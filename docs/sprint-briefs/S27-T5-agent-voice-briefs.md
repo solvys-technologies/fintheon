@@ -1,128 +1,189 @@
-# S27-T5 — Agent-Voiced Briefs (Track C, part 2 of 2)
+# S27-T5 — Voice Assistant Completion (Voicebox/Qwen via Hermes Sidecar, Non-Interrupting Rim UX)
 
-## Inspiration
+## Ownership
 
-[jamiepine/voicebox](https://github.com/jamiepine/voicebox) — open-source voice synthesis studio. Qwen3-TTS + Whisper, supports voice cloning. Relevant here for the idea of **per-agent voice identity** at brief-generation time, not on-demand at render time.
+Claude-08, Wave 2, branch `s27-w2c-voice`, worktree `/Users/tifos/Desktop/Codebases/fintheon-s27-w2c`.
 
-## The Gap
+Starts only after Wave 1 lands W1b (Hermes sidecar) + W1d (SOUL.md).
 
-Audit finding:
+## Context — This is a Rewrite, Not the Original T5
 
-> "MDB/ADB/PMDB/TOTT briefs are text-only. There is no route that pipes brief output through TTS. The `/api/voice/speak` endpoint calls `synthesizeVoice` for Hermes (CAO) replies in a voice conversation context — not for briefs."
+The originally-drafted T5 was brief-narration (MDB/ADB/PMDB/TOTT audio with per-agent OpenAI voices). **Dropped.** TP clarified the real T5:
 
-Result: TP reads briefs silently. A core product moment (morning brief, post-close brief) has no audio channel.
+> "Voice assistant, when enabled, needs microinteraction, then greeting from AI agent. User request is to be transcribed, then ingested by agent before streaming response via voice, emulating a real conversation, without lengthy deliberation. Feature is designed to be able to ask questions quickly, and get quick, but NOT stupid, analysis."
 
-## Design Choice
+And:
 
-Two paths were considered:
+> "OpenAI TTS relay to user and response from user in STT never worked properly."
 
-1. **Self-hosted voicebox (Qwen3-TTS)** — higher setup cost (GPU, MLX or CUDA), full voice-clone control. Deferred.
-2. **OpenAI TTS (already wired)** — 6 distinct voices (alloy, echo, fable, onyx, nova, shimmer), `gpt-4o-mini-tts` already in `voice-service.ts`, zero infra. **Chosen for S27.**
+The existing Fintheon voice path (`voice-service.ts` + `/api/voice/transcribe` + `/api/voice/speak` + `HeaderVoiceControl.tsx`) is partially wired but the end-to-end relay doesn't work. T5 fixes that by (a) replacing OpenAI TTS/STT with voicebox/Qwen3-TTS + Whisper-equivalent STT routed through the Hermes Python sidecar, (b) grounding the voice CAO on the same SOUL file used by main-chat CAOs so both surfaces have one source of personal truth, (c) shipping a non-interrupting rim UX so the feature works while TP is mid-trade without ever covering content.
 
-If TP later wants cloned agent voices, the voice-ID mapping table added here is the swap point — change `provider: 'openai'` to `provider: 'voicebox'` per agent without touching the brief pipeline.
+## Inspiration + Locked Decisions
 
-## Branch / Worktree / CWD
+- [jamiepine/voicebox](https://github.com/jamiepine/voicebox) — open-source voice studio, Qwen3-TTS + Whisper, self-hostable.
+- Voice model: **smartest FREE Qwen reasoning model available at implementation time**. Selected with TP sign-off during the sprint. Must be Sonnet-equivalent or better.
+- STT: Whisper-turbo (or Qwen-STT if benchmarks favor it at implementation time).
+- TTS: Qwen3-TTS through voicebox.
+- All three loaded as plugins inside the Hermes sidecar (W1b), accessed via `POST /v1/voice/stt` + `POST /v1/voice/tts` + `POST /v1/chat` with voice agent id.
+- Grounding: voice-CAO loads `backend-hono/src/services/ai/soul/harper.md` (written by W1d), which in turn imports Harper's `CLAUDE.md` verbatim as source of personal truth. Main-chat CAOs use the same file — no drift.
+- UX: **non-interrupting rim around the app window chrome**, not a modal. Must work during active trading without covering content.
 
-Same worktree as T4: `/Users/tifos/Desktop/Codebases/fintheon-s27-c`, branch `s27-c-capabilities`. T4 lands first; T5 stacks on top.
+## §1 — Sidecar voice plugin wiring (depends on W1b)
 
-## Scope — Included
+In `hermes-sidecar/config.yaml`, register:
 
-### 1. Agent voice map
+- `plugins.voice.tts.provider: voicebox` with Qwen3-TTS model config
+- `plugins.voice.stt.provider: whisper-turbo` (fallback to `qwen-stt` via env flag)
+- `plugins.voice.agent_id: harper-voice` — a dedicated voice agent whose SOUL inherits Harper's
 
-Create [`backend-hono/src/config/agent-voices.ts`](backend-hono/src/config/agent-voices.ts):
+Claude-08 verifies each plugin boots via:
 
-```ts
-export const AGENT_VOICES = {
-  harper: { provider: "openai", voice: "nova", style: "confident, executive" },
-  oracle: {
-    provider: "openai",
-    voice: "shimmer",
-    style: "analytical, measured",
-  },
-  feucht: { provider: "openai", voice: "onyx", style: "terse, trader-floor" },
-  consul: { provider: "openai", voice: "echo", style: "deliberate, macro" },
-  herald: { provider: "openai", voice: "fable", style: "newsroom, paced" },
-} as const;
+```
+curl -X POST http://localhost:8318/v1/voice/stt -F audio=@sample.wav → {transcript}
+curl -X POST http://localhost:8318/v1/voice/tts -d '{"text":"hello","voice_id":"harper-voice","stream":true}' → audio stream
 ```
 
-`style` is appended to the TTS prompt as steering guidance (OpenAI `gpt-4o-mini-tts` supports free-text style hints).
+## §2 — Backend streaming relay
 
-### 2. Brief section attribution
-
-Each brief today is a monolithic markdown blob. For audio, sections need to be tagged with the authoring agent so the right voice reads them.
-
-Update brief generators under [`backend-hono/src/services/briefs/`](backend-hono/src/services/briefs/) (audit exact path) to emit a structured sections array alongside the markdown:
+Rewrite [`backend-hono/src/services/voice-service.ts`](backend-hono/src/services/voice-service.ts) from OpenAI-direct to sidecar-relay:
 
 ```ts
-type BriefSection = {
-  agent: keyof typeof AGENT_VOICES;
-  heading: string;
-  body: string; // plain text, no markdown syntax (TTS can't speak `**bold**`)
-};
+// OLD: direct OpenAI call
+// NEW: proxy to sidecar
+export async function transcribe(audio: ArrayBuffer): Promise<Transcript> {
+  return await sidecarClient.voice.stt({ audio_bytes: Buffer.from(audio).toString('base64') })
+}
+
+export async function* streamVoiceReply(
+  conversationId: string,
+  transcript: string
+): AsyncGenerator<VoiceEvent> {
+  // 1. Ingest user turn into sidecar context
+  await sidecarClient.context.ingest(conversationId, { role: 'user', content: transcript, ... })
+
+  // 2. Start chat stream
+  const chatStream = sidecarClient.chat.stream({
+    agent_id: 'harper-voice',
+    conversation_id: conversationId,
+    user_message: transcript,
+    stream: true,
+  })
+
+  // 3. For each text delta, start TTS stream (parallel, overlap synthesis + generation)
+  let ttsQueue: Promise<ArrayBuffer>[] = []
+  for await (const evt of chatStream) {
+    if (evt.type === 'delta' && evt.payload.text) {
+      ttsQueue.push(sidecarClient.voice.tts({
+        text: evt.payload.text,
+        voice_id: 'harper-voice',
+        stream: true,
+      }))
+    }
+    yield { type: 'text', text: evt.payload.text }
+  }
+
+  for (const audioBuf of await Promise.all(ttsQueue)) {
+    yield { type: 'audio', bytes: audioBuf }
+  }
+}
 ```
 
-Persist sections alongside the existing brief text in Supabase (existing `briefs` table gets a new `sections jsonb` column — migration `supabase/migrations/20260419_brief_sections.sql`).
+Update [`backend-hono/src/routes/voice/handlers.ts`](backend-hono/src/routes/voice/handlers.ts) to expose:
 
-If a brief is authored by Harper-Opus synthesizing across desks, the generator should split the synthesis into per-desk sections based on the existing agent-prefix headings Harper already writes (e.g., "## Macro (Consul)" → tag `consul`).
+- `POST /api/voice/session/start` → returns `{ conversation_id, greeting_audio_url }`. Backend pre-renders the greeting so there's zero perceived lag when UX opens.
+- `POST /api/voice/session/turn` → accepts user audio, returns SSE stream of `{type: 'transcript', …}`, `{type: 'text', …}`, `{type: 'audio', …}` events.
+- `POST /api/voice/session/interrupt` → aborts in-flight chat + TTS streams for a conversation.
+- `POST /api/voice/session/end` → closes the conversation, optional memory consolidation.
 
-### 3. Pre-render pipeline
+## §3 — Proactive greeting
 
-At brief generation time (inside the MDB/ADB/PMDB/TOTT generator), after the text is final:
+When UX opens:
 
-- For each `BriefSection`, call `synthesizeVoice(section.body, AGENT_VOICES[section.agent])` via the existing `voice-service.ts` helper.
-- Upload each resulting mp3 to Supabase Storage bucket `brief-audio` with key `{brief_type}/{brief_id}/{section_idx}-{agent}.mp3`.
-- Also render a **combined** mp3 (sections concatenated with 600ms silence between) at `{brief_type}/{brief_id}/full.mp3`. Use `ffmpeg` via existing infra (if not present, fall back to serving sections sequentially on the client).
-- Store signed URLs (7-day expiry) in the new `audio_urls jsonb` column on the `briefs` row.
+1. Frontend calls `POST /api/voice/session/start`.
+2. Backend creates conversation, loads SOUL.md, calls sidecar `/v1/chat` with a system-generated prompt: "The user just opened the voice assistant. Give a 1-sentence greeting (max 12 words) and wait for their question. Do not begin analysis."
+3. Sidecar streams text, backend pipes through TTS, stores resulting audio in Supabase Storage `voice-greetings/{conversation_id}.opus`.
+4. Backend returns signed URL. Frontend plays on UX open.
 
-Failure handling: if TTS fails for any section, log + continue. The brief text still ships. Frontend shows a "audio unavailable" state for that section only.
+Greeting copy is **generated per-session** by the agent (grounded in SOUL), not hardcoded. Default SOUL hint: "Terse, conversational, Harper-voiced. Examples: 'What are we looking at?', 'Ready when you are.'"
 
-### 4. Route addition
+## §4 — Frontend rim UX
 
-Add `GET /api/data/brief/audio?type=MDB&id=…` to [`backend-hono/src/routes/data/brief.ts`](backend-hono/src/routes/data/brief.ts). Returns the `audio_urls` map for a brief. No auth change — same JWT gate as `/api/data/brief/latest`.
+**Electron window chrome**: create `electron/window-chrome-voice.ts`. When voice session active, set a 3px accent-gold border on the BrowserWindow via `setContentProtection` + a custom `titleBarOverlay` style. The rim pulses subtly (2s cycle, opacity 0.6→1.0→0.6) when the agent is speaking; solid at 0.8 when listening; 0.4 when idle.
 
-### 5. Frontend playback control
+**Web/mobile overlay**: for non-Electron surfaces, matching behavior via a CSS-only outline on the outermost app container. Pointer-events: none, so it never intercepts trading clicks.
 
-New component [`frontend/components/briefs/BriefPlayer.tsx`](frontend/components/briefs/BriefPlayer.tsx):
+**Transcript ticker**: single-line scrolling text at the top-center of the rim, shows the last 120 chars of agent speech as it streams. Silent when idle. Dismiss button at top-right corner of the rim. No modal, no panel, no overlay that covers content.
 
-- Glass pill at the top of the brief body with: play/pause, section skip, current-agent indicator ("CONSUL" in accent gold), elapsed time.
-- Audio element reads from the `full.mp3` URL; section skip seeks to known timestamps (generator emits a `section_offsets` array alongside URLs).
-- Reduced-motion: no waveform animation. Just a static accent underline that fills as playback progresses (CSS transition, no JS tick).
+Component locations:
 
-Wire into the existing brief viewer in Consilium. Audit existing brief component path; likely `frontend/components/briefs/BriefViewer.tsx` or under Sanctum.
+- `frontend/components/voice/VoiceRimFrame.tsx` — the rim component, reads session state from existing `useVoice()` context
+- `frontend/components/voice/VoiceTranscriptTicker.tsx` — scrolling transcript element
+- `electron/window-chrome-voice.ts` — Electron-side window decoration hooks
+- Mount point: `frontend/App.tsx` (or nearest root that's above every route)
 
-### 6. Backfill job
+Reuse [`frontend/components/voice/HeaderVoiceControl.tsx`](frontend/components/voice/HeaderVoiceControl.tsx) mic button + `useVoice()` context. Don't build a second activation affordance — the existing mic icon starts the session.
 
-One-time script [`backend-hono/scripts/backfill-brief-audio.ts`](backend-hono/scripts/backfill-brief-audio.ts) to render audio for the last 30 days of briefs. Runs manually after deploy. Rate-limited to 10 briefs/minute to stay under OpenAI TTS quota.
+## §5 — Target latency
 
-## Scope — Excluded
+- **End-of-user-speech → first agent audio byte: < 2 seconds.**
+- Critical path: STT (~400ms) → sidecar `/v1/chat` first token (~500ms) → TTS first chunk (~400ms) → network + playback init (~200ms) ≈ 1.5s median, 2.0s p95.
+- Overlap aggressively: start TTS on the first text delta, don't wait for full reply. Stream audio chunks as TTS produces them.
+- If p95 exceeds 2s in load test, fallback: switch voice agent to a smaller Qwen model via routing override (see T9) + log quality-drop telemetry.
 
-- Voicebox (Qwen3-TTS) self-hosting — deferred. Voice map schema leaves the door open.
-- Voice-cloned agent voices — deferred.
-- Brief-time voice selection UI (TP picks voice per agent via env or config edit, not in-app).
-- Mobile playback — backend + desktop only. Mobile gets it free once frontend lands since the PWA mirrors the same React.
-- Real-time streaming TTS — pre-render only. Faster on the client, predictable cost.
+## §6 — Interrupt + resume
+
+- Frontend emits `POST /api/voice/session/interrupt` when user starts speaking mid-agent-reply (detected via VAD — existing voice context should have this).
+- Backend cancels in-flight chat + TTS streams, marks the partial reply as truncated in conversation history.
+- New user turn proceeds normally. Agent is told via system prompt injection that the prior reply was cut off — do not re-narrate.
+
+## §7 — Tests (this feature NEEDS tests to prove it works this time)
+
+End-to-end integration test in `backend-hono/test/voice-assistant.test.ts`:
+
+1. Load a fixture audio clip asking "What's NQ doing?"
+2. Call `/api/voice/session/start` → assert greeting audio is non-empty.
+3. Call `/api/voice/session/turn` with the clip → assert SSE stream produces `transcript` (non-empty), `text` (non-empty), `audio` (non-empty bytes) events in order.
+4. Measure end-of-user-audio → first `audio` event latency. Assert < 2.5s (CI-tolerant; local target < 2s).
+5. Mid-stream, emit `/api/voice/session/interrupt` → assert remaining SSE events stop within 200ms.
+6. Call `/api/voice/session/end` → confirm conversation persisted.
+
+Frontend Playwright test in `frontend/test/voice-rim.spec.ts`:
+
+1. Mount app, click mic → rim appears around window.
+2. Assert rim does NOT cover any element with `data-testid="trading-view-*"`.
+3. Wait for greeting to play (mock audio) → assert transcript ticker shows text.
+4. Click dismiss → rim disappears, no data loss in conversation log.
+
+## Files to touch
+
+- NEW `backend-hono/src/services/ai/sidecar-voice-client.ts` (typed wrapper around `/v1/voice/*`)
+- NEW `backend-hono/src/routes/voice/session.ts` (new session endpoints)
+- NEW `backend-hono/test/voice-assistant.test.ts`
+- NEW `frontend/components/voice/VoiceRimFrame.tsx`
+- NEW `frontend/components/voice/VoiceTranscriptTicker.tsx`
+- NEW `frontend/test/voice-rim.spec.ts`
+- NEW `electron/window-chrome-voice.ts`
+- EDIT `backend-hono/src/services/voice-service.ts` (sidecar proxy, drop OpenAI direct calls)
+- EDIT `backend-hono/src/routes/voice/handlers.ts` (mount new session routes)
+- EDIT `backend-hono/src/routes/voice/index.ts` (route registration)
+- EDIT `frontend/components/voice/HeaderVoiceControl.tsx` (call new session-start endpoint)
+- EDIT `frontend/lib/voice/useVoice.tsx` or equivalent context (add session state, interrupt handler)
+- EDIT `frontend/App.tsx` (mount `VoiceRimFrame` at root)
+- EDIT `electron/main.ts` (wire window-chrome-voice)
+- EDIT `hermes-sidecar/config.yaml` (voice plugin registration — coordinate with W1b)
+- EDIT `src/lib/changelog.ts`
 
 ## Validation
 
-1. `cd backend-hono && bun run build` clean.
-2. Trigger a fresh MDB via `POST /api/data/brief/generate` with type `MDB`. Expect: brief row has `sections`, `audio_urls.full`, and `audio_urls.sections[]` populated.
-3. Open the brief in Consilium — BriefPlayer pill appears, play produces audio, section skip changes the current-agent indicator.
-4. Kill OpenAI API key temporarily, regenerate brief — text renders, audio pill shows "audio unavailable."
-5. Backfill script runs against last 7 days of briefs without rate-limit errors.
-6. Restart local launchd backend + confirm `/api/diagnostics` green.
+See §7 tests. Plus live smoke:
 
-## Files to Touch
-
-- NEW `backend-hono/src/config/agent-voices.ts`
-- NEW `backend-hono/scripts/backfill-brief-audio.ts`
-- NEW `frontend/components/briefs/BriefPlayer.tsx`
-- NEW `supabase/migrations/20260419_brief_sections.sql`
-- EDIT `backend-hono/src/services/briefs/*.ts` (generators — one per brief type)
-- EDIT `backend-hono/src/services/voice-service.ts` (extend `synthesizeVoice` to accept style hint)
-- EDIT `backend-hono/src/routes/data/brief.ts` (new audio route)
-- EDIT `frontend/components/briefs/BriefViewer.tsx` (audit exact name; mount BriefPlayer)
-- EDIT `src/lib/changelog.ts`
+1. Fresh install, start local launchd backend + sidecar, open Fintheon, click mic.
+2. Rim appears, greeting plays within 500ms of first click.
+3. Say "What's the macro read for tomorrow?" — agent transcribes accurately, responds within 2s in Harper's voice tone.
+4. Say "Actually, what about NQ levels?" mid-response → agent cuts off mid-sentence cleanly; new reply begins.
+5. Trading view remains fully visible and clickable throughout; no modal, no overlay covers content.
+6. Dismiss rim → conversation saved, reopen mic → previous context accessible via `/api/voice/session/start?conversation_id=...`.
 
 ## Ship
 
-Commit prefix: `v.27.3`. Second commit on the Track C branch after T4.
+`v.27.7` when W2c merges to `v5.22`.

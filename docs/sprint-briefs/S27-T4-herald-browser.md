@@ -1,145 +1,195 @@
-# S27-T4 — Herald Browser-Harness (Track C, part 1 of 2)
+# S27-T4 — Shared Browser Primitives + Rettiwt Cut + Headline Telemetry
 
-## Inspiration
+## Ownership
 
-[browser-use/browser-harness](https://github.com/browser-use/browser-harness) — self-healing headless browser designed for LLM task completion. Retries on selector drift, handles JS-rendered content, exposes a small tool surface.
+Claude-04, Wave 1, branch `s27-w1c-browser`, worktree `/Users/tifos/Desktop/Codebases/fintheon-s27-w1c`.
 
-## The Gap
+Primitives ship here; consumers (T6 Harper Browser Operator + T7 News Worker) are Claude-09 (W2d). Must land before W2d unblocks.
 
-Audit finding:
+## Inspiration + Decisions
 
-> "Herald fetches news via three stacked sources — no raw browser rendering. AgentReach is a TypeScript `fetch`-based article scraper. No Playwright or headless browser in the Herald news pipeline. Playwright exists in `screenshot-service.ts` for chart captures only."
+- [browser-use/browser-harness](https://github.com/browser-use/browser-harness) — self-healing CDP-native browser harness. "The agent writes what's missing, mid-task." Structural + similarity-based selector recovery when pages change. Devs offer a free Mac mini to anyone who finds a task it can't complete — TP cited that as the confidence signal.
+- TP's decision: **browser-harness replaces Rettiwt and acts as fallback when Exa / AgentReach miss.** Rettiwt is cut from the dispatcher but code left inert for fast re-enable. Headline volume metric quantifies the tradeoff in the first 48h post-S27.
 
-Sites that matter and break on fetch:
+## Why Shared Primitives (not Herald-only)
 
-- **SEC EDGAR** filing detail pages — 8-K/10-Q exhibits are JS-rendered after the initial HTML
-- **FOMC press release / minutes** pages — PDF embedded in viewer, title metadata lives in JS-populated DOM
-- **Polymarket / Kalshi** live order books — DOM updates via WebSocket after page load
-- **BLS release** pages at the moment of embargo lift (30s window where HTML lags)
+T6 needs the same browser for Harper's `browse_task`; T7 runs the same browser in a sibling process. Building a Herald-specific harness and then replicating it twice is the wrong shape. Primitives live at `backend-hono/src/services/browser/` and are imported by Herald, Harper, and the news worker alike. Downstream callers set intent via a `mode` flag (`'allowlist' | 'universal'`) — same code paths.
 
-Today Herald silently misses these.
+## §1 — Browser pool
 
-## Branch / Worktree / CWD
+`backend-hono/src/services/browser/pool.ts`
 
-- **Worktree**: `/Users/tifos/Desktop/Codebases/fintheon-s27-c`
-- **Branch**: `s27-c-capabilities` off `v5.22`. Contains T4 and T5.
-- Merge target: `v5.22` → ship tag `v.27.3`
+Extract Playwright launch logic from `backend-hono/src/services/screenshot-service.ts` (audit-confirmed location). Pool is a singleton, max 4 concurrent pages (up from the audit's 2 — needed because Herald + Harper + news worker share). Reconnect on crash, LIFO page reuse.
 
-## Scope — Included
+Both `screenshot-service` (chart captures) and the new `harness.ts` consume from this pool. `screenshot-service.ts` gets refactored to import — not duplicate.
 
-### 1. Reuse existing Playwright
+## §2 — Allow-list with tiered quotas
 
-[`backend-hono/src/services/screenshot-service.ts`](backend-hono/src/services/screenshot-service.ts) already has Playwright bootstrapped. Extract the browser-launch logic into [`backend-hono/src/services/browser-pool.ts`](backend-hono/src/services/browser-pool.ts) as a shared singleton (max 2 concurrent pages; reconnect on crash). Both `screenshot-service` and the new Herald browser harness consume it.
+`backend-hono/src/services/browser/allowlist.ts`
 
-### 2. Herald browser client
-
-Create [`backend-hono/src/services/herald/browser-harness.ts`](backend-hono/src/services/herald/browser-harness.ts). Thin API:
+Not a binary list anymore. Per-domain daily-quota tiers:
 
 ```ts
-type FetchOptions = {
-  url: string;
-  waitFor?: "load" | "networkidle" | { selector: string; timeoutMs?: number };
-  extract?: { selectors: Record<string, string> }; // css → field name
-  textOnly?: boolean; // default true
-};
+export const BROWSER_ALLOWLIST: BrowserAllowlistEntry[] = [
+  { domain: "sec.gov", tier: "regulatory", dailyQuota: 200 },
+  { domain: "federalreserve.gov", tier: "regulatory", dailyQuota: 50 },
+  { domain: "bls.gov", tier: "regulatory", dailyQuota: 50 },
+  { domain: "treasury.gov", tier: "regulatory", dailyQuota: 50 },
+  { domain: "polymarket.com", tier: "market", dailyQuota: 100 },
+  { domain: "kalshi.com", tier: "market", dailyQuota: 100 },
+  // Post-Rettiwt Twitter/X capture:
+  { domain: "x.com", tier: "social", dailyQuota: 500 },
+  { domain: "twitter.com", tier: "social", dailyQuota: 500 },
+  // Major newswires (for AgentReach fallback):
+  { domain: "reuters.com", tier: "news", dailyQuota: 200 },
+  { domain: "bloomberg.com", tier: "news", dailyQuota: 100 },
+  { domain: "wsj.com", tier: "news", dailyQuota: 100 },
+  { domain: "ft.com", tier: "news", dailyQuota: 100 },
+];
+```
 
-export async function browseRead(opts: FetchOptions): Promise<{
+Quota counter in-memory, mirrored to `browser_quota_ledger` table so it survives restarts. UTC midnight reset.
+
+`mode: 'universal'` callers bypass the allow-list but pay per-URL: hard cap $0.01 in LLM cost per fetch (measured via OpenRouter spend signals), falls through to HTML `fetch` if exceeded. Universal mode is gated behind `BROWSER_UNIVERSAL_ENABLED=true` env flag — off by default, T6 will turn on.
+
+## §3 — Harness wrapper
+
+`backend-hono/src/services/browser/harness.ts`
+
+Thin wrapper around the `browser-use` TypeScript SDK. Exposes:
+
+```ts
+export async function browseRead(opts: {
   url: string;
-  title: string;
-  body: string; // cleaned text
-  fields?: Record<string, string>;
-  status: number;
-  rendered_at: string;
-}>;
+  mode: "allowlist" | "universal";
+  waitFor?: "load" | "networkidle" | { selector: string; timeoutMs?: number };
+  extract?: { schema: ZodSchema<any> }; // structured extraction via LLM
+  textOnly?: boolean; // default true
+  budget_usd?: number; // default 0.01 (universal only)
+}): Promise<BrowseResult>;
 ```
 
 Behavior:
 
-- Allow-list only (see §3). Unknown domain ⇒ throws with a `URL_NOT_ALLOWED` code; caller falls back to `AgentReach`.
-- `waitFor` default: `networkidle`, 10s timeout.
-- On selector miss during `waitFor`, retry once with `load` + 3s settle, then give up.
-- Strip scripts, styles, nav/header/footer before returning `body`. Reuse existing AgentReach cleaner.
-- `textOnly: false` returns raw HTML (for cases where Herald wants to run its own parser).
+- Self-healing on: when a CSS selector specified in `waitFor` or `extract` breaks, harness computes alternative candidates from semantic meaning / visual context / past successful interactions. Built-in to browser-use, we don't reimplement.
+- Circuit breaker (reuses AgentReach pattern from `agent-reach-service.ts`): 3 consecutive failures per domain → 10-minute pause, auto-fall-through to raw `fetch`.
+- Every call logs to `browser_fetches` table: domain, URL hash, status, latency_ms, cost_usd, self_heal_occurred, cached_xpath_used.
+- Strips nav/header/footer before returning text. Reuses existing AgentReach cleaner.
 
-### 3. Allow-list + quota
+## §4 — Rettiwt cut
 
-Create [`backend-hono/src/services/herald/browser-allowlist.ts`](backend-hono/src/services/herald/browser-allowlist.ts):
+Two files become inert:
+
+- `backend-hono/src/services/rettiwt-service.ts`
+- `backend-hono/src/services/rettiwt-poller-accounts.ts`
+
+Cut from the dispatcher in [`backend-hono/src/services/agent-reach-service.ts`](backend-hono/src/services/agent-reach-service.ts) (or whichever module routes Herald sources — audit exact location): source-router no longer calls Rettiwt. Files + DB tables untouched; fast re-enable if coverage gaps show up.
+
+Add a one-line comment at the top of each Rettiwt file:
 
 ```ts
-export const BROWSER_ALLOWLIST = [
-  { domain: "sec.gov", dailyQuota: 200 },
-  { domain: "federalreserve.gov", dailyQuota: 50 },
-  { domain: "bls.gov", dailyQuota: 50 },
-  { domain: "treasury.gov", dailyQuota: 50 },
-  { domain: "polymarket.com", dailyQuota: 100 },
-  { domain: "kalshi.com", dailyQuota: 100 },
-] as const;
+// [claude-code 2026-04-19] Cut from Herald dispatcher during S27-T4. Left inert for fast re-enable. Delete in S29 if browser-harness coverage holds. Do NOT remove imports elsewhere without replacing data source.
 ```
 
-Per-domain daily counter in memory (reset at UTC midnight) + logged row in `agent_memory` so it survives restarts. Exceeding quota ⇒ throws `QUOTA_EXCEEDED`; caller logs + falls back.
+## §5 — Headline volume telemetry
 
-### 4. Wire into Herald source stack
-
-Update [`backend-hono/src/services/herald/source-router.ts`](backend-hono/src/services/herald/source-router.ts) (audit exact file; likely lives near `agent-reach-service.ts`). New order:
-
-1. Exa neural search (unchanged)
-2. Rettiwt timeline (unchanged)
-3. **Allow-list check** → if domain matches, call `browseRead`
-4. Fall through to AgentReach fetch for everything else
-
-Add a `source` tag on the returned article object: `'exa' | 'rettiwt' | 'browser' | 'agent-reach'` so RiskFlow cards can show provenance.
-
-### 5. Circuit breaker
-
-Reuse AgentReach's breaker pattern ([`agent-reach-service.ts`](backend-hono/src/services/agent-reach-service.ts)): 3 consecutive browser failures on the same domain ⇒ pause browser calls to that domain for 10 minutes, auto-fall-through to AgentReach.
-
-### 6. Observability
-
-Log every browser fetch to a new table (migration `supabase/migrations/20260419_browser_fetches.sql`):
+New migration `supabase/migrations/20260419_02_sources.sql`:
 
 ```sql
-create table public.browser_fetches (
+-- Add source tag + metadata to the RiskFlow items table.
+alter table public.riskflow_items
+  add column if not exists source text,          -- 'exa' | 'rettiwt' | 'agent-reach' | 'browser-harness'
+  add column if not exists source_domain text,
+  add column if not exists fetched_at timestamptz,
+  add column if not exists fetch_latency_ms int;
+
+create index if not exists riskflow_items_source_fetched_at_idx
+  on public.riskflow_items (source, fetched_at desc);
+
+-- Rolling 48h comparison view.
+create or replace view public.v_headline_volume_48h as
+select
+  source,
+  count(*) as headlines,
+  avg(fetch_latency_ms) as avg_latency_ms,
+  min(fetched_at) as earliest,
+  max(fetched_at) as latest
+from public.riskflow_items
+where fetched_at > now() - interval '48 hours'
+group by source;
+
+create table if not exists public.browser_fetches (
   id uuid primary key default gen_random_uuid(),
   domain text not null,
-  url text not null,
+  url_hash text not null,
   status int,
-  ms int,
+  latency_ms int,
+  cost_usd numeric(10,4) default 0,
+  self_heal_occurred boolean default false,
+  cached_xpath_used boolean default false,
   failure_reason text,
   created_at timestamptz default now()
 );
+
+create table if not exists public.browser_quota_ledger (
+  domain text not null,
+  day date not null,
+  fetches int not null default 0,
+  primary key (domain, day)
+);
 ```
 
-TP can query failure rate per domain + tune allow-list weekly.
+Every source writes into `riskflow_items` with its `source` tag (Exa, AgentReach, browser-harness, or the now-inert Rettiwt for historical rows).
 
-## Scope — Excluded
+New route `GET /api/diagnostics/headline-volume`:
 
-- No form submission / clicking through the site (read-only browser).
-- No captcha solving.
-- No cookie persistence across sessions.
-- No LLM-in-the-loop for navigation (browser-harness the library does this; we're using a narrower read-only subset).
-- No Rettiwt or Exa changes.
-- Not a generic "browser tool" for Harper — T4 is Herald-only.
+```ts
+// backend-hono/src/routes/diagnostics.ts (edit existing diagnostics route file)
+app.get("/api/diagnostics/headline-volume", async (c) => {
+  const { data } = await supabase.from("v_headline_volume_48h").select("*");
+  return c.json({ window: "48h", sources: data });
+});
+```
+
+Small widget on the existing diagnostics page shows the per-source counts as a sparkline. Glassmorphic surface, accent-gold numerics, no gradients, no emojis. Widget lives in `frontend/components/diagnostics/HeadlineVolumeWidget.tsx`.
+
+## §6 — Coordination with Herald source-router
+
+Update the source-router (likely in [`backend-hono/src/services/agent-reach-service.ts`](backend-hono/src/services/agent-reach-service.ts)) so the order is:
+
+1. Exa neural search (unchanged)
+2. ~~Rettiwt~~ — removed from this list
+3. If domain is in browser-harness allow-list OR universal mode is enabled → `browseRead({mode: 'allowlist'|'universal'})`
+4. Fall through to AgentReach raw `fetch`
+
+Tag every returned article with its `source` field for `riskflow_items` insertion.
+
+## Files to touch
+
+- NEW `backend-hono/src/services/browser/pool.ts`
+- NEW `backend-hono/src/services/browser/allowlist.ts`
+- NEW `backend-hono/src/services/browser/harness.ts`
+- NEW `backend-hono/src/services/browser/index.ts` (barrel export)
+- NEW `supabase/migrations/20260419_02_sources.sql`
+- NEW `frontend/components/diagnostics/HeadlineVolumeWidget.tsx`
+- EDIT `backend-hono/src/services/screenshot-service.ts` (refactor Playwright launch into pool import)
+- EDIT `backend-hono/src/services/agent-reach-service.ts` (source-router: drop Rettiwt, add browser-harness tier)
+- EDIT `backend-hono/src/services/rettiwt-service.ts` (header comment marking inert)
+- EDIT `backend-hono/src/services/rettiwt-poller-accounts.ts` (header comment marking inert)
+- EDIT `backend-hono/src/routes/diagnostics.ts` (new `/headline-volume` route)
+- EDIT `frontend/components/diagnostics/DiagnosticsPage.tsx` (mount widget — audit exact path)
+- EDIT `src/lib/changelog.ts`
 
 ## Validation
 
 1. `cd backend-hono && bun run build` clean.
-2. Scripted test: fetch an SEC 8-K detail URL that was previously returning partial HTML via `AgentReach`. Expect full text body + non-empty title.
-3. Allow-list reject test: `browseRead({url: 'https://example.com'})` → throws `URL_NOT_ALLOWED`.
-4. Quota reject test: mock daily counter at `dailyQuota - 1`, make 2 calls → second throws `QUOTA_EXCEEDED`.
-5. Circuit breaker test: force 3 failures on a domain, verify 4th attempt falls through to AgentReach.
-6. `GET /api/diagnostics` green; browser pool reports healthy.
-
-## Files to Touch
-
-- NEW `backend-hono/src/services/browser-pool.ts`
-- NEW `backend-hono/src/services/herald/browser-harness.ts`
-- NEW `backend-hono/src/services/herald/browser-allowlist.ts`
-- NEW `supabase/migrations/20260419_browser_fetches.sql`
-- EDIT `backend-hono/src/services/screenshot-service.ts` (refactor to use `browser-pool`)
-- EDIT `backend-hono/src/services/herald/source-router.ts` (or equivalent dispatcher)
-- EDIT `backend-hono/src/services/agent-reach-service.ts` (only if the router wiring is inside it)
-- EDIT `src/lib/changelog.ts`
+2. `browseRead({url: 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000320193&type=8-K&dateb=&owner=include&count=40', mode: 'allowlist'})` returns title + body with ≥90% of the filings listed. Previous AgentReach `fetch` returned <40% because of JS-rendered rows.
+3. `browseRead({url: 'https://x.com/search?q=%24AAPL', mode: 'allowlist'})` returns timeline tweets. Confirms Rettiwt replacement is viable.
+4. Circuit breaker test: force 3 consecutive failures on `bloomberg.com`, confirm 4th call falls through to `fetch` + domain paused for 10 minutes in `browser_fetches` log.
+5. Universal mode off test: `browseRead({url: 'https://random-blog.example.com', mode: 'universal'})` with `BROWSER_UNIVERSAL_ENABLED=false` → throws `UNIVERSAL_MODE_DISABLED`.
+6. `GET /api/diagnostics/headline-volume` returns populated per-source counts. Widget renders without layout shift.
+7. Restart local launchd backend; `/api/diagnostics` green.
 
 ## Ship
 
-Commit prefix: `v.27.3`. Ships with T5 on the same branch; merge both into `v5.22` in sequence.
+`v.27.3` when W1c merges to `v5.22`.
