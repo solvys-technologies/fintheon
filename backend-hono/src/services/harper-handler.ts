@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] S27-T9 W2e: Harper CLI bridge invocation now records a routing_decisions row via llmCall wrapper — even though the model is pinned to Opus via Claude Code CLI, the telemetry feeds diagnostics + GEPA metrics.
 // [claude-code 2026-04-19] S27-T8 W1d: Harper system prompt now loads from SOUL.md (grounded on CLAUDE.md literal import). Hardcoded HARPER_BASE_SYSTEM_PROMPT retained as fallback only.
 // [claude-code 2026-04-17] S23-T3: buildAquariumContext now exported + enhanced with "how to read this" preamble + surface-gated injection (Harper reads her own AgentDesk output as ground truth)
 // [claude-code 2026-03-28] S8-T7: Harper handler — Claude CLI session handler for Chat
@@ -37,6 +38,8 @@ import {
   type AgentMemoryEntry,
 } from "./agent-context-bank-service.js";
 import { createLogger } from "../lib/logger.js";
+import { selectModel } from "./ai/routing.js";
+import { getSupabaseClient } from "../config/supabase.js";
 
 const log = createLogger("HarperOpus");
 
@@ -383,6 +386,12 @@ export async function harperChat(
     requestId,
   };
 
+  // [S27-T9 W2e] Record the routing decision for diagnostics + GEPA telemetry.
+  //   Claude CLI bridge is cost-free (Claude Max subscription), so cost_usd=0 —
+  //   but we still want Harper traffic visible alongside OpenRouter-routed agents.
+  const rule = selectModel("harper", "chat");
+  const startedAt = Date.now();
+
   const result = bridgeChat(bridgeRequest, {
     systemPrompt,
     model: "opus",
@@ -390,5 +399,46 @@ export async function harperChat(
     maxTurns: thinkHarder ? 5 : 3,
   });
 
+  void recordHarperRoutingDecision({
+    conversationId,
+    rule_model: rule.model,
+    rule_provider: rule.provider,
+    getFullText: result.getFullText,
+    startedAt,
+  });
+
   return result;
+}
+
+async function recordHarperRoutingDecision(args: {
+  conversationId: string;
+  rule_model: string;
+  rule_provider: string;
+  getFullText: () => string;
+  startedAt: number;
+}): Promise<void> {
+  const sb = getSupabaseClient();
+  if (!sb) return;
+  // Defer until the stream has had a chance to complete — the bridge settles getFullText.
+  await new Promise((resolve) => setTimeout(resolve, 2_000));
+  try {
+    const text = args.getFullText();
+    // crude token estimate: ~4 chars/token — good enough for diagnostics smoke.
+    const output_tokens = Math.max(1, Math.round(text.length / 4));
+    await sb.from("routing_decisions").insert({
+      conversation_id: args.conversationId,
+      agent_id: "harper",
+      task_type: "chat",
+      model: args.rule_model,
+      provider: args.rule_provider,
+      input_tokens: null,
+      output_tokens,
+      cost_usd: 0,
+      latency_ms: Date.now() - args.startedAt,
+    });
+  } catch (err) {
+    log.warn("Failed to record harper routing_decisions row", {
+      error: String(err),
+    });
+  }
 }

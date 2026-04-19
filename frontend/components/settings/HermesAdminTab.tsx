@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] S27-T9 W2e: mount RoutingWidget on diagnostics surface.
 // [claude-code 2026-04-19] S27-T4: mount HeadlineVolumeWidget on diagnostics surface.
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — Hermes:Admin merged tab
 // [claude-code 2026-03-20] S3:T3 — merged Connection+Hermes tabs into Hermes:Admin
@@ -8,6 +9,7 @@ import { useToast } from "../../contexts/ToastContext";
 import Toggle from "../Toggle";
 import { HermesSettings } from "./HermesSettings";
 import { HeadlineVolumeWidget } from "../diagnostics/HeadlineVolumeWidget";
+import { RoutingWidget } from "../diagnostics/RoutingWidget";
 
 interface DiagnosticService {
   name: string;
@@ -318,6 +320,11 @@ export function HermesAdminTab() {
       {/* 4. Headline Volume (S27-T4) */}
       <section>
         <HeadlineVolumeWidget />
+      </section>
+
+      {/* 5. Smart Model Routing (S27-T9 W2e) */}
+      <section>
+        <RoutingWidget />
       </section>
     </div>
   );

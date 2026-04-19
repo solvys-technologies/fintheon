@@ -9,6 +9,25 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T15:10:00",
+    agent: "claude-code",
+    summary:
+      "[v.27.9] S27-T9 W2e — Smart Model Routing flipped live per-agent. hermes-handler OpenRouter path now routes through selectModel() + llmCall() wrapper: Oracle→claude-opus-4-7, Feucht→claude-haiku-4-5-20251001, Consul→claude-sonnet-4-6, Herald→claude-haiku-4-5-20251001, Harper→claude-opus-4-7. Anthropic models emit with the OpenRouter `anthropic/` prefix. Task-type routing hints mapped from hermes intent buckets (probability/news/tape/macro). harper-handler CLI bridge now emits a routing_decisions row at stream settle so diagnostics sees Harper traffic alongside Hermes. New budget.ts layer: per-user daily cap (default $20, env ROUTING_DAILY_CAP, ROUTING_DISABLE_BUDGET=true bypass). On cap exceed: Harper+Oracle degrade Opus→Sonnet; Feucht/Herald stay Haiku; Consul stays Sonnet. New agent-map.ts translates HermesAgentRole→AgentId. Diagnostics surface: /api/diagnostics body now carries routing.last_24h per-agent {model,calls,total_cost_usd,avg_latency_ms} + budget_status; new /api/diagnostics/routing + /api/diagnostics/gepa endpoints. New RoutingWidget.tsx (glassmorphic, accent-gold numerics, zero gradients) mounted in HermesAdminTab. New supabase/migrations/20260419_07_user_budgets.sql. Env-var override still honored (ROUTING_OVERRIDE_ORACLE=claude-haiku-4-5-20251001 etc) via routing.ts. Backend bun run build clean, frontend tsc --noEmit clean, frontend clean vite build clean.",
+    files: [
+      "backend-hono/src/services/ai/routing.ts",
+      "backend-hono/src/services/ai/llm-call.ts",
+      "backend-hono/src/services/ai/budget.ts",
+      "backend-hono/src/services/ai/agent-map.ts",
+      "backend-hono/src/services/hermes-handler.ts",
+      "backend-hono/src/services/harper-handler.ts",
+      "backend-hono/src/routes/diagnostics/index.ts",
+      "frontend/components/diagnostics/RoutingWidget.tsx",
+      "frontend/components/settings/HermesAdminTab.tsx",
+      "supabase/migrations/20260419_07_user_budgets.sql",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-20T14:00:00",
     agent: "claude-code",
     summary:
