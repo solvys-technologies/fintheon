@@ -58,7 +58,7 @@ const tierData: Record<Tier, TierInfo> = {
       "Full Consilium with @mention",
       "Voice assistant",
       "Chat agents",
-      "MiroShark predictions",
+      "AgentDesk predictions",
       "Automated proposals",
     ],
     color: "text-[color-mix(in_srgb,var(--fintheon-accent)_80%,white)]",

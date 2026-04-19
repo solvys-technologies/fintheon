@@ -34,7 +34,7 @@ export interface DAGDefinition {
   conversationId?: string;
   userId?: string;
   surface: SurfaceId;
-  template?: string; // 'miroshark-deliberation' | 'ad-hoc'
+  template?: string; // 'agent-desk-deliberation' | 'ad-hoc'
   input: Record<string, unknown>;
   tasks: TaskDefinition[];
 }

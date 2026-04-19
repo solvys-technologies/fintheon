@@ -1,4 +1,4 @@
-// [claude-code 2026-04-02] Blended IV score service — 70% VIX + 20% catalyst heat + 10% MiroShark running analysis + systemic overlay
+// [claude-code 2026-04-02] Blended IV score service — 70% VIX + 20% catalyst heat + 10% AgentDesk running analysis + systemic overlay
 // Provides a single 0-10 composite score for the /api/market-data/iv-score endpoint.
 // V3: adds systemic risk overlay (causal chains, historical rhyming, credit signals)
 
@@ -11,19 +11,19 @@ import {
 import { getCachedAssessment } from "../systemic/risk-detector.js";
 import { generateIVPrediction } from "./iv-prediction.js";
 import type { IVPrediction } from "./iv-prediction-types.js";
-import { getRunningAnalysisScore } from "../miroshark/miroshark-reactive.js";
+import { getRunningAnalysisScore } from "../agent-desk/agent-desk-reactive.js";
 
 export interface BlendedIVScore {
-  /** Composite 0-10 score (70% VIX + 20% catalyst heat + 10% MiroShark + systemic overlay) */
+  /** Composite 0-10 score (70% VIX + 20% catalyst heat + 10% AgentDesk + systemic overlay) */
   score: number;
   /** VIX-only component score (0-10) */
   vixComponent: number;
   /** Headline-only component score (0-10) */
   headlineComponent: number;
-  /** MiroShark running analysis component score (0-10) */
-  mirosharkComponent: number;
+  /** AgentDesk running analysis component score (0-10) */
+  agentDeskComponent: number;
   /** Weight breakdown */
-  weights: { vix: number; headlines: number; miroshark: number };
+  weights: { vix: number; headlines: number; agentDesk: number };
   /** VIX snapshot */
   vix: {
     level: number;
@@ -53,13 +53,13 @@ export interface BlendedIVScore {
     };
     rationale: string[];
   };
-  /** V4: Next-session prediction (MiroShark or heuristic) */
+  /** V4: Next-session prediction (AgentDesk or heuristic) */
   prediction?: IVPrediction;
 }
 
 const VIX_WEIGHT = 0.7;
 const HEADLINE_WEIGHT = 0.2;
-const MIROSHARK_WEIGHT = 0.1;
+const AGENT_DESK_WEIGHT = 0.1;
 
 /**
  * Map VIX level to a 0-10 score.
@@ -96,9 +96,9 @@ function vixToScore(vix: number): number {
 }
 
 /**
- * Calculate a blended IV score: 70% VIX + 20% catalyst heat + 10% MiroShark running analysis.
+ * Calculate a blended IV score: 70% VIX + 20% catalyst heat + 10% AgentDesk running analysis.
  * Headline heat comes from the V2 scoring engine applied to recent DB events.
- * MiroShark component comes from the deterministic reactive scoring engine.
+ * AgentDesk component comes from the deterministic reactive scoring engine.
  */
 export async function calculateBlendedIVScore(
   recentEvents: StackedEvent[],
@@ -134,20 +134,20 @@ export async function calculateBlendedIVScore(
     rationale.push("No recent headline events → headline component 0");
   }
 
-  // MiroShark running analysis component
-  const mirosharkScore = getRunningAnalysisScore();
-  if (mirosharkScore > 0) {
+  // AgentDesk running analysis component
+  const agentDeskScore = getRunningAnalysisScore();
+  if (agentDeskScore > 0) {
     rationale.push(
-      `MiroShark running analysis → component score ${mirosharkScore.toFixed(1)}/10`,
+      `AgentDesk running analysis → component score ${agentDeskScore.toFixed(1)}/10`,
     );
   } else {
-    rationale.push("No MiroShark running analysis → component 0");
+    rationale.push("No AgentDesk running analysis → component 0");
   }
 
   // Dynamic weights: below VIX 16, keep VIX dominant ("stubborn" regime)
   let effectiveVixWeight = VIX_WEIGHT;
   let effectiveHeadlineWeight = HEADLINE_WEIGHT;
-  let effectiveMfWeight = MIROSHARK_WEIGHT;
+  let effectiveMfWeight = AGENT_DESK_WEIGHT;
   if (vixData.level < 16) {
     effectiveVixWeight = 0.75;
     effectiveHeadlineWeight = 0.15;
@@ -158,7 +158,7 @@ export async function calculateBlendedIVScore(
   const blended =
     vixScore * effectiveVixWeight +
     headlineScore * effectiveHeadlineWeight +
-    mirosharkScore * effectiveMfWeight;
+    agentDeskScore * effectiveMfWeight;
   // VIX floor: elevated VIX guarantees minimum score (e.g. VIX 24 → vixScore 9 → floor 7)
   const vixFloor = Math.max(0, vixScore - 2);
   let finalScore = Math.max(blended, vixFloor);
@@ -195,18 +195,18 @@ export async function calculateBlendedIVScore(
 
   const clamped = Math.min(10, Math.max(0, Number(finalScore.toFixed(1))));
   rationale.push(
-    `Blended: (${vixScore.toFixed(1)} × ${effectiveVixWeight}) + (${headlineScore.toFixed(1)} × ${effectiveHeadlineWeight}) + (${mirosharkScore.toFixed(1)} × ${effectiveMfWeight}) = ${blended.toFixed(1)}, floor ${vixFloor.toFixed(1)}${systemicAssessment?.ivScoreOverlay ? ` + systemic ${systemicAssessment.ivScoreOverlay.toFixed(1)}` : ""} → ${clamped}`,
+    `Blended: (${vixScore.toFixed(1)} × ${effectiveVixWeight}) + (${headlineScore.toFixed(1)} × ${effectiveHeadlineWeight}) + (${agentDeskScore.toFixed(1)} × ${effectiveMfWeight}) = ${blended.toFixed(1)}, floor ${vixFloor.toFixed(1)}${systemicAssessment?.ivScoreOverlay ? ` + systemic ${systemicAssessment.ivScoreOverlay.toFixed(1)}` : ""} → ${clamped}`,
   );
 
   const result: BlendedIVScore = {
     score: clamped,
     vixComponent: Number(vixScore.toFixed(1)),
     headlineComponent: Number(headlineScore.toFixed(1)),
-    mirosharkComponent: Number(mirosharkScore.toFixed(1)),
+    agentDeskComponent: Number(agentDeskScore.toFixed(1)),
     weights: {
       vix: effectiveVixWeight,
       headlines: effectiveHeadlineWeight,
-      miroshark: effectiveMfWeight,
+      agentDesk: effectiveMfWeight,
     },
     vix: {
       level: vixData.level,

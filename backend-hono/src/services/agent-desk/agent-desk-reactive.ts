@@ -1,7 +1,7 @@
 // [claude-code 2026-03-24] Deterministic reactive score adjustment engine — NO LLM calls, purely rule-based.
-// Maps RiskFlow items to MiroShark risk categories and adjusts running analysis scores in real-time.
+// Maps RiskFlow items to AgentDesk risk categories and adjusts running analysis scores in real-time.
 
-export type MiroSharkRiskCategory =
+export type AgentDeskRiskCategory =
   | "geopolitical"
   | "political"
   | "monetary-policy"
@@ -11,7 +11,7 @@ export type MiroSharkRiskCategory =
 
 export interface RunningAnalysisState {
   baselineRunId: string | null;
-  categoryScores: Record<MiroSharkRiskCategory, number>;
+  categoryScores: Record<AgentDeskRiskCategory, number>;
   compositeIV: number;
   confidence: number;
   accumulatedItemIds: string[];
@@ -19,7 +19,7 @@ export interface RunningAnalysisState {
   adjustmentCount: number;
 }
 
-const ALL_CATEGORIES: MiroSharkRiskCategory[] = [
+const ALL_CATEGORIES: AgentDeskRiskCategory[] = [
   "geopolitical",
   "political",
   "monetary-policy",
@@ -28,7 +28,7 @@ const ALL_CATEGORIES: MiroSharkRiskCategory[] = [
   "black-swan",
 ];
 
-const CATEGORY_MAP: Record<string, MiroSharkRiskCategory> = {
+const CATEGORY_MAP: Record<string, AgentDeskRiskCategory> = {
   fed: "monetary-policy",
   fomc: "monetary-policy",
   rate: "monetary-policy",
@@ -58,13 +58,13 @@ function clamp(min: number, max: number, value: number): number {
 }
 
 /**
- * Map a RiskFlow item's tags + headline to one of the 6 MiroShark risk categories.
+ * Map a RiskFlow item's tags + headline to one of the 6 AgentDesk risk categories.
  * Checks tags first, then headline keywords. Defaults to 'market-structure'.
  */
 export function mapRiskFlowToCategory(
   tags: string[],
   headline: string,
-): MiroSharkRiskCategory {
+): AgentDeskRiskCategory {
   // Check tags first
   for (const tag of tags) {
     const lower = tag.toLowerCase();
@@ -140,10 +140,10 @@ export function setRunningState(state: RunningAnalysisState): void {
   _runningState = state;
 }
 
-/** Initialize fresh running state from a full MiroShark debate result. */
+/** Initialize fresh running state from a full AgentDesk debate result. */
 export function resetRunningState(
   baselineRunId: string,
-  categoryScores: Record<MiroSharkRiskCategory, number>,
+  categoryScores: Record<AgentDeskRiskCategory, number>,
   compositeIV: number,
 ): void {
   _runningState = {

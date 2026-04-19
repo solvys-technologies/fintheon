@@ -1,11 +1,11 @@
-// [claude-code 2026-03-16] Convert Fintheon narrative state → MiroShark seed format
+// [claude-code 2026-03-16] Convert Fintheon narrative state → AgentDesk seed format
 
 import type {
-  MiroSharkSeed,
-  MiroSharkEntity,
-  MiroSharkRelationship,
-  MiroSharkAgent,
-} from "./miroshark-types.js";
+  AgentDeskSeed,
+  AgentDeskEntity,
+  AgentDeskRelationship,
+  AgentDeskAgent,
+} from "./agent-desk-types.js";
 
 interface NarrativeLaneInput {
   id: string;
@@ -53,8 +53,8 @@ interface ContextSnapshot {
   econPrintHistory?: EconPrintSnapshot[];
 }
 
-/** Map narrative categories to MiroShark agent roles */
-const CATEGORY_TO_AGENT_ROLE: Record<string, MiroSharkAgent["role"]> = {
+/** Map narrative categories to AgentDesk agent roles */
+const CATEGORY_TO_AGENT_ROLE: Record<string, AgentDeskAgent["role"]> = {
   monetary: "macro-strategist",
   macroeconomic: "macro-strategist",
   "market-structure": "sentiment-analyst",
@@ -64,7 +64,7 @@ const CATEGORY_TO_AGENT_ROLE: Record<string, MiroSharkAgent["role"]> = {
   "supply-chain": "geopolitical-analyst",
 };
 
-const AGENT_PERSONAS: Record<MiroSharkAgent["role"], { persona: string }> = {
+const AGENT_PERSONAS: Record<AgentDeskAgent["role"], { persona: string }> = {
   "macro-strategist": {
     persona:
       "Senior macro strategist focused on monetary policy and economic cycles",
@@ -90,7 +90,7 @@ const AGENT_PERSONAS: Record<MiroSharkAgent["role"], { persona: string }> = {
   sentiment: {
     persona: "Sentiment analyst reading news flow and social signals",
   },
-  // Gov official roles (used by MiroShark debate engine)
+  // Gov official roles (used by AgentDesk debate engine)
   "central-banker": {
     persona: "Federal Reserve Chair — data-dependent monetary policy",
   },
@@ -133,8 +133,8 @@ const AGENT_PERSONAS: Record<MiroSharkAgent["role"], { persona: string }> = {
 function buildEntities(
   lanes: NarrativeLaneInput[],
   catalysts: CatalystCardInput[],
-): MiroSharkEntity[] {
-  const entities: MiroSharkEntity[] = [];
+): AgentDeskEntity[] {
+  const entities: AgentDeskEntity[] = [];
 
   for (const lane of lanes) {
     entities.push({
@@ -170,7 +170,7 @@ function buildEntities(
   return entities;
 }
 
-function buildRelationships(ropes: RopeInput[]): MiroSharkRelationship[] {
+function buildRelationships(ropes: RopeInput[]): AgentDeskRelationship[] {
   return ropes.map((rope) => ({
     fromId: rope.fromId,
     toId: rope.toId,
@@ -182,9 +182,9 @@ function buildRelationships(ropes: RopeInput[]): MiroSharkRelationship[] {
   }));
 }
 
-function buildAgents(lanes: NarrativeLaneInput[]): MiroSharkAgent[] {
-  const roleSet = new Set<MiroSharkAgent["role"]>();
-  const roleCats = new Map<MiroSharkAgent["role"], string[]>();
+function buildAgents(lanes: NarrativeLaneInput[]): AgentDeskAgent[] {
+  const roleSet = new Set<AgentDeskAgent["role"]>();
+  const roleCats = new Map<AgentDeskAgent["role"], string[]>();
 
   for (const lane of lanes) {
     const role = CATEGORY_TO_AGENT_ROLE[lane.category] ?? "macro-strategist";
@@ -207,7 +207,7 @@ export function convertNarrativeToSeed(
   catalysts: CatalystCardInput[],
   ropes: RopeInput[],
   context?: ContextSnapshot,
-): MiroSharkSeed {
+): AgentDeskSeed {
   const environmentalContext: Record<string, unknown> = {};
 
   if (context?.vixLevel != null)

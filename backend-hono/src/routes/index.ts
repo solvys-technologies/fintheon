@@ -18,7 +18,7 @@ import { createRithmicRoutes } from "./rithmic/index.js";
 import { createHyperliquidRoutes } from "./hyperliquid/index.js";
 import { createDataRoutes } from "./data/index.js";
 import { createNarrativeRoutes } from "./narrative/index.js";
-import { createMirosharkRoutes } from "./miroshark/index.js";
+import { createAgentDeskRoutes } from "./agent-desk/index.js";
 import { createERRoutes } from "./er/index.js";
 import { createVoiceRoutes } from "./voice/index.js";
 import { livekit } from "./livekit/index.js";
@@ -42,6 +42,8 @@ import { createTerminalRoutes } from "./terminal/index.js";
 import { createSetupRoutes } from "./setup/index.js";
 import { createTradeIdeasRoutes } from "./trade-ideas/index.js";
 import { createProfileRoutes } from "./profile/index.js";
+// [claude-code 2026-04-19] v5.22 S1: shared cross-platform preferences
+import { createPreferencesRoutes } from "./preferences/index.js";
 import { createAuthCallbackRoute } from "./auth-callback.js";
 import { createAuthRoutes } from "./auth/index.js";
 import { createCommentatorRoutes } from "./commentator/index.js";
@@ -106,8 +108,12 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/systemic", systemicRoutes);
   // Context Bank — public, agents consume directly (unified snapshot + desk reports)
   app.route("/api/context-bank", createContextBankRoutes());
-  // MiroShark multi-agent simulation — feature-flagged via MIROSHARK_ENABLED
-  app.route("/api/miroshark", createMirosharkRoutes());
+  // Agent Desk multi-agent simulation — feature-flagged via AGENT_DESK_ENABLED
+  // [claude-code 2026-04-19] v5.22: dual-mount — /api/agent-desk is the new path,
+  //   /api/miroshark kept as legacy alias for live clients mid-deploy.
+  const agentDeskRoutes = createAgentDeskRoutes();
+  app.route("/api/agent-desk", agentDeskRoutes);
+  app.route("/api/miroshark", agentDeskRoutes);
   // DAG scheduler — status, SSE stream, cancel (S8-T2)
   app.route("/api/dag", createDagRoutes());
   // Agent Dream Room — autonomous agent reflection channel
@@ -212,6 +218,10 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/settings/*", authMiddleware, requireAuth);
   app.use("/api/profile", authMiddleware, requireAuth);
   app.use("/api/profile/*", authMiddleware, requireAuth);
+  // [claude-code 2026-04-19] v5.22 S1: shared cross-platform preferences — theme,
+  //   traderName, notifications, fuse palette overrides (reusable by mobile).
+  app.use("/api/preferences", authMiddleware, requireAuth);
+  app.use("/api/preferences/*", authMiddleware, requireAuth);
   // [S23-T4] /api/me — client identity diagnostic for cross-device account debugging.
   app.use("/api/me", authMiddleware, requireAuth);
   app.use("/api/me/*", authMiddleware, requireAuth);
@@ -271,6 +281,9 @@ export function registerRoutes(app: Hono): void {
 
   // User profiles + app state (localStorage migration target)
   app.route("/api/profile", createProfileRoutes());
+
+  // v5.22 S1: cross-platform preferences (theme, notifications, fuse palette)
+  app.route("/api/preferences", createPreferencesRoutes());
 
   // [S23-T4] /api/me — diagnostic: { userId, email, traderName }
   app.route("/api/me", createMeRoutes());

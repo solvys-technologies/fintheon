@@ -1,8 +1,8 @@
 // [claude-code 2026-04-05] Fixed 404: added API_BASE to all fetch calls (was using relative URLs)
-// [claude-code 2026-03-16] MiroShark simulation side panel — status, controls, prediction results
+// [claude-code 2026-03-16] AgentDesk simulation side panel — status, controls, prediction results
 import { useState, useCallback } from "react";
 import { Play, Loader2, CheckCircle, AlertCircle, Zap } from "lucide-react";
-import { MiroSharkPrediction } from "./MiroSharkPrediction";
+import { AgentDeskPrediction } from "./AgentDeskPrediction";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -18,19 +18,19 @@ interface Prediction {
     probability: number;
     projectedScore: number;
   }>;
-  source: "miroshark" | "heuristic";
+  source: "agentDesk" | "heuristic";
   generatedAt: string;
 }
 
-interface MiroSharkPanelProps {
+interface AgentDeskPanelProps {
   onRunSimulation: () => Promise<string | null>;
   onOpenInject: () => void;
 }
 
-export function MiroSharkPanel({
+export function AgentDeskPanel({
   onRunSimulation,
   onOpenInject,
-}: MiroSharkPanelProps) {
+}: AgentDeskPanelProps) {
   const [status, setStatus] = useState<SimStatus>("idle");
   const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [simId, setSimId] = useState<string | null>(null);
@@ -50,11 +50,11 @@ export function MiroSharkPanel({
       // Poll for completion
       const poll = async () => {
         try {
-          const res = await fetch(`${API_BASE}/api/miroshark/status/${id}`);
+          const res = await fetch(`${API_BASE}/api/agent-desk/status/${id}`);
           const data = await res.json();
           if (data.status === "complete") {
             const reportRes = await fetch(
-              `${API_BASE}/api/miroshark/report/${id}`,
+              `${API_BASE}/api/agent-desk/report/${id}`,
             );
             const report = await reportRes.json();
             setPrediction(report);
@@ -67,7 +67,7 @@ export function MiroSharkPanel({
           }
         } catch {
           setStatus("error");
-          setError("Lost connection to MiroShark");
+          setError("Lost connection to AgentDesk");
         }
       };
       setTimeout(poll, 1000);
@@ -106,7 +106,7 @@ export function MiroSharkPanel({
             style={{ color: "var(--fintheon-accent)" }}
           />
           <span className="text-xs font-semibold text-[var(--fintheon-text)]">
-            MiroShark
+            AgentDesk
           </span>
           {statusIcon}
         </div>
@@ -151,7 +151,7 @@ export function MiroSharkPanel({
 
         {prediction &&
           prediction.scenarios.map((scenario, i) => (
-            <MiroSharkPrediction
+            <AgentDeskPrediction
               key={i}
               label={scenario.label}
               probability={scenario.probability}

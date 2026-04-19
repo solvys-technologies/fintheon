@@ -1,17 +1,17 @@
 // [claude-code 2026-03-28] S8-T4: Volatility amplifier multiplier replaces probability/score bars
 import { useState, useEffect } from "react";
 import type {
-  MiroSharkScenario,
-  MiroSharkCategoryScore,
-} from "../../types/miroshark";
+  AgentDeskScenario,
+  AgentDeskCategoryScore,
+} from "../../types/agent-desk";
 
 const API_BASE = (
   import.meta.env.VITE_API_URL || "http://localhost:8080"
 ).replace(/\/$/, "");
 
 interface SanctumThesesProps {
-  scenarios: MiroSharkScenario[];
-  categoryScores: MiroSharkCategoryScore[];
+  scenarios: AgentDeskScenario[];
+  categoryScores: AgentDeskCategoryScore[];
   expanded?: boolean;
 }
 

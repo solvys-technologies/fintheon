@@ -159,6 +159,42 @@ html *::-webkit-scrollbar {
   }
 }
 
+/* [claude-code 2026-04-19] v5.22 S1: Nothing-design fuse shimmer — slow 4.2s sweep with
+ *   ~1s dwell between sweeps (no AI sparkle). Apply as absolutely-positioned overlay
+ *   inside every desktop fuse fill. Disabled under prefers-reduced-motion. */
+@keyframes nothing-fuse-shimmer {
+  0%,
+  76%,
+  100% {
+    background-position: -200% 0;
+    opacity: 0;
+  }
+  38% {
+    background-position: 200% 0;
+    opacity: 0.45;
+  }
+}
+.nothing-fuse-shimmer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--fintheon-text, #f0ead6) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  mix-blend-mode: overlay;
+  animation: nothing-fuse-shimmer 4.2s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nothing-fuse-shimmer {
+    animation: none;
+    opacity: 0;
+  }
+}
+
 /* Horizontal fuse shimmer for RiskFlow expanded card footer */
 @keyframes riskflow-fuse {
   0% {

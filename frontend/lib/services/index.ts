@@ -48,7 +48,7 @@ import {
 } from "./journal";
 import {
   ContextBankService,
-  MiroSharkService,
+  AgentDeskService,
   MemoryService,
   SkillsService,
   EditorSidebarService,
@@ -86,7 +86,7 @@ export interface BackendClient {
   agentPerformance: AgentPerformanceService;
   contextBank: ContextBankService;
   autopilot: AutopilotService;
-  miroshark: MiroSharkService;
+  agentDesk: AgentDeskService;
   peers: PeersService;
   documents: DocumentService;
   research: ResearchService;
@@ -124,7 +124,7 @@ export function createBackendClient(client: ApiClient): BackendClient {
     agentPerformance: new AgentPerformanceService(client),
     contextBank: new ContextBankService(client),
     autopilot: new AutopilotService(client),
-    miroshark: new MiroSharkService(client),
+    agentDesk: new AgentDeskService(client),
     peers: new PeersService(client),
     documents: new DocumentService(client),
     research: new ResearchService(client),

@@ -24,7 +24,7 @@ import {
 } from "./handlers.js";
 import { agentBus } from "../../services/agent-bus/bus.js";
 import { executeDag } from "../../services/agent-bus/dag-scheduler.js";
-import { createMiroSharkDAG } from "../../services/agent-bus/templates/miroshark-template.js";
+import { createAgentDeskDAG } from "../../services/agent-bus/templates/agent-desk-template.js";
 import type {
   AgentStreamEvent,
   DAGProgressEvent,
@@ -75,7 +75,7 @@ export function createBoardroomRoutes(): Hono {
    * Returns: { dagId }
    *
    * Creates and fires a DAG for the boardroom surface. Multi-agent by default
-   * (MiroShark template). Frontend subscribes to GET /dag/:dagId/stream for
+   * (AgentDesk template). Frontend subscribes to GET /dag/:dagId/stream for
    * real-time events.
    */
   router.post("/dag", async (c) => {
@@ -117,8 +117,8 @@ export function createBoardroomRoutes(): Hono {
                 },
               ],
             }
-          : // Multi-agent: full MiroShark deliberation
-            await createMiroSharkDAG({
+          : // Multi-agent: full AgentDesk deliberation
+            await createAgentDeskDAG({
               lanes: [
                 {
                   id: "boardroom-query",

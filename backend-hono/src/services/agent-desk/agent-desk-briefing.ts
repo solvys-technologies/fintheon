@@ -1,17 +1,17 @@
 // [claude-code 2026-03-28] S4-T2: Rewrote briefing with trader-friendly language (Market Heat, Regime Risk, Signal Strength)
-// [claude-code 2026-03-23] MiroShark briefing generator — deterministic text from debate results
+// [claude-code 2026-03-23] AgentDesk briefing generator — deterministic text from debate results
 // [claude-code 2026-04-17] Slop-detection: when a run has no real signal, emit the explicit fallback string instead of templated heat/regime slop
 import type {
-  MiroSharkReport,
-  MiroSharkBriefing,
+  AgentDeskReport,
+  AgentDeskBriefing,
   SimulationContext,
-} from "./miroshark-types.js";
+} from "./agent-desk-types.js";
 
 export const SLOP_FALLBACK =
   "No new agentic updates. Trigger an update in Aquarium.";
 
 function isSlopRun(
-  report: MiroSharkReport,
+  report: AgentDeskReport,
   context: SimulationContext,
 ): boolean {
   const allDefault = report.categoryScores.every(
@@ -52,21 +52,21 @@ function heatInterpretation(score: number): string {
 }
 
 /**
- * Generate a structured text briefing from MiroShark debate results.
+ * Generate a structured text briefing from AgentDesk debate results.
  * No AI call — purely deterministic from the numbers.
  * Uses trader-friendly language: Market Heat, Regime Risk, Signal Strength.
  */
 export function generateBriefing(
-  report: MiroSharkReport,
+  report: AgentDeskReport,
   context: SimulationContext,
-): MiroSharkBriefing {
+): AgentDeskBriefing {
   // Slop guard: no real signal → explicit fallback, not templated heat/regime slop
   if (isSlopRun(report, context)) {
     return {
       summary: SLOP_FALLBACK,
       keyFindings: [],
       harperAnalysis: SLOP_FALLBACK,
-    } as MiroSharkBriefing;
+    } as AgentDeskBriefing;
   }
 
   const composite = report.nextSessionProjection;

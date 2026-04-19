@@ -1,8 +1,8 @@
-// [claude-code 2026-03-28] S8-T5: MiroShark gov official agents, deliberation pipeline types
-// [claude-code 2026-03-24] Added RunningAnalysisSnapshot, RollingWindowQuery, AggregatedRollingData, MiroSharkRunSummary
-// [claude-code 2026-03-23] MiroShark simulation engine types
+// [claude-code 2026-03-28] S8-T5: AgentDesk gov official agents, deliberation pipeline types
+// [claude-code 2026-03-24] Added RunningAnalysisSnapshot, RollingWindowQuery, AggregatedRollingData, AgentDeskRunSummary
+// [claude-code 2026-03-23] AgentDesk simulation engine types
 
-export type MiroSharkRiskCategory =
+export type AgentDeskRiskCategory =
   | "geopolitical"
   | "political"
   | "monetary-policy"
@@ -10,7 +10,7 @@ export type MiroSharkRiskCategory =
   | "market-structure"
   | "black-swan";
 
-export interface MiroSharkAgent {
+export interface AgentDeskAgent {
   id: string;
   persona: string;
   role:
@@ -52,7 +52,7 @@ export interface GovOfficialAssessment {
   recommendedAction: string;
   projectedIVScore: number;
   regimeShiftProbability: number;
-  categoryScores: MiroSharkCategoryScore[];
+  categoryScores: AgentDeskCategoryScore[];
 }
 
 export interface HermesDeliberation {
@@ -66,7 +66,7 @@ export interface HermesDeliberation {
 export interface HarperOpusScoring {
   compositeIV: number;
   regimeShiftProbability: number;
-  categoryScores: MiroSharkCategoryScore[];
+  categoryScores: AgentDeskCategoryScore[];
   surfacedTheses: string[];
   downgradedTheses: string[];
   finalBriefing: string;
@@ -96,7 +96,7 @@ export interface DeliberationState {
   /** Phase 1: Market analyst assessments (primary layer) */
   analystResults?: MarketAnalystAssessment[];
   /** Phase 1.5: Gov official assessments (conditional — geopolitical content) */
-  mirosharkResults?: GovOfficialAssessment[];
+  agentDeskResults?: GovOfficialAssessment[];
   /** Whether the gov-official phase was skipped */
   govOfficialsSkipped?: boolean;
   hermesResults?: HermesDeliberation[];
@@ -105,29 +105,29 @@ export interface DeliberationState {
   error?: string;
 }
 
-export interface MiroSharkEntity {
+export interface AgentDeskEntity {
   id: string;
   type: "narrative" | "event" | "indicator";
   label: string;
   properties: Record<string, unknown>;
 }
 
-export interface MiroSharkRelationship {
+export interface AgentDeskRelationship {
   fromId: string;
   toId: string;
   type: "reinforces" | "contradicts" | "causes" | "correlates";
   weight: number;
 }
 
-export interface MiroSharkSeed {
-  entities: MiroSharkEntity[];
-  relationships: MiroSharkRelationship[];
+export interface AgentDeskSeed {
+  entities: AgentDeskEntity[];
+  relationships: AgentDeskRelationship[];
   environmentalContext: Record<string, unknown>;
-  agents: MiroSharkAgent[];
+  agents: AgentDeskAgent[];
   timestamp: string;
 }
 
-export interface MiroSharkSimulation {
+export interface AgentDeskSimulation {
   id: string;
   status: "queued" | "running" | "complete" | "error";
   progress: number;
@@ -136,7 +136,7 @@ export interface MiroSharkSimulation {
   error?: string;
 }
 
-export interface MiroSharkScenario {
+export interface AgentDeskScenario {
   label: string;
   probability: number;
   projectedIVScore: number;
@@ -144,58 +144,58 @@ export interface MiroSharkScenario {
   agentConsensus: number;
 }
 
-export interface MiroSharkCategoryScore {
-  category: MiroSharkRiskCategory;
+export interface AgentDeskCategoryScore {
+  category: AgentDeskRiskCategory;
   ivScore: number;
   confidence: number;
   delta: number;
 }
 
-export interface MiroSharkTimePoint {
+export interface AgentDeskTimePoint {
   dayOffset: number;
   date: string;
   composite: number;
-  categories: Record<MiroSharkRiskCategory, number>;
+  categories: Record<AgentDeskRiskCategory, number>;
 }
 
-export interface MiroSharkGeneratedEvent {
+export interface AgentDeskGeneratedEvent {
   id: string;
   title: string;
   description: string;
   date: string;
-  category: MiroSharkRiskCategory;
+  category: AgentDeskRiskCategory;
   impactScore: number;
   probability: number;
   isAiGenerated: true;
 }
 
-export interface MiroSharkAgentResponse {
+export interface AgentDeskAgentResponse {
   agentId: string;
   projectedIVScore: number;
   regimeShiftProbability: number;
-  categoryScores: MiroSharkCategoryScore[];
-  scenarios: MiroSharkScenario[];
-  generatedEvents: MiroSharkGeneratedEvent[];
+  categoryScores: AgentDeskCategoryScore[];
+  scenarios: AgentDeskScenario[];
+  generatedEvents: AgentDeskGeneratedEvent[];
   reasoning: string;
 }
 
-export interface MiroSharkReport {
+export interface AgentDeskReport {
   simulationId: string;
-  scenarios: MiroSharkScenario[];
+  scenarios: AgentDeskScenario[];
   regimeShiftProbability: number;
   nextSessionProjection: number;
   confidence: number;
   agentVotes: Array<{ agentId: string; position: string; confidence: number }>;
-  categoryScores: MiroSharkCategoryScore[];
-  timeSeries: MiroSharkTimePoint[];
-  generatedEvents: MiroSharkGeneratedEvent[];
+  categoryScores: AgentDeskCategoryScore[];
+  timeSeries: AgentDeskTimePoint[];
+  generatedEvents: AgentDeskGeneratedEvent[];
   generatedAt: string;
-  briefing?: MiroSharkBriefing;
+  briefing?: AgentDeskBriefing;
   contextSnapshot?: SimulationContext;
   /** Which debate layer produced this report */
   debateLayer?: DebateLayer;
   /** Whether the gov-official layer was also run (geopolitical content detected) */
-  govOfficialReport?: MiroSharkReport;
+  govOfficialReport?: AgentDeskReport;
 }
 
 // ── Market Analyst Assessment (Sprint 2 deliberation) ──────────────────────
@@ -211,11 +211,11 @@ export interface MarketAnalystAssessment {
   keyConcern: string;
   projectedIVScore: number;
   regimeShiftProbability: number;
-  categoryScores: MiroSharkCategoryScore[];
+  categoryScores: AgentDeskCategoryScore[];
   headlineCount: number;
 }
 
-export interface MiroSharkPrediction {
+export interface AgentDeskPrediction {
   simulationId: string;
   nextSessionScore: number;
   confidence: number;
@@ -225,16 +225,16 @@ export interface MiroSharkPrediction {
     probability: number;
     projectedScore: number;
   }>;
-  categoryScores?: MiroSharkCategoryScore[];
-  timeSeries?: MiroSharkTimePoint[];
-  generatedEvents?: MiroSharkGeneratedEvent[];
-  briefing?: MiroSharkBriefing;
+  categoryScores?: AgentDeskCategoryScore[];
+  timeSeries?: AgentDeskTimePoint[];
+  generatedEvents?: AgentDeskGeneratedEvent[];
+  briefing?: AgentDeskBriefing;
   contextSnapshot?: SimulationContext;
-  source: "miroshark";
+  source: "agentDesk";
   generatedAt: string;
 }
 
-export interface MiroSharkInjection {
+export interface AgentDeskInjection {
   variable: string;
   targetNarrativeIds: string[];
   description: string;
@@ -307,7 +307,7 @@ export interface SimulationContext {
   fetchedAt: string;
 }
 
-export interface MiroSharkBriefing {
+export interface AgentDeskBriefing {
   summary: string;
   keyFindings: string[];
   riskAlerts: string[];
@@ -317,7 +317,7 @@ export interface MiroSharkBriefing {
   generatedAt: string;
 }
 
-export interface MiroSharkRunRecord {
+export interface AgentDeskRunRecord {
   id: string;
   simulation_id: string;
   preset: SanctumPreset;
@@ -325,8 +325,8 @@ export interface MiroSharkRunRecord {
   regime_shift_probability: number;
   confidence: number;
   briefing_text: string;
-  category_scores: MiroSharkCategoryScore[];
-  scenarios: MiroSharkScenario[];
+  category_scores: AgentDeskCategoryScore[];
+  scenarios: AgentDeskScenario[];
   context_snapshot: SimulationContext;
   created_at: string;
 }
@@ -335,7 +335,7 @@ export interface MiroSharkRunRecord {
 
 export interface RunningAnalysisSnapshot {
   compositeIV: number;
-  categoryScores: MiroSharkCategoryScore[];
+  categoryScores: AgentDeskCategoryScore[];
   confidence: number;
   adjustmentCount: number;
   lastUpdateAt: string;
@@ -350,7 +350,7 @@ export interface RollingWindowQuery {
 }
 
 export interface AggregatedRollingData {
-  runs: MiroSharkRunSummary[];
+  runs: AgentDeskRunSummary[];
   avgCompositeIV: number;
   avgConfidence: number;
   avgRegimeShift: number;
@@ -359,14 +359,14 @@ export interface AggregatedRollingData {
   periodEnd: string;
 }
 
-export interface MiroSharkRunSummary {
+export interface AgentDeskRunSummary {
   simulationId: string;
   preset: SanctumPreset;
   compositeIV: number;
   confidence: number;
   regimeShiftProbability: number;
   briefingText: string;
-  categoryScores: MiroSharkCategoryScore[];
-  scenarios: MiroSharkScenario[];
+  categoryScores: AgentDeskCategoryScore[];
+  scenarios: AgentDeskScenario[];
   createdAt: string;
 }

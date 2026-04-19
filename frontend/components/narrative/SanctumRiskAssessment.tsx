@@ -4,13 +4,13 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import type {
   RiskFlowCatalyst,
-  MiroSharkCategoryScore,
-} from "../../types/miroshark";
-import { RISK_CATEGORY_LABELS, ivHeatColor } from "../../types/miroshark";
+  AgentDeskCategoryScore,
+} from "../../types/agent-desk";
+import { RISK_CATEGORY_LABELS, ivHeatColor } from "../../types/agent-desk";
 
 interface SanctumRiskAssessmentProps {
   riskflowItems: RiskFlowCatalyst[];
-  categoryScores?: MiroSharkCategoryScore[];
+  categoryScores?: AgentDeskCategoryScore[];
 }
 
 const RISK_CATEGORIES = ["geopolitical", "political"] as const;

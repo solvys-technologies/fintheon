@@ -1,5 +1,5 @@
 // [claude-code 2026-04-16] S20-T9: Two-phase boot — bootCritical() before listen, bootBackground() after via queueMicrotask
-// [claude-code 2026-04-03] Added MiroShark daily cron (6:00 AM ET weekdays) to boot sequence
+// [claude-code 2026-04-03] Added AgentDesk daily cron (6:00 AM ET weekdays) to boot sequence
 // [claude-code 2026-03-29] Added catalyst promoter to boot sequence (graduates scored items → narrative catalysts)
 // [claude-code 2026-03-24] Added VIX polling, central scorer, IV ticker, VIX rescore to boot sequence
 // [claude-code 2026-03-20] Service boot consolidation — single entry point for all background services
@@ -48,9 +48,9 @@ import { isComputerUseAvailable } from "../services/skills/tradingview-trade-pla
 import * as projectxService from "../services/projectx-service.js";
 import { startSharedMemoryCleanup } from "../services/peers/shared-memory.js";
 import { startReflectScheduler } from "../services/autoresearch/reflect-scheduler.js";
-import { startMiroSharkDaily } from "../services/cron/miroshark-daily.js";
+import { startAgentDeskDaily } from "../services/cron/agent-desk-daily.js";
 import { startAquariumScheduler } from "../services/riskflow/aquarium-scheduler.js";
-import { restoreMiroSharkRunningState } from "../services/miroshark/miroshark-boot.js";
+import { restoreAgentDeskRunningState } from "../services/agent-desk/agent-desk-boot.js";
 import { startDivergenceDetector } from "../services/polymarket-kalshi-divergence.js";
 import { startPredictionResolver } from "../services/polymarket-prediction-resolver.js";
 import { bootHarperAutonomous } from "../services/harper-autonomous/index.js";
@@ -216,9 +216,9 @@ export async function bootBackground(): Promise<void> {
   startCatalystPromoter();
   log.info("CatalystPromoter started");
 
-  // MiroShark running state restore (from latest Aquarium simulation — non-blocking)
-  restoreMiroSharkRunningState().catch((err) =>
-    log.warn("MiroShark running state restore failed (non-fatal)", {
+  // AgentDesk running state restore (from latest Aquarium simulation — non-blocking)
+  restoreAgentDeskRunningState().catch((err) =>
+    log.warn("AgentDesk running state restore failed (non-fatal)", {
       error: String(err),
     }),
   );
@@ -342,9 +342,9 @@ export async function bootBackground(): Promise<void> {
   // Shared memory cleanup cron (60min — expires entries past TTL)
   startSharedMemoryCleanup();
 
-  // MiroShark daily auto-run (6:00 AM ET weekdays — once per day before MDB)
-  startMiroSharkDaily();
-  log.info("MiroSharkDaily cron scheduled");
+  // AgentDesk daily auto-run (6:00 AM ET weekdays — once per day before MDB)
+  startAgentDeskDaily();
+  log.info("AgentDeskDaily cron scheduled");
 
   // Aquarium AI scheduler (Oracle/Nous — 60min interval, first run 20s after boot)
   startAquariumScheduler();

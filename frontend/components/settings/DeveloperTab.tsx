@@ -119,17 +119,17 @@ export function DeveloperTab({
             "Awaiting AI-generated brief..."
           </p>
           <Toggle
-            label="MiroShark simulations"
-            enabled={developerSettings.mirosharkSimulations ?? false}
+            label="AgentDesk simulations"
+            enabled={developerSettings.agentDeskSimulations ?? false}
             onChange={(val) =>
               setDeveloperSettings({
                 ...developerSettings,
-                mirosharkSimulations: val,
+                agentDeskSimulations: val,
               })
             }
           />
           <p className="text-xs text-gray-500">
-            Enable MiroShark simulation layer for narrative and IV prediction
+            Enable AgentDesk simulation layer for narrative and IV prediction
             testing
           </p>
           <Toggle

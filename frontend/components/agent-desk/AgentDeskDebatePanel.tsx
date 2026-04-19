@@ -1,5 +1,5 @@
 // [claude-code 2026-04-17] S23-T2: fire onSynthesisComplete callback when phase hits complete (fixes Aquarium hang)
-// [claude-code 2026-04-03] MiroShark Deliberation v2 — 4 phases: Analysts → Officials? → Hermes → Harper
+// [claude-code 2026-04-03] AgentDesk Deliberation v2 — 4 phases: Analysts → Officials? → Hermes → Harper
 // Shows market analyst cards with subject tags, consensus gauge, devil's advocate badge
 import { useState, useEffect, useRef } from "react";
 import {
@@ -15,6 +15,8 @@ import {
   BarChart3,
   Zap,
 } from "lucide-react";
+import { NothingFuse } from "../shared/NothingFuse";
+import { severityFromScore } from "../../lib/fuse-palette";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -85,7 +87,7 @@ interface DeliberationState {
   phase: DeliberationPhase;
   phaseStartedAt: string;
   analystResults?: MarketAnalystAssessment[];
-  mirosharkResults?: GovOfficialAssessment[];
+  agentDeskResults?: GovOfficialAssessment[];
   govOfficialsSkipped?: boolean;
   hermesResults?: HermesDeliberation[];
   harperScoring?: HarperOpusScoring;
@@ -95,13 +97,20 @@ interface DeliberationState {
 
 // ── Component ───────────────────────────────────────────────────────────────
 
-export function MiroSharkDebatePanel({
+export function AgentDeskDebatePanel({
   simulationId,
   onSynthesisComplete,
+  compositeIV,
+  regimeShiftProbability,
+  confidence,
 }: {
   simulationId: string | null;
   /** Fires once per simulationId when deliberation reaches phase === "complete". */
   onSynthesisComplete?: () => void;
+  /** [v5.22 S1] Live read for footer fuses — mirrors Sanctum KPI row values. */
+  compositeIV?: number;
+  regimeShiftProbability?: number;
+  confidence?: number;
 }) {
   const [state, setState] = useState<DeliberationState | null>(null);
   const [expandedPhase, setExpandedPhase] = useState<number | null>(null);
@@ -133,7 +142,7 @@ export function MiroSharkDebatePanel({
     const fetchOnce = async () => {
       try {
         const res = await fetch(
-          `${API_BASE}/api/miroshark/deliberation/${simulationId}`,
+          `${API_BASE}/api/agent-desk/deliberation/${simulationId}`,
         );
         if (!res.ok || cancelled) return;
         const data = await res.json();
@@ -152,7 +161,7 @@ export function MiroSharkDebatePanel({
           pollRef.current = setInterval(async () => {
             try {
               const r = await fetch(
-                `${API_BASE}/api/miroshark/deliberation/${simulationId}`,
+                `${API_BASE}/api/agent-desk/deliberation/${simulationId}`,
               );
               if (!r.ok) return;
               const d = await r.json();
@@ -184,7 +193,7 @@ export function MiroSharkDebatePanel({
     setInjecting(true);
     try {
       await fetch(
-        `${API_BASE}/api/miroshark/deliberation/${simulationId}/inject`,
+        `${API_BASE}/api/agent-desk/deliberation/${simulationId}/inject`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -207,7 +216,7 @@ export function MiroSharkDebatePanel({
         <div className="flex items-center gap-2 mb-1">
           <Shield className="w-4 h-4 text-[var(--fintheon-accent)]" />
           <span className="text-sm font-medium tracking-wide">
-            MiroShark Deliberation
+            AgentDesk Deliberation
           </span>
           {state?.harperScoring?.contrarianTriggered && (
             <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-400/15 text-amber-400 font-medium">
@@ -256,7 +265,7 @@ export function MiroSharkDebatePanel({
         )}
 
         {/* Phase 1.5: Gov Official Assessments (conditional) */}
-        {state?.mirosharkResults && state.mirosharkResults.length > 0 && (
+        {state?.agentDeskResults && state.agentDeskResults.length > 0 && (
           <PhaseSection
             index={1}
             title="Gov Officials"
@@ -267,7 +276,7 @@ export function MiroSharkDebatePanel({
             onToggle={() => setExpandedPhase(expandedPhase === 1 ? null : 1)}
           >
             <div className="space-y-2">
-              {state.mirosharkResults.map((a) => (
+              {state.agentDeskResults.map((a) => (
                 <OfficialCard key={a.agentId} assessment={a} />
               ))}
             </div>
@@ -353,6 +362,64 @@ export function MiroSharkDebatePanel({
           </div>
         </div>
       )}
+
+      {/* [claude-code 2026-04-19] v5.22 S1: Deliberation KPI footer fuses — SIGNAL /
+       *   REGIME / HEAT mirror the Sanctum KPI row and pull palette colors through
+       *   severityFromScore, so desktop severity links to the shared palette. */}
+      {(compositeIV !== undefined ||
+        regimeShiftProbability !== undefined ||
+        confidence !== undefined) && (
+        <div className="flex-shrink-0 px-3 py-2 border-t border-[var(--fintheon-accent)]/10 grid grid-cols-3 gap-3">
+          <DeliberationFooterFuse
+            label="Signal"
+            value={(confidence ?? 0).toFixed(2)}
+            percent={confidence ?? 0}
+            score={(confidence ?? 0) * 10}
+          />
+          <DeliberationFooterFuse
+            label="Regime"
+            value={`${((regimeShiftProbability ?? 0) * 100).toFixed(0)}%`}
+            percent={regimeShiftProbability ?? 0}
+            score={(regimeShiftProbability ?? 0) * 10}
+          />
+          <DeliberationFooterFuse
+            label="Heat"
+            value={(compositeIV ?? 0).toFixed(1)}
+            percent={Math.min(1, (compositeIV ?? 0) / 10)}
+            score={compositeIV ?? 0}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DeliberationFooterFuse({
+  label,
+  value,
+  percent,
+  score,
+}: {
+  label: string;
+  value: string;
+  percent: number;
+  score: number;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between">
+        <span className="text-[8px] uppercase tracking-[0.18em] text-[var(--fintheon-text)]/40">
+          {label}
+        </span>
+        <span className="text-[10px] font-mono text-[var(--fintheon-text)]">
+          {value}
+        </span>
+      </div>
+      <NothingFuse
+        value={percent}
+        severity={severityFromScore(score)}
+        thickness={3}
+      />
     </div>
   );
 }

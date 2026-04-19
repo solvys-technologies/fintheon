@@ -1,10 +1,10 @@
 // [claude-code 2026-03-23] Sanctum kanban — dashboard-grade timeline strips + live RiskFlow catalysts
 import type {
-  MiroSharkRiskCategory,
-  MiroSharkGeneratedEvent,
+  AgentDeskRiskCategory,
+  AgentDeskGeneratedEvent,
   RiskFlowCatalyst,
-} from "../../types/miroshark";
-import { RISK_CATEGORY_LABELS, ivHeatColor } from "../../types/miroshark";
+} from "../../types/agent-desk";
+import { RISK_CATEGORY_LABELS, ivHeatColor } from "../../types/agent-desk";
 
 interface CatalystInput {
   id: string;
@@ -18,12 +18,12 @@ interface CatalystInput {
 
 interface SanctumKanbanProps {
   catalysts: CatalystInput[];
-  generatedEvents: MiroSharkGeneratedEvent[];
+  generatedEvents: AgentDeskGeneratedEvent[];
   riskflowItems?: RiskFlowCatalyst[];
   expanded?: boolean;
 }
 
-const CATEGORIES: MiroSharkRiskCategory[] = [
+const CATEGORIES: AgentDeskRiskCategory[] = [
   "geopolitical",
   "political",
   "monetary-policy",
@@ -32,7 +32,7 @@ const CATEGORIES: MiroSharkRiskCategory[] = [
   "black-swan",
 ];
 
-const CATEGORY_MAP: Record<string, MiroSharkRiskCategory> = {
+const CATEGORY_MAP: Record<string, AgentDeskRiskCategory> = {
   geopolitical: "geopolitical",
   "supply-chain": "geopolitical",
   political: "political",
@@ -66,7 +66,7 @@ function severityToScore(sev: string): number {
   return 3;
 }
 
-function inferCategory(title: string, summary?: string): MiroSharkRiskCategory {
+function inferCategory(title: string, summary?: string): AgentDeskRiskCategory {
   const text = `${title} ${summary ?? ""}`.toLowerCase();
   if (text.match(/tariff|sanction|war|nato|china|russia|israel/))
     return "geopolitical";
@@ -88,7 +88,7 @@ export function SanctumKanban({
   riskflowItems,
   expanded,
 }: SanctumKanbanProps) {
-  const lanes = new Map<MiroSharkRiskCategory, KanbanCard[]>();
+  const lanes = new Map<AgentDeskRiskCategory, KanbanCard[]>();
   for (const cat of CATEGORIES) lanes.set(cat, []);
 
   for (const c of catalysts) {

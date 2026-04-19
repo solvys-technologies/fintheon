@@ -1,7 +1,7 @@
 import { memo, useMemo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import { Handle, Position } from "@xyflow/react";
-import { ivHeatColor } from "../../types/miroshark";
+import { ivHeatColor } from "../../types/agent-desk";
 import {
   SEVERITY_COLORS,
   deriveCyclicality,

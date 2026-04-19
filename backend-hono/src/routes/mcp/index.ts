@@ -176,7 +176,7 @@ const INTERNAL_CONNECTORS: McpServerEntry[] = [
   {
     id: "aquarium",
     name: "Aquarium",
-    description: "Discuss the most recent MiroShark simulation run",
+    description: "Discuss the most recent AgentDesk simulation run",
     transport: "stdio",
     enabled: true,
     installed: true,

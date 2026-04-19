@@ -966,7 +966,7 @@ export async function readEconHistory(
 }
 
 /**
- * Fetch aggregated econ print stats for MiroShark context enrichment.
+ * Fetch aggregated econ print stats for AgentDesk context enrichment.
  * Returns recent prints with beat/miss patterns grouped by event type.
  */
 export async function readRecentEconPrintStats(

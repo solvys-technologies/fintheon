@@ -1,15 +1,15 @@
 // [claude-code 2026-04-16] S20-T2: Added fetchFilteredHeadlines() for per-agent subject-tag filtering
 // [claude-code 2026-03-28] S4-T2: Widened RiskFlow select to include full scored metadata
-// [claude-code 2026-03-27] S4: Added econPrintHistory to context for MiroShark aggregation
+// [claude-code 2026-03-27] S4: Added econPrintHistory to context for AgentDesk aggregation
 // [claude-code 2026-03-27] S2-T4: Added addCalibrationContext for calibration upload pipeline
 // [claude-code 2026-03-24] Widened RiskFlow window to 72h/40 with configurable params
-// [claude-code 2026-03-23] MiroShark context assembly — fetches VIX, FRED, RiskFlow in parallel
+// [claude-code 2026-03-23] AgentDesk context assembly — fetches VIX, FRED, RiskFlow in parallel
 import type {
   SanctumPreset,
   SimulationContext,
   RiskFlowHeadline,
   EconPrintStat,
-} from "./miroshark-types.js";
+} from "./agent-desk-types.js";
 import {
   fetchFredIndicators,
   getCachedFredIndicators,
@@ -65,7 +65,7 @@ export async function assembleSimulationContext(
 }
 
 /**
- * Fetch recent econ print history (7 days) and transform for MiroShark consumption.
+ * Fetch recent econ print history (7 days) and transform for AgentDesk consumption.
  * Aggregates beat/miss/inline patterns for simulation context.
  */
 async function fetchEconPrintHistory(): Promise<EconPrintStat[]> {
@@ -125,7 +125,7 @@ async function fetchRiskFlowHeadlines(
     .limit(limit);
 
   if (error) {
-    console.warn("[MiroShark Context] RiskFlow fetch failed:", error.message);
+    console.warn("[AgentDesk Context] RiskFlow fetch failed:", error.message);
     return [];
   }
 
@@ -156,7 +156,7 @@ async function fetchRiskFlowHeadlines(
 }
 
 // ─── Per-Agent Subject-Filtered Headlines ──────────────────────────────────
-// Ported from miroshark-client.ts:687-756 — each DAG agent gets headlines
+// Ported from agent-desk-client.ts:687-756 — each DAG agent gets headlines
 // filtered by its subjects array: 12 subject-matched + 3 high-impact cross-domain.
 
 export interface FilteredHeadline {
@@ -272,13 +272,13 @@ async function fetchExaFallback(
 
     if (headlines.length > 0) {
       console.log(
-        `[MiroShark] Exa supplemented ${headlines.length} headlines for ${agentName}`,
+        `[AgentDesk] Exa supplemented ${headlines.length} headlines for ${agentName}`,
       );
     }
     return headlines;
   } catch (err) {
     console.warn(
-      `[MiroShark] Exa search failed for ${agentName}:`,
+      `[AgentDesk] Exa search failed for ${agentName}:`,
       String(err),
     );
     return [];
@@ -296,7 +296,7 @@ interface CalibrationContextEntry {
 let calibrationContext: CalibrationContextEntry | null = null;
 
 /**
- * Stores parsed calibration items in MiroShark's running context so they influence analysis.
+ * Stores parsed calibration items in AgentDesk's running context so they influence analysis.
  * Called by the Upload Context pipeline after bulk-ingest.
  */
 export function addCalibrationContext(
@@ -308,7 +308,7 @@ export function addCalibrationContext(
     uploadedAt: new Date().toISOString(),
   };
   console.log(
-    `[MiroShark Context] Calibration context updated: ${items.length} items`,
+    `[AgentDesk Context] Calibration context updated: ${items.length} items`,
   );
 }
 

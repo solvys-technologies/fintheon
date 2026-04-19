@@ -24,7 +24,7 @@ import {
   generateBrief,
   BRIEF_LABELS,
 } from "../../services/brief-generator.js";
-import { startPrediction } from "../../services/miroshark/miroshark-service.js";
+import { startPrediction } from "../../services/agent-desk/agent-desk-service.js";
 
 // ── Helpers: transform DB records → frontend shapes ─────────────────────────
 
@@ -240,13 +240,13 @@ export function createDataRoutes(): Hono {
 
   // POST /api/data/brief/generate — AI brief generation + store in Supabase
   // Delegates to shared brief-generator service (also used by dispatch-scheduler crons)
-  // [claude-code 2026-04-16] Triggers MiroShark Aquarium run after successful brief publish
+  // [claude-code 2026-04-16] Triggers AgentDesk Aquarium run after successful brief publish
   app.post("/brief/generate", async (c) => {
     try {
       const result = await generateBrief();
 
       // Fire-and-forget: trigger Aquarium deliberation after brief publish
-      // Empty lanes → MiroShark synthesizes from RiskFlow headlines
+      // Empty lanes → AgentDesk synthesizes from RiskFlow headlines
       startPrediction(
         { lanes: [], catalysts: [], ropes: [] },
         undefined,

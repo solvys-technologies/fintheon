@@ -16,7 +16,7 @@ export function createMarketDataRoutes(): Hono {
   const router = new Hono();
   router.get("/quote/:symbol", handleQuote);
   router.get("/vix", handleVix);
-  router.get("/iv-score", handleIVScore); // blended 70/20/10 VIX+catalyst+MiroShark
+  router.get("/iv-score", handleIVScore); // blended 70/20/10 VIX+catalyst+AgentDesk
   router.get("/iv-score/stream", handleIVScoreStream); // SSE push stream
   router.get("/gex/:symbol", handleGex);
   router.get("/walls/:symbol", handleWalls);

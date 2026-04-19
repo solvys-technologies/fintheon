@@ -1,13 +1,13 @@
-// [claude-code 2026-04-16] Boot-time restore of MiroShark running state from latest Aquarium simulation.
-// Without this, mirosharkComponent in the IV score is always 0 after backend restart.
+// [claude-code 2026-04-16] Boot-time restore of AgentDesk running state from latest Aquarium simulation.
+// Without this, agentDeskComponent in the IV score is always 0 after backend restart.
 
 import { getSupabaseClient } from "../../config/supabase.js";
 import {
   resetRunningState,
-  type MiroSharkRiskCategory,
-} from "./miroshark-reactive.js";
+  type AgentDeskRiskCategory,
+} from "./agent-desk-reactive.js";
 
-const ALL_CATEGORIES: MiroSharkRiskCategory[] = [
+const ALL_CATEGORIES: AgentDeskRiskCategory[] = [
   "geopolitical",
   "political",
   "monetary-policy",
@@ -17,10 +17,10 @@ const ALL_CATEGORIES: MiroSharkRiskCategory[] = [
 ];
 
 /**
- * Restore MiroShark running state from the latest Aquarium simulation in DB.
+ * Restore AgentDesk running state from the latest Aquarium simulation in DB.
  * Called once at boot — if no recent simulation exists, running state stays null (score 0).
  */
-export async function restoreMiroSharkRunningState(): Promise<void> {
+export async function restoreAgentDeskRunningState(): Promise<void> {
   const sb = getSupabaseClient();
   if (!sb) return;
 
@@ -33,7 +33,7 @@ export async function restoreMiroSharkRunningState(): Promise<void> {
   if (error || !data?.length) {
     if (error)
       console.warn(
-        "[MiroShark Boot] Failed to fetch latest run:",
+        "[AgentDesk Boot] Failed to fetch latest run:",
         error.message,
       );
     return;
@@ -47,14 +47,14 @@ export async function restoreMiroSharkRunningState(): Promise<void> {
   const ageMs = Date.now() - new Date(row.created_at).getTime();
   if (ageMs > 24 * 60 * 60 * 1000) {
     console.log(
-      `[MiroShark Boot] Latest simulation too old (${Math.round(ageMs / 3600000)}h), skipping restore`,
+      `[AgentDesk Boot] Latest simulation too old (${Math.round(ageMs / 3600000)}h), skipping restore`,
     );
     return;
   }
 
   // Reconstruct category scores from DB (may be stored as array or object)
-  const categoryScores: Record<MiroSharkRiskCategory, number> = {} as Record<
-    MiroSharkRiskCategory,
+  const categoryScores: Record<AgentDeskRiskCategory, number> = {} as Record<
+    AgentDeskRiskCategory,
     number
   >;
   for (const cat of ALL_CATEGORIES) {
@@ -64,15 +64,15 @@ export async function restoreMiroSharkRunningState(): Promise<void> {
   if (row.category_scores) {
     if (Array.isArray(row.category_scores)) {
       for (const entry of row.category_scores) {
-        const cat = entry.category as MiroSharkRiskCategory;
+        const cat = entry.category as AgentDeskRiskCategory;
         if (ALL_CATEGORIES.includes(cat)) {
           categoryScores[cat] = entry.score ?? entry.value ?? 0;
         }
       }
     } else if (typeof row.category_scores === "object") {
       for (const [cat, score] of Object.entries(row.category_scores)) {
-        if (ALL_CATEGORIES.includes(cat as MiroSharkRiskCategory)) {
-          categoryScores[cat as MiroSharkRiskCategory] =
+        if (ALL_CATEGORIES.includes(cat as AgentDeskRiskCategory)) {
+          categoryScores[cat as AgentDeskRiskCategory] =
             typeof score === "number" ? score : 0;
         }
       }
@@ -81,7 +81,7 @@ export async function restoreMiroSharkRunningState(): Promise<void> {
 
   resetRunningState(row.simulation_id, categoryScores, compositeIV);
   console.log(
-    `[MiroShark Boot] Restored running state from simulation ${row.simulation_id} ` +
+    `[AgentDesk Boot] Restored running state from simulation ${row.simulation_id} ` +
       `(compositeIV: ${compositeIV.toFixed(1)}, age: ${Math.round(ageMs / 60000)}m)`,
   );
 }

@@ -3,7 +3,7 @@
 // [claude-code 2026-04-12] Fix stuck scorer: staleness guard (90s force-reset), defensive tick logging, delayed initial cycle for DB pool warmup
 // [claude-code 2026-03-31] POI priority boost — Top 3 POI = Critical (macroLevel 4), Top 8 = High (macroLevel 3)
 // [claude-code 2026-03-26] Fix currentPrice: 0 → fetch real instrument price for autoresearch observations
-// [claude-code 2026-03-24] Added reactive MiroShark adjustment loop for high-impact items (macroLevel >= 3)
+// [claude-code 2026-03-24] Added reactive AgentDesk adjustment loop for high-impact items (macroLevel >= 3)
 // [claude-code 2026-03-23] Central scoring agent — polls unscored items from Supabase, runs AI analysis, writes scored results
 // Gated by ENABLE_CENTRAL_SCORING=true (only TP's instance should set this)
 // Phase T4: wired recordObservation() to feed autoresearch scoring pipeline
@@ -28,7 +28,7 @@ import {
   adjustScoresForRiskFlow,
   getRunningState,
   setRunningState,
-} from "../miroshark/miroshark-reactive.js";
+} from "../agent-desk/agent-desk-reactive.js";
 import {
   getAllActivePhrases,
   phraseMatchesItem,
@@ -272,7 +272,7 @@ export async function scoringCycle(): Promise<number> {
       }
     }
 
-    // Subject tagging for MiroShark persona routing
+    // Subject tagging for AgentDesk persona routing
     for (const item of enrichedItems) {
       const subjectTags = tagHeadlineSubjects(item.headline, item.tags || []);
       if (subjectTags.length > 0) {
@@ -337,7 +337,7 @@ export async function scoringCycle(): Promise<number> {
       log.info(` Recorded ${observationCount} autoresearch observations`);
     }
 
-    // Reactive MiroShark adjustment
+    // Reactive AgentDesk adjustment
     for (const item of enrichedItems) {
       if (item.macroLevel && shouldTriggerReactiveAdjustment(item.macroLevel)) {
         const currentState = getRunningState();
@@ -352,7 +352,7 @@ export async function scoringCycle(): Promise<number> {
           });
           setRunningState(updated);
           log.info(
-            ` Reactive MiroShark adjustment: ${item.headline.slice(0, 60)}... → composite ${updated.compositeIV.toFixed(1)}`,
+            ` Reactive AgentDesk adjustment: ${item.headline.slice(0, 60)}... → composite ${updated.compositeIV.toFixed(1)}`,
           );
         }
       }

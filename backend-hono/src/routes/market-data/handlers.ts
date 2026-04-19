@@ -183,7 +183,7 @@ export async function handleContext(c: Context) {
 }
 
 /**
- * GET /api/market-data/iv-score — blended VIX/catalyst/MiroShark IV score
+ * GET /api/market-data/iv-score — blended VIX/catalyst/AgentDesk IV score
  *
  * Serves the cached ticker score (computed every 60s in background).
  * Decay is continuous from event published_at — never restarts on backend restart.

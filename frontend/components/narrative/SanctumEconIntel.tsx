@@ -3,7 +3,7 @@
 // [claude-code 2026-03-28] S8-T4: Risk sector cards — whole border + fuse + percentage (matching CategoryScoreCard)
 // [claude-code 2026-03-28] S5-T2: Added Market Impact (NQ/ES/YM day close) display to expanded econ cards
 // [claude-code 2026-03-28] S4-T3: Category score interpretation with trading-specific context per risk sector
-// [claude-code 2026-03-27] Econ Intel — historical prints, scoring breakdown, MiroShark-ready aggregation
+// [claude-code 2026-03-27] Econ Intel — historical prints, scoring breakdown, AgentDesk-ready aggregation
 // [claude-code 2026-03-24] Econ Intel — 2-col grid, expandable cards with countdown + history + risk category sub-cards
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
@@ -20,9 +20,9 @@ import type {
   EconHistoryPrint,
   EconScoredItem,
   SimulationContext,
-  MiroSharkCategoryScore,
-} from "../../types/miroshark";
-import { RISK_CATEGORY_LABELS, ivHeatColor } from "../../types/miroshark";
+  AgentDeskCategoryScore,
+} from "../../types/agent-desk";
+import { RISK_CATEGORY_LABELS, ivHeatColor } from "../../types/agent-desk";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -664,7 +664,7 @@ function EconCard({
 interface SanctumEconIntelProps {
   expanded?: boolean;
   context?: SimulationContext | null;
-  categoryScores?: MiroSharkCategoryScore[];
+  categoryScores?: AgentDeskCategoryScore[];
 }
 
 export function SanctumEconIntel({

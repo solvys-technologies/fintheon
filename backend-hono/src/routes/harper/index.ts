@@ -29,7 +29,7 @@ import { createApprovalDetailRoutes } from "./approvals.js";
 import { createDispatchRoute } from "./dispatch.js";
 import { agentBus } from "../../services/agent-bus/bus.js";
 import { executeDag } from "../../services/agent-bus/dag-scheduler.js";
-import { createMiroSharkDAG } from "../../services/agent-bus/templates/miroshark-template.js";
+import { createAgentDeskDAG } from "../../services/agent-bus/templates/agent-desk-template.js";
 import type {
   AgentStreamEvent,
   DAGProgressEvent,
@@ -98,7 +98,7 @@ export function createHarperRoutes() {
 
       if (isBoardroomMode) {
         const userId = (c.get("userId" as never) as string) || "anonymous";
-        const dagDef = await createMiroSharkDAG({
+        const dagDef = await createAgentDeskDAG({
           lanes: [
             {
               id: "boardroom-query",

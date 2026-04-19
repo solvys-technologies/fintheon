@@ -1,6 +1,6 @@
-// [claude-code 2026-03-23] MiroShark Sanctum frontend types — expanded for snap-scroll dashboard + presets
+// [claude-code 2026-03-23] AgentDesk Sanctum frontend types — expanded for snap-scroll dashboard + presets
 
-export type MiroSharkRiskCategory =
+export type AgentDeskRiskCategory =
   | "geopolitical"
   | "political"
   | "monetary-policy"
@@ -8,34 +8,34 @@ export type MiroSharkRiskCategory =
   | "market-structure"
   | "black-swan";
 
-export interface MiroSharkCategoryScore {
-  category: MiroSharkRiskCategory;
+export interface AgentDeskCategoryScore {
+  category: AgentDeskRiskCategory;
   ivScore: number;
   confidence: number;
   delta: number;
   description?: string;
 }
 
-export interface MiroSharkTimePoint {
+export interface AgentDeskTimePoint {
   dayOffset: number;
   date: string;
   composite: number;
-  categories: Record<MiroSharkRiskCategory, number>;
+  categories: Record<AgentDeskRiskCategory, number>;
   impliedPoints?: number;
 }
 
-export interface MiroSharkGeneratedEvent {
+export interface AgentDeskGeneratedEvent {
   id: string;
   title: string;
   description: string;
   date: string;
-  category: MiroSharkRiskCategory;
+  category: AgentDeskRiskCategory;
   impactScore: number;
   probability: number;
   isAiGenerated: true;
 }
 
-export interface MiroSharkScenario {
+export interface AgentDeskScenario {
   label: string;
   probability: number;
   projectedScore: number;
@@ -50,15 +50,15 @@ export interface SanctumData {
   compositeIV: number;
   confidence: number;
   regimeShiftProbability: number;
-  categoryScores: MiroSharkCategoryScore[];
-  timeSeries: MiroSharkTimePoint[];
-  generatedEvents: MiroSharkGeneratedEvent[];
-  scenarios: MiroSharkScenario[];
-  briefing?: MiroSharkBriefing;
+  categoryScores: AgentDeskCategoryScore[];
+  timeSeries: AgentDeskTimePoint[];
+  generatedEvents: AgentDeskGeneratedEvent[];
+  scenarios: AgentDeskScenario[];
+  briefing?: AgentDeskBriefing;
   contextSnapshot?: SimulationContext;
 }
 
-export const RISK_CATEGORY_LABELS: Record<MiroSharkRiskCategory, string> = {
+export const RISK_CATEGORY_LABELS: Record<AgentDeskRiskCategory, string> = {
   geopolitical: "Geopolitical",
   political: "Political",
   "monetary-policy": "Monetary Policy",
@@ -68,7 +68,7 @@ export const RISK_CATEGORY_LABELS: Record<MiroSharkRiskCategory, string> = {
 };
 
 /** @deprecated Use ivHeatColor(score) instead — dynamic heat-map coloring based on IV value */
-export const RISK_CATEGORY_COLORS: Record<MiroSharkRiskCategory, string> = {
+export const RISK_CATEGORY_COLORS: Record<AgentDeskRiskCategory, string> = {
   geopolitical: "#EF4444",
   political: "#8B5CF6",
   "monetary-policy": "#3B82F6",
@@ -267,7 +267,7 @@ export interface SimulationContext {
   fetchedAt: string;
 }
 
-export interface MiroSharkBriefing {
+export interface AgentDeskBriefing {
   summary: string;
   keyFindings: string[];
   riskAlerts: string[];
@@ -296,7 +296,7 @@ export interface SanctumNarrative {
   dateRange: { start: string; end: string | null };
 }
 
-export interface MiroSharkRunRecord {
+export interface AgentDeskRunRecord {
   id: string;
   simulation_id: string;
   preset: SanctumPreset;
@@ -311,7 +311,7 @@ export interface MiroSharkRunRecord {
 
 export interface RunningAnalysisSnapshot {
   compositeIV: number;
-  categoryScores: MiroSharkCategoryScore[];
+  categoryScores: AgentDeskCategoryScore[];
   confidence: number;
   adjustmentCount: number;
   lastUpdateAt: string;
@@ -320,7 +320,7 @@ export interface RunningAnalysisSnapshot {
 }
 
 export interface RollingWindowData {
-  runs: MiroSharkRunSummary[];
+  runs: AgentDeskRunSummary[];
   avgCompositeIV: number;
   avgConfidence: number;
   avgRegimeShift: number;
@@ -329,14 +329,14 @@ export interface RollingWindowData {
   periodEnd: string;
 }
 
-export interface MiroSharkRunSummary {
+export interface AgentDeskRunSummary {
   simulationId: string;
   preset: SanctumPreset;
   compositeIV: number;
   confidence: number;
   regimeShiftProbability: number;
   briefingText: string;
-  categoryScores: MiroSharkCategoryScore[];
-  scenarios: MiroSharkScenario[];
+  categoryScores: AgentDeskCategoryScore[];
+  scenarios: AgentDeskScenario[];
   createdAt: string;
 }

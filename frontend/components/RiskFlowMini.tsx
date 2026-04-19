@@ -39,8 +39,24 @@ import {
 import { useBackend } from "../lib/backend";
 
 import { SEVERITY_CONFIG } from "../lib/severity-config";
-import { ivHeatColor } from "../types/miroshark";
+import { ivHeatColor } from "../types/agent-desk";
 import { SourceIcon } from "../lib/shared-icons";
+import { NothingFuse } from "./shared/NothingFuse";
+import {
+  type FuseSeverity,
+  severityFromScore,
+  colorForSeverity,
+} from "../lib/fuse-palette";
+
+// [claude-code 2026-04-19] v5.22 S1: map RiskFlow alert severity to the shared FuseSeverity
+//   keys so every desktop card tints from one palette (linkable to user preferences later).
+function alertSeverityToPalette(sev: RiskFlowAlert["severity"]): FuseSeverity {
+  if (sev === "critical") return "critical";
+  if (sev === "high") return "high";
+  if (sev === "medium") return "medium";
+  if (sev === "low") return "low";
+  return "neutral";
+}
 
 // ── Cyclical Badge ───────────────────────────────────────────────────────────
 
@@ -186,6 +202,11 @@ function TradeIdeaRow({
     e.dataTransfer.effectAllowed = "copy";
   };
 
+  // [claude-code 2026-04-19] v5.22 S1: TradeIdeaRow gets palette-driven left accent so
+  //   priority-color linkage shows at a glance on desktop cards.
+  const tradeIdeaPalColor = colorForSeverity(
+    alertSeverityToPalette(alert.severity),
+  );
   return (
     <div
       draggable
@@ -193,9 +214,10 @@ function TradeIdeaRow({
       className={`group relative border-b border-zinc-800/50 hover:bg-[var(--fintheon-accent)]/5 transition-colors ${
         seen ? "opacity-70" : ""
       } ${fresh ? "riskflow-flicker" : ""}`}
+      style={{ borderLeft: `2px solid ${tradeIdeaPalColor}` }}
     >
       <div
-        className="flex items-start gap-2 px-3 py-2.5 cursor-pointer"
+        className="flex items-start gap-2 px-3 py-3 cursor-pointer"
         onClick={() => {
           onMarkSeen(alert.id);
           onOpen(idea);
@@ -370,23 +392,45 @@ function AlertRow({
     e.dataTransfer.effectAllowed = "copy";
   };
 
+  // [claude-code 2026-04-19] v5.22 S1: mobile-vocabulary desktop card — left severity
+  //   fuse bar in place of the pill badge, palette-driven color (respects user preferences
+  //   once wired via SettingsContext).
+  const palSeverity = alertSeverityToPalette(alert.severity);
+  const palColor = colorForSeverity(palSeverity);
+  const ivScoreValue = alert.ivScore != null ? Number(alert.ivScore) : null;
+  const fuseScore =
+    ivScoreValue != null ? ivScoreValue : alert.severity === "critical" ? 9 : alert.severity === "high" ? 7 : alert.severity === "medium" ? 5 : alert.severity === "low" ? 3 : 1;
+
   return (
     <div
       draggable
       onDragStart={handleDragStart}
       className={`group relative border-b border-zinc-800/60 overflow-hidden hover:border-[var(--fintheon-accent)]/30 transition-colors ${isHigh ? "riskflow-fintheon-row" : ""} ${seen ? "opacity-70" : ""} ${fresh ? "riskflow-flicker" : ""}`}
+      style={{
+        borderLeft: `2px solid ${palColor}`,
+        boxShadow: isHigh ? `inset 3px 0 12px ${palColor}22` : undefined,
+      }}
     >
       {/* Main content area */}
       <div
-        className="block px-3 pt-2.5 pb-2 cursor-pointer"
+        className="block px-3 pt-3 pb-2.5 cursor-pointer"
         onClick={() => {
           onMarkSeen(alert.id);
           onToggleExpand();
         }}
       >
-        <div className="flex items-start gap-2">
+        <div className="flex items-stretch gap-3 min-h-[72px]">
+          {/* Left: vertical severity fuse (mobile-vocabulary, larger desktop thickness) */}
+          <div className="flex-shrink-0 w-[6px] flex items-stretch py-0.5">
+            <NothingFuse
+              value={Math.min(1, Math.max(0.15, fuseScore / 10))}
+              severity={severityFromScore(fuseScore)}
+              orientation="vertical"
+              thickness={6}
+            />
+          </div>
           <span
-            className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border ${sev.glow || ""} flex-shrink-0 mt-0.5`}
+            className={`inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border ${sev.glow || ""} flex-shrink-0 mt-0.5 h-[18px]`}
           >
             {sev.label}
           </span>
