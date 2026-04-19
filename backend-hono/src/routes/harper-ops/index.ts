@@ -16,6 +16,14 @@ import {
   type HarperTask,
 } from "../../services/harper-autonomous/index.js";
 import type { OpsEntry } from "../../services/harper-autonomous/ops-store.js";
+import { getRoutine } from "../../services/routines/registry.js";
+import {
+  getConfig,
+  recordRun,
+  type RoutineRunStatus,
+  type RoutineSeverity,
+} from "../../services/routines/state-store.js";
+import { applyPostRunPolicy } from "../../services/routines/error-handler.js";
 
 // [claude-code 2026-04-05] SSE client management for ops stream
 const sseClients = new Set<ReadableStreamDefaultController>();
@@ -176,6 +184,42 @@ export function createHarperOpsRoutes() {
       }).catch(() => {
         /* non-fatal */
       });
+
+      // Routines Console wiring: record the run + apply per-mode policy.
+      // The triggerId is required for registry lookup; routineId is accepted
+      // as a synonym so existing payloads keep working.
+      const triggerId =
+        (typeof meta.triggerId === "string" && meta.triggerId) ||
+        (typeof meta.routineId === "string" && meta.routineId) ||
+        null;
+
+      if (triggerId && getRoutine(triggerId)) {
+        const severity = (body.severity ?? "info") as RoutineSeverity;
+        const status: RoutineRunStatus =
+          severity === "critical"
+            ? "failed"
+            : severity === "warning"
+              ? "degraded"
+              : "ok";
+
+        Promise.resolve()
+          .then(async () => {
+            const cfg = await getConfig(triggerId);
+            const run = await recordRun({
+              triggerId,
+              status,
+              severity,
+              title: body.title!,
+              detail: body.detail ?? null,
+              opsEntryId: entry.id ?? null,
+              errorMessage: status === "failed" ? (body.detail ?? null) : null,
+            });
+            await applyPostRunPolicy(run, cfg);
+          })
+          .catch(() => {
+            /* non-fatal — feed entry still persisted */
+          });
+      }
     }
 
     return c.json({ ok: true, entry });

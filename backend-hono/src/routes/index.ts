@@ -72,6 +72,7 @@ import { createWebPushRoutes } from "./web-push.js";
 import { createOracleRoutes } from "./oracle.js";
 import { createMeRoutes } from "./me/index.js";
 import { createMaintenanceRoutes } from "./maintenance.js";
+import { createRoutinesRoutes } from "./routines/index.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -169,6 +170,8 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/harper", createHarperRoutes());
   // Harper Ops — autonomous loop monitoring + control (public, local-only)
   app.route("/api/harper-ops", createHarperOpsRoutes());
+  // Routines Console — operator surface for the 8 Claude Code Routines (public, local-only)
+  app.route("/api/routines", createRoutinesRoutes());
   // MCP registry — live read/write of ~/.claude/mcp.json (public, local-only)
   app.route("/api/mcp", createMcpRoutes());
 

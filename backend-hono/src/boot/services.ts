@@ -60,6 +60,7 @@ import { startRelayConnector } from "../services/relay-connector.js";
 import { startOracleResearch } from "../services/cron/oracle-research-scheduler.js";
 import { startOutcomeResolver } from "../services/cron/outcome-resolver.js";
 import { startOutcomeTagger } from "../services/scoring/outcome-tagger.js";
+import { initRoutinesStore } from "../services/routines/state-store.js";
 
 const log = createLogger("Boot");
 let localPeerHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -267,6 +268,11 @@ export async function bootBackground(): Promise<void> {
   // Tool approval store (load persistent permissions)
   initToolApprovalStore().catch((err) =>
     log.warn("Tool approval store init failed", { error: String(err) }),
+  );
+
+  // Routines Console store — verifies routine_config table is reachable
+  initRoutinesStore().catch((err) =>
+    log.warn("Routines store init failed (non-fatal)", { error: String(err) }),
   );
 
   // Claude SDK bridge (non-blocking)

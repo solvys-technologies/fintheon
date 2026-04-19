@@ -27,6 +27,7 @@ import {
 import { AdvancedPane } from "./AdvancedPane";
 import { MatrixEditor } from "./MatrixEditor";
 import { LexiconEditor } from "./LexiconEditor";
+import { RoutinesConsole } from "./RoutinesConsole";
 import { ScoreImpactPreview } from "../ui/InlineDiff";
 import { useToast } from "../../contexts/ToastContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -368,8 +369,12 @@ export function RefinementEngine() {
         </div>
       ) : (
         <div className="flex-1 min-h-0 flex">
-          {/* Left panel — V4 group dials + presets + advanced pane */}
+          {/* Left panel — routines console + V4 group dials + regime + presets + advanced pane */}
           <div className="w-[340px] shrink-0 border-r border-[var(--fintheon-accent)]/15 overflow-y-auto p-3">
+            <RoutinesConsole />
+
+            <div className="border-t border-[var(--fintheon-accent)]/15 my-4" />
+
             <RegimeControl regime={regime} onRegimeChanged={fetchRegime} />
 
             {v4Available ? (
