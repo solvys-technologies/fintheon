@@ -1,5 +1,6 @@
-// [claude-code 2026-04-18] v5.22 S2: wrapped segment column in a position:relative
-//   container so the shared .nothing-fuse-shimmer overlay can ride across all segments.
+// [claude-code 2026-04-18] Drop the .nothing-fuse-shimmer overlay per TP — too brief on
+//   mobile to register, and it competed visually with the drain choreography. Outer
+//   wrapper kept (position:relative) in case future overlays need it.
 //   Color contract unchanged — caller still passes a resolved CSS color from
 //   colorForSeverity / colorForScore (palette adoption lives at the call site).
 // [claude-code 2026-04-19] S26-P2 T10: `draining` prop — when true, the segments
@@ -66,7 +67,6 @@ export function VerticalFuseBar({
           />
         ))}
       </div>
-      <span className="nothing-fuse-shimmer" aria-hidden="true" />
     </div>
   );
 }
