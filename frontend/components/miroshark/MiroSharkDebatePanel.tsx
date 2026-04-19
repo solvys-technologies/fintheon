@@ -458,8 +458,13 @@ function Fuse({
           {label}
         </span>
         <span
-          className="text-[10px] font-mono font-bold"
-          style={{ color, fontFamily: "var(--font-mono)" }}
+          className="text-[12px] font-bold"
+          style={{
+            color,
+            // Static Nothing-Display font for Aquarium KPI numbers — ignores theme
+            fontFamily: "Doto, ui-monospace, monospace",
+            letterSpacing: "0.02em",
+          }}
         >
           {value}
         </span>

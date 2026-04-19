@@ -74,7 +74,11 @@ export function NextSessionForecastCard({
       {/* Projected score + confidence */}
       <div className="flex items-center gap-3 mb-2">
         <span
-          className={`text-lg font-bold ${getScoreColor(prediction.nextSessionScore)}`}
+          className={`text-xl font-bold ${getScoreColor(prediction.nextSessionScore)}`}
+          style={{
+            fontFamily: "Doto, ui-monospace, monospace",
+            letterSpacing: "0.02em",
+          }}
         >
           {prediction.nextSessionScore.toFixed(1)}
         </span>

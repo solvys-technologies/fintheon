@@ -9,6 +9,21 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T21:15:00",
+    agent: "claude-code",
+    summary:
+      "Aquarium redesign sprint — Track 3 (right-rail Sanctum drawer + Strategium footer-stub fix + Doto font on Aquarium KPIs). New SanctumSitemapDrawer component: a 4px hot zone on the screen-right edge that slides out a 240px navigation drawer when hovered (auto-hides 1.5s after the mouse leaves). Lists Sanctum's three subviews (Narrative Flow / Timeline / Aquarium) plus three nested Aquarium pages (Command / Econ / Risk) so users can deep-link from anywhere in Sanctum without going back to the top tab strip. Mounted in ConsiliumHub only when activeTab === 'sanctum'. Cross-component navigation uses a window CustomEvent ('fintheon:aquarium-scroll-to') that Sanctum.tsx listens for and routes through its existing scrollToPage handler — keeps Sanctum's internal page state self-contained. Strategium footer-stub fix: when in feedOnly pane mode (RiskFlow takes the whole right rail) and the user collapses the feed, the entire pane used to disappear with no way back; now (a) the chevron-down handler in feedOnly explicitly sets riskFlowCollapsed=true instead of toggling silently, (b) the StrategiumPeekBar footer renders whenever the feed is hidden (widgetsOnly OR feedOnly+collapsed), (c) restoring from the peek does the right thing for either mode. Doto (Nothing Design display font) now wraps the Aquarium KPI numbers — SIGNAL/REGIME/HEAT fuse values in DeliberationFuses, Blended IV Score, and Next Session Forecast score — with hard-coded inline font-family so the look stays static regardless of which theme is active. Bumped Blended IV from text-sm to text-base and Next Session Forecast from text-lg to text-xl since Doto's wider glyphs needed the polish.",
+    files: [
+      "frontend/components/layout/SanctumSitemapDrawer.tsx",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/miroshark/MiroSharkDebatePanel.tsx",
+      "frontend/components/narrative/BlendedVIXCard.tsx",
+      "frontend/components/narrative/NextSessionForecastCard.tsx",
+    ],
+  },
+  {
     date: "2026-04-19T20:30:00",
     agent: "claude-code",
     summary:

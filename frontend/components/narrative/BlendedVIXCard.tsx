@@ -73,7 +73,13 @@ export function BlendedVIXCard({ data, isLoading }: BlendedVIXCardProps) {
           Blended IV Score
         </span>
         <div className="flex items-center gap-1.5">
-          <span className={`text-sm font-bold ${scoreColor}`}>
+          <span
+            className={`text-base font-bold ${scoreColor}`}
+            style={{
+              fontFamily: "Doto, ui-monospace, monospace",
+              letterSpacing: "0.02em",
+            }}
+          >
             {data.score.toFixed(1)}
           </span>
           <span className={`text-[9px] font-medium ${scoreColor}`}>

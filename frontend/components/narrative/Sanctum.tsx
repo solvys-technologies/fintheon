@@ -6,7 +6,13 @@
 // [claude-code 2026-03-24] Persistence refactor: show persisted data immediately, background updates, no idle state
 // [claude-code 2026-03-24] Thread selectedSymbol prop for TradingView chart, taller chart container (65vh)
 // [claude-code 2026-03-24] Sanctum — 3-page dashboard (merged Risk + Narratives), expandable econ cards
-import { useState, useCallback, useRef, useLayoutEffect } from "react";
+import {
+  useState,
+  useCallback,
+  useRef,
+  useLayoutEffect,
+  useEffect,
+} from "react";
 import { Loader2 } from "lucide-react";
 import type {
   SanctumData,
@@ -116,6 +122,17 @@ export function Sanctum({
     if (pages[idx])
       pages[idx].scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
+
+  // Listen for cross-component navigation (right-rail Sanctum drawer dispatches this)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ page?: number }>).detail;
+      if (typeof detail?.page === "number") scrollToPage(detail.page);
+    };
+    window.addEventListener("fintheon:aquarium-scroll-to", handler);
+    return () =>
+      window.removeEventListener("fintheon:aquarium-scroll-to", handler);
+  }, [scrollToPage]);
 
   const handlePresetChange = useCallback(
     (p: SanctumPreset) => {

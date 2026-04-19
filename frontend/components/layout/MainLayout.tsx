@@ -586,62 +586,68 @@ function MainLayoutInner() {
                 </div>
               )}
 
-              {/* RiskFlow pane — shown in balanced + feedOnly */}
-              {strategiumPaneMode !== "widgetsOnly" && (
-                <div
-                  className={`${
-                    strategiumPaneMode === "feedOnly"
-                      ? "flex-1"
-                      : riskFlowCollapsed
-                        ? "h-[168px] shrink-0"
-                        : "h-1/2"
-                  } flex flex-col transition-all duration-300 relative`}
-                >
-                  {/* Pane-mode toggle overlay — top-right of RiskFlow section */}
-                  <div className="absolute top-1.5 right-8 z-20 flex items-center gap-0.5 pointer-events-none">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        updateStrategiumPaneMode(
-                          strategiumPaneMode === "feedOnly"
-                            ? "balanced"
-                            : "feedOnly",
-                        )
-                      }
-                      className="pointer-events-auto p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] transition-colors"
-                      title={
-                        strategiumPaneMode === "feedOnly"
-                          ? "Restore widgets"
-                          : "Maximize RiskFlow"
-                      }
-                    >
-                      {strategiumPaneMode === "feedOnly" ? (
-                        <Minimize2 className="w-3 h-3" />
-                      ) : (
-                        <Maximize2 className="w-3 h-3" />
-                      )}
-                    </button>
-                  </div>
-                  <div className="flex-1 min-h-0 overflow-y-auto">
-                    <RiskFlowMini
-                      collapsed={riskFlowCollapsed}
-                      onToggleCollapsed={() => {
-                        // In balanced mode, chevron-down means "collapse RiskFlow to peek-footer".
-                        // Route through pane mode so there's always a way to restore.
-                        if (strategiumPaneMode === "balanced") {
-                          updateStrategiumPaneMode("widgetsOnly");
-                        } else {
-                          setRiskFlowCollapsed((v) => !v);
+              {/* RiskFlow pane — shown in balanced + feedOnly (and only when not fully-collapsed-in-feedOnly) */}
+              {strategiumPaneMode !== "widgetsOnly" &&
+                !(strategiumPaneMode === "feedOnly" && riskFlowCollapsed) && (
+                  <div
+                    className={`${
+                      strategiumPaneMode === "feedOnly"
+                        ? "flex-1"
+                        : riskFlowCollapsed
+                          ? "h-[168px] shrink-0"
+                          : "h-1/2"
+                    } flex flex-col transition-all duration-300 relative`}
+                  >
+                    {/* Pane-mode toggle overlay — top-right of RiskFlow section */}
+                    <div className="absolute top-1.5 right-8 z-20 flex items-center gap-0.5 pointer-events-none">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateStrategiumPaneMode(
+                            strategiumPaneMode === "feedOnly"
+                              ? "balanced"
+                              : "feedOnly",
+                          )
                         }
-                      }}
-                      onNavigateToFeed={() => navigateTab("riskflow")}
-                    />
+                        className="pointer-events-auto p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] transition-colors"
+                        title={
+                          strategiumPaneMode === "feedOnly"
+                            ? "Restore widgets"
+                            : "Maximize RiskFlow"
+                        }
+                      >
+                        {strategiumPaneMode === "feedOnly" ? (
+                          <Minimize2 className="w-3 h-3" />
+                        ) : (
+                          <Maximize2 className="w-3 h-3" />
+                        )}
+                      </button>
+                    </div>
+                    <div className="flex-1 min-h-0 overflow-y-auto">
+                      <RiskFlowMini
+                        collapsed={riskFlowCollapsed}
+                        onToggleCollapsed={() => {
+                          // Always route through a state that guarantees a peek-footer is visible:
+                          // - balanced  → widgetsOnly (peek-footer at bottom)
+                          // - feedOnly  → riskFlowCollapsed=true (peek-footer replaces feed)
+                          // - widgetsOnly → toggle riskFlowCollapsed (no-op visible, kept for parity)
+                          if (strategiumPaneMode === "balanced") {
+                            updateStrategiumPaneMode("widgetsOnly");
+                          } else if (strategiumPaneMode === "feedOnly") {
+                            setRiskFlowCollapsed(true);
+                          } else {
+                            setRiskFlowCollapsed((v) => !v);
+                          }
+                        }}
+                        onNavigateToFeed={() => navigateTab("riskflow")}
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* RiskFlow peek-footer (only visible in widgetsOnly mode so user can restore feed) */}
-              {strategiumPaneMode === "widgetsOnly" && (
+              {/* RiskFlow peek-footer — visible whenever the feed is fully hidden so users can always bring it back */}
+              {(strategiumPaneMode === "widgetsOnly" ||
+                (strategiumPaneMode === "feedOnly" && riskFlowCollapsed)) && (
                 <StrategiumPeekBar
                   variant="footer"
                   label="RiskFlow"
@@ -649,7 +655,13 @@ function MainLayoutInner() {
                     riskFlowAlerts.filter((a: { id: string }) => !isSeen(a.id))
                       .length
                   }
-                  onRestore={() => updateStrategiumPaneMode("balanced")}
+                  onRestore={() => {
+                    if (strategiumPaneMode === "widgetsOnly") {
+                      updateStrategiumPaneMode("balanced");
+                    } else {
+                      setRiskFlowCollapsed(false);
+                    }
+                  }}
                 />
               )}
             </>
