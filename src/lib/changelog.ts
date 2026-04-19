@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T22:00:00",
+    agent: "claude-code",
+    summary:
+      "Aquarium redesign sprint — Track 4a (Econ Intelligence scroll-lock page UI rebuild). Old sectioned-card page (Inflation Data / Jobs Data / Supply Chain with expandable CategoryScoreCards) replaced entirely with the new event-filter flow. Top of the page is a split header row: Econ Pulse fuses on the left (Inflation Pulse, Labor Pulse, Supply/Output — all vertically stacked with clear ECON PULSE heading, Doto numbers, coverage count) and Instruments fuses on the right (each instrument from /api/predictions/outlook rendered as one fuse per row, vertically stacked with clear INSTRUMENTS heading), separated by a fading vertical ruler. Middle: EconEventFilter dropdown (multi-select with hard cap of 4 events; each option shows category tag + sub-desc 'N releases collected · last X ago · next DATE'), a timespan pill row (1W/1M/3M/6M/1Y), and a Generate button. Bottom: progressive chevron event cards (EconEventCard) mount inside a scrollable container with staggered 120ms-per-card fade-in-and-up; each card shows ticker + category tag + name + sub-desc collapsed, expands on chevron to show CAO Synthesis block (description + third-order thinking, derived from existing econ-history data in 4a — real CAO synthesis lands in 4b), a Forecast chip that renders ONLY when the latest print conclusively beat or missed (not inline), per-print rows formatted as Date · Variant · [→] Previous · Forecast · Actual · Deviation (actuals in Doto, deviation priority-colored: green < 2% | amber 2-5% | red ≥ 5%), then a footer AI-synthesis confidence fuse (Nothing-Design bar with Doto %). Catalogue is seeded with 11 standard tickers (CPI/PPI/PCE, NFP/UNEMP/INIT/JOLTS, GDP/PMI/RETA/FOMC) and enriched on mount from /api/data/econ-calendar (next release date) + per-ticker /api/data/econ-history peek (release count + last seen date). The old SanctumEconIntel props (expanded/context/categoryScores) are kept for call-site compat but marked @deprecated and ignored. New directory: frontend/components/narrative/econ/ with EconKpiFuses, EconInstrumentFuses, EconEventFilter, EconEventCard.",
+    files: [
+      "frontend/components/narrative/econ/EconEventCard.tsx",
+      "frontend/components/narrative/econ/EconEventFilter.tsx",
+      "frontend/components/narrative/econ/EconKpiFuses.tsx",
+      "frontend/components/narrative/econ/EconInstrumentFuses.tsx",
+      "frontend/components/narrative/SanctumEconIntel.tsx",
+    ],
+  },
+  {
     date: "2026-04-19T21:15:00",
     agent: "claude-code",
     summary:

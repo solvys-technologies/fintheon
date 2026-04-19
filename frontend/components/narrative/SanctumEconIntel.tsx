@@ -1,833 +1,330 @@
-// [claude-code 2026-04-19] S25-T1: Removed Risk Sector fuse cards (duplicated Agent Desk fuses); categoryScores prop now unused on this page
-// [claude-code 2026-04-10] Split into Inflation/Jobs/Supply Chain sections, US-only filter
-// [claude-code 2026-03-28] S9-T3: 5s fetch timeout, error fallback with retry, history fetch timeout
-// [claude-code 2026-03-28] S8-T4: Risk sector cards — whole border + fuse + percentage (matching CategoryScoreCard)
-// [claude-code 2026-03-28] S5-T2: Added Market Impact (NQ/ES/YM day close) display to expanded econ cards
-// [claude-code 2026-03-28] S4-T3: Category score interpretation with trading-specific context per risk sector
-// [claude-code 2026-03-27] Econ Intel — historical prints, scoring breakdown, MiroShark-ready aggregation
-// [claude-code 2026-03-24] Econ Intel — 2-col grid, expandable cards with countdown + history + risk category sub-cards
-import { useState, useEffect, useCallback, useRef } from "react";
-import {
-  Diff,
-  TrendingDown,
-  Minus,
-  CalendarClock,
-  ChevronDown,
-  Activity,
-  BarChart3,
-} from "lucide-react";
+// [claude-code 2026-04-19] S25-T4a: Econ Intelligence rebuilt as event-filter scroll-lock page. Top: Econ KPI fuses LEFT + Instrument fuses RIGHT (vertically stacked, fading vertical ruler between). Middle: event-filter dropdown + timespan + Generate. Bottom: chevron event cards with staggered fade-in; each expands to a CAO synthesis + per-print rows + AI-confidence fuse footer. Old sectioned-card UI replaced entirely; categoryScores + context props kept for back-compat (unused here).
+import { useEffect, useMemo, useState } from "react";
+import { CalendarClock } from "lucide-react";
 import type {
-  EconCardData,
-  EconHistoryPrint,
-  EconScoredItem,
   SimulationContext,
   MiroSharkCategoryScore,
 } from "../../types/miroshark";
-import { ivHeatColor } from "../../types/miroshark";
+import { EconKpiFuses } from "./econ/EconKpiFuses";
+import { EconInstrumentFuses } from "./econ/EconInstrumentFuses";
+import { EconEventFilter, type EconTimespan } from "./econ/EconEventFilter";
+import { EconEventCard, type EconEventCardData } from "./econ/EconEventCard";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-type SectionedEconCard = EconCardData & { section: string };
-
-const ECON_TICKERS: SectionedEconCard[] = [
-  // Inflation Data
-  { name: "Consumer Price Index", ticker: "CPI", section: "Inflation Data" },
-  { name: "Producer Price Index", ticker: "PPI", section: "Inflation Data" },
-  { name: "Personal Consumption", ticker: "PCE", section: "Inflation Data" },
-  // Jobs Data
-  { name: "Non-Farm Payrolls", ticker: "NFP", section: "Jobs Data" },
-  { name: "Unemployment Rate", ticker: "UNEMP", section: "Jobs Data" },
-  { name: "Initial Jobless Claims", ticker: "INIT", section: "Jobs Data" },
-  { name: "Job Openings (JOLTS)", ticker: "JOLTS", section: "Jobs Data" },
-  // Supply Chain
-  { name: "Gross Domestic Product", ticker: "GDP", section: "Supply Chain" },
-  { name: "Purchasing Mgrs Index", ticker: "PMI", section: "Supply Chain" },
-  { name: "Retail Sales", ticker: "RETA", section: "Supply Chain" },
-  { name: "New Home Sales", ticker: "NHS", section: "Supply Chain" },
-  { name: "Existing Home Sales", ticker: "EHS", section: "Supply Chain" },
-  { name: "Fed Rate Decision", ticker: "FOMC", section: "Supply Chain" },
-  { name: "Rate Cut Expectations", ticker: "CUTS", section: "Supply Chain" },
+/** Static catalogue of trackable events — enriched from /api/data/econ-calendar at runtime. */
+const ECON_CATALOGUE_SEED: EconEventCardData[] = [
+  {
+    ticker: "CPI",
+    name: "Consumer Price Index",
+    category: "price-stability",
+    releasesCollected: 0,
+    lastSeen: null,
+    nextRelease: null,
+  },
+  {
+    ticker: "PPI",
+    name: "Producer Price Index",
+    category: "price-stability",
+    releasesCollected: 0,
+    lastSeen: null,
+    nextRelease: null,
+  },
+  {
+    ticker: "PCE",
+    name: "Personal Consumption Expenditures",
+    category: "price-stability",
+    releasesCollected: 0,
+    lastSeen: null,
+    nextRelease: null,
+  },
+  {
+    ticker: "NFP",
+    name: "Non-Farm Payrolls",
+    category: "employment",
+    releasesCollected: 0,
+    lastSeen: null,
+    nextRelease: null,
+  },
+  {
+    ticker: "UNEMP",
+    name: "Unemployment Rate",
+    category: "employment",
+    releasesCollected: 0,
+    lastSeen: null,
+    nextRelease: null,
+  },
+  {
+    ticker: "INIT",
+    name: "Initial Jobless Claims",
+    category: "employment",
+    releasesCollected: 0,
+    lastSeen: null,
+    nextRelease: null,
+  },
+  {
+    ticker: "JOLTS",
+    name: "Job Openings",
+    category: "employment",
+    releasesCollected: 0,
+    lastSeen: null,
+    nextRelease: null,
+  },
+  {
+    ticker: "GDP",
+    name: "Gross Domestic Product",
+    category: "supply-chain",
+    releasesCollected: 0,
+    lastSeen: null,
+    nextRelease: null,
+  },
+  {
+    ticker: "PMI",
+    name: "Purchasing Managers' Index",
+    category: "supply-chain",
+    releasesCollected: 0,
+    lastSeen: null,
+    nextRelease: null,
+  },
+  {
+    ticker: "RETA",
+    name: "Retail Sales",
+    category: "supply-chain",
+    releasesCollected: 0,
+    lastSeen: null,
+    nextRelease: null,
+  },
+  {
+    ticker: "FOMC",
+    name: "Fed Rate Decision",
+    category: "supply-chain",
+    releasesCollected: 0,
+    lastSeen: null,
+    nextRelease: null,
+  },
 ];
 
-const ECON_SECTIONS = ["Inflation Data", "Jobs Data", "Supply Chain"] as const;
-
-const DIRECTION_CONFIG = {
-  beat: { icon: Diff, color: "var(--fintheon-low)", label: "BEAT" },
-  miss: { icon: TrendingDown, color: "var(--fintheon-severe)", label: "MISS" },
-  inline: {
-    icon: Minus,
-    color: "var(--fintheon-neutral-severe)",
-    label: "INLINE",
-  },
-} as const;
-
-function ConfidenceBar({ value }: { value: number }) {
-  const pct = Math.round(value * 100);
-  const color =
-    pct >= 70
-      ? "var(--fintheon-low)"
-      : pct >= 50
-        ? "var(--fintheon-neutral-severe)"
-        : "var(--fintheon-severe)";
-  return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 h-[3px] rounded-full bg-[var(--fintheon-border)]/10 overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all"
-          style={{ width: `${pct}%`, backgroundColor: color }}
-        />
-      </div>
-      <span className="text-[9px] font-mono text-[var(--fintheon-muted)]/50 w-[28px] text-right">
-        {pct}%
-      </span>
-    </div>
-  );
-}
-
-function daysUntil(dateStr: string): number {
-  const now = new Date();
-  const target = new Date(dateStr);
-  return Math.max(
-    0,
-    Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
-  );
-}
-
-function countdownLabel(dateStr: string): string {
-  const days = daysUntil(dateStr);
-  if (days === 0) return "Today";
-  if (days === 1) return "Tomorrow";
-  return `${days}d away`;
-}
-
-/** Compute beat/miss streak from history */
-function computeStreak(history: EconHistoryPrint[]): {
-  type: "beat" | "miss" | "inline" | null;
-  count: number;
-} {
-  if (history.length === 0) return { type: null, count: 0 };
-  const first = history[0].direction;
-  if (!first) return { type: null, count: 0 };
-  let count = 0;
-  for (const p of history) {
-    if (p.direction === first) count++;
-    else break;
-  }
-  return { type: first, count };
-}
-
-/** Sub-score bar for scoring breakdown */
-function SubScoreBar({
-  label,
-  value,
-  max,
-}: {
-  label: string;
-  value: number;
-  max: number;
-}) {
-  const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
-  const color = ivHeatColor(value);
-  return (
-    <div className="flex items-center gap-2">
-      <span className="text-[8px] font-mono text-[var(--fintheon-muted)]/50 w-[52px] truncate">
-        {label}
-      </span>
-      <div className="flex-1 h-[4px] rounded-full bg-[var(--fintheon-border)]/10 overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all"
-          style={{ width: `${pct}%`, backgroundColor: color }}
-        />
-      </div>
-      <span className="text-[9px] font-mono text-[var(--fintheon-muted)]/60 w-[24px] text-right">
-        {value.toFixed(1)}
-      </span>
-    </div>
-  );
-}
-
-function EconCard({
-  data,
-  expanded,
-  onToggle,
-  historyCache,
-  onFetchHistory,
-}: {
-  data: EconCardData;
-  expanded: boolean;
-  onToggle: () => void;
-  historyCache: Record<
-    string,
-    { prints: EconHistoryPrint[]; scored: EconScoredItem[] }
-  >;
-  onFetchHistory: (ticker: string) => void;
-}) {
-  const direction = data.agentConsensus ?? "inline";
-  const cfg = DIRECTION_CONFIG[direction];
-  const Icon = cfg.icon;
-  const hasAgent = data.agentConsensus != null;
-
-  // Fetch history when expanding
-  const prevExpanded = useRef(expanded);
-  useEffect(() => {
-    if (expanded && !prevExpanded.current && !historyCache[data.ticker]) {
-      onFetchHistory(data.ticker);
-    }
-    prevExpanded.current = expanded;
-  }, [expanded, data.ticker, historyCache, onFetchHistory]);
-
-  const cached = historyCache[data.ticker];
-  const history = data.printHistory ?? cached?.prints ?? [];
-  const scoredItems = data.scoredItems ?? cached?.scored ?? [];
-  const streak = computeStreak(history);
-
-  // Show most recent scored item's sub-scores
-  const latestScored = scoredItems[0];
-
-  return (
-    <div
-      className={`flex flex-col rounded-lg border bg-[var(--fintheon-surface)]/40 transition-all duration-300 cursor-pointer ${
-        expanded
-          ? "border-[var(--fintheon-accent)]/30 shadow-[0_0_12px_rgba(199,159,74,0.15)]"
-          : "border-[var(--fintheon-border)]/15 hover:border-[var(--fintheon-accent)]/20"
-      }`}
-      onClick={onToggle}
-    >
-      <div className="p-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <span className="text-[13px] font-mono font-bold text-[var(--fintheon-accent)]">
-              {data.ticker}
-            </span>
-            <p className="text-[10px] text-[var(--fintheon-muted)]/50 mt-0.5">
-              {data.name}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {hasAgent && (
-              <div
-                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono font-bold"
-                style={{ color: cfg.color, backgroundColor: `${cfg.color}15` }}
-              >
-                <Icon className="w-3 h-3" />
-                {cfg.label}
-              </div>
-            )}
-            <ChevronDown
-              className={`w-3.5 h-3.5 text-[var(--fintheon-muted)]/30 transition-transform duration-300 ${
-                expanded ? "rotate-180" : ""
-              }`}
-            />
-          </div>
-        </div>
-
-        {/* Last print data */}
-        {data.lastPrint ? (
-          <div className="grid grid-cols-3 gap-2 mb-3">
-            <div>
-              <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">
-                Actual
-              </span>
-              <span className="text-xs font-mono text-[var(--fintheon-text)]">
-                {data.lastPrint.actual}
-              </span>
-            </div>
-            <div>
-              <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">
-                Forecast
-              </span>
-              <span className="text-xs font-mono text-[var(--fintheon-text)]/70">
-                {data.lastPrint.forecast}
-              </span>
-            </div>
-            <div>
-              <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">
-                Previous
-              </span>
-              <span className="text-xs font-mono text-[var(--fintheon-text)]/50">
-                {data.lastPrint.previous}
-              </span>
-            </div>
-          </div>
-        ) : (
-          <div className="text-[10px] text-[var(--fintheon-muted)]/30 italic mb-3">
-            Awaiting data...
-          </div>
-        )}
-
-        {/* Next print date */}
-        {data.nextDate && (
-          <div className="flex items-center gap-1.5 text-[9px] text-[var(--fintheon-muted)]/50 mb-2">
-            <CalendarClock className="w-3 h-3" />
-            <span className="font-mono">Next: {data.nextDate}</span>
-          </div>
-        )}
-
-        {/* Agent confidence */}
-        {data.agentConfidence != null && (
-          <div>
-            <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider">
-              Agent Confidence
-            </span>
-            <ConfidenceBar value={data.agentConfidence} />
-          </div>
-        )}
-      </div>
-
-      {/* ── Expanded detail panel ── */}
-      <div
-        className="overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out"
-        style={{
-          maxHeight: expanded ? "700px" : "0px",
-          opacity: expanded ? 1 : 0,
-        }}
-      >
-        <div className="border-t border-[var(--fintheon-border)]/10 px-4 py-3 flex flex-col gap-3">
-          {/* Countdown */}
-          {data.nextDate && (
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5">
-                <CalendarClock className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/60" />
-                <span className="text-[10px] font-mono text-[var(--fintheon-text)]/80">
-                  Next print: {data.nextDate}
-                </span>
-              </div>
-              <span
-                className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded"
-                style={{
-                  color:
-                    daysUntil(data.nextDate) <= 2
-                      ? "#EF4444"
-                      : daysUntil(data.nextDate) <= 7
-                        ? "#F59E0B"
-                        : "#34D399",
-                  backgroundColor:
-                    daysUntil(data.nextDate) <= 2
-                      ? "#EF444415"
-                      : daysUntil(data.nextDate) <= 7
-                        ? "#F59E0B15"
-                        : "#34D39915",
-                }}
-              >
-                {countdownLabel(data.nextDate)}
-              </span>
-            </div>
-          )}
-
-          {/* ── Historical Print Table ── */}
-          {history.length > 0 ? (
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider flex items-center gap-1">
-                  <BarChart3 className="w-3 h-3" />
-                  Print History ({history.length} prints)
-                </span>
-                {streak.type && streak.count > 1 && (
-                  <span
-                    className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded"
-                    style={{
-                      color: DIRECTION_CONFIG[streak.type]?.color ?? "#F59E0B",
-                      backgroundColor: `${DIRECTION_CONFIG[streak.type]?.color ?? "#F59E0B"}15`,
-                    }}
-                  >
-                    {streak.count}x {streak.type.toUpperCase()} streak
-                  </span>
-                )}
-              </div>
-              <div className="rounded-lg border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-bg)]/40 overflow-hidden">
-                <div className="grid grid-cols-6 gap-0 text-[8px] font-mono text-[var(--fintheon-muted)]/40 uppercase tracking-wider px-3 py-1.5 border-b border-[var(--fintheon-border)]/5">
-                  <span>Date</span>
-                  <span>Actual</span>
-                  <span>Forecast</span>
-                  <span>Previous</span>
-                  <span>Surprise</span>
-                  <span>IV</span>
-                </div>
-                {history.map((p, i) => (
-                  <div
-                    key={p.id ?? i}
-                    className={`grid grid-cols-6 gap-0 text-[10px] font-mono px-3 py-1.5 ${
-                      i > 0 ? "border-t border-[var(--fintheon-border)]/5" : ""
-                    }`}
-                  >
-                    <span className="text-[var(--fintheon-muted)]/60">
-                      {p.date?.slice(5) ?? "—"}
-                    </span>
-                    <span className="text-[var(--fintheon-text)]">
-                      {p.actual ?? "—"}
-                    </span>
-                    <span className="text-[var(--fintheon-text)]/70">
-                      {p.forecast ?? "—"}
-                    </span>
-                    <span className="text-[var(--fintheon-text)]/50">
-                      {p.previous ?? "—"}
-                    </span>
-                    <span
-                      style={{
-                        color: p.direction
-                          ? (DIRECTION_CONFIG[p.direction]?.color ?? "#F59E0B")
-                          : "var(--fintheon-muted)",
-                      }}
-                    >
-                      {p.surprise != null
-                        ? (p.surprise > 0 ? "+" : "") +
-                          p.surprise.toFixed(2) +
-                          "%"
-                        : "—"}
-                    </span>
-                    <span
-                      style={{
-                        color:
-                          p.ivScore != null
-                            ? ivHeatColor(p.ivScore)
-                            : "var(--fintheon-muted)",
-                      }}
-                    >
-                      {p.ivScore != null ? p.ivScore.toFixed(1) : "—"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : data.lastPrint ? (
-            <div>
-              <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1.5">
-                Recent Print History
-              </span>
-              <div className="rounded-lg border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-bg)]/40 overflow-hidden">
-                <div className="grid grid-cols-5 gap-0 text-[8px] font-mono text-[var(--fintheon-muted)]/40 uppercase tracking-wider px-3 py-1.5 border-b border-[var(--fintheon-border)]/5">
-                  <span>Date</span>
-                  <span>Actual</span>
-                  <span>Forecast</span>
-                  <span>Previous</span>
-                  <span>Result</span>
-                </div>
-                <div className="grid grid-cols-5 gap-0 text-[10px] font-mono px-3 py-2">
-                  <span className="text-[var(--fintheon-muted)]/60">
-                    {data.lastPrint.date?.slice(5) ?? "—"}
-                  </span>
-                  <span className="text-[var(--fintheon-text)]">
-                    {data.lastPrint.actual}
-                  </span>
-                  <span className="text-[var(--fintheon-text)]/70">
-                    {data.lastPrint.forecast}
-                  </span>
-                  <span className="text-[var(--fintheon-text)]/50">
-                    {data.lastPrint.previous}
-                  </span>
-                  <span
-                    style={{
-                      color:
-                        DIRECTION_CONFIG[data.lastPrint.direction ?? "inline"]
-                          ?.color ?? "#F59E0B",
-                    }}
-                  >
-                    {data.lastPrint.surprise != null
-                      ? (data.lastPrint.surprise > 0 ? "+" : "") +
-                        data.lastPrint.surprise.toFixed(2)
-                      : "—"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          {/* ── Scoring Breakdown (from most recent scored item) ── */}
-          {latestScored && latestScored.subScores && (
-            <div>
-              <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider flex items-center gap-1 mb-1.5">
-                <Activity className="w-3 h-3" />
-                Scoring Engine Breakdown
-              </span>
-              <div className="rounded-lg border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-bg)]/40 px-3 py-2.5 flex flex-col gap-1.5">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-mono text-[var(--fintheon-text)]/80">
-                    IV:{" "}
-                    <span
-                      className="font-bold"
-                      style={{ color: ivHeatColor(latestScored.ivScore ?? 0) }}
-                    >
-                      {latestScored.ivScore?.toFixed(1) ?? "—"}
-                    </span>
-                    /10
-                  </span>
-                  <div className="flex items-center gap-2">
-                    {latestScored.macroLevel && (
-                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]">
-                        L{latestScored.macroLevel}
-                      </span>
-                    )}
-                    {latestScored.sentiment && (
-                      <span className="text-[9px] font-mono text-[var(--fintheon-muted)]/50">
-                        {latestScored.sentiment}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <SubScoreBar
-                  label="Event Wt"
-                  value={latestScored.subScores.eventWeight ?? 0}
-                  max={10}
-                />
-                <SubScoreBar
-                  label="Timing"
-                  value={latestScored.subScores.timing ?? 0}
-                  max={3}
-                />
-                <SubScoreBar
-                  label="Deviation"
-                  value={latestScored.subScores.deviation ?? 0}
-                  max={3}
-                />
-                <SubScoreBar
-                  label="Momentum"
-                  value={latestScored.subScores.momentum ?? 0}
-                  max={2}
-                />
-                <SubScoreBar
-                  label="VIX Ctx"
-                  value={latestScored.subScores.vixContext ?? 0}
-                  max={10}
-                />
-                {latestScored.subScores.vixMultiplier != null &&
-                  latestScored.subScores.vixMultiplier !== 1 && (
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[8px] font-mono text-[var(--fintheon-muted)]/40">
-                        VIX Multiplier
-                      </span>
-                      <span className="text-[9px] font-mono text-[var(--fintheon-accent)]">
-                        {latestScored.subScores.vixMultiplier.toFixed(2)}x
-                      </span>
-                    </div>
-                  )}
-                {latestScored.subScores.regimeName && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-[8px] font-mono text-[var(--fintheon-muted)]/40">
-                      Regime
-                    </span>
-                    <span className="text-[9px] font-mono text-[var(--fintheon-muted)]/60">
-                      {latestScored.subScores.regimeName}
-                      {latestScored.subScores.regimeMultiplier != null &&
-                      latestScored.subScores.regimeMultiplier !== 1
-                        ? ` (${latestScored.subScores.regimeMultiplier.toFixed(2)}x)`
-                        : ""}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ── Scored Items Feed (related RiskFlow items) ── */}
-          {scoredItems.length > 1 && (
-            <div>
-              <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1.5">
-                Related Scored Items ({scoredItems.length})
-              </span>
-              <div className="flex flex-col gap-1">
-                {scoredItems.slice(0, 5).map((s) => (
-                  <div
-                    key={s.id}
-                    className="flex items-center gap-2 px-2 py-1 rounded bg-[var(--fintheon-bg)]/30 border border-[var(--fintheon-border)]/5"
-                  >
-                    <span
-                      className="text-[10px] font-mono font-bold w-[28px]"
-                      style={{ color: ivHeatColor(s.ivScore ?? 0) }}
-                    >
-                      {s.ivScore?.toFixed(1) ?? "—"}
-                    </span>
-                    <span className="text-[9px] text-[var(--fintheon-text)]/60 truncate flex-1">
-                      {s.headline}
-                    </span>
-                    {s.publishedAt && (
-                      <span className="text-[8px] font-mono text-[var(--fintheon-muted)]/30 flex-shrink-0">
-                        {new Date(s.publishedAt).toLocaleDateString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Market Impact — shows if scored items have marketImpact data */}
-          {scoredItems.some((s) => s.marketImpact) && (
-            <div>
-              <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1.5">
-                Market Impact (Day Close)
-              </span>
-              <div className="grid grid-cols-3 gap-2">
-                {(["nq", "es", "ym"] as const).map((sym) => {
-                  const impact = scoredItems.find((s) => s.marketImpact?.[sym])
-                    ?.marketImpact?.[sym];
-                  if (!impact) return null;
-                  const color =
-                    impact.percent > 0
-                      ? "var(--fintheon-low)"
-                      : impact.percent < 0
-                        ? "var(--fintheon-severe)"
-                        : "var(--fintheon-muted)";
-                  return (
-                    <div
-                      key={sym}
-                      className="rounded bg-[var(--fintheon-bg)]/40 border border-[var(--fintheon-border)]/5 px-2 py-1.5"
-                    >
-                      <span className="text-[8px] font-mono text-[var(--fintheon-muted)]/40 uppercase block">
-                        {sym.toUpperCase()}
-                      </span>
-                      <span
-                        className="text-[11px] font-mono font-bold"
-                        style={{ color }}
-                      >
-                        {impact.points > 0 ? "+" : ""}
-                        {impact.points.toFixed(0)} pts
-                      </span>
-                      <span
-                        className="text-[9px] font-mono block"
-                        style={{ color }}
-                      >
-                        {impact.percent > 0 ? "+" : ""}
-                        {impact.percent.toFixed(2)}%
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Agent reasoning */}
-          {hasAgent && data.agentConfidence != null && (
-            <div>
-              <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1">
-                Agent Reasoning
-              </span>
-              <p className="text-[10px] text-[var(--fintheon-muted)]/50 leading-relaxed">
-                Model projects{" "}
-                <span className="font-bold" style={{ color: cfg.color }}>
-                  {cfg.label}
-                </span>{" "}
-                with {Math.round((data.agentConfidence ?? 0) * 100)}% confidence
-                based on recent macro signals and historical print patterns.
-                {streak.type && streak.count > 1 && (
-                  <>
-                    {" "}
-                    Current {streak.count}x {streak.type} streak suggests{" "}
-                    {streak.type === "beat"
-                      ? "upward bias"
-                      : streak.type === "miss"
-                        ? "downward pressure"
-                        : "range-bound action"}
-                    .
-                  </>
-                )}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 interface SanctumEconIntelProps {
+  /** @deprecated Kept for back-compat — not used on the new page. */
   expanded?: boolean;
+  /** @deprecated Kept for back-compat — not used on the new page. */
   context?: SimulationContext | null;
-  /** @deprecated Risk Sector fuse cards removed — kept for call-site compat; Track 4 repurposes this page. */
+  /** @deprecated Kept for back-compat — not used on the new page. */
   categoryScores?: MiroSharkCategoryScore[];
 }
 
-export function SanctumEconIntel({ expanded, context }: SanctumEconIntelProps) {
-  const [cards, setCards] = useState<SectionedEconCard[]>(ECON_TICKERS);
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(false);
-  const [retryKey, setRetryKey] = useState(0);
-  const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
-  const [historyCache, setHistoryCache] = useState<
-    Record<string, { prints: EconHistoryPrint[]; scored: EconScoredItem[] }>
-  >({});
+export function SanctumEconIntel(_props: SanctumEconIntelProps) {
+  const [catalogue, setCatalogue] =
+    useState<EconEventCardData[]>(ECON_CATALOGUE_SEED);
+  const [selection, setSelection] = useState<{
+    events: EconEventCardData[];
+    timespan: EconTimespan;
+  } | null>(null);
+  const [generating, setGenerating] = useState(false);
 
+  // Enrich catalogue from /api/data/econ-calendar (next release dates, release counts)
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
 
-    async function fetchEconData() {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
+    (async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/data/econ-calendar`, {
+        const r = await fetch(`${API_BASE}/api/data/econ-calendar`, {
           signal: controller.signal,
         });
-        if (!res.ok) throw new Error(`${res.status}`);
-        const data = await res.json();
-
+        if (!r.ok || cancelled) return;
+        const data = await r.json();
         if (cancelled) return;
-        setFetchError(false);
 
-        // Merge fetched data with our ticker cards
-        if (Array.isArray(data.events)) {
-          setCards((prev) =>
-            prev.map((card) => {
-              const match = data.events.find(
-                (e: { aiTicker?: string; name?: string; country?: string }) =>
-                  (e.country === "US" ||
-                    e.country === "United States" ||
-                    !e.country) &&
-                  (e.aiTicker === card.ticker ||
-                    e.name?.toLowerCase().includes(card.ticker.toLowerCase())),
-              );
-              if (!match) return card;
-              return {
-                ...card,
-                nextDate: match.date,
-                lastPrint: match.lastPrint ?? card.lastPrint,
-                agentConsensus: match.agentConsensus ?? card.agentConsensus,
-                agentConfidence: match.agentConfidence ?? card.agentConfidence,
-              };
-            }),
-          );
-        }
+        setCatalogue((prev) =>
+          prev.map((item) => {
+            const match = (data.events ?? []).find(
+              (e: { aiTicker?: string; name?: string; country?: string }) =>
+                (e.country === "US" ||
+                  e.country === "United States" ||
+                  !e.country) &&
+                (e.aiTicker === item.ticker ||
+                  e.name?.toLowerCase().includes(item.ticker.toLowerCase())),
+            );
+            if (!match) return item;
+            return {
+              ...item,
+              nextRelease: match.date ?? item.nextRelease,
+              lastSeen: match.lastPrint?.date ?? item.lastSeen,
+              releasesCollected:
+                match.releasesCollected ?? item.releasesCollected,
+            };
+          }),
+        );
       } catch {
-        if (!cancelled) setFetchError(true);
+        /* silent — fuses/catalogue just stay seeded */
       } finally {
         clearTimeout(timeout);
-        if (!cancelled) setLoading(false);
       }
-    }
+    })();
 
-    fetchEconData();
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearTimeout(timeout);
+    };
+  }, []);
+
+  // Prefill release counts by peeking at econ-history for each ticker in parallel (best-effort)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const results = await Promise.allSettled(
+        ECON_CATALOGUE_SEED.map((s) =>
+          fetch(
+            `${API_BASE}/api/data/econ-history/${encodeURIComponent(s.ticker)}?limit=50`,
+          ).then((r) => (r.ok ? r.json() : null)),
+        ),
+      );
+      if (cancelled) return;
+      setCatalogue((prev) =>
+        prev.map((item, idx) => {
+          const res = results[idx];
+          if (res.status !== "fulfilled" || !res.value) return item;
+          const history = res.value.history as
+            | { date: string | null }[]
+            | undefined;
+          if (!history) return item;
+          const latestDate = history[0]?.date ?? item.lastSeen;
+          return {
+            ...item,
+            releasesCollected: history.length,
+            lastSeen: latestDate,
+          };
+        }),
+      );
+    })();
     return () => {
       cancelled = true;
     };
-  }, [retryKey]);
+  }, []);
 
-  /** Fetch historical prints + scoring for a ticker on-demand */
-  const fetchHistory = useCallback(
-    async (ticker: string) => {
-      if (historyCache[ticker]) return;
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
-      try {
-        const res = await fetch(
-          `${API_BASE}/api/data/econ-history/${encodeURIComponent(ticker)}?limit=10`,
-          { signal: controller.signal },
-        );
-        if (!res.ok) return;
-        const data = await res.json();
-        setHistoryCache((prev) => ({
-          ...prev,
-          [ticker]: {
-            prints: data.history ?? [],
-            scored: data.scoring ?? [],
-          },
-        }));
-      } catch {
-        // Timeout or network failure — card shows fallback
-      } finally {
-        clearTimeout(timeout);
-      }
-    },
-    [historyCache],
-  );
+  const pulses = useMemo(() => computePulses(catalogue), [catalogue]);
+
+  const handleGenerate = (next: {
+    events: EconEventCardData[];
+    timespan: EconTimespan;
+  }) => {
+    setGenerating(true);
+    setSelection(null);
+    // Small delay so the fade-out/fade-in reads as a deliberate transition rather than a flash
+    setTimeout(() => {
+      setSelection(next);
+      setGenerating(false);
+    }, 220);
+  };
 
   return (
-    <div className={expanded ? "flex flex-col gap-4" : ""}>
-      {/* Economic Event Cards — grouped by section */}
-      {ECON_SECTIONS.map((sectionName, sectionIdx) => {
-        const sectionCards = cards.filter((c) => c.section === sectionName);
-        if (sectionCards.length === 0) return null;
-        return (
-          <div key={sectionName} className={sectionIdx > 0 ? "mt-4" : ""}>
-            <div className="text-[9px] text-[var(--fintheon-muted)]/40 font-mono mb-2 uppercase tracking-wider">
-              {sectionName}
-            </div>
-            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
-              {sectionCards.map((card) => (
-                <EconCard
-                  key={card.ticker}
-                  data={card}
-                  expanded={expandedTicker === card.ticker}
-                  onToggle={() =>
-                    setExpandedTicker((prev) =>
-                      prev === card.ticker ? null : card.ticker,
-                    )
-                  }
-                  historyCache={historyCache}
-                  onFetchHistory={fetchHistory}
-                />
-              ))}
-            </div>
-          </div>
-        );
-      })}
+    <div className="flex flex-col gap-4 h-full min-h-0">
+      {/* ── Split header row: Econ Pulse (left) | Instruments (right) ── */}
+      <div className="shrink-0 flex items-stretch rounded-md overflow-hidden">
+        <EconKpiFuses
+          catalogue={catalogue}
+          inflationPulse={pulses.inflation}
+          laborPulse={pulses.labor}
+          supplyPulse={pulses.supply}
+        />
+        <FadingVRule />
+        <EconInstrumentFuses />
+      </div>
 
-      {loading && (
-        <p className="text-[10px] text-[var(--fintheon-muted)]/30 text-center mt-2">
-          Fetching economic data...
-        </p>
-      )}
-      {!loading && fetchError && (
-        <div className="text-center mt-2 flex flex-col items-center gap-1">
-          <p className="text-[10px] text-[var(--fintheon-muted)]/40">
-            No data available — backend may be offline
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              setLoading(true);
-              setFetchError(false);
-              setRetryKey((k) => k + 1);
-            }}
-            className="text-[10px] font-mono text-[var(--fintheon-accent)] hover:text-[var(--fintheon-accent)]/80 underline underline-offset-2"
-          >
-            Retry
-          </button>
-        </div>
-      )}
+      {/* Fading horizontal ruler */}
+      <FadingHRule />
 
-      {/* FRED Macro Indicators */}
-      {expanded &&
-        context &&
-        Object.keys(context.fredIndicators).length > 0 && (
-          <div className="mt-6">
-            <div className="text-[9px] text-[var(--fintheon-muted)]/40 font-mono mb-2 uppercase tracking-wider">
-              Macro Stress Indicators (FRED)
-            </div>
-            <div className="grid grid-cols-2 xl:grid-cols-5 gap-3">
-              {context.vixLevel != null && (
-                <div className="rounded-lg border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-4 py-3">
-                  <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">
-                    VIX
-                  </span>
-                  <span className="text-lg font-mono font-bold text-[var(--fintheon-text)]">
-                    {context.vixLevel.toFixed(1)}
-                  </span>
-                </div>
-              )}
-              {Object.entries(context.fredIndicators).map(([key, val]) => (
-                <div
-                  key={key}
-                  className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-4 py-3"
-                >
-                  <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">
-                    {key}
-                  </span>
-                  <span className="text-lg font-mono font-bold text-[var(--fintheon-text)]">
-                    {val?.toFixed(2) ?? "—"}
-                  </span>
-                </div>
-              ))}
-            </div>
-            {context.fredFetchedAt && (
-              <p className="text-[8px] text-[var(--fintheon-muted)]/20 font-mono mt-1">
-                Last updated: {new Date(context.fredFetchedAt).toLocaleString()}
-              </p>
-            )}
+      {/* ── Event filter ── */}
+      <div className="shrink-0">
+        <EconEventFilter
+          catalogue={catalogue}
+          isGenerating={generating}
+          onGenerate={handleGenerate}
+        />
+      </div>
+
+      {/* ── Progressive card container ── */}
+      <div className="flex-1 min-h-0 overflow-y-auto rounded-md border border-[var(--fintheon-accent)]/8 bg-[var(--fintheon-surface)]/20">
+        {!selection && !generating && (
+          <div className="h-full flex flex-col items-center justify-center gap-2 py-8 text-[var(--fintheon-muted)]/45">
+            <CalendarClock className="w-5 h-5" />
+            <p className="text-[11px]">
+              Pick up to 4 events and a timespan, then hit Generate.
+            </p>
           </div>
         )}
+        {selection && (
+          <div className="flex flex-col divide-y divide-[var(--fintheon-border)]/8">
+            {selection.events.map((evt, idx) => (
+              <EconEventCard
+                key={evt.ticker}
+                event={evt}
+                appearDelay={idx * 120}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function computePulses(catalogue: EconEventCardData[]): {
+  inflation?: number;
+  labor?: number;
+  supply?: number;
+} {
+  // Pulses are placeholders in 4a — they'll be driven by /api/econ/synthesize in 4b.
+  // For now: linear scaling of per-category coverage so the fuses render believably instead of at 0.
+  const byCat = {
+    "price-stability": catalogue.filter(
+      (c) => c.category === "price-stability",
+    ),
+    employment: catalogue.filter((c) => c.category === "employment"),
+    "supply-chain": catalogue.filter((c) => c.category === "supply-chain"),
+  };
+  const score = (items: EconEventCardData[]) => {
+    if (items.length === 0) return undefined;
+    const covered = items.filter((i) => i.releasesCollected > 0).length;
+    // Placeholder: 3 + 4*coverageRatio so filled pulses hover around 3–7 by default
+    return 3 + 4 * (covered / items.length);
+  };
+  return {
+    inflation: score(byCat["price-stability"]),
+    labor: score(byCat["employment"]),
+    supply: score(byCat["supply-chain"]),
+  };
+}
+
+function FadingVRule() {
+  return (
+    <div className="w-px shrink-0 relative">
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(to bottom, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
+          opacity: 0.18,
+        }}
+      />
+    </div>
+  );
+}
+
+function FadingHRule() {
+  return (
+    <div className="h-px relative">
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(to right, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
+          opacity: 0.18,
+        }}
+      />
     </div>
   );
 }
