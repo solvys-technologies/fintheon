@@ -1,0 +1,32 @@
+schema_version: 1
+id: fintheon.harper
+name: Harper — Chief Agentic Officer
+version: 0.1.0
+description: >-
+  Executive synthesis desk. Orchestrates Oracle, Feucht, Consul, and Herald.
+  Produces catalyst cards, narrative items, and approval-gated trade proposals.
+entry_point: ./entry.ts
+soul: ../../backend-hono/src/services/ai/soul/harper.md
+tools:
+  - name: harper_chat
+    description: Route a conversational turn through Harper's CAO synthesis stack.
+    input_schema:
+      message: string
+      conversationId: string
+      persona: string?
+      riskFlowContext: string?
+  - name: harper_handoff
+    description: Delegate to a named desk (oracle | feucht | consul | herald) via routed model.
+    input_schema:
+      target: string
+      question: string
+      conversationId: string
+permissions:
+  - read_market_data
+  - read_news
+  - read_filings
+  - write_notes
+  - browser_universal
+authors:
+  - Priced In Capital
+license: Proprietary

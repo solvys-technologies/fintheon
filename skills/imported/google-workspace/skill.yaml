@@ -1,0 +1,27 @@
+schema_version: 1
+id: fintheon.imported.google-workspace
+name: Google Workspace (wrapped)
+version: 0.1.0
+description: >-
+  Wraps existing Gmail + Google Calendar hooks as a skill — read-only for
+  calendar peek, draft-only for email (never auto-sends, matches TP's no-exfil
+  rule).
+entry_point: ./entry.ts
+tools:
+  - name: gmail_search
+    description: Search Gmail threads matching a query string.
+    input_schema:
+      query: string
+  - name: gcal_peek
+    description: Read the next N events on TP's primary calendar.
+    input_schema:
+      max_results: number
+permissions:
+  - read_news
+security_scan:
+  data_exfil_risks: []
+  prompt_injection_vectors: []
+  destructive_ops: []
+authors:
+  - Priced In Capital
+license: Proprietary

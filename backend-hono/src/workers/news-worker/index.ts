@@ -6,7 +6,11 @@
 import "dotenv/config";
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
-import { startScheduler, stopScheduler, getSchedulerSnapshot } from "./scheduler.js";
+import {
+  startScheduler,
+  stopScheduler,
+  getSchedulerSnapshot,
+} from "./scheduler.js";
 
 const PORT = Number(process.env.NEWS_WORKER_PORT ?? 8082);
 const START_AT = new Date().toISOString();
@@ -64,6 +68,8 @@ async function main() {
 }
 
 main().catch((err) => {
-  log("boot_error", { error: err instanceof Error ? err.message : String(err) });
+  log("boot_error", {
+    error: err instanceof Error ? err.message : String(err),
+  });
   process.exit(1);
 });

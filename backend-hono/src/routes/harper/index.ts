@@ -454,7 +454,10 @@ export function createHarperRoutes() {
     const body = await c.req.json().catch(() => ({}));
     const parsed = BrowseTaskInputSchema.safeParse(body);
     if (!parsed.success) {
-      return c.json({ error: "invalid input", issues: parsed.error.issues }, 400);
+      return c.json(
+        { error: "invalid input", issues: parsed.error.issues },
+        400,
+      );
     }
     const result = await browseTask(parsed.data);
     const status = result.success

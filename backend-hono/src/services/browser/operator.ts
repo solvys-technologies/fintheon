@@ -61,7 +61,12 @@ export interface BrowseTaskResult {
   cost_usd: number;
   duration_ms: number;
   failure_reason?: string;
-  error_code?: "URL_NOT_ALLOWED" | "BUDGET_EXCEEDED" | "REPLAY_FAILED" | "LLM_UNAVAILABLE" | "NAV_FAILED";
+  error_code?:
+    | "URL_NOT_ALLOWED"
+    | "BUDGET_EXCEEDED"
+    | "REPLAY_FAILED"
+    | "LLM_UNAVAILABLE"
+    | "NAV_FAILED";
   allowed_domain_suggestion?: string;
 }
 
@@ -73,9 +78,16 @@ function schemaHash(
 ): string | null {
   if (!schema && !fields) return null;
   const source = fields
-    ? JSON.stringify(Object.keys(fields).sort().map((k) => [k, fields[k]]))
+    ? JSON.stringify(
+        Object.keys(fields)
+          .sort()
+          .map((k) => [k, fields[k]]),
+      )
     : (schema as unknown as { _def?: unknown })?._def
-      ? JSON.stringify((schema as unknown as { _def: unknown })._def).slice(0, 2000)
+      ? JSON.stringify((schema as unknown as { _def: unknown })._def).slice(
+          0,
+          2000,
+        )
       : "schema";
   return createHash("sha256").update(source).digest("hex").slice(0, 16);
 }
@@ -91,7 +103,10 @@ function makeCacheKey(
 
 // ── Allow-list gate (universal mode is permitted; allowlist still fast-path) ──
 
-function checkAllowlist(url: string): { allowed: boolean; suggestion?: string } {
+function checkAllowlist(url: string): {
+  allowed: boolean;
+  suggestion?: string;
+} {
   if (process.env.BROWSER_UNIVERSAL_ENABLED === "true") {
     return { allowed: true };
   }
@@ -235,12 +250,18 @@ async function recordRun(row: {
 
 // ── Replay (zero-LLM cache hit) ───────────────────────────────────────────
 
-async function replayAction(page: Page, action: BrowseTaskAction): Promise<void> {
+async function replayAction(
+  page: Page,
+  action: BrowseTaskAction,
+): Promise<void> {
   switch (action.action) {
     case "navigate": {
       const target = action.value ?? action.xpath ?? "";
       if (!target) throw new Error("navigate action missing target");
-      await page.goto(target, { timeout: NAV_TIMEOUT_MS, waitUntil: "domcontentloaded" });
+      await page.goto(target, {
+        timeout: NAV_TIMEOUT_MS,
+        waitUntil: "domcontentloaded",
+      });
       return;
     }
     case "click": {
@@ -258,7 +279,9 @@ async function replayAction(page: Page, action: BrowseTaskAction): Promise<void>
     case "waitFor": {
       const selector = action.waitFor ?? action.xpath;
       if (selector) {
-        await page.waitForSelector(selector, { timeout: 10_000 }).catch(() => {});
+        await page
+          .waitForSelector(selector, { timeout: 10_000 })
+          .catch(() => {});
       } else {
         await page
           .waitForLoadState("domcontentloaded", { timeout: 8_000 })
@@ -269,7 +292,9 @@ async function replayAction(page: Page, action: BrowseTaskAction): Promise<void>
     case "extract":
       return;
     default:
-      throw new Error(`unknown action: ${(action as { action: string }).action}`);
+      throw new Error(
+        `unknown action: ${(action as { action: string }).action}`,
+      );
   }
 }
 
@@ -338,20 +363,23 @@ async function runLlmExtraction(
     bodyText,
   );
 
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
+  const response = await fetch(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "anthropic/claude-haiku-4-5",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 800,
+        temperature: 0,
+      }),
+      signal: AbortSignal.timeout(20_000),
     },
-    body: JSON.stringify({
-      model: "anthropic/claude-haiku-4-5",
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: 800,
-      temperature: 0,
-    }),
-    signal: AbortSignal.timeout(20_000),
-  });
+  );
 
   if (!response.ok) {
     throw new Error(`OpenRouter HTTP ${response.status}`);
@@ -363,11 +391,15 @@ async function runLlmExtraction(
   };
 
   const content = json.choices?.[0]?.message?.content ?? "";
-  const input_tokens = json.usage?.prompt_tokens ?? Math.ceil(prompt.length / 4);
-  const output_tokens = json.usage?.completion_tokens ?? Math.ceil(content.length / 4);
+  const input_tokens =
+    json.usage?.prompt_tokens ?? Math.ceil(prompt.length / 4);
+  const output_tokens =
+    json.usage?.completion_tokens ?? Math.ceil(content.length / 4);
   const cost_usd = Number(
-    ((input_tokens / 1_000_000) * HAIKU_IN_PER_MTOK +
-      (output_tokens / 1_000_000) * HAIKU_OUT_PER_MTOK).toFixed(6),
+    (
+      (input_tokens / 1_000_000) * HAIKU_IN_PER_MTOK +
+      (output_tokens / 1_000_000) * HAIKU_OUT_PER_MTOK
+    ).toFixed(6),
   );
 
   if (cost_usd > budget) {
@@ -376,7 +408,10 @@ async function runLlmExtraction(
 
   let data: unknown = null;
   try {
-    const stripped = content.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+    const stripped = content
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
     data = JSON.parse(stripped);
   } catch {
     data = { raw: content };
@@ -385,7 +420,10 @@ async function runLlmExtraction(
   if (opts.extract_schema) {
     const parsed = opts.extract_schema.safeParse(data);
     if (!parsed.success) {
-      data = { ...(data as Record<string, unknown>), _schema_errors: parsed.error.issues };
+      data = {
+        ...(data as Record<string, unknown>),
+        _schema_errors: parsed.error.issues,
+      };
     } else {
       data = parsed.data;
     }
@@ -399,7 +437,9 @@ async function runLlmExtraction(
 export class OperatorBudgetExceededError extends Error {
   code = "BUDGET_EXCEEDED" as const;
   constructor(url: string, cap: number, spend: number) {
-    super(`Budget $${cap.toFixed(4)} exceeded for ${url} (spent $${spend.toFixed(4)})`);
+    super(
+      `Budget $${cap.toFixed(4)} exceeded for ${url} (spent $${spend.toFixed(4)})`,
+    );
   }
 }
 
@@ -412,7 +452,9 @@ export class OperatorLlmUnavailableError extends Error {
 
 // ── Public API ────────────────────────────────────────────────────────────
 
-export async function browseTask(opts: BrowseTaskOpts): Promise<BrowseTaskResult> {
+export async function browseTask(
+  opts: BrowseTaskOpts,
+): Promise<BrowseTaskResult> {
   const started = Date.now();
   const budget = opts.budget_usd ?? DEFAULT_BUDGET_USD;
   const useCache = opts.use_cache !== false && DEFAULT_USE_CACHE;
@@ -440,7 +482,8 @@ export async function browseTask(opts: BrowseTaskOpts): Promise<BrowseTaskResult
       objective: opts.objective,
       cost_usd: 0,
       duration_ms: Date.now() - started,
-      failure_reason: "URL outside allow-list and BROWSER_UNIVERSAL_ENABLED=false",
+      failure_reason:
+        "URL outside allow-list and BROWSER_UNIVERSAL_ENABLED=false",
       error_code: "URL_NOT_ALLOWED",
       allowed_domain_suggestion: gate.suggestion,
     };
@@ -533,7 +576,9 @@ export async function browseTask(opts: BrowseTaskOpts): Promise<BrowseTaskResult
     if (status === 0 || status >= 500 || status === 403 || status === 429) {
       throw new Error(`HTTP ${status}`);
     }
-    await handle.page.waitForLoadState("domcontentloaded", { timeout: 8_000 }).catch(() => {});
+    await handle.page
+      .waitForLoadState("domcontentloaded", { timeout: 8_000 })
+      .catch(() => {});
     const rawHtml = await handle.page.content();
     const body = stripHtml(rawHtml);
     bodyPreview = body.slice(0, 400);
@@ -543,7 +588,10 @@ export async function browseTask(opts: BrowseTaskOpts): Promise<BrowseTaskResult
       cost_usd = outcome.cost_usd;
       extracted = outcome.data;
     } else {
-      extracted = { title: await handle.page.title().catch(() => ""), body_preview: bodyPreview };
+      extracted = {
+        title: await handle.page.title().catch(() => ""),
+        body_preview: bodyPreview,
+      };
     }
 
     if (allowEntry) await incrementQuota(opts.url);
@@ -618,7 +666,8 @@ export const BROWSE_TASK_TOOL_SCHEMA = {
       },
       use_cache: {
         type: "boolean",
-        description: "Prefer cached XPath replay when available (default true).",
+        description:
+          "Prefer cached XPath replay when available (default true).",
       },
     },
   },
@@ -653,10 +702,17 @@ export async function getBrowseTaskStats24h(): Promise<{
       .select("cache_hit, cost_usd")
       .gte("created_at", cutoff);
     if (error || !data) {
-      return { runs_24h: 0, hits_24h: 0, cache_hit_rate_24h: 0, cost_usd_24h: 0 };
+      return {
+        runs_24h: 0,
+        hits_24h: 0,
+        cache_hit_rate_24h: 0,
+        cost_usd_24h: 0,
+      };
     }
     const runs = data.length;
-    const hits = data.filter((r) => (r as { cache_hit?: boolean }).cache_hit).length;
+    const hits = data.filter(
+      (r) => (r as { cache_hit?: boolean }).cache_hit,
+    ).length;
     const cost = data.reduce(
       (sum, r) => sum + Number((r as { cost_usd?: number }).cost_usd ?? 0),
       0,

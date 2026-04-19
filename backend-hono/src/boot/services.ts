@@ -388,7 +388,39 @@ export async function bootBackground(): Promise<void> {
 
   // [claude-code 2026-04-19] Relay connector moved to bootCritical — duplicate call removed here.
 
+  // [S27-T10 W2e] Register local skills with the Hermes sidecar so cross-agent skill invocation
+  // works identically whether the caller is Harper (MCP) or the sidecar (/v1/chat tool call).
+  void registerLocalSkillsWithSidecar().catch((err) =>
+    log.warn("Sidecar skill registration skipped (non-fatal)", {
+      error: String(err),
+    }),
+  );
+
   log.info(`Background boot complete in ${Date.now() - t0}ms`);
+}
+
+async function registerLocalSkillsWithSidecar(): Promise<void> {
+  const { isSidecarEnabled, sidecarClient } =
+    await import("../services/ai/sidecar-client.js");
+  if (!isSidecarEnabled()) return;
+  const { listAllSkills } = await import("../services/skills/registry.js");
+  const skills = await listAllSkills();
+  for (const s of skills) {
+    try {
+      await sidecarClient.skills.invoke("register_local", {
+        skill_id: s.manifest.id,
+        version: s.manifest.version,
+        entry_path: s.path,
+        permissions: s.manifest.permissions,
+      });
+    } catch (err) {
+      log.warn("sidecar skill register failed", {
+        skill_id: s.manifest.id,
+        error: String(err),
+      });
+    }
+  }
+  log.info(`Registered ${skills.length} local skills with sidecar`);
 }
 
 /**

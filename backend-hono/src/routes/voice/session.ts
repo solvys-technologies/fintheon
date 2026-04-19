@@ -196,7 +196,10 @@ export async function handleSessionTurn(c: Context) {
           role: "assistant",
           content: assistantText + note,
           model: "hermes-harper-voice",
-          metadata: { channel: "voice", interrupted: controller.signal.aborted },
+          metadata: {
+            channel: "voice",
+            interrupted: controller.signal.aborted,
+          },
         });
       }
     }

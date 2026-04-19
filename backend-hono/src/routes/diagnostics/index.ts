@@ -49,11 +49,19 @@ interface DiagnosticsResponse {
   };
   news_worker?: {
     age_seconds: number | null;
-    tiers: Array<{ tier: string; last_run_at: string | null; age_seconds: number | null; items_ingested: number; errors: number }>;
+    tiers: Array<{
+      tier: string;
+      last_run_at: string | null;
+      age_seconds: number | null;
+      items_ingested: number;
+      errors: number;
+    }>;
   };
 }
 
-async function getNewsWorkerSnapshot(): Promise<DiagnosticsResponse["news_worker"]> {
+async function getNewsWorkerSnapshot(): Promise<
+  DiagnosticsResponse["news_worker"]
+> {
   const { getSupabaseClient } = await import("../../config/supabase.js");
   const sb = getSupabaseClient();
   if (!sb) return { age_seconds: null, tiers: [] };
@@ -63,12 +71,14 @@ async function getNewsWorkerSnapshot(): Promise<DiagnosticsResponse["news_worker
       .select("tier, last_run_at, items_ingested, errors");
     if (error || !data) return { age_seconds: null, tiers: [] };
     const now = Date.now();
-    const tiers = (data as Array<{
-      tier: string;
-      last_run_at: string | null;
-      items_ingested: number;
-      errors: number;
-    }>).map((row) => ({
+    const tiers = (
+      data as Array<{
+        tier: string;
+        last_run_at: string | null;
+        items_ingested: number;
+        errors: number;
+      }>
+    ).map((row) => ({
       tier: row.tier,
       last_run_at: row.last_run_at,
       age_seconds: row.last_run_at
@@ -77,7 +87,9 @@ async function getNewsWorkerSnapshot(): Promise<DiagnosticsResponse["news_worker
       items_ingested: Number(row.items_ingested ?? 0),
       errors: Number(row.errors ?? 0),
     }));
-    const ages = tiers.map((t) => t.age_seconds).filter((n): n is number => typeof n === "number");
+    const ages = tiers
+      .map((t) => t.age_seconds)
+      .filter((n): n is number => typeof n === "number");
     const age_seconds = ages.length > 0 ? Math.min(...ages) : null;
     return { age_seconds, tiers };
   } catch {
@@ -252,6 +264,110 @@ function auditEnvVars(): string[] {
   return missing;
 }
 
+// ── Smart Model Routing snapshot (T9 W2e) ────────────────────────────────
+// Aggregates the last 24h of routing_decisions rows per agent so the
+// RoutingWidget on the diagnostics page can show live per-agent cost + latency.
+
+interface RoutingAgentRow {
+  model: string;
+  calls: number;
+  total_cost_usd: number;
+  avg_latency_ms: number;
+}
+
+async function loadRoutingSnapshot(): Promise<{
+  last_24h: Record<string, RoutingAgentRow>;
+  budget_status: {
+    user_id: string;
+    used_usd: number;
+    cap_usd: number;
+    degraded: boolean;
+  };
+} | null> {
+  try {
+    const { getSupabaseClient } = await import("../../config/supabase.js");
+    const sb = getSupabaseClient();
+    if (!sb) return null;
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data } = await sb
+      .from("routing_decisions")
+      .select("agent_id, model, cost_usd, latency_ms")
+      .gte("created_at", since);
+    const rows = (data ?? []) as Array<{
+      agent_id: string;
+      model: string;
+      cost_usd: number | null;
+      latency_ms: number | null;
+    }>;
+    const agg: Record<
+      string,
+      { model: string; calls: number; cost: number; latencySum: number }
+    > = {};
+    for (const r of rows) {
+      const key = r.agent_id;
+      if (!agg[key]) {
+        agg[key] = { model: r.model, calls: 0, cost: 0, latencySum: 0 };
+      }
+      agg[key].calls += 1;
+      agg[key].cost += Number(r.cost_usd ?? 0);
+      agg[key].latencySum += Number(r.latency_ms ?? 0);
+      agg[key].model = r.model;
+    }
+    const last_24h: Record<string, RoutingAgentRow> = {};
+    for (const [agent, v] of Object.entries(agg)) {
+      last_24h[agent] = {
+        model: v.model,
+        calls: v.calls,
+        total_cost_usd: Number(v.cost.toFixed(6)),
+        avg_latency_ms: v.calls > 0 ? Math.round(v.latencySum / v.calls) : 0,
+      };
+    }
+
+    const { getBudgetStatus } = await import("../../services/ai/budget.js");
+    const budget = await getBudgetStatus(undefined);
+    return {
+      last_24h,
+      budget_status: {
+        user_id: budget.user_id,
+        used_usd: budget.used_usd,
+        cap_usd: budget.cap_usd,
+        degraded: budget.degraded,
+      },
+    };
+  } catch (err) {
+    log.warn("loadRoutingSnapshot failed", { error: String(err) });
+    return null;
+  }
+}
+
+// ── GEPA snapshot (T11) ──────────────────────────────────────────────────
+
+async function loadGepaSnapshot(): Promise<{
+  last_run_at: string | null;
+  evolutions_proposed_7d: number;
+  evolutions_merged_7d: number;
+  current_metric_deltas: Record<
+    string,
+    { accuracy: string; latency: string; cost: string }
+  >;
+} | null> {
+  try {
+    const { loadGepaDiagnostics } =
+      await import("../../services/gepa/runner.js");
+    return await loadGepaDiagnostics();
+  } catch (err) {
+    log.warn("loadGepaSnapshot failed (GEPA may be disabled)", {
+      error: String(err),
+    });
+    return {
+      last_run_at: null,
+      evolutions_proposed_7d: 0,
+      evolutions_merged_7d: 0,
+      current_metric_deltas: {},
+    };
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /*  Route                                                               */
 /* ------------------------------------------------------------------ */
@@ -283,13 +399,23 @@ export function createDiagnosticsRoutes(): Hono {
         ? "degraded"
         : "ok";
 
-    const response: DiagnosticsResponse = {
+    const [routing, gepa] = await Promise.all([
+      loadRoutingSnapshot(),
+      loadGepaSnapshot(),
+    ]);
+
+    const response: DiagnosticsResponse & {
+      routing?: unknown;
+      gepa?: unknown;
+    } = {
       timestamp: new Date().toISOString(),
       overall,
       services,
       missingEnvVars,
       browser_operator: browserStats,
       news_worker: newsWorker,
+      routing,
+      gepa,
     };
 
     log.info("Diagnostics check", { overall, elapsed: Date.now() - start });
@@ -297,6 +423,18 @@ export function createDiagnosticsRoutes(): Hono {
     const statusCode =
       overall === "ok" ? 200 : overall === "degraded" ? 207 : 503;
     return c.json(response, statusCode);
+  });
+
+  /* ------------------------------------------------------------------ */
+  /*  Routing snapshot — Smart Model Routing telemetry                   */
+  /* ------------------------------------------------------------------ */
+
+  router.get("/routing", async (c) => {
+    return c.json((await loadRoutingSnapshot()) ?? { last_24h: {} });
+  });
+
+  router.get("/gepa", async (c) => {
+    return c.json((await loadGepaSnapshot()) ?? { last_run_at: null });
   });
 
   /* ------------------------------------------------------------------ */

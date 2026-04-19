@@ -1,0 +1,32 @@
+# [claude-code 2026-04-19] S27-T11 W2e: Fly cron machine config for GEPA nightly run.
+# Deploys as a sibling machine to the fintheon-hermes app so sidecar calls are localhost-cheap.
+# Schedule: 06:00 UTC daily (matches local launchd 02:00 ET).
+#
+# Deploy: fly deploy -a fintheon-hermes --config fly.gepa-cron.toml --strategy rolling
+# Visibility: fly machines list -a fintheon-hermes | grep gepa-cron
+
+app = "fintheon-hermes"
+primary_region = "ord"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[processes]
+  gepa_cron = "bun run src/services/gepa/runner.ts"
+
+[[schedules]]
+  name = "gepa-nightly"
+  schedule = "0 6 * * *"  # 02:00 ET / 06:00 UTC
+  command = "bun run src/services/gepa/runner.ts"
+  region = "ord"
+  timeout = "15m"
+
+[env]
+  GEPA_ENABLED = "true"
+  HERMES_SIDECAR_ENABLED = "true"
+  HERMES_SIDECAR_URL = "http://fintheon-hermes.internal:8318"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

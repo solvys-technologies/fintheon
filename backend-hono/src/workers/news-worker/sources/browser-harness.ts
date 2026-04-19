@@ -25,9 +25,15 @@ function makeItemId(url: string, headline: string): string {
     .slice(0, 24);
 }
 
-function extractHeadlineFromBody(title: string | undefined, body: string): string {
+function extractHeadlineFromBody(
+  title: string | undefined,
+  body: string,
+): string {
   if (title && title.trim().length > 0) return title.slice(0, HEADLINE_MAX);
-  const firstLine = body.split(/\n|\. /).map((l) => l.trim()).find((l) => l.length > 15);
+  const firstLine = body
+    .split(/\n|\. /)
+    .map((l) => l.trim())
+    .find((l) => l.length > 15);
   return (firstLine ?? "untitled").slice(0, HEADLINE_MAX);
 }
 
