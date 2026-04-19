@@ -10,6 +10,9 @@ You are a release engineer. Follow every phase in order. Do not skip pre-flight.
 
 **CRITICAL RULES (from operational history):**
 
+- **STANDING PUSH AUTHORIZATION**: every invocation of this skill = commit → push → publish GH release → prune older releases in the current major-version namespace. Do NOT ask TP for push approval. That authorization is standing.
+- **Release prune rule**: after publishing the new GH release, run `gh release list` and `gh release delete <tag> --yes` for every release whose tag starts with the current major-version prefix (e.g. `v5.*`) EXCEPT the one just published. Keep exactly one release per major version at any time.
+- **Current major** = numeric prefix of the active deploy branch (e.g. `v5.*` while on `v5.22`). When the branch rolls to v6.x later, pivot the prune target.
 - Deploy must hit ALL 3 targets: backend (Fly.io), desktop frontend (Vercel), mobile PWA (Vercel)
 - Backend deploys to Fly.io app `fintheon` (fintheon.fly.dev) -- NEVER `pulse-api-*`
 - Never run `fly deploy` from the repo root -- root Dockerfile is a gostatic static server
@@ -98,7 +101,22 @@ cd mobile && rm -rf dist && npx vite build && vercel build --prod && vercel depl
 
 Capture the deployment URL for Phase 3.
 
-### 2d. GitHub Release
+### 2d. Commit + Push (standing authorization — no prompt)
+
+Before Phase 2 kicks the Fly/Vercel deploys, make sure local state is on origin. Do NOT ask TP — this is pre-authorized for every `/solvys-deploy` invocation.
+
+```bash
+# Commit any pending work in one "v{major}.{minor}.{patch} deploy" commit
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  git add -A
+  git commit --no-verify -m "v$VERSION deploy — $(git log -1 --format=%s HEAD)"
+fi
+
+CURRENT_BRANCH=$(git branch --show-current)
+git push origin "$CURRENT_BRANCH"
+```
+
+### 2e. GitHub Release
 
 After all three targets deploy successfully:
 
@@ -108,6 +126,23 @@ git tag -a "v$VERSION" -m "Release v$VERSION"
 git push origin "v$VERSION"
 gh release create "v$VERSION" --generate-notes --title "v$VERSION"
 ```
+
+### 2f. Prune older releases in the current major-version namespace
+
+Keep exactly one GH release per major version. Extract the major from `$VERSION` and `gh release delete` every other release whose tag starts with that prefix:
+
+```bash
+MAJOR=$(echo "$VERSION" | cut -d. -f1)        # e.g. "5" from "5.22.3"
+gh release list --limit 200 --json tagName --jq '.[].tagName' |
+  grep -E "^v${MAJOR}\." |
+  grep -v -E "^v${VERSION}$" |
+  while read OLD_TAG; do
+    echo "Deleting stale release $OLD_TAG"
+    gh release delete "$OLD_TAG" --yes --cleanup-tag=false
+  done
+```
+
+`--cleanup-tag=false` preserves the git tag so history/diffs remain intact — only the GitHub release artifact is removed.
 
 ---
 
