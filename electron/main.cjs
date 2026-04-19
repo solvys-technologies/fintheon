@@ -6,7 +6,9 @@
 // [claude-code 2026-03-20] Configurable backend autostart + launch-on-login toggles (stored in userData)
 // [claude-code 2026-03-23] Browser Use Phase 2 — CDP + browser-use CLI bridge
 // [claude-code 2026-03-24] Supabase Google OAuth deep link: fintheon:// protocol + open-url handler
+// [claude-code 2026-04-19] S27-T5 W2c: voice window chrome hook for active voice sessions
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
+const { installVoiceChromeHook } = require("./window-chrome-voice.cjs");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
@@ -445,6 +447,11 @@ function createWindow() {
   );
   win.loadFile(rendererPath);
   mainWindow = win;
+
+  // [claude-code 2026-04-19] S27-T5 W2c: install voice-chrome ipc hook once the
+  // window exists. Idempotent — installVoiceChromeHook only registers the
+  // listener on first call because ipcMain.on is additive.
+  installVoiceChromeHook({ ipcMain, getWindow: () => mainWindow });
 }
 
 // [claude-code 2026-03-23] Browser Use Phase 2 — enable CDP for browser-use CLI

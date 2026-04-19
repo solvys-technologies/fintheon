@@ -9,6 +9,31 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T16:00:00",
+    agent: "claude-code",
+    summary:
+      "S27-T5 W2c (Claude-08): voice assistant end-to-end via Hermes sidecar + Qwen + rim UX. Locked harper-voice model to qwen/qwen3.6-plus-preview:free (free, 1M context, ~3x faster than Opus 4.6, exceeds Claude 4.5 Opus on Terminal-Bench 2.0 61.6 vs 59.3 and RealWorldQA 85.4 vs 77.0 — comfortably above the Sonnet-equivalent-or-better bar). Registered voicebox/Qwen3-TTS + Whisper-turbo (with Qwen-STT fallback) as sidecar voice plugins. Rewrote backend-hono voice-service.ts from the broken OpenAI-direct path to a sidecar-relay: transcribeVoice proxies /v1/voice/stt, synthesizeVoice proxies /v1/voice/tts, synthesizeGreeting pre-renders Harper's 1-sentence greeting via /v1/chat + SOUL grounding, streamVoiceReply generator overlaps reasoning + TTS sentence-by-sentence for the <2s first-audio target. Added sidecar-voice-client.ts as typed HTTP wrapper. New /api/voice/session/start (pre-renders greeting, caches in Supabase Storage voice-greetings bucket + returns signed URL), /turn (SSE transcript → text → audio events), /interrupt (aborts in-flight stream via AbortController registry keyed by conversationId), /end. Frontend: VoiceRimFrame.tsx (3px accent-gold rim around app chrome, pulse/solid/idle states, data-testid=voice-rim-frame, pointer-events: none so never eats trading clicks) + VoiceTranscriptTicker.tsx (single-line top-center ticker, last 120 chars, pointer-events: none) + useVoiceSession hook that fires POST /api/voice/session/start on enable transitions and plays greeting. Replaced the in-App.tsx VoiceBorderPulse with VoiceRimFrame. Extended VoiceContext.cancel() to also call /api/voice/session/interrupt. VoiceService frontend client gained sessionStart/Interrupt/End. Electron main.cjs installs voice-chrome ipc hook (window-chrome-voice.cjs) that recolors titleBarOverlay per voice state. Backend test (src/tests/voice-assistant.test.ts, 4 tests green) proves transcript→text→audio→done ordering, first-audio <2.5s, abortSignal interrupt, and sidecar-disabled graceful fallback. Playwright spec frontend/test/voice-rim.spec.ts asserts rim pointer-events: none, no coverage of data-testid=trading-view-*, dismiss preserves conversation. Validation: backend bun run build + tsc clean, frontend vite build clean (3.61s). Rollback: ROUTING_OVERRIDE_HARPER_VOICE env var swaps the Qwen model; VOICE_SIDECAR_DISABLED=true or HERMES_SIDECAR_ENABLED=false falls back cleanly.",
+    files: [
+      "src/lib/changelog.ts",
+      "backend-hono/src/services/ai/routing.ts",
+      "backend-hono/src/services/ai/sidecar-voice-client.ts",
+      "backend-hono/src/services/voice-service.ts",
+      "backend-hono/src/routes/voice/session.ts",
+      "backend-hono/src/routes/voice/index.ts",
+      "backend-hono/src/tests/voice-assistant.test.ts",
+      "frontend/components/voice/VoiceRimFrame.tsx",
+      "frontend/components/voice/VoiceTranscriptTicker.tsx",
+      "frontend/hooks/useVoiceSession.ts",
+      "frontend/contexts/VoiceContext.tsx",
+      "frontend/lib/services/voice.ts",
+      "frontend/App.tsx",
+      "frontend/test/voice-rim.spec.ts",
+      "electron/window-chrome-voice.cjs",
+      "electron/main.cjs",
+      "hermes-sidecar/config.yaml",
+    ],
+  },
+  {
     date: "2026-04-20T14:00:00",
     agent: "claude-code",
     summary:
