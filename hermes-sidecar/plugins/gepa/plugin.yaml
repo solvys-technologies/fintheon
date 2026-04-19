@@ -1,0 +1,25 @@
+# [claude-code 2026-04-19] S27-T11 W2e: GEPA plugin — DSPy + evolutionary prompt optimization.
+# Loaded by hermes-sidecar runtime when GEPA_ENABLED=true. Installs its Python deps lazily
+# so the base sidecar image stays small.
+schema_version: 1
+id: gepa
+name: GEPA Self-Evolution
+version: 0.1.0
+description: >-
+  Evolutionary prompt optimization (DSPy + GEPA upstream) for Fintheon agent SOULs.
+  Consumed by backend-hono/src/services/gepa/runner.ts via /v1/gepa/*.
+  NEVER auto-merges — proposes candidate SOULs that get PR'd for human review.
+enabled_by_env: GEPA_ENABLED
+python_deps:
+  - dspy-ai>=2.5.0
+  - numpy>=1.26
+routes:
+  - method: POST
+    path: /v1/gepa/optimize
+    handler: engine:optimize
+  - method: GET
+    path: /v1/gepa/status
+    handler: engine:status
+authors:
+  - Priced In Capital
+license: Proprietary

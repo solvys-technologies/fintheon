@@ -9,6 +9,25 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T15:30:00",
+    agent: "claude-code",
+    summary:
+      "[v.27.9] S27-T11 W2e — GEPA self-improvement loop. Evolutionary prompt optimization for all 5 SOULs via DSPy-backed sidecar plugin. NEVER auto-merges — proposes candidates as PRs against soul-evolution/<agent>-<ts> branches. Runner (backend-hono/src/services/gepa/runner.ts) nightly @ 02:00 ET: computes per-agent accuracy from last 24h routing_decisions + agent_memory + RiskFlow trade-followthrough samples; compares to 7d baseline; triggers optimize when accuracy drop > 5%; enforces 25% prompt-size cap + 3-reject → 14d pause + 7d auto-close rails. Sidecar plugin at hermes-sidecar/plugins/gepa/{plugin.yaml,engine.py} — shallow mutation default (scope tighten + voice trim + handoff trigger), GEPA_DEEP=true switches to full DSPy path. pr-creator writes candidate to soul-evolution/<agent>/<ts>.md, creates branch, commits, pushes, opens gh PR with baseline + projected Δ + projected risk in body. Three sample sources: explicit thumbs feedback (routing_decisions.user_feedback_score), agent_memory accuracy_feedback rows, implicit RiskFlow→trade-followthrough signal. Diagnostics surface: /api/diagnostics now carries gepa.{last_run_at, evolutions_proposed_7d, evolutions_merged_7d, current_metric_deltas} + /api/diagnostics/gepa dedicated endpoint. New GepaWidget.tsx mounted in HermesAdminTab (glassmorphic, accent-gold deltas, no gradients). Local launchd unit at launchd/io.solvys.fintheon-gepa.plist (02:00 ET daily). Fly cron config at backend-hono/fly.gepa-cron.toml (06:00 UTC daily) for fintheon-hermes app. CLI dry-run: bun run gepa:dry-run --agent=harper. GEPA_DRY_RUN=true env gate keeps pr-creator local-only during smoke. Closes v.27.9 bundle (T9 live + T10 skills + T11 GEPA).",
+    files: [
+      "backend-hono/src/services/gepa/runner.ts",
+      "backend-hono/src/services/gepa/pr-creator.ts",
+      "backend-hono/src/services/gepa/sample-sourcing.ts",
+      "hermes-sidecar/plugins/gepa/plugin.yaml",
+      "hermes-sidecar/plugins/gepa/engine.py",
+      "launchd/io.solvys.fintheon-gepa.plist",
+      "backend-hono/fly.gepa-cron.toml",
+      "backend-hono/package.json",
+      "frontend/components/diagnostics/GepaWidget.tsx",
+      "frontend/components/settings/HermesAdminTab.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-20T15:20:00",
     agent: "claude-code",
     summary:
