@@ -9,6 +9,29 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T15:45:00",
+    agent: "claude-code",
+    summary:
+      "[v.27.8] S27-T7 (W2d Claude-09): Always-On News Worker — sibling process in backend-hono/src/workers/news-worker/ (index, scheduler, sources/{browser-harness,exa,agent-reach,types}, score, persist). Breaking tier runs every 60s (Reuters, Bloomberg via browser-harness + RSS), standard tier every 5 min (SEC, Fed, Treasury via browser-harness + Exa + RSS). Per-source collector errors isolated; one failure never kills a tier. Worker writes `riskflow_items` upserts keyed on item_id with source tag + heartbeats via news_worker_heartbeats (new table). Supabase is the only contract back to backend-hono — no HTTP coupling. /healthz served on port 8082 for launchd + Fly keepalive. Self-healing: launchd KeepAlive with Crashed=true (io.solvys.fintheon-news-worker.plist), Fly restart_policy on-failure + min_machines_running=1 (fly.news-worker.toml + Dockerfile.news-worker on playwright:v1.58.2-jammy base). fintheon.config.ts maps news→8082 subdomain for news.fintheon.test portless hostname. FLAG_NEWS_WORKER_WRITES_RISKFLOW env gate keeps dry-run mode for load testing. /api/diagnostics now returns news_worker.{age_seconds, tiers[]}. Migration 20260419_06_worker_heartbeats.sql creates news_worker_heartbeats with unique index on tier.",
+    files: [
+      "backend-hono/src/workers/news-worker/index.ts",
+      "backend-hono/src/workers/news-worker/scheduler.ts",
+      "backend-hono/src/workers/news-worker/score.ts",
+      "backend-hono/src/workers/news-worker/persist.ts",
+      "backend-hono/src/workers/news-worker/sources/index.ts",
+      "backend-hono/src/workers/news-worker/sources/types.ts",
+      "backend-hono/src/workers/news-worker/sources/browser-harness.ts",
+      "backend-hono/src/workers/news-worker/sources/exa.ts",
+      "backend-hono/src/workers/news-worker/sources/agent-reach.ts",
+      "backend-hono/fly.news-worker.toml",
+      "backend-hono/Dockerfile.news-worker",
+      "launchd/io.solvys.fintheon-news-worker.plist",
+      "fintheon.config.ts",
+      "supabase/migrations/20260419_06_worker_heartbeats.sql",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-19T15:30:00",
     agent: "claude-code",
     summary:
