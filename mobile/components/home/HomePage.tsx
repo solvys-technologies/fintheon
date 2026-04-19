@@ -1,6 +1,8 @@
-// [claude-code 2026-04-18] v5.22 S2: AGENTIC DESK → AGENT DESK; hero ticker labels aligned on
-//   one row (alignItems flex-start + lineHeight 1 on labels); IVSubScores prop renamed miroshark
-//   → agentDesk. Backend response field `ivData.mirosharkComponent` stays per S1 alias plan.
+// [claude-code 2026-04-18] v5.22 S2 (post-S1 reconcile): AGENTIC DESK → AGENT DESK; hero
+//   ticker labels aligned on one row (alignItems flex-start + lineHeight 1 on labels);
+//   IVSubScores prop renamed miroshark → agentDesk. S1 fully renamed the IVScoreResponse
+//   field too (mirosharkComponent → agentDeskComponent), so the call-site reads the new
+//   name. Legacy `/api/miroshark/*` URLs still aliased on the backend.
 // [claude-code 2026-04-19] Tighten page 1 padding (−25% above brief), give briefing card
 //   more vertical room; page 2 calendar now owns real pixel height so no black gap above
 //   Aquarium. Aquarium rendered in a compact glass sliver at bottom.
@@ -325,7 +327,7 @@ export function HomePage() {
               <IVSubScores
                 vix={ivData.vixComponent ?? 0}
                 headlines={ivData.headlineComponent ?? 0}
-                agentDesk={ivData.mirosharkComponent ?? 0}
+                agentDesk={ivData.agentDeskComponent ?? 0}
               />
             )}
           </motion.div>
