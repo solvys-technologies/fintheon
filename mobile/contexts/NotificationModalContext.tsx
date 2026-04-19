@@ -14,7 +14,8 @@ export type ModalPayload =
   | { kind: "toolApproval"; approvalId: string }
   | { kind: "riskflowItem"; itemId: string }
   | { kind: "catalyst"; catalystId: string }
-  | { kind: "dailyBrief"; briefId?: string };
+  | { kind: "dailyBrief"; briefId?: string }
+  | { kind: "maintenanceRequest"; requestId: string };
 
 interface ContextValue {
   current: ModalPayload | null;

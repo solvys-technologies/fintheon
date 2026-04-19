@@ -1,3 +1,8 @@
+// [claude-code 2026-04-19] S26-P2 T9 v5.26.1: lock-screen dispatch for maintenance_request
+//   (commit / deploy / deny → POST /api/maintenance/decision). When a push arrives with
+//   category "maintenance_request" the SW carries a requestId into the notification data
+//   and renders up to 2 of the 3 actions per OS limit; tapping the notification (no action)
+//   routes into the app like any other category.
 // [claude-code 2026-04-19] S25 v5.22.0: SOTA push — rich media (image), lock-screen actions
 //   (Approve/Deny/Open), per-item tags (approvals stack, riskflow collapses), badge counter
 //   via setAppBadge + SW-local counter in memory, and an `event.action` branch that fires a
@@ -7,8 +12,8 @@
 //   served the v1 cached assets. activate step nukes any cache name not in the current list.
 // [claude-code 2026-04-16] T7: Service worker — push notifications, app shell caching, stale-while-revalidate
 
-const CACHE_NAME = "fintheon-v5.22.0";
-const STATIC_CACHE = "fintheon-static-v5.22.0";
+const CACHE_NAME = "fintheon-v5.26.1";
+const STATIC_CACHE = "fintheon-static-v5.26.1";
 
 // App shell resources to pre-cache on install
 const APP_SHELL = ["/", "/index.html"];
@@ -132,13 +137,17 @@ self.addEventListener("push", (event) => {
     conversationId,
     itemId,
     approvalId,
+    requestId,
   } = data;
 
-  // [S25] Per-item tag so approvals stack (user sees multiple pending decisions)
+  // [S25/S26] Per-item tag so approvals stack (user sees multiple pending decisions)
   //       while noisy riskflow storms collapse under a single `riskflow` tag.
+  //       Maintenance requests use requestId as their tag key so each stacks.
   let tag = category || "default";
   if (category === "toolApprovals" && approvalId) {
     tag = `toolApprovals:${approvalId}`;
+  } else if (category === "maintenance_request" && requestId) {
+    tag = `maintenance_request:${requestId}`;
   } else if (category === "chat_relay" && conversationId) {
     tag = `chat_relay:${conversationId}`;
   } else if (itemId && category !== "riskflow") {
@@ -161,6 +170,7 @@ self.addEventListener("push", (event) => {
       conversationId,
       itemId,
       approvalId,
+      requestId,
     },
     tag,
     renotify: true,
@@ -182,7 +192,7 @@ self.addEventListener("notificationclick", (event) => {
 
   const data = event.notification.data || {};
   const action = event.action || "";
-  const { url, category, conversationId, approvalId } = data;
+  const { url, category, conversationId, approvalId, requestId } = data;
 
   // [S25] Lock-screen Approve/Deny — no-auth POST to the quick-decision endpoint,
   //       approval-id-as-secret. Window is 10 min; handler enforces freshness.
@@ -204,6 +214,35 @@ self.addEventListener("notificationclick", (event) => {
     return;
   }
 
+  // [S26-P2 T9] Lock-screen Commit / Deploy / Deny for maintenance_request. This posts
+  //   directly to /api/maintenance/decision. Super-admin gate runs server-side — if the
+  //   SW's session token is missing or non-admin the call returns 401/403 and the user
+  //   has to open the app to re-auth. That's the intended failure mode.
+  if (
+    (action === "approve_commit" ||
+      action === "approve_deploy" ||
+      action === "deny") &&
+    requestId &&
+    category === "maintenance_request"
+  ) {
+    const mapped =
+      action === "approve_commit"
+        ? "approve_commit"
+        : action === "approve_deploy"
+          ? "approve_and_deploy"
+          : "deny";
+    event.waitUntil(
+      fetch("/api/maintenance/decision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId, action: mapped }),
+      }).catch(() => {
+        /* silent — user can open the app */
+      }),
+    );
+    return;
+  }
+
   event.waitUntil(
     self.clients.matchAll({ type: "window" }).then((clients) => {
       for (const client of clients) {
@@ -213,6 +252,7 @@ self.addEventListener("notificationclick", (event) => {
             category: category || "unknown",
             url: url || "/",
             conversationId: conversationId || null,
+            requestId: requestId || null,
           });
           return client.focus();
         }

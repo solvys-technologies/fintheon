@@ -21,6 +21,8 @@ const APPROVAL_CATEGORIES = new Set([
   "lexiconProposals",
   "walkBackReverts",
   "toolApprovals",
+  // [S26-P2 T9] maintenance_request decisions flow through the MaintenanceDetail modal,
+  // not through the inline approve/deny icons. Drawer cards for this category tap-to-open.
 ]);
 
 const APPROVAL_ENDPOINT_MAP: Record<string, string> = {

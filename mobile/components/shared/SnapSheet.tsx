@@ -1,10 +1,16 @@
+// [claude-code 2026-04-19] S26-P2 T1: gesture-math rewrite per TP — bulletin kept
+//   collapsing on the lightest scroll-up because the whole sheet was draggable and
+//   thresholds were lenient (velocity OR offset). Now: only the pill handle drags.
+//   Content scrolls in place (overflowY: auto stays). Dismiss requires the AND of
+//   offset > 260 AND velocity > 500, OR a deliberate tap on the pill handle. Pill
+//   tint shifts to accent on press so tap/drag affordance is obvious. dragElastic
+//   dropped to 0.08 so pushing past the threshold barely rubber-bands.
 // [claude-code 2026-04-19] TP standard: every popup in the app uses this surface. Pill bar
-//   sized like the Daily Brief overlay (40x5, 12/8 padding), title pad 16/12, drag thresholds
-//   for velocity+offset dismiss. Glassmorphic (TP: glass before kanban, always).
+//   sized like the Daily Brief overlay (40x5, 12/8 padding), title pad 16/12. Glassmorphic
+//   (TP: glass before kanban, always).
 // [claude-code 2026-04-19] Generalized from NotificationSheet. Top-anchored sheet that opens
 //   to a target element's bottom edge (e.g. the dash fuse-bar row) — so only tickers + fuses
 //   stay visible above. Used by NotificationDrawer + MobileBulletin + BriefingCard.
-//   Glassmorphic surface by default (not Kanban — TP's design rule).
 import {
   type ReactNode,
   useRef,
@@ -25,11 +31,12 @@ interface SnapSheetProps {
   fallbackTopPx?: number;
 }
 
-/**
- * Opens upward from the bottom, snapping its top edge just under `anchorSelector`
- * (defaults to `[data-snap-anchor="fuses"]`). Page auto-scrolls to top so the
- * anchor is visible before the sheet settles. Drag-down-to-close.
- */
+/** AND-threshold for dismiss — TP explicitly asked for a much wider swipe + faster
+ *  flick before the sheet collapses. OR thresholds (the old rule) tripped on the
+ *  lightest scroll-up, which made reading bulletin copy basically impossible. */
+const DISMISS_OFFSET = 260;
+const DISMISS_VELOCITY = 500;
+
 export function SnapSheet({
   isOpen,
   onClose,
@@ -49,12 +56,10 @@ export function SnapSheet({
     document
       .querySelectorAll<HTMLElement>("[data-scroll-container='true']")
       .forEach((el) => el.scrollTo({ top: 0, behavior: "auto" }));
-    // One RAF so layout settles, then measure.
     requestAnimationFrame(() => {
       const anchor = document.querySelector<HTMLElement>(anchorSelector);
       if (anchor) {
         const rect = anchor.getBoundingClientRect();
-        // 4px breathing room under the fuse row — sheet top edge sits right below.
         setTopPx(Math.max(0, Math.round(rect.bottom + 4)));
       } else {
         setTopPx(fallbackTopPx);
@@ -62,9 +67,14 @@ export function SnapSheet({
     });
   }, [isOpen, anchorSelector, fallbackTopPx]);
 
-  const handleDragEnd = useCallback(
+  const handleHandleDragEnd = useCallback(
     (_: unknown, info: PanInfo) => {
-      if (info.velocity.y > 300 || info.offset.y > 120) onClose();
+      if (
+        info.offset.y > DISMISS_OFFSET &&
+        info.velocity.y > DISMISS_VELOCITY
+      ) {
+        onClose();
+      }
     },
     [onClose],
   );
@@ -73,7 +83,7 @@ export function SnapSheet({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop — clears the ticker/fuses area so taps above dismiss */}
+          {/* Backdrop — tap above the sheet dismisses */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -93,17 +103,14 @@ export function SnapSheet({
             }}
           />
 
-          {/* Sheet — glassmorphic, top-anchored under the fuse row */}
+          {/* Sheet — static when open. Content scrolls; the sheet itself does NOT
+              translate during vertical gestures unless they start on the pill handle. */}
           <motion.div
             ref={sheetRef}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%", opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-            drag="y"
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={0.1}
-            onDragEnd={handleDragEnd}
             style={{
               position: "fixed",
               top: topPx,
@@ -122,28 +129,44 @@ export function SnapSheet({
               boxShadow: "0 -12px 40px rgba(0,0,0,0.6)",
             }}
           >
-            {/* Handle — TP standard: 40×5, generous grab area */}
-            <div
+            {/* Handle — the ONLY drag/tap dismiss target. Tap closes, swipe-down
+                requires AND(offset>260, velocity>500) to dismiss. Hit target is
+                padded for finger width; visible pill stays 40×5. */}
+            <motion.div
+              drag="y"
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={0.08}
+              onDragEnd={handleHandleDragEnd}
+              onClick={onClose}
+              whileTap={{ scale: 0.96 }}
               style={{
                 display: "flex",
                 justifyContent: "center",
-                paddingTop: 12,
-                paddingBottom: 8,
+                padding: "16px 32px 12px",
                 cursor: "grab",
                 flexShrink: 0,
+                touchAction: "none",
+                WebkitTapHighlightColor: "transparent",
               }}
             >
-              <div
+              <motion.div
+                initial={{
+                  background: "var(--border-visible)",
+                }}
+                whileTap={{
+                  background:
+                    "color-mix(in srgb, var(--accent) 40%, transparent)",
+                }}
                 style={{
                   width: 40,
                   height: 5,
                   borderRadius: 3,
                   background: "var(--border-visible)",
+                  transition: "background 120ms ease",
                 }}
               />
-            </div>
+            </motion.div>
 
-            {/* Title */}
             {title && (
               <div
                 style={{
@@ -161,7 +184,8 @@ export function SnapSheet({
               </div>
             )}
 
-            {/* Content — tight 10px side gutter so notification cards sit nearly edge-to-edge */}
+            {/* Content — scrolls in place. overscrollBehavior: contain prevents
+                the iOS bounce from propagating as a drag on the ancestor. */}
             <div
               style={{
                 flex: 1,

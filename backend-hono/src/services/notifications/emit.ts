@@ -49,6 +49,8 @@ export const NOTIFICATION_CATEGORIES = [
   "lexiconProposals",
   "walkBackReverts",
   "toolApprovals",
+  // [S26-P2 T9] Agent-proposed maintenance requests — super-admin commit/deploy/deny.
+  "maintenance_request",
   "chat_relay",
   "test",
   "system",

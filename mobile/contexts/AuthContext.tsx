@@ -1,3 +1,6 @@
+// [claude-code 2026-04-19] S26-P2 T9: isSuperAdmin helper — TP's sub (from memory) OR
+//   a VITE_SUPER_ADMIN_USER_ID allow-list env for staging/pairing. Consumed by the
+//   MaintenanceDetail modal to decide whether the 3-button action row renders.
 // [claude-code 2026-04-15] T2: Mobile auth — Supabase Google OAuth with browser redirect, session auto-restore
 import {
   createContext,
@@ -12,10 +15,21 @@ import type { Session, User } from "@supabase/supabase-js";
 
 export type UserTier = "free" | "fintheon" | "fintheon_plus" | "fintheon_pro";
 
+/** TP's auth sub (per memory reference_tp_identity). Still overridable via env
+ *  so TP can add a staging account without a code change. */
+const TP_USER_ID = "826e7c65-7fd0-48be-9fe7-f05601dfb004";
+const SUPER_ADMIN_ALLOW_LIST = (
+  (import.meta.env.VITE_SUPER_ADMIN_USER_ID as string | undefined) || TP_USER_ID
+)
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   userId: string;
+  isSuperAdmin: boolean;
   session: Session | null;
   user: User | null;
   tier: UserTier;
@@ -78,12 +92,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return s?.access_token ?? null;
   }, []);
 
+  const userId = user?.id ?? "";
+  const isSuperAdmin =
+    Boolean(userId) && SUPER_ADMIN_ALLOW_LIST.includes(userId);
+
   return (
     <AuthContext.Provider
       value={{
         isAuthenticated: session !== null,
         isLoading,
-        userId: user?.id ?? "",
+        userId,
+        isSuperAdmin,
         session,
         user,
         tier,

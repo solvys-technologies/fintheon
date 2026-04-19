@@ -1,9 +1,12 @@
+// [claude-code 2026-04-19] S26-P2 T9: + maintenance_request handling → opens
+//   MaintenanceDetail modal. URL shape: /maintenance/{id}.
 // [claude-code 2026-04-19] S25: SW `notification-tap` message → tab focus + DetailSheet open.
 //   Parses the URL shape sent by backend push payload builders:
 //     /apparatus/approvals/{id}        → toolApproval
 //     /riskflow?item={id}              → riskflowItem
 //     /narrative/catalyst/{id}         → catalyst
 //     /briefing                        → dailyBrief
+//     /maintenance/{id}                → maintenanceRequest
 //     /chat?conversationId=…           → keep existing chat-relay behavior (no modal)
 import { useEffect } from "react";
 import { useNotificationModal } from "../contexts/NotificationModalContext";
@@ -22,10 +25,11 @@ export function useNotificationTapRouter({ onTabChange }: Options) {
 
     const handler = (event: MessageEvent) => {
       if (event.data?.type !== "notification-tap") return;
-      const { category, url, conversationId } = event.data as {
+      const { category, url, conversationId, requestId } = event.data as {
         category?: string;
         url?: string;
         conversationId?: string | null;
+        requestId?: string | null;
       };
 
       // 1. Route tab focus (same as before — preserves prior UX)
@@ -56,7 +60,12 @@ export function useNotificationTapRouter({ onTabChange }: Options) {
         onTabChange(0);
       }
 
-      // 2. Detail modal open if URL matches a known shape
+      // 2. Detail modal open if URL matches a known shape OR requestId is present
+      if (category === "maintenance_request" && requestId) {
+        open({ kind: "maintenanceRequest", requestId });
+        return;
+      }
+
       if (!url) return;
 
       try {
@@ -68,6 +77,16 @@ export function useNotificationTapRouter({ onTabChange }: Options) {
         const approvalMatch = path.match(/^\/apparatus\/approvals\/([^/]+)/);
         if (approvalMatch) {
           open({ kind: "toolApproval", approvalId: approvalMatch[1] });
+          return;
+        }
+
+        // /maintenance/{id}
+        const maintenanceMatch = path.match(/^\/maintenance\/([^/]+)/);
+        if (maintenanceMatch) {
+          open({
+            kind: "maintenanceRequest",
+            requestId: maintenanceMatch[1],
+          });
           return;
         }
 
@@ -98,7 +117,12 @@ export function useNotificationTapRouter({ onTabChange }: Options) {
     // Also listen for in-app card taps that want to open the modal without going through SW
     const openDetailHandler = (e: Event) => {
       const custom = e as CustomEvent<{
-        kind: "toolApproval" | "riskflowItem" | "catalyst" | "dailyBrief";
+        kind:
+          | "toolApproval"
+          | "riskflowItem"
+          | "catalyst"
+          | "dailyBrief"
+          | "maintenanceRequest";
         id?: string;
       }>;
       if (!custom.detail) return;
@@ -110,6 +134,8 @@ export function useNotificationTapRouter({ onTabChange }: Options) {
       else if (kind === "catalyst" && id)
         open({ kind: "catalyst", catalystId: id });
       else if (kind === "dailyBrief") open({ kind: "dailyBrief", briefId: id });
+      else if (kind === "maintenanceRequest" && id)
+        open({ kind: "maintenanceRequest", requestId: id });
     };
 
     navigator.serviceWorker.addEventListener("message", handler);

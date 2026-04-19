@@ -1,6 +1,10 @@
-// [claude-code 2026-04-19] TP beta polish: accordion-style theme picker. Collapsed row
-//   shows the active accent + label + chevron. Expanded reveals a chip grid of standard
-//   themes and, under a muted "NOTHING DESIGN" divider, the special Nothing presets.
+// [claude-code 2026-04-19] S26-P2 T5: theme picker rewritten per TP — "let's just make
+//   it a drop-down menu, like a list drop-down menu... the preview swatch should be the
+//   whole color... People should have the option to switch between the light theme and
+//   the dark theme on a toggle inside of the menu that pops up from the hamburger menu."
+//   Each row IS the full-bleed primary accent colour (44×full-width, rounded 8px). The
+//   active theme gets a 2px inset ring in --fintheon-text. The NOTHING DESIGN divider
+//   sits between the presets and the Nothing Design specials.
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
@@ -14,6 +18,25 @@ interface ThemePickerAccordionProps {
   onPick: (t: ThemeConfig) => void;
   standard: Record<string, ThemeConfig>;
   special: Record<string, ThemeConfig>;
+}
+
+/** Luminance-based contrast pick so a row label reads cleanly on its swatch.
+ *  Simple relative-luminance approximation — good enough for hex accents. */
+function textOnSwatch(hex: string): string {
+  const clean = hex.replace("#", "");
+  const n =
+    clean.length === 3
+      ? clean
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : clean.padEnd(6, "0");
+  const r = parseInt(n.slice(0, 2), 16);
+  const g = parseInt(n.slice(2, 4), 16);
+  const b = parseInt(n.slice(4, 6), 16);
+  // Perceptual luminance (Rec. 709)
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return lum > 0.55 ? "#0a0a0a" : "#ffffff";
 }
 
 export function ThemePickerAccordion({
@@ -59,38 +82,39 @@ export function ThemePickerAccordion({
         aria-expanded={open}
         style={{
           width: "100%",
+          height: 44,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: 12,
-          padding: "12px 14px",
-          background: "color-mix(in srgb, var(--accent) 4%, transparent)",
-          border:
-            "1px solid color-mix(in srgb, var(--accent) 18%, transparent)",
-          borderRadius: 10,
+          padding: "0 14px",
+          background: current.accent,
+          border: "none",
+          borderRadius: 8,
           cursor: "pointer",
           WebkitTapHighlightColor: "transparent",
-          transition: "border-color 200ms ease, background 200ms ease",
+          boxShadow: open ? `inset 0 0 0 2px var(--fintheon-text)` : "none",
+          transition: "box-shadow 180ms ease",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <ThemeSwatch theme={current} active ringless size={28} dotSize={10} />
-          <span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 14,
-              color: "var(--text-primary)",
-            }}
-          >
-            {current.label}
-          </span>
-        </div>
+        <span
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 14,
+            fontWeight: 500,
+            color: textOnSwatch(current.accent),
+            letterSpacing: "0.02em",
+          }}
+        >
+          {current.label}
+        </span>
         <motion.span
           animate={{ rotate: open ? 180 : 0 }}
           transition={{ duration: 0.25, ease: NOTHING_EASE }}
           style={{
             display: "inline-flex",
-            color: "var(--text-secondary)",
+            color: textOnSwatch(current.accent),
+            opacity: 0.7,
           }}
         >
           <ChevronDown size={18} strokeWidth={1.6} />
@@ -100,15 +124,15 @@ export function ThemePickerAccordion({
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
-            key="theme-grid"
+            key="theme-list"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.28, ease: NOTHING_EASE }}
             style={{ overflow: "hidden" }}
           >
-            <div style={{ paddingTop: 12 }}>
-              <ThemeGrid
+            <div style={{ paddingTop: 10 }}>
+              <SwatchList
                 themes={standard}
                 current={current}
                 onPick={handlePick}
@@ -117,7 +141,7 @@ export function ThemePickerAccordion({
                 <>
                   <div
                     style={{
-                      marginTop: 16,
+                      marginTop: 14,
                       marginBottom: 10,
                       display: "flex",
                       alignItems: "center",
@@ -140,7 +164,7 @@ export function ThemePickerAccordion({
                       }}
                     />
                   </div>
-                  <ThemeGrid
+                  <SwatchList
                     themes={special}
                     current={current}
                     onPick={handlePick}
@@ -155,7 +179,7 @@ export function ThemePickerAccordion({
   );
 }
 
-function ThemeGrid({
+function SwatchList({
   themes,
   current,
   onPick,
@@ -165,47 +189,41 @@ function ThemeGrid({
   onPick: (t: ThemeConfig) => void;
 }) {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(58px, 1fr))",
-        gap: 10,
-      }}
-    >
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       {Object.values(themes).map((t) => {
         const active = current.name === t.name;
+        const fg = textOnSwatch(t.accent);
         return (
           <button
             key={t.name}
+            type="button"
             onClick={() => onPick(t)}
-            title={t.label}
-            aria-label={t.label}
             aria-pressed={active}
             style={{
+              width: "100%",
+              height: 44,
               display: "flex",
-              flexDirection: "column",
               alignItems: "center",
-              gap: 6,
-              padding: 0,
-              background: "transparent",
+              padding: "0 14px",
+              background: t.accent,
               border: "none",
+              borderRadius: 8,
               cursor: "pointer",
               WebkitTapHighlightColor: "transparent",
+              boxShadow: active
+                ? `inset 0 0 0 2px var(--fintheon-text)`
+                : "none",
+              transition: "box-shadow 180ms ease, transform 120ms ease",
+              textAlign: "left",
             }}
           >
-            <ThemeSwatch theme={t} active={active} />
             <span
               style={{
-                fontFamily: "var(--font-data)",
-                fontSize: 9,
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-                color: active ? "var(--accent)" : "var(--text-disabled)",
-                textAlign: "center",
-                lineHeight: 1.2,
-                maxWidth: 70,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
+                fontFamily: "var(--font-body)",
+                fontSize: 14,
+                fontWeight: active ? 600 : 500,
+                color: fg,
+                letterSpacing: "0.02em",
               }}
             >
               {t.label}
@@ -213,54 +231,6 @@ function ThemeGrid({
           </button>
         );
       })}
-    </div>
-  );
-}
-
-function ThemeSwatch({
-  theme,
-  active,
-  ringless = false,
-  size = 44,
-  dotSize = 12,
-}: {
-  theme: ThemeConfig;
-  active: boolean;
-  ringless?: boolean;
-  size?: number;
-  dotSize?: number;
-}) {
-  return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: 10,
-        background: theme.bg,
-        border:
-          !ringless && active
-            ? `1.5px solid var(--accent)`
-            : "1px solid color-mix(in srgb, var(--accent) 16%, transparent)",
-        position: "relative",
-        boxShadow:
-          !ringless && active
-            ? "0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent)"
-            : "none",
-        transition: "box-shadow 200ms ease, border-color 200ms ease",
-      }}
-    >
-      <div
-        aria-hidden
-        style={{
-          width: dotSize,
-          height: dotSize,
-          borderRadius: dotSize / 2,
-          background: theme.accent,
-          position: "absolute",
-          bottom: 5,
-          right: 5,
-        }}
-      />
     </div>
   );
 }

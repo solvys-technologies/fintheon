@@ -1,7 +1,13 @@
+// [claude-code 2026-04-19] S26-P2 T5: Light/Dark mode toggle row per TP — "the option
+//   to switch between the light theme and the dark theme on a toggle inside of the menu
+//   that pops up from the hamburger menu." Sun/Moon icons, two-segment pill, active
+//   segment uses the accent; mode persists through ThemeContext.
 // [claude-code 2026-04-15] S18: Header menu — section nav + Harper refresh, session, sign out
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Sun, Moon } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
 
 interface HamburgerMenuProps {
   open: boolean;
@@ -27,6 +33,7 @@ export function HamburgerMenu({
   onNavigate,
 }: HamburgerMenuProps) {
   const { user, signOut, getAccessToken } = useAuth();
+  const { mode, setMode } = useTheme();
   const [harperStatus, setHarperStatus] = useState<HarperStatus>("idle");
 
   const handleRefreshHarper = useCallback(async () => {
@@ -167,6 +174,53 @@ export function HamburgerMenu({
             })}
             <div className="fade-divider" style={{ margin: "4px 0" }} />
 
+            {/* Light/Dark — two-segment pill, borderless glass. Sun + Moon iconography
+                so the state is obvious at a glance. */}
+            <div
+              style={{
+                ...rowStyle,
+                justifyContent: "space-between",
+                cursor: "default",
+              }}
+            >
+              <span style={{ ...labelStyle, color: "var(--text-secondary)" }}>
+                [MODE]
+              </span>
+              <div
+                role="tablist"
+                aria-label="Theme mode"
+                style={{
+                  display: "inline-flex",
+                  gap: 4,
+                  padding: 3,
+                  background:
+                    "color-mix(in srgb, var(--accent) 5%, transparent)",
+                  border:
+                    "1px solid color-mix(in srgb, var(--accent) 16%, transparent)",
+                  borderRadius: 999,
+                }}
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={mode === "light"}
+                  onClick={() => setMode("light")}
+                  style={modeSegmentStyle(mode === "light")}
+                >
+                  <Sun size={14} strokeWidth={1.8} />
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={mode === "dark"}
+                  onClick={() => setMode("dark")}
+                  style={modeSegmentStyle(mode === "dark")}
+                >
+                  <Moon size={14} strokeWidth={1.8} />
+                </button>
+              </div>
+            </div>
+
             {/* Refresh Harper */}
             <button
               onClick={handleRefreshHarper}
@@ -204,4 +258,21 @@ export function HamburgerMenu({
       )}
     </AnimatePresence>
   );
+}
+
+function modeSegmentStyle(active: boolean): React.CSSProperties {
+  return {
+    width: 32,
+    height: 26,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 999,
+    background: active ? "var(--accent)" : "transparent",
+    color: active ? "var(--black, #000)" : "var(--text-secondary)",
+    border: "none",
+    cursor: "pointer",
+    WebkitTapHighlightColor: "transparent",
+    transition: "background 180ms ease, color 180ms ease",
+  };
 }

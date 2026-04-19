@@ -69,6 +69,7 @@ import { createPreviewRoutes } from "./preview.js";
 import { createWebPushRoutes } from "./web-push.js";
 import { createOracleRoutes } from "./oracle.js";
 import { createMeRoutes } from "./me/index.js";
+import { createMaintenanceRoutes } from "./maintenance.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -150,6 +151,14 @@ export function registerRoutes(app: Hono): void {
   // [S25] Public OG preview — allow-listed domains only. Served unauthenticated so the
   // mobile EmbedPreview can render even before Supabase token is hydrated on cold start.
   app.route("/api/preview", createPreviewRoutes());
+
+  // [S26-P2 T9] Maintenance — super-admin commit/deploy/deny for agent-proposed fixes.
+  // GET /api/maintenance/request/:id is public (modal renders for anyone), POST
+  // /api/maintenance/decision is gated inside the handler (returns 401 unauthed /
+  // 403 non-admin). optional-auth middleware fills userId when the JWT is present.
+  app.use("/api/maintenance", authMiddleware);
+  app.use("/api/maintenance/*", authMiddleware);
+  app.route("/api/maintenance", createMaintenanceRoutes());
   // Harper — Claude CLI chat via SDK bridge (public, local-only)
   app.route("/api/harper", createHarperRoutes());
   // Harper Ops — autonomous loop monitoring + control (public, local-only)

@@ -1,6 +1,7 @@
-// [claude-code 2026-04-19] TP beta polish: full 5-font picker matching desktop. Each
-//   row renders the heading font as a sample so the selection is self-evident.
-import { Check } from "lucide-react";
+// [claude-code 2026-04-19] S26-P2 T5: font picker adopts the same full-bleed dropdown
+//   pattern as the theme picker per TP. Each row renders the heading font live at 18px
+//   with the data font as a secondary descriptor so the row itself IS the preview. The
+//   active row gets the 2px inset ring.
 import type { FontTheme } from "@frontend/lib/font-theme";
 import { useHaptic } from "../../hooks/useHaptic";
 
@@ -31,7 +32,7 @@ export function FontPickerList({
       >
         FONT
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {Object.values(fonts).map((f) => {
           const active = current.id === f.id;
           return (
@@ -44,64 +45,44 @@ export function FontPickerList({
               }}
               aria-pressed={active}
               style={{
+                width: "100%",
+                minHeight: 44,
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 12,
-                padding: "12px 14px",
-                background: active
-                  ? "color-mix(in srgb, var(--accent) 6%, transparent)"
-                  : "color-mix(in srgb, var(--accent) 2%, transparent)",
-                border: active
-                  ? "1px solid color-mix(in srgb, var(--accent) 40%, transparent)"
-                  : "1px solid color-mix(in srgb, var(--accent) 14%, transparent)",
-                borderRadius: 10,
+                flexDirection: "column",
+                justifyContent: "center",
+                gap: 2,
+                padding: "8px 14px",
+                background: "transparent",
+                border: "none",
+                borderRadius: 8,
                 cursor: "pointer",
                 textAlign: "left",
                 WebkitTapHighlightColor: "transparent",
-                transition: "border-color 200ms ease, background 200ms ease",
+                boxShadow: active
+                  ? `inset 0 0 0 2px var(--fintheon-text)`
+                  : `inset 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent)`,
+                transition: "box-shadow 180ms ease",
               }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 2,
-                  minWidth: 0,
-                  flex: 1,
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: f.fontHeading,
-                    fontSize: 18,
-                    color: "var(--text-primary)",
-                    letterSpacing: f.id === "nothing" ? "0.05em" : "0.01em",
-                  }}
-                >
-                  {f.label}
-                </span>
-                <span
-                  style={{
-                    fontFamily: "var(--font-data)",
-                    fontSize: 10,
-                    letterSpacing: "0.06em",
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  {f.description}
-                </span>
-              </div>
               <span
-                aria-hidden
                 style={{
-                  display: "inline-flex",
-                  opacity: active ? 1 : 0,
-                  color: "var(--accent)",
-                  transition: "opacity 200ms ease",
+                  fontFamily: f.fontHeading,
+                  fontSize: 18,
+                  color: active ? "var(--accent)" : "var(--text-primary)",
+                  letterSpacing: f.id === "nothing" ? "0.05em" : "0.01em",
                 }}
               >
-                <Check size={18} strokeWidth={2} />
+                {f.label}
+              </span>
+              <span
+                style={{
+                  fontFamily: "var(--font-data)",
+                  fontSize: 10,
+                  letterSpacing: "0.06em",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                {f.description}
               </span>
             </button>
           );

@@ -40,6 +40,9 @@ export interface PushPayload {
   itemId?: string;
   /** Approval ID — only set for toolApprovals category. Used by SW's no-auth decision fetch. */
   approvalId?: string;
+  /** [S26-P2 T9] Maintenance request ID — only set for maintenance_request category.
+   *  SW uses it for lock-screen commit/deploy/deny actions + modal deep-link. */
+  requestId?: string;
 }
 
 export const SEVERITY_ORDER = ["low", "medium", "high", "critical"] as const;

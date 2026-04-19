@@ -9,6 +9,34 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T22:40:00",
+    agent: "claude-code",
+    summary:
+      "S26-P2: heavy mobile UX + maintenance backend (v.26.2). (T1) SnapSheet gesture rewrite — dismiss now requires the pill handle (tap OR swipe-down with AND(offset>260, velocity>500)). Content area no longer drags; full viewport scrolls in place. dragElastic 0.1→0.08 so pushing past the threshold barely rubber-bands. Handle hit target padded to 16×32×12; pill tints to 40% accent on press for tap affordance. Fixes TP's bulletin-collapses-on-scroll-up complaint. (T5) Theme picker full-bleed rewrite — each row IS the accent swatch (44×full-width, rounded 8, luminance-aware label color); active row gets a 2px inset ring in --fintheon-text. Font picker follows the same pattern. New light/dark `mode` in ThemeContext with Sun/Moon toggle inside the hamburger menu; dark remains default. Light mode flips bg/surface to paper + text to near-black while keeping theme accent so brand identity persists. Persists to localStorage key `fintheon:theme-mode`. (T9) Maintenance backend: new POST /api/maintenance/decision (super-admin gated via peer-registry role OR SUPER_ADMIN_USER_ID env allow-list; returns 401 unauthed, 403 non-admin), new GET /api/maintenance/request/:id (public read); registered at /api/maintenance under optional-auth. Supabase-backed when maintenance_requests + maintenance_decisions tables exist; falls back to in-memory store otherwise. Added `maintenance_request` to NOTIFICATION_CATEGORIES + `requestId` to PushPayload. Service worker bumped to fintheon-v5.26.1 — new lock-screen action handler for approve_commit/approve_deploy/deny → no-auth POST /api/maintenance/decision; requestId threaded into notification.data + notification-tap postMessage. Mobile: MaintenanceDetail modal (issue preview + fix description + 3-button action row: COMMIT+DEPLOY filled-accent, COMMIT-ONLY accent-outline, DENY muted-secondary); non-admins see read-only footer. AuthContext now exposes `isSuperAdmin` via TP_USER_ID (memory: 826e7c65-...) or VITE_SUPER_ADMIN_USER_ID env override. NotificationModalContext + DetailSheetRoot + useNotificationTapRouter all dispatch on kind:'maintenanceRequest'. Haptics on approve (success) + deny (deny). (T10) RiskFlow card → catalyst modal transition gets the IV fuse drain/fill choreography TP asked for. Approach B (explicit): on tap the card's VerticalFuseBar drains top-down over 220ms (segment transition-delay staggered 18ms × 10), then the modal opens with the horizontal IVFuseBar animating from 0 to the real score (existing 720ms charge animation reads naturally as the continuation of the drain). Reads like juice flowing from the card to the modal footer. Validation: mobile tsc clean, vite build clean (index 552.14 kB); backend tsc clean; backend restarted via launchctl; /api/diagnostics 200; /api/maintenance/decision unauthed returns 401 as required.",
+    files: [
+      "mobile/components/shared/SnapSheet.tsx",
+      "mobile/components/shared/VerticalFuseBar.tsx",
+      "mobile/components/settings/ThemePickerAccordion.tsx",
+      "mobile/components/settings/FontPickerList.tsx",
+      "mobile/components/layout/HamburgerMenu.tsx",
+      "mobile/contexts/ThemeContext.tsx",
+      "mobile/contexts/AuthContext.tsx",
+      "mobile/contexts/NotificationModalContext.tsx",
+      "mobile/components/catalyst-modal/DetailSheetRoot.tsx",
+      "mobile/components/catalyst-modal/MaintenanceDetail.tsx",
+      "mobile/components/notifications/NotificationDrawer.tsx",
+      "mobile/components/riskflow/RiskFlowCard.tsx",
+      "mobile/hooks/useMaintenanceById.ts",
+      "mobile/hooks/useNotificationTapRouter.ts",
+      "mobile/lib/services/maintenance.ts",
+      "mobile/public/sw.js",
+      "backend-hono/src/routes/maintenance.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/services/notifications/emit.ts",
+      "backend-hono/src/services/web-push-sender.ts",
+    ],
+  },
+  {
     date: "2026-04-19T21:15:00",
     agent: "claude-code",
     summary:

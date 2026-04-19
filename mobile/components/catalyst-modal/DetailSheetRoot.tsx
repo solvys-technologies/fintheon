@@ -1,3 +1,5 @@
+// [claude-code 2026-04-19] S26-P2 T9: dispatch on `maintenanceRequest` kind so push-tap
+//   or notification-drawer tap lands in the MaintenanceDetail modal.
 // [claude-code 2026-04-19] S25: single mount point for the full-viewport DetailSheet. Reads
 //   NotificationModalContext, dispatches on `kind`, and handles "Ask CAO" dispatch success by
 //   closing the sheet + routing to the Chat tab.
@@ -8,6 +10,7 @@ import { ToolApprovalDetail } from "./ToolApprovalDetail";
 import { RiskFlowDetail } from "./RiskFlowDetail";
 import { CatalystDetail } from "./CatalystDetail";
 import { BriefDetail } from "./BriefDetail";
+import { MaintenanceDetail } from "./MaintenanceDetail";
 
 interface Props {
   /** Called when the user successfully fires Ask CAO — App.tsx routes to Chat tab. */
@@ -36,7 +39,9 @@ export function DetailSheetRoot({ onDispatched }: Props) {
         ? "Headline detail"
         : current.kind === "catalyst"
           ? "Catalyst detail"
-          : "Daily brief";
+          : current.kind === "maintenanceRequest"
+            ? "Maintenance request"
+            : "Daily brief";
 
   return (
     <DetailSheet isOpen={true} onClose={close} ariaLabel={ariaLabel}>
@@ -63,6 +68,9 @@ export function DetailSheetRoot({ onDispatched }: Props) {
           onClose={close}
           onDispatched={handleDispatched}
         />
+      )}
+      {current.kind === "maintenanceRequest" && (
+        <MaintenanceDetail requestId={current.requestId} onClose={close} />
       )}
     </DetailSheet>
   );
