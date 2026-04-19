@@ -53,6 +53,7 @@ import type {
 import { ChatSidebar } from "../chat/ChatSidebar";
 import { SessionsModal } from "../chat/SessionsModal";
 import { HarperActivityFeed } from "./HarperActivityFeed";
+import { SanctumSitemapDrawer } from "../layout/SanctumSitemapDrawer";
 import {
   REGULAR_TABS,
   SANCTUM_SUB_VIEWS,
@@ -982,6 +983,14 @@ export function ConsiliumHub() {
           </div>
         </div>
       </div>
+
+      {/* Right-rail Sanctum sitemap drawer — only when Sanctum is active */}
+      {activeTab === "sanctum" && (
+        <SanctumSitemapDrawer
+          activeSubView={sanctumSubView}
+          onNavigate={handleSanctumSubChange}
+        />
+      )}
     </div>
   );
 }

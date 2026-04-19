@@ -6,6 +6,7 @@ import { useState, useCallback } from "react";
 import { Zap, Loader2, Upload, X } from "lucide-react";
 import type { SanctumPreset } from "../../types/agent-desk";
 import { SanctumPresets } from "./SanctumPresets";
+import { SanctumOpsChips } from "./SanctumOpsChips";
 
 const API_BASE = (
   import.meta.env.VITE_API_URL || "http://localhost:8080"
@@ -65,14 +66,9 @@ export function SanctumHeader({
         </div>
 
         <div className="flex items-center gap-3">
-          <SanctumPresets active={preset} onChange={onPresetChange} />
+          <SanctumOpsChips />
 
-          <span
-            className="text-[10px] text-[var(--fintheon-muted)]/50"
-            style={{ fontFamily: "var(--font-body)" }}
-          >
-            5d window
-          </span>
+          <SanctumPresets active={preset} onChange={onPresetChange} />
 
           <button
             onClick={() => setUploadOpen(true)}

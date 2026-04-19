@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] S25-T1: Removed KPI row (moved to Agent Desk fuses), stripped card borders to fading edges, viewport lock ≥1440px, fuses piped into DebatePanel
 // [claude-code 2026-04-17] S23-T1: Aquarium restructure — top chart replaced with brief-pattern container (IV+Forecast | Deliberation), Chart toggle renders 50/50 with TradingView iframe, feels polish
 // [claude-code 2026-04-16] Sanctum — full-border severity on Risk Signals containers, solvys-feels polish
 // [claude-code 2026-03-28] S8-T4: Chart cleanup, Page 2 restructure (50/50 narratives+risk), sim history removed
@@ -5,7 +6,13 @@
 // [claude-code 2026-03-24] Persistence refactor: show persisted data immediately, background updates, no idle state
 // [claude-code 2026-03-24] Thread selectedSymbol prop for TradingView chart, taller chart container (65vh)
 // [claude-code 2026-03-24] Sanctum — 3-page dashboard (merged Risk + Narratives), expandable econ cards
-import { useState, useCallback, useRef, useLayoutEffect } from "react";
+import {
+  useState,
+  useCallback,
+  useRef,
+  useLayoutEffect,
+  useEffect,
+} from "react";
 import { Loader2 } from "lucide-react";
 import type {
   SanctumData,
@@ -14,17 +21,15 @@ import type {
   RiskFlowCatalyst,
   SanctumNarrative,
 } from "../../types/agent-desk";
-import { AUDITORIUM_PAGES, ivHeatColor } from "../../types/agent-desk";
+import { AUDITORIUM_PAGES } from "../../types/agent-desk";
 import { SanctumChart } from "./SanctumChart";
 import { SanctumEconIntel } from "./SanctumEconIntel";
 import { SanctumHeader } from "./SanctumHeader";
 import { SanctumBriefing } from "./SanctumBriefing";
 import { SanctumNarratives } from "./SanctumNarratives";
-import { SanctumRiskAssessment } from "./SanctumRiskAssessment";
 import { AgentScorecard } from "../consilium/AgentScorecard";
 import { AquariumPredictionCards } from "./AquariumPredictionCards";
-import { InstrumentFusesPanel } from "./InstrumentFusesPanel";
-import { PolymarketPredictionCards } from "./PolymarketPredictionCards";
+import { ConsolidatedTradeLedger } from "./ConsolidatedTradeLedger";
 import { BlendedVIXCard } from "./BlendedVIXCard";
 import { NextSessionForecastCard } from "./NextSessionForecastCard";
 import { RiskSignalCards } from "./RiskSignalCards";
@@ -53,101 +58,6 @@ interface SanctumProps {
   chartMode?: boolean;
   /** Fires once per simulationId when AgentDesk deliberation completes — parent should reload latest report. */
   onSynthesisComplete?: () => void;
-}
-
-function heatInterpretation(score: number): string {
-  if (score >= 9) return "Extreme — capital preservation mode";
-  if (score >= 7) return "High — reduce size, widen stops";
-  if (score >= 5) return "Elevated — wider ranges, faster reversals";
-  if (score >= 3) return "Moderate — normal conditions";
-  return "Low — range-bound, fade extremes";
-}
-
-function regimeInterpretation(probability: number): string {
-  const pct = probability * 100;
-  if (pct >= 60) return "Likely shifting — trend models unreliable";
-  if (pct >= 30) return "Possible — tighten stops on trend trades";
-  if (pct >= 15) return "Low risk — current regime holding";
-  return "Stable — no structural change expected";
-}
-
-function confidenceInterpretation(confidence: number): string {
-  const pct = confidence * 100;
-  if (pct >= 80) return "High conviction — size accordingly";
-  if (pct >= 60) return "Moderate — standard positioning";
-  if (pct >= 40) return "Uncertain — reduce exposure";
-  return "Low — consider sitting out";
-}
-
-function KpiTile({
-  label,
-  value,
-  valueColor,
-  caption,
-}: {
-  label: string;
-  value: string;
-  valueColor: string;
-  caption: string;
-}) {
-  return (
-    <div className="rounded-md border border-[var(--fintheon-accent)]/10 bg-[var(--fintheon-surface)] px-4 py-3">
-      <span
-        className="text-[8px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block"
-        style={{ fontFamily: "var(--font-heading)" }}
-      >
-        {label}
-      </span>
-      <span
-        className="text-lg font-bold"
-        style={{ color: valueColor, fontFamily: "var(--font-mono)" }}
-      >
-        {value}
-      </span>
-      <span className="text-[8px] text-[var(--fintheon-muted)]/40 block mt-0.5">
-        {caption}
-      </span>
-    </div>
-  );
-}
-
-function KpiRow({ data }: { data: SanctumData }) {
-  return (
-    <div className="shrink-0 flex justify-center">
-      <div className="grid grid-cols-3 gap-3 w-full max-w-2xl">
-        <KpiTile
-          label="Market Heat"
-          value={data.compositeIV.toFixed(1)}
-          valueColor={ivHeatColor(data.compositeIV)}
-          caption={heatInterpretation(data.compositeIV)}
-        />
-        <KpiTile
-          label="Regime Risk"
-          value={`${(data.regimeShiftProbability * 100).toFixed(0)}%`}
-          valueColor={
-            data.regimeShiftProbability >= 0.6
-              ? "var(--fintheon-severe)"
-              : data.regimeShiftProbability >= 0.3
-                ? "var(--fintheon-neutral-severe)"
-                : "var(--fintheon-low)"
-          }
-          caption={regimeInterpretation(data.regimeShiftProbability)}
-        />
-        <KpiTile
-          label="Signal Strength"
-          value={`${(data.confidence * 100).toFixed(0)}%`}
-          valueColor={
-            data.confidence >= 0.8
-              ? "var(--fintheon-low)"
-              : data.confidence >= 0.6
-                ? "var(--fintheon-neutral-severe)"
-                : "var(--fintheon-severe)"
-          }
-          caption={confidenceInterpretation(data.confidence)}
-        />
-      </div>
-    </div>
-  );
 }
 
 export function Sanctum({
@@ -212,6 +122,17 @@ export function Sanctum({
       pages[idx].scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
+  // Listen for cross-component navigation (right-rail Sanctum drawer dispatches this)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ page?: number }>).detail;
+      if (typeof detail?.page === "number") scrollToPage(detail.page);
+    };
+    window.addEventListener("fintheon:aquarium-scroll-to", handler);
+    return () =>
+      window.removeEventListener("fintheon:aquarium-scroll-to", handler);
+  }, [scrollToPage]);
+
   const handlePresetChange = useCallback(
     (p: SanctumPreset) => {
       setPreset(p);
@@ -258,7 +179,10 @@ export function Sanctum({
   const displayContext = data?.contextSnapshot ?? macroContext ?? null;
 
   return (
-    <div className="h-full w-full flex flex-col bg-[var(--fintheon-bg)]">
+    <div
+      className="h-full w-full flex flex-col bg-[var(--fintheon-bg)]"
+      data-aquarium-viewport-lock
+    >
       {/* Persistent header — always visible */}
       <SanctumHeader
         preset={preset}
@@ -286,7 +210,6 @@ export function Sanctum({
                 /* Chart mode — 50/50 split: compact Aquarium stack on left, TradingView chart on right */
                 <div className="flex-1 grid grid-cols-1 xl:grid-cols-2 gap-3 min-h-0">
                   <div className="flex flex-col gap-3 overflow-y-auto pr-1">
-                    {data && data.compositeIV > 0 && <KpiRow data={data} />}
                     {data && data.compositeIV > 0 && (
                       <SanctumBriefing
                         briefing={data.briefing ?? null}
@@ -301,7 +224,7 @@ export function Sanctum({
                     />
                     <AquariumPredictionCards />
                   </div>
-                  <div className="min-h-[60vh] xl:min-h-0 rounded-xl border border-[var(--fintheon-accent)]/12 overflow-hidden">
+                  <div className="min-h-[60vh] xl:min-h-0 overflow-hidden">
                     <SanctumChart
                       timeSeries={data?.timeSeries ?? []}
                       rollingDays={rollingDays}
@@ -315,10 +238,10 @@ export function Sanctum({
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col gap-4">
-                  {/* Brief-pattern top container — IV+Forecast left (55%), Deliberation right (45%) */}
+                  {/* Brief-pattern top container — Volatility Read left (55%), Deliberation right (45%) — no outer border, fading ruler divides */}
                   <div className="min-h-[520px] flex">
-                    <div className="flex-1 flex border border-[var(--fintheon-accent)]/12 rounded-xl overflow-hidden mx-1 my-1">
-                      {/* Left: Blended IV + Next Session Forecast (55%) */}
+                    <div className="flex-1 flex overflow-hidden mx-1 my-1">
+                      {/* Left: Volatility Read — Blended IV + Next Session Forecast (55%) */}
                       <div className="flex-[55] min-w-0 overflow-y-auto p-4 flex flex-col gap-3">
                         <div className="flex items-center gap-2">
                           <span
@@ -338,19 +261,19 @@ export function Sanctum({
                         />
                       </div>
 
-                      {/* Needle divider — matches Dashboard brief pattern */}
+                      {/* Fading vertical ruler between Volatility Read and Deliberation */}
                       <div className="w-px relative shrink-0">
                         <div
                           className="absolute inset-0"
                           style={{
                             background:
-                              "linear-gradient(to bottom, transparent 0%, var(--fintheon-accent) 25%, var(--fintheon-accent) 75%, transparent 100%)",
-                            opacity: 0.15,
+                              "linear-gradient(to bottom, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
+                            opacity: 0.18,
                           }}
                         />
                       </div>
 
-                      {/* Right: AgentDesk Deliberation (45%) */}
+                      {/* Right: AgentDesk Deliberation with SIGNAL/REGIME/HEAT fuses at bottom (45%) */}
                       <div className="flex-[45] min-w-0 min-h-0 flex flex-col">
                         <AgentDeskDebatePanel
                           simulationId={data?.simulationId ?? null}
@@ -363,69 +286,17 @@ export function Sanctum({
                     </div>
                   </div>
 
-                  {/* [claude-code 2026-04-19] v5.22 S1: KPI row — expansive full-width, no
-                   *   vertical dividers, dashboard-margin aligned with the top VOLATILITY READ
-                   *   frame (mx-1). Generous gap replaces borderlines per TP's instruction. */}
+                  {/* Briefing */}
                   {data && data.compositeIV > 0 && (
-                    <div className="shrink-0 mx-1">
-                      <div className="grid grid-cols-3 gap-10">
-                        <KpiTile
-                          label="Market Heat"
-                          value={data.compositeIV.toFixed(1)}
-                          valueColor={ivHeatColor(data.compositeIV)}
-                          caption={heatInterpretation(data.compositeIV)}
-                        />
-                        <KpiTile
-                          label="Regime Risk"
-                          value={`${(data.regimeShiftProbability * 100).toFixed(0)}%`}
-                          valueColor={
-                            data.regimeShiftProbability >= 0.6
-                              ? "var(--fintheon-severe)"
-                              : data.regimeShiftProbability >= 0.3
-                                ? "var(--fintheon-neutral-severe)"
-                                : "var(--fintheon-low)"
-                          }
-                          caption={regimeInterpretation(
-                            data.regimeShiftProbability,
-                          )}
-                        />
-                        <KpiTile
-                          label="Signal Strength"
-                          value={`${(data.confidence * 100).toFixed(0)}%`}
-                          valueColor={
-                            data.confidence >= 0.8
-                              ? "var(--fintheon-low)"
-                              : data.confidence >= 0.6
-                                ? "var(--fintheon-neutral-severe)"
-                                : "var(--fintheon-severe)"
-                          }
-                          caption={confidenceInterpretation(data.confidence)}
-                        />
-                      </div>
-                    </div>
+                    <SanctumBriefing
+                      briefing={data.briefing ?? null}
+                      isLoading={false}
+                      noBorder
+                    />
                   )}
 
-                  {/* ANALYSIS — own framed glass surface, matches top VOLATILITY READ frame */}
-                  {data && data.compositeIV > 0 && (
-                    <div className="mx-1 border border-[var(--fintheon-accent)]/12 rounded-xl overflow-hidden bg-[color-mix(in_srgb,var(--fintheon-surface)_70%,transparent)] backdrop-blur-sm">
-                      <div className="px-4 pt-3 pb-1 flex items-center gap-2">
-                        <span
-                          className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
-                          style={{ fontFamily: "var(--font-heading)" }}
-                        >
-                          Analysis
-                        </span>
-                      </div>
-                      <SanctumBriefing
-                        briefing={data.briefing ?? null}
-                        isLoading={false}
-                        noBorder
-                      />
-                    </div>
-                  )}
-
-                  {/* Prediction Cards — 5 instruments on a single row at dash margins */}
-                  <div className="mx-1">
+                  {/* Instrument Fuses — single fused row, /NQ /ES /YM /CL /GC with fading rulers */}
+                  <div className="flex justify-center">
                     <AquariumPredictionCards />
                   </div>
                 </div>
@@ -460,19 +331,12 @@ export function Sanctum({
                   Agent consensus on next prints
                 </span>
               </div>
-              {/* [claude-code 2026-04-19] v5.22 S1: Econ Intel left (60%), Instrument
-               *   Fuses right (40%) — TP brief § 4. */}
-              <div className="flex-1 flex gap-4 min-h-0">
-                <div className="flex-[60] min-w-0 overflow-y-auto">
-                  <SanctumEconIntel
-                    expanded={preset === "econ-watch"}
-                    context={displayContext}
-                    categoryScores={data?.categoryScores}
-                  />
-                </div>
-                <div className="flex-[40] min-w-0">
-                  <InstrumentFusesPanel />
-                </div>
+              <div className="flex-1">
+                <SanctumEconIntel
+                  expanded={preset === "econ-watch"}
+                  context={displayContext}
+                  categoryScores={data?.categoryScores}
+                />
               </div>
             </div>
           )}
@@ -494,70 +358,84 @@ export function Sanctum({
 
               {data && data.compositeIV > 0 ? (
                 <div className="flex-1 flex flex-col gap-6">
-                  {/* ── 50/50: Active Narratives + Live Risk Signals ── */}
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 min-h-[300px]">
-                    {/* Left: Active Narratives */}
-                    <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/20 overflow-hidden">
-                      <div className="px-4 py-2 border-b border-[var(--fintheon-border)]/10">
-                        <span className="text-[9px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider">
-                          Active Narratives
+                  {/* ── 2-col: Risk Signals (left, moved from bottom) | Active Narratives (right) ── */}
+                  <div className="flex items-stretch min-h-[320px]">
+                    {/* Left: Risk Signals */}
+                    <div className="flex-1 min-w-0 flex flex-col px-3 py-2">
+                      <div className="px-1 pb-2">
+                        <span
+                          className="text-[10px] tracking-[0.22em] uppercase text-[var(--fintheon-accent)]/85"
+                          style={{ fontFamily: "var(--font-heading)" }}
+                        >
+                          Risk Signals
                         </span>
                       </div>
-                      <div className="p-3 max-h-[400px] overflow-y-auto">
+                      <div className="flex-1 min-h-0 overflow-y-auto">
+                        <RiskSignalCards />
+                      </div>
+                    </div>
+
+                    {/* Fading vertical ruler */}
+                    <div className="w-px shrink-0 relative mx-2">
+                      <div
+                        className="absolute inset-0"
+                        style={{
+                          background:
+                            "linear-gradient(to bottom, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
+                          opacity: 0.18,
+                        }}
+                      />
+                    </div>
+
+                    {/* Right: Active Narratives */}
+                    <div className="flex-1 min-w-0 flex flex-col">
+                      <div className="flex-1 min-h-0 overflow-y-auto">
                         <SanctumNarratives
                           narratives={narratives}
                           expanded={preset === "full-brief"}
                         />
                       </div>
                     </div>
-                    {/* Right: Live Risk Signals */}
-                    <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/20 overflow-hidden">
-                      <div className="px-4 py-2 border-b border-[var(--fintheon-border)]/10">
-                        <span className="text-[9px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider">
-                          Live Risk Signals
-                        </span>
-                      </div>
-                      <div className="p-3 max-h-[400px] overflow-y-auto">
-                        {(riskflowItems?.length ?? 0) > 0 ? (
-                          <SanctumRiskAssessment
-                            riskflowItems={riskflowItems ?? []}
-                            categoryScores={data.categoryScores}
-                          />
-                        ) : (
-                          <p className="text-[10px] text-[var(--fintheon-muted)]/30 text-center py-4">
-                            No risk signals in current window
-                          </p>
-                        )}
-                      </div>
-                    </div>
                   </div>
 
-                  {/* Prediction Markets & Polybot Trades — moved from Page 0 */}
+                  {/* Fading horizontal ruler */}
+                  <div className="h-px relative">
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background:
+                          "linear-gradient(to right, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
+                        opacity: 0.18,
+                      }}
+                    />
+                  </div>
+
+                  {/* Consolidated Trade Ledger — replaces Polymarket kanban */}
                   <div>
-                    <div className="text-[9px] text-[var(--fintheon-muted)]/40 mb-2 uppercase tracking-wider">
-                      Prediction Markets & Polybot Trades
-                    </div>
-                    <PolymarketPredictionCards />
+                    <ConsolidatedTradeLedger />
                   </div>
 
-                  {/* ── Agent Scorecards ── */}
-                  <div className="flex items-center gap-3 py-2">
-                    <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
-                    <span className="text-[8px] text-[var(--fintheon-muted)]/30 uppercase tracking-widest">
-                      Agent Performance
-                    </span>
-                    <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
+                  {/* Fading horizontal ruler */}
+                  <div className="h-px relative">
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background:
+                          "linear-gradient(to right, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
+                        opacity: 0.18,
+                      }}
+                    />
                   </div>
-                  <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/20 overflow-hidden">
-                    <div className="border-b border-[var(--fintheon-border)]/10">
-                      <div className="px-4 py-2">
-                        <span className="text-[9px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider">
-                          Risk Signals
-                        </span>
-                      </div>
-                      <div className="px-3 pb-3">
-                        <RiskSignalCards />
-                      </div>
+
+                  {/* Agent Performance — scorecards only (risk signals moved up; no bordered container) */}
+                  <div>
+                    <div className="px-1 pb-2">
+                      <span
+                        className="text-[10px] tracking-[0.22em] uppercase text-[var(--fintheon-accent)]/85"
+                        style={{ fontFamily: "var(--font-heading)" }}
+                      >
+                        Agent Performance
+                      </span>
                     </div>
                     <div className="max-h-[350px] overflow-y-auto">
                       <AgentScorecard />

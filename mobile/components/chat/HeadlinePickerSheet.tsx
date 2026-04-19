@@ -76,7 +76,8 @@ export function HeadlinePickerSheet({
               border: "none",
               outline: "none",
               fontFamily: "var(--font-data)",
-              fontSize: 12,
+              // 16px prevents iOS Safari from auto-zooming the viewport on focus
+              fontSize: 16,
               color: "var(--text-primary)",
             }}
           />

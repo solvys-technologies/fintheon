@@ -1,9 +1,10 @@
+// [claude-code 2026-04-20] S25-T6b: Category color keys section (narrative-*) + narrative overrides bundled into saved custom themes (restore on activation, cleared on Reset to Default).
 // [claude-code 2026-04-18] Remove Digit Size slider (digits reverted to Inter via unicode-range override)
 // [claude-code 2026-04-18] Nothing Font Kit card
 // [claude-code 2026-04-15] Special themes section — Nothing Design (Something Solvys/Monochrome)
 // [claude-code 2026-03-24] Theme settings — font style, color presets, custom color picker, severity colors, save custom themes
-import { useState } from "react";
-import { Check, Save, Plus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Check, Save } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { type ThemeConfig, DEFAULT_THEME } from "../../lib/theme";
 import { DEFAULT_FONT_THEME } from "../../lib/font-theme";
@@ -33,6 +34,96 @@ const DEFAULT_SEVERITY: Record<string, string> = {
   low: "#34D399",
 };
 
+// Narrative category color tokens — mirrors index.css :root + NarrativeColorKey
+const NARRATIVE_FIELDS: {
+  id: NarrativeCategoryKey;
+  label: string;
+  token: string;
+  fallback: string;
+}[] = [
+  {
+    id: "geopolitical",
+    label: "Geopolitical",
+    token: "--narrative-geopolitical",
+    fallback: "#F59E0B",
+  },
+  {
+    id: "monetary",
+    label: "Monetary",
+    token: "--narrative-monetary",
+    fallback: "#8B5CF6",
+  },
+  {
+    id: "macroeconomic",
+    label: "Macro",
+    token: "--narrative-macroeconomic",
+    fallback: "#3B82F6",
+  },
+  {
+    id: "market-structure",
+    label: "Market Structure",
+    token: "--narrative-market-structure",
+    fallback: "#EC4899",
+  },
+  {
+    id: "earnings",
+    label: "Earnings",
+    token: "--narrative-earnings",
+    fallback: "#34D399",
+  },
+  {
+    id: "supply-chain",
+    label: "Supply Chain",
+    token: "--narrative-supply-chain",
+    fallback: "#14B8A6",
+  },
+  {
+    id: "black-swan",
+    label: "Black Swan",
+    token: "--narrative-black-swan",
+    fallback: "#EF4444",
+  },
+];
+
+type NarrativeCategoryKey =
+  | "geopolitical"
+  | "monetary"
+  | "macroeconomic"
+  | "market-structure"
+  | "earnings"
+  | "supply-chain"
+  | "black-swan";
+
+type NarrativeOverrides = Partial<Record<NarrativeCategoryKey, string>>;
+
+const NARRATIVE_STORAGE_KEY = "fintheon:narrative-color-overrides";
+
+function loadNarrativeOverrides(): NarrativeOverrides {
+  try {
+    const raw = localStorage.getItem(NARRATIVE_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as NarrativeOverrides) : {};
+  } catch {
+    return {};
+  }
+}
+
+function persistNarrativeOverrides(next: NarrativeOverrides): void {
+  try {
+    localStorage.setItem(NARRATIVE_STORAGE_KEY, JSON.stringify(next));
+  } catch {}
+}
+
+function applyNarrativeOverride(token: string, hex: string | null): void {
+  if (typeof document === "undefined") return;
+  if (hex) document.documentElement.style.setProperty(token, hex);
+  else document.documentElement.style.removeProperty(token);
+}
+
+/** ThemeConfig extension: bundles narrative category overrides into a saved theme. */
+interface ThemeConfigWithNarrative extends ThemeConfig {
+  narrativeColors?: NarrativeOverrides;
+}
+
 function isValidHex(v: string): boolean {
   return /^#[0-9A-Fa-f]{6}$/.test(v);
 }
@@ -56,15 +147,69 @@ export function ThemeSettings() {
 
   const isSpecialActive = theme.special === true;
   const [customDraft, setCustomDraft] = useState<Record<string, string>>({});
-  const [customThemes, setCustomThemes] = useState<ThemeConfig[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem("fintheon-custom-themes") || "[]");
-    } catch {
-      return [];
+  const [customThemes, setCustomThemes] = useState<ThemeConfigWithNarrative[]>(
+    () => {
+      try {
+        return JSON.parse(
+          localStorage.getItem("fintheon-custom-themes") || "[]",
+        );
+      } catch {
+        return [];
+      }
+    },
+  );
+  const [narrativeOverrides, setNarrativeOverrides] =
+    useState<NarrativeOverrides>(() => loadNarrativeOverrides());
+
+  // Hydrate CSS vars from persisted overrides once on mount
+  useEffect(() => {
+    for (const { id, token } of NARRATIVE_FIELDS) {
+      if (narrativeOverrides[id]) {
+        applyNarrativeOverride(token, narrativeOverrides[id]!);
+      }
     }
-  });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const presetList = Object.values(presets);
+
+  const handleNarrativeChange = (cat: NarrativeCategoryKey, hex: string) => {
+    if (!isValidHex(hex)) return;
+    const field = NARRATIVE_FIELDS.find((f) => f.id === cat);
+    if (!field) return;
+    const next = { ...narrativeOverrides, [cat]: hex };
+    setNarrativeOverrides(next);
+    persistNarrativeOverrides(next);
+    applyNarrativeOverride(field.token, hex);
+  };
+
+  const getNarrativeFieldValue = (cat: NarrativeCategoryKey): string => {
+    const override = narrativeOverrides[cat];
+    if (override && isValidHex(override)) return override;
+    const field = NARRATIVE_FIELDS.find((f) => f.id === cat);
+    return field?.fallback ?? "#333333";
+  };
+
+  const resetNarrativeOverrides = () => {
+    for (const { token } of NARRATIVE_FIELDS) {
+      applyNarrativeOverride(token, null);
+    }
+    setNarrativeOverrides({});
+    persistNarrativeOverrides({});
+  };
+
+  const applyNarrativeBundle = (bundle: NarrativeOverrides | undefined) => {
+    // First clear every override, then apply what the bundle provides
+    for (const { token } of NARRATIVE_FIELDS) {
+      applyNarrativeOverride(token, null);
+    }
+    const next = bundle ?? {};
+    for (const { id, token } of NARRATIVE_FIELDS) {
+      if (next[id]) applyNarrativeOverride(token, next[id]!);
+    }
+    setNarrativeOverrides(next);
+    persistNarrativeOverrides(next);
+  };
 
   const handleCustomChange = (key: keyof ThemeConfig, value: string) => {
     setCustomDraft((d) => ({ ...d, [key]: value }));
@@ -462,20 +607,62 @@ export function ThemeSettings() {
         </div>
       </section>
 
+      {/* Narrative Category Colors */}
+      <section>
+        <div className="flex items-baseline justify-between mb-1">
+          <h3
+            className="text-sm font-semibold"
+            style={{ color: "var(--fintheon-accent)" }}
+          >
+            Narrative Category Colors
+          </h3>
+          {Object.keys(narrativeOverrides).length > 0 && (
+            <button
+              onClick={resetNarrativeOverrides}
+              className="text-[10px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
+            >
+              Reset categories
+            </button>
+          )}
+        </div>
+        <p className="text-[11px] text-zinc-500 mb-3">
+          Controls node, edge and legend colors on the Narrative Flow map and
+          Active Narratives category tags. Saved inside custom themes so they
+          travel with your palette.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {NARRATIVE_FIELDS.map(({ id, label }) => {
+            const value = getNarrativeFieldValue(id);
+            return (
+              <ColorSwatchInput
+                key={id}
+                color={value}
+                label={label}
+                onChange={(hex) => handleNarrativeChange(id, hex)}
+              />
+            );
+          })}
+        </div>
+      </section>
+
       {/* Save Custom Theme + Reset */}
       <div className="pt-4 flex items-center gap-3 flex-wrap">
         <button
           onClick={() => {
             const name = prompt("Theme name:");
             if (!name) return;
-            const custom: ThemeConfig = {
+            const custom: ThemeConfigWithNarrative = {
               ...theme,
               name: `custom-${Date.now()}`,
               label: name,
+              narrativeColors:
+                Object.keys(narrativeOverrides).length > 0
+                  ? { ...narrativeOverrides }
+                  : undefined,
             };
             const saved = JSON.parse(
               localStorage.getItem("fintheon-custom-themes") || "[]",
-            ) as ThemeConfig[];
+            ) as ThemeConfigWithNarrative[];
             saved.push(custom);
             localStorage.setItem(
               "fintheon-custom-themes",
@@ -498,6 +685,7 @@ export function ThemeSettings() {
             setTheme(DEFAULT_THEME);
             setFontTheme(DEFAULT_FONT_THEME);
             setCustomDraft({});
+            resetNarrativeOverrides();
           }}
           className="px-4 py-2 rounded-md text-xs font-medium transition-colors border border-zinc-700 text-zinc-500 hover:text-zinc-300"
         >
@@ -521,8 +709,11 @@ export function ThemeSettings() {
                 <button
                   key={ct.name}
                   onClick={() => {
-                    setTheme(ct);
+                    // Strip the narrative bundle before handing the base theme to ThemeContext.
+                    const { narrativeColors, ...baseTheme } = ct;
+                    setTheme(baseTheme as ThemeConfig);
                     setCustomDraft({});
+                    applyNarrativeBundle(narrativeColors);
                   }}
                   className="relative text-left p-3 rounded-lg border transition-all hover:scale-[1.01]"
                   style={{

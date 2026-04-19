@@ -1,5 +1,5 @@
 // [claude-code 2026-04-19] v5.22 S1: Nothing-fuse-shimmer on every component bar, palette
-//   severity colors, "Agent Desk" label replaces MiroShark.
+//   severity colors, "Agent Desk" label replaces AgentDesk.
 // [claude-code 2026-04-15] S16-T4: Blended VIX Score card — visible on Aquarium Page 0
 import type { IVScoreResponse } from "../../types/market-data";
 import { NothingFuse } from "../shared/NothingFuse";
@@ -69,7 +69,13 @@ export function BlendedVIXCard({ data, isLoading }: BlendedVIXCardProps) {
           Blended IV Score
         </span>
         <div className="flex items-center gap-1.5">
-          <span className={`text-sm font-bold ${scoreColor}`}>
+          <span
+            className={`text-base font-bold ${scoreColor}`}
+            style={{
+              fontFamily: "Doto, ui-monospace, monospace",
+              letterSpacing: "0.02em",
+            }}
+          >
             {data.score.toFixed(1)}
           </span>
           <span className={`text-[9px] font-medium ${scoreColor}`}>

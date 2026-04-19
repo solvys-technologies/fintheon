@@ -52,6 +52,8 @@ import { createCalibrationRoutes } from "./calibration/index.js";
 import { createScoringRoutes } from "./scoring/index.js";
 import { createHarperRoutes } from "./harper/index.js";
 import { createHarperOpsRoutes } from "./harper-ops/index.js";
+import { createOpsRoutes } from "./ops/index.js";
+import { createEconRoutes } from "./econ/index.js";
 import { createPeersRoutes } from "./peers/index.js";
 import predictionsRoutes from "./predictions.js";
 import { createDocumentRoutes } from "./documents/index.js";
@@ -72,6 +74,7 @@ import { createWebPushRoutes } from "./web-push.js";
 import { createOracleRoutes } from "./oracle.js";
 import { createMeRoutes } from "./me/index.js";
 import { createMaintenanceRoutes } from "./maintenance.js";
+import { createRoutinesRoutes } from "./routines/index.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -169,6 +172,12 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/harper", createHarperRoutes());
   // Harper Ops — autonomous loop monitoring + control (public, local-only)
   app.route("/api/harper-ops", createHarperOpsRoutes());
+  // Routines Console — operator surface for the 8 Claude Code Routines (public, local-only)
+  app.route("/api/routines", createRoutinesRoutes());
+  // Aquarium ops — context audit badges + groupthink guard (Track 7b)
+  app.route("/api/ops", createOpsRoutes());
+  // Econ Intelligence — event cards, filters, KPI/instrument fuses (Track 4a/4b)
+  app.route("/api/econ", createEconRoutes());
   // MCP registry — live read/write of ~/.claude/mcp.json (public, local-only)
   app.route("/api/mcp", createMcpRoutes());
 

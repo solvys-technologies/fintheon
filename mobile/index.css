@@ -50,15 +50,10 @@
   --space-3xl: 64px;
   --space-4xl: 96px;
 
-  /* ── Motion ──
-     TP beta polish 2026-04-19: one source of truth for easing + durations.
-     Framer Motion components still declare their own transitions, but every
-     CSS-driven transition should pick from these tokens. */
+  /* ── Motion ── */
   --ease-nothing: cubic-bezier(0.25, 0.1, 0.25, 1);
-  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
   --duration-micro: 150ms;
   --duration-transition: 300ms;
-  --duration-long: 500ms;
 
   /* ── Fintheon Legacy Tokens (shared component compatibility) ── */
   --fintheon-accent: #d4af37;
@@ -124,74 +119,12 @@
 }
 
 /* ── Global Base ── */
-html,
 body {
   background: var(--black);
   color: var(--text-primary);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Disable iOS text-size auto-adjust on rotate; prevents unwanted scaling. */
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
-  /* Prevent rubber-band overscroll on the root so fixed/sticky surfaces don't leak gaps. */
-  overscroll-behavior-y: none;
-}
-
-/* ── Native-feel touch defaults ──
-   Claude's iOS-PWA audit: tap-highlight + double-tap-zoom make chat feel
-   like a browser page instead of an app. Kill both globally.
-   TP beta polish 2026-04-19: add subtle active-scale micro-interaction on
-   presses. Framer-motion components override their own transform, so this
-   only affects vanilla buttons/anchors — which is where we want it. */
-button,
-[role="button"],
-a,
-input,
-textarea,
-select,
-label {
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-button,
-[role="button"] {
-  transition:
-    transform var(--duration-micro) var(--ease-nothing),
-    background-color 200ms var(--ease-nothing),
-    border-color 200ms var(--ease-nothing),
-    color 200ms var(--ease-nothing),
-    opacity 200ms var(--ease-nothing);
-}
-
-button:active:not(:disabled),
-[role="button"]:active:not([aria-disabled="true"]) {
-  transform: scale(0.97);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  button,
-  [role="button"] {
-    transition: none;
-  }
-  button:active:not(:disabled),
-  [role="button"]:active:not([aria-disabled="true"]) {
-    transform: none;
-  }
-}
-
-/* iOS Safari zooms into inputs whose font-size is < 16px on focus.
-   Force a floor of 16px for native form fields; components that need smaller
-   visible text should apply `font-size: 16px; transform: none;` or use the
-   explicit `input-ios-safe` escape hatch below. */
-input,
-textarea,
-select {
-  font-size: max(16px, 1em);
-}
-.input-ios-safe {
-  font-size: 16px !important;
 }
 
 /* ── Scrollbar Hiding (match frontend) ── */
@@ -251,9 +184,12 @@ html *::-webkit-scrollbar {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* [claude-code 2026-04-18] Removed nothing-fuse-shimmer per TP — too brief on mobile to
-   read as anything but a flash, dropped to keep fuses calm. Component overlays stay as
-   no-op spans (the class is empty so the markup stays compatible with desktop). */
-.nothing-fuse-shimmer {
-  display: none;
+/* ── iOS Safari auto-zoom suppression ──
+   Safari zooms the viewport whenever an input or textarea with font-size
+   < 16px gains focus. Force a 16px floor on every form control so the page
+   stops jumping around when users tap the chat composer or headline search. */
+input,
+textarea,
+select {
+  font-size: 16px;
 }

@@ -6,7 +6,7 @@
   <string>io.solvys.fintheon-news-worker</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/opt/homebrew/bin/bun</string>
+    <string>/Users/tifos/.bun/bin/bun</string>
     <string>run</string>
     <string>src/workers/news-worker/index.ts</string>
   </array>
@@ -32,7 +32,7 @@
     <key>FLAG_NEWS_WORKER_WRITES_RISKFLOW</key>
     <string>false</string>
     <key>PATH</key>
-    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <string>/Users/tifos/.bun/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
   </dict>
   <key>ThrottleInterval</key>
   <integer>10</integer>

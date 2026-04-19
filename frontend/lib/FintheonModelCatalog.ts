@@ -2,15 +2,12 @@
  * FintheonModelCatalog — Minimal model configuration.
  *
  * Fintheon is an Opus-only app. All analysts run Claude Opus 4.6.
- * Codex handles backend trading / coding tasks.
+ * Autonomous backend work runs on Claude Code Routines (see docs/routines.md).
  * There is no user-facing model selection.
  */
 
 export const DEFAULT_MODEL = "anthropic/claude-opus-4-6" as const;
 export const DEFAULT_MODEL_NAME = "Claude Opus 4.6" as const;
-
-export const CODEX_MODEL = "openai/codex-mini" as const;
-export const CODEX_MODEL_NAME = "Codex Mini" as const;
 
 /** Returns the default model ID used by all Fintheon analysts. */
 export function getDefaultModel(): string {
