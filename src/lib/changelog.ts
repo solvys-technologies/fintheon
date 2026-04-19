@@ -9,6 +9,34 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T20:40:00",
+    agent: "claude-code",
+    summary:
+      "S27 shipped (Agentic Intelligence, 10-Claude sprint): 8 of 11 tracks live — T2§1-3 Hermes sidecar, T4 browser primitives + Rettiwt cut, T5 voice assistant, T6 Harper Browser Operator, T7 news worker, T8 SOUL.md, T9 Smart Model Routing, T10 Skills Hub, T11 GEPA. T1/T2§4-6/T3 rolled to S28. Archived to sprint-changelog/. 11 sub-track briefs deleted.",
+    files: [
+      "sprint-changelog/S27-ORCHESTRATION.md",
+      "sprint-changelog/S27-CONTEXT.md",
+    ],
+  },
+  {
+    date: "2026-04-20T20:40:00",
+    agent: "claude-code",
+    summary:
+      "S26 shipped (mobile polish + heavy UX + maintenance backend, two-part single-agent handoff): archived to sprint-changelog/. Three files: S26-ORCHESTRATION + S26-PART-1-polish + S26-PART-2-heavy.",
+    files: [
+      "sprint-changelog/S26-ORCHESTRATION.md",
+      "sprint-changelog/S26-PART-1-polish.md",
+      "sprint-changelog/S26-PART-2-heavy.md",
+    ],
+  },
+  {
+    date: "2026-04-20T20:40:00",
+    agent: "claude-code",
+    summary:
+      "S25 unified in v5 line retroactively: Routines Console + Mobile Superadmin (v5.22.4, branch caed3239) + Sanctum/Aquarium/Econ Intel redesign (v5.22.6, branch 6d76d74e). Both sat unmerged across S26/S27; TP flagged them during v.27.10 final-sanitation. 14 tracks, 52 files.",
+    files: ["src/lib/changelog.ts"],
+  },
+  {
     date: "2026-04-20T17:45:00",
     agent: "claude-code",
     summary:
