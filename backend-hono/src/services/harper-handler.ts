@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] S27-T8 W1d: Harper system prompt now loads from SOUL.md (grounded on CLAUDE.md literal import). Hardcoded HARPER_BASE_SYSTEM_PROMPT retained as fallback only.
 // [claude-code 2026-04-17] S23-T3: buildAquariumContext now exported + enhanced with "how to read this" preamble + surface-gated injection (Harper reads her own AgentDesk output as ground truth)
 // [claude-code 2026-03-28] S8-T7: Harper handler — Claude CLI session handler for Chat
 /**
@@ -17,6 +18,9 @@
  *   - Session persistence in Supabase (harper_sessions)
  */
 
+// [claude-code 2026-04-19] S27-T8 W1d: Harper system prompt now loads from SOUL.md (grounded on CLAUDE.md).
+//   The hardcoded HARPER_BASE_SYSTEM_PROMPT constant is retained as a fallback for offline/bootstrap
+//   scenarios where the SOUL file is unreadable.
 import {
   isBridgeAvailable,
   bridgeChat,
@@ -24,6 +28,10 @@ import {
   type BridgeChatRequest,
 } from "./claude-sdk/bridge.js";
 import { buildFeedContext } from "./ai/agent-instructions/index.js";
+import {
+  loadSoul,
+  renderSystemPrompt as renderSoulPrompt,
+} from "./ai/soul/loader.js";
 import {
   getContextForAgent,
   type AgentMemoryEntry,
@@ -266,8 +274,17 @@ export async function harperChat(
     requestId,
   } = request;
 
-  // Build system prompt with persona modifier
-  let systemPrompt = HARPER_BASE_SYSTEM_PROMPT;
+  // Build system prompt — SOUL-grounded identity first, legacy constant as fallback.
+  let systemPrompt: string;
+  try {
+    const soul = await loadSoul("harper");
+    systemPrompt = renderSoulPrompt(soul);
+  } catch (err) {
+    log.warn("SOUL load failed for Harper; falling back to hardcoded prompt", {
+      error: String(err),
+    });
+    systemPrompt = HARPER_BASE_SYSTEM_PROMPT;
+  }
 
   if (persona && PERSONA_MODIFIERS[persona]) {
     systemPrompt += `\n\n--- PERSONA ACTIVE ---\n${PERSONA_MODIFIERS[persona]}`;

@@ -12,6 +12,16 @@ W1b (Claude-03) populates this directory. Placeholder until the sidecar lands.
 - `launchd/io.solvys.fintheon-hermes.plist` — local launchd unit on port 8318
 - `plugins/gepa/` — T11 lands the GEPA + DSPy plugin here
 
+## SOUL.md Mount (T8 dependency)
+
+Every agent in Fintheon is grounded by a SOUL.md in `backend-hono/src/services/ai/soul/`. The sidecar must have read access to this directory so that per-agent system prompts match backend-hono's view.
+
+- **Local**: bind-mount the repo path — `../backend-hono/src/services/ai/soul → /app/soul` (ro)
+- **Fly**: deploy a volume or copy the SOUL dir into the image at build time (prefer image-bake so SOUL drift is caught in CI before deploy)
+- `config.yaml` should set `soul.dir: /app/soul` — loader reads `${agent_id}.md` on demand
+- Grounding imports `../../../../../CLAUDE.md` literally — the sidecar must either replicate that relative tree or resolve the `grounding.source_of_truth` field at runtime by fetching from backend-hono's SOUL API. Simplest: mount the repo root read-only.
+- Schema + TS reference: [`shared/soul-schema.ts`](../shared/soul-schema.ts). Python port lives under `hermes-sidecar/soul_schema.py` (W1b lands this alongside the rest of the sidecar).
+
 ## HTTP Contract
 
 - `POST /v1/chat` (SSE stream)

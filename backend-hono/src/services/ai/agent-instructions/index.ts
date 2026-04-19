@@ -1,4 +1,6 @@
 // [claude-code 2026-04-16] S20-T1: Agent dossiers injected after base prompt
+// [claude-code 2026-04-19] S27-T8 W1d: Identity/scope/constraints/grounding now load from SOUL.md per agent.
+//   BASE_PROMPTS + DOSSIER_* remain as fallbacks for legacy code paths and surface-specific layers (capabilities, gates, skills).
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
@@ -16,6 +18,19 @@ import { DOSSIER_FEUCHT } from "./dossiers/feucht.js";
 import { DOSSIER_CONSUL } from "./dossiers/consul.js";
 import { DOSSIER_HERALD } from "./dossiers/herald.js";
 import { getSupabaseClient } from "../../../config/supabase.js";
+import {
+  loadSoul,
+  renderSystemPrompt as renderSoulPrompt,
+  type AgentId as SoulAgentId,
+} from "../soul/loader.js";
+
+const ROLE_TO_SOUL_ID: Record<HermesAgentRole, SoulAgentId> = {
+  "harper-cao": "harper",
+  "pma-merged": "oracle",
+  "futures-desk": "feucht",
+  "fundamentals-desk": "consul",
+  herald: "herald",
+};
 
 /** Cache entry for compiled prompts */
 type CacheEntry = { prompt: string; expiresAt: number };
@@ -138,19 +153,39 @@ export async function getAgentSystemPrompt(
     return cached.prompt;
   }
 
-  // 1. Base role description (graceful fallback to harper-cao)
-  let prompt = BASE_PROMPTS[role] ?? BASE_PROMPTS["harper-cao"];
-
-  // 1.5. Full persona profile from ~/.hermes persona files
-  const persona = await loadPersonaFile(role);
-  if (persona) {
-    prompt += `\n\n## Full Persona Profile\n${persona}`;
+  // 1. SOUL-grounded identity — loads CLAUDE.md literally + the agent-specific extra dossier.
+  //    Replaces BASE_PROMPTS + DOSSIER_* composition for the identity layer.
+  //    Legacy constants are kept for surfaces that still reference them (voice, sidecar bootstrap) and
+  //    as the fallback path below.
+  let prompt = "";
+  const soulId = ROLE_TO_SOUL_ID[role];
+  if (soulId) {
+    try {
+      const soul = await loadSoul(soulId);
+      prompt = renderSoulPrompt(soul);
+    } catch (err) {
+      console.warn(
+        `[AgentInstructions] SOUL load failed for role=${role} (${soulId}); falling back to legacy prompt composition.`,
+        err,
+      );
+    }
   }
 
-  // 1.6. Agent dossier — authoritative identity, worldview, and operational rules
-  const dossier = AGENT_DOSSIERS[role];
-  if (dossier) {
-    prompt += dossier;
+  // Fallback composition when SOUL load fails. Keeps the system resilient under misconfiguration.
+  if (!prompt) {
+    prompt = BASE_PROMPTS[role] ?? BASE_PROMPTS["harper-cao"];
+
+    // 1.5. Full persona profile from ~/.hermes persona files
+    const persona = await loadPersonaFile(role);
+    if (persona) {
+      prompt += `\n\n## Full Persona Profile\n${persona}`;
+    }
+
+    // 1.6. Agent dossier — authoritative identity, worldview, and operational rules
+    const dossier = AGENT_DOSSIERS[role];
+    if (dossier) {
+      prompt += dossier;
+    }
   }
 
   // 2. Shared beliefs — the neural web
