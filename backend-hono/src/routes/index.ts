@@ -47,6 +47,7 @@ import { createSourceAccountRoutes } from "./source-accounts/index.js";
 import { createCalibrationRoutes } from "./calibration/index.js";
 import { createHarperRoutes } from "./harper/index.js";
 import { createHarperOpsRoutes } from "./harper-ops/index.js";
+import { createOpsRoutes } from "./ops/index.js";
 import { createPeersRoutes } from "./peers/index.js";
 import predictionsRoutes from "./predictions.js";
 import { createDocumentRoutes } from "./documents/index.js";
@@ -130,6 +131,8 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/harper", createHarperRoutes());
   // Harper Ops — autonomous loop monitoring + control (public, local-only)
   app.route("/api/harper-ops", createHarperOpsRoutes());
+
+  app.route("/api/ops", createOpsRoutes());
   // MCP registry — live read/write of ~/.claude/mcp.json (public, local-only)
   app.route("/api/mcp", createMcpRoutes());
 
