@@ -66,7 +66,7 @@ fi
 cd "$FINTHEON_ROOT"
 CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "main")
 info "Branch: $CURRENT_BRANCH"
-info "Current: $(git describe --tags --always 2>/dev/null || git log --oneline -1 | cut -c1-7)"
+info "Current: $(git describe --tags --abbrev=0 2>/dev/null || git log --oneline -1 | cut -c1-7)"
 echo ""
 
 # ── Step 1: Stop Fintheon + kill backend ─────────────────────────────────────
@@ -407,7 +407,7 @@ fi
 
 # ── Done ─────────────────────────────────────────────────────────────────────
 
-VERSION=$(git describe --tags --always 2>/dev/null || git log --oneline -1 | cut -c1-7)
+VERSION=$(git describe --tags --abbrev=0 2>/dev/null || git log --oneline -1 | cut -c1-7)
 echo ""
 echo -e "      ${_FIRE3}  )  ${_R}                                    ${_FIRE3}  (  ${_R}"
 echo -e "      ${_FIRE2} ( \\ ${_R}                                    ${_FIRE2} / ) ${_R}"
