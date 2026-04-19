@@ -1,5 +1,7 @@
+// [claude-code 2026-04-19] v5.22 S1: Confidence fuse uses Nothing shimmer + palette color.
 // [claude-code 2026-04-15] S16-T4: Next Session Forecast card — visible on Aquarium Page 0
 import type { IVScoreResponse } from "../../types/market-data";
+import { NothingFuse } from "../shared/NothingFuse";
 
 interface NextSessionForecastCardProps {
   data: IVScoreResponse | null;
@@ -67,7 +69,7 @@ export function NextSessionForecastCard({
           Next Session Forecast
         </span>
         <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-zinc-800 text-gray-500">
-          {prediction.source === "miroshark" ? "MiroShark" : "Heuristic"}
+          {prediction.source === "agentDesk" ? "Agent Desk" : "Heuristic"}
         </span>
       </div>
 
@@ -85,12 +87,11 @@ export function NextSessionForecastCard({
               {(prediction.confidence * 100).toFixed(0)}%
             </span>
           </div>
-          <div className="w-full h-[3px] bg-zinc-800 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full bg-[var(--fintheon-accent)]"
-              style={{ width: `${prediction.confidence * 100}%` }}
-            />
-          </div>
+          <NothingFuse
+            value={prediction.confidence}
+            score={prediction.confidence * 10}
+            thickness={3}
+          />
         </div>
       </div>
 

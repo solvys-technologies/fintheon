@@ -55,7 +55,7 @@ const LEVEL4_KEYWORDS = new Set([
   "ceasefire",
 ]);
 
-// Level 3 — High (consilium push, Oracle notes, MiroShark adjustment)
+// Level 3 — High (consilium push, Oracle notes, AgentDesk adjustment)
 // Standard econ prints, tariffs, Fed speakers, geopolitical escalation, mega-cap earnings
 const LEVEL3_KEYWORDS = new Set([
   "tariff",

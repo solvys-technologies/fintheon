@@ -1,4 +1,4 @@
-// [claude-code 2026-04-17] S23-T1/T2: Debate button → Chart button (LineChart icon, toggles Sanctum 50/50 with TradingView), Proposals iframe-toggle removed, reloadLatestReport wired into MiroShark synthesis-complete callback to fix Aquarium hang
+// [claude-code 2026-04-17] S23-T1/T2: Debate button → Chart button (LineChart icon, toggles Sanctum 50/50 with TradingView), Proposals iframe-toggle removed, reloadLatestReport wired into AgentDesk synthesis-complete callback to fix Aquarium hang
 // [claude-code 2026-04-03] Spring-physics CSS transitions for dropdowns, tab content, side panels
 // [claude-code 2026-04-03] S14-T3: Consilium restructure — Boardroom + Apparatus as dropdowns
 // [claude-code 2026-03-30] Wire narratives from NarrativeContext → Sanctum (Aquarium)
@@ -48,7 +48,7 @@ import type {
   SimulationContext,
   RiskFlowCatalyst,
   SanctumNarrative,
-} from "../../types/miroshark";
+} from "../../types/agent-desk";
 
 import { ChatSidebar } from "../chat/ChatSidebar";
 import { SessionsModal } from "../chat/SessionsModal";
@@ -156,7 +156,7 @@ export function ConsiliumHub() {
   const [boardroomDropdownOpen, setBoardroomDropdownOpen] = useState(false);
   const [apparatusDropdownOpen, setApparatusDropdownOpen] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
-  const [mirosharkData, setMirosharkData] = useState<SanctumData | null>(null);
+  const [agentDeskData, setAgentDeskData] = useState<SanctumData | null>(null);
   const [riskflowItems, setRiskflowItems] = useState<RiskFlowCatalyst[]>([]);
   const [macroContext, setMacroContext] = useState<SimulationContext | null>(
     null,
@@ -350,7 +350,7 @@ export function ConsiliumHub() {
   // Fetch market context on mount
   const fetchContext = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/miroshark/context`);
+      const res = await fetch(`${API_BASE}/api/agent-desk/context`);
       if (res.ok) {
         const ctx = await res.json();
         setMacroContext(ctx);
@@ -365,17 +365,17 @@ export function ConsiliumHub() {
     fetchContext();
   }, [fetchContext]);
 
-  // Load persisted MiroShark report on mount + auto-run if stale (not run today)
+  // Load persisted AgentDesk report on mount + auto-run if stale (not run today)
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         // Load latest cached report for immediate display
-        const res = await fetch(`${API_BASE}/api/miroshark/latest`);
+        const res = await fetch(`${API_BASE}/api/agent-desk/latest`);
         if (res.ok) {
           const report = await res.json();
           if (!cancelled && report) {
-            setMirosharkData({
+            setAgentDeskData({
               simulationId: report.simulationId ?? "",
               status: "complete",
               compositeIV: report.compositeIV ?? 0,
@@ -394,16 +394,16 @@ export function ConsiliumHub() {
         // Check if we need an auto-run (minimum 1/day)
         if (cancelled) return;
         const autoCheck = await fetch(
-          `${API_BASE}/api/miroshark/auto-run-check`,
+          `${API_BASE}/api/agent-desk/auto-run-check`,
         );
         if (!autoCheck.ok) return;
         const { shouldRun } = await autoCheck.json();
         if (shouldRun && !cancelled) {
           console.log(
-            "[ConsiliumHub] MiroShark stale — triggering daily auto-run",
+            "[ConsiliumHub] AgentDesk stale — triggering daily auto-run",
           );
           // Run simulation in background — don't block the UI
-          const simRes = await fetch(`${API_BASE}/api/miroshark/simulate`, {
+          const simRes = await fetch(`${API_BASE}/api/agent-desk/simulate`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -414,11 +414,11 @@ export function ConsiliumHub() {
           if (simRes.ok && !cancelled) {
             const { simulationId } = await simRes.json();
             const reportRes = await fetch(
-              `${API_BASE}/api/miroshark/report/${simulationId}`,
+              `${API_BASE}/api/agent-desk/report/${simulationId}`,
             );
             if (reportRes.ok && !cancelled) {
               const report = await reportRes.json();
-              setMirosharkData({
+              setAgentDeskData({
                 simulationId: simulationId,
                 status: "complete",
                 compositeIV: report.compositeIV ?? report.nextSessionScore ?? 0,
@@ -435,7 +435,7 @@ export function ConsiliumHub() {
           }
         }
       } catch (err) {
-        console.error("[ConsiliumHub] Failed to load/auto-run MiroShark:", err);
+        console.error("[ConsiliumHub] Failed to load/auto-run AgentDesk:", err);
       }
     })();
     return () => {
@@ -445,7 +445,7 @@ export function ConsiliumHub() {
 
   const applyReport = useCallback(
     (report: Record<string, any>, simId?: string) => {
-      setMirosharkData({
+      setAgentDeskData({
         simulationId: simId ?? report.simulationId ?? "",
         status: "complete",
         compositeIV: report.compositeIV ?? report.nextSessionScore ?? 0,
@@ -465,7 +465,7 @@ export function ConsiliumHub() {
 
   const reloadLatestReport = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/miroshark/latest`);
+      const res = await fetch(`${API_BASE}/api/agent-desk/latest`);
       if (!res.ok) return;
       const report = await res.json();
       if (report) applyReport(report);
@@ -474,12 +474,12 @@ export function ConsiliumHub() {
     }
   }, [applyReport]);
 
-  const handleRunMiroShark = useCallback(
+  const handleRunAgentDesk = useCallback(
     async (
       preset?: SanctumPreset,
       narrativeState?: { lanes: any[]; catalysts: any[]; ropes: any[] },
     ) => {
-      setMirosharkData((prev) =>
+      setAgentDeskData((prev) =>
         prev
           ? { ...prev, status: "running" }
           : {
@@ -497,7 +497,7 @@ export function ConsiliumHub() {
 
       try {
         // Always kick off a fresh simulation when the user clicks Update
-        const simRes = await fetch(`${API_BASE}/api/miroshark/simulate`, {
+        const simRes = await fetch(`${API_BASE}/api/agent-desk/simulate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -514,15 +514,15 @@ export function ConsiliumHub() {
         const { simulationId } = await simRes.json();
 
         const reportRes = await fetch(
-          `${API_BASE}/api/miroshark/report/${simulationId}`,
+          `${API_BASE}/api/agent-desk/report/${simulationId}`,
         );
         if (!reportRes.ok)
           throw new Error(`Report fetch failed: ${reportRes.status}`);
         const report = await reportRes.json();
         applyReport(report, simulationId);
       } catch (err) {
-        console.error("[MiroShark] Run failed:", err);
-        setMirosharkData((prev) =>
+        console.error("[AgentDesk] Run failed:", err);
+        setAgentDeskData((prev) =>
           prev
             ? {
                 ...prev,
@@ -871,8 +871,8 @@ export function ConsiliumHub() {
               {displayedSubView === "narratives" && <NarrativeMap />}
               {displayedSubView === "aquarium" && (
                 <SanctumWithNarratives
-                  data={mirosharkData}
-                  onRun={handleRunMiroShark}
+                  data={agentDeskData}
+                  onRun={handleRunAgentDesk}
                   riskflowItems={riskflowItems}
                   macroContext={macroContext}
                   selectedSymbol={selectedSymbol.symbol}

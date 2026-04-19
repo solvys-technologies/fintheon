@@ -94,7 +94,7 @@ const AGENTS: AgentNode[] = [
       {
         id: "f2",
         fact: "VIX at 14.2 — low vol regime, reducing position sizes",
-        source: "miroshark",
+        source: "agentDesk",
         timestamp: "2026-03-20T09:00:00",
         confidence: 0.91,
         version: 1,
@@ -118,7 +118,7 @@ const AGENTS: AgentNode[] = [
       {
         id: "c2",
         fact: "Mega-cap tech P/E compression: avg forward P/E dropped from 32x to 28x",
-        source: "miroshark",
+        source: "agentDesk",
         timestamp: "2026-03-20T06:00:00",
         confidence: 0.85,
         version: 2,

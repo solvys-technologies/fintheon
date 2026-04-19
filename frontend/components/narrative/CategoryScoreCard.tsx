@@ -1,8 +1,8 @@
 // [claude-code 2026-03-29] Layout overhaul: center-justify score+delta, right-justify confidence, add description
 // [claude-code 2026-03-24] Heat-map colors — ivHeatColor(score) replaces static RISK_CATEGORY_COLORS
-import { RISK_CATEGORY_LABELS, ivHeatColor } from "../../types/miroshark";
+import { RISK_CATEGORY_LABELS, ivHeatColor } from "../../types/agent-desk";
 
-type MiroSharkRiskCategory =
+type AgentDeskRiskCategory =
   | "geopolitical"
   | "political"
   | "monetary-policy"
@@ -17,7 +17,7 @@ export function CategoryScoreCard({
   confidence,
   description,
 }: {
-  category: MiroSharkRiskCategory;
+  category: AgentDeskRiskCategory;
   score: number;
   delta: number;
   confidence: number;

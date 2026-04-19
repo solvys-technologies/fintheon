@@ -167,7 +167,7 @@ class ApiClient {
         endpoint.startsWith("/api/riskflow/") ||
         endpoint.startsWith("/api/predictions/") ||
         endpoint.startsWith("/api/data/") ||
-        endpoint.startsWith("/api/miroshark/") ||
+        endpoint.startsWith("/api/agent-desk/") ||
         endpoint.startsWith("/api/diagnostics/") ||
         endpoint.startsWith("/api/market-data/") ||
         endpoint.startsWith("/api/market/");

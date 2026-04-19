@@ -1,5 +1,5 @@
 /**
- * ContextBank, MiroShark, Memory, Skills, and EditorSidebar Services
+ * ContextBank, AgentDesk, Memory, Skills, and EditorSidebar Services
  */
 
 import ApiClient from "../apiClient";
@@ -39,8 +39,8 @@ export class ContextBankService {
   }
 }
 
-// MiroShark Service
-export class MiroSharkService {
+// AgentDesk Service
+export class AgentDeskService {
   constructor(private client: ApiClient) {}
 
   async simulate(
@@ -55,18 +55,18 @@ export class MiroSharkService {
       macroIndicators?: Record<string, number>;
     },
   ): Promise<{ simulationId: string }> {
-    return this.client.post("/api/miroshark/simulate", {
+    return this.client.post("/api/agent-desk/simulate", {
       narrativeState,
       contextBank,
     });
   }
 
   async getReport(simId: string): Promise<any> {
-    return this.client.get(`/api/miroshark/report/${simId}`);
+    return this.client.get(`/api/agent-desk/report/${simId}`);
   }
 
   async getStatus(simId: string): Promise<any> {
-    return this.client.get(`/api/miroshark/status/${simId}`);
+    return this.client.get(`/api/agent-desk/status/${simId}`);
   }
 
   async inject(
@@ -75,7 +75,7 @@ export class MiroSharkService {
     targetNarrativeIds: string[],
     description: string,
   ): Promise<any> {
-    return this.client.post(`/api/miroshark/inject/${simId}`, {
+    return this.client.post(`/api/agent-desk/inject/${simId}`, {
       variable,
       targetNarrativeIds,
       description,

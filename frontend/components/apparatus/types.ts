@@ -56,7 +56,7 @@ export interface MemoryVersion {
 export type MemorySource =
   | "twitter"
   | "data"
-  | "miroshark"
+  | "agentDesk"
   | "trade"
   | "boardroom"
   | "manual";

@@ -13,8 +13,8 @@ import type {
   SimulationContext,
   RiskFlowCatalyst,
   SanctumNarrative,
-} from "../../types/miroshark";
-import { AUDITORIUM_PAGES, ivHeatColor } from "../../types/miroshark";
+} from "../../types/agent-desk";
+import { AUDITORIUM_PAGES, ivHeatColor } from "../../types/agent-desk";
 import { SanctumChart } from "./SanctumChart";
 import { SanctumEconIntel } from "./SanctumEconIntel";
 import { SanctumHeader } from "./SanctumHeader";
@@ -23,12 +23,13 @@ import { SanctumNarratives } from "./SanctumNarratives";
 import { SanctumRiskAssessment } from "./SanctumRiskAssessment";
 import { AgentScorecard } from "../consilium/AgentScorecard";
 import { AquariumPredictionCards } from "./AquariumPredictionCards";
+import { InstrumentFusesPanel } from "./InstrumentFusesPanel";
 import { PolymarketPredictionCards } from "./PolymarketPredictionCards";
 import { BlendedVIXCard } from "./BlendedVIXCard";
 import { NextSessionForecastCard } from "./NextSessionForecastCard";
 import { RiskSignalCards } from "./RiskSignalCards";
 import { useIVScoreData } from "./useIVScoreData";
-import { MiroSharkDebatePanel } from "../miroshark/MiroSharkDebatePanel";
+import { AgentDeskDebatePanel } from "../agent-desk/AgentDeskDebatePanel";
 
 interface CatalystInput {
   id: string;
@@ -50,7 +51,7 @@ interface SanctumProps {
   selectedSymbol?: string;
   /** Chart mode — splits Aquarium 50/50 with a TradingView iframe on the right. Toggled from the Consilium tab bar Chart button. */
   chartMode?: boolean;
-  /** Fires once per simulationId when MiroShark deliberation completes — parent should reload latest report. */
+  /** Fires once per simulationId when AgentDesk deliberation completes — parent should reload latest report. */
   onSynthesisComplete?: () => void;
 }
 
@@ -185,7 +186,7 @@ export function Sanctum({
     onRunRef.current = onRun;
   }, [onRun]);
 
-  // Auto-run check removed from mount — MiroShark is scheduled twice daily
+  // Auto-run check removed from mount — AgentDesk is scheduled twice daily
   // (before MDB and ADB) via backend staleness threshold (6h).
   // Manual runs still available via the Simulate button in SanctumHeader.
 
@@ -349,20 +350,25 @@ export function Sanctum({
                         />
                       </div>
 
-                      {/* Right: MiroShark Deliberation (45%) */}
+                      {/* Right: AgentDesk Deliberation (45%) */}
                       <div className="flex-[45] min-w-0 min-h-0 flex flex-col">
-                        <MiroSharkDebatePanel
+                        <AgentDeskDebatePanel
                           simulationId={data?.simulationId ?? null}
                           onSynthesisComplete={onSynthesisComplete}
+                          compositeIV={data?.compositeIV}
+                          regimeShiftProbability={data?.regimeShiftProbability}
+                          confidence={data?.confidence}
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* KPI Row */}
+                  {/* [claude-code 2026-04-19] v5.22 S1: KPI row — expansive full-width, no
+                   *   vertical dividers, dashboard-margin aligned with the top VOLATILITY READ
+                   *   frame (mx-1). Generous gap replaces borderlines per TP's instruction. */}
                   {data && data.compositeIV > 0 && (
-                    <div className="shrink-0 flex justify-center">
-                      <div className="grid grid-cols-3 gap-4 w-full max-w-2xl">
+                    <div className="shrink-0 mx-1">
+                      <div className="grid grid-cols-3 gap-10">
                         <KpiTile
                           label="Market Heat"
                           value={data.compositeIV.toFixed(1)}
@@ -399,17 +405,27 @@ export function Sanctum({
                     </div>
                   )}
 
-                  {/* Briefing */}
+                  {/* ANALYSIS — own framed glass surface, matches top VOLATILITY READ frame */}
                   {data && data.compositeIV > 0 && (
-                    <SanctumBriefing
-                      briefing={data.briefing ?? null}
-                      isLoading={false}
-                      noBorder
-                    />
+                    <div className="mx-1 border border-[var(--fintheon-accent)]/12 rounded-xl overflow-hidden bg-[color-mix(in_srgb,var(--fintheon-surface)_70%,transparent)] backdrop-blur-sm">
+                      <div className="px-4 pt-3 pb-1 flex items-center gap-2">
+                        <span
+                          className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
+                          style={{ fontFamily: "var(--font-heading)" }}
+                        >
+                          Analysis
+                        </span>
+                      </div>
+                      <SanctumBriefing
+                        briefing={data.briefing ?? null}
+                        isLoading={false}
+                        noBorder
+                      />
+                    </div>
                   )}
 
-                  {/* Prediction Cards — 5 instruments */}
-                  <div className="flex justify-center">
+                  {/* Prediction Cards — 5 instruments on a single row at dash margins */}
+                  <div className="mx-1">
                     <AquariumPredictionCards />
                   </div>
                 </div>
@@ -444,12 +460,19 @@ export function Sanctum({
                   Agent consensus on next prints
                 </span>
               </div>
-              <div className="flex-1">
-                <SanctumEconIntel
-                  expanded={preset === "econ-watch"}
-                  context={displayContext}
-                  categoryScores={data?.categoryScores}
-                />
+              {/* [claude-code 2026-04-19] v5.22 S1: Econ Intel left (60%), Instrument
+               *   Fuses right (40%) — TP brief § 4. */}
+              <div className="flex-1 flex gap-4 min-h-0">
+                <div className="flex-[60] min-w-0 overflow-y-auto">
+                  <SanctumEconIntel
+                    expanded={preset === "econ-watch"}
+                    context={displayContext}
+                    categoryScores={data?.categoryScores}
+                  />
+                </div>
+                <div className="flex-[40] min-w-0">
+                  <InstrumentFusesPanel />
+                </div>
               </div>
             </div>
           )}

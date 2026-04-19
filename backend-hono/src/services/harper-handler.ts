@@ -1,4 +1,4 @@
-// [claude-code 2026-04-17] S23-T3: buildAquariumContext now exported + enhanced with "how to read this" preamble + surface-gated injection (Harper reads her own MiroShark output as ground truth)
+// [claude-code 2026-04-17] S23-T3: buildAquariumContext now exported + enhanced with "how to read this" preamble + surface-gated injection (Harper reads her own AgentDesk output as ground truth)
 // [claude-code 2026-03-28] S8-T7: Harper handler — Claude CLI session handler for Chat
 /**
  * Harper Handler
@@ -11,7 +11,7 @@
  *     → Parsed stream events → SSE to frontend
  *
  * Features:
- *   - Full Fintheon context injection (narratives, RiskFlow, MiroShark)
+ *   - Full Fintheon context injection (narratives, RiskFlow, AgentDesk)
  *   - Artifact creation (catalyst cards, narrative items, trade ideas)
  *   - Persona switching via system prompt modifier
  *   - Session persistence in Supabase (harper_sessions)
@@ -100,7 +100,7 @@ Use these freely to inspect code, grep logs, query the database, run scripts, bu
 
 ## Platform Sections
 - **Consilium** = Main workspace with tabs: Sanctum (narratives), Chat (you), Boardroom (team), Apparatus (tools)
-- **Sanctum** = NarrativeMap (force-directed canvas), Aquarium (MiroShark sim), Timeline
+- **Sanctum** = NarrativeMap (force-directed canvas), Aquarium (AgentDesk sim), Timeline
 - **Boardroom** = Forum (bulletin), Imperium (task command), Agentic Forum, Scriptorium (docs)
 - **Apparatus** = Desk (agent monitoring), Fileroom (context bank)
 - **Strategium** = Right panel: mission control widgets, RiskFlow feed, economic calendar
@@ -134,8 +134,8 @@ Use these freely to inspect code, grep logs, query the database, run scripts, bu
 - **Consul** — Mega-cap tech, earnings, sector rotation, fundamental valuations
 - **Herald** — Breaking news, social sentiment, headline risk, information asymmetry
 
-## Aquarium (MiroShark)
-When the user is on the Aquarium surface, or when a simulation report appears in your context, you are looking at the live MiroShark deliberation you helped score. Treat the Composite IV / Regime Risk / Signal Strength / Surfaced+Contested findings as ground-truth output of the platform — not as a broken data dump or a test run. The user wants interpretation: what the numbers imply for session positioning, what the contested findings mean for conviction, what the surfaced theses imply for risk. Never respond with "it looks like the pipeline is broken" — that's a category error.
+## Aquarium (AgentDesk)
+When the user is on the Aquarium surface, or when a simulation report appears in your context, you are looking at the live AgentDesk deliberation you helped score. Treat the Composite IV / Regime Risk / Signal Strength / Surfaced+Contested findings as ground-truth output of the platform — not as a broken data dump or a test run. The user wants interpretation: what the numbers imply for session positioning, what the contested findings mean for conviction, what the surfaced theses imply for risk. Never respond with "it looks like the pipeline is broken" — that's a category error.
 
 ## Communication Style
 Concise, authoritative, data-driven. No hedging unless genuinely uncertain.
@@ -164,14 +164,14 @@ information asymmetry detection. Fast, alert-oriented.`,
 // ── Internal Connector Context Builders ───────────────────────────────────
 
 /**
- * Build Aquarium context: injects latest MiroShark simulation summary with interpretation scaffolding.
+ * Build Aquarium context: injects latest AgentDesk simulation summary with interpretation scaffolding.
  * [S23-T3] "How to read this" preamble so the agent interprets the simulation as ground-truth
  * market signal instead of treating it as a broken data dump.
  */
 export async function buildAquariumContext(): Promise<string> {
   try {
     const { getLatestReport } =
-      await import("./miroshark/miroshark-service.js");
+      await import("./agent-desk/agent-desk-service.js");
     const report = (await getLatestReport()) as Record<string, any> | null;
     if (!report) return "";
 
@@ -200,7 +200,7 @@ export async function buildAquariumContext(): Promise<string> {
               ? "Light Winds"
               : "Calm Seas";
 
-    return `\n\n--- AQUARIUM (MiroShark) CONTEXT ---
+    return `\n\n--- AQUARIUM (AgentDesk) CONTEXT ---
 How to read this:
 - Composite IV (0-10): 0-2 Calm Seas, 2-4 Light Winds, 4-6 Gathering Storm, 6-8 Tipping Point, 8-10 Shit Show.
 - Regime Risk is the probability (%) the current regime flips in the next session. >30% = elevated reversal risk.

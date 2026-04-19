@@ -1,4 +1,4 @@
-// [claude-code 2026-03-28] S8-T5: MiroShark gov official debate engine — 8 personas replacing 5 debate agents
+// [claude-code 2026-03-28] S8-T5: AgentDesk gov official debate engine — 8 personas replacing 5 debate agents
 // Hybrid worldview: baked-in base + 14-day RiskFlow headline augmentation per official
 
 import { invokeAgent } from "../strands/index.js";
@@ -6,17 +6,17 @@ import { isSkillEnabled } from "../../config/feature-flags.js";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { exaSearch, isExaAvailable } from "../exa-service.js";
 import type {
-  MiroSharkSeed,
-  MiroSharkReport,
-  MiroSharkScenario,
-  MiroSharkRiskCategory,
-  MiroSharkCategoryScore,
-  MiroSharkTimePoint,
-  MiroSharkGeneratedEvent,
-  MiroSharkAgentResponse,
-} from "./miroshark-types.js";
+  AgentDeskSeed,
+  AgentDeskReport,
+  AgentDeskScenario,
+  AgentDeskRiskCategory,
+  AgentDeskCategoryScore,
+  AgentDeskTimePoint,
+  AgentDeskGeneratedEvent,
+  AgentDeskAgentResponse,
+} from "./agent-desk-types.js";
 
-const RISK_CATEGORIES: MiroSharkRiskCategory[] = [
+const RISK_CATEGORIES: AgentDeskRiskCategory[] = [
   "geopolitical",
   "political",
   "monetary-policy",
@@ -131,7 +131,7 @@ async function fetchExaForOfficial(
         (r) => `[EXA] ${r.title}${r.text ? ` — ${r.text.slice(0, 100)}` : ""}`,
       );
   } catch (err) {
-    console.warn(`[MiroShark] Exa search failed for ${name}:`, String(err));
+    console.warn(`[AgentDesk] Exa search failed for ${name}:`, String(err));
     return [];
   }
 }
@@ -185,7 +185,7 @@ async function fetchRecentHeadlinesForOfficial(
 function buildAgentSystemPrompt(persona: string, headlines: string[]): string {
   let prompt = `${persona}
 
-You are a government official participating in a MiroShark policy simulation. Based on your role and worldview, analyze the provided market context and assess how your policy domain affects market volatility and risk.`;
+You are a government official participating in a AgentDesk policy simulation. Based on your role and worldview, analyze the provided market context and assess how your policy domain affects market volatility and risk.`;
 
   if (headlines.length > 0) {
     prompt += `\n\n--- RECENT HEADLINES RELEVANT TO YOUR PORTFOLIO ---\n${headlines.join("\n")}\n--- END HEADLINES ---\n\nIncorporate these recent developments into your assessment. They reflect the latest actions and statements from your domain.`;
@@ -224,11 +224,11 @@ export function getGovOfficials() {
   }));
 }
 
-export function isMiroSharkEnabled(): boolean {
-  return isSkillEnabled("miroshark");
+export function isAgentDeskEnabled(): boolean {
+  return isSkillEnabled("agentDesk");
 }
 
-export async function runDebate(seed: MiroSharkSeed): Promise<MiroSharkReport> {
+export async function runDebate(seed: AgentDeskSeed): Promise<AgentDeskReport> {
   const context = formatSeedContext(seed);
   const startTime = Date.now();
 
@@ -247,21 +247,21 @@ export async function runDebate(seed: MiroSharkSeed): Promise<MiroSharkReport> {
     ),
   );
 
-  const responses: MiroSharkAgentResponse[] = [];
+  const responses: AgentDeskAgentResponse[] = [];
   for (const result of results) {
     if (result.status === "fulfilled") {
       responses.push(result.value);
     } else {
-      console.error("[MiroShark] Agent failed:", result.reason);
+      console.error("[AgentDesk] Agent failed:", result.reason);
     }
   }
 
   if (responses.length === 0) {
-    throw new Error("All MiroShark gov official agents failed");
+    throw new Error("All AgentDesk gov official agents failed");
   }
 
   console.log(
-    `[MiroShark] Debate completed: ${responses.length}/${GOV_OFFICIALS.length} officials responded in ${Date.now() - startTime}ms`,
+    `[AgentDesk] Debate completed: ${responses.length}/${GOV_OFFICIALS.length} officials responded in ${Date.now() - startTime}ms`,
   );
   return aggregateResponses(responses);
 }
@@ -270,7 +270,7 @@ async function runGovAgent(
   agent: GovOfficialAgent,
   context: string,
   headlines: string[],
-): Promise<MiroSharkAgentResponse> {
+): Promise<AgentDeskAgentResponse> {
   const systemPrompt = buildAgentSystemPrompt(agent.persona, headlines);
 
   const { text } = await invokeAgent({
@@ -279,7 +279,7 @@ async function runGovAgent(
     model: { temperature: 0.4, maxTokens: 1024 },
   });
 
-  const parsed = parseJsonSafe<Omit<MiroSharkAgentResponse, "agentId">>(text);
+  const parsed = parseJsonSafe<Omit<AgentDeskAgentResponse, "agentId">>(text);
 
   if (!parsed) {
     return buildFallbackResponse(agent.id);
@@ -301,8 +301,8 @@ async function runGovAgent(
 }
 
 function aggregateResponses(
-  responses: MiroSharkAgentResponse[],
-): MiroSharkReport {
+  responses: AgentDeskAgentResponse[],
+): AgentDeskReport {
   const agentWeights = new Map(GOV_OFFICIALS.map((a) => [a.id, a.weight]));
   let totalWeight = 0;
   let weightedIV = 0;
@@ -362,9 +362,9 @@ function aggregateResponses(
 }
 
 function aggregateCategoryScores(
-  responses: MiroSharkAgentResponse[],
+  responses: AgentDeskAgentResponse[],
   weights: Map<string, number>,
-): MiroSharkCategoryScore[] {
+): AgentDeskCategoryScore[] {
   return RISK_CATEGORIES.map((cat) => {
     let totalW = 0;
     let wScore = 0;
@@ -396,9 +396,9 @@ function aggregateCategoryScores(
 }
 
 function mergeScenarios(
-  responses: MiroSharkAgentResponse[],
-): MiroSharkScenario[] {
-  const all: MiroSharkScenario[] = [];
+  responses: AgentDeskAgentResponse[],
+): AgentDeskScenario[] {
+  const all: AgentDeskScenario[] = [];
   for (const r of responses) {
     for (const s of r.scenarios) {
       all.push({
@@ -411,7 +411,7 @@ function mergeScenarios(
   }
 
   // Group by label similarity and average
-  const grouped = new Map<string, MiroSharkScenario[]>();
+  const grouped = new Map<string, AgentDeskScenario[]>();
   for (const s of all) {
     const key = s.label
       .toLowerCase()
@@ -422,7 +422,7 @@ function mergeScenarios(
     grouped.set(key, group);
   }
 
-  const merged: MiroSharkScenario[] = [];
+  const merged: AgentDeskScenario[] = [];
   for (const [, group] of grouped) {
     const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
     merged.push({
@@ -446,10 +446,10 @@ function mergeScenarios(
 }
 
 function deduplicateEvents(
-  responses: MiroSharkAgentResponse[],
-): MiroSharkGeneratedEvent[] {
+  responses: AgentDeskAgentResponse[],
+): AgentDeskGeneratedEvent[] {
   const seen = new Set<string>();
-  const events: MiroSharkGeneratedEvent[] = [];
+  const events: AgentDeskGeneratedEvent[] = [];
 
   for (const r of responses) {
     for (const e of r.generatedEvents) {
@@ -468,11 +468,11 @@ function deduplicateEvents(
 }
 
 function generateTimeSeries(
-  categoryScores: MiroSharkCategoryScore[],
+  categoryScores: AgentDeskCategoryScore[],
   compositeScore: number,
   days: number,
-): MiroSharkTimePoint[] {
-  const points: MiroSharkTimePoint[] = [];
+): AgentDeskTimePoint[] {
+  const points: AgentDeskTimePoint[] = [];
   const now = new Date();
   const meanTarget = 3.5;
 
@@ -481,7 +481,7 @@ function generateTimeSeries(
     date.setDate(date.getDate() + d);
     const decay = d / days;
 
-    const categories = {} as Record<MiroSharkRiskCategory, number>;
+    const categories = {} as Record<AgentDeskRiskCategory, number>;
     let catSum = 0;
 
     for (const cs of categoryScores) {
@@ -510,8 +510,8 @@ function generateTimeSeries(
   return points;
 }
 
-function formatSeedContext(seed: MiroSharkSeed): string {
-  const sections: string[] = ["=== MIROSHARK SIMULATION CONTEXT ==="];
+function formatSeedContext(seed: AgentDeskSeed): string {
+  const sections: string[] = ["=== AGENT DESK SIMULATION CONTEXT ==="];
 
   if (seed.entities.length > 0) {
     sections.push("\n--- NARRATIVE ENTITIES ---");
@@ -577,7 +577,7 @@ function formatSeedContext(seed: MiroSharkSeed): string {
   return sections.join("\n");
 }
 
-function buildFallbackResponse(agentId: string): MiroSharkAgentResponse {
+function buildFallbackResponse(agentId: string): AgentDeskAgentResponse {
   return {
     agentId,
     projectedIVScore: 5,
@@ -603,8 +603,8 @@ function buildFallbackResponse(agentId: string): MiroSharkAgentResponse {
 }
 
 function normalizeCategories(
-  scores: MiroSharkCategoryScore[] | undefined,
-): MiroSharkCategoryScore[] {
+  scores: AgentDeskCategoryScore[] | undefined,
+): AgentDeskCategoryScore[] {
   if (!scores || scores.length === 0) {
     return RISK_CATEGORIES.map((cat) => ({
       category: cat,
@@ -650,8 +650,8 @@ function parseJsonSafe<T>(text: string): T | null {
 // ── Legacy Market Analyst code removed (S20-T2) ────────────────────────────
 // MARKET_ANALYSTS, fetchHeadlinesForAnalyst, fetchExaHeadlinesForAgent,
 // runMarketAnalystDebate, getMarketAnalysts — all killed.
-// Subject-filtered headline logic ported to miroshark-context.ts:fetchFilteredHeadlines()
-// Agent metadata lives in miroshark-template.ts:ANALYST_META
+// Subject-filtered headline logic ported to agent-desk-context.ts:fetchFilteredHeadlines()
+// Agent metadata lives in agent-desk-template.ts:ANALYST_META
 
 /**
  * Check if any headlines in the current context have geopolitical subject tags.

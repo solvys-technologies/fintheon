@@ -1,16 +1,16 @@
-// [claude-code 2026-04-05] MiroShark auto-run every 6h (weekdays) to keep Sanctum fresh
+// [claude-code 2026-04-05] AgentDesk auto-run every 6h (weekdays) to keep Sanctum fresh
 import cron from "node-cron";
 import {
   shouldAutoRun,
   startPrediction,
-} from "../miroshark/miroshark-service.js";
+} from "../agent-desk/agent-desk-service.js";
 import { createLogger } from "../../lib/logger.js";
 
-const log = createLogger("MiroSharkDaily");
+const log = createLogger("AgentDeskDaily");
 
 let scheduled = false;
 
-async function runMiroSharkUpdate(): Promise<void> {
+async function runAgentDeskUpdate(): Promise<void> {
   try {
     const { shouldRun, staleness } = await shouldAutoRun();
     if (!shouldRun) {
@@ -35,11 +35,11 @@ async function runMiroSharkUpdate(): Promise<void> {
       });
     }
   } catch (err) {
-    log.error("MiroShark cron error", { error: String(err) });
+    log.error("AgentDesk cron error", { error: String(err) });
   }
 }
 
-export function startMiroSharkDaily(): void {
+export function startAgentDeskDaily(): void {
   if (scheduled) return;
   scheduled = true;
 
@@ -47,11 +47,11 @@ export function startMiroSharkDaily(): void {
   cron.schedule(
     "0 0,6,12,18 * * 1-5",
     async () => {
-      log.info("MiroShark 6h cron triggered");
-      await runMiroSharkUpdate();
+      log.info("AgentDesk 6h cron triggered");
+      await runAgentDeskUpdate();
     },
     { timezone: "America/New_York" },
   );
 
-  log.info("MiroShark cron scheduled (every 6h, weekdays: 00/06/12/18 ET)");
+  log.info("AgentDesk cron scheduled (every 6h, weekdays: 00/06/12/18 ET)");
 }

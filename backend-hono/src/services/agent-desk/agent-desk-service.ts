@@ -4,46 +4,46 @@
 // [claude-code 2026-03-28] S8-T5: 3-phase deliberation pipeline integration
 // [claude-code 2026-03-24] Persistence refactor: getLatestReport(), full report JSONB in persistRun(), 30min staleness
 // [claude-code 2026-03-24] Added getRollingWindowData, shouldAutoRun, running state init hook
-// [claude-code 2026-03-23] MiroShark simulation lifecycle orchestrator
+// [claude-code 2026-03-23] AgentDesk simulation lifecycle orchestrator
 
 import type {
-  MiroSharkPrediction,
-  MiroSharkReport,
-  MiroSharkSimulation,
-  MiroSharkInjection,
+  AgentDeskPrediction,
+  AgentDeskReport,
+  AgentDeskSimulation,
+  AgentDeskInjection,
   SanctumPreset,
   SimulationContext,
   EconPrintStat,
   RollingWindowQuery,
   AggregatedRollingData,
-  MiroSharkRunSummary,
-  MiroSharkBriefing,
+  AgentDeskRunSummary,
+  AgentDeskBriefing,
   DeliberationState,
-} from "./miroshark-types.js";
+} from "./agent-desk-types.js";
 // @ts-ignore — T1 creates this file
-import { resetRunningState } from "./miroshark-reactive.js";
+import { resetRunningState } from "./agent-desk-reactive.js";
 import {
-  isMiroSharkEnabled,
+  isAgentDeskEnabled,
   runDebate,
   hasGeopoliticalContent,
-} from "./miroshark-client.js";
-import { convertNarrativeToSeed } from "./miroshark-seed.js";
-import { assembleSimulationContext } from "./miroshark-context.js";
-import { generateBriefing, SLOP_FALLBACK } from "./miroshark-briefing.js";
+} from "./agent-desk-client.js";
+import { convertNarrativeToSeed } from "./agent-desk-seed.js";
+import { assembleSimulationContext } from "./agent-desk-context.js";
+import { generateBriefing, SLOP_FALLBACK } from "./agent-desk-briefing.js";
 import {
   runDeliberationPipeline,
   getDeliberationState,
   getDeliberationStateAsync,
   injectUserTake,
-} from "./miroshark-deliberation.js";
+} from "./agent-desk-deliberation.js";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { invokeAgent } from "../strands/index.js";
 
 /** In-memory prediction cache (simId → prediction) */
-const predictionCache = new Map<string, MiroSharkPrediction>();
+const predictionCache = new Map<string, AgentDeskPrediction>();
 
 /** In-memory simulation tracking */
-const activeSimulations = new Map<string, MiroSharkSimulation>();
+const activeSimulations = new Map<string, AgentDeskSimulation>();
 
 /** Track seeds for re-running with injections */
 const seedCache = new Map<string, ReturnType<typeof convertNarrativeToSeed>>();
@@ -84,7 +84,7 @@ interface ContextBank {
 }
 
 /**
- * Start a MiroShark prediction simulation.
+ * Start a AgentDesk prediction simulation.
  * Auto-fetches live market context (VIX, FRED, RiskFlow) based on preset.
  * Generates briefing text. Persists run to Supabase.
  */
@@ -93,8 +93,8 @@ export async function startPrediction(
   contextBank?: ContextBank,
   preset: SanctumPreset = "full-brief",
 ): Promise<{ simulationId: string } | { error: string }> {
-  if (!isMiroSharkEnabled()) {
-    return { error: "MiroShark is not enabled" };
+  if (!isAgentDeskEnabled()) {
+    return { error: "AgentDesk is not enabled" };
   }
 
   const simId = crypto.randomUUID();
@@ -128,7 +128,7 @@ export async function startPrediction(
       context.riskflowHeadlines.length > 0
     ) {
       console.log(
-        `[MiroShark] Empty lanes from frontend — synthesizing from ${context.riskflowHeadlines.length} RiskFlow headlines`,
+        `[AgentDesk] Empty lanes from frontend — synthesizing from ${context.riskflowHeadlines.length} RiskFlow headlines`,
       );
       const threadGroups = new Map<string, typeof context.riskflowHeadlines>();
       for (const h of context.riskflowHeadlines) {
@@ -172,7 +172,7 @@ export async function startPrediction(
     // Validate context snapshot has VIX + headlines before running
     if (!context.vixLevel && context.riskflowHeadlines.length === 0) {
       console.warn(
-        "[MiroShark] No VIX and no RiskFlow headlines — simulation will produce low-quality results",
+        "[AgentDesk] No VIX and no RiskFlow headlines — simulation will produce low-quality results",
       );
     }
 
@@ -213,7 +213,7 @@ export async function startPrediction(
     const geoActive = await hasGeopoliticalContent();
     if (geoActive) {
       console.log(
-        "[MiroShark] Geopolitical content detected — running gov-official second layer",
+        "[AgentDesk] Geopolitical content detected — running gov-official second layer",
       );
       const govReport = await runDebate(seed);
       govReport.debateLayer = "gov-officials";
@@ -230,7 +230,7 @@ export async function startPrediction(
       try {
         await generateHarperAnalysis(report, context, briefing);
       } catch (err) {
-        console.warn("[MiroShark] Harper analysis failed (non-fatal):", err);
+        console.warn("[AgentDesk] Harper analysis failed (non-fatal):", err);
         briefing.harperAnalysis = SLOP_FALLBACK;
       }
     }
@@ -242,7 +242,7 @@ export async function startPrediction(
     predictionCache.set(simId, prediction);
 
     // Initialize running analysis state from fresh debate result
-    // Convert MiroSharkCategoryScore[] → Record<MiroSharkRiskCategory, number>
+    // Convert AgentDeskCategoryScore[] → Record<AgentDeskRiskCategory, number>
     const categoryRecord = report.categoryScores.reduce(
       (acc, cs) => {
         acc[cs.category] = cs.ivScore;
@@ -253,7 +253,7 @@ export async function startPrediction(
     resetRunningState(
       simId,
       categoryRecord as Record<
-        import("./miroshark-types.js").MiroSharkRiskCategory,
+        import("./agent-desk-types.js").AgentDeskRiskCategory,
         number
       >,
       report.nextSessionProjection,
@@ -269,19 +269,19 @@ export async function startPrediction(
 
     // Persist to Supabase (fire-and-forget)
     persistRun(simId, preset, report, context, briefing).catch((err) => {
-      console.warn("[MiroShark] Failed to persist run:", err);
+      console.warn("[AgentDesk] Failed to persist run:", err);
     });
 
     // Start deliberation pipeline (fire-and-forget — frontend polls for state)
     runDeliberationPipeline(simId, report).catch((err) => {
-      console.warn("[MiroShark] Deliberation pipeline failed:", err);
+      console.warn("[AgentDesk] Deliberation pipeline failed:", err);
     });
 
     return { simulationId: simId };
   } catch (err) {
     const msg =
       err instanceof Error ? err.message : "Unknown error starting simulation";
-    console.error("[MiroShark] startPrediction failed:", msg);
+    console.error("[AgentDesk] startPrediction failed:", msg);
 
     activeSimulations.set(simId, {
       id: simId,
@@ -296,21 +296,21 @@ export async function startPrediction(
 }
 
 /** Get simulation status */
-export function pollStatus(simId: string): MiroSharkSimulation | null {
+export function pollStatus(simId: string): AgentDeskSimulation | null {
   return activeSimulations.get(simId) ?? null;
 }
 
 /** Extract structured predictions from a completed simulation */
-export function getPredictions(simId: string): MiroSharkPrediction | null {
+export function getPredictions(simId: string): AgentDeskPrediction | null {
   return predictionCache.get(simId) ?? null;
 }
 
 /** Inject a scenario variable and re-run the debate */
 export async function injectScenarioVariable(
   simId: string,
-  injection: MiroSharkInjection,
-): Promise<MiroSharkSimulation | null> {
-  if (!isMiroSharkEnabled()) return null;
+  injection: AgentDeskInjection,
+): Promise<AgentDeskSimulation | null> {
+  if (!isAgentDeskEnabled()) return null;
 
   const cachedSeed = seedCache.get(simId);
   if (!cachedSeed) return null;
@@ -340,7 +340,7 @@ export async function injectScenarioVariable(
     const prediction = reportToPrediction(simId, report);
     predictionCache.set(simId, prediction);
 
-    const sim: MiroSharkSimulation = {
+    const sim: AgentDeskSimulation = {
       id: simId,
       status: "complete",
       progress: 100,
@@ -350,25 +350,25 @@ export async function injectScenarioVariable(
     activeSimulations.set(simId, sim);
     return sim;
   } catch (err) {
-    console.error("[MiroShark] injectScenarioVariable failed:", err);
+    console.error("[AgentDesk] injectScenarioVariable failed:", err);
     return null;
   }
 }
 
 export function getCachedSimulation(
   simId: string,
-): MiroSharkSimulation | undefined {
+): AgentDeskSimulation | undefined {
   return activeSimulations.get(simId);
 }
 
 export function getCachedPrediction(
   simId: string,
-): MiroSharkPrediction | undefined {
+): AgentDeskPrediction | undefined {
   return predictionCache.get(simId);
 }
 
-export function getLatestCachedPrediction(): MiroSharkPrediction | undefined {
-  let latest: MiroSharkPrediction | undefined;
+export function getLatestCachedPrediction(): AgentDeskPrediction | undefined {
+  let latest: AgentDeskPrediction | undefined;
   for (const pred of predictionCache.values()) {
     if (!latest || pred.generatedAt > latest.generatedAt) {
       latest = pred;
@@ -378,7 +378,7 @@ export function getLatestCachedPrediction(): MiroSharkPrediction | undefined {
 }
 
 /** [S23-T2] After deliberation completes, overwrite the cached prediction with Harper's refined
- * composite IV / regime risk / briefing so GET /api/miroshark/latest returns the post-synthesis
+ * composite IV / regime risk / briefing so GET /api/agent-desk/latest returns the post-synthesis
  * payload (fixes the Aquarium "Updating…" hang where the frontend showed stale pre-Harper numbers). */
 export function mergeHarperScoringIntoCache(
   simId: string,
@@ -395,7 +395,7 @@ export function mergeHarperScoringIntoCache(
   const cached = predictionCache.get(simId);
   if (!cached) return;
 
-  const merged: MiroSharkPrediction = {
+  const merged: AgentDeskPrediction = {
     ...cached,
     nextSessionScore: harperScoring.compositeIV ?? cached.nextSessionScore,
     regimeShiftProbability:
@@ -429,13 +429,13 @@ export async function getRunHistory(limit = 20): Promise<unknown[]> {
     .limit(limit);
 
   if (error) {
-    console.warn("[MiroShark] History fetch failed:", error.message);
+    console.warn("[AgentDesk] History fetch failed:", error.message);
     return [];
   }
   return data ?? [];
 }
 
-/** Get the latest persisted MiroShark report (reconstructed as SanctumData-compatible shape) */
+/** Get the latest persisted AgentDesk report (reconstructed as SanctumData-compatible shape) */
 export async function getLatestReport(): Promise<Record<
   string,
   unknown
@@ -476,7 +476,7 @@ export async function getLatestReport(): Promise<Record<
 
   if (error || !data?.length) {
     if (error)
-      console.warn("[MiroShark] Latest report fetch failed:", error.message);
+      console.warn("[AgentDesk] Latest report fetch failed:", error.message);
     return null;
   }
 
@@ -524,8 +524,8 @@ export async function getLatestReport(): Promise<Record<
 
 function reportToPrediction(
   simId: string,
-  report: MiroSharkReport,
-): MiroSharkPrediction {
+  report: AgentDeskReport,
+): AgentDeskPrediction {
   return {
     simulationId: simId,
     nextSessionScore: report.nextSessionProjection,
@@ -541,7 +541,7 @@ function reportToPrediction(
     generatedEvents: report.generatedEvents,
     briefing: report.briefing,
     contextSnapshot: report.contextSnapshot,
-    source: "miroshark",
+    source: "agentDesk",
     generatedAt: report.generatedAt,
   };
 }
@@ -549,9 +549,9 @@ function reportToPrediction(
 async function persistRun(
   simId: string,
   preset: SanctumPreset,
-  report: MiroSharkReport,
+  report: AgentDeskReport,
   context: SimulationContext,
-  briefing: MiroSharkBriefing,
+  briefing: AgentDeskBriefing,
 ): Promise<void> {
   const sb = getSupabaseClient();
   if (!sb) return;
@@ -579,7 +579,7 @@ async function persistRun(
 
   if (error) {
     console.warn(
-      "[MiroShark] Full persist failed, retrying with base columns:",
+      "[AgentDesk] Full persist failed, retrying with base columns:",
       error.message,
     );
     await sb.from("mirofish_runs").insert(basePayload);
@@ -608,7 +608,7 @@ export async function getRollingWindowData(
 
   if (error || !data?.length) return emptyAggregation(query.days);
 
-  const runs: MiroSharkRunSummary[] = data.map((row) => ({
+  const runs: AgentDeskRunSummary[] = data.map((row) => ({
     simulationId: row.simulation_id,
     preset: row.preset,
     compositeIV: row.composite_iv,
@@ -712,9 +712,9 @@ function harperOutputIsSlop(text: string): boolean {
 }
 
 async function generateHarperAnalysis(
-  report: MiroSharkReport,
+  report: AgentDeskReport,
   context: SimulationContext,
-  briefing: MiroSharkBriefing,
+  briefing: AgentDeskBriefing,
 ): Promise<void> {
   const categoryBreakdown = report.categoryScores
     .map(
@@ -781,7 +781,7 @@ Write your 2-3 paragraph narrative now. No preamble, no headers, no questions ba
       .then(({ error }) => {
         if (error)
           console.warn(
-            "[MiroShark] Failed to update harper analysis in DB:",
+            "[AgentDesk] Failed to update harper analysis in DB:",
             error.message,
           );
       });
@@ -813,4 +813,4 @@ export {
   getDeliberationState,
   getDeliberationStateAsync,
   injectUserTake,
-} from "./miroshark-deliberation.js";
+} from "./agent-desk-deliberation.js";

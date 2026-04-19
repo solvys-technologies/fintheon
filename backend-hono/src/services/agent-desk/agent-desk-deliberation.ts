@@ -1,4 +1,4 @@
-// [claude-code 2026-04-17] S23-T2: Merge Harper's post-synthesis scoring into prediction cache so GET /api/miroshark/latest returns refined numbers
+// [claude-code 2026-04-17] S23-T2: Merge Harper's post-synthesis scoring into prediction cache so GET /api/agent-desk/latest returns refined numbers
 // [claude-code 2026-04-10] S8-T3: Deliberation refactored to DAG execution via dag-scheduler
 // [claude-code 2026-04-03] Deliberation v2 — 4-phase pipeline with anti-groupthink + consensus scoring
 // Phase 1→Wave 0: Market analysts (parallel DAG tasks)
@@ -8,22 +8,22 @@
 
 import type { HermesAgentRole } from "../hermes-service.js";
 import type {
-  MiroSharkReport,
-  MiroSharkAgentResponse,
+  AgentDeskReport,
+  AgentDeskAgentResponse,
   GovOfficialAssessment,
   MarketAnalystAssessment,
   HermesDeliberation,
   HarperOpusScoring,
   DeliberationState,
   DeliberationPhase,
-} from "./miroshark-types.js";
+} from "./agent-desk-types.js";
 import {
-  createMiroSharkDAG,
+  createAgentDeskDAG,
   postProcessDeliberation,
   ANALYST_META,
   type CollectedTaskOutput,
   type NarrativeLane,
-} from "../agent-bus/templates/miroshark-template.js";
+} from "../agent-bus/templates/agent-desk-template.js";
 import { executeDag } from "../agent-bus/dag-scheduler.js";
 import { agentBus } from "../agent-bus/bus.js";
 import type { DAGProgressEvent, HermesAgentId } from "../agent-bus/types.js";
@@ -92,8 +92,8 @@ function updatePhase(
 // Preserved for backward compatibility — used by external routes.
 
 export function extractAnalystAssessments(
-  report: MiroSharkReport,
-  agentResponses?: MiroSharkAgentResponse[],
+  report: AgentDeskReport,
+  agentResponses?: AgentDeskAgentResponse[],
 ): MarketAnalystAssessment[] {
   return report.agentVotes.map((vote) => {
     const analyst = ANALYST_META[vote.agentId];
@@ -126,7 +126,7 @@ export function extractAnalystAssessments(
   });
 }
 
-function extractKeyConcern(response: MiroSharkAgentResponse): string {
+function extractKeyConcern(response: AgentDeskAgentResponse): string {
   const sorted = [...response.categoryScores].sort(
     (a, b) => b.ivScore - a.ivScore,
   );
@@ -137,7 +137,7 @@ function extractKeyConcern(response: MiroSharkAgentResponse): string {
 }
 
 export function extractGovAssessments(
-  report: MiroSharkReport,
+  report: AgentDeskReport,
 ): GovOfficialAssessment[] {
   const GOV_NAMES: Record<string, string> = {
     "fed-chair": "Fed Chair",
@@ -174,10 +174,10 @@ export function extractGovAssessments(
   }));
 }
 
-// ── Convert MiroSharkReport → MiroSharkParams ────────────────────────────────
+// ── Convert AgentDeskReport → AgentDeskParams ────────────────────────────────
 
 function reportToParams(
-  report: MiroSharkReport,
+  report: AgentDeskReport,
   userInjection?: string,
 ): {
   lanes: NarrativeLane[];
@@ -199,7 +199,7 @@ function reportToParams(
 
 export async function runDeliberationPipeline(
   simId: string,
-  report: MiroSharkReport,
+  report: AgentDeskReport,
 ): Promise<DeliberationState> {
   const state: DeliberationState = {
     simulationId: simId,
@@ -209,11 +209,11 @@ export async function runDeliberationPipeline(
   activeDeliberations.set(simId, state);
 
   try {
-    // Build DAG params from the MiroShark report
+    // Build DAG params from the AgentDesk report
     const currentState = activeDeliberations.get(simId)!;
     const params = reportToParams(report, currentState.userInjection);
 
-    const dagDef = await createMiroSharkDAG({
+    const dagDef = await createAgentDeskDAG({
       ...params,
       // No conversationId/userId at this layer — this is the simulation pipeline
     });
@@ -294,23 +294,23 @@ export async function runDeliberationPipeline(
       Object.assign(activeDeliberations.get(simId)!, result);
       updatePhase(simId, "complete", result);
 
-      // [S23-T2] Merge Harper's refined scoring into the prediction cache so GET /api/miroshark/latest
+      // [S23-T2] Merge Harper's refined scoring into the prediction cache so GET /api/agent-desk/latest
       // returns post-synthesis numbers — fixes the Aquarium "Updating…" hang.
       const finalState = activeDeliberations.get(simId)!;
       if (finalState.harperScoring) {
         const { mergeHarperScoringIntoCache } =
-          await import("./miroshark-service.js");
+          await import("./agent-desk-service.js");
         mergeHarperScoringIntoCache(simId, finalState.harperScoring);
       }
 
       // Persist deliberation to Supabase (fire-and-forget)
       persistDeliberation(activeDeliberations.get(simId)!).catch((err) => {
-        console.warn("[MiroShark Deliberation] Failed to persist:", err);
+        console.warn("[AgentDesk Deliberation] Failed to persist:", err);
       });
 
       // T4: Capture predictions for outcome tracking (fire-and-forget)
       captureDeliberation(simId).catch((err) => {
-        console.warn("[MiroShark Deliberation] Outcome capture failed:", err);
+        console.warn("[AgentDesk Deliberation] Outcome capture failed:", err);
       });
 
       return activeDeliberations.get(simId)!;
@@ -322,7 +322,7 @@ export async function runDeliberationPipeline(
   } catch (err) {
     const msg =
       err instanceof Error ? err.message : "Deliberation pipeline failed";
-    console.error("[MiroShark Deliberation]", msg);
+    console.error("[AgentDesk Deliberation]", msg);
     updatePhase(simId, "complete", { error: msg });
     return activeDeliberations.get(simId)!;
   }
@@ -348,7 +348,7 @@ export function injectUserTake(simId: string, take: string): boolean {
     state.phase === "harper-scoring"
   ) {
     console.log(
-      `[MiroShark Deliberation] User injection mid-stream (${state.phase}) — logged for synthesis: ${take.slice(0, 80)}`,
+      `[AgentDesk Deliberation] User injection mid-stream (${state.phase}) — logged for synthesis: ${take.slice(0, 80)}`,
     );
     agentBus.publish("dag.status", {
       dagId: simId,
@@ -386,10 +386,10 @@ async function persistDeliberation(state: DeliberationState): Promise<void> {
   );
 
   if (error) {
-    console.warn("[MiroShark Deliberation] Persist failed:", error.message);
+    console.warn("[AgentDesk Deliberation] Persist failed:", error.message);
   } else {
     console.log(
-      `[MiroShark Deliberation] Persisted deliberation for ${state.simulationId}`,
+      `[AgentDesk Deliberation] Persisted deliberation for ${state.simulationId}`,
     );
   }
 }

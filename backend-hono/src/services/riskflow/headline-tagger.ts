@@ -1,4 +1,4 @@
-// [claude-code 2026-04-03] Headline subject tagger for MiroShark persona routing
+// [claude-code 2026-04-03] Headline subject tagger for AgentDesk persona routing
 // Tags headlines with subject categories so each market analyst persona
 // receives a filtered headline subset (anti-groupthink routing).
 

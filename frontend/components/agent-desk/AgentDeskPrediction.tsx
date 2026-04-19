@@ -1,17 +1,17 @@
-// [claude-code 2026-03-16] Individual MiroShark prediction card with animated border
-interface MiroSharkPredictionProps {
+// [claude-code 2026-03-16] Individual AgentDesk prediction card with animated border
+interface AgentDeskPredictionProps {
   label: string;
   probability: number;
   projectedScore: number;
   isTop?: boolean;
 }
 
-export function MiroSharkPrediction({
+export function AgentDeskPrediction({
   label,
   probability,
   projectedScore,
   isTop = false,
-}: MiroSharkPredictionProps) {
+}: AgentDeskPredictionProps) {
   const scoreColor =
     projectedScore >= 7
       ? "#EF4444"
@@ -28,7 +28,7 @@ export function MiroSharkPrediction({
           ? "rgba(212, 175, 55, 0.4)"
           : "rgba(255, 255, 255, 0.06)",
         animation: isTop
-          ? "miroshark-pulse 2s ease-in-out infinite"
+          ? "agent-desk-pulse 2s ease-in-out infinite"
           : undefined,
       }}
     >

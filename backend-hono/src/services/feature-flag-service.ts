@@ -40,7 +40,7 @@ const FLAG_REGISTRY: Record<string, FlagDef> = {
   psych_assist: { default: true },
   maintenance: { default: true },
   quick_fintheon: { default: true },
-  miroshark: { default: true },
+  agentDesk: { default: true },
   chart_levels: { default: true },
 };
 

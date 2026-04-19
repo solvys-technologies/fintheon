@@ -1,12 +1,12 @@
 // [claude-code 2026-03-28] S4-T3: Enhanced briefing display — structured sections, severity indicators, accent borders
-// [claude-code 2026-03-23] MiroShark briefing panel — agent reasoning synthesis
+// [claude-code 2026-03-23] AgentDesk briefing panel — agent reasoning synthesis
 // [claude-code 2026-04-17] Slop-fallback rendering: compact empty-state with Aquarium trigger link when backend emits SLOP_FALLBACK
-import type { MiroSharkBriefing } from "../../types/miroshark";
+import type { AgentDeskBriefing } from "../../types/agent-desk";
 
 const SLOP_FALLBACK = "No new agentic updates. Trigger an update in Aquarium.";
 
 interface SanctumBriefingProps {
-  briefing: MiroSharkBriefing | null;
+  briefing: AgentDeskBriefing | null;
   isLoading?: boolean;
   noBorder?: boolean;
   onTriggerAquarium?: () => void;

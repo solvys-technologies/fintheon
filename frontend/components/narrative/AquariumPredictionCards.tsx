@@ -4,6 +4,7 @@
 // [claude-code 2026-03-28] S7: 5 forward-looking prediction cards under TradingView in Aquarium
 import { useState, useEffect, useRef } from "react";
 import { Diff, TrendingDown, Minus, Loader2 } from "lucide-react";
+import { NothingFuse } from "../shared/NothingFuse";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -35,16 +36,8 @@ const CONVICTION_COLOR: Record<string, string> = {
 };
 
 function IVHeatBar({ score }: { score: number }) {
-  const pct = Math.min(100, (score / 10) * 100);
-  const hue = score >= 7 ? 0 : score >= 5 ? 30 : score >= 3 ? 45 : 120;
-  return (
-    <div className="w-full h-[3px] rounded-full bg-[var(--fintheon-border)]/10 overflow-hidden">
-      <div
-        className="h-full rounded-full transition-all"
-        style={{ width: `${pct}%`, backgroundColor: `hsl(${hue}, 70%, 50%)` }}
-      />
-    </div>
-  );
+  // [claude-code 2026-04-19] v5.22 S1: HEAT bar uses shared NothingFuse + palette severity.
+  return <NothingFuse value={Math.min(1, score / 10)} score={score} thickness={3} />;
 }
 
 const CACHE_KEY = "fintheon:aquarium-predictions";
@@ -124,14 +117,17 @@ export function AquariumPredictionCards() {
   }
 
   return (
-    <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-none">
+    // [claude-code 2026-04-19] v5.22 S1: 5 symbol cards align on a single horizontal line
+    //   via grid-cols-5 (replaces overflow-x scroll); each card fills its column equally so
+    //   /NQ /ES /YM /CL /GC headers sit aligned regardless of viewport width.
+    <div className="grid grid-cols-5 gap-2 px-4 py-3">
       {outlook.map((inst) => {
         const leanCfg = LEAN_CONFIG[inst.lean];
         const LeanIcon = leanCfg.icon;
         return (
           <div
             key={inst.symbol}
-            className="flex-shrink-0 w-[220px] rounded-lg border p-3 flex flex-col gap-2"
+            className="min-w-0 rounded-lg border p-3 flex flex-col gap-2"
             style={{
               backgroundColor:
                 "color-mix(in srgb, var(--fintheon-surface) 80%, transparent)",

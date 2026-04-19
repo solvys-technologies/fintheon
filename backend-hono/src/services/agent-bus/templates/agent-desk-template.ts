@@ -1,5 +1,5 @@
 // [claude-code 2026-04-16] S20-T2: Differentiated context feeding — per-agent subject-filtered headlines
-// [claude-code 2026-04-10] S8-T3: MiroShark DAG template — 3-wave deliberation pipeline
+// [claude-code 2026-04-10] S8-T3: AgentDesk DAG template — 3-wave deliberation pipeline
 // Wave 0: 4 analyst tasks (parallel) → Wave 1: 4 deliberation tasks → Wave 2: Harper synthesis
 
 import type {
@@ -13,10 +13,10 @@ import type {
   HermesDeliberation,
   HarperOpusScoring,
   DeliberationState,
-  MiroSharkCategoryScore,
-  MiroSharkRiskCategory,
-} from "../../miroshark/miroshark-types.js";
-import { fetchFilteredHeadlines } from "../../miroshark/miroshark-context.js";
+  AgentDeskCategoryScore,
+  AgentDeskRiskCategory,
+} from "../../agent-desk/agent-desk-types.js";
+import { fetchFilteredHeadlines } from "../../agent-desk/agent-desk-context.js";
 import { buildMemoryBlock } from "../../agent-memory/memory-injector.js";
 import type { AgentId } from "../../agent-memory/types.js";
 import { getLatestBrief } from "../../context-bank/context-bank-service.js";
@@ -29,11 +29,11 @@ export interface NarrativeLane {
   name: string;
   /** 0-1 sentiment score for this lane */
   sentiment: number;
-  /** Optional — maps to MiroSharkRiskCategory */
+  /** Optional — maps to AgentDeskRiskCategory */
   category?: string;
 }
 
-export interface MiroSharkParams {
+export interface AgentDeskParams {
   lanes: NarrativeLane[];
   userInjection?: string;
   conversationId?: string;
@@ -48,9 +48,9 @@ export interface CollectedTaskOutput {
   text: string;
 }
 
-// ── MiroSharkResult (alias for DeliberationState, preserved for compat) ──────
+// ── AgentDeskResult (alias for DeliberationState, preserved for compat) ──────
 
-export type MiroSharkResult = DeliberationState;
+export type AgentDeskResult = DeliberationState;
 
 // ── Agent metadata ────────────────────────────────────────────────────────────
 
@@ -345,10 +345,10 @@ export function shouldIncludeGovPhase(lanes: NarrativeLane[]): boolean {
   );
 }
 
-// ── createMiroSharkDAG ───────────────────────────────────────────────────────
+// ── createAgentDeskDAG ───────────────────────────────────────────────────────
 
-export async function createMiroSharkDAG(
-  params: MiroSharkParams,
+export async function createAgentDeskDAG(
+  params: AgentDeskParams,
 ): Promise<DAGDefinition> {
   const { lanes, userInjection, conversationId, userId } = params;
   const tasks: TaskDefinition[] = [];
@@ -444,7 +444,7 @@ export async function createMiroSharkDAG(
     conversationId,
     userId,
     surface: "boardroom",
-    template: "miroshark-deliberation",
+    template: "agent-desk-deliberation",
     input: { lanes, userInjection: userInjection ?? null },
     tasks,
   };
@@ -475,7 +475,7 @@ function stddev(values: number[]): number {
 /**
  * Compute convergence among analyst projectedIVScores.
  * convergence = 1 - (stddev(ivScores) / mean(ivScores))
- * MUST match the formula in miroshark-deliberation.ts exactly.
+ * MUST match the formula in agent-desk-deliberation.ts exactly.
  */
 function computeConvergence(assessments: MarketAnalystAssessment[]): {
   convergence: number;
@@ -507,7 +507,7 @@ function computeConvergence(assessments: MarketAnalystAssessment[]): {
 }
 
 /**
- * Consensus scoring — MUST match the formula in miroshark-deliberation.ts exactly.
+ * Consensus scoring — MUST match the formula in agent-desk-deliberation.ts exactly.
  * base = avgConfidence * 50
  *      + agreeRatio * 25
  *      - disagreeRatio * 20
@@ -550,8 +550,8 @@ function computeConsensusScore(
 }
 
 /** Fallback category scores when parsing fails */
-function defaultCategoryScores(): MiroSharkCategoryScore[] {
-  const cats: MiroSharkRiskCategory[] = [
+function defaultCategoryScores(): AgentDeskCategoryScore[] {
+  const cats: AgentDeskRiskCategory[] = [
     "geopolitical",
     "political",
     "monetary-policy",
@@ -579,7 +579,7 @@ export function postProcessDeliberation(
   collectedOutputs: CollectedTaskOutput[],
   simId: string,
   userInjection?: string,
-): MiroSharkResult {
+): AgentDeskResult {
   // ── Wave 0: Extract analyst assessments ──────────────────────────────────
   const wave0Outputs = collectedOutputs.filter((t) => t.wave === 0);
   // Exclude gov-analysis from the main analyst list (it uses agentId 'oracle' twice)

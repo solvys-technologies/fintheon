@@ -364,7 +364,7 @@ export async function handleChat(c: Context) {
     }
 
     // [S23-T3] Aquarium awareness: Hermes CAOs (Oracle, Feucht, Consul, Herald) should also
-    // interpret MiroShark output when the user is on the Aquarium surface.
+    // interpret AgentDesk output when the user is on the Aquarium surface.
     const mcpActive = Array.isArray((body as any)?.mcpServers)
       ? ((body as any).mcpServers as string[])
       : [];

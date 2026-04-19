@@ -1,6 +1,6 @@
 // [claude-code 2026-03-24] Persistence refactor: added GET /latest endpoint
 // [claude-code 2026-03-24] Added rolling-window, auto-run-check, running-state endpoints
-// [claude-code 2026-03-23] MiroShark route handlers — preset-aware, context endpoint, history
+// [claude-code 2026-03-23] AgentDesk route handlers — preset-aware, context endpoint, history
 // [claude-code 2026-03-16] Switched to feature flag, local debate engine
 
 import type { Context } from "hono";
@@ -16,19 +16,19 @@ import {
   getDeliberationState,
   getDeliberationStateAsync,
   injectUserTake,
-} from "../../services/miroshark/miroshark-service.js";
-import { getGovOfficials } from "../../services/miroshark/miroshark-client.js";
-import { ANALYST_META } from "../../services/agent-bus/templates/miroshark-template.js";
-import { assembleSimulationContext } from "../../services/miroshark/miroshark-context.js";
+} from "../../services/agent-desk/agent-desk-service.js";
+import { getGovOfficials } from "../../services/agent-desk/agent-desk-client.js";
+import { ANALYST_META } from "../../services/agent-bus/templates/agent-desk-template.js";
+import { assembleSimulationContext } from "../../services/agent-desk/agent-desk-context.js";
 import { isSkillEnabled } from "../../config/feature-flags.js";
-import type { SanctumPreset } from "../../services/miroshark/miroshark-types.js";
+import type { SanctumPreset } from "../../services/agent-desk/agent-desk-types.js";
 // @ts-ignore — T1 creates this file
-import { getRunningState } from "../../services/miroshark/miroshark-reactive.js";
+import { getRunningState } from "../../services/agent-desk/agent-desk-reactive.js";
 
 function checkEnabled(c: Context): Response | null {
-  if (!isSkillEnabled("miroshark")) {
+  if (!isSkillEnabled("agentDesk")) {
     return c.json(
-      { error: "MiroShark is disabled", code: "FEATURE_DISABLED" },
+      { error: "AgentDesk is disabled", code: "FEATURE_DISABLED" },
       403,
     );
   }
@@ -158,7 +158,7 @@ export async function handleGetContext(c: Context) {
     const context = await assembleSimulationContext("full-brief");
     return c.json(context);
   } catch (err) {
-    console.error("[MiroShark] Context assembly failed:", err);
+    console.error("[AgentDesk] Context assembly failed:", err);
     return c.json({ error: "Failed to assemble context" }, 500);
   }
 }

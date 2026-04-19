@@ -1,23 +1,23 @@
 // [claude-code 2026-04-05] Fixed 404: added API_BASE to fetch call (was using relative URL)
-// [claude-code 2026-03-16] God's Eye View — variable injection modal for MiroShark
+// [claude-code 2026-03-16] God's Eye View — variable injection modal for AgentDesk
 import { useState, useCallback } from "react";
 import { X, Zap } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-interface MiroSharkInjectProps {
+interface AgentDeskInjectProps {
   open: boolean;
   onClose: () => void;
   simulationId: string | null;
   narratives: Array<{ id: string; title: string }>;
 }
 
-export function MiroSharkInject({
+export function AgentDeskInject({
   open,
   onClose,
   simulationId,
   narratives,
-}: MiroSharkInjectProps) {
+}: AgentDeskInjectProps) {
   const [variable, setVariable] = useState("");
   const [selectedNarratives, setSelectedNarratives] = useState<Set<string>>(
     new Set(),
@@ -40,7 +40,7 @@ export function MiroSharkInject({
     setResult(null);
     try {
       const res = await fetch(
-        `${API_BASE}/api/miroshark/inject/${simulationId}`,
+        `${API_BASE}/api/agent-desk/inject/${simulationId}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

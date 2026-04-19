@@ -54,7 +54,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     title: "Predictions",
     description:
-      "MiroShark prediction engine. IV forecasts and risk visualization.",
+      "AgentDesk prediction engine. IV forecasts and risk visualization.",
     nav: "proposals",
     selector: 'button[data-tour-target="proposals"]',
     position: "right",
@@ -109,7 +109,7 @@ const WHATS_NEW_ITEMS = [
   "Contextual walkthrough tour with 11-step guided overview",
   "Consilium — AI agents debate trades and surface proposals",
   "Apparatus — agent memory, reasoning, and schedule visibility",
-  "Narrative Map canvas with MiroShark integration",
+  "Narrative Map canvas with AgentDesk integration",
   "Blindspots interview — personalized trader profile setup",
   "Setup wizard for backend dependency checks",
 ];

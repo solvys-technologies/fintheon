@@ -1,6 +1,6 @@
 // [claude-code 2026-03-28] S8-T5: Added deliberation, inject-take, officials routes
 // [claude-code 2026-03-24] Persistence refactor: added GET /latest route
-// [claude-code 2026-03-23] MiroShark simulation routes
+// [claude-code 2026-03-23] AgentDesk simulation routes
 
 import { Hono } from "hono";
 import {
@@ -20,7 +20,7 @@ import {
   handleGetAnalysts,
 } from "./handlers.js";
 
-export function createMirosharkRoutes(): Hono {
+export function createAgentDeskRoutes(): Hono {
   const app = new Hono();
 
   app.post("/simulate", handleSimulate);

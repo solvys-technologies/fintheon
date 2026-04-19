@@ -25,7 +25,7 @@ export const INTERNAL_CONNECTORS: McpServerConfig[] = [
   {
     id: "aquarium",
     name: "Aquarium",
-    description: "Discuss the most recent MiroShark simulation run",
+    description: "Discuss the most recent AgentDesk simulation run",
     transport: "stdio",
     command: "",
     args: [],
