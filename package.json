@@ -1,6 +1,6 @@
 {
   "name": "fintheon",
-  "version": "5.22.1",
+  "version": "5.22.2",
   "type": "module",
   "packageManager": "bun",
   "dependencies": {
