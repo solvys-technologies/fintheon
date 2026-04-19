@@ -1,4 +1,5 @@
 // [claude-code 2026-04-18] S24-T4: Scoring preset / sensitivity API — graceful when T3 endpoints not yet live
+// [claude-code 2026-04-20] S27 final-sanitation fix: thread auth tokens through GET fetches + treat 401/403 as notReady so the Refinement Engine doesn't deadlock on an unauthenticated boot.
 import type { SensitivityValues } from "../components/refinement/GroupSensitivityDial";
 import type { ScoringPreset } from "../components/refinement/PresetSelector";
 import type { ScoreBucketDelta } from "../components/ui/InlineDiff";
@@ -19,7 +20,15 @@ async function safeFetch<T>(
 ): Promise<T | NotReady> {
   try {
     const res = await fetch(url, init);
-    if (res.status === 404 || res.status === 501) {
+    // 401/403 mean the session isn't authenticated (or token lapsed);
+    // 404/501 mean the route isn't live yet. All four degrade the UI
+    // to the built-in preset set rather than crashing the loader.
+    if (
+      res.status === 401 ||
+      res.status === 403 ||
+      res.status === 404 ||
+      res.status === 501
+    ) {
       return { notReady: true, status: res.status };
     }
     if (!res.ok) {
@@ -34,19 +43,27 @@ async function safeFetch<T>(
   }
 }
 
-export async function fetchPresets(): Promise<ScoringPreset[] | NotReady> {
+function authHeaders(token?: string): Record<string, string> {
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export async function fetchPresets(
+  token?: string,
+): Promise<ScoringPreset[] | NotReady> {
   const res = await safeFetch<{ presets: ScoringPreset[] }>(
     `${API_BASE}/api/scoring/presets`,
+    { headers: authHeaders(token) },
   );
   if (isNotReady(res)) return res;
   return res.presets ?? [];
 }
 
-export async function fetchCurrentSensitivities(): Promise<
-  SensitivityValues | NotReady
-> {
+export async function fetchCurrentSensitivities(
+  token?: string,
+): Promise<SensitivityValues | NotReady> {
   const res = await safeFetch<{ sensitivities: SensitivityValues }>(
     `${API_BASE}/api/scoring/sensitivities`,
+    { headers: authHeaders(token) },
   );
   if (isNotReady(res)) return res;
   return res.sensitivities;

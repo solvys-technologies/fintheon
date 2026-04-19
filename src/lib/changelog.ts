@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T17:45:00",
+    agent: "claude-code",
+    summary:
+      "v.27.10 fix: Refinement Engine stuck-loading bug. TP flagged the /refinement page deadlocked on 'Loading Refinement Engine...' on the latest release — blocker before /solvys-deploy. Root cause: RefinementEngine.tsx's loadAll uses Promise.all across 6 fetchers; 5 are silent-on-failure (try/catch → no-op) but loadV4State was the lone outlier with no guard. loadV4State calls fetchPresets() + fetchCurrentSensitivities(), both of which hit /api/scoring/presets + /api/scoring/sensitivities — routes protected by /api/scoring/* authMiddleware + requireAuth at backend-hono/src/routes/index.ts:132-133. No auth token was ever threaded through the GET fetches, so the backend returned 401 Unauthorized. safeFetch in frontend/lib/scoring-preset-api.ts only treated 404/501 as 'notReady'; any other non-2xx (including 401/403) threw, which propagated up through loadV4State → Promise.all in loadAll → the `await` rejected → setLoading(false) never ran → UI forever stuck. Fix is two-part: (1) scoring-preset-api.ts safeFetch now treats 401/403 as notReady too, AND fetchPresets/fetchCurrentSensitivities accept a token arg + attach Authorization header matching the POST/PATCH pattern; (2) RefinementEngine.tsx loadV4State wraps its body in try/catch that defaults to setV4Available(false), matching the silent-on-failure contract the sibling fetchers already honor. V4 dials now render properly for authenticated sessions and fall back to built-in presets + Advanced pane for unauthenticated/degraded ones — either way the loader unsticks. Verified: frontend tsc --noEmit clean, frontend clean vite build clean (3.35s).",
+    files: [
+      "frontend/lib/scoring-preset-api.ts",
+      "frontend/components/refinement/RefinementEngine.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-20T17:30:00",
     agent: "claude-code",
     summary:

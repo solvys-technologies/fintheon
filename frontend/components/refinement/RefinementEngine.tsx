@@ -1,3 +1,4 @@
+// [claude-code 2026-04-20] S27 final-sanitation: thread auth token into V4 preset fetches + wrap loadV4State in try/catch so a rejected fetch never deadlocks the loader. Prior release stuck forever on "Loading Refinement Engine...".
 // [claude-code 2026-04-18] S24-T4: Rebuilt — 5 group dials + presets + advanced pane + toasts + rescore preview
 // [claude-code 2026-03-27] S2-T7: Refinement Engine — scoring calibration workbench
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -154,25 +155,34 @@ export function RefinementEngine() {
   }, []);
 
   const loadV4State = useCallback(async () => {
-    const [presetsRes, currentRes] = await Promise.all([
-      fetchPresets(),
-      fetchCurrentSensitivities(),
-    ]);
-    if (isNotReady(presetsRes) || isNotReady(currentRes)) {
+    try {
+      const token = (await getAccessToken()) ?? undefined;
+      const [presetsRes, currentRes] = await Promise.all([
+        fetchPresets(token),
+        fetchCurrentSensitivities(token),
+      ]);
+      if (isNotReady(presetsRes) || isNotReady(currentRes)) {
+        setV4Available(false);
+        return;
+      }
+      const combined = [...BUILTIN_PRESETS, ...presetsRes];
+      setPresets(combined);
+      setAppliedSensitivities(currentRes);
+      setPendingSensitivities(currentRes);
+      // Select closest matching preset, fall back to neutral
+      const match = combined.find((p) =>
+        sameSensitivities(p.sensitivities, currentRes),
+      );
+      setSelectedPresetId(match?.id ?? null);
+      setV4Available(true);
+    } catch {
+      // Any unexpected failure here must NOT deadlock the loader — the
+      // other fetchers are silent-on-failure, so loadV4State matches
+      // that contract by flagging V4 unavailable and letting the
+      // Advanced pane + built-in presets still render.
       setV4Available(false);
-      return;
     }
-    const combined = [...BUILTIN_PRESETS, ...presetsRes];
-    setPresets(combined);
-    setAppliedSensitivities(currentRes);
-    setPendingSensitivities(currentRes);
-    // Select closest matching preset, fall back to neutral
-    const match = combined.find((p) =>
-      sameSensitivities(p.sensitivities, currentRes),
-    );
-    setSelectedPresetId(match?.id ?? null);
-    setV4Available(true);
-  }, []);
+  }, [getAccessToken]);
 
   useEffect(() => {
     const loadAll = async () => {
