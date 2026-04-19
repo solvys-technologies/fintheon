@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T02:00:00",
+    agent: "claude-code",
+    summary:
+      "[v.27.1] S27-T1 §1 W1a schema layer — populated shared/harper-cards.ts with full discriminated Zod union of 6 card variants (price-level, probability-table, agent-handoff, risk-flag, backtest-result, narrative-thread), fence contract constants (CARD_FENCE_OPEN / CARD_FENCE_CLOSE / CARD_KIND), parseCardPayload helper, and CARD_VARIANT_CATALOG for the W2a prompt builder. shared/skill-manifest.ts now carries the full agentskills.io-compatible schema (SkillManifest, SkillPermission, SkillTool, SkillSecurityScanDeclaration, SkillScanFinding, SkillScanReport, SkillImportResult) feeding T10 importer + security scanner. shared/plugin-manifest.ts expanded to match NousResearch Hermes v0.9 plugin.yaml (plugin_type, runtime, provides/requires capability graph, rollback_flag). shared/sidecar-contract.ts fully typed against T2 §2 HTTP contract: SIDECAR_ROUTES, SIDECAR_HEADERS, Chat{Request,Event} discriminated union (delta/tool_call/tool_result/context_view/memory_writes/done/error), Context{Ingest,View,Tool} schemas with LCM_CONTEXT_TOOLS constant, Voice{Stt,Tts} schemas, Skill{List,Invoke} schemas, Routing{Select} with ModelProvider enum, Healthz + SidecarErrorResponse. AgentIdSchema deduped into sidecar-contract (single source of truth); harper-cards imports it for AgentHandoff. No consumers wired yet — W2a (cards UI), W1b (sidecar-client), W1d (soul/routing), W2e (skills hub) pull types from here as their waves start. Validated: backend-hono bun run build clean, frontend npx tsc --noEmit clean, frontend vite build clean (3.23s).",
+    files: [
+      "shared/harper-cards.ts",
+      "shared/skill-manifest.ts",
+      "shared/plugin-manifest.ts",
+      "shared/sidecar-contract.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-20T01:00:00",
     agent: "claude-code",
     summary:
