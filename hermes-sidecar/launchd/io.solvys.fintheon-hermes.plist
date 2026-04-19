@@ -12,16 +12,14 @@
     <array>
         <string>/bin/bash</string>
         <string>-lc</string>
-        <string>cd "$HERMES_SIDECAR_DIR" &amp;&amp; exec "$UV_BIN" run python entrypoint.py</string>
+        <string>cd "$HERMES_SIDECAR_DIR" &amp;&amp; exec uv run python entrypoint.py</string>
     </array>
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
-        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <string>/Users/tifos/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
         <key>HERMES_SIDECAR_DIR</key>
         <string>/Users/tifos/Documents/Codebases/fintheon/hermes-sidecar</string>
-        <key>UV_BIN</key>
-        <string>/opt/homebrew/bin/uv</string>
         <key>PORT</key>
         <string>8318</string>
         <key>HERMES_LOG_LEVEL</key>

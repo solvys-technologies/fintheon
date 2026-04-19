@@ -13,12 +13,12 @@
     <array>
         <string>/bin/bash</string>
         <string>-lc</string>
-        <string>cd "$FINTHEON_ROOT/backend-hono" &amp;&amp; /opt/homebrew/bin/bun run src/services/gepa/runner.ts &gt;&gt; /tmp/fintheon-gepa.log 2&gt;&amp;1</string>
+        <string>cd "$FINTHEON_ROOT/backend-hono" &amp;&amp; /Users/tifos/.bun/bin/bun run src/services/gepa/runner.ts &gt;&gt; /tmp/fintheon-gepa.log 2&gt;&amp;1</string>
     </array>
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
-        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <string>/Users/tifos/.bun/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
         <key>FINTHEON_ROOT</key>
         <string>/Users/tifos/Documents/Codebases/fintheon</string>
         <key>GEPA_ENABLED</key>
