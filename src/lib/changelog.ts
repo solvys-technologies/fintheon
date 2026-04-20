@@ -97,10 +97,10 @@ export const changelog: ChangelogEntry[] = [
     summary:
       "S21 — Omi voice layer + PsychAssist fork (scaffold). Added the Omi (omi.me, MIT) integration as a voice sensory layer with three triggers: (1) PsychAssist activation (Coach agent), (2) Voice Assistant header button (routes market Qs to Oracle fast-voice, general to Harper), (3) new Performance-tab header chat button. Webhooks receive real-time transcripts + audio bytes + memory creations at /api/omi/webhook/*; audio uses system permissions (no wearable required) — Electron preload bridge + main-process IPC handlers added for mic/camera permission query/request so TP's onboarding-flow sprint can drive the first-run ask. Backend: new omi service (client, session-manager, router), prosody feature extractor (energy + frustration-vocabulary) feeding a new omi_prosody_samples table that will nudge PsychAssist tilt. Frontend: shared draggable AgentResponsePopup (smoothly-draggable via existing useDraggable hook, 5s fade, hover pauses, click pins, white isometric WhiteWaveform as the agent's 'mouth' — no text UNLESS an agent loops another in, per spec). AgentResponsePopupHost mounted once in MainLayout; session triggered via CustomEvent from useOmiSession so triggers don't need a React context. SuperAdmin PsychAssist fork: new user_feature_overrides table + getFlagForUser(name, userId) resolution layer; reasoning@pricedinresearch.io seeded with psych_assist_fork.edit + psych_assist_fork.flag_toggle overrides (raw audio access + sub-admin powers explicitly NOT granted). New admin endpoints at /api/admin/psych-assist-fork gated by requireFeature middleware; new psych_assist_forks table stores per-user system_prompt + ER weights + tilt thresholds. Coach agent system prompt (voice-native: max two sentences, no markdown, no lists) + Oracle fast-voice variant added. Light polish pass on PsychAssistDockable: MessageSquare activation button + mini WhiteWaveform during active session; three widget positions unchanged per user spec ('polish, don't redesign'). No onboarding UI in this sprint (TP's follow-up). Privacy model: Omi cloud v1 (audio transits Deepgram — documented trade-off). No ElevenLabs (Omi built-in TTS). All migrations idempotent; seed is safe to re-run.",
     files: [
-      "supabase/migrations/20260420100000_omi_integration.sql",
-      "supabase/migrations/20260420100100_user_feature_overrides.sql",
-      "supabase/migrations/20260420100200_psych_assist_forks.sql",
-      "supabase/migrations/20260420100300_seed_reasoning_fork.sql",
+      "supabase/migrations/20260420033323_omi_integration.sql",
+      "supabase/migrations/20260420033330_user_feature_overrides.sql",
+      "supabase/migrations/20260420033337_psych_assist_forks.sql",
+      "supabase/migrations/20260420033354_seed_reasoning_fork.sql",
       "backend-hono/src/routes/omi.ts",
       "backend-hono/src/routes/admin/psych-assist-fork.ts",
       "backend-hono/src/routes/index.ts",
