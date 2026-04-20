@@ -185,6 +185,72 @@ export function createHarperRoutes() {
             const mainTextId = nextTextId();
             ctrl.enqueue(sse({ type: "text-start", id: mainTextId }));
 
+            // [S28-T1] Analysts are prompted to reply with pure JSON
+            //   (see agent-bus/templates/agent-desk-template.ts → buildAnalystPrompt).
+            //   Streaming those deltas verbatim leaked raw `{"agentId":"feucht",...}`
+            //   into the Harper chat bubble. Buffer per agent, parse on completion,
+            //   and emit a one-line prose summary — the source truth (JSON) stays
+            //   available via the Aquarium/AgentDesk surfaces where it belongs.
+            const agentBuffers = new Map<string, string>();
+            const agentCompleted = new Set<string>();
+
+            function summarizeAgent(agentId: string): string {
+              const raw = (agentBuffers.get(agentId) ?? "").trim();
+              if (!raw) return "";
+              const cleaned = raw
+                .replace(/```json\n?/g, "")
+                .replace(/```\n?/g, "")
+                .trim();
+              try {
+                const parsed = JSON.parse(cleaned);
+                if (typeof parsed === "object" && parsed !== null) {
+                  const p = parsed as Record<string, unknown>;
+                  const lines: string[] = [];
+                  if (typeof p.assessment === "string") {
+                    lines.push(String(p.assessment).trim());
+                  }
+                  if (typeof p.reasoning === "string") {
+                    lines.push(String(p.reasoning).trim());
+                  }
+                  if (typeof p.finalBriefing === "string") {
+                    lines.push(String(p.finalBriefing).trim());
+                  }
+                  const stats: string[] = [];
+                  if (typeof p.projectedIVScore === "number") {
+                    stats.push(`IV ${Number(p.projectedIVScore).toFixed(1)}`);
+                  }
+                  if (typeof p.compositeIV === "number") {
+                    stats.push(
+                      `Composite IV ${Number(p.compositeIV).toFixed(1)}`,
+                    );
+                  }
+                  if (typeof p.confidence === "number") {
+                    stats.push(
+                      `conf ${Math.round(Number(p.confidence) * 100)}%`,
+                    );
+                  }
+                  if (typeof p.verdict === "string") {
+                    stats.push(`verdict: ${String(p.verdict)}`);
+                  }
+                  if (stats.length > 0) {
+                    lines.push(`(${stats.join(" · ")})`);
+                  }
+                  if (typeof p.keyConcern === "string" && p.keyConcern) {
+                    lines.push(`Key concern: ${String(p.keyConcern).trim()}`);
+                  }
+                  const out = lines.filter(Boolean).join(" ").trim();
+                  if (out) return out;
+                }
+              } catch {
+                /* not JSON — fall through to prose path */
+              }
+              // Not parseable as JSON, but still strip any dossier-shaped blobs
+              // before surfacing to the chat bubble.
+              return cleaned
+                .replace(/\{\s*"agentId"[\s\S]*?\}\s*$/g, "")
+                .trim();
+            }
+
             // Subscribe to agent stream events — bridge deltas into UIMessageStream
             const unsubSurface = agentBus.subscribe<AgentStreamEvent>(
               "surface.boardroom",
@@ -197,6 +263,7 @@ export function createHarperRoutes() {
                   !agentStarted.has(ev.agentId)
                 ) {
                   agentStarted.add(ev.agentId);
+                  agentBuffers.set(ev.agentId, "");
                   const label = AGENT_LABELS[ev.agentId] ?? ev.agentId;
                   ctrl.enqueue(
                     sse({
@@ -208,13 +275,25 @@ export function createHarperRoutes() {
                 }
 
                 if (ev.type === "agent-delta" && typeof ev.data === "string") {
-                  ctrl.enqueue(
-                    sse({
-                      type: "text-delta",
-                      id: mainTextId,
-                      delta: ev.data,
-                    }),
-                  );
+                  const prev = agentBuffers.get(ev.agentId) ?? "";
+                  agentBuffers.set(ev.agentId, prev + ev.data);
+                }
+
+                if (
+                  ev.type === "agent-complete" &&
+                  !agentCompleted.has(ev.agentId)
+                ) {
+                  agentCompleted.add(ev.agentId);
+                  const summary = summarizeAgent(ev.agentId);
+                  if (summary) {
+                    ctrl.enqueue(
+                      sse({
+                        type: "text-delta",
+                        id: mainTextId,
+                        delta: summary,
+                      }),
+                    );
+                  }
                 }
 
                 if (ev.type === "agent-error") {
@@ -244,6 +323,22 @@ export function createHarperRoutes() {
                   msg.payload.type === "dag-complete" ||
                   msg.payload.type === "dag-error"
                 ) {
+                  // Flush any agents whose buffer was never closed by a
+                  // terminal agent-end event — protects against DAG shortcuts.
+                  for (const agentId of agentBuffers.keys()) {
+                    if (agentCompleted.has(agentId)) continue;
+                    agentCompleted.add(agentId);
+                    const summary = summarizeAgent(agentId);
+                    if (summary) {
+                      ctrl.enqueue(
+                        sse({
+                          type: "text-delta",
+                          id: mainTextId,
+                          delta: summary,
+                        }),
+                      );
+                    }
+                  }
                   if (msg.payload.type === "dag-error") {
                     ctrl.enqueue(
                       sse({

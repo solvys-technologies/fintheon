@@ -6,7 +6,7 @@
 // [claude-code 2026-04-19] Loader swapped to Unicode FishSwimmer — aquarium-themed microinteraction
 import { useState, useEffect, useRef } from "react";
 import { Diff, TrendingDown, Minus } from "lucide-react";
-import { FishSwimmer } from "../icon-bank/UnicodeSpinners";
+import { SnakeSpinner } from "../icon-bank/agent-spinners";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -113,7 +113,7 @@ export function AquariumPredictionCards() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-4">
-        <FishSwimmer size={13} streamWidth={8} />
+        <SnakeSpinner size={13} />
       </div>
     );
   }
