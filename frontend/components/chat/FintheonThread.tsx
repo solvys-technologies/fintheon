@@ -15,7 +15,7 @@ import {
 import { ThreadPrimitive, useMessage, useThread } from "@assistant-ui/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { AlertCircle, ArrowDown } from "lucide-react";
+import { AlertCircle, ArrowDown } from "@/components/shared/iso-icons";
 import { ChatGreeting } from "./ChatGreeting";
 import { FintheonThinkingIndicator } from "./FintheonThinkingIndicator";
 import { HelixSpinner } from "../icon-bank/agent-spinners";

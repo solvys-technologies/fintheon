@@ -1,6 +1,6 @@
 // [claude-code 2026-04-18] S24-T4: Classification Matrix editor — per-regime rubric
 import { useState, useEffect, useCallback } from "react";
-import { Layers } from "lucide-react";
+import { Layers } from "@/components/shared/iso-icons";
 import { useToast } from "../../contexts/ToastContext";
 import { useAuth } from "../../contexts/AuthContext";
 

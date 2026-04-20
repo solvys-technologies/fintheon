@@ -8,7 +8,7 @@ import {
   RefreshCw,
   ExternalLink,
   Terminal,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 
 interface CheckStatus {
   label: string;

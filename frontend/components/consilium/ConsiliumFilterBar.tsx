@@ -1,6 +1,6 @@
 // [claude-code 2026-03-29] Boardroom overhaul: removed agent filter, rectangular timeframe bar, message count moved to status bar
 // [claude-code 2026-03-22] Track 3: Filter bar with agent dropdown (replaces chips)
-import { Search } from "lucide-react";
+import { Search } from "@/components/shared/iso-icons";
 
 interface ConsiliumFilterBarProps {
   search: string;

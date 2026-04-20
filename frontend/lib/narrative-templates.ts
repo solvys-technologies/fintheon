@@ -1,5 +1,11 @@
 // [claude-code 2026-03-06] Catalyst template presets for NarrativeFlow quick-add menu
-import { Building2, BarChart3, DollarSign, Globe, Plus } from "lucide-react";
+import {
+  Building2,
+  BarChart3,
+  DollarSign,
+  Globe,
+  Plus,
+} from "@/components/shared/iso-icons";
 import type { CatalystTemplateType, CatalystSeverity } from "./narrative-types";
 
 export interface CatalystTemplate {

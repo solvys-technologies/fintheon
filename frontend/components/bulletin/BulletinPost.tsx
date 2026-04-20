@@ -1,6 +1,12 @@
 // [claude-code 2026-04-03] Discord-style message row — avatar, grouping, hover action bar, image thumbnails
 import { useState, useCallback } from "react";
-import { MessageSquare, ArrowRight, Trash2, Copy, Check } from "lucide-react";
+import {
+  MessageSquare,
+  ArrowRight,
+  Trash2,
+  Copy,
+  Check,
+} from "@/components/shared/iso-icons";
 import { VotingControls, type VoteType } from "./VotingControls";
 
 export interface BulletinPostData {

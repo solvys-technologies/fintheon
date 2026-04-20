@@ -12,7 +12,7 @@
 // [claude-code 2026-03-22] Track 4: persona pills → PersonaDropdown, Plug2+Wrench → ToolsDropdown
 import { useEffect, useState, useCallback } from "react";
 import { useThread, useThreadRuntime } from "@assistant-ui/react";
-import { Radio, Unplug, Loader2 } from "lucide-react";
+import { Radio, Unplug, Loader2 } from "@/components/shared/iso-icons";
 import { PromptBox } from "../ui/chatgpt-prompt-input";
 import { SKILL_PREFIXES } from "../../lib/skillPrefixes";
 import { SKILLS } from "../../lib/skills";

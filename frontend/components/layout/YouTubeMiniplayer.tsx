@@ -1,6 +1,13 @@
 // [claude-code 2026-04-17] Migrated drag to useDraggable hook; resize migrated to pointer events + rAF; removed glass/shadow effects per Nothing-Design
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Minus, Maximize2, GripVertical, Play, Youtube } from "lucide-react";
+import {
+  X,
+  Minus,
+  Maximize2,
+  GripVertical,
+  Play,
+  Youtube,
+} from "@/components/shared/iso-icons";
 import { isElectron } from "../../lib/platform";
 import { useDraggable } from "../../hooks/useDraggable";
 

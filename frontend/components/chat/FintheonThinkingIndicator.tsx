@@ -1,7 +1,7 @@
 // [claude-code 2026-04-19] Radar pulse replaced by HelixVertical Braille spinner
 // (unicode icon-bank) — matches Nothing/Doto design language across the app.
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight } from "@/components/shared/iso-icons";
 import { HelixSpinner } from "../icon-bank/agent-spinners";
 
 const THINKING_PHRASES = [

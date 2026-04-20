@@ -1,6 +1,6 @@
 // [claude-code 2026-04-18] S24-T4: Preset selector for scoring sensitivities
 import { useState } from "react";
-import { Save, ChevronDown } from "lucide-react";
+import { Save, ChevronDown } from "@/components/shared/iso-icons";
 import type { SensitivityValues } from "./GroupSensitivityDial";
 
 export interface ScoringPreset {

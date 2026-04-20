@@ -1,6 +1,11 @@
 // [claude-code 2026-03-16] Blindspots interview — 4-step onboarding questionnaire
 import { useState, useCallback } from "react";
-import { X, ChevronRight, ChevronLeft, Check } from "lucide-react";
+import {
+  X,
+  ChevronRight,
+  ChevronLeft,
+  Check,
+} from "@/components/shared/iso-icons";
 
 interface InterviewData {
   name: string;

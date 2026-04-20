@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { FileText, Trash2 } from "lucide-react";
+import { FileText, Trash2 } from "@/components/shared/iso-icons";
 import { FeedItem as FeedItemType, IVIndicator } from "../../types/feed";
 import { useBackend } from "../../lib/backend";
 import type { RiskFlowItem } from "../../types/api";

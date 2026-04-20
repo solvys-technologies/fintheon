@@ -7,7 +7,13 @@ import React, {
   useEffect,
   useMemo,
 } from "react";
-import { ChevronRight, Pencil, GripVertical, Eye, EyeOff } from "lucide-react";
+import {
+  ChevronRight,
+  Pencil,
+  GripVertical,
+  Eye,
+  EyeOff,
+} from "@/components/shared/iso-icons";
 import { KanbanTitle } from "../ui/KanbanTitle";
 import type { MissionWidgetId } from "../../lib/layoutOrderStorage";
 

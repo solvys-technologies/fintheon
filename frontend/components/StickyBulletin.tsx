@@ -17,7 +17,7 @@ import {
   ChevronUp,
   Zap,
   GripVertical,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import { useStickyBulletin, DAY_LABELS } from "../hooks/useStickyBulletin";
 import { useDraggable } from "../hooks/useDraggable";
 

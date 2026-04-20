@@ -6,7 +6,7 @@ import {
   MOCK_PROPOSAL,
   type TradingProposal,
 } from "../ProposalModal";
-import { Zap, Diff, TrendingDown } from "lucide-react";
+import { Zap, Diff, TrendingDown } from "@/components/shared/iso-icons";
 import type { RiskFlowItem } from "../../types/api";
 
 // Track last seen news item ID to count unread items (per session)

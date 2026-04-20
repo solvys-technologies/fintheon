@@ -1,6 +1,6 @@
 // [claude-code 2026-03-11] T5: added /stop command handling
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Lock } from "lucide-react";
+import { Lock } from "@/components/shared/iso-icons";
 import { filterSkills, type SkillDef } from "../../lib/skills";
 
 interface FintheonSlashPickerProps {

@@ -1,7 +1,11 @@
 // [claude-code 2026-03-22] ErrorLogPanel — persistent error log with expandable "More Info" dropdowns
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Trash2,
+} from "@/components/shared/iso-icons";
 import { useErrorLog } from "../../hooks/useErrorLog";
 import type { ErrorLogEntry } from "../../lib/errorLog";
 

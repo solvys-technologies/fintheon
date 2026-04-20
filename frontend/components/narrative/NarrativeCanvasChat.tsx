@@ -2,7 +2,7 @@
 // [claude-code 2026-03-28] S8-T2: Ephemeral command palette chat — expandable above toolbar
 // Same Claude CLI session as sidebar Chat. Responses auto-hide after 8s.
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Loader2, ChevronUp, X } from "lucide-react";
+import { Loader2, ChevronUp, X } from "@/components/shared/iso-icons";
 import { useNarrative } from "../../contexts/NarrativeContext";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";

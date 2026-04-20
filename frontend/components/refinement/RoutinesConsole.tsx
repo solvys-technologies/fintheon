@@ -11,7 +11,7 @@ import {
   Pause,
   Play,
   RefreshCw,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import { RoutineDetailModal } from "./RoutineDetailModal";
 
 const API_BASE = (

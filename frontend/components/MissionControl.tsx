@@ -1,4 +1,4 @@
-import { X, ChevronRight } from "lucide-react";
+import { X, ChevronRight } from "@/components/shared/iso-icons";
 import { useEffect, useState } from "react";
 import { useBackend } from "../lib/backend";
 import type { Account } from "../types/api";

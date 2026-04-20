@@ -7,7 +7,7 @@ import {
   RefreshCw,
   Eye,
   AlertTriangle,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import { useBackend } from "../../lib/backend";
 import { useERSafe } from "../../contexts/ERContext";
 import { KPICard } from "./KPICard";

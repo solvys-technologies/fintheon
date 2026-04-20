@@ -1,6 +1,6 @@
 // [claude-code 2026-04-11] S14-T5: Multi-select headline attachment for chat surfaces
 import { useState, useEffect, useRef, useMemo } from "react";
-import { X, Search, Check, Newspaper } from "lucide-react";
+import { X, Search, Check, Newspaper } from "@/components/shared/iso-icons";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 
 export interface HeadlineChip {

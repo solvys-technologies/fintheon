@@ -10,7 +10,7 @@ import {
   Radio,
   Unplug,
   Loader2,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import {
   AssistantRuntimeProvider,
   useThread,

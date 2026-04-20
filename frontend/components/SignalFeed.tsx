@@ -1,6 +1,11 @@
 // [claude-code 2026-03-11] Track 3: Signal feed — scrollable signal list + pending proposals with countdown
 import { useState, useEffect } from "react";
-import { Radio, Clock, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  Radio,
+  Clock,
+  ArrowUp,
+  ArrowDown,
+} from "@/components/shared/iso-icons";
 import type { SignalEvent, StoredProposal } from "./AutopilotDashboard";
 
 interface SignalFeedProps {

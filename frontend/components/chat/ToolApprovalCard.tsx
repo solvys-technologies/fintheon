@@ -9,7 +9,7 @@ import {
   Globe,
   FolderCog,
   PenLine,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import type { ToolApprovalRequest } from "./hooks/useToolApprovals";
 
 const TOOL_META: Record<

@@ -4,7 +4,7 @@
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — Hermes:Admin merged tab
 // [claude-code 2026-03-20] S3:T3 — merged Connection+Hermes tabs into Hermes:Admin
 import React, { useState, useEffect, useCallback } from "react";
-import { Copy, RefreshCw } from "lucide-react";
+import { Copy, RefreshCw } from "@/components/shared/iso-icons";
 import { useGateway } from "../../contexts/GatewayContext";
 import { useToast } from "../../contexts/ToastContext";
 import Toggle from "../Toggle";

@@ -1,5 +1,5 @@
 // [claude-code 2026-03-23] T3: MCP Connector Popup — locked connectors (always-on), removed alpha-vantage, twitter→riskflow
-import { X, Plug2, AlertTriangle } from "lucide-react";
+import { X, Plug2, AlertTriangle } from "@/components/shared/iso-icons";
 import type { McpServerConfig, McpServerId } from "../../types/mcp";
 
 export interface McpConnectorPopupProps {

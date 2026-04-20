@@ -13,7 +13,7 @@
 // Transcript ticker + dismiss button are the only DOM that consumes pointer
 // events, and the ticker is pointer-events-none.
 import { useCallback } from "react";
-import { X } from "lucide-react";
+import { X } from "@/components/shared/iso-icons";
 import { useVoice } from "../../contexts/VoiceContext";
 import { VoiceTranscriptTicker } from "./VoiceTranscriptTicker";
 

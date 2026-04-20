@@ -1,6 +1,6 @@
 // [claude-code 2026-03-27] S2-T7: Regime control panel — display + manual override
 import { useState, useEffect } from "react";
-import { Shield, ChevronDown } from "lucide-react";
+import { Shield, ChevronDown } from "@/components/shared/iso-icons";
 import {
   MARKET_REGIMES,
   REGIME_LABELS,

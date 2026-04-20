@@ -1,6 +1,6 @@
 // [claude-code 2026-04-11] S14-T8: Added CAO naming step (step 3) to onboarding flow
 import { useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { X } from "@/components/shared/iso-icons";
 import { supabase } from "../../lib/supabase";
 import { useBackend } from "../../lib/backend";
 import { useAuth } from "../../contexts/AuthContext";

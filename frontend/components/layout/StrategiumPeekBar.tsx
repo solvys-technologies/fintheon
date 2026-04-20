@@ -1,5 +1,5 @@
 // [claude-code 2026-04-17] Peek bar for hidden Strategium sections (RiskFlow-collapsed or Widgets-collapsed modes)
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown } from "@/components/shared/iso-icons";
 
 interface StrategiumPeekBarProps {
   /** "footer" sits at the bottom (RiskFlow hidden); "header" sits at the top (widgets hidden). */

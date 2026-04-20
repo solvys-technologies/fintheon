@@ -7,7 +7,7 @@ import {
   Megaphone,
   MessageCircle,
   Bot,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 
 export type BoardroomAgent =
   | "Harper"

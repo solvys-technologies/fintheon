@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Zap } from "lucide-react";
+import { Zap } from "@/components/shared/iso-icons";
 import { useBackend } from "../../lib/backend";
 import { useSettings } from "../../contexts/SettingsContext";
 

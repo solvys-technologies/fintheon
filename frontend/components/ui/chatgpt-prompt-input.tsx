@@ -28,7 +28,7 @@ import {
   Maximize2,
   Loader2,
   Clock,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import { FintheonSlashPicker } from "../chat/FintheonSlashPicker";
 import {
   FintheonAttachPopup,

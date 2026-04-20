@@ -1,5 +1,11 @@
 // [claude-code 2026-04-03] Discord-style reaction pills — compact, only show non-zero, gold active state
-import { Check, X, ArrowUp, ArrowDown, Plus } from "lucide-react";
+import {
+  Check,
+  X,
+  ArrowUp,
+  ArrowDown,
+  Plus,
+} from "@/components/shared/iso-icons";
 
 export type VoteType = "up" | "down" | "check" | "x";
 

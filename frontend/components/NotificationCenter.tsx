@@ -10,7 +10,7 @@ import {
   AlertTriangle,
   Server,
   ShieldAlert,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import { useDND, type QueuedNotification } from "../contexts/DNDContext";
 
 function notificationIcon(type: QueuedNotification["type"]) {

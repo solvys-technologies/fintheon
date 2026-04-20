@@ -1,7 +1,7 @@
 // [claude-code 2026-03-24] Boardroom UX overhaul — removed hover discoloration, added inline copy, date+time timestamps
 // [claude-code 2026-03-26] T3: Rich @mention parsing + "show full analysis" button
 import { useState, useCallback } from "react";
-import { Copy, Check, Bot } from "lucide-react";
+import { Copy, Check, Bot } from "@/components/shared/iso-icons";
 import { AgentBadge, type BoardroomAgent } from "./AgentBadge";
 import { AgentMention, EveryoneMention } from "./AgentMention";
 import { ContextInjectionBadge } from "./ContextInjectionBadge";

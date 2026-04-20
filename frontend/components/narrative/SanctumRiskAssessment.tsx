@@ -5,7 +5,7 @@
 //   sentiment label keeps its color but moves under the IV in the right column for consistency
 //   with every other RiskFlow card surface.
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown } from "@/components/shared/iso-icons";
 import type {
   RiskFlowCatalyst,
   AgentDeskCategoryScore,

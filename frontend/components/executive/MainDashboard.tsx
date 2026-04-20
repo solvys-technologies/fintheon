@@ -24,7 +24,11 @@ import {
   shouldShowSetupGuide,
 } from "../onboarding/SetupGuideCard";
 import { BlindspotsInterview } from "../onboarding/BlindspotsInterview";
-import { RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+} from "@/components/shared/iso-icons";
 import { useSettings } from "../../contexts/SettingsContext";
 
 const DASHBOARD_PAGES = ["Briefing", "RiskFlow"];

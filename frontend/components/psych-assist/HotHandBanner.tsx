@@ -1,5 +1,5 @@
 // [claude-code 2026-03-22] Source of Truth fusion — 48h hot hand overconfidence banner
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "@/components/shared/iso-icons";
 
 interface HotHandBannerProps {
   hoursRemaining: number;

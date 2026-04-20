@@ -10,7 +10,7 @@ import {
   Globe,
   FileText,
   Diff,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import { useGateway } from "../../contexts/GatewayContext";
 import { useBackend } from "../../lib/backend";
 

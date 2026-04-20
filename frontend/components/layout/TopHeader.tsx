@@ -32,7 +32,7 @@ import {
   BellOff,
   ClipboardList,
   Zap,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import { WhatsNewButton } from "../onboarding/FirstTimeTour";
 import { StickyBulletin } from "../StickyBulletin";
 import { TraderNametag } from "../TraderNametag";

@@ -1,7 +1,7 @@
 // [claude-code 2026-04-11] S14-T8: CAO name persists to user_settings via SettingsContext
 // S13-T1: AgenticDesk — read-only subanalyst cards, CAO name-only editable
 import { useState, useCallback } from "react";
-import { Save, Check } from "lucide-react";
+import { Save, Check } from "@/components/shared/iso-icons";
 import {
   useFintheonAgents,
   type FintheonAgent,

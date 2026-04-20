@@ -6,7 +6,7 @@ import {
   ChevronDown,
   ToggleLeft,
   ToggleRight,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import { MARKET_REGIMES, REGIME_LABELS } from "../../types/regime";
 import type { MarketRegime } from "../../types/regime";
 

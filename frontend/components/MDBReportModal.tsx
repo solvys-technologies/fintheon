@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X } from "@/components/shared/iso-icons";
 import { useBackend } from "../lib/backend";
 
 const BULLISH_THINKING_TERMS = [

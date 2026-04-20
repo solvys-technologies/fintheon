@@ -1,6 +1,6 @@
 // [claude-code 2026-03-11] Track 3: Autopilot Dashboard shell — polls status/signals/proposals, grid layout
 import { useState, useEffect, useCallback } from "react";
-import { Activity } from "lucide-react";
+import { Activity } from "@/components/shared/iso-icons";
 import { AutopilotControls } from "./AutopilotControls";
 import { SignalFeed } from "./SignalFeed";
 import { SessionStatusBar } from "./SessionStatusBar";

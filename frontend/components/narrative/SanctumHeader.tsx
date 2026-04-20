@@ -3,7 +3,7 @@
 // [claude-code 2026-03-23] Persistent Sanctum header — presets, run button, status, rolling period
 // [claude-code 2026-03-25] Theme-sensitive fonts — use var(--font-heading) and var(--font-body)
 import { useState, useCallback } from "react";
-import { Zap, Loader2, Upload, X } from "lucide-react";
+import { Zap, Loader2, Upload, X } from "@/components/shared/iso-icons";
 import type { SanctumPreset } from "../../types/agent-desk";
 import { SanctumPresets } from "./SanctumPresets";
 import { SanctumOpsChips } from "./SanctumOpsChips";

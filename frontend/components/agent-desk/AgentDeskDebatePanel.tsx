@@ -15,7 +15,7 @@ import {
   Send,
   BarChart3,
   Zap,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import { ivHeatColor } from "../../types/agent-desk";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";

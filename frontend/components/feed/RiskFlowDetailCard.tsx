@@ -3,7 +3,7 @@
 //   scraped source body with YouTube + Open-original CTAs (surface="full" or
 //   "timeline"). Mini surfaces still render the legacy footer link row only.
 import { useState, useCallback } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink } from "@/components/shared/iso-icons";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import { useToast } from "../../contexts/ToastContext";
 import { BeatMissBadge } from "./BeatMissBadge";

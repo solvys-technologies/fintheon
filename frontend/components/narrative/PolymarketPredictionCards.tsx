@@ -6,7 +6,7 @@ import {
   ChevronUp,
   ArrowUp,
   ArrowDown,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 

@@ -1,6 +1,6 @@
 // [claude-code 2026-03-22] Track 4: inline persona dropdown replacing persona pills
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown } from "@/components/shared/iso-icons";
 import {
   useFintheonAgents,
   type FintheonAgent,

@@ -1,6 +1,6 @@
 // [claude-code 2026-04-10] S9-T4: Extracted message hover actions from FintheonThread
 import { type FC, useState, useCallback } from "react";
-import { Copy, Check, Bookmark } from "lucide-react";
+import { Copy, Check, Bookmark } from "@/components/shared/iso-icons";
 
 interface MessageActionsProps {
   textContent: string;

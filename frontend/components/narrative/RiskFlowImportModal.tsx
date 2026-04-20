@@ -1,6 +1,6 @@
 // [claude-code 2026-03-06] RiskFlow import approval modal — score & import catalysts from RiskFlow/Daily Brief
 import { useState, useCallback } from "react";
-import { X, Loader2, Download } from "lucide-react";
+import { X, Loader2, Download } from "@/components/shared/iso-icons";
 import type {
   NarrativeLane,
   CatalystCard,

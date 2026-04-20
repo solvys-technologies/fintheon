@@ -11,7 +11,7 @@ import {
   Power,
   Monitor,
   Loader2,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import { useGateway } from "../../contexts/GatewayContext";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";

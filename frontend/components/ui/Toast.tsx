@@ -9,7 +9,7 @@ import {
   Info,
   BellOff,
   Activity,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import {
   useToast,
   type Toast,

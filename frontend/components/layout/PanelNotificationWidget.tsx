@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X } from "@/components/shared/iso-icons";
 
 interface PanelNotificationWidgetProps {
   panelName: string;

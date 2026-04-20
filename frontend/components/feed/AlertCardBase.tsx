@@ -6,7 +6,11 @@
 //   chevron stacked above IV number in Doto. Removed the bottom hero footer's IV+chevron
 //   pair; the footer now carries time, priority, risk type and dismiss controls only.
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, ChevronUp, ThumbsDown } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  ThumbsDown,
+} from "@/components/shared/iso-icons";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import { inferDirection } from "../../lib/riskflow-feed";
 import { SEVERITY_CONFIG } from "../../lib/severity-config";

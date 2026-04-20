@@ -44,3 +44,14 @@ export {
   IsoArrowRight as ArrowRight,
   IsoArrowUpRight as ArrowUpRight,
 } from "./glyphs";
+
+export {
+  IsoLogOut as LogOut,
+  IsoLandmark as Landmark,
+  IsoGripVertical as GripVertical,
+  IsoChevronsLeft as ChevronsLeft,
+  IsoChevronsRight as ChevronsRight,
+  IsoBookOpenCheck as BookOpenCheck,
+  IsoBellOff as BellOff,
+  IsoWrench as Wrench,
+} from "./sidebar";

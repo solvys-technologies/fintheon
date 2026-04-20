@@ -2,7 +2,7 @@
 // [claude-code 2026-03-11] VIX pulsating border: red >22, sunburst orange 16-22, yellow 14-16
 // [claude-code 2026-03-16] Restore toolbar regressions: IV inline points badge (envLabel + pts inline)
 // [claude-code 2026-03-20] S3:T4a: createPortal to document.body for popup — escapes parent stacking context, position:fixed with viewport clamping
-import { Info, Diff } from "lucide-react";
+import { Info, Diff } from "@/components/shared/iso-icons";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { IVScoreResponse } from "../types/market-data";

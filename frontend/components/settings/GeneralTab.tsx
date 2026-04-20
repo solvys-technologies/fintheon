@@ -1,7 +1,7 @@
 // [claude-code 2026-04-16] Added linked Google account display + switch account
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — general/profile tab
 import React, { useState } from "react";
-import { CreditCard, Mail, RefreshCw } from "lucide-react";
+import { CreditCard, Mail, RefreshCw } from "@/components/shared/iso-icons";
 import { Button } from "../ui/Button";
 import { useAuth } from "../../contexts/AuthContext";
 

@@ -1,7 +1,13 @@
 // [claude-code 2026-03-06] Dashboard regime preview card — shows top 3 active/upcoming regimes
 // [claude-code 2026-03-12] Replaced W/L with ORB bullish/bearish on bottom right, 12H NY time
 import { useState, useEffect, useMemo } from "react";
-import { Clock, Diff, TrendingDown, RotateCcw, Activity } from "lucide-react";
+import {
+  Clock,
+  Diff,
+  TrendingDown,
+  RotateCcw,
+  Activity,
+} from "@/components/shared/iso-icons";
 import { useRegimes } from "../../lib/regime-store";
 import {
   isRegimeActive,

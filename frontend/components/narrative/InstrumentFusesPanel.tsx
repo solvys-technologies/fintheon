@@ -3,7 +3,7 @@
 //   symbol + IV score, sourcing data from the same predictions/outlook endpoint that
 //   powers AquariumPredictionCards.
 import { useEffect, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/components/shared/iso-icons";
 import { NothingFuse } from "../shared/NothingFuse";
 import { severityFromScore } from "../../lib/fuse-palette";
 

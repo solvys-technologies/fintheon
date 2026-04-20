@@ -1,6 +1,6 @@
 // [claude-code 2026-03-16] T4: Chart mode dropdown — P&L, ER Trend, or Hybrid overlay
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown } from "@/components/shared/iso-icons";
 
 export type ChartMode = "pnl" | "er" | "hybrid";
 

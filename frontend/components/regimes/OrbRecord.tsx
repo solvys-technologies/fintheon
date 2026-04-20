@@ -1,5 +1,5 @@
 // [claude-code 2026-04-15] T2: OrbRecord — ORB direction record with optional mini history bars
-import { Diff, TrendingDown } from "lucide-react";
+import { Diff, TrendingDown } from "@/components/shared/iso-icons";
 import type { TradingRegime } from "../../lib/regimes";
 
 export function OrbRecord({

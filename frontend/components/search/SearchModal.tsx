@@ -7,7 +7,7 @@ import {
   FileText,
   Calendar,
   Layout,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import { FINTHEON_AGENTS } from "../../contexts/FintheonAgentContext";
 
 /* ------------------------------------------------------------------ */

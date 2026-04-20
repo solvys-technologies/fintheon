@@ -5,7 +5,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { TestTradeButton } from "./TestTradeButton";
 import type { ProjectXAccount } from "../../../types/api";
 type BrokerAccount = ProjectXAccount & { provider?: string; isPaper?: boolean };
-import { Radio } from "lucide-react";
+import { Radio } from "@/components/shared/iso-icons";
 
 interface AccountTrackerWidgetProps {
   currentPnL?: number;

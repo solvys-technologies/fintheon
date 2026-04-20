@@ -1,7 +1,7 @@
 // [claude-code 2026-04-19] Routines Console — detail modal with run history + per-mode config.
 
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle, X } from "lucide-react";
+import { CheckCircle, X } from "@/components/shared/iso-icons";
 import type {
   RoutineConfig,
   RoutineMode,

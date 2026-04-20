@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useBackend } from "../lib/backend";
 import { useSettings } from "../contexts/SettingsContext";
 import type { RiskFlowItem } from "../types/api";
-import { Diff, AlertTriangle, Info } from "lucide-react";
+import { Diff, AlertTriangle, Info } from "@/components/shared/iso-icons";
 import { Button } from "./ui/Button";
 import { useRiskFlowSSE } from "../hooks/useRiskFlow";
 

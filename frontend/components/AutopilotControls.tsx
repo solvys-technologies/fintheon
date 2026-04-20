@@ -1,5 +1,11 @@
 // [claude-code 2026-03-11] Track 3: Autopilot control panel — toggle, thresholds, strategy list
-import { Power, Target, BarChart3, Shield, Crosshair } from "lucide-react";
+import {
+  Power,
+  Target,
+  BarChart3,
+  Shield,
+  Crosshair,
+} from "@/components/shared/iso-icons";
 import type { AutopilotStatus } from "./AutopilotDashboard";
 
 interface AutopilotControlsProps {

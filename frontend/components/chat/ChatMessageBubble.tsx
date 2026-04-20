@@ -1,6 +1,6 @@
 // [claude-code 2026-03-29] S9-T5: Checkpoint → Take Note (saves to Harper memory via Context Bank)
 import { forwardRef } from "react";
-import { Bookmark } from "lucide-react";
+import { Bookmark } from "@/components/shared/iso-icons";
 import type { ChatMessage } from "./types";
 import { MessagePartRenderer } from "./parts/MessagePartRenderer";
 import { isReportHtml, ReportViewer } from "./ReportViewer";

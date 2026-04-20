@@ -2,7 +2,7 @@
 //   Replaces the legacy granular <select> dropdown of 7 raw sources with a
 //   5-bucket popover: OSINT / General / Commentary / Econ / Geopolitical.
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown } from "@/components/shared/iso-icons";
 import { SOURCE_BUCKETS, type SourceBucket } from "../../lib/source-buckets";
 
 interface SourceFilterMenuProps {

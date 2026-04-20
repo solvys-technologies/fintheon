@@ -1,6 +1,10 @@
 // [claude-code 2026-04-19] S25-T5: Replaces PolymarketPredictionCards' kanban-style grid on Risk & Narratives. One row per trade, age-collapse policy — rows older than AGE_FRESH_HOURS fold into a STALE drawer unless traction spikes. Columns: Question · Side · Entry · Traction · Origin · Age. No card borders, no kanban, fading horizontal rulers between rows.
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, Loader2, ExternalLink } from "lucide-react";
+import {
+  ChevronDown,
+  Loader2,
+  ExternalLink,
+} from "@/components/shared/iso-icons";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 

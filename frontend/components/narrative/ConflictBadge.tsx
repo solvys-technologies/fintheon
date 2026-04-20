@@ -1,5 +1,5 @@
 // [claude-code 2026-03-06] Warning badge for cross-narrative conflicts
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "@/components/shared/iso-icons";
 import type { NarrativeConflict } from "../../lib/narrative-types";
 import type { Point } from "../../lib/narrative-catenary";
 

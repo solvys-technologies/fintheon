@@ -1,7 +1,7 @@
 // [claude-code 2026-03-14] Keyboard shortcuts & easter egg hints modal
 
 import { useEffect, useRef } from "react";
-import { X } from "lucide-react";
+import { X } from "@/components/shared/iso-icons";
 
 interface ShortcutsPopupProps {
   isOpen: boolean;

@@ -9,7 +9,7 @@ import {
   Power,
   FileText,
   AlertTriangle,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import {
   PLATFORM_LABELS,
   PLATFORM_URLS,
@@ -26,7 +26,7 @@ import { ErrorLogPanel } from "../ui/ErrorLogPanel";
 import { StatusIndicator } from "../ui/StatusIndicator";
 import { TeamPanel } from "../team/TeamPanel";
 import { HarperOpsPanel } from "../harper-ops/HarperOpsPanel";
-import { Users, Bot } from "lucide-react";
+import { Users, Bot } from "@/components/shared/iso-icons";
 
 type PanelTab = "terminal" | "changelog" | "errors" | "team" | "harper-ops";
 

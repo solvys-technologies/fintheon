@@ -1,6 +1,6 @@
 // [claude-code 2026-04-18] S24-T4: Lexicon editor — CRUD + pending proposals approval
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { BookOpen, Plus } from "lucide-react";
+import { BookOpen, Plus } from "@/components/shared/iso-icons";
 import { KeywordDiffRow, type KeywordDiff } from "../ui/InlineDiff";
 import { useToast } from "../../contexts/ToastContext";
 import { useAuth } from "../../contexts/AuthContext";

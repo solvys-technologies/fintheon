@@ -1,5 +1,5 @@
 // S13-T2: Individual user presence card
-import { Phone } from "lucide-react";
+import { Phone } from "@/components/shared/iso-icons";
 import type { TeamMember } from "../../types/team";
 
 interface UserCardProps {

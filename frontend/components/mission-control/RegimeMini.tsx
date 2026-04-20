@@ -1,7 +1,13 @@
 // [claude-code 2026-03-06] Mission Control mini-screener for active/upcoming trading regimes
 // [claude-code 2026-03-12] Replaced W/L with ORB bullish/bearish, 12H NY time
 import { useState, useEffect } from "react";
-import { Clock, Diff, TrendingDown, RotateCcw, Activity } from "lucide-react";
+import {
+  Clock,
+  Diff,
+  TrendingDown,
+  RotateCcw,
+  Activity,
+} from "@/components/shared/iso-icons";
 import { useRegimes } from "../../lib/regime-store";
 import {
   isRegimeActive,

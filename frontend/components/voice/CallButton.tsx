@@ -1,5 +1,5 @@
 // S13-T3: Compact call button for TopHeader toolbar
-import { Phone, PhoneOff, Loader2 } from "lucide-react";
+import { Phone, PhoneOff, Loader2 } from "@/components/shared/iso-icons";
 import { useLiveKitRoom } from "../../hooks/useLiveKitRoom";
 
 export function CallButton() {

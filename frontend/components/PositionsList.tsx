@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useBackend } from "../lib/backend";
 import type { Position } from "../types/api";
-import { Diff, TrendingDown } from "lucide-react";
+import { Diff, TrendingDown } from "@/components/shared/iso-icons";
 
 export default function PositionsList() {
   const backend = useBackend();

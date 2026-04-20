@@ -5,7 +5,7 @@
 // [claude-code 2026-03-28] S7: 5 forward-looking prediction cards under TradingView in Aquarium
 // [claude-code 2026-04-19] Loader swapped to Unicode FishSwimmer — aquarium-themed microinteraction
 import { useState, useEffect, useRef } from "react";
-import { Diff, TrendingDown, Minus } from "lucide-react";
+import { Diff, TrendingDown, Minus } from "@/components/shared/iso-icons";
 import { SnakeSpinner } from "../icon-bank/agent-spinners";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";

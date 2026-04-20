@@ -1,6 +1,11 @@
 // [claude-code 2026-03-27] S2-T7: Quick weight editor — compact sliders for event type weights
 import { useState, useEffect, useCallback } from "react";
-import { SlidersHorizontal, Save, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  SlidersHorizontal,
+  Save,
+  ChevronDown,
+  ChevronUp,
+} from "@/components/shared/iso-icons";
 import type { CalibrationEntry } from "../../../backend-hono/src/types/calibration";
 
 const API_BASE = (

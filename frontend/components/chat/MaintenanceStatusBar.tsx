@@ -1,6 +1,6 @@
 // [claude-code 2026-03-06] Kanban-border maintenance status bar for footer toolbar
 import { useEffect } from "react";
-import { Loader2, Check, X } from "lucide-react";
+import { Loader2, Check, X } from "@/components/shared/iso-icons";
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */

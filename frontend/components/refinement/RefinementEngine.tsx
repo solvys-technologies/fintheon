@@ -3,7 +3,7 @@
 // [claude-code 2026-04-18] S24-T4: Rebuilt — 5 group dials + presets + advanced pane + toasts + rescore preview
 // [claude-code 2026-03-27] S2-T7: Refinement Engine — scoring calibration workbench
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { RefreshCw, Wrench } from "lucide-react";
+import { RefreshCw, Wrench } from "@/components/shared/iso-icons";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import type { CalibrationEntry } from "../../../backend-hono/src/types/calibration";
 import type { CommentatorEntry } from "../../../backend-hono/src/types/commentator";

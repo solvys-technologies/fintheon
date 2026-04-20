@@ -8,7 +8,7 @@ import {
   ChevronDown,
   ChevronUp,
   History,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import { useBackend } from "../../lib/backend";
 import type {
   JournalEntryItem,

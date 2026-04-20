@@ -12,7 +12,7 @@ import {
   RefreshCw,
   Clock,
   CheckCircle2,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import { useHarperOps, type OpsEntry } from "../../hooks/useHarperOps";
 
 function severityColor(severity: string): string {

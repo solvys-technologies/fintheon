@@ -8,7 +8,7 @@ import {
   RefreshCw,
   BarChart3,
   Shield,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import { useBackend } from "../../lib/backend";
 import type { TradePlanData } from "../../types/feed";
 

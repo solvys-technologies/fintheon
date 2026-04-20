@@ -9,7 +9,7 @@ import {
   MessageSquare,
   Pencil,
   History,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import type { AgentMemory, MemorySource } from "./types";
 
 const SOURCE_ICONS: Record<MemorySource, typeof Twitter> = {

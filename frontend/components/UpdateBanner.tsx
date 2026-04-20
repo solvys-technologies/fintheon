@@ -4,7 +4,7 @@
 //   equals the running build (stops the "already latest" repeat-prompt class reported by TP).
 // [claude-code 2026-04-05] Bottom-right update toast — Install Now / Later CTAs, auto-downloads in background
 import { useEffect, useState, useCallback } from "react";
-import { Download, X, Loader2, RotateCw } from "lucide-react";
+import { Download, X, Loader2, RotateCw } from "@/components/shared/iso-icons";
 import type { UpdateInfo, UpdateProgress } from "../types/electron";
 import pkgJson from "../../package.json";
 

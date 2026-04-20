@@ -5,7 +5,7 @@ import {
   Merge,
   Pause,
   RefreshCw,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import type { TradingRegime } from "../../lib/regimes";
 
 const BIAS_CONFIG: Record<

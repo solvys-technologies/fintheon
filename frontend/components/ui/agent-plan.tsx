@@ -8,7 +8,7 @@ import {
   CircleAlert,
   CircleDotDashed,
   CircleX,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import {
   motion,
   AnimatePresence,

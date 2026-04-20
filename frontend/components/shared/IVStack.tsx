@@ -3,7 +3,7 @@
 //   right-aligned in the Nothing Design display font (Doto). Mirrors the Fintheon Mobile
 //   RiskFlow card anatomy. Single source of truth so tweaks apply across AlertCardBase,
 //   AlertRow, TradeIdeaRow and SanctumRiskAssessment without drift.
-import { ChevronUp, ChevronDown, Minus } from "lucide-react";
+import { ChevronUp, ChevronDown, Minus } from "@/components/shared/iso-icons";
 import type { CSSProperties } from "react";
 import { ivHeatColor } from "../../types/agent-desk";
 

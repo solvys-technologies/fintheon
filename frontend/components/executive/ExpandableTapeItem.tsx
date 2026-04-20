@@ -6,7 +6,7 @@ import {
   Diff,
   TrendingDown,
   ThumbsDown,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import type { RiskFlowAlert, TradeIdeaDetail } from "../../lib/riskflow-feed";
 import { useBackend } from "../../lib/backend";
 import { DetailFooter } from "../feed/DetailFooter";

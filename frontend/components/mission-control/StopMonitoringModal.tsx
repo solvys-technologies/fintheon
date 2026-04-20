@@ -1,4 +1,4 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "@/components/shared/iso-icons";
 import { useState } from "react";
 import { Button } from "../ui/Button";
 

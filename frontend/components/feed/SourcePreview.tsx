@@ -3,7 +3,7 @@
 //   feedback_no_glass_effects memory) with bucket label, author handle,
 //   time ago, and an "Open original" link. If the item has a video_url,
 //   a YouTube button opens the link externally.
-import { ExternalLink, Youtube } from "lucide-react";
+import { ExternalLink, Youtube } from "@/components/shared/iso-icons";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import { bucketOfAlert } from "../../lib/source-buckets";
 import { timeAgo } from "../../lib/time-utils";

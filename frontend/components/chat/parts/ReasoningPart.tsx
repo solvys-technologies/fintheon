@@ -1,6 +1,6 @@
 // [claude-code 2026-03-06] Collapsible reasoning/thinking part renderer
 import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight } from "@/components/shared/iso-icons";
 
 interface ReasoningPartProps {
   text: string;

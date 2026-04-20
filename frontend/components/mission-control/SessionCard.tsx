@@ -1,4 +1,4 @@
-import { Diff, TrendingDown } from "lucide-react";
+import { Diff, TrendingDown } from "@/components/shared/iso-icons";
 
 interface SessionCardProps {
   date: string;

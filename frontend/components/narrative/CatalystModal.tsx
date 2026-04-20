@@ -1,7 +1,7 @@
 // [claude-code 2026-03-28] S7: Proper dropdowns for instruments, tag autocomplete, styled selects
 // [claude-code 2026-03-28] S5-T3: Rich add/edit modal for catalyst cards
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { X, ChevronDown, Check } from "lucide-react";
+import { X, ChevronDown, Check } from "@/components/shared/iso-icons";
 import { useNarrative } from "../../contexts/NarrativeContext";
 import type {
   CatalystCard,

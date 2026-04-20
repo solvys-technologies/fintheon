@@ -1,4 +1,4 @@
-import { Activity, Bot, Newspaper } from "lucide-react";
+import { Activity, Bot, Newspaper } from "@/components/shared/iso-icons";
 
 interface SidebarProps {
   activeTab: "feed" | "chat" | "news";

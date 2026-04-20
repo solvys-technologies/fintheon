@@ -5,7 +5,7 @@
 // Clipboard-copy pickup-code flow deprecated in favor of active dispatch via /api/relay/dispatch.
 // [claude-code 2026-04-04] T4: History dropdown — Clock button toggles dropdown instead of modal
 import { useState } from "react";
-import { Scroll, Plus, Clock } from "lucide-react";
+import { Scroll, Plus, Clock } from "@/components/shared/iso-icons";
 import { SessionsDropdown } from "./SessionsDropdown";
 
 const HEADER_BUTTON_CLASS =

@@ -1,6 +1,6 @@
 // [claude-code 2026-03-14] Refactored to use useERSafe() from ERContext (shared state), local fallback retained
 import { useState, useEffect, useRef } from "react";
-import { Mic, MicOff, AlertTriangle } from "lucide-react";
+import { Mic, MicOff, AlertTriangle } from "@/components/shared/iso-icons";
 import { WaveformCanvas } from "./WaveformCanvas";
 import { useBackend } from "../../lib/backend";
 import { useERSafe } from "../../contexts/ERContext";

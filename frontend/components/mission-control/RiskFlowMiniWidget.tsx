@@ -11,7 +11,7 @@ import {
   Diff,
   TrendingDown,
   Zap,
-} from "lucide-react";
+} from "@/components/shared/iso-icons";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import type { TradeIdeaDetail } from "../../lib/riskflow-feed";
 import TradeIdeaModal from "../TradeIdeaModal";

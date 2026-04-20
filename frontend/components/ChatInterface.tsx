@@ -1,7 +1,7 @@
 // [claude-code 2026-03-29] S9-T5: Replace checkpoint sidebar with real conversation history, Take Note button
 // [claude-code 2026-03-28] S8-T7: Dual-pane layout (left=conversation, right=artifacts) for Chat
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X, Layers } from "lucide-react";
+import { X, Layers } from "@/components/shared/iso-icons";
 import {
   AssistantRuntimeProvider,
   useThread,

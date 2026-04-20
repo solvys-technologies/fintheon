@@ -1,7 +1,7 @@
 // [claude-code 2026-04-03] S14-T6: Team status panel — clean status card grid
 // [claude-code 2026-04-11] Re-wired TeamOnboarding behind auth gate
 import { useState } from "react";
-import { UserPlus } from "lucide-react";
+import { UserPlus } from "@/components/shared/iso-icons";
 import { useTeamPresence } from "../../contexts/TeamPresenceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { TeamMemberCard } from "./TeamMemberCard";
