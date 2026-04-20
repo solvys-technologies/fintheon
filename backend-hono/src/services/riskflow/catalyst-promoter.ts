@@ -6,6 +6,7 @@
 import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
 import type { ScoredRiskFlowItem } from "../supabase-service.js";
+import { normalizeHeadline } from "./text-utils.js";
 
 const log = createLogger("CatalystPromoter");
 
@@ -233,13 +234,7 @@ function classifyNarrativeThreads(
 // the commentary scraper generates different IDs for the same article.
 const promotedHeadlines = new Set<string>();
 
-function normalizeHeadline(headline: string): string {
-  return headline
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+// normalizeHeadline moved to ./text-utils (imported at top of file)
 
 /**
  * Promote scored items into narrative catalysts.

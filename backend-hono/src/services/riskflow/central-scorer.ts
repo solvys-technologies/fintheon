@@ -41,6 +41,7 @@ import {
 import { tagHeadlineSubjects } from "./headline-tagger.js";
 import { checkContentGuard } from "./content-guard.js";
 import { getSupabaseClient } from "../../config/supabase.js";
+import { normalizeHeadline } from "./text-utils.js";
 
 // Re-export from extracted modules for backward compatibility
 export { normalizeSource, classifyRiskType } from "./scorer-tagging.js";
@@ -498,23 +499,178 @@ export async function scoringCycle(): Promise<number> {
       /* web-push not configured — skip silently */
     }
 
-    // ── Zero-IV auto-purge ─────────────────────────────────────────────────
-    // [claude-code 2026-04-15] S16-T5: Purge stale zero-IV items
+    // ── RiskFlow sanitation (4 sequential purges) ──────────────────────────
+    // [claude-code 2026-04-19] Was a single zero-IV purge; now covers the four
+    // classes of junk that had been accumulating: low-IV, narrative-orphans,
+    // duplicate headlines, and sourceless items with no back-link to scrape.
     try {
       const sb = getSupabaseClient();
       if (sb) {
-        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-        const { count: purgedScored } = await sb
-          .from("scored_riskflow_items")
-          .delete({ count: "exact" })
-          .eq("iv_score", 0)
-          .lt("published_at", oneHourAgo);
-        if (purgedScored && purgedScored > 0) {
-          log.info(`Purged ${purgedScored} zero-IV scored items older than 1h`);
+        const now = Date.now();
+        const oneHourAgo = new Date(now - 60 * 60 * 1000).toISOString();
+        const sixHoursAgo = new Date(now - 6 * 60 * 60 * 1000).toISOString();
+        const dayAgo = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+
+        // 1) Low-IV: iv_score <= 1 older than 1h
+        try {
+          const { count: lowCount } = await sb
+            .from("scored_riskflow_items")
+            .delete({ count: "exact" })
+            .lte("iv_score", 1)
+            .lt("published_at", oneHourAgo);
+          if (lowCount && lowCount > 0) {
+            log.info(`Purged ${lowCount} low-IV scored items (iv<=1, >1h)`);
+          }
+        } catch (err) {
+          log.warn("Low-IV purge failed", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+
+        // 2) Narrative-orphan: items older than 1h with no catalyst link,
+        //    bounded to the last 6h to keep the working set flat.
+        try {
+          const { data: recent } = await sb
+            .from("scored_riskflow_items")
+            .select("tweet_id")
+            .lt("published_at", oneHourAgo)
+            .gt("published_at", sixHoursAgo)
+            .limit(500);
+          const recentIds = (recent ?? [])
+            .map((r) => (r as { tweet_id: string }).tweet_id)
+            .filter(Boolean);
+          if (recentIds.length > 0) {
+            const { data: linked } = await sb
+              .from("narrative_card_links")
+              .select("card_id")
+              .in("card_id", recentIds);
+            const linkedSet = new Set(
+              (linked ?? []).map((r) => (r as { card_id: string }).card_id),
+            );
+            const orphans = recentIds.filter((id) => !linkedSet.has(id));
+            if (orphans.length > 0) {
+              const { count: orphanCount } = await sb
+                .from("scored_riskflow_items")
+                .delete({ count: "exact" })
+                .in("tweet_id", orphans);
+              if (orphanCount && orphanCount > 0) {
+                log.info(
+                  `Purged ${orphanCount} narrative-orphan scored items (>1h, no catalyst link)`,
+                );
+              }
+            }
+          }
+        } catch (err) {
+          log.warn("Narrative-orphan purge failed", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+
+        // 3) Headline dedup: collapse same normalized headline inside 24h,
+        //    keep newest per group.
+        try {
+          const { data: recent24 } = await sb
+            .from("scored_riskflow_items")
+            .select("tweet_id,headline,published_at")
+            .gt("published_at", dayAgo)
+            .order("published_at", { ascending: false })
+            .limit(2000);
+          const seen = new Map<string, string>();
+          const toDelete: string[] = [];
+          for (const row of (recent24 ?? []) as Array<{
+            tweet_id: string;
+            headline: string | null;
+          }>) {
+            const headline = row.headline ?? "";
+            if (!headline) continue;
+            const key = normalizeHeadline(headline);
+            if (!key) continue;
+            const winner = seen.get(key);
+            if (!winner) {
+              seen.set(key, row.tweet_id);
+            } else {
+              toDelete.push(row.tweet_id);
+            }
+          }
+          if (toDelete.length > 0) {
+            // Delete in chunks — Supabase .in() has a practical limit.
+            const CHUNK = 200;
+            let total = 0;
+            for (let i = 0; i < toDelete.length; i += CHUNK) {
+              const chunk = toDelete.slice(i, i + CHUNK);
+              const { count } = await sb
+                .from("scored_riskflow_items")
+                .delete({ count: "exact" })
+                .in("tweet_id", chunk);
+              total += count ?? 0;
+            }
+            if (total > 0) {
+              log.info(`Purged ${total} duplicate-headline items (24h window)`);
+            }
+          }
+        } catch (err) {
+          log.warn("Headline-dedup purge failed", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+
+        // 4) Source-link purge: items with no way to trace back to an original.
+        //    Items from these sources have their own resolvable context even
+        //    without a URL, so we keep them.
+        const TRUSTED_SOURCELESS = [
+          "FinancialJuice",
+          "DeItaOne",
+          "TwitterCli",
+          "OSINTSources",
+          "Hermes",
+        ];
+        try {
+          const { data: candidates } = await sb
+            .from("scored_riskflow_items")
+            .select("tweet_id,source,tags,url")
+            .lt("published_at", oneHourAgo)
+            .gt("published_at", sixHoursAgo)
+            .limit(500);
+          const toPurge: string[] = [];
+          for (const row of (candidates ?? []) as Array<{
+            tweet_id: string;
+            source: string | null;
+            tags: string[] | null;
+            url: string | null;
+          }>) {
+            if (row.source && TRUSTED_SOURCELESS.includes(row.source)) continue;
+            if (row.url && row.url.length > 0) continue;
+            const hasUrlTag = (row.tags ?? []).some(
+              (t) => typeof t === "string" && t.startsWith("url:"),
+            );
+            if (hasUrlTag) continue;
+            toPurge.push(row.tweet_id);
+          }
+          if (toPurge.length > 0) {
+            const CHUNK = 200;
+            let total = 0;
+            for (let i = 0; i < toPurge.length; i += CHUNK) {
+              const chunk = toPurge.slice(i, i + CHUNK);
+              const { count } = await sb
+                .from("scored_riskflow_items")
+                .delete({ count: "exact" })
+                .in("tweet_id", chunk);
+              total += count ?? 0;
+            }
+            if (total > 0) {
+              log.info(
+                `Purged ${total} sourceless items (no url, untrusted source)`,
+              );
+            }
+          }
+        } catch (err) {
+          log.warn("Source-link purge failed", {
+            error: err instanceof Error ? err.message : String(err),
+          });
         }
       }
     } catch (purgeErr) {
-      log.warn("Zero-IV purge failed (non-fatal):", {
+      log.warn("RiskFlow sanitation failed (non-fatal):", {
         error: purgeErr instanceof Error ? purgeErr.message : String(purgeErr),
       });
     }

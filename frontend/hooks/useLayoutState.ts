@@ -18,9 +18,12 @@ export function useLayoutState({
   flushQueue,
 }: UseLayoutStateParams) {
   const [layoutEditMode, setLayoutEditMode] = useState(false);
+  // [claude-code 2026-04-19] Strategium always boots closed per user request.
+  // Persisted state would fight with "restore to last route" — keep the panel
+  // explicitly hidden on every boot; user re-opens manually if wanted.
   const [missionControlCollapsed, setMissionControlCollapsedRaw] =
-    useState(false);
-  const [riskFlowCollapsed, setRiskFlowCollapsed] = useState(false);
+    useState(true);
+  const [riskFlowCollapsed, setRiskFlowCollapsed] = useState(true);
   // 4c: Link Strategium ↔ RiskFlow collapse — always in sync
   const setMissionControlCollapsed = useCallback(
     (v: boolean | ((prev: boolean) => boolean)) => {

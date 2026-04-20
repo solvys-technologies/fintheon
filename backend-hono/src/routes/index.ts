@@ -75,6 +75,9 @@ import { createOracleRoutes } from "./oracle.js";
 import { createMeRoutes } from "./me/index.js";
 import { createMaintenanceRoutes } from "./maintenance.js";
 import { createRoutinesRoutes } from "./routines/index.js";
+// [claude-code 2026-04-20] S21: Omi voice integration + PsychAssist fork admin
+import { createOmiRoutes } from "./omi.js";
+import { createPsychAssistForkRoutes } from "./admin/psych-assist-fork.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -331,4 +334,14 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/editor", authMiddleware, requireAuth);
   app.use("/api/editor/*", authMiddleware, requireAuth);
   app.route("/api/editor", createEditorRoutes());
+
+  // [S21] Omi voice integration — webhooks are public (uid-param auth),
+  //   session + pair endpoints are authMiddleware+requireAuth (inside the router).
+  app.route("/api/omi", createOmiRoutes());
+
+  // [S21-T5] PsychAssist fork admin — gated on psych_assist_fork.edit
+  //   per-user override. Reasoning@pricedinresearch.io is seeded with access.
+  app.use("/api/admin/psych-assist-fork", authMiddleware, requireAuth);
+  app.use("/api/admin/psych-assist-fork/*", authMiddleware, requireAuth);
+  app.route("/api/admin/psych-assist-fork", createPsychAssistForkRoutes());
 }

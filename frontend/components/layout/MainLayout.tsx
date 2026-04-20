@@ -31,6 +31,9 @@ import {
   PsychAssistDockable,
   type PsychAssistDockTarget,
 } from "./PsychAssistDockable";
+// [claude-code 2026-04-20] S21: Omi voice layer — Performance chat button + app-wide agent popup
+import { PerformanceChatButton } from "../performance/PerformanceChatButton";
+import { AgentResponsePopupHost } from "../voice/AgentResponsePopupHost";
 import { FooterToolbar } from "./FooterToolbar";
 import { EmbeddedBrowserFrame } from "./EmbeddedBrowserFrame";
 import { ScheduleProvider } from "../../contexts/ScheduleContext";
@@ -81,6 +84,43 @@ type NavTab =
   | "settings";
 type LayoutOption = "tickers-only" | "combined";
 
+// [claude-code 2026-04-19] Last-visited tab persistence — restores the user's
+// prior surface on sign-in / app restart so we don't dump them back at the
+// default dashboard. Invalid / legacy values fall back to "dashboard".
+const LAST_ROUTE_KEY = "fintheon:last-route:v1";
+const VALID_TABS: ReadonlySet<NavTab> = new Set<NavTab>([
+  "feed",
+  "analysis",
+  "riskflow",
+  "dashboard",
+  "econ",
+  "narrative",
+  "apparatus",
+  "performance",
+  "proposals",
+  "settings",
+]);
+
+function readLastRoute(): NavTab {
+  if (typeof window === "undefined") return "dashboard";
+  try {
+    const raw = window.localStorage.getItem(LAST_ROUTE_KEY);
+    if (raw && VALID_TABS.has(raw as NavTab)) return raw as NavTab;
+  } catch {
+    // ignore
+  }
+  return "dashboard";
+}
+
+function writeLastRoute(tab: NavTab): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(LAST_ROUTE_KEY, tab);
+  } catch {
+    // ignore
+  }
+}
+
 // TEAM_ONBOARDED_KEY removed
 
 function normalizeOrder<T extends string>(
@@ -110,7 +150,7 @@ function MainLayoutInner() {
   const { theme } = useTheme();
   const isStone = theme.name === "solvys-stone";
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
-  const [activeTab, setActiveTab] = useState<NavTab>("dashboard");
+  const [activeTab, setActiveTab] = useState<NavTab>(() => readLastRoute());
 
   const {
     topStepXEnabled,
@@ -221,8 +261,13 @@ function MainLayoutInner() {
   }, []);
 
   // Tab history for breadcrumb back/forward navigation
-  const [tabHistory, setTabHistory] = useState<NavTab[]>(["dashboard"]);
+  const [tabHistory, setTabHistory] = useState<NavTab[]>(() => [activeTab]);
   const [historyIndex, setHistoryIndex] = useState(0);
+
+  // Persist every tab change so the next boot lands on the same surface.
+  useEffect(() => {
+    writeLastRoute(activeTab);
+  }, [activeTab]);
 
   const navigateTab = (tab: NavTab) => {
     // Trim forward history when navigating to a new tab
@@ -676,6 +721,8 @@ function MainLayoutInner() {
       <div
         className={`h-screen flex flex-col bg-[var(--fintheon-bg)] text-white ${topStepXEnabled ? "topstepx-active" : ""}`}
       >
+        {/* [S21] App-wide host for the draggable Omi agent-response popup — single mount point */}
+        <AgentResponsePopupHost />
         <TopHeader
           topStepXEnabled={topStepXEnabled}
           onTopStepXToggle={handleBrowserEnable} // [claude-code 2026-03-16] Restore: clicking platform in dropdown enables iframe
@@ -712,6 +759,7 @@ function MainLayoutInner() {
               />
             ) : undefined
           }
+          performanceChatWidget={<PerformanceChatButton />}
         />
 
         {/* S14-T6: Peers panel removed — team status is now in footer Team tab */}

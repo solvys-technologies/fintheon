@@ -30,6 +30,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { SystemStatusProvider } from "./contexts/SystemStatusContext";
 import { migrateStorageKeys } from "./lib/storage-migration";
 import { AuthShell } from "./components/auth/AuthShell";
+import { CircleQuarters } from "./components/icon-bank/UnicodeSpinners";
 
 // Run storage migration before any providers read localStorage
 migrateStorageKeys();
@@ -130,9 +131,14 @@ function AuthGate() {
           <img
             src="./logo.png"
             alt="Fintheon"
-            className="h-16 w-16 animate-pulse opacity-60"
+            className="h-16 w-16 opacity-60"
           />
-          <p className="text-xs tracking-[0.3em] text-[#c79f4a]/50">LOADING</p>
+          <div className="flex items-center gap-2">
+            <CircleQuarters size={11} color="#c79f4a" />
+            <p className="text-[11px] tracking-[0.3em] text-[#c79f4a]/60">
+              LOADING
+            </p>
+          </div>
         </div>
       </div>
     );

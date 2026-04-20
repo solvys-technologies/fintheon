@@ -36,6 +36,10 @@ export interface MobileRiskFlowAlert {
   agentNote?: string | null;
   agentNoteGeneratedAt?: string | null;
   authorHandle?: string | null;
+  riskType?: string | null;
+  videoUrl?: string | null;
+  submittedBy?: string | null;
+  tags?: string[];
   econData?: {
     actual?: number | null;
     forecast?: number | null;
@@ -71,6 +75,10 @@ function mapRawItems(items: any[]): MobileRiskFlowAlert[] {
     agentNote: item.agentNote ?? null,
     agentNoteGeneratedAt: item.agentNoteGeneratedAt ?? null,
     authorHandle: item.authorHandle ?? null,
+    riskType: item.riskType ?? null,
+    videoUrl: item.video_url ?? item.videoUrl ?? null,
+    submittedBy: item.submittedBy ?? item.submitted_by ?? null,
+    tags: item.tags ?? [],
     econData: item.econData ?? null,
   }));
 }

@@ -21,7 +21,6 @@ Create one integration branch, stage only approved track files, run lightweight 
 
 - `backend-hono/src/services/riskflow/polling-config.ts`
 - `backend-hono/src/services/riskflow/feed-poller.ts`
-- `backend-hono/src/services/twitter-cli/econ-triggered-poller.ts`
 - `backend-hono/src/services/riskflow/feed-service.ts`
 - `backend-hono/src/services/riskflow/exa-scheduled-monitor.ts`
 - `backend-hono/src/routes/riskflow/handlers.ts`

@@ -1,10 +1,12 @@
 // [claude-code 2026-03-09] Added cancel on click during speaking/thinking, mic denied-state UI
 // [claude-code 2026-03-12] Switched from independent useVoiceAssistant() to shared VoiceContext
+// [claude-code 2026-04-20] S21: Toggling also starts/stops a `voice_assistant` Omi session so the popup + agent routing fire.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Mic, MicOff } from "lucide-react";
 import { useVoice } from "../../contexts/VoiceContext";
 import { resolveVoiceOrbState } from "../../types/voice";
 import { VoiceAuroraOrb } from "./VoiceAuroraOrb";
+import { useOmiSession } from "../../hooks/useOmiSession";
 
 const INFRACTION_HOLD_MS = 8_000;
 const INFRACTION_WINDOW_MS = 5 * 60_000;
@@ -163,14 +165,28 @@ export function HeaderVoiceControl({
   const isMicDenied = micPermission === "denied";
   const isDisabled = !isSupported || isMicDenied;
 
+  // [S21] Parallel Omi voice_assistant session — runs independent of VoiceContext's
+  //   LiveKit/browser-speech path so the omi backend can route questions to Oracle/Harper.
+  const {
+    session: omiSession,
+    start: startOmi,
+    stop: stopOmi,
+  } = useOmiSession();
+
   const handleClick = useCallback(() => {
     if (isBusy && enabled) {
       // Cancel current operation instead of toggling
       cancel();
+      if (omiSession?.trigger === "voice_assistant") void stopOmi();
     } else {
       toggleEnabled();
+      if (!enabled) {
+        void startOmi("voice_assistant");
+      } else if (omiSession?.trigger === "voice_assistant") {
+        void stopOmi();
+      }
     }
-  }, [isBusy, enabled, cancel, toggleEnabled]);
+  }, [isBusy, enabled, cancel, toggleEnabled, omiSession, startOmi, stopOmi]);
 
   const getTitle = () => {
     if (isMicDenied) return "Microphone blocked. Enable in browser settings.";

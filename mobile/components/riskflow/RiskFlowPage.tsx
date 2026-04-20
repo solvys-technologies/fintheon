@@ -1,12 +1,17 @@
 // [claude-code 2026-04-16] RiskFlow page — Agent Reach removed, pull-to-refresh is the only manual refresh
+// [claude-code 2026-04-19] Source filter sheet wired into the filter bar — tapping "SOURCE"
+//   opens the 5-bucket bottom sheet.
+import { useState } from "react";
 import { useMobileRiskFlow } from "../../contexts/RiskFlowContext";
 import { useRiskFlowInfiniteScroll } from "../../hooks/useRiskFlowInfiniteScroll";
 import { useRiskFlowFilters } from "../../hooks/useRiskFlowFilters";
 import { PullToRefresh } from "../shared/PullToRefresh";
 import { RiskFlowFilterBar } from "./RiskFlowFilterBar";
 import { RiskFlowCard } from "./RiskFlowCard";
+import { SourceFilterSheet } from "./SourceFilterSheet";
 
 export function RiskFlowPage() {
+  const [sourceSheetOpen, setSourceSheetOpen] = useState(false);
   const {
     alerts,
     isLoading,
@@ -21,10 +26,15 @@ export function RiskFlowPage() {
     removeAlert,
   } = useMobileRiskFlow();
 
-  const { filtered, activeSeverities, toggleSeverity, clearSeverities } =
-    useRiskFlowFilters({
-      alerts,
-    });
+  const {
+    filtered,
+    activeSeverities,
+    activeBuckets,
+    toggleSeverity,
+    clearSeverities,
+    toggleBucket,
+    clearBuckets,
+  } = useRiskFlowFilters({ alerts });
   const { sentinelRef, scrollContainerRef } = useRiskFlowInfiniteScroll({
     hasMore,
     loadingMore,
@@ -56,6 +66,8 @@ export function RiskFlowPage() {
           activeSeverities={activeSeverities}
           onToggleSeverity={toggleSeverity}
           onClearSeverities={clearSeverities}
+          onOpenSourceSheet={() => setSourceSheetOpen(true)}
+          sourceActive={activeBuckets.size > 0}
           counts={{
             all: alerts.length,
             critical: criticalCount,
@@ -63,6 +75,13 @@ export function RiskFlowPage() {
             medium: mediumCount,
             low: lowCount,
           }}
+        />
+        <SourceFilterSheet
+          isOpen={sourceSheetOpen}
+          onClose={() => setSourceSheetOpen(false)}
+          selected={activeBuckets}
+          onToggle={toggleBucket}
+          onClear={clearBuckets}
         />
 
         {/* Card feed — zero gap, fade dividers between */}

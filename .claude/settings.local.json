@@ -48,7 +48,8 @@
       "mcp__e874efb4-98e4-4e7d-820c-cb2d397637e8__list_projects",
       "mcp__e874efb4-98e4-4e7d-820c-cb2d397637e8__execute_sql",
       "mcp__e874efb4-98e4-4e7d-820c-cb2d397637e8__apply_migration",
-      "mcp__Claude_Preview__preview_start"
+      "mcp__Claude_Preview__preview_start",
+      "mcp__claude_ai_Supabase__list_migrations"
     ]
   }
 }

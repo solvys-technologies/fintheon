@@ -22,7 +22,6 @@ import {
   ChevronDown,
   ChevronUp,
   ChevronRight,
-  Trash2,
   Diff,
   TrendingDown,
   MessageSquare,
@@ -39,8 +38,8 @@ import { useSourceStatus } from "../hooks/useSourceStatus";
 import {
   useRiskFlowFilters,
   type SeverityFilter,
-  type SourceFilter,
 } from "../hooks/useRiskFlowFilters";
+import { SourceFilterMenu } from "./feed/SourceFilterMenu";
 import { useBackend } from "../lib/backend";
 
 import { SEVERITY_CONFIG } from "../lib/severity-config";
@@ -673,7 +672,6 @@ export default function RiskFlowMini({
     alerts,
     highCount,
     mediumCount,
-    clearAll,
     removeAlert,
     markSeen,
     markAllSeen,
@@ -693,8 +691,9 @@ export default function RiskFlowMini({
     toggleSeverity,
     clearSeverities,
     setSeverityFilter,
-    sourceFilter,
-    setSourceFilter,
+    bucketSet,
+    toggleBucket,
+    clearBuckets,
     showProposals,
     setShowProposals,
     filterAlerts,
@@ -846,16 +845,8 @@ export default function RiskFlowMini({
                   className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`}
                 />
               </button>
-              {alerts.length > 0 && (
-                <button
-                  type="button"
-                  onClick={clearAll}
-                  className="p-1 rounded hover:bg-red-500/10 text-zinc-500 hover:text-red-400 transition-colors"
-                  title="Clear all"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              )}
+              {/* [claude-code 2026-04-19] Trash / clear-all removed — users asked for this
+                  to go; dismissal is per-item via the thumbs-down in AlertCardBase. */}
               <button
                 onClick={() => {
                   if (onToggleCollapsed) onToggleCollapsed();
@@ -891,15 +882,15 @@ export default function RiskFlowMini({
                   medium: mediumCount,
                 }}
               />
-              <FilterDropdown<SourceFilter>
-                value={showProposals ? "all" : sourceFilter}
-                options={[
-                  { value: "all", label: "Source: All" },
-                  { value: "twitter", label: "X / FJ" },
-                ]}
-                onChange={(v) => {
+              <SourceFilterMenu
+                selected={showProposals ? new Set() : bucketSet}
+                onToggle={(b) => {
                   setShowProposals(false);
-                  setSourceFilter(v);
+                  toggleBucket(b);
+                }}
+                onClear={() => {
+                  setShowProposals(false);
+                  clearBuckets();
                 }}
               />
               <button

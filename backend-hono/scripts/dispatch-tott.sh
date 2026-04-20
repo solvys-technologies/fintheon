@@ -29,18 +29,19 @@ send_imessage() {
   " 2>> "$LOG_FILE"
 }
 
-# --- Step 0: Ensure backend is running ---
-if ! lsof -i :8080 -sTCP:LISTEN >/dev/null 2>&1; then
-  log "Backend not running. Starting..."
-  cd "$BACKEND_DIR"
-  nohup bun run dev >> "$LOG_FILE" 2>&1 &
-  sleep 8
-  if ! lsof -i :8080 -sTCP:LISTEN >/dev/null 2>&1; then
-    log "FATAL: Backend failed to start after 8s"
-    send_imessage "⚠️ $BRIEF_TYPE dispatch failed — backend unreachable after startup attempt."
-    exit 1
+# --- Step 0: Ensure backend is reachable ---
+# [claude-code 2026-04-20] Wait-don't-spawn — the launchd-managed backend is
+# authoritative. Previous impl raced port 8080 binding.
+for _i in $(seq 1 15); do
+  if curl -sf --max-time 2 "$BACKEND_URL/api/diagnostics" >/dev/null 2>&1; then
+    break
   fi
-  log "Backend started (PID $!)"
+  sleep 2
+done
+if ! curl -sf --max-time 2 "$BACKEND_URL/api/diagnostics" >/dev/null 2>&1; then
+  log "FATAL: Backend unreachable at $BACKEND_URL after 30s"
+  send_imessage "⚠️ $BRIEF_TYPE dispatch failed — backend unreachable (launchd backend not running?)"
+  exit 1
 fi
 
 # --- Step 1: Trigger brief generation ---

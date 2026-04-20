@@ -86,6 +86,9 @@ interface TopHeaderProps {
   hideBranding?: boolean;
   psychAssistHeadingWidget?: React.ReactNode;
   voiceRoomWidget?: React.ReactNode;
+  // [S21] Performance-tab-scoped chat trigger for Omi voice coaching session.
+  // Rendered next to psychAssistHeadingWidget when activeTab === "performance".
+  performanceChatWidget?: React.ReactNode;
   toolbarEditMode?: boolean;
 }
 
@@ -107,6 +110,7 @@ export function TopHeader({
   hideBranding = false,
   psychAssistHeadingWidget,
   voiceRoomWidget,
+  performanceChatWidget,
   toolbarEditMode = false,
 }: TopHeaderProps) {
   const { tier } = useAuth();
@@ -551,6 +555,7 @@ export function TopHeader({
         <div className="flex items-center gap-2 flex-shrink-0">
           <WhatsNewButton />
           {psychAssistHeadingWidget}
+          {activeTab === "performance" && performanceChatWidget}
           <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-2.5 h-7 flex items-center flex-shrink-0">
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] text-gray-500">VIX</span>
