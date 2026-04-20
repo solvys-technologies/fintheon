@@ -263,6 +263,7 @@ export function RiskFlowMain() {
               seen={isSeen(item.id)}
               onGenerateNote={handleGenerateNote}
               onNotRelevant={handleNotRelevant}
+              surface="full"
             />
           ))
         )}

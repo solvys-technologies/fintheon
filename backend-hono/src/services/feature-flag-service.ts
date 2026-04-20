@@ -96,6 +96,26 @@ export function getFlag(name: string): boolean {
 }
 
 /**
+ * Per-user feature resolution. Adds a user_feature_overrides row as the
+ * highest-priority layer — used in S21 for the PsychAssist fork granted to
+ * reasoning@pricedinresearch.io. Falls through to the global getFlag() when
+ * no user-specific override exists.
+ *
+ * Must be async because it hits Supabase; use the sync getFlag() on hot paths
+ * where per-user resolution isn't needed.
+ */
+export async function getFlagForUser(
+  name: string,
+  userId: string | null | undefined,
+): Promise<boolean> {
+  if (!userId || userId === "anonymous") return getFlag(name);
+  const { getUserOverride } = await import("./user-feature-overrides.js");
+  const override = await getUserOverride(userId, name);
+  if (override) return override.enabled;
+  return getFlag(name);
+}
+
+/**
  * Get all flags and their current values (for diagnostics)
  */
 export function getAllFlags(): Record<string, boolean> {
