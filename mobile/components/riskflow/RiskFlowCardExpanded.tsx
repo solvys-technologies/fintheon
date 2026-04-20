@@ -1,8 +1,14 @@
+// [claude-code 2026-04-20] Footer row added: horizontal IV bar picks up the
+//   juice from the preview card's drained vertical fuse (fills 0→IV on mount),
+//   paperclip icon right-justified links to the original source, and the IV
+//   numeral sits far-right at the very bottom. Replaces the old inline
+//   [OPEN SOURCE] text link for the mini surface.
 // [claude-code 2026-04-15] T5: Expanded card content — inline detail view with agent notes, sub-scores, symbols
 // [claude-code 2026-04-19] Surface-gated SourcePreview — when rendering in the full or
 //   timeline surface, the expanded card shows the scraped body in a SourcePreview block
 //   with YouTube + open-original CTAs; mini surfaces keep the legacy [OPEN SOURCE] link.
 import { motion } from "framer-motion";
+import { Paperclip } from "lucide-react";
 import type { MobileRiskFlowAlert } from "../../contexts/RiskFlowContext";
 import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
 import { SourcePreview } from "./SourcePreview";
@@ -12,6 +18,11 @@ export type RiskFlowExpandedSurface = "full" | "timeline" | "mini";
 interface RiskFlowCardExpandedProps {
   alert: MobileRiskFlowAlert;
   surface?: RiskFlowExpandedSurface;
+  /** When provided (from RiskFlowCard on tap-expand), the mini footer renders a
+   *  horizontal IV bar + paperclip + IV numeral. Omit to suppress the footer
+   *  (e.g. when consumed from a list view that renders its own score UI). */
+  ivScore?: number;
+  severityColor?: string;
 }
 
 const SEVERITY_COLORS: Record<AlertSeverity, string> = {
@@ -59,8 +70,13 @@ function SubScoreRow({
 export function RiskFlowCardExpanded({
   alert,
   surface = "mini",
+  ivScore,
+  severityColor,
 }: RiskFlowCardExpandedProps) {
   const showSourcePreview = surface === "full" || surface === "timeline";
+  const showFooter =
+    !showSourcePreview && ivScore != null && severityColor != null;
+  const ivFillPercent = Math.max(0, Math.min(100, ((ivScore ?? 0) / 10) * 100));
   return (
     <motion.div
       initial={{ height: 0, opacity: 0 }}
@@ -175,23 +191,83 @@ export function RiskFlowCardExpanded({
           </div>
         )}
 
-        {/* External link — only on mini surfaces (full/timeline show it via SourcePreview) */}
-        {!showSourcePreview && alert.url && (
-          <a
-            href={alert.url}
-            target="_blank"
-            rel="noopener noreferrer"
+        {/* Footer — horizontal fuse picks up the drained juice from the
+            preview card, paperclip links to the original, IV numeral anchors
+            the bottom-right. Only rendered when RiskFlowCard wires ivScore +
+            severityColor (i.e. the tap-expand flow). */}
+        {showFooter && (
+          <div
             style={{
-              fontFamily: "var(--font-data)",
-              fontSize: "11px",
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              color: "var(--interactive)",
-              textDecoration: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              marginTop: 4,
             }}
           >
-            [OPEN SOURCE]
-          </a>
+            {/* Horizontal fuse bar — fills from 0 to ivFillPercent on mount */}
+            <div
+              style={{
+                flex: 1,
+                height: 4,
+                borderRadius: 2,
+                background: "var(--fintheon-surface, #0a0a00)",
+                overflow: "hidden",
+                position: "relative",
+              }}
+            >
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${ivFillPercent}%` }}
+                transition={{ duration: 0.72, ease: [0.16, 0.8, 0.24, 1] }}
+                style={{
+                  height: "100%",
+                  background: severityColor,
+                  borderRadius: 2,
+                }}
+              />
+            </div>
+
+            {/* Paperclip → original source */}
+            {alert.url && (
+              <a
+                href={alert.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                aria-label="Open original source"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 32,
+                  height: 32,
+                  color: "var(--text-secondary)",
+                  borderRadius: 6,
+                  WebkitTapHighlightColor: "transparent",
+                }}
+              >
+                <Paperclip size={16} />
+              </a>
+            )}
+
+            {/* IV numeral — far right, Doto */}
+            <span
+              style={{
+                fontFamily:
+                  "'Doto', 'Readable Digits', var(--font-data, monospace)",
+                fontSize: 14,
+                fontWeight: 600,
+                color: severityColor,
+                fontVariantNumeric: "tabular-nums",
+                letterSpacing: "0.02em",
+                lineHeight: 1,
+                minWidth: 32,
+                textAlign: "right",
+              }}
+            >
+              {(ivScore ?? 0).toFixed(1)}
+            </span>
+          </div>
         )}
       </div>
     </motion.div>

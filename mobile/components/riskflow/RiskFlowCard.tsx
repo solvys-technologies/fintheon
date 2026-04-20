@@ -1,19 +1,18 @@
-// [claude-code 2026-04-20] Dropped the 3-line headline clamp per TP —
-//   partial headlines were unreadable on mobile. Card height now grows with
-//   the headline. Fuse + right-column IV stretch via flex alignItems: stretch.
+// [claude-code 2026-04-20] Tap-to-expand restored per TP — tap the card now
+//   expands RiskFlowCardExpanded inline (not the DetailSheet modal). The
+//   vertical fuse drains on tap, fades to zero opacity, then the expanded
+//   card's horizontal fuse fills from 0 to the real IV score at the footer.
+//   Right-column IV/chevron fades out during expansion so the footer IV at
+//   the far right of the expanded card takes over. Preview stays at the
+//   original 3-line clamp + static min-height.
 // [claude-code 2026-04-18] v5.22 S2: severity color now resolved through
 //   colorForSeverity from mobile/lib/fuse-palette so user-preferences fusePalette
 //   overrides apply uniformly. Card geometry + drain choreography unchanged.
 // [claude-code 2026-04-19] S26-P2 T10: IV fuse drain choreography per TP — "this cool
 //   micro interaction that kind of depletes the IV gauge on the left and then fills it
 //   down in the footer when it expands." On tap: drain the vertical fuse to 0 over
-//   ~220ms, THEN open the modal. The modal's horizontal IVFuseBar fills from 0 to the
-//   real score on mount, completing the visual hand-off. Using the explicit approach
-//   (B) from the brief because the vertical-to-horizontal rotation makes Framer's
-//   layoutId crossfade look janky.
-// [claude-code 2026-04-19] S25: tap now opens the full DetailSheet modal (deep view) instead
-//   of inline expansion. Long-press still expands inline for quick triage (kept for power users
-//   who scroll fast). Entry point is unified with CatalystCards + BriefingCard + push-tap flow.
+//   ~220ms, THEN reveal the expanded card. The expanded card's horizontal IV bar
+//   fills from 0 to the real score on mount, completing the visual hand-off.
 // [claude-code 2026-04-16] RiskFlow card — haptic on expand
 // [claude-code 2026-04-19] Polish pass: IV numeral now renders in Doto explicitly
 //   (var(--font-data) was getting mapped to a heavier mono on some themes), matching
@@ -21,20 +20,22 @@
 import { useCallback, useState } from "react";
 import { ChevronUp, ChevronDown, Minus } from "lucide-react";
 import { useHaptic } from "../../hooks/useHaptic";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import type { MobileRiskFlowAlert } from "../../contexts/RiskFlowContext";
 import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
 import { timeAgo } from "@frontend/lib/time-utils";
 import { SwipeAction } from "../shared/SwipeAction";
 import { VerticalFuseBar } from "../shared/VerticalFuseBar";
-import { useNotificationModal } from "../../contexts/NotificationModalContext";
 import { CARD_PRESS } from "../../lib/sheet-motion";
 import { colorForSeverity, type FuseSeverity } from "../../lib/fuse-palette";
 import { bucketOf } from "../../lib/source-buckets";
+import { RiskFlowCardExpanded } from "./RiskFlowCardExpanded";
 
 /** How long the drain takes — covers the staggered top-down segment fade. Keep this
  *  in sync with VerticalFuseBar's `transitionDelay` formula (segments × 18ms + 150ms buffer). */
 const DRAIN_DURATION_MS = 220;
+/** How long the fuse fades out once fully drained, before the expanded card reveals. */
+const FUSE_FADE_MS = 140;
 
 interface RiskFlowCardProps {
   alert: MobileRiskFlowAlert;
@@ -90,27 +91,27 @@ export function RiskFlowCard({
   index = 0,
 }: RiskFlowCardProps) {
   const vibrate = useHaptic();
-  const { open } = useNotificationModal();
   const [draining, setDraining] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const severityColor = colorForSeverity(paletteSeverity(alert.severity));
   const ivScore = alert.ivScore ?? 0;
 
-  // Strip "backend-" prefix so modal matches feed-service item ids (id="tweet_id")
-  const modalItemId = alert.id.startsWith("backend-")
-    ? alert.id.slice("backend-".length)
-    : alert.id;
-
-  const openWithDrain = useCallback(() => {
+  const handleTap = useCallback(() => {
+    if (expanded) {
+      // Collapse: hide expanded section, restore fuse
+      setExpanded(false);
+      setDraining(false);
+      vibrate(6);
+      return;
+    }
     if (draining) return;
     vibrate(8);
     setDraining(true);
+    // Wait for the drain to empty + a short fade, then reveal the expanded card
     window.setTimeout(() => {
-      open({ kind: "riskflowItem", itemId: modalItemId });
-      // Reset draining after the modal is up so if the user returns to this card
-      // the fuse re-renders at full fill (VerticalFuseBar re-mounts are cheap).
-      window.setTimeout(() => setDraining(false), 400);
-    }, DRAIN_DURATION_MS);
-  }, [draining, vibrate, open, modalItemId]);
+      setExpanded(true);
+    }, DRAIN_DURATION_MS + FUSE_FADE_MS);
+  }, [expanded, draining, vibrate]);
 
   return (
     <motion.div
@@ -120,15 +121,20 @@ export function RiskFlowCard({
     >
       <SwipeAction onSwipeLeft={() => onDismiss(alert.id)}>
         <motion.div
-          onClick={openWithDrain}
+          onClick={handleTap}
           whileTap={CARD_PRESS}
           role="button"
           tabIndex={0}
-          aria-label={`Open headline detail: ${alert.title}`}
+          aria-label={
+            expanded
+              ? `Collapse headline: ${alert.title}`
+              : `Expand headline: ${alert.title}`
+          }
+          aria-expanded={expanded}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              openWithDrain();
+              handleTap();
             }
           }}
           style={{
@@ -146,12 +152,20 @@ export function RiskFlowCard({
               minHeight: 60,
             }}
           >
-            {/* Left: Vertical fuse bar — drains on tap to hand juice to the modal footer */}
-            <VerticalFuseBar
-              value={ivScore}
-              color={severityColor}
-              draining={draining}
-            />
+            {/* Left: Vertical fuse bar — drains on tap, then fades; the expanded
+                card's horizontal bar picks up the juice on the footer. */}
+            <motion.div
+              animate={{ opacity: expanded ? 0 : 1 }}
+              transition={{ duration: FUSE_FADE_MS / 1000 }}
+              style={{ display: "flex", alignItems: "stretch" }}
+            >
+              <VerticalFuseBar
+                value={ivScore}
+                color={severityColor}
+                draining={draining || expanded}
+                animateIn
+              />
+            </motion.div>
 
             {/* Center: Source + Headline + Author */}
             <div
@@ -187,7 +201,7 @@ export function RiskFlowCard({
                 <span>{timeAgo(alert.publishedAt)}</span>
               </div>
 
-              {/* Headline — no line clamp; card grows to fit the full text */}
+              {/* Headline — 3-line clamp when collapsed, full text when expanded. */}
               <h3
                 style={{
                   fontFamily: "var(--font-body)",
@@ -195,7 +209,14 @@ export function RiskFlowCard({
                   color: "var(--text-primary)",
                   lineHeight: 1.45,
                   margin: 0,
-                  wordBreak: "break-word",
+                  ...(expanded
+                    ? { wordBreak: "break-word" as const }
+                    : {
+                        display: "-webkit-box",
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: "vertical" as const,
+                        overflow: "hidden",
+                      }),
                 }}
               >
                 {alert.title}
@@ -216,8 +237,11 @@ export function RiskFlowCard({
               )}
             </div>
 
-            {/* Right: Direction chevron + IV score, vertically centered */}
-            <div
+            {/* Right: Direction chevron + IV score — fades during expansion, the
+                expanded card's footer takes over this role. */}
+            <motion.div
+              animate={{ opacity: expanded ? 0 : 1 }}
+              transition={{ duration: FUSE_FADE_MS / 1000 }}
               style={{
                 display: "flex",
                 flexDirection: "column",
@@ -246,8 +270,21 @@ export function RiskFlowCard({
               >
                 {ivScore.toFixed(1)}
               </span>
-            </div>
+            </motion.div>
           </div>
+
+          {/* Expanded body — sub-scores, agent notes, and the footer row with
+              the horizontal fuse handoff + paperclip + far-right IV numeral. */}
+          <AnimatePresence initial={false}>
+            {expanded && (
+              <RiskFlowCardExpanded
+                alert={alert}
+                surface="mini"
+                ivScore={ivScore}
+                severityColor={severityColor}
+              />
+            )}
+          </AnimatePresence>
         </motion.div>
       </SwipeAction>
     </motion.div>

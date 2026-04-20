@@ -388,8 +388,6 @@ export function NotificationCard({
               <span style={{ color: "var(--text-disabled)" }}>&middot;</span>
               <span>{timeLabel(n.createdAt)}</span>
             </div>
-            {/* [claude-code 2026-04-20] Removed title + body line clamps per TP —
-                full headline must be visible without tapping. */}
             <span
               style={{
                 fontFamily: "var(--font-body)",
@@ -397,7 +395,10 @@ export function NotificationCard({
                 lineHeight: 1.4,
                 fontWeight: n.read ? 400 : 600,
                 color: n.read ? "var(--text-primary)" : "var(--accent)",
-                wordBreak: "break-word",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical" as const,
+                overflow: "hidden",
               }}
             >
               {n.title}
@@ -408,7 +409,10 @@ export function NotificationCard({
                   fontSize: 12.5,
                   color: "var(--text-secondary)",
                   lineHeight: 1.45,
-                  wordBreak: "break-word",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical" as const,
+                  overflow: "hidden",
                 }}
               >
                 {n.body}

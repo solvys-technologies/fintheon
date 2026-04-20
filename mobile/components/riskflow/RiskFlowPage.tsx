@@ -1,3 +1,8 @@
+// [claude-code 2026-04-20] [NO ALERTS] now distinguishes "feed is empty" from
+//   "filters hid everything" — when any severity/source filter is active and
+//   the result is empty, show a Clear Filters affordance so TP can recover
+//   instead of staring at a blank screen. Source sheet also renders per-bucket
+//   counts so zero-match selections are visible up front.
 // [claude-code 2026-04-16] RiskFlow page — Agent Reach removed, pull-to-refresh is the only manual refresh
 // [claude-code 2026-04-19] Source filter sheet wired into the filter bar — tapping "SOURCE"
 //   opens the 5-bucket bottom sheet.
@@ -30,11 +35,14 @@ export function RiskFlowPage() {
     filtered,
     activeSeverities,
     activeBuckets,
+    bucketCounts,
     toggleSeverity,
     clearSeverities,
     toggleBucket,
     clearBuckets,
+    clearFilters,
   } = useRiskFlowFilters({ alerts });
+  const filtersActive = activeSeverities.size > 0 || activeBuckets.size > 0;
   const { sentinelRef, scrollContainerRef } = useRiskFlowInfiniteScroll({
     hasMore,
     loadingMore,
@@ -80,13 +88,17 @@ export function RiskFlowPage() {
           isOpen={sourceSheetOpen}
           onClose={() => setSourceSheetOpen(false)}
           selected={activeBuckets}
+          bucketCounts={bucketCounts}
           onToggle={toggleBucket}
           onClear={clearBuckets}
         />
 
         {/* Card feed — zero gap, fade dividers between */}
         {filtered.length === 0 ? (
-          <div className="flex items-center justify-center py-20">
+          <div
+            className="flex flex-col items-center justify-center py-20"
+            style={{ gap: 14 }}
+          >
             <span
               style={{
                 fontFamily: "var(--font-data)",
@@ -95,8 +107,32 @@ export function RiskFlowPage() {
                 color: "var(--text-disabled)",
               }}
             >
-              [NO ALERTS]
+              {filtersActive && alerts.length > 0
+                ? "[NO ALERTS MATCH FILTERS]"
+                : "[NO ALERTS]"}
             </span>
+            {filtersActive && alerts.length > 0 && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                style={{
+                  fontFamily: "var(--font-data)",
+                  fontSize: 11,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "var(--accent)",
+                  background: "transparent",
+                  border: "1px solid var(--accent)",
+                  padding: "10px 18px",
+                  borderRadius: 8,
+                  minHeight: 44,
+                  cursor: "pointer",
+                  WebkitTapHighlightColor: "transparent",
+                }}
+              >
+                Clear filters
+              </button>
+            )}
           </div>
         ) : (
           <div>

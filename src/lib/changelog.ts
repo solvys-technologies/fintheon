@@ -9,6 +9,36 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T14:20:00",
+    agent: "claude-code",
+    summary:
+      "Mobile RiskFlow UX pass — tap-to-expand, source filter visibility, " +
+      "and fuse fill-on-mount. (1) Tap on a RiskFlow card now expands " +
+      "RiskFlowCardExpanded inline (was opening the DetailSheet modal); " +
+      "vertical fuse drains + fades, right-column IV fades, expanded card " +
+      "renders with a footer row — horizontal fuse charging 0→IV, paperclip " +
+      "→ original source, Doto IV numeral far right. Preview stays on the " +
+      "3-line clamp + static min-height. (2) Source filter sheet now shows " +
+      "per-bucket counts (TP was hitting [NO ALERTS] after selecting a " +
+      "zero-match bucket with no visible signal); the feed's empty state " +
+      "reads [NO ALERTS MATCH FILTERS] + Clear-filters button when alerts " +
+      "exist but filters hide them. (3) New card arrival choreography: " +
+      "VerticalFuseBar (mobile) + NothingFuse (desktop) accept `animateIn`; " +
+      "the fuse mounts empty and charges bottom-up so scored items arriving " +
+      "at the feed top visibly fill in. Also reverted the NotificationCard " +
+      "line-clamp change from the earlier pass — it wasn't what TP asked for.",
+    files: [
+      "mobile/components/riskflow/RiskFlowCard.tsx",
+      "mobile/components/riskflow/RiskFlowCardExpanded.tsx",
+      "mobile/components/riskflow/RiskFlowPage.tsx",
+      "mobile/components/riskflow/SourceFilterSheet.tsx",
+      "mobile/components/shared/VerticalFuseBar.tsx",
+      "mobile/components/notifications/NotificationCard.tsx",
+      "frontend/components/shared/NothingFuse.tsx",
+      "frontend/components/feed/AlertCardBase.tsx",
+    ],
+  },
+  {
     date: "2026-04-20T13:40:00",
     agent: "claude-code",
     summary:

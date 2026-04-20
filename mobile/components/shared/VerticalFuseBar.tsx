@@ -1,3 +1,7 @@
+// [claude-code 2026-04-20] `animateIn` — when true, the fuse mounts empty and
+//   fills bottom-up, one segment at a time, so new scored items arriving at
+//   the top of the feed visibly "charge up". Staggered delays mirror the
+//   existing drain choreography (just reversed direction).
 // [claude-code 2026-04-18] Drop the .nothing-fuse-shimmer overlay per TP — too brief on
 //   mobile to register, and it competed visually with the drain choreography. Outer
 //   wrapper kept (position:relative) in case future overlays need it.
@@ -10,6 +14,7 @@
 //   from the card into the modal footer. Sequence is orchestrated by RiskFlowCard —
 //   we just honor the draining flag here.
 // [claude-code 2026-04-15] Nothing-styled vertical fuse bar — discrete blocks filling bottom-up, IV 0-10 scale
+import { useEffect, useState } from "react";
 
 interface VerticalFuseBarProps {
   value: number; // 0-10
@@ -18,6 +23,8 @@ interface VerticalFuseBarProps {
   /** When true, renders zero filled segments so the fuse appears to drain. Pair with
    *  a 150-220ms delay before navigating away for a clean drain/fill choreography. */
   draining?: boolean;
+  /** When true, the fuse mounts empty and animates to `value` bottom-up. */
+  animateIn?: boolean;
 }
 
 const SEGMENT_COUNT = 10;
@@ -28,8 +35,18 @@ export function VerticalFuseBar({
   color,
   segments = SEGMENT_COUNT,
   draining = false,
+  animateIn = false,
 }: VerticalFuseBarProps) {
-  const filled = draining ? 0 : Math.round((value / 10) * segments);
+  // Mount-charge state: when animateIn=true, start filled=0 then flip to target
+  // on the next frame so CSS transitions animate each segment bottom-up.
+  const [charged, setCharged] = useState(!animateIn);
+  useEffect(() => {
+    if (!animateIn || charged) return;
+    const raf = requestAnimationFrame(() => setCharged(true));
+    return () => cancelAnimationFrame(raf);
+  }, [animateIn, charged]);
+  const targetFilled = Math.round((value / 10) * segments);
+  const filled = draining || !charged ? 0 : targetFilled;
 
   return (
     <div
@@ -57,11 +74,13 @@ export function VerticalFuseBar({
               minHeight: 2,
               borderRadius: 1,
               background: i < filled ? color : "var(--border)",
-              // Stagger the drain top-down (i=9 first, i=0 last) so it reads as juice
-              // flowing out of the card, not a simple fade. 18ms per segment × 10 = 180ms.
+              // Drain reads top-down (i=9 first, i=0 last), mount-fill reads
+              // bottom-up (i=0 first, i=9 last). 18ms per segment × 10 = 180ms.
               transitionDelay: draining
                 ? `${(segments - 1 - i) * 18}ms`
-                : "0ms",
+                : animateIn
+                  ? `${i * 18}ms`
+                  : "0ms",
               transition: "background 150ms ease-out",
             }}
           />

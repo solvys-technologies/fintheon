@@ -107,6 +107,7 @@ export function AlertCardBase({
               severity={palSeverity}
               orientation="vertical"
               thickness={6}
+              animateIn
             />
           </div>
 
