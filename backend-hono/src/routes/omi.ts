@@ -125,6 +125,37 @@ export function createOmiRoutes() {
     return c.json({ ok: true });
   });
 
+  // Day Summary — Omi's end-of-day aggregate. Stored as a sessions row with a
+  // synthetic `day_summary` trigger so the Performance journal can surface it
+  // without a new table. Not tied to an active session.
+  router.post("/webhook/day-summary", async (c: Context) => {
+    const uid = c.req.query("uid");
+    if (!uid) return c.json({ error: "missing uid" }, 400);
+    const userId = await resolveUserIdForOmiUid(uid);
+    if (!userId) return c.json({ error: "uid not paired" }, 404);
+
+    const body = (await c.req.json().catch(() => null)) as Record<
+      string,
+      unknown
+    > | null;
+    if (!body) return c.json({ error: "bad body" }, 400);
+
+    const sb = getSupabaseClient();
+    if (sb) {
+      await sb.from("omi_sessions").insert({
+        user_id: userId,
+        trigger: "psych_assist",
+        primary_agent: "coach",
+        status: "ended",
+        started_at: new Date().toISOString(),
+        ended_at: new Date().toISOString(),
+        transcript_snapshot: body,
+        metadata: { kind: "day_summary" },
+      });
+    }
+    return c.json({ ok: true });
+  });
+
   router.post("/webhook/memory", async (c: Context) => {
     const uid = c.req.query("uid");
     if (!uid) return c.json({ error: "missing uid" }, 400);
