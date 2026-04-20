@@ -110,7 +110,13 @@ const MARKET_KEYWORDS =
 
 // ── Platform ad / promo prefixes ───────────────────────────────────────────
 // "FinancialJuice | ..." is their ad/promo format on X. Block at ingestion.
-const PLATFORM_AD_PATTERNS = [/FinancialJuice\s*\|/i, /financialjuice\.com/i];
+// [claude-code 2026-04-20] "Markets Wrap" / regional "Wrap" titles are Bloomberg
+//   scheduled recaps, not catalysts. TP: these read like ads and drive dupe pushes.
+const PLATFORM_AD_PATTERNS = [
+  /FinancialJuice\s*\|/i,
+  /financialjuice\.com/i,
+  /\b(markets?|europe|asia|americas|global|us|u\.?s\.?)\s+wrap\b/i,
+];
 
 // ── Scraper artifact / bot-check / error page detection ───────────────────
 // When a source scrapes a URL and hits a captcha, paywall, or error page,

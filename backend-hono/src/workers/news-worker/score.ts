@@ -7,11 +7,15 @@
 const MIN_HEADLINE_LEN = 10;
 const MIN_ALNUM_RATIO = 0.35;
 
+// [claude-code 2026-04-20] Added "Markets Wrap" / regional wrap rejection —
+// Bloomberg's scheduled recaps aren't catalysts; they were leaking through
+// and firing repeat push notifications.
 const REJECT_PATTERNS: RegExp[] = [
   /^\s*(sponsored|advert|promoted)\b/i,
   /^\s*sign up\s+/i,
   /^\s*subscribe\s+/i,
   /^\s*sale\b.*(off|%)/i,
+  /\b(markets?|europe|asia|americas|global|us|u\.?s\.?)\s+wrap\b/i,
 ];
 
 /**

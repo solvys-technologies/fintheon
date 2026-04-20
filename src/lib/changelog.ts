@@ -9,6 +9,32 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T09:40:00",
+    agent: "claude-code",
+    summary:
+      "RiskFlow push notifications — stop the dupe storm and calm the header. " +
+      "TP was seeing the same headline 10 times over 5-10 min, each card stamped " +
+      "with a running '8 updates · / 13 updates · / 21 updates ·' counter that " +
+      "was anxiety-inducing for traders. Root causes: (a) riskflow-payload.ts " +
+      "appended a 5-minute bucket to every fingerprint so the 30-min dedup window " +
+      "in emit.ts could never match across bucket flips — every ~5 min the same " +
+      "item re-fired; (b) narrative-coalesce.ts's flush rewrote the body to " +
+      "`${count} updates · ${headline}` and used a `:coalesced` fingerprint that " +
+      "rotated with the first item's bucket. Fixes: fingerprint is now content-only " +
+      "(`riskflow:<hash(headline|instrument)>`) so the 30-min window actually " +
+      "suppresses repeats; coalescer silently drops N-1 items per 60s window and " +
+      "emits only the first item unchanged (no counter); title changed from " +
+      "'Catalyst · Geopolitical' to 'Fintheon · Geopolitical' per TP. Also " +
+      "blocked Bloomberg-style 'Markets Wrap' / regional-wrap advertorials in " +
+      "both the news-worker pre-ingest filter and the server-side content guard.",
+    files: [
+      "backend-hono/src/services/notifications/riskflow-payload.ts",
+      "backend-hono/src/services/notifications/narrative-coalesce.ts",
+      "backend-hono/src/services/riskflow/content-guard.ts",
+      "backend-hono/src/workers/news-worker/score.ts",
+    ],
+  },
+  {
     date: "2026-04-20T09:00:00",
     agent: "claude-code",
     summary:

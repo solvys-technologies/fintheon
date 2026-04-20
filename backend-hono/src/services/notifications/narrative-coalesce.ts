@@ -1,10 +1,12 @@
+// [claude-code 2026-04-20] Drop "N updates ·" prefix — TP says the running counter is anxiety-inducing for traders.
+//   Coalescer still collapses N→1 within the window, but the surviving push shows only the first headline.
 // [claude-code 2026-04-18] B2: narrative-level debounce so repeat L3+ items within 60s collapse into one push
 /**
  * Narrative-level coalescer
  *
- * In-memory 60s debounce keyed by `{userId|"all"}:{narrativeKey}`. A second
- * L3+ item arriving during the window upgrades the pending push to a
- * "N updates on <narrative>" message and resets the timer.
+ * In-memory 60s debounce keyed by `{userId|"all"}:{narrativeKey}`. Additional
+ * L3+ items arriving during the window are silently dropped — only the first
+ * item's headline is surfaced when the window flushes.
  *
  * Single-process: relies on in-memory state. Acceptable because the scorer
  * only runs in one place (ENABLE_CENTRAL_SCORING=true on TP's node).
@@ -34,24 +36,18 @@ async function flush(key: string): Promise<void> {
   if (!entry) return;
   pending.delete(key);
 
-  if (entry.count === 1) {
-    await emitPushAndLog(entry.first).catch((err) =>
-      log.warn("Flush emit failed", { error: String(err) }),
-    );
-    return;
+  // Always emit the first item unchanged — N-1 others were silently dropped
+  // during the window. Dedup in emit.ts (content-only fingerprint + 30 min
+  // window) then suppresses repeat first-item pushes across windows.
+  await emitPushAndLog(entry.first).catch((err) =>
+    log.warn("Flush emit failed", { error: String(err) }),
+  );
+  if (entry.count > 1) {
+    log.info("Coalesced window", {
+      key,
+      dropped: entry.count - 1,
+    });
   }
-
-  // Multiple items in window — collapse
-  const narrativeLabel = entry.first.title;
-  await emitPushAndLog({
-    ...entry.first,
-    title: narrativeLabel,
-    body: `${entry.count} updates · ${entry.first.body}`,
-    // Fresh fingerprint so the collapsed message isn't itself dedup-suppressed
-    fingerprint: entry.first.fingerprint
-      ? `${entry.first.fingerprint}:coalesced`
-      : undefined,
-  }).catch((err) => log.warn("Coalesced emit failed", { error: String(err) }));
 }
 
 /**

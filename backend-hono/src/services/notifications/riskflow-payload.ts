@@ -1,17 +1,18 @@
+// [claude-code 2026-04-20] Notifications dedup + header polish:
+//   Title → "Fintheon · <Category>" (iOS shows this as the big header, drops redundant "from Fintheon").
+//   Fingerprint → content-only (no 5-min bucket) so dedup window actually suppresses repeats.
 // [claude-code 2026-04-19] S25: item-scoped URL (`/riskflow?item={id}`) so the mobile detail
 //   modal can open the exact headline on notification tap. Image passthrough supports rich
 //   push (hero media). Old SW versions ignore both gracefully.
-// [claude-code 2026-04-19] Plain-language catalyst push per TP — title "Catalyst · <Category>",
-//   body is the headline. Categories collapse to 3 buckets: Econ / Geopolitical / Monetary Policy
-//   (fallback "Market"). No more technical tags like "/ES · FOMC Minutes" on lock screen.
 // [claude-code 2026-04-18] B3: RiskFlow push payload polish + B1 fingerprint
 /**
  * RiskFlow → push payload builder
  *
  * Produces iOS-friendly title/body/url/fingerprint from a scored FeedItem.
- * Title: "Catalyst · <Category>"   (e.g. "Catalyst · Geopolitical")
+ * Title: "Fintheon · <Category>"   (e.g. "Fintheon · Geopolitical")
  * Body:  "<headline>"              (e.g. "Iran reopens Strait of Hormuz")
- * Fingerprint: riskflow:<hash(normalizedHeadline + instrument)>:<floor(now/5min)>
+ * Fingerprint: riskflow:<hash(normalizedHeadline + instrument)>
+ *   — content-only; the 30-min dedup window (emit.ts) is what blocks repeats.
  */
 
 import type { FeedItem } from "../../types/riskflow.js";
@@ -94,12 +95,11 @@ export function buildRiskFlowPush(item: FeedItem): RiskFlowPushPayload {
   const category = pickCategoryLabel(item);
   const headline = (item.headline || "").trim();
 
-  const title = `Catalyst · ${category}`;
+  const title = `Fintheon · ${category}`;
   const body = headline;
 
   const normalized = normalizeHeadline(headline);
-  const bucket = Math.floor(Date.now() / (5 * 60_000));
-  const fingerprint = `riskflow:${hash32(`${normalized}|${instrument}`)}:${bucket}`;
+  const fingerprint = `riskflow:${hash32(`${normalized}|${instrument}`)}`;
 
   return {
     title,
