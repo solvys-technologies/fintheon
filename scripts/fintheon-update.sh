@@ -104,21 +104,34 @@ else
 fi
 
 # ── Step 3: Pull latest code ────────────────────────────────────────────────
+# [claude-code 2026-04-20] Bulletproof pull: always authoritatively reset to
+# origin/$CURRENT_BRANCH. Local user changes were stashed in step 2 and popped
+# at the end, so the working tree after this step is guaranteed to match
+# origin. No user-visible warnings, no rebase-then-fallback dance, no HEAD-
+# override messages. Diagnostics go to /tmp/fintheon-update-pull.log.
 
 step "3/12" "Pulling latest code..."
-git fetch --all --prune --prune-tags 2>/dev/null || true
-git fetch --tags --force 2>/dev/null || true
 
-PULL_OUTPUT=$(git pull origin "$CURRENT_BRANCH" --rebase 2>&1) || {
-  warn "Pull failed — trying hard reset to origin/$CURRENT_BRANCH"
-  git reset --hard "origin/$CURRENT_BRANCH" 2>/dev/null || true
-  PULL_OUTPUT="reset to origin"
-}
+PULL_LOG="/tmp/fintheon-update-pull.log"
+: > "$PULL_LOG"
 
-if echo "$PULL_OUTPUT" | grep -q "Already up to date"; then
+git fetch --all --prune --prune-tags >>"$PULL_LOG" 2>&1 || true
+git fetch --tags --force >>"$PULL_LOG" 2>&1 || true
+
+# Attach to the resolved branch if we're in detached HEAD. Silent.
+if [[ -z "$(git branch --show-current 2>/dev/null)" ]]; then
+  git checkout -B "$CURRENT_BRANCH" "origin/$CURRENT_BRANCH" >>"$PULL_LOG" 2>&1 || \
+  git checkout "$CURRENT_BRANCH" >>"$PULL_LOG" 2>&1 || true
+fi
+
+BEFORE=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+git reset --hard "origin/$CURRENT_BRANCH" >>"$PULL_LOG" 2>&1 || true
+AFTER=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+
+if [[ "$BEFORE" == "$AFTER" ]]; then
   ok "Already up to date"
 else
-  ok "Code updated ($(git log --oneline -1 | cut -c1-7))"
+  ok "Code updated ($AFTER)"
 fi
 
 # ── Step 4: Install / update dependencies ────────────────────────────────────
@@ -358,47 +371,78 @@ for i in {1..15}; do
   fi
 done
 
-# ── Step 10: Cleanup legacy Twitter CLI + peer onboarding ──────────────────
+# ── Step 10: Refresh X feed tokens ─────────────────────────────────────────
+# [claude-code 2026-04-16] Force-reload Rettiwt keys from DB + reset cooldowns on update.
+# [claude-code 2026-04-20] Non-contributor case demoted from warn → info; it's
+# optional ("you can add a key") rather than broken.
 
 step "10/12" "Refreshing X feed tokens..."
-# [claude-code 2026-04-16] Force-reload Rettiwt keys from DB + reset cooldowns on update
-REFRESH_RESULT=$(curl -s -X POST localhost:8080/api/riskflow/rettiwt-refresh 2>/dev/null || echo '{}')
+REFRESH_RESULT=$(curl -s --max-time 5 -X POST localhost:8080/api/riskflow/rettiwt-refresh 2>/dev/null || echo '{}')
 TOTAL_KEYS=$(echo "$REFRESH_RESULT" | grep -o '"totalKeys":[0-9]*' | head -1 | cut -d: -f2 2>/dev/null || echo "0")
 RESET_COUNT=$(echo "$REFRESH_RESULT" | grep -o '"resetCount":[0-9]*' | head -1 | cut -d: -f2 2>/dev/null || echo "0")
 TOTAL_KEYS=${TOTAL_KEYS:-0}
 RESET_COUNT=${RESET_COUNT:-0}
 if [[ "$TOTAL_KEYS" -gt 0 ]]; then
-  ok "Rettiwt pool refreshed: $TOTAL_KEYS keys, $RESET_COUNT cooldowns reset"
+  ok "X feed tokens refreshed ($TOTAL_KEYS keys, $RESET_COUNT cooldowns reset)"
 else
-  warn "Rettiwt pool empty — run: fintheon peers"
+  info "X feed tokens: not contributing (optional — 'fintheon peers' to add your key)"
 fi
 
-step "11/12" "Cleaning up legacy Twitter CLI + peer sync..."
+# ── Step 11: Clean up deprecated dependencies + peer sync ──────────────────
+# [claude-code 2026-04-20] Renamed from "Twitter CLI cleanup" to a generic
+# deprecated-dependency sweep. Each entry in the table below is a thing
+# Fintheon used to ship but no longer relies on. Only emits `ok` when
+# something actually existed and was removed — silent when the system is
+# already clean. Add new entries here as deprecations accumulate.
 
-# Remove Twitter CLI if installed (replaced by Rettiwt library — no CLI needed)
-if command -v twitter &>/dev/null; then
-  TWITTER_PATH="$(which twitter 2>/dev/null)"
-  rm -f "$TWITTER_PATH" 2>/dev/null || true
-  ok "Removed legacy Twitter CLI ($TWITTER_PATH)"
-fi
-# Remove twitter-cli config/data if present
-rm -rf "$HOME/.twitter-cli" 2>/dev/null || true
-rm -rf "$HOME/.config/twitter-cli" 2>/dev/null || true
-# Remove old RETTIWT_AUTH_TOKEN from .env (keys are now per-user in Supabase)
+step "11/12" "Cleaning up deprecated dependencies + peer sync..."
+
+_CLEANED=0
+
+# Deprecated binaries on $PATH (replaced by in-process libraries).
+for _BIN in twitter; do
+  if command -v "$_BIN" &>/dev/null; then
+    _BIN_PATH="$(command -v "$_BIN" 2>/dev/null)"
+    rm -f "$_BIN_PATH" 2>/dev/null || true
+    ok "Removed deprecated binary: $_BIN ($_BIN_PATH)"
+    _CLEANED=$((_CLEANED + 1))
+  fi
+done
+
+# Deprecated config directories.
+for _DIR in "$HOME/.twitter-cli" "$HOME/.config/twitter-cli"; do
+  if [[ -d "$_DIR" ]]; then
+    rm -rf "$_DIR" 2>/dev/null || true
+    ok "Removed deprecated config: $(basename "$_DIR")"
+    _CLEANED=$((_CLEANED + 1))
+  fi
+done
+
+# Deprecated env vars (secrets vault + per-user Supabase rows replace them).
+# NOTION_API_KEY is included because Notion was fully severed 2026-04-16.
 if [[ -f "$BACKEND_ENV" ]]; then
-  sed -i '' '/^RETTIWT_AUTH_TOKEN=/d' "$BACKEND_ENV" 2>/dev/null || true
+  for _VAR in RETTIWT_AUTH_TOKEN TWITTER_CLI_PATH NOTION_API_KEY; do
+    if grep -q "^${_VAR}=" "$BACKEND_ENV" 2>/dev/null; then
+      sed -i '' "/^${_VAR}=/d" "$BACKEND_ENV" 2>/dev/null || true
+      ok "Removed deprecated env var: $_VAR"
+      _CLEANED=$((_CLEANED + 1))
+    fi
+  done
 fi
-ok "Legacy Twitter CLI artifacts cleaned"
+
+if [[ "$_CLEANED" -eq 0 ]]; then
+  ok "No deprecated dependencies found"
+fi
 
 # Peer onboarding sync
 if [[ -f "$FINTHEON_ROOT/scripts/peer-bootstrap.sh" ]]; then
-  if bash "$FINTHEON_ROOT/scripts/peer-bootstrap.sh" --from-update; then
+  if bash "$FINTHEON_ROOT/scripts/peer-bootstrap.sh" --from-update >/dev/null 2>&1; then
     ok "Peer onboarding sync complete"
   else
-    warn "Peer onboarding check failed (non-fatal) — run: fintheon peers"
+    info "Peer onboarding skipped (optional — run 'fintheon peers' to configure)"
   fi
 else
-  warn "peer-bootstrap.sh not found — skipping peer onboarding sync"
+  info "peer-bootstrap.sh not present — skipping peer sync"
 fi
 
 # ── Mobile bridge health check ──────────────────────────────────────────────

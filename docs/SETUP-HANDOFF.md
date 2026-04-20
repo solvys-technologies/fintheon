@@ -41,7 +41,7 @@ OPENAI_API_KEY=<key>                       # Voice only (Whisper + TTS)
 
 ### External CLI Tools
 
-- **twitter-cli** (`~/.local/bin/twitter`) — Python CLI for X/Twitter search. Install: `pip install twitter-cli && twitter login`
+- _(none currently required)_ — previous twitter-cli dependency is deprecated; X feed ingest runs in-process via Rettiwt. Swept automatically by `fintheon-update.sh` step 11 if lingering on old installs.
 
 ## Startup Sequence
 
@@ -133,7 +133,7 @@ cd backend-hono && npx tsc --noEmit   # Type check only
 - **Code signing warning**: Expected — no Developer ID cert. Ignore.
 - **Backend dist not found on Electron launch**: Run `cd backend-hono && npx tsc` first
 - **Notion status shows disconnected**: Backend may not be running. Check `http://localhost:8080/health`
-- **X CLI not found**: Install with `pip install twitter-cli`, ensure `~/.local/bin` is in PATH or set `TWITTER_CLI_PATH` env var
+- **X feed empty / no ingest**: The legacy twitter-cli dependency is deprecated — X ingest now runs via Rettiwt (in-process). If you see tokens=0 after `fintheon update`, run `fintheon peers` to add your Rettiwt key. The `TWITTER_CLI_PATH` env var is obsolete.
 
 ## Commit Convention
 

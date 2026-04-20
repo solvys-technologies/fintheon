@@ -1,6 +1,7 @@
 #!/bin/bash
 # Per-device peer bootstrap for Fintheon.
-# [claude-code 2026-04-18] Team Round Robin is Rettiwt + Agent Reach — Twitter CLI dropped.
+# [claude-code 2026-04-18] Team Round Robin is Rettiwt + Agent Reach.
+# [claude-code 2026-04-20] Previous twitter-cli dependency deprecated — swept by fintheon-update.sh step 11.
 # - Verifies backend reachability (Agent Reach ships built-in with backend, no install needed)
 # - Verifies Rettiwt pool has at least one key available (required for round-robin ingest)
 # - Registers/updates this device in peers with round-robin capabilities

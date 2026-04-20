@@ -25,7 +25,7 @@ cd ~/Documents/Codebases/fintheon
 Both paths do the same thing. The installer handles everything:
 
 - Homebrew, Node 22, Bun, Python 3, uv
-- Claude CLI, Hermes agent, Twitter CLI
+- Claude CLI, Hermes agent
 - VProxy Anthropic OAuth
 - All JS dependencies
 - Bootstrap environment (secrets loaded from cloud)
