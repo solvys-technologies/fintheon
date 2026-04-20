@@ -31,6 +31,9 @@ import {
   PsychAssistDockable,
   type PsychAssistDockTarget,
 } from "./PsychAssistDockable";
+// [claude-code 2026-04-20] S21: Omi voice layer — Performance chat button + app-wide agent popup
+import { PerformanceChatButton } from "../performance/PerformanceChatButton";
+import { AgentResponsePopupHost } from "../voice/AgentResponsePopupHost";
 import { FooterToolbar } from "./FooterToolbar";
 import { EmbeddedBrowserFrame } from "./EmbeddedBrowserFrame";
 import { ScheduleProvider } from "../../contexts/ScheduleContext";
@@ -676,6 +679,8 @@ function MainLayoutInner() {
       <div
         className={`h-screen flex flex-col bg-[var(--fintheon-bg)] text-white ${topStepXEnabled ? "topstepx-active" : ""}`}
       >
+        {/* [S21] App-wide host for the draggable Omi agent-response popup — single mount point */}
+        <AgentResponsePopupHost />
         <TopHeader
           topStepXEnabled={topStepXEnabled}
           onTopStepXToggle={handleBrowserEnable} // [claude-code 2026-03-16] Restore: clicking platform in dropdown enables iframe
@@ -712,6 +717,7 @@ function MainLayoutInner() {
               />
             ) : undefined
           }
+          performanceChatWidget={<PerformanceChatButton />}
         />
 
         {/* S14-T6: Peers panel removed — team status is now in footer Team tab */}

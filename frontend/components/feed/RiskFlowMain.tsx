@@ -4,8 +4,15 @@
 // [claude-code 2026-04-03] Fix IntersectionObserver root for overflow container, add Critical/Low priority filters
 // [claude-code 2026-04-19] Source filter collapsed to 5 buckets via SourceFilterMenu;
 //   priority filter replaced by PriorityFilterMenu (multi-select, already wired elsewhere).
+// [claude-code 2026-04-19] Refresh motion uses Unicode spinners: CIRCLE-QUARTERS in the
+//   header button, METER→ARROW-3 as a top-bar shimmer during refresh, ARROW-3 for loadingMore.
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import { Bell, BellOff, RefreshCw, Loader2 } from "lucide-react";
+import { Bell, BellOff } from "lucide-react";
+import {
+  CircleQuarters,
+  MeterToShimmer,
+  ArrowShimmer,
+} from "../icon-bank/UnicodeSpinners";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import { useSourceStatus } from "../../hooks/useSourceStatus";
 import { useBackend } from "../../lib/backend";
