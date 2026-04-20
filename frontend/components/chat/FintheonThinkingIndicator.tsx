@@ -1,5 +1,20 @@
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { AgentSpinner, type SpinnerAgent } from "../consilium/AgentSpinner";
+
+const AGENT_SPINNER_KEYS: SpinnerAgent[] = [
+  "harper",
+  "oracle",
+  "feucht",
+  "consul",
+  "herald",
+];
+
+function resolveAgentSpinner(name?: string): SpinnerAgent | null {
+  if (!name) return null;
+  const lower = name.toLowerCase();
+  return AGENT_SPINNER_KEYS.find((key) => lower.includes(key)) ?? null;
+}
 
 const THINKING_PHRASES = [
   "Surveying the arena...",
@@ -32,6 +47,7 @@ export function FintheonThinkingIndicator({
 }: FintheonThinkingIndicatorProps) {
   const [phrase, setPhrase] = useState(THINKING_PHRASES[0]);
   const [expanded, setExpanded] = useState(false);
+  const spinnerAgent = resolveAgentSpinner(agentName);
 
   useEffect(() => {
     if (!isThinking) return;
@@ -54,12 +70,18 @@ export function FintheonThinkingIndicator({
       }}
     >
       <div className="flex items-start gap-3">
-        {/* Radar pulse */}
-        <div className="relative mt-0.5 h-6 w-6 flex-shrink-0">
-          <div className="absolute inset-0 rounded-full pulse-radar-ring-1 fintheon-thinking-ring" />
-          <div className="absolute inset-[3px] rounded-full pulse-radar-ring-2 fintheon-thinking-ring-inner" />
-          <div className="absolute inset-[7px] rounded-full pulse-radar-dot fintheon-thinking-dot" />
-        </div>
+        {spinnerAgent ? (
+          <div className="mt-0.5 flex-shrink-0">
+            <AgentSpinner agent={spinnerAgent} size={22} />
+          </div>
+        ) : (
+          /* Radar pulse fallback when no agent is attributed */
+          <div className="relative mt-0.5 h-6 w-6 flex-shrink-0">
+            <div className="absolute inset-0 rounded-full pulse-radar-ring-1 fintheon-thinking-ring" />
+            <div className="absolute inset-[3px] rounded-full pulse-radar-ring-2 fintheon-thinking-ring-inner" />
+            <div className="absolute inset-[7px] rounded-full pulse-radar-dot fintheon-thinking-dot" />
+          </div>
+        )}
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">

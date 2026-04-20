@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { Play, Loader2, CheckCircle, AlertCircle, Zap } from "lucide-react";
 import { AgentDeskPrediction } from "./AgentDeskPrediction";
+import { AgentSpinner } from "../consilium/AgentSpinner";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -134,10 +135,11 @@ export function AgentDeskPanel({
         )}
 
         {status === "running" && (
-          <div className="text-center py-6 space-y-2">
-            <Loader2
-              className="w-6 h-6 animate-spin mx-auto"
-              style={{ color: "var(--fintheon-accent)" }}
+          <div className="flex flex-col items-center gap-2 py-6">
+            <AgentSpinner
+              agent="harper"
+              size={28}
+              title="Harper deliberating"
             />
             <p className="text-[11px] text-gray-400">Agents deliberating…</p>
           </div>

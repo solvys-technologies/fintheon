@@ -17,6 +17,7 @@ import {
   Zap,
 } from "lucide-react";
 import { ivHeatColor } from "../../types/agent-desk";
+import { AgentSpinner } from "../consilium/AgentSpinner";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -239,9 +240,13 @@ export function AgentDeskDebatePanel({
         )}
 
         {state?.phase === "idle" && simulationId && (
-          <div className="text-xs text-[var(--fintheon-text)]/40 text-center py-8">
-            <Loader2 className="w-4 h-4 animate-spin mx-auto mb-2 text-[var(--fintheon-accent)]" />
-            Waiting for deliberation to start...
+          <div className="flex flex-col items-center gap-2 text-xs text-[var(--fintheon-text)]/40 py-8">
+            <AgentSpinner
+              agent="harper"
+              size={22}
+              title="Waiting for Harper to convene the deliberation"
+            />
+            <span>Waiting for deliberation to start...</span>
           </div>
         )}
 

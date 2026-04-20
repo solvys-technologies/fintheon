@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T19:00:00",
+    agent: "claude-code",
+    summary:
+      "S28-T3 — Agent-themed loading spinners. New frontend/components/consilium/AgentSpinner.tsx renders a per-agent spinner (Harper/Crown orbit, Oracle/Eye scan, Feucht/Zap flicker, Consul/Scroll rotate, Herald/Megaphone broadcast) using the Solvys Gold accent + drop-shadow glow so loading surfaces can carry agent identity instead of a generic Loader2. All five variants share the same 32×32 viewBox ring + icon stack and only differ in animation character (smooth rotate vs sweeping arc vs stepped strobe vs broadcast pulse). Registered the set in frontend/lib/icon-bank.ts under a new AGENT_SPINNERS map (icon + variant + human-readable label per agent) alongside an AgentSpinnerKey type for consumers. Wired the spinner into three surfaces: FintheonThinkingIndicator swaps the radar pulse for an AgentSpinner when an agentName resolves to a known agent (case-insensitive substring match against harper/oracle/feucht/consul/herald — unknown agents still fall back to the radar pulse); AgentDeskPanel's running state replaced the raw Loader2 with the Harper spinner under 'Agents deliberating…'; AgentDeskDebatePanel's 'Waiting for deliberation to start' idle state now shows the Harper spinner so the wait reads as orchestration rather than a generic stall. Verified: frontend tsc --noEmit clean (only pre-existing baseUrl deprecation warning). No behavior change to Loader2 call sites that aren't agent-attributed.",
+    files: [
+      "frontend/components/consilium/AgentSpinner.tsx",
+      "frontend/lib/icon-bank.ts",
+      "frontend/components/chat/FintheonThinkingIndicator.tsx",
+      "frontend/components/agent-desk/AgentDeskPanel.tsx",
+      "frontend/components/agent-desk/AgentDeskDebatePanel.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-19T22:30:00",
     agent: "claude-code",
     summary:

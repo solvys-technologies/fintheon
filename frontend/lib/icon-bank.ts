@@ -369,6 +369,46 @@ export const LUCIDE_TO_NUCLEO: Record<string, string> = {
   Minus: "minus",
 };
 
+// ─── AGENT SPINNERS ──────────────────────────────────────────
+// Per-agent loading spinners (see frontend/components/consilium/AgentSpinner.tsx).
+// Use these anywhere an agent is thinking/working so loading surfaces carry
+// agent identity instead of a generic Loader2. Each variant pairs an
+// agent icon with a distinct ring animation:
+//   orbit     — smooth rotation (Harper, the orchestrator)
+//   scan      — sweeping arc (Oracle, the all-seer)
+//   flicker   — stepped strobe (Feucht, the risk desk)
+//   rotate    — slow rotation (Consul, the fundamentals scholar)
+//   broadcast — pulse + rotate (Herald, the sentiment crier)
+export const AGENT_SPINNERS = {
+  harper: {
+    icon: "Crown",
+    variant: "orbit",
+    label: "Harper — CAO synthesis, orchestration",
+  },
+  oracle: {
+    icon: "Eye",
+    variant: "scan",
+    label: "Oracle — volatility surface, probabilistic reasoning",
+  },
+  feucht: {
+    icon: "Zap",
+    variant: "flicker",
+    label: "Feucht — futures/risk, execution",
+  },
+  consul: {
+    icon: "Scroll",
+    variant: "rotate",
+    label: "Consul — fundamentals, earnings, macro",
+  },
+  herald: {
+    icon: "Megaphone",
+    variant: "broadcast",
+    label: "Herald — breaking news, sentiment",
+  },
+} as const;
+
+export type AgentSpinnerKey = keyof typeof AGENT_SPINNERS;
+
 // Icon categories relevant to Fintheon's main sections
 export const SECTION_ICONS = {
   riskflow: "notification", // Alert feed
