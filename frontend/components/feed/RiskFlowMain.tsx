@@ -2,6 +2,8 @@
 // [claude-code 2026-03-10] Dropdown filters (Priority + Source), X/FJ filter, X CLI status dot.
 // [claude-code 2026-03-26] T4: Replace inline cards with RiskFlowDetailCard, remove dead helpers
 // [claude-code 2026-04-03] Fix IntersectionObserver root for overflow container, add Critical/Low priority filters
+// [claude-code 2026-04-19] Source filter collapsed to 5 buckets via SourceFilterMenu;
+//   priority filter replaced by PriorityFilterMenu (multi-select, already wired elsewhere).
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { Bell, BellOff, RefreshCw, Loader2 } from "lucide-react";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
@@ -9,18 +11,10 @@ import { useSourceStatus } from "../../hooks/useSourceStatus";
 import { useBackend } from "../../lib/backend";
 import { useToast } from "../../contexts/ToastContext";
 import { RiskFlowDetailCard } from "./RiskFlowDetailCard";
-
-type PriorityFilter = "all" | "critical" | "high" | "medium" | "low";
-// [claude-code 2026-04-15] S16-T5: Expanded source filters for all pipeline sources
-type SourceFilter =
-  | "all"
-  | "twitter"
-  | "financial-juice"
-  | "deitaone"
-  | "osint"
-  | "econ-calendar"
-  | "polymarket-kalshi"
-  | "hermes";
+import { PriorityFilterMenu } from "../shared/PriorityFilterMenu";
+import { SourceFilterMenu } from "./SourceFilterMenu";
+import { useRiskFlowFilters } from "../../hooks/useRiskFlowFilters";
+import { bucketOf, SOURCE_BUCKETS } from "../../lib/source-buckets";
 
 export function RiskFlowMain() {
   const {
@@ -40,9 +34,16 @@ export function RiskFlowMain() {
   const backend = useBackend();
   const { addToast } = useToast();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
-  const [showProposals, setShowProposals] = useState(false);
+  const {
+    severitySet,
+    toggleSeverity,
+    clearSeverities,
+    bucketSet,
+    toggleBucket,
+    clearBuckets,
+    showProposals,
+    setShowProposals,
+  } = useRiskFlowFilters();
 
   useEffect(() => {
     markAllSeen(alerts.map((a) => a.id));
@@ -117,54 +118,40 @@ export function RiskFlowMain() {
   const items = useMemo(() => {
     if (showProposals) return alerts.filter((a) => a.source === "trade-idea");
     let base = [...alerts];
-    if (priorityFilter === "critical")
-      base = base.filter((a) => a.severity === "critical");
-    else if (priorityFilter === "high")
-      base = base.filter((a) => a.severity === "high");
-    else if (priorityFilter === "medium")
-      base = base.filter((a) => a.severity === "medium");
-    else if (priorityFilter === "low")
-      base = base.filter((a) => a.severity === "low");
-    // [claude-code 2026-04-15] S16-T5: Expanded source filter matching
-    if (sourceFilter === "twitter")
-      base = base.filter(
-        (a) =>
-          (a.source as string) === "TwitterCli" ||
-          (a.source as string) === "rettiwt" ||
-          (a.source as string) === "Rettiwt",
-      );
-    else if (sourceFilter === "financial-juice")
-      base = base.filter(
-        (a) =>
-          (a.source as string) === "FinancialJuice" ||
-          (a.source as string) === "financial-juice",
-      );
-    else if (sourceFilter === "deitaone")
-      base = base.filter((a) => (a.source as string) === "DeItaOne");
-    else if (sourceFilter === "osint")
-      base = base.filter(
-        (a) =>
-          (a.source as string) === "OSINTSources" ||
-          (a.source as string) === "osint-sources",
-      );
-    else if (sourceFilter === "econ-calendar")
-      base = base.filter(
-        (a) =>
-          (a.source as string) === "EconomicCalendar" ||
-          (a.source as string) === "economic-calendar",
-      );
-    else if (sourceFilter === "polymarket-kalshi")
-      base = base.filter(
-        (a) =>
-          (a.source as string) === "Polymarket" ||
-          (a.source as string) === "polymarket" ||
-          (a.source as string) === "Kalshi" ||
-          (a.source as string) === "kalshi-whale",
-      );
-    else if (sourceFilter === "hermes")
-      base = base.filter((a) => (a.source as string) === "Hermes");
+    if (severitySet.size > 0) {
+      base = base.filter((a) => severitySet.has(a.severity));
+    }
+    if (bucketSet.size > 0) {
+      base = base.filter((a) => {
+        const primary = bucketOf({
+          source: a.source as string,
+          riskType: a.riskType,
+        });
+        if (bucketSet.has(primary)) return true;
+        if (bucketSet.has("Geopolitical") && a.riskType === "Geopolitical") {
+          return true;
+        }
+        return false;
+      });
+    }
     return base;
-  }, [alerts, priorityFilter, sourceFilter, showProposals]);
+  }, [alerts, severitySet, bucketSet, showProposals]);
+
+  // Pre-compute bucket counts for the filter menu badges.
+  const bucketCounts = useMemo(() => {
+    const counts: Partial<Record<(typeof SOURCE_BUCKETS)[number], number>> = {};
+    for (const a of alerts) {
+      const b = bucketOf({
+        source: a.source as string,
+        riskType: a.riskType,
+      });
+      counts[b] = (counts[b] ?? 0) + 1;
+      if (a.riskType === "Geopolitical" && b !== "Geopolitical") {
+        counts.Geopolitical = (counts.Geopolitical ?? 0) + 1;
+      }
+    }
+    return counts;
+  }, [alerts]);
 
   return (
     <div
@@ -217,39 +204,37 @@ export function RiskFlowMain() {
         </div>
       </div>
 
-      {/* Filter row: Priority dropdown + Source dropdown + Proposals tab */}
+      {/* Filter row: Priority popover + Source bucket popover + Proposals tab */}
       <div className="flex items-center gap-2 mb-3 px-3">
-        <select
-          value={showProposals ? "all" : priorityFilter}
-          onChange={(e) => {
+        <PriorityFilterMenu
+          selected={showProposals ? new Set() : severitySet}
+          onToggle={(s) => {
             setShowProposals(false);
-            setPriorityFilter(e.target.value as PriorityFilter);
+            toggleSeverity(s);
           }}
-          className="text-[10px] px-2 py-1 rounded bg-[var(--fintheon-bg)] border border-zinc-800 text-zinc-400 focus:outline-none focus:border-[var(--fintheon-accent)]/40 cursor-pointer"
-        >
-          <option value="all">Priority: All ({alerts.length})</option>
-          <option value="critical">Critical ({critCount})</option>
-          <option value="high">High ({highCount})</option>
-          <option value="medium">Medium ({medCount})</option>
-          <option value="low">Low ({lowCount})</option>
-        </select>
-        <select
-          value={showProposals ? "all" : sourceFilter}
-          onChange={(e) => {
+          onClear={() => {
             setShowProposals(false);
-            setSourceFilter(e.target.value as SourceFilter);
+            clearSeverities();
           }}
-          className="text-[10px] px-2 py-1 rounded bg-[var(--fintheon-bg)] border border-zinc-800 text-zinc-400 focus:outline-none focus:border-[var(--fintheon-accent)]/40 cursor-pointer"
-        >
-          <option value="all">All Sources</option>
-          <option value="twitter">X (Twitter)</option>
-          <option value="financial-juice">Financial Juice</option>
-          <option value="deitaone">DeItaOne</option>
-          <option value="osint">OSINT</option>
-          <option value="econ-calendar">Econ Calendar</option>
-          <option value="polymarket-kalshi">Prediction Markets</option>
-          <option value="hermes">Hermes (Agent)</option>
-        </select>
+          counts={{
+            critical: critCount,
+            high: highCount,
+            medium: medCount,
+            low: lowCount,
+          }}
+        />
+        <SourceFilterMenu
+          selected={showProposals ? new Set() : bucketSet}
+          onToggle={(b) => {
+            setShowProposals(false);
+            toggleBucket(b);
+          }}
+          onClear={() => {
+            setShowProposals(false);
+            clearBuckets();
+          }}
+          counts={bucketCounts}
+        />
         <button
           onClick={() => setShowProposals((v) => !v)}
           className={`text-[10px] px-2.5 py-1 rounded transition-colors border ${

@@ -27,6 +27,7 @@ import { VerticalFuseBar } from "../shared/VerticalFuseBar";
 import { useNotificationModal } from "../../contexts/NotificationModalContext";
 import { CARD_PRESS } from "../../lib/sheet-motion";
 import { colorForSeverity, type FuseSeverity } from "../../lib/fuse-palette";
+import { bucketOf } from "../../lib/source-buckets";
 
 /** How long the drain takes — covers the staggered top-down segment fade. Keep this
  *  in sync with VerticalFuseBar's `transitionDelay` formula (segments × 18ms + 150ms buffer). */
@@ -173,7 +174,12 @@ export function RiskFlowCard({
                   gap: 4,
                 }}
               >
-                <span>{formatSource(alert.source)}</span>
+                <span>
+                  {bucketOf({
+                    source: alert.source,
+                    riskType: alert.riskType,
+                  })}
+                </span>
                 <span style={{ color: "var(--text-disabled)" }}>&middot;</span>
                 <span>{timeAgo(alert.publishedAt)}</span>
               </div>

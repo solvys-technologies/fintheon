@@ -14,6 +14,7 @@ import { ivHeatColor } from "../../types/agent-desk";
 import { SourceIcon } from "../../lib/shared-icons";
 import { timeAgo } from "../../lib/time-utils";
 import { linkifyText } from "../../lib/linkify";
+import { bucketOfAlert } from "../../lib/source-buckets";
 import { NothingFuse } from "../shared/NothingFuse";
 import { IVStack } from "../shared/IVStack";
 import {
@@ -118,7 +119,9 @@ export function AlertCardBase({
                 source={alert.source}
                 className="w-2.5 h-2.5 text-zinc-500 flex-shrink-0"
               />
-              <span className="truncate max-w-[60%]">{alert.source}</span>
+              <span className="truncate max-w-[60%]">
+                {bucketOfAlert(alert)}
+              </span>
               <span className="text-zinc-700">&middot;</span>
               <span>{timeAgo(alert.publishedAt)}</span>
             </div>
