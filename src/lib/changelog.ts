@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T12:55:00",
+    agent: "claude-code",
+    summary:
+      "v5.23.0 deploy — backend Fly + desktop Vercel + mobile Vercel shipped. " +
+      "S28 shipped (Omi speak routing, DAG leak fix, agent-spinners port) + " +
+      "RiskFlow notification dedup + 'Markets Wrap' ad filter. " +
+      "Archived S28-ORCHESTRATION.md to sprint-changelog/; deleted T1/T2/T3 " +
+      "sub-track briefs. Pruned v5.22.10 GH release (tag preserved).",
+    files: ["sprint-changelog/S28-ORCHESTRATION.md", "package.json"],
+  },
+  {
     date: "2026-04-20T09:40:00",
     agent: "claude-code",
     summary:
