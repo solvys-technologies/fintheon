@@ -4,11 +4,12 @@
 
 export type AgentId =
   | "harper"
+  | "harper-voice"
+  | "harper-debug" // [S28] Sonnet sub-agent spawned by Harper for bug triage / debug sessions.
   | "oracle"
   | "feucht"
   | "consul"
-  | "herald"
-  | "harper-voice";
+  | "herald";
 
 export type TaskType =
   | "chat"
@@ -48,18 +49,39 @@ export interface RoutingRule {
 // `qwen/qwen3.5-plus-02-15` or a Hermes-4 variant — see brief §5 fallback.
 export const QWEN_REASONING_LATEST = "qwen/qwen3.6-plus-preview:free";
 
-// [claude-code 2026-04-20] S28 directive — every agent routes to QWEN_REASONING_LATEST.
-// The previous split (Opus for harper+oracle, Sonnet for consul, Haiku for feucht+herald)
-// is gone. TP's call: unify on Qwen for cost + latency, rely on ROUTING_OVERRIDE_<AGENT>
-// env vars as the per-agent fallback if any particular desk regresses in capability.
+// [claude-code 2026-04-20] S28 directive — model split:
+//   - CAO (Harper) keeps Opus (heaviest reasoning, only position that needs it)
+//   - Harper-voice keeps Qwen (free/fast, voice-native)
+//   - Harper-debug is a Sonnet sub-agent Harper can spawn for bug triage only
+//     (not for team coding — team work flows through Agent Swarm + DAG)
+//   - All Hermes desk agents (Oracle, Feucht, Consul, Herald) route to Qwen.
+//     Qwen is the smartest non-Opus model per S28 call and keeps their cost
+//     profile at $0 via the hermes-sidecar pipe.
+// ROUTING_OVERRIDE_<AGENT> env vars remain as per-agent escape hatches.
 export const ROUTING_TABLE: RoutingRule[] = [
   {
     agent: "harper",
+    model: "claude-opus-4-7",
+    provider: "anthropic",
+    max_input_tokens: 200_000,
+    cost_per_mtoken_in_usd: 15,
+    cost_per_mtoken_out_usd: 75,
+  },
+  {
+    agent: "harper-voice",
     model: QWEN_REASONING_LATEST,
     provider: "hermes-sidecar",
     max_input_tokens: 1_000_000,
     cost_per_mtoken_in_usd: 0,
     cost_per_mtoken_out_usd: 0,
+  },
+  {
+    agent: "harper-debug",
+    model: "claude-sonnet-4-6",
+    provider: "anthropic",
+    max_input_tokens: 200_000,
+    cost_per_mtoken_in_usd: 3,
+    cost_per_mtoken_out_usd: 15,
   },
   {
     agent: "oracle",
@@ -87,14 +109,6 @@ export const ROUTING_TABLE: RoutingRule[] = [
   },
   {
     agent: "herald",
-    model: QWEN_REASONING_LATEST,
-    provider: "hermes-sidecar",
-    max_input_tokens: 1_000_000,
-    cost_per_mtoken_in_usd: 0,
-    cost_per_mtoken_out_usd: 0,
-  },
-  {
-    agent: "harper-voice",
     model: QWEN_REASONING_LATEST,
     provider: "hermes-sidecar",
     max_input_tokens: 1_000_000,
