@@ -1,16 +1,17 @@
-// [claude-code 2026-04-20] Base wrapper for isometric menu icons — fade-in on mount, press-scale micro-interaction
+// [claude-code 2026-04-20] Base wrapper for isometric icons — fade-in on mount, press-scale, lucide-compatible props
 import { motion } from "framer-motion";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 export interface IsoIconProps {
-  size?: number;
+  size?: number | string;
   className?: string;
   strokeWidth?: number;
   animate?: boolean;
   onClick?: () => void;
+  color?: string;
   "aria-label"?: string;
   "aria-hidden"?: boolean;
-  style?: React.CSSProperties;
+  style?: CSSProperties;
   children?: ReactNode;
 }
 
@@ -21,9 +22,7 @@ const MOUNT = {
   transition: { duration: 0.3, ease: "easeOut" as const },
 };
 
-const STATIC = {
-  initial: false,
-};
+const STATIC = { initial: false } as const;
 
 export function IsoIcon({
   size = 24,
@@ -31,11 +30,15 @@ export function IsoIcon({
   strokeWidth = 1.8,
   animate = true,
   onClick,
+  color,
   style,
   children,
   ...aria
 }: IsoIconProps) {
   const motionProps = animate ? MOUNT : STATIC;
+  const mergedStyle: CSSProperties = color
+    ? { color, ...style }
+    : (style ?? {});
 
   return (
     <motion.svg
@@ -48,7 +51,7 @@ export function IsoIcon({
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      style={style}
+      style={mergedStyle}
       onClick={onClick}
       whileTap={onClick ? { scale: 0.92 } : undefined}
       {...motionProps}
