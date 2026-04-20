@@ -65,12 +65,21 @@ export async function buildThoughtBankPromptBlock(
       const { listSharedMemory } = await import("../../peers/shared-memory.js");
       const regimeEntries = await listSharedMemory({ category: "regime" });
       if (regimeEntries.length > 0) {
-        const lines = regimeEntries
-          .slice(0, 5)
-          .map(
-            (e) =>
-              `- **${e.key}** (${e.agentName ?? "system"}): ${JSON.stringify(e.value).slice(0, 300)}`,
-          );
+        const lines = regimeEntries.slice(0, 5).map((e) => {
+          // S28-T1: prefer a plain-text summary field over a raw JSON dump
+          // so analyst dossiers stored in shared memory can't leak their
+          // `{"agentId":...}` shape into the agent's system prompt.
+          const v = e.value as Record<string, unknown> | string | null;
+          const display =
+            typeof v === "string"
+              ? v
+              : ((v as Record<string, unknown>)?.summary ??
+                (v as Record<string, unknown>)?.text ??
+                (v as Record<string, unknown>)?.note ??
+                "");
+          const safe = String(display).slice(0, 300);
+          return `- **${e.key}** (${e.agentName ?? "system"}): ${safe || "(no summary)"}`;
+        });
         block += `\n\n## Shared Team Memory — Regime Context\n\n${lines.join("\n")}\n`;
       }
     } catch {

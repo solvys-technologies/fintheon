@@ -1,6 +1,7 @@
-// [claude-code 2026-03-28] S8-T8: Browser STT/TTS stub — S9 full implementation
-// Web Speech API: SpeechRecognition for STT, speechSynthesis for TTS
-// These are free, built into Chrome/Electron — replaces OpenAI Whisper dependency
+// [claude-code 2026-03-28] S8-T8: Browser STT stub — S9 full implementation
+// [claude-code 2026-04-20] S28-T1: speechSynthesis TTS removed. All agent speech
+// routes through Omi's Notifications API via the backend /api/omi/notify path.
+// STT still uses Web Speech API (SpeechRecognition) for legacy callers.
 
 type SpeechCallback = (transcript: string) => void;
 type ErrorCallback = (error: string) => void;
@@ -14,13 +15,11 @@ type SpeechRecognitionType = typeof window extends {
 
 interface SpeechServiceState {
   isListening: boolean;
-  isSpeaking: boolean;
   recognition: any | null;
 }
 
 const state: SpeechServiceState = {
   isListening: false,
-  isSpeaking: false,
   recognition: null,
 };
 
@@ -32,9 +31,9 @@ export function isSpeechSupported(): boolean {
   );
 }
 
-/** Check if TTS is available */
+/** TTS is served through Omi — no browser TTS surface exists in-app. */
 export function isTTSSupported(): boolean {
-  return typeof window !== "undefined" && "speechSynthesis" in window;
+  return false;
 }
 
 /** Start listening via Web Speech API — returns transcript via callback */
@@ -87,40 +86,18 @@ export function stopListening(): void {
   }
 }
 
-/** Speak text via Web Speech API TTS */
-export function speak(text: string, onEnd?: () => void): void {
-  if (!isTTSSupported()) return;
-
-  // Cancel any current speech
-  window.speechSynthesis.cancel();
-
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 1.0;
-  utterance.pitch = 1.0;
-  utterance.volume = 1.0;
-
-  utterance.onstart = () => {
-    state.isSpeaking = true;
-  };
-  utterance.onend = () => {
-    state.isSpeaking = false;
-    onEnd?.();
-  };
-
-  window.speechSynthesis.speak(utterance);
+/** No-op: browser TTS removed; agent speech goes through Omi via /api/omi/notify. */
+export function speak(_text: string, onEnd?: () => void): void {
+  onEnd?.();
 }
 
-/** Stop speaking */
-export function stopSpeaking(): void {
-  if (isTTSSupported()) {
-    window.speechSynthesis.cancel();
-    state.isSpeaking = false;
-  }
-}
+/** No-op: browser TTS removed. */
+export function stopSpeaking(): void {}
 
 /** Get current state */
-export function getSpeechState(): Readonly<
-  Pick<SpeechServiceState, "isListening" | "isSpeaking">
-> {
-  return { isListening: state.isListening, isSpeaking: state.isSpeaking };
+export function getSpeechState(): Readonly<{
+  isListening: boolean;
+  isSpeaking: boolean;
+}> {
+  return { isListening: state.isListening, isSpeaking: false };
 }

@@ -29,6 +29,7 @@ import {
   persistSample,
 } from "../services/prosody/extractor.js";
 import { sendNotification } from "../services/omi/client.js";
+import { speakAgentReply } from "../services/omi/agent-reply.js";
 
 const log = createLogger("OmiRoutes");
 
@@ -77,7 +78,8 @@ export function createOmiRoutes() {
         .trim();
       if (utterance) {
         const intent = routeIntent(session.trigger, utterance);
-        if (intent.agent !== session.primaryAgent) {
+        const handoff = intent.agent !== session.primaryAgent;
+        if (handoff) {
           setPrimaryAgent(userId, intent.agent);
           log.info("agent handoff", {
             sessionId: session.id,
@@ -86,6 +88,14 @@ export function createOmiRoutes() {
             reason: intent.reason,
           });
         }
+
+        // S28-T1: agent-triggered speech path — all replies go through Omi.
+        void speakAgentReply(
+          userId,
+          intent.agent,
+          utterance,
+          handoff ? intent.preamble : undefined,
+        );
 
         // Prosody from transcript only (no PCM here). The /webhook/audio
         // endpoint adds the energy dimension when audio bytes arrive.

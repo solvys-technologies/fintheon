@@ -175,6 +175,41 @@ information asymmetry detection. Fast, alert-oriented.`,
 // ── Internal Connector Context Builders ───────────────────────────────────
 
 /**
+ * S28-T1: Coerce unknown values to plain display strings. Objects are flattened
+ * to their own `summary`/`text`/`assessment` field when present, otherwise
+ * dropped — never JSON.stringified — to avoid leaking dossier shapes into the
+ * system prompt.
+ */
+function asPlainString(value: unknown): string {
+  if (value == null) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean")
+    return String(value);
+  if (typeof value === "object") {
+    const o = value as Record<string, unknown>;
+    const candidate = o.summary ?? o.text ?? o.assessment ?? o.label ?? o.title;
+    return typeof candidate === "string" ? candidate : "";
+  }
+  return "";
+}
+
+/**
+ * S28-T1: Strip JSON-object fragments that look like agent dossiers from a
+ * prompt-bound string so the composed system prompt never carries raw
+ * `{ "agentId": "...", "role": "...", ... }` blobs that the model could echo
+ * verbatim into a user-facing reply.
+ */
+function stripDossierJson(text: string): string {
+  if (!text) return "";
+  // Match `{ ... "agentId" : "..." ... }` balanced enough for typical single
+  // analyst-assessment blocks without chewing code fences.
+  return text
+    .replace(/\{[^{}]*"agentId"\s*:\s*"[^"]*"[^{}]*\}/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+/**
  * Build Aquarium context: injects latest AgentDesk simulation summary with interpretation scaffolding.
  * [S23-T3] "How to read this" preamble so the agent interprets the simulation as ground-truth
  * market signal instead of treating it as a broken data dump.
@@ -190,15 +225,26 @@ export async function buildAquariumContext(): Promise<string> {
     const regimeRisk = Number(report.regimeShiftProbability ?? 0) * 100;
     const signalStrength = Number(report.confidence ?? 0) * 100;
     const briefing = report.briefing ?? {};
-    const summary = briefing.summary ?? report.summary ?? "No synthesis yet.";
-    const keyFindings: string[] = Array.isArray(briefing.keyFindings)
-      ? briefing.keyFindings
-      : Array.isArray(report.findings)
-        ? report.findings
-        : [];
-    const riskAlerts: string[] = Array.isArray(briefing.riskAlerts)
-      ? briefing.riskAlerts
-      : [];
+    const summary = stripDossierJson(
+      briefing.summary ?? report.summary ?? "No synthesis yet.",
+    );
+    // S28-T1: coerce every entry to a plain string and strip any analyst-dossier
+    // JSON fragments before injection so the system prompt never carries raw
+    // { "agentId": ... } blocks that Opus could echo into a user-facing reply.
+    const keyFindings: string[] = (
+      Array.isArray(briefing.keyFindings)
+        ? briefing.keyFindings
+        : Array.isArray(report.findings)
+          ? report.findings
+          : []
+    )
+      .map((f: unknown) => stripDossierJson(asPlainString(f)))
+      .filter((s: string) => s.length > 0);
+    const riskAlerts: string[] = (
+      Array.isArray(briefing.riskAlerts) ? briefing.riskAlerts : []
+    )
+      .map((f: unknown) => stripDossierJson(asPlainString(f)))
+      .filter((s: string) => s.length > 0);
 
     const envLabel =
       compositeIV >= 8

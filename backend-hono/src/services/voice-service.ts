@@ -14,9 +14,6 @@ const log = createLogger("VoiceService");
 const HARPER_VOICE_AGENT_ID = "harper-voice";
 const HARPER_VOICE_ID = "harper-voice";
 
-const GREETING_PROMPT =
-  "The user just opened the voice assistant. Give a 1-sentence greeting (max 12 words) and wait for their question. Do not begin analysis.";
-
 export interface VoiceTranscribeInput {
   audioBase64?: string;
   mimeType?: string;
@@ -113,41 +110,16 @@ export async function synthesizeVoice(
   };
 }
 
+// S28-T1: greeting synthesis is retired. All agent speech routes through Omi's
+// Notifications API (see services/omi/speak.ts). The old path fed the greeting
+// prompt into the sidecar as user_message, which made the model echo the
+// prompt verbatim ("Give a brief, casual greeting…") into the TTS pipeline.
+// Keeping the signature so callers still type-check; always returns null so
+// no audio blob is ever produced from a prompt.
 export async function synthesizeGreeting(
-  conversationId: string,
+  _conversationId: string,
 ): Promise<VoiceSynthesisResult | null> {
-  if (!isVoiceEnabled()) return null;
-
-  await sidecarClient.context.ingest(conversationId, {
-    id: crypto.randomUUID(),
-    role: "system",
-    content: GREETING_PROMPT,
-    tokens_estimated: Math.ceil(GREETING_PROMPT.length / 4),
-    created_at: Date.now(),
-  });
-
-  let greetingText = "";
-  const stream = sidecarClient.chat.stream({
-    agent_id: HARPER_VOICE_AGENT_ID,
-    conversation_id: conversationId,
-    user_message: GREETING_PROMPT,
-    stream: true,
-    system_overrides: { model: selectModel("harper-voice").model },
-  });
-
-  for await (const evt of stream) {
-    if (
-      evt.type === "delta" &&
-      typeof (evt.payload as { text?: string })?.text === "string"
-    ) {
-      greetingText += (evt.payload as { text: string }).text;
-    }
-    if (evt.type === "done" || evt.type === "error") break;
-  }
-
-  const cleaned = greetingText.trim();
-  if (!cleaned) return null;
-  return synthesizeVoice(cleaned, HARPER_VOICE_ID);
+  return null;
 }
 
 export interface StreamVoiceReplyArgs {

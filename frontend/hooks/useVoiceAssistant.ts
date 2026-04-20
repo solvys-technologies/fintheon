@@ -119,10 +119,6 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
       audioRef.current.src = "";
       audioRef.current = null;
     }
-
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
   }, []);
 
   const stopRecording = useCallback(() => {
@@ -182,19 +178,6 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
     },
     [],
   );
-
-  const playWithSpeechSynthesis = useCallback(async (text: string) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    await new Promise<void>((resolve) => {
-      const utterance = new SpeechSynthesisUtterance(text.slice(0, 800));
-      utterance.rate = 1;
-      utterance.pitch = 1;
-      utterance.volume = 1;
-      utterance.onend = () => resolve();
-      utterance.onerror = () => resolve();
-      window.speechSynthesis.speak(utterance);
-    });
-  }, []);
 
   // Analyze user speech for tilt indicators, dispatch PsychAssist events
   const analyzeSpeechForTilt = useCallback(
@@ -291,9 +274,10 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
 
           if (response.audioBase64) {
             await playAudio(response.audioBase64, response.audioMimeType);
-          } else {
-            await playWithSpeechSynthesis(assistantText);
           }
+          // S28-T1: no browser TTS fallback. If Omi is paired, the backend
+          // /api/omi/notify path speaks through the user's earbuds. Otherwise
+          // the assistant text renders in the UI silently.
         }
 
         if (!controller.signal.aborted) {
@@ -327,7 +311,6 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
       conversationId,
       persistConversationId,
       playAudio,
-      playWithSpeechSynthesis,
       setErrorWithRecovery,
       analyzeSpeechForTilt,
     ],

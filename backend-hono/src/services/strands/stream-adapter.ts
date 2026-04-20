@@ -64,6 +64,9 @@ export function strandsToUIStream(
         let currentTextId = "";
         let currentReasoningId = "";
         let inToolPhase = false;
+        // S28-T1: keep a small rolling tail so a dossier-JSON fragment split
+        // across deltas can be stripped before it renders in the chat bubble.
+        let sanitizerCarry = "";
 
         // Heartbeat timer — keeps Bun/Chrome from dropping the connection during tool-call silences
         const heartbeat = setInterval(() => {
@@ -156,12 +159,18 @@ export function strandsToUIStream(
                     textStarted = true;
                     emit({ type: "text-start", id: currentTextId });
                   }
-                  fullText += delta.text;
-                  emit({
-                    type: "text-delta",
-                    id: currentTextId,
-                    delta: delta.text,
-                  });
+                  const sanitized = sanitizeDossierJson(
+                    sanitizerCarry + delta.text,
+                  );
+                  sanitizerCarry = sanitized.carry;
+                  if (sanitized.output) {
+                    fullText += sanitized.output;
+                    emit({
+                      type: "text-delta",
+                      id: currentTextId,
+                      delta: sanitized.output,
+                    });
+                  }
                 } else if (
                   delta.type === "reasoningContentDelta" &&
                   delta.text
@@ -195,6 +204,17 @@ export function strandsToUIStream(
             finish();
           }
           return;
+        }
+
+        // S28-T1: flush the sanitizer carry at end of stream so a trailing
+        // non-dossier suffix isn't silently dropped.
+        if (textStarted && sanitizerCarry) {
+          const tail = sanitizeDossierJson(sanitizerCarry, { flush: true });
+          if (tail.output) {
+            fullText += tail.output;
+            emit({ type: "text-delta", id: currentTextId, delta: tail.output });
+          }
+          sanitizerCarry = "";
         }
 
         // Clean close
@@ -233,6 +253,40 @@ export function strandsToUIStream(
       cancelled = true;
     },
   });
+}
+
+/**
+ * S28-T1: strip agent-dossier JSON fragments (shape: `{"agentId":"...",...}`)
+ * from streaming assistant text before it renders in chat. Carries an open
+ * brace tail across deltas so objects split mid-chunk still match. `flush`
+ * emits any pending carry at stream end.
+ */
+function sanitizeDossierJson(
+  buffer: string,
+  options?: { flush?: boolean },
+): { output: string; carry: string } {
+  if (!buffer) return { output: "", carry: "" };
+
+  // Drop fully-enclosed dossier-shaped objects in a single pass.
+  let cleaned = buffer.replace(/\{[^{}]*"agentId"\s*:\s*"[^"]*"[^{}]*\}/g, "");
+
+  if (options?.flush) return { output: cleaned, carry: "" };
+
+  // If a `{` is open with no matching `}` yet, hold everything from that brace
+  // onward until more deltas arrive. Bound the carry so a runaway never grows
+  // past a single analyst-assessment payload.
+  const MAX_CARRY = 4_000;
+  const openIdx = cleaned.lastIndexOf("{");
+  if (openIdx !== -1 && cleaned.indexOf("}", openIdx) === -1) {
+    const tail = cleaned.slice(openIdx);
+    if (tail.length > MAX_CARRY) {
+      // Too long to plausibly be a dossier — release it as-is.
+      return { output: cleaned, carry: "" };
+    }
+    return { output: cleaned.slice(0, openIdx), carry: tail };
+  }
+
+  return { output: cleaned, carry: "" };
 }
 
 /**

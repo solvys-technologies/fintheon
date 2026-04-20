@@ -9,6 +9,43 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T12:00:00",
+    agent: "claude-code",
+    summary:
+      "S28-T1: route all agent speech through Omi Notifications + stop prompt " +
+      "leak + strip dossier JSON from Harper chat. (1) New " +
+      "backend-hono/src/services/omi/speak.ts — single funnel from agent text " +
+      "to Omi's /v1/dev/user/notifications with speak:true; returns silently " +
+      "when unpaired. (2) New backend-hono/src/services/omi/agent-reply.ts — " +
+      "voice-native reply generator for Coach/Oracle/Harper (max two " +
+      "sentences, no markdown) wired into the /api/omi/webhook/transcript " +
+      "handler so any routed utterance produces a reply spoken back through " +
+      "the earbuds. (3) synthesizeGreeting() in voice-service.ts now returns " +
+      "null — the old path fed GREETING_PROMPT as user_message and the " +
+      "sidecar echoed it into TTS, which is what made 'Give a brief, casual " +
+      "greeting…' play out loud. (4) Removed all speechSynthesis usage from " +
+      "frontend: useVoiceAssistant stopPlayback + playWithSpeechSynthesis " +
+      "fallback deleted; lib/speech-service.ts stubs speak()/stopSpeaking/" +
+      "isTTSSupported. (5) Harper JSON leak: buildAquariumContext now coerces " +
+      "every keyFinding/riskAlert to a plain string and strips dossier-shape " +
+      "JSON; thought-bank-awareness prefers summary/text/note over a raw " +
+      "JSON.stringify of shared-memory values. Strands stream adapter adds a " +
+      'streaming sanitizer that drops `{"agentId":...}` fragments (with ' +
+      "cross-delta carry + end-of-stream flush) before chat deltas emit.",
+    files: [
+      "backend-hono/src/services/omi/speak.ts",
+      "backend-hono/src/services/omi/agent-reply.ts",
+      "backend-hono/src/routes/omi.ts",
+      "backend-hono/src/services/voice-service.ts",
+      "backend-hono/src/services/harper-handler.ts",
+      "backend-hono/src/services/ai/agent-instructions/thought-bank-awareness.ts",
+      "backend-hono/src/services/strands/stream-adapter.ts",
+      "frontend/hooks/useVoiceAssistant.ts",
+      "frontend/lib/speech-service.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-19T22:40:00",
     agent: "claude-code",
     summary:
