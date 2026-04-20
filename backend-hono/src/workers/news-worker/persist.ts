@@ -5,11 +5,16 @@
 //
 // [claude-code 2026-04-20] S27 final-sanitation fix: W2d invented a
 // `public.riskflow_items` table that does not exist. Real ingestion inbox
-// is `public.raw_riskflow_items` (keyed on tweet_id, not item_id). Renamed
-// the .from() target so that when FLAG_NEWS_WORKER_WRITES_RISKFLOW=true is
-// ever flipped, it writes to a real table. Column schema mismatch
-// (item_id/url/tier vs tweet_id/symbols/tags/is_breaking) left for S28 —
-// the flag defaults off so this path is dormant in prod; writes stay inert.
+// is `public.raw_riskflow_items` (keyed on tweet_id, not item_id).
+//
+// [claude-code 2026-04-20] Schema mismatch fixed for the now-live writer:
+// raw_riskflow_items keys on `tweet_id` (unique), not `item_id`, and has
+// `is_breaking` instead of `tier`. There is no `url` column — the live
+// schema is id/tweet_id/source/headline/body/symbols/tags/is_breaking/urgency/
+// published_at/submitted_by/created_at + the source-provenance trio
+// (source_domain/fetched_at/fetch_latency_ms) added by the sources migration.
+// URL is appended to `tags` so the original link survives until a real `url`
+// column lands; symbols stays empty (worker doesn't tag tickers yet).
 
 import { getSupabaseClient } from "../../config/supabase.js";
 import type { CollectedNewsItem } from "./sources/types.js";
@@ -41,26 +46,27 @@ export async function writeCollectedItems(
   }
 
   const rows = items.map((item) => ({
-    item_id: item.item_id,
+    tweet_id: item.item_id,
     source: item.source,
     source_domain: item.source_domain,
     headline: item.headline,
     body: item.body,
-    url: item.url,
-    tier: item.tier,
+    symbols: [] as string[],
+    tags: item.url
+      ? [`url:${item.url}`, `tier:${item.tier}`]
+      : [`tier:${item.tier}`],
+    is_breaking: item.tier === "breaking",
+    urgency: item.tier === "breaking" ? 8 : 4,
     published_at: item.published_at,
+    submitted_by: "news-worker",
     fetched_at: item.fetched_at,
     fetch_latency_ms: item.fetch_latency_ms,
   }));
 
   try {
-    // TODO(S28): schema mismatch — raw_riskflow_items keys on tweet_id, not
-    // item_id, and does not have url/tier columns. Flag-gated + defaults off,
-    // so dormant in prod. Fix column names in sources/types.ts + rewrite rows
-    // mapper above when the news-worker is promoted past dry-run.
     const { data, error } = await sb
       .from("raw_riskflow_items")
-      .upsert(rows, { onConflict: "item_id", ignoreDuplicates: true })
+      .upsert(rows, { onConflict: "tweet_id", ignoreDuplicates: true })
       .select("id");
     if (error) {
       console.warn(
