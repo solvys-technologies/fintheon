@@ -82,11 +82,12 @@ export async function writeRawItems(items: RawRiskFlowItem[]): Promise<number> {
       for (const item of items) {
         const result = await dbSql`
           INSERT INTO raw_riskflow_items (
-            tweet_id, source, headline, body, symbols, tags,
+            tweet_id, source, headline, body, url, symbols, tags,
             is_breaking, urgency, published_at, submitted_by
           ) VALUES (
             ${item.tweet_id}, ${item.source}, ${item.headline},
-            ${item.body ?? null}, ${item.symbols ?? []}, ${item.tags ?? []},
+            ${item.body ?? null}, ${item.url ?? null},
+            ${item.symbols ?? []}, ${item.tags ?? []},
             ${item.is_breaking ?? false}, ${item.urgency ?? "normal"},
             ${item.published_at ?? new Date().toISOString()}, ${item.submitted_by ?? "unknown"}
           ) ON CONFLICT (tweet_id) DO NOTHING
@@ -221,13 +222,14 @@ export async function writeScoredItems(
       for (const item of items) {
         await dbSql`
           INSERT INTO scored_riskflow_items (
-            raw_item_id, tweet_id, source, headline, body, symbols, tags,
+            raw_item_id, tweet_id, source, headline, body, url, symbols, tags,
             is_breaking, urgency, sentiment, iv_score, macro_level,
             published_at, analyzed_at, scored_by, price_brain_score,
             sub_scores, risk_type, agent_note, agent_note_generated_at, econ_data
           ) VALUES (
             ${item.raw_item_id ?? null}, ${item.tweet_id}, ${item.source}, ${item.headline},
-            ${item.body ?? null}, ${item.symbols ?? []}, ${item.tags ?? []},
+            ${item.body ?? null}, ${item.url ?? null},
+            ${item.symbols ?? []}, ${item.tags ?? []},
             ${item.is_breaking ?? false}, ${item.urgency ?? "normal"}, ${item.sentiment ?? null},
             ${item.iv_score ?? null}, ${item.macro_level ?? null},
             ${item.published_at ?? new Date().toISOString()}, ${item.analyzed_at ?? new Date().toISOString()},
@@ -245,7 +247,8 @@ export async function writeScoredItems(
             risk_type = EXCLUDED.risk_type,
             agent_note = EXCLUDED.agent_note,
             agent_note_generated_at = EXCLUDED.agent_note_generated_at,
-            econ_data = EXCLUDED.econ_data
+            econ_data = EXCLUDED.econ_data,
+            url = COALESCE(scored_riskflow_items.url, EXCLUDED.url)
         `;
         written++;
       }
