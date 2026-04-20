@@ -165,17 +165,28 @@ echo "  Rettiwt pool ready:   $RETTIWT_AVAILABLE ($RETTIWT_KEYS keys)"
 echo "  Round-robin enrolled: $ROUND_ROBIN_ENROLLED"
 echo "  Config: $PEER_CONFIG"
 
-# Test fire: trigger an immediate feed poll to verify the pipeline works on this device
+# Test fire: trigger an immediate feed poll to verify the pipeline works on this device.
+# [claude-code 2026-04-20] Retry up to 3x with 2s backoff so the "non-fatal" warning
+# doesn't spam every update run — it used to fire reliably during backend cold-start
+# (the update script restarts backend ~2s before this check). A single retry loop lets
+# us differentiate transient boot from a real pipeline break.
 if [[ "$ROUND_ROBIN_ENROLLED" == true ]]; then
   info "Test-firing feed poll to verify pipeline..."
-  TEST_FIRE="$(curl -sS --max-time 10 -X POST "$API_BASE/api/riskflow/refresh" \
-    "${AUTH_HEADER[@]}" \
-    -H "Content-Type: application/json" \
-    -o /dev/null -w "%{http_code}" 2>/dev/null || echo "000")"
+  TEST_FIRE="000"
+  for attempt in 1 2 3; do
+    TEST_FIRE="$(curl -sS --max-time 10 -X POST "$API_BASE/api/riskflow/refresh" \
+      "${AUTH_HEADER[@]}" \
+      -H "Content-Type: application/json" \
+      -o /dev/null -w "%{http_code}" 2>/dev/null || echo "000")"
+    [[ "$TEST_FIRE" == "200" ]] && break
+    [[ $attempt -lt 3 ]] && sleep 2
+  done
   if [[ "$TEST_FIRE" == "200" ]]; then
     ok "Feed pipeline test-fire successful"
+  elif [[ "$TEST_FIRE" == "000" ]]; then
+    warn "Feed test-fire couldn't reach $API_BASE (non-fatal — check backend is running on port 8080)"
   else
-    warn "Feed test-fire returned HTTP $TEST_FIRE (non-fatal — backend may still be starting)"
+    warn "Feed test-fire returned HTTP $TEST_FIRE (non-fatal — investigate if this persists across updates)"
   fi
 fi
 

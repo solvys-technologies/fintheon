@@ -64,7 +64,20 @@ if [[ ! -d "$FINTHEON_ROOT/.git" ]]; then
 fi
 
 cd "$FINTHEON_ROOT"
-CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "main")
+# [claude-code 2026-04-20] Two-layer fallback. `git branch --show-current` exits 0
+# with empty stdout in detached-HEAD state, so `|| echo main` never fired and the
+# pull step ran `git pull origin ""` which obviously blew up. Order of preference:
+#   1. Named current branch
+#   2. Remote default branch (origin/HEAD → e.g. "v5.22")
+#   3. Hardcoded fallback to the active deploy branch
+CURRENT_BRANCH=$(git branch --show-current 2>/dev/null)
+if [[ -z "$CURRENT_BRANCH" ]]; then
+  CURRENT_BRANCH=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@')
+fi
+if [[ -z "$CURRENT_BRANCH" ]]; then
+  CURRENT_BRANCH="v5.22"
+  warn "Detached HEAD and no origin/HEAD set — defaulting to $CURRENT_BRANCH"
+fi
 info "Branch: $CURRENT_BRANCH"
 info "Current: $(git describe --tags --abbrev=0 2>/dev/null || git log --oneline -1 | cut -c1-7)"
 echo ""
