@@ -1,5 +1,5 @@
 // [claude-code 2026-04-16] T2: Thumbnail preview strip for attached images
-import { X } from "lucide-react";
+import { X } from "../shared/iso-icons";
 
 interface ImagePreviewRowProps {
   images: string[];

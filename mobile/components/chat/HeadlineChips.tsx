@@ -1,5 +1,5 @@
 // [claude-code 2026-04-16] T2: Headline pill chips + formatHeadlineContext for mobile chat
-import { X } from "lucide-react";
+import { X } from "../shared/iso-icons";
 
 export interface HeadlineChip {
   id: string;

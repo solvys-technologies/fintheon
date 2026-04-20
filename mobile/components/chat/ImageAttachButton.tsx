@@ -1,6 +1,6 @@
 // [claude-code 2026-04-16] Attach button — Plus icon, no capture constraint so iOS shows full picker
 import { useRef, useCallback } from "react";
-import { Plus } from "lucide-react";
+import { Plus } from "../shared/iso-icons";
 
 interface ImageAttachButtonProps {
   onAdd: (dataUri: string) => void;

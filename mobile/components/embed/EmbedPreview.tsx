@@ -6,7 +6,7 @@
 //     • tap opens source in new tab with subtle scale feedback
 //     • errors fall back to a compact source-link glass pill
 import { motion, useReducedMotion } from "framer-motion";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink } from "../shared/iso-icons";
 import { useEmbedPreview } from "../../hooks/useEmbedPreview";
 
 interface Props {

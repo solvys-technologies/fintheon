@@ -1,5 +1,5 @@
 // [claude-code 2026-04-16] T2: Inline approve/deny card for tool approval-gated calls
-import { Check, X } from "lucide-react";
+import { Check, X } from "../shared/iso-icons";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ToolApprovalCardProps {

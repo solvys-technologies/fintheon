@@ -111,3 +111,18 @@ export function IsoXCircle(props: P) {
     </IsoIcon>
   );
 }
+
+export function IsoShieldCheck(props: P) {
+  return (
+    <IsoIcon aria-label="Verified" {...props}>
+      {/* Shield body */}
+      <path
+        d="M 24 8 L 38 14 L 38 24 Q 38 36 24 42 Q 10 36 10 24 L 10 14 Z"
+        fill="currentColor"
+        fillOpacity={0.14}
+      />
+      {/* Inner check */}
+      <path d="M 16 24 L 22 30 L 32 18" strokeWidth={2} />
+    </IsoIcon>
+  );
+}

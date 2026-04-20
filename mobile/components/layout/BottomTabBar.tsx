@@ -5,7 +5,7 @@ import {
   Newspaper,
   MessageSquare,
   Settings,
-} from "lucide-react";
+} from "../shared/iso-icons";
 import { useHaptic } from "../../hooks/useHaptic";
 
 export const TAB_CONFIG = [

@@ -9,7 +9,7 @@
 //   stick across reloads. Animations use the Nothing ease — no bounce, opacity-led.
 import { useState, useCallback, useEffect, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown } from "../shared/iso-icons";
 import { useHaptic } from "../../hooks/useHaptic";
 
 const OPEN_STATE_KEY = "fintheon-mobile:settings-open";

@@ -8,7 +8,7 @@
 //   timeline surface, the expanded card shows the scraped body in a SourcePreview block
 //   with YouTube + open-original CTAs; mini surfaces keep the legacy [OPEN SOURCE] link.
 import { motion } from "framer-motion";
-import { Paperclip } from "lucide-react";
+import { Paperclip } from "../shared/iso-icons";
 import type { MobileRiskFlowAlert } from "../../contexts/RiskFlowContext";
 import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
 import { SourcePreview } from "./SourcePreview";

@@ -9,21 +9,29 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
-    date: "2026-04-20T15:00:00",
+    date: "2026-04-20T15:30:00",
     agent: "claude-code",
     summary:
-      "Iso-icons kickoff — scaffold /components/shared/iso-icons/ with " +
-      "IsoIcon base wrapper (Framer Motion fade-in + whileTap press-scale, " +
-      "currentColor-driven so one SVG works on light + dark bg). Ship two " +
-      "aesthetic samples for TP sign-off: IsoSettings (isometric drawer " +
-      "cabinet with two drawers + knob dots) and IsoNewspaper (folded " +
-      "two-page spread with headline/subhead strokes). Both render at 48x48 " +
-      "viewbox, 1.8 stroke, tri-tone face fills. Pending: full 31-icon swap " +
-      "after TP approves the look.",
+      "Iso-icon refactor — FULL mobile swap. Replaced every lucide-react " +
+      "icon (31 unique across 25 component files) with hand-drawn " +
+      "isometric SVGs. Four groups: nav.tsx (Home/News/Chat/Settings/Menu/" +
+      "Bell), status.tsx (Zap/Crosshair/Sun/Moon/Check+X Circles/" +
+      "ShieldCheck), content.tsx (Search/Paperclip/StickyNote/Clock/" +
+      "Calendar/Trash/Refresh/ExternalLink/MessageCircle), glyphs.tsx " +
+      "(flat Check/X/Plus/Minus + 3 chevrons + 3 arrows). Base IsoIcon " +
+      "wrapper now lucide-compatible (color/size/strokeWidth props) with " +
+      "Framer Motion fade-in + whileTap scale-0.92. index.ts re-exports " +
+      "via lucide names so consumer files only needed import-path swap. " +
+      "Tri-tone fills via currentColor+fillOpacity — one SVG works on " +
+      "both cream + #050402 bg automatically. Build clean, TS passes.",
     files: [
       "mobile/components/shared/iso-icons/IsoIcon.tsx",
-      "mobile/components/shared/iso-icons/IsoSettings.tsx",
-      "mobile/components/shared/iso-icons/IsoNewspaper.tsx",
+      "mobile/components/shared/iso-icons/nav.tsx",
+      "mobile/components/shared/iso-icons/status.tsx",
+      "mobile/components/shared/iso-icons/content.tsx",
+      "mobile/components/shared/iso-icons/glyphs.tsx",
+      "mobile/components/shared/iso-icons/index.ts",
+      "mobile/components/**/*.tsx (25 import swaps)",
     ],
   },
   {

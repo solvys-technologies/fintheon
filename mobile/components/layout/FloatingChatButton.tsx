@@ -1,6 +1,6 @@
 // [claude-code 2026-04-16] S20: Chat FAB — 3-state status indicator (idle/loading/success)
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, Check } from "lucide-react";
+import { MessageSquare, Check } from "../shared/iso-icons";
 import { useHaptic } from "../../hooks/useHaptic";
 import { useActivityStatus } from "../../contexts/ActivityStatusContext";
 import { RadarSpinner } from "../shared/RadarSpinner";

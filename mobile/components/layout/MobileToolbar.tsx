@@ -3,7 +3,7 @@
 // [claude-code 2026-04-18] A4: mounted NotificationBell next to hamburger
 // [claude-code 2026-04-16] S20: Toolbar — global save checkmark under hamburger
 // [claude-code 2026-04-17] Toolbar VIX fades in only when Dash hero VIX is off-screen
-import { Menu } from "lucide-react";
+import { Menu } from "../shared/iso-icons";
 import { AnimatePresence, motion } from "framer-motion";
 import { VixBadge } from "../shared/VixBadge";
 import { SaveButton } from "../settings/SaveButton";

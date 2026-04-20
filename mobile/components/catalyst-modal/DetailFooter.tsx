@@ -5,7 +5,7 @@
 //   button scales + animates an accent glow that trails the tap point; meanwhile the hook
 //   seeds the conversation and navigates to Chat.
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight } from "../shared/iso-icons";
 import { IVFuseBar, type FuseSeverity } from "../shared/IVFuseBar";
 import { useAskCAO, type AskCAOInput } from "../../hooks/useAskCAO";
 import { useHaptic } from "../../hooks/useHaptic";
