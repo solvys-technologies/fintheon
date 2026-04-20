@@ -9,6 +9,58 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T22:40:00",
+    agent: "claude-code",
+    summary:
+      "RiskFlow sanitation + source buckets + card polish + session restore. " +
+      "(1) Central scorer: 4-purge block — low-IV (<=1, >1h), narrative-orphan, " +
+      "headline dedup (24h window, normalized key shared with catalyst-promoter via " +
+      "new text-utils.ts), and sourceless-untrusted-source items; each purge wrapped " +
+      "in its own try/catch, non-fatal. (2) Real url column on raw + scored riskflow " +
+      "tables via 029_riskflow_url_column.sql; news-worker writes url directly, Supabase " +
+      "writer threads it through both tables, ON CONFLICT preserves existing urls. " +
+      "Rettiwt transform synthesizes https://x.com/<handle>/status/<id> so X items " +
+      "finally back-link. (3) 5-bucket source taxonomy (OSINT/General/Commentary/Econ/" +
+      "Geopolitical) via lib/source-buckets.ts (desktop) + mirror in mobile/lib. " +
+      "SourceFilterMenu replaces the legacy 7-source <select> on desktop (RiskFlowMain + " +
+      "RiskFlowMini); SourceFilterSheet + SRC tab on mobile RiskFlowFilterBar. Card " +
+      "source chips now print the bucket, not the granular source. (4) SourcePreview " +
+      "component (desktop + mobile), surface-gated: expanded cards under full/timeline " +
+      "surfaces render scraped body + YouTube + Open-original CTAs; mini surfaces keep " +
+      "the old compact footer. (5) Trash-can / clear-all removed from RiskFlowMini " +
+      "header — dismissal is per-item now. (6) Strategium boots closed every time " +
+      "(missionControlCollapsed default true); activeTab persists to localStorage " +
+      "and restores on next sign-in via readLastRoute().",
+    files: [
+      "backend-hono/src/services/riskflow/text-utils.ts",
+      "backend-hono/src/services/riskflow/central-scorer.ts",
+      "backend-hono/src/services/riskflow/catalyst-promoter.ts",
+      "backend-hono/src/services/riskflow/rettiwt-poller-transform.ts",
+      "backend-hono/src/services/supabase-service.ts",
+      "backend-hono/src/workers/news-worker/persist.ts",
+      "backend-hono/migrations/029_riskflow_url_column.sql",
+      "frontend/lib/source-buckets.ts",
+      "frontend/components/feed/SourceFilterMenu.tsx",
+      "frontend/components/feed/SourcePreview.tsx",
+      "frontend/components/feed/RiskFlowDetailCard.tsx",
+      "frontend/components/feed/RiskFlowMain.tsx",
+      "frontend/components/feed/AlertCardBase.tsx",
+      "frontend/components/RiskFlowMini.tsx",
+      "frontend/hooks/useRiskFlowFilters.ts",
+      "frontend/hooks/useLayoutState.ts",
+      "frontend/components/layout/MainLayout.tsx",
+      "mobile/lib/source-buckets.ts",
+      "mobile/components/riskflow/SourceFilterSheet.tsx",
+      "mobile/components/riskflow/SourcePreview.tsx",
+      "mobile/components/riskflow/RiskFlowPage.tsx",
+      "mobile/components/riskflow/RiskFlowFilterBar.tsx",
+      "mobile/components/riskflow/RiskFlowCard.tsx",
+      "mobile/components/riskflow/RiskFlowCardExpanded.tsx",
+      "mobile/contexts/RiskFlowContext.tsx",
+      "mobile/hooks/useRiskFlowFilters.ts",
+    ],
+  },
+  {
     date: "2026-04-20T00:05:00",
     agent: "claude-code",
     summary:
