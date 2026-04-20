@@ -45,12 +45,16 @@ export async function writeCollectedItems(
     return 0;
   }
 
+  // [claude-code 2026-04-19] url now writes to a real column; we keep the
+  // url: tag for one release as a transition fallback so legacy consumers
+  // that still read from `tags` don't suddenly see empty source links.
   const rows = items.map((item) => ({
     tweet_id: item.item_id,
     source: item.source,
     source_domain: item.source_domain,
     headline: item.headline,
     body: item.body,
+    url: item.url ?? null,
     symbols: [] as string[],
     tags: item.url
       ? [`url:${item.url}`, `tier:${item.tier}`]
