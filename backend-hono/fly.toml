@@ -11,7 +11,12 @@ primary_region = 'iad'
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = 'stop'
+  # 24/7 always-on: backend serves mobile PWA + desktop electron, both finished
+  # surfaces. Idle-stop savings aren't worth the cold-start latency on first
+  # request after a quiet stretch (~5s). Keep min_machines_running >= 1 and
+  # disable proxy-driven autostop so capacity-based culling can't drop the
+  # last machine. News worker has the same posture in fly.news-worker.toml.
+  auto_stop_machines = false
   auto_start_machines = true
   min_machines_running = 1
   processes = ['app']
