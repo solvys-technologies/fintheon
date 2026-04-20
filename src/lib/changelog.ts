@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T13:40:00",
+    agent: "claude-code",
+    summary:
+      "Mobile cards: dropped headline line-clamps per TP — partial headlines " +
+      "were unreadable. RiskFlowCard (3-line clamp) and NotificationCard " +
+      "(2-line title + 3-line body clamps) now grow to fit the full text. " +
+      "Fuses/numerals untouched; wordBreak: break-word keeps long tokens " +
+      "from blowing out the right column.",
+    files: [
+      "mobile/components/riskflow/RiskFlowCard.tsx",
+      "mobile/components/notifications/NotificationCard.tsx",
+    ],
+  },
+  {
     date: "2026-04-20T12:55:00",
     agent: "claude-code",
     summary:

@@ -1,3 +1,6 @@
+// [claude-code 2026-04-20] Dropped the 3-line headline clamp per TP —
+//   partial headlines were unreadable on mobile. Card height now grows with
+//   the headline. Fuse + right-column IV stretch via flex alignItems: stretch.
 // [claude-code 2026-04-18] v5.22 S2: severity color now resolved through
 //   colorForSeverity from mobile/lib/fuse-palette so user-preferences fusePalette
 //   overrides apply uniformly. Card geometry + drain choreography unchanged.
@@ -184,18 +187,15 @@ export function RiskFlowCard({
                 <span>{timeAgo(alert.publishedAt)}</span>
               </div>
 
-              {/* Headline */}
+              {/* Headline — no line clamp; card grows to fit the full text */}
               <h3
                 style={{
                   fontFamily: "var(--font-body)",
                   fontSize: 14,
                   color: "var(--text-primary)",
                   lineHeight: 1.45,
-                  display: "-webkit-box",
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: "vertical" as const,
-                  overflow: "hidden",
                   margin: 0,
+                  wordBreak: "break-word",
                 }}
               >
                 {alert.title}
