@@ -18,10 +18,13 @@ const log = createLogger("StrandsFactory");
 /** Provider override — which backend to route through */
 export type HarperProvider = "local" | "nous" | "orouter" | "grok";
 
-/** Nous fallback model chain — tried in order */
+/** Nous model chain — tried in order.
+ *  [claude-code 2026-04-20] S28: Qwen Plus 3.6 first (smartest non-Opus
+ *  model per TP's directive, $0 via Nous sub). Arcee trinity kept as
+ *  secondary fallback in case Nous's Qwen slot is saturated. */
 export const NOUS_MODELS = [
-  "arcee-ai/trinity-large-preview:free",
   "qwen/qwen3.6-plus",
+  "arcee-ai/trinity-large-preview:free",
 ];
 
 export interface CreateAgentOptions {

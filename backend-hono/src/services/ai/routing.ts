@@ -33,21 +33,22 @@ export interface RoutingRule {
 }
 
 // [claude-code 2026-04-19] S27-T5 W2c: locked the harper-voice model.
+// [claude-code 2026-04-20] S28: swapped `:free` variant → `qwen/qwen3.6-plus`
+//   against TP's Nous subscription (flat-rate, effectively $0/token). The
+//   `:free` tier on OpenRouter rotates; Nous-hosted Qwen Plus 3.6 is stable.
 //
-// Chose `qwen/qwen3.6-plus-preview:free` (April 2026). Rationale:
-//   - Free tier on OpenRouter / can be piped through Hermes sidecar at $0/token.
+// Rationale for qwen3.6-plus:
 //   - 1M context window, up to 65k output tokens, native function calling.
 //   - Outperforms Claude 4.5 Opus on Terminal-Bench 2.0 (61.6 vs 59.3) and
-//     RealWorldQA (85.4 vs 77.0) — comfortably above the "Sonnet-equivalent or
-//     better" bar set by the S27-T5 brief.
-//   - ~3x faster than Claude Opus 4.6 on first-token latency, which is what
-//     matters for the <2s end-of-speech → first-audio voice target.
+//     RealWorldQA (85.4 vs 77.0) — "Sonnet-equivalent or better" bar from
+//     the original S27-T5 brief.
+//   - ~3x faster than Claude Opus 4.6 on first-token latency, which matters
+//     for the <2s end-of-speech → first-audio voice target.
 //   - Hybrid architecture keeps chain-of-thought reasoning on for smart
 //     answers while still streaming quickly through the sidecar TTS pipe.
 //
-// If load-tests show p95 > 2s, set env `ROUTING_OVERRIDE_HARPER_VOICE` to
-// `qwen/qwen3.5-plus-02-15` or a Hermes-4 variant — see brief §5 fallback.
-export const QWEN_REASONING_LATEST = "qwen/qwen3.6-plus-preview:free";
+// If a desk regresses, `ROUTING_OVERRIDE_<AGENT>` env vars override per-agent.
+export const QWEN_REASONING_LATEST = "qwen/qwen3.6-plus";
 
 // [claude-code 2026-04-20] S28 directive — model split:
 //   - CAO (Harper) keeps Opus (heaviest reasoning, only position that needs it)

@@ -336,13 +336,17 @@ export const validateTradeProposal = (
 
 /**
  * Hermes model IDs used by P.I.C.
- * CAO uses Claude Opus 4.6 (CLI bridge), sub-agents use Grok 4.20 Fast
+ * [claude-code 2026-04-20] S28 split: CAO keeps Opus (only position that
+ * needs it). Every non-CAO Hermes role moves to qwen/qwen3.6-plus against
+ * TP's Nous subscription — smartest non-Opus model available, flat-rate
+ * (effectively $0/token). Replaces the prior xai/grok-4-fast assignments
+ * for FAST_ANALYSIS / NEWS_REALTIME / RESEARCH.
  */
 export const HERMES_MODELS = {
   CAO_REASONING: "anthropic/claude-opus-4.6",
-  FAST_ANALYSIS: "xai/grok-4-fast",
-  NEWS_REALTIME: "xai/grok-4-fast",
-  RESEARCH: "xai/grok-4-fast",
+  FAST_ANALYSIS: "qwen/qwen3.6-plus",
+  NEWS_REALTIME: "qwen/qwen3.6-plus",
+  RESEARCH: "qwen/qwen3.6-plus",
 } as const;
 
 export type HermesModelId = (typeof HERMES_MODELS)[keyof typeof HERMES_MODELS];
