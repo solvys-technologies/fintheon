@@ -9,6 +9,24 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T15:00:00",
+    agent: "claude-code",
+    summary:
+      "Iso-icons kickoff — scaffold /components/shared/iso-icons/ with " +
+      "IsoIcon base wrapper (Framer Motion fade-in + whileTap press-scale, " +
+      "currentColor-driven so one SVG works on light + dark bg). Ship two " +
+      "aesthetic samples for TP sign-off: IsoSettings (isometric drawer " +
+      "cabinet with two drawers + knob dots) and IsoNewspaper (folded " +
+      "two-page spread with headline/subhead strokes). Both render at 48x48 " +
+      "viewbox, 1.8 stroke, tri-tone face fills. Pending: full 31-icon swap " +
+      "after TP approves the look.",
+    files: [
+      "mobile/components/shared/iso-icons/IsoIcon.tsx",
+      "mobile/components/shared/iso-icons/IsoSettings.tsx",
+      "mobile/components/shared/iso-icons/IsoNewspaper.tsx",
+    ],
+  },
+  {
     date: "2026-04-20T14:20:00",
     agent: "claude-code",
     summary:
