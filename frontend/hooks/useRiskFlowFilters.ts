@@ -5,20 +5,37 @@
 //   `severityFilter` / `setSeverityFilter` shims map "all" / "high" / "medium" onto the new
 //   set so callers that haven't migrated still compile. Filter state persists to
 //   localStorage so refresh / app restart keeps the user's selection.
+// [claude-code 2026-04-19] Source filter collapsed from 7 raw sources into 5 buckets
+//   (OSINT / General / Commentary / Econ / Geopolitical) via bucketOf(). Severity
+//   stays multi-select; source is now also multi-select. Backward-compat
+//   `sourceFilter: SourceFilter` / `setSourceFilter` shim preserves the old
+//   single-value "twitter" / "financial-juice" etc. API for any holdover callers.
 import { useState, useCallback, useMemo, useEffect } from "react";
 import type { AlertSeverity, RiskFlowAlert } from "../lib/riskflow-feed";
+import {
+  bucketOf,
+  matchesBuckets,
+  type SourceBucket,
+} from "../lib/source-buckets";
 
-const STORAGE_KEY = "fintheon:riskflow-filters:v1";
+const STORAGE_KEY = "fintheon:riskflow-filters:v2";
 const VALID_SEVERITIES: ReadonlySet<AlertSeverity> = new Set([
   "critical",
   "high",
   "medium",
   "low",
 ]);
+const VALID_BUCKETS: ReadonlySet<SourceBucket> = new Set([
+  "OSINT",
+  "General",
+  "Commentary",
+  "Econ",
+  "Geopolitical",
+]);
 
 interface PersistedFilterState {
   severities: AlertSeverity[];
-  source: SourceFilter;
+  buckets: SourceBucket[];
   proposals: boolean;
 }
 
@@ -33,12 +50,13 @@ function loadPersisted(): PersistedFilterState | null {
           VALID_SEVERITIES.has(s as AlertSeverity),
         )
       : [];
-    const source: SourceFilter =
-      typeof parsed.source === "string"
-        ? (parsed.source as SourceFilter)
-        : "all";
+    const buckets = Array.isArray(parsed.buckets)
+      ? parsed.buckets.filter((b): b is SourceBucket =>
+          VALID_BUCKETS.has(b as SourceBucket),
+        )
+      : [];
     const proposals = parsed.proposals === true;
-    return { severities, source, proposals };
+    return { severities, buckets, proposals };
   } catch {
     return null;
   }
@@ -52,6 +70,8 @@ function savePersisted(state: PersistedFilterState): void {
 }
 
 export type SeverityFilter = "all" | "high" | "medium";
+// [claude-code 2026-04-19] Legacy single-value source filter kept for back-compat.
+// New callers should use `bucketSet` / `toggleBucket` instead.
 export type SourceFilter =
   | "all"
   | "twitter"
@@ -67,9 +87,14 @@ interface UseRiskFlowFiltersReturn {
   severitySet: Set<AlertSeverity>;
   toggleSeverity: (s: AlertSeverity) => void;
   clearSeverities: () => void;
-  /** Backward-compat single-value view: "all" when set is empty, "high" when {high,critical}, "medium" when {medium}. */
+  /** Backward-compat single-value view. */
   severityFilter: SeverityFilter;
   setSeverityFilter: (f: SeverityFilter) => void;
+  /** Multi-select set of source buckets (OSINT / General / Commentary / Econ / Geopolitical). */
+  bucketSet: Set<SourceBucket>;
+  toggleBucket: (b: SourceBucket) => void;
+  clearBuckets: () => void;
+  /** Legacy single-value source filter — set-only shim, reads always return "all". */
   sourceFilter: SourceFilter;
   setSourceFilter: (f: SourceFilter) => void;
   showProposals: boolean;
@@ -82,23 +107,22 @@ export function useRiskFlowFilters(): UseRiskFlowFiltersReturn {
     const persisted = loadPersisted();
     return new Set(persisted?.severities ?? []);
   });
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>(() => {
+  const [bucketSet, setBucketSet] = useState<Set<SourceBucket>>(() => {
     const persisted = loadPersisted();
-    return persisted?.source ?? "all";
+    return new Set(persisted?.buckets ?? []);
   });
   const [showProposals, setShowProposals] = useState<boolean>(() => {
     const persisted = loadPersisted();
     return persisted?.proposals ?? false;
   });
 
-  // Persist any change so refresh / app restart keeps the user's selection.
   useEffect(() => {
     savePersisted({
       severities: Array.from(severitySet),
-      source: sourceFilter,
+      buckets: Array.from(bucketSet),
       proposals: showProposals,
     });
-  }, [severitySet, sourceFilter, showProposals]);
+  }, [severitySet, bucketSet, showProposals]);
 
   const toggleSeverity = useCallback((s: AlertSeverity) => {
     setSeveritySet((prev) => {
@@ -110,6 +134,17 @@ export function useRiskFlowFilters(): UseRiskFlowFiltersReturn {
   }, []);
 
   const clearSeverities = useCallback(() => setSeveritySet(new Set()), []);
+
+  const toggleBucket = useCallback((b: SourceBucket) => {
+    setBucketSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(b)) next.delete(b);
+      else next.add(b);
+      return next;
+    });
+  }, []);
+
+  const clearBuckets = useCallback(() => setBucketSet(new Set()), []);
 
   const severityFilter: SeverityFilter = useMemo(() => {
     if (severitySet.size === 0) return "all";
@@ -128,6 +163,27 @@ export function useRiskFlowFilters(): UseRiskFlowFiltersReturn {
     }
   }, []);
 
+  // Legacy source-filter shim. Maps the old single-value filter onto the new
+  // bucket set so components that still call `setSourceFilter("twitter")`
+  // compile and produce roughly equivalent behavior (twitter → General).
+  const setSourceFilter = useCallback((f: SourceFilter) => {
+    if (f === "all") {
+      setBucketSet(new Set());
+      return;
+    }
+    const mapped: SourceBucket | null =
+      f === "osint"
+        ? "OSINT"
+        : f === "hermes"
+          ? "Commentary"
+          : f === "econ-calendar" || f === "polymarket-kalshi"
+            ? "Econ"
+            : f === "twitter" || f === "financial-juice" || f === "deitaone"
+              ? "General"
+              : null;
+    setBucketSet(mapped ? new Set<SourceBucket>([mapped]) : new Set());
+  }, []);
+
   const filterAlerts = useCallback(
     (alerts: RiskFlowAlert[]): RiskFlowAlert[] => {
       let base = alerts;
@@ -135,46 +191,17 @@ export function useRiskFlowFilters(): UseRiskFlowFiltersReturn {
       if (severitySet.size > 0) {
         base = base.filter((a) => severitySet.has(a.severity));
       }
-      if (sourceFilter === "twitter")
-        base = base.filter(
-          (a) =>
-            (a.source as string) === "TwitterCli" ||
-            (a.source as string) === "rettiwt" ||
-            (a.source as string) === "Rettiwt",
+      if (bucketSet.size > 0) {
+        base = base.filter((a) =>
+          matchesBuckets(
+            { source: a.source as string, riskType: a.riskType },
+            bucketSet,
+          ),
         );
-      else if (sourceFilter === "financial-juice")
-        base = base.filter(
-          (a) =>
-            (a.source as string) === "FinancialJuice" ||
-            (a.source as string) === "financial-juice",
-        );
-      else if (sourceFilter === "deitaone")
-        base = base.filter((a) => (a.source as string) === "DeItaOne");
-      else if (sourceFilter === "osint")
-        base = base.filter(
-          (a) =>
-            (a.source as string) === "OSINTSources" ||
-            (a.source as string) === "osint-sources",
-        );
-      else if (sourceFilter === "econ-calendar")
-        base = base.filter(
-          (a) =>
-            (a.source as string) === "EconomicCalendar" ||
-            (a.source as string) === "economic-calendar",
-        );
-      else if (sourceFilter === "polymarket-kalshi")
-        base = base.filter(
-          (a) =>
-            (a.source as string) === "Polymarket" ||
-            (a.source as string) === "polymarket" ||
-            (a.source as string) === "Kalshi" ||
-            (a.source as string) === "kalshi-whale",
-        );
-      else if (sourceFilter === "hermes")
-        base = base.filter((a) => (a.source as string) === "Hermes");
+      }
       return base;
     },
-    [severitySet, sourceFilter, showProposals],
+    [severitySet, bucketSet, showProposals],
   );
 
   return {
@@ -183,10 +210,17 @@ export function useRiskFlowFilters(): UseRiskFlowFiltersReturn {
     clearSeverities,
     severityFilter,
     setSeverityFilter,
-    sourceFilter,
+    bucketSet,
+    toggleBucket,
+    clearBuckets,
+    sourceFilter: "all",
     setSourceFilter,
     showProposals,
     setShowProposals,
     filterAlerts,
   };
 }
+
+// Re-export for components that want to reason about buckets.
+export { bucketOf };
+export type { SourceBucket };

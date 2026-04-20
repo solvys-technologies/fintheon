@@ -1,4 +1,7 @@
 // [claude-code 2026-04-10] S9-T2: Refactored to use AlertCardBase — detail variant
+// [claude-code 2026-04-19] Surface-gated SourcePreview — expanded card now shows
+//   scraped source body with YouTube + Open-original CTAs (surface="full" or
+//   "timeline"). Mini surfaces still render the legacy footer link row only.
 import { useState, useCallback } from "react";
 import { ExternalLink } from "lucide-react";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
@@ -9,12 +12,17 @@ import { AlertCardBase } from "./AlertCardBase";
 import { YouTubeLogo } from "../../lib/shared-icons";
 import { timeAgo } from "../../lib/time-utils";
 import { linkifyText } from "../../lib/linkify";
+import { SourcePreview } from "./SourcePreview";
+
+export type RiskFlowDetailSurface = "full" | "timeline" | "mini";
 
 interface RiskFlowDetailCardProps {
   alert: RiskFlowAlert;
   seen?: boolean;
   onGenerateNote?: (itemId: string) => void;
   onNotRelevant?: (id: string, reason?: string) => void;
+  /** Which surface this card is rendering in. Drives SourcePreview visibility. */
+  surface?: RiskFlowDetailSurface;
 }
 
 export function RiskFlowDetailCard({
@@ -22,10 +30,12 @@ export function RiskFlowDetailCard({
   seen,
   onGenerateNote,
   onNotRelevant,
+  surface = "mini",
 }: RiskFlowDetailCardProps) {
   const [expanded, setExpanded] = useState(false);
   const { addToast } = useToast();
   const hasEconData = alert.econData && alert.econData.beatMiss;
+  const showSourcePreview = surface === "full" || surface === "timeline";
 
   const handleGenerateNote = useCallback(
     (e: React.MouseEvent) => {
@@ -154,10 +164,19 @@ export function RiskFlowDetailCard({
             </div>
 
             {/* 3. Summary (if exists and differs from headline) */}
-            {alert.summary && alert.summary !== alert.headline && (
-              <p className="text-[11px] text-[var(--fintheon-text)]/70 leading-relaxed mb-3">
-                {linkifyText(alert.summary)}
-              </p>
+            {!showSourcePreview &&
+              alert.summary &&
+              alert.summary !== alert.headline && (
+                <p className="text-[11px] text-[var(--fintheon-text)]/70 leading-relaxed mb-3">
+                  {linkifyText(alert.summary)}
+                </p>
+              )}
+
+            {/* Source preview — scraped body + YouTube + open-original CTAs */}
+            {showSourcePreview && (
+              <div className="mb-3">
+                <SourcePreview alert={alert} />
+              </div>
             )}
 
             {/* 5. Tags + Author + Source link */}
@@ -179,32 +198,36 @@ export function RiskFlowDetailCard({
                   @{alert.authorHandle}
                 </span>
               )}
-              <div className="ml-auto flex items-center gap-3">
-                {alert.videoUrl && (
-                  <a
-                    href={alert.videoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[10px] text-red-500/70 hover:text-red-400 transition-colors flex items-center gap-1"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <YouTubeLogo className="w-3 h-3" />
-                    Watch
-                  </a>
-                )}
-                {alert.url && alert.url !== alert.videoUrl && (
-                  <a
-                    href={alert.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[10px] text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors flex items-center gap-1"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    Source
-                  </a>
-                )}
-              </div>
+              {/* Footer CTAs only shown on mini surfaces — SourcePreview owns
+                  these links when surface is full/timeline. */}
+              {!showSourcePreview && (
+                <div className="ml-auto flex items-center gap-3">
+                  {alert.videoUrl && (
+                    <a
+                      href={alert.videoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-red-500/70 hover:text-red-400 transition-colors flex items-center gap-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <YouTubeLogo className="w-3 h-3" />
+                      Watch
+                    </a>
+                  )}
+                  {alert.url && alert.url !== alert.videoUrl && (
+                    <a
+                      href={alert.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors flex items-center gap-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      Source
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

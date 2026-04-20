@@ -80,3 +80,12 @@ contextBridge.exposeInMainWorld("electron", {
     getStatus: () => ipcRenderer.invoke("browser-use-status"),
   },
 });
+
+// [claude-code 2026-04-20] S21: System permissions bridge for the Omi voice layer.
+//   Consumed by frontend/lib/system-permissions.ts. The onboarding flow
+//   (TP's follow-up sprint) calls request() once at first run; the runtime
+//   calls query() before starting a voice session.
+contextBridge.exposeInMainWorld("systemPermissions", {
+  query: (name) => ipcRenderer.invoke("system-permissions:query", name),
+  request: (name) => ipcRenderer.invoke("system-permissions:request", name),
+});

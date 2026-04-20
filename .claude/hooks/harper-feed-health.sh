@@ -60,7 +60,7 @@ if [ "$STATUS" = "empty" ]; then
   echo "=== HARPER FEED HEALTH ALERT ===" >&2
   echo "RiskFlow feed cache is EMPTY (0 items)." >&2
   echo "Poller running: $POLLER | Newest item: $NEWEST" >&2
-  echo "Action: Check backend logs, Supabase connectivity, and twitter-cli." >&2
+  echo "Action: Check backend logs, Supabase connectivity, and Rettiwt pool (fintheon peers)." >&2
   echo "  launchctl list | grep fintheon" >&2
   echo "  curl $HEALTH_ENDPOINT" >&2
   echo "================================" >&2
@@ -102,17 +102,17 @@ if [ "$ITEM_AGE_CHECK" = "stale" ]; then
   echo "Newest feed item is ${ITEM_AGE_HOURS}h old — no new news in >2 hours." >&2
   echo "Cache: $CACHE_SIZE items | Poller: $POLLER" >&2
   echo "Twitter rate limited: $TWITTER_RATE_LIMITED (cooldown: ${TWITTER_COOLDOWN}s)" >&2
-  echo "Action: Check twitter-cli rate limits, run 'twitter doctor', verify cookies." >&2
+  echo "Action: Check Rettiwt rate limits, verify per-user keys in Supabase." >&2
   echo "====================================" >&2
 fi
 
 # Twitter 429 rate limit check
 if [ "$TWITTER_RATE_LIMITED" = "True" ]; then
   echo "" >&2
-  echo "=== HARPER TWITTER RATE LIMIT ===" >&2
-  echo "Twitter CLI is rate limited (HTTP 429). Cooldown: ${TWITTER_COOLDOWN}s remaining." >&2
+  echo "=== HARPER X FEED RATE LIMIT ===" >&2
+  echo "X feed pipeline is rate limited (HTTP 429). Cooldown: ${TWITTER_COOLDOWN}s remaining." >&2
   echo "Feed will resume automatically after cooldown expires." >&2
-  echo "If persistent: run 'twitter doctor' to check cookie auth." >&2
+  echo "If persistent: rotate Rettiwt keys or add more peers ('fintheon peers')." >&2
   echo "=================================" >&2
 fi
 

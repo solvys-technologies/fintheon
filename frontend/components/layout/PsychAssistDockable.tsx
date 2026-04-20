@@ -1,8 +1,16 @@
 // [claude-code 2026-04-17] Migrated drag to useDraggable hook (pointer events + rAF); grip-only; dock-on-release via onDragEnd
+// [claude-code 2026-04-20] S21: Added Omi voice activation button + live white-waveform indicator
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { GripVertical, PictureInPicture2, X } from "lucide-react";
+import {
+  GripVertical,
+  PictureInPicture2,
+  X,
+  MessageSquare,
+} from "lucide-react";
 import { CompactERMonitor } from "../mission-control/CompactERMonitor";
 import { useDraggable } from "../../hooks/useDraggable";
+import { useOmiSession } from "../../hooks/useOmiSession";
+import { WhiteWaveform } from "../voice/WhiteWaveform";
 
 export type PsychAssistDockTarget = "floating" | "header";
 
@@ -26,6 +34,15 @@ export function PsychAssistDockable({
   const [headerVisible, setHeaderVisible] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const gripRef = useRef<HTMLButtonElement>(null);
+  // [S21] Omi session for psych_assist trigger — activates the Coach in the user's ear.
+  const { session, starting, start, stop } = useOmiSession();
+  const sessionActive =
+    session?.status === "active" && session.trigger === "psych_assist";
+
+  const handleVoiceToggle = useCallback(() => {
+    if (sessionActive) void stop();
+    else void start("psych_assist");
+  }, [sessionActive, start, stop]);
 
   const floating = target === "floating";
 
@@ -82,12 +99,30 @@ export function PsychAssistDockable({
         <span className="text-[10px] text-[var(--fintheon-accent)] font-semibold tracking-[0.14em] uppercase">
           PsychAssist
         </span>
+        {sessionActive && (
+          <WhiteWaveform width={36} height={14} barCount={8} active />
+        )}
         <div className="flex-1 min-w-0">
           <CompactERMonitor />
         </div>
+        <button
+          onClick={handleVoiceToggle}
+          disabled={starting}
+          className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 transition-colors"
+          style={{
+            color: sessionActive
+              ? "var(--fintheon-accent)"
+              : "rgba(199,159,74,0.55)",
+            cursor: starting ? "wait" : "pointer",
+          }}
+          title={sessionActive ? "End Coach session" : "Talk to the Coach"}
+          aria-label={sessionActive ? "End Coach session" : "Talk to the Coach"}
+        >
+          <MessageSquare className="w-3.5 h-3.5" />
+        </button>
       </div>
     );
-  }, []);
+  }, [handleVoiceToggle, sessionActive, starting]);
 
   if (!floating) {
     return (

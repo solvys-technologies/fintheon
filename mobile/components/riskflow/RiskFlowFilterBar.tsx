@@ -2,12 +2,17 @@
 // [claude-code 2026-04-19] Polish pass: tabs are now multi-select. Tap CRIT/HIGH/MED/LOW to
 //   toggle each priority on or off independently; ALL clears the selection. Empty selection
 //   keeps the ALL tab as the active visual. Selection persists via useRiskFlowFilters.
+// [claude-code 2026-04-19] Source trigger added on the right edge — opens the
+//   5-bucket bottom sheet. `sourceActive` drives the active visual when any
+//   bucket is selected.
 import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
 
 interface RiskFlowFilterBarProps {
   activeSeverities: Set<AlertSeverity>;
   onToggleSeverity: (level: AlertSeverity) => void;
   onClearSeverities: () => void;
+  onOpenSourceSheet?: () => void;
+  sourceActive?: boolean;
   counts: {
     all: number;
     critical: number;
@@ -28,6 +33,8 @@ export function RiskFlowFilterBar({
   activeSeverities,
   onToggleSeverity,
   onClearSeverities,
+  onOpenSourceSheet,
+  sourceActive,
   counts,
 }: RiskFlowFilterBarProps) {
   const allActive = activeSeverities.size === 0;
@@ -55,6 +62,13 @@ export function RiskFlowFilterBar({
           onClick={() => onToggleSeverity(value)}
         />
       ))}
+      {onOpenSourceSheet && (
+        <FilterTab
+          label="SRC"
+          active={Boolean(sourceActive)}
+          onClick={onOpenSourceSheet}
+        />
+      )}
     </div>
   );
 }
@@ -66,7 +80,7 @@ function FilterTab({
   onClick,
 }: {
   label: string;
-  count: number;
+  count?: number;
   active: boolean;
   onClick: () => void;
 }) {
@@ -98,7 +112,7 @@ function FilterTab({
       }}
     >
       {label}
-      {count > 0 && (
+      {count != null && count > 0 && (
         <span
           style={{
             fontSize: 10,

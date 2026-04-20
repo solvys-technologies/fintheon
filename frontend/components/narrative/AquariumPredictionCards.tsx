@@ -3,8 +3,10 @@
 // [claude-code 2026-04-04] Persist last prediction to localStorage — shows instantly on startup, refreshes in background
 // [claude-code 2026-03-31] Added 120s polling interval (was static one-time fetch)
 // [claude-code 2026-03-28] S7: 5 forward-looking prediction cards under TradingView in Aquarium
+// [claude-code 2026-04-19] Loader swapped to Unicode FishSwimmer — aquarium-themed microinteraction
 import { useState, useEffect, useRef } from "react";
-import { Diff, TrendingDown, Minus, Loader2 } from "lucide-react";
+import { Diff, TrendingDown, Minus } from "lucide-react";
+import { FishSwimmer } from "../icon-bank/UnicodeSpinners";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -111,7 +113,7 @@ export function AquariumPredictionCards() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-4">
-        <Loader2 className="w-4 h-4 text-[var(--fintheon-accent)]/40 animate-spin" />
+        <FishSwimmer size={13} streamWidth={8} />
       </div>
     );
   }

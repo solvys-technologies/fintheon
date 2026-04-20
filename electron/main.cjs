@@ -831,3 +831,37 @@ ipcMain.handle("browser-use-status", async () => {
     );
   });
 });
+
+// [claude-code 2026-04-20] S21: System permissions bridge for the Omi voice layer.
+//   query + request mirror the minimal surface used by frontend/lib/system-permissions.ts.
+//   Onboarding flow (separate sprint) will call request("microphone") at first run.
+const { systemPreferences } = require("electron");
+
+function mapMacStatus(status) {
+  // systemPreferences.getMediaAccessStatus returns: 'not-determined'|'granted'|'denied'|'restricted'|'unknown'
+  if (status === "granted") return "granted";
+  if (status === "denied" || status === "restricted") return "denied";
+  if (status === "not-determined") return "prompt";
+  return "unknown";
+}
+
+ipcMain.handle("system-permissions:query", (_event, name) => {
+  if (process.platform !== "darwin") return "granted";
+  const mediaType = name === "camera" ? "camera" : "microphone";
+  try {
+    return mapMacStatus(systemPreferences.getMediaAccessStatus(mediaType));
+  } catch {
+    return "unknown";
+  }
+});
+
+ipcMain.handle("system-permissions:request", async (_event, name) => {
+  if (process.platform !== "darwin") return "granted";
+  const mediaType = name === "camera" ? "camera" : "microphone";
+  try {
+    const granted = await systemPreferences.askForMediaAccess(mediaType);
+    return granted ? "granted" : "denied";
+  } catch {
+    return "denied";
+  }
+});

@@ -83,10 +83,23 @@ export function tweetToFeedItem(
     urgencySignals,
   });
 
+  // [claude-code 2026-04-19] Synthesize x.com URL so cards can link back.
+  // Tweets coming from Rettiwt carry the author handle and the tweet id, so
+  // the canonical status URL reconstructs cleanly. Agent-Reach articles keep
+  // their original url passed in through tweet.id (ar-<url>).
+  const isAgentReach = tweet.id.startsWith("ar-");
+  const url = isAgentReach
+    ? tweet.id.slice(3)
+    : tweet.author
+      ? `https://x.com/${tweet.author}/status/${tweet.id}`
+      : undefined;
+
   return {
     id: `rt-${tweet.id}`,
     source,
     headline: tweet.text,
+    url,
+    authorHandle: isAgentReach ? undefined : tweet.author,
     symbols: extractSymbolsFromText(tweet.text),
     tags: extractTagsFromText(tweet.text),
     isBreaking: fjClassification.urgency === "immediate",

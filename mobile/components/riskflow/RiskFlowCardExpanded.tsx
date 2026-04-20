@@ -1,10 +1,17 @@
 // [claude-code 2026-04-15] T5: Expanded card content — inline detail view with agent notes, sub-scores, symbols
+// [claude-code 2026-04-19] Surface-gated SourcePreview — when rendering in the full or
+//   timeline surface, the expanded card shows the scraped body in a SourcePreview block
+//   with YouTube + open-original CTAs; mini surfaces keep the legacy [OPEN SOURCE] link.
 import { motion } from "framer-motion";
 import type { MobileRiskFlowAlert } from "../../contexts/RiskFlowContext";
 import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
+import { SourcePreview } from "./SourcePreview";
+
+export type RiskFlowExpandedSurface = "full" | "timeline" | "mini";
 
 interface RiskFlowCardExpandedProps {
   alert: MobileRiskFlowAlert;
+  surface?: RiskFlowExpandedSurface;
 }
 
 const SEVERITY_COLORS: Record<AlertSeverity, string> = {
@@ -49,7 +56,11 @@ function SubScoreRow({
   );
 }
 
-export function RiskFlowCardExpanded({ alert }: RiskFlowCardExpandedProps) {
+export function RiskFlowCardExpanded({
+  alert,
+  surface = "mini",
+}: RiskFlowCardExpandedProps) {
+  const showSourcePreview = surface === "full" || surface === "timeline";
   return (
     <motion.div
       initial={{ height: 0, opacity: 0 }}
@@ -62,19 +73,23 @@ export function RiskFlowCardExpanded({ alert }: RiskFlowCardExpandedProps) {
         className="pb-4 pt-2 fade-divider-top"
         style={{ borderTop: "none", padding: "8px 12px 16px 26px" }}
       >
-        {/* Content text */}
-        {alert.content && (
-          <p
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: "13px",
-              color: "var(--text-primary)",
-              lineHeight: 1.6,
-              marginBottom: "12px",
-            }}
-          >
-            {alert.content}
-          </p>
+        {/* Source preview (full/timeline) or plain content text (mini) */}
+        {showSourcePreview ? (
+          <SourcePreview alert={alert} />
+        ) : (
+          alert.content && (
+            <p
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "13px",
+                color: "var(--text-primary)",
+                lineHeight: 1.6,
+                marginBottom: "12px",
+              }}
+            >
+              {alert.content}
+            </p>
+          )
         )}
 
         {/* Agent notes */}
@@ -160,8 +175,8 @@ export function RiskFlowCardExpanded({ alert }: RiskFlowCardExpandedProps) {
           </div>
         )}
 
-        {/* External link */}
-        {alert.url && (
+        {/* External link — only on mini surfaces (full/timeline show it via SourcePreview) */}
+        {!showSourcePreview && alert.url && (
           <a
             href={alert.url}
             target="_blank"

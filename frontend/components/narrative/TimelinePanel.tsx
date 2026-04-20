@@ -1,6 +1,7 @@
 // [claude-code 2026-03-30] Full-border severity, bigger fonts, smooth transitions, wider tag filter w/ search, auto-purge banned tags
 // [claude-code 2026-03-29] Add severity filter (default: Critical & High) + fix empty timeline
 // [claude-code 2026-03-28] S7: Paginated 2-column narrative timeline — structured view of NarrativeFlow
+// [claude-code 2026-04-19] url:… tags now render as paperclip link chip; raw URLs no longer shown
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import {
   ChevronLeft,
@@ -16,6 +17,10 @@ import type {
   CatalystCard,
   NarrativeCategory,
 } from "../../lib/narrative-types";
+import {
+  partitionCatalystTags,
+  CatalystLinkChip,
+} from "../../lib/catalyst-tag-utils";
 
 // The 10 real narrative threads (must match migration 027)
 const NARRATIVE_THREADS = [
@@ -623,23 +628,37 @@ export function TimelinePanel() {
                             )}
 
                             {/* Tags */}
-                            {event.tags && event.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-1.5">
-                                {event.tags.slice(0, 4).map((t) => (
-                                  <span
-                                    key={t}
-                                    className="text-[9px] px-1.5 py-0.5 rounded"
-                                    style={{
-                                      color: `${thread.color}90`,
-                                      backgroundColor: `${thread.color}10`,
-                                      fontFamily: "var(--font-mono)",
-                                    }}
-                                  >
-                                    #{t}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
+                            {(() => {
+                              const { linkHref, categoryTags } =
+                                partitionCatalystTags(event.tags);
+                              if (!linkHref && categoryTags.length === 0)
+                                return null;
+                              return (
+                                <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                                  {linkHref && (
+                                    <CatalystLinkChip
+                                      href={linkHref}
+                                      size={9}
+                                      color={`${thread.color}ee`}
+                                      background={`${thread.color}18`}
+                                    />
+                                  )}
+                                  {categoryTags.slice(0, 4).map((t) => (
+                                    <span
+                                      key={t}
+                                      className="text-[9px] px-1.5 py-0.5 rounded"
+                                      style={{
+                                        color: `${thread.color}90`,
+                                        backgroundColor: `${thread.color}10`,
+                                        fontFamily: "var(--font-mono)",
+                                      }}
+                                    >
+                                      #{t}
+                                    </span>
+                                  ))}
+                                </div>
+                              );
+                            })()}
 
                             {/* Multi-narrative indicator (rope connection) */}
                             {isMultiNarrative && (

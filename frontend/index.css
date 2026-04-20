@@ -1277,3 +1277,39 @@ html *::-webkit-scrollbar {
 .nothing-active .font-mono {
   font-family: "Space Mono", "JetBrains Mono", monospace;
 }
+
+/* [claude-code 2026-04-19] View Transitions API — default cross-fade at 200ms
+ * using the existing spring ease. Browsers without support (Firefox, older
+ * Safari) ignore these rules; the fallback is an instant update. */
+@supports (view-transition-name: root) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 220ms;
+    animation-timing-function: var(
+      --ease-spring,
+      cubic-bezier(0.16, 1, 0.3, 1)
+    );
+  }
+  ::view-transition-old(root) {
+    animation-name: fintheon-vt-fade-out;
+  }
+  ::view-transition-new(root) {
+    animation-name: fintheon-vt-fade-in;
+  }
+}
+@keyframes fintheon-vt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes fintheon-vt-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
