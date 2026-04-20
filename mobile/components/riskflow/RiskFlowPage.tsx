@@ -26,10 +26,15 @@ export function RiskFlowPage() {
     removeAlert,
   } = useMobileRiskFlow();
 
-  const { filtered, activeSeverities, toggleSeverity, clearSeverities } =
-    useRiskFlowFilters({
-      alerts,
-    });
+  const {
+    filtered,
+    activeSeverities,
+    activeBuckets,
+    toggleSeverity,
+    clearSeverities,
+    toggleBucket,
+    clearBuckets,
+  } = useRiskFlowFilters({ alerts });
   const { sentinelRef, scrollContainerRef } = useRiskFlowInfiniteScroll({
     hasMore,
     loadingMore,
@@ -61,6 +66,8 @@ export function RiskFlowPage() {
           activeSeverities={activeSeverities}
           onToggleSeverity={toggleSeverity}
           onClearSeverities={clearSeverities}
+          onOpenSourceSheet={() => setSourceSheetOpen(true)}
+          sourceActive={activeBuckets.size > 0}
           counts={{
             all: alerts.length,
             critical: criticalCount,
@@ -68,6 +75,13 @@ export function RiskFlowPage() {
             medium: mediumCount,
             low: lowCount,
           }}
+        />
+        <SourceFilterSheet
+          isOpen={sourceSheetOpen}
+          onClose={() => setSourceSheetOpen(false)}
+          selected={activeBuckets}
+          onToggle={toggleBucket}
+          onClear={clearBuckets}
         />
 
         {/* Card feed — zero gap, fade dividers between */}
