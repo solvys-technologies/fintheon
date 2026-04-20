@@ -393,3 +393,4 @@
 [2026-04-20T01:22:06Z] status=stale cache=500 poller=True scorer=True unscored=0 newest=2026-04-20T00:10:53.000Z itemAge=1.2h cacheAge=1353488ms rateLimited=False
 [2026-04-20T01:35:45Z] status=stale cache=500 poller=True scorer=True unscored=0 newest=2026-04-20T00:10:53.000Z itemAge=1.4h cacheAge=2171709ms rateLimited=False
 [2026-04-20T01:36:18Z] status=stale cache=500 poller=True scorer=True unscored=0 newest=2026-04-20T00:10:53.000Z itemAge=1.4h cacheAge=2205178ms rateLimited=False
+[2026-04-20T01:42:17Z] status=stale cache=500 poller=True scorer=True unscored=0 newest=2026-04-20T00:10:53.000Z itemAge=1.5h cacheAge=2563825ms rateLimited=False
