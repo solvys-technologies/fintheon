@@ -9,15 +9,46 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T00:05:00",
+    agent: "claude-code",
+    summary:
+      "v5.23 polish pass 2. (1) View Transitions API helper at lib/view-transition.ts — wraps document.startViewTransition with a React-safe fallback; default cross-fade at 220ms + prefers-reduced-motion opt-out added to index.css. (2) Wired 4 surfaces to view transitions: ChatSidebar handlers (fintheon:chat-new / chat-run-report / chat-load-session) and RiskFlow priority/source/proposals filter toggles. (3) ui/ai-loader.tsx reimplemented to wrap HelixVertical — every importer cascades to the Braille-weave aesthetic without per-site edits. (4) SessionsModal loader swapped to HelixVertical + withViewTransition imported for future session-click wrapping. (5) Catalyst url-tag cleanup: new lib/catalyst-tag-utils.tsx partitions tags so `url:<href>` renders as a single paperclip-icon CatalystLinkChip instead of bleeding raw URLs into Timeline/Catalyst cards. Applied to TimelinePanel + CatalystCard. Deferred to a fresh orchestrated sprint (not in this deploy): Chart iframe → 50% slide-over refactor, app-wide edge-fade sweep, 45+ remaining spinner sites, Fintheon logo redraw.",
+    files: [
+      "frontend/lib/view-transition.ts",
+      "frontend/lib/catalyst-tag-utils.tsx",
+      "frontend/index.css",
+      "frontend/components/chat/ChatSidebar.tsx",
+      "frontend/components/chat/SessionsModal.tsx",
+      "frontend/components/feed/RiskFlowMain.tsx",
+      "frontend/components/ui/ai-loader.tsx",
+      "frontend/components/narrative/TimelinePanel.tsx",
+      "frontend/components/narrative/CatalystCard.tsx",
+    ],
+  },
+  {
+    date: "2026-04-19T23:45:00",
+    agent: "claude-code",
+    summary:
+      "Icon Bank — Unicode spinner library (aesthetic pivot inspired by Irfan Aziz's Unicode Spinner, unicode.framer.website). Five presets: FishSwimmer (Aquarium loader, `><((º>` through tilde stream), CircleQuarters (`◴→◷→◶→◵` clockwise — now the app's refresh icon + splash LOADING microinteraction), MeterBar (`▱→▰`), ArrowShimmer (`▹▹▹▹▹` with moving `▸`), MeterToShimmer (meter→arrow hand-off — RiskFlow header refresh motion), HelixVertical (Braille weave — replaces the chat radar pulse + AiLoader circular spinner). Every preset reads two driver props: `severity` (maps to --fintheon-severe/--fintheon-neutral-severe/--fintheon-neutral CSS vars) and `priority` (maps to animation interval: 60/100/150/220ms). Honors prefers-reduced-motion. Touchpoints: RiskFlowMain header refresh button + top-bar shimmer, AquariumPredictionCards loader, FintheonThinkingIndicator, FintheonThread.AiLoader, App.tsx splash. Did NOT touch any fuse surface (NothingFuse/VerticalFuseBar or adjacent loadingMore indicators in card lists) per standing design rule.",
+    files: [
+      "frontend/components/icon-bank/UnicodeSpinners.tsx",
+      "frontend/components/feed/RiskFlowMain.tsx",
+      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "frontend/components/chat/FintheonThinkingIndicator.tsx",
+      "frontend/components/chat/FintheonThread.tsx",
+      "frontend/App.tsx",
+    ],
+  },
+  {
     date: "2026-04-20T03:15:00",
     agent: "claude-code",
     summary:
       "S21 — Omi voice layer + PsychAssist fork (scaffold). Added the Omi (omi.me, MIT) integration as a voice sensory layer with three triggers: (1) PsychAssist activation (Coach agent), (2) Voice Assistant header button (routes market Qs to Oracle fast-voice, general to Harper), (3) new Performance-tab header chat button. Webhooks receive real-time transcripts + audio bytes + memory creations at /api/omi/webhook/*; audio uses system permissions (no wearable required) — Electron preload bridge + main-process IPC handlers added for mic/camera permission query/request so TP's onboarding-flow sprint can drive the first-run ask. Backend: new omi service (client, session-manager, router), prosody feature extractor (energy + frustration-vocabulary) feeding a new omi_prosody_samples table that will nudge PsychAssist tilt. Frontend: shared draggable AgentResponsePopup (smoothly-draggable via existing useDraggable hook, 5s fade, hover pauses, click pins, white isometric WhiteWaveform as the agent's 'mouth' — no text UNLESS an agent loops another in, per spec). AgentResponsePopupHost mounted once in MainLayout; session triggered via CustomEvent from useOmiSession so triggers don't need a React context. SuperAdmin PsychAssist fork: new user_feature_overrides table + getFlagForUser(name, userId) resolution layer; reasoning@pricedinresearch.io seeded with psych_assist_fork.edit + psych_assist_fork.flag_toggle overrides (raw audio access + sub-admin powers explicitly NOT granted). New admin endpoints at /api/admin/psych-assist-fork gated by requireFeature middleware; new psych_assist_forks table stores per-user system_prompt + ER weights + tilt thresholds. Coach agent system prompt (voice-native: max two sentences, no markdown, no lists) + Oracle fast-voice variant added. Light polish pass on PsychAssistDockable: MessageSquare activation button + mini WhiteWaveform during active session; three widget positions unchanged per user spec ('polish, don't redesign'). No onboarding UI in this sprint (TP's follow-up). Privacy model: Omi cloud v1 (audio transits Deepgram — documented trade-off). No ElevenLabs (Omi built-in TTS). All migrations idempotent; seed is safe to re-run.",
     files: [
-      "supabase/migrations/20260420_omi_integration.sql",
-      "supabase/migrations/20260420_user_feature_overrides.sql",
-      "supabase/migrations/20260420_psych_assist_forks.sql",
-      "supabase/migrations/20260420_seed_reasoning_fork.sql",
+      "supabase/migrations/20260420100000_omi_integration.sql",
+      "supabase/migrations/20260420100100_user_feature_overrides.sql",
+      "supabase/migrations/20260420100200_psych_assist_forks.sql",
+      "supabase/migrations/20260420100300_seed_reasoning_fork.sql",
       "backend-hono/src/routes/omi.ts",
       "backend-hono/src/routes/admin/psych-assist-fork.ts",
       "backend-hono/src/routes/index.ts",

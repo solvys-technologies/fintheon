@@ -1,5 +1,8 @@
+// [claude-code 2026-04-19] Radar pulse replaced by HelixVertical Braille spinner
+// (unicode icon-bank) — matches Nothing/Doto design language across the app.
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { HelixVertical } from "../icon-bank/UnicodeSpinners";
 
 const THINKING_PHRASES = [
   "Surveying the arena...",
@@ -54,11 +57,9 @@ export function FintheonThinkingIndicator({
       }}
     >
       <div className="flex items-start gap-3">
-        {/* Radar pulse */}
-        <div className="relative mt-0.5 h-6 w-6 flex-shrink-0">
-          <div className="absolute inset-0 rounded-full pulse-radar-ring-1 fintheon-thinking-ring" />
-          <div className="absolute inset-[3px] rounded-full pulse-radar-ring-2 fintheon-thinking-ring-inner" />
-          <div className="absolute inset-[7px] rounded-full pulse-radar-dot fintheon-thinking-dot" />
+        {/* Vertical braille helix — chat thinking indicator */}
+        <div className="mt-0.5 h-6 w-6 flex-shrink-0 flex items-center justify-center">
+          <HelixVertical active={isThinking} size={11} rows={5} />
         </div>
 
         <div className="min-w-0 flex-1">
@@ -96,24 +97,6 @@ export function FintheonThinkingIndicator({
           )}
         </div>
       </div>
-
-      <style>{`
-        .pulse-radar-ring-1 { animation: pulseRadar1 1.6s ease-out infinite; }
-        .pulse-radar-ring-2 { animation: pulseRadar2 1.6s ease-out infinite; }
-        .pulse-radar-dot { animation: pulseRadarDot 1.2s ease-in-out infinite; }
-        @keyframes pulseRadar1 {
-          0% { transform: scale(0.75); opacity: 0.9; }
-          100% { transform: scale(1.25); opacity: 0.1; }
-        }
-        @keyframes pulseRadar2 {
-          0% { transform: scale(0.8); opacity: 0.65; }
-          100% { transform: scale(1.15); opacity: 0.08; }
-        }
-        @keyframes pulseRadarDot {
-          0%, 100% { opacity: 0.45; }
-          50% { opacity: 1; }
-        }
-      `}</style>
     </div>
   );
 }

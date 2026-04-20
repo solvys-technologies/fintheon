@@ -18,6 +18,7 @@ import remarkGfm from "remark-gfm";
 import { AlertCircle, ArrowDown } from "lucide-react";
 import { ChatGreeting } from "./ChatGreeting";
 import { FintheonThinkingIndicator } from "./FintheonThinkingIndicator";
+import { HelixVertical } from "../icon-bank/UnicodeSpinners";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 import { CognitionPanel } from "./CognitionPanel";
 import { ToolApprovalCard } from "./ToolApprovalCard";
@@ -429,11 +430,10 @@ const ScrollToBottomButton: FC<{
 
 export const AiLoader: FC = () => (
   <div className="flex flex-col items-center justify-center py-16 gap-3">
-    <div className="relative w-8 h-8">
-      <div className="absolute inset-0 rounded-full border-2 border-[var(--fintheon-accent)]/20" />
-      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-[var(--fintheon-accent)] animate-spin" />
-    </div>
-    <span className="text-[11px] text-zinc-500">Loading conversation...</span>
+    <HelixVertical size={14} rows={6} />
+    <span className="text-[11px] text-zinc-500 tracking-[0.18em] uppercase">
+      Loading conversation
+    </span>
   </div>
 );
 

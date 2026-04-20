@@ -1,5 +1,8 @@
 // [claude-code 2026-03-10] AI Loader — rotating glow circle + text animation, Solvys Gold palette
+// [claude-code 2026-04-19] Internals swapped to HelixVertical Unicode spinner so every importer
+//   picks up the Braille-weave aesthetic without a codemod. Text and sizing API preserved.
 import { cn } from "../../lib/utils";
+import { HelixVertical } from "../icon-bank/UnicodeSpinners";
 
 interface AiLoaderProps {
   text?: string;
@@ -12,49 +15,18 @@ export function AiLoader({
   size = 40,
   className,
 }: AiLoaderProps) {
-  const r = size / 2 - 3; // ring radius with padding
-
+  const glyphSize = Math.max(10, Math.round(size * 0.32));
   return (
     <div className={cn("flex flex-col items-center gap-3", className)}>
-      <div className="relative" style={{ width: size, height: size }}>
-        {/* Outer glow */}
-        <svg
-          viewBox={`0 0 ${size} ${size}`}
-          className="animate-spin"
-          style={{ animationDuration: "2.4s" }}
-        >
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            fill="none"
-            stroke="var(--fintheon-accent)"
-            strokeWidth={2.5}
-            strokeLinecap="round"
-            strokeDasharray={`${r * 1.8} ${r * 4.5}`}
-            style={{ filter: "drop-shadow(0 0 4px var(--fintheon-accent))" }}
-          />
-        </svg>
-        {/* Inner dot */}
-        <span
-          className="absolute inset-0 flex items-center justify-center"
-          aria-hidden="true"
-        >
-          <span
-            className="rounded-full"
-            style={{
-              width: 6,
-              height: 6,
-              background: "var(--fintheon-accent)",
-              boxShadow: "0 0 8px var(--fintheon-accent)",
-            }}
-          />
-        </span>
+      <div
+        className="flex items-center justify-center"
+        style={{ width: size, height: size }}
+      >
+        <HelixVertical size={glyphSize} rows={5} />
       </div>
-
       {text && (
         <span
-          className="text-sm font-medium animate-pulse"
+          className="text-sm font-medium tracking-[0.2em] uppercase"
           style={{ color: "var(--fintheon-accent)" }}
         >
           {text}

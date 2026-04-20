@@ -8,11 +8,9 @@
 //   header button, METER→ARROW-3 as a top-bar shimmer during refresh, ARROW-3 for loadingMore.
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { Bell, BellOff } from "lucide-react";
-import {
-  CircleQuarters,
-  MeterToShimmer,
-  ArrowShimmer,
-} from "../icon-bank/UnicodeSpinners";
+import { CircleQuarters, MeterToShimmer } from "../icon-bank/UnicodeSpinners";
+import { Loader2 } from "lucide-react";
+import { withViewTransition } from "../../lib/view-transition";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import { useSourceStatus } from "../../hooks/useSourceStatus";
 import { useBackend } from "../../lib/backend";
@@ -182,6 +180,16 @@ export function RiskFlowMain() {
               X
             </span>
           </span>
+          <span
+            aria-hidden={!refreshing}
+            style={{
+              opacity: refreshing ? 1 : 0,
+              transition: "opacity 180ms ease",
+              minWidth: 60,
+            }}
+          >
+            <MeterToShimmer active={refreshing} size={11} cells={6} />
+          </span>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -190,12 +198,10 @@ export function RiskFlowMain() {
               void refresh();
             }}
             disabled={refreshing}
-            className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40"
+            className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40 flex items-center justify-center w-6 h-6"
             title="Refresh feeds"
           >
-            <RefreshCw
-              className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`}
-            />
+            <CircleQuarters active={refreshing} size={14} />
           </button>
           <button
             onClick={requestNotifications}
@@ -215,14 +221,18 @@ export function RiskFlowMain() {
       <div className="flex items-center gap-2 mb-3 px-3">
         <PriorityFilterMenu
           selected={showProposals ? new Set() : severitySet}
-          onToggle={(s) => {
-            setShowProposals(false);
-            toggleSeverity(s);
-          }}
-          onClear={() => {
-            setShowProposals(false);
-            clearSeverities();
-          }}
+          onToggle={(s) =>
+            withViewTransition(() => {
+              setShowProposals(false);
+              toggleSeverity(s);
+            })
+          }
+          onClear={() =>
+            withViewTransition(() => {
+              setShowProposals(false);
+              clearSeverities();
+            })
+          }
           counts={{
             critical: critCount,
             high: highCount,
@@ -232,18 +242,22 @@ export function RiskFlowMain() {
         />
         <SourceFilterMenu
           selected={showProposals ? new Set() : bucketSet}
-          onToggle={(b) => {
-            setShowProposals(false);
-            toggleBucket(b);
-          }}
-          onClear={() => {
-            setShowProposals(false);
-            clearBuckets();
-          }}
+          onToggle={(b) =>
+            withViewTransition(() => {
+              setShowProposals(false);
+              toggleBucket(b);
+            })
+          }
+          onClear={() =>
+            withViewTransition(() => {
+              setShowProposals(false);
+              clearBuckets();
+            })
+          }
           counts={bucketCounts}
         />
         <button
-          onClick={() => setShowProposals((v) => !v)}
+          onClick={() => withViewTransition(() => setShowProposals((v) => !v))}
           className={`text-[10px] px-2.5 py-1 rounded transition-colors border ${
             showProposals
               ? "bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] border-[var(--fintheon-accent)]/40"

@@ -1,6 +1,7 @@
 // [claude-code 2026-04-10] S8-T4: Cross-agent notification toasts via surface.sidebar SSE
 // [claude-code 2026-04-05] T2: Chat icons moved to Consilium bar — event-driven new chat, run report, load session
 // [claude-code 2026-03-28] S8-T7: Single-pane sidebar with agent-plan inline
+// [claude-code 2026-04-19] New chat / run report / load session now animated via View Transitions API
 // S13-T1: Renamed to ChatSidebar, surfaceId=chat
 import { useCallback, useState, useEffect, useRef, useMemo } from "react";
 import {
@@ -15,6 +16,7 @@ import { FintheonThread } from "./FintheonThread";
 import { FintheonComposer } from "./FintheonComposer";
 import { CognitionPanel } from "./CognitionPanel";
 import { useAgentBusSSE } from "../../hooks/useAgentBusSSE";
+import { withViewTransition } from "../../lib/view-transition";
 import type { SidebarNotifyEvent } from "../../../backend-hono/src/services/agent-bus/types";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -137,14 +139,15 @@ function ChatSidebarInner({
 
   // Listen for toolbar events dispatched from ConsiliumHub icons
   useEffect(() => {
-    const onNewChat = () => clearConversationId();
+    const onNewChat = () => withViewTransition(() => clearConversationId());
     const onRunReport = () => {
-      if (!isRunning) handleSend("Run the MDB report");
+      if (!isRunning)
+        withViewTransition(() => handleSend("Run the MDB report"));
     };
     const onLoadSession = (e: Event) => {
       const id = (e as CustomEvent).detail?.id;
       console.debug("[ChatSidebar] load-session event received", { id });
-      if (id) setConversationId(id);
+      if (id) withViewTransition(() => setConversationId(id));
     };
 
     window.addEventListener("fintheon:chat-new", onNewChat);

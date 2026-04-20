@@ -1,7 +1,12 @@
 // [claude-code 2026-03-16] Stone theme + narrative theme integration
 // [claude-code 2026-03-16] Added tag pills and inline tag-add button
+// [claude-code 2026-04-19] url:… tags surface as paperclip chip; raw URL no longer leaks into UI
 import { useState, useCallback, useRef } from "react";
 import type { CatalystCard as CatalystCardType } from "../../lib/narrative-types";
+import {
+  partitionCatalystTags,
+  CatalystLinkChip,
+} from "../../lib/catalyst-tag-utils";
 
 const SENTIMENT_COLORS: Record<string, string> = {
   bullish: "var(--fintheon-bullish)",
@@ -186,21 +191,31 @@ export default function CatalystCard({
 
           {/* Tag pills */}
           <div className="flex flex-wrap items-center gap-1 mt-1">
-            {catalyst.tags?.map((tag) => (
-              <span
-                key={tag}
-                className="text-[8px] px-1.5 py-0.5 rounded-full border"
-                style={{
-                  color: "var(--fintheon-accent)",
-                  backgroundColor:
-                    "color-mix(in srgb, var(--fintheon-accent) 15%, transparent)",
-                  borderColor:
-                    "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
-                }}
-              >
-                {tag}
-              </span>
-            ))}
+            {(() => {
+              const { linkHref, categoryTags } = partitionCatalystTags(
+                catalyst.tags,
+              );
+              return (
+                <>
+                  {linkHref && <CatalystLinkChip href={linkHref} size={9} />}
+                  {categoryTags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="text-[8px] px-1.5 py-0.5 rounded-full border"
+                      style={{
+                        color: "var(--fintheon-accent)",
+                        backgroundColor:
+                          "color-mix(in srgb, var(--fintheon-accent) 15%, transparent)",
+                        borderColor:
+                          "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
+                      }}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </>
+              );
+            })()}
             {onTagAdd && !showTagInput && (
               <button
                 onClick={(e) => {
