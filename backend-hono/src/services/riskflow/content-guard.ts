@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] Added scraper-artifact guard — catches bot-checks, paywalls, error pages (e.g. "Bloomberg - Are you a robot?")
 // [claude-code 2026-04-15] Fix: MARKET_KEYWORDS missing all FX/currency terms — headlines like "bold actions on FX" blocked as no-market-relevance
 // [claude-code 2026-04-15] Fix: FJ_ALLOWED_EMOJIS was missing 🟠🟡🔵 — medium/low severity items were blocked as "non-fj-emoji"
 // [claude-code 2026-04-12] Pre-ingestion content guard — blocks garbage before it hits raw_riskflow_items
@@ -110,6 +111,42 @@ const MARKET_KEYWORDS =
 // ── Platform ad / promo prefixes ───────────────────────────────────────────
 // "FinancialJuice | ..." is their ad/promo format on X. Block at ingestion.
 const PLATFORM_AD_PATTERNS = [/FinancialJuice\s*\|/i, /financialjuice\.com/i];
+
+// ── Scraper artifact / bot-check / error page detection ───────────────────
+// When a source scrapes a URL and hits a captcha, paywall, or error page,
+// the page title becomes the headline. These are NEVER real news.
+// Checked against headline only (not body) to prevent body keywords from
+// overriding the market-relevance gate.
+const SCRAPER_ARTIFACT_PATTERNS = [
+  /are you a robot/i,
+  /are you human/i,
+  /verify you are (a )?human/i,
+  /captcha/i,
+  /access denied/i,
+  /403 forbidden/i,
+  /404 not found/i,
+  /page not found/i,
+  /checking your browser/i,
+  /enable javascript/i,
+  /just a moment/i, // Cloudflare challenge page
+  /attention required/i, // Cloudflare
+  /please wait while we verify/i,
+  /subscribe to (continue|read|access)/i,
+  /sign in to (continue|read|access)/i,
+  /log in to (continue|read|access)/i,
+  /you('ve| have) been blocked/i,
+  /too many requests/i,
+  /rate limit/i,
+  /service unavailable/i,
+  /502 bad gateway/i,
+  /503 service/i,
+  /connection timed? ?out/i,
+  /unexpected error/i,
+  /something went wrong/i,
+  /we('re| are) sorry/i,
+  /this page isn't available/i,
+  /content is not available/i,
+];
 
 // ── Emdash rant detection ──────────────────────────────────────────────────
 // Opinion posts separated by emdashes (U+2014) are a common X rant pattern.
@@ -282,6 +319,14 @@ export function checkContentGuard(text: string): ContentGuardResult {
   for (const pattern of PLATFORM_AD_PATTERNS) {
     if (pattern.test(text)) {
       return { blocked: true, reason: "platform-ad" };
+    }
+  }
+
+  // 0b. Scraper artifacts — bot-checks, paywalls, error pages
+  // These are page titles from failed scrapes, never real headlines.
+  for (const pattern of SCRAPER_ARTIFACT_PATTERNS) {
+    if (pattern.test(text)) {
+      return { blocked: true, reason: "scraper-artifact" };
     }
   }
 
