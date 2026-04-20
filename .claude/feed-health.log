@@ -391,3 +391,4 @@
 [2026-04-20T12:44:41Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
 [2026-04-20T12:45:19Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
 [2026-04-20T12:47:13Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-20T12:47:49Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
