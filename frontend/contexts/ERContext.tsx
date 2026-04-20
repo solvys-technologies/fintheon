@@ -194,31 +194,13 @@ export function ERProvider({ children }: ERProviderProps) {
       return;
     lastVoiceInterventionRef.current = now;
 
-    // Fire and forget — speak an intervention
+    // [claude-code 2026-04-20] S28-T1 cleanup — /api/voice/speak no longer
+    // returns audio; Omi handles playback server-side. Fire and forget.
     backend.voice
       .speak({
         text: `Your emotional resonance score has dropped to ${erScore.toFixed(1)}. I'm detecting signs of tilt. Take a breath. Step away from the screen for 60 seconds. Your edge is your discipline, not this next trade.`,
         mode: "infraction",
-        includeAudio: true,
         agent: "harper-cao",
-      })
-      .then((res) => {
-        if (res.audioBase64) {
-          try {
-            const audioBytes = Uint8Array.from(atob(res.audioBase64), (c) =>
-              c.charCodeAt(0),
-            );
-            const blob = new Blob([audioBytes], {
-              type: res.audioMimeType || "audio/mpeg",
-            });
-            const url = URL.createObjectURL(blob);
-            const audio = new Audio(url);
-            audio.play().catch(() => {});
-            audio.onended = () => URL.revokeObjectURL(url);
-          } catch {
-            // Audio playback failed silently
-          }
-        }
       })
       .catch((err) => {
         console.debug("[ER] Voice intervention failed:", err);
