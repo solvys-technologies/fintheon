@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Search, MessageSquare, Plus, Trash2, X } from "lucide-react";
 import { API_BASE_URL } from "./constants";
-import { HelixVertical } from "../icon-bank/UnicodeSpinners";
+import { HelixSpinner } from "../icon-bank/agent-spinners";
 import { withViewTransition } from "../../lib/view-transition";
 
 interface ConversationSummary {
@@ -230,7 +230,7 @@ export function SessionsModal({
       >
         {loading && (
           <div className="flex items-center justify-center py-8">
-            <HelixVertical size={12} rows={5} />
+            <HelixSpinner size={12} />
           </div>
         )}
 

@@ -2,7 +2,7 @@
 // (unicode icon-bank) — matches Nothing/Doto design language across the app.
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { HelixVertical } from "../icon-bank/UnicodeSpinners";
+import { HelixSpinner } from "../icon-bank/agent-spinners";
 
 const THINKING_PHRASES = [
   "Surveying the arena...",
@@ -59,7 +59,7 @@ export function FintheonThinkingIndicator({
       <div className="flex items-start gap-3">
         {/* Vertical braille helix — chat thinking indicator */}
         <div className="mt-0.5 h-6 w-6 flex-shrink-0 flex items-center justify-center">
-          <HelixVertical active={isThinking} size={11} rows={5} />
+          <HelixSpinner active={isThinking} size={11} />
         </div>
 
         <div className="min-w-0 flex-1">

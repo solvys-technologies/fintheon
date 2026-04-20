@@ -114,14 +114,13 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
   }, []);
 
   const stopPlayback = useCallback(() => {
+    // [S28-T1] Browser TTS removed — all agent speech now routes through Omi.
+    //   The remaining audioRef only plays sidecar-generated blobs; stopping it
+    //   cancels an in-flight greeting if one is queued.
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
       audioRef.current = null;
-    }
-
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
     }
   }, []);
 
@@ -183,18 +182,9 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
     [],
   );
 
-  const playWithSpeechSynthesis = useCallback(async (text: string) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    await new Promise<void>((resolve) => {
-      const utterance = new SpeechSynthesisUtterance(text.slice(0, 800));
-      utterance.rate = 1;
-      utterance.pitch = 1;
-      utterance.volume = 1;
-      utterance.onend = () => resolve();
-      utterance.onerror = () => resolve();
-      window.speechSynthesis.speak(utterance);
-    });
-  }, []);
+  // [S28-T1] Browser TTS is banned. Agent audio arrives via Omi Notifications
+  //   (handled server-side). If the user isn't paired, we stay silent rather
+  //   than substituting a macOS voice — text still lands in the UI.
 
   // Analyze user speech for tilt indicators, dispatch PsychAssist events
   const analyzeSpeechForTilt = useCallback(
@@ -289,10 +279,11 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
           setRuntimeState("speaking");
           if (controller.signal.aborted) return null;
 
+          // [S28-T1] audioBase64 is no longer returned by /api/voice/speak —
+          //   audio is delivered directly to Omi. Keep the playAudio call only
+          //   for legacy payloads that still carry a blob, otherwise stay quiet.
           if (response.audioBase64) {
             await playAudio(response.audioBase64, response.audioMimeType);
-          } else {
-            await playWithSpeechSynthesis(assistantText);
           }
         }
 
@@ -327,7 +318,6 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
       conversationId,
       persistConversationId,
       playAudio,
-      playWithSpeechSynthesis,
       setErrorWithRecovery,
       analyzeSpeechForTilt,
     ],

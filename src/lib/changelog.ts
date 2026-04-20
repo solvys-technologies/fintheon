@@ -9,6 +9,48 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T09:00:00",
+    agent: "claude-code",
+    summary:
+      "[v5.23] S28-T1/T3: routed all agent-to-user speech through Omi's " +
+      "Notifications API (speak:true) and stopped the system-prompt TTS leak; " +
+      "replaced the 2026-04-19 Unicode spinner bank with a port of " +
+      "expo-agent-spinners (54 terminal-style spinners, MIT). " +
+      "(T1) New backend helper services/omi/speak.ts — looks up omi_pairings " +
+      "and calls sendNotification, silent fallback when unpaired. /api/voice/speak " +
+      "now fires the Omi notification server-side and no longer returns audioBase64; " +
+      "the frontend hook drops window.speechSynthesis entirely. Deleted useVoiceSession, " +
+      "the /api/voice/session/* sidecar routes, and lib/speech-service.ts — all " +
+      "redundant once Omi owns playback. Fixed the Harper boardroom DAG JSON " +
+      'leak (e.g. `{"agentId":"feucht",...}`) by buffering per-agent deltas and ' +
+      "emitting a prose summary on agent-complete instead of streaming the raw " +
+      "analyst JSON into the chat bubble. " +
+      "(T3) Ported 54 spinners to components/icon-bank/agent-spinners/: shared " +
+      "BaseSpinner + useSpinnerFrame + useReducedMotion hook, frame definitions in " +
+      "frames.ts, 54 named exports. App splash → CircleQuartersSpinner, RiskFlow " +
+      "header refresh → FillsweepSpinner + CircleQuartersSpinner, chat thinking/AiLoader " +
+      "→ HelixSpinner, Aquarium loader → SnakeSpinner. Old UnicodeSpinners removed.",
+    files: [
+      "backend-hono/src/services/omi/speak.ts",
+      "backend-hono/src/routes/voice/handlers.ts",
+      "backend-hono/src/routes/voice/index.ts",
+      "backend-hono/src/routes/harper/index.ts",
+      "frontend/hooks/useVoiceAssistant.ts",
+      "frontend/contexts/VoiceContext.tsx",
+      "frontend/lib/services/voice.ts",
+      "frontend/components/icon-bank/agent-spinners/base.tsx",
+      "frontend/components/icon-bank/agent-spinners/frames.ts",
+      "frontend/components/icon-bank/agent-spinners/index.tsx",
+      "frontend/App.tsx",
+      "frontend/components/chat/FintheonThinkingIndicator.tsx",
+      "frontend/components/chat/FintheonThread.tsx",
+      "frontend/components/chat/SessionsModal.tsx",
+      "frontend/components/feed/RiskFlowMain.tsx",
+      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "frontend/components/ui/ai-loader.tsx",
+    ],
+  },
+  {
     date: "2026-04-19T22:40:00",
     agent: "claude-code",
     summary:

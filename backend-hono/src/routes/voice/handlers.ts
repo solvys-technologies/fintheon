@@ -1,11 +1,9 @@
 import type { Context } from "hono";
 import * as conversationStore from "../../services/ai/conversation-store.js";
 import { handleHermesChat } from "../../services/hermes-handler.js";
-import {
-  synthesizeVoice,
-  transcribeVoice,
-} from "../../services/voice-service.js";
+import { transcribeVoice } from "../../services/voice-service.js";
 import { analyzeSentiment } from "../../services/voice-sentiment.js";
+import { speakToUser } from "../../services/omi/speak.js";
 
 function getUserId(c: Context): string | null {
   const userId = c.get("userId") as string | undefined;
@@ -95,7 +93,6 @@ export async function handleSpeak(c: Context) {
   }
 
   const mode = body?.mode === "infraction" ? "infraction" : "chat";
-  const includeAudio = body?.includeAudio !== false;
   const agent = body?.agent || "harper-cao";
 
   try {
@@ -140,30 +137,17 @@ export async function handleSpeak(c: Context) {
       },
     });
 
-    let audioBase64: string | undefined;
-    let audioMimeType: string | undefined;
-
-    if (includeAudio) {
-      try {
-        const audio = await synthesizeVoice(response.content);
-        if (audio) {
-          audioBase64 = audio.audioBase64;
-          audioMimeType = audio.audioMimeType;
-        }
-      } catch (error) {
-        console.warn(
-          "[Voice] TTS synthesis failed, returning text only:",
-          error,
-        );
-      }
-    }
+    // [S28-T1] All agent-to-user speech now routes through Omi's Notifications API.
+    //   The browser never speaks — if the user isn't paired the speak helper
+    //   silently no-ops and the client shows text only.
+    void speakToUser(userId, response.content).catch((err) => {
+      console.warn("[Voice] Omi speak failed (non-fatal):", err);
+    });
 
     return c.json({
       conversationId: conversation.id,
       agent: response.agent,
       responseText: response.content,
-      audioBase64,
-      audioMimeType,
       mode,
     });
   } catch (error) {

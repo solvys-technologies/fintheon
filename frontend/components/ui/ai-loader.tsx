@@ -2,7 +2,7 @@
 // [claude-code 2026-04-19] Internals swapped to HelixVertical Unicode spinner so every importer
 //   picks up the Braille-weave aesthetic without a codemod. Text and sizing API preserved.
 import { cn } from "../../lib/utils";
-import { HelixVertical } from "../icon-bank/UnicodeSpinners";
+import { HelixSpinner } from "../icon-bank/agent-spinners";
 
 interface AiLoaderProps {
   text?: string;
@@ -22,7 +22,7 @@ export function AiLoader({
         className="flex items-center justify-center"
         style={{ width: size, height: size }}
       >
-        <HelixVertical size={glyphSize} rows={5} />
+        <HelixSpinner size={glyphSize} />
       </div>
       {text && (
         <span
