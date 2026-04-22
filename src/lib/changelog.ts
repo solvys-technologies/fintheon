@@ -9,6 +9,25 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-21T03:12:00",
+    agent: "claude-code",
+    summary:
+      "Feed quality: added commodity recap verb filter to content guard. " +
+      "Catches 'Gold Steadies', 'Oil Holds', 'Dollar Edges Lower' style " +
+      "color-commentary wraps from Bloomberg RSS that passed existing guards " +
+      "because they contain market keywords but are non-actionable.",
+    files: ["backend-hono/src/services/riskflow/content-guard.ts"],
+  },
+  {
+    date: "2026-04-21T03:04:00",
+    agent: "claude-code",
+    summary:
+      "Feed quality: patched isForeignEconPrint bypass — added asia/asian/european/europe " +
+      "regional prefixes and bare 'markets' keyword so foreign market-wrap headlines " +
+      "(e.g. 'Asia markets mixed...') are filtered. Triggered by CNBC RSS dismissal.",
+    files: ["backend-hono/src/services/riskflow/feed-service.ts"],
+  },
+  {
     date: "2026-04-20T15:30:00",
     agent: "claude-code",
     summary:

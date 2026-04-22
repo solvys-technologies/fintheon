@@ -49,6 +49,10 @@ export interface RoutingRule {
 // `qwen/qwen3.5-plus-02-15` or a Hermes-4 variant — see brief §5 fallback.
 export const QWEN_REASONING_LATEST = "qwen/qwen3.6-plus-preview:free";
 
+// [claude-code 2026-04-21] S28: Qwen3.5 397B Cloud — static model for all Hermes sub-agents.
+// Harper can toggle between this and Claude Opus 4.7 via HARPER_DEFAULT_PROVIDER env.
+export const QWEN_CLOUD_LATEST = "qwen3.5:397b-cloud";
+
 // [claude-code 2026-04-20] S28 directive — model split:
 //   - CAO (Harper) keeps Opus (heaviest reasoning, only position that needs it)
 //   - Harper-voice keeps Qwen (free/fast, voice-native)
@@ -58,6 +62,9 @@ export const QWEN_REASONING_LATEST = "qwen/qwen3.6-plus-preview:free";
 //     Qwen is the smartest non-Opus model per S28 call and keeps their cost
 //     profile at $0 via the hermes-sidecar pipe.
 // ROUTING_OVERRIDE_<AGENT> env vars remain as per-agent escape hatches.
+
+// [claude-code 2026-04-21] S28 update: All sub-agents locked to Qwen3.5:397b-cloud.
+// Harper can toggle via HARPER_DEFAULT_PROVIDER=qwen|anthropic (default: anthropic).
 export const ROUTING_TABLE: RoutingRule[] = [
   {
     agent: "harper",
@@ -85,7 +92,7 @@ export const ROUTING_TABLE: RoutingRule[] = [
   },
   {
     agent: "oracle",
-    model: QWEN_REASONING_LATEST,
+    model: QWEN_CLOUD_LATEST,
     provider: "hermes-sidecar",
     max_input_tokens: 1_000_000,
     cost_per_mtoken_in_usd: 0,
@@ -93,7 +100,7 @@ export const ROUTING_TABLE: RoutingRule[] = [
   },
   {
     agent: "feucht",
-    model: QWEN_REASONING_LATEST,
+    model: QWEN_CLOUD_LATEST,
     provider: "hermes-sidecar",
     max_input_tokens: 1_000_000,
     cost_per_mtoken_in_usd: 0,
@@ -101,7 +108,7 @@ export const ROUTING_TABLE: RoutingRule[] = [
   },
   {
     agent: "consul",
-    model: QWEN_REASONING_LATEST,
+    model: QWEN_CLOUD_LATEST,
     provider: "hermes-sidecar",
     max_input_tokens: 1_000_000,
     cost_per_mtoken_in_usd: 0,
@@ -109,7 +116,7 @@ export const ROUTING_TABLE: RoutingRule[] = [
   },
   {
     agent: "herald",
-    model: QWEN_REASONING_LATEST,
+    model: QWEN_CLOUD_LATEST,
     provider: "hermes-sidecar",
     max_input_tokens: 1_000_000,
     cost_per_mtoken_in_usd: 0,
@@ -126,8 +133,9 @@ function overrideEnvKey(agent: AgentId): string {
  *
  * Resolution order:
  *   1. ROUTING_OVERRIDE_<AGENT> env var — swaps model, keeps provider/metadata
- *   2. Task-specific row in ROUTING_TABLE (agent + task match)
- *   3. Default row for the agent
+ *   2. HARPER_DEFAULT_PROVIDER=qwen|anthropic (Harper only, default: anthropic)
+ *   3. Task-specific row in ROUTING_TABLE (agent + task match)
+ *   4. Default row for the agent
  */
 export function selectModel(agent: AgentId, task?: TaskType): RoutingRule {
   let match: RoutingRule | undefined;
@@ -141,6 +149,20 @@ export function selectModel(agent: AgentId, task?: TaskType): RoutingRule {
     throw new Error(
       `[routing] No rule for agent=${agent} task=${task ?? "(none)"}`,
     );
+  }
+
+  // [claude-code 2026-04-21] Harper provider toggle
+  if (agent === "harper" && task !== "voice") {
+    const harperProvider = process.env.HARPER_DEFAULT_PROVIDER ?? "anthropic";
+    if (harperProvider === "qwen") {
+      return {
+        ...match,
+        model: QWEN_CLOUD_LATEST,
+        provider: "hermes-sidecar",
+        cost_per_mtoken_in_usd: 0,
+        cost_per_mtoken_out_usd: 0,
+      };
+    }
   }
 
   const override = process.env[overrideEnvKey(agent)];

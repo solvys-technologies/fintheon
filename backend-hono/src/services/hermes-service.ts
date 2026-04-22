@@ -130,21 +130,21 @@ const HERMES_AGENTS: Record<
   },
 };
 
-// Harper stays on Claude Opus 4.6 (CLI bridge, $0 cost)
-// Oracle, Feucht, Consul, Herald use Grok 4.20 Fast via OpenRouter
+// [claude-code 2026-04-21] S28: All sub-agents locked to Qwen3.5:397b-cloud via Hermes.
+// Harper toggles via HARPER_DEFAULT_PROVIDER=qwen|anthropic (default: anthropic).
 export const HERMES_TASK_MODEL_MAP: Record<string, string> = {
-  "harper-cao": "anthropic/claude-opus-4.6",
-  "cao-approval": "anthropic/claude-opus-4.6",
-  "cao-consolidation": "anthropic/claude-opus-4.6",
-  "pma-merged": "xai/grok-4-fast",
-  "prediction-market": "xai/grok-4-fast",
-  "futures-desk": "xai/grok-4-fast",
-  "fa-rippers": "xai/grok-4-fast",
-  "economic-analysis": "xai/grok-4-fast",
-  "fundamentals-desk": "xai/grok-4-fast",
-  "earnings-analysis": "xai/grok-4-fast",
-  "tech-mega-cap": "xai/grok-4-fast",
-  herald: "xai/grok-4-fast",
+  "harper-cao": "anthropic/claude-opus-4.7",
+  "cao-approval": "anthropic/claude-opus-4.7",
+  "cao-consolidation": "anthropic/claude-opus-4.7",
+  "pma-merged": "qwen3.5:397b-cloud",
+  "prediction-market": "qwen3.5:397b-cloud",
+  "futures-desk": "qwen3.5:397b-cloud",
+  "fa-rippers": "qwen3.5:397b-cloud",
+  "economic-analysis": "qwen3.5:397b-cloud",
+  "fundamentals-desk": "qwen3.5:397b-cloud",
+  "earnings-analysis": "qwen3.5:397b-cloud",
+  "tech-mega-cap": "qwen3.5:397b-cloud",
+  herald: "qwen3.5:397b-cloud",
 };
 
 /**

@@ -660,9 +660,19 @@ const FOREIGN_PREFIXES = [
   "turkish",
   "new zealand",
   "south african",
+  // [claude-code 2026-04-20] Regional prefixes — catch "Asia markets mixed" style wraps
+  "asia",
+  "asian",
+  "european",
+  "europe",
+  "latin america",
+  "emerging market",
+  "em ",
 ];
 
-// Econ data keywords — if headline has FOREIGN_PREFIX + one of these, it's foreign econ data
+// [claude-code 2026-04-20] Expanded: foreign stock-index / market-wrap headlines are noise
+//   for a US-focused fund. "Indian Stocks Face Fresh Hurdle" etc. now caught.
+// Econ data keywords — if headline has FOREIGN_PREFIX + one of these, it's foreign noise
 const ECON_DATA_KEYWORDS = [
   "cpi",
   "ppi",
@@ -696,6 +706,30 @@ const ECON_DATA_KEYWORDS = [
   "foreign investment",
   "service ppi",
   "public deficit",
+  // Foreign stock market / index wrap headlines
+  // [claude-code 2026-04-20] Added bare "markets" — only fires with a foreign prefix
+  "markets",
+  "stocks",
+  "stock index",
+  "stock market",
+  "equities",
+  "shares",
+  "bourse",
+  "nifty",
+  "sensex",
+  "kospi",
+  "topix",
+  "nikkei",
+  "hang seng",
+  "shanghai composite",
+  "dax",
+  "ftse",
+  "cac ",
+  "stoxx",
+  "asx",
+  "tsx",
+  "bovespa",
+  "ibovespa",
 ];
 
 function isForeignEconPrint(headline: string): boolean {

@@ -112,10 +112,16 @@ const MARKET_KEYWORDS =
 // "FinancialJuice | ..." is their ad/promo format on X. Block at ingestion.
 // [claude-code 2026-04-20] "Markets Wrap" / regional "Wrap" titles are Bloomberg
 //   scheduled recaps, not catalysts. TP: these read like ads and drive dupe pushes.
+// [claude-code 2026-04-20] Commodity/asset recap verbs — "Gold Steadies", "Oil Holds",
+//   "Dollar Edges Lower" are color-commentary wraps, not catalysts. The verb signals
+//   incremental non-actionable price movement. Only fires on known recap verbs at
+//   sentence start so genuine breaking moves ("Gold Surges 5%") still pass.
 const PLATFORM_AD_PATTERNS = [
   /FinancialJuice\s*\|/i,
   /financialjuice\.com/i,
   /\b(markets?|europe|asia|americas|global|us|u\.?s\.?)\s+wrap\b/i,
+  // Commodity/asset recap headlines: "[Asset] [recap verb] as [color commentary]"
+  /^(gold|oil|silver|copper|crude|brent|wti|dollar|euro|yen|sterling|treasur(?:y|ies)|bonds?)\s+(steadies|steady|holds?|edges?|drifts?|flat(?:tens?)?|little changed|barely moved?|muted|subdued|treads?\s+water|hovers?|lingers?|consolidates?|pares?|trims?|retreats?\s+from)\b/i,
 ];
 
 // ── Scraper artifact / bot-check / error page detection ───────────────────
