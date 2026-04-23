@@ -31,6 +31,8 @@ import { SystemStatusProvider } from "./contexts/SystemStatusContext";
 import { migrateStorageKeys } from "./lib/storage-migration";
 import { AuthShell } from "./components/auth/AuthShell";
 import { CircleQuarters } from "./components/icon-bank/UnicodeSpinners";
+import { ConsulControlCorners } from "./components/consul-control/ConsulControlCorners";
+import { useConsulControlStatus } from "./hooks/useConsulControlStatus";
 
 // Run storage migration before any providers read localStorage
 migrateStorageKeys();

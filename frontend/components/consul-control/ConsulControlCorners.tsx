@@ -123,9 +123,7 @@ export function ConsulControlCorners({ active }: { active: boolean }) {
           animation-play-state: paused !important;
         }
       `}</style>
-      <div
-        className={`consul-corners-root${active ? " is-active" : ""}`}
-      >
+      <div className={`consul-corners-root${active ? " is-active" : ""}`}>
         {CORNERS.map((corner, i) => (
           <CornerGrid key={corner} corner={corner} seed={seeds[i]} />
         ))}
