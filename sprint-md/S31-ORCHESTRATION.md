@@ -1,24 +1,25 @@
 # S31 — Harper 2.1 — Orchestration
 
 **Sprint 2 of the S30/S31/S32 Super Sprint.**
-**Codename**: Harper 2.1 — perception + agency refinement pass.
+**Codename**: Harper 2.1 — perception, reasoning, and advisory refinement.
 **Branch**: `s31-harper-2-1` (cut off `main` AFTER S30 merges).
-**Baseline**: post-S30 `main`.
 **Target version**: v5.23.0 at Super Sprint end.
 
 ## Composition
 
-Four tracks. T1 is sequential (everything else depends on it); T2/T3/T4 run in parallel after T1 merges.
+**Wave 1** (sequential prereq): T1.
+**Wave 2** (parallel, 8 tracks): T2–T9. All non-conflicting; each owns a distinct module. Up to 14 VS Code windows available — run them all at once.
+**Wave 3** (unification): orchestrator merges.
 
-### Wave 1 — Sequential (T1 only)
+### Wave 1 — T1 sequential
 
 ```
 @sprint-md/S31-T1-kimi-rollback-vproxy-reinstate.md
 ```
 
-**T1** strips the Kimi K2 / GitHub Models experiment, deletes the GitHub OAuth flow + UpdateBanner, and reinstates VProxy (`localhost:8317`) as the primary agentic provider. Pure subtractive — no new UI, no new routes, no schema change. This is TP's existing brief, renamed to fit the track numbering.
+**T1** — TP's Kimi rollback brief. Strips Kimi K2 / GitHub Models + GitHub OAuth + UpdateBanner; reinstates VProxy (`localhost:8317`) as primary. Everything else depends on this.
 
-### Wave 2 — Parallel (T2, T3, T4 after T1 merges)
+### Wave 2 — parallel (T2–T9)
 
 ```
 @sprint-md/S31-T2-harper-vision-refinement.md
@@ -32,54 +33,89 @@ Four tracks. T1 is sequential (everything else depends on it); T2/T3/T4 run in p
 @sprint-md/S31-T4-consul-control-pixelation-indicator.md
 ```
 
-**T2** fixes Kimi's Harper Vision work (audit verdict: refine, don't throw out): repairs the `VoiceTranscribeResult.confidence` TS build error, wires `generateDescriptionAsync` to a real VProxy vision call, dispatches trigger detections to the boardroom DAG (currently dead data), wires the privacy toggle end-to-end, strips the `backdrop-blur` glass violations from `VisionPanel`, implements a real `/status` endpoint (currently hardcoded), and adds a storage-bucket provisioning step + daily retention Routine.
+```
+@sprint-md/S31-T5-streamdown-and-tradingview-charts.md
+```
 
-**T3** adds an **Ollama-via-Hermes fallback** for every agentic operation. Primary stays VProxy (reinstated by T1); when it errors or times out, every call — Harper chat, Strands agents, brief generator, Harper Vision descriptions, desk agents — silently retries once against Ollama running Qwen's latest free cloud model (**confirm exact model ID with TP**; candidate `qwen3-coder:480b-cloud`). Response shape is identical regardless of which provider answered. `/api/diagnostics` reveals the source.
+```
+@sprint-md/S31-T6-psychassist-gating-and-blindspots.md
+```
 
-**T4** replaces the solid-color Consul Control overlay (Harper's Playwright-style app-control indicator) with animated **Solvys Gold pixel corners** that flicker at varying alpha — transparency + character, no blur, no gradients.
+```
+@sprint-md/S31-T7-harper-advisory-and-calendar-pill.md
+```
 
-### Wave 3 — Unification (orchestrator-run)
+```
+@sprint-md/S31-T8-browser-harness-voice-orb-sidebar-chat.md
+```
 
-- Merge T2/T3/T4 onto `s31-harper-2-1`
-- Resolve any overlap in `/api/diagnostics` between T2 (adds vision-status) and T3 (adds ai-chain) — they touch different keys of the same JSON, should merge cleanly
-- Run validation stack
-- Test end-to-end: kill VProxy → Harper Vision description falls back to Ollama (exercises T2 + T3 together); activate Consul Control → corners animate (T4)
-- Changelog consolidated entry
-- Restart launchd backend
+```
+@sprint-md/S31-T9-predictive-feature-knowledge-graph.md
+```
 
-## Critical File Ownership
+### Wave 3 — unification (orchestrator)
 
-| File                                                          | Owner                                          | Notes                                                         |
-| ------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------- |
-| `backend-hono/src/services/harper-vision/engine.ts`           | T2                                             | fix + trigger dispatch                                        |
-| `backend-hono/src/services/harper-vision/frame-store.ts`      | T2                                             | wire VProxy description                                       |
-| `backend-hono/src/routes/harper-vision/index.ts`              | T2                                             | real /status                                                  |
-| `frontend/components/harper-vision/VisionPanel.tsx`           | T2                                             | glass removal + privacy wire                                  |
-| `electron/services/harper-vision-screen.cjs`                  | T2                                             | privacy gate                                                  |
-| `electron/services/harper-vision-audio.cjs`                   | T2                                             | privacy gate                                                  |
-| `backend-hono/src/services/ai/provider-chain.ts`              | T3                                             | new                                                           |
-| `backend-hono/src/services/ai/ollama-hermes-client.ts`        | T3                                             | new                                                           |
-| `backend-hono/src/services/harper-handler.ts`                 | T3                                             | refactor to chain                                             |
-| `backend-hono/src/services/strands/agents/*.ts`               | T3                                             | refactor to chain                                             |
-| `backend-hono/src/routes/diagnostics*.ts`                     | T2 + T3                                        | additive only — T3 adds `ai`, T2 may add `vision` sibling key |
-| `frontend/components/consul-control/ConsulControlCorners.tsx` | T4                                             | new                                                           |
-| `frontend/App.tsx`                                            | T1 (UpdateBanner removal) + T4 (corners mount) | two separate edits, easy unification                          |
+- Merge T2–T9 onto `s31-harper-2-1`
+- Resolve additive conflicts in `/api/diagnostics` (T2, T3, T7 all append keys; union should merge cleanly)
+- Resolve additive conflicts in `shared/index.ts` (every track appends types)
+- Resolve additive conflicts in `backend-hono/src/routes/index.ts` (every backend track appends mounts)
+- Hand all migrations to TP for `supabase db push`:
+  - `035_harper_vision_storage.sql` (T2, if storage-bucket SQL path was chosen)
+  - `036_blindspots.sql` (T6)
+  - `037_watchouts.sql` (T7)
+  - `038_browser_harness_audit.sql` (T8)
+  - `039_usage_telemetry.sql` (T9)
+- Wire new Routines via Harper Ops (TP action, docs shipped by each track):
+  - `blindspots-nightly` (T6, Mon–Sat 3am ET)
+  - `feature-proposals-weekly` (T9, Sun 6pm ET)
+  - `harper-vision-cleanup` (T2, daily 3am ET)
+- Run validation stack + end-to-end smoke
+- Changelog consolidated entry + per-file header comments
+
+## Track Ownership Matrix
+
+| Track | Scope | Key files |
+|---|---|---|
+| T1 | Kimi rollback, VProxy reinstate | TP's brief |
+| T2 | Harper Vision fixes (TS error, trigger dispatch, privacy wire, LLM descriptions, glass removal) | `harper-vision/**` |
+| T3 | VProxy → Ollama/Hermes fallback chain on every agentic call | `services/ai/provider-chain.ts`, all agentic call sites |
+| T4 | Animated Solvys Gold pixel corners for Consul Control | `components/consul-control/ConsulControlCorners.tsx` |
+| T5 | Streamdown rich chat + TradingView lightweight charts | `components/chat/slots/*`, streamdown install |
+| T6 | PsychAssist gating + psych_blindspots + trading_blindspots + ER monitor + over-trading nudge (ONLY push-nudge) | `services/blindspots/*`, `services/psych/*`, migration 036 |
+| T7 | Advisory: calendar pill, autopilot guardian (non-psych), size suggestion, blindspots UI wiring, watchouts silent log | `components/layout/CalendarCountdownPill.tsx`, `services/autopilot/guardian.ts`, migration 037 |
+| T8 | browser-harness tool for Harper + voice orb toggle + sidebar chat takes over Omi quick-chat | browser_harness tool registration, voice orb, sidebar mount |
+| T9 | Predictive knowledge graph — usage telemetry + weekly feature proposals | `services/knowledge-graph/proposer.ts`, migration 039 |
+
+## Shared-File Coordination
+
+| File | Tracks appending | Merge strategy |
+|---|---|---|
+| `backend-hono/src/routes/index.ts` | T2 (vision), T6 (blindspots, harper-ops), T7 (calendar, advisory, watchouts, autopilot), T8 (usage-events not applicable, but browser-harness admin), T9 (usage-events, feature-proposals, harper-ops) | Each track appends its mounts at the bottom in a labeled block `// [S31-T#] mounts`. Orchestrator de-duplicates and orders logically. |
+| `shared/index.ts` | T6 (`Blindspot`), T7 (`Watchout`), T9 (`UsageEvent`, `FeatureProposal`) | Append-only; orchestrator keeps ordering. |
+| `user_preferences.prefs` JSONB | T6 (`psychAssistEnabled`), T7 (`autopilotGuardian`) | Single type definition updated in `shared/`; no schema collision since it's JSONB. |
+| `/api/diagnostics` | T2 (`vision`), T3 (`ai` chain), T7 (`autopilot`) | Additive keys; orchestrator merges response builder. |
+| `frontend/components/journal/BlindspotsRow.tsx` | S30-T2 creates, S31-T7 wires to live endpoints | T7's edit overlays T2's; clean additive. |
 
 ## Dependency Graph
 
 ```
-T1 (rollback) ──► T2 (vision refinement) ──┐
-                  T3 (ollama fallback)   ──├──► unification ──► tag v5.23.0
-                  T4 (consul corners)    ──┘
+T1 (rollback) ──► T2 (vision refine) ─┐
+                  T3 (ollama chain)   ├─► Wave 3 unification ──► tag v5.23.0
+                  T4 (consul corners) │
+                  T5 (streamdown+tv)  │
+                  T6 (psych+blindspots)│
+                  T7 (advisory+pill)  │
+                  T8 (browser+voice)  │
+                  T9 (knowledge graph)┘
 ```
 
-T2 specifically depends on T1 reinstating VProxy because T2's `generateDescriptionAsync` routes through it. T3 depends on T1 because it wraps VProxy in a provider chain.
+T2 depends on T1 for VProxy. T3 depends on T1 for VProxy. T5 has no runtime dep on others but its `tv-chart` slot pairs well with T7's calendar pill. T6 + T7 share PsychAssist semantics — T6 owns the gating source of truth; T7 reads.
 
-## Wave 3 Unification Checklist (orchestrator)
+## Wave 3 Unification Checklist
 
-1. Merge T2/T3/T4 onto `s31-harper-2-1`.
-2. Confirm `/api/diagnostics` returns both `ai` (from T3) and `vision` status cleanly.
-3. Run validation stack:
+1. Merge all 8 Wave-2 branches onto `s31-harper-2-1`.
+2. Resolve additive conflicts per matrix above.
+3. Run:
    ```bash
    npx tsc --noEmit --project frontend/tsconfig.json
    cd backend-hono && bun run build && cd ..
@@ -87,19 +123,29 @@ T2 specifically depends on T1 reinstating VProxy because T2's `generateDescripti
    launchctl unload ~/Library/LaunchAgents/io.solvys.fintheon-backend.plist
    launchctl load ~/Library/LaunchAgents/io.solvys.fintheon-backend.plist
    ```
-4. End-to-end smoke:
-   - VProxy up → Harper chat works via VProxy; Harper Vision description semantic; trigger dispatch fires
-   - VProxy down → same calls succeed via Ollama; logs tagged `[ai-chain] fallback`
-   - Privacy toggle → capture stops; `harper_vision_frames` row count stops growing
-   - Consul Control activation → gold pixel corners animate; deactivation fades cleanly
-5. Hand the retention-cleanup migration (`035_harper_vision_storage.sql` if added) to TP for `supabase db push`.
-6. Document the two new Routines for TP to wire via Harper Ops:
-   - `harper-vision-cleanup` (daily 3am ET)
-   - (existing T2 `hermes-daily-summary` + `daily-market-summary` from S30)
-7. Changelog consolidated entry + per-file header comments.
+4. End-to-end smoke matrix:
+   - VProxy up + Harper chat → replies via VProxy
+   - VProxy down → replies via Ollama-Qwen, log tagged `[ai-chain] fallback`
+   - Start Harper Vision capture → ask "what do you see?" → semantic response (not just window title)
+   - Toggle Privacy mode → frames stop arriving
+   - Trigger Consul Control → gold pixel corners animate
+   - Emit `catalyst-card` JSON block from Harper → streamdown renders the card
+   - Render `tv-chart` slot → candle chart appears with overlays
+   - PsychAssist OFF → BlindspotsRow shows empty-state CTA; no nightly rows written
+   - PsychAssist ON → manual-trigger nightly → rows appear in both blindspot tables
+   - 30 rapid trades in 5 min (while PsychAssist ON) → single over-trading nudge fires; rate-limit blocks repeat for 60 min
+   - Autopilot guardian → simulate drawdown trigger → autopilot pauses
+   - Calendar pill → set next event 4 min out → pill fades in with "{name} — 4 min"
+   - Voice orb → single click starts Omi session, orb pulses
+   - Sidebar chat open → Omi quick-chat floater hidden
+   - Harper asked "look something up" → `browser_harness` tool fires, audit row written
+   - Emit 50 usage events → run weekly proposer → proposals appear in settings panel (none forced)
+5. Hand migrations to TP; wire Routines.
+6. Changelog entry + per-file headers.
+7. Post-ship: `/install-maintenance` audit.
 
 ## Post-S31
 
 - `main` now has: Performance tab overhaul (S30) + Harper 2.1 refinement (S31)
 - Ready for S32 (third Super Sprint area — pending TP brief)
-- Single `/solvys-deploy` with version bump v5.23.0 at end of Super Sprint
+- Single `/solvys-deploy` with version bump v5.23.0 after S32 lands
