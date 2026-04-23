@@ -9,6 +9,38 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-23T16:20:00",
+    agent: "claude-code",
+    summary:
+      "S30-T2 [v5.22.10W]: Strategium widget swap + Blindspots promotion + Session consolidation. " +
+      "Retired BlindspotsWidget from the Strategium right panel and replaced it with WeeklyPerformanceWidget — " +
+      "five Mon-Fri rows of the user's selected instrument (day label · point delta · % change · chevron) that expand " +
+      "inline to an IVStack + one-line summary + session high/low / top P&L / trade count. Rename bumped the " +
+      "MissionWidgetId registry from 'blindspots' → 'weekly' and v4 → v5 localStorage key. On the Performance tab, " +
+      "promoted Blindspots into a full-width before/after row (BlindspotsRow) with a stub useBlindspots() hook that " +
+      "T3 will wire to a backend source. Collapsed the three session cards + Hermes Summary + Your Notes into a single " +
+      "SessionJournalPanel — infractions counter, Discipline + Emotional Control sliders on the 0.0–10.0 decimal scale " +
+      "(TP-locked), Hermes summary block, notes textarea, explicit Submit → PUT /api/session-journal. Added shared " +
+      "SessionJournal type + SessionJournalService. Deleted HumanPsychTab.tsx (SessionNotesPanel was its only export and " +
+      "all call sites moved). Frontend build passes (3241 modules). Only outstanding tsc error is a pre-existing " +
+      "sidecar-contract ↔ soul-schema AgentId re-export clash in shared/index.ts.",
+    files: [
+      "frontend/components/mission-control/WeeklyPerformanceWidget.tsx",
+      "frontend/components/mission-control/BlindspotsWidget.tsx (deleted)",
+      "frontend/components/mission-control/MissionControlPanel.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/journal/BlindspotsRow.tsx",
+      "frontend/components/journal/SessionJournalPanel.tsx",
+      "frontend/components/journal/PerformanceJournal.tsx",
+      "frontend/components/journal/HumanPsychTab.tsx (deleted)",
+      "frontend/lib/layoutOrderStorage.ts",
+      "frontend/lib/services/journal.ts",
+      "frontend/lib/services/index.ts",
+      "shared/session-journal.ts",
+      "shared/index.ts",
+    ],
+  },
+  {
     date: "2026-04-23T16:00:00",
     agent: "claude-code",
     summary:

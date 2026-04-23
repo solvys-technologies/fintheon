@@ -74,27 +74,27 @@
 
 ## Track Ownership Matrix
 
-| Track | Scope | Key files |
-|---|---|---|
-| T1 | Kimi rollback, VProxy reinstate | TP's brief |
-| T2 | Harper Vision fixes (TS error, trigger dispatch, privacy wire, LLM descriptions, glass removal) | `harper-vision/**` |
-| T3 | VProxy → Ollama/Hermes fallback chain on every agentic call | `services/ai/provider-chain.ts`, all agentic call sites |
-| T4 | Animated Solvys Gold pixel corners for Consul Control | `components/consul-control/ConsulControlCorners.tsx` |
-| T5 | Streamdown rich chat + TradingView lightweight charts | `components/chat/slots/*`, streamdown install |
-| T6 | PsychAssist gating + psych_blindspots + trading_blindspots + ER monitor + over-trading nudge (ONLY push-nudge) | `services/blindspots/*`, `services/psych/*`, migration 036 |
-| T7 | Advisory: calendar pill, autopilot guardian (non-psych), size suggestion, blindspots UI wiring, watchouts silent log | `components/layout/CalendarCountdownPill.tsx`, `services/autopilot/guardian.ts`, migration 037 |
-| T8 | browser-harness tool for Harper + voice orb toggle + sidebar chat takes over Omi quick-chat | browser_harness tool registration, voice orb, sidebar mount |
-| T9 | Predictive knowledge graph — usage telemetry + weekly feature proposals | `services/knowledge-graph/proposer.ts`, migration 039 |
+| Track | Scope                                                                                                                | Key files                                                                                      |
+| ----- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| T1    | Kimi rollback, VProxy reinstate                                                                                      | TP's brief                                                                                     |
+| T2    | Harper Vision fixes (TS error, trigger dispatch, privacy wire, LLM descriptions, glass removal)                      | `harper-vision/**`                                                                             |
+| T3    | VProxy → Ollama/Hermes fallback chain on every agentic call                                                          | `services/ai/provider-chain.ts`, all agentic call sites                                        |
+| T4    | Animated Solvys Gold pixel corners for Consul Control                                                                | `components/consul-control/ConsulControlCorners.tsx`                                           |
+| T5    | Streamdown rich chat + TradingView lightweight charts                                                                | `components/chat/slots/*`, streamdown install                                                  |
+| T6    | PsychAssist gating + psych_blindspots + trading_blindspots + ER monitor + over-trading nudge (ONLY push-nudge)       | `services/blindspots/*`, `services/psych/*`, migration 036                                     |
+| T7    | Advisory: calendar pill, autopilot guardian (non-psych), size suggestion, blindspots UI wiring, watchouts silent log | `components/layout/CalendarCountdownPill.tsx`, `services/autopilot/guardian.ts`, migration 037 |
+| T8    | browser-harness tool for Harper + voice orb toggle + sidebar chat takes over Omi quick-chat                          | browser_harness tool registration, voice orb, sidebar mount                                    |
+| T9    | Predictive knowledge graph — usage telemetry + weekly feature proposals                                              | `services/knowledge-graph/proposer.ts`, migration 039                                          |
 
 ## Shared-File Coordination
 
-| File | Tracks appending | Merge strategy |
-|---|---|---|
-| `backend-hono/src/routes/index.ts` | T2 (vision), T6 (blindspots, harper-ops), T7 (calendar, advisory, watchouts, autopilot), T8 (usage-events not applicable, but browser-harness admin), T9 (usage-events, feature-proposals, harper-ops) | Each track appends its mounts at the bottom in a labeled block `// [S31-T#] mounts`. Orchestrator de-duplicates and orders logically. |
-| `shared/index.ts` | T6 (`Blindspot`), T7 (`Watchout`), T9 (`UsageEvent`, `FeatureProposal`) | Append-only; orchestrator keeps ordering. |
-| `user_preferences.prefs` JSONB | T6 (`psychAssistEnabled`), T7 (`autopilotGuardian`) | Single type definition updated in `shared/`; no schema collision since it's JSONB. |
-| `/api/diagnostics` | T2 (`vision`), T3 (`ai` chain), T7 (`autopilot`) | Additive keys; orchestrator merges response builder. |
-| `frontend/components/journal/BlindspotsRow.tsx` | S30-T2 creates, S31-T7 wires to live endpoints | T7's edit overlays T2's; clean additive. |
+| File                                            | Tracks appending                                                                                                                                                                                       | Merge strategy                                                                                                                        |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `backend-hono/src/routes/index.ts`              | T2 (vision), T6 (blindspots, harper-ops), T7 (calendar, advisory, watchouts, autopilot), T8 (usage-events not applicable, but browser-harness admin), T9 (usage-events, feature-proposals, harper-ops) | Each track appends its mounts at the bottom in a labeled block `// [S31-T#] mounts`. Orchestrator de-duplicates and orders logically. |
+| `shared/index.ts`                               | T6 (`Blindspot`), T7 (`Watchout`), T9 (`UsageEvent`, `FeatureProposal`)                                                                                                                                | Append-only; orchestrator keeps ordering.                                                                                             |
+| `user_preferences.prefs` JSONB                  | T6 (`psychAssistEnabled`), T7 (`autopilotGuardian`)                                                                                                                                                    | Single type definition updated in `shared/`; no schema collision since it's JSONB.                                                    |
+| `/api/diagnostics`                              | T2 (`vision`), T3 (`ai` chain), T7 (`autopilot`)                                                                                                                                                       | Additive keys; orchestrator merges response builder.                                                                                  |
+| `frontend/components/journal/BlindspotsRow.tsx` | S30-T2 creates, S31-T7 wires to live endpoints                                                                                                                                                         | T7's edit overlays T2's; clean additive.                                                                                              |
 
 ## Dependency Graph
 

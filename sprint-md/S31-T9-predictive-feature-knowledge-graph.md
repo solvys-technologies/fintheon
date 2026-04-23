@@ -112,8 +112,22 @@ Scope boundary: this track builds the **observation + storage + read API**. Harp
 
 - [ ] Append to `shared/index.ts`:
   ```ts
-  export interface UsageEvent { surface: string; action: string; targetId?: string; metadata?: Record<string, unknown>; }
-  export interface FeatureProposal { id: string; userId: string; proposedAt: string; anchorSurface: string; title: string; description: string; status: 'proposed' | 'accepted' | 'dismissed' | 'scaffolded'; decidedAt: string | null; }
+  export interface UsageEvent {
+    surface: string;
+    action: string;
+    targetId?: string;
+    metadata?: Record<string, unknown>;
+  }
+  export interface FeatureProposal {
+    id: string;
+    userId: string;
+    proposedAt: string;
+    anchorSurface: string;
+    title: string;
+    description: string;
+    status: "proposed" | "accepted" | "dismissed" | "scaffolded";
+    decidedAt: string | null;
+  }
   ```
 
 ### Changelog + headers
