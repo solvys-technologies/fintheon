@@ -9,6 +9,84 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-23T20:55:00",
+    agent: "claude-code",
+    summary:
+      "S31-T1 [v.04.23.1] Rolled back the March GitHub OAuth / GitHub-Models / update-banner experiment " +
+      "(SHA 98332f5d) and reinstated the local VProxy gateway (localhost:8317 → Claude Opus 4.6) as the " +
+      "primary AI path. Backend: dropped the github-models provider type (types/ai-types.ts) plus the " +
+      "github-deepseek model, githubModelsBaseUrl, github-* aliases, isGitHubModelsModel() helper, and the " +
+      "providers.githubModels block in config/ai-config.ts. Frontend: deleted components/GitHubOAuthCallback.tsx " +
+      "and components/UpdateBanner.tsx, stripped the GitHub OAuth state + popup listener + connect/disconnect/" +
+      "handleCallback handlers from contexts/AuthContext.tsx, and removed the two mounts + imports from App.tsx. " +
+      "Electron: dropped the github.com host allowlist block added for the OAuth popup from main.cjs. Env: " +
+      "scrubbed GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET / GITHUB_REDIRECT_URI from backend-hono/.env, " +
+      "backend-hono/.env.example, backend-hono/.env.bak-20260418-084041, and .cursor/install.sh " +
+      "(which also now seeds AI_PRIMARY_PROVIDER=anthropic-vproxy + USE_VPROXY_ANTHROPIC=true + " +
+      "VPROXY_BASE_URL=http://localhost:8317 for fresh cloud containers). Docs: removed the orphaned " +
+      "Harper-Kimi source pointer from knowledge-base/notion/PIC-NOTION-ENTITY-MAP.md. Grep gate " +
+      "(kimi|moonshot|github-kimi|githubModels|GITHUB_CLIENT|GITHUB_REDIRECT|setRuntimeGitHubToken|" +
+      "GitHubOAuthCallback|UpdateBanner) returns 0 matches outside historical changelog entries. " +
+      "Frontend tsc + vite build clean, backend bun run build clean, launchd backend restarted, " +
+      "/api/diagnostics reports overall:ok, VProxy at :8317 serves claude-opus-4-6, and POST /api/harper/chat " +
+      "streams a valid Opus response. VProxy plumbing (services/vproxy/anthropic-client.ts) and its 2026-04 " +
+      "headers were left untouched per brief.",
+    files: [
+      "backend-hono/src/config/ai-config.ts",
+      "backend-hono/src/types/ai-types.ts",
+      "backend-hono/.env",
+      "backend-hono/.env.example",
+      "backend-hono/.env.bak-20260418-084041",
+      ".cursor/install.sh",
+      "frontend/App.tsx",
+      "frontend/contexts/AuthContext.tsx",
+      "frontend/components/GitHubOAuthCallback.tsx",
+      "frontend/components/UpdateBanner.tsx",
+      "electron/main.cjs",
+      "knowledge-base/notion/PIC-NOTION-ENTITY-MAP.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-23T20:50:00",
+    agent: "claude-code",
+    summary:
+      "S30-T3 [v5.22.10W]: Session/journal backend + futures-daily cache + daily market summary + Hermes routines. " +
+      "Added three migrations (031_session_journal, 032_futures_daily, 033_daily_market_summary) using the 3-digit " +
+      "backend-hono/migrations scheme — TP to push via supabase db push. New services: session-journal (get/getRange/upsert/ " +
+      "updateHermesSummary/listUsers), market-data/futures-daily-sync (Yahoo =F daily bars, 365d backfill, contract-invariant " +
+      "for ES/NQ/MES/MNQ/CL/GC/6E), market-data/daily-market-summary (≤160-char summary from top IV-weighted RiskFlow items " +
+      "via generateTextViaClaude with fallback). New routes: /api/session-journal (authed CRUD), /api/market/futures-daily " +
+      "(cached reads + cold-cache 202 with fire-and-forget sync), /api/market/daily-summary, /api/harper-ops/hermes-daily-summary " +
+      "+ /api/harper-ops/daily-market-summary (x-routine-secret gated, 401 when missing or wrong). Shared types added: " +
+      "SessionJournal/SessionJournalDraft + FuturesDailyBar/FuturesDailyStats/FuturesDailyResponse/DailyMarketSummary. " +
+      "Routine docs under docs/routines/. Backend bun run build passes. Applied a 2-line type shim (as never) to T4's " +
+      "projectx/account.ts + trades/ingest-screenshot.ts — pre-existing TS2769 blocking the build; no runtime change.",
+    files: [
+      "backend-hono/migrations/031_session_journal.sql",
+      "backend-hono/migrations/032_futures_daily.sql",
+      "backend-hono/migrations/033_daily_market_summary.sql",
+      "backend-hono/src/services/session-journal.ts",
+      "backend-hono/src/services/market-data/futures-daily-sync.ts",
+      "backend-hono/src/services/market-data/daily-market-summary.ts",
+      "backend-hono/src/routes/session-journal.ts",
+      "backend-hono/src/routes/market/futures-daily.ts",
+      "backend-hono/src/routes/market/daily-summary.ts",
+      "backend-hono/src/routes/market/index.ts",
+      "backend-hono/src/routes/harper-ops/hermes-daily-summary.ts",
+      "backend-hono/src/routes/harper-ops/daily-market-summary.ts",
+      "backend-hono/src/routes/harper-ops/index.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/routes/projectx/account.ts",
+      "backend-hono/src/routes/trades/ingest-screenshot.ts",
+      "shared/session-journal.ts",
+      "shared/futures-daily.ts",
+      "shared/index.ts",
+      "docs/routines/hermes-daily-summary.md",
+      "docs/routines/daily-market-summary.md",
+    ],
+  },
+  {
     date: "2026-04-23T19:45:00",
     agent: "claude-code",
     summary:

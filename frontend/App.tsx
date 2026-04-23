@@ -1,3 +1,4 @@
+// [claude-code 2026-04-23] Rollback: remove GitHub OAuth callback + update banner mounts
 // [claude-code 2026-03-24] Auth gate with init screen, cloud migration, and soft fade-in
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -22,8 +23,6 @@ import SplashScreen from "./components/SplashScreen";
 import { NotificationContainer } from "./components/NotificationToast";
 import { ToastContainer } from "./components/ui/Toast";
 import { PreMarketReminder } from "./components/PreMarketReminder";
-import { GitHubOAuthCallback } from "./components/GitHubOAuthCallback";
-import { UpdateBanner } from "./components/UpdateBanner";
 import { ApiErrorToastBridge } from "./components/ApiErrorToastBridge";
 import { VersionChecker } from "./components/VersionChecker";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -202,8 +201,6 @@ function AuthGate() {
                 `}</style>
                               <ApiErrorToastBridge />
                               <VersionChecker />
-                              <UpdateBanner />
-                              <GitHubOAuthCallback />
                               <MainLayout />
                               <NotificationContainer />
                               <ToastContainer />

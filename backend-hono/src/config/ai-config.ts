@@ -1,3 +1,4 @@
+// [claude-code 2026-04-23] Rollback: reinstate VProxy as primary; drop GitHub-backed inference provider
 // [claude-code 2026-03-29] Add Grok 4.20 via OpenRouter as scoring fallback (news, sentiment, econ, earnings)
 // [claude-code 2026-03-14] Default inference: OpenRouter (Nous subscription) + Claude Opus 4.6; Groq removed as primary
 import priceSystemPrompt from "../prompts/price-system-prompt.js";
@@ -29,8 +30,6 @@ export type AiModelKey =
   | "hermes-realtime" // Real-time
   // Claude Code SDK Bridge (free via Max subscription)
   | "claude-local" // Claude Opus via local CLI bridge
-  // GitHub Models (free, OAuth-powered)
-  | "github-deepseek" // DeepSeek R1 via GitHub Models
   // Nous Research direct inference (fallback when OpenRouter DNS fails)
   | "nous-direct"; // Hermes 4 405B via inference-api.nousresearch.com
 
@@ -75,9 +74,6 @@ export interface AiProviderSettings {
     baseUrl: string;
     appName: string;
   };
-  githubModels: {
-    baseUrl: string;
-  };
 }
 
 export interface AiConversationConfig {
@@ -105,7 +101,6 @@ const vercelGatewayBaseUrl =
   "https://ai-gateway.vercel.sh/v1/chat/completions";
 
 const openRouterBaseUrl = "https://openrouter.ai/api/v1";
-const githubModelsBaseUrl = "https://models.inference.ai.azure.com";
 
 // OpenRouter (Nous subscription) — primary inference; Hermes base URL optional for legacy
 const normalizeHermesBaseUrl = (value: string): string => {
@@ -162,11 +157,6 @@ const modelAliases: Record<string, AiModelKey> = {
   "claude-sdk": "claude-local",
   "claude-max": "claude-local",
   "opus-local": "claude-local",
-  // GitHub Models (GPT-4o fallback)
-  "github-deepseek": "github-deepseek",
-  "github-gpt4o": "github-deepseek",
-  "github-models": "github-deepseek",
-  "gpt4o-free": "github-deepseek",
   // Nous Direct (fallback)
   "nous-direct": "nous-direct",
   nous: "nous-direct",
@@ -366,24 +356,6 @@ export const defaultAiConfig: AiConfig = {
       supportsVision: true,
     },
 
-    // GitHub Models (free via GitHub OAuth) — fallback model
-    "github-deepseek": {
-      id: getEnv("GITHUB_MODELS_MODEL_ID") ?? "gpt-4o",
-      displayName: "GPT-4o (GitHub Models)",
-      provider: "openai-compatible",
-      providerType: "github-models",
-      apiKeyEnv: "GITHUB_TOKEN",
-      baseUrl: githubModelsBaseUrl,
-      temperature: 0.4,
-      maxTokens: 4096,
-      timeoutMs: 30_000,
-      costPer1kInputUsd: 0,
-      costPer1kOutputUsd: 0,
-      contextWindow: 128_000,
-      supportsStreaming: true,
-      supportsVision: true,
-    },
-
     // Nous Research direct inference — fallback when OpenRouter DNS is unreachable
     "nous-direct": {
       id: "nousresearch/hermes-4-405b",
@@ -463,8 +435,6 @@ export const defaultAiConfig: AiConfig = {
       "hermes-realtime": "openrouter-grok",
       // Claude Local SDK fallback to OpenRouter Opus
       "claude-local": "openrouter-opus",
-      // GitHub Models fallback to OpenRouter
-      "github-deepseek": "openrouter-sonnet",
       // Nous Direct is terminal — no further fallback
       "nous-direct": "openrouter-sonnet",
     },
@@ -487,9 +457,6 @@ export const defaultAiConfig: AiConfig = {
     hermes: {
       baseUrl: getHermesOpenAIBaseUrl(),
       appName: getEnv("HERMES_APP_NAME") ?? "Fintheon-PIC-Hermes",
-    },
-    githubModels: {
-      baseUrl: githubModelsBaseUrl,
     },
   },
 
@@ -526,11 +493,6 @@ export const isOpenRouterModel = (modelKey: AiModelKey): boolean => {
 // Hermes agent keys (routed to OpenRouter Opus 4.6)
 export const isHermesModel = (modelKey: AiModelKey): boolean => {
   return modelKey.startsWith("hermes-");
-};
-
-// Helper to check if a model uses GitHub Models
-export const isGitHubModelsModel = (modelKey: AiModelKey): boolean => {
-  return modelKey.startsWith("github-");
 };
 
 // Helper to check if a model uses Claude Local SDK bridge

@@ -1,8 +1,9 @@
+// [claude-code 2026-04-23] Rollback: strip GitHub OAuth token state and handlers
 // [claude-code 2026-04-18] Notify the local backend of the signed-in user's sub so its relay
 //   connector can register the outbound WS under the correct user_id. Without this the local
 //   backend has no way to know which user it serves, Fly reports connected:false on
 //   /api/relay/health, and mobile's ChatInput stays locked in "OFFLINE".
-// [claude-code 2026-03-24] Supabase Google OAuth + Electron deep link + GitHub Models OAuth
+// [claude-code 2026-03-24] Supabase Google OAuth + Electron deep link
 import {
   createContext,
   useContext,
@@ -21,13 +22,6 @@ import type { Session, User } from "@supabase/supabase-js";
 
 export type UserTier = "free" | "fintheon" | "fintheon_plus" | "fintheon_pro";
 
-interface GitHubUser {
-  id: number;
-  login: string;
-  name: string | null;
-  avatar: string;
-}
-
 interface AuthContextType {
   tier: UserTier;
   setTier: (tier: UserTier) => void;
@@ -39,15 +33,6 @@ interface AuthContextType {
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
   getAccessToken: () => Promise<string | null>;
-  // GitHub OAuth (for GitHub Models — separate from Supabase auth)
-  gitHub: {
-    isConnected: boolean;
-    user: GitHubUser | null;
-    token: string | null;
-    connect: () => void;
-    disconnect: () => void;
-    handleCallback: (code: string, state: string) => Promise<void>;
-  };
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -60,40 +45,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [tier, setTier] = useState<UserTier>("fintheon_pro");
-
-  // GitHub OAuth state (separate from Supabase — used for GitHub Models access)
-  const [ghToken, setGhToken] = useState<string | null>(() =>
-    localStorage.getItem("github_token"),
-  );
-  const [ghUser, setGhUser] = useState<GitHubUser | null>(() => {
-    const stored = localStorage.getItem("github_user");
-    return stored ? JSON.parse(stored) : null;
-  });
-
-  // Persist GitHub state
-  useEffect(() => {
-    if (ghToken) localStorage.setItem("github_token", ghToken);
-    else localStorage.removeItem("github_token");
-  }, [ghToken]);
-
-  useEffect(() => {
-    if (ghUser) localStorage.setItem("github_user", JSON.stringify(ghUser));
-    else localStorage.removeItem("github_user");
-  }, [ghUser]);
-
-  // Listen for GitHub OAuth popup messages
-  useEffect(() => {
-    const handler = (e: MessageEvent) => {
-      if (e.data?.type === "github-oauth-success") {
-        const token = localStorage.getItem("github_token");
-        const userStr = localStorage.getItem("github_user");
-        if (token) setGhToken(token);
-        if (userStr) setGhUser(JSON.parse(userStr));
-      }
-    };
-    window.addEventListener("message", handler);
-    return () => window.removeEventListener("message", handler);
-  }, []);
 
   // --- Supabase Auth ---
   useEffect(() => {
@@ -353,42 +304,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return s?.access_token ?? null;
   }, []);
 
-  // GitHub OAuth handlers
-  const connectGitHub = useCallback(() => {
-    const width = 500;
-    const height = 700;
-    const left = window.screenX + (window.innerWidth - width) / 2;
-    const top = window.screenY + (window.innerHeight - height) / 2;
-    window.open(
-      `${API_BASE}/api/auth/github`,
-      "github-oauth",
-      `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`,
-    );
-  }, []);
-
-  const disconnectGitHub = useCallback(() => {
-    setGhToken(null);
-    setGhUser(null);
-  }, []);
-
-  const handleGitHubCallback = useCallback(
-    async (code: string, state: string) => {
-      const res = await fetch(`${API_BASE}/api/auth/github/callback`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, state }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "GitHub authentication failed");
-      }
-      const data = (await res.json()) as { token: string; user: GitHubUser };
-      setGhToken(data.token);
-      setGhUser(data.user);
-    },
-    [],
-  );
-
   const isAuthenticated = session !== null;
   const userId = user?.id ?? "";
 
@@ -405,14 +320,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn,
         signOut,
         getAccessToken,
-        gitHub: {
-          isConnected: Boolean(ghToken),
-          user: ghUser,
-          token: ghToken,
-          connect: connectGitHub,
-          disconnect: disconnectGitHub,
-          handleCallback: handleGitHubCallback,
-        },
       }}
     >
       {children}

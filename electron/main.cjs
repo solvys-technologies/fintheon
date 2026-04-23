@@ -1,3 +1,4 @@
+// [claude-code 2026-04-23] Rollback: drop github.com OAuth popup allowlist (provider retired)
 // [claude-code 2026-04-16] Lifecycle v2: token refresh on open, smart kill on close, idle shutdown for routine-started backends
 // [claude-code 2026-02-26] Ensure OAuth popups work for embedded webviews.
 // [claude-code 2026-03-11] Auto-start backend on app init.
@@ -384,10 +385,6 @@ const shouldAllowInAppPopup = (urlString) => {
     // TradeSea iframe login
     if (host === "app.tradesea.ai") return true;
     if (host === "tradesea.ai") return true;
-
-    // GitHub OAuth (GitHub Models — Kimi K2)
-    if (host === "github.com") return true;
-    if (host.endsWith(".github.com")) return true;
 
     // Discord (Boardroom)
     if (host === "discord.com") return true;
