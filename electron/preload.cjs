@@ -47,6 +47,12 @@ ipcRenderer.on("update-downloaded", () => {
 });
 
 contextBridge.exposeInMainWorld("electron", {
+  // [claude-code 2026-04-23] Platform info for renderer chrome branching + remote-backend detection
+  platform: PLATFORM,
+  apiBase: API_BASE,
+  isWindows: PLATFORM === "win32",
+  isMac: PLATFORM === "darwin",
+
   toggleMiniWidget: async () => {
     try {
       await ipcRenderer.invoke("toggle-mini-widget");
@@ -118,3 +124,8 @@ contextBridge.exposeInMainWorld("systemPermissions", {
   query: (name) => ipcRenderer.invoke("system-permissions:query", name),
   request: (name) => ipcRenderer.invoke("system-permissions:request", name),
 });
+
+// [claude-code 2026-04-23] Runtime API-base global — matches AutopilotDashboard's
+// existing __FINTHEON_API_BASE__ convention. Build-time VITE_API_URL is authoritative;
+// this is a belt-and-suspenders fallback for any code that reads at runtime.
+contextBridge.exposeInMainWorld("__FINTHEON_API_BASE__", API_BASE);

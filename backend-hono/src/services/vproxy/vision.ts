@@ -1,13 +1,17 @@
+// [claude-code 2026-04-23] S32-T3 Harper Vision — route description through VProxy → Ollama chain
 // [claude-code 2026-04-23] S32-T2 Harper Vision — Claude Opus 4.6 vision call via VProxy
 /**
  * Vision describe helper. Sends a PNG frame to Claude Opus 4.6 via VProxy
- * and returns a terse trading-desk scene description. Errors are swallowed
- * (caller treats null as "no description") so this is safe for fire-and-forget.
+ * and returns a terse trading-desk scene description. When VProxy is
+ * unavailable, chain falls through to the Ollama-Qwen text fallback — which
+ * cannot see images — so the helper returns null. Caller handles null as
+ * "no description" and a routine can backfill later.
  */
 import { generateText } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { getVProxyHealth } from "./anthropic-client.js";
 import { getNextBaseUrl } from "../strands/provider.js";
+import { isOllamaFallbackEnabled } from "../ai/ollama-hermes-client.js";
 import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger("VProxyVision");

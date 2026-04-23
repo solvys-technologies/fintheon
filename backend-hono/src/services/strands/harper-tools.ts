@@ -318,5 +318,66 @@ export function createHarperTools(
         return JSON.stringify(FINTHEON_PATHS, null, 2);
       },
     }),
+
+    // [S32-T8] browser_harness — Harper-only headless browser control. Open,
+    // navigate, and observe web pages for web search, fact checks,
+    // documentation lookup, UI/UX testing, and RiskFlow feed debugging.
+    tool({
+      name: "browser_harness",
+      description:
+        "Open, navigate, and observe web pages. Use for web search, fact checks, documentation lookup, UI/UX testing, and RiskFlow feed debugging. Actions: search(query), open(url), read(selector?), click(selector), fill(selector, text), screenshot(), close(). Rate-limited to 20 actions/minute per user; every call is audited.",
+      inputSchema: z.object({
+        action: z
+          .enum([
+            "search",
+            "open",
+            "read",
+            "click",
+            "fill",
+            "screenshot",
+            "close",
+          ])
+          .describe("The harness action to invoke"),
+        query: z.string().optional().describe("Search query (action='search')"),
+        url: z
+          .string()
+          .optional()
+          .describe("URL to navigate to (action='open')"),
+        selector: z
+          .string()
+          .optional()
+          .describe(
+            "CSS selector for the target element (read/click/fill — optional for read, defaults to body)",
+          ),
+        text: z
+          .string()
+          .optional()
+          .describe("Value to type into the selector (action='fill')"),
+      }),
+      callback: async (input: {
+        action:
+          | "search"
+          | "open"
+          | "read"
+          | "click"
+          | "fill"
+          | "screenshot"
+          | "close";
+        query?: string;
+        url?: string;
+        selector?: string;
+        text?: string;
+      }) => {
+        log.info("Harper tool: browser_harness", {
+          action: input.action,
+          url: input.url?.slice(0, 120),
+          query: input.query?.slice(0, 120),
+          selector: input.selector?.slice(0, 120),
+        });
+        const user = approvalOpts?.userId || "anonymous";
+        const result = await browserHarness(user, input);
+        return ensureNonEmpty(JSON.stringify(result));
+      },
+    }),
   ];
 }

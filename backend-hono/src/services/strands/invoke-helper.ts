@@ -58,6 +58,21 @@ export async function invokeAgent(
         }
       }
 
+      // Quick health check for ollama-qwen — skip if disabled or unreachable
+      if (provider === "ollama-qwen") {
+        if (!isOllamaFallbackEnabled()) {
+          log.info("Ollama fallback disabled, skipping");
+          continue;
+        }
+        const health = await getOllamaHealth();
+        if (!health.available) {
+          log.info("Ollama-Qwen unavailable, skipping", {
+            error: health.error,
+          });
+          continue;
+        }
+      }
+
       const result = await invokeWithProvider(options, provider);
       return result;
     } catch (err) {
