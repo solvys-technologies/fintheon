@@ -1,3 +1,4 @@
+// [claude-code 2026-04-23] S32-T4 Consul Control pixelation corners mounted above modals.
 // [claude-code 2026-03-24] Auth gate with init screen, cloud migration, and soft fade-in
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -113,6 +114,12 @@ function isColdStart(): boolean {
   }
 }
 
+/** Pixel-flicker corner indicator — active while Harper is holding the wheel. */
+function ConsulControlLayer() {
+  const active = useConsulControlStatus();
+  return <ConsulControlCorners active={active} />;
+}
+
 /** Auth-gated app shell — AuthShell → SplashScreen overlay → MainLayout */
 function AuthGate() {
   const { isAuthenticated, isLoading, signIn } = useAuth();
@@ -207,6 +214,7 @@ function AuthGate() {
                               <UpdateBanner />
                               <GitHubOAuthCallback />
                               <MainLayout />
+                              <ConsulControlLayer />
                               <NotificationContainer />
                               <ToastContainer />
                               <PreMarketReminder />

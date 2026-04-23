@@ -1,3 +1,4 @@
+// [claude-code 2026-04-23] S32-T3 Ollama fallback chain — bridge streams via chain, tools only on VProxy path
 // [claude-code 2026-04-04] Switch VProxy from textStream→fullStream to capture text across multi-step tool calls
 // [claude-code 2026-03-10] Claude SDK Bridge — relays Fintheon chat to Claude Code CLI stream-json
 /**

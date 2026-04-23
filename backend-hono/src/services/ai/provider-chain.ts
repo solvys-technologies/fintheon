@@ -208,9 +208,8 @@ export async function* streamViaChain(
     if (vproxyHealth.available) {
       try {
         // Import lazily to avoid circular deps at module-load time.
-        const { streamTextViaVProxy } = await import(
-          "../vproxy/anthropic-client.js"
-        );
+        const { streamTextViaVProxy } =
+          await import("../vproxy/anthropic-client.js");
         const stream = streamTextViaVProxy({
           prompt: request.prompt,
           systemPrompt: request.systemPrompt,
