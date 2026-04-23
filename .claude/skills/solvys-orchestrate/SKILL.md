@@ -160,26 +160,28 @@ Save each brief to `sprint-md/S{SPRINT}-T{N}-{slug}.md` at the CURRENT workspace
 
 **Sprint numbering:** Check existing files in `sprint-md/` AND `sprint-changelog/` (and any legacy `docs/sprint-briefs/`) for the highest S{N}. If the latest shipped is S26, the new sprint is S27. Always confirm with the user if unsure.
 
-## Phase 4 -- Execution Sequence
+## Phase 4 -- Execution Sequence (EXIT PLAN MODE HERE)
 
-Output the orchestration plan as a numbered wave sequence with @-mentions to the brief files. Save this as `docs/sprint-briefs/S{SPRINT}-ORCHESTRATION.md`.
+Once all track briefs are written and the orchestration doc is drafted, call `ExitPlanMode`. This is the only phase that exits plan mode -- everything upstream (discovery, track definition, brief writing) stays inside the plan so the user can course-correct without losing context.
+
+Output the orchestration plan as a numbered wave sequence with @-mentions to the brief files. Save this as `sprint-md/S{SPRINT}-ORCHESTRATION.md` (NOT `docs/sprint-briefs/` -- that path is legacy).
 
 **CRITICAL: The final output to the user must be ONLY the @ path mentions and the sequence. Do NOT dump brief content inline.** The user hands these @ paths directly to parallel Claude Code instances. Each @ path gets its OWN fenced code block so the user can copy-paste them individually. Follow with a short non-technical debrief explaining what each wave accomplishes. Example output:
 
 ### Wave 1 (parallel)
 
 ```
-@docs/sprint-briefs/S19-T1-{slug}.md
+@sprint-md/S27-T1-{slug}.md
 ```
 
 ```
-@docs/sprint-briefs/S19-T2-{slug}.md
+@sprint-md/S27-T2-{slug}.md
 ```
 
 ### Wave 2 (after Wave 1)
 
 ```
-@docs/sprint-briefs/S19-T3-unify.md
+@sprint-md/S27-T3-unify.md
 ```
 
 **Wave 1** does X and Y in parallel.
@@ -196,10 +198,15 @@ State which approach you chose and why.
 
 ## Rules
 
-- Never skip Phase 1. Incomplete discovery leads to conflicting tracks.
+- **Always auto-enter plan mode** (`EnterPlanMode`) as the first tool call of the skill. No exceptions.
+- **Always use `AskUserQuestion` for discovery**, never free-text Q&A. Batch 2-4 questions per call.
+- **R1 and R2 are mandatory.** Fire them even if the user's opening prompt seems self-explanatory. R3 only fires when real gaps remain.
+- **Write briefs automatically** after Phase 2, before `ExitPlanMode`. The user should not need to say "write the briefs".
+- **Only call `ExitPlanMode` in Phase 4**, once every brief + the orchestration doc exist on disk.
 - Never put more than 4 tracks in a single wave.
 - Always include a unification step, even for 2-track sprints.
-- If the user adds scope mid-planning, re-evaluate all track boundaries before proceeding.
+- If the user adds scope mid-planning, re-evaluate all track boundaries and (if needed) re-fire the affected `AskUserQuestion` round.
 - Check `src/lib/changelog.ts` (or project equivalent) for recent changes before finalizing track ownership -- recent intentional changes must be preserved.
 - Every track's validation commands must include `rm -rf dist` before build.
 - Never include `npx vite` or dev server commands in track briefs.
+- **Design tracks obey `/solvys-feels`**: no gradients, no emojis, no Kanban borders, no AI sparkles. State this banned-ornaments list inside any brief that includes UI work.

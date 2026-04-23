@@ -7,6 +7,9 @@ description: Visual architecture for Solvys applications. Industrial-luxe monoch
 
 You are a design systems engineer. Every UI decision you make must pass through these filters. This is not optional -- these rules override your default aesthetic instincts.
 
+> **AUTO-ENFORCED BANS (applies to every surface this skill touches).**
+> No gradients. No emojis (colored OR monochrome Unicode). No Kanban-style side-stripe borders. No AI sparkles / shimmer. These four are non-negotiable -- if any appear in code generated under this skill, that code is wrong. When another skill (including `/solvys-orchestrate` track briefs) invokes `/solvys-feels`, it inherits these bans verbatim. Do not restate them as "preferences" or "usually avoid" -- they are bans.
+
 ## THE FOUR BANNED ORNAMENTS (zero tolerance)
 
 TP called these out by name. They are never shipped, not anywhere in the product, not in UI chrome, not in prose, not in push copy, not in marketing, not in error messages:
@@ -241,6 +244,54 @@ Before finalizing any UI work, ask yourself:
 > "If someone saw this interface and was told 'AI made this,' would they believe it immediately?"
 
 If yes, that is the problem. Go back and subtract. Real design has opinion and restraint. AI slop has everything turned up to 7/10 across the board.
+
+## Design Research -- Pulling "Low-Key Luxe" References
+
+When you need external inspiration (a new component, a fresh take on an existing surface, proof that a pattern reads as industrial-luxe rather than AI slop), use the **`browser-harness`** operator that already powers the newsfeed scraping. It lives at `backend-hono/src/services/browser/` and exposes `browseTask({ url, objective, extract_schema })` through `backend-hono/src/services/browser/operator.ts`. Same allowlist, same quota budget, same Supabase action cache.
+
+**Preferred sources (industrial-luxe, not flashy):**
+
+- `https://x.com/search?q=%22design%20system%22%20luxe%20-gradient%20-emoji&f=live` -- live X/Twitter search filtered for low-key design-system work
+- `https://x.com/search?q=%22dark%20mode%22%20monochrome%20industrial&f=live` -- monochrome/industrial dark UI references
+- Specific accounts worth scraping case-by-case: Linear team builds, Superhuman components, Arc Browser, Railway status pages, Vercel docs
+
+**How to invoke (example skeleton for the executing Claude):**
+
+```ts
+import { browseTask } from "backend-hono/src/services/browser/operator.js";
+import { z } from "zod";
+
+const refs = await browseTask({
+  url: "https://x.com/search?q=%22design%20system%22%20luxe%20-gradient%20-emoji&f=live",
+  objective:
+    "Collect post URLs + one-line summary of posts showing monochrome/industrial UI with a single warm accent. Ignore anything with gradients, emojis, or sparkle effects.",
+  extract_schema: z.array(
+    z.object({
+      post_url: z.string().url(),
+      summary: z.string(),
+      signals: z
+        .enum(["monochrome", "warm-accent", "flat", "typographic"])
+        .array(),
+    }),
+  ),
+  budget_usd: 0.05,
+});
+```
+
+**Allowlist reality-check:** before firing, open `backend-hono/src/services/browser/allowlist.ts` and confirm `x.com` is permitted. If not, do NOT bypass -- ask the user to extend the allowlist via the standard path (the allowlist is how quotas and compliance stay honest).
+
+**What to DO with the references:**
+
+1. Filter every returned reference against the four banned ornaments above. Anything with a gradient, emoji, Kanban stripe, or AI sparkle is discarded silently.
+2. Extract only the structural idea: layout grid, typographic hierarchy, accent placement, spacing rhythm. Do not copy color, iconography, or branding.
+3. Re-render the idea in Solvys Gold + Inter + flat surfaces. If the idea cannot survive that re-render, the idea wasn't low-key -- drop it.
+
+**What NOT to DO:**
+
+- Do not screenshot-dump references into prompts for UI generation. `browseTask` returns text extracts for a reason -- the visual is the screenshot cache, the decision input is the text summary.
+- Do not scrape Figma, Dribbble, or Behance through `browser-harness`. Figma has its own MCP (`claude_ai_Figma`), and the other two are full of the exact AI slop we are filtering against.
+- Do not exfiltrate or cache full post bodies from private/locked accounts.
+- Do not invoke `browser-harness` for standard theme tweaks where the answer is already in `reference/solvys-themes.md`. External research is reserved for genuinely novel surfaces.
 
 ## Reference Files
 

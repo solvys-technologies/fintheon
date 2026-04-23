@@ -1,4 +1,5 @@
 // [claude-code 2026-04-18] v5.22 shared contract — single source of truth for fuse severity/priority colors.
+// [claude-code 2026-04-23] S30-T1 — added optional bullishColor/bearishColor for trade heatmaps.
 // Both frontend and mobile must import from this module (or its mobile mirror) to render any fuse bar.
 // TP requirement: all fuses across the app respect severity + priority color linking from the same palette.
 
@@ -16,7 +17,14 @@ export interface FusePalette {
   severity: Record<FuseSeverity, string>;
   priority: Record<FusePriority, string>;
   thresholds: FuseThresholds;
+  bullishColor?: string;
+  bearishColor?: string;
 }
+
+export const DEFAULT_TRADE_COLORS = {
+  bullishColor: "#c79f4a",
+  bearishColor: "#b4443a",
+} as const;
 
 export const DEFAULT_FUSE_PALETTE: FusePalette = {
   severity: {
@@ -33,6 +41,8 @@ export const DEFAULT_FUSE_PALETTE: FusePalette = {
     p3: "var(--fintheon-low, #b8b09c)",
   },
   thresholds: { critical: 8, high: 6, medium: 4, low: 2 },
+  bullishColor: DEFAULT_TRADE_COLORS.bullishColor,
+  bearishColor: DEFAULT_TRADE_COLORS.bearishColor,
 };
 
 export function severityFromScore(
