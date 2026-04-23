@@ -5,7 +5,10 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import type { HarperVisionFrameIngest, HarperVisionFrameRecord } from "../../types/harper-vision.js";
+import type {
+  HarperVisionFrameIngest,
+  HarperVisionFrameRecord,
+} from "../../types/harper-vision.js";
 
 const supabaseUrl = process.env.SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";

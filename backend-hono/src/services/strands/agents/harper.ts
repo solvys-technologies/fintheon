@@ -159,7 +159,8 @@ export async function streamHarperChat(
   // [claude-code 2026-04-23] Harper Vision — inject recent screen + audio context
   if (options.userId) {
     try {
-      const { buildVisionContext } = await import("../../harper-vision/engine.js");
+      const { buildVisionContext } =
+        await import("../../harper-vision/engine.js");
       const visionContext = await buildVisionContext(options.userId, {
         lookbackSeconds: 120,
       });

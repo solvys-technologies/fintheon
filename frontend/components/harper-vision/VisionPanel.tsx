@@ -87,10 +87,7 @@ export const VisionPanel: React.FC<VisionPanelProps> = ({ onClose }) => {
                     className="w-1.5 h-1.5 rounded-full animate-pulse"
                     style={{ background: "#c79f4a" }}
                   />
-                  <span
-                    className="text-xs"
-                    style={{ color: "#c79f4a" }}
-                  >
+                  <span className="text-xs" style={{ color: "#c79f4a" }}>
                     ACTIVE
                   </span>
                 </>
@@ -169,9 +166,7 @@ export const VisionPanel: React.FC<VisionPanelProps> = ({ onClose }) => {
             disabled={isLoading}
             className="flex items-center justify-center gap-2 px-4 py-2.5 rounded text-xs font-medium tracking-wide uppercase transition-all duration-200"
             style={{
-              background: isCapturing
-                ? "rgba(199, 159, 74, 0.12)"
-                : "#c79f4a",
+              background: isCapturing ? "rgba(199, 159, 74, 0.12)" : "#c79f4a",
               color: isCapturing ? "#c79f4a" : "#050402",
               border: isCapturing
                 ? "1px solid rgba(199, 159, 74, 0.20)"
@@ -208,12 +203,8 @@ export const VisionPanel: React.FC<VisionPanelProps> = ({ onClose }) => {
           onClick={() => setPrivacyMode(!privacyMode)}
           className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded text-xs tracking-wide uppercase transition-all duration-200 mb-6"
           style={{
-            background: privacyMode
-              ? "rgba(218, 0, 0, 0.08)"
-              : "transparent",
-            color: privacyMode
-              ? "#da0000"
-              : "rgba(240, 234, 214, 0.40)",
+            background: privacyMode ? "rgba(218, 0, 0, 0.08)" : "transparent",
+            color: privacyMode ? "#da0000" : "rgba(240, 234, 214, 0.40)",
             border: privacyMode
               ? "1px solid rgba(218, 0, 0, 0.15)"
               : "1px solid rgba(199, 159, 74, 0.08)",
@@ -257,7 +248,8 @@ export const VisionPanel: React.FC<VisionPanelProps> = ({ onClose }) => {
           className="text-center text-xs"
           style={{ color: "rgba(240, 234, 214, 0.25)" }}
         >
-          Screen data is stored for 24 hours and used to enrich Harper&apos;s context.
+          Screen data is stored for 24 hours and used to enrich Harper&apos;s
+          context.
         </p>
       </div>
     </div>

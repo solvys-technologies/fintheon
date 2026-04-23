@@ -34,14 +34,16 @@ export const VisionStatus: React.FC = () => {
         disabled={isLoading}
         className="flex items-center gap-2 px-3 py-1.5 rounded-md transition-all duration-200"
         style={{
-          background: isCapturing
-            ? "rgba(199, 159, 74, 0.10)"
-            : "transparent",
+          background: isCapturing ? "rgba(199, 159, 74, 0.10)" : "transparent",
           border: isCapturing
             ? "1px solid rgba(199, 159, 74, 0.30)"
             : "1px solid rgba(199, 159, 74, 0.10)",
         }}
-        title={isCapturing ? "Harper is watching — click to open panel" : "Enable Harper Vision"}
+        title={
+          isCapturing
+            ? "Harper is watching — click to open panel"
+            : "Enable Harper Vision"
+        }
       >
         {isLoading ? (
           <Loader2

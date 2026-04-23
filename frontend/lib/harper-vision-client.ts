@@ -20,17 +20,26 @@ export async function getVisionStatus() {
   return res.json();
 }
 
-export async function getRecentFrames(options?: { sessionId?: string; limit?: number }) {
+export async function getRecentFrames(options?: {
+  sessionId?: string;
+  limit?: number;
+}) {
   const params = new URLSearchParams();
   if (options?.sessionId) params.set("sessionId", options.sessionId);
   if (options?.limit) params.set("limit", String(options.limit));
-  const res = await fetch(`${API_BASE_URL}/api/harper-vision/frames?${params}`, {
-    headers: await authHeaders(),
-  });
+  const res = await fetch(
+    `${API_BASE_URL}/api/harper-vision/frames?${params}`,
+    {
+      headers: await authHeaders(),
+    },
+  );
   return res.json();
 }
 
-export async function getScene(options?: { sessionId?: string; lookback?: number }) {
+export async function getScene(options?: {
+  sessionId?: string;
+  lookback?: number;
+}) {
   const params = new URLSearchParams();
   if (options?.sessionId) params.set("sessionId", options.sessionId);
   if (options?.lookback) params.set("lookback", String(options.lookback));
@@ -40,13 +49,20 @@ export async function getScene(options?: { sessionId?: string; lookback?: number
   return res.json();
 }
 
-export async function detectTriggers(options?: { sessionId?: string; lookbackSeconds?: number }) {
+export async function detectTriggers(options?: {
+  sessionId?: string;
+  lookbackSeconds?: number;
+}) {
   const params = new URLSearchParams();
   if (options?.sessionId) params.set("sessionId", options.sessionId);
-  if (options?.lookbackSeconds) params.set("lookbackSeconds", String(options.lookbackSeconds));
-  const res = await fetch(`${API_BASE_URL}/api/harper-vision/triggers?${params}`, {
-    method: "POST",
-    headers: await authHeaders(),
-  });
+  if (options?.lookbackSeconds)
+    params.set("lookbackSeconds", String(options.lookbackSeconds));
+  const res = await fetch(
+    `${API_BASE_URL}/api/harper-vision/triggers?${params}`,
+    {
+      method: "POST",
+      headers: await authHeaders(),
+    },
+  );
   return res.json();
 }

@@ -27,11 +27,17 @@ interface VisionSource {
   thumbnail?: string;
 }
 
-const isElectron = typeof window !== "undefined" && !!window.electron?.isElectron;
+const isElectron =
+  typeof window !== "undefined" && !!window.electron?.isElectron;
 
 export function useHarperVision() {
   const [status, setStatus] = useState<VisionStatus>({
-    screen: { isCapturing: false, sessionId: null, frameCounter: 0, intervalMs: 5000 },
+    screen: {
+      isCapturing: false,
+      sessionId: null,
+      frameCounter: 0,
+      intervalMs: 5000,
+    },
     audio: { isRecording: false, sessionId: null, mode: "placeholder" },
   });
   const [isLoading, setIsLoading] = useState(false);

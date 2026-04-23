@@ -14,6 +14,7 @@ import {
 import {
   buildScene,
   detectTriggers,
+  ingestAudioChunk,
 } from "../../services/harper-vision/engine.js";
 import type { HarperVisionFrameIngest } from "../../types/harper-vision.js";
 
@@ -103,6 +104,26 @@ export function createHarperVisionRoutes() {
       return c.json({ ok: true, triggers });
     } catch (err: any) {
       console.error("[HarperVision] Trigger detection error:", err.message);
+      return c.json({ ok: false, error: err.message }, 500);
+    }
+  });
+
+  // POST /api/harper-vision/audio-chunk — Ingest audio chunk for transcription
+  app.post("/audio-chunk", async (c) => {
+    try {
+      const body = await c.req.json();
+      if (!body.sessionId || !body.audioBase64) {
+        return c.json(
+          { ok: false, error: "sessionId and audioBase64 required" },
+          400,
+        );
+      }
+
+      const user = (c.get("userId" as never) as string) || "anonymous";
+      const result = await ingestAudioChunk(user, body);
+      return c.json(result);
+    } catch (err: any) {
+      console.error("[HarperVision] Audio chunk error:", err.message);
       return c.json({ ok: false, error: err.message }, 500);
     }
   });

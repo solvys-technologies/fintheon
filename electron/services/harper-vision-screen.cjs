@@ -24,13 +24,18 @@ class HarperVisionScreen {
     this.isCapturing = true;
     this.frameCounter = 0;
 
-    console.log(`[HarperVision] Screen capture started — session ${this.sessionId}`);
+    console.log(
+      `[HarperVision] Screen capture started — session ${this.sessionId}`,
+    );
 
     // Immediate first capture
     await this._captureAndSend();
 
     // Periodic capture
-    this.timer = setInterval(() => this._captureAndSend(), this.captureIntervalMs);
+    this.timer = setInterval(
+      () => this._captureAndSend(),
+      this.captureIntervalMs,
+    );
 
     return { ok: true, sessionId: this.sessionId };
   }
@@ -87,7 +92,9 @@ class HarperVisionScreen {
       return { ok: false, error: "Empty thumbnail" };
     }
 
-    const base64 = thumbnail.toDataURL().replace(/^data:image\/png;base64,/, "");
+    const base64 = thumbnail
+      .toDataURL()
+      .replace(/^data:image\/png;base64,/, "");
     return {
       ok: true,
       base64,
@@ -100,7 +107,10 @@ class HarperVisionScreen {
   async _captureAndSend() {
     try {
       // Skip if system is idle (no mouse/keyboard activity for 60s)
-      if (powerMonitor.getSystemIdleState && powerMonitor.getSystemIdleState(60) === "locked") {
+      if (
+        powerMonitor.getSystemIdleState &&
+        powerMonitor.getSystemIdleState(60) === "locked"
+      ) {
         return;
       }
 
@@ -116,7 +126,9 @@ class HarperVisionScreen {
       if (!thumbnail || thumbnail.isEmpty()) return;
 
       // Simple perceptual hash to skip near-duplicate frames
-      const base64 = thumbnail.toDataURL().replace(/^data:image\/png;base64,/, "");
+      const base64 = thumbnail
+        .toDataURL()
+        .replace(/^data:image\/png;base64,/, "");
       const currentHash = this._quickHash(base64.slice(0, 1024));
       if (currentHash === this.lastFrameHash) {
         return; // No significant change

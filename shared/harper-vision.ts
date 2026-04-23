@@ -49,11 +49,19 @@ export interface HarperVisionScene {
   sessionId: string;
   summary: string;
   frames: Pick<HarperVisionFrameRecord, "id" | "timestamp" | "description">[];
-  transcripts: Pick<HarperVisionTranscript, "id" | "timestamp" | "transcript" | "speaker_label">[];
+  transcripts: Pick<
+    HarperVisionTranscript,
+    "id" | "timestamp" | "transcript" | "speaker_label"
+  >[];
 }
 
 export interface HarperVisionTrigger {
-  type: "chart_pattern" | "news_event" | "risk_alert" | "trade_opportunity" | "harper_query";
+  type:
+    | "chart_pattern"
+    | "news_event"
+    | "risk_alert"
+    | "trade_opportunity"
+    | "harper_query";
   confidence: number;
   agent?: "oracle" | "feucht" | "consul" | "herald" | "harper";
   symbol?: string;

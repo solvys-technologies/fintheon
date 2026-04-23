@@ -68,13 +68,41 @@ export interface ElectronAPI {
 
   // [claude-code 2026-04-23] Harper Vision — screen + audio capture bridge
   harperVision: {
-    captureScreen: () => Promise<{ ok: boolean; base64?: string; width?: number; height?: number; name?: string; error?: string }>;
-    captureWindow: (id: string) => Promise<{ ok: boolean; base64?: string; width?: number; height?: number; name?: string; error?: string }>;
-    getSources: () => Promise<Array<{ id: string; name: string; display_id?: string; thumbnail?: string }>>;
-    startCapture: (sessionId?: string) => Promise<{ ok: boolean; sessionId?: string; error?: string }>;
+    captureScreen: () => Promise<{
+      ok: boolean;
+      base64?: string;
+      width?: number;
+      height?: number;
+      name?: string;
+      error?: string;
+    }>;
+    captureWindow: (id: string) => Promise<{
+      ok: boolean;
+      base64?: string;
+      width?: number;
+      height?: number;
+      name?: string;
+      error?: string;
+    }>;
+    getSources: () => Promise<
+      Array<{
+        id: string;
+        name: string;
+        display_id?: string;
+        thumbnail?: string;
+      }>
+    >;
+    startCapture: (
+      sessionId?: string,
+    ) => Promise<{ ok: boolean; sessionId?: string; error?: string }>;
     stopCapture: () => Promise<{ ok: boolean }>;
     getStatus: () => Promise<{
-      screen: { isCapturing: boolean; sessionId: string | null; frameCounter: number; intervalMs: number };
+      screen: {
+        isCapturing: boolean;
+        sessionId: string | null;
+        frameCounter: number;
+        intervalMs: number;
+      };
       audio: { isRecording: boolean; sessionId: string | null; mode: string };
     }>;
   };

@@ -65,7 +65,9 @@ export async function buildScene(
   const frameList = (frames || []).map((f) => ({
     id: f.id,
     timestamp: f.timestamp,
-    description: f.description || `${f.app_name || "Unknown app"} — ${f.window_title || "Unknown window"}`,
+    description:
+      f.description ||
+      `${f.app_name || "Unknown app"} — ${f.window_title || "Unknown window"}`,
   }));
 
   const transcriptList = (transcripts || []).map((t) => ({
@@ -94,7 +96,11 @@ function generateSceneSummary(
   const parts: string[] = [];
 
   if (frames.length > 0) {
-    const apps = [...new Set(frames.map((f) => f.description.split(" — ")[0]).filter(Boolean))];
+    const apps = [
+      ...new Set(
+        frames.map((f) => f.description.split(" — ")[0]).filter(Boolean),
+      ),
+    ];
     if (apps.length > 0) {
       parts.push(`Active apps: ${apps.join(", ")}.`);
     }
@@ -105,7 +111,8 @@ function generateSceneSummary(
       .slice(0, 3)
       .map((t) => t.transcript)
       .join(" ");
-    const truncated = recentText.length > 200 ? recentText.slice(0, 200) + "..." : recentText;
+    const truncated =
+      recentText.length > 200 ? recentText.slice(0, 200) + "..." : recentText;
     parts.push(`Recent audio: "${truncated}"`);
   }
 
@@ -114,6 +121,53 @@ function generateSceneSummary(
   }
 
   return parts.join(" ");
+}
+
+/**
+ * Ingest an audio chunk — transcribe via Hermes sidecar and store transcript
+ * Called by Electron audio capture service every 5s
+ */
+export async function ingestAudioChunk(
+  userId: string,
+  payload: {
+    sessionId: string;
+    audioBase64: string;
+    mimeType?: string;
+    timestamp?: string;
+  },
+): Promise<{ ok: boolean; transcript?: string; error?: string }> {
+  try {
+    // Transcribe via existing voice service (Hermes sidecar Whisper)
+    const { transcribeVoice } = await import("../voice-service.js");
+    const result = await transcribeVoice({
+      audioBase64: payload.audioBase64,
+      mimeType: payload.mimeType || "audio/webm",
+    });
+
+    if (!result.text || result.text.trim().length === 0) {
+      return { ok: true, transcript: "" };
+    }
+
+    // Store transcript
+    const { error } = await supabase.from("harper_vision_transcripts").insert({
+      user_id: userId,
+      session_id: payload.sessionId,
+      timestamp: payload.timestamp || new Date().toISOString(),
+      transcript: result.text,
+      speaker_label: "USER",
+      confidence: result.confidence || null,
+      prosody: null,
+    });
+
+    if (error) {
+      console.error("[HarperVision] Transcript insert error:", error.message);
+    }
+
+    return { ok: true, transcript: result.text };
+  } catch (err: any) {
+    console.error("[HarperVision] Audio chunk ingest error:", err.message);
+    return { ok: false, error: err.message };
+  }
 }
 
 /**
@@ -132,7 +186,11 @@ export async function detectTriggers(
     const text = t.transcript.toLowerCase();
 
     // Chart pattern keywords -> Feucht
-    if (/\b(head and shoulders|double top|double bottom|triangle|flag|pennant|support|resistance|breakout|reversal)\b/.test(text)) {
+    if (
+      /\b(head and shoulders|double top|double bottom|triangle|flag|pennant|support|resistance|breakout|reversal)\b/.test(
+        text,
+      )
+    ) {
       triggers.push({
         type: "chart_pattern",
         confidence: 0.7,
@@ -142,7 +200,11 @@ export async function detectTriggers(
     }
 
     // News/earnings keywords -> Oracle
-    if (/\b(earnings|fed|fomc|cpi|ppi|jobs report|unemployment|gdp|recession|inflation)\b/.test(text)) {
+    if (
+      /\b(earnings|fed|fomc|cpi|ppi|jobs report|unemployment|gdp|recession|inflation)\b/.test(
+        text,
+      )
+    ) {
       triggers.push({
         type: "news_event",
         confidence: 0.75,
@@ -152,7 +214,11 @@ export async function detectTriggers(
     }
 
     // Risk keywords -> Herald
-    if (/\b(vix spike|margin call|stop loss|drawdown|volatility|crash|correction)\b/.test(text)) {
+    if (
+      /\b(vix spike|margin call|stop loss|drawdown|volatility|crash|correction)\b/.test(
+        text,
+      )
+    ) {
       triggers.push({
         type: "risk_alert",
         confidence: 0.8,
@@ -162,7 +228,11 @@ export async function detectTriggers(
     }
 
     // Trade setup keywords -> Consul
-    if (/\b(entry|exit|position|long|short|buy|sell|order|fill|slippage)\b/.test(text)) {
+    if (
+      /\b(entry|exit|position|long|short|buy|sell|order|fill|slippage)\b/.test(
+        text,
+      )
+    ) {
       triggers.push({
         type: "trade_opportunity",
         confidence: 0.65,

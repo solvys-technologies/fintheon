@@ -51,7 +51,9 @@ export interface HarperVisionAPI {
   captureScreen: () => Promise<HarperVisionCaptureResult>;
   captureWindow: (id: string) => Promise<HarperVisionCaptureResult>;
   getSources: () => Promise<HarperVisionSource[]>;
-  startCapture: (sessionId?: string) => Promise<{ ok: boolean; sessionId?: string; error?: string }>;
+  startCapture: (
+    sessionId?: string,
+  ) => Promise<{ ok: boolean; sessionId?: string; error?: string }>;
   stopCapture: () => Promise<{ ok: boolean }>;
   getStatus: () => Promise<HarperVisionStatus>;
 }
@@ -99,7 +101,9 @@ export interface ElectronAPI {
 }
 
 export interface SystemPermissionsAPI {
-  query: (name: "microphone" | "camera") => Promise<"granted" | "denied" | "prompt" | "unknown">;
+  query: (
+    name: "microphone" | "camera",
+  ) => Promise<"granted" | "denied" | "prompt" | "unknown">;
   request: (name: "microphone" | "camera") => Promise<"granted" | "denied">;
 }
 
