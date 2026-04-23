@@ -82,9 +82,15 @@ Acceptance Criteria: [How to verify this track is done]
 - Utility/shared files get their own mini-track or go to the unification pass
 - Each track must be self-contained enough to run without seeing other tracks' changes
 
-## Phase 3 -- Brief Generation
+## Phase 3 -- Brief Generation (AUTO, while still in plan mode)
 
-Exit plan mode. For each track, produce a standalone markdown briefing file.
+**Stay in plan mode.** Do NOT call `ExitPlanMode` yet. As soon as Phase 2 track definitions are settled, auto-write one standalone markdown briefing file per track directly from the `AskUserQuestion` answers. The user should not have to prompt "now write the briefs" -- that is the whole point of this phase firing automatically.
+
+Before writing any brief, fact-check identifiers against the live tree and Supabase REST:
+
+- `grep` every table, route, service, and component name that will appear in a track brief against the current repo
+- If a referenced file does not exist, flag it in the brief as `[NEW -- to create]`
+- If a referenced table/route does not exist, list it under "Open questions" in the brief rather than hallucinating its shape
 
 ### Track Brief Template
 
