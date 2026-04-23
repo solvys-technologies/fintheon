@@ -1,7 +1,13 @@
+// [claude-code 2026-04-23] S32-T3 Ollama fallback chain — createOllamaFallbackModel + chain-aware helpers
 // [claude-code 2026-04-10] Round-robin across multiple VProxy endpoints via VPROXY_URLS env var
 // [claude-code 2026-04-04] Strands SDK VProxy model provider — OpenAI-compatible endpoint at localhost:8317
 import { OpenAIModel } from "@strands-agents/sdk/models/openai";
 import { createLogger } from "../../lib/logger.js";
+import {
+  getOllamaBaseUrl,
+  getOllamaModel,
+  isOllamaFallbackEnabled,
+} from "../ai/ollama-hermes-client.js";
 
 const log = createLogger("StrandsVProxy");
 

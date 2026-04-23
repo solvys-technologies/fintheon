@@ -1,3 +1,4 @@
+// [claude-code 2026-04-23] S32-T2 Harper Vision — privacy-mode gate on _sendChunk
 // Harper Vision Audio Capture Service
 // Inspired by OMI's AudioCaptureService.swift + AudioMixer.swift
 // Continuous microphone capture → PCM chunks → backend transcription
@@ -12,6 +13,14 @@ class HarperVisionAudio {
     this.sessionId = null;
     this.hiddenWindow = null;
     this.backendUrl = "http://localhost:8080";
+    this.privacyMode = false;
+  }
+
+  setPrivacyMode(enabled) {
+    this.privacyMode = !!enabled;
+    console.log(
+      `[HarperVision] Audio privacy mode: ${this.privacyMode ? "ON" : "OFF"}`,
+    );
   }
 
   async start(sessionId) {
