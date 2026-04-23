@@ -20,7 +20,7 @@ import {
   ChevronDown,
   ChevronUp,
   Zap,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import type { AgentNode, AgentConnection, AgentMemory } from "./types";
 import { COMMANDMENTS } from "./commandments-data";
 

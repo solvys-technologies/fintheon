@@ -23,7 +23,7 @@ import {
   LineChart,
   Scroll,
   Plus,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useConsiliumNav } from "../../lib/consilium-nav-store";
 import { AgentChattr } from "./AgentChattr";

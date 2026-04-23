@@ -1,7 +1,7 @@
 // TODO: remove — replaced by Fluxer embed (2026-04-12). Kept until Fluxer is confirmed stable.
 // [claude-code 2026-04-03] Discord-style forum redesign — PromptBox, message grouping, scroll container, hover actions
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, ChevronDown, Send } from "@/components/shared/iso-icons";
+import { Loader2, ChevronDown, Send } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useBackend } from "../../lib/backend";
 import { useAuth } from "../../contexts/AuthContext";

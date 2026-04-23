@@ -12,7 +12,7 @@ import {
   Highlighter,
   SquareDashedMousePointer,
   Cpu,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { NarrativeCanvasChat } from "./NarrativeCanvasChat";
 
 export type CanvasTool = "select" | "hand" | "multi-select" | "highlight";

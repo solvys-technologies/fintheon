@@ -5,7 +5,7 @@ import {
   MessageSquare,
   Trash2,
   Loader2,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useBackend } from "../../lib/backend";
 
 interface SessionEntry {

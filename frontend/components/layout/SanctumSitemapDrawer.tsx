@@ -5,7 +5,7 @@ import {
   GitBranch,
   Fish,
   ChevronRight,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import type { SanctumSubView } from "../consilium/ConsiliumTabConfig";
 
 const AUTO_HIDE_MS = 1500;

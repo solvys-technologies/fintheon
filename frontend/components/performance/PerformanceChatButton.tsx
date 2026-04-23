@@ -2,7 +2,7 @@
 // Third of three Omi voice triggers (the other two being PsychAssist activation
 // and the general Voice Assistant button). Rendered by TopHeader ONLY when
 // activeTab === "performance".
-import { MessageSquare } from "@/components/shared/iso-icons";
+import { MessageSquare } from "lucide-react";
 import { useOmiSession } from "../../hooks/useOmiSession";
 
 export function PerformanceChatButton() {

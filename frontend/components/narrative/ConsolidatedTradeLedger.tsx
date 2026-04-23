@@ -4,7 +4,7 @@ import {
   ChevronDown,
   Loader2,
   ExternalLink,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 

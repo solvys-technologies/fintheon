@@ -10,7 +10,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { PanelPosition } from "../layout/DraggablePanel";
 
 // Track last seen alert ID to count unread (per session)

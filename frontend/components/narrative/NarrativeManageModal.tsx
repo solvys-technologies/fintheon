@@ -1,6 +1,6 @@
 // [claude-code 2026-03-16] NarrativeTimelineModal — scrollable vertical timeline with electric pulse
 import { useState, useCallback, useMemo } from "react";
-import { X, Plus } from "@/components/shared/iso-icons";
+import { X, Plus } from "lucide-react";
 import { useNarrative } from "../../contexts/NarrativeContext";
 import type {
   CatalystCard,

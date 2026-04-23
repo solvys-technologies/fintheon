@@ -7,7 +7,7 @@ import {
   CheckCircle,
   AlertCircle,
   Zap,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { AgentDeskPrediction } from "./AgentDeskPrediction";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";

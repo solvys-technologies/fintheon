@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight } from "@/components/shared/iso-icons";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { HelixSpinner } from "../icon-bank/agent-spinners";
 
 const THINKING_PHRASES = [

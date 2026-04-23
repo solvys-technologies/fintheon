@@ -1,7 +1,7 @@
 // [claude-code 2026-03-20] 8d: Blindspots overhaul — 7-day rolling W/L record instead of severity badge
 // [claude-code 2026-04-17] Nothing-Design FuseBar (monochrome + shimmer), IV chip replaces W/L%, 140-char text cap, 4-entry cap
 import { useState, useEffect } from "react";
-import { Eye } from "@/components/shared/iso-icons";
+import { Eye } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useBackend } from "../../lib/backend";
 import { LockedCard } from "../ui/LockedCard";

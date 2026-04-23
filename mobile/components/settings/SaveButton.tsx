@@ -4,7 +4,7 @@
 //   shows a subtle green flash on success, then fades out when isDirty clears.
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check } from "../shared/iso-icons";
+import { Check } from "lucide-react";
 
 const NOTHING_EASE: [number, number, number, number] = [0.25, 0.1, 0.25, 1];
 const SUCCESS_GREEN = "oklch(0.62 0.10 145)";

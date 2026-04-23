@@ -7,7 +7,7 @@ import {
   TrendingDown,
   RotateCcw,
   Activity,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useRegimes } from "../../lib/regime-store";
 import {
   isRegimeActive,

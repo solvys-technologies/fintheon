@@ -1,6 +1,6 @@
 // [claude-code 2026-03-22] Track 3: Multi-select agent filter dropdown for Consilium
 import { useState, useEffect, useRef } from "react";
-import { ChevronDown, Check } from "@/components/shared/iso-icons";
+import { ChevronDown, Check } from "lucide-react";
 import { AGENT_MAP, type BoardroomAgent } from "./AgentBadge";
 
 interface AgentFilterDropdownProps {

@@ -4,7 +4,7 @@ import {
   SlidersHorizontal,
   Inbox,
   Activity,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { RefinementEngine } from "../refinement/RefinementEngine";
 import { ApprovalsPage } from "./ApprovalsPage";
 import { MonitoringLoopCard } from "./MonitoringLoopCard";

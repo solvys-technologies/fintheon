@@ -9,7 +9,7 @@ import {
   useThread,
   useThreadRuntime,
 } from "@assistant-ui/react";
-import { X } from "@/components/shared/iso-icons";
+import { X } from "lucide-react";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 import { useHermesRuntime } from "./useHermesRuntime";
 import { FintheonThread } from "./FintheonThread";

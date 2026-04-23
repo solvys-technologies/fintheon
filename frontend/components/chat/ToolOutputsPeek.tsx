@@ -4,7 +4,7 @@ import {
   ChevronRight,
   Wrench,
   Loader2,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { ToolOutputBubble, type ToolOutputData } from "./ToolOutputBubble";
 
 /* ------------------------------------------------------------------ */

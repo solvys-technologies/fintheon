@@ -1,6 +1,6 @@
 // [claude-code 2026-03-16] Stone theme + narrative theme integration
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { Play, Pause, Square } from "@/components/shared/iso-icons";
+import { Play, Pause, Square } from "lucide-react";
 import type {
   NarrativeFlowState,
   CatalystCard,

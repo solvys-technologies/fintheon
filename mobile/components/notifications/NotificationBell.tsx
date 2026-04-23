@@ -1,6 +1,6 @@
 // [claude-code 2026-04-18] A4: bell glyph + unread badge, opens NotificationDrawer
 import { useState } from "react";
-import { Bell } from "../shared/iso-icons";
+import { Bell } from "lucide-react";
 import { useNotificationHistory } from "../../hooks/useNotificationHistory";
 import { NotificationDrawer } from "./NotificationDrawer";
 

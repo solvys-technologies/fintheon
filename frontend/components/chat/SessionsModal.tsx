@@ -7,7 +7,7 @@ import {
   Plus,
   Trash2,
   X,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { API_BASE_URL } from "./constants";
 import { HelixSpinner } from "../icon-bank/agent-spinners";
 import { withViewTransition } from "../../lib/view-transition";

@@ -5,7 +5,7 @@ import {
   ArrowUp,
   ArrowDown,
   Plus,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 
 export type VoteType = "up" | "down" | "check" | "x";
 

@@ -11,7 +11,7 @@ import {
   Video,
   PhoneOff,
   PictureInPicture2,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { isElectron } from "../../lib/platform";
 
 const FLUXER_URL = import.meta.env.VITE_FLUXER_COMMUNITY_URL as

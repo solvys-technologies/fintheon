@@ -6,7 +6,7 @@ import {
   ArrowDownRight,
   Check,
   X,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import type { ProposalData } from "../../types/feed";
 import { TradePlanCard } from "../proposals/TradePlanCard";
 import { TradePlanStatus } from "../proposals/TradePlanStatus";

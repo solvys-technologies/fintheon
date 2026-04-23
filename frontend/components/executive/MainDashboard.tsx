@@ -28,7 +28,7 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useSettings } from "../../contexts/SettingsContext";
 
 const DASHBOARD_PAGES = ["Briefing", "RiskFlow"];

@@ -11,7 +11,7 @@ import {
   MessageSquare,
   Loader2,
   Trash2,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { API_BASE_URL } from "./constants";
 import { getAccessToken } from "../../lib/supabase";
 

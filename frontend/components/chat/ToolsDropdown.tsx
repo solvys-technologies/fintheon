@@ -1,6 +1,6 @@
 // [claude-code 2026-03-22] Track 4: combined Tools dropdown merging Skills + Connectors
 import { useState, useRef, useEffect } from "react";
-import { Settings2, Check, AlertTriangle } from "@/components/shared/iso-icons";
+import { Settings2, Check, AlertTriangle } from "lucide-react";
 import type { SkillDef } from "../../lib/skills";
 import type { McpServerConfig, McpServerId } from "../../types/mcp";
 

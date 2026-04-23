@@ -1,6 +1,6 @@
 // [claude-code 2026-03-11] Rewrite: expanded layout, smooth transitions matching MCP connectors popup
 import { useState } from "react";
-import { X, Lock, ChevronDown, ChevronUp } from "@/components/shared/iso-icons";
+import { X, Lock, ChevronDown, ChevronUp } from "lucide-react";
 import { SKILLS, type SkillId } from "../../lib/skills";
 
 export { type SkillId, SKILLS };

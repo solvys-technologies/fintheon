@@ -19,7 +19,7 @@ import {
   ToggleRight,
   Trophy,
   ShieldAlert,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useBackend } from "../../lib/backend";
 import { ModelGlossary } from "./ModelGlossary";
 import { AgentScorecard } from "../consilium/AgentScorecard";

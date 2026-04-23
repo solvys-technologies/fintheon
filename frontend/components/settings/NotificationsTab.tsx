@@ -1,6 +1,6 @@
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — notifications tab
 import React from "react";
-import { Volume2, Mic } from "@/components/shared/iso-icons";
+import { Volume2, Mic } from "lucide-react";
 import Toggle from "../Toggle";
 import { useToast } from "../../contexts/ToastContext";
 import {

@@ -5,7 +5,7 @@
 // Clipboard-copy pickup-code flow deprecated in favor of active dispatch via /api/relay/dispatch.
 // [claude-code 2026-04-04] T4: History dropdown — Clock button toggles dropdown instead of modal
 import { useState } from "react";
-import { Scroll, Plus, Clock } from "@/components/shared/iso-icons";
+import { Scroll, Plus, Clock } from "lucide-react";
 import { SessionsDropdown } from "./SessionsDropdown";
 // [claude-code 2026-04-23] Harper Vision — screen capture status indicator
 import { VisionStatus } from "../harper-vision/VisionStatus";

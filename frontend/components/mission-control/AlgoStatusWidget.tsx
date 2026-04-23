@@ -1,4 +1,4 @@
-import { Cpu, Circle } from "@/components/shared/iso-icons";
+import { Cpu, Circle } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useBackend } from "../../lib/backend";

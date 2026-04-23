@@ -6,7 +6,7 @@ import {
   Trash2,
   Copy,
   Check,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { VotingControls, type VoteType } from "./VotingControls";
 
 export interface BulletinPostData {

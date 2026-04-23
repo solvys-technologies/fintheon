@@ -5,7 +5,7 @@ import {
   BarChart3,
   Shield,
   Crosshair,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import type { AutopilotStatus } from "./AutopilotDashboard";
 
 interface AutopilotControlsProps {

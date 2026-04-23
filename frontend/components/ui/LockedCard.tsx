@@ -1,4 +1,4 @@
-import { Lock } from "@/components/shared/iso-icons";
+import { Lock } from "lucide-react";
 import { ReactNode } from "react";
 import { Button } from "./Button";
 

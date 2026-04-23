@@ -4,7 +4,7 @@
 // [claude-code 2026-03-22] Replaced "The Tape" in Castra with RiskFlowMini (same as non-iFrame Strategium)
 // [claude-code 2026-03-31] S12-T2: Added Documents tab (TipTap editor)
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { ChevronLeft } from "@/components/shared/iso-icons";
+import { ChevronLeft } from "lucide-react";
 import type { IVScoreResponse } from "../../types/market-data";
 import { TopHeader } from "./TopHeader";
 import { NavSidebar } from "./NavSidebar";
@@ -66,7 +66,7 @@ import {
   type StrategiumPaneMode,
 } from "../../lib/layoutOrderStorage";
 import { StrategiumPeekBar } from "./StrategiumPeekBar";
-import { Maximize2, Minimize2 } from "@/components/shared/iso-icons";
+import { Maximize2, Minimize2 } from "lucide-react";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { useLayoutState } from "../../hooks/useLayoutState";
 import { useBrowserTransition } from "../../hooks/useBrowserTransition";

@@ -5,7 +5,7 @@ import {
   MoveRight,
   GripVertical,
   X,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { EmotionalResonanceMonitor } from "./EmotionalResonanceMonitor";
 import { BlindspotsWidget } from "./BlindspotsWidget";

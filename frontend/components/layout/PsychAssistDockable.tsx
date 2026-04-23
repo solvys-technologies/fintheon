@@ -6,7 +6,7 @@ import {
   PictureInPicture2,
   X,
   MessageSquare,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { CompactERMonitor } from "../mission-control/CompactERMonitor";
 import { useDraggable } from "../../hooks/useDraggable";
 import { useOmiSession } from "../../hooks/useOmiSession";

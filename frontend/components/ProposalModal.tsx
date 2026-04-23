@@ -6,7 +6,7 @@ import {
   AlertTriangle,
   Shield,
   Zap,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 
 export interface TradingProposal {
   id: string;

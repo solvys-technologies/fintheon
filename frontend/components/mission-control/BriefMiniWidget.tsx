@@ -6,7 +6,7 @@ import {
   RefreshCw,
   ChevronDown,
   Clock,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useBackend } from "../../lib/backend";
 
 /** Markdown renderer for brief text — headers, bold labels, bullets, dividers */

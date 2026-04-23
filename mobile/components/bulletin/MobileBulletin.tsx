@@ -10,7 +10,7 @@ import {
   StickyNote,
   X,
   Zap,
-} from "../shared/iso-icons";
+} from "lucide-react";
 // [claude-code 2026-04-19] Use SnapSheet so the bulletin rises under the dash fuse row,
 //   matching the notification drawer's sizing per TP.
 import { SnapSheet } from "../shared/SnapSheet";

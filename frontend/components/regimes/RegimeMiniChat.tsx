@@ -1,6 +1,6 @@
 // [claude-code 2026-04-15] T3: Mini chat input per regime card — dispatches to sidebar chat
 import { useState, useRef } from "react";
-import { ArrowUp } from "@/components/shared/iso-icons";
+import { ArrowUp } from "lucide-react";
 import type { TradingRegime } from "../../lib/regimes";
 
 interface RegimeMiniChatProps {

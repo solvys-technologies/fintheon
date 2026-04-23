@@ -8,7 +8,7 @@ import {
   AlertTriangle,
   BellOff,
   Zap,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { playAlertSound, playIOSPing, AlertType } from "../utils/soundAlerts";
 import { useSettings } from "../contexts/SettingsContext";

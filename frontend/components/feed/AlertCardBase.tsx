@@ -10,7 +10,7 @@ import {
   ChevronDown,
   ChevronUp,
   ThumbsDown,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import { inferDirection } from "../../lib/riskflow-feed";
 import { SEVERITY_CONFIG } from "../../lib/severity-config";

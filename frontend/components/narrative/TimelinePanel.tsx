@@ -11,7 +11,7 @@ import {
   Search,
   X,
   Clock,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useNarrative } from "../../contexts/NarrativeContext";
 import type {
   CatalystCard,

@@ -5,7 +5,7 @@ import {
   ChevronDown,
   Zap,
   Loader2,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import type { EconEventCardData } from "./EconEventCard";
 
 const MAX_EVENTS = 4;

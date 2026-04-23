@@ -5,7 +5,7 @@ import {
   ChevronDown,
   ChevronRight,
   Trash2,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useErrorLog } from "../../hooks/useErrorLog";
 import type { ErrorLogEntry } from "../../lib/errorLog";
 

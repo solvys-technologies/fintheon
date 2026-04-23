@@ -1,4 +1,4 @@
-import { Settings } from "@/components/shared/iso-icons";
+import { Settings } from "lucide-react";
 import { useState } from "react";
 import SettingsModal from "./SettingsModal";
 

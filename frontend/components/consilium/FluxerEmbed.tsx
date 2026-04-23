@@ -1,6 +1,6 @@
 // [claude-code 2026-04-16] Fluxer embed — webview in Electron (bypasses X-Frame-Options), external link fallback in browser
 import { useState, useRef, useCallback, useEffect } from "react";
-import { ExternalLink } from "@/components/shared/iso-icons";
+import { ExternalLink } from "lucide-react";
 import { isElectron } from "../../lib/platform";
 import { buildFluxerThemeCSS } from "../../lib/fluxer-theme";
 import { useSettings } from "../../contexts/SettingsContext";

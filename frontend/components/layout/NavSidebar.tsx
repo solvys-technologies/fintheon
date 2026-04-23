@@ -13,7 +13,7 @@ import {
   Bell,
   BellOff,
   Wrench,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useDND } from "../../contexts/DNDContext";
 import {
   getSidebarOrder,

@@ -2,7 +2,7 @@
 // [claude-code 2026-03-12] Switched from independent useVoiceAssistant() to shared VoiceContext
 // [claude-code 2026-04-20] S21: Toggling also starts/stops a `voice_assistant` Omi session so the popup + agent routing fire.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Mic, MicOff } from "@/components/shared/iso-icons";
+import { Mic, MicOff } from "lucide-react";
 import { useVoice } from "../../contexts/VoiceContext";
 import { resolveVoiceOrbState } from "../../types/voice";
 import { VoiceAuroraOrb } from "./VoiceAuroraOrb";

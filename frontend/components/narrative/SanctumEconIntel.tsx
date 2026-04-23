@@ -1,6 +1,6 @@
 // [claude-code 2026-04-19] S25-T4a: Econ Intelligence rebuilt as event-filter scroll-lock page. Top: Econ KPI fuses LEFT + Instrument fuses RIGHT (vertically stacked, fading vertical ruler between). Middle: event-filter dropdown + timespan + Generate. Bottom: chevron event cards with staggered fade-in; each expands to a CAO synthesis + per-print rows + AI-confidence fuse footer. Old sectioned-card UI replaced entirely; categoryScores + context props kept for back-compat (unused here).
 import { useEffect, useMemo, useState } from "react";
-import { CalendarClock } from "@/components/shared/iso-icons";
+import { CalendarClock } from "lucide-react";
 import type {
   SimulationContext,
   AgentDeskCategoryScore,

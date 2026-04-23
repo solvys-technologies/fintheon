@@ -7,7 +7,7 @@ import {
   Loader2,
   Copy,
   Clock,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */

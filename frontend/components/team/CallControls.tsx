@@ -5,7 +5,7 @@ import {
   Mic,
   MicOff,
   Loader2,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useLiveKitRoom } from "../../hooks/useLiveKitRoom";
 
 export function CallControls() {

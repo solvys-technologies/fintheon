@@ -5,7 +5,7 @@ import {
   Clock,
   ArrowUp,
   ArrowDown,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import type { SignalEvent, StoredProposal } from "./AutopilotDashboard";
 
 interface SignalFeedProps {

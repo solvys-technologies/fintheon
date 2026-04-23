@@ -1,6 +1,6 @@
 // [claude-code 2026-03-22] Source of Truth fusion — morning routine gate (Commandment 14)
 import { useState } from "react";
-import { CheckCircle, Circle, Lock } from "@/components/shared/iso-icons";
+import { CheckCircle, Circle, Lock } from "lucide-react";
 
 const ROUTINE_STEPS = [
   { id: "fintheon", label: "Open Fintheon — read the tape, see the briefing" },

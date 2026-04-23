@@ -10,7 +10,7 @@ import {
   Brain,
   BookOpen,
   Moon,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 
 // Top-level tabs: Sanctum, Boardroom, Apparatus are dropdowns; Chat is a direct button
 export type ConsiliumTab = "sanctum" | "chat" | "boardroom" | "apparatus";

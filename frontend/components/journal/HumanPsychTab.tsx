@@ -8,7 +8,7 @@ import {
   Bot,
   FileText,
   Lock,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useBackend } from "../../lib/backend";
 import { useERSafe } from "../../contexts/ERContext";
 import type { JournalEntryItem } from "../../lib/services";

@@ -5,7 +5,7 @@
 // [claude-code 2026-04-15] S18: Header menu — section nav + Harper refresh, session, sign out
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Moon } from "../shared/iso-icons";
+import { Sun, Moon } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
 

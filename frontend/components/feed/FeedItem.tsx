@@ -1,4 +1,4 @@
-import { Diff, TrendingDown, Minus } from "@/components/shared/iso-icons";
+import { Diff, TrendingDown, Minus } from "lucide-react";
 import { FeedItem as FeedItemType } from "../../types/feed";
 import { decodeHtmlEntities } from "../../lib/html-entities";
 import { ProposalCard } from "./ProposalCard";

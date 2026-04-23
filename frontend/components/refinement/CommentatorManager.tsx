@@ -9,7 +9,7 @@ import {
   Trash2,
   Pencil,
   Sprout,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import type {
   CommentatorEntry,
   CommentatorTier,

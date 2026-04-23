@@ -1,6 +1,6 @@
 // [claude-code 2026-04-05] Slim read-only Harper activity feed for Boardroom sidebar
 import { useState } from "react";
-import { ChevronRight, Activity } from "@/components/shared/iso-icons";
+import { ChevronRight, Activity } from "lucide-react";
 import { useHarperOps, type OpsEntry } from "../../hooks/useHarperOps";
 
 function formatTimeET(iso: string): string {

@@ -30,7 +30,7 @@ import {
   RefreshCw,
   Loader2,
   ThumbsDown,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import type { RiskFlowAlert, TradeIdeaDetail } from "../lib/riskflow-feed";
 import { inferDirection } from "../lib/riskflow-feed";
 import TradeIdeaModal from "./TradeIdeaModal";

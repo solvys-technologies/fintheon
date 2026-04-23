@@ -13,7 +13,7 @@ import {
   GripVertical,
   Eye,
   EyeOff,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { KanbanTitle } from "../ui/KanbanTitle";
 import type { MissionWidgetId } from "../../lib/layoutOrderStorage";
 

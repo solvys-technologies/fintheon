@@ -1,5 +1,5 @@
 // [claude-code 2026-03-22] T5: Updated pricing — Pleb $0, Analyst $149, Desk $699, Boardroom $1,999
-import { X, Check, Cpu } from "@/components/shared/iso-icons";
+import { X, Check, Cpu } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/Button";
 import { useAuth } from "../contexts/AuthContext";

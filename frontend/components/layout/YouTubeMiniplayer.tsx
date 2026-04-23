@@ -7,7 +7,7 @@ import {
   GripVertical,
   Play,
   Youtube,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { isElectron } from "../../lib/platform";
 import { useDraggable } from "../../hooks/useDraggable";
 

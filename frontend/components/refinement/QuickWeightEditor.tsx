@@ -5,7 +5,7 @@ import {
   Save,
   ChevronDown,
   ChevronUp,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import type { CalibrationEntry } from "../../../backend-hono/src/types/calibration";
 
 const API_BASE = (

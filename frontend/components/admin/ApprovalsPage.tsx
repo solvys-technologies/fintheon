@@ -5,7 +5,7 @@ import {
   XCircle,
   Inbox,
   ExternalLink,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useToast } from "../../contexts/ToastContext";
 import { useAuth } from "../../contexts/AuthContext";
 

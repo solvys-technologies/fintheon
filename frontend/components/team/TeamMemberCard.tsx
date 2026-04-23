@@ -1,7 +1,7 @@
 // [claude-code 2026-04-03] S14-T6: Team member card with status dropdown + service lights + last seen
 // [claude-code 2026-04-18] S25-T4: Unified News light + per-member time-ago + self-only Doctor button
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Phone, Stethoscope } from "@/components/shared/iso-icons";
+import { Phone, Stethoscope } from "lucide-react";
 import type { TeamMember, UserStatus } from "../../types/team";
 import { isStale, timeAgo } from "../../types/team";
 import { useTeamPresence } from "../../contexts/TeamPresenceContext";

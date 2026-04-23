@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Newspaper, ShieldCheck } from "../shared/iso-icons";
+import { Newspaper, ShieldCheck } from "lucide-react";
 import { useSwipeGesture } from "../../hooks/useSwipeGesture";
 import { useVixTicker } from "../../hooks/useVixTicker";
 import { useHaptic } from "../../hooks/useHaptic";

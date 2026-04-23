@@ -10,7 +10,7 @@ import {
   EyeOff,
   ChevronDown,
   Calendar,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useNarrative } from "../../contexts/NarrativeContext";
 import NarrativeForceCanvas from "./NarrativeForceCanvas";
 import { TimelineScrubber } from "./TimelineScrubber";

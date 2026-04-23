@@ -2,7 +2,7 @@
 //   label, severity dot, timestamp, close button. Micro-interaction: close-button rotate on
 //   tap, severity dot pulses softly (respects prefers-reduced-motion).
 import { motion, useReducedMotion } from "framer-motion";
-import { X } from "../shared/iso-icons";
+import { X } from "lucide-react";
 
 type Sev = "low" | "medium" | "high" | "critical";
 

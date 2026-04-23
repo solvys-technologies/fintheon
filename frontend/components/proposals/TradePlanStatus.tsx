@@ -3,7 +3,7 @@ import {
   Loader2,
   CheckCircle2,
   CircleOff,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 
 type TradePlanState = "generating" | "ready" | "unavailable";
 

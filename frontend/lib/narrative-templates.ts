@@ -5,7 +5,7 @@ import {
   DollarSign,
   Globe,
   Plus,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import type { CatalystTemplateType, CatalystSeverity } from "./narrative-types";
 
 export interface CatalystTemplate {

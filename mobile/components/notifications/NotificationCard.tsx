@@ -19,7 +19,7 @@ import {
   XCircle,
   MessageCircle,
   Trash2,
-} from "../shared/iso-icons";
+} from "lucide-react";
 import { VerticalFuseBar } from "../shared/VerticalFuseBar";
 import type { NotificationItem } from "../../hooks/useNotificationHistory";
 import { colorForSeverity, type FuseSeverity } from "../../lib/fuse-palette";

@@ -1,6 +1,6 @@
 // [claude-code 2026-03-16] Positioned tooltip for spotlight tour — auto-positions around target
 import { useState, useEffect, useRef } from "react";
-import { ChevronRight, ChevronLeft } from "@/components/shared/iso-icons";
+import { ChevronRight, ChevronLeft } from "lucide-react";
 
 interface TourStep {
   title: string;

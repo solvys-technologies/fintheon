@@ -1,7 +1,7 @@
 // [claude-code 2026-03-14] Pompa Mode themed toast notification
 
 import { useEffect, useState } from "react";
-import { Award, ShieldAlert } from "@/components/shared/iso-icons";
+import { Award, ShieldAlert } from "lucide-react";
 import { playSound } from "../../lib/pompa";
 
 interface PompaToastProps {

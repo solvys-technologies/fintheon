@@ -5,7 +5,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Check,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 
 interface InterviewData {
   name: string;

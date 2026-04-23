@@ -1,6 +1,6 @@
 // [claude-code 2026-03-06] Save confirmation modal for NarrativeFlow state persistence
 import { useState } from "react";
-import { Save, X } from "@/components/shared/iso-icons";
+import { Save, X } from "lucide-react";
 
 interface NarrativeSaveModalProps {
   open: boolean;

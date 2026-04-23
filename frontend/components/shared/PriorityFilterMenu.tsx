@@ -3,7 +3,7 @@
 //   (e.g. show CRIT + HIGH together). Empty selection = "All". Counts shown next to each
 //   level mirror the mobile filter strip's count badges.
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown } from "@/components/shared/iso-icons";
+import { Check, ChevronDown } from "lucide-react";
 import type { AlertSeverity } from "../../lib/riskflow-feed";
 
 const LEVELS: { value: AlertSeverity; label: string }[] = [

@@ -13,7 +13,7 @@ import {
   CalendarCheck,
   Brain,
   Eye,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 
 const SUGGESTION_CHIPS: {

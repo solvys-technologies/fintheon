@@ -11,7 +11,7 @@
 //     • countdown: live seconds tick that softens as time runs out
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight } from "../shared/iso-icons";
+import { ChevronRight } from "lucide-react";
 import { MICRO_SPRING } from "../../lib/sheet-motion";
 
 export type ApprovalVariant = "toolApproval" | "generativeTask" | "custom";

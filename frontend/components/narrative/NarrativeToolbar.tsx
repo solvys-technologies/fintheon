@@ -16,7 +16,7 @@ import {
   Zap,
   Highlighter,
   Move,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import type {
   NarrativeFlowState,
   ZoomLevel,

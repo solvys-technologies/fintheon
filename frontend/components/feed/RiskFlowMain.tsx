@@ -7,12 +7,12 @@
 // [claude-code 2026-04-19] Refresh motion uses Unicode spinners: CIRCLE-QUARTERS in the
 //   header button, METER→ARROW-3 as a top-bar shimmer during refresh, ARROW-3 for loadingMore.
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import { Bell, BellOff } from "@/components/shared/iso-icons";
+import { Bell, BellOff } from "lucide-react";
 import {
   CircleQuartersSpinner,
   FillsweepSpinner,
 } from "../icon-bank/agent-spinners";
-import { Loader2 } from "@/components/shared/iso-icons";
+import { Loader2 } from "lucide-react";
 import { withViewTransition } from "../../lib/view-transition";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import { useSourceStatus } from "../../hooks/useSourceStatus";

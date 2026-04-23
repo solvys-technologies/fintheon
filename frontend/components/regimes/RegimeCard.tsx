@@ -5,7 +5,7 @@ import {
   Trash2,
   Diff,
   TrendingDown,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { GlassEffect } from "../ui/liquid-glass";
 import { BiasBadge } from "./BiasBadge";
 import { ConfidenceBar } from "./ConfidenceBar";

@@ -6,7 +6,7 @@ import {
   ChevronRight,
   Check,
   X,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useEconCalendar } from "../../contexts/EconCalendarContext";
 import type { EconEventItem, EconPrintItem } from "../../lib/services";
 
