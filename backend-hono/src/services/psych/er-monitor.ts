@@ -103,7 +103,11 @@ class ERMonitor extends EventEmitter {
     return now - rollup.lastNudgeAt < NUDGE_COOLDOWN_MS;
   }
 
-  snapshot(): Array<{ userId: string; tradesIn30Min: number; lastNudgeAt: number | null }> {
+  snapshot(): Array<{
+    userId: string;
+    tradesIn30Min: number;
+    lastNudgeAt: number | null;
+  }> {
     return Array.from(this.users.entries()).map(([userId, r]) => ({
       userId,
       tradesIn30Min: r.tradesIn30Min,

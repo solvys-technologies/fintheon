@@ -420,16 +420,37 @@ const shouldAllowInAppPopup = (urlString) => {
 };
 
 function createWindow() {
+  // [claude-code 2026-04-23] Windows: use titleBarOverlay for Win 11 frameless chrome
+  // that inherits Solvys palette (BG #050402, accent #c79f4a). macOS keeps the
+  // native traffic-light chrome — no override needed.
+  const windowsChrome = IS_WIN
+    ? {
+        titleBarStyle: "hidden",
+        titleBarOverlay: {
+          color: "#050402",
+          symbolColor: "#f0ead6",
+          height: 28,
+        },
+        backgroundColor: "#050402",
+        autoHideMenuBar: true,
+      }
+    : {};
+
   const win = new BrowserWindow({
     width: 1600,
     height: 980,
     title: "Fintheon",
+    ...windowsChrome,
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
       webviewTag: true,
       nativeWindowOpen: true,
+      additionalArguments: [
+        `--fintheon-api-base=${IS_WIN ? REMOTE_BACKEND_URL : "http://localhost:8080"}`,
+        `--fintheon-platform=${process.platform}`,
+      ],
     },
   });
 
@@ -943,7 +964,12 @@ ipcMain.handle("harper-vision:stop-capture", async () => {
 ipcMain.handle("harper-vision:get-status", async () => {
   if (!harperVisionScreen || !harperVisionAudio) {
     return {
-      screen: { isCapturing: false, sessionId: null, frameCounter: 0, intervalMs: 0 },
+      screen: {
+        isCapturing: false,
+        sessionId: null,
+        frameCounter: 0,
+        intervalMs: 0,
+      },
       audio: { isRecording: false, sessionId: null, mode: "unsupported" },
       privacyMode: false,
     };

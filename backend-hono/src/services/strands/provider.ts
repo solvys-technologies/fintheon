@@ -176,6 +176,27 @@ export function isVProxyEnabled(): boolean {
 }
 
 /**
+ * Synchronous view of the last cached VProxy health.
+ * Returns "available" when any endpoint is up, "down" when all recent checks
+ * failed, "unknown" when we haven't probed yet.
+ */
+export function cachedVProxyHealth(): "available" | "down" | "unknown" {
+  const urls = getVProxyUrls();
+  let anyKnown = false;
+  let anyUp = false;
+  for (const raw of urls) {
+    const normalized = normalizeUrl(raw);
+    const cached = healthCacheMap.get(normalized);
+    if (cached) {
+      anyKnown = true;
+      if (cached.available) anyUp = true;
+    }
+  }
+  if (!anyKnown) return "unknown";
+  return anyUp ? "available" : "down";
+}
+
+/**
  * Create a Strands OpenAIModel pointing at the Ollama-via-Hermes fallback.
  * Used by agent-factory when VProxy is unhealthy at agent-creation time.
  */

@@ -91,6 +91,9 @@ contextBridge.exposeInMainWorld("electron", {
       ipcRenderer.invoke("harper-vision:start-capture", sessionId),
     stopCapture: () => ipcRenderer.invoke("harper-vision:stop-capture"),
     getStatus: () => ipcRenderer.invoke("harper-vision:get-status"),
+    setPrivacyMode: (enabled) =>
+      ipcRenderer.invoke("harper-vision:set-privacy-mode", enabled),
+    getPrivacyMode: () => ipcRenderer.invoke("harper-vision:get-privacy-mode"),
   },
 });
 
