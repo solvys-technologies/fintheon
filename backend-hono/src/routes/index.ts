@@ -251,14 +251,6 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/bulletin/*", authMiddleware, requireAuth);
   app.use("/api/sticky-bulletin", authMiddleware, requireAuth);
   app.use("/api/sticky-bulletin/*", authMiddleware, requireAuth);
-  // [claude-code 2026-04-23] S31-T9 predictive knowledge graph — both telemetry intake
-  // and proposal CRUD require a verified Supabase identity (RLS pins rows to auth.uid()).
-  app.use("/api/usage-events", authMiddleware, requireAuth);
-  app.use("/api/usage-events/*", authMiddleware, requireAuth);
-  app.use("/api/feature-proposals", authMiddleware, requireAuth);
-  app.use("/api/feature-proposals/*", authMiddleware, requireAuth);
-  app.route("/api/usage-events", createUsageEventsRoutes());
-  app.route("/api/feature-proposals", createFeatureProposalsRoutes());
   // Journal — public (local Electron app, no user auth needed)
 
   // Phase 1: Account routes
