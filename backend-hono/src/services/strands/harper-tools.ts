@@ -1,4 +1,5 @@
 // [claude-code 2026-04-04] Harper CAO tools — ported from Vercel AI SDK to Strands
+// [claude-code 2026-04-23] S32-T8 added browser_harness (Harper-only web control)
 import { tool } from "@strands-agents/sdk";
 import { z } from "zod";
 import { spawn } from "node:child_process";
@@ -7,6 +8,7 @@ import { resolve } from "node:path";
 import { homedir } from "node:os";
 import { createLogger } from "../../lib/logger.js";
 import { isToolApproved, requestApproval } from "../tool-approval-store.js";
+import { browserHarness } from "../browser/harness-tool.js";
 
 const log = createLogger("HarperTools");
 
@@ -21,6 +23,9 @@ const AUTO_APPROVED_TOOLS = new Set([
   "read_file",
   "read_mcp_config",
   "get_fintheon_paths",
+  // [S32-T8] Harper drives the headless browser freely — rate-limited to 20/min
+  // and every call is audited to browser_harness_audit.
+  "browser_harness",
 ]);
 
 /** Ensure tool results are never empty — VProxy/OpenAI rejects empty content */

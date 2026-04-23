@@ -8,6 +8,10 @@ import {
 } from "./agent-factory.js";
 import { checkVProxyHealth } from "./provider.js";
 import type { VProxyModelOptions } from "./provider.js";
+import {
+  getOllamaHealth,
+  isOllamaFallbackEnabled,
+} from "../ai/ollama-hermes-client.js";
 import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger("InvokeAgent");
@@ -20,8 +24,14 @@ export interface InvokeAgentOptions {
   provider?: HarperProvider;
 }
 
+// [claude-code 2026-04-23] S32-T3: inject ollama-qwen as second-in-chain after VProxy
 /** Provider fallback chain for silent/background tasks */
-const FALLBACK_CHAIN: HarperProvider[] = ["local", "nous", "orouter"];
+const FALLBACK_CHAIN: HarperProvider[] = [
+  "local",
+  "ollama-qwen",
+  "nous",
+  "orouter",
+];
 
 /**
  * One-shot text generation via a Strands agent.

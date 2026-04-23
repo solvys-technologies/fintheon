@@ -1,8 +1,7 @@
 // [claude-code 2026-04-23] S32-T5 streamdown + TV charts
-// Shared visual shell for every chat slot. Implements the "invisible panel"
-// treatment per brief: dark alpha BG, thin accent border, no backdrop-blur,
-// no box-shadow, no gradient fills. Row + column dividers use mask-image to
-// produce fading edges — never a hard rule, never a blur.
+// Shared visual shell for every chat slot. "Invisible panel" treatment per
+// brief: dark alpha background, thin accent border, flat surfaces only.
+// Row + column dividers use mask-image to produce fading edges.
 
 import type { CSSProperties, ReactNode } from "react";
 

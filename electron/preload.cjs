@@ -2,7 +2,20 @@
 // [claude-code 2026-03-23] Browser Use Phase 2 — browserUse IPC bridge
 // [claude-code 2026-03-24] Auth deep link callback bridge for Supabase OAuth
 // [claude-code 2026-04-23] Harper Vision — screen capture IPC bridge
+// [claude-code 2026-04-23] Windows build — expose platform + api base so renderer can branch chrome + guards
 const { contextBridge, ipcRenderer } = require("electron");
+
+// Read --fintheon-api-base / --fintheon-platform switches injected by main.cjs
+// via BrowserWindow.webPreferences.additionalArguments. The renderer can read
+// these synchronously at module load without awaiting an IPC round-trip.
+function readAdditionalArg(flag) {
+  const prefix = `--${flag}=`;
+  const hit = process.argv.find((a) => a.startsWith(prefix));
+  return hit ? hit.slice(prefix.length) : null;
+}
+const API_BASE =
+  readAdditionalArg("fintheon-api-base") || "http://localhost:8080";
+const PLATFORM = readAdditionalArg("fintheon-platform") || process.platform;
 
 let cliOutputCallback = null;
 ipcRenderer.on("cli-output", (_event, data) => {

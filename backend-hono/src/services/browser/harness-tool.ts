@@ -134,7 +134,10 @@ async function doRead(page: Page, selector?: string): Promise<unknown> {
   const loc = selector ? page.locator(selector) : page.locator("body");
   const count = await loc.count().catch(() => 0);
   if (count === 0) return { text: "", matched: 0 };
-  const text = await loc.first().innerText({ timeout: 5_000 }).catch(() => "");
+  const text = await loc
+    .first()
+    .innerText({ timeout: 5_000 })
+    .catch(() => "");
   return {
     text: text.slice(0, 6_000),
     matched: count,
@@ -234,7 +237,9 @@ export async function browserHarness(
       }
       default: {
         const exhaustive: never = input.action;
-        throw new Error(`unknown browser_harness action: ${String(exhaustive)}`);
+        throw new Error(
+          `unknown browser_harness action: ${String(exhaustive)}`,
+        );
       }
     }
 
@@ -309,7 +314,11 @@ export async function getBrowserHarnessStats24h(): Promise<{
 }> {
   const sb = getSupabaseClient();
   if (!sb) {
-    return { calls_24h: 0, errors_24h: 0, rate_limit_per_min: RATE_LIMIT_PER_MIN };
+    return {
+      calls_24h: 0,
+      errors_24h: 0,
+      rate_limit_per_min: RATE_LIMIT_PER_MIN,
+    };
   }
   const cutoff = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
   try {
@@ -326,9 +335,9 @@ export async function getBrowserHarnessStats24h(): Promise<{
     }
     const calls = data.length;
     const errors = data.filter((r) =>
-      String((r as { result_summary?: string }).result_summary ?? "").startsWith(
-        "error:",
-      ),
+      String(
+        (r as { result_summary?: string }).result_summary ?? "",
+      ).startsWith("error:"),
     ).length;
     return {
       calls_24h: calls,

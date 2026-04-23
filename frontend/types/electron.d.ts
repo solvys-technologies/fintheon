@@ -104,7 +104,12 @@ export interface ElectronAPI {
         intervalMs: number;
       };
       audio: { isRecording: boolean; sessionId: string | null; mode: string };
+      privacyMode?: boolean;
     }>;
+    setPrivacyMode: (
+      enabled: boolean,
+    ) => Promise<{ ok: boolean; privacyMode: boolean }>;
+    getPrivacyMode: () => Promise<{ privacyMode: boolean }>;
   };
 }
 

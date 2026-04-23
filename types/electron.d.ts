@@ -56,6 +56,10 @@ export interface HarperVisionAPI {
   ) => Promise<{ ok: boolean; sessionId?: string; error?: string }>;
   stopCapture: () => Promise<{ ok: boolean }>;
   getStatus: () => Promise<HarperVisionStatus>;
+  setPrivacyMode: (
+    enabled: boolean,
+  ) => Promise<{ ok: boolean; privacyMode: boolean }>;
+  getPrivacyMode: () => Promise<{ privacyMode: boolean }>;
 }
 
 export interface ElectronAPI {

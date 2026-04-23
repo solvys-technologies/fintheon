@@ -1,11 +1,12 @@
+// [claude-code 2026-04-23] S32-T2 Harper Vision — strip glass, wire privacy to IPC
 /**
  * VisionPanel
  * Harper Vision control panel
- * Solvys-feels: frosted glass surface, monochrome canvas, gold accent
+ * Flat monochrome surface with a gold accent border (no blur per memory).
  */
 
-import React, { useState } from "react";
-import { Eye, EyeOff, Camera, Mic, MicOff, Pause, Play, X } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Eye, Camera, EyeOff, Pause, Play, X } from "lucide-react";
 import { useHarperVision } from "../../hooks/useHarperVision";
 
 interface VisionPanelProps {
@@ -25,10 +26,26 @@ export const VisionPanel: React.FC<VisionPanelProps> = ({ onClose }) => {
   const [privacyMode, setPrivacyMode] = useState(false);
   const isCapturing = status.screen.isCapturing;
 
-  const glassStyle: React.CSSProperties = {
+  useEffect(() => {
+    window.electron?.harperVision
+      ?.getPrivacyMode()
+      .then((res) => setPrivacyMode(!!res?.privacyMode))
+      .catch(() => {});
+  }, []);
+
+  const togglePrivacyMode = async () => {
+    const next = !privacyMode;
+    setPrivacyMode(next);
+    try {
+      await window.electron?.harperVision?.setPrivacyMode(next);
+    } catch {
+      setPrivacyMode(!next);
+    }
+  };
+
+  const panelStyle: React.CSSProperties = {
     background: "rgba(10, 9, 5, 0.85)",
-    backdropFilter: "blur(20px) saturate(1.4)",
-    border: "1px solid rgba(199, 159, 74, 0.10)",
+    border: "1px solid rgba(199, 159, 74, 0.35)",
     borderRadius: "6px",
   };
 
@@ -40,13 +57,17 @@ export const VisionPanel: React.FC<VisionPanelProps> = ({ onClose }) => {
     >
       <div
         className="w-full max-w-md mx-4 p-6"
-        style={glassStyle}
+        style={panelStyle}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <Eye size={18} style={{ color: "#c79f4a" }} />
+            {privacyMode ? (
+              <EyeOff size={18} style={{ color: "#da0000" }} />
+            ) : (
+              <Eye size={18} style={{ color: "#c79f4a" }} />
+            )}
             <h2
               className="text-sm font-semibold tracking-wide uppercase"
               style={{
@@ -59,7 +80,7 @@ export const VisionPanel: React.FC<VisionPanelProps> = ({ onClose }) => {
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded transition-colors duration-150 hover:bg-white/5"
+            className="p-1 rounded transition-colors duration-150 hover:bg-[#c79f4a]/10"
           >
             <X size={16} style={{ color: "rgba(240, 234, 214, 0.50)" }} />
           </button>
@@ -200,14 +221,14 @@ export const VisionPanel: React.FC<VisionPanelProps> = ({ onClose }) => {
 
         {/* Privacy toggle */}
         <button
-          onClick={() => setPrivacyMode(!privacyMode)}
+          onClick={togglePrivacyMode}
           className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded text-xs tracking-wide uppercase transition-all duration-200 mb-6"
           style={{
             background: privacyMode ? "rgba(218, 0, 0, 0.08)" : "transparent",
             color: privacyMode ? "#da0000" : "rgba(240, 234, 214, 0.40)",
             border: privacyMode
-              ? "1px solid rgba(218, 0, 0, 0.15)"
-              : "1px solid rgba(199, 159, 74, 0.08)",
+              ? "1px solid rgba(218, 0, 0, 0.35)"
+              : "1px solid rgba(199, 159, 74, 0.25)",
           }}
         >
           {privacyMode ? (

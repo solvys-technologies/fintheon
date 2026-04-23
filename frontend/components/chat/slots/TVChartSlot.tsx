@@ -231,40 +231,19 @@ function ChartCanvas({ data, palette }: ChartCanvasProps) {
     };
   }, [bars, data.overlays, palette]);
 
-  if (status === "loading") {
-    return (
-      <div
-        style={{
-          height: 200,
-          fontFamily: "var(--font-data, ui-monospace, monospace)",
-          fontSize: 10,
-          color: "rgba(240, 234, 214, 0.5)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        Loading {data.symbol}…
-      </div>
-    );
-  }
-  if (status === "empty" || !bars || bars.length === 0) {
-    return (
-      <div
-        style={{
-          height: 200,
-          fontFamily: "var(--font-data, ui-monospace, monospace)",
-          fontSize: 10,
-          color: "rgba(240, 234, 214, 0.5)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        No bars available for {data.symbol}
-      </div>
-    );
-  }
+  const statusStyle: React.CSSProperties = {
+    height: 200,
+    fontFamily: "var(--font-data, ui-monospace, monospace)",
+    fontSize: 10,
+    color: "rgba(240, 234, 214, 0.5)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  };
+  if (status === "loading")
+    return <div style={statusStyle}>Loading {data.symbol}…</div>;
+  if (status === "empty" || !bars || bars.length === 0)
+    return <div style={statusStyle}>No bars available for {data.symbol}</div>;
   return (
     <div
       ref={containerRef}

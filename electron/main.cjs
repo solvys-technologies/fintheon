@@ -917,6 +917,9 @@ ipcMain.handle("system-permissions:request", async (_event, name) => {
 /* ------------------------------------------------------------------ */
 
 ipcMain.handle("harper-vision:capture-screen", async () => {
+  if (!harperVisionScreen) {
+    return { ok: false, error: "Harper Vision is macOS-only" };
+  }
   try {
     const result = await harperVisionScreen.captureOnce();
     return result || { ok: false, error: "Capture failed" };
@@ -926,6 +929,9 @@ ipcMain.handle("harper-vision:capture-screen", async () => {
 });
 
 ipcMain.handle("harper-vision:capture-window", async (_event, sourceId) => {
+  if (!harperVisionScreen) {
+    return { ok: false, error: "Harper Vision is macOS-only" };
+  }
   try {
     return await harperVisionScreen.captureSource(sourceId);
   } catch (err) {
@@ -934,6 +940,7 @@ ipcMain.handle("harper-vision:capture-window", async (_event, sourceId) => {
 });
 
 ipcMain.handle("harper-vision:get-sources", async () => {
+  if (!harperVisionScreen) return [];
   try {
     return await harperVisionScreen.getSources();
   } catch (err) {
@@ -942,6 +949,9 @@ ipcMain.handle("harper-vision:get-sources", async () => {
 });
 
 ipcMain.handle("harper-vision:start-capture", async (_event, sessionId) => {
+  if (!harperVisionScreen || !harperVisionAudio) {
+    return { ok: false, error: "Harper Vision is macOS-only" };
+  }
   try {
     const result = await harperVisionScreen.start(sessionId);
     await harperVisionAudio.start(sessionId);
@@ -952,6 +962,9 @@ ipcMain.handle("harper-vision:start-capture", async (_event, sessionId) => {
 });
 
 ipcMain.handle("harper-vision:stop-capture", async () => {
+  if (!harperVisionScreen || !harperVisionAudio) {
+    return { ok: true, screen: null, audio: null, unsupported: true };
+  }
   try {
     const screenResult = harperVisionScreen.stop();
     const audioResult = harperVisionAudio.stop();
