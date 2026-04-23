@@ -15,42 +15,47 @@ You are a sprint architect. Your job is to decompose a large task into parallel 
 - Deploy track (if included) must hit all 3 targets: backend (Fly.io), desktop (Vercel), mobile (Vercel)
 - Check `src/lib/changelog.ts` before finalizing track ownership -- recent entries are intentional
 
-## Phase 1 -- Discovery (MANDATORY)
+## Phase 1 -- Discovery (MANDATORY, AUTO-PILOT)
 
-Enter plan mode. Do NOT proceed until you have answers to ALL of the following:
+**Auto-behavior on skill invocation:**
 
-### Questions to Ask
+1. **Immediately call `EnterPlanMode`** before asking anything else. This skill never runs in execution mode -- the whole discovery loop happens in plan mode so the user sees proposed track boundaries before any file is written.
+2. **All discovery questions go through `AskUserQuestion`** (the multiple-choice modal). Do not free-text-interrogate the user one sentence at a time. Batch 2-4 related questions per `AskUserQuestion` call, each with 2-4 concrete options. The tool auto-appends an "Other" escape hatch -- you never add one.
+3. **Three rounds are enforced.** R1 and R2 are MANDATORY and must always fire, even if the user's initial message seems complete. R3 is optional and fires only if R1+R2 answers leave real ambiguity. Do not collapse rounds into one mega-prompt -- the user needs to see the sprint shape evolve between rounds.
 
-**Scope:**
+Between rounds, write a one-paragraph "what I heard" summary and then fire the next round. Never exit plan mode until briefs are written (Phase 3) and `ExitPlanMode` is called in Phase 4.
 
-- What is the end-state we are building toward?
-- What exists today that we are changing vs. building from scratch?
-- What are the boundaries -- what is explicitly out of scope?
+### Round 1 -- Scope & Surface (MANDATORY)
 
-**Architecture:**
+Fire an `AskUserQuestion` batch covering:
 
-- What connects to what? Draw the dependency map in plain language.
-- How do these pieces operate in non-technical terms?
-- Which direction do we want data/control to flow?
+- **End-state:** what does the product look like when the sprint ships? (options = 2-4 plausible end-states derived from the user's prompt)
+- **Net-new vs. refactor:** is this greenfield, a change to existing surfaces, or a mix? (single-select)
+- **Surface scope:** which parts of the app get touched? (multi-select: Backend, Desktop frontend, Mobile PWA, Electron shell, Supabase schema, Agent instructions)
+- **Track budget:** how many parallel Claude Code instances do you want to run? (single-select: 2 / 3 / 4 -- default 3, hard cap 4 per wave)
 
-**Constraints:**
+### Round 2 -- Architecture & Constraints (MANDATORY)
 
-- What must not break? (existing features, APIs, other agents' work)
-- Are there files owned by other agents that we must not touch?
-- What is the target branch? Does it exist yet?
+Fire a second `AskUserQuestion` batch covering:
 
-**Preferences:**
+- **Branch strategy:** shared branch vs. per-track branches? (single-select)
+- **Ownership conflicts:** which existing agent-owned files must stay off-limits? Start from `src/lib/changelog.ts` recent entries and list the top 2-3 candidates.
+- **Breakage tolerance:** what must NOT regress? (multi-select: Harper chat, RiskFlow feed, MDB/ADB/PMDB briefs, Aquarium, Mobile PWA, Desktop install flow, Supabase RLS)
+- **Unification owner:** does the orchestrator Claude merge, or does a dedicated unification track? (single-select)
 
-- How many parallel tracks are comfortable? (default: 3 max)
-- Should tracks share a branch or use separate branches?
-- Is there a hard deadline or priority ordering?
+### Round 3 -- Validation & Aesthetic (OPTIONAL)
 
-**Validation:**
+Fire a third `AskUserQuestion` batch ONLY if R1+R2 left gaps. Typical triggers: UI work landed in scope, deadline unclear, validation path undefined, or the user picked "Other" in a prior round.
 
-- How do we know each track succeeded?
-- What is the integration test for the full sprint?
+- **Validation spec:** per-track acceptance signal? (multi-select: tsc clean, vite build clean, bun build clean, curl smoke, Playwright, manual TP review)
+- **Design anchor:** for any UI track, reference source? (single-select: existing Fintheon surface, Figma link, `/solvys-feels` defaults, external reference via `browser-harness`)
+- **Deadline:** is this tied to a release window? (single-select: this week / next deploy / no deadline / other)
 
-Keep asking until you have a complete picture. Repeat back your understanding and get explicit confirmation before proceeding.
+If R1+R2 fully define the sprint, skip R3 and state "Round 3 skipped -- discovery complete" before moving to Phase 2.
+
+### Between Rounds
+
+After each round, repeat back a one-paragraph summary of the sprint shape so far ("Heard: {end-state}, {surface}, {N} tracks on {branch strategy}..."). Do not ask "is this right?" -- the next `AskUserQuestion` batch is the correction channel.
 
 ## Phase 2 -- Track Definition
 
