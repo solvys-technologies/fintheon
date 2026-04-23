@@ -18,6 +18,33 @@ const isDev = process.env.NODE_ENV !== "production";
 const MAX_BATCH_SIZE = 10;
 const TIMEOUT_MS = 15_000;
 
+// Circuit breaker for OpenRouter credit exhaustion. RiskFlow scores every ~30s
+// with parallel chunks, so a 402 from Grok creates 50+ failed calls/min — each
+// one a wasted round-trip that also slows /health and stresses the event loop.
+// When we see repeated 402s, trip the breaker and fall back to deterministic
+// parsing (which analyzeHeadline already does on error). Auto-probes after the
+// cooldown so it self-heals once credits are topped up.
+const CB_FAILURE_THRESHOLD = 3;
+const CB_COOLDOWN_MS = 5 * 60_000;
+let cbFailures = 0;
+let cbOpenUntil = 0;
+let cbLastLoggedOpen = 0;
+
+function isQuotaError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as {
+    status?: number;
+    code?: number;
+    message?: string;
+    cause?: unknown;
+  };
+  if (e.status === 402 || e.code === 402) return true;
+  const msg = typeof e.message === "string" ? e.message : "";
+  if (/insufficient credits|402|circuit open|quota/i.test(msg)) return true;
+  if (e.cause) return isQuotaError(e.cause);
+  return false;
+}
+
 export interface AnalyzedHeadline {
   raw: string;
   source: NewsSource;
@@ -116,8 +143,11 @@ export async function analyzeHeadline(
       latencyMs: Date.now() - startTime,
     };
   } catch (error) {
-    // AI failed, return deterministic result
-    console.error("[GrokAnalyzer] AI analysis failed:", error);
+    // AI failed, return deterministic result. Quota errors are already
+    // summarized by the circuit breaker; don't spam the log with stacks.
+    if (!isQuotaError(error)) {
+      console.error("[GrokAnalyzer] AI analysis failed:", error);
+    }
     return {
       raw: headline,
       source,
@@ -137,6 +167,11 @@ async function analyzeWithAi(
   headline: string,
   source: NewsSource,
 ): Promise<Partial<ParsedHeadline>> {
+  // Circuit open: fail fast, caller falls back to deterministic parse.
+  if (Date.now() < cbOpenUntil) {
+    throw new Error("grok-analyzer: circuit open (OpenRouter quota)");
+  }
+
   const prompt = buildAnalysisPrompt(headline, source);
 
   try {
@@ -148,8 +183,25 @@ async function analyzeWithAi(
       provider: "grok",
     });
 
+    // Success → reset breaker
+    cbFailures = 0;
     return parseAiResponse(text);
   } catch (error) {
+    if (isQuotaError(error)) {
+      cbFailures += 1;
+      if (cbFailures >= CB_FAILURE_THRESHOLD && Date.now() >= cbOpenUntil) {
+        cbOpenUntil = Date.now() + CB_COOLDOWN_MS;
+        // Log once per trip, not per request
+        if (cbOpenUntil !== cbLastLoggedOpen) {
+          cbLastLoggedOpen = cbOpenUntil;
+          console.warn(
+            `[GrokAnalyzer] OpenRouter quota exhausted — circuit open for ${Math.round(
+              CB_COOLDOWN_MS / 1000,
+            )}s. Deterministic parsing only until credits are restored.`,
+          );
+        }
+      }
+    }
     throw error;
   }
 }

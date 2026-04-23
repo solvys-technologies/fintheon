@@ -74,7 +74,7 @@ function FloatingInner({
             {activeAgent?.icon || "H"}
           </div>
           <div>
-            <div className="text-[12px] font-semibold text-white">
+            <div className="text-[12px] font-semibold text-[#f0ead6]">
               {activeAgent?.name || "Harper"}
             </div>
             <div className="text-[10px] text-gray-500">
@@ -96,7 +96,7 @@ function FloatingInner({
           </button>
           <button
             onClick={onCollapse}
-            className="flex items-center justify-center rounded-md text-gray-500 hover:text-white transition-colors"
+            className="flex items-center justify-center rounded-md text-[#f0ead6]/40 hover:text-[var(--fintheon-accent)] transition-colors"
             style={{ width: "28px", height: "28px" }}
           >
             <X size={14} />
@@ -200,9 +200,9 @@ export function FintheonFloatingChat({
             : "Open chat";
 
     const buttonClass = [
-      "fixed z-[90] flex items-center justify-center rounded-full transition-all shadow-lg hover:shadow-xl",
+      "fixed z-[90] flex items-center justify-center rounded-full transition-all",
       isDispatchedHere
-        ? "bg-[var(--fintheon-accent)] text-black shadow-[0_0_24px_rgba(199,159,74,0.45)] animate-pulse"
+        ? "bg-[var(--fintheon-accent)] text-black"
         : isDispatchedElsewhere
           ? "bg-[var(--fintheon-accent)]/50 text-black/60 cursor-not-allowed"
           : relay.isDispatching

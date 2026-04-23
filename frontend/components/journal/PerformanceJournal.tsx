@@ -19,6 +19,7 @@ import {
 import { ERTrendChart } from "./ERTrendChart";
 import { DayHistoryCard } from "./DayHistoryCard";
 import { SessionNotesPanel } from "./HumanPsychTab";
+import { TradingCalendar } from "./TradingCalendar";
 import type {
   JournalEntryItem,
   JournalSummaryResponse,
@@ -27,11 +28,13 @@ import type {
 } from "../../lib/services";
 
 type JournalTab = "human" | "agent";
+type PerformanceView = "dashboard" | "calendar";
 
 export function PerformanceJournal() {
   const backend = useBackend();
   const er = useERSafe();
   const [activeTab, setActiveTab] = useState<JournalTab>("human");
+  const [view, setView] = useState<PerformanceView>("dashboard");
   const [entries, setEntries] = useState<JournalEntryItem[]>([]);
   const [summary, setSummary] = useState<JournalSummaryResponse | null>(null);
   const [kpis, setKpis] = useState<PerformanceResponse | null>(null);
@@ -262,151 +265,180 @@ export function PerformanceJournal() {
         })}
       </div>
 
+      {/* View Selector: Dashboard | Calendar */}
+      <div className="flex px-3 pt-1 gap-1">
+        {(["dashboard", "calendar"] as PerformanceView[]).map((v) => (
+          <button
+            key={v}
+            onClick={() => setView(v)}
+            className={`flex-1 py-1 rounded text-[10px] font-medium transition-all ${
+              view === v
+                ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
+                : "text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]"
+            }`}
+          >
+            {v === "dashboard" ? "Dashboard" : "Calendar"}
+          </button>
+        ))}
+      </div>
+
+      {/* Calendar view */}
+      {view === "calendar" && (
+        <div className="flex-1 overflow-y-auto px-3 py-3">
+          <TradingCalendar />
+        </div>
+      )}
+
       {/* Scroll-lock container */}
-      <div className="flex-1 overflow-y-auto snap-y snap-mandatory scroll-smooth">
-        {/* PAGE 1 */}
-        <div className="min-h-full snap-start flex flex-col px-3 py-3 gap-3">
-          {loading && entries.length === 0 ? (
-            <div className="flex items-center justify-center h-32 text-[10px] text-[var(--fintheon-muted)]">
-              Loading dashboard...
+      {view === "dashboard" && (
+        <div className="flex-1 overflow-y-auto snap-y snap-mandatory scroll-smooth">
+          {/* PAGE 1 */}
+          <div className="min-h-full snap-start flex flex-col px-3 py-3 gap-3">
+            {loading && entries.length === 0 ? (
+              <div className="flex items-center justify-center h-32 text-[10px] text-[var(--fintheon-muted)]">
+                Loading dashboard...
+              </div>
+            ) : (
+              <>
+                {/* KPI Cards — 4x2 grid */}
+                <div className="grid grid-cols-4 gap-2">
+                  {orderedKpis.map((kpi, i) => (
+                    <KPICard
+                      key={i}
+                      label={kpi.label}
+                      value={kpi.value}
+                      subtitle={kpi.subtitle}
+                      pieData={kpi.pieData}
+                      accentColor={kpi.accentColor}
+                    />
+                  ))}
+                </div>
+
+                {/* Middle split: Bloomberg chart (78%) + Blindspots (~22%) */}
+                <div className="flex gap-3 min-h-0">
+                  {/* Left: Bloomberg chart fills container */}
+                  <div className="flex-[78] min-w-0">
+                    {chartMetric === "pnl" ? (
+                      <BloombergChart
+                        data={pnlDailyData}
+                        period={chartPeriod}
+                        metric={chartMetric}
+                        onPeriodChange={setChartPeriod}
+                        onMetricChange={setChartMetric}
+                      />
+                    ) : (
+                      <BloombergChart
+                        data={pnlDailyData}
+                        period={chartPeriod}
+                        metric={chartMetric}
+                        onPeriodChange={setChartPeriod}
+                        onMetricChange={setChartMetric}
+                      />
+                    )}
+                  </div>
+
+                  {/* Right ~22%: Blindspots (narrower) */}
+                  <div className="flex-[22] min-w-0">
+                    <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg p-2.5 h-full">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Eye className="w-3 h-3 text-[var(--fintheon-accent)]" />
+                        <span className="text-[10px] font-semibold text-[var(--fintheon-text)]">
+                          Blindspots
+                        </span>
+                      </div>
+                      {blindspots.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {blindspots.slice(0, 4).map((spot) => (
+                            <div
+                              key={spot.id}
+                              className="flex items-start gap-1"
+                            >
+                              <span
+                                className={`mt-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${spot.severity === "high" ? "bg-red-400" : "bg-[var(--fintheon-accent)]"}`}
+                              />
+                              <span className="text-[9px] text-[var(--fintheon-text)] leading-tight">
+                                {spot.text}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-[9px] text-[var(--fintheon-muted)] py-3 text-center">
+                          {blindspotSource === "error" ||
+                          blindspotSource === "empty"
+                            ? "No blindspot data"
+                            : "No blindspots detected"}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom split: Session + Notes */}
+                <SessionNotesPanel
+                  entries={entries}
+                  onRefresh={fetchData}
+                  todayInfractions={todayInfractions}
+                  avgDiscipline={avgDiscipline}
+                />
+              </>
+            )}
+          </div>
+
+          {/* PAGE 2 */}
+          <div className="min-h-full snap-start flex flex-col px-3 py-3 gap-3">
+            {/* Week picker */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-[var(--fintheon-text)]">
+                {activeTab === "human" ? "Session History" : "Agent History"}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setWeekOffset((w) => w + 1)}
+                  disabled={weekOffset >= Math.floor(entries.length / 5)}
+                  className="px-2 py-0.5 text-[10px] bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/15 rounded text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)] disabled:opacity-30"
+                >
+                  Older
+                </button>
+                <button
+                  onClick={() => setWeekOffset((w) => Math.max(0, w - 1))}
+                  disabled={weekOffset === 0}
+                  className="px-2 py-0.5 text-[10px] bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/15 rounded text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)] disabled:opacity-30"
+                >
+                  Newer
+                </button>
+              </div>
             </div>
-          ) : (
-            <>
-              {/* KPI Cards — 4x2 grid */}
-              <div className="grid grid-cols-4 gap-2">
-                {orderedKpis.map((kpi, i) => (
-                  <KPICard
-                    key={i}
-                    label={kpi.label}
-                    value={kpi.value}
-                    subtitle={kpi.subtitle}
-                    pieData={kpi.pieData}
-                    accentColor={kpi.accentColor}
+
+            {/* Day cards */}
+            {historyEntries.length > 0 ? (
+              <div className="space-y-2">
+                {historyEntries.map((entry) => (
+                  <DayHistoryCard
+                    key={entry.id}
+                    date={entry.date}
+                    pnl={entry.totalPnl ?? 0}
+                    notes={entry.notes}
+                    erScore={
+                      entry.erTrend?.length
+                        ? entry.erTrend[entry.erTrend.length - 1]
+                        : undefined
+                    }
+                    isAgentView={activeTab === "agent"}
+                    agentName={entry.agentName}
+                    winRate={entry.winRate}
+                    proposalCount={entry.proposalCount}
                   />
                 ))}
               </div>
-
-              {/* Middle split: Bloomberg chart (78%) + Blindspots (~22%) */}
-              <div className="flex gap-3 min-h-0">
-                {/* Left: Bloomberg chart fills container */}
-                <div className="flex-[78] min-w-0">
-                  {chartMetric === "pnl" ? (
-                    <BloombergChart
-                      data={pnlDailyData}
-                      period={chartPeriod}
-                      metric={chartMetric}
-                      onPeriodChange={setChartPeriod}
-                      onMetricChange={setChartMetric}
-                    />
-                  ) : (
-                    <BloombergChart
-                      data={pnlDailyData}
-                      period={chartPeriod}
-                      metric={chartMetric}
-                      onPeriodChange={setChartPeriod}
-                      onMetricChange={setChartMetric}
-                    />
-                  )}
-                </div>
-
-                {/* Right ~22%: Blindspots (narrower) */}
-                <div className="flex-[22] min-w-0">
-                  <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg p-2.5 h-full">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <Eye className="w-3 h-3 text-[var(--fintheon-accent)]" />
-                      <span className="text-[10px] font-semibold text-[var(--fintheon-text)]">
-                        Blindspots
-                      </span>
-                    </div>
-                    {blindspots.length > 0 ? (
-                      <div className="space-y-1.5">
-                        {blindspots.slice(0, 4).map((spot) => (
-                          <div key={spot.id} className="flex items-start gap-1">
-                            <span
-                              className={`mt-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${spot.severity === "high" ? "bg-red-400" : "bg-[var(--fintheon-accent)]"}`}
-                            />
-                            <span className="text-[9px] text-[var(--fintheon-text)] leading-tight">
-                              {spot.text}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-[9px] text-[var(--fintheon-muted)] py-3 text-center">
-                        {blindspotSource === "error" ||
-                        blindspotSource === "empty"
-                          ? "No blindspot data"
-                          : "No blindspots detected"}
-                      </div>
-                    )}
-                  </div>
-                </div>
+            ) : (
+              <div className="flex items-center justify-center h-32 text-[10px] text-[var(--fintheon-muted)]">
+                No history entries
               </div>
-
-              {/* Bottom split: Session + Notes */}
-              <SessionNotesPanel
-                entries={entries}
-                onRefresh={fetchData}
-                todayInfractions={todayInfractions}
-                avgDiscipline={avgDiscipline}
-              />
-            </>
-          )}
-        </div>
-
-        {/* PAGE 2 */}
-        <div className="min-h-full snap-start flex flex-col px-3 py-3 gap-3">
-          {/* Week picker */}
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[var(--fintheon-text)]">
-              {activeTab === "human" ? "Session History" : "Agent History"}
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setWeekOffset((w) => w + 1)}
-                disabled={weekOffset >= Math.floor(entries.length / 5)}
-                className="px-2 py-0.5 text-[10px] bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/15 rounded text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)] disabled:opacity-30"
-              >
-                Older
-              </button>
-              <button
-                onClick={() => setWeekOffset((w) => Math.max(0, w - 1))}
-                disabled={weekOffset === 0}
-                className="px-2 py-0.5 text-[10px] bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/15 rounded text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)] disabled:opacity-30"
-              >
-                Newer
-              </button>
-            </div>
+            )}
           </div>
-
-          {/* Day cards */}
-          {historyEntries.length > 0 ? (
-            <div className="space-y-2">
-              {historyEntries.map((entry) => (
-                <DayHistoryCard
-                  key={entry.id}
-                  date={entry.date}
-                  pnl={entry.totalPnl ?? 0}
-                  notes={entry.notes}
-                  erScore={
-                    entry.erTrend?.length
-                      ? entry.erTrend[entry.erTrend.length - 1]
-                      : undefined
-                  }
-                  isAgentView={activeTab === "agent"}
-                  agentName={entry.agentName}
-                  winRate={entry.winRate}
-                  proposalCount={entry.proposalCount}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-32 text-[10px] text-[var(--fintheon-muted)]">
-              No history entries
-            </div>
-          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -45,7 +45,13 @@ export const ChainOfThought: FC<ChainOfThoughtProps> = ({
         </svg>
         <span>Chain of Thought</span>
         {isStreaming && (
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse ml-1" />
+          <span
+            className="w-1.5 h-1.5 rounded-full ml-1"
+            style={{
+              backgroundColor: "var(--fintheon-accent)",
+              animation: "p 1.5s ease-in-out infinite",
+            }}
+          />
         )}
         <svg
           width="10"

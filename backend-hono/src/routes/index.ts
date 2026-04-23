@@ -78,6 +78,10 @@ import { createRoutinesRoutes } from "./routines/index.js";
 // [claude-code 2026-04-20] S21: Omi voice integration + PsychAssist fork admin
 import { createOmiRoutes } from "./omi.js";
 import { createPsychAssistForkRoutes } from "./admin/psych-assist-fork.js";
+// [S29-T4] Catalyst slide-out panel — date-filtered RiskFlow headlines
+import { createCatalystsByDateRoute } from "./catalysts/by-date.js";
+// [S29-T1] ProjectX trades history — calendar heatmap data layer
+import { createProjectXTradesRoute } from "./projectx/trades.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -344,4 +348,10 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/admin/psych-assist-fork", authMiddleware, requireAuth);
   app.use("/api/admin/psych-assist-fork/*", authMiddleware, requireAuth);
   app.route("/api/admin/psych-assist-fork", createPsychAssistForkRoutes());
+
+  // [S29-T4] Catalysts — date-filtered RiskFlow headlines for calendar panel
+  app.route("/api/catalysts", createCatalystsByDateRoute());
+
+  // [S29-T1] ProjectX trades history — public (BYPASS_AUTH compatible)
+  app.route("/api/projectx", createProjectXTradesRoute());
 }

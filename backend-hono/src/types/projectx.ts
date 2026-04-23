@@ -138,3 +138,25 @@ export interface PlaceOrderResponse {
   errorCode?: number;
   errorMessage?: string;
 }
+
+// ── S29-T1: Trade history types ──
+
+import { z } from "zod";
+
+export const ProjectXTradeSchema = z.object({
+  id: z.string(),
+  contract: z.string(),
+  entryAt: z.string().datetime(),
+  exitAt: z.string().datetime().nullable(),
+  side: z.enum(["long", "short"]),
+  qty: z.number().int().positive(),
+  entryPrice: z.number(),
+  exitPrice: z.number().nullable(),
+  realizedPnL: z.number(),
+});
+
+export type ProjectXTrade = z.infer<typeof ProjectXTradeSchema>;
+
+export const ProjectXTradesResponseSchema = z.object({
+  trades: z.array(ProjectXTradeSchema),
+});

@@ -14,6 +14,7 @@ import type {
 import type { BulletinPost } from "../../types/bulletin.js";
 import * as rithmicService from "../rithmic-service.js";
 import * as hyperliquidService from "../hyperliquid-service.js";
+import { recordAutopilotTrade } from "./autopilot-scheduler.js";
 
 export interface StoredProposal {
   id: string;
@@ -477,6 +478,15 @@ export async function executeProposal(
       proposalCache.set(proposalId, proposal);
     }
 
+    void recordAutopilotTrade({
+      id: orderId,
+      contract: proposal.instrument,
+      entryAt: now.toISOString(),
+      side: proposal.direction as "long" | "short",
+      qty: proposal.positionSize,
+      entryPrice: proposal.entryPrice ?? 0,
+    });
+
     return { success: true, orderId };
   }
 
@@ -520,6 +530,14 @@ export async function executeProposal(
       proposal.updatedAt = now.toISOString();
       proposalCache.set(proposalId, proposal);
     }
+    void recordAutopilotTrade({
+      id: orderId,
+      contract: proposal.instrument,
+      entryAt: now.toISOString(),
+      side: proposal.direction as "long" | "short",
+      qty: proposal.positionSize,
+      entryPrice: proposal.entryPrice ?? 0,
+    });
     return { success: true, orderId };
   }
 
@@ -563,6 +581,14 @@ export async function executeProposal(
       proposal.updatedAt = now.toISOString();
       proposalCache.set(proposalId, proposal);
     }
+    void recordAutopilotTrade({
+      id: orderId,
+      contract: proposal.instrument,
+      entryAt: now.toISOString(),
+      side: proposal.direction as "long" | "short",
+      qty: proposal.positionSize,
+      entryPrice: proposal.entryPrice ?? 0,
+    });
     return { success: true, orderId };
   }
 

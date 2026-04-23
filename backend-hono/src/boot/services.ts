@@ -62,6 +62,7 @@ import { startOracleResearch } from "../services/cron/oracle-research-scheduler.
 import { startOutcomeResolver } from "../services/cron/outcome-resolver.js";
 import { startOutcomeTagger } from "../services/scoring/outcome-tagger.js";
 import { initRoutinesStore } from "../services/routines/state-store.js";
+import { startTradesSync } from "../services/projectx-sync.js";
 
 const log = createLogger("Boot");
 let localPeerHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -224,6 +225,10 @@ export async function bootBackground(): Promise<void> {
   // Autopilot scheduler (30s cycle — proposal expiry, session detection)
   startAutopilotScheduler();
   log.info("AutopilotScheduler started");
+
+  // ProjectX trades sync (15min — upserts historical trades into Supabase for calendar heatmap)
+  startTradesSync();
+  log.info("ProjectXTradesSync started");
 
   // Catalyst promoter (60s — graduates scored items into narrative catalysts with thread links)
   startCatalystPromoter();

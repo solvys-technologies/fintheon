@@ -13,7 +13,7 @@ set -eo pipefail
 
 # [claude-code 2026-04-18] Resolve install path: FINTHEON_ROOT env > ~/.fintheon/install-path > default
 FINTHEON_ROOT="${FINTHEON_ROOT:-$(cat "$HOME/.fintheon/install-path" 2>/dev/null || echo "$HOME/Documents/Codebases/fintheon")}"
-UPDATE_VERSION="5.23.0"
+UPDATE_VERSION="5.22.9W"
 SUPABASE_DATABASE_URL="postgresql://postgres:PIR0670963957%24@db.nrcfnzclbjboctptxaxx.supabase.co:5432/postgres"
 
 # ── Solvys Gold ANSI palette ──────────────────────────────────────────────────
@@ -75,7 +75,7 @@ if [[ -z "$CURRENT_BRANCH" ]]; then
   CURRENT_BRANCH=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@')
 fi
 if [[ -z "$CURRENT_BRANCH" ]]; then
-  CURRENT_BRANCH="v5.22"
+  CURRENT_BRANCH="main"
   warn "Detached HEAD and no origin/HEAD set — defaulting to $CURRENT_BRANCH"
 fi
 info "Branch: $CURRENT_BRANCH"

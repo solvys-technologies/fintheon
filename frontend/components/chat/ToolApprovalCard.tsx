@@ -1,7 +1,6 @@
 // [claude-code 2026-04-03] In-chat tool approval card — smooth spring animations, Solvys Gold palette
 import { useState, useEffect, useRef } from "react";
 import {
-  Shield,
   ShieldCheck,
   ShieldX,
   Terminal,
@@ -25,7 +24,11 @@ const TOOL_META: Record<
 
 function getToolMeta(toolName: string) {
   return (
-    TOOL_META[toolName] ?? { icon: Shield, label: toolName, color: "#9CA3AF" }
+    TOOL_META[toolName] ?? {
+      icon: ShieldCheck,
+      label: toolName,
+      color: "#9CA3AF",
+    }
   );
 }
 
@@ -85,8 +88,6 @@ export function ToolApprovalCard({ approval, onApprove, onDeny }: Props) {
   const isApproved = status === "approved";
   const isDenied = status === "denied";
 
-  // Status icon
-  const StatusIcon = isPending ? Shield : isApproved ? ShieldCheck : ShieldX;
   const statusColor = isPending
     ? meta.color
     : isApproved
@@ -115,17 +116,22 @@ export function ToolApprovalCard({ approval, onApprove, onDeny }: Props) {
           : "opacity 350ms cubic-bezier(0.16, 1, 0.3, 1), transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1)",
         overflow: "hidden",
       }}
-      className="max-w-[82%] rounded-xl border overflow-hidden"
+      className="max-w-[82%] rounded-lg border overflow-hidden"
       data-approval-id={approvalId}
     >
-      {/* Border color based on status */}
-      <div className="border-l-2" style={{ borderColor: statusColor }}>
+      <div>
         {/* Header */}
         <div className="flex items-center gap-2 px-3 py-2.5 bg-[var(--fintheon-bg)]/80">
-          <StatusIcon
-            size={14}
-            style={{ color: statusColor }}
-            className={isPending ? "animate-pulse" : ""}
+          <span
+            style={{
+              display: "inline-block",
+              width: "6px",
+              height: "6px",
+              borderRadius: "50%",
+              backgroundColor: statusColor,
+              flexShrink: 0,
+              animation: isPending ? "p 1.5s ease-in-out infinite" : "none",
+            }}
           />
           <span
             className="text-[10px] font-medium uppercase tracking-wider"

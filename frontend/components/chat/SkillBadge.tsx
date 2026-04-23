@@ -19,7 +19,7 @@ export function SkillBadge({ skillId, onDismiss }: SkillBadgeProps) {
 
   return (
     <div
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded"
       style={{
         border: `1px solid ${skill.color}4D`,
         backgroundColor: `${skill.color}1A`,

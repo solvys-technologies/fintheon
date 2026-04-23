@@ -108,7 +108,7 @@ export function ChatGreeting({
     <div className="flex flex-col items-center justify-center min-h-[400px] gap-5 max-w-[780px] mx-auto w-full">
       {/* Agent name — large, centered */}
       <div className="flex flex-col items-center gap-2.5">
-        <h2 className="text-[22px] font-semibold text-white tracking-tight">
+        <h2 className="text-[22px] font-semibold text-[#f0ead6] tracking-tight">
           {agent.name}
         </h2>
       </div>
@@ -116,7 +116,7 @@ export function ChatGreeting({
       {/* Large greeting — shimmer animation */}
       <h1
         className={[
-          "text-[26px] font-bold text-white tracking-tight text-center leading-snug mt-1",
+          "text-[26px] font-bold tracking-tight text-center leading-snug mt-1",
           mounted ? "greeting-animate greeting-settle" : "opacity-0",
         ].join(" ")}
       >
@@ -132,10 +132,10 @@ export function ChatGreeting({
               key={index}
               onClick={() => handleChipClick(chip)}
               disabled={isLoading}
-              className="flex items-center gap-3 px-4 py-3.5 bg-transparent border border-white/10 fintheon-accent-border-hover hover:bg-[var(--fintheon-accent)]/5 disabled:opacity-50 rounded-xl text-left transition-all group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--fintheon-accent)]/60 focus-visible:border-[var(--fintheon-accent)]/60"
+              className="flex items-center gap-3 px-4 py-3.5 bg-transparent border border-[rgba(199,159,74,0.10)] hover:border-[rgba(199,159,74,0.20)] hover:bg-[var(--fintheon-accent)]/5 disabled:opacity-50 rounded-lg text-left transition-all group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--fintheon-accent)]/60"
             >
-              <Icon className="w-[18px] h-[18px] text-gray-500 transition-colors shrink-0 fintheon-group-accent group-hover:text-[var(--fintheon-accent)]" />
-              <span className="text-[13px] text-zinc-300 group-hover:text-white transition-colors">
+              <Icon className="w-[18px] h-[18px] text-[#f0ead6]/30 transition-colors shrink-0 group-hover:text-[var(--fintheon-accent)]" />
+              <span className="text-[13px] text-[#f0ead6]/72 group-hover:text-[#f0ead6] transition-colors">
                 {chip.label}
               </span>
             </button>

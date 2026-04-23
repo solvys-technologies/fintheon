@@ -425,7 +425,7 @@ export function PromptBox({
             {visibleQueueJobs.map((job) => (
               <span
                 key={job.jobId}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[var(--fintheon-accent)]/20 bg-[#0d0c09]/80 text-[11px] text-zinc-400"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded border border-[var(--fintheon-accent)]/20 bg-[#0d0c09]/80 text-[11px] text-[#f0ead6]/60"
               >
                 {job.status === "processing" ? (
                   <Loader2
@@ -453,7 +453,7 @@ export function PromptBox({
             ))}
             {hiddenQueueCount > 0 && (
               <span
-                className="inline-flex items-center px-2 py-1 rounded-full border border-[var(--fintheon-accent)]/10 bg-[#0d0c09]/60 text-[10px] text-zinc-500"
+                className="inline-flex items-center px-2 py-1 rounded border border-[var(--fintheon-accent)]/10 bg-[#0d0c09]/60 text-[10px] text-[#f0ead6]/40"
                 title={`${hiddenQueueCount} more job(s) queued`}
               >
                 +{hiddenQueueCount} more
@@ -475,22 +475,19 @@ export function PromptBox({
         {/* Main input container */}
         <div
           className={[
-            "relative flex flex-col rounded-2xl border",
+            "relative flex flex-col rounded-lg border",
             "backdrop-blur-xl",
             focused
-              ? "border-[var(--fintheon-accent)]/55 ring-1 ring-[var(--fintheon-accent)]/30 shadow-[0_0_20px_rgba(199,159,74,0.18),0_0_40px_rgba(199,159,74,0.08)]"
+              ? "border-[var(--fintheon-accent)]/55"
               : text
-                ? "border-[var(--fintheon-accent)]/40 ring-1 ring-[var(--fintheon-accent)]/15 shadow-[0_0_16px_rgba(199,159,74,0.08)]"
+                ? "border-[var(--fintheon-accent)]/40"
                 : "border-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/25",
             disabled ? "opacity-50 pointer-events-none" : "",
             vanishing ? "animate-prompt-vanish" : "",
           ].join(" ")}
           style={{
-            background:
-              focused || text
-                ? "linear-gradient(180deg, rgba(13,12,9,0.98), rgba(8,8,6,0.95))"
-                : "transparent",
-            transition: "all 0.4s ease",
+            background: focused || text ? "rgba(13,12,9,0.98)" : "transparent",
+            transition: "border-color 0.2s ease, background 0.2s ease",
           }}
         >
           {/* Headline chips above textarea */}
@@ -537,7 +534,7 @@ export function PromptBox({
             }}
             placeholder={placeholder}
             rows={1}
-            className="resize-none bg-transparent text-[13px] text-white placeholder:text-zinc-500 focus:outline-none overflow-y-auto"
+            className="resize-none bg-transparent text-[13px] text-[#f0ead6] placeholder:text-zinc-500 focus:outline-none overflow-y-auto"
             style={{
               padding: compact ? "10px 14px 6px" : "14px 16px 8px",
               maxHeight: compact ? "100px" : "170px",
@@ -592,9 +589,9 @@ export function PromptBox({
                 disabled={!text.trim() && images.length === 0 && !isProcessing}
                 className={`flex items-center justify-center rounded-full ${
                   isProcessing
-                    ? "bg-[var(--fintheon-accent)]/80 hover:bg-[var(--fintheon-accent)] text-black shadow-[0_0_12px_rgba(199,159,74,0.3)]"
+                    ? "bg-[var(--fintheon-accent)]/80 hover:bg-[var(--fintheon-accent)] text-black"
                     : text.trim() || focused
-                      ? "bg-[var(--fintheon-accent)] hover:bg-[#C5A030] text-black shadow-[0_0_20px_rgba(199,159,74,0.4)] hover:shadow-[0_0_28px_rgba(199,159,74,0.55)]"
+                      ? "bg-[var(--fintheon-accent)] hover:bg-[#C5A030] text-black"
                       : "bg-[var(--fintheon-accent)]/30 text-black/50 disabled:opacity-20"
                 }`}
                 style={{

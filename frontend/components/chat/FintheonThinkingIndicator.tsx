@@ -1,5 +1,3 @@
-// [claude-code 2026-04-19] Radar pulse replaced by HelixVertical Braille spinner
-// (unicode icon-bank) — matches Nothing/Doto design language across the app.
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronRight } from "@/components/shared/iso-icons";
 import { HelixSpinner } from "../icon-bank/agent-spinners";
@@ -57,9 +55,18 @@ export function FintheonThinkingIndicator({
       }}
     >
       <div className="flex items-start gap-3">
-        {/* Vertical braille helix — chat thinking indicator */}
+        {/* Pulse dot — Solvys gold on dim bg */}
         <div className="mt-0.5 h-6 w-6 flex-shrink-0 flex items-center justify-center">
-          <HelixSpinner active={isThinking} size={11} />
+          <span
+            style={{
+              display: "inline-block",
+              width: "8px",
+              height: "8px",
+              borderRadius: "50%",
+              backgroundColor: "#c79f4a",
+              animation: "p 1.5s ease-in-out infinite",
+            }}
+          />
         </div>
 
         <div className="min-w-0 flex-1">

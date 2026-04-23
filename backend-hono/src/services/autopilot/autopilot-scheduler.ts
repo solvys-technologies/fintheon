@@ -1,3 +1,4 @@
+// [claude-code 2026-04-22] S29-T1: Added recordAutopilotTrade — tags autopilot fills with origin='autopilot'
 // [claude-code 2026-03-11] Autopilot scheduler — manages RTH session detection, daily limits, and proposal expiry
 
 /**
@@ -7,6 +8,7 @@
 
 import { expireOldProposals } from "./proposal-service.js";
 import { getSignalStats } from "./signal-processor.js";
+import { query } from "../../db/optimized.js";
 
 let schedulerInterval: ReturnType<typeof setInterval> | null = null;
 let enabled = true;
@@ -91,5 +93,32 @@ export function stopAutopilotScheduler() {
     clearInterval(schedulerInterval);
     schedulerInterval = null;
     console.log("[AutoPilot] Scheduler stopped");
+  }
+}
+
+export async function recordAutopilotTrade(trade: {
+  id: string;
+  contract: string;
+  entryAt: string;
+  side: "long" | "short";
+  qty: number;
+  entryPrice: number;
+}): Promise<void> {
+  try {
+    await query(
+      `INSERT INTO trades (id, contract, entry_at, side, qty, entry_price, origin)
+       VALUES ($1, $2, $3, $4, $5, $6, 'autopilot')
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        trade.id,
+        trade.contract,
+        trade.entryAt,
+        trade.side,
+        trade.qty,
+        trade.entryPrice,
+      ],
+    );
+  } catch (err) {
+    console.warn("[AutoPilot] recordAutopilotTrade failed (non-fatal):", err);
   }
 }

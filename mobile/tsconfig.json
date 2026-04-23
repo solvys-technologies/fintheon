@@ -15,7 +15,9 @@
     "jsx": "preserve",
     "paths": {
       "@/*": ["./*"],
-      "@frontend/*": ["../frontend/*"]
+      "@frontend/*": ["../frontend/*"],
+      "react": ["./node_modules/@types/react"],
+      "react-dom": ["./node_modules/@types/react-dom"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],

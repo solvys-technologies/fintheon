@@ -20,7 +20,7 @@ export function FintheonStreamingBubble({
   return (
     <div className={`flex justify-start ${compact ? "" : "mb-3"}`}>
       <div
-        className={`relative max-w-[85%] rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm ${
+        className={`relative max-w-[85%] rounded-lg border border-[rgba(199,159,74,0.10)] bg-[#0a0905] backdrop-blur-sm ${
           compact ? "text-[11px]" : "text-[13px]"
         }`}
         style={{ padding: compact ? "8px 10px" : "12px 16px" }}
@@ -30,14 +30,15 @@ export function FintheonStreamingBubble({
             {agentName}
           </div>
         )}
-        <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+        <div className="text-[#f0ead6]/80 leading-relaxed whitespace-pre-wrap">
           {content}
           <span
-            className="inline-block w-[2px] ml-0.5 animate-pulse"
+            className="inline-block w-[2px] ml-0.5"
             style={{
               height: compact ? "12px" : "14px",
               backgroundColor: "var(--fintheon-accent)",
               verticalAlign: "text-bottom",
+              animation: "p 1.5s ease-in-out infinite",
             }}
           />
         </div>

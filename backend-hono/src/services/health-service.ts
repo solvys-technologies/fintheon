@@ -50,7 +50,22 @@ const checkDatabase = async () => {
   }
 };
 
+// Cache aiGateway health for 30s. /health is polled every ~2s by the frontend;
+// hitting OpenRouter on every poll makes /health stall (2–5s) while Harper/Grok
+// are slamming OpenRouter, which flips the GatewayContext to "disconnected" and
+// shows the spurious "Hermes disconnecting" toast.
+let aiGatewayCache: {
+  value: { status: ComponentStatus; details?: Record<string, unknown> };
+  expiresAt: number;
+} | null = null;
+const AI_GATEWAY_CACHE_TTL_MS = 30_000;
+const AI_GATEWAY_PROBE_TIMEOUT_MS = 2500;
+
 const checkAiGateway = async () => {
+  if (aiGatewayCache && aiGatewayCache.expiresAt > Date.now()) {
+    return aiGatewayCache.value;
+  }
+
   const baseUrl =
     defaultAiConfig.models["openrouter-opus"]?.baseUrl ??
     process.env.OPENROUTER_BASE_URL ??
@@ -58,10 +73,15 @@ const checkAiGateway = async () => {
   const apiKey = process.env.OPENROUTER_API_KEY;
 
   if (!apiKey) {
-    return {
+    const result = {
       status: "error" as ComponentStatus,
       details: { error: "Missing OPENROUTER_API_KEY" },
     };
+    aiGatewayCache = {
+      value: result,
+      expiresAt: Date.now() + AI_GATEWAY_CACHE_TTL_MS,
+    };
+    return result;
   }
 
   try {
@@ -73,27 +93,33 @@ const checkAiGateway = async () => {
           Authorization: `Bearer ${apiKey}`,
         },
       },
-      8000,
+      AI_GATEWAY_PROBE_TIMEOUT_MS,
     );
 
     const statusCode = response.status;
     const isHealthy = statusCode >= 200 && statusCode < 400;
 
-    return {
+    const result = {
       status: isHealthy
         ? ("ok" as ComponentStatus)
         : ("degraded" as ComponentStatus),
-      details: {
-        statusCode,
-      },
+      details: { statusCode },
     };
+    aiGatewayCache = {
+      value: result,
+      expiresAt: Date.now() + AI_GATEWAY_CACHE_TTL_MS,
+    };
+    return result;
   } catch (error) {
-    return {
+    const result = {
       status: "error" as ComponentStatus,
       details: {
         message: error instanceof Error ? error.message : String(error),
       },
     };
+    // Cache errors briefly too so a single network blip doesn't flap the UI
+    aiGatewayCache = { value: result, expiresAt: Date.now() + 5_000 };
+    return result;
   }
 };
 

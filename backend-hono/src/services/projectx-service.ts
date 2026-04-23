@@ -1,3 +1,4 @@
+// [claude-code 2026-04-22] S29-T1: Added getTrades for historical trade sync
 // [claude-code 2026-03-28] ProjectX service — HTTP client for execution bridge sidecar
 /**
  * ProjectX Service
@@ -14,6 +15,10 @@ import type {
   BridgePositionResponse,
   BridgeAccountResponse,
 } from "../types/execution-bridge.js";
+import {
+  ProjectXTradesResponseSchema,
+  type ProjectXTrade,
+} from "../types/projectx.js";
 
 const BRIDGE_URL = process.env.BRIDGE_URL ?? "http://localhost:8001";
 
@@ -130,5 +135,27 @@ export async function cancelOrder(
       success: false,
       error: err instanceof Error ? err.message : "Cancel failed",
     };
+  }
+}
+
+export async function getTrades(
+  accountId: string,
+  from: string,
+  to: string,
+): Promise<ProjectXTrade[]> {
+  if (!hasCredentials(accountId)) {
+    console.warn("[ProjectX] getTrades: no credentials — returning []");
+    return [];
+  }
+
+  try {
+    const raw = await bridgeFetch<unknown>(
+      `/accounts/${accountId}/trades?from=${from}&to=${to}`,
+    );
+    const parsed = ProjectXTradesResponseSchema.parse(raw);
+    return parsed.trades;
+  } catch (err) {
+    console.error("[ProjectX] getTrades failed:", err);
+    return [];
   }
 }

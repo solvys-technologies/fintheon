@@ -52,17 +52,17 @@ const MARKDOWN_COMPONENTS = {
     <li className="leading-relaxed">{children}</li>
   ),
   h1: ({ children }: { children?: React.ReactNode }) => (
-    <h1 className="text-base font-bold text-white mb-2 mt-3 first:mt-0">
+    <h1 className="text-base font-bold text-[#f0ead6] mb-2 mt-3 first:mt-0">
       {children}
     </h1>
   ),
   h2: ({ children }: { children?: React.ReactNode }) => (
-    <h2 className="text-sm font-semibold text-white mb-2 mt-3 first:mt-0">
+    <h2 className="text-sm font-semibold text-[#f0ead6] mb-2 mt-3 first:mt-0">
       {children}
     </h2>
   ),
   h3: ({ children }: { children?: React.ReactNode }) => (
-    <h3 className="text-sm font-semibold text-zinc-200 mb-1.5 mt-2 first:mt-0">
+    <h3 className="text-sm font-semibold text-[#f0ead6]/80 mb-1.5 mt-2 first:mt-0">
       {children}
     </h3>
   ),
@@ -75,11 +75,11 @@ const MARKDOWN_COMPONENTS = {
   }) => {
     const isBlock = className?.includes("language-");
     return isBlock ? (
-      <code className="block bg-zinc-900/80 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-zinc-300 overflow-x-auto my-2">
+      <code className="block bg-[#0a0905] border border-[rgba(199,159,74,0.10)] rounded px-3 py-2 text-xs font-mono text-[#f0ead6]/72 overflow-x-auto my-2">
         {children}
       </code>
     ) : (
-      <code className="bg-zinc-800/80 rounded px-1 py-0.5 text-xs font-mono text-zinc-300">
+      <code className="bg-[#0a0905] rounded px-1 py-0.5 text-xs font-mono text-[#f0ead6]/72">
         {children}
       </code>
     );
@@ -93,9 +93,9 @@ const MARKDOWN_COMPONENTS = {
     </blockquote>
   ),
   strong: ({ children }: { children?: React.ReactNode }) => (
-    <strong className="font-semibold text-zinc-100">{children}</strong>
+    <strong className="font-semibold text-[#f0ead6]">{children}</strong>
   ),
-  hr: () => <hr className="border-white/10 my-3" />,
+  hr: () => <hr className="border-[rgba(199,159,74,0.10)] my-3" />,
   a: ({ children, href }: { children?: React.ReactNode; href?: string }) => (
     <a
       href={href}
@@ -141,7 +141,7 @@ const FintheonTextPart: FC<{ text: string }> = ({ text }) => {
     artifacts.length > 0 ? stripArtifactBlocks(safeText) : safeText;
 
   return (
-    <div className="text-sm text-zinc-300 max-w-none">
+    <div className="text-sm text-[#f0ead6]/80 max-w-none">
       {cleanText && (
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
@@ -240,10 +240,10 @@ const FintheonUserMessage: FC = () => {
 
   return (
     <div className="group/msg flex flex-col items-end animate-fade-slide-in">
-      <div className="max-w-[95%] rounded-2xl p-4 backdrop-blur-md border transition-colors fintheon-user-bubble">
+      <div className="max-w-[95%] rounded-lg p-4 backdrop-blur-md border transition-colors fintheon-user-bubble">
         <MessageErrorBoundary>
           {userText && (
-            <p className="text-sm text-white whitespace-pre-wrap break-words">
+            <p className="text-sm text-[#f0ead6] whitespace-pre-wrap break-words">
               {userText}
             </p>
           )}
@@ -251,7 +251,7 @@ const FintheonUserMessage: FC = () => {
             <ClickableImage
               key={i}
               src={src}
-              className="mt-2 rounded-lg max-w-full max-h-64 object-contain border border-white/10"
+              className="mt-2 rounded max-w-full max-h-64 object-contain border border-[rgba(199,159,74,0.10)]"
             />
           ))}
         </MessageErrorBoundary>
@@ -407,7 +407,7 @@ const ScrollToBottomButton: FC<{
       {showButton && (
         <button
           onClick={scrollToBottom}
-          className="scroll-to-bottom-btn fixed z-30 flex items-center justify-center rounded-full border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-surface)] text-[var(--fintheon-accent)] shadow-lg hover:bg-[var(--fintheon-accent)]/10"
+          className="scroll-to-bottom-btn fixed z-30 flex items-center justify-center rounded-full border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-surface)] text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
           style={{
             width: "36px",
             height: "36px",
@@ -479,9 +479,9 @@ const DirectUserMessage: FC<{ msg: any }> = ({ msg }) => {
   const images = extractImages(msg);
   return (
     <div className="group/msg flex flex-col items-end animate-fade-slide-in">
-      <div className="max-w-[95%] rounded-2xl p-4 backdrop-blur-md border transition-colors fintheon-user-bubble">
+      <div className="max-w-[95%] rounded-lg p-4 backdrop-blur-md border transition-colors fintheon-user-bubble">
         {text && (
-          <p className="text-sm text-white whitespace-pre-wrap break-words">
+          <p className="text-sm text-[#f0ead6] whitespace-pre-wrap break-words">
             {text}
           </p>
         )}
@@ -489,7 +489,7 @@ const DirectUserMessage: FC<{ msg: any }> = ({ msg }) => {
           <ClickableImage
             key={i}
             src={src}
-            className="mt-2 rounded-lg max-w-full max-h-64 object-contain border border-white/10"
+            className="mt-2 rounded max-w-full max-h-64 object-contain border border-[rgba(199,159,74,0.10)]"
           />
         ))}
       </div>
@@ -638,7 +638,7 @@ export function FintheonThread({
 
             {/* Error banner — visible in thread, not just input area */}
             {lastError && !isLoading && (
-              <div className="flex items-start gap-2.5 rounded-xl border border-red-500/25 bg-red-500/8 px-4 py-3 animate-fade-slide-in">
+              <div className="flex items-start gap-2.5 rounded-lg border border-red-500/25 bg-red-500/8 px-4 py-3 animate-fade-slide-in">
                 <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
                 <div className="min-w-0">
                   <p className="text-xs text-red-300 leading-relaxed">
@@ -657,13 +657,13 @@ export function FintheonThread({
       {/* Image lightbox overlay */}
       {lightboxSrc && (
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-zoom-out"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#050402]/90 backdrop-blur-sm cursor-zoom-out"
           onClick={() => setLightboxSrc(null)}
         >
           <img
             src={lightboxSrc}
             alt="Expanded"
-            className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
             onClick={(e) => e.stopPropagation()}
           />
         </div>

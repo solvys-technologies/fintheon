@@ -200,7 +200,7 @@ export function HeadlineChips({
       {chips.map((c) => (
         <span
           key={c.id}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-[var(--fintheon-accent)]/10 border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)]"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-[var(--fintheon-accent)]/10 border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)]"
         >
           {c.headline.slice(0, 40)}
           {c.headline.length > 40 ? "..." : ""}

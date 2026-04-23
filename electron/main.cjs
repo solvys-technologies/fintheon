@@ -92,7 +92,10 @@ async function startBackend() {
     return { ok: true, detail: "already running" };
   }
 
-  const backendDir = path.join(__dirname, "..", "backend-hono");
+  const repoRoot = app.isPackaged
+    ? path.join(require("os").homedir(), "Documents", "Fintheon")
+    : path.join(__dirname, "..");
+  const backendDir = path.join(repoRoot, "backend-hono");
   const distEntry = path.join(backendDir, "dist", "index.js");
 
   if (!fs.existsSync(distEntry)) {
@@ -118,11 +121,13 @@ async function startBackend() {
   console.log(
     `[Electron] Starting backend server... (cwd: ${backendDir}, env: ${envPath})`,
   );
-  backendProcess = spawn("node", [distEntry], {
+  const nodeBin = app.isPackaged ? "/opt/homebrew/bin/node" : "node";
+  backendProcess = spawn(nodeBin, [distEntry], {
     cwd: backendDir,
     env: {
       ...process.env,
       NODE_ENV: runtimeNodeEnv,
+      FINTHEON_DESKTOP: "true",
       DOTENV_CONFIG_PATH: envPath,
     },
     stdio: ["ignore", "pipe", "pipe"],

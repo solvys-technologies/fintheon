@@ -133,7 +133,8 @@ export function validateEnv(): ValidationResult {
   }
 
   // --- Dangerous dev vars in production ---
-  if (isProd) {
+  const isDesktop = process.env.FINTHEON_DESKTOP === "true";
+  if (isProd && !isDesktop) {
     for (const { name, reason } of DANGEROUS_DEV_VARS) {
       if (process.env[name]) {
         criticalErrors.push(

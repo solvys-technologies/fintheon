@@ -9,6 +9,34 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-22T14:30:00",
+    agent: "T3/Wealth",
+    summary:
+      "S29-T3: Modernized chat interface to Solvys design system (visual-only, no logic changes)",
+    files: [
+      "frontend/components/chat/ChatGreeting.tsx",
+      "frontend/components/chat/ChainOfThought.tsx",
+      "frontend/components/chat/CognitionPanel.tsx",
+      "frontend/components/chat/FintheonFloatingChat.tsx",
+      "frontend/components/chat/FintheonStreamingBubble.tsx",
+      "frontend/components/chat/FintheonThinkingIndicator.tsx",
+      "frontend/components/chat/FintheonThread.tsx",
+      "frontend/components/chat/HeadlinePickerPopover.tsx",
+      "frontend/components/chat/SkillBadge.tsx",
+      "frontend/components/chat/ToolApprovalCard.tsx",
+      "frontend/components/ui/chatgpt-prompt-input.tsx",
+      "frontend/index.css",
+      "frontend/styles/custom.css",
+    ],
+  },
+
+  {
+    date: "2026-04-20T22:30:00",
+    agent: "harper-opus",
+    summary:
+      "Evening maintenance sweep: fixed mobile/tsconfig.json — added explicit 'react' and 'react-dom' path entries pointing to mobile/node_modules/@types so shared frontend lib files (regime-store.ts, useRegimeTracker.ts) resolve React types correctly during mobile tsc check. Without this, mobile/node_modules/@types/react was invisible to files traversed via the @frontend/* path alias. Frontend, backend builds, and both external MCP repos (financial-datasets, tradingview-mcp) confirmed clean.",
+    files: ["mobile/tsconfig.json"],
+  },
     date: "2026-04-21T03:12:00",
     agent: "claude-code",
     summary:
@@ -6969,6 +6997,61 @@ export const changelog: ChangelogEntry[] = [
       "backend-hono/src/services/strands/provider.ts",
       "backend-hono/src/services/vproxy/anthropic-client.ts",
       "frontend/components/layout/TimelineOverlay.tsx",
+    ],
+  },
+  {
+    date: "2026-04-22T12:41:00",
+    agent: "T1/Wealth",
+    summary:
+      "S29-T1: Added trades origin column + ProjectX trades sync + /api/projectx/trades endpoint. Migration adds origin TEXT column (user|autopilot) to trades table. Sync worker polls every 15 min and upserts last 48h of trades. Route supports ?from&to&origin filtering. Autopilot fills now tagged with origin='autopilot' across all broker paths.",
+    files: [
+      "supabase/migrations/20260422_trades_origin.sql",
+      "backend-hono/src/services/projectx-service.ts",
+      "backend-hono/src/services/projectx-sync.ts",
+      "backend-hono/src/routes/projectx/trades.ts",
+      "backend-hono/src/services/autopilot/autopilot-scheduler.ts",
+      "backend-hono/src/services/autopilot/proposal-service.ts",
+      "backend-hono/src/boot/services.ts",
+      "backend-hono/src/types/projectx.ts",
+    ],
+  },
+  {
+    date: "2026-04-22T13:19:00",
+    agent: "T2/Wealth",
+    summary:
+      "S29-T2: Split AgentPerformanceTab into sub-components (AgentKpiStats, AgentBreakdownTable, AgentProposalTracker, AgentSummaryPanel). Added TradingCalendar with ProjectX and Solvys views, Agentic/Human/All origin toggle, day/week/month granularity pills, CalendarNav with month navigation, equity curve drawer on cell click. Dashboard | Calendar segmented control in PerformanceJournal. CalendarSelection type exported for T4 integration.",
+    files: [
+      "frontend/components/journal/AgentPerformanceTab.tsx",
+      "frontend/components/journal/PerformanceJournal.tsx",
+      "frontend/components/journal/performance-tab/AgentKpiStats.tsx",
+      "frontend/components/journal/performance-tab/AgentBreakdownTable.tsx",
+      "frontend/components/journal/performance-tab/AgentProposalTracker.tsx",
+      "frontend/components/journal/performance-tab/AgentSummaryPanel.tsx",
+      "frontend/components/journal/TradingCalendar/index.tsx",
+      "frontend/components/journal/TradingCalendar/types.ts",
+      "frontend/components/journal/TradingCalendar/ProjectXCalendar.tsx",
+      "frontend/components/journal/TradingCalendar/SolvysCalendar.tsx",
+      "frontend/components/journal/TradingCalendar/CalendarCell.tsx",
+      "frontend/components/journal/TradingCalendar/WeekTotalCell.tsx",
+      "frontend/components/journal/TradingCalendar/CalendarNav.tsx",
+      "frontend/components/journal/TradingCalendar/CalendarControls.tsx",
+      "frontend/components/journal/TradingCalendar/EquityCurveDrawer.tsx",
+      "frontend/components/journal/TradingCalendar/hooks/useTradeCalendarData.ts",
+    ],
+  },
+  {
+    date: "2026-04-22T13:04:00",
+    agent: "T4/Wealth",
+    summary:
+      "S29-T4: Added CatalystSlideOut panel + /api/catalysts/by-date route — shows RiskFlow headlines filtered to calendar selection. Slide-out drawer with urgency tags, date grouping, ESC/click-outside close, Solvys Gold styling.",
+    files: [
+      "frontend/components/journal/CatalystSlideOut/index.tsx",
+      "frontend/components/journal/CatalystSlideOut/CatalystList.tsx",
+      "frontend/components/journal/CatalystSlideOut/CatalystListItem.tsx",
+      "frontend/components/journal/CatalystSlideOut/EmptyState.tsx",
+      "frontend/components/journal/CatalystSlideOut/hooks/useCatalystsByDate.ts",
+      "backend-hono/src/routes/catalysts/by-date.ts",
+      "backend-hono/src/routes/index.ts",
     ],
   },
 ];

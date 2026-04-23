@@ -165,7 +165,13 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
         <div className="flex items-center gap-2">
           {/* Fintheon dot while streaming, static when done */}
           {isStreaming && !done ? (
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
+            <span
+              className="inline-block w-1.5 h-1.5 rounded-full"
+              style={{
+                backgroundColor: "var(--fintheon-accent)",
+                animation: "p 1.5s ease-in-out infinite",
+              }}
+            />
           ) : (
             <span
               className="inline-block w-1.5 h-1.5 rounded-full"

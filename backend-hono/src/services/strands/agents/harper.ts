@@ -7,6 +7,7 @@ import { TextBlock, ImageBlock } from "@strands-agents/sdk";
 import type { ContentBlock } from "@strands-agents/sdk";
 import { withCognition } from "../telemetry.js";
 import { createConversationManager } from "../memory-store.js";
+import { checkVProxyHealth } from "../provider.js";
 import { getAgentSystemPrompt } from "../../ai/agent-instructions/index.js";
 import { createLogger } from "../../../lib/logger.js";
 
@@ -67,6 +68,19 @@ export async function createHarperAgent(
       ? createConversationManager(opts.conversationId, opts.userId)
       : undefined;
 
+  // Auto-fallback: when no explicit provider, prefer VProxy (local Opus subscription);
+  // if it's unreachable, transparently fall back to OpenRouter Opus so chat still works.
+  let effectiveProvider = opts?.provider;
+  if (!effectiveProvider) {
+    const health = await checkVProxyHealth();
+    effectiveProvider = health.available ? "local" : "orouter";
+    if (!health.available) {
+      log.warn("VProxy unreachable — falling back to OpenRouter Opus", {
+        error: health.error,
+      });
+    }
+  }
+
   return createAgent({
     name: "harper-opus",
     description:
@@ -79,7 +93,7 @@ export async function createHarperAgent(
       maxTokens: 16384,
     },
     conversationManager,
-    provider: opts?.provider,
+    provider: effectiveProvider,
   });
 }
 
