@@ -470,6 +470,16 @@ html *::-webkit-scrollbar {
   }
 }
 
+/* [claude-code 2026-04-23] S32-T5 — chat slot skeleton→content reveal */
+@keyframes slotReveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Luxurious fade animations for zen, calm feel */
 @keyframes fadeIn {
   from {

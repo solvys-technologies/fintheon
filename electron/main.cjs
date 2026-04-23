@@ -7,18 +7,32 @@
 // [claude-code 2026-03-23] Browser Use Phase 2 — CDP + browser-use CLI bridge
 // [claude-code 2026-03-24] Supabase Google OAuth deep link: fintheon:// protocol + open-url handler
 // [claude-code 2026-04-19] S27-T5 W2c: voice window chrome hook for active voice sessions
+// [claude-code 2026-04-23] Windows build support — remote-backend mode, platform gating, titleBarOverlay chrome
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const { installVoiceChromeHook } = require("./window-chrome-voice.cjs");
-const { HarperVisionScreen } = require("./services/harper-vision-screen.cjs");
-const { HarperVisionAudio } = require("./services/harper-vision-audio.cjs");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
 const { autoUpdater } = require("electron-updater");
 
-// [claude-code 2026-04-23] Harper Vision — screen + audio capture instances
-const harperVisionScreen = new HarperVisionScreen();
-const harperVisionAudio = new HarperVisionAudio();
+const IS_MAC = process.platform === "darwin";
+const IS_WIN = process.platform === "win32";
+
+// [claude-code 2026-04-23] Windows runs in remote-backend mode: no local spawn,
+// no launchd, frontend hits fintheon.fly.dev directly. macOS keeps the localhost
+// sidecar via launchd + app-owned spawn (lifecycle v2).
+const REMOTE_BACKEND_URL = "https://fintheon.fly.dev";
+
+// [claude-code 2026-04-23] Harper Vision — macOS-only (uses ScreenCaptureKit under the hood).
+// Windows build stubs these out and returns { ok: false } from the IPC handlers.
+let harperVisionScreen = null;
+let harperVisionAudio = null;
+if (IS_MAC) {
+  const { HarperVisionScreen } = require("./services/harper-vision-screen.cjs");
+  const { HarperVisionAudio } = require("./services/harper-vision-audio.cjs");
+  harperVisionScreen = new HarperVisionScreen();
+  harperVisionAudio = new HarperVisionAudio();
+}
 
 let mainWindow = null;
 let backendProcess = null;
@@ -927,8 +941,66 @@ ipcMain.handle("harper-vision:stop-capture", async () => {
 });
 
 ipcMain.handle("harper-vision:get-status", async () => {
+  if (!harperVisionScreen || !harperVisionAudio) {
+    return {
+      screen: { isCapturing: false, sessionId: null, frameCounter: 0, intervalMs: 0 },
+      audio: { isRecording: false, sessionId: null, mode: "unsupported" },
+      privacyMode: false,
+    };
+  }
   return {
     screen: harperVisionScreen.status(),
     audio: harperVisionAudio.status(),
+    privacyMode: harperVisionScreen.privacyMode === true,
   };
+});
+
+// [claude-code 2026-04-23] S32-T2 Harper Vision — privacy mode persistence
+const HV_PRIVACY_PATH = path.join(
+  app.getPath("userData"),
+  "harper-vision-privacy.json",
+);
+
+function readHarperVisionPrivacy() {
+  try {
+    if (fs.existsSync(HV_PRIVACY_PATH)) {
+      const parsed = JSON.parse(fs.readFileSync(HV_PRIVACY_PATH, "utf8"));
+      return !!parsed.enabled;
+    }
+  } catch {}
+  return false;
+}
+
+function writeHarperVisionPrivacy(enabled) {
+  try {
+    fs.writeFileSync(
+      HV_PRIVACY_PATH,
+      JSON.stringify({ enabled: !!enabled }, null, 2),
+      "utf8",
+    );
+  } catch (err) {
+    console.error(
+      "[HarperVision] Failed to persist privacy flag:",
+      err.message,
+    );
+  }
+}
+
+function applyHarperVisionPrivacy(enabled) {
+  if (harperVisionScreen) harperVisionScreen.setPrivacyMode(enabled);
+  if (harperVisionAudio) harperVisionAudio.setPrivacyMode(enabled);
+}
+
+// Apply persisted flag on startup so capture respects it before the UI mounts
+if (IS_MAC) applyHarperVisionPrivacy(readHarperVisionPrivacy());
+
+ipcMain.handle("harper-vision:set-privacy-mode", async (_event, enabled) => {
+  const flag = !!enabled;
+  applyHarperVisionPrivacy(flag);
+  writeHarperVisionPrivacy(flag);
+  return { ok: true, privacyMode: flag };
+});
+
+ipcMain.handle("harper-vision:get-privacy-mode", async () => {
+  return { privacyMode: readHarperVisionPrivacy() };
 });
