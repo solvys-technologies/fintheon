@@ -1,4 +1,5 @@
 // [claude-code 2026-04-04] Harper Ops routes — autonomous loop monitoring + control
+// [claude-code 2026-04-23] S32-T2 — mount harper-vision-cleanup routine endpoint
 
 import { Hono } from "hono";
 import {
@@ -24,6 +25,7 @@ import {
   type RoutineSeverity,
 } from "../../services/routines/state-store.js";
 import { applyPostRunPolicy } from "../../services/routines/error-handler.js";
+import { createHarperVisionCleanupRoute } from "./harper-vision-cleanup.js";
 
 // [claude-code 2026-04-05] SSE client management for ops stream
 const sseClients = new Set<ReadableStreamDefaultController>();
@@ -45,6 +47,9 @@ opsEmitter.on("entry", broadcastOpsEntry);
 
 export function createHarperOpsRoutes() {
   const app = new Hono();
+
+  // [claude-code 2026-04-23] S32-T2 — mount harper-vision-cleanup routine endpoint
+  app.route("/harper-vision-cleanup", createHarperVisionCleanupRoute());
 
   // ── Status ────────────────────────────────────────────────────────────────
   app.get("/status", async (c) => {

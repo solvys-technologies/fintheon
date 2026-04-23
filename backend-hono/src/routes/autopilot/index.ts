@@ -1,3 +1,4 @@
+// [claude-code 2026-04-23] S32-T7: guardian resume route added.
 /**
  * AutoPilot Routes
  * Route registration for /api/autopilot endpoints
@@ -5,6 +6,7 @@
  */
 
 import { Hono } from "hono";
+import type { Context } from "hono";
 import {
   handleGenerateProposal,
   handleGetPendingProposals,
@@ -19,6 +21,10 @@ import {
   handleGetSignals,
   handleAutopilotStatus,
 } from "./signal-ingest.js";
+import {
+  resumeAutopilot,
+  getGuardianStatus,
+} from "../../services/autopilot/guardian.js";
 
 export function createAutopilotRoutes(): Hono {
   const router = new Hono();
@@ -52,6 +58,14 @@ export function createAutopilotRoutes(): Hono {
 
   // GET /api/autopilot/status - Autopilot scheduler status
   router.get("/status", handleAutopilotStatus);
+
+  // POST /api/autopilot/guardian/resume — manual resume before cooldown completes
+  router.post("/guardian/resume", async (c: Context) => {
+    const uid = c.get("supabaseUid") as string | undefined;
+    if (!uid) return c.json({ error: "Unauthorized" }, 401);
+    const resumed = resumeAutopilot("manual");
+    return c.json({ resumed, status: getGuardianStatus() });
+  });
 
   return router;
 }

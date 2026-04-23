@@ -61,6 +61,8 @@
     "frontend:build": "cd frontend && bun run build",
     "desktop:build": "bun run frontend:build && electron-builder --mac dmg",
     "release:mac": "bun run frontend:build && cd backend-hono && bun run build && cd .. && bunx electron-builder --mac dmg",
+    "frontend:build:windows": "cd frontend && bun run build --mode windows",
+    "release:win": "bun run frontend:build:windows && bunx electron-builder --win nsis --publish never",
     "release": "bash scripts/build-release.sh",
     "setup": "bun run scripts/setup.ts",
     "update": "bun run scripts/update.ts"
@@ -86,10 +88,36 @@
     },
     "win": {
       "target": [
-        "nsis"
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
-      "icon": "electron/icons/icon.ico"
+      "icon": "electron/icons/icon.ico",
+      "artifactName": "Fintheon-Setup-${version}.${ext}"
     },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Fintheon",
+      "installerIcon": "electron/icons/icon.ico",
+      "uninstallerIcon": "electron/icons/icon.ico",
+      "uninstallDisplayName": "Fintheon",
+      "deleteAppDataOnUninstall": false
+    },
+    "protocols": [
+      {
+        "name": "Fintheon OAuth",
+        "schemes": [
+          "fintheon"
+        ]
+      }
+    ],
     "publish": {
       "provider": "github",
       "owner": "solvys-technologies",
