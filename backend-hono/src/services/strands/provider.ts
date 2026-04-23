@@ -174,3 +174,58 @@ export async function checkVProxyHealth(
 export function isVProxyEnabled(): boolean {
   return process.env.USE_VPROXY_ANTHROPIC !== "false";
 }
+
+/**
+ * Create a Strands OpenAIModel pointing at the Ollama-via-Hermes fallback.
+ * Used by agent-factory when VProxy is unhealthy at agent-creation time.
+ */
+export function createOllamaFallbackModel(
+  options?: VProxyModelOptions,
+): OpenAIModel {
+  const baseUrl = getOllamaBaseUrl();
+  const modelId = options?.model || getOllamaModel();
+  log.info("Creating Ollama-Qwen fallback model", { modelId, baseUrl });
+  return new OpenAIModel({
+    api: "chat",
+    // Ollama OpenAI-compat endpoint accepts any non-empty bearer
+    apiKey: process.env.OLLAMA_API_KEY || "ollama",
+    clientConfig: { baseURL: `${baseUrl}/v1` },
+    modelId,
+    temperature: options?.temperature ?? 0.4,
+    maxTokens: options?.maxTokens ?? 8192,
+  });
+}
+
+/**
+ * Chain-aware Strands model selection.
+ * Returns VProxy model when VProxy is available, otherwise the Ollama-Qwen fallback.
+ * Caller receives the active provider so telemetry + logs can tag it.
+ */
+export async function createChainModel(
+  options?: VProxyModelOptions,
+): Promise<{ model: OpenAIModel; provider: "vproxy" | "ollama-qwen" }> {
+  if (isVProxyEnabled()) {
+    const health = await checkVProxyHealth();
+    if (health.available) {
+      return { model: createVProxyModel(options), provider: "vproxy" };
+    }
+    if (!isOllamaFallbackEnabled()) {
+      throw new Error(
+        `VProxy unavailable (${health.error ?? "unknown"}) and Ollama fallback disabled`,
+      );
+    }
+    log.warn(
+      `[ai-chain] vproxy unhealthy (${health.error ?? "unknown"}), falling back to ollama-qwen for Strands agent`,
+    );
+    return {
+      model: createOllamaFallbackModel(options),
+      provider: "ollama-qwen",
+    };
+  }
+  if (!isOllamaFallbackEnabled()) {
+    throw new Error(
+      "VProxy disabled and Ollama fallback disabled — no model available",
+    );
+  }
+  return { model: createOllamaFallbackModel(options), provider: "ollama-qwen" };
+}

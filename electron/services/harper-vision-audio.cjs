@@ -97,6 +97,7 @@ class HarperVisionAudio {
     // Listen for audio chunks from the hidden renderer
     const { ipcMain } = require("electron");
     this._chunkHandler = (_event, base64) => {
+      if (this.privacyMode) return;
       this._sendChunk(base64).catch(() => {});
     };
     this._startedHandler = () => {

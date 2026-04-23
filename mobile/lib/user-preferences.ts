@@ -1,6 +1,7 @@
 // [claude-code 2026-04-18] v5.22 shared contract — mobile mirror of frontend/lib/user-preferences.ts
 // Backing store: Supabase user_preferences (added in T4). Mobile writes only `notifications`; everything
 // else is read-only surface. Must mirror the frontend module byte-for-byte (minus this header).
+// [claude-code 2026-04-23] S31-T6: psychAssistEnabled mirror (read-only on mobile).
 
 import type { FusePalette } from "./fuse-palette";
 
@@ -19,6 +20,7 @@ export interface UserPreferences {
   traderName?: string;
   notifications: NotificationPrefs;
   fusePalette?: Partial<FusePalette>;
+  psychAssistEnabled?: boolean;
   updatedAt: string;
 }
 
@@ -31,6 +33,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
     quietFromEtHour: 16,
     quietToEtHour: 9.5,
   },
+  psychAssistEnabled: false,
   updatedAt: new Date(0).toISOString(),
 };
 
