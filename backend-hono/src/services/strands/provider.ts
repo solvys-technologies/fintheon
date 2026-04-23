@@ -1,13 +1,7 @@
-// [claude-code 2026-04-23] S32-T3 Ollama fallback chain — createOllamaFallbackModel + chain-aware helpers
 // [claude-code 2026-04-10] Round-robin across multiple VProxy endpoints via VPROXY_URLS env var
 // [claude-code 2026-04-04] Strands SDK VProxy model provider — OpenAI-compatible endpoint at localhost:8317
 import { OpenAIModel } from "@strands-agents/sdk/models/openai";
 import { createLogger } from "../../lib/logger.js";
-import {
-  getOllamaBaseUrl,
-  getOllamaModel,
-  isOllamaFallbackEnabled,
-} from "../ai/ollama-hermes-client.js";
 
 const log = createLogger("StrandsVProxy");
 
@@ -173,80 +167,4 @@ export async function checkVProxyHealth(
 
 export function isVProxyEnabled(): boolean {
   return process.env.USE_VPROXY_ANTHROPIC !== "false";
-}
-
-/**
- * Synchronous view of the last cached VProxy health.
- * Returns "available" when any endpoint is up, "down" when all recent checks
- * failed, "unknown" when we haven't probed yet.
- */
-export function cachedVProxyHealth(): "available" | "down" | "unknown" {
-  const urls = getVProxyUrls();
-  let anyKnown = false;
-  let anyUp = false;
-  for (const raw of urls) {
-    const normalized = normalizeUrl(raw);
-    const cached = healthCacheMap.get(normalized);
-    if (cached) {
-      anyKnown = true;
-      if (cached.available) anyUp = true;
-    }
-  }
-  if (!anyKnown) return "unknown";
-  return anyUp ? "available" : "down";
-}
-
-/**
- * Create a Strands OpenAIModel pointing at the Ollama-via-Hermes fallback.
- * Used by agent-factory when VProxy is unhealthy at agent-creation time.
- */
-export function createOllamaFallbackModel(
-  options?: VProxyModelOptions,
-): OpenAIModel {
-  const baseUrl = getOllamaBaseUrl();
-  const modelId = options?.model || getOllamaModel();
-  log.info("Creating Ollama-Qwen fallback model", { modelId, baseUrl });
-  return new OpenAIModel({
-    api: "chat",
-    // Ollama OpenAI-compat endpoint accepts any non-empty bearer
-    apiKey: process.env.OLLAMA_API_KEY || "ollama",
-    clientConfig: { baseURL: `${baseUrl}/v1` },
-    modelId,
-    temperature: options?.temperature ?? 0.4,
-    maxTokens: options?.maxTokens ?? 8192,
-  });
-}
-
-/**
- * Chain-aware Strands model selection.
- * Returns VProxy model when VProxy is available, otherwise the Ollama-Qwen fallback.
- * Caller receives the active provider so telemetry + logs can tag it.
- */
-export async function createChainModel(
-  options?: VProxyModelOptions,
-): Promise<{ model: OpenAIModel; provider: "vproxy" | "ollama-qwen" }> {
-  if (isVProxyEnabled()) {
-    const health = await checkVProxyHealth();
-    if (health.available) {
-      return { model: createVProxyModel(options), provider: "vproxy" };
-    }
-    if (!isOllamaFallbackEnabled()) {
-      throw new Error(
-        `VProxy unavailable (${health.error ?? "unknown"}) and Ollama fallback disabled`,
-      );
-    }
-    log.warn(
-      `[ai-chain] vproxy unhealthy (${health.error ?? "unknown"}), falling back to ollama-qwen for Strands agent`,
-    );
-    return {
-      model: createOllamaFallbackModel(options),
-      provider: "ollama-qwen",
-    };
-  }
-  if (!isOllamaFallbackEnabled()) {
-    throw new Error(
-      "VProxy disabled and Ollama fallback disabled — no model available",
-    );
-  }
-  return { model: createOllamaFallbackModel(options), provider: "ollama-qwen" };
 }

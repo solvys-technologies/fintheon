@@ -1,4 +1,3 @@
-// [claude-code 2026-04-23] S32-T3 Ollama fallback chain — generateTextViaClaude now goes through provider-chain
 // [claude-code 2026-03-10] Claude Code SDK process manager — spawns CLI with --print for headless inference
 /**
  * Claude Code Process Manager
@@ -15,7 +14,10 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { createLogger } from "../../lib/logger.js";
 import { getSessionManager } from "./session-manager.js";
-import { generateViaChain } from "../ai/provider-chain.js";
+import {
+  generateTextViaVProxy,
+  isVProxyAnthropicEnabled,
+} from "../vproxy/anthropic-client.js";
 
 const log = createLogger("ClaudeSDK");
 
@@ -282,21 +284,21 @@ export async function generateTextViaClaude(
   prompt: string,
   options?: Partial<ClaudeSDKConfig>,
 ): Promise<string> {
-  // Preferred path for Harper flows: VProxy → Ollama-via-Hermes chain.
-  try {
-    const chain = await generateViaChain({
-      prompt,
-      systemPrompt: options?.systemPrompt,
-      model: options?.model,
-      maxOutputTokens: 8192,
-      timeoutMs: options?.timeoutMs ?? config.timeoutMs,
-    });
-    return chain.response;
-  } catch (err) {
-    log.warn(
-      "AI chain (VProxy+Ollama) failed — falling back to Claude CLI if available",
-      { error: err instanceof Error ? err.message : String(err) },
-    );
+  // Preferred path for Harper flows: Anthropic via local VProxy gateway.
+  if (isVProxyAnthropicEnabled()) {
+    try {
+      return await generateTextViaVProxy({
+        prompt,
+        systemPrompt: options?.systemPrompt,
+        model: options?.model,
+        maxOutputTokens: 8192,
+        timeoutMs: options?.timeoutMs ?? config.timeoutMs,
+      });
+    } catch (err) {
+      log.warn("VProxy Anthropic request failed — falling back to Claude CLI", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
 
   if (!isAvailable()) {

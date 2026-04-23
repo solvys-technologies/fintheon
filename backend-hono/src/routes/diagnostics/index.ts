@@ -1,4 +1,3 @@
-// [claude-code 2026-04-23] S32-T7: surface autopilot guardian status on GET /.
 // [claude-code 2026-03-20] Diagnostics endpoint — service status, missing env vars, suggested fixes
 // [claude-code 2026-03-22] Add POST /hermes/restart for frontend-triggered Hermes re-initialization
 // [claude-code 2026-04-19] S27-T6/T7 (W2d): surface cache_hit_rate_24h (browser operator) and
@@ -25,7 +24,6 @@ import {
 } from "../../services/autoresearch/reflect-scheduler.js";
 import { getLatestReflectReport } from "../../services/autoresearch/reflect-engine.js";
 import { getBrowseTaskStats24h } from "../../services/browser/operator.js";
-import { getBrowserHarnessStats24h } from "../../services/browser/harness-tool.js";
 
 const log = createLogger("Diagnostics");
 
@@ -58,12 +56,6 @@ interface DiagnosticsResponse {
       items_ingested: number;
       errors: number;
     }>;
-  };
-  autopilot?: {
-    status: "active" | "paused" | "disabled";
-    reason: string | null;
-    resumesAt: string | null;
-    detail: string | null;
   };
 }
 

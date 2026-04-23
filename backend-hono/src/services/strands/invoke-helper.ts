@@ -8,10 +8,6 @@ import {
 } from "./agent-factory.js";
 import { checkVProxyHealth } from "./provider.js";
 import type { VProxyModelOptions } from "./provider.js";
-import {
-  getOllamaHealth,
-  isOllamaFallbackEnabled,
-} from "../ai/ollama-hermes-client.js";
 import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger("InvokeAgent");
@@ -24,14 +20,8 @@ export interface InvokeAgentOptions {
   provider?: HarperProvider;
 }
 
-// [claude-code 2026-04-23] S32-T3: inject ollama-qwen as second-in-chain after VProxy
 /** Provider fallback chain for silent/background tasks */
-const FALLBACK_CHAIN: HarperProvider[] = [
-  "local",
-  "ollama-qwen",
-  "nous",
-  "orouter",
-];
+const FALLBACK_CHAIN: HarperProvider[] = ["local", "nous", "orouter"];
 
 /**
  * One-shot text generation via a Strands agent.
@@ -54,21 +44,6 @@ export async function invokeAgent(
         const health = await checkVProxyHealth();
         if (!health.available) {
           log.info("VProxy unavailable, skipping local provider");
-          continue;
-        }
-      }
-
-      // Quick health check for ollama-qwen — skip if disabled or unreachable
-      if (provider === "ollama-qwen") {
-        if (!isOllamaFallbackEnabled()) {
-          log.info("Ollama fallback disabled, skipping");
-          continue;
-        }
-        const health = await getOllamaHealth();
-        if (!health.available) {
-          log.info("Ollama-Qwen unavailable, skipping", {
-            error: health.error,
-          });
           continue;
         }
       }

@@ -184,25 +184,6 @@ html *::-webkit-scrollbar {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* [claude-code 2026-04-23] S32-T5 — chat slot keyframes (desktop parity) */
-@keyframes slotReveal {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@keyframes p {
-  0%,
-  100% {
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 0.9;
-  }
-}
-
 /* ── iOS Safari auto-zoom suppression ──
    Safari zooms the viewport whenever an input or textarea with font-size
    < 16px gains focus. Force a 16px floor on every form control so the page

@@ -1,4 +1,3 @@
-// [claude-code 2026-04-23] S32-T3 Ollama fallback chain — bridge streams via chain, tools only on VProxy path
 // [claude-code 2026-04-04] Switch VProxy from textStream→fullStream to capture text across multi-step tool calls
 // [claude-code 2026-03-10] Claude SDK Bridge — relays Fintheon chat to Claude Code CLI stream-json
 /**
@@ -27,10 +26,6 @@ import {
   isVProxyAnthropicEnabled,
   streamTextViaVProxy,
 } from "../vproxy/anthropic-client.js";
-import {
-  isOllamaFallbackEnabled,
-  streamTextViaOllama,
-} from "../ai/ollama-hermes-client.js";
 
 const LOG_PREFIX = "[ClaudeSDK:Bridge]";
 
@@ -113,18 +108,14 @@ export function bridgeChat(
     ...configOverrides,
   };
 
-  // Preferred route: VProxy → Ollama-via-Hermes chain.
-  // Stream fallback runs only when VProxy health check fails BEFORE the first token
-  // is shipped; once VProxy streaming has started, a mid-stream failure surfaces to
-  // the client rather than silently restarting (user has already seen output).
-  // Tools require VProxy — Ollama streams text only.
+  // Preferred route: Anthropic via local VProxy gateway.
   if (isVProxyAnthropicEnabled()) {
     console.log(`${LOG_PREFIX} Routing through VProxy Anthropic stream`);
     let fullText = "";
     let aborted = false;
     const controller = new AbortController();
 
-    const chainStream = wrapChainStream(
+    const vproxyStream = wrapVProxyStream(
       prompt,
       spawnOpts,
       (text) => {
@@ -137,7 +128,7 @@ export function bridgeChat(
     );
 
     return {
-      stream: chainStream,
+      stream: vproxyStream,
       abort: () => {
         aborted = true;
         controller.abort();
@@ -255,77 +246,6 @@ async function* wrapSessionStream(
   yield { type: "text-end", id: messageId };
 }
 
-/**
- * Chain-aware stream wrapper: picks VProxy or Ollama based on VProxy health at
- * request start. On VProxy path a mid-stream failure falls through to Claude CLI.
- * On Ollama path, tools are disabled (Ollama-Qwen has no Harper tool schema).
- */
-async function* wrapChainStream(
-  prompt: string,
-  options: Partial<ClaudeSDKConfig>,
-  onText: (text: string) => void,
-  isAborted: () => boolean,
-  abortSignal: AbortSignal,
-  enableTools = false,
-  requestId?: string,
-): AsyncGenerator<BridgeStreamEvent> {
-  const vproxyHealth = await getVProxyHealth();
-  if (!vproxyHealth.available && isOllamaFallbackEnabled()) {
-    console.log(
-      `${LOG_PREFIX} VProxy unhealthy (${vproxyHealth.error ?? "unknown"}) — streaming via Ollama-Qwen fallback`,
-    );
-    yield* wrapOllamaStream(prompt, options, onText, isAborted, abortSignal);
-    return;
-  }
-  yield* wrapVProxyStream(
-    prompt,
-    options,
-    onText,
-    isAborted,
-    abortSignal,
-    enableTools,
-    requestId,
-  );
-}
-
-async function* wrapOllamaStream(
-  prompt: string,
-  options: Partial<ClaudeSDKConfig>,
-  onText: (text: string) => void,
-  isAborted: () => boolean,
-  abortSignal: AbortSignal,
-): AsyncGenerator<BridgeStreamEvent> {
-  const messageId = `ollama-${Date.now()}`;
-  let textStarted = false;
-  try {
-    for await (const delta of streamTextViaOllama({
-      prompt,
-      systemPrompt: options.systemPrompt,
-      maxOutputTokens: 8192,
-      abortSignal,
-    })) {
-      if (isAborted()) break;
-      if (!delta) continue;
-      if (!textStarted) {
-        textStarted = true;
-        yield { type: "text-start", id: messageId };
-      }
-      onText(delta);
-      yield { type: "text-delta", id: messageId, delta };
-    }
-  } catch (err) {
-    if (isAborted()) return;
-    console.error(`${LOG_PREFIX} Ollama stream error:`, err);
-    yield {
-      type: "error",
-      id: messageId,
-      delta: err instanceof Error ? err.message : "Ollama stream error",
-    };
-  }
-  if (!textStarted) yield { type: "text-start", id: messageId };
-  yield { type: "text-end", id: messageId };
-}
-
 async function* wrapVProxyStream(
   prompt: string,
   options: Partial<ClaudeSDKConfig>,
@@ -400,15 +320,6 @@ async function* wrapVProxyStream(
   } catch (err) {
     if (isAborted()) return;
     console.error(`${LOG_PREFIX} VProxy stream error:`, err);
-    // If no text has shipped yet, silent fallback to Ollama (chain policy).
-    // Once tokens are out, we surface the error instead of restarting the stream.
-    if (!textStarted && isOllamaFallbackEnabled()) {
-      console.warn(
-        `${LOG_PREFIX} VProxy failed before first token — falling back to ollama-qwen for request ${requestId ?? "-"}`,
-      );
-      yield* wrapOllamaStream(prompt, options, onText, isAborted, abortSignal);
-      return;
-    }
     console.warn(`${LOG_PREFIX} Falling back to Claude CLI`);
     const { process: proc, abort } = spawnClaudeProcess(prompt, options);
     yield* parseClaudeStream(proc, onText, isAborted, abort);

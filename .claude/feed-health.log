@@ -428,16 +428,3 @@
 [2026-04-23T19:43:22Z] status=healthy cache=500 poller=True scorer=True unscored=0 newest=2026-04-23T15:10:32.000Z itemAge=4.5h cacheAge=21677ms rateLimited=False
 [2026-04-23T20:13:20Z] status=healthy cache=500 poller=True scorer=True unscored=0 newest=2026-04-23T15:10:32.000Z itemAge=5.0h cacheAge=19750ms rateLimited=False
 [2026-04-23T20:14:41Z] status=healthy cache=500 poller=True scorer=True unscored=0 newest=2026-04-23T15:10:32.000Z itemAge=5.1h cacheAge=40840ms rateLimited=False
-[2026-04-23T23:00:06Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-23T15:10:32.000Z itemAge=7.8h cacheAge=6069ms rateLimited=False
-[2026-04-23T23:05:13Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-23T15:10:32.000Z itemAge=7.9h cacheAge=12806ms rateLimited=False
-[2026-04-23T23:11:24Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-23T15:10:32.000Z itemAge=8.0h cacheAge=23853ms rateLimited=False
-[2026-04-23T23:11:25Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-23T15:10:32.000Z itemAge=8.0h cacheAge=24391ms rateLimited=False
-[2026-04-23T23:13:47Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-23T15:10:32.000Z itemAge=8.1h cacheAge=46196ms rateLimited=False
-[2026-04-23T23:14:38Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-23T15:10:32.000Z itemAge=8.1h cacheAge=38696ms rateLimited=False
-[2026-04-23T23:15:22Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-23T15:10:32.000Z itemAge=8.1h cacheAge=21317ms rateLimited=False
-[2026-04-23T23:19:02Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-23T15:10:32.000Z itemAge=8.1h cacheAge=2458ms rateLimited=False
-[2026-04-23T23:22:09Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-23T15:10:32.000Z itemAge=8.2h cacheAge=9459ms rateLimited=False
-[2026-04-23T23:23:22Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-23T15:10:32.000Z itemAge=8.2h cacheAge=21680ms rateLimited=False
-[2026-04-23T23:25:20Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-23T15:10:32.000Z itemAge=8.2h cacheAge=19435ms rateLimited=False
-[2026-04-23T23:47:00Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-23T15:10:32.000Z itemAge=8.6h cacheAge=59711ms rateLimited=False
-[2026-04-23T23:53:42Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-23T15:10:32.000Z itemAge=8.7h cacheAge=41968ms rateLimited=False

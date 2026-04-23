@@ -82,9 +82,6 @@ export function startAutopilotScheduler() {
       if (expired > 0) {
         console.log(`[AutoPilot] Expired ${expired} proposals`);
       }
-      // S32-T7: guardian cooldown — re-enables autopilot when the pause window ends
-      const { cooldownTick } = await import("./guardian.js");
-      cooldownTick();
     } catch (error) {
       console.error("[AutoPilot] Scheduler error:", error);
     }
