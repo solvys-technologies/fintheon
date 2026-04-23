@@ -8,3 +8,5 @@ export * from "./soul-schema";
 export * from "./harper-vision";
 // [claude-code 2026-04-23] S30-T2: SessionJournal (consolidated daily psych record)
 export * from "./session-journal";
+// [claude-code 2026-04-23] S31-T9: predictive knowledge graph + feature proposals
+export * from "./predictive-knowledge-graph";

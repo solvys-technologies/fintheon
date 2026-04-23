@@ -44,6 +44,7 @@ const preferencesSchema = z.object({
   traderName: z.string().optional(),
   notifications: notificationsSchema,
   fusePalette: fusePaletteOverrideSchema.optional(),
+  psychAssistEnabled: z.boolean().optional(),
   updatedAt: z.string(),
 });
 
@@ -58,6 +59,7 @@ const DEFAULT_PREFERENCES: Preferences = {
     quietFromEtHour: 16,
     quietToEtHour: 9.5,
   },
+  psychAssistEnabled: false,
   updatedAt: new Date(0).toISOString(),
 };
 

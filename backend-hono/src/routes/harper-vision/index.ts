@@ -145,17 +145,8 @@ export function createHarperVisionRoutes() {
   app.get("/status", authMiddleware, requireAuth, async (c) => {
     try {
       const userId = (c.get("userId" as never) as string) || "anonymous";
-
-      // TODO: Query actual capture status from session store
-      return c.json({
-        ok: true,
-        status: {
-          screen: { isCapturing: false, sessionId: null, frameCounter: 0 },
-          audio: { isRecording: false, sessionId: null, mode: "placeholder" },
-          lastFrameAt: null,
-          lastTranscriptAt: null,
-        },
-      });
+      const status = await getVisionStatus(userId);
+      return c.json({ ok: true, status });
     } catch (err: any) {
       return c.json({ ok: false, error: err.message }, 500);
     }
