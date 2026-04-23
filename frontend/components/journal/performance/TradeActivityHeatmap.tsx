@@ -5,7 +5,7 @@
 // with opacity scaled by normalized daily intensity (count / qty / notional).
 
 import { useEffect, useMemo, useState } from "react";
-import { Activity } from "@/components/shared/iso-icons";
+import { Activity } from "lucide-react";
 import { getIntensityColor } from "../../../lib/trade-colors";
 import {
   DEFAULT_FUSE_PALETTE,
