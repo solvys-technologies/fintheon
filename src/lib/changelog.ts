@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-23T19:20:00",
+    agent: "claude-code",
+    summary:
+      "S32-T4 (Harper 2.1): added ConsulControlCorners — animated gold pixel flicker at four corners while Harper is holding the wheel. Replaces the flat solid-color overlay plan. L-shape density gradient (layout only), CSS @keyframes opacity 0.08→0.4→0.08, per-cell stable randomized delays, will-change: opacity, pointer-events: none, 400ms fade-in / 600ms fade-out, paused via class toggle when inactive. Status wired via new useConsulControlStatus hook polling GET /api/consul-control/status every 2s (404-tolerant until backend lands). No existing overlay to delete.",
+    files: [
+      "frontend/App.tsx",
+      "frontend/components/consul-control/ConsulControlCorners.tsx",
+      "frontend/hooks/useConsulControlStatus.ts",
+    ],
+  },
+  {
     date: "2026-04-23T16:20:00",
     agent: "claude-code",
     summary:

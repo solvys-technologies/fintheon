@@ -104,7 +104,17 @@ export function createHarperVisionRoutes() {
         sessionId,
         lookbackSeconds,
       });
-      return c.json({ ok: true, triggers });
+
+      const dispatch = await dispatchTriggers(triggers, userId);
+
+      return c.json({
+        ok: true,
+        triggers,
+        dispatch: {
+          dispatched: dispatch.dispatched.length,
+          skipped: dispatch.skipped.length,
+        },
+      });
     } catch (err: any) {
       console.error("[HarperVision] Trigger detection error:", err.message);
       return c.json({ ok: false, error: err.message }, 500);
