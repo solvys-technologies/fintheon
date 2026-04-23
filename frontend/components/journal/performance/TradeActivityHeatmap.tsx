@@ -11,6 +11,11 @@ import {
   DEFAULT_FUSE_PALETTE,
   type FusePalette,
 } from "../../../lib/fuse-palette";
+import {
+  HeatmapGrid,
+  buildYearColumns,
+  type HeatmapColumn,
+} from "./HeatmapGrid";
 
 type ActivityMetric = "trades" | "shares" | "notional";
 
@@ -18,17 +23,12 @@ interface TradeRow {
   id: string;
   contract: string;
   entryAt: string;
-  side: string;
   qty: number;
   entryPrice: number;
-  exitPrice: number | null;
-  realizedPnL: number;
-  origin: string;
 }
 
 interface TradeActivityHeatmapProps {
   palette?: FusePalette;
-  /** Include Sat/Sun rows if the user trades weekends. */
   includeWeekends?: boolean;
 }
 
@@ -38,30 +38,13 @@ const METRIC_LABELS: Record<ActivityMetric, string> = {
   notional: "Notional",
 };
 
-const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const CELL = 11;
-const GAP = 2;
+const CELL_BORDER = "var(--fintheon-accent-10, rgba(199,159,74,0.12))";
 
-function toDateKey(iso: string): string {
-  return iso.slice(0, 10);
-}
-
-function mondayIndex(date: Date): number {
-  // 0 = Mon … 6 = Sun (JS getDay: 0=Sun)
-  const d = date.getUTCDay();
-  return d === 0 ? 6 : d - 1;
-}
-
-function isoMondayKey(date: Date): string {
-  const d = new Date(date);
-  d.setUTCDate(d.getUTCDate() - mondayIndex(d));
-  return d.toISOString().slice(0, 10);
-}
-
-function yearsInRange(min: number, max: number): number[] {
-  const out: number[] = [];
-  for (let y = max; y >= min; y--) out.push(y);
-  return out;
+function contribution(metric: ActivityMetric, t: TradeRow): number {
+  if (metric === "trades") return 1;
+  if (metric === "shares") return Math.abs(t.qty ?? 0);
+  return Math.abs((t.qty ?? 0) * (t.entryPrice ?? 0));
 }
 
 export function TradeActivityHeatmap({
@@ -103,65 +86,52 @@ export function TradeActivityHeatmap({
   }, [year]);
 
   const { byDay, activeDays, availableYears } = useMemo(() => {
-    const byDay = new Map<string, number>();
+    const by = new Map<string, number>();
     const years = new Set<number>([currentYear]);
     for (const t of trades) {
       if (!t.entryAt) continue;
-      const key = toDateKey(t.entryAt);
+      const key = t.entryAt.slice(0, 10);
       years.add(Number(key.slice(0, 4)));
-      const contribution =
-        metric === "trades"
-          ? 1
-          : metric === "shares"
-            ? Math.abs(t.qty ?? 0)
-            : Math.abs((t.qty ?? 0) * (t.entryPrice ?? 0));
-      byDay.set(key, (byDay.get(key) ?? 0) + contribution);
+      by.set(key, (by.get(key) ?? 0) + contribution(metric, t));
     }
-    return {
-      byDay,
-      activeDays: byDay.size,
-      availableYears: yearsInRange(Math.min(...years), Math.max(...years)),
-    };
+    const yrs: number[] = [];
+    for (let y = Math.max(...years); y >= Math.min(...years); y--) yrs.push(y);
+    return { byDay: by, activeDays: by.size, availableYears: yrs };
   }, [trades, metric, currentYear]);
 
   const { columns, maxValue } = useMemo(() => {
-    const firstOfYear = new Date(Date.UTC(year, 0, 1));
-    const lastOfYear = new Date(Date.UTC(year, 11, 31));
-    const startMonday = new Date(firstOfYear);
-    startMonday.setUTCDate(startMonday.getUTCDate() - mondayIndex(firstOfYear));
-
-    const cols: { weekStart: string; days: (string | null)[] }[] = [];
-    let cursor = new Date(startMonday);
+    const raw = buildYearColumns(year);
     let max = 0;
-    while (cursor <= lastOfYear) {
-      const weekStart = cursor.toISOString().slice(0, 10);
-      const days: (string | null)[] = [];
-      for (let i = 0; i < 7; i++) {
-        const d = new Date(cursor);
-        d.setUTCDate(d.getUTCDate() + i);
-        if (d.getUTCFullYear() === year) {
-          const key = d.toISOString().slice(0, 10);
-          days.push(key);
-          const v = byDay.get(key);
-          if (v && v > max) max = v;
-        } else {
-          days.push(null);
-        }
-      }
-      cols.push({ weekStart, days });
-      cursor.setUTCDate(cursor.getUTCDate() + 7);
-    }
+    const cols: HeatmapColumn[] = raw.map((col) => ({
+      weekStart: col.weekStart,
+      cells: col.days.map((dayKey, i) => {
+        const value = dayKey ? (byDay.get(dayKey) ?? 0) : 0;
+        if (value > max) max = value;
+        return {
+          key: `${col.weekStart}-${i}`,
+          dateKey: dayKey,
+          bg: "transparent",
+          borderColor: CELL_BORDER,
+          title: "",
+        };
+      }),
+    }));
+    cols.forEach((col) =>
+      col.cells.forEach((cell) => {
+        if (!cell.dateKey) return;
+        const value = byDay.get(cell.dateKey) ?? 0;
+        cell.bg = getIntensityColor(value, palette, { min: 0, max });
+        cell.title = `${cell.dateKey} · ${value.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${METRIC_LABELS[metric].toLowerCase()}`;
+      }),
+    );
     return { columns: cols, maxValue: max };
-  }, [byDay, year]);
+  }, [byDay, year, palette, metric]);
 
   const weekdayRows = includeWeekends ? 7 : 5;
-  const rows = WEEKDAY_LABELS.slice(0, weekdayRows);
-
   const legendSteps = [0.1, 0.3, 0.55, 0.8, 1];
 
   return (
     <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg p-3 h-full flex flex-col">
-      {/* Header */}
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-start gap-2">
           <Activity className="w-3.5 h-3.5 text-[var(--fintheon-accent)] mt-0.5" />
@@ -204,69 +174,12 @@ export function TradeActivityHeatmap({
         </div>
       </div>
 
-      {/* Grid */}
-      <div className="flex-1 overflow-x-auto">
-        <div className="flex gap-1">
-          {/* Weekday labels */}
-          <div
-            className="flex flex-col text-[8px] text-[var(--fintheon-muted)] pr-1"
-            style={{ gap: `${GAP}px`, paddingTop: "2px" }}
-          >
-            {rows.map((r, i) => (
-              <div
-                key={r}
-                style={{
-                  height: `${CELL}px`,
-                  lineHeight: `${CELL}px`,
-                  visibility: i % 2 === 0 ? "visible" : "hidden",
-                }}
-              >
-                {r}
-              </div>
-            ))}
-          </div>
-          {/* Week columns */}
-          <div className="flex" style={{ gap: `${GAP}px` }}>
-            {columns.map((col) => (
-              <div
-                key={col.weekStart}
-                className="flex flex-col"
-                style={{ gap: `${GAP}px` }}
-              >
-                {col.days.slice(0, weekdayRows).map((dayKey, rowIdx) => {
-                  const value = dayKey ? (byDay.get(dayKey) ?? 0) : 0;
-                  const bg = dayKey
-                    ? getIntensityColor(value, palette, {
-                        min: 0,
-                        max: maxValue,
-                      })
-                    : "transparent";
-                  const title = dayKey
-                    ? `${dayKey} · ${value.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${METRIC_LABELS[metric].toLowerCase()}`
-                    : "";
-                  return (
-                    <div
-                      key={`${col.weekStart}-${rowIdx}`}
-                      title={title}
-                      style={{
-                        width: `${CELL}px`,
-                        height: `${CELL}px`,
-                        background: bg,
-                        border: dayKey
-                          ? `1px solid var(--fintheon-accent-10, rgba(199,159,74,0.12))`
-                          : "none",
-                        borderRadius: "1px",
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <HeatmapGrid
+        columns={columns}
+        weekdayRows={weekdayRows}
+        cellSize={CELL}
+      />
 
-      {/* Footer legend */}
       <div className="flex items-center justify-between mt-2 text-[8px] text-[var(--fintheon-muted)]">
         <div>
           {loading
@@ -287,7 +200,7 @@ export function TradeActivityHeatmap({
                   min: 0,
                   max: 1,
                 }),
-                border: `1px solid var(--fintheon-accent-10, rgba(199,159,74,0.12))`,
+                border: `1px solid ${CELL_BORDER}`,
                 borderRadius: "1px",
                 display: "inline-block",
               }}

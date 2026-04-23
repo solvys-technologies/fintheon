@@ -8,7 +8,8 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { EmotionalResonanceMonitor } from "./EmotionalResonanceMonitor";
-import { BlindspotsWidget } from "./BlindspotsWidget";
+// [claude-code 2026-04-23] S30-T2: BlindspotsWidget retired from Strategium — replaced by WeeklyPerformanceWidget.
+import { WeeklyPerformanceWidget } from "./WeeklyPerformanceWidget";
 import { AlgoStatusWidget } from "./AlgoStatusWidget";
 import { AccountTrackerWidget } from "./AccountTrackerWidget";
 import { RegimeMini } from "./RegimeMini";
@@ -159,7 +160,7 @@ export function MissionControlPanel({
           <AlgoStatusWidget />
           <RegimeMini />
           <AccountTrackerWidget />
-          <BlindspotsWidget />
+          <WeeklyPerformanceWidget />
         </div>
       </div>
     </div>

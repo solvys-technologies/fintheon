@@ -45,6 +45,8 @@ import {
   JournalService,
   AgentPerformanceService,
   BlindspotsService,
+  // [claude-code 2026-04-23] S30-T2: consolidated daily session journal
+  SessionJournalService,
 } from "./journal";
 import {
   ContextBankService,
@@ -82,6 +84,7 @@ export interface BackendClient {
   marketData: MarketDataService;
   mcp: McpService;
   journal: JournalService;
+  sessionJournal: SessionJournalService;
   blindspots: BlindspotsService;
   agentPerformance: AgentPerformanceService;
   contextBank: ContextBankService;
@@ -120,6 +123,7 @@ export function createBackendClient(client: ApiClient): BackendClient {
     marketData: new MarketDataService(client),
     mcp: new McpService(client),
     journal: new JournalService(client),
+    sessionJournal: new SessionJournalService(client),
     blindspots: new BlindspotsService(client),
     agentPerformance: new AgentPerformanceService(client),
     contextBank: new ContextBankService(client),

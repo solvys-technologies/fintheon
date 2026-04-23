@@ -9,6 +9,34 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-23T16:00:00",
+    agent: "claude-code",
+    summary:
+      "S30-T1 [v5.22.10W]: Rebuilt Performance tab top row as two heatmap cards (Trade Activity + Futures Daily), " +
+      "demoted the 8 KPI cards to the row below. TradeActivityHeatmap is a GitHub-style grid fed by " +
+      "/api/projectx/trades with Trades/Shares/Notional toggle + year selector, colored by the user's " +
+      "bullishColor with opacity scaled to daily intensity. FuturesDailyHeatmap is diverging " +
+      "(bullish/bearish) on daily % change, with a contract selector (ES/NQ/MES/MNQ/CL/GC/6E), " +
+      "stats row, and cell-click showing a ≤160-char daily market summary that stays identical " +
+      "across contract swaps. Extended FusePalette with optional bullishColor/bearishColor + " +
+      "DEFAULT_TRADE_COLORS. Added trade-colors.ts helper (getIntensityColor, getDivergingColor), " +
+      "shared HeatmapGrid primitive, PerformanceHeatmapsRow + PerformanceHistoryPage extracts to " +
+      "keep PerformanceJournal.tsx under 300 lines. Futures bars fall back to a deterministic mock " +
+      "in frontend/lib/__mocks__/futures-daily.json until T3 ships /api/market/futures-daily.",
+    files: [
+      "frontend/components/journal/PerformanceJournal.tsx",
+      "frontend/components/journal/performance/TradeActivityHeatmap.tsx",
+      "frontend/components/journal/performance/FuturesDailyHeatmap.tsx",
+      "frontend/components/journal/performance/PerformanceHeatmapsRow.tsx",
+      "frontend/components/journal/performance/PerformanceHistoryPage.tsx",
+      "frontend/components/journal/performance/HeatmapGrid.tsx",
+      "frontend/lib/trade-colors.ts",
+      "frontend/lib/fuse-palette.ts",
+      "frontend/lib/__mocks__/futures-daily.json",
+    ],
+  },
+
+  {
     date: "2026-04-23T14:55:00",
     agent: "claude-code",
     summary:

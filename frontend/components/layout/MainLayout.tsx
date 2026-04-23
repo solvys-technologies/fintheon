@@ -16,7 +16,8 @@ import { useBackend } from "../../lib/backend";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { EmotionalResonanceMonitor } from "../mission-control/EmotionalResonanceMonitor";
-import { BlindspotsWidget } from "../mission-control/BlindspotsWidget";
+// [claude-code 2026-04-23] S30-T2: BlindspotsWidget retired from Strategium — promoted to Performance tab.
+import { WeeklyPerformanceWidget } from "../mission-control/WeeklyPerformanceWidget";
 import { AccountTrackerWidget } from "../mission-control/AccountTrackerWidget";
 import { AlgoStatusWidget } from "../mission-control/AlgoStatusWidget";
 import { PanelNotificationWidget } from "./PanelNotificationWidget";
@@ -443,10 +444,10 @@ function MainLayoutInner() {
         label: "Account Tracker",
         node: <AccountTrackerWidget />,
       },
-      blindspots: {
-        id: "blindspots" as const,
-        label: "Blindspots",
-        node: <BlindspotsWidget />,
+      weekly: {
+        id: "weekly" as const,
+        label: "Weekly Performance",
+        node: <WeeklyPerformanceWidget />,
       },
       calendar: {
         id: "calendar" as const,
