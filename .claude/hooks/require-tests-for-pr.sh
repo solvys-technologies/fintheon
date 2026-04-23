@@ -12,7 +12,8 @@ if echo "$COMMAND" | grep -q "gh pr create\|git push"; then
   echo "Running build check before PR..."
   cd "$CLAUDE_PROJECT_DIR" || exit 1
 
-  if ! bun run build > /dev/null 2>&1; then
+  BUILD_CMD="npm run build"; command -v bun &>/dev/null && BUILD_CMD="bun run build"
+  if ! $BUILD_CMD > /dev/null 2>&1; then
     echo "BLOCKED: Build is failing. Fix errors before creating a PR."
     echo "Run 'bun run build' to see failures."
     exit 2

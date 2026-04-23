@@ -37,6 +37,7 @@ export const changelog: ChangelogEntry[] = [
       "Evening maintenance sweep: fixed mobile/tsconfig.json — added explicit 'react' and 'react-dom' path entries pointing to mobile/node_modules/@types so shared frontend lib files (regime-store.ts, useRegimeTracker.ts) resolve React types correctly during mobile tsc check. Without this, mobile/node_modules/@types/react was invisible to files traversed via the @frontend/* path alias. Frontend, backend builds, and both external MCP repos (financial-datasets, tradingview-mcp) confirmed clean.",
     files: ["mobile/tsconfig.json"],
   },
+  {
     date: "2026-04-21T03:12:00",
     agent: "claude-code",
     summary:
