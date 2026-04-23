@@ -1,3 +1,4 @@
+// [claude-code 2026-04-23] S32-T2 Harper Vision — dispatch triggers, real status endpoint
 /**
  * Harper Vision Routes
  * Screen + audio ingestion, scene building, and trigger detection
@@ -16,6 +17,8 @@ import {
   detectTriggers,
   ingestAudioChunk,
 } from "../../services/harper-vision/engine.js";
+import { dispatchTriggers } from "../../services/harper-vision/dispatcher.js";
+import { getVisionStatus } from "../../services/harper-vision/status.js";
 import type { HarperVisionFrameIngest } from "../../types/harper-vision.js";
 
 export function createHarperVisionRoutes() {

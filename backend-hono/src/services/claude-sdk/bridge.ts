@@ -113,14 +113,18 @@ export function bridgeChat(
     ...configOverrides,
   };
 
-  // Preferred route: Anthropic via local VProxy gateway.
+  // Preferred route: VProxy → Ollama-via-Hermes chain.
+  // Stream fallback runs only when VProxy health check fails BEFORE the first token
+  // is shipped; once VProxy streaming has started, a mid-stream failure surfaces to
+  // the client rather than silently restarting (user has already seen output).
+  // Tools require VProxy — Ollama streams text only.
   if (isVProxyAnthropicEnabled()) {
     console.log(`${LOG_PREFIX} Routing through VProxy Anthropic stream`);
     let fullText = "";
     let aborted = false;
     const controller = new AbortController();
 
-    const vproxyStream = wrapVProxyStream(
+    const chainStream = wrapChainStream(
       prompt,
       spawnOpts,
       (text) => {
@@ -133,7 +137,7 @@ export function bridgeChat(
     );
 
     return {
-      stream: vproxyStream,
+      stream: chainStream,
       abort: () => {
         aborted = true;
         controller.abort();
