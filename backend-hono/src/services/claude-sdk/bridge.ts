@@ -27,6 +27,10 @@ import {
   isVProxyAnthropicEnabled,
   streamTextViaVProxy,
 } from "../vproxy/anthropic-client.js";
+import {
+  isOllamaFallbackEnabled,
+  streamTextViaOllama,
+} from "../ai/ollama-hermes-client.js";
 
 const LOG_PREFIX = "[ClaudeSDK:Bridge]";
 

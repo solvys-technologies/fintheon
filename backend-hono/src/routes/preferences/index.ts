@@ -1,6 +1,7 @@
 // [claude-code 2026-04-19] v5.22 S1: Cross-platform user preferences route. Backs the
 //   shared UserPreferences contract (frontend/lib/user-preferences.ts + mobile mirror).
 //   GET returns the merged prefs (defaults filled in); PUT upserts and returns the fresh row.
+// [claude-code 2026-04-23] S31-T6: psychAssistEnabled flag; default false (silent mode).
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { z } from "zod";
