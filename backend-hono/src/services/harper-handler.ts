@@ -40,6 +40,8 @@ import {
 import { createLogger } from "../lib/logger.js";
 import { selectModel } from "./ai/routing.js";
 import { getSupabaseClient } from "../config/supabase.js";
+// [claude-code 2026-04-23] Harper Vision — screen + audio context injection
+import { buildVisionContext } from "./harper-vision/engine.js";
 
 const log = createLogger("HarperOpus");
 
@@ -368,6 +370,26 @@ export async function harperChat(
 
   if (activeConnectors?.includes("boardroom")) {
     systemPrompt += buildBoardroomContext();
+  }
+
+  // [claude-code 2026-04-23] Harper Vision — inject recent screen + audio context
+  try {
+    if (userId) {
+      const visionContext = await buildVisionContext(userId, {
+        lookbackSeconds: 120,
+      });
+      if (visionContext) {
+        systemPrompt += visionContext;
+        log.info("Harper Vision context injected", {
+          conversationId,
+          userId,
+        });
+      }
+    }
+  } catch (err) {
+    log.warn("Failed to build Harper Vision context (non-fatal)", {
+      error: String(err),
+    });
   }
 
   log.info("Harper chat request", {

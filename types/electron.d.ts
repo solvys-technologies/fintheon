@@ -1,7 +1,5 @@
 // [claude-code 2026-03-16] Added auto-update types
-/**
- * Type declarations for Electron API exposed via preload script
- */
+// [claude-code 2026-04-23] Harper Vision — screen capture IPC types
 
 export type CliOutputEvent =
   | { type: "stdout"; data: string }
@@ -23,6 +21,39 @@ export interface UpdateProgress {
 export interface StartupConfig {
   backendAutostart: boolean;
   launchOnLogin: boolean;
+}
+
+export interface HarperVisionSource {
+  id: string;
+  name: string;
+  display_id?: string;
+  appIcon?: string;
+  thumbnail?: string;
+}
+
+export interface HarperVisionCaptureResult {
+  ok: boolean;
+  base64?: string;
+  width?: number;
+  height?: number;
+  name?: string;
+  error?: string;
+}
+
+export interface HarperVisionStatus {
+  isCapturing: boolean;
+  sessionId: string | null;
+  frameCounter: number;
+  intervalMs: number;
+}
+
+export interface HarperVisionAPI {
+  captureScreen: () => Promise<HarperVisionCaptureResult>;
+  captureWindow: (id: string) => Promise<HarperVisionCaptureResult>;
+  getSources: () => Promise<HarperVisionSource[]>;
+  startCapture: (sessionId?: string) => Promise<{ ok: boolean; sessionId?: string; error?: string }>;
+  stopCapture: () => Promise<{ ok: boolean }>;
+  getStatus: () => Promise<HarperVisionStatus>;
 }
 
 export interface ElectronAPI {
@@ -62,11 +93,20 @@ export interface ElectronAPI {
     ) => Promise<{ ok: boolean; data?: any; error?: string; stderr?: string }>;
     getStatus: () => Promise<{ running: boolean; sessions?: string }>;
   };
+
+  // [claude-code 2026-04-23] Harper Vision — screen + audio capture
+  harperVision: HarperVisionAPI;
+}
+
+export interface SystemPermissionsAPI {
+  query: (name: "microphone" | "camera") => Promise<"granted" | "denied" | "prompt" | "unknown">;
+  request: (name: "microphone" | "camera") => Promise<"granted" | "denied">;
 }
 
 declare global {
   interface Window {
     electron?: ElectronAPI;
+    systemPermissions?: SystemPermissionsAPI;
   }
 }
 
