@@ -53,8 +53,17 @@ The fallback is silent — Harper, the brief generator, the Strands agents, desk
 
 - [ ] Extend `GET /api/diagnostics` response with:
   ```json
-  { "ai": { "primary": { "provider": "vproxy", "available": true, "latencyMs": 42 },
-             "fallback": { "provider": "ollama-hermes", "model": "qwen3-coder:480b-cloud", "available": true, "latencyMs": 210 } } }
+  {
+    "ai": {
+      "primary": { "provider": "vproxy", "available": true, "latencyMs": 42 },
+      "fallback": {
+        "provider": "ollama-hermes",
+        "model": "qwen3-coder:480b-cloud",
+        "available": true,
+        "latencyMs": 210
+      }
+    }
+  }
   ```
 - [ ] Log every fallback fire: `[ai-chain] vproxy failed (${error}), falling back to ollama-qwen for request ${requestId}`
 - [ ] Counter metric (in-memory): fallback count per hour; expose at `GET /api/diagnostics/ai-chain-stats`
