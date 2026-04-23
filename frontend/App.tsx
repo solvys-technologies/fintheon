@@ -30,7 +30,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { SystemStatusProvider } from "./contexts/SystemStatusContext";
 import { migrateStorageKeys } from "./lib/storage-migration";
 import { AuthShell } from "./components/auth/AuthShell";
-import { CircleQuartersSpinner } from "./components/icon-bank/agent-spinners";
+import { CircleQuarters } from "./components/icon-bank/UnicodeSpinners";
 
 // Run storage migration before any providers read localStorage
 migrateStorageKeys();
@@ -134,7 +134,7 @@ function AuthGate() {
             className="h-16 w-16 opacity-60"
           />
           <div className="flex items-center gap-2">
-            <CircleQuartersSpinner size={11} color="#c79f4a" />
+            <CircleQuarters size={11} color="#c79f4a" />
             <p className="text-[11px] tracking-[0.3em] text-[#c79f4a]/60">
               LOADING
             </p>

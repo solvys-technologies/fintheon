@@ -1,11 +1,6 @@
 // [claude-code 2026-04-19] S25-T3: Right-rail hover drawer — 4px hot zone on screen-right slides out a 240px Sanctum sitemap (Narrative Flow / Timeline / Aquarium → Command/Econ/Risk/5D). Auto-hides 1.5s after mouse leaves. Lets users jump anywhere in Sanctum without going back to the top tab strip.
 import { useEffect, useRef, useState, useCallback } from "react";
-import {
-  Clock,
-  GitBranch,
-  Fish,
-  ChevronRight,
-} from "lucide-react";
+import { Clock, GitBranch, Fish, ChevronRight } from "lucide-react";
 import type { SanctumSubView } from "../consilium/ConsiliumTabConfig";
 
 const AUTO_HIDE_MS = 1500;

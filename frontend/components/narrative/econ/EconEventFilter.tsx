@@ -1,11 +1,6 @@
 // [claude-code 2026-04-19] S25-T4a: Event-filter dropdown + timespan + Generate. Up to 4 events selectable, each option shows category tag + sub-desc (releases collected, last seen, next release). Generate fires onGenerate({events, timespan}) which the parent uses to mount EconEventCards with magical staggered fade-in.
 import { useState, useRef, useEffect, useMemo } from "react";
-import {
-  Check,
-  ChevronDown,
-  Zap,
-  Loader2,
-} from "lucide-react";
+import { Check, ChevronDown, Zap, Loader2 } from "lucide-react";
 import type { EconEventCardData } from "./EconEventCard";
 
 const MAX_EVENTS = 4;

@@ -1,11 +1,5 @@
 // S13-T3: Call controls with join/leave/mute and participant list
-import {
-  Phone,
-  PhoneOff,
-  Mic,
-  MicOff,
-  Loader2,
-} from "lucide-react";
+import { Phone, PhoneOff, Mic, MicOff, Loader2 } from "lucide-react";
 import { useLiveKitRoom } from "../../hooks/useLiveKitRoom";
 
 export function CallControls() {

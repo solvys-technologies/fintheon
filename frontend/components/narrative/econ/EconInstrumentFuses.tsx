@@ -1,11 +1,6 @@
 // [claude-code 2026-04-19] S25-T4a: Econ Intelligence right-column instrument fuses. Vertical layout (one per row), reads from the same /api/predictions/outlook + cache that AquariumPredictionCards uses. Doto numbers, fading vertical ruler is owned by the parent.
 import { useEffect, useState } from "react";
-import {
-  Diff,
-  TrendingDown,
-  Minus,
-  Loader2,
-} from "lucide-react";
+import { Diff, TrendingDown, Minus, Loader2 } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const CACHE_KEY = "fintheon:aquarium-predictions";

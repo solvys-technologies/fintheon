@@ -6,14 +6,7 @@ import {
   useEffect,
   type DragEvent,
 } from "react";
-import {
-  X,
-  FileText,
-  Image,
-  Activity,
-  Check,
-  Search,
-} from "lucide-react";
+import { X, FileText, Image, Activity, Check, Search } from "lucide-react";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 
 type AttachTab = "docs" | "media" | "riskflow";

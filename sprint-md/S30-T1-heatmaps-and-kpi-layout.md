@@ -4,7 +4,7 @@
 
 Sprint 1 of the S30/S31/S32 Super Sprint refines the Performance tab shipped in v5.22.9W (S29 cherry-pick). The current top row is empty: "No P&L data" chart on the left, "No blindspots detected" card on the right — it wastes the most valuable real estate on the page. This track rebuilds the top row as two dense **heatmap cards** (Trade Activity + SPY Daily) in the user's personalized bullish/bearish palette, then demotes the 8 KPI cards to the row below.
 
-Trade data already lives in the Supabase `trades` table (populated every 15 min by ProjectX sync + autopilot). SPY daily close data does NOT yet have a persistent cache — T3 will build `spy_daily` + `/api/market/spy-daily`; until then, scaffold the SPY heatmap against a typed mock and swap at Wave 2.
+Trade data already lives in the Supabase `trades` table (populated every 15 min by ProjectX sync + autopilot). Fintheon trades **futures only — no stocks**. Market-context heatmap must track **ES** (E-mini S&P 500 continuous front-month, Yahoo symbol `ES=F`) by default, with the ability to swap to any futures contract (ES, NQ, MES, MNQ, etc.) via a contract param. Futures daily bar data does NOT yet have a persistent cache — T3 builds `futures_daily` (keyed by `(contract, date)`) + `/api/market/futures-daily?contract=ES`; until then, scaffold the heatmap against a typed mock and swap at Wave 2.
 
 ## Branch Target
 
@@ -20,12 +20,15 @@ Trade data already lives in the Supabase `trades` table (populated every 15 min 
   - Year selector dropdown (defaults to current year); years derived from data range
   - Footer: "Less ▢▢▢▢ More" legend using the same opacity steps
   - Reads from `/api/projectx/trades?from=YYYY-01-01&to=YYYY-12-31` (existing route)
-- [ ] New component `frontend/components/journal/performance/SPYDailyHeatmap.tsx`
+- [ ] New component `frontend/components/journal/performance/FuturesDailyHeatmap.tsx`
   - Same grid layout, but color diverges: positive days = `bullishColor`, negative = `bearishColor`, opacity = `min(|pct_change|, 2%) / 2%`
-  - Header row: title "SPY daily performance", subtitle "`{YEAR}` YTD · intensity = daily % change (open to close)"
+  - **Default contract = user's selected instrument** (read from `user_preferences.selectedInstrument` or the TopStepX header dropdown; fall back to `ES`)
+  - **Contract selector dropdown** on the card (top-right): ES, NQ, MES, MNQ, CL, GC, 6E (seed list; allow switching without affecting other cards)
+  - Header row: title "`{contract}` daily performance", subtitle "`{YEAR}` YTD · intensity = daily % change (open to close)"
   - Right-side stats row: "`N` trading days YTD · `X` up · `Y` down · avg ±`Z%`"
-  - Footer legend: "`−2%` [red scale] [green scale] `+2%`"
-  - Reads from `/api/market/spy-daily?from=YYYY-01-01` (T3-owned; mock until integration)
+  - Footer legend: "`−2%` [bearish scale] [bullish scale] `+2%`"
+  - Cell hover/click: tooltip or inline expand showing `{date} · {contract} {open→close} · {pct}%` AND a **date-pinned daily market summary (≤160 chars)** — this summary text is the SAME across contracts for a given date; only the price delta changes when swapping contract. Summary source: T3's `daily_market_summary` table, fetched via `/api/market/daily-summary?date=YYYY-MM-DD`
+  - Reads daily bars from `/api/market/futures-daily?contract={contract}&from=YYYY-01-01` (T3-owned; mock until integration)
 - [ ] New helper `frontend/lib/trade-colors.ts`
   - Exported: `getIntensityColor(value: number, palette: FusePalette, range: { min, max }): string`
   - Exported: `getDivergingColor(pct: number, palette: FusePalette, cap = 0.02): string`
@@ -35,7 +38,7 @@ Trade data already lives in the Supabase `trades` table (populated every 15 min 
   - Add optional `bearishColor?: string` (default `#ef4444`)
   - Defaults live in a new constant `DEFAULT_TRADE_COLORS` — heatmaps fall back to these when prefs are absent
 - [ ] `frontend/components/journal/PerformanceJournal.tsx` top-row layout flip:
-  - Replace the current "No P&L data" chart area and the inline Blindspots card (lines ~341-374) with a `<div className="grid grid-cols-2 gap-4">` holding `<TradeActivityHeatmap />` and `<SPYDailyHeatmap />`
+  - Replace the current "No P&L data" chart area and the inline Blindspots card (lines ~341-374) with a `<div className="grid grid-cols-2 gap-4">` holding `<TradeActivityHeatmap />` and `<FuturesDailyHeatmap />`
   - Move the KPI row (8 cards using existing `KPICard.tsx`) to render BELOW that grid
   - Keep `BloombergChart.tsx` importable as a drill-down but remove from the top-row hero slot
 - [ ] Changelog entry in `src/lib/changelog.ts` with date `2026-04-23` describing the layout flip + heatmaps
@@ -71,7 +74,7 @@ Trade data already lives in the Supabase `trades` table (populated every 15 min 
    - Group by `entry_at::date`, compute metric per day (count / qty sum / |notional| sum)
    - Normalize against max for the year → intensity 0–1
    - Render SVG or div-grid (pick whichever the rest of the codebase uses — grep for existing heatmap or calendar-intensity patterns in `TradingCalendar/CalendarCell.tsx`)
-5. Build `SPYDailyHeatmap.tsx`:
+5. Build `FuturesDailyHeatmap.tsx`:
    - Fetch from `/api/market/spy-daily` (expect 404 until T3 ships — use a mock JSON file `frontend/lib/__mocks__/spy-daily.json` until wave 2)
    - Diverging color logic via `getDivergingColor`
    - Stats row computed client-side from the fetched array
@@ -87,7 +90,7 @@ Trade data already lives in the Supabase `trades` table (populated every 15 min 
 - [ ] `TradeActivityHeatmap` shows a gold (or user-custom) cell for every day in `trades` within the selected year
 - [ ] Toggle between Trades/Shares/Notional updates intensity without refetch
 - [ ] Year selector populates from the actual date range of `trades` (plus current year)
-- [ ] `SPYDailyHeatmap` renders with diverging colors; stats row computes correctly from the mock data
+- [ ] `FuturesDailyHeatmap` renders with diverging colors; stats row computes correctly from the mock data
 - [ ] KPI row renders BELOW the heatmaps (visually confirm via build)
 - [ ] `FusePalette` type accepts optional `bullishColor` / `bearishColor`; existing code that reads FusePalette still type-checks
 - [ ] `PerformanceJournal.tsx` is under 300 lines (extract `PerformanceHeatmapsRow.tsx` if needed)
@@ -106,7 +109,7 @@ rm -rf dist && npx vite build
 
 # Confirm heatmap files exist and are <300 lines each
 wc -l frontend/components/journal/performance/TradeActivityHeatmap.tsx \
-      frontend/components/journal/performance/SPYDailyHeatmap.tsx \
+      frontend/components/journal/performance/FuturesDailyHeatmap.tsx \
       frontend/components/journal/PerformanceJournal.tsx \
       frontend/lib/trade-colors.ts
 ```

@@ -1,11 +1,6 @@
 // [claude-code 2026-04-15] T2: RegimeCard — glass-wrapped regime card with decomposed subcomponents
 // [claude-code 2026-04-15] T3: Added RegimeMiniChat integration at card bottom
-import {
-  Clock,
-  Trash2,
-  Diff,
-  TrendingDown,
-} from "lucide-react";
+import { Clock, Trash2, Diff, TrendingDown } from "lucide-react";
 import { GlassEffect } from "../ui/liquid-glass";
 import { BiasBadge } from "./BiasBadge";
 import { ConfidenceBar } from "./ConfidenceBar";

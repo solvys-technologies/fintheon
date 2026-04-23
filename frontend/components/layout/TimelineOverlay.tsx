@@ -1,12 +1,7 @@
 // [claude-code 2026-04-01] Timeline split-screen overlay — slides over browser iframe, same width as Strategium
 // Fetches from RiskFlow API directly (no NarrativeProvider dependency) — works from any tab
 import { useState, useMemo, useCallback, useEffect } from "react";
-import {
-  ChevronRight,
-  Clock,
-  ChevronDown,
-  Loader2,
-} from "lucide-react";
+import { ChevronRight, Clock, ChevronDown, Loader2 } from "lucide-react";
 import { useBackend } from "../../lib/backend";
 import { ivHeatColor } from "../../types/agent-desk";
 

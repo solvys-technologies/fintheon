@@ -14,12 +14,7 @@ import {
   useAnimation,
   AnimatePresence,
 } from "framer-motion";
-import {
-  CheckCircle2,
-  XCircle,
-  MessageCircle,
-  Trash2,
-} from "lucide-react";
+import { CheckCircle2, XCircle, MessageCircle, Trash2 } from "lucide-react";
 import { VerticalFuseBar } from "../shared/VerticalFuseBar";
 import type { NotificationItem } from "../../hooks/useNotificationHistory";
 import { colorForSeverity, type FuseSeverity } from "../../lib/fuse-palette";

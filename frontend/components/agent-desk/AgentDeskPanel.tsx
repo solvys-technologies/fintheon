@@ -1,13 +1,7 @@
 // [claude-code 2026-04-05] Fixed 404: added API_BASE to all fetch calls (was using relative URLs)
 // [claude-code 2026-03-16] AgentDesk simulation side panel — status, controls, prediction results
 import { useState, useCallback } from "react";
-import {
-  Play,
-  Loader2,
-  CheckCircle,
-  AlertCircle,
-  Zap,
-} from "lucide-react";
+import { Play, Loader2, CheckCircle, AlertCircle, Zap } from "lucide-react";
 import { AgentDeskPrediction } from "./AgentDeskPrediction";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";

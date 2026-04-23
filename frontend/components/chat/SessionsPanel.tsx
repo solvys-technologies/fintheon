@@ -1,11 +1,6 @@
 // [claude-code 2026-04-16] T6: Sessions panel — switched from bare fetch to BackendClient with auth headers
 import { useEffect, useState, useCallback } from "react";
-import {
-  Calendar,
-  MessageSquare,
-  Trash2,
-  Loader2,
-} from "lucide-react";
+import { Calendar, MessageSquare, Trash2, Loader2 } from "lucide-react";
 import { useBackend } from "../../lib/backend";
 
 interface SessionEntry {
