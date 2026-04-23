@@ -8,10 +8,7 @@
 //   header button, METER→ARROW-3 as a top-bar shimmer during refresh, ARROW-3 for loadingMore.
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { Bell, BellOff } from "lucide-react";
-import {
-  CircleQuartersSpinner,
-  FillsweepSpinner,
-} from "../icon-bank/agent-spinners";
+import { CircleQuarters, MeterToShimmer } from "../icon-bank/UnicodeSpinners";
 import { Loader2 } from "lucide-react";
 import { withViewTransition } from "../../lib/view-transition";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
@@ -191,7 +188,7 @@ export function RiskFlowMain() {
               minWidth: 60,
             }}
           >
-            <FillsweepSpinner active={refreshing} size={11} />
+            <MeterToShimmer active={refreshing} size={11} cells={6} />
           </span>
         </div>
         <div className="flex items-center gap-1">
@@ -204,7 +201,7 @@ export function RiskFlowMain() {
             className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40 flex items-center justify-center w-6 h-6"
             title="Refresh feeds"
           >
-            <CircleQuartersSpinner active={refreshing} size={14} />
+            <CircleQuarters active={refreshing} size={14} />
           </button>
           <button
             onClick={requestNotifications}

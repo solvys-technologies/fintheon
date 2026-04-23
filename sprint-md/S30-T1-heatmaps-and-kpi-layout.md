@@ -75,7 +75,10 @@ Trade data already lives in the Supabase `trades` table (populated every 15 min 
    - Normalize against max for the year → intensity 0–1
    - Render SVG or div-grid (pick whichever the rest of the codebase uses — grep for existing heatmap or calendar-intensity patterns in `TradingCalendar/CalendarCell.tsx`)
 5. Build `FuturesDailyHeatmap.tsx`:
-   - Fetch from `/api/market/spy-daily` (expect 404 until T3 ships — use a mock JSON file `frontend/lib/__mocks__/spy-daily.json` until wave 2)
+   - Determine default contract: read user's selected instrument from prefs/header; fall back to `ES`
+   - Fetch bars from `/api/market/futures-daily?contract={contract}` (expect 404 until T3 ships — use mock `frontend/lib/__mocks__/futures-daily.json` keyed by contract until wave 2)
+   - Contract dropdown swaps the fetched dataset, not the summary — summaries are date-pinned
+   - On cell hover/click: fetch `/api/market/daily-summary?date=YYYY-MM-DD` once per date and cache locally
    - Diverging color logic via `getDivergingColor`
    - Stats row computed client-side from the fetched array
 6. Refactor `PerformanceJournal.tsx`:
@@ -90,7 +93,8 @@ Trade data already lives in the Supabase `trades` table (populated every 15 min 
 - [ ] `TradeActivityHeatmap` shows a gold (or user-custom) cell for every day in `trades` within the selected year
 - [ ] Toggle between Trades/Shares/Notional updates intensity without refetch
 - [ ] Year selector populates from the actual date range of `trades` (plus current year)
-- [ ] `FuturesDailyHeatmap` renders with diverging colors; stats row computes correctly from the mock data
+- [ ] `FuturesDailyHeatmap` defaults to the user's selected instrument; dropdown swaps contracts; stats row computes correctly from the mock data
+- [ ] Cell hover/click shows a ≤160-char daily market summary that stays identical when the contract dropdown changes (only price delta changes)
 - [ ] KPI row renders BELOW the heatmaps (visually confirm via build)
 - [ ] `FusePalette` type accepts optional `bullishColor` / `bearishColor`; existing code that reads FusePalette still type-checks
 - [ ] `PerformanceJournal.tsx` is under 300 lines (extract `PerformanceHeatmapsRow.tsx` if needed)

@@ -9,6 +9,33 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-23T14:55:00",
+    agent: "claude-code",
+    summary:
+      "Reverted the 3D iso-icon bank and agent-spinner port back to the prior lucide + UnicodeSpinners surface (TP: 'they look terrible. lol'). " +
+      "Swapped all 244 consumers (219 frontend + 25 mobile) from '@/components/shared/iso-icons' and '../shared/iso-icons' back to 'lucide-react'; " +
+      "deleted frontend/components/shared/iso-icons/ and mobile/components/shared/iso-icons/. " +
+      "Restored frontend/components/icon-bank/UnicodeSpinners.tsx from pre-c243abac HEAD; swapped the 6 agent-spinner consumers " +
+      "(App.tsx, ai-loader.tsx, FintheonThinkingIndicator.tsx, SessionsModal.tsx, FintheonThread.tsx, AquariumPredictionCards.tsx, RiskFlowMain.tsx) " +
+      "back to HelixVertical / CircleQuarters / MeterToShimmer / FishSwimmer; deleted frontend/components/icon-bank/agent-spinners/. " +
+      "Frontend + mobile tsc clean, vite builds pass (3234 + 2416 modules).",
+    files: [
+      "frontend/App.tsx",
+      "frontend/components/ui/ai-loader.tsx",
+      "frontend/components/chat/FintheonThinkingIndicator.tsx",
+      "frontend/components/chat/FintheonThread.tsx",
+      "frontend/components/chat/SessionsModal.tsx",
+      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "frontend/components/feed/RiskFlowMain.tsx",
+      "frontend/components/icon-bank/UnicodeSpinners.tsx",
+      "frontend/components/shared/iso-icons/ (deleted)",
+      "frontend/components/icon-bank/agent-spinners/ (deleted)",
+      "mobile/components/shared/iso-icons/ (deleted)",
+      "+ 237 frontend/mobile consumer files swapped from iso-icons back to lucide-react",
+    ],
+  },
+
+  {
     date: "2026-04-22T14:30:00",
     agent: "T3/Wealth",
     summary:

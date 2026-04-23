@@ -44,7 +44,7 @@ All other files are single-owner. No two tracks modify the same non-shared file.
 
 - **T1** rebuilds the top row with two heatmap cards (Trade Activity + SPY Daily) in the user's bullish/bearish palette, moves the 8 KPI cards down, extends `FusePalette` with color prefs.
 - **T2** swaps the Strategium Blindspots widget for a Weekly Performance widget, promotes Blindspots to a full-width before/after row on Performance, and collapses the 3 session cards + Hermes + Notes into one `SessionJournalPanel` with 0.0–10.0 decimal sliders.
-- **T3** ships the entire session/journal + SPY daily backend: two migrations, CRUD routes, Yahoo daily bar sync, and the Hermes-daily-summary Routine endpoint (5pm ET).
+- **T3** ships the entire session/journal + futures daily backend: three migrations (session_journal, futures_daily, daily_market_summary), CRUD routes, Yahoo `=F` futures bar sync, `/api/market/daily-summary` (≤160-char date-pinned summary), and two Routine-gated endpoints (hermes-daily-summary + daily-market-summary, both 5pm ET).
 - **T4** removes the Dashboard/Calendar pill toggle (calendar now inline + viewport-fit), audits + extends ProjectX read endpoints, adds the screenshot ingestion pipeline reusing harper-vision's LLM helper, and redesigns the Day Detail modal (equity curve + trade table + Daily News Summary replacing "Add Journal").
 
 ## Wave 2 Unification Checklist (orchestrator)
@@ -52,12 +52,13 @@ All other files are single-owner. No two tracks modify the same non-shared file.
 1. Merge 4 tracks onto `s30-performance`. Resolve `PerformanceJournal.tsx` with the intended final layout: heatmaps row (T1) → KPI row (T1) → BlindspotsRow (T2) → SessionJournalPanel (T2) → Calendar inline (T4).
 2. Wire `SessionJournalPanel` Submit → `PUT /api/session-journal`.
 3. Wire `TradeActivityHeatmap` + `SPYDailyHeatmap` → extended `FusePalette.bullishColor` / `.bearishColor`.
-4. Wire `SPYDailyHeatmap` → `GET /api/market/spy-daily` (remove mock).
+4. Wire `FuturesDailyHeatmap` → `GET /api/market/futures-daily?contract=...` + `GET /api/market/daily-summary?date=...` (remove mocks).
 5. Wire `DailyNewsSummary` → existing RiskFlow endpoint.
-6. Hand the three migration files to TP for `supabase db push`:
+6. Hand migration files to TP for `supabase db push`:
    - `backend-hono/migrations/031_session_journal.sql`
-   - `backend-hono/migrations/032_spy_daily.sql`
-   - `backend-hono/migrations/033_trades_source.sql` (if T4 added it)
+   - `backend-hono/migrations/032_futures_daily.sql`
+   - `backend-hono/migrations/033_daily_market_summary.sql`
+   - `backend-hono/migrations/034_trades_source.sql` (only if T4 added the `trades.source` column)
 7. Wire `hermes-daily-summary` Routine via Harper Ops (TP action, documented by T3).
 8. Run validation stack:
    ```bash
