@@ -7,31 +7,36 @@ import { randomUUID } from "node:crypto";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
 import type {
-  OmiPrimaryAgent,
-  OmiSession,
-  OmiSessionStatus,
-  OmiTrigger,
-  OmiTranscriptSegment,
+  HarperVoicePrimaryAgent,
+  HarperVoiceSession,
+  HarperVoiceSessionStatus,
+  HarperVoiceTrigger,
+  HarperVoiceTranscriptSegment,
 } from "./types.js";
 
-const log = createLogger("OmiSessionManager");
+const log = createLogger("HarperVoiceSessionManager");
 
-const TRIGGER_DEFAULT_AGENT: Record<OmiTrigger, OmiPrimaryAgent> = {
+const TRIGGER_DEFAULT_AGENT: Record<
+  HarperVoiceTrigger,
+  HarperVoicePrimaryAgent
+> = {
   psych_assist: "coach",
   voice_assistant: "harper",
   performance_chat: "coach",
 };
 
-const active = new Map<string, OmiSession>();
+const active = new Map<string, HarperVoiceSession>();
 
-export function getActiveSession(userId: string): OmiSession | undefined {
+export function getActiveSession(
+  userId: string,
+): HarperVoiceSession | undefined {
   return active.get(userId);
 }
 
 export async function startSession(
   userId: string,
-  trigger: OmiTrigger,
-): Promise<OmiSession> {
+  trigger: HarperVoiceTrigger,
+): Promise<HarperVoiceSession> {
   const existing = active.get(userId);
   if (existing && existing.status === "active") {
     log.info("re-using active session", {
@@ -42,7 +47,7 @@ export async function startSession(
     return existing;
   }
 
-  const session: OmiSession = {
+  const session: HarperVoiceSession = {
     id: randomUUID(),
     userId,
     trigger,
@@ -77,8 +82,8 @@ export async function startSession(
 
 export async function endSession(
   userId: string,
-  status: OmiSessionStatus = "ended",
-): Promise<OmiSession | null> {
+  status: HarperVoiceSessionStatus = "ended",
+): Promise<HarperVoiceSession | null> {
   const session = active.get(userId);
   if (!session) return null;
 
@@ -98,7 +103,10 @@ export async function endSession(
   return session;
 }
 
-export function setPrimaryAgent(userId: string, agent: OmiPrimaryAgent): void {
+export function setPrimaryAgent(
+  userId: string,
+  agent: HarperVoicePrimaryAgent,
+): void {
   const s = active.get(userId);
   if (s) s.primaryAgent = agent;
 }
@@ -110,7 +118,7 @@ export function setPrimaryAgent(userId: string, agent: OmiPrimaryAgent): void {
  */
 export async function appendTranscript(
   userId: string,
-  segments: OmiTranscriptSegment[],
+  segments: HarperVoiceTranscriptSegment[],
 ): Promise<string | null> {
   const session = active.get(userId);
   if (!session) return null;
@@ -138,7 +146,7 @@ export async function appendTranscript(
  * Look up a session by its Omi `uid` → Fintheon user mapping. The webhook
  * receiver uses this to resolve which user a webhook call belongs to.
  */
-export async function resolveUserIdForOmiUid(
+export async function resolveUserIdForHarperVoiceUid(
   omiUid: string,
 ): Promise<string | null> {
   const sb = getSupabaseClient();

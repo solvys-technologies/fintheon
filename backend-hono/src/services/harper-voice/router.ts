@@ -5,7 +5,11 @@
 // When a non-default agent takes over, we return a `preamble` that the UI can
 // announce: "I had the desk search the web, here's what we found:"
 
-import type { OmiPrimaryAgent, OmiRouteIntent, OmiTrigger } from "./types.js";
+import type {
+  HarperVoicePrimaryAgent,
+  HarperVoiceRouteIntent,
+  HarperVoiceTrigger,
+} from "./types.js";
 
 const MARKET_VERBS =
   /\b(price|quote|level|iv|implied vol|vol|volume|earnings?|gex|gamma|delta|put|call|dte|chain|open interest|oi|flow|walls?|regime|session|gap|vix)\b/i;
@@ -13,9 +17,9 @@ const TICKER_PATTERN = /\b([A-Z]{2,5})\b/;
 const GREETING = /^(hey|hi|hello|yo|okay|ok|so)\b/i;
 
 export function routeIntent(
-  trigger: OmiTrigger,
+  trigger: HarperVoiceTrigger,
   utterance: string,
-): OmiRouteIntent {
+): HarperVoiceRouteIntent {
   const text = utterance.trim();
 
   if (trigger === "psych_assist") {
@@ -57,7 +61,7 @@ function looksLikeMarketQuestion(text: string): boolean {
   return hasVerb || hasTicker;
 }
 
-export function agentLabel(agent: OmiPrimaryAgent): string {
+export function agentLabel(agent: HarperVoicePrimaryAgent): string {
   switch (agent) {
     case "coach":
       return "Coach";

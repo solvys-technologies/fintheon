@@ -17,8 +17,10 @@ const HARPER_CONVERSATION_STORAGE_KEY = hermesConversationStorageKey("harper");
 const ERROR_AUTO_RECOVERY_MS = 5000;
 
 // VAD (Voice Activity Detection) settings
+// [claude-code 2026-04-23] TP: bumped silence threshold 1.8s → 2.6s so users get room to think
+//   mid-utterance without the mic cutting them off and auto-submitting a half-formed question.
 const VAD_SILENCE_THRESHOLD = 0.015; // RMS level below this = silence
-const VAD_SILENCE_DURATION_MS = 1800; // 1.8s of silence = done speaking
+const VAD_SILENCE_DURATION_MS = 2600; // 2.6s of silence = done speaking
 const VAD_MAX_RECORDING_MS = 30_000; // Max 30s recording
 const VAD_CHECK_INTERVAL_MS = 100; // Check audio level every 100ms
 const MIC_DEVICE_STORAGE_KEY = "fintheon:voice-mic-device:v1";
@@ -114,7 +116,7 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
   }, []);
 
   const stopPlayback = useCallback(() => {
-    // [S28-T1] Browser TTS removed — all agent speech now routes through Omi.
+    // [S28-T1] Browser TTS removed — all agent speech now routes through Harper Voice.
     //   The remaining audioRef only plays sidecar-generated blobs; stopping it
     //   cancels an in-flight greeting if one is queued.
     if (audioRef.current) {
@@ -182,7 +184,7 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
     [],
   );
 
-  // [S28-T1] Browser TTS is banned. Agent audio arrives via Omi Notifications
+  // [S28-T1] Browser TTS is banned. Agent audio arrives via Harper Voice Notifications
   //   (handled server-side). If the user isn't paired, we stay silent rather
   //   than substituting a macOS voice — text still lands in the UI.
 

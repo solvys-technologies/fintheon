@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { CompactERMonitor } from "../mission-control/CompactERMonitor";
 import { useDraggable } from "../../hooks/useDraggable";
-import { useOmiSession } from "../../hooks/useOmiSession";
+import { useHarperVoiceSession } from "../../hooks/useHarperVoiceSession";
 import { WhiteWaveform } from "../voice/WhiteWaveform";
 
 export type PsychAssistDockTarget = "floating" | "header";
@@ -35,7 +35,7 @@ export function PsychAssistDockable({
   const panelRef = useRef<HTMLDivElement>(null);
   const gripRef = useRef<HTMLButtonElement>(null);
   // [S21] Omi session for psych_assist trigger — activates the Coach in the user's ear.
-  const { session, starting, start, stop } = useOmiSession();
+  const { session, starting, start, stop } = useHarperVoiceSession();
   const sessionActive =
     session?.status === "active" && session.trigger === "psych_assist";
 

@@ -3,7 +3,7 @@ import * as conversationStore from "../../services/ai/conversation-store.js";
 import { handleHermesChat } from "../../services/hermes-handler.js";
 import { transcribeVoice } from "../../services/voice-service.js";
 import { analyzeSentiment } from "../../services/voice-sentiment.js";
-import { speakToUser } from "../../services/omi/speak.js";
+import { speakToUser } from "../../services/harper-voice/speak.js";
 
 function getUserId(c: Context): string | null {
   const userId = c.get("userId") as string | undefined;
@@ -137,11 +137,11 @@ export async function handleSpeak(c: Context) {
       },
     });
 
-    // [S28-T1] All agent-to-user speech now routes through Omi's Notifications API.
+    // [S28-T1] All agent-to-user speech now routes through Harper Voice's Notifications API.
     //   The browser never speaks — if the user isn't paired the speak helper
     //   silently no-ops and the client shows text only.
     void speakToUser(userId, response.content).catch((err) => {
-      console.warn("[Voice] Omi speak failed (non-fatal):", err);
+      console.warn("[Voice] Harper Voice speak failed (non-fatal):", err);
     });
 
     return c.json({

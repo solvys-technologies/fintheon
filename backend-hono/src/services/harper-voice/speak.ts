@@ -1,11 +1,11 @@
 // [claude-code 2026-04-20] S28-T1: Agent→User speech helper.
-// All agent-to-user audio routes through Omi's Notifications API with speak=true.
+// All agent-to-user audio routes through Harper Voice's Notifications API with speak=true.
 // Browser speechSynthesis is no longer used anywhere in the app.
 import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
 import { sendNotification } from "./client.js";
 
-const log = createLogger("OmiSpeak");
+const log = createLogger("HarperVoiceSpeak");
 
 /**
  * Speak `text` into the user's Omi earbuds via the Notifications API.

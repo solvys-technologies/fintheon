@@ -1,7 +1,7 @@
 // [claude-code 2026-03-11] Track 7B: Added analyze-sentiment endpoint (Claude Haiku)
 // [claude-code 2026-04-20] S28-T1: Removed /session/* sidecar routes — browser-side
 //   greeting playback is redundant now that all agent-to-user speech routes through
-//   Omi's Notifications API (see services/omi/speak.ts).
+//   Harper Voice Notifications API (see services/harper-voice/speak.ts).
 import { Hono } from "hono";
 import {
   handleSpeak,

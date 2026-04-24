@@ -5,12 +5,12 @@
 // React context dependency.
 import { useCallback, useEffect, useState } from "react";
 import {
-  getActiveOmiSession,
-  startOmiSession,
-  stopOmiSession,
-  type OmiSession,
-  type OmiTrigger,
-} from "../lib/omi";
+  getActiveHarperVoiceSession,
+  startHarperVoiceSession,
+  stopHarperVoiceSession,
+  type HarperVoiceSession,
+  type HarperVoiceTrigger,
+} from "../lib/harper-voice";
 import { ensureVoicePermissions } from "../lib/system-permissions";
 
 export interface AgentResponseEventDetail {
@@ -30,13 +30,13 @@ export function emitAgentResponse(detail: AgentResponseEventDetail) {
   );
 }
 
-export function useOmiSession() {
-  const [session, setSession] = useState<OmiSession | null>(null);
+export function useHarperVoiceSession() {
+  const [session, setSession] = useState<HarperVoiceSession | null>(null);
   const [starting, setStarting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    getActiveOmiSession().then((s) => {
+    getActiveHarperVoiceSession().then((s) => {
       if (!cancelled) setSession(s);
     });
     return () => {
@@ -44,14 +44,14 @@ export function useOmiSession() {
     };
   }, []);
 
-  const start = useCallback(async (trigger: OmiTrigger) => {
+  const start = useCallback(async (trigger: HarperVoiceTrigger) => {
     setStarting(true);
     try {
       // Permission may already be granted by the onboarding flow; this is a
       // belt-and-braces check so the live triggers still work before
       // onboarding ships.
       await ensureVoicePermissions();
-      const s = await startOmiSession(trigger);
+      const s = await startHarperVoiceSession(trigger);
       setSession(s);
       if (s) {
         emitAgentResponse({
@@ -67,7 +67,7 @@ export function useOmiSession() {
   }, []);
 
   const stop = useCallback(async () => {
-    await stopOmiSession();
+    await stopHarperVoiceSession();
     setSession(null);
     emitAgentResponse({ agent: "coach", isSpeaking: false, open: false });
   }, []);
