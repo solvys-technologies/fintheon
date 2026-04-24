@@ -3,10 +3,15 @@
 // [claude-code 2026-04-24] Scope guardrails: predictions must be in PREDICTION_CATEGORIES
 //   and settle within 7 days. Mirrors the DB CHECK constraints so agents get a useful 400
 //   instead of an opaque Postgres failure.
+// [claude-code 2026-04-24] v5.23.5: added screener status + manual trigger endpoints.
 import { Hono } from "hono";
 import { createPolymarketService } from "../../services/polymarket-service.js";
 import { getRecentDivergenceAlerts } from "../../services/polymarket-kalshi-divergence.js";
 import { getSupabaseClient } from "../../config/supabase.js";
+import {
+  getScreenerStatus,
+  triggerScreenerCycle,
+} from "../../services/cron/polymarket-screener-scheduler.js";
 
 const PREDICTION_CATEGORIES = [
   "weather",
@@ -253,6 +258,24 @@ export function createPolymarketRoutes() {
     }));
 
     return c.json({ accuracy: result });
+  });
+
+  // GET /api/polymarket/screener/status — screener scheduler telemetry
+  app.get("/screener/status", (c) => {
+    return c.json(getScreenerStatus());
+  });
+
+  // POST /api/polymarket/screener/run — manual trigger (honors env gate)
+  app.post("/screener/run", async (c) => {
+    try {
+      const summary = await triggerScreenerCycle();
+      return c.json({ ok: true, summary });
+    } catch (err) {
+      return c.json(
+        { ok: false, error: err instanceof Error ? err.message : String(err) },
+        err instanceof Error && err.message.includes("disabled") ? 409 : 500,
+      );
+    }
   });
 
   return app;

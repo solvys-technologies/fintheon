@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T02:05:00",
+    agent: "claude-code",
+    summary:
+      "v5.23.5: Polymarket screener-scheduler — the missing auto-trigger. v5.23.4 shipped the guardrails + scorecards but nothing actually called POST /predictions, so Oracle's win-rate table would have stayed empty. New polymarket-screener-scheduler runs every 6h during extended market hours (6a-8p ET, weekdays), pulls ~60 trending contracts, pre-filters to the 4 allowed categories + ≤7d horizon + ≥$50k volume + non-degenerate odds (0.05<yes<0.95), dedupes against Oracle's open predictions, then hands up to 8 candidates/cycle to invokeAgent with a strict Pick-Wisely system prompt. Oracle returns strict JSON; parser rejects anything outside the contract or probabilities < 0.05 / > 0.95. Final belt-and-suspenders edge check in-process before Supabase insert (the LLM can lie about self-reported edge). Direct DB insert bypasses HTTP round-trip. New env gate POLYMARKET_SCREENER_ENABLED — stays off until TP flips it in Fly secrets so no background LLM spend until explicitly approved. Status + manual trigger exposed at GET /api/polymarket/screener/status and POST /api/polymarket/screener/run (returns 409 if gated off).",
+    files: [
+      "backend-hono/src/services/cron/polymarket-screener-scheduler.ts",
+      "backend-hono/src/boot/services.ts",
+      "backend-hono/src/routes/polymarket/index.ts",
+      "backend-hono/src/services/ai/agent-instructions/oracle-extra.md",
+    ],
+  },
+  {
     date: "2026-04-24T01:15:00",
     agent: "claude-code",
     summary:

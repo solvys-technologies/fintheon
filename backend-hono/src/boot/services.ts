@@ -59,6 +59,7 @@ import { initRettiwtPool } from "../services/rettiwt-service.js";
 import { cleanupOldRawItems } from "../services/supabase-service.js";
 import { startRelayConnector } from "../services/relay-connector.js";
 import { startOracleResearch } from "../services/cron/oracle-research-scheduler.js";
+import { startPolymarketScreener } from "../services/cron/polymarket-screener-scheduler.js";
 import { startOutcomeResolver } from "../services/cron/outcome-resolver.js";
 import { startOutcomeTagger } from "../services/scoring/outcome-tagger.js";
 // [claude-code 2026-04-23] Routines service retired — in-process schedulers handle the work directly.
@@ -396,6 +397,10 @@ export async function bootBackground(): Promise<void> {
 
   // Oracle research scheduler (4h interval — prediction market scanning + arb detection, gated by ORACLE_RESEARCH_ENABLED)
   startOracleResearch();
+
+  // Polymarket screener (6h interval — Oracle autonomously picks qualifying
+  // contracts and POSTs to polymarket_predictions. Gated by POLYMARKET_SCREENER_ENABLED.)
+  startPolymarketScreener();
 
   // [claude-code 2026-04-19] Relay connector moved to bootCritical — duplicate call removed here.
 
