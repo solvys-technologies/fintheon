@@ -1,11 +1,13 @@
+// [claude-code 2026-04-24] S34-T9: unified T6+T8 SSE hook — single broadcastEconPrint call uses T8's flat payload (matches frontend EconPrintFrame).
 // [claude-code 2026-04-24] S34-T6: SSE broadcast on successful inject for countdown modal
+// [claude-code 2026-04-24] S34-T8: fire broadcastEconPrint SSE frame after successful insert
+// so the frontend EconCountdownModal can cross-fade to the actual-vs-forecast view.
 // [claude-code 2026-03-11] Bridge: econ prints → RiskFlow feed items
 // When an economic release actual is detected, inject it as a high-priority RiskFlow item
 // so it flows into the IV scoring engine and appears in the feed.
 
 import { calculateIVScore } from "../analysis/iv-scorer.js";
 import { broadcastEconPrint } from "./sse-broadcaster.js";
-import type { EconEvent } from "../econ-calendar-service.js";
 
 interface EconPrintEvent {
   eventName: string;
@@ -104,21 +106,14 @@ export async function injectEconPrintToFeed(
     );
 
     try {
-      const syntheticEvent: EconEvent = {
-        id: `econ-bridge-${print.eventName}-${print.date}`,
-        name: print.eventName,
-        date: print.date,
-        country: "",
-        importance: 2,
-      };
       broadcastEconPrint({
-        event: syntheticEvent,
-        country: "",
-        category: "",
+        eventName: print.eventName,
         actual: print.actual,
-        forecast: print.forecast,
-        previous: print.previous,
-        headline,
+        forecast: print.forecast ?? null,
+        previous: print.previous ?? null,
+        surprisePercent: econData.surprisePercent,
+        beatMiss: direction as "beat" | "miss" | "inline",
+        printedAt: new Date().toISOString(),
       });
     } catch (sseErr) {
       console.warn(

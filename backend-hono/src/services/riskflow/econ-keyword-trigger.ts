@@ -274,16 +274,26 @@ export async function promoteToFeed(
   if (written <= 0) return false;
 
   try {
+    const surprisePercent =
+      extracted?.actual != null && extracted?.forecast != null && extracted.forecast !== 0
+        ? ((extracted.actual - extracted.forecast) / Math.abs(extracted.forecast)) * 100
+        : null;
+    const beatMiss: "beat" | "miss" | "inline" =
+      surprisePercent == null
+        ? "inline"
+        : surprisePercent > 0.1
+          ? "beat"
+          : surprisePercent < -0.1
+            ? "miss"
+            : "inline";
     broadcastEconPrint({
-      rawItemId: raw.id,
-      tweetId: raw.tweet_id,
-      event: ctx.event,
-      country: ctx.country,
-      category: ctx.category,
-      actual: extracted?.actual,
-      forecast: extracted?.forecast,
-      previous: extracted?.previous,
-      headline: raw.headline ?? ctx.event.name,
+      eventName: ctx.event.name,
+      actual: extracted?.actual ?? 0,
+      forecast: extracted?.forecast ?? null,
+      previous: extracted?.previous ?? null,
+      surprisePercent,
+      beatMiss,
+      printedAt: new Date().toISOString(),
     });
   } catch (err) {
     log.warn("broadcastEconPrint threw (swallowed)", {

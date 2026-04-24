@@ -1,12 +1,15 @@
+// [claude-code 2026-04-24] S34-T9: integration merge — T3 upcoming + T6 trigger + T8 active-watch all live in this file.
+// [claude-code 2026-04-24] S34-T8: GET /api/econ/active-watch joins economic_events × econ_watch_filters within a -2/+30min window for the countdown modal.
 // [claude-code 2026-04-24] S34-T6: added GET /api/econ/trigger-status — reports the econ-keyword-trigger scheduler health (enabled, last tick, last scan/promote counts) + POST /api/econ/trigger-run for manual smoke tests.
-// [claude-code 2026-04-19] S25-T4b: Backend econ CAO synthesis. POST /api/econ/synthesize takes {tickers, timeframe?} and returns CAO-generated description + third-order thinking per ticker. Forecast only populated when latest print conclusively beat/missed. Uses invokeAgent (Strands) with a JSON-output prompt; falls back to heuristic derivation if the LLM call fails so the UI never shows a blank card.
 // [claude-code 2026-04-24] S34-T3: added GET /api/econ/upcoming?country=X&category=Y — reads from the economic_events table now populated by econ-calendar-populator.
+// [claude-code 2026-04-19] S25-T4b: Backend econ CAO synthesis. POST /api/econ/synthesize takes {tickers, timeframe?} and returns CAO-generated description + third-order thinking per ticker. Forecast only populated when latest print conclusively beat/missed. Uses invokeAgent (Strands) with a JSON-output prompt; falls back to heuristic derivation if the LLM call fails so the UI never shows a blank card.
 import { Hono } from "hono";
 import { invokeAgent } from "../../services/strands/index.js";
 import {
   readEconHistory,
   readUpcomingEconEvents,
 } from "../../services/supabase-service.js";
+import { sql, isDatabaseAvailable } from "../../config/database.js";
 import { createLogger } from "../../lib/logger.js";
 import { runEconCalendarPopulator } from "../../services/cron/econ-calendar-populator.js";
 import {
@@ -112,8 +115,79 @@ function heuristicFallback(ticker: string, prints: PrintRow[]): EventSynthesis {
   };
 }
 
+interface ActiveWatchRow {
+  id: string;
+  event_name: string;
+  country: string | null;
+  category: string | null;
+  scheduled_at: string;
+  forecast: number | null;
+  previous: number | null;
+  actual: number | null;
+  actual_printed_at: string | null;
+}
+
 export function createEconRoutes() {
   const app = new Hono();
+
+  // GET /api/econ/active-watch — countdown modal feed
+  // Returns upcoming + freshly-printed events within window [-2min, +30min]
+  // joined against active econ_watch_filters. Returns [] gracefully if either
+  // table is missing (fresh dev DB) so the frontend never 500s.
+  app.get("/active-watch", async (c) => {
+    if (!isDatabaseAvailable()) {
+      return c.json({ events: [] });
+    }
+    try {
+      const rows = (await sql`
+        SELECT
+          ee.id,
+          ee.event_name,
+          ee.country,
+          ee.category,
+          ee.scheduled_at,
+          ee.forecast,
+          ee.previous,
+          ee.actual,
+          ee.actual_printed_at
+        FROM economic_events ee
+        INNER JOIN econ_watch_filters ewf
+          ON ewf.country = ee.country
+         AND ewf.category = ee.category
+         AND ewf.active = true
+        WHERE ee.scheduled_at BETWEEN (NOW() - INTERVAL '2 minutes')
+                                  AND (NOW() + INTERVAL '30 minutes')
+        ORDER BY ee.scheduled_at ASC
+        LIMIT 20
+      `) as ActiveWatchRow[];
+
+      const events = rows.map((r) => ({
+        id: r.id,
+        eventName: r.event_name,
+        country: r.country,
+        category: r.category,
+        scheduledAt: new Date(r.scheduled_at).toISOString(),
+        forecast: r.forecast,
+        previous: r.previous,
+        actual: r.actual,
+        status:
+          r.actual != null
+            ? "printed"
+            : new Date(r.scheduled_at).getTime() + 15 * 60 * 1000 <
+                Date.now()
+              ? "missed"
+              : "upcoming",
+      }));
+
+      return c.json({ events });
+    } catch (err) {
+      console.warn(
+        "[EconActiveWatch] query failed — returning empty (tables may not exist yet):",
+        (err as Error)?.message ?? err,
+      );
+      return c.json({ events: [] });
+    }
+  });
 
   // POST /api/econ/synthesize { tickers: string[], timeframe?: string }
   app.post("/synthesize", async (c) => {
