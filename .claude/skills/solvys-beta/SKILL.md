@@ -15,6 +15,7 @@ You are a build engineer. Build the app locally, install it, verify it runs, and
 - Every desktop build must verify install/update scripts match the current version
 - Always clear quarantine attributes with `xattr -cr` after DMG install
 - Backend is launchd-managed (`io.solvys.fintheon-backend`) -- must unload before restart
+- **DMG lands on ~/Desktop every time** -- after electron-builder finishes, delete every prior `Fintheon-*.dmg` on `~/Desktop/` and copy the new one there. TP installs from Desktop; old DMGs confuse it. This applies whether /solvys-beta was asked for or triggered as part of /solvys-deploy's binary-attach step.
 
 ---
 
@@ -156,28 +157,43 @@ echo "Checksum: $(shasum -a 256 "$DMG" | cut -d' ' -f1)"
 
 ---
 
-## Phase 5 -- Old DMG Cleanup
+## Phase 5 -- Place DMG on ~/Desktop + Clean Up Old DMGs
 
-Keep the current version's DMG. Delete all older DMGs:
+Copy the new DMG to `~/Desktop/` so TP can grab it from there. Delete every other `Fintheon-*.dmg` already on the Desktop first — only one DMG ever sits there at a time.
 
 ```bash
 VERSION=$(node -p "require('./package.json').version")
+DMG="desktop-dist/Fintheon-${VERSION}-arm64.dmg"
 
-# Clean desktop-dist/
+# 1. MANDATORY: clear any prior Fintheon DMGs off the Desktop (TP installs from here)
+find ~/Desktop -maxdepth 1 -name "Fintheon-*.dmg" -type f -delete
+echo "Cleared prior Fintheon DMGs from ~/Desktop"
+
+# 2. Copy the new DMG onto the Desktop
+cp "$DMG" "$HOME/Desktop/"
+echo "Placed ~/Desktop/$(basename $DMG)"
+
+# 3. Clean desktop-dist/ — keep only the current version's DMG
 for dmg in desktop-dist/*.dmg; do
   if [[ "$dmg" != *"$VERSION"* ]]; then
-    rm "$dmg"
+    /bin/rm -f "$dmg"
     echo "Removed: $dmg"
   fi
 done
 
-# Clean Downloads
+# 4. Clean ~/Downloads/ too — harmless if DMG isn't there
 for dmg in ~/Downloads/Fintheon-*.dmg; do
-  if [[ "$dmg" != *"$VERSION"* ]]; then
-    rm "$dmg"
+  if [[ -e "$dmg" && "$dmg" != *"$VERSION"* ]]; then
+    /bin/rm -f "$dmg"
     echo "Removed: $dmg"
   fi
 done
+```
+
+Verify:
+
+```bash
+ls -lh ~/Desktop/Fintheon-*.dmg   # should show exactly one file matching the new $VERSION
 ```
 
 ---
@@ -190,11 +206,12 @@ done
   {project} v{version} -- {date}
 ============================================
 
-DMG: desktop-dist/Fintheon-{version}-arm64.dmg
-Size: {size}
-Checksum: {sha256}
-Installed: /Applications/Fintheon.app
-Backend: localhost:8080 [RUNNING/STOPPED]
+DMG:             desktop-dist/Fintheon-{version}-arm64.dmg
+Desktop copy:    ~/Desktop/Fintheon-{version}-arm64.dmg  (older DMGs cleared)
+Size:            {size}
+Checksum:        {sha256}
+Installed:       /Applications/Fintheon.app
+Backend:         localhost:8080 [RUNNING/STOPPED]
 Install scripts: [CURRENT/OUTDATED]
 Old DMGs removed: {count}
 
@@ -210,5 +227,6 @@ Open the app to verify manually.
 - Always `rm -rf dist` before any vite build to prevent stale bundles.
 - Always remove the old app from /Applications before installing the new one.
 - Always clear quarantine attributes with `xattr -cr`.
-- Keep exactly one DMG (current version). Delete all others.
+- Keep exactly one DMG (current version). Delete all others — including every `Fintheon-*.dmg` already on `~/Desktop/`.
+- Copy the new DMG to `~/Desktop/` at the end of every build. No exceptions.
 - Verify install/update scripts are current -- flag if outdated.
