@@ -74,16 +74,16 @@ No gradients. No emojis. No Kanban borders. No AI sparkles / shimmer / animated 
 
 ## Peer assignment (claude-peers MCP)
 
-| Track | Peer ID            | Status            |
-| ----- | ------------------ | ----------------- |
-| T1    | a4dlos79           | dispatched Wave 1 |
-| T2    | 2wxplrc7           | dispatched Wave 1 |
-| T3    | 61nnt9zx           | dispatched Wave 1 |
-| T4    | wlp2to6q           | dispatched Wave 1 |
-| T5    | 1vlolesi           | Wave 2 (held)     |
-| T6    | u3pl7egk           | Wave 2 (held)     |
-| T7    | p5bw5t48           | Wave 2 (held)     |
-| T8    | ivguf0wi           | Wave 2 (held)     |
-| T9    | o4yv3wlt           | Wave 3 (held)     |
-| T10   | 0bwuvb79           | background (held) |
-| spare | y2khnk3m, rohbo9ch | reserve           |
+| Track | Peer ID        | Status                                                |
+| ----- | -------------- | ----------------------------------------------------- |
+| T1    | d8dnr6v3       | **dispatched 2026-04-24 Wave 1**                      |
+| T2    | wl7hjigu       | **dispatched 2026-04-24 Wave 1**                      |
+| T3    | j229b967       | **dispatched 2026-04-24 Wave 1**                      |
+| T4    | wiu8zo04       | **dispatched 2026-04-24 Wave 1**                      |
+| T5    | TBD            | Wave 2 (assign from: cid45lln / bafgiagr / xtrk1sg5)  |
+| T6    | TBD            | Wave 2                                                |
+| T7    | TBD            | Wave 2                                                |
+| T8    | TBD            | Wave 2                                                |
+| T9    | TBD            | Wave 3                                                |
+| T10   | TBD            | background (kicks off after Wave 2 merges)            |
+| probe | 7 peers pinged | period-opener ID pending; swap into T1 if it surfaces |
