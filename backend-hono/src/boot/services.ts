@@ -10,7 +10,7 @@ import { startFeedPoller } from "../services/riskflow/feed-poller.js";
 import { startAgentReachPoller } from "../services/riskflow/agent-reach-poller.js";
 import { startPollWatchdog } from "../services/riskflow/poll-watchdog.js";
 import { seedCacheFromDb } from "../services/riskflow/feed-service.js";
-import { startEconEnricher } from "../services/cron/econ-enricher.js";
+import { startRiskFlowEconEnricher } from "../services/cron/riskflow-econ-enricher.js";
 import { startEconCalendarPopulator } from "../services/cron/econ-calendar-populator.js";
 import { startFiscalSpeakerPopulator } from "../services/cron/fiscal-speaker-populator.js";
 import { startEconPoller } from "../services/riskflow/econ-rettiwt-poller.js";
@@ -261,9 +261,9 @@ export async function bootBackground(): Promise<void> {
   startFiscalSpeakerPopulator();
   log.info("FiscalSpeakerPopulator started");
 
-  // Econ calendar enricher (economic_events → RiskFlow feed on actual print)
-  startEconEnricher();
-  log.info("EconEnricher started");
+  // RiskFlow econ enricher (economic_events → RiskFlow feed on actual print)
+  startRiskFlowEconEnricher();
+  log.info("RiskFlowEconEnricher started");
 
   // Context Bank ticker (120s — unified snapshot for all agents)
   startContextBankTicker();
@@ -273,7 +273,7 @@ export async function bootBackground(): Promise<void> {
   startBoardroomScheduler();
   log.info("BoardroomScheduler started");
 
-  // Dispatch scheduler (cron-driven MDB/ADB/PMDB/TOTT briefing generation)
+  // Dispatch scheduler (cron-driven MDB/ADB/PMDB/TWT briefing generation)
   startDispatchScheduler();
   log.info("DispatchScheduler started");
 
