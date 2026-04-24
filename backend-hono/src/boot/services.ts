@@ -12,6 +12,7 @@ import { startPollWatchdog } from "../services/riskflow/poll-watchdog.js";
 import { seedCacheFromDb } from "../services/riskflow/feed-service.js";
 import { startEconEnricher } from "../services/cron/econ-enricher.js";
 import { startEconCalendarPopulator } from "../services/cron/econ-calendar-populator.js";
+import { startFiscalSpeakerPopulator } from "../services/cron/fiscal-speaker-populator.js";
 import { startEconPoller } from "../services/riskflow/econ-rettiwt-poller.js";
 import { startExaScheduledMonitor } from "../services/riskflow/exa-scheduled-monitor.js";
 import { initClaudeSDK } from "../services/claude-sdk/process-manager.js";
@@ -251,6 +252,10 @@ export async function bootBackground(): Promise<void> {
   // Must start BEFORE the enricher so the table has rows to read.
   startEconCalendarPopulator();
   log.info("EconCalendarPopulator started");
+
+  // [S34-T7] Fiscal speaker populator (Fed/Bessent/Trump → economic_events as category='Speaker')
+  startFiscalSpeakerPopulator();
+  log.info("FiscalSpeakerPopulator started");
 
   // Econ calendar enricher (economic_events → RiskFlow feed on actual print)
   startEconEnricher();

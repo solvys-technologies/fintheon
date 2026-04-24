@@ -60,16 +60,15 @@ async function viaHtml(): Promise<ScrapedFiscalEvent[]> {
   // The calendar page is structured but scrapeUrl already flattened it. We
   // keep the fallback minimal: one synthetic pointer row so the modal has at
   // least a URL to surface until RSS recovers. Detail = the calendar URL.
-  return [
-    {
-      speaker: "Fed",
-      venue: "FOMC calendar (pending parse)",
-      date: toEtParts(new Date())?.date ?? "",
-      time: "00:00",
-      detail: FED_CALENDAR_HTML,
-      source: "fed-html",
-    },
-  ].filter((e) => e.date);
+  const synthetic: ScrapedFiscalEvent = {
+    speaker: "Fed",
+    venue: "FOMC calendar (pending parse)",
+    date: toEtParts(new Date())?.date ?? "",
+    time: "00:00",
+    detail: FED_CALENDAR_HTML,
+    source: "fed-html",
+  };
+  return synthetic.date ? [synthetic] : [];
 }
 
 export async function scrapeFedSpeeches(): Promise<ScrapeResult> {

@@ -9,6 +9,25 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T09:45:00",
+    agent: "claude-code",
+    summary:
+      "S34-T7: Fiscal speaker populator — Fed / Bessent / Trump schedules upserted to economic_events as category='Speaker'. Scrapes via existing Agent-Reach primitives (fetchRss on federalreserve.gov speeches.xml, home.treasury.gov press-releases/feed, whitehouse.gov statements-releases feed, trumpstruth.org mirror) with HTML fallback on the Fed calendar page; all scrapers log + return empty on failure, never throw. Node-cron runs 06:00/12:00/18:00 ET Mon–Fri with a boot-time kick. Filter gate reads econ_watch_filters (country='US', category='Speaker') with 30s TTL cache and fails open when the T1 table isn't pushed yet. /api/diagnostics gains a fiscal_speakers block with lastRun + per-source counters. No migrations authored by T7 — reuses T3's economic_events base.",
+    files: [
+      "backend-hono/src/services/fiscal-sources/types.ts",
+      "backend-hono/src/services/fiscal-sources/date-utils.ts",
+      "backend-hono/src/services/fiscal-sources/fed-speeches.ts",
+      "backend-hono/src/services/fiscal-sources/bessent-speeches.ts",
+      "backend-hono/src/services/fiscal-sources/trump-schedule.ts",
+      "backend-hono/src/services/cron/fiscal-speaker-populator.ts",
+      "backend-hono/src/boot/services.ts",
+      "backend-hono/src/routes/diagnostics/index.ts",
+      "sprint-md/S34-T7-fiscal-speaker-sources.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+
+  {
     date: "2026-04-24T07:00:00",
     agent: "claude-code",
     summary:

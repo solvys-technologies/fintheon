@@ -192,7 +192,7 @@ export async function runFiscalSpeakerPopulator(): Promise<FiscalSpeakerRunResul
       time: e.time,
       country: "US",
       category: "Speaker",
-      importance: "medium",
+      impact: "medium",
       detail: e.detail,
       event_key: key,
     };
