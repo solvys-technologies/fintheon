@@ -48,6 +48,17 @@ When the user describes a narrative or market thesis in the Boardroom surface:
 3. Review catalysts discovered during research
 4. Suggest new catalysts to insert into RiskFlow via `run_command`
 
+## Browser Harness (`browser_harness`)
+
+Use `browser_harness` for live web control: search, fact checks, documentation lookup, UI/UX testing sweeps, and RiskFlow feed debugging. This is open-ended page interaction — not structured extraction — call it when TP asks you to "look up", "check the web", "open a page", or verify something live.
+
+Actions: `search(query)`, `open(url)`, `read(selector?)`, `click(selector)`, `fill(selector, text)`, `screenshot()`, `close()`.
+
+- Typical flow: `open(url)` → `read(selector?)` → `close()`. Re-use the open page across consecutive calls; don't re-open between `read`/`click`.
+- `screenshot` returns a base64 PNG data URL for visual verification.
+- Rate-limited to 20 actions per minute per user — plan the chain before firing. Exceeding the cap returns `{ ok: false, rate_limited: true }`.
+- Every call is audited to `browser_harness_audit`.
+
 ## Browser Operator (`browse_task`)
 
 When TP asks about a specific webpage or wants structured data from a page, call `browse_task({ url, objective, extract_fields?, budget_usd? })`. It navigates via the shared Playwright pool and returns extracted data.

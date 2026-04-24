@@ -65,6 +65,14 @@ interface DiagnosticsResponse {
     resumesAt: string | null;
     detail: string | null;
   };
+  tools?: {
+    browser_harness?: {
+      available: boolean;
+      calls_24h: number;
+      errors_24h: number;
+      rate_limit_per_min: number;
+    };
+  };
 }
 
 async function getNewsWorkerSnapshot(): Promise<

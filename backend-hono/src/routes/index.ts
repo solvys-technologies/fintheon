@@ -84,6 +84,10 @@ import { createHarperVisionRoutes } from "./harper-vision/index.js";
 import { createCatalystsByDateRoute } from "./catalysts/by-date.js";
 // [S29-T1] ProjectX trades history — calendar heatmap data layer
 import { createProjectXTradesRoute } from "./projectx/trades.js";
+// [claude-code 2026-04-23] S32-T7: Advisory layer — calendar pill, size hint, watchouts log.
+import { createCalendarRoutes } from "./calendar/next-event.js";
+import { createAdvisoryRoutes } from "./advisory/index.js";
+import { createWatchoutsRoutes } from "./watchouts/index.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -116,6 +120,8 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/narrative", createNarrativeRoutes());
   // Blindspots — public, agent-controllable via ER monitoring
   app.route("/api/blindspots", createBlindspotsRoutes());
+  // [S32-T7] Calendar countdown pill — public, always-on, independent of PsychAssist
+  app.route("/api/calendar", createCalendarRoutes());
   // Systemic risk — public, read-only (causal chains, historical rhyming, FRED data)
   app.route("/api/systemic", systemicRoutes);
   // Context Bank — public, agents consume directly (unified snapshot + desk reports)
@@ -179,6 +185,13 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/maintenance", createMaintenanceRoutes());
   // Harper — Claude CLI chat via SDK bridge (public, local-only)
   app.route("/api/harper", createHarperRoutes());
+  // [claude-code 2026-04-23] S31-T9 predictive knowledge graph — Routine-secret-gated
+  // weekly proposer trigger. Mounted BEFORE the harper-ops catch-all so the more
+  // specific path wins.
+  app.route(
+    "/api/harper-ops/feature-proposals-weekly",
+    createFeatureProposalsWeeklyRoute(),
+  );
   // Harper Ops — autonomous loop monitoring + control (public, local-only)
   app.route("/api/harper-ops", createHarperOpsRoutes());
   // Routines Console — operator surface for the 8 Claude Code Routines (public, local-only)

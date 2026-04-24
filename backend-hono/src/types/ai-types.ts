@@ -12,7 +12,9 @@ export type AiProviderType =
   | "hermes"
   | "github-models"
   | "claude-local"
-  | "nous-direct";
+  | "nous-direct"
+  // [claude-code 2026-04-23] S32-T3 Ollama fallback chain provider identifier
+  | "ollama-hermes";
 
 // Circuit breaker states
 export type CircuitState = "closed" | "open" | "half-open";
