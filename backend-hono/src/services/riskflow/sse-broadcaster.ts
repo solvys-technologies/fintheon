@@ -1,4 +1,6 @@
+// [claude-code 2026-04-24] S34-T6: Added broadcastEconPrint for countdown modal SSE hook
 import type { FeedItem, NewsSource } from "../../types/riskflow.js";
+import type { EconEvent } from "../econ-calendar-service.js";
 
 type SSEClient = {
   controller: ReadableStreamDefaultController;
@@ -61,6 +63,51 @@ export interface ProposalBroadcast {
   takeProfit: number | number[];
   screenshotPath?: string;
   proposalId?: string;
+}
+
+// [claude-code 2026-04-24] S34-T6: Econ-print broadcast — countdown modal flips
+// from countdown → "Actual X vs Forecast Y" in-place when this fires.
+export interface EconPrintBroadcast {
+  rawItemId?: string;
+  tweetId?: string;
+  event: EconEvent;
+  country: string;
+  category: string;
+  actual?: number;
+  forecast?: number;
+  previous?: number;
+  headline: string;
+}
+
+export function broadcastEconPrint(print: EconPrintBroadcast) {
+  const payload = `event: econ-print\ndata: ${JSON.stringify({
+    type: "econ-print",
+    event: {
+      id: print.event.id,
+      name: print.event.name,
+      country: print.country,
+      category: print.category,
+      date: print.event.date,
+      time: print.event.time,
+    },
+    rawItemId: print.rawItemId,
+    tweetId: print.tweetId,
+    actual: print.actual ?? null,
+    forecast: print.forecast ?? null,
+    previous: print.previous ?? null,
+    headline: print.headline,
+    at: new Date().toISOString(),
+  })}\n\n`;
+
+  const encoder = new TextEncoder();
+  clients.forEach((client) => {
+    try {
+      client.controller.enqueue(encoder.encode(payload));
+    } catch (error) {
+      console.warn("[SSE] Removing client (econ-print enqueue failure)", error);
+      removeClient(client.controller);
+    }
+  });
 }
 
 export function broadcastProposal(proposal: ProposalBroadcast) {

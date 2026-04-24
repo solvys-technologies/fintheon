@@ -1,3 +1,4 @@
+// [claude-code 2026-04-24] S34-T6: added GET /api/econ/trigger-status — reports the econ-keyword-trigger scheduler health (enabled, last tick, last scan/promote counts) + POST /api/econ/trigger-run for manual smoke tests.
 // [claude-code 2026-04-19] S25-T4b: Backend econ CAO synthesis. POST /api/econ/synthesize takes {tickers, timeframe?} and returns CAO-generated description + third-order thinking per ticker. Forecast only populated when latest print conclusively beat/missed. Uses invokeAgent (Strands) with a JSON-output prompt; falls back to heuristic derivation if the LLM call fails so the UI never shows a blank card.
 // [claude-code 2026-04-24] S34-T3: added GET /api/econ/upcoming?country=X&category=Y — reads from the economic_events table now populated by econ-calendar-populator.
 import { Hono } from "hono";
@@ -8,6 +9,14 @@ import {
 } from "../../services/supabase-service.js";
 import { createLogger } from "../../lib/logger.js";
 import { runEconCalendarPopulator } from "../../services/cron/econ-calendar-populator.js";
+import {
+  isEconKeywordSchedulerActive,
+  getLastEconKeywordResult,
+} from "../../services/cron/econ-keyword-scheduler.js";
+import {
+  getTriggerStats,
+  runEconKeywordSweep,
+} from "../../services/riskflow/econ-keyword-trigger.js";
 
 const log = createLogger("EconSynthesize");
 
@@ -250,6 +259,28 @@ Return the JSON schema specified in the system prompt.`;
     const result = await runEconCalendarPopulator({
       todayOnly: todayOnlyParam === "true",
     });
+    return c.json({ ok: true, ...result });
+  });
+
+  // [S34-T6] GET /api/econ/trigger-status — keyword-trigger scheduler diagnostics.
+  app.get("/trigger-status", (c) => {
+    const stats = getTriggerStats();
+    return c.json({
+      enabled: isEconKeywordSchedulerActive(),
+      envFlag: process.env.ECON_KEYWORD_TRIGGER_ENABLED ?? "true",
+      lastResult: getLastEconKeywordResult(),
+      stats,
+    });
+  });
+
+  // [S34-T6] POST /api/econ/trigger-run — manual sweep (debug / smoke).
+  // Gated on x-routine-secret matching ROUTINE_SECRET; no-op if env unset.
+  app.post("/trigger-run", async (c) => {
+    const secret = process.env.ROUTINE_SECRET;
+    if (secret && c.req.header("x-routine-secret") !== secret) {
+      return c.json({ error: "unauthorized" }, 401);
+    }
+    const result = await runEconKeywordSweep();
     return c.json({ ok: true, ...result });
   });
 
