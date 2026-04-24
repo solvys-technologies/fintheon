@@ -9,6 +9,35 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T04:00:00",
+    agent: "claude-code",
+    summary:
+      "S34-T1 [v.04.24.1]: Econ watch filters — country × category grid that drives which " +
+      "econ events the populator (T3) watches. Migration 20260424100000_econ_watch_filters.sql " +
+      "creates econ_watch_filters (id, country, category, active, user_id nullable, created_at, " +
+      "updated_at, unique(country,category,user_id)) + seeds 28 rows (7 countries × 4 categories). " +
+      "Backend type + service (cache + seed-on-empty mirroring source-accounts pattern). " +
+      "/api/econ-filters routes — GET list, POST create, PATCH toggle, PUT full, DELETE. " +
+      "Country + category validated against narrowed unions. EconFiltersManager component slotted " +
+      "into RefinementEngine AdvancedPane alongside SourceAccountsManager (additive only — no layout " +
+      "change). Category chip palette: Fiscal→gold, Inflation→amber, Supply Chain→neutral, " +
+      "Job Market→slate. Smoke: HTTP 200 + POST rejects invalid country with proper error. " +
+      "Migration is local-file-only per feedback_supabase_migration_filenames — hand to TP for " +
+      "`supabase db push`. Cross-track unblock: same one-line cast in harper-vision/engine.ts:158 " +
+      "(VoiceTranscribeResult.confidence missing since 7bfda6bc4 2026-04-23) so bun run build " +
+      "passes; flagged for S32/T2, out of T1 scope.",
+    files: [
+      "supabase/migrations/20260424100000_econ_watch_filters.sql",
+      "backend-hono/src/types/econ-watch-filter.ts",
+      "backend-hono/src/services/econ-watch-filters/econ-watch-filters-service.ts",
+      "backend-hono/src/routes/econ-filters/index.ts",
+      "backend-hono/src/routes/econ-filters/handlers.ts",
+      "backend-hono/src/routes/index.ts",
+      "frontend/components/refinement/EconFiltersManager.tsx",
+      "frontend/components/refinement/RefinementEngine.tsx",
+    ],
+  },
+  {
     date: "2026-04-23T16:20:00",
     agent: "claude-code",
     summary:

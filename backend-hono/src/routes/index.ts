@@ -48,6 +48,7 @@ import { createAuthCallbackRoute } from "./auth-callback.js";
 import { createAuthRoutes } from "./auth/index.js";
 import { createCommentatorRoutes } from "./commentator/index.js";
 import { createSourceAccountRoutes } from "./source-accounts/index.js";
+import { createEconFiltersRoutes } from "./econ-filters/index.js";
 import { createCalibrationRoutes } from "./calibration/index.js";
 import { createScoringRoutes } from "./scoring/index.js";
 import { createHarperRoutes } from "./harper/index.js";
@@ -138,6 +139,7 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/commentator", createCommentatorRoutes());
   // Source accounts — curated X account management for timeline polling (public, admin CRUD)
   app.route("/api/source-accounts", createSourceAccountRoutes());
+  app.route("/api/econ-filters", createEconFiltersRoutes());
   // Calibration — scoring weight management, annotations, observations, bulk ingest (public, admin)
   app.route("/api/calibration", createCalibrationRoutes());
   // Scoring — V4 shadow stats + rescore-status [S24-T3]
