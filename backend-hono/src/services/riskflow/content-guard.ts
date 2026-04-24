@@ -5,7 +5,12 @@
 // Catches: slurs, profanity, political spam, non-financial govt agencies, junk slang, drunk/incoherent text, @ mention replies
 // This is a PROFESSIONAL trading platform. Zero tolerance for non-market content.
 
+// [claude-code 2026-04-24] S34-T4: wired bumpCounter into filterWithContentGuard
+// so every content-guard rejection lands in riskflow_drop_counters with its
+// reason + source. Default stage = "content-guard".
+
 import { createLogger } from "../../lib/logger.js";
+import { bumpCounter } from "./drop-counters.js";
 
 const log = createLogger("ContentGuard");
 
@@ -419,6 +424,7 @@ export function checkContentGuard(text: string): ContentGuardResult {
 export function filterWithContentGuard<T>(
   items: T[],
   getText: (item: T) => string,
+  opts?: { source?: string; getSource?: (item: T) => string | undefined },
 ): T[] {
   const passed: T[] = [];
   let blockedCount = 0;
@@ -431,6 +437,8 @@ export function filterWithContentGuard<T>(
       blockedCount++;
       blockedReasons[result.reason!] =
         (blockedReasons[result.reason!] || 0) + 1;
+      const itemSource = opts?.getSource?.(item) || opts?.source || "unknown";
+      bumpCounter(itemSource, "content-guard", result.reason || "unknown");
     } else {
       passed.push(item);
     }
