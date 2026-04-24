@@ -32,6 +32,8 @@ import { createMarketDataRoutes } from "./market-data/index.js";
 import { createSettingsRoutes } from "./settings/index.js";
 import { createJournalRoutes } from "./journal/index.js";
 import { createBlindspotsRoutes } from "./blindspots.js";
+// [claude-code 2026-04-23] S31-T6 — user-scoped blindspots endpoints (auth-gated)
+import { createBlindspotsUserRoutes } from "./blindspots-user.js";
 import { systemic as systemicRoutes } from "./systemic/index.js";
 import { createContextBankRoutes } from "./context-bank/index.js";
 import { createAutopilotRoutes } from "./autopilot/index.js";
@@ -80,6 +82,10 @@ import { createOmiRoutes } from "./omi.js";
 import { createPsychAssistForkRoutes } from "./admin/psych-assist-fork.js";
 // [claude-code 2026-04-23] Harper Vision — screen + audio perception layer
 import { createHarperVisionRoutes } from "./harper-vision/index.js";
+// [claude-code 2026-04-23] S31-T9 predictive knowledge graph — usage telemetry + Harper feature proposals
+import { createUsageEventsRoutes } from "./usage-events.js";
+import { createFeatureProposalsRoutes } from "./feature-proposals.js";
+import { createFeatureProposalsWeeklyRoute } from "./harper-ops/feature-proposals-weekly.js";
 // [S29-T4] Catalyst slide-out panel — date-filtered RiskFlow headlines
 import { createCatalystsByDateRoute } from "./catalysts/by-date.js";
 // [S29-T1] ProjectX trades history — calendar heatmap data layer
@@ -120,6 +126,11 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/narrative", createNarrativeRoutes());
   // Blindspots — public, agent-controllable via ER monitoring
   app.route("/api/blindspots", createBlindspotsRoutes());
+  // [S31-T6] Auth-gated, table-backed blindspots (psych + trading, per-user)
+  app.use("/api/blindspots/psych", authMiddleware, requireAuth);
+  app.use("/api/blindspots/trading", authMiddleware, requireAuth);
+  app.use("/api/blindspots/latest", authMiddleware, requireAuth);
+  app.route("/api/blindspots", createBlindspotsUserRoutes());
   // [S32-T7] Calendar countdown pill — public, always-on, independent of PsychAssist
   app.route("/api/calendar", createCalendarRoutes());
   // Systemic risk — public, read-only (causal chains, historical rhyming, FRED data)
@@ -152,6 +163,13 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/scoring", createScoringRoutes());
   // Predictions — forward-looking instrument outlook from scored items + econ events
   app.route("/api/predictions", predictionsRoutes);
+  // [S31-T9] Usage telemetry + Harper feature proposals (auth-gated)
+  app.use("/api/usage-events", authMiddleware, requireAuth);
+  app.use("/api/usage-events/*", authMiddleware, requireAuth);
+  app.route("/api/usage-events", createUsageEventsRoutes());
+  app.use("/api/feature-proposals", authMiddleware, requireAuth);
+  app.use("/api/feature-proposals/*", authMiddleware, requireAuth);
+  app.route("/api/feature-proposals", createFeatureProposalsRoutes());
   // Polymarket — read-only public market data, whale alerts, search (S15-T2)
   app.route("/api/polymarket", createPolymarketRoutes());
   // Oracle — scheduled research findings, manual trigger (S20-T3)
@@ -185,6 +203,13 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/maintenance", createMaintenanceRoutes());
   // Harper — Claude CLI chat via SDK bridge (public, local-only)
   app.route("/api/harper", createHarperRoutes());
+  // [claude-code 2026-04-23] S31-T9 predictive knowledge graph — Routine-secret-gated
+  // weekly proposer trigger. Mounted BEFORE the harper-ops catch-all so the more
+  // specific path wins.
+  app.route(
+    "/api/harper-ops/feature-proposals-weekly",
+    createFeatureProposalsWeeklyRoute(),
+  );
   // Harper Ops — autonomous loop monitoring + control (public, local-only)
   app.route("/api/harper-ops", createHarperOpsRoutes());
   // Routines Console — operator surface for the 8 Claude Code Routines (public, local-only)
