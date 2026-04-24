@@ -1,8 +1,13 @@
 // [claude-code 2026-04-19] S25-T4b: Backend econ CAO synthesis. POST /api/econ/synthesize takes {tickers, timeframe?} and returns CAO-generated description + third-order thinking per ticker. Forecast only populated when latest print conclusively beat/missed. Uses invokeAgent (Strands) with a JSON-output prompt; falls back to heuristic derivation if the LLM call fails so the UI never shows a blank card.
+// [claude-code 2026-04-24] S34-T3: added GET /api/econ/upcoming?country=X&category=Y — reads from the economic_events table now populated by econ-calendar-populator.
 import { Hono } from "hono";
 import { invokeAgent } from "../../services/strands/index.js";
-import { readEconHistory } from "../../services/supabase-service.js";
+import {
+  readEconHistory,
+  readUpcomingEconEvents,
+} from "../../services/supabase-service.js";
 import { createLogger } from "../../lib/logger.js";
+import { runEconCalendarPopulator } from "../../services/cron/econ-calendar-populator.js";
 
 const log = createLogger("EconSynthesize");
 
@@ -215,6 +220,37 @@ Return the JSON schema specified in the system prompt.`;
       events,
       generatedAt: new Date().toISOString(),
     });
+  });
+
+  // [S34-T3] GET /api/econ/upcoming?country=US&category=Inflation&daysAhead=7
+  app.get("/upcoming", async (c) => {
+    const country = c.req.query("country")?.toUpperCase();
+    const category = c.req.query("category");
+    const daysAheadRaw = c.req.query("daysAhead");
+    const daysAhead = daysAheadRaw ? parseInt(daysAheadRaw, 10) : 7;
+    const rows = await readUpcomingEconEvents({
+      country: country || undefined,
+      category: category || undefined,
+      daysAhead:
+        Number.isFinite(daysAhead) && daysAhead > 0 && daysAhead <= 90
+          ? daysAhead
+          : 7,
+    });
+    return c.json({ events: rows, count: rows.length });
+  });
+
+  // [S34-T3] POST /api/econ/populate — manual trigger (debug / smoke).
+  // Gated on x-routine-secret matching ROUTINE_SECRET; no-op if env unset.
+  app.post("/populate", async (c) => {
+    const secret = process.env.ROUTINE_SECRET;
+    if (secret && c.req.header("x-routine-secret") !== secret) {
+      return c.json({ error: "unauthorized" }, 401);
+    }
+    const todayOnlyParam = c.req.query("todayOnly");
+    const result = await runEconCalendarPopulator({
+      todayOnly: todayOnlyParam === "true",
+    });
+    return c.json({ ok: true, ...result });
   });
 
   return app;

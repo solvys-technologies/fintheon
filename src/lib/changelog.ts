@@ -40,6 +40,21 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
+    date: "2026-04-24T07:00:00",
+    agent: "claude-code",
+    summary:
+      "S34-T3: Econ calendar populator + economic_events base migration. Unblocks the econ-enricher (orphaned since Notion severance on 2026-04-16) by wiring a ForexFactory weekly pull (Sun 22:00 ET) + hourly weekday refresh that upserts to economic_events on a sha256(name|date|time|country) event_key. Adds country/category/event_key columns via idempotent ALTERs so the table now has a reproducible base migration (per feedback_trades_table_migration). Exposes GET /api/econ/upcoming for the T8 countdown modal + a gated POST /api/econ/populate for smoke runs.",
+    files: [
+      "supabase/migrations/20260424101000_economic_events_base.sql",
+      "backend-hono/src/services/supabase-service.ts",
+      "backend-hono/src/services/econ-calendar-service.ts",
+      "backend-hono/src/services/cron/econ-calendar-populator.ts",
+      "backend-hono/src/routes/econ/index.ts",
+      "backend-hono/src/boot/services.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-24T04:00:00",
     agent: "claude-code",
     summary:

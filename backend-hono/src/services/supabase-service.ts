@@ -1,5 +1,6 @@
 // [claude-code 2026-03-20] Supabase cloud service — full data layer replacing Notion + scoring, ER, settings, consilium
 // [claude-code 2026-03-19] Supabase cloud service — centralized scoring, ER persistence, user settings, consilium
+// [claude-code 2026-04-24] S34-T3: extended EconEventRecord with country/category/event_key; added upsertEconEvent + readUpcomingEconEvents for the calendar populator + /api/econ/upcoming.
 import { getSupabaseClient, isSupabaseConfigured } from "../config/supabase.js";
 import { sql as dbSql, isDatabaseAvailable } from "../config/database.js";
 
@@ -768,6 +769,9 @@ export interface EconEventRecord {
   previous?: string;
   detail?: string;
   impact?: "low" | "medium" | "high";
+  country?: string;
+  category?: string;
+  event_key?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -789,6 +793,65 @@ export async function writeEconEvent(
     return null;
   }
   return data;
+}
+
+// [claude-code 2026-04-24] S34-T3: idempotent upsert on event_key for the populator.
+export async function upsertEconEvent(
+  event: Omit<EconEventRecord, "id" | "created_at" | "updated_at"> & {
+    event_key: string;
+  },
+): Promise<EconEventRecord | null> {
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+
+  const { data, error } = await sb
+    .from("economic_events")
+    .upsert(
+      { ...event, updated_at: new Date().toISOString() },
+      { onConflict: "event_key" },
+    )
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[Supabase] upsertEconEvent error:", error.message);
+    return null;
+  }
+  return data;
+}
+
+// [claude-code 2026-04-24] S34-T3: filter-aware upcoming read for /api/econ/upcoming.
+export async function readUpcomingEconEvents(filter: {
+  country?: string;
+  category?: string;
+  daysAhead?: number;
+}): Promise<EconEventRecord[]> {
+  const sb = getSupabaseClient();
+  if (!sb) return [];
+
+  const today = new Date().toISOString().slice(0, 10);
+  const horizon = new Date();
+  horizon.setUTCDate(horizon.getUTCDate() + (filter.daysAhead ?? 7));
+  const to = horizon.toISOString().slice(0, 10);
+
+  let query = sb
+    .from("economic_events")
+    .select("*")
+    .gte("date", today)
+    .lte("date", to)
+    .order("date", { ascending: true })
+    .order("time", { ascending: true })
+    .limit(500);
+
+  if (filter.country) query = query.eq("country", filter.country);
+  if (filter.category) query = query.eq("category", filter.category);
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("[Supabase] readUpcomingEconEvents error:", error.message);
+    return [];
+  }
+  return data ?? [];
 }
 
 export async function readEconEvents(dateRange?: {
