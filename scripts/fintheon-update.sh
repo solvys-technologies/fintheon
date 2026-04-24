@@ -64,21 +64,14 @@ if [[ ! -d "$FINTHEON_ROOT/.git" ]]; then
 fi
 
 cd "$FINTHEON_ROOT"
-# [claude-code 2026-04-20] Two-layer fallback. `git branch --show-current` exits 0
-# with empty stdout in detached-HEAD state, so `|| echo main` never fired and the
-# pull step ran `git pull origin ""` which obviously blew up. Order of preference:
-#   1. Named current branch
-#   2. Remote default branch (origin/HEAD → e.g. "v5.22")
-#   3. Hardcoded fallback to the active deploy branch
-CURRENT_BRANCH=$(git branch --show-current 2>/dev/null)
-if [[ -z "$CURRENT_BRANCH" ]]; then
-  CURRENT_BRANCH=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@')
-fi
-if [[ -z "$CURRENT_BRANCH" ]]; then
-  CURRENT_BRANCH="main"
-  warn "Detached HEAD and no origin/HEAD set — defaulting to $CURRENT_BRANCH"
-fi
-info "Branch: $CURRENT_BRANCH"
+# [claude-code 2026-04-24] Tag-authoritative updates. Prior versions reset the
+# working tree to origin/$CURRENT_BRANCH, which silently pinned anyone on `main`
+# to whatever `main` last tracked — and `main` drifts weeks behind the active
+# deploy branch (all shipping lives on feature branches like s32-harper-2-1).
+# Now the update flow resolves the newest v*.*.* tag on origin and hard-resets
+# to that. Branch state is no longer load-bearing.
+CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")
+info "Branch: ${CURRENT_BRANCH:-(detached)}"
 info "Current: $(git describe --tags --abbrev=0 2>/dev/null || git log --oneline -1 | cut -c1-7)"
 echo ""
 
@@ -103,14 +96,15 @@ else
   ok "Clean working directory"
 fi
 
-# ── Step 3: Pull latest code ────────────────────────────────────────────────
-# [claude-code 2026-04-20] Bulletproof pull: always authoritatively reset to
-# origin/$CURRENT_BRANCH. Local user changes were stashed in step 2 and popped
-# at the end, so the working tree after this step is guaranteed to match
-# origin. No user-visible warnings, no rebase-then-fallback dance, no HEAD-
-# override messages. Diagnostics go to /tmp/fintheon-update-pull.log.
+# ── Step 3: Pull latest release tag ─────────────────────────────────────────
+# [claude-code 2026-04-24] Tag-authoritative. We resolve the highest v*.*.* tag
+# on origin (sorted by semver) and hard-reset the working tree to it. Local
+# user changes were stashed in step 2 and popped at the end, so the tree after
+# this step is guaranteed to match the shipped release byte-for-byte. No
+# branch drift, no stale `main`, no detached-HEAD guesswork. Diagnostics go to
+# /tmp/fintheon-update-pull.log.
 
-step "3/12" "Pulling latest code..."
+step "3/12" "Pulling latest release..."
 
 PULL_LOG="/tmp/fintheon-update-pull.log"
 : > "$PULL_LOG"
@@ -118,20 +112,31 @@ PULL_LOG="/tmp/fintheon-update-pull.log"
 git fetch --all --prune --prune-tags >>"$PULL_LOG" 2>&1 || true
 git fetch --tags --force >>"$PULL_LOG" 2>&1 || true
 
-# Attach to the resolved branch if we're in detached HEAD. Silent.
-if [[ -z "$(git branch --show-current 2>/dev/null)" ]]; then
-  git checkout -B "$CURRENT_BRANCH" "origin/$CURRENT_BRANCH" >>"$PULL_LOG" 2>&1 || \
-  git checkout "$CURRENT_BRANCH" >>"$PULL_LOG" 2>&1 || true
-fi
+# Resolve the newest semver tag of the form v<major>.<minor>.<patch> (no suffix).
+# `git tag -l` glob matching is coarse, so we filter with grep -E to reject
+# tags like v8.30.1-s12-fix. `--sort=-v:refname` gives us semver order.
+LATEST_TAG=$(git tag -l --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
 
-BEFORE=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-git reset --hard "origin/$CURRENT_BRANCH" >>"$PULL_LOG" 2>&1 || true
-AFTER=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-
-if [[ "$BEFORE" == "$AFTER" ]]; then
-  ok "Already up to date"
+if [[ -z "$LATEST_TAG" ]]; then
+  warn "No v*.*.* tag found on origin — falling back to current branch"
+  FALLBACK_BRANCH="${CURRENT_BRANCH:-$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@' || echo main)}"
+  BEFORE=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+  git reset --hard "origin/$FALLBACK_BRANCH" >>"$PULL_LOG" 2>&1 || true
+  AFTER=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+  if [[ "$BEFORE" == "$AFTER" ]]; then
+    ok "Already up to date ($FALLBACK_BRANCH)"
+  else
+    ok "Code updated to $FALLBACK_BRANCH ($AFTER)"
+  fi
 else
-  ok "Code updated ($AFTER)"
+  BEFORE=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+  git reset --hard "$LATEST_TAG" >>"$PULL_LOG" 2>&1 || true
+  AFTER=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+  if [[ "$BEFORE" == "$AFTER" ]]; then
+    ok "Already on $LATEST_TAG"
+  else
+    ok "Code updated to $LATEST_TAG ($AFTER)"
+  fi
 fi
 
 # ── Step 4: Install / update dependencies ────────────────────────────────────

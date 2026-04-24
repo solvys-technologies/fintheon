@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T02:45:00",
+    agent: "claude-code",
+    summary:
+      "INSTALL-UPDATE: fintheon-update.sh now tag-authoritative. Root cause of 'update script still running old code': prior version hard-reset to origin/$CURRENT_BRANCH, but origin/HEAD points to main, and main has been frozen 70 commits behind s32-harper-2-1 (0 ahead, pure drift — all shipping lives on feature branches). Any install on main or detached-HEAD pulled stale code forever. Step 3 now resolves the highest v<major>.<minor>.<patch> tag via `git tag -l --sort=-v:refname | grep -E '^vX.Y.Z$' | head -1` and hard-resets to it, so branch state stops being load-bearing. Fallback to origin/$FALLBACK_BRANCH kicks in only if no semver tag exists. One-time hot-fix for current installs: `cd ~/Documents/Codebases/fintheon && git fetch --tags && git reset --hard v5.23.5` — after that, every future `fintheon update` self-heals.",
+    files: ["scripts/fintheon-update.sh"],
+  },
+  {
     date: "2026-04-24T02:05:00",
     agent: "claude-code",
     summary:
