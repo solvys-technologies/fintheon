@@ -20,7 +20,13 @@ import { getAgentSystemPrompt } from "../ai/agent-instructions/index.js";
 const log = createLogger("StrandsFactory");
 
 /** Provider override — which backend to route through */
-export type HarperProvider = "local" | "nous" | "orouter" | "grok";
+// [claude-code 2026-04-23] S32-T3 added "ollama-qwen" fallback chain provider
+export type HarperProvider =
+  | "local"
+  | "ollama-qwen"
+  | "nous"
+  | "orouter"
+  | "grok";
 
 /** Nous fallback model chain — tried in order */
 export const NOUS_MODELS = [

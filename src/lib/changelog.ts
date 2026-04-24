@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-23T21:30:00",
+    agent: "claude-code",
+    summary:
+      "S32 Harper 2.1 unified (partial) — Wave 3 merge pass. Cherry-picked Kimi rollback c4c599ef onto s32-harper-2-1 (finishing touches on top of earlier auto-checkpoint deletions); resolved 5 conflicts (ai-config.ts, ai-types.ts, App.tsx, AuthContext.tsx, changelog.ts) by keeping rollback's deletions and preserving s32-T3 ollama-hermes additions. Extended HarperProvider type in strands/agent-factory.ts with 'ollama-qwen' so invoke-helper's T3 fallback chain typechecks. Removed dangling createFeatureProposalsWeeklyRoute mount from routes/index.ts (T9 backend service was deleted by the 19:57 auto-checkpoint and never restored). Deleted orphan frontend/lib/usage-emit.ts (imported shared/predictive-knowledge-graph which is also absent). Fixed pre-existing shared/index.ts AgentId/AgentIdSchema re-export ambiguity (now exports sidecar-contract fully, soul-schema only SoulSchema/Soul/LoadedSoul). Residue gates: Kimi gate clean on live code (0 matches outside changelog/sprint-md/docs); glass gate clean (no backdrop-blur in harper-vision). Build gates: backend bun run build clean, frontend tsc clean, frontend vite build clean (3239 modules). MISSING FROM TREE (alert TP): T4 Consul Control corners (frontend/components/consul-control/), T5 streamdown/TV chart slots (frontend/components/chat/slots/), T6 PsychAssist services (services/blindspots, services/psych, migrations/036_blindspots.sql, 038_psych_assist.sql), T9 backend (services/knowledge-graph, routes/feature-proposals.ts, migrations/038/039 usage_telemetry) — the 19:57 auto-checkpoint bulk-deleted them and only T3 + T7 (19:59) + T8 (20:02) were restored. Harper Vision (T2), Ollama-Hermes (T3), Autopilot/Calendar/Watchouts (T7), Browser Harness (T8) are present and wired.",
+    files: [
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/services/strands/agent-factory.ts",
+      "frontend/lib/usage-emit.ts",
+      "shared/index.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-23T20:55:00",
     agent: "claude-code",
     summary:

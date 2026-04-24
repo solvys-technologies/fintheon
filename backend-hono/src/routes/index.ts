@@ -185,13 +185,6 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/maintenance", createMaintenanceRoutes());
   // Harper — Claude CLI chat via SDK bridge (public, local-only)
   app.route("/api/harper", createHarperRoutes());
-  // [claude-code 2026-04-23] S31-T9 predictive knowledge graph — Routine-secret-gated
-  // weekly proposer trigger. Mounted BEFORE the harper-ops catch-all so the more
-  // specific path wins.
-  app.route(
-    "/api/harper-ops/feature-proposals-weekly",
-    createFeatureProposalsWeeklyRoute(),
-  );
   // Harper Ops — autonomous loop monitoring + control (public, local-only)
   app.route("/api/harper-ops", createHarperOpsRoutes());
   // Routines Console — operator surface for the 8 Claude Code Routines (public, local-only)
