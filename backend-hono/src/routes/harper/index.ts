@@ -117,7 +117,7 @@ export function createHarperRoutes() {
         body.surface === "boardroom" || body.boardroom === true;
 
       if (isBoardroomMode) {
-        const userId = (c.get("userId" as never) as string) || "anonymous";
+        const userId = authedUserId;
         const dagDef = await createAgentDeskDAG({
           lanes: [
             {
@@ -399,7 +399,7 @@ export function createHarperRoutes() {
       }
 
       // Get or create conversation
-      const userId = (c.get("userId" as never) as string) || "anonymous";
+      const userId = authedUserId;
       const reqConversationId = body.conversationId ?? undefined;
       let conversation = reqConversationId
         ? await conversationStore.getConversation(reqConversationId, userId)

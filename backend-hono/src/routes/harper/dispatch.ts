@@ -62,6 +62,20 @@ export function createDispatchRoute() {
   const app = new Hono();
 
   app.post("/", async (c) => {
+    // Dispatch seeds a conversation in ai_conversations scoped by userId —
+    // guard auth before we parse the body so an unauthed caller gets 401
+    // instead of a 400 that leaks the Zod schema.
+    const userId = c.get("userId" as never) as string | undefined;
+    if (!userId || userId === "anonymous") {
+      return c.json(
+        {
+          error: "Authentication required",
+          hint: "Dispatch seeds a conversation — sign in before POSTing to /api/harper/dispatch.",
+        },
+        401,
+      );
+    }
+
     const raw = await c.req.json().catch(() => null);
     const parsed = DispatchBody.safeParse(raw);
     if (!parsed.success) {
@@ -71,8 +85,6 @@ export function createDispatchRoute() {
       );
     }
     const { source, sourceId, context, question } = parsed.data;
-
-    const userId = (c.get("userId" as never) as string) || "anonymous";
 
     const seed = formatSeed(source, context, question);
 
