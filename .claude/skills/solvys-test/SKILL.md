@@ -15,7 +15,7 @@ You are a QA engineer. Your job is to read a sprint brief, extract every testabl
 - Backend runs on localhost:8080 (launchd-managed) and fintheon.fly.dev (production)
 - Always `rm -rf dist` before any vite build during fix cycles
 - After fixing and rebuilding, redeploy the affected target before re-testing
-- Playwright is installed (`playwright@1.58.2`) -- use it for frontend verification
+- **browser-harness is the canonical browser driver for UI verification.** It is the Solvys Playwright pool at `backend-hono/src/services/browser/` (actions: `search | open | read | click | fill | screenshot | close`). Drive it directly via Playwright (`playwright@1.58.2`) from the test script using the same semantics -- open, read selector, click, screenshot -- so the test path mirrors the Harper tool path.
 - `expect` is available at `/usr/bin/expect` for interactive CLI testing if needed
 
 ---
@@ -154,61 +154,61 @@ After 2 failed fix attempts on the same test, mark it as BLOCKED and continue.
 
 ---
 
-## Phase 4 -- Frontend Verification (Playwright)
+## Phase 4 -- Frontend Verification (browser-harness)
 
-Test UI features against the live deployed site or localhost Electron app.
+Drive UI verification through the **browser-harness** semantics -- the same action surface Harper uses on the web (`open | read | click | fill | screenshot | close`). The underlying driver is the Solvys Playwright pool at `backend-hono/src/services/browser/`; tests in this skill call Playwright directly using those same primitives so the harness path and the QA path stay aligned.
 
-### 4a. Playwright Setup
+Ad-hoc audit (UX review / bug repro) and sprint-verification test scripts both follow the same shape:
+
+### 4a. Harness Setup
 
 ```bash
-# Verify Playwright is ready
+# Verify the underlying driver is ready
 npx playwright --version
 
 # If browsers aren't installed
 npx playwright install chromium 2>/dev/null
 ```
 
-### 4b. Generate Test Script
+### 4b. Generate Harness Script
 
-For each UI feature in the test manifest, generate a Playwright test. Write it to a temporary file:
+For each UI feature in the test manifest, generate a browser-harness-shaped script. Keep the action names matching the Harper tool (`open/read/click/fill/screenshot`) so a reader can port the script into a Harper tool call if needed. Write to a temporary file:
 
 ```typescript
 // /tmp/solvys-test-{timestamp}.spec.ts
 import { test, expect } from "@playwright/test";
 
-test.describe("Sprint {N} Feature Verification", () => {
+test.describe("Sprint {N} -- browser-harness verification", () => {
   test("{feature name}", async ({ page }) => {
-    // Navigate to the relevant page
+    // harness.open(url)
     await page.goto("{target_url}");
-
-    // Wait for page to be ready (no loading indicators)
     await page.waitForSelector("body", { state: "visible" });
 
-    // Feature-specific assertions
-    // Example: verify a new component renders
+    // harness.read(selector) -- verify a component is present
     await expect(page.locator("{selector}")).toBeVisible();
-
-    // Example: verify data loads
     await expect(page.locator("{data-selector}")).not.toBeEmpty();
 
-    // Example: verify interaction works
+    // harness.click(selector) / harness.read(selector)
     await page.click("{button-selector}");
     await expect(page.locator("{result-selector}")).toContainText("{expected}");
+
+    // harness.screenshot() for visual evidence
+    await page.screenshot({ path: "/tmp/solvys-test-{feature}.png" });
   });
 });
 ```
 
-### 4c. Run Tests
+### 4c. Run Harness Script
 
 ```bash
 npx playwright test /tmp/solvys-test-*.spec.ts --reporter=list --timeout=30000
 ```
 
-If tests need authentication (Supabase JWT), use the stored session or prompt the user for a test token.
+If auth is required (Supabase JWT on fintheon.pricedinresearch.io / fintheon-desktop.vercel.app), use the stored session or prompt the user for a test token. Auto mode: never try to log in with guessed credentials; if auth is blocking, screenshot the login screen, report it, and fall back to code-review verification.
 
 ### 4d. Visual Verification
 
-For UI changes that can't be assertion-tested, take screenshots:
+For UI changes that can't be assertion-tested, take harness screenshots:
 
 ```bash
 npx playwright screenshot {url} /tmp/solvys-test-screenshot-{feature}.png
@@ -220,11 +220,11 @@ Present screenshots to the user for manual review.
 
 Same as Phase 3 but for frontend failures:
 
-1. Diagnose from Playwright error output
+1. Diagnose from harness script output (Playwright error trace)
 2. Fix the component/route
 3. Rebuild: `rm -rf dist && npx vite build`
 4. Redeploy the affected frontend target
-5. Re-run the Playwright test
+5. Re-run the harness script
 
 ---
 
