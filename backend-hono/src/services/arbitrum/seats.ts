@@ -6,7 +6,7 @@
 //        rationale, risks[]} structure.
 
 import { createLogger } from "../../lib/logger.js";
-import { seatChat } from "./adapters.js";
+import { seatChat, type SeatChatResult } from "./adapters.js";
 import type {
   ArbitrumDeliberateInput,
   ArbitrumSeatConfig,
@@ -215,7 +215,7 @@ export async function invokeMoA(
   );
   const l1Drafts = l1Results
     .filter(
-      (r): r is PromiseFulfilledResult<{ content: string }> =>
+      (r): r is PromiseFulfilledResult<SeatChatResult> =>
         r.status === "fulfilled",
     )
     .map((r) => r.value.content)
