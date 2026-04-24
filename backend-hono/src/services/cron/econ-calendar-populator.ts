@@ -8,10 +8,7 @@
 
 import cron from "node-cron";
 import { createHash } from "node:crypto";
-import {
-  upsertEconEvent,
-  type EconEventRecord,
-} from "../supabase-service.js";
+import { upsertEconEvent, type EconEventRecord } from "../supabase-service.js";
 import {
   categorizeEvent,
   ffCurrencyToCountry,
@@ -52,7 +49,9 @@ function eventKey(parts: {
     .digest("hex");
 }
 
-function normalizeImpact(impact?: string): "low" | "medium" | "high" | undefined {
+function normalizeImpact(
+  impact?: string,
+): "low" | "medium" | "high" | undefined {
   const v = (impact ?? "").toLowerCase();
   if (v === "high") return "high";
   if (v === "medium") return "medium";
@@ -221,12 +220,8 @@ export async function runEconCalendarPopulator(
           await injectEconPrintToFeed({
             eventName: name,
             actual: actualNum,
-            forecast: record.forecast
-              ? parseFloat(record.forecast)
-              : undefined,
-            previous: record.previous
-              ? parseFloat(record.previous)
-              : undefined,
+            forecast: record.forecast ? parseFloat(record.forecast) : undefined,
+            previous: record.previous ? parseFloat(record.previous) : undefined,
             date: dt.date,
           });
           result.actualsBridged++;

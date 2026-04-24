@@ -30,6 +30,7 @@ import {
 import { getLatestReflectReport } from "../../services/autoresearch/reflect-engine.js";
 import { getBrowseTaskStats24h } from "../../services/browser/operator.js";
 import { getBrowserHarnessStats24h } from "../../services/browser/harness-tool.js";
+import { getFiscalSpeakerStats } from "../../services/cron/fiscal-speaker-populator.js";
 
 const log = createLogger("Diagnostics");
 
@@ -427,6 +428,7 @@ export function createDiagnosticsRoutes(): Hono {
     const response: DiagnosticsResponse & {
       routing?: unknown;
       gepa?: unknown;
+      fiscal_speakers?: unknown;
     } = {
       timestamp: new Date().toISOString(),
       overall,
@@ -436,6 +438,7 @@ export function createDiagnosticsRoutes(): Hono {
       news_worker: newsWorker,
       routing,
       gepa,
+      fiscal_speakers: getFiscalSpeakerStats(),
     };
 
     log.info("Diagnostics check", { overall, elapsed: Date.now() - start });

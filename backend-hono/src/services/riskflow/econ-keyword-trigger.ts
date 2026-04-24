@@ -275,8 +275,12 @@ export async function promoteToFeed(
 
   try {
     const surprisePercent =
-      extracted?.actual != null && extracted?.forecast != null && extracted.forecast !== 0
-        ? ((extracted.actual - extracted.forecast) / Math.abs(extracted.forecast)) * 100
+      extracted?.actual != null &&
+      extracted?.forecast != null &&
+      extracted.forecast !== 0
+        ? ((extracted.actual - extracted.forecast) /
+            Math.abs(extracted.forecast)) *
+          100
         : null;
     const beatMiss: "beat" | "miss" | "inline" =
       surprisePercent == null
