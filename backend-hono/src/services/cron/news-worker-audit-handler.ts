@@ -6,16 +6,16 @@
 //   Escalates to superadmins via push when auto-heal doesn't recover or when human action is
 //   required (e.g. a code-level fix is needed and a commit/deploy has to happen).
 
-import { getSupabaseClient } from "../../../config/supabase.js";
-import { createLogger } from "../../../lib/logger.js";
-import { writeOpsEntry } from "../../harper-autonomous/ops-store.js";
-import { recordRun } from "../state-store.js";
-import { notifySuperadmins } from "../../notifications/notify-superadmins.js";
+import { getSupabaseClient } from "../../config/supabase.js";
+import { createLogger } from "../../lib/logger.js";
+import { writeOpsEntry } from "../harper-autonomous/ops-store.js";
+// [claude-code 2026-04-23] recordRun dropped — routines state-store retired; ops entry above is enough.
+import { notifySuperadmins } from "../notifications/notify-superadmins.js";
 import {
   agentReachTick,
   startAgentReachPoller,
   stopAgentReachPoller,
-} from "../../riskflow/agent-reach-poller.js";
+} from "../riskflow/agent-reach-poller.js";
 
 const log = createLogger("NewsWorkerAudit");
 
@@ -261,29 +261,8 @@ export async function runNewsWorkerAudit(opts: {
     return null;
   });
 
-  await recordRun({
-    triggerId: opts.triggerId,
-    status:
-      finalStatus === "ok"
-        ? "ok"
-        : finalStatus === "warn"
-          ? "degraded"
-          : "failed",
-    severity:
-      finalStatus === "critical"
-        ? "critical"
-        : finalStatus === "warn"
-          ? "warning"
-          : "info",
-    title: `${opts.auditName} — ${finalStatus.toUpperCase()}`,
-    detail:
-      reasons.length > 0
-        ? reasons.join("; ")
-        : "All tiers fresh, pipeline healthy.",
-    opsEntryId: opsEntry?.id ?? null,
-  }).catch((err) => log.warn("recordRun failed", { error: String(err) }));
-
-  // Escalate to superadmins when auto-heal didn't recover.
+  // [claude-code 2026-04-23] recordRun removed with the Routines Console; ops entry above
+  //   is the durable trail. Escalate to superadmins when auto-heal didn't recover.
   if (finalStatus === "critical") {
     await notifySuperadmins({
       title: `News feed unhealthy — ${opts.auditName}`,

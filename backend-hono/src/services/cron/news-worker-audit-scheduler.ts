@@ -1,40 +1,40 @@
 // [claude-code 2026-04-19] S28: In-process cron scheduler for the 3 mandatory news-worker audits.
-//   Fires at 6:00am / 11:30am / 4:00pm America/New_York. Paused state honoured via routine_config
-//   so operators can pause from the UI without a restart. Skips the run + logs if DB flags paused.
+//   Fires at 6:00am / 11:30am / 4:00pm America/New_York.
+// [claude-code 2026-04-23] Routines Console retired — dropped the operator pause-check and
+//   the routines/registry lookup. Constants inlined below. Disable via env flag
+//   NEWS_WORKER_AUDIT_ENABLED=false (same as before).
 
 import cron from "node-cron";
 import { createLogger } from "../../lib/logger.js";
-import {
-  NEWS_WORKER_AUDIT_IDS,
-  getRoutine,
-  type NewsWorkerAuditId,
-} from "../routines/registry.js";
-import { runNewsWorkerAudit } from "../routines/handlers/news-worker-audit.js";
-import { getConfig } from "../routines/state-store.js";
+import { runNewsWorkerAudit } from "./news-worker-audit-handler.js";
 
 const log = createLogger("NewsWorkerAuditCron");
 
 interface AuditJob {
-  triggerId: NewsWorkerAuditId;
+  triggerId: string;
   cron: string;
   label: string;
+  auditName: string;
 }
 
 const JOBS: AuditJob[] = [
   {
-    triggerId: NEWS_WORKER_AUDIT_IDS.morning,
+    triggerId: "news_worker_audit_morning",
     cron: "0 6 * * *",
     label: "Morning Open (6:00am ET)",
+    auditName: "News Worker Audit — Morning Open",
   },
   {
-    triggerId: NEWS_WORKER_AUDIT_IDS.midday,
+    triggerId: "news_worker_audit_midday",
     cron: "30 11 * * *",
     label: "Midday (11:30am ET)",
+    auditName: "News Worker Audit — Midday",
   },
   {
-    triggerId: NEWS_WORKER_AUDIT_IDS.close,
+    triggerId: "news_worker_audit_close",
     cron: "0 16 * * *",
     label: "Close (4:00pm ET)",
+    auditName: "News Worker Audit — Close",
   },
 ];
 
@@ -42,30 +42,18 @@ let tasks: cron.ScheduledTask[] = [];
 let running = false;
 
 async function fireAudit(job: AuditJob): Promise<void> {
-  const def = getRoutine(job.triggerId);
-  if (!def) {
-    log.warn(`Unknown routine ${job.triggerId} — audit skipped`);
-    return;
-  }
-
-  const cfg = await getConfig(job.triggerId).catch(() => null);
-  if (cfg?.paused) {
-    log.info(`${def.name} paused by operator — skipping scheduled run`);
-    return;
-  }
-
   try {
     const result = await runNewsWorkerAudit({
-      auditName: def.name,
-      triggerId: def.triggerId,
+      auditName: job.auditName,
+      triggerId: job.triggerId,
     });
-    log.info(`${def.name} complete`, {
+    log.info(`${job.auditName} complete`, {
       finalStatus: result.snapshot.finalStatus,
       heal: result.snapshot.healActions,
       reasons: result.snapshot.reasons,
     });
   } catch (err) {
-    log.error(`${def.name} threw — audit did not complete`, {
+    log.error(`${job.auditName} threw — audit did not complete`, {
       error: err instanceof Error ? err.message : String(err),
     });
   }

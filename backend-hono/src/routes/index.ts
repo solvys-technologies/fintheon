@@ -76,7 +76,7 @@ import { createWebPushRoutes } from "./web-push.js";
 import { createOracleRoutes } from "./oracle.js";
 import { createMeRoutes } from "./me/index.js";
 import { createMaintenanceRoutes } from "./maintenance.js";
-import { createRoutinesRoutes } from "./routines/index.js";
+// [claude-code 2026-04-23] Routines Console retired — replaced by in-process schedulers + hooks.
 // [claude-code 2026-04-20] S21: Harper Voice integration (formerly Omi) + PsychAssist fork admin
 import { createHarperVoiceRoutes } from "./harper-voice.js";
 import { createPsychAssistForkRoutes } from "./admin/psych-assist-fork.js";
@@ -212,8 +212,6 @@ export function registerRoutes(app: Hono): void {
   );
   // Harper Ops — autonomous loop monitoring + control (public, local-only)
   app.route("/api/harper-ops", createHarperOpsRoutes());
-  // Routines Console — operator surface for the 8 Claude Code Routines (public, local-only)
-  app.route("/api/routines", createRoutinesRoutes());
   // Aquarium ops — context audit badges + groupthink guard (Track 7b)
   app.route("/api/ops", createOpsRoutes());
   // Econ Intelligence — event cards, filters, KPI/instrument fuses (Track 4a/4b)

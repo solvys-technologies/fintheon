@@ -9,6 +9,31 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T00:30:00",
+    agent: "claude-code",
+    summary:
+      "v5.23.3: retired Anthropic-hosted Claude Code Routines + operator console. Every trigger was spawning a full Claude Code session to curl back to the backend (11 triggers firing 1–4x/day = constant Extra Usage); the backend already did the real work via VProxy/generateTextViaClaude. Removed: backend-hono/src/services/routines/* (registry, state-store, error-handler, handlers/), backend-hono/src/routes/routines/*, the three *_VIA_ROUTINE env-flag gates in reflect-scheduler/polymarket-prediction-resolver/market-impact-enricher (schedulers now always run in-process on the always-on Fly machine), the run-tracking block in /api/harper-ops/feed, the Monitor admin sub-tab + MonitoringLoopCard + RoutinesConsole + RoutineDetailModal. news-worker-audit handler relocated from services/routines/handlers/ to services/cron/; scheduler inlined trigger IDs + dropped pause-check. /api/routines mount removed from routes/index.ts. Operator UI is now Scoring + Approvals only. Companion smoke-test fix from v5.23.2 afterglow: T6 blindspots-nightly route now mounted under harper-ops aggregate (was exported but unrouted; smoke found 404). TP follow-up: delete the 11 trig_* scheduled tasks from the Anthropic Claude Code dashboard — backend code no longer routes them anywhere, but the spawns keep firing until removed at the source.",
+    files: [
+      "backend-hono/src/boot/services.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/routes/harper-ops/index.ts",
+      "backend-hono/src/services/cron/news-worker-audit-scheduler.ts",
+      "backend-hono/src/services/cron/news-worker-audit-handler.ts",
+      "backend-hono/src/services/cron/market-impact-enricher.ts",
+      "backend-hono/src/services/autoresearch/reflect-scheduler.ts",
+      "backend-hono/src/services/polymarket-prediction-resolver.ts",
+      "backend-hono/src/services/routines/ (deleted)",
+      "backend-hono/src/routes/routines/ (deleted)",
+      "frontend/components/admin/AdminShell.tsx",
+      "frontend/components/admin/MonitoringLoopCard.tsx (deleted)",
+      "frontend/components/refinement/RoutinesConsole.tsx (deleted)",
+      "frontend/components/refinement/RoutineDetailModal.tsx (deleted)",
+      "package.json",
+      "scripts/fintheon-update.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-23T23:30:00",
     agent: "claude-code",
     summary:
