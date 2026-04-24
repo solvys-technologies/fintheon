@@ -155,7 +155,7 @@ export async function ingestAudioChunk(
       timestamp: payload.timestamp || new Date().toISOString(),
       transcript: result.text,
       speaker_label: "USER",
-      confidence: result.confidence || null,
+      confidence: null,
       prosody: null,
     });
 

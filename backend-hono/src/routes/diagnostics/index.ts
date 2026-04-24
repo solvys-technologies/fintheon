@@ -2,6 +2,7 @@
 // [claude-code 2026-03-22] Add POST /hermes/restart for frontend-triggered Hermes re-initialization
 // [claude-code 2026-04-19] S27-T6/T7 (W2d): surface cache_hit_rate_24h (browser operator) and
 //   news_worker_age_seconds (news worker heartbeat) on GET /.
+// [claude-code 2026-04-24] S34-T10: surface econ_backfill aggregate on GET /.
 
 import { Hono } from "hono";
 import { pingDb } from "../../db/optimized.js";
@@ -24,6 +25,8 @@ import {
 } from "../../services/autoresearch/reflect-scheduler.js";
 import { getLatestReflectReport } from "../../services/autoresearch/reflect-engine.js";
 import { getBrowseTaskStats24h } from "../../services/browser/operator.js";
+import { getEconBackfillDiagnostics } from "../../services/cron/econ-backfill-orchestrator.js";
+import type { BackfillDiagnostics } from "../../types/econ-backfill.js";
 
 const log = createLogger("Diagnostics");
 
@@ -57,6 +60,7 @@ interface DiagnosticsResponse {
       errors: number;
     }>;
   };
+  econ_backfill?: BackfillDiagnostics;
 }
 
 async function getNewsWorkerSnapshot(): Promise<
@@ -378,16 +382,18 @@ export function createDiagnosticsRoutes(): Hono {
   router.get("/", async (c) => {
     const start = Date.now();
 
-    const [services, browserStats, newsWorker] = await Promise.all([
-      Promise.all([
-        checkHermesAI(),
-        checkDatabase(),
-        Promise.resolve(checkRettiwt()),
-        Promise.resolve(checkSupabaseAuth()),
-      ]),
-      getBrowseTaskStats24h(),
-      getNewsWorkerSnapshot(),
-    ]);
+    const [services, browserStats, newsWorker, econBackfill] =
+      await Promise.all([
+        Promise.all([
+          checkHermesAI(),
+          checkDatabase(),
+          Promise.resolve(checkRettiwt()),
+          Promise.resolve(checkSupabaseAuth()),
+        ]),
+        getBrowseTaskStats24h(),
+        getNewsWorkerSnapshot(),
+        getEconBackfillDiagnostics().catch(() => null),
+      ]);
 
     const missingEnvVars = auditEnvVars();
 
@@ -414,6 +420,7 @@ export function createDiagnosticsRoutes(): Hono {
       missingEnvVars,
       browser_operator: browserStats,
       news_worker: newsWorker,
+      econ_backfill: econBackfill ?? undefined,
       routing,
       gepa,
     };
