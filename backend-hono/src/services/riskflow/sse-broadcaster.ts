@@ -1,4 +1,6 @@
+// [claude-code 2026-04-24] S34-T6: Added broadcastEconPrint for countdown modal SSE hook
 import type { FeedItem, NewsSource } from "../../types/riskflow.js";
+import type { EconEvent } from "../econ-calendar-service.js";
 
 type SSEClient = {
   controller: ReadableStreamDefaultController;
