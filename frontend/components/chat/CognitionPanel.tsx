@@ -1,9 +1,12 @@
+// [claude-code 2026-04-24] "thought for" redesign — label change, dot removal,
+//   Streamdown-rendered thinking stream, slow semi-unsteady shimmer on phrases.
 // [claude-code 2026-03-10] Agent cognition visualization — real-time step-by-step process panel
 // Connects to /api/ai/cognition/stream SSE and renders agent pipeline steps as they arrive.
 // Solvys Gold palette: BG #050402, Accent #c79f4a, Text #f0ead6. No gradients, no colored emojis.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { API_BASE_URL } from "./constants.js";
+import { StreamdownChat } from "./slots";
 
 export type CognitionStepKind =
   | "agent-route"
@@ -30,51 +33,40 @@ interface Props {
   isStreaming: boolean;
 }
 
-// Icon per step kind — text-based, no colored emojis
-function StepIcon({ kind }: { kind: CognitionStepKind }) {
-  const glyphs: Record<CognitionStepKind, string> = {
-    "agent-route": "→",
-    "context-build": "≡",
-    "skill-check": "✓",
-    "tool-dispatch": "⊙",
-    "tool-approval-needed": "⚑",
-    "tool-approval-resolved": "✓",
-    "gateway-call": "⇌",
-    "gateway-fallback": "↩",
-    "response-ready": "◆",
-    error: "✕",
-  };
-  return (
-    <span className="text-[var(--fintheon-accent)] font-mono text-[10px] w-3 shrink-0 select-none">
-      {glyphs[kind] ?? "·"}
-    </span>
-  );
+// Human-readable kind → short phrase prefix. Keeps the thought stream natural.
+const KIND_PHRASE: Record<CognitionStepKind, string> = {
+  "agent-route": "Routing",
+  "context-build": "Building context",
+  "skill-check": "Skill check",
+  "tool-dispatch": "Calling tool",
+  "tool-approval-needed": "Awaiting approval",
+  "tool-approval-resolved": "Approval resolved",
+  "gateway-call": "Gateway call",
+  "gateway-fallback": "Gateway fallback",
+  "response-ready": "Response ready",
+  error: "Error",
+};
+
+function stepsToMarkdown(steps: CognitionStep[]): string {
+  // Render each step as a single line, tool calls in inline code. Keep markdown
+  // minimal so Streamdown streams it without slot dispatch or block styling.
+  return steps
+    .map((s) => {
+      const prefix = KIND_PHRASE[s.kind] ?? s.kind;
+      const detail = s.detail
+        ? s.kind === "tool-dispatch" || s.kind === "gateway-call"
+          ? ` \`${s.detail}\``
+          : ` — ${s.detail}`
+        : "";
+      const dur = s.durationMs !== undefined ? ` _(${s.durationMs}ms)_` : "";
+      return `${prefix}${detail ? ":" : ""}${detail}${dur}`;
+    })
+    .join("\n\n");
 }
 
-function StepRow({ step, idx }: { step: CognitionStep; idx: number }) {
-  return (
-    <div
-      className="flex items-start gap-2 py-0.5 animate-[fadeSlideIn_0.2s_ease-out_forwards]"
-      style={{ animationDelay: `${idx * 30}ms`, opacity: 0 }}
-    >
-      <StepIcon kind={step.kind} />
-      <div className="min-w-0 flex-1">
-        <span className="text-[11px] text-[var(--fintheon-text)]/80 leading-tight">
-          {step.label}
-        </span>
-        {step.detail && (
-          <span className="text-[10px] text-[var(--fintheon-text)]/40 ml-1.5">
-            {step.detail}
-          </span>
-        )}
-      </div>
-      {step.durationMs !== undefined && (
-        <span className="text-[9px] text-[var(--fintheon-text)]/25 tabular-nums shrink-0">
-          {step.durationMs}ms
-        </span>
-      )}
-    </div>
-  );
+function formatElapsed(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  return `${(ms / 1000).toFixed(1)}s`;
 }
 
 /**
@@ -93,7 +85,6 @@ export function useCognitionStream(requestId: string | null) {
       return;
     }
 
-    // Close previous connection
     esRef.current?.close();
     setSteps([]);
     setDone(false);
@@ -131,14 +122,28 @@ export function useCognitionStream(requestId: string | null) {
 }
 
 /**
- * CognitionPanel — collapsible panel showing live agent cognition steps.
- * Renders below the thinking indicator during processing, stays visible after.
+ * CognitionPanel — collapsible "thought for …" panel that streams the agent's
+ * thinking phrases (routing, tool calls, gateway hops) via Streamdown.
  */
 export function CognitionPanel({ requestId, isStreaming }: Props) {
   const { steps, done } = useCognitionStream(requestId);
   const [collapsed, setCollapsed] = useState(false);
 
-  // Auto-collapse when done + no errors
+  // Elapsed: live while streaming, frozen at last step once done.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (done || !isStreaming) return;
+    const t = setInterval(() => setNow(Date.now()), 120);
+    return () => clearInterval(t);
+  }, [done, isStreaming]);
+
+  const elapsedMs = useMemo(() => {
+    if (steps.length === 0) return 0;
+    const start = steps[0].ts;
+    const end = done ? steps[steps.length - 1].ts : now;
+    return Math.max(0, end - start);
+  }, [steps, done, now]);
+
   useEffect(() => {
     if (done && steps.length > 0 && !steps.some((s) => s.kind === "error")) {
       const t = setTimeout(() => setCollapsed(true), 4_000);
@@ -146,48 +151,33 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
     }
   }, [done, steps]);
 
-  // Re-expand on new request
   useEffect(() => {
     if (requestId) setCollapsed(false);
   }, [requestId]);
 
-  if (!requestId || steps.length === 0) return null;
+  const markdown = useMemo(() => stepsToMarkdown(steps), [steps]);
+  const stillThinking = isStreaming && !done;
 
-  const hasError = steps.some((s) => s.kind === "error");
+  if (!requestId || steps.length === 0) return null;
 
   return (
     <div className="rounded-xl bg-[var(--fintheon-bg)]/90 overflow-hidden transition-all">
-      {/* Header */}
+      {/* Header — "thought for {elapsed}" with caret. No status dot. */}
       <button
         onClick={() => setCollapsed((c) => !c)}
         className="w-full flex items-center justify-between px-3 py-2 hover:bg-white/3 transition-colors"
       >
-        <div className="flex items-center gap-2">
-          {/* Fintheon dot while streaming, static when done */}
-          {isStreaming && !done ? (
-            <span
-              className="inline-block w-1.5 h-1.5 rounded-full"
-              style={{
-                backgroundColor: "var(--fintheon-accent)",
-                animation: "p 1.5s ease-in-out infinite",
-              }}
-            />
-          ) : (
-            <span
-              className="inline-block w-1.5 h-1.5 rounded-full"
-              style={{
-                backgroundColor: hasError
-                  ? "#ef4444"
-                  : "var(--fintheon-accent)",
-                opacity: 0.6,
-              }}
-            />
-          )}
-          <span className="text-[10px] font-medium tracking-wider uppercase text-[var(--fintheon-accent)]/70">
-            Agent Mind
+        <div className="flex items-center gap-1.5">
+          <span
+            className={
+              "text-[10px] font-medium tracking-wider lowercase text-[var(--fintheon-accent)]/70" +
+              (stillThinking ? " cognition-thought-shimmer" : "")
+            }
+          >
+            thought for
           </span>
-          <span className="text-[9px] text-[var(--fintheon-text)]/25">
-            {steps.length} step{steps.length !== 1 ? "s" : ""}
+          <span className="text-[10px] text-[var(--fintheon-text)]/55 tabular-nums">
+            {formatElapsed(elapsedMs)}
           </span>
         </div>
         <span
@@ -201,24 +191,17 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
         </span>
       </button>
 
-      {/* Steps */}
+      {/* Thinking stream — Streamdown renders phrases as they arrive. */}
       {!collapsed && (
-        <div className="px-3 pb-2.5 space-y-0.5">
-          {steps.map((step, idx) => (
-            <StepRow key={`${step.ts}-${idx}`} step={step} idx={idx} />
-          ))}
-
-          {/* Live indicator while streaming and not yet done */}
-          {isStreaming && !done && (
-            <div className="flex items-center gap-2 pt-0.5">
-              <span className="text-[var(--fintheon-accent)] font-mono text-[10px] w-3">
-                ·
-              </span>
-              <span className="text-[10px] text-[var(--fintheon-text)]/30 animate-pulse">
-                processing…
-              </span>
-            </div>
-          )}
+        <div className="px-3 pb-2.5">
+          <div
+            className={
+              "text-[11px] leading-relaxed text-[var(--fintheon-text)]/75 space-y-1" +
+              (stillThinking ? " cognition-thought-shimmer" : "")
+            }
+          >
+            <StreamdownChat content={markdown} streaming={stillThinking} />
+          </div>
         </div>
       )}
     </div>

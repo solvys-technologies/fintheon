@@ -1,3 +1,5 @@
+// [claude-code 2026-04-23] S32-T4 Consul Control pixelation corners mounted above modals.
+// [claude-code 2026-04-23] Rollback: remove GitHub OAuth callback + update banner mounts
 // [claude-code 2026-03-24] Auth gate with init screen, cloud migration, and soft fade-in
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -22,8 +24,6 @@ import SplashScreen from "./components/SplashScreen";
 import { NotificationContainer } from "./components/NotificationToast";
 import { ToastContainer } from "./components/ui/Toast";
 import { PreMarketReminder } from "./components/PreMarketReminder";
-import { GitHubOAuthCallback } from "./components/GitHubOAuthCallback";
-import { UpdateBanner } from "./components/UpdateBanner";
 import { ApiErrorToastBridge } from "./components/ApiErrorToastBridge";
 import { VersionChecker } from "./components/VersionChecker";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -31,6 +31,8 @@ import { SystemStatusProvider } from "./contexts/SystemStatusContext";
 import { migrateStorageKeys } from "./lib/storage-migration";
 import { AuthShell } from "./components/auth/AuthShell";
 import { CircleQuarters } from "./components/icon-bank/UnicodeSpinners";
+import { ConsulControlCorners } from "./components/consul-control/ConsulControlCorners";
+import { useConsulControlStatus } from "./hooks/useConsulControlStatus";
 
 // Run storage migration before any providers read localStorage
 migrateStorageKeys();
@@ -109,6 +111,12 @@ function isColdStart(): boolean {
   } catch {
     return true;
   }
+}
+
+/** Pixel-flicker corner indicator — active while Harper is holding the wheel. */
+function ConsulControlLayer() {
+  const active = useConsulControlStatus();
+  return <ConsulControlCorners active={active} />;
 }
 
 /** Auth-gated app shell — AuthShell → SplashScreen overlay → MainLayout */
@@ -202,9 +210,8 @@ function AuthGate() {
                 `}</style>
                               <ApiErrorToastBridge />
                               <VersionChecker />
-                              <UpdateBanner />
-                              <GitHubOAuthCallback />
                               <MainLayout />
+                              <ConsulControlLayer />
                               <NotificationContainer />
                               <ToastContainer />
                               <PreMarketReminder />

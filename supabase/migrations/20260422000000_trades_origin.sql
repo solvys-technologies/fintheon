@@ -1,7 +1,10 @@
--- [claude-code 2026-04-24] Placeholder stub for migration already applied on remote.
--- Canonical SQL was applied directly on the Fintheon Supabase project prior to this
--- local file being reconstituted. This stub exists so:
---   supabase migration repair --status applied 20260422000000
--- can locate a file at glob supabase/migrations/20260422000000_*.sql.
--- If you need the real DDL for disaster recovery, query:
---   select statements from supabase_migrations.schema_migrations where version = '20260422000000';
+-- Add origin column to trades table to distinguish agent-placed vs user-placed trades
+ALTER TABLE trades
+  ADD COLUMN IF NOT EXISTS origin TEXT NOT NULL DEFAULT 'user'
+    CHECK (origin IN ('user', 'autopilot'));
+
+CREATE INDEX IF NOT EXISTS idx_trades_origin_entry_at
+  ON trades(origin, entry_at);
+
+-- Backfill existing rows: assume all pre-S29 trades are user-placed
+UPDATE trades SET origin = 'user' WHERE origin IS NULL;

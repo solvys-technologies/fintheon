@@ -2,7 +2,20 @@
 // [claude-code 2026-03-23] Browser Use Phase 2 — browserUse IPC bridge
 // [claude-code 2026-03-24] Auth deep link callback bridge for Supabase OAuth
 // [claude-code 2026-04-23] Harper Vision — screen capture IPC bridge
+// [claude-code 2026-04-23] Windows build — expose platform + api base so renderer can branch chrome + guards
 const { contextBridge, ipcRenderer } = require("electron");
+
+// Read --fintheon-api-base / --fintheon-platform switches injected by main.cjs
+// via BrowserWindow.webPreferences.additionalArguments. The renderer can read
+// these synchronously at module load without awaiting an IPC round-trip.
+function readAdditionalArg(flag) {
+  const prefix = `--${flag}=`;
+  const hit = process.argv.find((a) => a.startsWith(prefix));
+  return hit ? hit.slice(prefix.length) : null;
+}
+const API_BASE =
+  readAdditionalArg("fintheon-api-base") || "http://localhost:8080";
+const PLATFORM = readAdditionalArg("fintheon-platform") || process.platform;
 
 let cliOutputCallback = null;
 ipcRenderer.on("cli-output", (_event, data) => {
@@ -34,6 +47,12 @@ ipcRenderer.on("update-downloaded", () => {
 });
 
 contextBridge.exposeInMainWorld("electron", {
+  // [claude-code 2026-04-23] Platform info for renderer chrome branching + remote-backend detection
+  platform: PLATFORM,
+  apiBase: API_BASE,
+  isWindows: PLATFORM === "win32",
+  isMac: PLATFORM === "darwin",
+
   toggleMiniWidget: async () => {
     try {
       await ipcRenderer.invoke("toggle-mini-widget");
@@ -91,6 +110,9 @@ contextBridge.exposeInMainWorld("electron", {
       ipcRenderer.invoke("harper-vision:start-capture", sessionId),
     stopCapture: () => ipcRenderer.invoke("harper-vision:stop-capture"),
     getStatus: () => ipcRenderer.invoke("harper-vision:get-status"),
+    setPrivacyMode: (enabled) =>
+      ipcRenderer.invoke("harper-vision:set-privacy-mode", enabled),
+    getPrivacyMode: () => ipcRenderer.invoke("harper-vision:get-privacy-mode"),
   },
 });
 
@@ -102,3 +124,8 @@ contextBridge.exposeInMainWorld("systemPermissions", {
   query: (name) => ipcRenderer.invoke("system-permissions:query", name),
   request: (name) => ipcRenderer.invoke("system-permissions:request", name),
 });
+
+// [claude-code 2026-04-23] Runtime API-base global — matches AutopilotDashboard's
+// existing __FINTHEON_API_BASE__ convention. Build-time VITE_API_URL is authoritative;
+// this is a belt-and-suspenders fallback for any code that reads at runtime.
+contextBridge.exposeInMainWorld("__FINTHEON_API_BASE__", API_BASE);

@@ -37,7 +37,6 @@ This database is part of the existing PIC system for surfacing executive-facing 
 - **Harper Messages**
   - **DB URL**: `https://www.notion.so/30c141b0da7d81ba8bb6e319a0c4c309`
   - **Data source**: `collection://30c141b0-da7d-8162-b035-000b181783c1`
-  - **Notable source option**: `Harper-Kimi`
 
 ## Notes for Boardroom iframe
 

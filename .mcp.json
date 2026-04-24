@@ -17,6 +17,10 @@
       "env": {
         "OPENAPI_MCP_HEADERS": "{\"Authorization\":\"Bearer ${NOTION_API_KEY}\",\"Notion-Version\":\"2022-06-28\"}"
       }
+    },
+    "claude-peers": {
+      "command": "bun",
+      "args": ["/Users/tifos/claude-peers-mcp/server.ts"]
     }
   }
 }

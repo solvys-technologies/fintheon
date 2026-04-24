@@ -1,11 +1,12 @@
-// [claude-code 2026-04-18] S24-T4: Admin sub-tabs — Scoring / Approvals / Monitor
+// [claude-code 2026-04-18] S24-T4: Admin sub-tabs — Scoring / Approvals
+// [claude-code 2026-04-23] Monitor sub-tab removed with the Routines Console retirement.
+//   In-process schedulers run silently inside fintheon.fly.dev now; no operator UI needed.
 import { useState, type ReactNode } from "react";
-import { SlidersHorizontal, Inbox, Activity } from "lucide-react";
+import { SlidersHorizontal, Inbox } from "lucide-react";
 import { RefinementEngine } from "../refinement/RefinementEngine";
 import { ApprovalsPage } from "./ApprovalsPage";
-import { MonitoringLoopCard } from "./MonitoringLoopCard";
 
-type AdminSection = "scoring" | "approvals" | "monitor";
+type AdminSection = "scoring" | "approvals";
 
 interface TabDef {
   id: AdminSection;
@@ -16,7 +17,6 @@ interface TabDef {
 const TABS: TabDef[] = [
   { id: "scoring", label: "Scoring", Icon: SlidersHorizontal },
   { id: "approvals", label: "Approvals", Icon: Inbox },
-  { id: "monitor", label: "Monitor", Icon: Activity },
 ];
 
 function TabButton({
@@ -88,7 +88,6 @@ export function AdminShell({
   const views: Record<AdminSection, ReactNode> = {
     scoring: <RefinementEngine />,
     approvals: <ApprovalsPage />,
-    monitor: <MonitoringLoopCard />,
   };
 
   return (

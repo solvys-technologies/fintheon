@@ -1,3 +1,4 @@
+// [claude-code 2026-04-23] S32-T2 Harper Vision refinement — drop stale result.confidence, add dispatchTriggers
 /**
  * Harper Vision Engine
  * The intermediary layer between screen/audio capture and Harper + desk agents

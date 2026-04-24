@@ -1,6 +1,7 @@
 // [claude-code 2026-04-19] v5.22 S1: Cross-platform user preferences route. Backs the
 //   shared UserPreferences contract (frontend/lib/user-preferences.ts + mobile mirror).
 //   GET returns the merged prefs (defaults filled in); PUT upserts and returns the fresh row.
+// [claude-code 2026-04-23] S31-T6: psychAssistEnabled flag; default false (silent mode).
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { z } from "zod";
@@ -43,6 +44,7 @@ const preferencesSchema = z.object({
   traderName: z.string().optional(),
   notifications: notificationsSchema,
   fusePalette: fusePaletteOverrideSchema.optional(),
+  psychAssistEnabled: z.boolean().optional(),
   updatedAt: z.string(),
 });
 
@@ -57,6 +59,7 @@ const DEFAULT_PREFERENCES: Preferences = {
     quietFromEtHour: 16,
     quietToEtHour: 9.5,
   },
+  psychAssistEnabled: false,
   updatedAt: new Date(0).toISOString(),
 };
 

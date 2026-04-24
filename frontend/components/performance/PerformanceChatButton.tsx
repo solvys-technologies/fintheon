@@ -3,10 +3,10 @@
 // and the general Voice Assistant button). Rendered by TopHeader ONLY when
 // activeTab === "performance".
 import { MessageSquare } from "lucide-react";
-import { useOmiSession } from "../../hooks/useOmiSession";
+import { useHarperVoiceSession } from "../../hooks/useHarperVoiceSession";
 
 export function PerformanceChatButton() {
-  const { session, starting, start, stop } = useOmiSession();
+  const { session, starting, start, stop } = useHarperVoiceSession();
   const active =
     session?.status === "active" && session.trigger === "performance_chat";
 

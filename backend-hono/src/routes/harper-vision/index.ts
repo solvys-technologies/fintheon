@@ -1,3 +1,4 @@
+// [claude-code 2026-04-23] S32-T2 Harper Vision — dispatch triggers, real status endpoint
 /**
  * Harper Vision Routes
  * Screen + audio ingestion, scene building, and trigger detection
@@ -16,6 +17,8 @@ import {
   detectTriggers,
   ingestAudioChunk,
 } from "../../services/harper-vision/engine.js";
+import { dispatchTriggers } from "../../services/harper-vision/dispatcher.js";
+import { getVisionStatus } from "../../services/harper-vision/status.js";
 import type { HarperVisionFrameIngest } from "../../types/harper-vision.js";
 
 export function createHarperVisionRoutes() {
@@ -101,7 +104,17 @@ export function createHarperVisionRoutes() {
         sessionId,
         lookbackSeconds,
       });
-      return c.json({ ok: true, triggers });
+
+      const dispatch = await dispatchTriggers(triggers, userId);
+
+      return c.json({
+        ok: true,
+        triggers,
+        dispatch: {
+          dispatched: dispatch.dispatched.length,
+          skipped: dispatch.skipped.length,
+        },
+      });
     } catch (err: any) {
       console.error("[HarperVision] Trigger detection error:", err.message);
       return c.json({ ok: false, error: err.message }, 500);
@@ -132,17 +145,8 @@ export function createHarperVisionRoutes() {
   app.get("/status", authMiddleware, requireAuth, async (c) => {
     try {
       const userId = (c.get("userId" as never) as string) || "anonymous";
-
-      // TODO: Query actual capture status from session store
-      return c.json({
-        ok: true,
-        status: {
-          screen: { isCapturing: false, sessionId: null, frameCounter: 0 },
-          audio: { isRecording: false, sessionId: null, mode: "placeholder" },
-          lastFrameAt: null,
-          lastTranscriptAt: null,
-        },
-      });
+      const status = await getVisionStatus(userId);
+      return c.json({ ok: true, status });
     } catch (err: any) {
       return c.json({ ok: false, error: err.message }, 500);
     }

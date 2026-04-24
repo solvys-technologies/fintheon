@@ -1,0 +1,71 @@
+# [claude-code 2026-04-23] Windows desktop build — produces signed NSIS installer
+# on windows-latest runner. Triggered manually or on tags matching v*.
+#
+# Remote-backend mode: the Windows installer has no bundled backend; the renderer
+# is built with VITE_API_URL=https://fintheon.fly.dev (see frontend/.env.windows).
+#
+# To ship a signed build, configure these repo secrets:
+#   - WIN_CSC_LINK:         base64-encoded .pfx code-signing certificate
+#   - WIN_CSC_KEY_PASSWORD: password for the .pfx
+# Without them the build runs unsigned (users see a SmartScreen warning on first launch).
+name: Windows Desktop Build
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install root dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: bun install --frozen-lockfile
+
+      - name: Build frontend (windows mode — remote backend)
+        working-directory: frontend
+        run: bun run build:windows
+
+      - name: Build Windows installer (NSIS)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: bunx electron-builder --win nsis --publish never
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Fintheon-Windows-Installer
+          path: desktop-dist/*.exe
+          retention-days: 30
+
+      - name: Attach installer to GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: desktop-dist/*.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

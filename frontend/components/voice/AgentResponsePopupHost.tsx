@@ -1,13 +1,13 @@
 // [claude-code 2026-04-20] S21-T3: App-wide host for the agent-response popup.
 // Mounts once in MainLayout; listens to the `fintheon:agent-response` event
-// dispatched by useOmiSession so any of the three triggers renders through
+// dispatched by useHarperVoiceSession so any of the three triggers renders through
 // a single component instance.
 import { useEffect, useState } from "react";
 import {
   AgentResponsePopup,
   type AgentResponseAgent,
 } from "./AgentResponsePopup";
-import type { AgentResponseEventDetail } from "../../hooks/useOmiSession";
+import type { AgentResponseEventDetail } from "../../hooks/useHarperVoiceSession";
 
 interface HostState {
   open: boolean;

@@ -8,6 +8,7 @@ import { hermesConversationStorageKey } from "../lib/hermesAgentRouting";
 import type { VoiceRuntimeState } from "../types/voice";
 import { useMicPermission } from "./useMicPermission";
 import { useMicArbitration } from "./useMicArbitration";
+import { useSpeechSynthesis } from "./useSpeechSynthesis";
 
 export { useMicPermission } from "./useMicPermission";
 export { useMicArbitration } from "./useMicArbitration";
@@ -17,8 +18,10 @@ const HARPER_CONVERSATION_STORAGE_KEY = hermesConversationStorageKey("harper");
 const ERROR_AUTO_RECOVERY_MS = 5000;
 
 // VAD (Voice Activity Detection) settings
+// [claude-code 2026-04-23] TP: bumped silence threshold 1.8s → 2.6s so users get room to think
+//   mid-utterance without the mic cutting them off and auto-submitting a half-formed question.
 const VAD_SILENCE_THRESHOLD = 0.015; // RMS level below this = silence
-const VAD_SILENCE_DURATION_MS = 1800; // 1.8s of silence = done speaking
+const VAD_SILENCE_DURATION_MS = 2600; // 2.6s of silence = done speaking
 const VAD_MAX_RECORDING_MS = 30_000; // Max 30s recording
 const VAD_CHECK_INTERVAL_MS = 100; // Check audio level every 100ms
 const MIC_DEVICE_STORAGE_KEY = "fintheon:voice-mic-device:v1";
@@ -93,6 +96,18 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
   const { requestMic } = useMicArbitration();
 
   // Keep onTranscript ref in sync
+
+  // [claude-code 2026-04-24] Native browser TTS for Harper responses
+  const {
+    speak: speakTTS,
+    cancel: cancelTTS,
+    isSupported: ttsSupported,
+  } = useSpeechSynthesis({
+    onSpeakStart: () => console.debug("[VoiceAssistant] TTS: speaking started"),
+    onSpeakEnd: () => console.debug("[VoiceAssistant] TTS: speaking ended"),
+    onSpeakError: (error) =>
+      console.error("[VoiceAssistant] TTS error:", error),
+  });
   onTranscriptRef.current = options?.onTranscript;
 
   // Always supported now — we use getUserMedia + Whisper, not SpeechRecognition
@@ -114,7 +129,7 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
   }, []);
 
   const stopPlayback = useCallback(() => {
-    // [S28-T1] Browser TTS removed — all agent speech now routes through Omi.
+    // [S28-T1] Browser TTS removed — all agent speech now routes through Harper Voice.
     //   The remaining audioRef only plays sidecar-generated blobs; stopping it
     //   cancels an in-flight greeting if one is queued.
     if (audioRef.current) {
@@ -182,7 +197,7 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
     [],
   );
 
-  // [S28-T1] Browser TTS is banned. Agent audio arrives via Omi Notifications
+  // [S28-T1] Browser TTS is banned. Agent audio arrives via Harper Voice Notifications
   //   (handled server-side). If the user isn't paired, we stay silent rather
   //   than substituting a macOS voice — text still lands in the UI.
 
@@ -279,14 +294,27 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
           setRuntimeState("speaking");
           if (controller.signal.aborted) return null;
 
-          // [S28-T1] audioBase64 is no longer returned by /api/voice/speak —
-          //   audio is delivered directly to Omi. Keep the playAudio call only
-          //   for legacy payloads that still carry a blob, otherwise stay quiet.
-          if (response.audioBase64) {
+          // [claude-code 2026-04-24] TTS Flow: Attempt native Web Speech API first,
+          //   then fallback to Omi-delivered audio if user is paired.
+          //   This gives desktop users immediate audio feedback without roundtrip to Omi.
+          let ttsAttempted = false;
+          if (ttsSupported) {
+            try {
+              await speakTTS(assistantText);
+              ttsAttempted = true;
+            } catch (ttsError) {
+              console.warn(
+                "[VoiceAssistant] TTS failed, will try Omi audio:",
+                ttsError,
+              );
+            }
+          }
+
+          // Legacy fallback: if TTS wasn't attempted or failed, use Omi audio if available
+          if (response.audioBase64 && !ttsAttempted) {
             await playAudio(response.audioBase64, response.audioMimeType);
           }
         }
-
         if (!controller.signal.aborted) {
           if (prompt && mode === "chat") {
             analyzeSpeechForTilt(prompt).catch(() => {});
@@ -320,6 +348,8 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
       playAudio,
       setErrorWithRecovery,
       analyzeSpeechForTilt,
+      speakTTS,
+      ttsSupported,
     ],
   );
 

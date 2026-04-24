@@ -59,7 +59,22 @@ export function createHarperRoutes() {
   });
 
   // ── Chat (streaming SSE) ─────────────────────────────────────────────────
+  // Chat writes to ai_conversations / ai_messages scoped by userId. When no JWT
+  // is present the auth middleware sets userId = "anonymous", so without this
+  // guard every unauthed request would write into one shared row bucket. Reject
+  // up front and force callers to carry a Supabase token.
   app.post("/chat", async (c) => {
+    const authedUserId = c.get("userId" as never) as string | undefined;
+    if (!authedUserId || authedUserId === "anonymous") {
+      return c.json(
+        {
+          error: "Authentication required",
+          hint: "Chat writes per-user conversation history — sign in with Supabase before POSTing to /api/harper/chat.",
+        },
+        401,
+      );
+    }
+
     const startTime = Date.now();
     const requestId = `harper-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     const cognition = createRequestCognition(requestId, startTime);
@@ -102,7 +117,7 @@ export function createHarperRoutes() {
         body.surface === "boardroom" || body.boardroom === true;
 
       if (isBoardroomMode) {
-        const userId = (c.get("userId" as never) as string) || "anonymous";
+        const userId = authedUserId;
         const dagDef = await createAgentDeskDAG({
           lanes: [
             {
@@ -384,7 +399,7 @@ export function createHarperRoutes() {
       }
 
       // Get or create conversation
-      const userId = (c.get("userId" as never) as string) || "anonymous";
+      const userId = authedUserId;
       const reqConversationId = body.conversationId ?? undefined;
       let conversation = reqConversationId
         ? await conversationStore.getConversation(reqConversationId, userId)

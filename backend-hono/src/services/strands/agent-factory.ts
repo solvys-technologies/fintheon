@@ -1,3 +1,4 @@
+// [claude-code 2026-04-23] S32-T3 Ollama fallback chain — local provider now goes through createChainModel
 // [claude-code 2026-04-10] S8-T2: added createAgentForTask() for DAG dispatch (always local/VProxy)
 // [claude-code 2026-04-08] Nous provider tries arcee trinity-large first, then qwen3.6-plus
 // [claude-code 2026-04-07] Strands agent factory — VProxy, OpenRouter, or Nous Direct provider selection
@@ -6,8 +7,11 @@ import { OpenAIModel } from "@strands-agents/sdk/models/openai";
 import {
   createVProxyModel,
   checkVProxyHealth,
+  createChainModel,
+  createOllamaFallbackModel,
   type VProxyModelOptions,
 } from "./provider.js";
+import { isOllamaFallbackEnabled } from "../ai/ollama-hermes-client.js";
 import { createLogger } from "../../lib/logger.js";
 import type { HermesAgentId } from "../agent-bus/types.js";
 import { BASE_PROMPTS } from "../ai/agent-instructions/base-prompts.js";
@@ -16,7 +20,13 @@ import { getAgentSystemPrompt } from "../ai/agent-instructions/index.js";
 const log = createLogger("StrandsFactory");
 
 /** Provider override — which backend to route through */
-export type HarperProvider = "local" | "nous" | "orouter" | "grok";
+// [claude-code 2026-04-23] S32-T3 added "ollama-qwen" fallback chain provider
+export type HarperProvider =
+  | "local"
+  | "ollama-qwen"
+  | "nous"
+  | "orouter"
+  | "grok";
 
 /** Nous fallback model chain — tried in order */
 export const NOUS_MODELS = [

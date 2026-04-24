@@ -1,3 +1,4 @@
+// [claude-code 2026-04-23] Rollback: drop github.com OAuth popup allowlist (provider retired)
 // [claude-code 2026-04-16] Lifecycle v2: token refresh on open, smart kill on close, idle shutdown for routine-started backends
 // [claude-code 2026-02-26] Ensure OAuth popups work for embedded webviews.
 // [claude-code 2026-03-11] Auto-start backend on app init.
@@ -7,18 +8,32 @@
 // [claude-code 2026-03-23] Browser Use Phase 2 — CDP + browser-use CLI bridge
 // [claude-code 2026-03-24] Supabase Google OAuth deep link: fintheon:// protocol + open-url handler
 // [claude-code 2026-04-19] S27-T5 W2c: voice window chrome hook for active voice sessions
+// [claude-code 2026-04-23] Windows build support — remote-backend mode, platform gating, titleBarOverlay chrome
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const { installVoiceChromeHook } = require("./window-chrome-voice.cjs");
-const { HarperVisionScreen } = require("./services/harper-vision-screen.cjs");
-const { HarperVisionAudio } = require("./services/harper-vision-audio.cjs");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
 const { autoUpdater } = require("electron-updater");
 
-// [claude-code 2026-04-23] Harper Vision — screen + audio capture instances
-const harperVisionScreen = new HarperVisionScreen();
-const harperVisionAudio = new HarperVisionAudio();
+const IS_MAC = process.platform === "darwin";
+const IS_WIN = process.platform === "win32";
+
+// [claude-code 2026-04-23] Windows runs in remote-backend mode: no local spawn,
+// no launchd, frontend hits fintheon.fly.dev directly. macOS keeps the localhost
+// sidecar via launchd + app-owned spawn (lifecycle v2).
+const REMOTE_BACKEND_URL = "https://fintheon.fly.dev";
+
+// [claude-code 2026-04-23] Harper Vision — macOS-only (uses ScreenCaptureKit under the hood).
+// Windows build stubs these out and returns { ok: false } from the IPC handlers.
+let harperVisionScreen = null;
+let harperVisionAudio = null;
+if (IS_MAC) {
+  const { HarperVisionScreen } = require("./services/harper-vision-screen.cjs");
+  const { HarperVisionAudio } = require("./services/harper-vision-audio.cjs");
+  harperVisionScreen = new HarperVisionScreen();
+  harperVisionAudio = new HarperVisionAudio();
+}
 
 let mainWindow = null;
 let backendProcess = null;
@@ -371,10 +386,6 @@ const shouldAllowInAppPopup = (urlString) => {
     if (host === "app.tradesea.ai") return true;
     if (host === "tradesea.ai") return true;
 
-    // GitHub OAuth (GitHub Models — Kimi K2)
-    if (host === "github.com") return true;
-    if (host.endsWith(".github.com")) return true;
-
     // Discord (Boardroom)
     if (host === "discord.com") return true;
     if (host.endsWith(".discord.com")) return true;
@@ -405,17 +416,46 @@ const shouldAllowInAppPopup = (urlString) => {
   }
 };
 
-function createWindow() {
+function createWindow(apiBase) {
+  // [claude-code 2026-04-23] Windows: use titleBarOverlay for Win 11 frameless chrome
+  // that inherits Solvys palette (BG #050402, accent #c79f4a). macOS keeps the
+  // native traffic-light chrome — no override needed.
+  const windowsChrome = IS_WIN
+    ? {
+        titleBarStyle: "hidden",
+        titleBarOverlay: {
+          color: "#050402",
+          symbolColor: "#f0ead6",
+          height: 28,
+        },
+        backgroundColor: "#050402",
+        autoHideMenuBar: true,
+      }
+    : {};
+
+  // [claude-code 2026-04-24] apiBase is resolved by the caller in app.whenReady().
+  // Mac defaults to localhost:8080 when a local backend is healthy, falls back
+  // to fintheon.fly.dev when it isn't. Windows always hits Fly. The prior
+  // behavior of unconditionally pinning Mac to localhost left the chat UI
+  // hanging on "Model inference · 121ms" whenever launchd was down.
+  const resolvedApiBase =
+    apiBase || (IS_WIN ? REMOTE_BACKEND_URL : "http://localhost:8080");
+
   const win = new BrowserWindow({
     width: 1600,
     height: 980,
     title: "Fintheon",
+    ...windowsChrome,
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
       webviewTag: true,
       nativeWindowOpen: true,
+      additionalArguments: [
+        `--fintheon-api-base=${resolvedApiBase}`,
+        `--fintheon-platform=${process.platform}`,
+      ],
     },
   });
 
@@ -500,14 +540,20 @@ app.whenReady().then(async () => {
   // Register fintheon:// as a custom protocol for OAuth callbacks
   app.setAsDefaultProtocolClient("fintheon");
 
+  // [claude-code 2026-04-24] Decide the API base *after* we try to bring the
+  // local backend up. If it never goes healthy (e.g. launchd boot-assert on
+  // BYPASS_AUTH, or the user's ~/Documents/Fintheon tree doesn't exist), fall
+  // back to fintheon.fly.dev so the chat UI still works. Windows already
+  // always uses the remote.
+  let localBackendHealthy = false;
   const cfg = readStartupConfig();
   if (cfg.backendAutostart) {
     const startResult = await startBackend();
     if (!startResult.ok) {
       console.error("[Electron] Backend failed to start:", startResult.detail);
     } else {
-      const healthy = await waitForBackendHealthy(15000);
-      if (!healthy) {
+      localBackendHealthy = await waitForBackendHealthy(15000);
+      if (!localBackendHealthy) {
         console.warn("[Electron] Backend did not become healthy within 15s");
       } else {
         // [claude-code 2026-04-16] Refresh tokens + disarm idle shutdown on app open
@@ -516,8 +562,18 @@ app.whenReady().then(async () => {
     }
   } else {
     console.log("[Electron] Backend autostart disabled — skipping");
+    localBackendHealthy = await isBackendAlive();
   }
-  createWindow();
+
+  const apiBase = IS_WIN
+    ? REMOTE_BACKEND_URL
+    : localBackendHealthy
+      ? "http://localhost:8080"
+      : REMOTE_BACKEND_URL;
+  console.log(
+    `[Electron] Renderer api-base resolved to ${apiBase} (local healthy: ${localBackendHealthy})`,
+  );
+  createWindow(apiBase);
   setupAutoUpdater();
 
   // Forward any pending auth URL AFTER the renderer finishes loading
@@ -652,14 +708,22 @@ app.whenReady().then(async () => {
   app.on("activate", async () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       const cfg = readStartupConfig();
+      let localHealthy = false;
       if (cfg.backendAutostart) {
         const startResult = await startBackend();
         if (startResult.ok) {
-          const healthy = await waitForBackendHealthy(15000);
-          if (healthy) await onBackendReady();
+          localHealthy = await waitForBackendHealthy(15000);
+          if (localHealthy) await onBackendReady();
         }
+      } else {
+        localHealthy = await isBackendAlive();
       }
-      createWindow();
+      const apiBase = IS_WIN
+        ? REMOTE_BACKEND_URL
+        : localHealthy
+          ? "http://localhost:8080"
+          : REMOTE_BACKEND_URL;
+      createWindow(apiBase);
     }
   });
 });
@@ -882,6 +946,9 @@ ipcMain.handle("system-permissions:request", async (_event, name) => {
 /* ------------------------------------------------------------------ */
 
 ipcMain.handle("harper-vision:capture-screen", async () => {
+  if (!harperVisionScreen) {
+    return { ok: false, error: "Harper Vision is macOS-only" };
+  }
   try {
     const result = await harperVisionScreen.captureOnce();
     return result || { ok: false, error: "Capture failed" };
@@ -891,6 +958,9 @@ ipcMain.handle("harper-vision:capture-screen", async () => {
 });
 
 ipcMain.handle("harper-vision:capture-window", async (_event, sourceId) => {
+  if (!harperVisionScreen) {
+    return { ok: false, error: "Harper Vision is macOS-only" };
+  }
   try {
     return await harperVisionScreen.captureSource(sourceId);
   } catch (err) {
@@ -899,6 +969,7 @@ ipcMain.handle("harper-vision:capture-window", async (_event, sourceId) => {
 });
 
 ipcMain.handle("harper-vision:get-sources", async () => {
+  if (!harperVisionScreen) return [];
   try {
     return await harperVisionScreen.getSources();
   } catch (err) {
@@ -907,6 +978,9 @@ ipcMain.handle("harper-vision:get-sources", async () => {
 });
 
 ipcMain.handle("harper-vision:start-capture", async (_event, sessionId) => {
+  if (!harperVisionScreen || !harperVisionAudio) {
+    return { ok: false, error: "Harper Vision is macOS-only" };
+  }
   try {
     const result = await harperVisionScreen.start(sessionId);
     await harperVisionAudio.start(sessionId);
@@ -917,6 +991,9 @@ ipcMain.handle("harper-vision:start-capture", async (_event, sessionId) => {
 });
 
 ipcMain.handle("harper-vision:stop-capture", async () => {
+  if (!harperVisionScreen || !harperVisionAudio) {
+    return { ok: true, screen: null, audio: null, unsupported: true };
+  }
   try {
     const screenResult = harperVisionScreen.stop();
     const audioResult = harperVisionAudio.stop();
@@ -927,8 +1004,71 @@ ipcMain.handle("harper-vision:stop-capture", async () => {
 });
 
 ipcMain.handle("harper-vision:get-status", async () => {
+  if (!harperVisionScreen || !harperVisionAudio) {
+    return {
+      screen: {
+        isCapturing: false,
+        sessionId: null,
+        frameCounter: 0,
+        intervalMs: 0,
+      },
+      audio: { isRecording: false, sessionId: null, mode: "unsupported" },
+      privacyMode: false,
+    };
+  }
   return {
     screen: harperVisionScreen.status(),
     audio: harperVisionAudio.status(),
+    privacyMode: harperVisionScreen.privacyMode === true,
   };
+});
+
+// [claude-code 2026-04-23] S32-T2 Harper Vision — privacy mode persistence
+const HV_PRIVACY_PATH = path.join(
+  app.getPath("userData"),
+  "harper-vision-privacy.json",
+);
+
+function readHarperVisionPrivacy() {
+  try {
+    if (fs.existsSync(HV_PRIVACY_PATH)) {
+      const parsed = JSON.parse(fs.readFileSync(HV_PRIVACY_PATH, "utf8"));
+      return !!parsed.enabled;
+    }
+  } catch {}
+  return false;
+}
+
+function writeHarperVisionPrivacy(enabled) {
+  try {
+    fs.writeFileSync(
+      HV_PRIVACY_PATH,
+      JSON.stringify({ enabled: !!enabled }, null, 2),
+      "utf8",
+    );
+  } catch (err) {
+    console.error(
+      "[HarperVision] Failed to persist privacy flag:",
+      err.message,
+    );
+  }
+}
+
+function applyHarperVisionPrivacy(enabled) {
+  if (harperVisionScreen) harperVisionScreen.setPrivacyMode(enabled);
+  if (harperVisionAudio) harperVisionAudio.setPrivacyMode(enabled);
+}
+
+// Apply persisted flag on startup so capture respects it before the UI mounts
+if (IS_MAC) applyHarperVisionPrivacy(readHarperVisionPrivacy());
+
+ipcMain.handle("harper-vision:set-privacy-mode", async (_event, enabled) => {
+  const flag = !!enabled;
+  applyHarperVisionPrivacy(flag);
+  writeHarperVisionPrivacy(flag);
+  return { ok: true, privacyMode: flag };
+});
+
+ipcMain.handle("harper-vision:get-privacy-mode", async () => {
+  return { privacyMode: readHarperVisionPrivacy() };
 });

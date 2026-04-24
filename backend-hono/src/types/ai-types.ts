@@ -1,3 +1,4 @@
+// [claude-code 2026-04-23] Rollback: drop GitHub-backed inference provider type
 // [claude-code 2026-03-14] Default: OpenRouter (Nous) + Opus 4.6
 /**
  * Shared AI types for multi-provider architecture
@@ -10,9 +11,10 @@ export type AiProviderType =
   | "openrouter"
   | "vercel-gateway"
   | "hermes"
-  | "github-models"
   | "claude-local"
-  | "nous-direct";
+  | "nous-direct"
+  // [claude-code 2026-04-23] S32-T3 Ollama fallback chain provider identifier
+  | "ollama-hermes";
 
 // Circuit breaker states
 export type CircuitState = "closed" | "open" | "half-open";

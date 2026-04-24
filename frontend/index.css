@@ -233,6 +233,42 @@ html *::-webkit-scrollbar {
   animation: severe-shimmer 3s ease-in-out infinite;
 }
 
+/* [claude-code 2026-04-24] Cognition "thought for…" stream shimmer — slow,
+ *   semi-unsteady breath on thinking phrases. Uneven keyframe stops give it an
+ *   organic cadence (not the regular 50% oscillation used on fuses). */
+@keyframes cognition-thought-shimmer {
+  0% {
+    opacity: 0.55;
+  }
+  17% {
+    opacity: 0.82;
+  }
+  34% {
+    opacity: 0.6;
+  }
+  52% {
+    opacity: 0.95;
+  }
+  71% {
+    opacity: 0.7;
+  }
+  88% {
+    opacity: 0.88;
+  }
+  100% {
+    opacity: 0.55;
+  }
+}
+.cognition-thought-shimmer {
+  animation: cognition-thought-shimmer 6.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cognition-thought-shimmer {
+    animation: none;
+    opacity: 0.78;
+  }
+}
+
 /* Subtle pulse glow for new-message indicator */
 @keyframes msg-pulse {
   0%,
@@ -467,6 +503,16 @@ html *::-webkit-scrollbar {
   pre,
   .font-mono {
     font-family: "JetBrains Mono", "SF Mono", "Fira Code", monospace;
+  }
+}
+
+/* [claude-code 2026-04-23] S32-T5 — chat slot skeleton→content reveal */
+@keyframes slotReveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 

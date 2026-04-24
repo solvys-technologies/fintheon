@@ -1,3 +1,4 @@
+// [claude-code 2026-04-23] S32-T2 Harper Vision — privacy-mode gate on _captureAndSend
 // Harper Vision Screen Capture Service
 // Inspired by OMI's ScreenCaptureManager.swift — adapted for Electron desktopCapturer
 // Captures screen frames, encodes to WebP-quality PNG, and streams to backend.
@@ -15,6 +16,14 @@ class HarperVisionScreen {
     this.frameCounter = 0;
     this.activeWindowTitle = "";
     this.activeAppName = "";
+    this.privacyMode = false;
+  }
+
+  setPrivacyMode(enabled) {
+    this.privacyMode = !!enabled;
+    console.log(
+      `[HarperVision] Screen privacy mode: ${this.privacyMode ? "ON" : "OFF"}`,
+    );
   }
 
   async start(sessionId, options = {}) {
@@ -106,6 +115,8 @@ class HarperVisionScreen {
 
   async _captureAndSend() {
     try {
+      if (this.privacyMode) return;
+
       // Skip if system is idle (no mouse/keyboard activity for 60s)
       if (
         powerMonitor.getSystemIdleState &&

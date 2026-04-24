@@ -1,14 +1,12 @@
 /**
- * Conversations Handler
- * Handle conversation CRUD operations
- * Day 19 - Phase 5 Implementation
+ * Conversations Handler — CRUD for ai_conversations + ai_messages.
+ *
+ * All handlers require a verified userId. An unauthed caller gets 401, never
+ * a "anonymous" row lookup. The prior behavior returned any conversation
+ * whose id happened to live under the literal userId "anonymous" and then
+ * silently reassigned that row to the caller — that combination is an ACL
+ * bypass, so both the fallback lookup and the reassign helper are removed.
  */
-
-// [claude-code 2026-04-18] Anon-convo hydration now auto-reassigns to the authed user. The
-// anonymous fallback in handleGetConversation was masking ownership mismatches — convos
-// showed up in chat history fine but /api/relay/dispatch (strict ownership) returned 404,
-// breaking the relay button for any convo missed by the 2026-04-18 migration or created
-// as anon after it. Reassigning on first authed access aligns hydration + dispatch.
 import type { Context } from "hono";
 import * as conversationStore from "../../../services/ai/conversation-store.js";
 import type {
@@ -17,12 +15,21 @@ import type {
   ConversationListResponse,
 } from "../../../types/ai-chat.js";
 
-/**
- * GET /api/ai/conversations
- * List all conversations for user
- */
+const AUTH_REQUIRED = {
+  error: "Authentication required",
+  hint: "Sign in via Supabase before calling /api/ai/conversations.",
+} as const;
+
+function resolveUserId(c: Context): string | null {
+  const uid = c.get("userId") as string | undefined;
+  if (!uid || uid === "anonymous") return null;
+  return uid;
+}
+
+/** GET /api/ai/conversations */
 export async function handleListConversations(c: Context) {
-  const userId = (c.get("userId") as string | undefined) || "anonymous";
+  const userId = resolveUserId(c);
+  if (!userId) return c.json(AUTH_REQUIRED, 401);
 
   try {
     const limit = parseInt(c.req.query("limit") ?? "20", 10);
@@ -53,55 +60,24 @@ export async function handleListConversations(c: Context) {
   }
 }
 
-/**
- * GET /api/ai/conversations/:id
- * Get a single conversation with messages
- */
+/** GET /api/ai/conversations/:id — owner-only, no anon fallback. */
 export async function handleGetConversation(c: Context) {
-  const userId = (c.get("userId") as string | undefined) || "anonymous";
+  const userId = resolveUserId(c);
+  if (!userId) return c.json(AUTH_REQUIRED, 401);
 
   const conversationId = c.req.param("id");
-
   if (!conversationId) {
     return c.json({ error: "Conversation ID is required" }, 400);
   }
 
   try {
-    // Try authenticated userId first, fall back to "anonymous" for legacy conversations.
-    // If the fallback succeeds for an authed user, reassign ownership on the spot so that
-    // subsequent ownership-gated endpoints (relay dispatch, delete, etc.) succeed instead
-    // of returning 404. This is a no-op for unauthed callers (userId === "anonymous").
-    let conversation = await conversationStore.getConversationWithMessages(
+    const conversation = await conversationStore.getConversationWithMessages(
       conversationId,
       userId,
     );
-    if (!conversation && userId !== "anonymous") {
-      conversation = await conversationStore.getConversationWithMessages(
-        conversationId,
-        "anonymous",
-      );
-      if (conversation) {
-        const reassigned = await conversationStore
-          .reassignConversationOwner(conversationId, "anonymous", userId)
-          .catch((err) => {
-            console.warn(
-              "[Conversations] Anon-to-user reassign failed (non-fatal):",
-              err,
-            );
-            return false;
-          });
-        if (reassigned) {
-          console.info(
-            `[Conversations] Reassigned legacy anon convo ${conversationId} to ${userId}`,
-          );
-        }
-      }
-    }
-
     if (!conversation) {
       return c.json({ error: "Conversation not found" }, 404);
     }
-
     return c.json(conversation);
   } catch (error) {
     console.error("[Conversations] Get error:", error);
@@ -109,12 +85,10 @@ export async function handleGetConversation(c: Context) {
   }
 }
 
-/**
- * POST /api/ai/conversations
- * Create a new conversation
- */
+/** POST /api/ai/conversations */
 export async function handleCreateConversation(c: Context) {
-  const userId = (c.get("userId") as string | undefined) || "anonymous";
+  const userId = resolveUserId(c);
+  if (!userId) return c.json(AUTH_REQUIRED, 401);
 
   try {
     const body = await c.req
@@ -133,15 +107,12 @@ export async function handleCreateConversation(c: Context) {
   }
 }
 
-/**
- * PATCH /api/ai/conversations/:id
- * Update a conversation
- */
+/** PATCH /api/ai/conversations/:id */
 export async function handleUpdateConversation(c: Context) {
-  const userId = (c.get("userId") as string | undefined) || "anonymous";
+  const userId = resolveUserId(c);
+  if (!userId) return c.json(AUTH_REQUIRED, 401);
 
   const conversationId = c.req.param("id");
-
   if (!conversationId) {
     return c.json({ error: "Conversation ID is required" }, 400);
   }
@@ -151,7 +122,6 @@ export async function handleUpdateConversation(c: Context) {
       .json<UpdateConversationRequest>()
       .catch(() => null);
 
-    // Validate body and at least one field to update
     if (
       !body ||
       (body.title === undefined &&
@@ -178,15 +148,12 @@ export async function handleUpdateConversation(c: Context) {
   }
 }
 
-/**
- * DELETE /api/ai/conversations/:id
- * Delete a conversation
- */
+/** DELETE /api/ai/conversations/:id */
 export async function handleDeleteConversation(c: Context) {
-  const userId = (c.get("userId") as string | undefined) || "anonymous";
+  const userId = resolveUserId(c);
+  if (!userId) return c.json(AUTH_REQUIRED, 401);
 
   const conversationId = c.req.param("id");
-
   if (!conversationId) {
     return c.json({ error: "Conversation ID is required" }, 400);
   }
@@ -208,15 +175,12 @@ export async function handleDeleteConversation(c: Context) {
   }
 }
 
-/**
- * POST /api/ai/conversations/:id/archive
- * Archive a conversation
- */
+/** POST /api/ai/conversations/:id/archive */
 export async function handleArchiveConversation(c: Context) {
-  const userId = (c.get("userId") as string | undefined) || "anonymous";
+  const userId = resolveUserId(c);
+  if (!userId) return c.json(AUTH_REQUIRED, 401);
 
   const conversationId = c.req.param("id");
-
   if (!conversationId) {
     return c.json({ error: "Conversation ID is required" }, 400);
   }
@@ -239,15 +203,12 @@ export async function handleArchiveConversation(c: Context) {
   }
 }
 
-/**
- * POST /api/ai/conversations/:id/unarchive
- * Unarchive a conversation
- */
+/** POST /api/ai/conversations/:id/unarchive */
 export async function handleUnarchiveConversation(c: Context) {
-  const userId = (c.get("userId") as string | undefined) || "anonymous";
+  const userId = resolveUserId(c);
+  if (!userId) return c.json(AUTH_REQUIRED, 401);
 
   const conversationId = c.req.param("id");
-
   if (!conversationId) {
     return c.json({ error: "Conversation ID is required" }, 400);
   }

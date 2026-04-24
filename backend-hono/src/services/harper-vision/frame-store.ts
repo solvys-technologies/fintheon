@@ -1,3 +1,4 @@
+// [claude-code 2026-04-23] S32-T2 Harper Vision — real LLM frame description + embedding
 /**
  * Harper Vision Frame Store
  * Persists screen capture frames to Supabase
@@ -9,6 +10,8 @@ import type {
   HarperVisionFrameIngest,
   HarperVisionFrameRecord,
 } from "../../types/harper-vision.js";
+import { describeTradingDeskFrame } from "../vproxy/vision.js";
+import { embedText } from "../embeddings/index.js";
 
 const supabaseUrl = process.env.SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
@@ -92,10 +95,25 @@ async function generateDescriptionAsync(
   frameId: string,
   base64Image: string,
 ): Promise<void> {
-  // TODO: Call vision-capable LLM (Claude/GPT-4o) to describe the screenshot
-  // This is a background job — failures are non-critical
-  // For now, leave description null; it will be backfilled by a routine
-  console.log(`[HarperVision] Queued description for frame ${frameId}`);
+  const description = await describeTradingDeskFrame(base64Image);
+  if (!description) return;
+
+  const embedding = await embedText(description);
+
+  const { error } = await supabase
+    .from("harper_vision_frames")
+    .update({
+      description,
+      description_embedding: embedding,
+    })
+    .eq("id", frameId);
+
+  if (error) {
+    console.error(
+      "[HarperVision] Frame description update error:",
+      error.message,
+    );
+  }
 }
 
 export async function getRecentFrames(
