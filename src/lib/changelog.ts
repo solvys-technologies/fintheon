@@ -9,6 +9,22 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-23T19:45:00",
+    agent: "claude-code",
+    summary:
+      "Windows desktop build scaffolding — first Windows target for Fintheon. Remote-backend mode (no local sidecar, renderer hits fintheon.fly.dev directly) to stay under 8GB RAM. Generated multi-size icon.ico (16/24/32/48/64/128/256) from macOS icns. Gated macOS-only code in electron/main.cjs: hardcoded /opt/homebrew/bin/node path, backend spawn / lifecycle v2 / smart-shutdown, Harper Vision (ScreenCaptureKit), browser-use CLI — all guarded behind IS_MAC check; Windows returns clean 'not supported' responses from the same IPC surface. Added Win 11 titleBarOverlay (color #050402, symbol #f0ead6, height 28) + autoHideMenuBar for frameless chrome parity. Preload now reads --fintheon-api-base and --fintheon-platform switches injected by main.cjs, exposes electron.platform / electron.apiBase / electron.isWindows / electron.isMac plus window.__FINTHEON_API_BASE__ runtime fallback. package.json build config: NSIS installer with wizard (oneClick:false, perMachine:false per-user install, allowToChangeInstallationDirectory, desktop + start menu shortcut), fintheon:// protocol handler registered at install time, artifact named Fintheon-Setup-${version}.exe. New release:win + frontend:build:windows scripts. frontend/.env.windows pins VITE_API_URL=https://fintheon.fly.dev. Fixed 3 hardcoded localhost:8080 URLs in SetupWizard.tsx to respect API_BASE. Added .github/workflows/windows-build.yml (windows-latest runner, triggers on v* tags or manual dispatch, uploads installer + attaches to GitHub release; CSC_LINK/CSC_KEY_PASSWORD optional for code signing).",
+    files: [
+      "electron/main.cjs",
+      "electron/preload.cjs",
+      "electron/icons/icon.ico",
+      "package.json",
+      "frontend/package.json",
+      "frontend/.env.windows",
+      "frontend/components/onboarding/SetupWizard.tsx",
+      ".github/workflows/windows-build.yml",
+    ],
+  },
+  {
     date: "2026-04-23T19:20:00",
     agent: "claude-code",
     summary:

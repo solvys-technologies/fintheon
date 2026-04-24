@@ -1,4 +1,5 @@
 // [claude-code 2026-03-16] Backend dependency setup wizard — health checks with auto-recheck
+// [claude-code 2026-04-23] Windows build — use VITE_API_URL / __FINTHEON_API_BASE__ instead of hardcoded localhost
 import { useState, useEffect, useCallback } from "react";
 import {
   X,
@@ -9,6 +10,11 @@ import {
   ExternalLink,
   Terminal,
 } from "lucide-react";
+
+const API_BASE =
+  (typeof window !== "undefined" && (window as any).__FINTHEON_API_BASE__) ||
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:8080";
 
 interface CheckStatus {
   label: string;
@@ -66,7 +72,7 @@ export function SetupWizard({ visible, onClose }: SetupWizardProps) {
 
     // 1. Backend API health
     try {
-      const res = await fetch("http://localhost:8080/health", {
+      const res = await fetch(`${API_BASE}/health`, {
         signal: AbortSignal.timeout(3000),
       });
       if (res.ok) {
@@ -86,7 +92,7 @@ export function SetupWizard({ visible, onClose }: SetupWizardProps) {
 
     // 3. Supabase data layer
     try {
-      const res = await fetch("http://localhost:8080/api/data/trade-ideas", {
+      const res = await fetch(`${API_BASE}/api/data/trade-ideas`, {
         signal: AbortSignal.timeout(3000),
       });
       results[2].status = res.ok ? "ok" : "warn";
@@ -96,10 +102,9 @@ export function SetupWizard({ visible, onClose }: SetupWizardProps) {
 
     // 4. Market data / IV score
     try {
-      const res = await fetch(
-        "http://localhost:8080/api/market-data/iv-score",
-        { signal: AbortSignal.timeout(3000) },
-      );
+      const res = await fetch(`${API_BASE}/api/market-data/iv-score`, {
+        signal: AbortSignal.timeout(3000),
+      });
       results[3].status = res.ok ? "ok" : "warn";
     } catch {
       results[3].status = results[0].status === "fail" ? "fail" : "warn";
