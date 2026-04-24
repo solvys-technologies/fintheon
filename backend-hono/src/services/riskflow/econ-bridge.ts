@@ -19,7 +19,7 @@ interface EconPrintEvent {
 
 /**
  * Convert an econ print into a RiskFlow-compatible feed item and persist to DB.
- * Called by econ-enricher and econ-triggered-poller when an actual lands.
+ * Called by riskflow-econ-enricher and econ-triggered-poller when an actual lands.
  */
 export async function injectEconPrintToFeed(
   print: EconPrintEvent,

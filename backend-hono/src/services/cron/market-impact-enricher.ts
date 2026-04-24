@@ -118,7 +118,7 @@ export async function runMarketImpactEnrichment(): Promise<{
   return { processed, enriched, errors };
 }
 
-// ─── Scheduler (setInterval-based, same pattern as econ-enricher) ───
+// ─── Scheduler (setInterval-based, same pattern as riskflow-econ-enricher) ───
 
 let enricherTimer: ReturnType<typeof setInterval> | null = null;
 const INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours

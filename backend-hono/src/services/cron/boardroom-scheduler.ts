@@ -3,7 +3,7 @@
  * Boardroom Scheduler
  *
  * Uses node-cron to trigger morning standup rounds at scheduled times.
- * Follows the same start/stop pattern as autopilot-scheduler.ts and econ-enricher.ts.
+ * Follows the same start/stop pattern as autopilot-scheduler.ts and riskflow-econ-enricher.ts.
  *
  * Schedule (America/New_York, weekdays only):
  *   7:30 AM — Initial standup
