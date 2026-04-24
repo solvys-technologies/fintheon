@@ -9,6 +9,31 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T14:50:00",
+    agent: "claude-code",
+    summary:
+      "S34-T8 [v.04.24.8]: Econ Countdown Modal. Adds broadcastEconPrint SSE channel " +
+      "in sse-broadcaster.ts (event: econ-print frame) fired from injectEconPrintToFeed " +
+      "after successful news_feed_items insert. New GET /api/econ/active-watch route joins " +
+      "economic_events × active econ_watch_filters within [-2min, +30min] window, returns " +
+      "[] gracefully when T1/T3 tables are absent. New EconCountdownModal.tsx mounts in " +
+      "RiskFlowMain: polls /active-watch every 30s, subscribes to econ-print SSE, renders " +
+      "up to 3 cards stacked top-right with Doto mm:ss countdown — fades in at T-5min, " +
+      "cross-fades to Actual/Forecast on print arrival (300ms gold flash), fades out 20s " +
+      "after print or 15min after scheduled-no-print. Flat #050402 + 1px #c79f4a border, " +
+      "no glass/blur/shadow/gradient. Tiny type widening on VoiceTranscribeResult.confidence " +
+      "to unblock pre-existing harper-vision tsc drift so backend bun build goes green.",
+    files: [
+      "backend-hono/src/services/riskflow/sse-broadcaster.ts",
+      "backend-hono/src/services/riskflow/econ-bridge.ts",
+      "backend-hono/src/routes/econ/index.ts",
+      "backend-hono/src/services/voice-service.ts",
+      "frontend/components/feed/EconCountdownModal.tsx",
+      "frontend/components/feed/RiskFlowMain.tsx",
+      "sprint-md/S34-T8-countdown-modal.md",
+    ],
+  },
+  {
     date: "2026-04-23T16:20:00",
     agent: "claude-code",
     summary:

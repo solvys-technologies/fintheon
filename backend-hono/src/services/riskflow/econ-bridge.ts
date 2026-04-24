@@ -1,8 +1,11 @@
 // [claude-code 2026-03-11] Bridge: econ prints → RiskFlow feed items
 // When an economic release actual is detected, inject it as a high-priority RiskFlow item
 // so it flows into the IV scoring engine and appears in the feed.
+// [claude-code 2026-04-24] S34-T8: fire broadcastEconPrint SSE frame after successful insert
+// so the frontend EconCountdownModal can cross-fade to the actual-vs-forecast view.
 
 import { calculateIVScore } from "../analysis/iv-scorer.js";
+import { broadcastEconPrint } from "./sse-broadcaster.js";
 
 interface EconPrintEvent {
   eventName: string;
@@ -99,6 +102,16 @@ export async function injectEconPrintToFeed(
     console.log(
       `[EconBridge] Injected: ${headline} (macroLevel=${macroLevel})`,
     );
+
+    broadcastEconPrint({
+      eventName: print.eventName,
+      actual: print.actual,
+      forecast: print.forecast ?? null,
+      previous: print.previous ?? null,
+      surprisePercent: econData.surprisePercent,
+      beatMiss: direction as "beat" | "miss" | "inline",
+      printedAt: new Date().toISOString(),
+    });
   } catch (err) {
     console.error("[EconBridge] Failed to inject econ print:", err);
   }

@@ -30,6 +30,7 @@ export interface VoiceTranscribeResult {
   model: string;
   provider: "hermes-sidecar" | "fallback";
   words?: { word: string; start: number; end: number }[];
+  confidence?: number;
 }
 
 export interface VoiceSynthesisResult {

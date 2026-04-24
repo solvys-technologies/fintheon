@@ -6,7 +6,9 @@
 //   priority filter replaced by PriorityFilterMenu (multi-select, already wired elsewhere).
 // [claude-code 2026-04-19] Refresh motion uses Unicode spinners: CIRCLE-QUARTERS in the
 //   header button, METER→ARROW-3 as a top-bar shimmer during refresh, ARROW-3 for loadingMore.
+// [claude-code 2026-04-24] S34-T8: mount EconCountdownModal overlay inside feed pane.
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { EconCountdownModal } from "./EconCountdownModal";
 import { Bell, BellOff } from "lucide-react";
 import { CircleQuarters, MeterToShimmer } from "../icon-bank/UnicodeSpinners";
 import { Loader2 } from "lucide-react";
@@ -161,8 +163,9 @@ export function RiskFlowMain() {
   return (
     <div
       ref={scrollContainerRef}
-      className="h-full overflow-y-auto px-0 pt-0 pb-0"
+      className="relative h-full overflow-y-auto px-0 pt-0 pb-0"
     >
+      <EconCountdownModal />
       <div className="flex items-center justify-between mb-2 mt-1 px-3">
         <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.12em]">
           <span className="text-[var(--fintheon-accent)] font-semibold tracking-[0.15em]">

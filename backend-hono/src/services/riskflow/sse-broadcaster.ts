@@ -1,3 +1,4 @@
+// [claude-code 2026-04-24] S34-T8: broadcastEconPrint SSE channel for countdown modal updates
 import type { FeedItem, NewsSource } from "../../types/riskflow.js";
 
 type SSEClient = {
@@ -80,4 +81,29 @@ export function broadcastProposal(proposal: ProposalBroadcast) {
   };
 
   broadcastLevel4(item);
+}
+
+export interface EconPrintPayload {
+  eventId?: string;
+  eventName: string;
+  actual: number;
+  forecast?: number | null;
+  previous?: number | null;
+  surprisePercent?: number | null;
+  beatMiss: "beat" | "miss" | "inline";
+  printedAt: string;
+}
+
+export function broadcastEconPrint(payload: EconPrintPayload) {
+  const frame = `event: econ-print\ndata: ${JSON.stringify(payload)}\n\n`;
+  const encoder = new TextEncoder();
+
+  clients.forEach((client) => {
+    try {
+      client.controller.enqueue(encoder.encode(frame));
+    } catch (error) {
+      console.warn("[SSE] Removing client due to econ-print enqueue failure", error);
+      removeClient(client.controller);
+    }
+  });
 }
