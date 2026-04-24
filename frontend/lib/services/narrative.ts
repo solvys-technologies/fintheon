@@ -91,6 +91,15 @@ export class NarrativeService {
     const params = since ? `?since=${encodeURIComponent(since)}` : "";
     return this.client.get(`/api/narrative/catalysts${params}`);
   }
+
+  async summarizeCluster(input: {
+    groupId: string;
+    narrativeSlug?: string;
+    narrativeTitle?: string;
+    cards: ClusterSummaryCardPayload[];
+  }): Promise<ClusterSummaryResponse> {
+    return this.client.post("/api/narrative/cluster-summary", input);
+  }
 }
 
 /** Shape returned by GET /api/narrative/catalysts — maps to CatalystCard */

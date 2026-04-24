@@ -9,6 +9,31 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T18:10:00",
+    agent: "claude-code",
+    summary:
+      "S36 ClusterBeam — NarrativeFlow cluster UX rebuild. Replaces the cramped inline 400px expander on AggregateCardNode with a right-docked ClusterBeamPanel (420px, mirrors TimelineOverlay's translate-x 300ms init). Panel leads with an AI summary from new POST /api/narrative/cluster-summary (Hermes via Strands invokeAgent → deterministic no-key fallback → in-memory 10-min TTL + Supabase cluster_summaries warm cache, sha1(sorted cardIds) key). Route is JWT-gated + Zod-validated + 30/min per-user rate-limit. New ShockLayer fires a gold dot along cluster→hub on panel open via Web Animations API (no box-shadow, no backdrop-blur — flat per feedback_no_glass_effects), with absorb-flash on arrival and reverse shock-on-arrival when new cards land in an already-open cluster. New ClusterScrubber drag-to-replay strip, DensityMeter sparkline in collapsed headers, hover-echo from panel rows back to the canvas. Fuse-shimmer strip untouched per feedback_fuses_are_sacred. Migration 20260424180000_cluster_summaries pending supabase db push. Frontend tsc clean, vite build clean (3.62s, no new chunk issues), backend bun build clean, local curl smoke: 200 OK + Zod 400 on bad input + cached:true on re-call. Branch: s36-clusterbeam.",
+    files: [
+      "supabase/migrations/20260424180000_cluster_summaries.sql",
+      "backend-hono/src/types/cluster-summary.ts",
+      "backend-hono/src/services/narrative/cluster-summarizer.ts",
+      "backend-hono/src/services/ai/agent-instructions/cluster-summarizer.md",
+      "backend-hono/src/routes/narrative/cluster-summary.ts",
+      "backend-hono/src/routes/narrative/index.ts",
+      "backend-hono/src/routes/index.ts",
+      "frontend/contexts/ClusterBeamContext.tsx",
+      "frontend/hooks/useClusterSummary.ts",
+      "frontend/lib/services/narrative.ts",
+      "frontend/components/narrative/ClusterBeamPanel.tsx",
+      "frontend/components/narrative/ClusterScrubber.tsx",
+      "frontend/components/narrative/DensityMeter.tsx",
+      "frontend/components/narrative/ShockLayer.tsx",
+      "frontend/components/narrative/AggregateCardNode.tsx",
+      "frontend/components/narrative/NarrativeForceCanvas.tsx",
+      "frontend/index.css",
+    ],
+  },
+  {
     date: "2026-04-24T18:00:00",
     agent: "claude-code",
     summary:
