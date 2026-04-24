@@ -673,13 +673,12 @@ function MainLayoutInner() {
                       <RiskFlowMini
                         collapsed={riskFlowCollapsed}
                         onToggleCollapsed={() => {
-                          // Always route through a state that guarantees a peek-footer is visible:
-                          // - balanced  → widgetsOnly (peek-footer at bottom)
-                          // - feedOnly  → riskFlowCollapsed=true (peek-footer replaces feed)
-                          // - widgetsOnly → toggle riskFlowCollapsed (no-op visible, kept for parity)
-                          if (strategiumPaneMode === "balanced") {
-                            updateStrategiumPaneMode("widgetsOnly");
-                          } else if (strategiumPaneMode === "feedOnly") {
+                          // [S37] Balanced-mode collapse now reaches the 168px mini card instead
+                          // of jumping to widgetsOnly (which fully hid the feed and left the user
+                          // unable to restore). In each mode we toggle the riskFlowCollapsed flag
+                          // directly — balanced + collapsed = 168px mini, feedOnly + collapsed
+                          // = peek-footer, widgetsOnly still relies on its own peek-footer.
+                          if (strategiumPaneMode === "feedOnly") {
                             setRiskFlowCollapsed(true);
                           } else {
                             setRiskFlowCollapsed((v) => !v);

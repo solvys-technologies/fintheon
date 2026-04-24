@@ -9,6 +9,25 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T20:30:00",
+    agent: "claude-code",
+    summary:
+      "S37 Refinement Engine polish + Strategium fixes. (1) HOTFIX: RiskFlow mini-card unreachable after collapse — decoupled missionControlCollapsed from riskFlowCollapsed (useLayoutState.ts) and rewired the balanced-mode collapse button to hit the 168px mini state directly instead of jumping to widgetsOnly. Default boot now leaves riskFlowCollapsed=false so the feed is visible on first open. (2) Refinement Engine typography bumped — headers promoted to var(--font-heading), body to 12–13px, chromes spaced for robustness. (3) Advanced pane right-justified with a new RefinementEditLockModal; locked by default as a 'glass of a data center' (always readable, mutations gated by a transparent overlay). Same SHA-256 password gate as Developer Settings — rotated to PricedInResearch122356 across both surfaces. (4) AutopilotWidget iOS-pill master toggle + ● Active/Idle dots replaced with horizontal NothingFuse fills (same vocabulary as RiskFlow vertical fuses; master = on/off fill, category = enabledCount/total ratio fill). (5) Approvals inbox: approving the most-recent regime proposal now fades + clears the entire regime queue (stale suggestions drop once the newest is adjudicated). Dropped backdrop-blur + box-shadow from proposal cards per feedback_no_glass_effects. (6) S24-T3 'group fuses' shipped: new POST /api/scoring/presets + /api/scoring/sensitivities (GET/PATCH) backed by scoring_user_sensitivity + scoring_presets tables with RLS (user-scoped + public builtin presets). Graceful degrade to in-memory cache when Supabase is unavailable. (7) RECONCILIATION: prior changelog claimed S24-T3 shipped — correct for the scoring engine (scarcity gate, shadow mode, rescore-all) but the USER-FACING preset/sensitivity UI and its persistence API were missing; that frontend surface is what S37 closes. Frontend tsc clean, vite build pending validation. Migration 20260424190000_scoring_sensitivity_and_presets.sql pending supabase db push. Branch: s37-refinement-polish.",
+    files: [
+      "frontend/hooks/useLayoutState.ts",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/refinement/RefinementEngine.tsx",
+      "frontend/components/refinement/AdvancedPane.tsx",
+      "frontend/components/refinement/RefinementEditLockModal.tsx",
+      "frontend/components/admin/ApprovalsPage.tsx",
+      "frontend/components/mission-control/AlgoStatusWidget.tsx",
+      "frontend/lib/dev-settings-auth.ts",
+      "backend-hono/src/routes/scoring/index.ts",
+      "backend-hono/src/services/scoring/preset-api.ts",
+      "supabase/migrations/20260424190000_scoring_sensitivity_and_presets.sql",
+    ],
+  },
+  {
     date: "2026-04-24T18:10:00",
     agent: "claude-code",
     summary:

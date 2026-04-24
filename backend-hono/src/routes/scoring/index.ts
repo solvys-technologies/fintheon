@@ -1,3 +1,4 @@
+// [claude-code 2026-04-24] S37: added /api/scoring/presets (GET/POST) + /api/scoring/sensitivities (GET/PATCH) — the user-facing CRUD the Refinement Engine fuses need. The S24-T3 backend engine (scarcity gate, shadow mode, rescore-all) shipped earlier; only the preset/sensitivity persistence was missing.
 // [claude-code 2026-04-19] S24 unify: T4 monitoring routes + T3 shadow-mode + T3 rescore-status
 // [claude-code 2026-04-19] S24-T3: /api/scoring/* — shadow stats + V4 utilities
 // [claude-code 2026-04-18] S24-T4: Scoring admin routes — monitoring loop + shadow stats
@@ -19,6 +20,12 @@ import {
   isRescoreInProgress,
   getLastRescoreStats,
 } from "../../services/scoring/rescore-all.js";
+import {
+  getUserSensitivity,
+  setUserSensitivity,
+  listPresets,
+  savePreset,
+} from "../../services/scoring/preset-api.js";
 import { sql, isDatabaseAvailable } from "../../config/database.js";
 
 const log = createLogger("ScoringRoutes");
@@ -180,6 +187,81 @@ export function createScoringRoutes(): Hono {
       inProgress: isRescoreInProgress(),
       last: getLastRescoreStats(),
     });
+  });
+
+  // ── [S37] Group sensitivity (user-scoped) ─────────────────────────────
+  // GET /api/scoring/sensitivities → { sensitivities: SensitivityValues }
+  router.get("/sensitivities", async (c: Context) => {
+    const userId = c.get("userId") as string | undefined;
+    if (!userId || userId === "anonymous") {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+    try {
+      const sensitivities = await getUserSensitivity(userId);
+      return c.json({ sensitivities });
+    } catch (err) {
+      log.error("getUserSensitivity failed", { error: String(err) });
+      return c.json({ error: "sensitivity read failed" }, 500);
+    }
+  });
+
+  // PATCH /api/scoring/sensitivities { sensitivities } → { ok: true }
+  router.patch("/sensitivities", async (c: Context) => {
+    const userId = c.get("userId") as string | undefined;
+    if (!userId || userId === "anonymous") {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+    const body = (await c.req.json().catch(() => null)) as {
+      sensitivities?: unknown;
+    } | null;
+    if (!body || typeof body.sensitivities !== "object") {
+      return c.json({ error: "sensitivities object required" }, 400);
+    }
+    try {
+      const applied = await setUserSensitivity(userId, body.sensitivities);
+      return c.json({ ok: true, sensitivities: applied });
+    } catch (err) {
+      log.error("setUserSensitivity failed", { error: String(err) });
+      return c.json({ error: "sensitivity write failed" }, 500);
+    }
+  });
+
+  // ── [S37] Presets (user-scoped + builtins) ────────────────────────────
+  // GET /api/scoring/presets → { presets: ScoringPreset[] }
+  router.get("/presets", async (c: Context) => {
+    const userId = c.get("userId") as string | undefined;
+    if (!userId || userId === "anonymous") {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+    try {
+      const presets = await listPresets(userId);
+      return c.json({ presets });
+    } catch (err) {
+      log.error("listPresets failed", { error: String(err) });
+      return c.json({ error: "preset read failed" }, 500);
+    }
+  });
+
+  // POST /api/scoring/presets { name, sensitivities } → { preset }
+  router.post("/presets", async (c: Context) => {
+    const userId = c.get("userId") as string | undefined;
+    if (!userId || userId === "anonymous") {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+    const body = (await c.req.json().catch(() => null)) as {
+      name?: string;
+      sensitivities?: unknown;
+    } | null;
+    if (!body || typeof body.name !== "string" || !body.sensitivities) {
+      return c.json({ error: "name + sensitivities required" }, 400);
+    }
+    try {
+      const preset = await savePreset(userId, body.name, body.sensitivities);
+      return c.json({ preset });
+    } catch (err) {
+      log.error("savePreset failed", { error: String(err) });
+      return c.json({ error: "preset write failed" }, 500);
+    }
   });
 
   return router;

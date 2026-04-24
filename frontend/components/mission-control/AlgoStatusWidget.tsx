@@ -1,9 +1,11 @@
-import { Cpu, Circle } from "lucide-react";
+// [claude-code 2026-04-24] S37: converted the iOS-pill master toggle + "● Active/Idle" indicators into horizontal NothingFuse fills — same vertical-fuse vocabulary as RiskFlow cards, rotated 90°. Full fill = enabled/active, empty = disabled/idle. Master fuse tracks algoEnabled; each strategy-category fuse tracks enabledCount / totalCount.
+import { Cpu } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useBackend } from "../../lib/backend";
 import { useState, useEffect } from "react";
 import { LockedCard } from "../ui/LockedCard";
+import { NothingFuse } from "../shared/NothingFuse";
 import { IS_INTERNAL_BUILD } from "../../lib/internal-build";
 
 export function AlgoStatusWidget() {
@@ -66,31 +68,67 @@ export function AlgoStatusWidget() {
 
   const content = (
     <div className="p-4">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Cpu className="w-4 h-4 text-[var(--fintheon-accent)]" />
           <h3 className="text-sm font-semibold text-[var(--fintheon-accent)]">
             Autopilot
           </h3>
         </div>
+        {/* [S37] Master toggle = horizontal fuse. Full fill when on, empty when off. */}
         <button
           onClick={handleToggleAlgo}
-          className={`relative w-10 h-5 rounded-full transition-colors ${
-            algoEnabled ? "bg-emerald-500" : "bg-zinc-700"
-          }`}
+          title={
+            algoEnabled
+              ? "Autopilot ON — tap to stop"
+              : "Autopilot OFF — tap to start"
+          }
+          aria-pressed={algoEnabled}
+          className="flex items-center gap-2 py-1 px-2 hover:bg-[var(--fintheon-accent)]/8 transition-colors"
+          style={{
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+          }}
         >
-          <div
-            className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-              algoEnabled ? "translate-x-[18px]" : "translate-x-0"
-            }`}
-          />
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 9,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: algoEnabled
+                ? "var(--fintheon-accent)"
+                : "var(--fintheon-muted)",
+              opacity: algoEnabled ? 1 : 0.55,
+              minWidth: 22,
+              textAlign: "right",
+            }}
+          >
+            {algoEnabled ? "ON" : "OFF"}
+          </span>
+          <div style={{ width: 44 }}>
+            <NothingFuse
+              value={algoEnabled ? 1 : 0}
+              color={
+                algoEnabled
+                  ? "var(--fintheon-accent)"
+                  : "var(--fintheon-muted)"
+              }
+              orientation="horizontal"
+              thickness={6}
+              segments={4}
+            />
+          </div>
         </button>
       </div>
       <div className="space-y-3">
         {categories.map((category) => {
+          const total = category.strategies.length;
           const enabledCount = category.strategies.filter(
             (s) => tradingModels[s.key as keyof typeof tradingModels],
           ).length;
+          const ratio = total === 0 ? 0 : enabledCount / total;
           const hasEnabled = enabledCount > 0;
 
           return (
@@ -99,21 +137,34 @@ export function AlgoStatusWidget() {
                 <span className="text-gray-300 font-medium">
                   {category.name}
                 </span>
-                <div className="flex items-center gap-2">
-                  <Circle
-                    className={`w-2 h-2 fill-current ${
-                      hasEnabled ? "text-emerald-400" : "text-gray-600"
-                    }`}
-                  />
-                  <span
-                    className={
-                      hasEnabled ? "text-emerald-400" : "text-gray-500"
-                    }
-                  >
-                    {hasEnabled ? "Active" : "Idle"}
-                  </span>
-                </div>
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 9,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: hasEnabled
+                      ? "var(--fintheon-bullish)"
+                      : "var(--fintheon-muted)",
+                    opacity: hasEnabled ? 0.9 : 0.5,
+                  }}
+                >
+                  {hasEnabled ? `Active · ${enabledCount}/${total}` : "Idle"}
+                </span>
               </div>
+              {/* [S37] Horizontal fuse replaces the `● Active / ● Idle` dot. Fill ratio
+                  reflects how many sub-strategies inside the category are live. */}
+              <NothingFuse
+                value={ratio}
+                color={
+                  hasEnabled
+                    ? "var(--fintheon-bullish)"
+                    : "var(--fintheon-muted)"
+                }
+                orientation="horizontal"
+                thickness={4}
+                segments={Math.max(total, 4)}
+              />
             </div>
           );
         })}

@@ -1,3 +1,4 @@
+// [claude-code 2026-04-24] S37: when the most-recent regime proposal is approved, the entire regime queue fades out and clears — historic regime suggestions are stale once the newest has been adjudicated, so they're silently dropped rather than lingering.
 // [claude-code 2026-04-18] S24-T4: Admin approvals inbox — regime / lexicon / walk-back proposals
 import { useState, useEffect, useCallback } from "react";
 import { CheckCircle2, XCircle, Inbox, ExternalLink } from "lucide-react";
@@ -76,6 +77,10 @@ export function ApprovalsPage() {
     walkBack: false,
   });
   const [pendingDecision, setPendingDecision] = useState<string | null>(null);
+  // [S37] When the newest regime proposal is approved, every remaining regime proposal
+  // animates out together. We mark them as fading first (drives CSS opacity transition),
+  // then wipe the regime queue once the animation finishes.
+  const [fadingIds, setFadingIds] = useState<Set<string>>(new Set());
 
   const loadTab = useCallback(async (which: ProposalTab) => {
     try {
@@ -112,6 +117,18 @@ export function ApprovalsPage() {
   const decide = useCallback(
     async (proposalId: string, action: "approve" | "deny") => {
       setPendingDecision(proposalId);
+      // [S37] Detect "most-recent regime approval" BEFORE the state mutation so we
+      // can decide whether to flush the whole queue. Most-recent = newest by
+      // created_at (we sort desc when rendering).
+      const queueSnapshot = items[tab];
+      const newest = [...queueSnapshot].sort((a, b) =>
+        b.created_at.localeCompare(a.created_at),
+      )[0];
+      const shouldFlushRegimeQueue =
+        tab === "regime" &&
+        action === "approve" &&
+        newest?.id === proposalId &&
+        queueSnapshot.length > 1;
       try {
         const token = await getAccessToken();
         const res = await fetch(
@@ -126,11 +143,32 @@ export function ApprovalsPage() {
           `Proposal ${action === "approve" ? "approved" : "denied"}`,
           action === "approve" ? "success" : "info",
         );
-        // Remove from local list optimistically
-        setItems((prev) => ({
-          ...prev,
-          [tab]: prev[tab].filter((p) => p.id !== proposalId),
-        }));
+        if (shouldFlushRegimeQueue) {
+          // Fade every other regime proposal, then wipe the list.
+          const toFade = queueSnapshot
+            .filter((p) => p.id !== proposalId)
+            .map((p) => p.id);
+          setFadingIds((prev) => {
+            const next = new Set(prev);
+            for (const id of toFade) next.add(id);
+            return next;
+          });
+          // Remove the approved one immediately; let the rest fade for 350ms.
+          setItems((prev) => ({
+            ...prev,
+            regime: prev.regime.filter((p) => p.id !== proposalId),
+          }));
+          window.setTimeout(() => {
+            setItems((prev) => ({ ...prev, regime: [] }));
+            setFadingIds(new Set());
+          }, 360);
+        } else {
+          // Normal single-item removal.
+          setItems((prev) => ({
+            ...prev,
+            [tab]: prev[tab].filter((p) => p.id !== proposalId),
+          }));
+        }
       } catch (err) {
         addToast(
           "Decision failed",
@@ -141,7 +179,7 @@ export function ApprovalsPage() {
         setPendingDecision(null);
       }
     },
-    [tab, addToast, getAccessToken],
+    [tab, items, addToast, getAccessToken],
   );
 
   const currentItems = items[tab];
@@ -230,6 +268,7 @@ export function ApprovalsPage() {
                 tab={tab}
                 proposal={p}
                 disabled={pendingDecision === p.id}
+                fading={fadingIds.has(p.id)}
                 onApprove={() => void decide(p.id, "approve")}
                 onDeny={() => void decide(p.id, "deny")}
               />
@@ -245,12 +284,14 @@ function ProposalCard({
   tab,
   proposal,
   disabled,
+  fading,
   onApprove,
   onDeny,
 }: {
   tab: ProposalTab;
   proposal: BaseProposal;
   disabled: boolean;
+  fading?: boolean;
   onApprove: () => void;
   onDeny: () => void;
 }) {
@@ -263,16 +304,19 @@ function ProposalCard({
 
   return (
     <div
+      data-fading={fading ? "true" : undefined}
       style={{
-        // [claude-code 2026-04-19] Glassmorphic proposal card (TP rule: no kanban).
+        // [claude-code 2026-04-24] S37: dropped backdrop-blur + box-shadow per feedback_no_glass_effects.
+        // Flat surface with accent-tinted border; opacity transition drives the queue-fade animation.
         border:
-          "1px solid color-mix(in srgb, var(--fintheon-accent) 18%, transparent)",
-        borderRadius: 12,
+          "1px solid color-mix(in srgb, var(--fintheon-accent) 22%, transparent)",
+        borderRadius: 4,
         padding: "14px 16px",
-        background: "var(--fintheon-glass-bg)",
-        backdropFilter: "blur(24px) saturate(1.4)",
-        WebkitBackdropFilter: "blur(24px) saturate(1.4)",
-        boxShadow: "var(--fintheon-glass-shadow)",
+        background: "var(--fintheon-surface)",
+        opacity: fading ? 0 : 1,
+        transform: fading ? "translateX(24px)" : "translateX(0)",
+        transition: "opacity 320ms ease-out, transform 320ms ease-out",
+        pointerEvents: fading ? "none" : "auto",
       }}
     >
       <div

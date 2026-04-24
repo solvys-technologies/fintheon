@@ -1,3 +1,4 @@
+// [claude-code 2026-04-24] S37 fix: decouple missionControlCollapsed from riskFlowCollapsed. The forced sync made the 168px RiskFlow mini-card state unreachable — expanding Strategium from the chevron would reset riskFlowCollapsed=false and skip the mini.
 // [claude-code 2026-04-10] S9-T3: Extracted layout state from MainLayout
 import { useState, useCallback, useEffect, useRef } from "react";
 import type { PanelPosition } from "../components/layout/DraggablePanel";
@@ -21,20 +22,12 @@ export function useLayoutState({
   // [claude-code 2026-04-19] Strategium always boots closed per user request.
   // Persisted state would fight with "restore to last route" — keep the panel
   // explicitly hidden on every boot; user re-opens manually if wanted.
-  const [missionControlCollapsed, setMissionControlCollapsedRaw] =
+  const [missionControlCollapsed, setMissionControlCollapsed] =
     useState(true);
-  const [riskFlowCollapsed, setRiskFlowCollapsed] = useState(true);
-  // 4c: Link Strategium ↔ RiskFlow collapse — always in sync
-  const setMissionControlCollapsed = useCallback(
-    (v: boolean | ((prev: boolean) => boolean)) => {
-      setMissionControlCollapsedRaw((prev) => {
-        const next = typeof v === "function" ? v(prev) : v;
-        setRiskFlowCollapsed(next);
-        return next;
-      });
-    },
-    [],
-  );
+  // [S37] Start collapsed=false on boot so users see the RiskFlow feed, not a 168px
+  //       mini stub with no feed visible. Toggling from here is explicit — no forced
+  //       sync with missionControlCollapsed (that's what made the mini unreachable).
+  const [riskFlowCollapsed, setRiskFlowCollapsed] = useState(false);
   const [tapeCollapsed, setTapeCollapsed] = useState(false);
   const [combinedPanelCollapsed, setCombinedPanelCollapsed] = useState(false);
   const [combinedTapeCollapsed, setCombinedTapeCollapsed] = useState(false);
