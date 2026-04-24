@@ -1,12 +1,7 @@
 // [claude-code 2026-03-05] Expandable econ event row: importance dots, US flag, print table.
 // [claude-code 2026-03-11] Track 6: Volume bars (height=importance), beat/miss check/X, more row spacing.
 import { useState, useEffect } from "react";
-import {
-  ChevronDown,
-  ChevronRight,
-  Check,
-  X,
-} from "@/components/shared/iso-icons";
+import { ChevronDown, ChevronRight, Check, X } from "lucide-react";
 import { useEconCalendar } from "../../contexts/EconCalendarContext";
 import type { EconEventItem, EconPrintItem } from "../../lib/services";
 

@@ -13,7 +13,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   Globe,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useSettings, type APIKeys } from "../contexts/SettingsContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";

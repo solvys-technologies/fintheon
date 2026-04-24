@@ -1,10 +1,5 @@
 import { useState } from "react";
-import {
-  ChevronDown,
-  ChevronRight,
-  Wrench,
-  Loader2,
-} from "@/components/shared/iso-icons";
+import { ChevronDown, ChevronRight, Wrench, Loader2 } from "lucide-react";
 import { ToolOutputBubble, type ToolOutputData } from "./ToolOutputBubble";
 
 /* ------------------------------------------------------------------ */

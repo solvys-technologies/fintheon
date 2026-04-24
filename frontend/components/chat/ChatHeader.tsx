@@ -5,8 +5,10 @@
 // Clipboard-copy pickup-code flow deprecated in favor of active dispatch via /api/relay/dispatch.
 // [claude-code 2026-04-04] T4: History dropdown — Clock button toggles dropdown instead of modal
 import { useState } from "react";
-import { Scroll, Plus, Clock } from "@/components/shared/iso-icons";
+import { Scroll, Plus, Clock } from "lucide-react";
 import { SessionsDropdown } from "./SessionsDropdown";
+// [claude-code 2026-04-23] Harper Vision — screen capture status indicator
+import { VisionStatus } from "../harper-vision/VisionStatus";
 
 const HEADER_BUTTON_CLASS =
   "w-11 h-11 flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors disabled:opacity-40";
@@ -34,6 +36,7 @@ export function ChatHeader({
     <div className="bg-transparent">
       <div className="h-14 flex items-center justify-end px-4 mt-0.5">
         <div className="flex items-center gap-1">
+          <VisionStatus />
           <button
             onClick={onRunMDB}
             disabled={isLoading}

@@ -13,7 +13,7 @@ import {
   useLayoutEffect,
   useEffect,
 } from "react";
-import { Loader2 } from "@/components/shared/iso-icons";
+import { Loader2 } from "lucide-react";
 import type {
   SanctumData,
   SanctumPreset,

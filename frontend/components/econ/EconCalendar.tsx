@@ -1,7 +1,7 @@
 // [claude-code 2026-03-11] Native Economic Calendar — replaced TradingView iframe (X-Frame-Options blocked)
 // [claude-code 2026-03-12] Reverted to TradingView widget embed — full-tab with importance filter
 import { useEffect, useRef, useState } from "react";
-import { CalendarDays, Filter } from "@/components/shared/iso-icons";
+import { CalendarDays, Filter } from "lucide-react";
 
 type ImportanceFilter = "all" | "medium" | "high";
 

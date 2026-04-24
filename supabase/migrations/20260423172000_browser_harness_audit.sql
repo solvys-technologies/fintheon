@@ -1,0 +1,3 @@
+-- [claude-code 2026-04-24] Placeholder stub for migration already applied on remote.
+-- Canonical SQL lives in supabase_migrations.schema_migrations.statements on the Fintheon project.
+-- This stub exists so supabase CLI's glob-by-timestamp check passes.

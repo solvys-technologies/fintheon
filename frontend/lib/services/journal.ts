@@ -163,6 +163,38 @@ export class AgentPerformanceService {
   }
 }
 
+// [claude-code 2026-04-23] S30-T2: SessionJournalService — thin client for PUT /api/session-journal.
+// Backend endpoint ships in T3; gracefully degrades until then.
+import type { SessionJournal, SessionJournalDraft } from "../../../shared";
+
+export class SessionJournalService {
+  constructor(private client: ApiClient) {}
+
+  /** Fetch the current user's journal entry for a given date (defaults to today). */
+  async get(date?: string): Promise<SessionJournal | null> {
+    try {
+      const query = date ? `?date=${encodeURIComponent(date)}` : "";
+      return await this.client.get<SessionJournal>(
+        `/api/session-journal${query}`,
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  /** Upsert the current user's journal entry. */
+  async save(draft: SessionJournalDraft): Promise<SessionJournal | null> {
+    try {
+      return await this.client.put<SessionJournal>(
+        "/api/session-journal",
+        draft,
+      );
+    } catch {
+      return null;
+    }
+  }
+}
+
 // Blindspots Service
 export interface BlindspotItem {
   id: number;

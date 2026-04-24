@@ -1,12 +1,7 @@
 // [claude-code 2026-03-31] S13-T2: Added TradePlanCard + TradePlanStatus integration
 // [claude-code 2026-03-23] Browser Use Phase 2 — ProposalCard feed component
 import { useState } from "react";
-import {
-  ArrowUpRight,
-  ArrowDownRight,
-  Check,
-  X,
-} from "@/components/shared/iso-icons";
+import { ArrowUpRight, ArrowDownRight, Check, X } from "lucide-react";
 import type { ProposalData } from "../../types/feed";
 import { TradePlanCard } from "../proposals/TradePlanCard";
 import { TradePlanStatus } from "../proposals/TradePlanStatus";

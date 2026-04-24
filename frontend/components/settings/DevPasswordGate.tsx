@@ -1,6 +1,6 @@
 // [claude-code 2026-03-27] S2-T6: Password gate UI — blocks Developer tab until correct password entered
 import { useState } from "react";
-import { Lock } from "@/components/shared/iso-icons";
+import { Lock } from "lucide-react";
 import { authenticateDev } from "../../lib/dev-settings-auth";
 
 interface DevPasswordGateProps {

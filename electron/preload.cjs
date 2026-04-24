@@ -1,6 +1,7 @@
 // [claude-code 2026-03-16] Added auto-update IPC bridge
 // [claude-code 2026-03-23] Browser Use Phase 2 — browserUse IPC bridge
 // [claude-code 2026-03-24] Auth deep link callback bridge for Supabase OAuth
+// [claude-code 2026-04-23] Harper Vision — screen capture IPC bridge
 const { contextBridge, ipcRenderer } = require("electron");
 
 let cliOutputCallback = null;
@@ -78,6 +79,18 @@ contextBridge.exposeInMainWorld("electron", {
   browserUse: {
     runCommand: (args) => ipcRenderer.invoke("browser-use-command", args),
     getStatus: () => ipcRenderer.invoke("browser-use-status"),
+  },
+
+  // [claude-code 2026-04-23] Harper Vision — screen + audio capture bridge
+  harperVision: {
+    captureScreen: () => ipcRenderer.invoke("harper-vision:capture-screen"),
+    captureWindow: (id) =>
+      ipcRenderer.invoke("harper-vision:capture-window", id),
+    getSources: () => ipcRenderer.invoke("harper-vision:get-sources"),
+    startCapture: (sessionId) =>
+      ipcRenderer.invoke("harper-vision:start-capture", sessionId),
+    stopCapture: () => ipcRenderer.invoke("harper-vision:stop-capture"),
+    getStatus: () => ipcRenderer.invoke("harper-vision:get-status"),
   },
 });
 

@@ -7,7 +7,7 @@
 //   body, ticker chips, EmbedPreview peek of original post, footer (IV fuse + Ask CAO).
 //   Stagger-in so header lands first, body second, embed third, footer last.
 import { motion } from "framer-motion";
-import { ArrowUpRight } from "../shared/iso-icons";
+import { ArrowUpRight } from "lucide-react";
 import { DetailHeader } from "./DetailHeader";
 import { DetailFooter } from "./DetailFooter";
 import { EmbedPreview } from "../embed/EmbedPreview";

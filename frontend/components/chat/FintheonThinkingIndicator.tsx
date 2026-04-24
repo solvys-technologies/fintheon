@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight } from "@/components/shared/iso-icons";
-import { HelixSpinner } from "../icon-bank/agent-spinners";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 const THINKING_PHRASES = [
   "Surveying the arena...",

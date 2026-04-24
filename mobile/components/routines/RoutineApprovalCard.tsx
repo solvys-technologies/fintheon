@@ -2,7 +2,7 @@
 // Slide-up sheet with one large card per pending routine — Approve / Deny.
 
 import { useEffect, useState } from "react";
-import { Check, ChevronDown, RefreshCw, X } from "../shared/iso-icons";
+import { Check, ChevronDown, RefreshCw, X } from "lucide-react";
 import { BottomSheet } from "../shared/BottomSheet";
 import { useHaptic } from "../../hooks/useHaptic";
 import {

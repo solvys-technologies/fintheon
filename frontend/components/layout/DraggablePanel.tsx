@@ -1,6 +1,6 @@
 // [claude-code 2026-04-17] Migrated to useDraggable hook (pointer events + rAF + transform3d); grip-only handle; removed shadow-2xl per Nothing-Design
 import { useRef, ReactNode } from "react";
-import { GripVertical, X } from "@/components/shared/iso-icons";
+import { GripVertical, X } from "lucide-react";
 import { useDraggable } from "../../hooks/useDraggable";
 
 export type PanelPosition = "left" | "right" | "floating";

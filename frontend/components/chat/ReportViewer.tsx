@@ -1,5 +1,5 @@
 // [claude-code 2026-03-06] Report viewer: iframe/popup for agent-generated HTML dashboards
-import { X, ExternalLink, Maximize2 } from "@/components/shared/iso-icons";
+import { X, ExternalLink, Maximize2 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /*  Utilities                                                          */

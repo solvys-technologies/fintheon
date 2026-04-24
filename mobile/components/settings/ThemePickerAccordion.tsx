@@ -7,7 +7,7 @@
 //   sits between the presets and the Nothing Design specials.
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown } from "../shared/iso-icons";
+import { ChevronDown } from "lucide-react";
 import type { ThemeConfig } from "@frontend/lib/theme";
 import { useHaptic } from "../../hooks/useHaptic";
 

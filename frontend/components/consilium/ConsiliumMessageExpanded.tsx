@@ -1,6 +1,6 @@
 // [claude-code 2026-03-19] Full-width message detail slide-over for Consilium
 import { useState } from "react";
-import { X, Copy, Check } from "@/components/shared/iso-icons";
+import { X, Copy, Check } from "lucide-react";
 import { AgentBadge } from "./AgentBadge";
 import type { BoardroomMessage } from "./ConsiliumMessage";
 

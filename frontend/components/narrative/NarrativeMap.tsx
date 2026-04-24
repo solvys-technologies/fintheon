@@ -5,12 +5,7 @@
 // [claude-code 2026-03-28] S5-T3: CatalystModal + auto-seed pipeline wired in
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useHarperOps } from "../../hooks/useHarperOps";
-import {
-  Eye,
-  EyeOff,
-  ChevronDown,
-  Calendar,
-} from "@/components/shared/iso-icons";
+import { Eye, EyeOff, ChevronDown, Calendar } from "lucide-react";
 import { useNarrative } from "../../contexts/NarrativeContext";
 import NarrativeForceCanvas from "./NarrativeForceCanvas";
 import { TimelineScrubber } from "./TimelineScrubber";

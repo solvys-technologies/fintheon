@@ -17,7 +17,7 @@ import {
   XCircle,
   FileText,
   Trash2,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { MDBReportModal } from "./MDBReportModal";
 
 export default function SystemFeed() {

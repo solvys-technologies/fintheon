@@ -6,7 +6,7 @@ import {
   Info,
   ChevronDown,
   ChevronRight,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { COMMANDMENTS } from "./commandments-data";
 import type { Commandment, CommandmentBlockLevel } from "./types";
 

@@ -1,11 +1,6 @@
 // [claude-code 2026-04-18] S24-T4: Admin approvals inbox — regime / lexicon / walk-back proposals
 import { useState, useEffect, useCallback } from "react";
-import {
-  CheckCircle2,
-  XCircle,
-  Inbox,
-  ExternalLink,
-} from "@/components/shared/iso-icons";
+import { CheckCircle2, XCircle, Inbox, ExternalLink } from "lucide-react";
 import { useToast } from "../../contexts/ToastContext";
 import { useAuth } from "../../contexts/AuthContext";
 

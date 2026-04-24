@@ -1,15 +1,9 @@
 // [claude-code 2026-04-05] Sessions dropdown — compact list anchored under the Clock icon, no overlay
 // [claude-code 2026-04-19] Loader swapped to HelixVertical (icon-bank) for consistency with chat thinking
 import { useEffect, useState, useCallback, useRef } from "react";
-import {
-  Search,
-  MessageSquare,
-  Plus,
-  Trash2,
-  X,
-} from "@/components/shared/iso-icons";
+import { Search, MessageSquare, Plus, Trash2, X } from "lucide-react";
 import { API_BASE_URL } from "./constants";
-import { HelixSpinner } from "../icon-bank/agent-spinners";
+import { HelixVertical } from "../icon-bank/UnicodeSpinners";
 import { withViewTransition } from "../../lib/view-transition";
 
 interface ConversationSummary {
@@ -236,7 +230,7 @@ export function SessionsModal({
       >
         {loading && (
           <div className="flex items-center justify-center py-8">
-            <HelixSpinner size={12} />
+            <HelixVertical size={12} rows={5} />
           </div>
         )}
 

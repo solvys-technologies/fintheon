@@ -8,7 +8,7 @@ import {
   Loader2,
   Copy,
   Clock,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import type { ToolInvocationPart, ToolResultPart } from "../types";
 
 interface ToolCallPartProps {

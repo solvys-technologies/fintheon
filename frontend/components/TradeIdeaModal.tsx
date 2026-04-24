@@ -10,7 +10,7 @@ import {
   Target,
   Shield,
   AlertTriangle,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import type { TradeIdeaDetail } from "../lib/riskflow-feed";
 
 function formatPrice(n: number): string {

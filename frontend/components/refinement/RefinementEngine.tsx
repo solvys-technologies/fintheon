@@ -3,16 +3,18 @@
 // [claude-code 2026-04-18] S24-T4: Rebuilt — 5 group dials + presets + advanced pane + toasts + rescore preview
 // [claude-code 2026-03-27] S2-T7: Refinement Engine — scoring calibration workbench
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { RefreshCw, Wrench } from "@/components/shared/iso-icons";
+import { RefreshCw, Wrench } from "lucide-react";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import type { CalibrationEntry } from "../../../backend-hono/src/types/calibration";
 import type { CommentatorEntry } from "../../../backend-hono/src/types/commentator";
 import type { SourceAccount } from "../../../backend-hono/src/types/source-account";
+import type { EconWatchFilter } from "../../../backend-hono/src/types/econ-watch-filter";
 import type { MarketRegime } from "../../types/regime";
 import { RegimeControl } from "./RegimeControl";
 import { QuickWeightEditor } from "./QuickWeightEditor";
 import { CommentatorManager } from "./CommentatorManager";
 import { SourceAccountsManager } from "./SourceAccountsManager";
+import { EconFiltersManager } from "./EconFiltersManager";
 import { AnnotatableItem } from "./AnnotatableItem";
 import {
   GroupSensitivityDial,
@@ -76,6 +78,8 @@ export function RefinementEngine() {
   const [weights, setWeights] = useState<CalibrationEntry[]>([]);
   const [registry, setRegistry] = useState<CommentatorEntry[]>([]);
   const [sourceAccounts, setSourceAccounts] = useState<SourceAccount[]>([]);
+  // [claude-code 2026-04-24] S34-T1
+  const [econFilters, setEconFilters] = useState<EconWatchFilter[]>([]);
   const [isRescoring, setIsRescoring] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -155,6 +159,18 @@ export function RefinementEngine() {
     }
   }, []);
 
+  // [claude-code 2026-04-24] S34-T1
+  const fetchEconFilters = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/econ-filters`).then((r) =>
+        r.json(),
+      );
+      setEconFilters(res.filters ?? []);
+    } catch {
+      /* silent */
+    }
+  }, []);
+
   const loadV4State = useCallback(async () => {
     try {
       const token = (await getAccessToken()) ?? undefined;
@@ -194,6 +210,7 @@ export function RefinementEngine() {
         fetchWeights(),
         fetchRegistry(),
         fetchSourceAccounts(),
+        fetchEconFilters(),
         loadV4State(),
       ]);
       setLoading(false);
@@ -205,6 +222,7 @@ export function RefinementEngine() {
     fetchWeights,
     fetchRegistry,
     fetchSourceAccounts,
+    fetchEconFilters,
     loadV4State,
   ]);
 
@@ -481,6 +499,14 @@ export function RefinementEngine() {
               <SourceAccountsManager
                 accounts={sourceAccounts}
                 onAccountsChanged={fetchSourceAccounts}
+              />
+              <div
+                style={{ borderTop: "1px solid var(--fintheon-glass-border)" }}
+              />
+              {/* [claude-code 2026-04-24] S34-T1: Econ watch filters */}
+              <EconFiltersManager
+                filters={econFilters}
+                onFiltersChanged={fetchEconFilters}
               />
             </AdvancedPane>
           </div>

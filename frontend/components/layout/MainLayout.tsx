@@ -4,7 +4,7 @@
 // [claude-code 2026-03-22] Replaced "The Tape" in Castra with RiskFlowMini (same as non-iFrame Strategium)
 // [claude-code 2026-03-31] S12-T2: Added Documents tab (TipTap editor)
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { ChevronLeft } from "@/components/shared/iso-icons";
+import { ChevronLeft } from "lucide-react";
 import type { IVScoreResponse } from "../../types/market-data";
 import { TopHeader } from "./TopHeader";
 import { NavSidebar } from "./NavSidebar";
@@ -16,7 +16,8 @@ import { useBackend } from "../../lib/backend";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { EmotionalResonanceMonitor } from "../mission-control/EmotionalResonanceMonitor";
-import { BlindspotsWidget } from "../mission-control/BlindspotsWidget";
+// [claude-code 2026-04-23] S30-T2: BlindspotsWidget retired from Strategium — promoted to Performance tab.
+import { WeeklyPerformanceWidget } from "../mission-control/WeeklyPerformanceWidget";
 import { AccountTrackerWidget } from "../mission-control/AccountTrackerWidget";
 import { AlgoStatusWidget } from "../mission-control/AlgoStatusWidget";
 import { PanelNotificationWidget } from "./PanelNotificationWidget";
@@ -66,7 +67,7 @@ import {
   type StrategiumPaneMode,
 } from "../../lib/layoutOrderStorage";
 import { StrategiumPeekBar } from "./StrategiumPeekBar";
-import { Maximize2, Minimize2 } from "@/components/shared/iso-icons";
+import { Maximize2, Minimize2 } from "lucide-react";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { useLayoutState } from "../../hooks/useLayoutState";
 import { useBrowserTransition } from "../../hooks/useBrowserTransition";
@@ -443,10 +444,10 @@ function MainLayoutInner() {
         label: "Account Tracker",
         node: <AccountTrackerWidget />,
       },
-      blindspots: {
-        id: "blindspots" as const,
-        label: "Blindspots",
-        node: <BlindspotsWidget />,
+      weekly: {
+        id: "weekly" as const,
+        label: "Weekly Performance",
+        node: <WeeklyPerformanceWidget />,
       },
       calendar: {
         id: "calendar" as const,

@@ -10,7 +10,7 @@ import {
   Phone,
   PictureInPicture2,
   X,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import {
   LiveKitRoom,
   useLocalParticipant,

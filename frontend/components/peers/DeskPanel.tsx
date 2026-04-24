@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus } from "@/components/shared/iso-icons";
+import { Plus } from "lucide-react";
 import { useBackend } from "../../lib/backend";
 import type { DeskRecord, PeerRecord } from "./types";
 

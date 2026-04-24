@@ -10,7 +10,7 @@ import {
   X,
   Search,
   Square,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { ConsiliumMessage, type BoardroomMessage } from "./ConsiliumMessage";
 import { AGENT_MAP, type BoardroomAgent } from "./AgentBadge";
 import { ConsiliumFilterBar } from "./ConsiliumFilterBar";

@@ -1,6 +1,6 @@
 // [claude-code 2026-04-16] T2: Bottom sheet headline selector — mobile port of desktop HeadlinePickerPopover
 import { useState, useMemo, useRef, useEffect } from "react";
-import { Search, Check } from "../shared/iso-icons";
+import { Search, Check } from "lucide-react";
 import { BottomSheet } from "../shared/BottomSheet";
 import { useMobileRiskFlow } from "../../contexts/RiskFlowContext";
 import type { HeadlineChip } from "./HeadlineChips";

@@ -1,4 +1,4 @@
-import { X } from "@/components/shared/iso-icons";
+import { X } from "lucide-react";
 import { useState } from "react";
 import { useBackend } from "../lib/backend";
 

@@ -1,9 +1,5 @@
 // [claude-code 2026-03-31] S13-T2: TradePlanStatus — small badge shown on proposal cards
-import {
-  Loader2,
-  CheckCircle2,
-  CircleOff,
-} from "@/components/shared/iso-icons";
+import { Loader2, CheckCircle2, CircleOff } from "lucide-react";
 
 type TradePlanState = "generating" | "ready" | "unavailable";
 

@@ -1,10 +1,6 @@
 // [claude-code 2026-04-18] S24-T4: Admin sub-tabs — Scoring / Approvals / Monitor
 import { useState, type ReactNode } from "react";
-import {
-  SlidersHorizontal,
-  Inbox,
-  Activity,
-} from "@/components/shared/iso-icons";
+import { SlidersHorizontal, Inbox, Activity } from "lucide-react";
 import { RefinementEngine } from "../refinement/RefinementEngine";
 import { ApprovalsPage } from "./ApprovalsPage";
 import { MonitoringLoopCard } from "./MonitoringLoopCard";

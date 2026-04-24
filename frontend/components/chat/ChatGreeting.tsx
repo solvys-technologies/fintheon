@@ -8,12 +8,7 @@
 // [claude-code 2026-03-14] Fintheon rebrand: Dawn Dispatch/Weekly Tribune chips, Roman greetings, new agent titles
 // [claude-code 2026-03-16] Shimmer greeting animation, removed border/bg/emoji from greeting area
 import { useState, useEffect } from "react";
-import {
-  BarChart3,
-  CalendarCheck,
-  Brain,
-  Eye,
-} from "@/components/shared/iso-icons";
+import { BarChart3, CalendarCheck, Brain, Eye } from "lucide-react";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 
 const SUGGESTION_CHIPS: {

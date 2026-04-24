@@ -156,6 +156,25 @@ export async function streamHarperChat(
     }
   }
 
+  // [claude-code 2026-04-23] Harper Vision — inject recent screen + audio context
+  if (options.userId) {
+    try {
+      const { buildVisionContext } =
+        await import("../../harper-vision/engine.js");
+      const visionContext = await buildVisionContext(options.userId, {
+        lookbackSeconds: 120,
+      });
+      if (visionContext) {
+        prompt = `${visionContext}\n\n${prompt}`;
+        log.info("Harper Vision context injected (strands)", { requestId });
+      }
+    } catch (err) {
+      log.warn("failed to build Harper Vision context (non-fatal, strands)", {
+        error: String(err),
+      });
+    }
+  }
+
   // Inject user context so Harper addresses the user correctly and knows their setup
   if (options.userContext) {
     const uc = options.userContext;

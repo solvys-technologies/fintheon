@@ -4,7 +4,7 @@
 // [claude-code 2026-04-15] Special themes section — Nothing Design (Something Solvys/Monochrome)
 // [claude-code 2026-03-24] Theme settings — font style, color presets, custom color picker, severity colors, save custom themes
 import { useState, useEffect } from "react";
-import { Check, Save } from "@/components/shared/iso-icons";
+import { Check, Save } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { type ThemeConfig, DEFAULT_THEME } from "../../lib/theme";
 import { DEFAULT_FONT_THEME } from "../../lib/font-theme";

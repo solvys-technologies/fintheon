@@ -1,7 +1,7 @@
 // [claude-code 2026-04-05] Fix sidebar icons to match main Consilium toolbar (Scroll, Plus, Clock)
 // [claude-code 2026-04-03] Extracted from MainLayout.tsx — sliding chat panel
 import React, { useState } from "react";
-import { X, Scroll, Plus, Clock } from "@/components/shared/iso-icons";
+import { X, Scroll, Plus, Clock } from "lucide-react";
 import { ChatSidebar } from "../chat/ChatSidebar";
 import { SessionsModal } from "../chat/SessionsModal";
 interface ChatPanelProps {

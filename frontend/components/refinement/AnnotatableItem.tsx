@@ -8,7 +8,7 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import type { FlawTag } from "../../../backend-hono/src/types/calibration";
 import { SEVERITY_CONFIG } from "../../lib/severity-config";

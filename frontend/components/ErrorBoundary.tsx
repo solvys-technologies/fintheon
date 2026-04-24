@@ -1,7 +1,7 @@
 // [claude-code 2026-03-22] App-level error boundary — prevents white screen crashes
 // [claude-code 2026-03-22] Push caught errors to error log ring buffer for ErrorLogPanel
 import { Component, type ReactNode } from "react";
-import { RotateCcw } from "@/components/shared/iso-icons";
+import { RotateCcw } from "lucide-react";
 import { pushError } from "../lib/errorLog";
 
 interface Props {

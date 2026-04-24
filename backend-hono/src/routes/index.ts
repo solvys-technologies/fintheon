@@ -48,6 +48,7 @@ import { createAuthCallbackRoute } from "./auth-callback.js";
 import { createAuthRoutes } from "./auth/index.js";
 import { createCommentatorRoutes } from "./commentator/index.js";
 import { createSourceAccountRoutes } from "./source-accounts/index.js";
+import { createEconFiltersRoutes } from "./econ-filters/index.js";
 import { createCalibrationRoutes } from "./calibration/index.js";
 import { createScoringRoutes } from "./scoring/index.js";
 import { createHarperRoutes } from "./harper/index.js";
@@ -78,6 +79,8 @@ import { createRoutinesRoutes } from "./routines/index.js";
 // [claude-code 2026-04-20] S21: Omi voice integration + PsychAssist fork admin
 import { createOmiRoutes } from "./omi.js";
 import { createPsychAssistForkRoutes } from "./admin/psych-assist-fork.js";
+// [claude-code 2026-04-23] Harper Vision — screen + audio perception layer
+import { createHarperVisionRoutes } from "./harper-vision/index.js";
 // [S29-T4] Catalyst slide-out panel — date-filtered RiskFlow headlines
 import { createCatalystsByDateRoute } from "./catalysts/by-date.js";
 // [S29-T1] ProjectX trades history — calendar heatmap data layer
@@ -136,6 +139,7 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/commentator", createCommentatorRoutes());
   // Source accounts — curated X account management for timeline polling (public, admin CRUD)
   app.route("/api/source-accounts", createSourceAccountRoutes());
+  app.route("/api/econ-filters", createEconFiltersRoutes());
   // Calibration — scoring weight management, annotations, observations, bulk ingest (public, admin)
   app.route("/api/calibration", createCalibrationRoutes());
   // Scoring — V4 shadow stats + rescore-status [S24-T3]
@@ -342,6 +346,11 @@ export function registerRoutes(app: Hono): void {
   // [S21] Omi voice integration — webhooks are public (uid-param auth),
   //   session + pair endpoints are authMiddleware+requireAuth (inside the router).
   app.route("/api/omi", createOmiRoutes());
+
+  // [claude-code 2026-04-23] Harper Vision — screen + audio perception layer
+  // Frame ingestion is public (Electron main process posts directly),
+  // retrieval and scene building require auth.
+  app.route("/api/harper-vision", createHarperVisionRoutes());
 
   // [S21-T5] PsychAssist fork admin — gated on psych_assist_fork.edit
   //   per-user override. Reasoning@pricedinresearch.io is seeded with access.

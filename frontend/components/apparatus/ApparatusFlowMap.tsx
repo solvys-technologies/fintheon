@@ -15,12 +15,7 @@ import {
   MarkerType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import {
-  Shield,
-  ChevronDown,
-  ChevronUp,
-  Zap,
-} from "@/components/shared/iso-icons";
+import { Shield, ChevronDown, ChevronUp, Zap } from "lucide-react";
 import type { AgentNode, AgentConnection, AgentMemory } from "./types";
 import { COMMANDMENTS } from "./commandments-data";
 

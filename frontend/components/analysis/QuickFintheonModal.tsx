@@ -6,7 +6,7 @@ import {
   AlertTriangle,
   Check,
   Loader2,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useBackend } from "../../lib/backend";
 
 interface QuickFintheonModalProps {

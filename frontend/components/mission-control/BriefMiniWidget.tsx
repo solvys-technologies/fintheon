@@ -1,12 +1,7 @@
 // [claude-code 2026-03-30] S10: Briefing dropdown selector + countdown timer
 // [claude-code 2026-03-12] Made scrollable, removed line-clamp, renders markdown-style formatting
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  FileText,
-  RefreshCw,
-  ChevronDown,
-  Clock,
-} from "@/components/shared/iso-icons";
+import { FileText, RefreshCw, ChevronDown, Clock } from "lucide-react";
 import { useBackend } from "../../lib/backend";
 
 /** Markdown renderer for brief text — headers, bold labels, bullets, dividers */

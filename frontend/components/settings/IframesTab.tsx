@@ -1,7 +1,7 @@
 // [claude-code 2026-04-04] T5: Settings iFrame list with persistent proposer default
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — iFrames settings tab
 import React, { useState } from "react";
-import { Plus, Trash2, ExternalLink } from "@/components/shared/iso-icons";
+import { Plus, Trash2, ExternalLink } from "lucide-react";
 import type { ProposerIframeSource } from "../../contexts/SettingsContext";
 
 interface IframesTabProps {

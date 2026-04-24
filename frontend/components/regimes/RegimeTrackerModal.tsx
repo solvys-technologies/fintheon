@@ -3,13 +3,7 @@
 // [claude-code 2026-04-15] T2: Decomposed into subcomponents, liquid glass shell, 5 bias classifications, removed footer border
 // [claude-code 2026-04-15] T3: Glassmorphic AI generate overlay, thinking animation, mini-chat passthrough
 import { useState, useMemo } from "react";
-import {
-  X,
-  Plus,
-  Clock,
-  ChevronDown,
-  ChevronRight,
-} from "@/components/shared/iso-icons";
+import { X, Plus, Clock, ChevronDown, ChevronRight } from "lucide-react";
 import { useRegimes } from "../../lib/regime-store";
 import {
   isRegimeActive,

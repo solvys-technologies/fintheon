@@ -1,6 +1,6 @@
 // [claude-code 2026-04-18] S24-T4: Advanced pane — collapsible wrapper for per-event / commentator / source tweaks
 import { useState, type ReactNode } from "react";
-import { ChevronDown, SlidersHorizontal } from "@/components/shared/iso-icons";
+import { ChevronDown, SlidersHorizontal } from "lucide-react";
 
 export function AdvancedPane({
   children,

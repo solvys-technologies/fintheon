@@ -1,7 +1,7 @@
 // [claude-code 2026-03-20] S3:T2e — ModelGlossary redesign: fused card, merged items, rounded whole card
 // [claude-code 2026-03-20] Theme fix: zinc → fintheon gold/cream palette
 import { useState } from "react";
-import { ChevronDown } from "@/components/shared/iso-icons";
+import { ChevronDown } from "lucide-react";
 
 interface ModelEntry {
   name: string;

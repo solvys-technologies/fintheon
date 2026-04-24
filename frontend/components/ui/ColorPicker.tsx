@@ -1,6 +1,6 @@
 // [claude-code 2026-03-24] Custom Fintheon color picker — dark popover with SV gradient, hue slider, hex input
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X } from "@/components/shared/iso-icons";
+import { X } from "lucide-react";
 
 // ── Color conversion utilities ──
 

@@ -12,7 +12,7 @@ import {
   Scroll,
   Trophy,
   Minus,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { MemoryCard } from "./MemoryCard";
 import { CommandmentsSidebar } from "./CommandmentsSidebar";
 import type {

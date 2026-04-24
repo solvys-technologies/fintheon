@@ -1,7 +1,7 @@
 // [claude-code 2026-03-31] S12-T3: Research task board — kanban layout with 4 columns
 
 import { useCallback, useEffect, useState } from "react";
-import { Plus, X, Save, Search } from "@/components/shared/iso-icons";
+import { Plus, X, Save, Search } from "lucide-react";
 import { useBackend } from "../../lib/backend";
 import { useAuth } from "../../contexts/AuthContext";
 import { type ResearchTask, type ResearchTaskInput } from "../../lib/services";

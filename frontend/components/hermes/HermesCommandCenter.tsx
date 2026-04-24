@@ -12,7 +12,7 @@ import {
   EyeOff,
   CheckCircle2,
   XCircle,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 import { useGateway } from "../../contexts/GatewayContext";
 import { useSettings } from "../../contexts/SettingsContext";

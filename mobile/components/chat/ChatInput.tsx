@@ -1,6 +1,6 @@
 // [claude-code 2026-04-16] Chat input — matches desktop theme: gradient box, accent border, inline toolbar
 import { useState, useRef, useCallback, type KeyboardEvent } from "react";
-import { ArrowUp, Plus, Newspaper } from "../shared/iso-icons";
+import { ArrowUp, Plus, Newspaper } from "lucide-react";
 import { ImagePreviewRow } from "./ImagePreviewRow";
 import { HeadlineChips, formatHeadlineContext } from "./HeadlineChips";
 import type { HeadlineChip } from "./HeadlineChips";

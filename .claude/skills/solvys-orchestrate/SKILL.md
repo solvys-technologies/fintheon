@@ -15,42 +15,47 @@ You are a sprint architect. Your job is to decompose a large task into parallel 
 - Deploy track (if included) must hit all 3 targets: backend (Fly.io), desktop (Vercel), mobile (Vercel)
 - Check `src/lib/changelog.ts` before finalizing track ownership -- recent entries are intentional
 
-## Phase 1 -- Discovery (MANDATORY)
+## Phase 1 -- Discovery (MANDATORY, AUTO-PILOT)
 
-Enter plan mode. Do NOT proceed until you have answers to ALL of the following:
+**Auto-behavior on skill invocation:**
 
-### Questions to Ask
+1. **Immediately call `EnterPlanMode`** before asking anything else. This skill never runs in execution mode -- the whole discovery loop happens in plan mode so the user sees proposed track boundaries before any file is written.
+2. **All discovery questions go through `AskUserQuestion`** (the multiple-choice modal). Do not free-text-interrogate the user one sentence at a time. Batch 2-4 related questions per `AskUserQuestion` call, each with 2-4 concrete options. The tool auto-appends an "Other" escape hatch -- you never add one.
+3. **Three rounds are enforced.** R1 and R2 are MANDATORY and must always fire, even if the user's initial message seems complete. R3 is optional and fires only if R1+R2 answers leave real ambiguity. Do not collapse rounds into one mega-prompt -- the user needs to see the sprint shape evolve between rounds.
 
-**Scope:**
+Between rounds, write a one-paragraph "what I heard" summary and then fire the next round. Never exit plan mode until briefs are written (Phase 3) and `ExitPlanMode` is called in Phase 4.
 
-- What is the end-state we are building toward?
-- What exists today that we are changing vs. building from scratch?
-- What are the boundaries -- what is explicitly out of scope?
+### Round 1 -- Scope & Surface (MANDATORY)
 
-**Architecture:**
+Fire an `AskUserQuestion` batch covering:
 
-- What connects to what? Draw the dependency map in plain language.
-- How do these pieces operate in non-technical terms?
-- Which direction do we want data/control to flow?
+- **End-state:** what does the product look like when the sprint ships? (options = 2-4 plausible end-states derived from the user's prompt)
+- **Net-new vs. refactor:** is this greenfield, a change to existing surfaces, or a mix? (single-select)
+- **Surface scope:** which parts of the app get touched? (multi-select: Backend, Desktop frontend, Mobile PWA, Electron shell, Supabase schema, Agent instructions)
+- **Track budget:** how many parallel Claude Code instances do you want to run? (single-select: 2 / 3 / 4 -- default 3, hard cap 4 per wave)
 
-**Constraints:**
+### Round 2 -- Architecture & Constraints (MANDATORY)
 
-- What must not break? (existing features, APIs, other agents' work)
-- Are there files owned by other agents that we must not touch?
-- What is the target branch? Does it exist yet?
+Fire a second `AskUserQuestion` batch covering:
 
-**Preferences:**
+- **Branch strategy:** shared branch vs. per-track branches? (single-select)
+- **Ownership conflicts:** which existing agent-owned files must stay off-limits? Start from `src/lib/changelog.ts` recent entries and list the top 2-3 candidates.
+- **Breakage tolerance:** what must NOT regress? (multi-select: Harper chat, RiskFlow feed, MDB/ADB/PMDB briefs, Aquarium, Mobile PWA, Desktop install flow, Supabase RLS)
+- **Unification owner:** does the orchestrator Claude merge, or does a dedicated unification track? (single-select)
 
-- How many parallel tracks are comfortable? (default: 3 max)
-- Should tracks share a branch or use separate branches?
-- Is there a hard deadline or priority ordering?
+### Round 3 -- Validation & Aesthetic (OPTIONAL)
 
-**Validation:**
+Fire a third `AskUserQuestion` batch ONLY if R1+R2 left gaps. Typical triggers: UI work landed in scope, deadline unclear, validation path undefined, or the user picked "Other" in a prior round.
 
-- How do we know each track succeeded?
-- What is the integration test for the full sprint?
+- **Validation spec:** per-track acceptance signal? (multi-select: tsc clean, vite build clean, bun build clean, curl smoke, Playwright, manual TP review)
+- **Design anchor:** for any UI track, reference source? (single-select: existing Fintheon surface, Figma link, `/solvys-feels` defaults, external reference via `browser-harness`)
+- **Deadline:** is this tied to a release window? (single-select: this week / next deploy / no deadline / other)
 
-Keep asking until you have a complete picture. Repeat back your understanding and get explicit confirmation before proceeding.
+If R1+R2 fully define the sprint, skip R3 and state "Round 3 skipped -- discovery complete" before moving to Phase 2.
+
+### Between Rounds
+
+After each round, repeat back a one-paragraph summary of the sprint shape so far ("Heard: {end-state}, {surface}, {N} tracks on {branch strategy}..."). Do not ask "is this right?" -- the next `AskUserQuestion` batch is the correction channel.
 
 ## Phase 2 -- Track Definition
 
@@ -77,9 +82,15 @@ Acceptance Criteria: [How to verify this track is done]
 - Utility/shared files get their own mini-track or go to the unification pass
 - Each track must be self-contained enough to run without seeing other tracks' changes
 
-## Phase 3 -- Brief Generation
+## Phase 3 -- Brief Generation (AUTO, while still in plan mode)
 
-Exit plan mode. For each track, produce a standalone markdown briefing file.
+**Stay in plan mode.** Do NOT call `ExitPlanMode` yet. As soon as Phase 2 track definitions are settled, auto-write one standalone markdown briefing file per track directly from the `AskUserQuestion` answers. The user should not have to prompt "now write the briefs" -- that is the whole point of this phase firing automatically.
+
+Before writing any brief, fact-check identifiers against the live tree and Supabase REST:
+
+- `grep` every table, route, service, and component name that will appear in a track brief against the current repo
+- If a referenced file does not exist, flag it in the brief as `[NEW -- to create]`
+- If a referenced table/route does not exist, list it under "Open questions" in the brief rather than hallucinating its shape
 
 ### Track Brief Template
 
@@ -149,26 +160,28 @@ Save each brief to `sprint-md/S{SPRINT}-T{N}-{slug}.md` at the CURRENT workspace
 
 **Sprint numbering:** Check existing files in `sprint-md/` AND `sprint-changelog/` (and any legacy `docs/sprint-briefs/`) for the highest S{N}. If the latest shipped is S26, the new sprint is S27. Always confirm with the user if unsure.
 
-## Phase 4 -- Execution Sequence
+## Phase 4 -- Execution Sequence (EXIT PLAN MODE HERE)
 
-Output the orchestration plan as a numbered wave sequence with @-mentions to the brief files. Save this as `docs/sprint-briefs/S{SPRINT}-ORCHESTRATION.md`.
+Once all track briefs are written and the orchestration doc is drafted, call `ExitPlanMode`. This is the only phase that exits plan mode -- everything upstream (discovery, track definition, brief writing) stays inside the plan so the user can course-correct without losing context.
+
+Output the orchestration plan as a numbered wave sequence with @-mentions to the brief files. Save this as `sprint-md/S{SPRINT}-ORCHESTRATION.md` (NOT `docs/sprint-briefs/` -- that path is legacy).
 
 **CRITICAL: The final output to the user must be ONLY the @ path mentions and the sequence. Do NOT dump brief content inline.** The user hands these @ paths directly to parallel Claude Code instances. Each @ path gets its OWN fenced code block so the user can copy-paste them individually. Follow with a short non-technical debrief explaining what each wave accomplishes. Example output:
 
 ### Wave 1 (parallel)
 
 ```
-@docs/sprint-briefs/S19-T1-{slug}.md
+@sprint-md/S27-T1-{slug}.md
 ```
 
 ```
-@docs/sprint-briefs/S19-T2-{slug}.md
+@sprint-md/S27-T2-{slug}.md
 ```
 
 ### Wave 2 (after Wave 1)
 
 ```
-@docs/sprint-briefs/S19-T3-unify.md
+@sprint-md/S27-T3-unify.md
 ```
 
 **Wave 1** does X and Y in parallel.
@@ -185,10 +198,15 @@ State which approach you chose and why.
 
 ## Rules
 
-- Never skip Phase 1. Incomplete discovery leads to conflicting tracks.
+- **Always auto-enter plan mode** (`EnterPlanMode`) as the first tool call of the skill. No exceptions.
+- **Always use `AskUserQuestion` for discovery**, never free-text Q&A. Batch 2-4 questions per call.
+- **R1 and R2 are mandatory.** Fire them even if the user's opening prompt seems self-explanatory. R3 only fires when real gaps remain.
+- **Write briefs automatically** after Phase 2, before `ExitPlanMode`. The user should not need to say "write the briefs".
+- **Only call `ExitPlanMode` in Phase 4**, once every brief + the orchestration doc exist on disk.
 - Never put more than 4 tracks in a single wave.
 - Always include a unification step, even for 2-track sprints.
-- If the user adds scope mid-planning, re-evaluate all track boundaries before proceeding.
+- If the user adds scope mid-planning, re-evaluate all track boundaries and (if needed) re-fire the affected `AskUserQuestion` round.
 - Check `src/lib/changelog.ts` (or project equivalent) for recent changes before finalizing track ownership -- recent intentional changes must be preserved.
 - Every track's validation commands must include `rm -rf dist` before build.
 - Never include `npx vite` or dev server commands in track briefs.
+- **Design tracks obey `/solvys-feels`**: no gradients, no emojis, no Kanban borders, no AI sparkles. State this banned-ornaments list inside any brief that includes UI work.

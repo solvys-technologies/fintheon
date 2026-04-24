@@ -18,7 +18,7 @@
 //   (var(--font-data) was getting mapped to a heavier mono on some themes), matching
 //   desktop's right-stacked IVStack. Chevron stays in the right column above the numeral.
 import { useCallback, useState } from "react";
-import { ChevronUp, ChevronDown, Minus } from "../shared/iso-icons";
+import { ChevronUp, ChevronDown, Minus } from "lucide-react";
 import { useHaptic } from "../../hooks/useHaptic";
 import { motion, AnimatePresence } from "framer-motion";
 import type { MobileRiskFlowAlert } from "../../contexts/RiskFlowContext";

@@ -1,6 +1,6 @@
 // [claude-code 2026-04-19] S25-T6: Bottom-right narrative color key + micro popover. Click the swatch strip to open; click any category swatch to edit its color via a native <input type="color">. Edits write to the --narrative-* CSS variable on :root and persist in localStorage under fintheon:narrative-color-overrides so they survive reloads. Global Personalization Settings still owns the long-form UI; this is the in-canvas fast path.
 import { useEffect, useRef, useState } from "react";
-import { Palette, RotateCcw, X } from "@/components/shared/iso-icons";
+import { Palette, RotateCcw, X } from "lucide-react";
 import type { NarrativeCategory } from "../../lib/narrative-types";
 import { getCategoryColor } from "../../lib/narrative-force-layout";
 

@@ -1,11 +1,6 @@
 // [claude-code 2026-04-16] S16-T3: Risk Signal cards — full-border severity coloring, solvys-feels polish
 import { useState, useEffect, useRef, useCallback } from "react";
-import {
-  ChevronDown,
-  ChevronRight,
-  Loader2,
-  ShieldAlert,
-} from "@/components/shared/iso-icons";
+import { ChevronDown, ChevronRight, Loader2, ShieldAlert } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const CACHE_KEY = "fintheon:risk-signals";

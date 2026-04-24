@@ -1,4 +1,4 @@
-import { MessageSquare, Clock } from "@/components/shared/iso-icons";
+import { MessageSquare, Clock } from "lucide-react";
 import { useThread } from "../../contexts/ThreadContext";
 
 export function ThreadHistory() {

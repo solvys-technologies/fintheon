@@ -13,7 +13,7 @@ import {
   User,
   BookOpen,
   Link2,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { useBackend } from "../../lib/backend";
 import type { SharedMemoryEntry } from "../../lib/services";
 

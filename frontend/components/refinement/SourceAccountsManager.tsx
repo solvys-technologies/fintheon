@@ -8,7 +8,7 @@ import {
   Trash2,
   Pencil,
   Power,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import type {
   SourceAccount,
   SourceAccountCategory,

@@ -1,30 +1,19 @@
 // [claude-code 2026-03-20] S3:T8f — Bloomberg-style chart, narrower blindspots, Missed Trades KPI, period filter
+// [claude-code 2026-04-23] S30-T1 heatmaps + KPI flip — top row rebuilt as two heatmap cards, KPI grid demoted below.
+// [claude-code 2026-04-23] S30-T2 — BlindspotsRow promoted full-width; session/Hermes/notes consolidated into SessionJournalPanel.
 import { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  BookOpen,
-  User,
-  Bot,
-  RefreshCw,
-  Eye,
-  AlertTriangle,
-} from "@/components/shared/iso-icons";
+import { BookOpen, User, Bot, RefreshCw } from "lucide-react";
 import { useBackend } from "../../lib/backend";
-import { useERSafe } from "../../contexts/ERContext";
 import { KPICard } from "./KPICard";
-import {
-  BloombergChart,
-  type ChartPeriod,
-  type ChartMetric,
-} from "./BloombergChart";
-import { ERTrendChart } from "./ERTrendChart";
-import { DayHistoryCard } from "./DayHistoryCard";
-import { SessionNotesPanel } from "./HumanPsychTab";
+import { BlindspotsRow } from "./BlindspotsRow";
+import { SessionJournalPanel } from "./SessionJournalPanel";
 import { TradingCalendar } from "./TradingCalendar";
+import { PerformanceHeatmapsRow } from "./performance/PerformanceHeatmapsRow";
+import { PerformanceHistoryPage } from "./performance/PerformanceHistoryPage";
 import type {
   JournalEntryItem,
   JournalSummaryResponse,
   PerformanceResponse,
-  BlindspotItem,
 } from "../../lib/services";
 
 type JournalTab = "human" | "agent";
@@ -32,33 +21,25 @@ type PerformanceView = "dashboard" | "calendar";
 
 export function PerformanceJournal() {
   const backend = useBackend();
-  const er = useERSafe();
   const [activeTab, setActiveTab] = useState<JournalTab>("human");
   const [view, setView] = useState<PerformanceView>("dashboard");
   const [entries, setEntries] = useState<JournalEntryItem[]>([]);
   const [summary, setSummary] = useState<JournalSummaryResponse | null>(null);
   const [kpis, setKpis] = useState<PerformanceResponse | null>(null);
-  const [blindspots, setBlindspots] = useState<BlindspotItem[]>([]);
-  const [blindspotSource, setBlindspotSource] = useState("");
   const [loading, setLoading] = useState(true);
-  const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("30D");
-  const [chartMetric, setChartMetric] = useState<ChartMetric>("pnl");
   const [weekOffset, setWeekOffset] = useState(0);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [entriesRes, summaryRes, kpisRes, blindRes] = await Promise.all([
+      const [entriesRes, summaryRes, kpisRes] = await Promise.all([
         backend.journal.listEntries({ limit: 90 }),
         backend.journal.getSummary(30),
         backend.data.getPerformance(),
-        backend.blindspots.getBlindspots(),
       ]);
       setEntries(entriesRes.entries);
       setSummary(summaryRes);
       setKpis(kpisRes);
-      setBlindspots(blindRes.blindspots);
-      setBlindspotSource(blindRes.source);
     } catch (err) {
       console.warn("Failed to fetch journal data:", err);
     } finally {
@@ -70,7 +51,6 @@ export function PerformanceJournal() {
     fetchData();
   }, [fetchData]);
 
-  // --- Derived data ---
   const findKpi = (label: string) =>
     kpis?.kpis?.find((k) =>
       k.label.toLowerCase().includes(label.toLowerCase()),
@@ -80,7 +60,6 @@ export function PerformanceJournal() {
   const winRate = findKpi("Win Rate") ?? findKpi("win");
   const trades = findKpi("Trades") ?? findKpi("trades");
 
-  // Agent stats from summary
   const agentWinRate = summary?.avgWinRate ?? 0;
   const agentDecisions = entries
     .filter((e) => e.type === "agent")
@@ -88,56 +67,6 @@ export function PerformanceJournal() {
   const agentPnl = summary?.totalAgentPnl ?? 0;
   const missedTrades = summary?.missedTrades ?? 0;
 
-  // Discipline
-  const weekAgo = new Date(Date.now() - 7 * 86400000)
-    .toISOString()
-    .split("T")[0];
-  const weekEntries = entries.filter(
-    (e) => e.type === "human" && e.date >= weekAgo,
-  );
-  const avgDiscipline =
-    weekEntries.length > 0
-      ? Math.round(
-          weekEntries.reduce((s, e) => s + (e.disciplineScore ?? 0), 0) /
-            weekEntries.length,
-        )
-      : 0;
-  const todayInfractions = er?.infractionCount ?? 0;
-
-  // P&L daily data filtered by period
-  const pnlDailyData = useMemo(() => {
-    const agentEntries = entries
-      .filter((e) => e.type === "agent" && typeof e.totalPnl === "number")
-      .slice(0, 90)
-      .reverse();
-
-    const periodDays: Record<ChartPeriod, number> = {
-      "7D": 7,
-      "30D": 30,
-      "90D": 90,
-      YTD: Math.ceil(
-        (Date.now() - new Date(new Date().getFullYear(), 0, 1).getTime()) /
-          86400000,
-      ),
-      ALL: 9999,
-    };
-    const limit = periodDays[chartPeriod];
-    return agentEntries.slice(-limit).map((e) => e.totalPnl ?? 0);
-  }, [entries, chartPeriod]);
-
-  // ER trend data
-  const erTrendData = useMemo(() => {
-    const fromEntries = entries
-      .filter((e) => e.type === "human" && e.erTrend?.length)
-      .slice(0, 7)
-      .reverse()
-      .flatMap((e) => e.erTrend ?? []);
-    const liveSnapshots = er?.getRecentSnapshots?.() ?? [];
-    const live = liveSnapshots.map((s) => s.score).reverse();
-    return fromEntries.length > 0 ? fromEntries : live;
-  }, [entries, er]);
-
-  // --- KPI cards ---
   const humanKpis = [
     {
       label: "Net P&L",
@@ -207,7 +136,6 @@ export function PerformanceJournal() {
       ? [...humanKpis, ...agentKpis]
       : [...agentKpis, ...humanKpis];
 
-  // --- Page 2: day history ---
   const historyEntries = useMemo(() => {
     const typeFilter = activeTab === "human" ? "human" : "agent";
     const filtered = entries.filter((e) => e.type === typeFilter);
@@ -222,7 +150,6 @@ export function PerformanceJournal() {
 
   return (
     <div className="bg-[var(--fintheon-bg)] h-full flex flex-col">
-      {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--fintheon-accent)]/10">
         <div className="flex items-center gap-2">
           <BookOpen className="w-4 h-4 text-[var(--fintheon-accent)]" />
@@ -243,7 +170,6 @@ export function PerformanceJournal() {
         </div>
       </div>
 
-      {/* Tab Toggle */}
       <div className="flex px-3 pt-2 gap-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -265,7 +191,6 @@ export function PerformanceJournal() {
         })}
       </div>
 
-      {/* View Selector: Dashboard | Calendar */}
       <div className="flex px-3 pt-1 gap-1">
         {(["dashboard", "calendar"] as PerformanceView[]).map((v) => (
           <button
@@ -282,17 +207,14 @@ export function PerformanceJournal() {
         ))}
       </div>
 
-      {/* Calendar view */}
       {view === "calendar" && (
         <div className="flex-1 overflow-y-auto px-3 py-3">
           <TradingCalendar />
         </div>
       )}
 
-      {/* Scroll-lock container */}
       {view === "dashboard" && (
         <div className="flex-1 overflow-y-auto snap-y snap-mandatory scroll-smooth">
-          {/* PAGE 1 */}
           <div className="min-h-full snap-start flex flex-col px-3 py-3 gap-3">
             {loading && entries.length === 0 ? (
               <div className="flex items-center justify-center h-32 text-[10px] text-[var(--fintheon-muted)]">
@@ -300,7 +222,8 @@ export function PerformanceJournal() {
               </div>
             ) : (
               <>
-                {/* KPI Cards — 4x2 grid */}
+                <PerformanceHeatmapsRow />
+
                 <div className="grid grid-cols-4 gap-2">
                   {orderedKpis.map((kpi, i) => (
                     <KPICard
@@ -314,129 +237,22 @@ export function PerformanceJournal() {
                   ))}
                 </div>
 
-                {/* Middle split: Bloomberg chart (78%) + Blindspots (~22%) */}
-                <div className="flex gap-3 min-h-0">
-                  {/* Left: Bloomberg chart fills container */}
-                  <div className="flex-[78] min-w-0">
-                    {chartMetric === "pnl" ? (
-                      <BloombergChart
-                        data={pnlDailyData}
-                        period={chartPeriod}
-                        metric={chartMetric}
-                        onPeriodChange={setChartPeriod}
-                        onMetricChange={setChartMetric}
-                      />
-                    ) : (
-                      <BloombergChart
-                        data={pnlDailyData}
-                        period={chartPeriod}
-                        metric={chartMetric}
-                        onPeriodChange={setChartPeriod}
-                        onMetricChange={setChartMetric}
-                      />
-                    )}
-                  </div>
+                {/* T2: blindspots row here */}
+                <BlindspotsRow />
 
-                  {/* Right ~22%: Blindspots (narrower) */}
-                  <div className="flex-[22] min-w-0">
-                    <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg p-2.5 h-full">
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <Eye className="w-3 h-3 text-[var(--fintheon-accent)]" />
-                        <span className="text-[10px] font-semibold text-[var(--fintheon-text)]">
-                          Blindspots
-                        </span>
-                      </div>
-                      {blindspots.length > 0 ? (
-                        <div className="space-y-1.5">
-                          {blindspots.slice(0, 4).map((spot) => (
-                            <div
-                              key={spot.id}
-                              className="flex items-start gap-1"
-                            >
-                              <span
-                                className={`mt-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${spot.severity === "high" ? "bg-red-400" : "bg-[var(--fintheon-accent)]"}`}
-                              />
-                              <span className="text-[9px] text-[var(--fintheon-text)] leading-tight">
-                                {spot.text}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-[9px] text-[var(--fintheon-muted)] py-3 text-center">
-                          {blindspotSource === "error" ||
-                          blindspotSource === "empty"
-                            ? "No blindspot data"
-                            : "No blindspots detected"}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom split: Session + Notes */}
-                <SessionNotesPanel
-                  entries={entries}
-                  onRefresh={fetchData}
-                  todayInfractions={todayInfractions}
-                  avgDiscipline={avgDiscipline}
-                />
+                {/* T2: session panel here */}
+                <SessionJournalPanel />
               </>
             )}
           </div>
 
-          {/* PAGE 2 */}
-          <div className="min-h-full snap-start flex flex-col px-3 py-3 gap-3">
-            {/* Week picker */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[var(--fintheon-text)]">
-                {activeTab === "human" ? "Session History" : "Agent History"}
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setWeekOffset((w) => w + 1)}
-                  disabled={weekOffset >= Math.floor(entries.length / 5)}
-                  className="px-2 py-0.5 text-[10px] bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/15 rounded text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)] disabled:opacity-30"
-                >
-                  Older
-                </button>
-                <button
-                  onClick={() => setWeekOffset((w) => Math.max(0, w - 1))}
-                  disabled={weekOffset === 0}
-                  className="px-2 py-0.5 text-[10px] bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/15 rounded text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)] disabled:opacity-30"
-                >
-                  Newer
-                </button>
-              </div>
-            </div>
-
-            {/* Day cards */}
-            {historyEntries.length > 0 ? (
-              <div className="space-y-2">
-                {historyEntries.map((entry) => (
-                  <DayHistoryCard
-                    key={entry.id}
-                    date={entry.date}
-                    pnl={entry.totalPnl ?? 0}
-                    notes={entry.notes}
-                    erScore={
-                      entry.erTrend?.length
-                        ? entry.erTrend[entry.erTrend.length - 1]
-                        : undefined
-                    }
-                    isAgentView={activeTab === "agent"}
-                    agentName={entry.agentName}
-                    winRate={entry.winRate}
-                    proposalCount={entry.proposalCount}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-32 text-[10px] text-[var(--fintheon-muted)]">
-                No history entries
-              </div>
-            )}
-          </div>
+          <PerformanceHistoryPage
+            entries={entries}
+            historyEntries={historyEntries}
+            activeTab={activeTab}
+            weekOffset={weekOffset}
+            setWeekOffset={setWeekOffset}
+          />
         </div>
       )}
     </div>

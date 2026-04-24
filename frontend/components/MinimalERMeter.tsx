@@ -1,4 +1,4 @@
-import { Diff, TrendingDown } from "@/components/shared/iso-icons";
+import { Diff, TrendingDown } from "lucide-react";
 
 interface MinimalERMeterProps {
   resonance: number;

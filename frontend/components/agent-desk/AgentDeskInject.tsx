@@ -1,7 +1,7 @@
 // [claude-code 2026-04-05] Fixed 404: added API_BASE to fetch call (was using relative URL)
 // [claude-code 2026-03-16] God's Eye View — variable injection modal for AgentDesk
 import { useState, useCallback } from "react";
-import { X, Zap } from "@/components/shared/iso-icons";
+import { X, Zap } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 

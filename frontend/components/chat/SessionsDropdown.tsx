@@ -6,12 +6,7 @@
 //   dropdown has committed to the DOM before focus() fires (Electron portal ordering issue).
 // [claude-code 2026-04-04] Sessions dropdown — compact history panel anchored under trigger button
 import { useEffect, useState, useCallback, useRef } from "react";
-import {
-  Search,
-  MessageSquare,
-  Loader2,
-  Trash2,
-} from "@/components/shared/iso-icons";
+import { Search, MessageSquare, Loader2, Trash2 } from "lucide-react";
 import { API_BASE_URL } from "./constants";
 import { getAccessToken } from "../../lib/supabase";
 

@@ -9,10 +9,16 @@
 // [claude-code 2026-04-19] S27-T5 W2c: voice window chrome hook for active voice sessions
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const { installVoiceChromeHook } = require("./window-chrome-voice.cjs");
+const { HarperVisionScreen } = require("./services/harper-vision-screen.cjs");
+const { HarperVisionAudio } = require("./services/harper-vision-audio.cjs");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
 const { autoUpdater } = require("electron-updater");
+
+// [claude-code 2026-04-23] Harper Vision — screen + audio capture instances
+const harperVisionScreen = new HarperVisionScreen();
+const harperVisionAudio = new HarperVisionAudio();
 
 let mainWindow = null;
 let backendProcess = null;
@@ -869,4 +875,60 @@ ipcMain.handle("system-permissions:request", async (_event, name) => {
   } catch {
     return "denied";
   }
+});
+
+/* ------------------------------------------------------------------ */
+/*  Harper Vision IPC handlers [claude-code 2026-04-23]              */
+/* ------------------------------------------------------------------ */
+
+ipcMain.handle("harper-vision:capture-screen", async () => {
+  try {
+    const result = await harperVisionScreen.captureOnce();
+    return result || { ok: false, error: "Capture failed" };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("harper-vision:capture-window", async (_event, sourceId) => {
+  try {
+    return await harperVisionScreen.captureSource(sourceId);
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("harper-vision:get-sources", async () => {
+  try {
+    return await harperVisionScreen.getSources();
+  } catch (err) {
+    return [];
+  }
+});
+
+ipcMain.handle("harper-vision:start-capture", async (_event, sessionId) => {
+  try {
+    const result = await harperVisionScreen.start(sessionId);
+    await harperVisionAudio.start(sessionId);
+    return result;
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("harper-vision:stop-capture", async () => {
+  try {
+    const screenResult = harperVisionScreen.stop();
+    const audioResult = harperVisionAudio.stop();
+    return { ok: true, screen: screenResult, audio: audioResult };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("harper-vision:get-status", async () => {
+  return {
+    screen: harperVisionScreen.status(),
+    audio: harperVisionAudio.status(),
+  };
 });

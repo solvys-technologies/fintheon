@@ -8,7 +8,7 @@ import {
   ShieldAlert,
   Lock,
   Volume2,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 import { WaveformCanvas } from "./WaveformCanvas";
 import { Button } from "../ui/Button";
 import { StopMonitoringModal } from "./StopMonitoringModal";

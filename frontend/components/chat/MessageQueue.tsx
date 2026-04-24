@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Edit3, Check, ListOrdered } from "@/components/shared/iso-icons";
+import { X, Edit3, Check, ListOrdered } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */

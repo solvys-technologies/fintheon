@@ -8,7 +8,7 @@ import {
   type FC,
   type KeyboardEvent,
 } from "react";
-import { ArrowUp, ChevronDown, Check } from "@/components/shared/iso-icons";
+import { ArrowUp, ChevronDown, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 /* ------------------------------------------------------------------ */

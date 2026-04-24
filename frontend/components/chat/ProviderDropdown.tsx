@@ -1,6 +1,6 @@
 // [claude-code 2026-04-07] Harper provider selector — Local / Nous / ORouter
 import { useState, useRef, useEffect } from "react";
-import { Cpu, Cloud, Server } from "@/components/shared/iso-icons";
+import { Cpu, Cloud, Server } from "lucide-react";
 
 export type HarperProvider = "local" | "nous" | "orouter";
 

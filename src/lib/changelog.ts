@@ -9,6 +9,122 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T04:00:00",
+    agent: "claude-code",
+    summary:
+      "S34-T1 [v.04.24.1]: Econ watch filters — country × category grid that drives which " +
+      "econ events the populator (T3) watches. Migration 20260424100000_econ_watch_filters.sql " +
+      "creates econ_watch_filters (id, country, category, active, user_id nullable, created_at, " +
+      "updated_at, unique(country,category,user_id)) + seeds 28 rows (7 countries × 4 categories). " +
+      "Backend type + service (cache + seed-on-empty mirroring source-accounts pattern). " +
+      "/api/econ-filters routes — GET list, POST create, PATCH toggle, PUT full, DELETE. " +
+      "Country + category validated against narrowed unions. EconFiltersManager component slotted " +
+      "into RefinementEngine AdvancedPane alongside SourceAccountsManager (additive only — no layout " +
+      "change). Category chip palette: Fiscal→gold, Inflation→amber, Supply Chain→neutral, " +
+      "Job Market→slate. Smoke: HTTP 200 + POST rejects invalid country with proper error. " +
+      "Migration is local-file-only per feedback_supabase_migration_filenames — hand to TP for " +
+      "`supabase db push`. Cross-track unblock: same one-line cast in harper-vision/engine.ts:158 " +
+      "(VoiceTranscribeResult.confidence missing since 7bfda6bc4 2026-04-23) so bun run build " +
+      "passes; flagged for S32/T2, out of T1 scope.",
+    files: [
+      "supabase/migrations/20260424100000_econ_watch_filters.sql",
+      "backend-hono/src/types/econ-watch-filter.ts",
+      "backend-hono/src/services/econ-watch-filters/econ-watch-filters-service.ts",
+      "backend-hono/src/routes/econ-filters/index.ts",
+      "backend-hono/src/routes/econ-filters/handlers.ts",
+      "backend-hono/src/routes/index.ts",
+      "frontend/components/refinement/EconFiltersManager.tsx",
+      "frontend/components/refinement/RefinementEngine.tsx",
+    ],
+  },
+  {
+    date: "2026-04-23T16:20:00",
+    agent: "claude-code",
+    summary:
+      "S30-T2 [v5.22.10W]: Strategium widget swap + Blindspots promotion + Session consolidation. " +
+      "Retired BlindspotsWidget from the Strategium right panel and replaced it with WeeklyPerformanceWidget — " +
+      "five Mon-Fri rows of the user's selected instrument (day label · point delta · % change · chevron) that expand " +
+      "inline to an IVStack + one-line summary + session high/low / top P&L / trade count. Rename bumped the " +
+      "MissionWidgetId registry from 'blindspots' → 'weekly' and v4 → v5 localStorage key. On the Performance tab, " +
+      "promoted Blindspots into a full-width before/after row (BlindspotsRow) with a stub useBlindspots() hook that " +
+      "T3 will wire to a backend source. Collapsed the three session cards + Hermes Summary + Your Notes into a single " +
+      "SessionJournalPanel — infractions counter, Discipline + Emotional Control sliders on the 0.0–10.0 decimal scale " +
+      "(TP-locked), Hermes summary block, notes textarea, explicit Submit → PUT /api/session-journal. Added shared " +
+      "SessionJournal type + SessionJournalService. Deleted HumanPsychTab.tsx (SessionNotesPanel was its only export and " +
+      "all call sites moved). Frontend build passes (3241 modules). Only outstanding tsc error is a pre-existing " +
+      "sidecar-contract ↔ soul-schema AgentId re-export clash in shared/index.ts.",
+    files: [
+      "frontend/components/mission-control/WeeklyPerformanceWidget.tsx",
+      "frontend/components/mission-control/BlindspotsWidget.tsx (deleted)",
+      "frontend/components/mission-control/MissionControlPanel.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/journal/BlindspotsRow.tsx",
+      "frontend/components/journal/SessionJournalPanel.tsx",
+      "frontend/components/journal/PerformanceJournal.tsx",
+      "frontend/components/journal/HumanPsychTab.tsx (deleted)",
+      "frontend/lib/layoutOrderStorage.ts",
+      "frontend/lib/services/journal.ts",
+      "frontend/lib/services/index.ts",
+      "shared/session-journal.ts",
+      "shared/index.ts",
+    ],
+  },
+  {
+    date: "2026-04-23T16:00:00",
+    agent: "claude-code",
+    summary:
+      "S30-T1 [v5.22.10W]: Rebuilt Performance tab top row as two heatmap cards (Trade Activity + Futures Daily), " +
+      "demoted the 8 KPI cards to the row below. TradeActivityHeatmap is a GitHub-style grid fed by " +
+      "/api/projectx/trades with Trades/Shares/Notional toggle + year selector, colored by the user's " +
+      "bullishColor with opacity scaled to daily intensity. FuturesDailyHeatmap is diverging " +
+      "(bullish/bearish) on daily % change, with a contract selector (ES/NQ/MES/MNQ/CL/GC/6E), " +
+      "stats row, and cell-click showing a ≤160-char daily market summary that stays identical " +
+      "across contract swaps. Extended FusePalette with optional bullishColor/bearishColor + " +
+      "DEFAULT_TRADE_COLORS. Added trade-colors.ts helper (getIntensityColor, getDivergingColor), " +
+      "shared HeatmapGrid primitive, PerformanceHeatmapsRow + PerformanceHistoryPage extracts to " +
+      "keep PerformanceJournal.tsx under 300 lines. Futures bars fall back to a deterministic mock " +
+      "in frontend/lib/__mocks__/futures-daily.json until T3 ships /api/market/futures-daily.",
+    files: [
+      "frontend/components/journal/PerformanceJournal.tsx",
+      "frontend/components/journal/performance/TradeActivityHeatmap.tsx",
+      "frontend/components/journal/performance/FuturesDailyHeatmap.tsx",
+      "frontend/components/journal/performance/PerformanceHeatmapsRow.tsx",
+      "frontend/components/journal/performance/PerformanceHistoryPage.tsx",
+      "frontend/components/journal/performance/HeatmapGrid.tsx",
+      "frontend/lib/trade-colors.ts",
+      "frontend/lib/fuse-palette.ts",
+      "frontend/lib/__mocks__/futures-daily.json",
+    ],
+  },
+
+  {
+    date: "2026-04-23T14:55:00",
+    agent: "claude-code",
+    summary:
+      "Reverted the 3D iso-icon bank and agent-spinner port back to the prior lucide + UnicodeSpinners surface (TP: 'they look terrible. lol'). " +
+      "Swapped all 244 consumers (219 frontend + 25 mobile) from '@/components/shared/iso-icons' and '../shared/iso-icons' back to 'lucide-react'; " +
+      "deleted frontend/components/shared/iso-icons/ and mobile/components/shared/iso-icons/. " +
+      "Restored frontend/components/icon-bank/UnicodeSpinners.tsx from pre-c243abac HEAD; swapped the 6 agent-spinner consumers " +
+      "(App.tsx, ai-loader.tsx, FintheonThinkingIndicator.tsx, SessionsModal.tsx, FintheonThread.tsx, AquariumPredictionCards.tsx, RiskFlowMain.tsx) " +
+      "back to HelixVertical / CircleQuarters / MeterToShimmer / FishSwimmer; deleted frontend/components/icon-bank/agent-spinners/. " +
+      "Frontend + mobile tsc clean, vite builds pass (3234 + 2416 modules).",
+    files: [
+      "frontend/App.tsx",
+      "frontend/components/ui/ai-loader.tsx",
+      "frontend/components/chat/FintheonThinkingIndicator.tsx",
+      "frontend/components/chat/FintheonThread.tsx",
+      "frontend/components/chat/SessionsModal.tsx",
+      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "frontend/components/feed/RiskFlowMain.tsx",
+      "frontend/components/icon-bank/UnicodeSpinners.tsx",
+      "frontend/components/shared/iso-icons/ (deleted)",
+      "frontend/components/icon-bank/agent-spinners/ (deleted)",
+      "mobile/components/shared/iso-icons/ (deleted)",
+      "+ 237 frontend/mobile consumer files swapped from iso-icons back to lucide-react",
+    ],
+  },
+
+  {
     date: "2026-04-22T14:30:00",
     agent: "T3/Wealth",
     summary:

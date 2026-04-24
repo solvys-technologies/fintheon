@@ -1,6 +1,6 @@
 // [claude-code 2026-03-20] S3-FIX:T4 — Walkthrough overhaul: contextual floating cards, 11 steps
 import { useState, useEffect, useCallback, useRef } from "react";
-import { X } from "@/components/shared/iso-icons";
+import { X } from "lucide-react";
 import { useToast } from "../../contexts/ToastContext";
 
 const TOUR_STORAGE_KEY = "fintheon:tour-completed";

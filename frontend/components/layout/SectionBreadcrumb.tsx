@@ -2,7 +2,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronRight as Separator,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 
 type NavTab = string;
 

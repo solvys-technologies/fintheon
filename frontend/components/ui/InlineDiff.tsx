@@ -1,6 +1,6 @@
 // [claude-code 2026-04-18] S24-T4: InlineDiff — rescore-impact preview + lexicon diff approval cells
 import { useMemo } from "react";
-import { ArrowRight, Plus, Minus } from "@/components/shared/iso-icons";
+import { ArrowRight, Plus, Minus } from "lucide-react";
 
 export interface ScoreBucketDelta {
   bucket: string; // e.g. "L10", "L9", "score >=8"

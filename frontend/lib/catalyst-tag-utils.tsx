@@ -6,7 +6,7 @@
 // Timeline and Catalyst cards share this so the treatment is consistent.
 
 import type { CSSProperties, ReactNode } from "react";
-import { Link as LinkIcon } from "@/components/shared/iso-icons";
+import { Link as LinkIcon } from "lucide-react";
 
 const URL_PREFIX = "url:";
 

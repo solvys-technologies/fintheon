@@ -10,7 +10,7 @@ import {
   StopCircle,
   RefreshCw,
   type LucideIcon,
-} from "@/components/shared/iso-icons";
+} from "lucide-react";
 
 export interface SkillDef {
   id: string;
