@@ -9,6 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T01:15:00",
+    agent: "claude-code",
+    summary:
+      "v5.23.4: Polymarket scope + duration guardrails + per-category agent scorecard. Migration 20260424010000 adds CHECK constraint on polymarket_predictions.category (weather | economics | commentary | projected_data), hard ceiling CHECK that market_close_at ≤ created_at + 7 days, plus reasoning + catalyst_source columns and two supporting indexes (category/agent on resolved rows, market_close_at on open rows). POST /api/polymarket/predictions now enforces the same rules pre-insert with descriptive 400s (category allowlist, marketCloseAt required + in future + ≤ 7d). GET /api/polymarket/predictions/accuracy now segments by (agent, category) — TP reads win-rate per bucket. Analyst prompts rewritten: oracle-extra adds the 4-bucket definition + pick-wisely rubric (category fit, ≤168h horizon, ≥10pp edge, named catalyst within window, liquidity check) + required payload template; herald-extra, consul-extra, harper-extra say 'delegate to Oracle, cite the catalyst, don't POST yourself'. Backend build ✓, frontend tsc ✓, vite ✓, mobile ✓. Zero existing trades so migration is a no-op on data; guardrails apply to all future inserts.",
+    files: [
+      "supabase/migrations/20260424010000_polymarket_predictions_guardrails.sql",
+      "backend-hono/src/routes/polymarket/index.ts",
+      "backend-hono/src/services/ai/agent-instructions/oracle-extra.md",
+      "backend-hono/src/services/ai/agent-instructions/herald-extra.md",
+      "backend-hono/src/services/ai/agent-instructions/consul-extra.md",
+      "backend-hono/src/services/ai/agent-instructions/harper-extra.md",
+      "package.json",
+      "scripts/fintheon-update.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-24T00:30:00",
     agent: "claude-code",
     summary:
