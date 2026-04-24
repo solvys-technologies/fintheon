@@ -85,9 +85,7 @@ export function VerdictCard({
             day: "numeric",
           })}
         </span>
-        {trigger && (
-          <span className="uppercase tracking-wider">{trigger}</span>
-        )}
+        {trigger && <span className="uppercase tracking-wider">{trigger}</span>}
       </div>
     </div>
   );

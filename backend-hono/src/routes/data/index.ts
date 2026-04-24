@@ -39,7 +39,12 @@ function normalizeBriefTypeParam(raw: string | undefined): BriefType | null {
     );
     return "TWT";
   }
-  if (upper === "MDB" || upper === "ADB" || upper === "PMDB" || upper === "TWT") {
+  if (
+    upper === "MDB" ||
+    upper === "ADB" ||
+    upper === "PMDB" ||
+    upper === "TWT"
+  ) {
     return upper as BriefType;
   }
   return null;
@@ -264,9 +269,9 @@ export function createDataRoutes(): Hono {
     try {
       let overrideType: BriefType | undefined;
       try {
-        const body = (await c.req.json().catch(() => null)) as
-          | { type?: string }
-          | null;
+        const body = (await c.req.json().catch(() => null)) as {
+          type?: string;
+        } | null;
         overrideType = normalizeBriefTypeParam(body?.type) ?? undefined;
       } catch {
         /* no body or invalid JSON — auto-detect via getCurrentBriefType() */

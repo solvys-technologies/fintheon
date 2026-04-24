@@ -2,7 +2,8 @@
 import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
 import { DissentBadge } from "./DissentBadge";
 
-const EMPTY_COPY = "No fresh read — chamber convenes at 17:00 ET or on IV ≥ 8.5.";
+const EMPTY_COPY =
+  "No fresh read — chamber convenes at 17:00 ET or on IV ≥ 8.5.";
 
 export function ArbitrumPeek() {
   const { verdict, isLoading } = useArbitrumLatest();

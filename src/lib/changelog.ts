@@ -25,6 +25,16 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
+    date: "2026-04-24T19:00:00",
+    agent: "claude-code",
+    summary:
+      "S35-T11: PMDB Chamber Read integration. brief-generator now fetches the latest Arbitrum session-trigger digest via a runtime-resolved dynamic import of services/arbitrum/index.js (keeps build green before T1/T12 land the barrel) and, when present, prepends a '## Chamber Read (17:00 Arbitrum Session)' section to the PMDB prompt plus a prompt-instruction tweak telling the model to lead with the consensus and flag dissent. ADB/MDB/TWT paths untouched. Null-safe: if the arbitrum module is missing or the helper returns null, PMDB falls back to the original short-form instruction. Branch: s35-t11-pmdb-chamber-read. Also wrote sprint-md/S35-T11-pmdb-chamber-read.md brief (orchestrator had deferred).",
+    files: [
+      "backend-hono/src/services/brief-generator.ts",
+      "sprint-md/S35-T11-pmdb-chamber-read.md",
+    ],
+  },
+  {
     date: "2026-04-24T21:00:00",
     agent: "claude-code",
     summary:

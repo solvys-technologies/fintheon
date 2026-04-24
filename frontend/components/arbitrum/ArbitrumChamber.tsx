@@ -25,7 +25,8 @@ const DEFAULT_ROLES: ReadonlyArray<ArbitrumSeat["role"]> = [
   "Bear",
 ];
 
-const EMPTY_COPY = "No fresh read — chamber convenes at 17:00 ET or on IV ≥ 8.5.";
+const EMPTY_COPY =
+  "No fresh read — chamber convenes at 17:00 ET or on IV ≥ 8.5.";
 
 function seatLetter(role: string): string {
   return role.charAt(0).toUpperCase();
@@ -193,7 +194,8 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
   const revealed = useStaggeredReveal(seats.length);
 
   const roundsTotal = verdict?.rounds_total ?? 3;
-  const roundsComplete = verdict?.rounds_complete ?? (verdict ? roundsTotal : 0);
+  const roundsComplete =
+    verdict?.rounds_complete ?? (verdict ? roundsTotal : 0);
   const roundsValue = roundsTotal > 0 ? roundsComplete / roundsTotal : 0;
   const phase = verdict?.phase ?? (verdict ? "complete" : "convening");
 

@@ -1,3 +1,4 @@
+// [claude-code 2026-04-24] S35-T11: Inject Arbitrum "Chamber Read" (17:00 session digest) into PMDB prompt. Dynamic import of getLatestChamberRead so build stays green before T1/T12 lands the arbitrum barrel.
 // [claude-code 2026-04-19] S24-T1: MDB no longer writes regime directly — it proposes. Live behind SCORING_V4 env flag so V3 is a one-toggle rollback. Root cause: 2026-04-17 TP manually set BULL_TREND; MDB silently overwrote it 10h later via setRegime(). Kills the silent-override footgun.
 // [claude-code 2026-04-05] Strands Phase 8: Replace generateText + OpenRouter fallback with invokeAgent
 // [claude-code 2026-03-26] S2-T2: Add regime classification to MDB prompt + auto-parse after generation
@@ -29,6 +30,29 @@ export const BRIEF_LABELS: Record<string, string> = {
   PMDB: "Post-Market Daily Brief (PMDB)",
   TWT: "The Weekly Tribune",
 };
+
+/**
+ * Fetch the latest Arbitrum session-trigger digest for PMDB injection.
+ * The import path is assembled at runtime so tsc doesn't statically resolve
+ * it — that keeps the build green before T1 lands `services/arbitrum/`.
+ * T12 unification swaps this for a direct import once the barrel exists.
+ */
+async function fetchChamberRead(): Promise<string | null> {
+  try {
+    const modulePath = "./arbitrum/index.js";
+    const mod = (await import(modulePath)) as {
+      getLatestChamberRead?: () => Promise<string | null>;
+    };
+    if (typeof mod.getLatestChamberRead !== "function") return null;
+    const text = await mod.getLatestChamberRead();
+    return typeof text === "string" && text.trim().length > 0 ? text : null;
+  } catch (err) {
+    log.warn("Chamber Read unavailable (arbitrum module not loaded)", {
+      error: String(err),
+    });
+    return null;
+  }
+}
 
 export function getCurrentBriefType(): BriefType {
   const now = new Date();
@@ -98,6 +122,13 @@ export async function generateBrief(
           .join("\n")
       : "No major economic events today.";
 
+  // PMDB runs at 17:15 ET — five minutes after the 17:00 Arbitrum session
+  // digest lands. If the session fired, lead PMDB with its consensus + dissent.
+  const chamberRead = briefType === "PMDB" ? await fetchChamberRead() : null;
+  const chamberSection = chamberRead
+    ? `\n## Chamber Read (17:00 Arbitrum Session)\n${chamberRead}\n`
+    : "";
+
   const isFull = briefType === "MDB" || briefType === "TWT";
 
   const prompt = isFull
@@ -165,12 +196,14 @@ ${econSummary}
 
 ## Recent RiskFlow Headlines
 ${feedSummary}
-
+${chamberSection}
 ## Instructions
 ${
   briefType === "ADB"
     ? "Write 3-5 bullet points covering ONLY new headlines and data since the morning that moved or could move the market. Skip anything already covered in the MDB. Be direct and actionable. Max 200 words."
-    : "Write 3-5 bullet points covering ONLY new developments since the afternoon brief — post-market moves, after-hours earnings, overnight catalysts. Be direct and actionable. Max 200 words."
+    : chamberRead
+      ? "Write 4-6 bullet points covering new developments since the afternoon brief — post-market moves, after-hours earnings, overnight catalysts. Lead with a 1-sentence restatement of the Chamber Read consensus above, flag any dissent, then the bullets. Be direct and actionable. Max 250 words."
+      : "Write 3-5 bullet points covering ONLY new developments since the afternoon brief — post-market moves, after-hours earnings, overnight catalysts. Be direct and actionable. Max 200 words."
 }`;
 
   let text: string;
