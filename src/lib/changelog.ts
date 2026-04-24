@@ -9,6 +9,24 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T20:00:00",
+    agent: "claude-code",
+    summary:
+      "S34-T9 [v.04.24.9]: Econ pipeline integration. Merged T1 (econ-watch-filters) + T4 (source quality) + T3 (economic_events populator) + T6 (keyword trigger) + T8 (countdown modal + /api/econ/active-watch + econ-print SSE). " +
+      "Unified broadcastEconPrint signature onto T8's flat EconPrintPayload (matches the frontend EconCountdownModal's EconPrintFrame) — removed duplicate T6-signature; adapted econ-bridge + econ-keyword-trigger call sites to pass {eventName, actual, forecast, previous, surprisePercent, beatMiss, printedAt}. " +
+      "Gap-fill: econ-calendar-populator now reads getActiveFilters() from the T1 service on each run and skips upserts for (country, category) combos TP has disabled in the Refinement Engine — falls back to implicit-all if the filter table is absent. " +
+      "Backend bun build green. Frontend tsc pre-existing drift unchanged (react-ts-tradingview-widgets + @sentry/vite-plugin missing deps + shared/index.ts AgentId re-export — all pre-T9, flagged for orchestrator). " +
+      "Held: T2 visual rebuild + T7 fiscal-speaker sources still in flight — will re-merge when those tracks finalize.",
+    files: [
+      "backend-hono/src/services/cron/econ-calendar-populator.ts",
+      "backend-hono/src/services/riskflow/sse-broadcaster.ts",
+      "backend-hono/src/services/riskflow/econ-bridge.ts",
+      "backend-hono/src/services/riskflow/econ-keyword-trigger.ts",
+      "backend-hono/src/routes/econ/index.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-24T19:10:00",
     agent: "claude-code",
     summary:

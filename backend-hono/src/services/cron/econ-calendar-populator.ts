@@ -1,3 +1,4 @@
+// [claude-code 2026-04-24] S34-T9: populator honors econ_watch_filters (T1) — skip upserts for (country, category) combos that TP has disabled in the Refinement Engine.
 // [claude-code 2026-04-24] S34-T3: Econ calendar populator.
 // - Sunday 22:00 America/New_York: weekly pull of ForexFactory ff_calendar_thisweek.json
 // - Hourly weekdays 9–17 ET: refresh today's slice to capture actuals as they print
@@ -18,6 +19,7 @@ import {
   type EconCountryCode,
 } from "../econ-calendar-service.js";
 import { injectEconPrintToFeed } from "../riskflow/econ-bridge.js";
+import { getActiveFilters } from "../econ-watch-filters/econ-watch-filters-service.js";
 import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger("EconCalendarPopulator");
@@ -120,6 +122,7 @@ interface RunResult {
   actualsBridged: number;
   skippedCountry: number;
   skippedDate: number;
+  skippedFilter: number;
 }
 
 export async function runEconCalendarPopulator(
@@ -139,11 +142,29 @@ export async function runEconCalendarPopulator(
     actualsBridged: 0,
     skippedCountry: 0,
     skippedDate: 0,
+    skippedFilter: 0,
   };
 
   const rows = await fetchForexFactory();
   if (!rows) return result;
   result.fetched = rows.length;
+
+  // [S34-T9] T1 watch-filters: build an active-set once per run. If the service
+  // throws (fresh DB without table), fall back to implicit-all so populator
+  // still runs standalone.
+  let activeFilterKey: Set<string> | null = null;
+  try {
+    const filters = await getActiveFilters();
+    if (filters.length > 0) {
+      activeFilterKey = new Set(
+        filters.map((f) => `${f.country}:${f.category}`),
+      );
+    }
+  } catch (err) {
+    log.warn("getActiveFilters failed — falling back to implicit-all", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
 
   for (const row of rows) {
     const country = ffCurrencyToCountry(row.country);
@@ -164,6 +185,12 @@ export async function runEconCalendarPopulator(
     const name = (row.title ?? "").trim();
     if (!name) continue;
 
+    const category = categorizeEvent(name);
+    if (activeFilterKey && !activeFilterKey.has(`${country}:${category}`)) {
+      result.skippedFilter++;
+      continue;
+    }
+
     const key = eventKey({ name, date: dt.date, time: dt.time, country });
     const record: Omit<EconEventRecord, "id" | "created_at" | "updated_at"> & {
       event_key: string;
@@ -172,7 +199,7 @@ export async function runEconCalendarPopulator(
       date: dt.date,
       time: dt.time,
       country,
-      category: categorizeEvent(name),
+      category,
       forecast: row.forecast?.trim() || undefined,
       previous: row.previous?.trim() || undefined,
       actual: row.actual?.trim() || undefined,
