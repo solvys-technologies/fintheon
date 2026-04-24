@@ -1,4 +1,7 @@
 // [claude-code 2026-04-12] Source accounts CRUD service — curated X accounts for timeline polling
+// [claude-code 2026-04-24] S34-T5: TTL tightened to 30s so Refinement Engine edits take effect
+// by the next tier tick without a backend restart. Added getWireHandles / getMacroHandles for
+// news-worker DB-driven handle wiring.
 
 import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
@@ -12,7 +15,7 @@ const log = createLogger("SourceAccountsService");
 
 let cache: SourceAccount[] = [];
 let cacheLoadedAt = 0;
-const CACHE_TTL = 300_000; // 5 min
+const CACHE_TTL = 30_000; // 30s — UI edits reflect in the next tier tick
 
 function clearCache(): void {
   cache = [];
@@ -75,6 +78,16 @@ export async function getActiveAccounts(): Promise<SourceAccount[]> {
 export async function getAccountHandles(): Promise<string[]> {
   const active = await getActiveAccounts();
   return active.map((a) => a.handle);
+}
+
+export async function getWireHandles(): Promise<string[]> {
+  const active = await getActiveAccounts();
+  return active.filter((a) => a.category === "Wire").map((a) => a.handle);
+}
+
+export async function getMacroHandles(): Promise<string[]> {
+  const active = await getActiveAccounts();
+  return active.filter((a) => a.category === "Macro").map((a) => a.handle);
 }
 
 export async function addAccount(

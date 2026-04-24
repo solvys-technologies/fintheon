@@ -299,44 +299,18 @@ async function pollForNewItems(): Promise<void> {
       return;
     }
 
-    // [claude-code 2026-04-18] S25-T1: Rettiwt is now SECONDARY. Agent Reach dedicated poller
-    // handles primary news. Rettiwt only runs when authenticated keys are available (not just
-    // registered — must be off cooldown). Silent when absent; no log spam.
-    const rettiwtUp = hasAuthenticatedKeys();
+    // [claude-code 2026-04-24] S34-T5: Rettiwt secondary branch removed. DB-driven
+    // Agent-Reach (news-worker tier coordinators) now covers Wire+Macro handles via
+    // Nitter mirrors. Rettiwt utilities remain inert stubs above for future re-enable
+    // behind RETTIWT_REENABLE. Economic feed + scrape fallback paths are preserved.
+    const econItems = await fetchEconomicFeed().catch((err) => {
+      log.warn("Economic feed fetch failed:", { error: String(err) });
+      return [] as FeedItem[];
+    });
 
-    // Gather items from Rettiwt (if keys ready) + economic feed
-    const [rettiwtItems, econItems] = await Promise.all([
-      rettiwtUp
-        ? pollForEconNews().catch((err) => {
-            log.error("Rettiwt poll failed:", { error: String(err) });
-            return [] as FeedItem[];
-          })
-        : Promise.resolve([] as FeedItem[]),
-      fetchEconomicFeed().catch((err) => {
-        log.warn("Economic feed fetch failed:", { error: String(err) });
-        return [] as FeedItem[];
-      }),
-    ]);
-
-    // Track empty polls — triggers scrape fallback after consecutive empties
-    if (rettiwtUp && rettiwtItems.length === 0) {
-      markRettiwtPollEmpty();
-      if (isRettiwtRateLimited()) {
-        log.info(
-          "Rettiwt returning empty — running scrape fallback for headlines",
-        );
-        await runScrapeFallback();
-      }
-    } else if (rettiwtItems.length > 0) {
-      markRettiwtPollSuccess();
-    }
-
-    const rawItems: FeedItem[] = [...econItems, ...rettiwtItems];
+    const rawItems: FeedItem[] = [...econItems];
 
     if (rawItems.length === 0) {
-      log.info(
-        `Poll cycle: 0 items from all sources (rettiwt: ${rettiwtUp ? "available" : "unavailable"}, econ: checked)`,
-      );
       consecutivePollingFailures = 0;
       return;
     }

@@ -1,11 +1,18 @@
 // [claude-code 2026-04-19] S27-T7 (W2d): tier coordinators — compose source
 // collectors and hand off to persist.ts. Per-source failures are isolated so
 // one bad source never kills the tier (AgentReach pattern).
+// [claude-code 2026-04-24] S34-T5: add DB-driven handle collectors — Wire in
+// Breaking tier, Macro in Standard tier — sourced from riskflow_source_accounts
+// via source-accounts-service (30s cache). Closes the Refinement Engine loop.
 
 import { collectFromBrowserHarness } from "./browser-harness.js";
 import { collectFromExa } from "./exa.js";
 import { collectFromAgentReach } from "./agent-reach.js";
 import { writeCollectedItems } from "../persist.js";
+import {
+  getWireHandles,
+  getMacroHandles,
+} from "../../../services/source-accounts/source-accounts-service.js";
 import type { CollectedNewsItem } from "./types.js";
 
 export interface TierRunResult {
@@ -54,6 +61,11 @@ export async function runBreakingTier(): Promise<TierRunResult> {
         tier: "breaking",
       }),
     ),
+    safeCollect("agent-reach:wire-handles", async () => {
+      const handles = await getWireHandles();
+      if (handles.length === 0) return [];
+      return collectFromAgentReach({ handles, tier: "breaking" });
+    }),
   ]);
 
   const items = results.flatMap((r) => r.items);
@@ -88,6 +100,11 @@ export async function runStandardTier(): Promise<TierRunResult> {
         tier: "standard",
       }),
     ),
+    safeCollect("agent-reach:macro-handles", async () => {
+      const handles = await getMacroHandles();
+      if (handles.length === 0) return [];
+      return collectFromAgentReach({ handles, tier: "standard" });
+    }),
   ]);
 
   const items = results.flatMap((r) => r.items);

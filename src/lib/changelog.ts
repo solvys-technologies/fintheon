@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T10:30:00",
+    agent: "claude-code",
+    summary:
+      "S34-T5 (WS1): Source-accounts → news-worker DB-driven wiring. Closed the loop so Refinement Engine edits on riskflow_source_accounts actually drive polling. Tightened source-accounts cache TTL from 300s to 30s so toggles take effect by the next tier tick without a backend restart. Added getWireHandles + getMacroHandles helpers. Extended Agent-Reach collector with an optional `handles?` expansion: each handle fans out to a Nitter RSS fallback chain (nitter.net → nitter.poast.org → nitter.privacydev.net), tagged source_domain='nitter:{handle}' so T4's per-source counter attributes back to the handle rather than the mirror. Wired Wire handles into runBreakingTier and Macro handles into runStandardTier alongside existing RSS/browser/exa collectors (isolated failures). Deleted the S25-T1 rettiwt-gated secondary branch in feed-poller.pollForNewItems — inert stubs + scrape-fallback + RETTIWT_REENABLE path preserved for future re-enable.",
+    files: [
+      "backend-hono/src/services/source-accounts/source-accounts-service.ts",
+      "backend-hono/src/workers/news-worker/sources/agent-reach.ts",
+      "backend-hono/src/workers/news-worker/sources/index.ts",
+      "backend-hono/src/services/riskflow/feed-poller.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+
+  {
     date: "2026-04-24T09:45:00",
     agent: "claude-code",
     summary:
