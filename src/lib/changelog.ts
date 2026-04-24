@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T03:10:00",
+    agent: "claude-code",
+    summary:
+      "Harper voice + cognition panel polish. (1) Wired useSpeechSynthesis into useVoiceAssistant so Harper speaks voice-chat replies aloud with a British female voice (Web Speech API, graceful fallback chain en-GB female → en-GB → en-US female → en → default). Text chat path unchanged — TTS only fires on the voice path. (2) CognitionPanel redesign: 'Agent Mind' → 'thought for {elapsed}', removed the pulsing status dot next to the label, steps now render through Streamdown as a streaming thinking narrative (tool calls in inline code, durations italicised), and thinking phrases get a new slow semi-unsteady shimmer keyframe (6.8s, uneven stops) in index.css. Shimmer disabled under prefers-reduced-motion.",
+    files: [
+      "frontend/components/chat/CognitionPanel.tsx",
+      "frontend/hooks/useVoiceAssistant.ts",
+      "frontend/hooks/useSpeechSynthesis.ts",
+      "frontend/index.css",
+    ],
+  },
+  {
     date: "2026-04-24T02:45:00",
     agent: "claude-code",
     summary:

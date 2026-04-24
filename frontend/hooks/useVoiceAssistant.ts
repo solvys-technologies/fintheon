@@ -8,6 +8,7 @@ import { hermesConversationStorageKey } from "../lib/hermesAgentRouting";
 import type { VoiceRuntimeState } from "../types/voice";
 import { useMicPermission } from "./useMicPermission";
 import { useMicArbitration } from "./useMicArbitration";
+import { useSpeechSynthesis } from "./useSpeechSynthesis";
 
 export { useMicPermission } from "./useMicPermission";
 export { useMicArbitration } from "./useMicArbitration";
@@ -95,6 +96,18 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
   const { requestMic } = useMicArbitration();
 
   // Keep onTranscript ref in sync
+
+  // [claude-code 2026-04-24] Native browser TTS for Harper responses
+  const {
+    speak: speakTTS,
+    cancel: cancelTTS,
+    isSupported: ttsSupported,
+  } = useSpeechSynthesis({
+    onSpeakStart: () => console.debug("[VoiceAssistant] TTS: speaking started"),
+    onSpeakEnd: () => console.debug("[VoiceAssistant] TTS: speaking ended"),
+    onSpeakError: (error) =>
+      console.error("[VoiceAssistant] TTS error:", error),
+  });
   onTranscriptRef.current = options?.onTranscript;
 
   // Always supported now — we use getUserMedia + Whisper, not SpeechRecognition
@@ -281,14 +294,27 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
           setRuntimeState("speaking");
           if (controller.signal.aborted) return null;
 
-          // [S28-T1] audioBase64 is no longer returned by /api/voice/speak —
-          //   audio is delivered directly to Omi. Keep the playAudio call only
-          //   for legacy payloads that still carry a blob, otherwise stay quiet.
-          if (response.audioBase64) {
+          // [claude-code 2026-04-24] TTS Flow: Attempt native Web Speech API first,
+          //   then fallback to Omi-delivered audio if user is paired.
+          //   This gives desktop users immediate audio feedback without roundtrip to Omi.
+          let ttsAttempted = false;
+          if (ttsSupported) {
+            try {
+              await speakTTS(assistantText);
+              ttsAttempted = true;
+            } catch (ttsError) {
+              console.warn(
+                "[VoiceAssistant] TTS failed, will try Omi audio:",
+                ttsError,
+              );
+            }
+          }
+
+          // Legacy fallback: if TTS wasn't attempted or failed, use Omi audio if available
+          if (response.audioBase64 && !ttsAttempted) {
             await playAudio(response.audioBase64, response.audioMimeType);
           }
         }
-
         if (!controller.signal.aborted) {
           if (prompt && mode === "chat") {
             analyzeSpeechForTilt(prompt).catch(() => {});
@@ -322,6 +348,8 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
       playAudio,
       setErrorWithRecovery,
       analyzeSpeechForTilt,
+      speakTTS,
+      ttsSupported,
     ],
   );
 

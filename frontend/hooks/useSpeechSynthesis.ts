@@ -30,14 +30,12 @@ export function useSpeechSynthesis({
   useEffect(() => {
     if (typeof window !== "undefined") {
       synthRef.current =
-        window.speechSynthesis ||
-        (window as any).webkitSpeechSynthesis ||
-        null;
+        window.speechSynthesis || (window as any).webkitSpeechSynthesis || null;
     }
   }, []);
 
-  const findBritishFemaleVoice = useCallback(
-    (): SpeechSynthesisVoice | null => {
+  const findBritishFemaleVoice =
+    useCallback((): SpeechSynthesisVoice | null => {
       const synth = synthRef.current;
       if (!synth) return null;
 
@@ -57,16 +55,15 @@ export function useSpeechSynthesis({
         const match = voices.find(
           (v) =>
             v.lang.startsWith(pattern.lang) &&
-            (pattern.gender === "" || v.name.toLowerCase().includes(pattern.gender)),
+            (pattern.gender === "" ||
+              v.name.toLowerCase().includes(pattern.gender)),
         );
         if (match) return match;
       }
 
       // Fallback to first available voice
       return voices.length > 0 ? voices[0] : null;
-    },
-    [],
-  );
+    }, []);
 
   const speak = useCallback(
     async (text: string): Promise<void> => {
@@ -114,9 +111,7 @@ export function useSpeechSynthesis({
 
           utterance.onerror = (event) => {
             isSpeakingRef.current = false;
-            const error = new Error(
-              `SpeechSynthesis error: ${event.error}`,
-            );
+            const error = new Error(`SpeechSynthesis error: ${event.error}`);
             onSpeakError?.(error);
             reject(error);
           };
