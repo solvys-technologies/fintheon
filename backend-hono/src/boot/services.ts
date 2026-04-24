@@ -11,6 +11,7 @@ import { startAgentReachPoller } from "../services/riskflow/agent-reach-poller.j
 import { startPollWatchdog } from "../services/riskflow/poll-watchdog.js";
 import { seedCacheFromDb } from "../services/riskflow/feed-service.js";
 import { startEconEnricher } from "../services/cron/econ-enricher.js";
+import { startEconCalendarPopulator } from "../services/cron/econ-calendar-populator.js";
 import { startEconPoller } from "../services/riskflow/econ-rettiwt-poller.js";
 import { startExaScheduledMonitor } from "../services/riskflow/exa-scheduled-monitor.js";
 import { initClaudeSDK } from "../services/claude-sdk/process-manager.js";
@@ -245,7 +246,12 @@ export async function bootBackground(): Promise<void> {
   initVIXRescore();
   log.info("VIXRescore initialized");
 
-  // Econ calendar enricher (Notion calendar → RiskFlow feed)
+  // [S34-T3] Econ calendar populator (ForexFactory weekly + hourly refresh → economic_events)
+  // Must start BEFORE the enricher so the table has rows to read.
+  startEconCalendarPopulator();
+  log.info("EconCalendarPopulator started");
+
+  // Econ calendar enricher (economic_events → RiskFlow feed on actual print)
   startEconEnricher();
   log.info("EconEnricher started");
 

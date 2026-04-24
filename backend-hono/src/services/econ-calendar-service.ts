@@ -1,4 +1,5 @@
 // [claude-code 2026-04-16] Economic Calendar service — Supabase-backed
+// [claude-code 2026-04-24] S34-T3: added categorizeEvent heuristic + CountryCode / Category type exports for the populator + filter joins.
 
 import {
   readEconEvents,
@@ -9,6 +10,82 @@ import {
   type EconEventRecord,
   type EconPrintRecord,
 } from "./supabase-service.js";
+
+// ── S34-T3: Filter taxonomy ────────────────────────────────────────────────
+
+export type EconCountryCode = "US" | "EU" | "UK" | "JP" | "NZ" | "AU" | "CA";
+export type EconCategory =
+  | "Fiscal"
+  | "Supply Chain"
+  | "Inflation"
+  | "Job Market"
+  | "Speaker";
+
+export const ECON_DEFAULT_COUNTRIES: readonly EconCountryCode[] = [
+  "US",
+  "EU",
+  "UK",
+  "JP",
+  "NZ",
+  "AU",
+  "CA",
+] as const;
+
+// ForexFactory JSON uses currency codes; map to our country codes.
+const FF_CURRENCY_TO_COUNTRY: Record<string, EconCountryCode> = {
+  USD: "US",
+  EUR: "EU",
+  GBP: "UK",
+  JPY: "JP",
+  NZD: "NZ",
+  AUD: "AU",
+  CAD: "CA",
+};
+
+export function ffCurrencyToCountry(
+  currency: string | undefined,
+): EconCountryCode | null {
+  if (!currency) return null;
+  return FF_CURRENCY_TO_COUNTRY[currency.toUpperCase()] ?? null;
+}
+
+// Case-insensitive keyword → category.
+// Fallback is 'Fiscal' — rate decisions, budget etc. all cluster there and it
+// keeps unknowns out of the Inflation/Job Market buckets that drive T6 boosts.
+export function categorizeEvent(name: string): EconCategory {
+  const s = (name ?? "").toLowerCase();
+
+  if (
+    /\b(cpi|ppi|pce|hicp|inflation|import price|export price|core pce|core cpi)\b/.test(
+      s,
+    )
+  ) {
+    return "Inflation";
+  }
+  if (
+    /\b(nfp|non[- ]?farm|jobless claims|claims|adp|unemployment|jolts|eci|employment cost|average earnings|wages|payroll)\b/.test(
+      s,
+    )
+  ) {
+    return "Job Market";
+  }
+  if (
+    /\b(ism|pmi|manufacturing|durable goods|factory orders|trade balance|inventories|industrial production|retail sales|housing starts|building permits)\b/.test(
+      s,
+    )
+  ) {
+    return "Supply Chain";
+  }
+  if (
+    /\b(speech|speaks?|speaking|testimony|testifies|testifying|press conference|statement|remarks|powell|yellen|bessent|trump|lagarde|bailey|ueda|macklem|lowe|orr|nagel|waller|warsh|breeden|hunter|fomc member|mpc member|rba \w+ \w+)\b/.test(
+      s,
+    )
+  ) {
+    return "Speaker";
+  }
+  // Default: Fiscal (rate decisions, budget, Treasury auctions, FOMC minutes, etc.)
+  return "Fiscal";
+}
 
 // ── Types (preserved for backward compatibility) ────────────────────────────
 
