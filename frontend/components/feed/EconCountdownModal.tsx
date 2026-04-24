@@ -6,8 +6,7 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 
-const API_BASE =
-  import.meta.env.VITE_API_URL ?? "http://localhost:8080";
+const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
 const POLL_INTERVAL_MS = 30_000;
 const VISIBLE_WINDOW_MS = 5 * 60 * 1000; // T-5min gate
 const POST_PRINT_HOLD_MS = 20_000; // 20s visible after actual
@@ -79,9 +78,7 @@ function useEconActiveWatch(): ActiveWatchEvent[] {
   return events;
 }
 
-function useEconPrintStream(
-  onPrint: (frame: EconPrintFrame) => void,
-): void {
+function useEconPrintStream(onPrint: (frame: EconPrintFrame) => void): void {
   const onPrintRef = useRef(onPrint);
   onPrintRef.current = onPrint;
 
@@ -173,13 +170,19 @@ export function EconCountdownModal() {
         if (card.status === "printed") return { card, msUntil, drop: false };
         if (msUntil > VISIBLE_WINDOW_MS) return { card, msUntil, drop: true };
         if (now - scheduled > STALE_WINDOW_MS) {
-          return { card: { ...card, status: "missed" as Status }, msUntil, drop: true };
+          return {
+            card: { ...card, status: "missed" as Status },
+            msUntil,
+            drop: true,
+          };
         }
         return { card, msUntil, drop: false };
       })
       .filter((v) => {
         if (v.card.status === "printed" && v.card.printedAt) {
-          return now - new Date(v.card.printedAt).getTime() < POST_PRINT_HOLD_MS;
+          return (
+            now - new Date(v.card.printedAt).getTime() < POST_PRINT_HOLD_MS
+          );
         }
         return !v.drop;
       })
@@ -190,7 +193,9 @@ export function EconCountdownModal() {
   useEffect(() => {
     const drop = Object.values(cards).filter((card) => {
       if (card.status === "printed" && card.printedAt) {
-        return now - new Date(card.printedAt).getTime() > POST_PRINT_HOLD_MS + 500;
+        return (
+          now - new Date(card.printedAt).getTime() > POST_PRINT_HOLD_MS + 500
+        );
       }
       const scheduled = new Date(card.scheduledAt).getTime();
       return now - scheduled > STALE_WINDOW_MS + 500;

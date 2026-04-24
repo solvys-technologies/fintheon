@@ -240,6 +240,9 @@ export const changelog: ChangelogEntry[] = [
       "backend-hono/src/routes/index.ts",
       "frontend/components/refinement/EconFiltersManager.tsx",
       "frontend/components/refinement/RefinementEngine.tsx",
+    ],
+  },
+  {
     date: "2026-04-24T00:30:00",
     agent: "claude-code",
     summary:

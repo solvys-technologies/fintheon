@@ -173,8 +173,7 @@ export function createEconRoutes() {
         status:
           r.actual != null
             ? "printed"
-            : new Date(r.scheduled_at).getTime() + 15 * 60 * 1000 <
-                Date.now()
+            : new Date(r.scheduled_at).getTime() + 15 * 60 * 1000 < Date.now()
               ? "missed"
               : "upcoming",
       }));
