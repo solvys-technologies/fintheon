@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T18:00:00",
+    agent: "claude-code",
+    summary:
+      "v5.24.0 — S34 Econ Pipeline Restoration + Refinement Engine Rebuild. 10 tracks merged across 3 waves: T1 econ_watch_filters table + UI, T2 Refinement Engine layout flip + notched fuses (Nothing design), T3 economic_events base migration + ForexFactory populator, T4 silent-drop counters + FJ keyword baseline, T5 source-accounts → news-worker via Nitter mirrors, T6 Actual/Forecast keyword trigger + event-window scheduler, T7 Trump/Bessent/Fed speaker scrapers, T8 countdown modal + SSE econ-print channel, T9 integration + s32-harper-2-1 reconcile (v5.23.3–v5.23.6 prod work: routines retirement + polymarket guardrails + screener + tenancy lockdown + update-script tag authority + main.cjs remote fallback), T10 backfill orchestrator (2023-Q1 → current, free-tier LLMs, gated off). 3 migrations live on prod: econ_watch_filters (20260424100000), economic_events country/category/event_key (20260424101000), riskflow_drop_counters + v_source_signal_noise (20260424103000). T10's migration (20260424102000_econ_backfill_progress) awaits supabase db push on this deploy. Backend bun build clean, frontend tsc clean, frontend vite build clean. Branch: s34-unified. Archived sprint planning docs to sprint-changelog/.",
+    files: [
+      "sprint-changelog/S34-ORCHESTRATION.md",
+      "package.json",
+      "scripts/fintheon-update.sh",
+    ],
+  },
+  {
     date: "2026-04-24T02:55:00",
     agent: "claude-code",
     summary:
