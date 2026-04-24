@@ -9,6 +9,33 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T09:45:00",
+    agent: "claude-code",
+    summary:
+      "S34-T6 [v.04.24.6]: Econ keyword 'Actual/Forecast' trigger + per-minute event-window scheduler. " +
+      "New econ-keyword-trigger service sweeps recent raw_riskflow_items for the keyword, checks against " +
+      "active econ_watch_filters (T1) × upcoming economic_events (T3) windows using existing PRE_/POST_EVENT_MINUTES " +
+      "constants, and promotes matches to scored_riskflow_items with macro_level=4, risk_type='Macro', " +
+      "tags=['econ-print', country, category, keyword]. Numeric extractActualFromText runs as best-effort enrichment " +
+      "for econ_data. Tolerates missing filter/events tables (graceful fallback to implicit-all / empty-window no-op) " +
+      "so the track builds standalone. New econ-keyword-scheduler (node-cron, * * * * * America/New_York) cloned from " +
+      "news-worker-audit-scheduler; gated by ECON_KEYWORD_TRIGGER_ENABLED=false env flag. Added broadcastEconPrint to " +
+      "sse-broadcaster for T8's countdown modal; wired into econ-bridge.injectEconPrintToFeed success path. " +
+      "rettiwt-poller-econ.processActualsFromTweets now keyword-first gates (cheap skip) before running matchTweetToEvent; " +
+      "numeric-only items still require extractActualFromText for the rettiwt path (keyword-only handled by trigger sweep). " +
+      "Diagnostics: GET /api/econ/trigger-status + POST /api/econ/trigger-run (x-routine-secret).",
+    files: [
+      "backend-hono/src/services/riskflow/econ-keyword-trigger.ts (new)",
+      "backend-hono/src/services/cron/econ-keyword-scheduler.ts (new)",
+      "backend-hono/src/services/riskflow/sse-broadcaster.ts",
+      "backend-hono/src/services/riskflow/econ-bridge.ts",
+      "backend-hono/src/services/riskflow/rettiwt-poller-econ.ts",
+      "backend-hono/src/boot/services.ts",
+      "backend-hono/src/routes/econ/index.ts",
+      "sprint-md/S34-T6-keyword-trigger-scheduler.md (new)",
+    ],
+  },
+  {
     date: "2026-04-23T16:20:00",
     agent: "claude-code",
     summary:
