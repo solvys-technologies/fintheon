@@ -37,7 +37,7 @@ function briefTypeToLabel(bt: string): string {
       return "Midday Dispatch";
     case "PMDB":
       return "Dusk Dispatch";
-    case "WT":
+    case "TWT":
       return "The Weekly Tribune";
     default:
       return "Latest Brief";
@@ -124,13 +124,13 @@ export function MainDashboard({
     [settings],
   );
 
-  // Brief type windows: TOTT (Sun>=17:00 through Mon<7AM), PMDB (5:30PM through 6:29AM), ADB (11AM-5:29PM), MDB (6:30AM-10:59AM)
+  // Brief type windows: TWT (Sun>=17:00 through Mon<7AM), PMDB (5:30PM through 6:29AM), ADB (11AM-5:29PM), MDB (6:30AM-10:59AM)
   const getBriefLabel = () => {
     const now = new Date();
     const day = now.getDay();
     const h = now.getHours();
     const t = h * 60 + now.getMinutes();
-    // TOTT: Sunday >= 17:00 through Monday < 07:00
+    // TWT: Sunday >= 17:00 through Monday < 07:00
     if ((day === 0 && t >= 17 * 60) || (day === 1 && h < 7))
       return "The Weekly Tribune";
     // PMDB stays active overnight until MDB fires at 6:30 AM

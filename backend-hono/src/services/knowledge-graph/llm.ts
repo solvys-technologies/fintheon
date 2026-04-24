@@ -25,7 +25,7 @@ Allowed feature categories:
 - new filter (refines an existing list/feed)
 - new automation (routine, alert, scheduled action)
 - new card variant (different rendering of an existing card)
-- new brief section (added to MDB/ADB/PMDB/TOTT)
+- new brief section (added to MDB/ADB/PMDB/TWT)
 - new agent invocation shortcut (one-tap path to invoke an agent on something)
 
 REFUSAL: If no surface has at least ${MIN_EVENTS_FOR_SIGNAL} events OR no surface has a clearly dominant or rising trend, respond with exactly: []

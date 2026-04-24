@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
+// [claude-code 2026-04-24] S35-T5: TOTT/WT → TWT rename; legacy TOTT/WT alias (sunsets 2026-05-08)
 // dispatch-brief.ts — Generate daily briefs via Claude CLI (Sonnet) + POST to Supabase + iMessage
-// Usage: bun run scripts/dispatch-brief.ts MDB|ADB|PMDB|TOTT
+// Usage: bun run scripts/dispatch-brief.ts MDB|ADB|PMDB|TWT
 // Standalone — does NOT require backend to be running.
 
 import { createClient } from "@supabase/supabase-js";
@@ -9,11 +10,23 @@ import { appendFileSync, mkdirSync, readFileSync } from "fs";
 import { join } from "path";
 
 // ── Config ──
-const BRIEF_TYPE = (process.argv[2] ?? "ADB").toUpperCase() as
-  | "MDB"
-  | "ADB"
-  | "PMDB"
-  | "TOTT";
+type DispatchBriefType = "MDB" | "ADB" | "PMDB" | "TWT";
+
+// S35-T5: legacy TOTT/WT alias sunsets 2026-05-08
+function normalizeBriefType(raw: string): DispatchBriefType {
+  const upper = raw.toUpperCase();
+  if (upper === "TOTT" || upper === "WT") {
+    console.log(
+      `[dispatch-brief] legacy brief type alias normalized: received=${upper} normalizedTo=TWT`,
+    );
+    return "TWT";
+  }
+  return upper as DispatchBriefType;
+}
+
+const BRIEF_TYPE: DispatchBriefType = normalizeBriefType(
+  process.argv[2] ?? "ADB",
+);
 const RECIPIENT = "+15618490392";
 const LOG_DIR = join(import.meta.dir, "..", "logs");
 const LOG_FILE = join(LOG_DIR, `dispatch-${BRIEF_TYPE.toLowerCase()}.log`);
@@ -118,9 +131,9 @@ Provide 3-5 bullet points covering:
 
 Keep it under 200 words. Terse, forward-looking.`,
   },
-  TOTT: {
-    label: "Tip of the Tape — Weekly Tribune",
-    prompt: `You are a senior futures desk analyst at Priced In Capital. Generate the Weekly Tribune (TOTT - Tip of the Tape).
+  TWT: {
+    label: "The Weekly Tribune",
+    prompt: `You are a senior futures desk analyst at Priced In Capital. Generate the Weekly Tribune (TWT - The Weekly Tribune).
 
 Format sections:
 - Week in Review: What drove markets this week (2-3 sentences)
@@ -290,7 +303,7 @@ async function persistBrief(
       brief_type: BRIEF_TYPE,
       content,
       generated_by: generatedBy,
-      category: BRIEF_TYPE === "TOTT" ? "weekly" : "daily",
+      category: BRIEF_TYPE === "TWT" ? "weekly" : "daily",
     })
     .select("id")
     .single();

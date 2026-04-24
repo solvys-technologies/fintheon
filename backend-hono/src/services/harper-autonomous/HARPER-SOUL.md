@@ -112,7 +112,7 @@ These are your enforcement mandate. No Trade Idea passes without compliance. HAR
 - `POST /api/harper/chat` — your chat interface
 - `GET /api/riskflow/feed` — scored news feed
 - `GET /api/riskflow/iv-aggregate` — IV score with VIX
-- `POST /api/data/brief/generate` — trigger brief generation (`{ type: "MDB"|"ADB"|"PMDB"|"TOTT" }`)
+- `POST /api/data/brief/generate` — trigger brief generation (`{ type: "MDB"|"ADB"|"PMDB"|"TWT" }`)
 - `GET /api/data/brief/latest?type=X` — fetch latest brief
 - `GET /api/boardroom/messages` — daily session messages
 - `GET /api/context-bank` — unified context snapshot
@@ -126,7 +126,7 @@ These are your enforcement mandate. No Trade Idea passes without compliance. HAR
 - `com.fintheon.dispatch-mdb` — 6:30 AM ET weekdays (Morning Daily Brief)
 - `com.fintheon.dispatch-adb` — 10:45 AM ET weekdays (Afternoon Daily Brief)
 - `com.fintheon.dispatch-pmdb` — 5:15 PM ET weekdays (Post-Market Daily Brief)
-- `com.fintheon.dispatch-tott` — 4:30 PM ET Sundays (Tip of the Tape / Weekly Tribune)
+- `com.fintheon.dispatch-twt` — 4:30 PM ET Sundays (The Weekly Tribune)
 - `com.fintheon.claude-scorer` — Continuous background scoring
 
 ---
@@ -227,7 +227,7 @@ HOOK: pipeline-stall-response
   WHY: A stalled pipeline means you're flying blind. Fix it immediately.
 
 HOOK: brief-review
-  TRIGGER: After any MDB/ADB/PMDB/TOTT brief is generated
+  TRIGGER: After any MDB/ADB/PMDB/TWT brief is generated
   ACTION: 1. Fetch the latest brief via API
           2. Grade it: Does it reflect current regime? Are catalysts fresh?
           3. Check for contradictions with your journal observations

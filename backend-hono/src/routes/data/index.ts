@@ -1,3 +1,4 @@
+// [claude-code 2026-04-24] S35-T5: TOTT/WT → TWT rename; legacy alias normalization (sunsets 2026-05-08)
 // [claude-code 2026-03-20] Data routes — Supabase-backed, replaces /api/notion/* endpoints
 // [claude-code 2026-03-22] Refactored brief generation to use shared brief-generator service
 // [claude-code 2026-03-27] Added /econ-history/:ticker for Sanctum expanded cards with prints + scoring
@@ -25,6 +26,24 @@ import {
   BRIEF_LABELS,
 } from "../../services/brief-generator.js";
 import { startPrediction } from "../../services/agent-desk/agent-desk-service.js";
+
+// S35-T5: legacy TOTT/WT alias sunsets 2026-05-08
+// Normalizes incoming brief-type query/body params — any caller still sending
+// "TOTT" or "WT" is silently mapped to "TWT" and logged once per invocation.
+function normalizeBriefTypeParam(raw: string | undefined): BriefType | null {
+  if (!raw) return null;
+  const upper = raw.toUpperCase();
+  if (upper === "TOTT" || upper === "WT") {
+    console.log(
+      `[data/brief] legacy brief type alias normalized received=${upper} normalizedTo=TWT`,
+    );
+    return "TWT";
+  }
+  if (upper === "MDB" || upper === "ADB" || upper === "PMDB" || upper === "TWT") {
+    return upper as BriefType;
+  }
+  return null;
+}
 
 // ── Helpers: transform DB records → frontend shapes ─────────────────────────
 
@@ -175,16 +194,14 @@ export function createDataRoutes(): Hono {
 
   // ── Briefs ──────────────────────────────────────────────────────
 
-  // GET /api/data/brief?type=MDB|ADB|PMDB|TOTT
+  // GET /api/data/brief?type=MDB|ADB|PMDB|TWT
+  // Legacy "TOTT" / "WT" values accepted and normalized to "TWT" until 2026-05-08.
   // No type param → returns most recent brief of any type (so overnight shows PMDB, not stale MDB)
   app.get("/brief", async (c) => {
     try {
-      const typeParam = c.req.query("type")?.toUpperCase() as
-        | BriefType
-        | undefined;
-      const validTypes = ["MDB", "ADB", "PMDB", "WT"];
+      const typeParam = normalizeBriefTypeParam(c.req.query("type"));
 
-      if (typeParam && validTypes.includes(typeParam)) {
+      if (typeParam) {
         // Explicit type requested — fetch that specific brief
         const brief = await readLatestBrief(typeParam);
         if (brief) {
@@ -240,10 +257,21 @@ export function createDataRoutes(): Hono {
 
   // POST /api/data/brief/generate — AI brief generation + store in Supabase
   // Delegates to shared brief-generator service (also used by dispatch-scheduler crons)
+  // Optional body `{ type: "MDB"|"ADB"|"PMDB"|"TWT" }`. Legacy "TOTT" / "WT" normalized to "TWT".
+  // [claude-code 2026-04-24] S35-T5: accept body.type with legacy TOTT/WT alias
   // [claude-code 2026-04-16] Triggers AgentDesk Aquarium run after successful brief publish
   app.post("/brief/generate", async (c) => {
     try {
-      const result = await generateBrief();
+      let overrideType: BriefType | undefined;
+      try {
+        const body = (await c.req.json().catch(() => null)) as
+          | { type?: string }
+          | null;
+        overrideType = normalizeBriefTypeParam(body?.type) ?? undefined;
+      } catch {
+        /* no body or invalid JSON — auto-detect via getCurrentBriefType() */
+      }
+      const result = await generateBrief(overrideType);
 
       // Fire-and-forget: trigger Aquarium deliberation after brief publish
       // Empty lanes → AgentDesk synthesizes from RiskFlow headlines

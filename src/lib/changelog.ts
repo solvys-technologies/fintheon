@@ -40,6 +40,26 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
+    date: "2026-04-24T21:30:00",
+    agent: "claude-code",
+    summary:
+      'S35-T5: TOTT → TWT canonical rename (The Weekly Tribune). Updated dispatch-brief.ts, dispatch-scheduler.ts (cron id com.fintheon.dispatch-twt, DispatchJob.briefType "TWT"), harper-handler.ts + harper-extra.md + HARPER-SOUL.md (docstrings + scheduled jobs + hook trigger), knowledge-graph/llm.ts feature-category list, routes/data/index.ts comment + validTypes + POST /brief/generate body.type plumbing, MainDashboard.tsx time-window comments + case "TWT", UpgradeModal.tsx feature list. Scope expansion: WT → TWT runtime rename across supabase-service BriefType union, brief-generator BRIEF_LABELS/getCurrentBriefType/isFull, routes/ops cadenceLimitMin. Legacy "TOTT"/"WT" incoming aliases normalized to "TWT" in routes/data and dispatch-brief with one-shot log — sunsets 2026-05-08. boot/services.ts left to T12 unification per brief.',
+    files: [
+      "backend-hono/scripts/dispatch-brief.ts",
+      "backend-hono/src/services/cron/dispatch-scheduler.ts",
+      "backend-hono/src/services/harper-handler.ts",
+      "backend-hono/src/services/harper-autonomous/HARPER-SOUL.md",
+      "backend-hono/src/services/ai/agent-instructions/harper-extra.md",
+      "backend-hono/src/services/knowledge-graph/llm.ts",
+      "backend-hono/src/routes/data/index.ts",
+      "backend-hono/src/services/supabase-service.ts",
+      "backend-hono/src/services/brief-generator.ts",
+      "backend-hono/src/routes/ops/index.ts",
+      "frontend/components/executive/MainDashboard.tsx",
+      "frontend/components/UpgradeModal.tsx",
+    ],
+  },
+  {
     date: "2026-04-24T18:00:00",
     agent: "claude-code",
     summary:

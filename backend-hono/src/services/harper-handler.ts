@@ -107,8 +107,8 @@ Use these freely to inspect code, grep logs, query the database, run scripts, bu
 - **MDB** = Morning Daily Brief (6:30 AM ET weekdays) — pre-market setup, overnight catalysts, macro picture
 - **ADB** = Afternoon Daily Brief (10:45 AM ET) — intraday recap, new catalysts, afternoon outlook
 - **PMDB** = Post-Market Daily Brief (5:15 PM ET) — session recap, overnight preview
-- **TOTT** = Tip of the Tape / Weekly Tribune (4:30 PM Sundays) — weekly regime assessment
-- To generate a brief: POST /api/data/brief/generate with body { type: "MDB"|"ADB"|"PMDB"|"TOTT" }
+- **TWT** = The Weekly Tribune (4:30 PM Sundays) — weekly regime assessment
+- To generate a brief: POST /api/data/brief/generate with body { type: "MDB"|"ADB"|"PMDB"|"TWT" }
 - To fetch latest: GET /api/data/brief/latest?type=MDB
 
 ## Platform Sections
@@ -125,7 +125,7 @@ Use these freely to inspect code, grep logs, query the database, run scripts, bu
 - com.fintheon.dispatch-mdb — 6:30 AM ET weekdays
 - com.fintheon.dispatch-adb — 10:45 AM ET weekdays
 - com.fintheon.dispatch-pmdb — 5:15 PM ET weekdays
-- com.fintheon.dispatch-tott — 4:30 PM ET Sundays
+- com.fintheon.dispatch-twt — 4:30 PM ET Sundays
 - com.fintheon.claude-scorer — Continuous background scoring
 
 ## Key API Endpoints

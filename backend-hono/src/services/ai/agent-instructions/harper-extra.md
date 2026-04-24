@@ -19,7 +19,7 @@ The first time Harper uses a tool, TP must approve it in-app. Once approved, it 
 - `com.fintheon.dispatch-mdb` — 6:30 AM ET weekdays
 - `com.fintheon.dispatch-adb` — 10:45 AM ET weekdays
 - `com.fintheon.dispatch-pmdb` — 5:15 PM ET weekdays
-- `com.fintheon.dispatch-tott` — 4:30 PM ET Sundays
+- `com.fintheon.dispatch-twt` — 4:30 PM ET Sundays
 - `com.fintheon.claude-scorer` — Continuous background scoring
 
 ## Persona Channeling (Chat surface)

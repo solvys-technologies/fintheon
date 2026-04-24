@@ -1,4 +1,5 @@
-// [claude-code 2026-03-22] Dispatch briefing scheduler — cron-driven MDB/ADB/PMDB/TOTT generation
+// [claude-code 2026-04-24] S35-T5: TOTT/WT → TWT rename (The Weekly Tribune)
+// [claude-code 2026-03-22] Dispatch briefing scheduler — cron-driven MDB/ADB/PMDB/TWT generation
 /**
  * Dispatch Scheduler
  *
@@ -9,7 +10,7 @@
  *   6:30 AM  — MDB  (Morning Daily Brief)
  *   10:45 AM — ADB  (Afternoon Daily Brief)
  *   5:15 PM  — PMDB (Post-Market Daily Brief)
- *   4:30 PM Sunday — TOTT (Tale of the Tape / Weekly Tribune)
+ *   4:30 PM Sunday — TWT (The Weekly Tribune)
  */
 
 import cron from "node-cron";
@@ -53,11 +54,11 @@ const DISPATCH_JOBS: DispatchJob[] = [
     description: "Post-Market Daily Brief (5:15 PM ET, weekdays)",
   },
   {
-    id: "dispatch-wt",
-    briefType: "WT",
+    id: "dispatch-twt",
+    briefType: "TWT",
     cronExpression: "30 16 * * 0",
     timezone: "America/New_York",
-    description: "Weekly Tribune (4:30 PM ET, Sunday)",
+    description: "The Weekly Tribune (4:30 PM ET, Sunday)",
   },
 ];
 

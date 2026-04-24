@@ -1,4 +1,5 @@
-// [claude-code 2026-04-19] S25-T7: Ops endpoint surface — last-run + next-run for Aquarium simulation and the four scheduled briefs (MDB/ADB/PMDB/WT). Frontend uses this for the Aquarium last-run timer + brief countdown chip in the Sanctum header. Failure state is inferred from age vs expected cadence.
+// [claude-code 2026-04-24] S35-T5: WT → TWT in cadence check and inline comment
+// [claude-code 2026-04-19] S25-T7: Ops endpoint surface — last-run + next-run for Aquarium simulation and the four scheduled briefs (MDB/ADB/PMDB/TWT). Frontend uses this for the Aquarium last-run timer + brief countdown chip in the Sanctum header. Failure state is inferred from age vs expected cadence.
 import { Hono } from "hono";
 import { readLatestBrief } from "../../services/supabase-service.js";
 import type { BriefType } from "../../services/supabase-service.js";
@@ -168,7 +169,7 @@ export function createOpsRoutes() {
           // Has run before; consider stale if more than (cadence + grace) since last run
           // We don't compute cadence per-job; treat ≥ 26h as stale (briefs are daily/weekly)
           const cadenceLimitMin =
-            j.briefType === "WT" ? 7 * 24 * 60 + 60 : 26 * 60;
+            j.briefType === "TWT" ? 7 * 24 * 60 + 60 : 26 * 60;
           if (
             ageMin != null &&
             ageMin > cadenceLimitMin + STALE_BRIEF_GRACE_MINUTES

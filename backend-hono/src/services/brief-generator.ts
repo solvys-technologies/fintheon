@@ -27,7 +27,7 @@ export const BRIEF_LABELS: Record<string, string> = {
   MDB: "Morning Daily Brief (MDB)",
   ADB: "Afternoon Daily Brief (ADB)",
   PMDB: "Post-Market Daily Brief (PMDB)",
-  WT: "The Weekly Tribune",
+  TWT: "The Weekly Tribune",
 };
 
 export function getCurrentBriefType(): BriefType {
@@ -35,9 +35,9 @@ export function getCurrentBriefType(): BriefType {
   const day = now.getDay();
   const h = now.getHours();
   const timeVal = h * 60 + now.getMinutes();
-  // WT: Sunday >= 17:00 through Monday < 07:00
-  if (day === 0 && timeVal >= 17 * 60) return "WT";
-  if (day === 1 && h < 7) return "WT";
+  // TWT: Sunday >= 17:00 through Monday < 07:00
+  if (day === 0 && timeVal >= 17 * 60) return "TWT";
+  if (day === 1 && h < 7) return "TWT";
   // PMDB stays active overnight until MDB fires at 6:30 AM
   if (timeVal < 6 * 60 + 30) return "PMDB";
   if (timeVal >= 17 * 60 + 30) return "PMDB";
@@ -98,7 +98,7 @@ export async function generateBrief(
           .join("\n")
       : "No major economic events today.";
 
-  const isFull = briefType === "MDB" || briefType === "WT";
+  const isFull = briefType === "MDB" || briefType === "TWT";
 
   const prompt = isFull
     ? `You are Fintheon, a macro trading assistant for Priced In Capital. Generate a comprehensive ${BRIEF_LABELS[briefType]}.
