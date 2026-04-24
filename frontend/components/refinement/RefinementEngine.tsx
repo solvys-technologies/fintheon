@@ -1,3 +1,4 @@
+// [claude-code 2026-04-24] S34-T2: Layout flip — main pane (75%) now carries regime/fuses/presets/advanced; feed shrinks to a 25% right panel (min 280, max 420). GroupSensitivityDial swapped for NotchedFuse (same -1..+1 contract). Nothing-design pass: flat surfaces, accent borders, dotted dividers, Doto numerals. No glass.
 // [claude-code 2026-04-19] S28: RoutinesConsole moved out of Scoring sidebar into the Monitor sub-tab. Scoring sidebar keeps Regime / Sensitivity / Presets / Advanced.
 // [claude-code 2026-04-20] S27 final-sanitation: thread auth token into V4 preset fetches + wrap loadV4State in try/catch so a rejected fetch never deadlocks the loader. Prior release stuck forever on "Loading Refinement Engine...".
 // [claude-code 2026-04-18] S24-T4: Rebuilt — 5 group dials + presets + advanced pane + toasts + rescore preview
@@ -14,8 +15,8 @@ import { QuickWeightEditor } from "./QuickWeightEditor";
 import { CommentatorManager } from "./CommentatorManager";
 import { SourceAccountsManager } from "./SourceAccountsManager";
 import { AnnotatableItem } from "./AnnotatableItem";
+import { NotchedFuse } from "./NotchedFuse";
 import {
-  GroupSensitivityDial,
   SENSITIVITY_DEFAULTS,
   type SensitivityGroup,
   type SensitivityValues,
@@ -369,8 +370,8 @@ export function RefinementEngine() {
         </div>
       ) : (
         <div className="flex-1 min-h-0 flex">
-          {/* Left panel — V4 group dials + regime + presets + advanced pane */}
-          <div className="w-[340px] shrink-0 border-r border-[var(--fintheon-accent)]/15 overflow-y-auto p-3">
+          {/* Main pane (75%) — regime / fuses / presets / advanced */}
+          <div className="flex-1 min-w-0 overflow-y-auto p-4">
             <RegimeControl regime={regime} onRegimeChanged={fetchRegime} />
 
             {v4Available ? (
@@ -379,7 +380,8 @@ export function RefinementEngine() {
                   style={{
                     marginTop: 16,
                     paddingTop: 12,
-                    borderTop: "1px solid var(--fintheon-glass-border)",
+                    borderTop:
+                      "1px dotted color-mix(in srgb, var(--fintheon-accent) 35%, transparent)",
                   }}
                 >
                   <div
@@ -395,7 +397,7 @@ export function RefinementEngine() {
                     Group Sensitivity
                   </div>
                   {GROUPS.map((g) => (
-                    <GroupSensitivityDial
+                    <NotchedFuse
                       key={g}
                       group={g}
                       value={pendingSensitivities[g]}
@@ -439,8 +441,9 @@ export function RefinementEngine() {
                 style={{
                   marginTop: 16,
                   padding: "10px 12px",
-                  border: "1px dashed var(--fintheon-glass-border)",
-                  borderRadius: 4,
+                  border:
+                    "1px dashed color-mix(in srgb, var(--fintheon-accent) 35%, transparent)",
+                  borderRadius: 0,
                   fontSize: 11,
                   color: "var(--fintheon-muted)",
                   fontFamily: "var(--font-data)",
@@ -448,7 +451,7 @@ export function RefinementEngine() {
                   lineHeight: 1.5,
                 }}
               >
-                V4 preset API not yet available — group dials land with T3.
+                V4 preset API not yet available — group fuses land with T3.
                 Advanced per-event controls still work.
               </div>
             )}
@@ -458,25 +461,37 @@ export function RefinementEngine() {
             >
               <MatrixEditor />
               <div
-                style={{ borderTop: "1px solid var(--fintheon-glass-border)" }}
+                style={{
+                  borderTop:
+                    "1px dotted color-mix(in srgb, var(--fintheon-accent) 25%, transparent)",
+                }}
               />
               <LexiconEditor />
               <div
-                style={{ borderTop: "1px solid var(--fintheon-glass-border)" }}
+                style={{
+                  borderTop:
+                    "1px dotted color-mix(in srgb, var(--fintheon-accent) 25%, transparent)",
+                }}
               />
               <QuickWeightEditor
                 weights={weights}
                 onWeightsSaved={fetchWeights}
               />
               <div
-                style={{ borderTop: "1px solid var(--fintheon-glass-border)" }}
+                style={{
+                  borderTop:
+                    "1px dotted color-mix(in srgb, var(--fintheon-accent) 25%, transparent)",
+                }}
               />
               <CommentatorManager
                 registry={registry}
                 onRegistryChanged={fetchRegistry}
               />
               <div
-                style={{ borderTop: "1px solid var(--fintheon-glass-border)" }}
+                style={{
+                  borderTop:
+                    "1px dotted color-mix(in srgb, var(--fintheon-accent) 25%, transparent)",
+                }}
               />
               <SourceAccountsManager
                 accounts={sourceAccounts}
@@ -485,10 +500,19 @@ export function RefinementEngine() {
             </AdvancedPane>
           </div>
 
-          {/* Right panel — annotatable feed */}
-          <div className="flex-1 min-w-0 overflow-y-auto p-3 space-y-2">
-            <div className="text-[10px] text-zinc-500 mb-1">
-              {items.length} item{items.length !== 1 ? "s" : ""} in feed
+          {/* Right panel (25%, min 280, max 420) — annotatable feed preview */}
+          <div className="w-1/4 min-w-[280px] max-w-[420px] shrink-0 border-l border-[var(--fintheon-accent)]/20 overflow-y-auto p-3 space-y-2">
+            <div
+              style={{
+                fontFamily: "var(--font-data)",
+                fontSize: 10,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "var(--fintheon-muted)",
+                marginBottom: 4,
+              }}
+            >
+              Feed Preview · {items.length} item{items.length !== 1 ? "s" : ""}
             </div>
 
             {items.length === 0 ? (
