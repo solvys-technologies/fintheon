@@ -140,7 +140,7 @@ function AuthenticatedApp() {
     onTabChange: (idx) => handleTabChange(idx as number),
   });
 
-  // [v5.22 polish] Notification drawer's "Ask Harper" swipe dispatches a
+  // [v5.22 polish] Notification drawer's "Ask CAO" swipe dispatches a
   // window event with {index} to switch tabs. Decoupled from the drawer so
   // the drawer doesn't need to know about layout state.
   useEffect(() => {

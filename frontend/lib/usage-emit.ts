@@ -135,7 +135,9 @@ function attachLifecycleHandlers() {
 /**
  * Record a single usage event. Fire-and-forget — never blocks UI, never throws.
  * surface: stable namespace string ("riskflow", "chat", "calendar", ...).
- * action: opaque verb ("view", "click", "filter", "promote", "ask_harper", ...).
+ * action: opaque verb ("view", "click", "filter", "promote", "ask_cao", "ask_harper" [legacy, migrating 2wk], ...).
+ * // ask_harper deprecated 2026-05-08
+ * // S35-T4: ask_cao is the primary action name; ask_harper stays as legacy dual-emit until 2026-05-08
  * targetId: optional opaque identifier (do NOT pass user-visible content).
  * metadata: optional small JSON-safe object (no prices, no order IDs).
  */

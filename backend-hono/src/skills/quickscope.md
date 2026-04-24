@@ -2,7 +2,7 @@
 
 ## Trigger
 
-User says "quickscope" in Ask Harp chat.
+User says "quickscope" in CAO chat.
 
 ## What it does
 

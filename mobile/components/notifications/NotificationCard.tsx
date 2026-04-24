@@ -267,7 +267,7 @@ export function NotificationCard({
               marginLeft: 8,
             }}
           >
-            ASK HARPER
+            ASK CAO
           </span>
         </motion.div>
       )}

@@ -49,7 +49,7 @@ export function RegimeMiniChat({
         }}
         className="text-[10px] text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors duration-200"
       >
-        Ask Harper...
+        Ask CAO...
       </button>
     );
   }

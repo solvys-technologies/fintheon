@@ -9,6 +9,21 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T21:00:00",
+    agent: "claude-code",
+    summary:
+      "S35-T4 [v5.25.0-S35-T4]: Ask Harper → CAO copy sweep (7 files). Mobile notification card button ASK HARPER → ASK CAO; drawer swipe comment; mobile App.tsx swipe-dispatch comment; frontend RegimeMiniChat placeholder; relay-dispatch-store store comment; usage-emit docstring updated to list ask_cao primary + ask_harper legacy with sunset date 2026-05-08; backend quickscope skill trigger text (Ask Harp → CAO). Persona 'Harper' stays as the CAO's name; only the feature label 'CAO chat' changes. Route /api/harper/chat and agent id harper-opus untouched (identifiers). Zero live-code Ask Harper/ASK HARPER hits remain. No actual ask_harper emit call sites exist in frontend/mobile, so the dual-emit step is documentation-only.",
+    files: [
+      "mobile/components/notifications/NotificationCard.tsx",
+      "mobile/components/notifications/NotificationDrawer.tsx",
+      "mobile/App.tsx",
+      "frontend/components/regimes/RegimeMiniChat.tsx",
+      "frontend/lib/relay-dispatch-store.ts",
+      "frontend/lib/usage-emit.ts",
+      "backend-hono/src/skills/quickscope.md",
+    ],
+  },
+  {
     date: "2026-04-24T18:00:00",
     agent: "claude-code",
     summary:

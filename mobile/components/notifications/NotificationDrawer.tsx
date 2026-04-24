@@ -1,6 +1,6 @@
 // [claude-code 2026-04-18] v5.22 polish per TP — overhauled drawer.
 //   • Cards extracted into NotificationCard with bidirectional swipe (left = dismiss,
-//     right = ASK HARPER for scored alerts / REVEAL ACTIONS for proposals).
+//     right = ASK CAO for scored alerts / REVEAL ACTIONS for proposals).
 //   • "Clear" button at top-right runs a fast staggered exit (40ms between cards) and
 //     marks-all-read on the backend.
 //   • Local dismissedIds Set persisted to localStorage so dismissed cards stay gone

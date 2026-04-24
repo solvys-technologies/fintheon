@@ -1,7 +1,7 @@
 // [claude-code 2026-04-18] S21-T1 Relay dispatch state — desktop ↔ mobile mirror handoff.
 // Tracks: whether paired mobile is reachable, whether a dispatch is active, the mirror
 // messages streaming in from mobile while dispatched. One store shared by sidebar chat
-// and main Ask Harper chat so both surfaces render the same state.
+// and main CAO chat so both surfaces render the same state.
 import { create } from "zustand";
 
 export interface MirrorMessage {
