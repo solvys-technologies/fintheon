@@ -52,7 +52,9 @@ Protocol: "Harper orchestrates, Oracle analyzes, Feucht guards, Consul validates
 - `electron/` — main + preload
 - `backend-hono/src/services/harper-handler.ts` — Harper chat handler
 - `backend-hono/src/services/ai/agent-instructions/` — Agent system prompts
+- `backend-hono/src/services/arbitrum/` — Arbitrum deliberation engine (5-seat chamber)
 - `backend-hono/src/routes/` — All API routes
+- `frontend/components/arbitrum/` — Arbitrum UI surfaces (Aquarium panel, hover peek)
 - `src/lib/changelog.ts` — Changelog (add entry after every feature/fix)
 
 ## API Endpoints (Key)
@@ -60,22 +62,69 @@ Protocol: "Harper orchestrates, Oracle analyzes, Feucht guards, Consul validates
 - `POST /api/harper/chat` — Harper-Opus chat
 - `GET /api/riskflow/feed` — Scored news feed
 - `GET /api/riskflow/iv-aggregate` — IV score with VIX
-- `POST /api/data/brief/generate` — Trigger brief (MDB/ADB/PMDB/TOTT)
+- `POST /api/data/brief/generate` — Trigger brief (MDB/ADB/PMDB/TWT)
 - `GET /api/data/brief/latest?type=X` — Fetch latest brief
 - `GET /api/mcp` — MCP server config list
-- `GET /api/miroshark/latest` — Latest Aquarium simulation
+- `GET /api/miroshark/latest` — Latest Aquarium simulation (legacy; deprecated with MiroShark)
+- `POST /api/arbitrum/deliberate` — Fire a chamber run
+- `GET /api/arbitrum/latest` — Latest Arbitrum verdict
+- `GET /api/arbitrum/verdicts/:id` — Specific verdict by id
 - `GET /api/diagnostics` — Service health check
+
+## Canonical Feature Names (locked 2026-04-24)
+
+When TP directs an agent to "fix X," these are the authoritative names. Any internal identifier that doesn't match goes on the rename list.
+
+| Canonical name                            | What it is                                                       | Internal locator                                               |
+| ----------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------- |
+| **Consilium**                             | Main workspace                                                   | `frontend/components/consilium/`                               |
+| **Sanctum**                               | Timeline + Aquarium + NarrativeFlow composite                    | `frontend/components/narrative/Sanctum.tsx`                    |
+| **Forum**                                 | Team channel (Fluxer iframe)                                     | `frontend/components/consilium/FluxerEmbed.tsx`                |
+| **Agentic Forum** (aka Agentic Boardroom) | DAG + agent-swarm runtime                                        | `backend-hono/src/services/boardroom-*` + DAG routes           |
+| **Apparatus**                             | Where the agents live (agent registry)                           | `frontend/components/apparatus/`                               |
+| **Strategium**                            | Right rail — mission control + RiskFlow feed + economic calendar | `frontend/components/MissionControl.tsx` + Strategium panels   |
+| **Arbitrum**                              | 5-seat deliberation engine (replaces MiroShark)                  | `backend-hono/src/services/arbitrum/`                          |
+| **Aquarium**                              | Surface label inside Sanctum for Arbitrum output                 | `frontend/components/narrative/Sanctum.tsx` (chart-mode panel) |
+| **RiskFlow**                              | Scored news feed                                                 | `backend-hono/src/services/riskflow/`                          |
+| **NarrativeFlow**                         | Catalyst cards promoted from RiskFlow                            | `frontend/components/narrative/NarrativeCanvas.tsx`            |
+| **CAO chat**                              | Main chat feature (persona: Harper)                              | `/api/harper/chat` + frontend ChatInterface                    |
+| **PsychAssist**                           | Trader tilt detector                                             | `backend-hono/src/services/psych-assist/`                      |
+| **MDB / ADB / PMDB / TWT**                | Morning / Afternoon / Post-market / Weekly briefs                | `backend-hono/src/services/brief-generator.ts`                 |
+
+**Legacy names (DO NOT use in new code):** Ask Harp → CAO chat, TOTT → TWT, News Worker → RiskFlow Worker, Econ Enricher → RiskFlow Econ Enricher, OpenClaw → Hermes, Pulse\* → Fintheon\*, MiroShark → Arbitrum.
 
 ## Terminology
 
 - **MDB** = Morning Daily Brief (6:30 AM ET weekdays)
 - **ADB** = Afternoon Daily Brief (10:45 AM ET)
 - **PMDB** = Post-Market Daily Brief (5:15 PM ET)
-- **TOTT** = Tip of the Tape / Weekly Tribune (4:30 PM Sundays)
+- **TWT** = Tribune Weekly / Weekly Tribune (4:30 PM Sundays) — supersedes legacy TOTT
 - **RiskFlow** = Scored news feed with IV-weighted urgency
 - **NarrativeFlow** = Catalyst cards promoted from RiskFlow into narrative threads
-- **Aquarium** = MiroShark multi-agent simulation
+- **Aquarium** = Surface label inside Sanctum for Arbitrum output (formerly MiroShark multi-agent simulation — **MiroShark deprecated 2026-04-24**, replaced by Arbitrum; see Arbitrum section below)
 - **PsychAssist** = Trader tilt detection via ER scoring
+
+## Arbitrum (deliberation engine, replaces MiroShark)
+
+**What:** 5-seat Qwen-family debate via Hermes. Output is a signal digest (consensus probability, confidence, dissent summary, digest text, IV simulation, upcoming catalysts). NO trade tickets, NO auto-actions — human makes the call.
+
+**Seats:**
+
+| Seat | Role         | Model                                   | Provider            | Weight | Persona voice       |
+| ---- | ------------ | --------------------------------------- | ------------------- | ------ | ------------------- |
+| 1    | Lead Analyst | Qwen3-235B-A22B                         | DashScope free-tier | 30%    | Harper (CAO)        |
+| 2    | Forecaster   | Qwen2.5-72B-Instruct                    | Ollama              | 30%    | Oracle              |
+| 3    | Risk Manager | QwQ-32B-Preview                         | Ollama              | 20%    | Feucht              |
+| 4    | Quantitative | Qwen2.5-Coder-32B                       | Ollama              | 10%    | Consul              |
+| 5    | Bear Case    | Qwen3-14B (w/ non-Qwen Ollama fallback) | Ollama              | 10%    | Feucht alt / Herald |
+
+**Cadence:** event-driven (scored_riskflow_items.iv_score ≥ 8.5 AND speaker is top-10 commentator OR party-of-interest) + session cron 17:00 ET weekdays (feeds into PMDB as "Chamber Read" section at 17:15).
+
+**Routing:** Hermes-only, never OpenRouter. Harper-CAO keeps its existing Claude-Opus path for chat; Arbitrum seats route through Hermes → Ollama/DashScope/Groq.
+
+**Engine surface vs UI surface:** the engine is `services/arbitrum/`. The user sees output inside Sanctum's Aquarium surface and as a peek textbox in the IV scoring widget hover modal.
+
+**Brand note:** yes, the name collides with Arbitrum the Ethereum L2. Disambiguate as "Fintheon Arbitrum" when needed.
 
 ## Platform Sections
 
