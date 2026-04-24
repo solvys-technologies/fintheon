@@ -769,6 +769,7 @@ async function fetchFreshFeed(): Promise<FeedItem[]> {
     const cleanMerged = filterWithContentGuard(
       merged,
       (i) => `${i.headline} ${i.body || ""}`,
+      { source: "feed-service:fetchFreshFeed", getSource: (i) => i.source },
     );
     if (isSupabaseConfigured() && cleanMerged.length > 0) {
       const rawRows = cleanMerged.map(feedItemToRaw);

@@ -156,6 +156,7 @@ export async function pollCommentary(): Promise<void> {
       const cleanItems = filterWithContentGuard(
         items,
         (i) => `${i.headline} ${i.body || ""}`,
+        { source: `commentary-scraper:@${account.handle}` },
       );
       if (cleanItems.length === 0) continue;
 

@@ -242,6 +242,7 @@ export async function checkForScheduledEvents(): Promise<void> {
   const cleanRows = filterWithContentGuard(
     freshRows,
     (i) => `${i.headline} ${i.body || ""}`,
+    { source: "exa-scheduled-monitor", getSource: (i) => i.source },
   );
   if (cleanRows.length === 0) {
     log.info("[ExaMonitor] All scheduled events blocked by content guard");

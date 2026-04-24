@@ -1,3 +1,6 @@
+// [claude-code 2026-04-24] S34-T4: wired drop-counter bumps at every scorer
+// drop site (content-guard, dismissed-pattern, narrative gate, web-scrape
+// below-threshold) so the per-source signal-noise endpoint reflects them.
 // [claude-code 2026-04-19] S24-T2: SCORING_V4 walk-back pair detection after write, before push emit
 // [claude-code 2026-04-16] S20-T9: Split into scorer-tagging.ts + scorer-watchlist.ts — this file is now the pipeline orchestrator
 // [claude-code 2026-04-12] Fix stuck scorer: staleness guard (90s force-reset), defensive tick logging, delayed initial cycle for DB pool warmup
@@ -40,6 +43,7 @@ import {
 } from "./agent-notes.js";
 import { tagHeadlineSubjects } from "./headline-tagger.js";
 import { checkContentGuard } from "./content-guard.js";
+import { bumpCounter } from "./drop-counters.js";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { normalizeHeadline } from "./text-utils.js";
 
@@ -159,6 +163,11 @@ export async function scoringCycle(): Promise<number> {
       const result = checkContentGuard(`${item.headline} ${item.body || ""}`);
       if (result.blocked) {
         blockedIds.add(item.id);
+        bumpCounter(
+          item.source || "unknown",
+          "central-scorer",
+          result.reason || "content-guard-unknown",
+        );
         log.info(
           `Content guard blocked in scorer: [${result.reason}] ${item.headline.slice(0, 80)}`,
         );
@@ -190,6 +199,11 @@ export async function scoringCycle(): Promise<number> {
       for (const item of guardedFeedItems) {
         if (isSimilarToDismissed(item.headline, dismissed)) {
           dismissedMatchIds.add(item.id);
+          bumpCounter(
+            item.source || "unknown",
+            "central-scorer",
+            "dropped_dismissed_pattern",
+          );
           log.info(`Dismissed-pattern match: "${item.headline.slice(0, 60)}"`);
         }
       }
@@ -221,6 +235,11 @@ export async function scoringCycle(): Promise<number> {
       const fullText = `${item.headline} ${item.body || ""} ${(item.tags || []).join(" ")}`;
       if (!matchesAnyNarrative(fullText)) {
         narrativeDropIds.add(item.id);
+        bumpCounter(
+          item.source || "unknown",
+          "central-scorer",
+          "dropped_narrative_gate",
+        );
         log.info(`Narrative gate dropped: "${item.headline.slice(0, 60)}"`);
       }
     }
@@ -376,7 +395,14 @@ export async function scoringCycle(): Promise<number> {
       const isWebScrape = WEB_SCRAPE_PREFIXES.some((p) =>
         submittedBy.startsWith(p),
       );
-      if (isWebScrape) droppedItems.push(item);
+      if (isWebScrape) {
+        droppedItems.push(item);
+        bumpCounter(
+          item.source || "unknown",
+          "central-scorer",
+          "dropped_below_threshold",
+        );
+      }
       return !isWebScrape;
     });
     if (droppedItems.length > 0) {

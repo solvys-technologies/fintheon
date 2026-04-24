@@ -1,3 +1,7 @@
 -- [claude-code 2026-04-24] Placeholder stub for migration already applied on remote.
--- Canonical SQL lives in supabase_migrations.schema_migrations.statements on the Fintheon project.
--- This stub exists so supabase CLI's glob-by-timestamp check passes.
+-- Canonical SQL was applied directly on the Fintheon Supabase project prior to this
+-- local file being reconstituted. This stub exists so:
+--   supabase migration repair --status applied 20260423173000
+-- can locate a file at glob supabase/migrations/20260423173000_*.sql.
+-- If you need the real DDL for disaster recovery, query:
+--   select statements from supabase_migrations.schema_migrations where version = '20260423173000';

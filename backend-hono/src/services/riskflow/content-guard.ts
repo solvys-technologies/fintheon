@@ -5,7 +5,12 @@
 // Catches: slurs, profanity, political spam, non-financial govt agencies, junk slang, drunk/incoherent text, @ mention replies
 // This is a PROFESSIONAL trading platform. Zero tolerance for non-market content.
 
+// [claude-code 2026-04-24] S34-T4: wired bumpCounter into filterWithContentGuard
+// so every content-guard rejection lands in riskflow_drop_counters with its
+// reason + source. Default stage = "content-guard".
+
 import { createLogger } from "../../lib/logger.js";
+import { bumpCounter } from "./drop-counters.js";
 
 const log = createLogger("ContentGuard");
 
@@ -105,8 +110,11 @@ const POLITICAL_SPAM_PATTERNS = [
 ];
 
 // ── Market relevance keywords (used by multiple filters below) ─────────────
+// [claude-code 2026-04-24] S34-T4: appended FJ-density keywords (see
+// fj-keyword-baseline.json). Append-only — NEVER remove a keyword without
+// TP signoff, per S34-T4 scope (it only widens the pass rate).
 const MARKET_KEYWORDS =
-  /\b(tariff|trade\s+war|sanction|executive\s+order|bill\s+sign|deficit|spending|budget|tax|debt|rate|inflation|CPI|PPI|GDP|NFP|FOMC|Fed\b|Treasury|yield|bond|equity|stock|futures|oil|crude|gold|VIX|earnings|revenue|IPO|merger|acquisition|bankruptcy|default|downgrade|upgrade|PMI|jobless|unemployment|retail\s+sales|housing|consumer|manufacturing|import|export|supply\s+chain|semiconductor|chip|OPEC|barrel|EIA|DOE|refinery|pipeline|LNG|natgas|interest\s+rate|basis\s+point|hike|cut|hawkish|dovish|tightening|easing|QE|QT|balance\s+sheet|repo|liquidity|margin|leverage|short|long|hedge|derivative|swap|option|put|call|strike|expiry|settlement|clearing|regulation|SEC|CFTC|DOJ|antitrust|compliance|stimulus|infrastructure|appropriation|continuing\s+resolution|shutdown|ceiling|sequester|reconciliation|USMCA|NATO|AUKUS|BRICS|G7|G20|IMF|World\s+Bank|WTO|BIS|ceasefire|escalat|de-?escalat|retaliati|mobiliz|airstrike|missile|nuclear|military|deploy|naval|carrier|drone|IRGC|Houthi|Hezbollah|IDF|Pentagon|CENTCOM|strait|blockade|proxy|invasion|annex|occupation|incursion|FX|forex|currency|currencies|USD|EUR|GBP|JPY|CNY|CHF|AUD|CAD|NZD|DXY|dollar|euro|yen|yuan|sterling|cable|carry\s+trade|intervention|Fin\.?\s*Min|Finance\s+Minister|BOJ|BOC|SNB|RBA|RBNZ|Riksbank|Norges\s+Bank|monetary\s+policy|devaluat|revaluat|peg|depreciat|appreciat)\b/i;
+  /\b(tariff|trade\s+war|sanction|executive\s+order|bill\s+sign|deficit|spending|budget|tax|debt|rate|inflation|CPI|PPI|GDP|NFP|FOMC|Fed\b|Treasury|yield|bond|equity|stock|futures|oil|crude|gold|VIX|earnings|revenue|IPO|merger|acquisition|bankruptcy|default|downgrade|upgrade|PMI|jobless|unemployment|retail\s+sales|housing|consumer|manufacturing|import|export|supply\s+chain|semiconductor|chip|OPEC|barrel|EIA|DOE|refinery|pipeline|LNG|natgas|interest\s+rate|basis\s+point|hike|cut|hawkish|dovish|tightening|easing|QE|QT|balance\s+sheet|repo|liquidity|margin|leverage|short|long|hedge|derivative|swap|option|put|call|strike|expiry|settlement|clearing|regulation|SEC|CFTC|DOJ|antitrust|compliance|stimulus|infrastructure|appropriation|continuing\s+resolution|shutdown|ceiling|sequester|reconciliation|USMCA|NATO|AUKUS|BRICS|G7|G20|IMF|World\s+Bank|WTO|BIS|ceasefire|escalat|de-?escalat|retaliati|mobiliz|airstrike|missile|nuclear|military|deploy|naval|carrier|drone|IRGC|Houthi|Hezbollah|IDF|Pentagon|CENTCOM|strait|blockade|proxy|invasion|annex|occupation|incursion|FX|forex|currency|currencies|USD|EUR|GBP|JPY|CNY|CHF|AUD|CAD|NZD|DXY|dollar|euro|yen|yuan|sterling|cable|carry\s+trade|intervention|Fin\.?\s*Min|Finance\s+Minister|BOJ|BOC|SNB|RBA|RBNZ|Riksbank|Norges\s+Bank|monetary\s+policy|devaluat|revaluat|peg|depreciat|appreciat|Lagarde|Powell|Draghi|Villeroy|Nagel|Kazaks|Kazimir|Knot|Holzmann|Wunsch|Centeno|Rehn|Stournaras|Simkus|auction|bid-to-cover|spread|widen|reverse\s+repo|standing\s+facility|MRO|TLTRO|tapering|forward\s+guidance|terminal\s+rate|inversion|curve\s+steepener|curve\s+flattener|real\s+yield|breakeven|TIPS|OIS|dot\s+plot|SEP|dissent|minutes|jawboning|refunding|QRA|bill\s+issuance|coupon|fixing|LIBOR|SOFR|ESTR|SONIA|TONAR|Nikkei|Hang\s+Seng|Topix|CSI|DAX|CAC|FTSE|IBEX|MIB|buyback|dividend|guidance\s+cut|guidance\s+raise|short\s+squeeze|gamma\s+squeeze|open\s+interest|skew|term\s+structure|contango|backwardation|inventory\s+draw|inventory\s+build|rig\s+count|crush\s+spread|crack\s+spread|heating\s+oil|gasoline|distillate|ISM|JOLTS|ADP|Challenger|Empire\s+State|Philly\s+Fed|Kansas\s+City\s+Fed|Dallas\s+Fed|Richmond\s+Fed|Beige\s+Book|core\s+PCE|supercore|trimmed\s+mean|Atlanta\s+Fed)\b/i;
 
 // ── Platform ad / promo prefixes ───────────────────────────────────────────
 // "FinancialJuice | ..." is their ad/promo format on X. Block at ingestion.
@@ -419,6 +427,7 @@ export function checkContentGuard(text: string): ContentGuardResult {
 export function filterWithContentGuard<T>(
   items: T[],
   getText: (item: T) => string,
+  opts?: { source?: string; getSource?: (item: T) => string | undefined },
 ): T[] {
   const passed: T[] = [];
   let blockedCount = 0;
@@ -431,6 +440,8 @@ export function filterWithContentGuard<T>(
       blockedCount++;
       blockedReasons[result.reason!] =
         (blockedReasons[result.reason!] || 0) + 1;
+      const itemSource = opts?.getSource?.(item) || opts?.source || "unknown";
+      bumpCounter(itemSource, "content-guard", result.reason || "unknown");
     } else {
       passed.push(item);
     }

@@ -209,6 +209,7 @@ export async function runScrapeFallback(): Promise<number> {
         const cleanItems = filterWithContentGuard(
           items,
           (i) => `${i.headline} ${i.body || ""}`,
+          { source: `feed-poller:timeline-${handle}` },
         );
         if (cleanItems.length > 0) {
           const written = await writeRawItems(cleanItems);
@@ -360,6 +361,7 @@ async function pollForNewItems(): Promise<void> {
     const cleanItems = filterWithContentGuard(
       newItems,
       (item) => `${item.headline} ${item.body || ""}`,
+      { source: "feed-poller", getSource: (i) => i.source },
     );
 
     // S3: Write raw (unenriched) items to raw_riskflow_items for central scorer
@@ -501,6 +503,7 @@ export async function forcePoll(): Promise<void> {
     const cleanRefreshItems = filterWithContentGuard(
       newItems,
       (item) => `${item.headline} ${item.body || ""}`,
+      { source: "feed-poller:manual-refresh", getSource: (i) => i.source },
     );
 
     // S3: Write raw items to raw_riskflow_items for central scorer

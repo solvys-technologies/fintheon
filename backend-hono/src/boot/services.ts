@@ -44,6 +44,7 @@ import { startAgentNotesCron } from "../services/riskflow/agent-notes.js";
 import { startCommentaryScraper } from "../services/riskflow/commentary-scraper.js";
 import { startMarketImpactEnricher } from "../services/cron/market-impact-enricher.js";
 import { startMonitoringLoop } from "../services/cron/monitoring-loop.js";
+import { startDropCounterFlush } from "../services/riskflow/drop-counters.js";
 import { startCatalystPromoter } from "../services/riskflow/catalyst-promoter.js";
 import { isComputerUseAvailable } from "../services/skills/tradingview-trade-plan.js";
 import * as projectxService from "../services/projectx-service.js";
@@ -308,6 +309,9 @@ export async function bootBackground(): Promise<void> {
   // Market impact enricher (24h — enriches HIGH/CRITICAL scored items with NQ/ES/YM daily close)
   startMarketImpactEnricher();
   log.info("MarketImpactEnricher started");
+
+  // [claude-code 2026-04-24] S34-T4: silent-drop counters (60s flush → riskflow_drop_counters)
+  startDropCounterFlush();
 
   // [claude-code 2026-04-18] S24-T4: V4 monitoring loop (2h — proposes regime/lexicon/walk-back changes)
   // Gated by ENABLE_MONITORING_LOOP env var. Turn on after T1/T2/T3 migrations land.

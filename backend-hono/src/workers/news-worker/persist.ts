@@ -15,8 +15,14 @@
 // (source_domain/fetched_at/fetch_latency_ms) added by the sources migration.
 // URL is appended to `tags` so the original link survives until a real `url`
 // column lands; symbols stays empty (worker doesn't tag tickers yet).
+//
+// [claude-code 2026-04-24] S34-T4: Count dedup silent-drops per source. When
+// upsert with ignoreDuplicates collapses rows, the gap between `items.length`
+// and the returned id[] is the dedup count. Emit into riskflow_drop_counters
+// via bumpCounter so the quiet "items_ingested: 0" zero is traceable.
 
 import { getSupabaseClient } from "../../config/supabase.js";
+import { bumpCounter } from "../../services/riskflow/drop-counters.js";
 import type { CollectedNewsItem } from "./sources/types.js";
 
 const FLAG_WRITES = "FLAG_NEWS_WORKER_WRITES_RISKFLOW";
@@ -48,7 +54,25 @@ export async function writeCollectedItems(
   // [claude-code 2026-04-19] url now writes to a real column; we keep the
   // url: tag for one release as a transition fallback so legacy consumers
   // that still read from `tags` don't suddenly see empty source links.
-  const rows = items.map((item) => ({
+  // [claude-code 2026-04-24] S34-T4: pre-filter missing-field items so the
+  // dedup math below isn't polluted by schema rejects that would short-circuit
+  // the upsert silently.
+  const eligible: CollectedNewsItem[] = [];
+  const perSourceMissing = new Map<string, number>();
+  for (const item of items) {
+    const src = item.source || "unknown";
+    if (!item.item_id || !item.headline || !item.headline.trim()) {
+      perSourceMissing.set(src, (perSourceMissing.get(src) ?? 0) + 1);
+      continue;
+    }
+    eligible.push(item);
+  }
+  for (const [src, count] of perSourceMissing) {
+    bumpCounter(src, "persist", "dropped_missing_fields", count);
+  }
+  if (eligible.length === 0) return 0;
+
+  const rows = eligible.map((item) => ({
     tweet_id: item.item_id,
     source: item.source,
     source_domain: item.source_domain,
@@ -81,9 +105,43 @@ export async function writeCollectedItems(
           error: error.message,
         }),
       );
+      for (const item of eligible) {
+        bumpCounter(
+          item.source || "unknown",
+          "persist",
+          "dropped_supabase_error",
+        );
+      }
       return 0;
     }
-    return data?.length ?? 0;
+    const written = data?.length ?? 0;
+    const droppedDedup = Math.max(0, eligible.length - written);
+    if (droppedDedup > 0) {
+      // ignoreDuplicates doesn't tell us WHICH rows got dropped, so distribute
+      // the dedup count across sources proportionally to their share of the
+      // eligible batch. This is good-enough attribution for trend detection;
+      // per-row precision would require a read-before-write per batch.
+      const perSource = new Map<string, number>();
+      for (const item of eligible) {
+        const src = item.source || "unknown";
+        perSource.set(src, (perSource.get(src) ?? 0) + 1);
+      }
+      const entries = Array.from(perSource.entries());
+      const total = eligible.length;
+      let allocated = 0;
+      for (let i = 0; i < entries.length; i++) {
+        const [src, share] = entries[i];
+        const portion =
+          i === entries.length - 1
+            ? droppedDedup - allocated
+            : Math.round((droppedDedup * share) / total);
+        if (portion > 0) {
+          bumpCounter(src, "persist", "dropped_dedup", portion);
+          allocated += portion;
+        }
+      }
+    }
+    return written;
   } catch (err) {
     console.warn(
       JSON.stringify({
@@ -93,6 +151,13 @@ export async function writeCollectedItems(
         error: err instanceof Error ? err.message : String(err),
       }),
     );
+    for (const item of eligible) {
+      bumpCounter(
+        item.source || "unknown",
+        "persist",
+        "dropped_supabase_exception",
+      );
+    }
     return 0;
   }
 }
