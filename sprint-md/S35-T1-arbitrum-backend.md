@@ -1,5 +1,14 @@
 # Sprint Brief: T1 — Arbitrum Backend (Engine + Hermes Adapter + Event Trigger + 17:00 Scheduler + Commentator Helper)
 
+## AMENDMENT 2026-04-24 — BACKEND-SAFETY FIXES (read first)
+
+Two backend-safety rules were tightened after initial brief:
+
+1. **Event-trigger is fire-and-forget.** Insertion in `central-scorer.ts` at post-upsert sites (around lines 543, 560 where `.from("scored_riskflow_items")` writes happen) must be `void eventTrigger.checkAndFire(row).catch(err => log.error({err}, "arbitrum event-trigger failed"))` — NEVER `await`. If Ollama/DashScope is down, the chamber call can take 20s+; the riskflow scorer cannot block on it.
+2. **`resolveProvider(modelId)` defaults to `'openrouter'`** for any model id not in the arbitrum seat map. This preserves harper-cao's existing Claude-Opus path verbatim. Regression test: `POST /api/harper/chat` must still return a valid Claude response after T1 ships.
+
+Both rules are codified in the plan file under "Build-never-breaks policy."
+
 ## Context
 
 Arbitrum is Fintheon's new multi-agent deliberation engine, replacing MiroShark. Five Qwen-family seats debate via Hermes (NOT OpenRouter — that path is reserved for harper-cao), produce a signal landscape with explicit dissent surfacing, and persist a verdict. This track builds the entire backend: chamber orchestration, per-seat MoA, facilitator synthesis, Hermes provider-routing abstraction, commentator top-N helper, event trigger (iv_score ≥ 8.5 + priority filter), session cron (17:00 ET weekdays), and API routes. Output shape: signal digest only — NO `decision` field, NO `recommended_action`, NO auto-trade gates. Human-in-the-loop.

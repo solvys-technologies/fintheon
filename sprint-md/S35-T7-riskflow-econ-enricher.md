@@ -1,5 +1,23 @@
 # Sprint Brief: T7 — RiskFlow Econ Enricher Rename
 
+## AMENDMENT 2026-04-24 — RE-EXPORT SHIM (read first)
+
+**Original brief said "build breaks until T12." That's wrong — we now require the build to stay green mid-sprint.**
+
+After `git mv`-ing `econ-enricher.ts` → `riskflow-econ-enricher.ts` and renaming the symbols inside, **create a new thin `econ-enricher.ts` at the original path** that re-exports the new names under their old names:
+
+```ts
+// [claude-code 2026-04-24 S35-T7] Re-export shim — lets boot/services.ts:13 keep importing
+// startEconEnricher / stopEconEnricher until T12 unification rewires the import.
+// T12 deletes this file.
+export {
+  startRiskFlowEconEnricher as startEconEnricher,
+  stopRiskFlowEconEnricher as stopEconEnricher,
+} from "./riskflow-econ-enricher.js";
+```
+
+With this shim, `cd backend-hono && bun run build` must be **clean** on this branch. No expected breakage. T12 unification swaps `boot/services.ts:13` to import `startRiskFlowEconEnricher` directly from `riskflow-econ-enricher.js`, then `rm econ-enricher.ts`.
+
 ## Context
 
 The `EconEnricher` cron service writes Notion economic-calendar prints into the RiskFlow feed. Its name doesn't tie it to the RiskFlow feature it's part of. Rename to `RiskFlowEconEnricher` — file, class/logger, exported functions, imports, internal comments. `backend-hono/src/boot/services.ts` imports the current `startEconEnricher` — the import update is deferred to T12 unification (which also edits this file for T1 arbitrum scheduler + T5 TOTT comment).

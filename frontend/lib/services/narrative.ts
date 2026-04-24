@@ -1,8 +1,28 @@
+// [claude-code 2026-04-24] S36 ClusterBeam — added summarizeCluster()
 /**
  * Narrative Scoring Service
  */
 
 import ApiClient from "../apiClient";
+
+export interface ClusterSummaryCardPayload {
+  id: string;
+  title: string;
+  sentiment?: "bullish" | "bearish" | "neutral";
+  severity?: "low" | "medium" | "high";
+  date?: string;
+  ivScore?: number;
+}
+
+export interface ClusterSummaryResponse {
+  one_liner: string;
+  bullets: string[];
+  dominant_sentiment: "bullish" | "bearish" | "mixed";
+  dominant_sentiment_confidence: number;
+  notable_tickers: string[];
+  cached: boolean;
+  ts: string;
+}
 
 export interface ScoredCandidate {
   sourceId: string;
