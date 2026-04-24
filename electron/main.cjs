@@ -416,7 +416,7 @@ const shouldAllowInAppPopup = (urlString) => {
   }
 };
 
-function createWindow() {
+function createWindow(apiBase) {
   // [claude-code 2026-04-23] Windows: use titleBarOverlay for Win 11 frameless chrome
   // that inherits Solvys palette (BG #050402, accent #c79f4a). macOS keeps the
   // native traffic-light chrome — no override needed.
@@ -433,6 +433,14 @@ function createWindow() {
       }
     : {};
 
+  // [claude-code 2026-04-24] apiBase is resolved by the caller in app.whenReady().
+  // Mac defaults to localhost:8080 when a local backend is healthy, falls back
+  // to fintheon.fly.dev when it isn't. Windows always hits Fly. The prior
+  // behavior of unconditionally pinning Mac to localhost left the chat UI
+  // hanging on "Model inference · 121ms" whenever launchd was down.
+  const resolvedApiBase =
+    apiBase || (IS_WIN ? REMOTE_BACKEND_URL : "http://localhost:8080");
+
   const win = new BrowserWindow({
     width: 1600,
     height: 980,
@@ -445,7 +453,7 @@ function createWindow() {
       webviewTag: true,
       nativeWindowOpen: true,
       additionalArguments: [
-        `--fintheon-api-base=${IS_WIN ? REMOTE_BACKEND_URL : "http://localhost:8080"}`,
+        `--fintheon-api-base=${resolvedApiBase}`,
         `--fintheon-platform=${process.platform}`,
       ],
     },
@@ -532,14 +540,20 @@ app.whenReady().then(async () => {
   // Register fintheon:// as a custom protocol for OAuth callbacks
   app.setAsDefaultProtocolClient("fintheon");
 
+  // [claude-code 2026-04-24] Decide the API base *after* we try to bring the
+  // local backend up. If it never goes healthy (e.g. launchd boot-assert on
+  // BYPASS_AUTH, or the user's ~/Documents/Fintheon tree doesn't exist), fall
+  // back to fintheon.fly.dev so the chat UI still works. Windows already
+  // always uses the remote.
+  let localBackendHealthy = false;
   const cfg = readStartupConfig();
   if (cfg.backendAutostart) {
     const startResult = await startBackend();
     if (!startResult.ok) {
       console.error("[Electron] Backend failed to start:", startResult.detail);
     } else {
-      const healthy = await waitForBackendHealthy(15000);
-      if (!healthy) {
+      localBackendHealthy = await waitForBackendHealthy(15000);
+      if (!localBackendHealthy) {
         console.warn("[Electron] Backend did not become healthy within 15s");
       } else {
         // [claude-code 2026-04-16] Refresh tokens + disarm idle shutdown on app open
@@ -548,8 +562,18 @@ app.whenReady().then(async () => {
     }
   } else {
     console.log("[Electron] Backend autostart disabled — skipping");
+    localBackendHealthy = await isBackendAlive();
   }
-  createWindow();
+
+  const apiBase = IS_WIN
+    ? REMOTE_BACKEND_URL
+    : localBackendHealthy
+      ? "http://localhost:8080"
+      : REMOTE_BACKEND_URL;
+  console.log(
+    `[Electron] Renderer api-base resolved to ${apiBase} (local healthy: ${localBackendHealthy})`,
+  );
+  createWindow(apiBase);
   setupAutoUpdater();
 
   // Forward any pending auth URL AFTER the renderer finishes loading
@@ -684,14 +708,22 @@ app.whenReady().then(async () => {
   app.on("activate", async () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       const cfg = readStartupConfig();
+      let localHealthy = false;
       if (cfg.backendAutostart) {
         const startResult = await startBackend();
         if (startResult.ok) {
-          const healthy = await waitForBackendHealthy(15000);
-          if (healthy) await onBackendReady();
+          localHealthy = await waitForBackendHealthy(15000);
+          if (localHealthy) await onBackendReady();
         }
+      } else {
+        localHealthy = await isBackendAlive();
       }
-      createWindow();
+      const apiBase = IS_WIN
+        ? REMOTE_BACKEND_URL
+        : localHealthy
+          ? "http://localhost:8080"
+          : REMOTE_BACKEND_URL;
+      createWindow(apiBase);
     }
   });
 });
