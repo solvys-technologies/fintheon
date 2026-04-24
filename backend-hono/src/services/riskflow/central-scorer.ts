@@ -236,6 +236,11 @@ export async function scoringCycle(): Promise<number> {
       const fullText = `${item.headline} ${item.body || ""} ${(item.tags || []).join(" ")}`;
       if (!matchesAnyNarrative(fullText)) {
         narrativeDropIds.add(item.id);
+        bumpCounter(
+          item.source || "unknown",
+          "central-scorer",
+          "dropped_narrative_gate",
+        );
         log.info(`Narrative gate dropped: "${item.headline.slice(0, 60)}"`);
       }
     }
@@ -391,7 +396,14 @@ export async function scoringCycle(): Promise<number> {
       const isWebScrape = WEB_SCRAPE_PREFIXES.some((p) =>
         submittedBy.startsWith(p),
       );
-      if (isWebScrape) droppedItems.push(item);
+      if (isWebScrape) {
+        droppedItems.push(item);
+        bumpCounter(
+          item.source || "unknown",
+          "central-scorer",
+          "dropped_below_threshold",
+        );
+      }
       return !isWebScrape;
     });
     if (droppedItems.length > 0) {

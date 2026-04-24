@@ -1,3 +1,6 @@
+// [claude-code 2026-04-24] S34-T4: GET /source-quality — merges v_source_signal_noise
+//   with in-memory drop-counter snapshot + recent riskflow_drop_counters rows.
+//   The "items_ingested: 0, errors: 0" silent-drop pattern now has a trace.
 // [claude-code 2026-03-20] Diagnostics endpoint — service status, missing env vars, suggested fixes
 // [claude-code 2026-03-22] Add POST /hermes/restart for frontend-triggered Hermes re-initialization
 // [claude-code 2026-04-19] S27-T6/T7 (W2d): surface cache_hit_rate_24h (browser operator) and
@@ -5,6 +8,7 @@
 
 import { Hono } from "hono";
 import { pingDb } from "../../db/optimized.js";
+import { getCurrentSnapshot as getDropCounterSnapshot } from "../../services/riskflow/drop-counters.js";
 import { supabaseAuthHealth } from "../../services/supabase-auth.js";
 import { isPollingActive } from "../../services/riskflow/feed-poller.js";
 import { getFeedHealth } from "../../services/riskflow/feed-service.js";
@@ -601,6 +605,64 @@ export function createDiagnosticsRoutes(): Hono {
       return c.json({ success: true, ...result });
     } catch (err) {
       return c.json({ success: false, error: String(err) }, 500);
+    }
+  });
+
+  // [claude-code 2026-04-24] S34-T4: per-source signal/noise + live drop
+  // counters. v_source_signal_noise is the rolling 48h promotion funnel;
+  // riskflow_drop_counters surfaces what got silently dropped and why.
+  router.get("/source-quality", async (c) => {
+    try {
+      const { getSupabaseClient } = await import("../../config/supabase.js");
+      const sb = getSupabaseClient();
+      const liveSnapshot = getDropCounterSnapshot();
+      if (!sb) {
+        return c.json({
+          window: "48h",
+          sources: [],
+          flushed_counters: [],
+          live_counters: liveSnapshot,
+          reason: "supabase_unconfigured",
+        });
+      }
+      const sinceIso = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+      const [viewResult, countersResult] = await Promise.all([
+        sb.from("v_source_signal_noise").select("*"),
+        sb
+          .from("riskflow_drop_counters")
+          .select("source,stage,reason,count,window_end")
+          .gte("window_end", sinceIso)
+          .order("window_end", { ascending: false })
+          .limit(500),
+      ]);
+      const sources = (viewResult.data ?? []) as Array<{
+        source: string;
+        ingested: number;
+        scored_total: number;
+        promoted: number;
+        drop_rate: number;
+        avg_score: number;
+      }>;
+      const counters = (countersResult.data ?? []) as Array<{
+        source: string;
+        stage: string;
+        reason: string;
+        count: number;
+        window_end: string;
+      }>;
+      return c.json({
+        window: "48h",
+        counter_window: "2h",
+        sources,
+        flushed_counters: counters,
+        live_counters: liveSnapshot,
+        errors: {
+          view: viewResult.error?.message ?? null,
+          counters: countersResult.error?.message ?? null,
+        },
+      });
+    } catch (err) {
+      return c.json({ window: "48h", sources: [], error: String(err) }, 500);
     }
   });
 
