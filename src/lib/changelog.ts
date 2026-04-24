@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T02:55:00",
+    agent: "claude-code",
+    summary:
+      "S34-T2: Refinement Engine layout flip — main pane (75%) carries regime/fuses/presets/advanced; feed shrinks to 25% right panel (min 280, max 420). New NotchedFuse swap-in for GroupSensitivityDial (same -1..+1 contract) with vertical-ruler ticks + Doto numeral readout. Dotted accent dividers replace flat glass-border rules. No glass / gradient / shadow.",
+    files: [
+      "frontend/components/refinement/RefinementEngine.tsx",
+      "frontend/components/refinement/NotchedFuse.tsx",
+    ],
+  },
+  {
     date: "2026-04-24T20:00:00",
     agent: "claude-code",
     summary:
