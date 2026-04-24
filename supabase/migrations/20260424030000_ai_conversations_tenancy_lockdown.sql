@@ -14,7 +14,7 @@
 --
 -- Safe to apply on an empty schema (conditional on table existence).
 
--- 1. Quarantine legacy anonymous rows.
+-- 1. Quarantine legacy anonymous rows (conversations + messages).
 DO $$
 BEGIN
   IF EXISTS (
@@ -31,6 +31,18 @@ BEGIN
             'legacy_user_id', user_id
           ),
         user_id = 'quarantined:' || id::text
+      WHERE user_id = 'anonymous';
+  END IF;
+
+  -- ai_messages also carries user_id directly on some rows (backfilled via
+  -- handleGetConversation's ACL-bypass reassign). Rewrite them to quarantined:{id}
+  -- so the CHECK constraint below can land.
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'ai_messages'
+  ) THEN
+    UPDATE public.ai_messages
+      SET user_id = 'quarantined:' || id::text
       WHERE user_id = 'anonymous';
   END IF;
 END
