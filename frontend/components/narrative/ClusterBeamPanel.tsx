@@ -17,9 +17,7 @@ import { useClusterSummary } from "../../hooks/useClusterSummary";
 import { ClusterScrubber } from "./ClusterScrubber";
 import type { CatalystCard } from "../../lib/narrative-types";
 
-function sentimentKey(
-  card: CatalystCard,
-): "bullish" | "bearish" | "neutral" {
+function sentimentKey(card: CatalystCard): "bullish" | "bearish" | "neutral" {
   const raw = ((card as { sentiment?: string }).sentiment ?? "").toLowerCase();
   if (raw === "bullish") return "bullish";
   if (raw === "bearish") return "bearish";
@@ -35,7 +33,9 @@ function dispatchShock(detail: {
 }
 
 function dispatchEcho(cardId: string | null) {
-  window.dispatchEvent(new CustomEvent("narrative:echo", { detail: { cardId } }));
+  window.dispatchEvent(
+    new CustomEvent("narrative:echo", { detail: { cardId } }),
+  );
 }
 
 export function ClusterBeamPanel() {
@@ -209,7 +209,9 @@ export function ClusterBeamPanel() {
                 AI Summary
               </div>
               {loading && !summary && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                >
                   <div
                     style={{
                       height: 14,
