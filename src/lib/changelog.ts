@@ -9,6 +9,26 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T22:30:00",
+    agent: "claude-code",
+    summary:
+      "S35-T12 Phase B — Arbitrum wiring + T9 safe deletions + T13 NOTICES + T6 README. Ships what S35 needed to actually fire: (1) arbitrum/engine.ts chamber orchestrator — glues ARBITRUM_SEATS × invokeMoA × synthesize × computeGates × saveVerdict; multi-round support with peer-draft summaries; (2) commentator-service.getTopNCommentators(n) sorted by weightMultiplier; (3) arbitrum/event-trigger.ts — fire-and-forget, gated on ivScore>=ARBITRUM_EVENT_IV_THRESHOLD (default 8.5) AND speaker fuzzy-matches top-N commentators, 20min per-speaker cooldown; (4) central-scorer.ts wires the trigger after writeScoredItems for every enrichedItem with ivScore>=8.5 (lazy dynamic import keeps cold-start clean); (5) routes/arbitrum/index.ts + mount (GET /latest[?trigger=], GET /:id, POST /deliberate); (6) cron/arbitrum-session-scheduler.ts — 17:00 ET weekdays via node-cron America/New_York, gated by ARBITRUM_SESSION_SCHEDULER_ENABLED; wired into bootBackground(). T11 dynamic import of services/arbitrum/index.js now resolves real digest_text. T9: deleted orphaned AgentDeskDebatePanel.tsx (zero live imports — Sanctum swapped in T3). /api/miroshark alias dropped from routes/index.ts. T9 table drop deferred — miroshark_deliberations still read by outcome-tracker.ts and written by agent-desk-deliberation.ts. T13: NOTICES.md added crediting Qwen/Anthropic/Ollama/Together MoA/Nous Hermes/aaronjmars MiroShark/TradingAgents/shadcn/Radix/Lucide/Framer Motion. T13 user-visible Hermes→AI-gateway copy sweep SKIPPED — conflicts with memory project_hermes_openclaw_pulse.md (Hermes is Fintheon's proprietary term). T6: frontend/README.md stale 'Pulse' → 'Fintheon'; Harper-soul OpenClaw/Pulse origin lore intentionally preserved. All builds green: backend bun, frontend tsc+vite, mobile vite.",
+    files: [
+      "backend-hono/src/services/arbitrum/engine.ts",
+      "backend-hono/src/services/arbitrum/event-trigger.ts",
+      "backend-hono/src/services/arbitrum/index.ts",
+      "backend-hono/src/services/commentator/commentator-service.ts",
+      "backend-hono/src/services/riskflow/central-scorer.ts",
+      "backend-hono/src/services/cron/arbitrum-session-scheduler.ts",
+      "backend-hono/src/routes/arbitrum/index.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/boot/services.ts",
+      "frontend/components/agent-desk/AgentDeskDebatePanel.tsx",
+      "NOTICES.md",
+      "frontend/README.md",
+    ],
+  },
+  {
     date: "2026-04-24T15:10:00",
     agent: "claude-code",
     summary:

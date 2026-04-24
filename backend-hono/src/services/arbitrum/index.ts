@@ -13,6 +13,12 @@ export { ARBITRUM_SEATS, invokeMoA } from "./seats.js";
 export { synthesize, type SynthesisResult } from "./facilitator.js";
 export { computeGates, type GatesContext } from "./gates.js";
 export { seatChat } from "./adapters.js";
+export {
+  runChamber,
+  type RunChamberOptions,
+  type RunChamberResult,
+} from "./engine.js";
+export { checkAndFire as checkAndFireArbitrumEvent } from "./event-trigger.js";
 export type {
   ArbitrumSeatId,
   ArbitrumSeatConfig,

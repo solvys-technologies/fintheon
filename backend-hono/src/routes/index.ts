@@ -19,6 +19,7 @@ import { createHyperliquidRoutes } from "./hyperliquid/index.js";
 import { createDataRoutes } from "./data/index.js";
 import { createNarrativeRoutes } from "./narrative/index.js";
 import { createAgentDeskRoutes } from "./agent-desk/index.js";
+import { createArbitrumRoutes } from "./arbitrum/index.js";
 import { createERRoutes } from "./er/index.js";
 import { createVoiceRoutes } from "./voice/index.js";
 import { livekit } from "./livekit/index.js";
@@ -139,11 +140,13 @@ export function registerRoutes(app: Hono): void {
   // Context Bank — public, agents consume directly (unified snapshot + desk reports)
   app.route("/api/context-bank", createContextBankRoutes());
   // Agent Desk multi-agent simulation — feature-flagged via AGENT_DESK_ENABLED
-  // [claude-code 2026-04-19] v5.22: dual-mount — /api/agent-desk is the new path,
-  //   /api/miroshark kept as legacy alias for live clients mid-deploy.
-  const agentDeskRoutes = createAgentDeskRoutes();
-  app.route("/api/agent-desk", agentDeskRoutes);
-  app.route("/api/miroshark", agentDeskRoutes);
+  // [claude-code 2026-04-24] S35-T9: dropped /api/miroshark legacy alias.
+  //   Arbitrum (S35-T1) is the deliberation engine now; Aquarium UI stays on
+  //   /api/agent-desk for historical simulations until AgentDesk fully retires.
+  app.route("/api/agent-desk", createAgentDeskRoutes());
+  // [claude-code 2026-04-24] S35-T1: Arbitrum deliberation chamber —
+  //   /latest, /:id, /deliberate. Public reads (digest_text is UI content).
+  app.route("/api/arbitrum", createArbitrumRoutes());
   // DAG scheduler — status, SSE stream, cancel (S8-T2)
   app.route("/api/dag", createDagRoutes());
   // Agent Dream Room — autonomous agent reflection channel

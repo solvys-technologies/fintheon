@@ -36,6 +36,7 @@ import {
 } from "../services/cron/dispatch-scheduler.js";
 import { startNewsWorkerAuditScheduler } from "../services/cron/news-worker-audit-scheduler.js";
 import { startEconKeywordScheduler } from "../services/cron/econ-keyword-scheduler.js";
+import { startArbitrumSessionScheduler } from "../services/cron/arbitrum-session-scheduler.js";
 // [claude-code 2026-04-24] S34-T10: historical econ backfill cron
 import { startEconBackfillOrchestrator } from "../services/cron/econ-backfill-orchestrator.js";
 // [claude-code 2026-03-27] cleanupOldItems import removed — feed items retained for calibration
@@ -289,6 +290,11 @@ export async function bootBackground(): Promise<void> {
   // [claude-code 2026-04-24] S34-T10: Econ backfill — Monday 02:00 ET, 2 slices/tick to 2023
   startEconBackfillOrchestrator();
   log.info("EconBackfillOrchestrator started");
+
+  // [claude-code 2026-04-24] S35-T1: Arbitrum session chamber — 17:00 ET weekdays,
+  // digest persists to arbitrum_verdicts with trigger_type=session; PMDB picks
+  // it up at 17:15 ET via getLatestChamberRead() (T11).
+  startArbitrumSessionScheduler();
 
   // Catch-up: generate any briefs that should have fired today but were missed (backend wasn't running)
   catchUpMissedBriefs().catch((err) =>

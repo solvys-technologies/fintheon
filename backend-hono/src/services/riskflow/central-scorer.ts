@@ -421,6 +421,23 @@ export async function scoringCycle(): Promise<number> {
     const written = await writeScoredItems(scoredItems);
     log.info(` Wrote ${written} scored items to Supabase`);
 
+    // ── Arbitrum event trigger (S35-T1) ────────────────────────────────────
+    // [claude-code 2026-04-24] S35-T1/T12 Phase B: fire-and-forget. The
+    // trigger itself gates on iv_score>=8.5 + speaker in top-N commentators
+    // + per-speaker cooldown. Never blocks the scorer pipeline; chamber
+    // failures degrade to low-confidence stubs inside engine.ts.
+    for (const item of enrichedItems) {
+      if ((item.ivScore ?? 0) < 8.5) continue;
+      void import("../arbitrum/event-trigger.js")
+        .then((mod) => mod.checkAndFire(item))
+        .catch((err) =>
+          log.warn("Arbitrum event trigger threw (swallowed)", {
+            item_id: item.id,
+            error: err instanceof Error ? err.message : String(err),
+          }),
+        );
+    }
+
     // ── Walk-back pairer (SCORING_V4) ──────────────────────────────────────
     // [claude-code 2026-04-19] S24-T2: scan newly-scored L9/L10 items for
     // semantic reversals of prior L9/L10 items in the last 24h. If matched,

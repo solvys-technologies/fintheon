@@ -91,6 +91,32 @@ export async function getMultiplierForSpeaker(
 }
 
 /**
+ * Top-N active commentators sorted by weightMultiplier (desc), then
+ * tier. Consumed by Arbitrum's event trigger (S35-T1) to gate whether
+ * an iv_score≥8.5 headline from a speaker is "meaningful" enough to
+ * fire a chamber deliberation.
+ */
+export async function getTopNCommentators(
+  n: number,
+): Promise<CommentatorEntry[]> {
+  if (!Number.isFinite(n) || n <= 0) return [];
+  const reg = await getRegistry();
+  const active = [...reg];
+  active.sort((a, b) => {
+    const wa =
+      a.weightMultiplier ??
+      TIER_DEFAULT_MULTIPLIERS[a.tier as CommentatorTier] ??
+      UNTAGGED_MULTIPLIER;
+    const wb =
+      b.weightMultiplier ??
+      TIER_DEFAULT_MULTIPLIERS[b.tier as CommentatorTier] ??
+      UNTAGGED_MULTIPLIER;
+    return wb - wa;
+  });
+  return active.slice(0, Math.floor(n));
+}
+
+/**
  * Case-insensitive fuzzy match against entry.name and entry.aliases[].
  * Handles partial matches: "Powell" matches alias "Jerome Powell".
  */
