@@ -34,5 +34,44 @@
   "optionalDependencies": {
     "rollup": "^4.44.1"
   },
-  "main": "electron/main.cjs"
+  "main": "electron/main.cjs",
+  "build": {
+    "appId": "io.solvys.fintheon",
+    "productName": "Fintheon",
+    "directories": {
+      "output": "desktop-dist"
+    },
+    "files": [
+      "electron/**/*",
+      "dist/**/*",
+      "backend-hono/dist/**/*",
+      "package.json",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/*.map"
+    ],
+    "asarUnpack": [],
+    "mac": {
+      "target": "dmg",
+      "icon": "electron/icons/icon.icns"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "electron/icons/icon.ico",
+      "artifactName": "Fintheon-Setup-${version}.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Fintheon",
+      "protocols": [
+        {
+          "name": "fintheon",
+          "schemes": ["fintheon"]
+        }
+      ]
+    }
+  }
 }
