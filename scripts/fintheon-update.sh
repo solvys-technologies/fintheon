@@ -306,46 +306,91 @@ else
 fi
 cd "$FINTHEON_ROOT"
 
-# ── Step 8: Rebuild frontend + DMG ──────────────────────────────────────────
+# ── Step 8: Install desktop app (download-first, local-rebuild fallback) ────
+# [claude-code 2026-04-24] Prefer the release-attached DMG from GitHub over a
+# local rebuild. Every /solvys-deploy attaches both the Mac DMG and Windows
+# .exe to the GH release, so the authoritative artifact already exists — we
+# don't need to rebuild 100+ MB of native bundle on every user's machine.
+# Local rebuild is kept as a fallback for offline / dev / prerelease scenarios,
+# but it now logs full output to /tmp so failures aren't swallowed by `| tail`.
 
-step "8/12" "Building frontend + DMG..."
+step "8/12" "Installing desktop app..."
 
-# Build frontend
-if npx vite build 2>&1 | tail -1; then
-  ok "Frontend built"
+VERSION_NUM="${LATEST_TAG#v}"
+ARCH="$(uname -m)"
+if [[ "$ARCH" == "arm64" ]]; then
+  DMG_SUFFIX="arm64"
 else
-  warn "Frontend build had issues"
+  DMG_SUFFIX="x64"
+fi
+DMG_NAME="Fintheon-${VERSION_NUM}-${DMG_SUFFIX}.dmg"
+DMG_URL="https://github.com/solvys-technologies/fintheon/releases/download/${LATEST_TAG}/${DMG_NAME}"
+DMG_LOCAL="$HOME/Downloads/$DMG_NAME"
+
+# Private repo — authenticated download via `gh` CLI is required. Plain curl
+# 404s because the releases/download URL only works on public repos. Fall
+# through to local rebuild if gh isn't installed or isn't logged in.
+DOWNLOAD_OK=false
+if [[ -n "$LATEST_TAG" ]] && command -v gh &>/dev/null && gh auth status &>/dev/null; then
+  info "Downloading $DMG_NAME via gh release..."
+  if gh release download "$LATEST_TAG" \
+      --repo solvys-technologies/fintheon \
+      --pattern "$DMG_NAME" \
+      --output "$DMG_LOCAL" \
+      --clobber 2>/dev/null; then
+    DOWNLOAD_OK=true
+    ok "Downloaded release DMG"
+  else
+    warn "Release DMG download failed — will rebuild locally"
+    /bin/rm -f "$DMG_LOCAL" 2>/dev/null || true
+  fi
+elif [[ -n "$LATEST_TAG" ]]; then
+  info "gh CLI unavailable or not authed — will rebuild locally (brew install gh && gh auth login to switch to prebuilt downloads)"
 fi
 
-# Build DMG
-if npm run desktop:build 2>&1 | grep -E "✓|building.*DMG|Built" | tail -2; then
-  ok "DMG built"
+if [[ "$DOWNLOAD_OK" != "true" ]]; then
+  # Local fallback rebuild. Log full output so the rollup stacktrace isn't
+  # truncated by `| tail -1` the way it used to be.
+  VITE_LOG="/tmp/fintheon-update-vite.log"
+  DMG_LOG="/tmp/fintheon-update-dmg.log"
+  : > "$VITE_LOG"
+  : > "$DMG_LOG"
 
-  # Install to /Applications — find the newest DMG regardless of version in filename
-  DMG_PATH=$(ls -t "$FINTHEON_ROOT/desktop-dist"/Fintheon-*-arm64.dmg 2>/dev/null | head -1)
-  if [[ -n "$DMG_PATH" && -f "$DMG_PATH" ]]; then
-    DMG_NAME=$(basename "$DMG_PATH")
-    # Copy to Downloads
-    cp "$DMG_PATH" "$HOME/Downloads/$DMG_NAME" 2>/dev/null || true
+  info "Building frontend locally (fallback)... see $VITE_LOG"
+  if npx vite build > "$VITE_LOG" 2>&1; then
+    ok "Frontend built"
+  else
+    warn "Frontend build failed — tail:"
+    tail -10 "$VITE_LOG" | sed 's/^/    /'
+  fi
 
-    # Eject any existing volumes
-    for vol in /Volumes/Fintheon*; do
-      hdiutil detach "$vol" -quiet 2>/dev/null || true
-    done
+  info "Building DMG locally (fallback)... see $DMG_LOG"
+  if npm run desktop:build > "$DMG_LOG" 2>&1; then
+    ok "DMG built"
+    DMG_LOCAL=$(ls -t "$FINTHEON_ROOT/desktop-dist"/Fintheon-*-${DMG_SUFFIX}.dmg 2>/dev/null | head -1)
+  else
+    warn "DMG build failed — tail:"
+    tail -10 "$DMG_LOG" | sed 's/^/    /'
+    DMG_LOCAL=""
+  fi
+fi
 
-    # Install
-    rm -rf /Applications/Fintheon.app /Applications/fintheon.app 2>/dev/null || true
-    hdiutil attach "$DMG_PATH" -nobrowse -quiet 2>/dev/null || true
-    VOLUME=$(ls -d /Volumes/Fintheon* 2>/dev/null | head -1)
-    if [[ -n "$VOLUME" ]]; then
-      cp -R "$VOLUME/Fintheon.app" /Applications/ 2>/dev/null || true
-      hdiutil detach "$VOLUME" -quiet 2>/dev/null || true
-      xattr -cr /Applications/Fintheon.app 2>/dev/null || true
-      ok "App installed to /Applications"
-    fi
+# Install whichever DMG we ended up with.
+if [[ -n "$DMG_LOCAL" && -f "$DMG_LOCAL" ]]; then
+  for vol in /Volumes/Fintheon*; do
+    hdiutil detach "$vol" -quiet 2>/dev/null || true
+  done
+  /bin/rm -R -f /Applications/Fintheon.app /Applications/fintheon.app 2>/dev/null || true
+  hdiutil attach "$DMG_LOCAL" -nobrowse -quiet 2>/dev/null || true
+  VOLUME=$(ls -d /Volumes/Fintheon* 2>/dev/null | head -1)
+  if [[ -n "$VOLUME" ]]; then
+    cp -R "$VOLUME/Fintheon.app" /Applications/ 2>/dev/null || true
+    hdiutil detach "$VOLUME" -quiet 2>/dev/null || true
+    xattr -cr /Applications/Fintheon.app 2>/dev/null || true
+    ok "App installed to /Applications"
   fi
 else
-  warn "DMG build skipped — use dev mode with 'fintheon start'"
+  warn "No DMG available — /Applications/Fintheon.app was not updated"
 fi
 
 # Re-install CLI in case the script was updated
