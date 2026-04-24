@@ -44,7 +44,6 @@ import {
 import { tagHeadlineSubjects } from "./headline-tagger.js";
 import { checkContentGuard } from "./content-guard.js";
 import { bumpCounter } from "./drop-counters.js";
-import { bumpCounter } from "./drop-counters.js";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { normalizeHeadline } from "./text-utils.js";
 

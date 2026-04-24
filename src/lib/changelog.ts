@@ -9,6 +9,37 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T19:10:00",
+    agent: "claude-code",
+    summary:
+      "S34-T4 [v.04.24.4]: Web source quality audit. Added riskflow_drop_counters table + v_source_signal_noise 48h funnel view (migration 20260424103000). " +
+      "In-process drop-counter service with 60s flush (src/services/riskflow/drop-counters.ts) instrumented into persist.ts " +
+      "(dedup + missing-fields + supabase errors), content-guard.ts (every reject reason), and central-scorer.ts " +
+      "(content-guard safety-net, dismissed-pattern, narrative-gate, below-threshold). filterWithContentGuard now takes a " +
+      "source hint so counters attribute correctly at feed-poller / feed-service / commentary-scraper / exa-scheduled-monitor " +
+      "call sites. New GET /api/diagnostics/source-quality returns signal-noise rows + flushed counters (2h) + live in-memory " +
+      "counter snapshot. MARKET_KEYWORDS in content-guard.ts extended APPEND-ONLY with 95 FJ-grade keywords derived from an " +
+      "FJ scrape script (scripts/scrape-fj-sample.ts) with curated fallback at fj-keyword-baseline.json. No RSS URL pruned — " +
+      "prune list in S34-T4-REPORT.md is AWAITING TP APPROVAL and deferred to T5. Unrelated pre-existing harper-vision/engine.ts " +
+      "tsc error (VoiceTranscribeResult.confidence missing, commit 7bfda6bc4 2026-04-23) blocks full bun run build; flagged for orchestrator, out of T4 scope.",
+    files: [
+      "backend-hono/src/services/riskflow/drop-counters.ts",
+      "backend-hono/src/services/riskflow/content-guard.ts",
+      "backend-hono/src/services/riskflow/central-scorer.ts",
+      "backend-hono/src/services/riskflow/feed-poller.ts",
+      "backend-hono/src/services/riskflow/feed-service.ts",
+      "backend-hono/src/services/riskflow/commentary-scraper.ts",
+      "backend-hono/src/services/riskflow/exa-scheduled-monitor.ts",
+      "backend-hono/src/services/riskflow/fj-keyword-baseline.json",
+      "backend-hono/src/workers/news-worker/persist.ts",
+      "backend-hono/src/routes/diagnostics/index.ts",
+      "backend-hono/src/boot/services.ts",
+      "backend-hono/scripts/scrape-fj-sample.ts",
+      "supabase/migrations/20260424103000_riskflow_drop_counters.sql",
+      "sprint-md/S34-T4-REPORT.md",
+    ],
+  },
+  {
     date: "2026-04-23T16:20:00",
     agent: "claude-code",
     summary:
