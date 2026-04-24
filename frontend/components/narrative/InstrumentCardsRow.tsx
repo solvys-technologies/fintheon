@@ -1,7 +1,11 @@
-// [claude-code 2026-04-19] v5.22 S1: Compact instrument fuses panel — right column of
-//   Sanctum's Econ Intelligence page. Renders /NQ /ES /YM /CL /GC as vertical fuses with
-//   symbol + IV score, sourcing data from the same predictions/outlook endpoint that
-//   powers AquariumPredictionCards.
+// [claude-code 2026-04-24] S35-T12 Phase B: Renamed from InstrumentFusesPanel to
+//   InstrumentCardsRow — laid out as a full-row 5-col grid of per-instrument fuse
+//   cards (/NQ /ES /YM /CL /GC), not a "panel" sitting in a right column. Wired into
+//   SanctumEconIntel as a full-width row above the event filter so the cards stretch
+//   and don't conflict with the surrounding flex layout.
+//   Data sourced from /api/predictions/outlook (same as AquariumPredictionCards).
+// [claude-code 2026-04-19] v5.22 S1: Original implementation, orphaned by the
+//   Track 4a Econ Intel rebuild.
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { NothingFuse } from "../shared/NothingFuse";
@@ -25,7 +29,7 @@ function loadCached(): InstrumentOutlook[] {
   }
 }
 
-export function InstrumentFusesPanel() {
+export function InstrumentCardsRow() {
   const [outlook, setOutlook] = useState<InstrumentOutlook[]>(loadCached());
   const [loading, setLoading] = useState(outlook.length === 0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);

@@ -1,4 +1,11 @@
-// [claude-code 2026-04-19] S25-T4a: Econ Intelligence rebuilt as event-filter scroll-lock page. Top: Econ KPI fuses LEFT + Instrument fuses RIGHT (vertically stacked, fading vertical ruler between). Middle: event-filter dropdown + timespan + Generate. Bottom: chevron event cards with staggered fade-in; each expands to a CAO synthesis + per-print rows + AI-confidence fuse footer. Old sectioned-card UI replaced entirely; categoryScores + context props kept for back-compat (unused here).
+// [claude-code 2026-04-24] S35-T12 Phase B: Reflowed Econ Intel header — KPI fuses get
+//   their own full-width row (was squeezed left half), InstrumentCardsRow takes the
+//   next full-width row (replaces the orphaned EconInstrumentFuses right-column variant),
+//   and event cards now render in a 2-column grid so expanded content has legible width.
+// [claude-code 2026-04-19] S25-T4a: Econ Intelligence rebuilt as event-filter scroll-lock
+//   page. Middle: event-filter dropdown + timespan + Generate. Bottom: chevron event cards
+//   with staggered fade-in; each expands to a CAO synthesis + per-print rows + AI-confidence
+//   fuse footer. categoryScores + context props kept for back-compat (unused here).
 import { useEffect, useMemo, useState } from "react";
 import { CalendarClock } from "lucide-react";
 import type {
@@ -6,7 +13,7 @@ import type {
   AgentDeskCategoryScore,
 } from "../../types/agent-desk";
 import { EconKpiFuses } from "./econ/EconKpiFuses";
-import { EconInstrumentFuses } from "./econ/EconInstrumentFuses";
+import { InstrumentCardsRow } from "./InstrumentCardsRow";
 import { EconEventFilter, type EconTimespan } from "./econ/EconEventFilter";
 import { EconEventCard, type EconEventCardData } from "./econ/EconEventCard";
 
@@ -222,16 +229,21 @@ export function SanctumEconIntel(_props: SanctumEconIntelProps) {
 
   return (
     <div className="flex flex-col gap-4 h-full min-h-0">
-      {/* ── Split header row: Econ Pulse (left) | Instruments (right) ── */}
-      <div className="shrink-0 flex items-stretch rounded-md overflow-hidden">
+      {/* ── Econ Pulse fuses — full width row ── */}
+      <div className="shrink-0 rounded-md overflow-hidden">
         <EconKpiFuses
           catalogue={catalogue}
           inflationPulse={pulses.inflation}
           laborPulse={pulses.labor}
           supplyPulse={pulses.supply}
         />
-        <FadingVRule />
-        <EconInstrumentFuses />
+      </div>
+
+      {/* ── Instrument cards row — full-width 5-col grid (renamed from
+            InstrumentFusesPanel; reads /api/predictions/outlook). Stretches
+            across the row instead of stacking vertically in a right column. ── */}
+      <div className="shrink-0">
+        <InstrumentCardsRow />
       </div>
 
       {/* Fading horizontal ruler */}
@@ -246,7 +258,9 @@ export function SanctumEconIntel(_props: SanctumEconIntelProps) {
         />
       </div>
 
-      {/* ── Progressive card container ── */}
+      {/* ── Progressive card container — 2-column grid so expanded cards
+            render side-by-side at half-width (still legible: per-print rows,
+            CAO synthesis, AI confidence fuse). Single column on narrow panes. ── */}
       <div className="flex-1 min-h-0 overflow-y-auto rounded-md border border-[var(--fintheon-accent)]/8 bg-[var(--fintheon-surface)]/20">
         {!selection && !generating && (
           <div className="h-full flex flex-col items-center justify-center gap-2 py-8 text-[var(--fintheon-muted)]/45">
@@ -257,7 +271,7 @@ export function SanctumEconIntel(_props: SanctumEconIntelProps) {
           </div>
         )}
         {selection && (
-          <div className="flex flex-col divide-y divide-[var(--fintheon-border)]/8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 p-3">
             {selection.events.map((evt, idx) => (
               <EconEventCard
                 key={evt.ticker}
@@ -297,21 +311,6 @@ function computePulses(catalogue: EconEventCardData[]): {
     labor: score(byCat["employment"]),
     supply: score(byCat["supply-chain"]),
   };
-}
-
-function FadingVRule() {
-  return (
-    <div className="w-px shrink-0 relative">
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(to bottom, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
-          opacity: 0.18,
-        }}
-      />
-    </div>
-  );
 }
 
 function FadingHRule() {

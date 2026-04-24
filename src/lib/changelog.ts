@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T23:30:00",
+    agent: "claude-code",
+    summary:
+      "S35 unification UI follow-up. (a) Sanctum Page 0 chart-mode height fix — page wrapper conditionally h-full (was min-h-full) when chartMode is on, and the chart column drops `min-h-[60vh] xl:min-h-0` for plain `min-h-0 overflow-hidden` so the TradingView iframe is bounded by viewport instead of bleeding past the snap boundary into Page 1 (Econ Intelligence). Left column gets matching min-h-0 so it scrolls internally. (b) Renamed orphan `frontend/components/narrative/InstrumentFusesPanel.tsx` → `InstrumentCardsRow.tsx`, internal export `InstrumentFusesPanel` → `InstrumentCardsRow`. Added in d5556408 (v5.22 S1) but never wired after Track 4a (c5f32a8d) replaced its host. Now wired into `SanctumEconIntel` as a full-width row above the event filter (replacing the old split header where KPI fuses + EconInstrumentFuses sat side-by-side at half width). KPI fuses now own their own full row; instrument cards stretch the next full row at 5-col grid. (c) `SanctumEconIntel` event-card container changed from `flex flex-col divide-y` → `grid grid-cols-1 lg:grid-cols-2 gap-3 p-3` so expanded econ event cards render side-by-side at lg+. (d) `EconEventCard` print grid tightened from `grid-cols-[68px_1fr_56px_56px_56px_64px]` → `grid-cols-[60px_1fr_48px_48px_48px_56px]` so the per-print rows stay legible at half-pane width. (e) `AquariumPredictionCards` row no longer horizontal-scrolls fixed 220px cards — children are now `flex-1 min-w-0` so they stretch and share row width (Sanctum Page 0 non-chart-mode instrument fuses row, plus anywhere else the component renders). EconInstrumentFuses left in tree but unimported (orphaned by this reflow). FadingVRule helper removed from SanctumEconIntel (no longer used after split-header removal). All four builds clean: backend bun, frontend tsc+vite, mobile vite.",
+    files: [
+      "frontend/components/narrative/Sanctum.tsx",
+      "frontend/components/narrative/SanctumEconIntel.tsx",
+      "frontend/components/narrative/InstrumentCardsRow.tsx",
+      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "frontend/components/narrative/econ/EconEventCard.tsx",
+    ],
+  },
+  {
     date: "2026-04-24T22:30:00",
     agent: "claude-code",
     summary:

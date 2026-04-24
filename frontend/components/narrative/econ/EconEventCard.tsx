@@ -232,7 +232,7 @@ export function EconEventCard({ event, appearDelay }: EconEventCardProps) {
 
               {/* Print rows: Date | Variant | [→] Previous | Forecast | Actual | Deviation */}
               <div className="flex flex-col">
-                <div className="grid grid-cols-[68px_1fr_56px_56px_56px_64px] gap-2 text-[8px] tracking-[0.18em] uppercase text-[var(--fintheon-muted)]/40 px-1 pb-1.5 border-b border-[var(--fintheon-border)]/8">
+                <div className="grid grid-cols-[60px_1fr_48px_48px_48px_56px] gap-2 text-[8px] tracking-[0.18em] uppercase text-[var(--fintheon-muted)]/40 px-1 pb-1.5 border-b border-[var(--fintheon-border)]/8">
                   <span>Date</span>
                   <span>Variant</span>
                   <span className="text-right">Previous</span>
@@ -273,7 +273,7 @@ function PrintRow({
 }) {
   const deviationColor = priorityDeviationColor(print.surprise);
   return (
-    <div className="grid grid-cols-[68px_1fr_56px_56px_56px_64px] gap-2 px-1 py-1.5 border-b border-[var(--fintheon-border)]/5 text-[10px]">
+    <div className="grid grid-cols-[60px_1fr_48px_48px_48px_56px] gap-2 px-1 py-1.5 border-b border-[var(--fintheon-border)]/5 text-[10px]">
       <span className="text-[var(--fintheon-muted)]/55 font-mono">
         {print.date ?? "—"}
       </span>

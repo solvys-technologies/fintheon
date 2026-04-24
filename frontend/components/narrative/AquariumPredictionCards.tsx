@@ -127,14 +127,14 @@ export function AquariumPredictionCards() {
   }
 
   return (
-    <div className="flex items-stretch px-4 py-3 overflow-x-auto scrollbar-none w-full">
+    <div className="flex items-stretch px-4 py-3 w-full gap-0">
       {outlook.map((inst, idx) => {
         const leanCfg = LEAN_CONFIG[inst.lean];
         const LeanIcon = leanCfg.icon;
         const isLast = idx === outlook.length - 1;
         return (
-          <div key={inst.symbol} className="flex items-stretch">
-            <div className="flex-shrink-0 w-[220px] px-3 py-2 flex flex-col gap-2">
+          <div key={inst.symbol} className="flex items-stretch flex-1 min-w-0">
+            <div className="flex-1 min-w-0 px-3 py-2 flex flex-col gap-2">
               {/* Header: symbol + lean */}
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-mono font-bold text-[var(--fintheon-accent)]">

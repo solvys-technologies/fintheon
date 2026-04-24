@@ -205,12 +205,16 @@ export function Sanctum({
           {showPage(0) && (
             <div
               data-aud-page="0"
-              className="min-h-full snap-start p-3 pt-2 flex flex-col"
+              className={`${chartMode ? "h-full" : "min-h-full"} snap-start p-3 pt-2 flex flex-col`}
             >
               {chartMode ? (
-                /* Chart mode — 50/50 split: compact Aquarium stack on left, TradingView chart on right */
+                /* Chart mode — 50/50 split: compact Aquarium stack on left, TradingView chart on right.
+                   Page wrapper is h-full (not min-h-full) so the TradingView iframe is bounded by the
+                   viewport and doesn't bleed past the snap boundary into Page 1. The chart column
+                   uses min-h-0 + overflow-hidden so flex constrains it; the left column scrolls
+                   internally if its content exceeds the page height. */
                 <div className="flex-1 grid grid-cols-1 xl:grid-cols-2 gap-3 min-h-0">
-                  <div className="flex flex-col gap-3 overflow-y-auto pr-1">
+                  <div className="min-h-0 flex flex-col gap-3 overflow-y-auto pr-1">
                     {data && data.compositeIV > 0 && (
                       <SanctumBriefing
                         briefing={data.briefing ?? null}
@@ -225,7 +229,7 @@ export function Sanctum({
                     />
                     <AquariumPredictionCards />
                   </div>
-                  <div className="min-h-[60vh] xl:min-h-0 overflow-hidden">
+                  <div className="min-h-0 overflow-hidden">
                     <SanctumChart
                       timeSeries={data?.timeSeries ?? []}
                       rollingDays={rollingDays}
