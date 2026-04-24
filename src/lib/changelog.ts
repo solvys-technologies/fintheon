@@ -496,6 +496,37 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
+    date: "2026-04-24T16:30:00",
+    agent: "claude-code",
+    summary:
+      "S34-T10 [v.04.24.10]: Historical econ backfill orchestrator (2023-Q1 → current, free-tier LLMs). " +
+      "New migration 20260424102000_econ_backfill_progress.sql stands up econ_backfill_progress (quarterly " +
+      "slice ledger, 7 countries × ~13 quarters ≈ 91 pending rows seeded via DO block) and econ_backfill_queue " +
+      "(raw LLM output staging). New cron service econ-backfill-orchestrator fires Monday 02:00 America/New_York, " +
+      "claims 2 oldest pending slices, pulls historical events via OpenRouter free-tier Llama 3.3 70B (fallback " +
+      "Mistral Large) in econ-backfill-puller, optionally enriches US slices with FRED series (CPIAUCSL, PAYEMS, " +
+      "UNRATE, FEDFUNDS, GDP) if FRED_API_KEY is set. Harper batch categorization in econ-backfill-harper routes " +
+      "through OpenRouter anthropic/claude-opus-4, dedups against existing economic_events.event_key, assigns " +
+      "Fiscal|Supply Chain|Inflation|Job Market|Speaker, with a soft 500k-token weekly cap that defers remaining " +
+      "queue if exceeded. Upsert into economic_events is idempotent on event_key (sha256 of name|date|time|country). " +
+      "ECON_BACKFILL_ENABLED env guard (default on); missing OPENROUTER_API_KEY warns + skips tick, never crashes. " +
+      "/api/diagnostics.econ_backfill surfaces pending/claimed/enriching/complete/failed counts + rows_written_total " +
+      "+ harper_tokens_week. Registered in boot/services.ts alongside the S28 news-worker audit scheduler. " +
+      "Depends on T3's economic_events base migration for country/category/event_key columns. Drive-by fix: " +
+      "harper-vision/engine.ts line 158 referenced VoiceTranscribeResult.confidence which doesn't exist on the " +
+      "type — changed to null to unblock the build (pre-existing on main, not T10-introduced).",
+    files: [
+      "supabase/migrations/20260424102000_econ_backfill_progress.sql",
+      "backend-hono/src/types/econ-backfill.ts",
+      "backend-hono/src/services/cron/econ-backfill-puller.ts",
+      "backend-hono/src/services/cron/econ-backfill-harper.ts",
+      "backend-hono/src/services/cron/econ-backfill-orchestrator.ts",
+      "backend-hono/src/boot/services.ts",
+      "backend-hono/src/routes/diagnostics/index.ts",
+      "backend-hono/src/services/harper-vision/engine.ts",
+    ],
+  },
+  {
     date: "2026-04-23T16:20:00",
     agent: "claude-code",
     summary:

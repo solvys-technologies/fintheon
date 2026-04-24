@@ -36,6 +36,8 @@ import {
 } from "../services/cron/dispatch-scheduler.js";
 import { startNewsWorkerAuditScheduler } from "../services/cron/news-worker-audit-scheduler.js";
 import { startEconKeywordScheduler } from "../services/cron/econ-keyword-scheduler.js";
+// [claude-code 2026-04-24] S34-T10: historical econ backfill cron
+import { startEconBackfillOrchestrator } from "../services/cron/econ-backfill-orchestrator.js";
 // [claude-code 2026-03-27] cleanupOldItems import removed — feed items retained for calibration
 import { startVIXPolling } from "../services/vix-service.js";
 import { startRegimePushListener } from "../services/notifications/regime-push.js";
@@ -283,6 +285,10 @@ export async function bootBackground(): Promise<void> {
   // "Actual"/"Forecast" inside active event windows and promotes to macro_level=4.
   startEconKeywordScheduler();
   log.info("EconKeywordScheduler started");
+
+  // [claude-code 2026-04-24] S34-T10: Econ backfill — Monday 02:00 ET, 2 slices/tick to 2023
+  startEconBackfillOrchestrator();
+  log.info("EconBackfillOrchestrator started");
 
   // Catch-up: generate any briefs that should have fired today but were missed (backend wasn't running)
   catchUpMissedBriefs().catch((err) =>
