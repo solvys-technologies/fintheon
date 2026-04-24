@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-23T22:45:00",
+    agent: "claude-code",
+    summary:
+      "S32 shipped v5.23.1: Harper 2.1 unified — Kimi rollback + Vision + Ollama-Hermes fallback + Consul Control corners + Streamdown/TV chart slots + PsychAssist gating + advisory/calendar/watchouts + browser-harness + predictive knowledge graph. Migrations pushed (trades base + origin + S32 T2/T6/T7/T8/T9). Backend fintheon.fly.dev, desktop fintheon-alpha.vercel.app, mobile fintheon.pricedinresearch.io. 9 tracks, 254 files. Archived to sprint-changelog/.",
+    files: [
+      "sprint-changelog/S32-ORCHESTRATION.md",
+      "sprint-changelog/S32-UNIFY.md",
+    ],
+  },
+  {
     date: "2026-04-23T22:00:00",
     agent: "claude-code",
     summary:
