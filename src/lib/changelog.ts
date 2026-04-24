@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T18:50:00",
+    agent: "claude-code",
+    summary:
+      "v5.24.1 deploy — S36 ClusterBeam shipped across all 3 targets + Mac DMG. Backend live on fintheon.fly.dev, desktop on fintheon-alpha.vercel.app, mobile on fintheon.pricedinresearch.io, DMG attached to GH release + copied to ~/Desktop/. Archived S36-BRIEF-clusterbeam.md to sprint-changelog/. Sanitation clean (1 WARN: ClusterBeamPanel.tsx 523 lines vs 300 rule — follow-up split recommended). Windows .exe not shipped this deploy (requires Windows runner, flagged).",
+    files: [
+      "sprint-changelog/S36-BRIEF-clusterbeam.md",
+      "package.json",
+      "scripts/fintheon-update.sh",
+    ],
+  },
+  {
     date: "2026-04-24T18:10:00",
     agent: "claude-code",
     summary:
