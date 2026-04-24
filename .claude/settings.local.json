@@ -51,7 +51,11 @@
       "mcp__Claude_Preview__preview_start",
       "mcp__claude_ai_Supabase__list_migrations",
       "mcp__claude-peers__set_summary",
-      "mcp__claude-peers__list_peers"
+      "mcp__claude-peers__list_peers",
+      "Bash(cp /Users/tifos/Documents/Codebases/fintheon/.claude/skills/solvys-deploy/SKILL.md /Users/tifos/Documents/Codebases/solvys-skills/.claude/skills/solvys-deploy/SKILL.md)",
+      "Bash(cp /Users/tifos/Documents/Codebases/fintheon/.claude/skills/solvys-beta/SKILL.md /Users/tifos/Documents/Codebases/solvys-skills/.claude/skills/solvys-beta/SKILL.md)",
+      "Read(//Users/tifos/Documents/Codebases/solvys-skills/.claude/skills/solvys-deploy/**)",
+      "Read(//Users/tifos/Documents/Codebases/solvys-skills/.claude/skills/solvys-beta/**)"
     ]
   }
 }
