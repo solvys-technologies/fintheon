@@ -2,10 +2,12 @@
 // [claude-code 2026-03-11] VIX pulsating border: red >22, sunburst orange 16-22, yellow 14-16
 // [claude-code 2026-03-16] Restore toolbar regressions: IV inline points badge (envLabel + pts inline)
 // [claude-code 2026-03-20] S3:T4a: createPortal to document.body for popup — escapes parent stacking context, position:fixed with viewport clamping
+// [claude-code 2026-04-24] S35-T3: embed ArbitrumPeek in IV hover portal
 import { Info, Diff } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { IVScoreResponse } from "../types/market-data";
+import { ArbitrumPeek } from "./arbitrum/ArbitrumPeek";
 
 interface IVScoreCardProps {
   /** Backend blended IV score response */
@@ -569,6 +571,9 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
                     </div>
                   ))}
                 </div>
+
+                {/* Arbitrum chamber peek — latest consensus + dissent + digest line */}
+                <ArbitrumPeek />
               </div>,
               document.body,
             )}

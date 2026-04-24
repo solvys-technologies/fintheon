@@ -9,6 +9,22 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T15:10:00",
+    agent: "claude-code",
+    summary:
+      "S35-T3: Arbitrum frontend. New frontend/components/arbitrum/ (ArbitrumChamber, VerdictCard, DissentBadge, ArbitrumPeek) + useArbitrumLatest hook polling /api/arbitrum/latest every 60s. IVScoreCard hover portal now renders ArbitrumPeek (consensus% + dissent + 2-line digest) as the last block. Sanctum swaps AgentDeskDebatePanel → ArbitrumChamber (5 seats: Lead/Forecaster/Risk/Quant/Bear, round indicator via NothingFuse, compact VerdictCard footer, staggered 200ms reveal). /solvys-feels enforced: no gradients, no glass, no emojis, no shimmer-for-show; Solvys Gold only; Doto for probability numerals. Local types.ts mirrors T2 migration columns to avoid T9 merge collision.",
+    files: [
+      "frontend/components/arbitrum/types.ts",
+      "frontend/components/arbitrum/ArbitrumChamber.tsx",
+      "frontend/components/arbitrum/VerdictCard.tsx",
+      "frontend/components/arbitrum/DissentBadge.tsx",
+      "frontend/components/arbitrum/ArbitrumPeek.tsx",
+      "frontend/hooks/useArbitrumLatest.ts",
+      "frontend/components/IVScoreCard.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+    ],
+  },
+  {
     date: "2026-04-24T21:00:00",
     agent: "claude-code",
     summary:

@@ -34,7 +34,8 @@ import { BlendedVIXCard } from "./BlendedVIXCard";
 import { NextSessionForecastCard } from "./NextSessionForecastCard";
 import { RiskSignalCards } from "./RiskSignalCards";
 import { useIVScoreData } from "./useIVScoreData";
-import { AgentDeskDebatePanel } from "../agent-desk/AgentDeskDebatePanel";
+// [claude-code 2026-04-24] S35-T3: swap AgentDeskDebatePanel -> ArbitrumChamber
+import { ArbitrumChamber } from "../arbitrum/ArbitrumChamber";
 
 interface CatalystInput {
   id: string;
@@ -275,7 +276,7 @@ export function Sanctum({
 
                       {/* Right: AgentDesk Deliberation with SIGNAL/REGIME/HEAT fuses at bottom (45%) */}
                       <div className="flex-[45] min-w-0 min-h-0 flex flex-col">
-                        <AgentDeskDebatePanel
+                        <ArbitrumChamber
                           simulationId={data?.simulationId ?? null}
                           onSynthesisComplete={onSynthesisComplete}
                           compositeIV={data?.compositeIV}
