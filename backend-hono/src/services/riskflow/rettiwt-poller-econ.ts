@@ -1,3 +1,6 @@
+// [claude-code 2026-04-24] S34-T6: Keyword-first gate in processActualsFromTweets;
+// numeric extraction preserved as best-effort enrichment. PRE_/POST_EVENT_MINUTES
+// promoted to named exports for reuse by econ-keyword-trigger.
 // [claude-code 2026-04-11] Econ calendar integration for Rettiwt poller
 // Event windows, burst scheduling, actual extraction from FJ tweets
 
@@ -9,8 +12,8 @@ import {
 import { injectEconPrintToFeed } from "./econ-bridge.js";
 import type { EconEvent } from "../econ-calendar-service.js";
 
-const PRE_EVENT_MINUTES = 5;
-const POST_EVENT_MINUTES = 15;
+export const PRE_EVENT_MINUTES = 5;
+export const POST_EVENT_MINUTES = 15;
 export const BURST_INTERVAL_MS = 5_000;
 export const BURST_DURATION_MS = 30_000;
 
@@ -118,6 +121,12 @@ export function matchTweetToEvent(
 
 // ── Process Actuals ────────────────────────────────────────────────────────
 
+// [claude-code 2026-04-24] S34-T6: Keyword-first gate. Items with "Actual"/"Forecast"
+// that match an active event proceed even when numeric extraction fails — the econ
+// feed card still renders from the event metadata. Numeric extraction remains the
+// enrichment path when values are present.
+const ECON_KEYWORD_RE = /\b(actual|forecast)\b/i;
+
 export async function processActualsFromTweets(
   tweets: Array<{
     id: string;
@@ -134,10 +143,12 @@ export async function processActualsFromTweets(
   );
 
   for (const tweet of fjTweets) {
-    const extracted = extractActualFromText(tweet.text);
-    if (!extracted) continue;
+    if (!ECON_KEYWORD_RE.test(tweet.text)) continue;
 
     const event = matchTweetToEvent(tweet.text, activeEvents);
+    if (!event) continue;
+
+    const extracted = extractActualFromText(tweet.text);
     if (!event) continue;
 
     if (actualWrittenIds.has(event.id)) continue;
