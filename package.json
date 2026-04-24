@@ -56,7 +56,7 @@
   },
   "main": "electron/main.cjs",
   "scripts": {
-    "build": "npx vite build",
+    "build": "cd frontend && bun run build",
     "frontend:install": "cd frontend && bun install",
     "frontend:build": "cd frontend && bun run build",
     "desktop:build": "bun run frontend:build && electron-builder --mac dmg",
