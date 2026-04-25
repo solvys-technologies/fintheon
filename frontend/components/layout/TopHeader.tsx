@@ -247,53 +247,23 @@ export function TopHeader({
     setPlatformDropdownPos({ top: rect.bottom + 8, left });
   }, [showPlatformDropdown]);
 
+  // [claude-code 2026-04-24] Header dropdown is fully driven by the user-managed
+  // iFrame catalogue (Settings → iFrames). No hardcoded list — adding/removing
+  // entries there is what changes what shows up here.
   const platformOptions: Array<{
     value: TradingPlatform;
     label: string;
     description: string;
-  }> = [
-    { value: "tradesea", label: "TradeSea", description: "TradeSea Trading" },
-    {
-      value: "topstepx",
-      label: "TopStepX",
-      description: "Real-Time Futures Trading Platform",
-    },
-    {
-      value: "mmt",
-      label: "MMT",
-      description: "Market Monkey Terminal — Crypto Order Flow",
-    },
-    { value: "kalshi", label: "Kalshi", description: "Prediction Market" },
-    {
-      value: "tradovate",
-      label: "Tradovate",
-      description: "Futures Trading Platform",
-    },
-    {
-      value: "tradelocker",
-      label: "TradeLocker",
-      description: "Multi-Asset Trading Platform",
-    },
-    {
-      value: "tradingview",
-      label: "TradingView",
-      description: "TradingView Chart",
-    },
-    {
-      value: "research",
-      label: "Research",
-      description: "Research iFrame",
-    },
-    ...proposerIframeSources.map((s) => ({
-      value: `custom:${s.id}` as TradingPlatform,
-      label: s.label,
-      description: s.url,
-    })),
-  ];
+  }> = proposerIframeSources.map((s) => ({
+    value: s.id as TradingPlatform,
+    label: s.label,
+    description: s.url,
+  }));
 
   const selectedPlatformLabel =
     platformOptions.find((opt) => opt.value === selectedPlatform)?.label ??
-    "TradeSea";
+    platformOptions[0]?.label ??
+    "—";
 
   const layoutOptions: Array<{
     value: LayoutOption;

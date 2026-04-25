@@ -821,6 +821,8 @@ export function FooterToolbar({
         {topStepXEnabled && (
           <>
             <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
+            {/* [claude-code 2026-04-24] Footer iFrame picker — single source: the
+                user-managed catalogue in Settings → iFrames. No hardcoded list. */}
             <select
               value={primaryPlatform}
               onChange={(e) =>
@@ -828,13 +830,8 @@ export function FooterToolbar({
               }
               className="px-1.5 py-0.5 bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/15 rounded text-[10px] text-[var(--fintheon-accent)] focus:outline-none"
             >
-              {Object.entries(PLATFORM_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
               {proposerIframeSources.map((s) => (
-                <option key={s.id} value={`custom:${s.id}`}>
+                <option key={s.id} value={s.id}>
                   {s.label}
                 </option>
               ))}
@@ -864,17 +861,10 @@ export function FooterToolbar({
                     className="px-1.5 py-0.5 bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/15 rounded text-[10px] text-[var(--fintheon-accent)]/70 focus:outline-none"
                     title="Secondary frame"
                   >
-                    {Object.entries(PLATFORM_LABELS)
-                      .filter(([key]) => key !== primaryPlatform)
-                      .map(([key, label]) => (
-                        <option key={key} value={key}>
-                          {label}
-                        </option>
-                      ))}
                     {proposerIframeSources
-                      .filter((s) => `custom:${s.id}` !== primaryPlatform)
+                      .filter((s) => s.id !== primaryPlatform)
                       .map((s) => (
-                        <option key={s.id} value={`custom:${s.id}`}>
+                        <option key={s.id} value={s.id}>
                           {s.label}
                         </option>
                       ))}

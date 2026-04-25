@@ -178,12 +178,16 @@ export function HeaderVoiceControl({
 
   const handleClick = useCallback(() => {
     if (enabled) {
-      // Single-intent off: cancel whatever's mid-flight, toggle the voice context
-      // off, and drop the parallel Harper Voice session. No stale-closure branching —
-      // one tap does all three so the user doesn't have to tap through busy→listening→off.
+      // [claude-code 2026-04-24] Orb is the single voice master — toggling it
+      // off must also drop ANY active Harper Voice session, regardless of which
+      // trigger started it. Previous code only stopped sessions started under
+      // `voice_assistant` and left psych_assist / performance_chat sessions
+      // running silently. Since those buttons are removed, in practice only
+      // voice_assistant should be active, but stopping any session here makes
+      // the orb's deactivate semantics bulletproof.
       if (isBusy) cancel();
       toggleEnabled();
-      if (voiceSession?.trigger === "voice_assistant") void stopVoiceSession();
+      if (voiceSession?.status === "active") void stopVoiceSession();
     } else {
       toggleEnabled();
       void startVoiceSession("voice_assistant");

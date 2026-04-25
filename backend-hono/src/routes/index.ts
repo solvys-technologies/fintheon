@@ -20,6 +20,7 @@ import { createDataRoutes } from "./data/index.js";
 import { createNarrativeRoutes } from "./narrative/index.js";
 import { createAgentDeskRoutes } from "./agent-desk/index.js";
 import { createArbitrumRoutes } from "./arbitrum/index.js";
+import { createConsulControlRoutes } from "./consul-control/index.js";
 import { createERRoutes } from "./er/index.js";
 import { createVoiceRoutes } from "./voice/index.js";
 import { livekit } from "./livekit/index.js";
@@ -149,6 +150,9 @@ export function registerRoutes(app: Hono): void {
   // [claude-code 2026-04-24] S35-T1: Arbitrum deliberation chamber —
   //   /latest, /:id, /deliberate. Public reads (digest_text is UI content).
   app.route("/api/arbitrum", createArbitrumRoutes());
+  // [claude-code 2026-04-24] Consul Control stub — kills /status 404 spam from
+  //   useConsulControlStatus until the real "Harper has the wheel" signal lands.
+  app.route("/api/consul-control", createConsulControlRoutes());
   // DAG scheduler — status, SSE stream, cancel (S8-T2)
   app.route("/api/dag", createDagRoutes());
   // Agent Dream Room — autonomous agent reflection channel

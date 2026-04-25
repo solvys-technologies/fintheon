@@ -4,6 +4,7 @@ import { handleHermesChat } from "../../services/hermes-handler.js";
 import { transcribeVoice } from "../../services/voice-service.js";
 import { analyzeSentiment } from "../../services/voice-sentiment.js";
 import { speakToUser } from "../../services/harper-voice/speak.js";
+import { synthesizeWithElevenLabs } from "../../services/voice-tts.js";
 
 function getUserId(c: Context): string | null {
   const userId = c.get("userId") as string | undefined;
@@ -137,18 +138,39 @@ export async function handleSpeak(c: Context) {
       },
     });
 
-    // [S28-T1] All agent-to-user speech now routes through Harper Voice's Notifications API.
-    //   The browser never speaks — if the user isn't paired the speak helper
-    //   silently no-ops and the client shows text only.
+    // [S28-T1] Omi pairing path stays as-is — fire-and-forget Harper Voice
+    // notification so paired users hear it through the earbuds.
     void speakToUser(userId, response.content).catch((err) => {
       console.warn("[Voice] Harper Voice speak failed (non-fatal):", err);
     });
+
+    // [claude-code 2026-04-24] When the client asks for inline audio (default
+    // for the on-screen orb), synthesize via ElevenLabs and return the bytes.
+    // Frontend `useVoiceAssistant.playAudio` already plays `audioBase64`. If
+    // ELEVENLABS_API_KEY isn't configured, audio is omitted and the frontend
+    // falls all the way back to its built-in synthesis (which we mark as a
+    // last resort, not the primary path).
+    const wantsAudio = body?.includeAudio !== false;
+    let audioBase64: string | undefined;
+    let audioMimeType: string | undefined;
+    let ttsProvider: string | undefined;
+    if (wantsAudio) {
+      const synth = await synthesizeWithElevenLabs(response.content);
+      if (synth) {
+        audioBase64 = synth.audioBase64;
+        audioMimeType = synth.audioMimeType;
+        ttsProvider = synth.provider;
+      }
+    }
 
     return c.json({
       conversationId: conversation.id,
       agent: response.agent,
       responseText: response.content,
       mode,
+      audioBase64,
+      audioMimeType,
+      ttsProvider,
     });
   } catch (error) {
     console.error("[Voice] Speak failed:", error);

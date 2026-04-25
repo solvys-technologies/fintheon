@@ -64,17 +64,30 @@ export function TradingBrowser({
   const { theme } = useTheme();
   const isStone = theme.name === "solvys-stone";
   const frameBg = isStone ? "bg-black" : "bg-white";
-  const builtinUrls: Record<string, string> = {
-    ...PLATFORM_URLS,
-    research: iframeUrls.research || PLATFORM_URLS.research,
-  };
-  // Resolve custom source URLs (IDs prefixed "custom:")
+  // [claude-code 2026-04-24] Resolution order: (1) user-managed iFrame catalogue
+  // (Settings → iFrames) is authoritative — match by id; (2) the legacy
+  // PLATFORM_URLS map is kept as a defensive fallback for any platform id that
+  // was selected before the user pruned it from the catalogue. The "research"
+  // override (env var) still lands via the catalogue's seed and the user's
+  // iframeUrls.research field below.
   const resolveUrl = (platform: TradingPlatform): string => {
-    if (builtinUrls[platform]) return builtinUrls[platform];
-    const custom = proposerIframeSources.find(
-      (s) => `custom:${s.id}` === platform,
+    const fromCatalogue = proposerIframeSources.find((s) => s.id === platform);
+    if (fromCatalogue) {
+      if (platform === "research" && iframeUrls.research) {
+        return iframeUrls.research;
+      }
+      return fromCatalogue.url;
+    }
+    if (platform === "research") {
+      return iframeUrls.research || PLATFORM_URLS.research;
+    }
+    return PLATFORM_URLS[platform] ?? "";
+  };
+  const resolveLabel = (platform: TradingPlatform): string => {
+    const fromCatalogue = proposerIframeSources.find((s) => s.id === platform);
+    return (
+      fromCatalogue?.label ?? PLATFORM_LABELS[platform] ?? String(platform)
     );
-    return custom?.url ?? "";
   };
   const primaryUrl = resolveUrl(primaryPlatform);
   const secondaryUrl = resolveUrl(secondaryPlatform);
@@ -87,13 +100,13 @@ export function TradingBrowser({
         className={`h-full ${splitViewEnabled && allowSplitView ? "grid grid-cols-2 gap-0" : ""}`}
       >
         <EmbeddedBrowserFrame
-          title={PLATFORM_LABELS[primaryPlatform]}
+          title={resolveLabel(primaryPlatform)}
           src={primaryUrl}
           className={`w-full h-full ${frameBg}`}
         />
         {splitViewEnabled && allowSplitView && (
           <EmbeddedBrowserFrame
-            title={PLATFORM_LABELS[secondaryPlatform]}
+            title={resolveLabel(secondaryPlatform)}
             src={secondaryUrl}
             className={`w-full h-full ${frameBg}`}
           />

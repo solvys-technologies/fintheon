@@ -9,6 +9,35 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T23:10:00",
+    agent: "claude-code",
+    summary:
+      "Post-v5.25 polish — iFrames unified, voice surfaces redesigned, Consul Control quieted. (1) iFrames: header + footer dropdowns drop hardcoded PLATFORM_LABELS and iterate exclusively over SettingsContext.proposerIframeSources. IframesTab can add AND remove every entry (builtin guard gone). Storage authoritative — pruning a builtin sticks; loader only seeds the canonical 10-entry catalogue on first install. TradingBrowser.resolveUrl matches by id against the catalogue first; PLATFORM_URLS only a defensive shim. (2) Floating COACH widget retired — AgentResponsePopup + AgentResponsePopupHost + the WhiteWaveform inside PsychAssistDockable all deleted. New AgentVoiceWaveform mounts at root as a chrome-less waveform (no border, no background, pointer-events:none) doubling as user-mic indicator (listening) and agent-voice indicator (speaking/thinking). (3) VoiceTranscriptTicker (the floating 'Give a brief casual greeting…' banner) deleted. (4) PsychAssist toggle-off no longer freezes — stopMonitoring flips isMonitoring/analyser/active flags synchronously and pushes audioContext.close() + final saveSession POST onto a fire-and-forget tail. (5) VoiceRimFrame redesigned per /solvys-feels: dithered 6px conic-gradient border (alternating bright/trough alpha replaces the flat 3px gold line), pixel-radius mount micro-interaction (inset 12→0 + blur 2.5→0 over 320ms cubic-bezier so pixels read as 'reassembling at the radius'). Error state keeps a flat solid red. (6) Consul Control 404 spam (231+ /status 404s per session): backend stub at /api/consul-control/status returns {active:false, reason:'consul_control_not_wired'}, frontend useConsulControlStatus hook short-circuits on either 404 or that reason and stops polling for the session. (7) Heading-toolbar PerformanceChatButton deleted; PsychAssistDockable's standalone 'Talk to Coach' MessageSquare button removed. The orb is the single voice trigger; its deactivate handler stops ANY active Harper Voice session regardless of trigger. (8) Voice TTS — ElevenLabs first: new backend voice-tts.ts (eleven_turbo_v2_5 + Rachel voice defaults, gated by ELEVENLABS_API_KEY); /api/voice/speak now returns audioBase64 + audioMimeType inline, frontend useVoiceAssistant prefers server-synth audio and demotes window.speechSynthesis to last-resort with a console warning. ELEVENLABS_VOICE_ID + ELEVENLABS_MODEL_ID overridable; ELEVENLABS_DISABLE=true forces fallback. All four builds clean.",
+    files: [
+      "frontend/contexts/SettingsContext.tsx",
+      "frontend/components/settings/IframesTab.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/layout/FooterToolbar.tsx",
+      "frontend/components/TradingBrowser.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/layout/PsychAssistDockable.tsx",
+      "frontend/components/voice/VoiceRimFrame.tsx",
+      "frontend/components/voice/AgentVoiceWaveform.tsx",
+      "frontend/components/voice/AgentResponsePopup.tsx",
+      "frontend/components/voice/AgentResponsePopupHost.tsx",
+      "frontend/components/voice/VoiceTranscriptTicker.tsx",
+      "frontend/components/voice/HeaderVoiceControl.tsx",
+      "frontend/components/performance/PerformanceChatButton.tsx",
+      "frontend/contexts/ERContext.tsx",
+      "frontend/hooks/useVoiceAssistant.ts",
+      "frontend/hooks/useConsulControlStatus.ts",
+      "backend-hono/src/routes/voice/handlers.ts",
+      "backend-hono/src/routes/consul-control/index.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/services/voice-tts.ts",
+    ],
+  },
+  {
     date: "2026-04-24T22:10:00",
     agent: "claude-code",
     summary:

@@ -33,8 +33,13 @@ import {
   type PsychAssistDockTarget,
 } from "./PsychAssistDockable";
 // [claude-code 2026-04-20] S21: Omi voice layer — Performance chat button + app-wide agent popup
-import { PerformanceChatButton } from "../performance/PerformanceChatButton";
-import { AgentResponsePopupHost } from "../voice/AgentResponsePopupHost";
+// [claude-code 2026-04-24] PerformanceChatButton retired — heading-toolbar chat
+// button had no clear purpose; the orb is the single voice trigger now.
+// import { PerformanceChatButton } from "../performance/PerformanceChatButton";
+// [claude-code 2026-04-24] Floating COACH popup removed — agent voice now plays
+// through the shared waveform on the rim; no draggable bordered widget.
+// import { AgentResponsePopupHost } from "../voice/AgentResponsePopupHost";
+import { AgentVoiceWaveform } from "../voice/AgentVoiceWaveform";
 import { FooterToolbar } from "./FooterToolbar";
 import { EmbeddedBrowserFrame } from "./EmbeddedBrowserFrame";
 import { ScheduleProvider } from "../../contexts/ScheduleContext";
@@ -721,8 +726,10 @@ function MainLayoutInner() {
       <div
         className={`h-screen flex flex-col bg-[var(--fintheon-bg)] text-white ${topStepXEnabled ? "topstepx-active" : ""}`}
       >
-        {/* [S21] App-wide host for the draggable Omi agent-response popup — single mount point */}
-        <AgentResponsePopupHost />
+        {/* [claude-code 2026-04-24] Standalone waveform overlay — no border, no
+            background. Doubles as user-mic indicator (when listening) and agent
+            voice (when speaking). The previous draggable COACH popup is gone. */}
+        <AgentVoiceWaveform />
         <TopHeader
           topStepXEnabled={topStepXEnabled}
           onTopStepXToggle={handleBrowserEnable} // [claude-code 2026-03-16] Restore: clicking platform in dropdown enables iframe
@@ -759,7 +766,8 @@ function MainLayoutInner() {
               />
             ) : undefined
           }
-          performanceChatWidget={<PerformanceChatButton />}
+          /* [claude-code 2026-04-24] performanceChatWidget removed — orb is
+             the only voice trigger now. */
         />
 
         {/* S14-T6: Peers panel removed — team status is now in footer Team tab */}

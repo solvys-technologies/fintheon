@@ -294,25 +294,36 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
           setRuntimeState("speaking");
           if (controller.signal.aborted) return null;
 
-          // [claude-code 2026-04-24] TTS Flow: Attempt native Web Speech API first,
-          //   then fallback to Omi-delivered audio if user is paired.
-          //   This gives desktop users immediate audio feedback without roundtrip to Omi.
-          let ttsAttempted = false;
-          if (ttsSupported) {
+          // [claude-code 2026-04-24] TTS preference order:
+          //   1) Server-synthesized audio (ElevenLabs via /api/voice/speak)
+          //      — `response.audioBase64` is present whenever the backend has
+          //      ELEVENLABS_API_KEY configured. This is a real human-sounding
+          //      voice and is always preferred.
+          //   2) Browser `window.speechSynthesis` — accessibility-tier voices
+          //      built into the OS. Only used as a last resort when no server
+          //      audio came back. We log a console warning so the absence of
+          //      ElevenLabs is obvious during dev.
+          let played = false;
+          if (response.audioBase64) {
             try {
-              await speakTTS(assistantText);
-              ttsAttempted = true;
-            } catch (ttsError) {
+              await playAudio(response.audioBase64, response.audioMimeType);
+              played = true;
+            } catch (audioErr) {
               console.warn(
-                "[VoiceAssistant] TTS failed, will try Omi audio:",
-                ttsError,
+                "[VoiceAssistant] Server audio playback failed, falling back to browser TTS:",
+                audioErr,
               );
             }
           }
-
-          // Legacy fallback: if TTS wasn't attempted or failed, use Omi audio if available
-          if (response.audioBase64 && !ttsAttempted) {
-            await playAudio(response.audioBase64, response.audioMimeType);
+          if (!played && ttsSupported) {
+            console.warn(
+              "[VoiceAssistant] Using browser speechSynthesis fallback — set ELEVENLABS_API_KEY on the backend for a real voice.",
+            );
+            try {
+              await speakTTS(assistantText);
+            } catch (ttsError) {
+              console.warn("[VoiceAssistant] Browser TTS failed:", ttsError);
+            }
           }
         }
         if (!controller.signal.aborted) {

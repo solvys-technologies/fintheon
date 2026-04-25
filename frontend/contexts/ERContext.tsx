@@ -574,26 +574,26 @@ export function ERProvider({ children }: ERProviderProps) {
   }, [backend, persistScore, startVAD]);
 
   const stopMonitoring = useCallback(async () => {
-    // Stop VAD
-    stopVAD();
-
-    // Stop media stream
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
-      mediaStreamRef.current = null;
-    }
-
-    // Close audio context
-    if (audioContextRef.current) {
-      try {
-        await audioContextRef.current.close();
-      } catch {
-        // Ignore errors
+    // [claude-code 2026-04-24] Toggle-off must feel instant. Flip every UI
+    // signal SYNCHRONOUSLY (analyser unmount, isMonitoring false, "active=false"
+    // localStorage flag) before doing any teardown that touches Web Audio or
+    // the network. Heavy work — audioContext.close() (can stall a frame on
+    // some browsers when WASM nodes are alive) and the final saveSession POST
+    // — moves to a fire-and-forget tail so the user sees the orb / monitor
+    // drop the instant they release the toggle.
+    setIsMonitoring(false);
+    setAnalyser(null);
+    setOvertradingStatus(null);
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        localStorage.setItem("psychassist_active", "false");
       }
-      audioContextRef.current = null;
+    } catch {
+      // Ignore errors
     }
 
-    // Clear intervals
+    // Stop VAD + intervals — cheap, do them now.
+    stopVAD();
     if (scoreIntervalRef.current) {
       clearInterval(scoreIntervalRef.current);
       scoreIntervalRef.current = null;
@@ -607,46 +607,57 @@ export function ERProvider({ children }: ERProviderProps) {
       overtradingIntervalRef.current = null;
     }
 
-    // Calculate final session metrics
+    // Stop media stream tracks — also cheap (stops the mic light).
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+
+    // Snapshot the values the tail needs before refs get reused on a restart.
+    const audioCtx = audioContextRef.current;
+    audioContextRef.current = null;
     const sessionEndTime = Date.now();
     const sessionStartTime = sessionStartTimeRef.current || sessionEndTime;
     const sessionDurationSeconds = Math.floor(
       (sessionEndTime - sessionStartTime) / 1000,
     );
-
     if (isInTiltRef.current && lastTiltStartRef.current) {
       timeInTiltRef.current += Math.floor(
         (sessionEndTime - lastTiltStartRef.current) / 1000,
       );
     }
+    const tailSessionId = sessionId;
+    const tailFinalScore = erScore;
+    const tailTimeInTilt = timeInTiltRef.current;
+    const tailInfractionCount = infractionCountRef.current;
+    const tailMaxTiltScore =
+      maxTiltScoreRef.current !== 0 ? maxTiltScoreRef.current : undefined;
+    const tailMaxTiltTime = maxTiltTimeRef.current || undefined;
 
-    if (sessionId) {
-      try {
-        await backend.er.saveSession({
-          finalScore: erScore,
-          timeInTiltSeconds: timeInTiltRef.current,
-          infractionCount: infractionCountRef.current,
-          sessionDurationSeconds: sessionDurationSeconds,
-          maxTiltScore:
-            maxTiltScoreRef.current !== 0 ? maxTiltScoreRef.current : undefined,
-          maxTiltTime: maxTiltTimeRef.current || undefined,
-        });
-      } catch (err) {
-        console.error("Failed to save ER session:", err);
+    // Fire-and-forget tail — UI is already off; this is bookkeeping only.
+    void (async () => {
+      if (audioCtx) {
+        try {
+          await audioCtx.close();
+        } catch {
+          // Ignore errors
+        }
       }
-    }
-
-    try {
-      if (typeof window !== "undefined" && window.localStorage) {
-        localStorage.setItem("psychassist_active", "false");
+      if (tailSessionId) {
+        try {
+          await backend.er.saveSession({
+            finalScore: tailFinalScore,
+            timeInTiltSeconds: tailTimeInTilt,
+            infractionCount: tailInfractionCount,
+            sessionDurationSeconds,
+            maxTiltScore: tailMaxTiltScore,
+            maxTiltTime: tailMaxTiltTime,
+          });
+        } catch (err) {
+          console.error("Failed to save ER session (tail):", err);
+        }
       }
-    } catch {
-      // Ignore errors
-    }
-
-    setAnalyser(null);
-    setIsMonitoring(false);
-    setOvertradingStatus(null);
+    })();
   }, [backend, sessionId, erScore, stopVAD]);
 
   // Score update and regression interval

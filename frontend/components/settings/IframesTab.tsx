@@ -45,10 +45,11 @@ export function IframesTab({
     setShowAddForm(false);
   };
 
-  const handleDeleteCustom = (id: string) => {
+  // [claude-code 2026-04-24] Builtins removable too — header + footer dropdowns
+  // read this list directly, so this is the user's curated set of iFrames.
+  const handleDelete = (id: string) => {
     const updated = proposerIframeSources.filter((s) => s.id !== id);
     setProposerIframeSources(updated);
-    // If the deleted source was the default, reset to first available
     if (proposerDefaultIframe === id && updated.length > 0) {
       setProposerDefaultIframe(updated[0].id);
     }
@@ -56,14 +57,16 @@ export function IframesTab({
 
   return (
     <>
-      {/* Proposer Default iFrame */}
+      {/* iFrame Catalogue — authoritative list for header + footer dropdowns + Proposer */}
       <section className="mb-6">
         <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-2">
-          Proposer Default
+          iFrames
         </h3>
         <p className="text-xs text-gray-500 mb-4">
-          Choose which iFrame loads as the default in the Proposals panel. The
-          selected source persists across sessions.
+          Add or remove the iFrames available across the app. This list IS what
+          shows up in the header platform picker, the footer iframe dropdown,
+          and the Proposals panel. The radio button below sets the Proposer
+          default. Removed entries can be re-added at the bottom.
         </p>
 
         <div className="space-y-1.5">
@@ -110,18 +113,20 @@ export function IframesTab({
                 >
                   <ExternalLink size={13} />
                 </button>
-                {!source.builtin && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleDeleteCustom(source.id);
-                    }}
-                    className="p-1 text-gray-500 hover:text-red-400 transition-colors"
-                    title="Remove custom source"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                )}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleDelete(source.id);
+                  }}
+                  className="p-1 text-gray-500 hover:text-red-400 transition-colors"
+                  title={
+                    source.builtin
+                      ? "Remove (builtin — can be re-added with Add Custom)"
+                      : "Remove"
+                  }
+                >
+                  <Trash2 size={13} />
+                </button>
               </div>
             </label>
           ))}
