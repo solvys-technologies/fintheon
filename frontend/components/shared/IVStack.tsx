@@ -1,3 +1,5 @@
+// [claude-code 2026-04-24] Doto numeral now uses t-digit-group pop-in (solvys-transitions) so the
+//   IV score cascades in when the card mounts or the score changes.
 // [claude-code 2026-04-19] RiskFlow card polish: shared right-column IV stack used by every
 //   desktop RiskFlow card variant. Direction chevron sits ABOVE the IV number, both rendered
 //   right-aligned in the Nothing Design display font (Doto). Mirrors the Fintheon Mobile

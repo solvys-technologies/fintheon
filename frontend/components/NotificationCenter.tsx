@@ -1,5 +1,6 @@
+// [claude-code 2026-04-24] Wired t-panel-slide transition (solvys-transitions) for open/close motion.
 // [claude-code 2026-03-20] S3:T10d — Notification Center dropdown: queued notifications, timestamps, clear all
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   X,
   Bell,
@@ -92,12 +93,25 @@ export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
     return () => document.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
+  // Drive the t-panel-slide data-open AFTER first paint so the entry animates
+  // from the closed (translateY + blur + opacity:0) resting state.
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => {
+    if (!open) {
+      setRevealed(false);
+      return;
+    }
+    const id = requestAnimationFrame(() => setRevealed(true));
+    return () => cancelAnimationFrame(id);
+  }, [open]);
+
   if (!open) return null;
 
   return (
     <div
       ref={panelRef}
-      className="absolute left-12 bottom-8 z-50 animate-fade-in-tab"
+      data-open={revealed ? "true" : "false"}
+      className="t-panel-slide absolute left-12 bottom-8 z-50"
       style={{
         width: "340px",
         maxHeight: "420px",
