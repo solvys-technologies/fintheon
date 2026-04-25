@@ -271,13 +271,6 @@ export function SanctumEconIntel(_props: SanctumEconIntelProps) {
         )}
       </div>
 
-      {/* ── Instrument cards row — horizontal heat-bar variant matching the
-            Sanctum Command tab (AquariumPredictionCards). Replaces the prior
-            vertical InstrumentCardsRow per S38. ── */}
-      <div className="shrink-0">
-        <AquariumPredictionCards />
-      </div>
-
       {/* Fading horizontal ruler */}
       <FadingHRule />
 
