@@ -318,8 +318,8 @@ export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
         )}
       </div>
 
-      {/* Footer — Clear All */}
-      {queue.length > 0 && (
+      {/* Footer — Clear All (clears server-side too, fans __sync to other devices) */}
+      {totalCount > 0 && (
         <div
           className="border-t px-3 py-2 flex justify-center"
           style={{
@@ -327,7 +327,7 @@ export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
           }}
         >
           <button
-            onClick={clearQueue}
+            onClick={handleClearAll}
             className="flex items-center gap-1.5 text-[10px] rounded px-2 py-1 transition-colors hover:bg-white/5"
             style={{ color: "var(--fintheon-muted)" }}
           >
