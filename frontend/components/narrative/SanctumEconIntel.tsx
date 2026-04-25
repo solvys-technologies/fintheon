@@ -16,7 +16,6 @@ import type {
   AgentDeskCategoryScore,
 } from "../../types/agent-desk";
 import { EconKpiFuses } from "./econ/EconKpiFuses";
-import { AquariumPredictionCards } from "./AquariumPredictionCards";
 import { EconEventFilter, type EconTimespan } from "./econ/EconEventFilter";
 import { EconEventCard, type EconEventCardData } from "./econ/EconEventCard";
 

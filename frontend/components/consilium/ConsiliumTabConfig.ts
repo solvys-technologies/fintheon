@@ -1,16 +1,19 @@
 // [claude-code 2026-04-10] Extracted from ConsiliumHub.tsx
+// [claude-code 2026-04-25] S35: Arbitrum entry's icon swapped from Fish (lucide) to
+//   ArbitrumGlyph — stacked +/- in Nothing Display font, matching the deliberation
+//   semantics of the 5-seat chamber.
 import {
   MessageSquare,
   Clock,
   GitBranch,
   Cpu,
   Users,
-  Fish,
   Shield,
   Brain,
   BookOpen,
   Moon,
 } from "lucide-react";
+import { ArbitrumGlyph } from "../icons/ArbitrumGlyph";
 
 // Top-level tabs: Sanctum, Boardroom, Apparatus are dropdowns; Chat is a direct button
 export type ConsiliumTab = "sanctum" | "chat" | "boardroom" | "apparatus";
@@ -25,11 +28,15 @@ export const REGULAR_TABS: {
   icon: typeof MessageSquare;
 }[] = [{ id: "chat", label: "Chat", icon: MessageSquare }];
 
+// Icon broadened to include the custom ArbitrumGlyph alongside lucide types — both
+// expose a {size, className} prop API so callers can render uniformly.
+type SubViewIcon = typeof GitBranch | typeof ArbitrumGlyph;
+
 export const SANCTUM_SUB_VIEWS: {
   id: SanctumSubView;
   label: string;
   subtitle?: string;
-  icon: typeof GitBranch;
+  icon: SubViewIcon;
 }[] = [
   {
     id: "timeline",
@@ -47,7 +54,7 @@ export const SANCTUM_SUB_VIEWS: {
     id: "aquarium",
     label: "Arbitrum",
     subtitle: "Deliberate it.",
-    icon: Fish,
+    icon: ArbitrumGlyph,
   },
 ];
 
