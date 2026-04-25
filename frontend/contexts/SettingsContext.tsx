@@ -403,29 +403,34 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     () => loadFromStorage("bulletinVoteThreshold", 3),
   );
 
+  // [claude-code 2026-04-24] iFrame sources are now the single source of truth for
+  // every dropdown that lists iframes (header platform picker, footer iframe picker,
+  // proposer default). The builtin flag is a label hint only — users can delete
+  // builtins. On first boot we seed the storage with this list; from then on, what's
+  // in storage is authoritative. No forced re-merge.
   const BUILTIN_PROPOSER_SOURCES: ProposerIframeSource[] = [
     {
-      id: "tradingview",
-      label: "TradingView",
-      url: "https://www.tradingview.com/chart",
-      builtin: true,
-    },
-    {
-      id: "unusual-whales",
-      label: "Unusual Whales",
-      url: "https://unusualwhales.com/flow",
-      builtin: true,
-    },
-    {
-      id: "kalshi",
-      label: "Kalshi Markets",
-      url: "https://kalshi.com/category/economics",
+      id: "topstepx",
+      label: "TopStepX",
+      url: "https://www.topstepx.com",
       builtin: true,
     },
     {
       id: "topstep-dashboard",
       label: "TopStep Dashboard",
       url: "https://dashboard.topstep.com",
+      builtin: true,
+    },
+    {
+      id: "mmt",
+      label: "MMT",
+      url: "https://app.mmt.gg",
+      builtin: true,
+    },
+    {
+      id: "kalshi",
+      label: "Kalshi",
+      url: "https://kalshi.com/category/economics",
       builtin: true,
     },
     {
@@ -440,20 +445,46 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       url: "https://trader.tradovate.com",
       builtin: true,
     },
+    {
+      id: "tradelocker",
+      label: "TradeLocker",
+      url: "https://app.tradelocker.com",
+      builtin: true,
+    },
+    {
+      id: "tradingview",
+      label: "TradingView",
+      url: "https://www.tradingview.com/chart",
+      builtin: true,
+    },
+    {
+      id: "unusual-whales",
+      label: "Unusual Whales",
+      url: "https://unusualwhales.com/flow",
+      builtin: true,
+    },
+    {
+      id: "research",
+      label: "Research",
+      url:
+        import.meta.env.VITE_RESEARCH_URL ||
+        "https://www.notion.so/solvys/344141b0da7d809ab3dff394c5c0aecc?v=344141b0da7d80ba935d000c9bda216f",
+      builtin: true,
+    },
   ];
 
   const [proposerIframeSources, setProposerIframeSources] = useState<
     ProposerIframeSource[]
   >(() => {
-    const stored = loadFromStorage<ProposerIframeSource[]>(
+    // Storage is authoritative — if the user has saved any list (including a list
+    // they've pruned a builtin from), use it as-is. Only seed with the builtin
+    // catalogue on a brand-new install (no prior settings blob, or no key set).
+    const stored = loadFromStorage<ProposerIframeSource[] | null>(
       "proposerIframeSources",
-      [],
+      null,
     );
-    // Merge: always include builtins, append custom entries from storage
-    const customEntries = stored.filter(
-      (s: ProposerIframeSource) => !s.builtin,
-    );
-    return [...BUILTIN_PROPOSER_SOURCES, ...customEntries];
+    if (Array.isArray(stored) && stored.length > 0) return stored;
+    return BUILTIN_PROPOSER_SOURCES;
   });
   const [proposerDefaultIframe, setProposerDefaultIframe] = useState<string>(
     () => loadFromStorage("proposerDefaultIframe", "tradingview"),
