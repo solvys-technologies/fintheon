@@ -927,6 +927,17 @@ export function FooterToolbar({
           <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
         )}
 
+        {/* [claude-code 2026-04-25] S38: Desk-name slot — relocated from TopHeader. Sits to the
+            LEFT of the system status indicators; existing fetch/update status messages render
+            above this in the row, so they appear to the LEFT of the desk name. Placeholder
+            string for now; future sprint wires this to a per-user desk preference. */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[9px] tracking-[0.18em] uppercase text-zinc-500 font-medium">
+            Priced In Capital
+          </span>
+        </div>
+        <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
+
         {/* System status indicators — real-time from /api/diagnostics */}
         <div className="flex items-center gap-2.5 shrink-0">
           <StatusIndicator

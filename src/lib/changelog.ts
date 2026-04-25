@@ -9,6 +9,25 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T11:00:00",
+    agent: "claude-code",
+    summary:
+      "S38 design patches — second pass (Refinement Engine + chrome + chart pin). (1) Active Market Environment: RegimeControl renamed 'Active Regime' → 'Active Market Environment' (UI only; backend `regime` untouched), right-justified, bumped header + badge type, override dropdown trigger enlarged with min-width 112px, dropdown items right-aligned. RefinementEngine top toolbar gets py-4 + min-h-60px so the chrome breathes ~12% taller. (2) Group Sensitivity row is now a click-to-toggle collapsible header with chevron, flat styling preserved (no card chrome), fuses render disabled unless the S37 Advanced-pane lock is open (predicate sourced from isRefinementEditUnlocked + 1.5s storage/focus poll for live sync). (3) PresetSelector relocated INTO AdvancedPane children — read-only when locked, interactive when unlocked. (4) Event Weights sliders rebuilt as NothingWeightSlider — 5 tick marks at 0/2.5/5/7.5/10, endpoint dots, solid accent active fill (no gradient), snap-to-tick on release, Inter-Mono drag-value popover above the thumb only while dragging. (5) Source Accounts / Persons of Interest / Econ Watch row text bumped one tier (text-[10px] → text-[12px], text-[9px] → text-[11px]) — single token reused across all three lists, no new size tier introduced. (6) Regime Approvals: same-state proposals (current === proposed) now rejected at write time in proposeRegimeChange and defensively filtered on the client read path; ApprovalsPage evidence panel suppressed entirely when empty (kills the blank fuse), backdrop-blur removed from the panel per no-glass rule, and evidence.sources[] renders as a 'Driving headlines' linked list (4 visible) with the legacy single evidence.headline as a fallback. (7) TopHeader: 'Priced In Capital' brand subtitle stripped from the header lockup. (8) FooterToolbar: desk-name slot ('Priced In Capital') inserted left of the system status indicators with a vertical divider; existing fetch/update status messages remain to its left. (9) Sanctum chart-mode: TradingView/SanctumChart hoisted out of Page 0 into a persistent right-half panel that stays in view as the user scrolls/snaps the left half through every page. tsc clean, vite build clean (3391 modules), backend bun build clean.",
+    files: [
+      "frontend/components/refinement/RegimeControl.tsx",
+      "frontend/components/refinement/RefinementEngine.tsx",
+      "frontend/components/refinement/QuickWeightEditor.tsx",
+      "frontend/components/refinement/CommentatorManager.tsx",
+      "frontend/components/refinement/SourceAccountsManager.tsx",
+      "frontend/components/refinement/EconFiltersManager.tsx",
+      "frontend/components/admin/ApprovalsPage.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/layout/FooterToolbar.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+      "backend-hono/src/services/regime/propose.ts",
+    ],
+  },
+  {
     date: "2026-04-25T06:30:00",
     agent: "claude-code",
     summary:

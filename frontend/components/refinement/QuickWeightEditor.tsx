@@ -1,7 +1,13 @@
+// [claude-code 2026-04-25] S38: Nothing-style sliders — tick increments above the track,
+//   solid accent active fill (no gradients), endpoint dots, Inter-Mono drag-value popover.
+//   Snap-to-tick on release; free-drag between.
 // [claude-code 2026-03-27] S2-T7: Quick weight editor — compact sliders for event type weights
 import { useState, useEffect, useCallback } from "react";
 import { SlidersHorizontal, Save, ChevronDown, ChevronUp } from "lucide-react";
 import type { CalibrationEntry } from "../../../backend-hono/src/types/calibration";
+
+const TICK_VALUES = [0, 2.5, 5, 7.5, 10] as const;
+const SNAP_STEP = 1;
 
 const API_BASE = (
   import.meta.env.VITE_API_URL || "http://localhost:8080"
@@ -84,35 +90,18 @@ export function QuickWeightEditor({
         Event Weights
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-3">
         {visible.map((w) => {
           const value = localWeights[w.eventType] ?? w.baseWeight;
           const isChanged = value !== w.baseWeight;
           return (
-            <div key={w.eventType} className="flex items-center gap-2">
-              <span
-                className={`text-[9px] w-20 truncate ${isChanged ? "text-[var(--fintheon-accent)]" : "text-zinc-500"}`}
-                title={w.eventType}
-              >
-                {w.eventType}
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={10}
-                step={0.5}
-                value={value}
-                onChange={(e) =>
-                  handleSliderChange(w.eventType, parseFloat(e.target.value))
-                }
-                className="flex-1 h-1 accent-[var(--fintheon-accent)] cursor-pointer"
-              />
-              <span
-                className={`text-[9px] w-6 text-right font-mono ${isChanged ? "text-[var(--fintheon-accent)]" : "text-zinc-500"}`}
-              >
-                {value.toFixed(1)}
-              </span>
-            </div>
+            <NothingWeightSlider
+              key={w.eventType}
+              eventType={w.eventType}
+              value={value}
+              isChanged={isChanged}
+              onChange={(v) => handleSliderChange(w.eventType, v)}
+            />
           );
         })}
       </div>
@@ -148,6 +137,104 @@ export function QuickWeightEditor({
           {hint}
         </div>
       )}
+    </div>
+  );
+}
+
+interface NothingWeightSliderProps {
+  eventType: string;
+  value: number;
+  isChanged: boolean;
+  onChange: (next: number) => void;
+}
+
+function NothingWeightSlider({
+  eventType,
+  value,
+  isChanged,
+  onChange,
+}: NothingWeightSliderProps) {
+  const [dragging, setDragging] = useState(false);
+  const pct = Math.max(0, Math.min(100, (value / 10) * 100));
+
+  const handleRelease = useCallback(() => {
+    setDragging(false);
+    const snapped = Math.round(value / SNAP_STEP) * SNAP_STEP;
+    if (snapped !== value) onChange(snapped);
+  }, [value, onChange]);
+
+  return (
+    <div className="flex items-center gap-2">
+      <span
+        className={`text-[9px] w-20 truncate ${isChanged ? "text-[var(--fintheon-accent)]" : "text-zinc-500"}`}
+        title={eventType}
+      >
+        {eventType}
+      </span>
+      <div className="relative flex-1 h-6 flex items-center">
+        {/* Tick marks above the track */}
+        <div className="absolute inset-x-0 top-0.5 h-1.5 pointer-events-none">
+          {TICK_VALUES.map((t) => (
+            <span
+              key={t}
+              aria-hidden="true"
+              className="absolute top-0 w-px h-1.5 bg-[var(--fintheon-text)]/40"
+              style={{ left: `${(t / 10) * 100}%` }}
+            />
+          ))}
+        </div>
+        {/* Endpoint dots */}
+        <span
+          aria-hidden="true"
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[var(--fintheon-accent)]/70"
+        />
+        <span
+          aria-hidden="true"
+          className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[var(--fintheon-accent)]/70"
+        />
+        {/* Solid accent active fill (no gradient) */}
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[2px] bg-[var(--fintheon-text)]/15 rounded-sm">
+          <div
+            className="h-full bg-[var(--fintheon-accent)] rounded-sm"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        {/* Native input drives a11y + keyboard; rendered transparent on top of the visual track */}
+        <input
+          type="range"
+          min={0}
+          max={10}
+          step={0.5}
+          value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value))}
+          onMouseDown={() => setDragging(true)}
+          onTouchStart={() => setDragging(true)}
+          onMouseUp={handleRelease}
+          onTouchEnd={handleRelease}
+          onKeyUp={handleRelease}
+          aria-label={`${eventType} weight`}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+        />
+        {/* Drag-value popover — Inter Mono, only while dragging */}
+        {dragging && (
+          <span
+            aria-hidden="true"
+            className="absolute -top-3.5 -translate-x-1/2 px-1 text-[9px] text-[var(--fintheon-accent)] bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/30 rounded-sm tabular-nums"
+            style={{
+              left: `${pct}%`,
+              fontFamily:
+                "var(--font-data, ui-monospace), ui-monospace, monospace",
+            }}
+          >
+            {value.toFixed(1)}
+          </span>
+        )}
+      </div>
+      <span
+        className={`text-[9px] w-6 text-right font-mono ${isChanged ? "text-[var(--fintheon-accent)]" : "text-zinc-500"}`}
+      >
+        {value.toFixed(1)}
+      </span>
     </div>
   );
 }

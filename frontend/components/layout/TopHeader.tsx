@@ -435,12 +435,12 @@ export function TopHeader({
         <div
           className={`flex items-center gap-3 transition-opacity duration-150 ${hideBranding ? "opacity-0 pointer-events-none" : "opacity-100"}`}
         >
+          {/* [claude-code 2026-04-25] S38: "Priced In Capital" brand string removed from
+              header — now lives in the FooterToolbar desk-name slot. Leaves the instance
+              name + time-of-day greeting. */}
           <div className="flex flex-col leading-tight">
             <span className="text-[12px] font-semibold tracking-[0.22em] text-[var(--fintheon-accent)] uppercase">
               {instanceName}
-            </span>
-            <span className="text-[10px] tracking-[0.18em] text-gray-500 uppercase hidden lg:block">
-              Priced In Capital
             </span>
             <span className="text-[9px] text-gray-600 italic hidden xl:block">
               {(() => {

@@ -5,7 +5,8 @@
 // [claude-code 2026-04-18] S24-T4: Rebuilt — 5 group dials + presets + advanced pane + toasts + rescore preview
 // [claude-code 2026-03-27] S2-T7: Refinement Engine — scoring calibration workbench
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { RefreshCw, Wrench } from "lucide-react";
+import { ChevronDown, ChevronRight, RefreshCw, Wrench } from "lucide-react";
+import { isRefinementEditUnlocked } from "../../lib/dev-settings-auth";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import type { CalibrationEntry } from "../../../backend-hono/src/types/calibration";
 import type { CommentatorEntry } from "../../../backend-hono/src/types/commentator";
@@ -84,6 +85,22 @@ export function RefinementEngine() {
   const [econFilters, setEconFilters] = useState<EconWatchFilter[]>([]);
   const [isRescoring, setIsRescoring] = useState(false);
   const [loading, setLoading] = useState(true);
+  // [claude-code 2026-04-25] S38: Group Sensitivity collapsible + view-only gating tied to S37 lock.
+  const [groupSensOpen, setGroupSensOpen] = useState(true);
+  const [editUnlocked, setEditUnlocked] = useState(() =>
+    isRefinementEditUnlocked(),
+  );
+  useEffect(() => {
+    const sync = () => setEditUnlocked(isRefinementEditUnlocked());
+    const interval = window.setInterval(sync, 1500);
+    window.addEventListener("storage", sync);
+    window.addEventListener("focus", sync);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("focus", sync);
+    };
+  }, []);
 
   // V4: group sensitivities + preset state
   const [appliedSensitivities, setAppliedSensitivities] =
@@ -343,8 +360,8 @@ export function RefinementEngine() {
 
   return (
     <div className="h-full flex flex-col bg-[var(--fintheon-bg)]">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--fintheon-accent)]/15">
+      {/* [claude-code 2026-04-25] S38: Header toolbar min-height bumped ~12% so chrome breathes */}
+      <div className="flex items-center justify-between px-5 py-4 min-h-[60px] border-b border-[var(--fintheon-accent)]/15">
         <div className="flex items-center gap-3">
           <Wrench className="w-5 h-5 text-[var(--fintheon-accent)]" />
           <h1
@@ -401,6 +418,9 @@ export function RefinementEngine() {
 
             {v4Available ? (
               <>
+                {/* [claude-code 2026-04-25] S38: Group Sensitivity is now a collapsible
+                    header row (chevron toggles), keeps flat styling (no card chrome).
+                    Fuses render disabled unless the S37 Advanced-pane lock is open. */}
                 <div
                   style={{
                     marginTop: 16,
@@ -409,35 +429,53 @@ export function RefinementEngine() {
                       "1px dotted color-mix(in srgb, var(--fintheon-accent) 35%, transparent)",
                   }}
                 >
-                  <div
+                  <button
+                    type="button"
+                    onClick={() => setGroupSensOpen((v) => !v)}
+                    aria-expanded={groupSensOpen}
                     style={{
-                      fontFamily: "var(--font-heading)",
-                      fontSize: 13,
-                      fontWeight: 700,
-                      letterSpacing: "0.14em",
-                      textTransform: "uppercase",
-                      color: "var(--fintheon-accent)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      width: "100%",
+                      padding: "2px 0",
                       marginBottom: 10,
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
                     }}
                   >
-                    Group Sensitivity
-                  </div>
-                  {GROUPS.map((g) => (
-                    <NotchedFuse
-                      key={g}
-                      group={g}
-                      value={pendingSensitivities[g]}
-                      onChange={onDialChange}
-                    />
-                  ))}
+                    <span
+                      style={{
+                        fontFamily: "var(--font-heading)",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        letterSpacing: "0.14em",
+                        textTransform: "uppercase",
+                        color: "var(--fintheon-accent)",
+                      }}
+                    >
+                      Group Sensitivity
+                    </span>
+                    {groupSensOpen ? (
+                      <ChevronDown size={14} color="var(--fintheon-muted)" />
+                    ) : (
+                      <ChevronRight size={14} color="var(--fintheon-muted)" />
+                    )}
+                  </button>
+                  {groupSensOpen &&
+                    GROUPS.map((g) => (
+                      <NotchedFuse
+                        key={g}
+                        group={g}
+                        value={pendingSensitivities[g]}
+                        onChange={onDialChange}
+                        disabled={!editUnlocked}
+                      />
+                    ))}
                 </div>
 
-                <PresetSelector
-                  presets={presets}
-                  selectedId={selectedPresetId}
-                  onSelect={onPresetSelect}
-                  onSaveCurrent={onSavePreset}
-                />
+                {/* PresetSelector relocated into AdvancedPane below — sits inside the locked region per S38. */}
 
                 {isDirty && (
                   <div style={{ marginBottom: 12 }}>
@@ -485,6 +523,21 @@ export function RefinementEngine() {
             <AdvancedPane
               count={weights.length + registry.length + sourceAccounts.length}
             >
+              {/* [claude-code 2026-04-25] S38: Preset dropdown moved INSIDE the locked Advanced
+                  pane — read-only when locked, interactive when unlocked. */}
+              <PresetSelector
+                presets={presets}
+                selectedId={selectedPresetId}
+                onSelect={onPresetSelect}
+                onSaveCurrent={onSavePreset}
+                disabled={!editUnlocked}
+              />
+              <div
+                style={{
+                  borderTop:
+                    "1px dotted color-mix(in srgb, var(--fintheon-accent) 25%, transparent)",
+                }}
+              />
               <MatrixEditor />
               <div
                 style={{

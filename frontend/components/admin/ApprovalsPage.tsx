@@ -1,3 +1,8 @@
+// [claude-code 2026-04-25] S38: Regime approvals rebuild — drops same-state transitions on read
+//   (current_regime === proposed_regime is a no-op proposal and never reaches the inbox); evidence
+//   block now renders the full sources[] list as linked driving headlines, with the legacy single
+//   evidence.headline kept as a fallback. Removed glassmorphic backdrop-blur on the evidence panel
+//   per project no-glass rule. Empty evidence panels suppressed entirely (kills the "blank fuse").
 // [claude-code 2026-04-24] S37: when the most-recent regime proposal is approved, the entire regime queue fades out and clears — historic regime suggestions are stale once the newest has been adjudicated, so they're silently dropped rather than lingering.
 // [claude-code 2026-04-18] S24-T4: Admin approvals inbox — regime / lexicon / walk-back proposals
 import { useState, useEffect, useCallback } from "react";
@@ -91,7 +96,20 @@ export function ApprovalsPage() {
       }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { proposals?: BaseProposal[] };
-      setItems((prev) => ({ ...prev, [which]: data.proposals ?? [] }));
+      // [S38] Drop same-state regime transitions (current === proposed); they're a no-op
+      // and clutter the queue with non-actionable cards.
+      const filtered =
+        which === "regime"
+          ? (data.proposals ?? []).filter((p) => {
+              const r = p as RegimeProposal;
+              return (
+                r.proposed_regime &&
+                r.current_regime &&
+                r.proposed_regime !== r.current_regime
+              );
+            })
+          : (data.proposals ?? []);
+      setItems((prev) => ({ ...prev, [which]: filtered }));
       setNotReady((prev) => ({ ...prev, [which]: false }));
     } catch {
       setNotReady((prev) => ({ ...prev, [which]: true }));
@@ -365,78 +383,112 @@ function ProposalCard({
         {proposal.reason}
       </div>
 
-      {proposal.evidence && (
-        <div
-          style={{
-            padding: "10px 12px",
-            background:
-              "color-mix(in srgb, var(--fintheon-accent) 4%, transparent)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            border:
-              "1px solid color-mix(in srgb, var(--fintheon-accent) 10%, transparent)",
-            borderRadius: 8,
-            marginBottom: 10,
-            display: "flex",
-            flexDirection: "column",
-            gap: 6,
-          }}
-        >
-          {proposal.evidence.headline && (
-            <div
-              style={{
-                fontSize: 11,
-                color: "var(--fintheon-text)",
-                fontStyle: "italic",
-              }}
-            >
-              “{proposal.evidence.headline}”
-            </div>
-          )}
-          {proposal.evidence.chart_url && (
-            <img
-              src={proposal.evidence.chart_url}
-              alt="Chart evidence"
-              style={{ maxWidth: "100%", borderRadius: 3, display: "block" }}
-            />
-          )}
-          {proposal.evidence.x_sentiment && (
-            <div
-              style={{
-                fontSize: 10,
-                color: "var(--fintheon-muted)",
-                fontFamily: "var(--font-data)",
-              }}
-            >
-              X sentiment: {proposal.evidence.x_sentiment}
-            </div>
-          )}
-          {proposal.evidence.sources &&
-            proposal.evidence.sources.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                {proposal.evidence.sources.map((s, i) => (
+      {proposal.evidence &&
+        (proposal.evidence.headline ||
+          proposal.evidence.chart_url ||
+          proposal.evidence.x_sentiment ||
+          (proposal.evidence.sources &&
+            proposal.evidence.sources.length > 0)) && (
+          <div
+            style={{
+              padding: "10px 12px",
+              background:
+                "color-mix(in srgb, var(--fintheon-accent) 4%, transparent)",
+              border:
+                "1px solid color-mix(in srgb, var(--fintheon-accent) 14%, transparent)",
+              borderRadius: 4,
+              marginBottom: 10,
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+            }}
+          >
+            {proposal.evidence.sources &&
+            proposal.evidence.sources.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <div
+                  style={{
+                    fontSize: 10,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    color: "var(--fintheon-muted)",
+                    fontFamily: "var(--font-data)",
+                  }}
+                >
+                  Driving headlines
+                </div>
+                {proposal.evidence.sources.slice(0, 4).map((s, i) => (
                   <a
-                    key={i}
+                    key={`${s.url}-${i}`}
                     href={s.url}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     style={{
-                      fontSize: 10,
+                      fontSize: 11,
                       color: "var(--fintheon-accent)",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 3,
                       textDecoration: "none",
+                      lineHeight: 1.4,
                     }}
                   >
-                    <ExternalLink size={10} />
-                    {s.label ?? new URL(s.url).hostname}
+                    {s.label || s.url}
                   </a>
                 ))}
               </div>
+            ) : proposal.evidence.headline ? (
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "var(--fintheon-text)",
+                  fontStyle: "italic",
+                }}
+              >
+                “{proposal.evidence.headline}”
+              </div>
+            ) : null}
+            {proposal.evidence.chart_url && (
+              <img
+                src={proposal.evidence.chart_url}
+                alt="Chart evidence"
+                style={{ maxWidth: "100%", borderRadius: 3, display: "block" }}
+              />
             )}
-        </div>
-      )}
+            {proposal.evidence.x_sentiment && (
+              <div
+                style={{
+                  fontSize: 10,
+                  color: "var(--fintheon-muted)",
+                  fontFamily: "var(--font-data)",
+                }}
+              >
+                X sentiment: {proposal.evidence.x_sentiment}
+              </div>
+            )}
+            {proposal.evidence.sources &&
+              proposal.evidence.sources.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                  {proposal.evidence.sources.map((s, i) => (
+                    <a
+                      key={i}
+                      href={s.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        fontSize: 10,
+                        color: "var(--fintheon-accent)",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 3,
+                        textDecoration: "none",
+                      }}
+                    >
+                      <ExternalLink size={10} />
+                      {s.label ?? new URL(s.url).hostname}
+                    </a>
+                  ))}
+                </div>
+              )}
+          </div>
+        )}
 
       {/* [claude-code 2026-04-19] Borderless, no-bg, accent letters per TP */}
       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>

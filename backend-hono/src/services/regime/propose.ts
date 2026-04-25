@@ -1,3 +1,5 @@
+// [claude-code 2026-04-25] S38: same-state guard — proposeRegimeChange now rejects no-op
+//   proposals where currentRegime === proposedRegime; they never reach the approval inbox.
 // [claude-code 2026-04-19] S24-T1: regime proposal helper — MDB + any agent calls this instead of setRegime().
 /**
  * proposeRegimeChange — the one function agents call to request a regime flip.
@@ -90,6 +92,22 @@ export async function proposeRegimeChange(
 
   const currentState = await getCurrentRegime().catch(() => null);
   const currentRegime = currentState?.regime ?? null;
+
+  // [claude-code 2026-04-25] S38: Reject same-state proposals at write time. A regime change
+  // request that doesn't actually change the regime is a no-op and clutters the TP approval
+  // inbox with cards like "Macro Econ → Macro Econ". The frontend also filters defensively.
+  if (currentRegime && currentRegime === input.proposedRegime) {
+    log.info("Skipping same-state regime proposal", {
+      regime: currentRegime,
+      proposedBy: input.proposedBy,
+    });
+    return {
+      id: null,
+      status: "skipped-duplicate",
+      lockedUntil: null,
+      pushed: 0,
+    };
+  }
 
   // Dedup: recent identical pending proposal from the same proposer in the last 30 min.
   const dedup = await sql`

@@ -1,3 +1,4 @@
+// [claude-code 2026-04-25] S38: Body text bumped one tier (text-[10px] → text-[12px], text-[9px] → text-[11px]) for legibility on the Refinement Engine surface.
 // [claude-code 2026-03-27] S2-T7: Commentator manager — drag-and-drop ranked list with add/seed
 import { useState, useCallback } from "react";
 import {
@@ -227,13 +228,13 @@ export function CommentatorManager({
                 <input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full bg-transparent border border-zinc-700 rounded px-2 py-0.5 text-[10px] text-[var(--fintheon-text)] focus:border-[var(--fintheon-accent)]/50 outline-none"
+                  className="w-full bg-transparent border border-zinc-700 rounded px-2 py-0.5 text-[12px] text-[var(--fintheon-text)] focus:border-[var(--fintheon-accent)]/50 outline-none"
                   placeholder="Name"
                 />
                 <input
                   value={editAliases}
                   onChange={(e) => setEditAliases(e.target.value)}
-                  className="w-full bg-transparent border border-zinc-700 rounded px-2 py-0.5 text-[10px] text-zinc-400 focus:border-[var(--fintheon-accent)]/50 outline-none"
+                  className="w-full bg-transparent border border-zinc-700 rounded px-2 py-0.5 text-[12px] text-zinc-400 focus:border-[var(--fintheon-accent)]/50 outline-none"
                   placeholder="Aliases (comma-separated)"
                 />
                 <div className="flex gap-1.5">
@@ -242,7 +243,7 @@ export function CommentatorManager({
                     onChange={(e) =>
                       setEditTier(Number(e.target.value) as CommentatorTier)
                     }
-                    className="bg-transparent border border-zinc-700 rounded px-1.5 py-0.5 text-[10px] text-zinc-400 outline-none"
+                    className="bg-transparent border border-zinc-700 rounded px-1.5 py-0.5 text-[12px] text-zinc-400 outline-none"
                   >
                     <option value={1}>Tier 1</option>
                     <option value={2}>Tier 2</option>
@@ -251,20 +252,20 @@ export function CommentatorManager({
                   <input
                     value={editRole}
                     onChange={(e) => setEditRole(e.target.value)}
-                    className="flex-1 bg-transparent border border-zinc-700 rounded px-2 py-0.5 text-[10px] text-zinc-400 focus:border-[var(--fintheon-accent)]/50 outline-none"
+                    className="flex-1 bg-transparent border border-zinc-700 rounded px-2 py-0.5 text-[12px] text-zinc-400 focus:border-[var(--fintheon-accent)]/50 outline-none"
                     placeholder="Role"
                   />
                 </div>
                 <div className="flex gap-1.5">
                   <button
                     onClick={handleSaveEdit}
-                    className="px-2 py-0.5 rounded text-[9px] bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/30 transition-colors"
+                    className="px-2 py-0.5 rounded text-[11px] bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/30 transition-colors"
                   >
                     Save
                   </button>
                   <button
                     onClick={() => setEditingId(null)}
-                    className="px-2 py-0.5 rounded text-[9px] text-zinc-500 hover:text-zinc-300 transition-colors"
+                    className="px-2 py-0.5 rounded text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
                   >
                     Cancel
                   </button>
@@ -290,11 +291,11 @@ export function CommentatorManager({
               <div className="cursor-grab active:cursor-grabbing touch-none shrink-0 text-zinc-600 hover:text-zinc-400">
                 <GripVertical className="w-3 h-3" />
               </div>
-              <span className="text-[9px] text-zinc-600 w-4 text-right font-mono shrink-0">
+              <span className="text-[11px] text-zinc-600 w-4 text-right font-mono shrink-0">
                 {idx + 1}.
               </span>
               <div className="flex-1 min-w-0">
-                <div className="text-[10px] font-semibold text-[var(--fintheon-text)] truncate">
+                <div className="text-[12px] font-semibold text-[var(--fintheon-text)] truncate">
                   {entry.name}
                 </div>
                 <div className="text-[8px] text-zinc-500 truncate">
@@ -326,7 +327,7 @@ export function CommentatorManager({
         })}
 
         {sorted.length === 0 && (
-          <div className="text-[10px] text-zinc-600 text-center py-4">
+          <div className="text-[12px] text-zinc-600 text-center py-4">
             No persons of interest. Click "Seed Defaults" to populate.
           </div>
         )}
@@ -335,7 +336,7 @@ export function CommentatorManager({
       {/* Add form toggle */}
       <button
         onClick={() => setShowAdd(!showAdd)}
-        className="flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
+        className="flex items-center gap-1.5 text-[12px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
       >
         <Plus className="w-3 h-3" />
         Add Official
@@ -351,13 +352,13 @@ export function CommentatorManager({
           <input
             value={addName}
             onChange={(e) => setAddName(e.target.value)}
-            className="w-full bg-transparent border border-zinc-700 rounded px-2 py-1 text-[10px] text-[var(--fintheon-text)] focus:border-[var(--fintheon-accent)]/50 outline-none"
+            className="w-full bg-transparent border border-zinc-700 rounded px-2 py-1 text-[12px] text-[var(--fintheon-text)] focus:border-[var(--fintheon-accent)]/50 outline-none"
             placeholder="Name"
           />
           <input
             value={addAliases}
             onChange={(e) => setAddAliases(e.target.value)}
-            className="w-full bg-transparent border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-400 focus:border-[var(--fintheon-accent)]/50 outline-none"
+            className="w-full bg-transparent border border-zinc-700 rounded px-2 py-1 text-[12px] text-zinc-400 focus:border-[var(--fintheon-accent)]/50 outline-none"
             placeholder="Aliases (comma-separated)"
           />
           <div className="flex gap-1.5">
@@ -366,7 +367,7 @@ export function CommentatorManager({
               onChange={(e) =>
                 setAddTier(Number(e.target.value) as CommentatorTier)
               }
-              className="bg-transparent border border-zinc-700 rounded px-1.5 py-1 text-[10px] text-zinc-400 outline-none"
+              className="bg-transparent border border-zinc-700 rounded px-1.5 py-1 text-[12px] text-zinc-400 outline-none"
             >
               <option value={1}>Tier 1</option>
               <option value={2}>Tier 2</option>
@@ -375,20 +376,20 @@ export function CommentatorManager({
             <input
               value={addRole}
               onChange={(e) => setAddRole(e.target.value)}
-              className="flex-1 bg-transparent border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-400 focus:border-[var(--fintheon-accent)]/50 outline-none"
+              className="flex-1 bg-transparent border border-zinc-700 rounded px-2 py-1 text-[12px] text-zinc-400 focus:border-[var(--fintheon-accent)]/50 outline-none"
               placeholder="Role"
             />
           </div>
           <input
             value={addInstitution}
             onChange={(e) => setAddInstitution(e.target.value)}
-            className="w-full bg-transparent border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-400 focus:border-[var(--fintheon-accent)]/50 outline-none"
+            className="w-full bg-transparent border border-zinc-700 rounded px-2 py-1 text-[12px] text-zinc-400 focus:border-[var(--fintheon-accent)]/50 outline-none"
             placeholder="Institution"
           />
           <button
             onClick={handleAdd}
             disabled={!addName.trim() || addSubmitting}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-[var(--fintheon-accent)]/30 text-[10px] text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-[var(--fintheon-accent)]/30 text-[12px] text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {addSubmitting ? "Adding..." : "Add to Bottom"}
           </button>

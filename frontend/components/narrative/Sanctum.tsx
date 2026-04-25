@@ -1,4 +1,5 @@
 // [claude-code 2026-04-19] S25-T1: Removed KPI row (moved to Agent Desk fuses), stripped card borders to fading edges, viewport lock ≥1440px, fuses piped into DebatePanel
+// [claude-code 2026-04-25] S38: Chart-mode pin-through — TradingView/SanctumChart is hoisted out of Page 0 into a persistent right-half panel, visible across every Sanctum page. Left half scrolls/snaps independently.
 // [claude-code 2026-04-17] S23-T1: Aquarium restructure — top chart replaced with brief-pattern container (IV+Forecast | Deliberation), Chart toggle renders 50/50 with TradingView iframe, feels polish
 // [claude-code 2026-04-16] Sanctum — full-border severity on Risk Signals containers, solvys-feels polish
 // [claude-code 2026-03-28] S8-T4: Chart cleanup, Page 2 restructure (50/50 narratives+risk), sim history removed
@@ -195,11 +196,15 @@ export function Sanctum({
       />
 
       <div className="flex flex-1 min-h-0">
+        {/* [claude-code 2026-04-25] S38: When chart mode is active, the TradingView chart
+            is pinned to the right half of the viewport and stays visible across every
+            page; the left half scrolls/pages independently. Off-mode falls back to the
+            full-width single-scroll layout. */}
         {/* Main scrollable area */}
         <div
           ref={containerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto scroll-smooth snap-y snap-mandatory"
+          className={`${chartMode ? "w-1/2" : "flex-1"} overflow-y-auto scroll-smooth snap-y snap-mandatory`}
         >
           {/* ── Page 0: Command Center ── */}
           {showPage(0) && (
@@ -208,38 +213,23 @@ export function Sanctum({
               className={`${chartMode ? "h-full" : "min-h-full"} snap-start p-3 pt-2 flex flex-col`}
             >
               {chartMode ? (
-                /* Chart mode — 50/50 split: compact Aquarium stack on left, TradingView chart on right.
-                   Page wrapper is h-full (not min-h-full) so the TradingView iframe is bounded by the
-                   viewport and doesn't bleed past the snap boundary into Page 1. The chart column
-                   uses min-h-0 + overflow-hidden so flex constrains it; the left column scrolls
-                   internally if its content exceeds the page height. */
-                <div className="flex-1 grid grid-cols-1 xl:grid-cols-2 gap-3 min-h-0">
-                  <div className="min-h-0 flex flex-col gap-3 overflow-y-auto pr-1">
-                    {data && data.compositeIV > 0 && (
-                      <SanctumBriefing
-                        briefing={data.briefing ?? null}
-                        isLoading={false}
-                        noBorder
-                      />
-                    )}
-                    <BlendedVIXCard data={ivData} isLoading={ivLoading} />
-                    <NextSessionForecastCard
-                      data={ivData}
-                      isLoading={ivLoading}
+                /* [claude-code 2026-04-25] S38: Chart now lives in the persistent right-half
+                   panel outside this scrollable area, so Page 0 in chart mode just renders the
+                   compact left-column stack (briefing + IV cards + instrument cards). */
+                <div className="flex-1 min-h-0 flex flex-col gap-3 overflow-y-auto pr-1">
+                  {data && data.compositeIV > 0 && (
+                    <SanctumBriefing
+                      briefing={data.briefing ?? null}
+                      isLoading={false}
+                      noBorder
                     />
-                    <AquariumPredictionCards />
-                  </div>
-                  <div className="min-h-0 overflow-hidden">
-                    <SanctumChart
-                      timeSeries={data?.timeSeries ?? []}
-                      rollingDays={rollingDays}
-                      selectedSymbol={selectedSymbol}
-                      compositeIV={data?.compositeIV}
-                      confidence={data?.confidence}
-                      regimeShiftProbability={data?.regimeShiftProbability}
-                      scenarios={data?.scenarios}
-                    />
-                  </div>
+                  )}
+                  <BlendedVIXCard data={ivData} isLoading={ivLoading} />
+                  <NextSessionForecastCard
+                    data={ivData}
+                    isLoading={ivLoading}
+                  />
+                  <AquariumPredictionCards />
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col gap-4">
@@ -457,6 +447,23 @@ export function Sanctum({
             </div>
           )}
         </div>
+
+        {/* [claude-code 2026-04-25] S38: Persistent right-half chart panel — pinned across
+            every Sanctum page when chart mode is active, so the chart stays in view as the
+            user scrolls/snaps through the left-half content. */}
+        {chartMode && (
+          <div className="w-1/2 shrink-0 border-l border-[var(--fintheon-accent)]/15 min-h-0 overflow-hidden">
+            <SanctumChart
+              timeSeries={data?.timeSeries ?? []}
+              rollingDays={rollingDays}
+              selectedSymbol={selectedSymbol}
+              compositeIV={data?.compositeIV}
+              confidence={data?.confidence}
+              regimeShiftProbability={data?.regimeShiftProbability}
+              scenarios={data?.scenarios}
+            />
+          </div>
+        )}
 
         {/* Scroll-lock page indicators */}
         {visiblePages.length > 1 && (
