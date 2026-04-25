@@ -1,7 +1,7 @@
 // [claude-code 2026-04-24] S34-T4: silent-drop counters. In-memory per-source
 // per-stage per-reason bumps, flushed every 60s into riskflow_drop_counters.
 // Instrumentation-first — no behavior change; just counts real zeroes so the
-// news-worker "items_ingested: 0, errors: 0" mystery can be traced to a
+// riskflow-worker "items_ingested: 0, errors: 0" mystery can be traced to a
 // concrete drop class per source.
 
 import { createLogger } from "../../lib/logger.js";

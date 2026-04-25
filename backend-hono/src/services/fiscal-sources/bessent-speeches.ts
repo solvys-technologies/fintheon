@@ -1,5 +1,5 @@
 // [claude-code 2026-04-24] S34-T7: Bessent / Treasury Secretary scraper.
-// Leverages the Treasury press-release RSS already in the news-worker allowlist.
+// Leverages the Treasury press-release RSS already in the riskflow-worker allowlist.
 
 import { fetchRss } from "../agent-reach-service.js";
 import { createLogger } from "../../lib/logger.js";

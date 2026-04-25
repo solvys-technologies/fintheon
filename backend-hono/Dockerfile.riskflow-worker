@@ -1,5 +1,5 @@
-# Fintheon News Worker — Always-On Sibling Process
-# Separates news ingestion uptime from API-server uptime. Writes to Supabase;
+# Fintheon RiskFlow Worker — Always-On Sibling Process
+# Separates RiskFlow ingestion uptime from API-server uptime. Writes to Supabase;
 # no HTTP coupling back to backend-hono. /healthz serves launchd/Fly checks.
 
 FROM mcr.microsoft.com/playwright:v1.58.2-jammy AS base
@@ -24,8 +24,8 @@ COPY scripts ./scripts
 RUN npm run build
 
 ENV NODE_ENV=production
-ENV NEWS_WORKER_PORT=8082
+ENV RISKFLOW_WORKER_PORT=8082
 
 EXPOSE 8082
 
-CMD ["node", "dist/workers/news-worker/index.js"]
+CMD ["node", "dist/workers/riskflow-worker/index.js"]

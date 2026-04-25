@@ -1,3 +1,6 @@
+// [claude-code 2026-04-24] S35-T10: renamed dir from workers/news-worker. Heartbeat table
+//   now writes to riskflow_worker_heartbeats (legacy view alias preserved through 2026-05-08).
+//   submitted_by tag updated to "riskflow-worker"; FLAG_WRITES env var has legacy fallback.
 // [claude-code 2026-04-19] S27-T7 (W2d): Supabase write layer. Worker and
 // backend-hono never talk HTTP — this is the contract. Dry-run mode skips
 // writes while still upserting heartbeats, so load tests don't pollute the
@@ -25,10 +28,20 @@ import { getSupabaseClient } from "../../config/supabase.js";
 import { bumpCounter } from "../../services/riskflow/drop-counters.js";
 import type { CollectedNewsItem } from "./sources/types.js";
 
-const FLAG_WRITES = "FLAG_NEWS_WORKER_WRITES_RISKFLOW";
+const FLAG_WRITES_NEW = "FLAG_RISKFLOW_WORKER_WRITES_RISKFLOW";
+const FLAG_WRITES_LEGACY = "FLAG_NEWS_WORKER_WRITES_RISKFLOW";
 
 function writesEnabled(): boolean {
-  return process.env[FLAG_WRITES] === "true";
+  // Legacy alias FLAG_NEWS_WORKER_WRITES_RISKFLOW honored until 2026-05-08.
+  const flag =
+    process.env[FLAG_WRITES_NEW] ?? process.env[FLAG_WRITES_LEGACY];
+  return flag === "true";
+}
+
+function flagDisplay(): string {
+  return process.env[FLAG_WRITES_NEW] !== undefined
+    ? FLAG_WRITES_NEW
+    : FLAG_WRITES_LEGACY;
 }
 
 export async function writeCollectedItems(
@@ -42,9 +55,9 @@ export async function writeCollectedItems(
     console.log(
       JSON.stringify({
         ts: new Date().toISOString(),
-        service: "news-worker",
+        service: "riskflow-worker",
         stage: "dry_run_skip",
-        reason: `${FLAG_WRITES} != true`,
+        reason: `${flagDisplay()} != true`,
         would_write: items.length,
       }),
     );
@@ -86,7 +99,7 @@ export async function writeCollectedItems(
     is_breaking: item.tier === "breaking",
     urgency: item.tier === "breaking" ? 8 : 4,
     published_at: item.published_at,
-    submitted_by: "news-worker",
+    submitted_by: "riskflow-worker",
     fetched_at: item.fetched_at,
     fetch_latency_ms: item.fetch_latency_ms,
   }));
@@ -100,7 +113,7 @@ export async function writeCollectedItems(
       console.warn(
         JSON.stringify({
           ts: new Date().toISOString(),
-          service: "news-worker",
+          service: "riskflow-worker",
           stage: "persist_error",
           error: error.message,
         }),
@@ -146,7 +159,7 @@ export async function writeCollectedItems(
     console.warn(
       JSON.stringify({
         ts: new Date().toISOString(),
-        service: "news-worker",
+        service: "riskflow-worker",
         stage: "persist_exception",
         error: err instanceof Error ? err.message : String(err),
       }),
@@ -171,14 +184,14 @@ export async function upsertHeartbeat(row: {
   const sb = getSupabaseClient();
   if (!sb) return;
   try {
-    await sb.from("news_worker_heartbeats").upsert(row, {
+    await sb.from("riskflow_worker_heartbeats").upsert(row, {
       onConflict: "tier",
     });
   } catch (err) {
     console.warn(
       JSON.stringify({
         ts: new Date().toISOString(),
-        service: "news-worker",
+        service: "riskflow-worker",
         stage: "heartbeat_error",
         error: err instanceof Error ? err.message : String(err),
       }),

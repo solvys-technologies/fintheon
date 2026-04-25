@@ -47,7 +47,9 @@ export async function broadcastSyncToUser(
     category: SYNC_CATEGORY,
   };
   // Attach the structured sync event under a reserved key the SW reads explicitly.
-  (payload as Record<string, unknown>).sync = {
+  // [claude-code 2026-04-25] S35-T10 late-unify: cast through `unknown` because PushPayload
+  // has no string index signature; direct conversion fails strict tsc.
+  (payload as unknown as Record<string, unknown>).sync = {
     kind: event.kind,
     id: event.id,
     originEndpoint: event.originEndpoint,

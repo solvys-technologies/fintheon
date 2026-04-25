@@ -3,12 +3,12 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>io.solvys.fintheon-news-worker</string>
+  <string>io.solvys.fintheon-riskflow-worker</string>
   <key>ProgramArguments</key>
   <array>
     <string>/Users/tifos/.bun/bin/bun</string>
     <string>run</string>
-    <string>src/workers/news-worker/index.ts</string>
+    <string>src/workers/riskflow-worker/index.ts</string>
   </array>
   <key>WorkingDirectory</key>
   <string>/Users/tifos/Documents/Codebases/fintheon/backend-hono</string>
@@ -22,14 +22,16 @@
   <key>RunAtLoad</key>
   <true/>
   <key>StandardOutPath</key>
-  <string>/tmp/fintheon-news-worker.out.log</string>
+  <string>/tmp/fintheon-riskflow-worker.out.log</string>
   <key>StandardErrorPath</key>
-  <string>/tmp/fintheon-news-worker.err.log</string>
+  <string>/tmp/fintheon-riskflow-worker.err.log</string>
   <key>EnvironmentVariables</key>
   <dict>
-    <key>NEWS_WORKER_PORT</key>
+    <key>NODE_ENV</key>
+    <string>development</string>
+    <key>RISKFLOW_WORKER_PORT</key>
     <string>8082</string>
-    <key>FLAG_NEWS_WORKER_WRITES_RISKFLOW</key>
+    <key>FLAG_RISKFLOW_WORKER_WRITES_RISKFLOW</key>
     <string>false</string>
     <key>PATH</key>
     <string>/Users/tifos/.bun/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>

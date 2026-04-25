@@ -233,8 +233,8 @@ if [[ -f "$BACKEND_ENV" ]]; then
   grep -q "^BROWSER_UNIVERSAL_ENABLED=" "$BACKEND_ENV" 2>/dev/null || echo "BROWSER_UNIVERSAL_ENABLED=false" >> "$BACKEND_ENV"
   grep -q "^ROUTING_DAILY_CAP=" "$BACKEND_ENV" 2>/dev/null || echo "ROUTING_DAILY_CAP=20" >> "$BACKEND_ENV"
   grep -q "^ROUTING_DISABLE_BUDGET=" "$BACKEND_ENV" 2>/dev/null || echo "ROUTING_DISABLE_BUDGET=false" >> "$BACKEND_ENV"
-  grep -q "^FLAG_NEWS_WORKER_WRITES_RISKFLOW=" "$BACKEND_ENV" 2>/dev/null || echo "FLAG_NEWS_WORKER_WRITES_RISKFLOW=false" >> "$BACKEND_ENV"
-  grep -q "^NEWS_WORKER_PORT=" "$BACKEND_ENV" 2>/dev/null || echo "NEWS_WORKER_PORT=8082" >> "$BACKEND_ENV"
+  grep -q "^FLAG_RISKFLOW_WORKER_WRITES_RISKFLOW=" "$BACKEND_ENV" 2>/dev/null || echo "FLAG_RISKFLOW_WORKER_WRITES_RISKFLOW=false" >> "$BACKEND_ENV"
+  grep -q "^RISKFLOW_WORKER_PORT=" "$BACKEND_ENV" 2>/dev/null || echo "RISKFLOW_WORKER_PORT=8082" >> "$BACKEND_ENV"
   grep -q "^GEPA_DRY_RUN=" "$BACKEND_ENV" 2>/dev/null || echo "GEPA_DRY_RUN=false" >> "$BACKEND_ENV"
   grep -q "^GEPA_DEEP=" "$BACKEND_ENV" 2>/dev/null || echo "GEPA_DEEP=false" >> "$BACKEND_ENV"
   grep -q "^VOICE_SIDECAR_DISABLED=" "$BACKEND_ENV" 2>/dev/null || echo "VOICE_SIDECAR_DISABLED=false" >> "$BACKEND_ENV"
@@ -246,19 +246,20 @@ else
   bash "$FINTHEON_ROOT/scripts/fintheon-setup.sh" 2>/dev/null || true
 fi
 
-# ── Step 5.5: Install S27 launchd units (hermes sidecar, news-worker, gepa) ──
+# ── Step 5.5: Install S27 launchd units (hermes sidecar, riskflow-worker, gepa) ──
+# [claude-code 2026-04-24] S35-T10: news-worker → riskflow-worker rename.
 # [claude-code 2026-04-20] S27 introduces 3 new background services. Symlink
 # plists from the repo into ~/Library/LaunchAgents so launchctl can load them.
 # Loading is opt-in per service — we don't auto-`launchctl load` here because
 # hermes needs a Python env + INTERNAL_HERMES_JWT agreement with prod, and
-# news-worker/gepa need their Fly counterparts live first.
+# riskflow-worker/gepa need their Fly counterparts live first.
 
 LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
 mkdir -p "$LAUNCH_AGENTS_DIR" 2>/dev/null || true
 
 for PLIST_PAIR in \
   "$FINTHEON_ROOT/hermes-sidecar/launchd/io.solvys.fintheon-hermes.plist:io.solvys.fintheon-hermes.plist" \
-  "$FINTHEON_ROOT/launchd/io.solvys.fintheon-news-worker.plist:io.solvys.fintheon-news-worker.plist" \
+  "$FINTHEON_ROOT/launchd/io.solvys.fintheon-riskflow-worker.plist:io.solvys.fintheon-riskflow-worker.plist" \
   "$FINTHEON_ROOT/launchd/io.solvys.fintheon-gepa.plist:io.solvys.fintheon-gepa.plist"; do
   SRC="${PLIST_PAIR%%:*}"
   NAME="${PLIST_PAIR##*:}"
@@ -269,7 +270,7 @@ for PLIST_PAIR in \
     fi
   fi
 done
-info "S27 launchd plists linked but NOT loaded — run 'launchctl load -w ~/Library/LaunchAgents/io.solvys.fintheon-{hermes,news-worker,gepa}.plist' when ready"
+info "S27 launchd plists linked but NOT loaded — run 'launchctl load -w ~/Library/LaunchAgents/io.solvys.fintheon-{hermes,riskflow-worker,gepa}.plist' when ready"
 
 # ── Step 6: Verify VProxy Anthropic OAuth ──────────────────────────────────
 

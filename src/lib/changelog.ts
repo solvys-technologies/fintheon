@@ -272,6 +272,30 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
+    date: "2026-04-25T03:55:00",
+    agent: "claude-code",
+    summary:
+      "S35-T10 RiskFlow Worker rename (infra + code). New backend-hono/fly.riskflow-worker.toml + Dockerfile.riskflow-worker + launchd/io.solvys.fintheon-riskflow-worker.plist. Workers dir backend-hono/src/workers/news-worker → riskflow-worker via git mv. Cron audit handler/scheduler renamed; runRiskFlowWorkerAudit + start/stop/isRiskFlowWorkerAuditScheduler*. Env vars RISKFLOW_WORKER_PORT / FLAG_RISKFLOW_WORKER_WRITES_RISKFLOW with legacy NEWS_WORKER_* fallback through 2026-05-08. Supabase migration 20260425035100_rename_news_worker_heartbeats.sql renames table + index, keeps legacy view alias. Diagnostics endpoint dual-emits news_worker + riskflow_worker keys. Notify-superadmins source tag dual-emits 'riskflow-worker-audit:' + 'news-worker-audit:'. Comment sweep across feed-poller / drop-counters / source-accounts-service / bessent-speeches / econ-keyword-scheduler / notify-superadmins. backend-hono/CLAUDE.md + scripts/fintheon-update.sh updated (preserves v5.25.2 self-update bootstrap). Old fly.news-worker.toml + Dockerfile.news-worker + io.solvys.fintheon-news-worker.plist deleted. boot/services.ts UNTOUCHED — T12 owns the import-symbol rename + Fly cutover + supabase db push atomically with the Wave-end unification.",
+    files: [
+      "backend-hono/fly.riskflow-worker.toml",
+      "backend-hono/Dockerfile.riskflow-worker",
+      "launchd/io.solvys.fintheon-riskflow-worker.plist",
+      "backend-hono/src/workers/riskflow-worker/index.ts",
+      "backend-hono/src/workers/riskflow-worker/scheduler.ts",
+      "backend-hono/src/workers/riskflow-worker/persist.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/index.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/types.ts",
+      "backend-hono/src/services/cron/riskflow-worker-audit-handler.ts",
+      "backend-hono/src/services/cron/riskflow-worker-audit-scheduler.ts",
+      "backend-hono/src/routes/diagnostics/index.ts",
+      "backend-hono/.env.example",
+      "backend-hono/CLAUDE.md",
+      "scripts/fintheon-update.sh",
+      "supabase/migrations/20260425035100_rename_news_worker_heartbeats.sql",
+      "sprint-md/S35-T10-riskflow-worker.md",
+    ],
+  },
+  {
     date: "2026-04-24T18:00:00",
     agent: "claude-code",
     summary:

@@ -1,13 +1,13 @@
-app = "fintheon-news-worker"
+app = "fintheon-riskflow-worker"
 primary_region = "iad"
 
 [build]
-  dockerfile = "Dockerfile.news-worker"
+  dockerfile = "Dockerfile.riskflow-worker"
 
 [env]
   NODE_ENV = "production"
-  NEWS_WORKER_PORT = "8082"
-  FLAG_NEWS_WORKER_WRITES_RISKFLOW = "true"
+  RISKFLOW_WORKER_PORT = "8082"
+  FLAG_RISKFLOW_WORKER_WRITES_RISKFLOW = "true"
 
 [http_service]
   internal_port = 8082

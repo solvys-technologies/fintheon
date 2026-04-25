@@ -34,7 +34,8 @@ import {
   startDispatchScheduler,
   catchUpMissedBriefs,
 } from "../services/cron/dispatch-scheduler.js";
-import { startNewsWorkerAuditScheduler } from "../services/cron/news-worker-audit-scheduler.js";
+// [claude-code 2026-04-25] S35-T10 late-unify: import flipped to renamed module.
+import { startRiskFlowWorkerAuditScheduler } from "../services/cron/riskflow-worker-audit-scheduler.js";
 import { startEconKeywordScheduler } from "../services/cron/econ-keyword-scheduler.js";
 import { startArbitrumSessionScheduler } from "../services/cron/arbitrum-session-scheduler.js";
 // [claude-code 2026-04-24] S34-T10: historical econ backfill cron
@@ -278,9 +279,10 @@ export async function bootBackground(): Promise<void> {
   startDispatchScheduler();
   log.info("DispatchScheduler started");
 
-  // [claude-code 2026-04-19] S28: News-worker audit gates — 6:00am/11:30am/4:00pm ET, non-negotiable
-  startNewsWorkerAuditScheduler();
-  log.info("NewsWorkerAuditScheduler started");
+  // [claude-code 2026-04-25] S35-T10 late-unify: News-Worker → RiskFlow-Worker rename.
+  // [claude-code 2026-04-19] S28: RiskFlow-worker audit gates — 6:00am/11:30am/4:00pm ET, non-negotiable
+  startRiskFlowWorkerAuditScheduler();
+  log.info("RiskFlowWorkerAuditScheduler started");
 
   // [claude-code 2026-04-24] S34-T6: Econ keyword trigger — every minute, scans for
   // "Actual"/"Forecast" inside active event windows and promotes to macro_level=4.

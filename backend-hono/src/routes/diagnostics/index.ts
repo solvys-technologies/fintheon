@@ -4,8 +4,11 @@
 // [claude-code 2026-04-23] S32-T7: surface autopilot guardian status on GET /.
 // [claude-code 2026-03-20] Diagnostics endpoint — service status, missing env vars, suggested fixes
 // [claude-code 2026-03-22] Add POST /hermes/restart for frontend-triggered Hermes re-initialization
+// [claude-code 2026-04-24] S35-T10: dual-emit news_worker + riskflow_worker payloads.
+//   Diagnostics reads from riskflow_worker_heartbeats (renamed table; legacy view alias
+//   keeps any unmigrated readers green). Sunset old `news_worker` key 2026-05-08.
 // [claude-code 2026-04-19] S27-T6/T7 (W2d): surface cache_hit_rate_24h (browser operator) and
-//   news_worker_age_seconds (news worker heartbeat) on GET /.
+//   riskflow_worker_age_seconds (riskflow worker heartbeat) on GET /.
 // [claude-code 2026-04-24] S34-T10: surface econ_backfill aggregate on GET /.
 
 import { Hono } from "hono";
@@ -57,7 +60,18 @@ interface DiagnosticsResponse {
     cache_hit_rate_24h: number;
     cost_usd_24h: number;
   };
+  // [S35-T10] dual-emit window through 2026-05-08; both keys carry identical payloads.
   news_worker?: {
+    age_seconds: number | null;
+    tiers: Array<{
+      tier: string;
+      last_run_at: string | null;
+      age_seconds: number | null;
+      items_ingested: number;
+      errors: number;
+    }>;
+  };
+  riskflow_worker?: {
     age_seconds: number | null;
     tiers: Array<{
       tier: string;
@@ -84,15 +98,15 @@ interface DiagnosticsResponse {
   econ_backfill?: BackfillDiagnostics;
 }
 
-async function getNewsWorkerSnapshot(): Promise<
-  DiagnosticsResponse["news_worker"]
+async function getRiskFlowWorkerSnapshot(): Promise<
+  DiagnosticsResponse["riskflow_worker"]
 > {
   const { getSupabaseClient } = await import("../../config/supabase.js");
   const sb = getSupabaseClient();
   if (!sb) return { age_seconds: null, tiers: [] };
   try {
     const { data, error } = await sb
-      .from("news_worker_heartbeats")
+      .from("riskflow_worker_heartbeats")
       .select("tier, last_run_at, items_ingested, errors");
     if (error || !data) return { age_seconds: null, tiers: [] };
     const now = Date.now();
@@ -403,7 +417,7 @@ export function createDiagnosticsRoutes(): Hono {
   router.get("/", async (c) => {
     const start = Date.now();
 
-    const [services, browserStats, newsWorker, econBackfill] =
+    const [services, browserStats, riskflowWorker, econBackfill] =
       await Promise.all([
         Promise.all([
           checkHermesAI(),
@@ -412,7 +426,7 @@ export function createDiagnosticsRoutes(): Hono {
           Promise.resolve(checkSupabaseAuth()),
         ]),
         getBrowseTaskStats24h(),
-        getNewsWorkerSnapshot(),
+        getRiskFlowWorkerSnapshot(),
         getEconBackfillDiagnostics().catch(() => null),
       ]);
 
@@ -441,7 +455,9 @@ export function createDiagnosticsRoutes(): Hono {
       services,
       missingEnvVars,
       browser_operator: browserStats,
-      news_worker: newsWorker,
+      // [S35-T10] dual-emit through 2026-05-08; legacy news_worker mirrors riskflow_worker.
+      news_worker: riskflowWorker,
+      riskflow_worker: riskflowWorker,
       econ_backfill: econBackfill ?? undefined,
       routing,
       gepa,

@@ -1,7 +1,7 @@
 // [claude-code 2026-04-24] S34-T6: Per-minute cron that sweeps raw_riskflow_items
 // for "Actual"/"Forecast" keywords inside active econ event windows and promotes
 // matches to scored_riskflow_items via econ-keyword-trigger. Pattern cloned from
-// news-worker-audit-scheduler — node-cron in-process, not an Anthropic Routine.
+// riskflow-worker-audit-scheduler — node-cron in-process, not an Anthropic Routine.
 
 import cron from "node-cron";
 import { createLogger } from "../../lib/logger.js";
