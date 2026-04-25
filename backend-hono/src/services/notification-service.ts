@@ -1,4 +1,5 @@
 // [claude-code 2026-04-18] Extended for unified push+history table; added insert + bulk mark-read + dedup lookup
+// [claude-code 2026-04-25] S35-Unified: clearOne + clearAll for cross-device dismiss
 /**
  * Notification Service
  * Business logic for notification operations (in-app history + push log)
@@ -50,6 +51,22 @@ export async function markAllAsRead(
 ): Promise<{ markedCount: number }> {
   const count = await notificationQueries.markAllAsRead(userId);
   return { markedCount: count };
+}
+
+export async function clearOne(
+  userId: string,
+  notificationId: string,
+  dismissedVia: string | null,
+): Promise<Notification | null> {
+  return notificationQueries.clearOne(userId, notificationId, dismissedVia);
+}
+
+export async function clearAll(
+  userId: string,
+  dismissedVia: string | null,
+): Promise<{ clearedCount: number }> {
+  const count = await notificationQueries.clearAll(userId, dismissedVia);
+  return { clearedCount: count };
 }
 
 export async function insertNotification(

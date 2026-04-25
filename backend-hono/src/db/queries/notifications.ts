@@ -214,5 +214,7 @@ function mapRowToNotification(row: Record<string, unknown>): Notification {
     read: Boolean(row.read),
     createdAt: new Date(row.created_at as string),
     readAt: row.read_at ? new Date(row.read_at as string) : undefined,
+    clearedAt: row.cleared_at ? new Date(row.cleared_at as string) : undefined,
+    dismissedVia: row.dismissed_via ? String(row.dismissed_via) : undefined,
   };
 }
