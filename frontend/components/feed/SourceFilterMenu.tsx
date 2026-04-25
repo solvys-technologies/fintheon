@@ -1,3 +1,4 @@
+// [claude-code 2026-04-24] Wired t-dropdown transition (solvys-transitions) for open/close motion.
 // [claude-code 2026-04-19] Multi-select source filter — mirrors PriorityFilterMenu.
 //   Replaces the legacy granular <select> dropdown of 7 raw sources with a
 //   5-bucket popover: OSINT / General / Commentary / Econ / Geopolitical.
