@@ -45,8 +45,8 @@ export const SANCTUM_SUB_VIEWS: {
   },
   {
     id: "aquarium",
-    label: "Aquarium",
-    subtitle: "The Shark Tank. Deliberate it.",
+    label: "Arbitrum",
+    subtitle: "Deliberate it.",
     icon: Fish,
   },
 ];

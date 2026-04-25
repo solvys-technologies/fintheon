@@ -9,6 +9,28 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T06:30:00",
+    agent: "claude-code",
+    summary:
+      "S38 design patches — voice + Sanctum + RiskFlow slice. (1) Voice orb ring now binds to a new --accent-primary CSS variable (alias of --fintheon-accent so theme swaps still work) and a deterministic VoiceModePixelOverlay sweeps in from the four corners, holds a ~60%-viewport circle, dissolves back to the corners, then runs a deterministic low-amplitude corner flicker on a ~520ms cadence while voice is active — WAAPI driven, no random shimmer. (2) SanctumHeader 'Aquarium' renamed to 'Arbitrum' with a larger lockup; the 'shark tank' subtitle is gone. The Consilium tab dropdown + SanctumSitemapDrawer now label the destination 'Arbitrum'; the underlying SanctumSubView id stays 'aquarium' for backend/route compatibility. (3) Sanctum Econ tab: EconKpiFuses wrapped in a click-to-toggle 'Econ Pulse' collapsible header (default expanded); InstrumentCardsRow swapped for AquariumPredictionCards (the horizontal heat-bar variant from the Command tab) so both tabs share one instrument-card pattern; AquariumPredictionCards heat bar bumped 3px → 5px so the gauge reads at a glance; dead EconInstrumentFuses.tsx file deleted. (4) RiskFlow 'Generate Note +' CTA now hits /api/riskflow/:id/generate-note with the user's selected instrument (localStorage fintheon:selected-instrument, default /ES) and renders a structured response: linked source headline + ≤200-char summary + a 'Bullish/Bearish/Neutral for {instrument}' badge. New backend service exports generateNoteForItemDetailed; route handler returns the detailed shape when an instrument is in the body and falls back to the legacy plain-text path otherwise. tsc clean, vite build clean (3391 modules), backend bun build clean.",
+    files: [
+      "frontend/components/voice/VoiceAuroraOrb.tsx",
+      "frontend/components/voice/VoiceModePixelOverlay.tsx",
+      "frontend/components/voice/HeaderVoiceControl.tsx",
+      "frontend/index.css",
+      "frontend/components/narrative/SanctumHeader.tsx",
+      "frontend/components/consilium/ConsiliumTabConfig.ts",
+      "frontend/components/layout/SanctumSitemapDrawer.tsx",
+      "frontend/components/narrative/SanctumEconIntel.tsx",
+      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "frontend/components/narrative/econ/EconInstrumentFuses.tsx",
+      "frontend/components/feed/RiskFlowDetailCard.tsx",
+      "backend-hono/src/services/riskflow/agent-notes.ts",
+      "backend-hono/src/routes/riskflow/handlers.ts",
+      "sprint-md/S38-BRIEF-design-patches.md",
+    ],
+  },
+  {
     date: "2026-04-25T01:30:00",
     agent: "claude-code",
     summary:

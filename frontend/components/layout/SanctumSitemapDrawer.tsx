@@ -111,10 +111,10 @@ export function SanctumSitemapDrawer({
             onClick={() => handleSubClick("timeline")}
           />
 
-          {/* Aquarium with nested page links */}
+          {/* Arbitrum (Aquarium internal id) with nested page links */}
           <DrawerLeaf
             icon={<Fish size={13} />}
-            label="Aquarium"
+            label="Arbitrum"
             active={activeSubView === "aquarium"}
             onClick={() => handleSubClick("aquarium")}
           />
