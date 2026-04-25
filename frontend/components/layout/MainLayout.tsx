@@ -72,7 +72,6 @@ import {
   type StrategiumPaneMode,
 } from "../../lib/layoutOrderStorage";
 import { StrategiumPeekBar } from "./StrategiumPeekBar";
-import { Maximize2, Minimize2 } from "lucide-react";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { useLayoutState } from "../../hooks/useLayoutState";
 import { useBrowserTransition } from "../../hooks/useBrowserTransition";

@@ -19,6 +19,11 @@ Continue on `s35-unified` (current active branch; no WIP blocking).
 - [ ] **Regime Approvals** card rebuild: filter out same-state transitions (`current === target` → skip at write-time), remove the blank fuse, surface the summary + RiskFlow headlines that drove the agent's decision
 - [ ] **RiskFlow `Generate Note` CTA**: generated note must statically include (a) link to original headline, (b) ≤200-char summary, (c) bullish/bearish directional read for the user's currently selected instrument
 - [ ] **Voice orb pixelation**: ring color bound to `var(--accent-primary)` (Solvys Gold `#c79f4a` default, theme-swappable); static/deterministic pixel pattern sweeps in from 4 corners → converges into a ~60%-screen circle → dissolves back to corners → lingering low-amplitude corner flicker while orb is active
+- [ ] **Sanctum Econ tab — kill "Instrument Fuses" card**: remove `EconInstrumentFuses.tsx` (the vertical-fuse block) entirely; replace its slot, sitting below the agent analysis section, with the same horizontal `InstrumentCardsRow` used at the bottom of the Sanctum Command tab
+- [ ] **Heat-gauge height bump**: increase the height of the horizontal heat bar inside `InstrumentCardsRow` instrument cards (~25–35%) so the gauge reads at a glance — text rows around it stay the same
+- [ ] **Econ Pulse becomes collapsible**: clicking the "ECON PULSE" header row (or any of its rows) toggles the whole pulse block (Inflation / Labor / Supply pulses) so the Econ Events comparison section below reclaims the space
+- [ ] **Aquarium → Arbitrum rename (UI surface)**: in `SanctumHeader.tsx` rename the "AQUARIUM" label to "ARBITRUM", bump its size (the header-left lockup is currently too small), drop the "shark tank" subtitle entirely; in the Sanctum tab/dropdown menu where "Aquarium" appears as a destination, rename to "Arbitrum"
+- [ ] **Persistent 50/50 chart split**: when chart mode is active inside Arbitrum, the TradingView iframe locks to 50% viewport width and stays pinned through scroll; the left half (Arbitrum content) reflows into ~6 paginated views so every section (volatility read, next session forecast, chamber seats, instrument cards, econ tab content) remains reachable beside the chart instead of scrolling out from under it
 
 ## Scope — Excluded (OUT OF BOUNDS)
 
