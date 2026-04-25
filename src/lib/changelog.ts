@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T01:30:00",
+    agent: "claude-code",
+    summary:
+      "Strategium: removed the Maximize/Minimize RiskFlow overlay button that sat on top of the refresh button in the RiskFlow header (TP has called this out across 6+ threads). Also removed the now-orphaned 'Widgets · hidden' peek-header. RiskFlow keeps its in-pane collapse/expand chevron, which is the only motion the user wanted. Persisted strategiumPaneMode is normalized to 'balanced' on mount so anyone landing with stale feedOnly/widgetsOnly state isn't stranded with no UI control to escape. Dropped the unused Maximize2/Minimize2 lucide imports. tsc + vite build clean.",
+    files: ["frontend/components/layout/MainLayout.tsx"],
+  },
+  {
     date: "2026-04-25T01:00:00",
     agent: "claude-code",
     summary:

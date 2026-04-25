@@ -20,6 +20,11 @@ Continue on `s35-unified` (current active branch; no WIP blocking).
 - [ ] **RiskFlow `Generate Note` CTA**: generated note must statically include (a) link to original headline, (b) ≤200-char summary, (c) bullish/bearish directional read for the user's currently selected instrument
 - [ ] **Voice orb pixelation**: ring color bound to `var(--accent-primary)` (Solvys Gold `#c79f4a` default, theme-swappable); static/deterministic pixel pattern sweeps in from 4 corners → converges into a ~60%-screen circle → dissolves back to corners → lingering low-amplitude corner flicker while orb is active
 - [ ] **Sanctum Econ tab — kill "Instrument Fuses" card**: remove `EconInstrumentFuses.tsx` (the vertical-fuse block) entirely; replace its slot, sitting below the agent analysis section, with the same horizontal `InstrumentCardsRow` used at the bottom of the Sanctum Command tab
+- [ ] **Heat-gauge height bump**: increase the height of the horizontal heat bar inside `InstrumentCardsRow` (~25–35%) so the gauge reads at a glance — surrounding text rows stay the same
+- [ ] **Econ Pulse collapsible**: clicking the "ECON PULSE" header row (or any of its pulse rows) toggles the whole pulse block (Inflation / Labor / Supply pulses) so the Econ Events comparison section below reclaims the space
+- [ ] **Aquarium → Arbitrum (UI surface rename)**: in `SanctumHeader.tsx` rename "AQUARIUM" → "ARBITRUM", bump its size, drop the "shark tank" subtitle entirely; in the Sanctum tab/dropdown menu rename the "Aquarium" destination to "Arbitrum"
+- [ ] **Persistent 50/50 chart split**: when chart mode is active inside Arbitrum, the TradingView iframe locks to 50% viewport width and stays pinned through scroll; the left half (Arbitrum content) reflows into ~6 paginated views so every section (volatility read, next session forecast, chamber seats, instrument cards, econ tab content) remains reachable beside the chart instead of scrolling out from under it
+- [ ] **Sanctum Econ tab — kill "Instrument Fuses" card**: remove `EconInstrumentFuses.tsx` (the vertical-fuse block) entirely; replace its slot, sitting below the agent analysis section, with the same horizontal `InstrumentCardsRow` used at the bottom of the Sanctum Command tab
 - [ ] **Heat-gauge height bump**: increase the height of the horizontal heat bar inside `InstrumentCardsRow` instrument cards (~25–35%) so the gauge reads at a glance — text rows around it stay the same
 - [ ] **Econ Pulse becomes collapsible**: clicking the "ECON PULSE" header row (or any of its rows) toggles the whole pulse block (Inflation / Labor / Supply pulses) so the Econ Events comparison section below reclaims the space
 - [ ] **Aquarium → Arbitrum rename (UI surface)**: in `SanctumHeader.tsx` rename the "AQUARIUM" label to "ARBITRUM", bump its size (the header-left lockup is currently too small), drop the "shark tank" subtitle entirely; in the Sanctum tab/dropdown menu where "Aquarium" appears as a destination, rename to "Arbitrum"
@@ -120,6 +125,36 @@ Continue on `s35-unified` (current active branch; no WIP blocking).
   - Mask is an SVG `<mask>` or CSS `clip-path`; either is fine, prefer whatever keeps the overlay GPU-friendly.
   - Activation trigger: tied to the same voice-chat active state that lights up the orb ring today. Single boolean; no new state machine.
 
+### Sanctum — Econ tab restructure
+
+- **Files**: `frontend/components/narrative/SanctumEconIntel.tsx`, `frontend/components/narrative/econ/EconInstrumentFuses.tsx` (DELETE), `frontend/components/narrative/econ/EconKpiFuses.tsx`, `frontend/components/narrative/InstrumentCardsRow.tsx` (REUSE).
+- **Kill the "INSTRUMENT FUSES" card**: remove `<EconInstrumentFuses />` from the Econ tab and delete the file. The vertical-fuse pattern was duplicating the horizontal heat-gauge cards already shown on the Command tab and taking up an entire row of dead-center real estate.
+- **Reuse `InstrumentCardsRow`**: drop the same horizontal instrument-card row (the /NQ HEAT 3.3 / RANGE / CONVICTION cards from the Command tab) into the Econ tab, positioned directly below the agent analysis paragraph. Same component, same data source — no fork.
+- **Heat bar height bump**: inside `InstrumentCardsRow`, increase the heat-bar element's height by ~25–35% (e.g. `h-1` → `h-1.5`, or whatever the existing token equivalent is). Bar only — keep the symbol label, RANGE row, CONVICTION row, and headline excerpt at their current sizes.
+- **Econ Pulse → collapsible**: wrap the Econ Pulse block (header + Inflation Pulse / Labor Pulse / Supply Output rows) in a collapsible region. Header row "ECON PULSE" left-aligned + chevron right-aligned; click anywhere on the header row toggles. Default state: expanded. No card chrome added — keep current flat styling, just make the header clickable. When collapsed, the events-comparison section below slides up to fill the space.
+
+### Sanctum — Aquarium → Arbitrum rename + header lockup
+
+- **Files**: `frontend/components/narrative/SanctumHeader.tsx`, plus wherever the Sanctum tab dropdown/menu defines its destination labels (likely `Sanctum.tsx` or a tab config).
+- The Aquarium UI surface label is being retired in favor of direct "Arbitrum" exposure. The earlier canonical-naming decision to keep "Aquarium" as a Sanctum surface label is overridden by this sprint.
+- In `SanctumHeader.tsx`: rename "AQUARIUM" → "ARBITRUM". Bump the lockup size — current is too small relative to the rest of the header. Drop the "shark tank" subtitle string entirely. The "LIVE" pill and any next-session timer can stay.
+- In the Sanctum tab dropdown: rename the "Aquarium" entry to "Arbitrum". Same icon, same destination route, just the label changes.
+- Keep "Aquarium" terminology on the backend / route names / data fields for now — this is a UI-only rename. A future sprint can do the deeper backend rename.
+
+### Sanctum — Persistent 50/50 chart split
+
+- **Files**: `frontend/components/narrative/Sanctum.tsx` (chart-mode container), plus whatever currently controls the TradingView iframe layout.
+- When the user clicks the chart toggle (the existing CHART button in the Sanctum header), the layout switches to a fixed 50/50 split: TradingView iframe pinned to the right half of the viewport, Sanctum content on the left half. Both halves scroll independently, OR the chart stays sticky while the left half scrolls — pick whichever is simpler given the existing layout primitive (sticky preferred so the chart is always in view).
+- Because the left half is now half-width, single-scroll layout no longer works — content reflows into ~6 paginated views. Pagination control sits at the bottom of the left half (page dots + prev/next chevrons, accent-tinted). Each page is one logical section — proposed grouping:
+  1. Volatility Read (Blended IV Score + Next Session Forecast)
+  2. Arbitrum Chamber (5 seat cards + round status)
+  3. Analysis paragraph + InstrumentCardsRow (heat gauges)
+  4. Econ Pulse (collapsible) + Econ Events comparison section
+  5. Whatever else currently lives further down the Sanctum scroll
+  6. Spillover / future content
+- Final page count is whatever the executor needs to fit everything legibly at half-width — 6 is a target, not a constraint. Keep pages roughly equal in vertical density.
+- When chart mode is OFF, the layout returns to its current full-width single-scroll form; pagination disappears.
+
 ### Aesthetic Rules
 
 - Flat surfaces, thin `#c79f4a` border where separation is already in place — do not add new chrome for its own sake.
@@ -143,6 +178,10 @@ Continue on `s35-unified` (current active branch; no WIP blocking).
    - e. Regime Approvals card rebuild
    - f. RiskFlow note block under the Generate Note CTA
    - g. Voice orb ring variable + pixel sweep overlay
+   - h. Sanctum Econ tab — kill EconInstrumentFuses, drop in InstrumentCardsRow below analysis, bump heat-bar height
+   - i. Sanctum Econ tab — Econ Pulse collapsible header
+   - j. SanctumHeader — Aquarium → Arbitrum rename, bigger lockup, drop "shark tank"; rename dropdown entry
+   - k. Sanctum chart-mode — persistent 50/50 split + ~6-page pagination of left half
 6. **Validation** — tsc, clean vite build, backend build, launchd restart, Desktop checkout sync, live curl smoke tests, manual UI pass on every surface touched (including orb activation — click the ring, verify the sweep).
 7. **Changelog + file headers** — Add one consolidated S38 entry in `src/lib/changelog.ts` summarizing all eight patches with the file list. Add `// [claude-code 2026-04-24] S38: {one-line}` to every substantially modified file (refinement components, VoiceAuroraOrb, TopHeader, FooterToolbar, RiskFlowDetailCard, agent-notes service, regime-approval service + route).
 
@@ -160,6 +199,12 @@ Continue on `s35-unified` (current active branch; no WIP blocking).
 - [ ] A new note generated from a RiskFlow expanded card renders: original headline link, ≤200-char summary, and a directional badge referencing the user's selected instrument
 - [ ] Voice orb ring color is driven by a `--accent-primary` CSS variable; changing the variable updates the ring
 - [ ] Activating the orb triggers a pixel sweep that starts at the four corners, converges into a ~60%-viewport circle, and dissolves back to the corners, followed by low-amplitude corner flicker that stops when the orb deactivates
+- [ ] Sanctum Econ tab no longer renders an "INSTRUMENT FUSES" card; the file `EconInstrumentFuses.tsx` is deleted; `InstrumentCardsRow` appears below the agent analysis section
+- [ ] Heat bar inside `InstrumentCardsRow` reads visibly taller than before; surrounding rows unchanged
+- [ ] Clicking the "ECON PULSE" header row toggles the pulse block; events-comparison section reclaims the space when collapsed
+- [ ] `SanctumHeader.tsx` shows "ARBITRUM" (not "AQUARIUM"), at a larger size, with no "shark tank" subtitle
+- [ ] The Sanctum tab dropdown lists the destination as "Arbitrum"
+- [ ] In chart mode, TradingView occupies exactly 50% viewport width and stays in view as the left half scrolls/pages; left half paginates (~6 pages); chart-mode-off returns to current full-width single-scroll layout
 - [ ] `npx tsc --noEmit --project frontend/tsconfig.json` passes
 - [ ] `rm -rf dist && npx vite build` passes
 - [ ] `cd backend-hono && bun run build` passes
