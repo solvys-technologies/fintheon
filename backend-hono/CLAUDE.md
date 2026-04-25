@@ -6,21 +6,23 @@ This is a sub-project of [Fintheon](../CLAUDE.md). Read the parent CLAUDE.md for
 
 - **Build**: `bun run build` (not just tsc)
 - **Deploy (main backend)**: `fly deploy --yes` from this directory — app `fintheon`, fintheon.fly.dev, uses `fly.toml` + `Dockerfile`
-- **Deploy (news-worker)**: `fly deploy --config fly.news-worker.toml --yes` from this directory — app `fintheon-news-worker`, fintheon-news-worker.fly.dev, uses `Dockerfile.news-worker`
+- **Deploy (riskflow-worker)**: `fly deploy --config fly.riskflow-worker.toml --yes` from this directory — app `fintheon-riskflow-worker`, fintheon-riskflow-worker.fly.dev, uses `Dockerfile.riskflow-worker` (T12 cuts over from the legacy `fintheon-news-worker` app during unification)
 - **Local**: launchd-managed `io.solvys.fintheon-backend` on port 8080
 - **Never** deploy from the repo root — there is no root Dockerfile or fly.toml anymore (they were a gostatic footgun that silently replaced Hono with a static server when anyone ran `fly deploy --app fintheon` from root)
 - **Never** deploy to `pulse-api-*` (deleted legacy app)
 - **Required env**: `OPENROUTER_API_KEY` — everything else has fallbacks
 
-## Routines — restoring news-worker to operational state
+## Routines — restoring riskflow-worker to operational state
 
-If fintheon-news-worker is down or serving the wrong image, the restore command is:
+If fintheon-riskflow-worker is down or serving the wrong image, the restore command is:
 
 ```bash
-cd backend-hono && fly deploy --config fly.news-worker.toml --yes
+cd backend-hono && fly deploy --config fly.riskflow-worker.toml --yes
 ```
 
-The `fly.news-worker.toml` pins `dockerfile = "Dockerfile.news-worker"` and `app = "fintheon-news-worker"`. As long as you run it from `backend-hono/` (not repo root) it cannot accidentally target the main `fintheon` app or use the wrong Dockerfile.
+The `fly.riskflow-worker.toml` pins `dockerfile = "Dockerfile.riskflow-worker"` and `app = "fintheon-riskflow-worker"`. As long as you run it from `backend-hono/` (not repo root) it cannot accidentally target the main `fintheon` app or use the wrong Dockerfile.
+
+(Until the T12 cutover lands, the legacy `fintheon-news-worker` app may also be running. Both apps cannot write heartbeats to the same Supabase table simultaneously without diverging counts; T12 retires the legacy app once the new one is healthy.)
 
 ## Key Paths
 

@@ -301,7 +301,7 @@ async function pollForNewItems(): Promise<void> {
     }
 
     // [claude-code 2026-04-24] S34-T5: Rettiwt secondary branch removed. DB-driven
-    // Agent-Reach (news-worker tier coordinators) now covers Wire+Macro handles via
+    // Agent-Reach (riskflow-worker tier coordinators) now covers Wire+Macro handles via
     // Nitter mirrors. Rettiwt utilities remain inert stubs above for future re-enable
     // behind RETTIWT_REENABLE. Economic feed + scrape fallback paths are preserved.
     const econItems = await fetchEconomicFeed().catch((err) => {

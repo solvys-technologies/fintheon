@@ -30,7 +30,7 @@ export interface SuperadminAlert {
   title: string;
   body: string;
   severity: "warn" | "critical";
-  /** e.g. "news-worker-audit-morning" — lets the SW dedupe + badge correctly. */
+  /** e.g. "riskflow-worker-audit-morning" — lets the SW dedupe + badge correctly. */
   source: string;
   /** Optional deep-link target in Fintheon Mobile (e.g. /admin/monitor). */
   url?: string;

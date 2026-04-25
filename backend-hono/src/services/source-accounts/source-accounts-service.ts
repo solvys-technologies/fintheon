@@ -1,7 +1,7 @@
 // [claude-code 2026-04-12] Source accounts CRUD service — curated X accounts for timeline polling
 // [claude-code 2026-04-24] S34-T5: TTL tightened to 30s so Refinement Engine edits take effect
 // by the next tier tick without a backend restart. Added getWireHandles / getMacroHandles for
-// news-worker DB-driven handle wiring.
+// riskflow-worker DB-driven handle wiring.
 
 import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
