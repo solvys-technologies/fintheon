@@ -9,6 +9,38 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T15:30:00",
+    agent: "claude-code",
+    summary:
+      "S35-Unified — cross-device notifications. (1) Schema migration adds notifications.cleared_at + dismissed_via, plus an idx_notifications_user_active partial index on the active set; non-destructive ADD COLUMN IF NOT EXISTS, applied via supabase db push. (2) UserPreferences contract (frontend/lib + mobile mirror + Zod schema) gains manualDnd, blockedCategories, severityThreshold so DND/blocklist persists in Supabase user_preferences and syncs across desktop + mobile via the existing /api/preferences pipe. (3) New backend endpoints POST /api/notifications/clear-all and POST /api/notifications/:id/clear soft-dismiss rows (sets cleared_at + dismissed_via); list/markRead queries respect cleared_at IS NULL so a clear on one device empties the bell on every other device. (4) sync-broadcast.ts fans a silent web-push (category=__sync) to the user's other subscriptions on every notification mutation + every preferences PUT; SW intercepts category=__sync, suppresses the notification banner, removes any visible OS notifications matching the cleared id (or all by tag for *_all kinds), updates the badge, and posts a fintheon:sync message to all open clients. (5) New evaluateDeliveryGates reads server-side user_preferences (manualDnd, blockedCategories, severityThreshold, quietHours) so emit.ts gates push delivery off the same source of truth as the UI; legacy quiet-hours.ts kept as a fallback path; canDeliverToUser still gates per-subscription category. Critical severity bypasses every user gate. (6) notifySuperadmins refactored to route through emitPushAndLog so super-admin alerts log to notifications, surface in the admin's bell on every device, and fan __sync — instead of the prior sendToUserDirect path that bypassed the audit log. (7) Desktop frontend: new NotificationsContext/useServerNotifications hook polls /api/notifications every 10s, listens to BroadcastChannel + SW messages, exposes optimistic markRead/clearOne/clearAll with X-Fintheon-Device origin header. NotificationCenter merges server rows + local DND queue and routes Clear All through the server. NavSidebar + TopHeader badge counts now sum local queue + server unread. DNDContext.manualDnd is now sourced from preferences, not localStorage. (8) Mobile useNotificationHistory gets clearOne/clearAll + a navigator.serviceWorker.message handler for fintheon:sync; NotificationDrawer's Clear All hits the server (preserves staggered exit animation). SW cache bumped to v5.27.0. tsc clean, frontend vite build clean (3395 modules), mobile vite build clean (2416 modules), backend bun build clean, smoke tests on /api/notifications/clear-all, /:id/clear, /read-all all 200 against the live local backend.",
+    files: [
+      "supabase/migrations/20260425145421_unified_notifications_state.sql",
+      "supabase/migrations-applied/20260425145421_unified_notifications_state.sql",
+      "backend-hono/src/types/notifications.ts",
+      "backend-hono/src/db/queries/notifications.ts",
+      "backend-hono/src/services/notification-service.ts",
+      "backend-hono/src/services/notifications/emit.ts",
+      "backend-hono/src/services/notifications/notify-superadmins.ts",
+      "backend-hono/src/services/notifications/sync-broadcast.ts",
+      "backend-hono/src/services/notifications/user-prefs-gate.ts",
+      "backend-hono/src/routes/notifications/handlers.ts",
+      "backend-hono/src/routes/notifications/index.ts",
+      "backend-hono/src/routes/preferences/index.ts",
+      "frontend/lib/user-preferences.ts",
+      "frontend/contexts/DNDContext.tsx",
+      "frontend/contexts/NotificationsContext.tsx",
+      "frontend/components/NotificationCenter.tsx",
+      "frontend/components/layout/NavSidebar.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/App.tsx",
+      "mobile/lib/user-preferences.ts",
+      "mobile/hooks/useNotificationHistory.ts",
+      "mobile/components/notifications/NotificationBell.tsx",
+      "mobile/components/notifications/NotificationDrawer.tsx",
+      "mobile/public/sw.js",
+    ],
+  },
+  {
     date: "2026-04-25T11:00:00",
     agent: "claude-code",
     summary:
