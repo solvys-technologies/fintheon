@@ -621,15 +621,6 @@ function MainLayoutInner() {
             </div>
           ) : (
             <>
-              {/* Widget peek-header (only visible in feedOnly mode so user can restore widgets) */}
-              {strategiumPaneMode === "feedOnly" && (
-                <StrategiumPeekBar
-                  variant="header"
-                  label="Widgets · hidden"
-                  onRestore={() => updateStrategiumPaneMode("balanced")}
-                />
-              )}
-
               {/* Widgets pane — shown in balanced + widgetsOnly.
                   [claude-code 2026-04-24] min-h-0 is CRITICAL in widgetsOnly:
                   without it, flex-1 + inner content force the pane taller than
@@ -666,31 +657,6 @@ function MainLayoutInner() {
                           : "h-1/2"
                     } flex flex-col transition-all duration-300 relative`}
                   >
-                    {/* Pane-mode toggle overlay — top-right of RiskFlow section */}
-                    <div className="absolute top-1.5 right-8 z-20 flex items-center gap-0.5 pointer-events-none">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          updateStrategiumPaneMode(
-                            strategiumPaneMode === "feedOnly"
-                              ? "balanced"
-                              : "feedOnly",
-                          )
-                        }
-                        className="pointer-events-auto p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] transition-colors"
-                        title={
-                          strategiumPaneMode === "feedOnly"
-                            ? "Restore widgets"
-                            : "Maximize RiskFlow"
-                        }
-                      >
-                        {strategiumPaneMode === "feedOnly" ? (
-                          <Minimize2 className="w-3 h-3" />
-                        ) : (
-                          <Maximize2 className="w-3 h-3" />
-                        )}
-                      </button>
-                    </div>
                     <div className="flex-1 min-h-0 overflow-y-auto">
                       <RiskFlowMini
                         collapsed={riskFlowCollapsed}

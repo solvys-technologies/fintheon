@@ -57,13 +57,13 @@ Continue on `s35-unified` (current active branch; no WIP blocking).
 - Fuses: render as view-only (disable drag / keyboard increment) unless the Advanced pane is unlocked. Reuse the existing lock predicate from `AdvancedPane`; do not introduce a new gate.
 - `PresetSelector` moves out of its current location and into the `AdvancedPane` locked region. In the locked (view-only) state, it renders as a read-only label ("Preset: Neutral"); when unlocked it becomes the active dropdown with Save As.
 
-### Refinement Engine fuses — match Arbitrum sizing
+### Event Weights — Nothing-style sliders
 
-- **Files**: `RefinementEngine.tsx` (Group Sensitivity rows ~412–432), `QuickWeightEditor` inside `AdvancedPane` (~485–534), and any other `NotchedFuse`/`NothingFuse` instance on the Refinement Engine surface.
-- The center-column fuses currently render at an oversized scale — drop them to Arbitrum's regular size. Reference: `frontend/components/arbitrum/ArbitrumChamber.tsx:93` uses `<NothingFuse value={…} color="var(--fintheon-accent)" thickness={2} segments={10} />`. Match that exactly.
-- No tick increments, no value-on-drag label, no extra character treatment. The fuse primitive is sacred everywhere else in the app — keep it consistent here too.
-- Endpoint dots stay (they're built into the primitive). Active segment color stays `var(--fintheon-accent)`.
-- Group Sensitivity fuses are read-only (per the lock rule above). Event Weights fuses inside the unlocked Advanced pane stay interactive; locked-state renders them at the same size, just disabled.
+- **File**: `QuickWeightEditor` inside `AdvancedPane` (RefinementEngine.tsx ~lines 485–534).
+- Keep endpoint dots. Add 5 visible tick increments along the track (0 / 0.25 / 0.5 / 0.75 / 1, or equivalent for the existing weight scale). Ticks are short orthogonal marks above the track in `#f0ead6` at 40% alpha; active segment fills in solid `#c79f4a` (no gradient).
+- Handle: dot or disc (reuse whatever the existing primitive uses — don't re-invent). Snap-to-tick on release, free-drag in between.
+- Drag-value label renders in Inter Mono (data = monospace rule); hide when idle.
+- Aesthetic: monochrome + single accent, dot-driven, precise. Matches Solvys + Nothing overlap.
 
 ### List font sizes
 
@@ -133,7 +133,7 @@ Continue on `s35-unified` (current active branch; no WIP blocking).
 5. **Frontend UI** — Implement in this order:
    - a. Active Market Environment header + TopHeader brand removal + FooterToolbar desk-name slot
    - b. Group Sensitivity collapsible + preset dropdown relocation into AdvancedPane
-   - c. Fuse downsize pass across all Refinement Engine instances (Arbitrum parity)
+   - c. Event Weights slider revamp (ticks + handle + snap behavior + Inter Mono drag label)
    - d. List font-size bumps
    - e. Regime Approvals card rebuild
    - f. RiskFlow note block under the Generate Note CTA
@@ -149,7 +149,7 @@ Continue on `s35-unified` (current active branch; no WIP blocking).
 - [ ] Clicking the "Group Sensitivity" row toggles its sub-content with a chevron; styling remains flat (no new card chrome)
 - [ ] Group Sensitivity fuses are not interactive unless the Advanced pane is unlocked via the S37 password flow
 - [ ] Preset dropdown renders inside the Advanced pane, read-only when locked, interactive when unlocked
-- [ ] All Refinement Engine fuses (Group Sensitivity + Event Weights) render at Arbitrum's `thickness={2} segments={10}` size — no oversized center-column fuses remain
+- [ ] Event Weight sliders show tick marks, snap to increments on release, retain dot endpoints, and render the drag-value label in Inter Mono
 - [ ] Source Accounts, Persons of Interest, and Econ Watch filter rows read at the new larger font size; feed preview font unchanged
 - [ ] Regime Approvals cards never show same-regime transitions; each card shows a summary paragraph and at least one linked driving headline; no blank fuse remains
 - [ ] A new note generated from a RiskFlow expanded card renders: original headline link, ≤200-char summary, and a directional badge referencing the user's selected instrument
