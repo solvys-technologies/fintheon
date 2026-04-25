@@ -1,3 +1,8 @@
+// [claude-code 2026-04-25] S35-Unified v5.27.0: cross-device clear/read sync. The backend
+//   sends a category="__sync" push when one device clears/reads/changes prefs; the SW
+//   suppresses any visible notification, removes any matching shown notifications by tag
+//   (so a clear on desktop wipes the lock-screen bubble on mobile), and broadcasts a
+//   "fintheon:sync" client message so the React app refetches /api/notifications.
 // [claude-code 2026-04-19] S26-P2 T9 v5.26.1: lock-screen dispatch for maintenance_request
 //   (commit / deploy / deny → POST /api/maintenance/decision). When a push arrives with
 //   category "maintenance_request" the SW carries a requestId into the notification data
@@ -12,8 +17,8 @@
 //   served the v1 cached assets. activate step nukes any cache name not in the current list.
 // [claude-code 2026-04-16] T7: Service worker — push notifications, app shell caching, stale-while-revalidate
 
-const CACHE_NAME = "fintheon-v5.26.1";
-const STATIC_CACHE = "fintheon-static-v5.26.1";
+const CACHE_NAME = "fintheon-v5.27.0";
+const STATIC_CACHE = "fintheon-static-v5.27.0";
 
 // App shell resources to pre-cache on install
 const APP_SHELL = ["/", "/index.html"];
@@ -117,12 +122,82 @@ self.addEventListener("fetch", (event) => {
 
 // ── Push notifications ──
 
+async function broadcastSyncToClients(sync) {
+  // Forward the sync event to every open client so the React app refetches.
+  const all = await self.clients.matchAll({
+    type: "window",
+    includeUncontrolled: true,
+  });
+  for (const client of all) {
+    try {
+      client.postMessage({ type: "fintheon:sync", ...sync });
+    } catch {
+      // ignore — client might be in the middle of unloading
+    }
+  }
+}
+
+async function handleSyncEvent(sync) {
+  // sync = { kind, id?, originEndpoint?, updatedAt }
+  // We don't know our own endpoint, so skipping by originEndpoint requires the
+  // app shell to filter — at SW level we just always replay. The cost is one
+  // extra refetch on the originating device; acceptable.
+  if (!sync || typeof sync.kind !== "string") return;
+
+  // For *_all kinds, wipe every visible notification (other than __sync, which
+  // never shows) and zero the badge.
+  if (
+    sync.kind === "notifications.cleared_all" ||
+    sync.kind === "notifications.read_all"
+  ) {
+    const shown = await self.registration.getNotifications();
+    for (const n of shown) {
+      // Don't close approvals/maintenance modals — they need explicit action,
+      // not a passive "read" sweep.
+      if (
+        n.tag &&
+        (n.tag.startsWith("toolApprovals:") ||
+          n.tag.startsWith("maintenance_request:"))
+      ) {
+        continue;
+      }
+      n.close();
+    }
+    swUnread = 0;
+    if (typeof self.registration.clearAppBadge === "function") {
+      self.registration.clearAppBadge().catch(() => {});
+    }
+  }
+
+  // For a single-id clear/read, find the matching shown notification by tag suffix.
+  if (sync.kind === "notification.cleared" && sync.id) {
+    const shown = await self.registration.getNotifications();
+    for (const n of shown) {
+      if (n.tag && n.tag.endsWith(`:${sync.id}`)) n.close();
+    }
+    if (swUnread > 0) {
+      swUnread -= 1;
+      if (typeof self.registration.setAppBadge === "function") {
+        self.registration.setAppBadge(swUnread).catch(() => {});
+      }
+    }
+  }
+
+  await broadcastSyncToClients(sync);
+}
+
 self.addEventListener("push", (event) => {
   if (!event.data) return;
   let data;
   try {
     data = event.data.json();
   } catch {
+    return;
+  }
+
+  // Silent cross-device sync push — never renders a notification.
+  if (data.category === "__sync") {
+    event.waitUntil(handleSyncEvent(data.sync));
     return;
   }
 

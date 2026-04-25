@@ -47,14 +47,14 @@ export async function broadcastSyncToUser(
     category: SYNC_CATEGORY,
   };
   // Attach the structured sync event under a reserved key the SW reads explicitly.
-  // [claude-code 2026-04-25] S35-T10 late-unify: cast through `unknown` because PushPayload
-  // has no string index signature; direct conversion fails strict tsc.
-  (payload as unknown as Record<string, unknown>).sync = {
+  // [claude-code 2026-04-25] S35-T10 late-unify: PushPayload widened to include sync?
+  //   (web-push-sender.ts) so direct assignment compiles cleanly.
+  payload.sync = {
     kind: event.kind,
     id: event.id,
     originEndpoint: event.originEndpoint,
     updatedAt: event.updatedAt ?? new Date().toISOString(),
-  } satisfies SyncEvent;
+  };
 
   try {
     return await sendToUserDirect(userId, payload);
