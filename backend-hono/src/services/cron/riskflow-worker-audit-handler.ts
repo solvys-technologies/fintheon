@@ -1,4 +1,7 @@
-// [claude-code 2026-04-19] S28: News Worker Audit — the clock-based health gate TP requires
+// [claude-code 2026-04-24] S35-T10: renamed from news-worker-audit-handler.ts. RiskFlow Worker
+//   is the new name of the News Worker; audit semantics unchanged. Source-tag emissions
+//   dual-emit "news-worker-audit" + "riskflow-worker-audit" through 2026-05-08.
+// [claude-code 2026-04-19] S28: RiskFlow Worker Audit — the clock-based health gate TP requires
 //   at 6:00am / 11:30am / 4:00pm ET. Three slices:
 //     1. Heartbeat freshness  — breaking tier > 10min or standard > 15min = unhealthy
 //     2. Pipeline health      — raw ingest + scored conversion in the last hour
@@ -17,7 +20,7 @@ import {
   stopAgentReachPoller,
 } from "../riskflow/agent-reach-poller.js";
 
-const log = createLogger("NewsWorkerAudit");
+const log = createLogger("RiskFlowWorkerAudit");
 
 const BREAKING_STALE_MS = 10 * 60_000;
 const STANDARD_STALE_MS = 15 * 60_000;
@@ -56,7 +59,7 @@ async function readHeartbeats(): Promise<TierHeartbeat[]> {
   const sb = getSupabaseClient();
   if (!sb) return [];
   const { data, error } = await sb
-    .from("news_worker_heartbeats")
+    .from("riskflow_worker_heartbeats")
     .select("tier, last_run_at, items_ingested, errors");
   if (error || !data) return [];
   const now = Date.now();
@@ -161,11 +164,11 @@ export interface AuditResult {
 }
 
 /**
- * Run a single news-worker audit cycle. Called by the cron scheduler at
+ * Run a single riskflow-worker audit cycle. Called by the cron scheduler at
  * 6:00am / 11:30am / 4:00pm ET and by the /api/routines/:id/rerun handler
  * when an operator manually fires an audit routine.
  */
-export async function runNewsWorkerAudit(opts: {
+export async function runRiskFlowWorkerAudit(opts: {
   auditName: string;
   triggerId: string;
 }): Promise<AuditResult> {
@@ -237,7 +240,7 @@ export async function runNewsWorkerAudit(opts: {
   // Ops-feed breadcrumb — always write, even on OK status, so operators see the cadence.
   const opsEntry = await writeOpsEntry({
     actionType: "routine",
-    title: `News worker audit: ${opts.auditName}`,
+    title: `RiskFlow worker audit: ${opts.auditName}`,
     detail: formatOpsDetail(snapshot),
     severity:
       finalStatus === "critical"
@@ -248,7 +251,10 @@ export async function runNewsWorkerAudit(opts: {
     metadata: {
       routineId: opts.triggerId,
       routineName: opts.auditName,
-      source: "news-worker-audit",
+      // [S35-T10] dual-emit source tag through 2026-05-08; legacy "news-worker-audit"
+      //   stays for any Harper-Ops filters still keyed on the old name.
+      source: "riskflow-worker-audit",
+      legacy_source: "news-worker-audit",
       finalStatus,
       reasons,
       healActions,
@@ -264,19 +270,31 @@ export async function runNewsWorkerAudit(opts: {
   // [claude-code 2026-04-23] recordRun removed with the Routines Console; ops entry above
   //   is the durable trail. Escalate to superadmins when auto-heal didn't recover.
   if (finalStatus === "critical") {
-    await notifySuperadmins({
-      title: `News feed unhealthy — ${opts.auditName}`,
+    // [S35-T10] dual-emit: send both the new "riskflow-worker-audit:" and legacy
+    //   "news-worker-audit:" source tag through 2026-05-08 so Harper-Ops filters
+    //   keyed on either name keep paging.
+    const baseAlert = {
+      title: `RiskFlow feed unhealthy — ${opts.auditName}`,
       body: `Tiers still stale after heal attempts: ${
         tiers
           .filter((t) => t.stale)
           .map((t) => t.tier)
           .join(", ") || "unknown"
       }. Heal: ${healActions.join(" → ") || "none"}.`,
-      severity: "critical",
-      source: `news-worker-audit:${opts.triggerId}`,
+      severity: "critical" as const,
       url: "/admin/monitor",
+    };
+    await notifySuperadmins({
+      ...baseAlert,
+      source: `riskflow-worker-audit:${opts.triggerId}`,
     }).catch((err) =>
       log.warn("notifySuperadmins failed", { error: String(err) }),
+    );
+    await notifySuperadmins({
+      ...baseAlert,
+      source: `news-worker-audit:${opts.triggerId}`,
+    }).catch((err) =>
+      log.warn("notifySuperadmins legacy failed", { error: String(err) }),
     );
   }
 

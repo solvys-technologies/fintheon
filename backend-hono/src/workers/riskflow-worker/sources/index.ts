@@ -1,3 +1,5 @@
+// [claude-code 2026-04-24] S35-T10: renamed dir from workers/news-worker. Tier-coordinator
+//   semantics unchanged; service log strings now emit "riskflow-worker".
 // [claude-code 2026-04-19] S27-T7 (W2d): tier coordinators — compose source
 // collectors and hand off to persist.ts. Per-source failures are isolated so
 // one bad source never kills the tier (AgentReach pattern).
@@ -31,7 +33,7 @@ async function safeCollect(
     console.warn(
       JSON.stringify({
         ts: new Date().toISOString(),
-        service: "news-worker",
+        service: "riskflow-worker",
         stage: "collector_error",
         source: label,
         error: err instanceof Error ? err.message : String(err),

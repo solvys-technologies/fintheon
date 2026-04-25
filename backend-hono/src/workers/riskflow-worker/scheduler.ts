@@ -1,7 +1,10 @@
+// [claude-code 2026-04-24] S35-T10: renamed dir from workers/news-worker. Heartbeats now
+//   key on riskflow_worker_heartbeats; diagnostics surfaces riskflow_worker_age_seconds
+//   (with news_worker_age_seconds dual-emitted through 2026-05-08).
 // [claude-code 2026-04-19] S27-T7 (W2d): scheduler — two tiers.
 // Breaking (60s): Reuters, Bloomberg, X/Twitter via browser-harness.
 // Standard (5m): SEC, FOMC, newsletters via Exa + RSS + AgentReach scrape.
-// Upserts heartbeats per tier so /api/diagnostics can show news_worker_age_seconds.
+// Upserts heartbeats per tier so /api/diagnostics can show riskflow_worker_age_seconds.
 
 import { runBreakingTier, runStandardTier } from "./sources/index.js";
 import { upsertHeartbeat } from "./persist.js";
@@ -60,7 +63,7 @@ async function runTier(tier: "breaking" | "standard"): Promise<void> {
     console.error(
       JSON.stringify({
         ts: new Date().toISOString(),
-        service: "news-worker",
+        service: "riskflow-worker",
         stage: "tier_error",
         tier,
         error: err instanceof Error ? err.message : String(err),
@@ -84,7 +87,7 @@ async function runTier(tier: "breaking" | "standard"): Promise<void> {
     console.log(
       JSON.stringify({
         ts: new Date().toISOString(),
-        service: "news-worker",
+        service: "riskflow-worker",
         stage: "tier_complete",
         tier,
         ingested,
