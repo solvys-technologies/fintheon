@@ -21,6 +21,7 @@ export const NOTIFICATION_CATEGORIES = [
   "toolApprovals",
   "maintenance_request",
   "chat_relay",
+  "econ_alerts",
   "test",
   "system",
 ] as const;
@@ -35,6 +36,8 @@ export interface NotificationPrefs {
   manualDnd: boolean;
   blockedCategories: NotificationCategory[];
   severityThreshold: Severity;
+  /** Mute everything except econ_alerts + critical. */
+  econOnlyMode: boolean;
 }
 
 export interface UserPreferences {
@@ -57,6 +60,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
     manualDnd: false,
     blockedCategories: [],
     severityThreshold: "medium",
+    econOnlyMode: false,
   },
   psychAssistEnabled: false,
   updatedAt: new Date(0).toISOString(),

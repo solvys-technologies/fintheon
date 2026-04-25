@@ -23,6 +23,7 @@ export const NOTIFICATION_CATEGORIES = [
   "toolApprovals",
   "maintenance_request",
   "chat_relay",
+  "econ_alerts",
   "test",
   "system",
 ] as const;
@@ -40,6 +41,9 @@ export interface NotificationPrefs {
   blockedCategories: NotificationCategory[];
   /** Lower bound for push delivery (in-app log still receives everything). */
   severityThreshold: Severity;
+  /** When true, only econ_alerts (and critical-severity) push. Convenient one-tap mute
+   *  for everything except FOMC/CPI/NFP-class events without filling blockedCategories. */
+  econOnlyMode: boolean;
 }
 
 export interface UserPreferences {
@@ -62,6 +66,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
     manualDnd: false,
     blockedCategories: [],
     severityThreshold: "medium",
+    econOnlyMode: false,
   },
   psychAssistEnabled: false,
   updatedAt: new Date(0).toISOString(),

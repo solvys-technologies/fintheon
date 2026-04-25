@@ -55,6 +55,9 @@ export const NOTIFICATION_CATEGORIES = [
   // [S26-P2 T9] Agent-proposed maintenance requests — super-admin commit/deploy/deny.
   "maintenance_request",
   "chat_relay",
+  // [S35-Unified] Economic-event alerts (FOMC/CPI/NFP/etc.) — distinct from riskflow so
+  //   users can mute speculative riskflow chatter while keeping calendar pings, or vice versa.
+  "econ_alerts",
   "test",
   "system",
 ] as const;
