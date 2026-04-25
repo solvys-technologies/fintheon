@@ -2,10 +2,15 @@
 //   shared UserPreferences contract (frontend/lib/user-preferences.ts + mobile mirror).
 //   GET returns the merged prefs (defaults filled in); PUT upserts and returns the fresh row.
 // [claude-code 2026-04-23] S31-T6: psychAssistEnabled flag; default false (silent mode).
+// [claude-code 2026-04-25] S35-Unified: notification prefs accept manualDnd, blockedCategories,
+//   severityThreshold. PUT also fans a __sync push to the user's other devices so DND/blocklist
+//   changes appear in the bell on every signed-in surface within a second.
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { z } from "zod";
 import { getSupabaseClient } from "../../config/supabase.js";
+import { broadcastSyncToUser } from "../../services/notifications/sync-broadcast.js";
+import { NOTIFICATION_CATEGORIES } from "../../services/notifications/emit.js";
 
 const THEME_VALUES = [
   "solvys-gold",
@@ -14,12 +19,17 @@ const THEME_VALUES = [
   "system",
 ] as const;
 
+const SEVERITY_VALUES = ["low", "medium", "high", "critical"] as const;
+
 const notificationsSchema = z.object({
   rth: z.boolean(),
   extendedHours: z.boolean(),
   criticalOnly: z.boolean(),
   quietFromEtHour: z.number().min(0).max(24),
   quietToEtHour: z.number().min(0).max(24),
+  manualDnd: z.boolean().default(false),
+  blockedCategories: z.array(z.enum(NOTIFICATION_CATEGORIES)).default([]),
+  severityThreshold: z.enum(SEVERITY_VALUES).default("medium"),
 });
 
 const fusePaletteOverrideSchema = z
@@ -58,6 +68,9 @@ const DEFAULT_PREFERENCES: Preferences = {
     criticalOnly: false,
     quietFromEtHour: 16,
     quietToEtHour: 9.5,
+    manualDnd: false,
+    blockedCategories: [],
+    severityThreshold: "medium",
   },
   psychAssistEnabled: false,
   updatedAt: new Date(0).toISOString(),
@@ -133,6 +146,12 @@ export function createPreferencesRoutes(): Hono {
       console.error("[preferences] upsert failed:", error.message);
       return c.json({ error: "Failed to save preferences" }, 500);
     }
+
+    // Best-effort cross-device sync — never fail the PUT on a sync hiccup.
+    void broadcastSyncToUser(uid, {
+      kind: "preferences",
+      updatedAt: now,
+    }).catch(() => {});
 
     return c.json(incoming);
   });
