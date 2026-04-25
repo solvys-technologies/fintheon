@@ -4,6 +4,8 @@
 
 @import "./fonts.css";
 
+@import "./styles/transitions.css";
+
 /* Hide all scrollbars app-wide — pagination dots serve as position indicators.
    Uses !important + html-scoped selector to override Tailwind preflight and any
    component-level scrollbar resets. Applies to every element in the document. */
