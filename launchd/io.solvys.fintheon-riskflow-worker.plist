@@ -27,6 +27,8 @@
   <string>/tmp/fintheon-riskflow-worker.err.log</string>
   <key>EnvironmentVariables</key>
   <dict>
+    <key>NODE_ENV</key>
+    <string>development</string>
     <key>RISKFLOW_WORKER_PORT</key>
     <string>8082</string>
     <key>FLAG_RISKFLOW_WORKER_WRITES_RISKFLOW</key>
