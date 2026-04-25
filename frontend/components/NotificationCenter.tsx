@@ -1,5 +1,8 @@
 // [claude-code 2026-04-24] Wired t-panel-slide transition (solvys-transitions) for open/close motion.
 // [claude-code 2026-03-20] S3:T10d — Notification Center dropdown: queued notifications, timestamps, clear all
+// [claude-code 2026-04-25] S35-Unified: bell now reads server-backed notifications via
+//   useServerNotifications. Clear All hits the backend so other devices clear too. Local
+//   DND queue is still rendered for UI-suppressed toasts that haven't crossed the wire.
 import { useEffect, useRef, useState } from "react";
 import {
   X,
@@ -13,6 +16,10 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { useDND, type QueuedNotification } from "../contexts/DNDContext";
+import {
+  useServerNotifications,
+  type ServerNotification,
+} from "../contexts/NotificationsContext";
 
 function notificationIcon(type: QueuedNotification["type"]) {
   switch (type) {
@@ -59,9 +66,36 @@ interface NotificationCenterProps {
   onClose: () => void;
 }
 
+// Maps server category to the local icon palette.
+function categoryToType(category: string): QueuedNotification["type"] {
+  switch (category) {
+    case "riskflow":
+      return "news";
+    case "dailyBrief":
+    case "lexiconProposals":
+      return "system";
+    case "regimeActivations":
+    case "regimeProposals":
+    case "walkBackReverts":
+      return "iv";
+    case "toolApprovals":
+    case "maintenance_request":
+      return "trade";
+    case "chat_relay":
+      return "system";
+    default:
+      return "system";
+  }
+}
+
 export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
   const { queue, dismissQueued, clearQueue, dndActive, toggleManualDnd } =
     useDND();
+  const {
+    notifications: serverNotifs,
+    clearOne,
+    clearAll: clearAllServer,
+  } = useServerNotifications();
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Close on click outside
@@ -107,6 +141,15 @@ export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
 
   if (!open) return null;
 
+  const totalCount = queue.length + serverNotifs.length;
+
+  const handleClearAll = async () => {
+    clearQueue();
+    if (serverNotifs.length > 0) {
+      await clearAllServer();
+    }
+  };
+
   return (
     <div
       ref={panelRef}
@@ -137,9 +180,9 @@ export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
           >
             Notifications
           </span>
-          {queue.length > 0 && (
+          {totalCount > 0 && (
             <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500/30 text-red-400 text-[10px] font-bold">
-              {queue.length}
+              {totalCount}
             </span>
           )}
         </div>
@@ -173,9 +216,10 @@ export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
         </div>
       </div>
 
-      {/* Notification list */}
+      {/* Notification list — server first, then in-memory queue.
+          Server rows persist + cross-device-sync; queue is local UI suppression overflow. */}
       <div className="overflow-y-auto" style={{ maxHeight: "320px" }}>
-        {queue.length === 0 ? (
+        {totalCount === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2">
             <Bell
               className="w-6 h-6"
@@ -185,14 +229,56 @@ export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
               className="text-[11px]"
               style={{ color: "var(--fintheon-muted)" }}
             >
-              No queued notifications
+              No notifications
             </span>
           </div>
         ) : (
           <div className="py-1">
+            {serverNotifs.map((n: ServerNotification) => (
+              <div
+                key={`s-${n.id}`}
+                className="flex items-start gap-2.5 px-3 py-2 hover:bg-white/[0.03] transition-colors group"
+              >
+                <div className="mt-0.5 shrink-0">
+                  {notificationIcon(categoryToType(n.category))}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div
+                    className="text-[11px] font-semibold truncate"
+                    style={{
+                      color: n.read
+                        ? "var(--fintheon-muted)"
+                        : "var(--fintheon-text)",
+                    }}
+                  >
+                    {n.title}
+                  </div>
+                  <div
+                    className="text-[10px] mt-0.5 line-clamp-2"
+                    style={{ color: "var(--fintheon-muted)" }}
+                  >
+                    {n.body}
+                  </div>
+                  <div
+                    className="text-[9px] mt-1"
+                    style={{ color: "rgba(107,114,128,0.5)" }}
+                  >
+                    {timeAgo(n.createdAt)}
+                  </div>
+                </div>
+                <button
+                  onClick={() => clearOne(n.id)}
+                  className="p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/10"
+                  style={{ color: "var(--fintheon-muted)" }}
+                  title="Dismiss"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
             {queue.map((n) => (
               <div
-                key={n.id}
+                key={`q-${n.id}`}
                 className="flex items-start gap-2.5 px-3 py-2 hover:bg-white/[0.03] transition-colors group"
               >
                 <div className="mt-0.5 shrink-0">
