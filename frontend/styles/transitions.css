@@ -87,8 +87,12 @@
    ============================================================ */
 
 @keyframes t-badge-slide-in {
-  from { transform: translate(var(--t-badge-offset-x), var(--t-badge-offset-y)); }
-  to   { transform: translate(0, 0); }
+  from {
+    transform: translate(var(--t-badge-offset-x), var(--t-badge-offset-y));
+  }
+  to {
+    transform: translate(0, 0);
+  }
 }
 
 .t-badge {
@@ -109,9 +113,9 @@
   opacity: 1;
   filter: blur(0);
   transition:
-    transform var(--t-badge-pop-dur)  var(--t-badge-pop-ease),
-    opacity   var(--t-badge-fade-dur) var(--t-badge-pop-ease),
-    filter    var(--t-badge-pop-dur)  var(--t-badge-pop-ease);
+    transform var(--t-badge-pop-dur) var(--t-badge-pop-ease),
+    opacity var(--t-badge-fade-dur) var(--t-badge-pop-ease),
+    filter var(--t-badge-pop-dur) var(--t-badge-pop-ease);
   will-change: transform, opacity, filter;
 }
 .t-badge[data-open="false"] .t-badge-dot {
@@ -119,9 +123,9 @@
   opacity: 0;
   filter: blur(var(--t-badge-blur));
   transition:
-    transform var(--t-badge-pop-close-dur)  var(--t-badge-close-ease),
-    opacity   var(--t-badge-fade-close-dur) var(--t-badge-close-ease),
-    filter    var(--t-badge-pop-close-dur)  var(--t-badge-close-ease);
+    transform var(--t-badge-pop-close-dur) var(--t-badge-close-ease),
+    opacity var(--t-badge-fade-close-dur) var(--t-badge-close-ease),
+    filter var(--t-badge-pop-close-dur) var(--t-badge-close-ease);
 }
 
 /* ============================================================
@@ -139,14 +143,24 @@
   pointer-events: none;
   transition:
     transform var(--t-dropdown-open-dur) var(--t-dropdown-ease),
-    opacity   var(--t-dropdown-open-dur) var(--t-dropdown-ease);
+    opacity var(--t-dropdown-open-dur) var(--t-dropdown-ease);
   will-change: transform, opacity;
 }
-.t-dropdown[data-origin="top-right"]     { transform-origin: top right; }
-.t-dropdown[data-origin="top-center"]    { transform-origin: top center; }
-.t-dropdown[data-origin="bottom-left"]   { transform-origin: bottom left; }
-.t-dropdown[data-origin="bottom-center"] { transform-origin: bottom center; }
-.t-dropdown[data-origin="bottom-right"]  { transform-origin: bottom right; }
+.t-dropdown[data-origin="top-right"] {
+  transform-origin: top right;
+}
+.t-dropdown[data-origin="top-center"] {
+  transform-origin: top center;
+}
+.t-dropdown[data-origin="bottom-left"] {
+  transform-origin: bottom left;
+}
+.t-dropdown[data-origin="bottom-center"] {
+  transform-origin: bottom center;
+}
+.t-dropdown[data-origin="bottom-right"] {
+  transform-origin: bottom right;
+}
 
 .t-dropdown.is-open {
   transform: scale(1);
@@ -159,7 +173,7 @@
   pointer-events: none;
   transition:
     transform var(--t-dropdown-close-dur) var(--t-dropdown-ease),
-    opacity   var(--t-dropdown-close-dur) var(--t-dropdown-ease);
+    opacity var(--t-dropdown-close-dur) var(--t-dropdown-ease);
 }
 
 /* ============================================================
@@ -174,8 +188,8 @@
   pointer-events: none;
   transition:
     transform var(--t-panel-close-dur) var(--t-panel-ease),
-    opacity   var(--t-panel-close-dur) var(--t-panel-ease),
-    filter    var(--t-panel-close-dur) var(--t-panel-ease);
+    opacity var(--t-panel-close-dur) var(--t-panel-ease),
+    filter var(--t-panel-close-dur) var(--t-panel-ease);
   will-change: transform, opacity, filter;
 }
 .t-panel-slide[data-open="true"] {
@@ -185,8 +199,8 @@
   pointer-events: auto;
   transition:
     transform var(--t-panel-open-dur) var(--t-panel-ease),
-    opacity   var(--t-panel-open-dur) var(--t-panel-ease),
-    filter    var(--t-panel-open-dur) var(--t-panel-ease);
+    opacity var(--t-panel-open-dur) var(--t-panel-ease),
+    filter var(--t-panel-open-dur) var(--t-panel-ease);
 }
 
 /* ============================================================
@@ -196,7 +210,7 @@
 
 .t-resize {
   transition:
-    width  var(--t-resize-dur) var(--t-resize-ease),
+    width var(--t-resize-dur) var(--t-resize-ease),
     height var(--t-resize-dur) var(--t-resize-ease);
   will-change: width, height;
 }
@@ -216,8 +230,8 @@
 .t-icon-swap .t-icon {
   grid-area: 1 / 1;
   transition:
-    opacity   var(--t-icon-swap-dur) var(--t-icon-swap-ease),
-    filter    var(--t-icon-swap-dur) var(--t-icon-swap-ease),
+    opacity var(--t-icon-swap-dur) var(--t-icon-swap-ease),
+    filter var(--t-icon-swap-dur) var(--t-icon-swap-ease),
     transform var(--t-icon-swap-dur) var(--t-icon-swap-ease);
   will-change: opacity, filter, transform;
 }
@@ -250,8 +264,8 @@
   opacity: 1;
   transition:
     transform var(--t-text-swap-dur) var(--t-text-swap-ease),
-    filter    var(--t-text-swap-dur) var(--t-text-swap-ease),
-    opacity   var(--t-text-swap-dur) var(--t-text-swap-ease);
+    filter var(--t-text-swap-dur) var(--t-text-swap-ease),
+    opacity var(--t-text-swap-dur) var(--t-text-swap-ease);
   will-change: transform, filter, opacity;
 }
 .t-text-swap.is-exit {
@@ -278,7 +292,7 @@
   pointer-events: none;
   transition:
     transform var(--t-modal-open-dur) var(--t-modal-ease),
-    opacity   var(--t-modal-open-dur) var(--t-modal-ease);
+    opacity var(--t-modal-open-dur) var(--t-modal-ease);
   will-change: transform, opacity;
 }
 .t-modal.is-open {
@@ -292,7 +306,7 @@
   pointer-events: none;
   transition:
     transform var(--t-modal-close-dur) var(--t-modal-ease),
-    opacity   var(--t-modal-close-dur) var(--t-modal-ease);
+    opacity var(--t-modal-close-dur) var(--t-modal-ease);
 }
 
 /* ============================================================
@@ -317,12 +331,14 @@
   inset: 0;
   opacity: 0;
   pointer-events: none;
-  transform: translateX(calc(var(--t-page-from-x, 0px) * var(--t-page-exit-enabled)));
+  transform: translateX(
+    calc(var(--t-page-from-x, 0px) * var(--t-page-exit-enabled))
+  );
   filter: blur(calc(var(--t-page-blur) * var(--t-page-exit-enabled)));
   transition:
-    opacity   var(--t-page-fade-dur)  var(--t-page-fade-ease),
+    opacity var(--t-page-fade-dur) var(--t-page-fade-ease),
     transform var(--t-page-slide-dur) var(--t-page-slide-ease),
-    filter    var(--t-page-slide-dur) var(--t-page-slide-ease);
+    filter var(--t-page-slide-dur) var(--t-page-slide-ease);
   will-change: opacity, transform, filter;
 }
 .t-page-slide[data-page="1"] .t-page[data-page-id="1"],
@@ -353,7 +369,11 @@
     opacity: 0;
     filter: blur(var(--t-digit-blur));
   }
-  100% { transform: translate(0, 0); opacity: 1; filter: blur(0); }
+  100% {
+    transform: translate(0, 0);
+    opacity: 1;
+    filter: blur(0);
+  }
 }
 
 .t-digit-group {
