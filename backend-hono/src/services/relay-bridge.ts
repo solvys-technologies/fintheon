@@ -157,9 +157,9 @@ class RelayBridge {
       waiting?.();
       waiting = null;
     };
-    const onError = (event: { message?: string }) => {
+    const onError = () => {
       if (done || error) return;
-      error = new Error(event?.message || "local_offline");
+      error = new Error("local_offline");
       waiting?.();
       waiting = null;
     };

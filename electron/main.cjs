@@ -592,6 +592,21 @@ function createWindow(apiBase) {
   win.loadFile(rendererPath);
   mainWindow = win;
 
+  // [claude-code 2026-04-25] S35: log the BrowserWindow close trigger so a
+  // user-clicked X, a Cmd+W, an IPC-driven close, or a renderer-initiated
+  // window.close() are all distinguishable in crash.log.
+  win.on("close", (_event) => {
+    closeReason = closeReason ?? "browserwindow-close";
+    logCrash("browserwindow-close", {
+      isFocused: win.isFocused?.() ?? null,
+      isVisible: win.isVisible?.() ?? null,
+    });
+  });
+  win.webContents.on("render-process-gone", (_event, details) => {
+    closeReason =
+      closeReason ?? `renderer-gone:${details?.reason ?? "unknown"}`;
+  });
+
   // [claude-code 2026-04-19] S27-T5 W2c: install voice-chrome ipc hook once the
   // window exists. Idempotent — installVoiceChromeHook only registers the
   // listener on first call because ipcMain.on is additive.

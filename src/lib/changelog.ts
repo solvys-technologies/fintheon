@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T17:45:00",
+    agent: "claude-code",
+    summary:
+      "S35 debug: two critical bugs. (1) Mobile chat no-response — relay-bridge.ts forward() generator hung forever when the local backend's WS dropped between frames, so relay.ts streamed 200 OK with an empty SSE body and mobile sat on the 12s 'HARPER SILENT' watchdog with no error bubble; added close/error listeners that synthesize a local_offline error so relay.ts's catch arm emits {type:error}+[DONE] and mobile renders [ERROR: Local backend disconnected]. Send call also now wrapped so a between-isConnected-and-send race hits the same path. (2) Electron 'error-closes after 5 min' — macOS log show revealed AppKit windowShouldClose: at every crash.log timestamp, but no instrumentation captured WHO triggered it; added BrowserWindow close, render-process-gone, app before-quit/will-quit/quit, and process SIGTERM/SIGINT/SIGHUP loggers that all attribute via a shared closeReason so the next repro lands a definitive trigger in crash.log instead of just the cascade.",
+    files: ["backend-hono/src/services/relay-bridge.ts", "electron/main.cjs"],
+  },
+  {
     date: "2026-04-25T18:00:00",
     agent: "claude-code",
     summary:
