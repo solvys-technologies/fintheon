@@ -532,3 +532,5 @@
 [2026-04-25T21:43:21Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
 [2026-04-25T21:48:01Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T21:35:30.000Z itemAge=0.2h cacheAge=227548ms rateLimited=False
 [2026-04-25T22:26:21Z] status=stale cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T21:35:30.000Z itemAge=0.8h cacheAge=2266740ms rateLimited=False
+[2026-04-25T22:34:01Z] status=stale cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T21:35:30.000Z itemAge=1.0h cacheAge=427855ms rateLimited=False
+[2026-04-25T22:34:04Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
