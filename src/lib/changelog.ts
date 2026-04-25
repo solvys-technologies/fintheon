@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T23:45:00",
+    agent: "claude-code",
+    summary:
+      "v5.25.1 — Strategium RiskFlow restore. In widgetsOnly mode the widgets pane was `flex-1` without `min-h-0`, so its content could force the pane taller than the viewport and push the RiskFlow peek-footer off-screen — the feed became unreachable. Added min-h-0 to every sizing branch of the widgets pane (widgetsOnly, balanced-with-collapsed-feed, balanced half-height) and made StrategiumPeekBar `shrink-0 h-9` so the footer is never squeezed out. RiskFlow always has a collapsed footer to return from in widgetsOnly now. Clicking it still flips strategiumPaneMode → balanced. No other behavior change.",
+    files: [
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/layout/StrategiumPeekBar.tsx",
+      "package.json",
+      "scripts/fintheon-update.sh",
+    ],
+  },
+  {
     date: "2026-04-24T23:10:00",
     agent: "claude-code",
     summary:

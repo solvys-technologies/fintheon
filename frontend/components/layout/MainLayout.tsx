@@ -616,15 +616,18 @@ function MainLayoutInner() {
                 />
               )}
 
-              {/* Widgets pane — shown in balanced + widgetsOnly */}
+              {/* Widgets pane — shown in balanced + widgetsOnly.
+                  [claude-code 2026-04-24] min-h-0 is CRITICAL in widgetsOnly:
+                  without it, flex-1 + inner content force the pane taller than
+                  the viewport and push the RiskFlow peek-footer off-screen. */}
               {strategiumPaneMode !== "feedOnly" && (
                 <div
                   className={`${
                     strategiumPaneMode === "widgetsOnly"
-                      ? "flex-1"
+                      ? "flex-1 min-h-0"
                       : riskFlowCollapsed
-                        ? "flex-1"
-                        : "h-1/2"
+                        ? "flex-1 min-h-0"
+                        : "h-1/2 min-h-0"
                   } flex flex-col transition-all duration-300 bg-[var(--fintheon-surface)] relative`}
                 >
                   <div className="flex-1 min-h-0 overflow-y-auto">
