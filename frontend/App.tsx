@@ -10,6 +10,7 @@ import {
 import { SettingsProvider } from "./contexts/SettingsContext";
 import { ThreadProvider } from "./contexts/ThreadContext";
 import { ToastProvider } from "./contexts/ToastContext";
+import { NotificationsProvider } from "./contexts/NotificationsContext";
 import { GatewayProvider } from "./contexts/GatewayContext";
 import { FintheonAgentProvider } from "./contexts/FintheonAgentContext";
 import { TeamPresenceProvider } from "./contexts/TeamPresenceContext";
@@ -161,19 +162,20 @@ function AuthGate() {
       {/* Liquid glass splash — cold start only, fades when init completes */}
       {showSplash && <SplashScreen isReady={initComplete} />}
       <SettingsProvider>
-        <ToastProvider>
-          <GatewayProvider>
-            <SystemStatusProvider>
-              <FintheonAgentProvider>
-                <TeamPresenceProvider>
-                  <RiskFlowProvider>
-                    <ContextBankProvider>
-                      <ThreadProvider>
-                        <VoiceProvider>
-                          <ERProvider>
-                            <div className="dark">
-                              <VoiceRimFrame />
-                              <style>{`
+        <NotificationsProvider>
+          <ToastProvider>
+            <GatewayProvider>
+              <SystemStatusProvider>
+                <FintheonAgentProvider>
+                  <TeamPresenceProvider>
+                    <RiskFlowProvider>
+                      <ContextBankProvider>
+                        <ThreadProvider>
+                          <VoiceProvider>
+                            <ERProvider>
+                              <div className="dark">
+                                <VoiceRimFrame />
+                                <style>{`
                   * {
                     scrollbar-width: thin;
                     scrollbar-color: var(--fintheon-accent) var(--fintheon-surface);
@@ -208,24 +210,25 @@ function AuthGate() {
                     pointer-events: none;
                   }
                 `}</style>
-                              <ApiErrorToastBridge />
-                              <VersionChecker />
-                              <MainLayout />
-                              <ConsulControlLayer />
-                              <NotificationContainer />
-                              <ToastContainer />
-                              <PreMarketReminder />
-                            </div>
-                          </ERProvider>
-                        </VoiceProvider>
-                      </ThreadProvider>
-                    </ContextBankProvider>
-                  </RiskFlowProvider>
-                </TeamPresenceProvider>
-              </FintheonAgentProvider>
-            </SystemStatusProvider>
-          </GatewayProvider>
-        </ToastProvider>
+                                <ApiErrorToastBridge />
+                                <VersionChecker />
+                                <MainLayout />
+                                <ConsulControlLayer />
+                                <NotificationContainer />
+                                <ToastContainer />
+                                <PreMarketReminder />
+                              </div>
+                            </ERProvider>
+                          </VoiceProvider>
+                        </ThreadProvider>
+                      </ContextBankProvider>
+                    </RiskFlowProvider>
+                  </TeamPresenceProvider>
+                </FintheonAgentProvider>
+              </SystemStatusProvider>
+            </GatewayProvider>
+          </ToastProvider>
+        </NotificationsProvider>
       </SettingsProvider>
     </div>
   );

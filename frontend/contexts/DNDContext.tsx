@@ -1,4 +1,7 @@
 // [claude-code 2026-03-20] S3:T10 — Do Not Disturb context: auto-suppress during trading, manual toggle, notification queue
+// [claude-code 2026-04-25] S35-Unified: manualDnd is now sourced from SettingsContext.preferences
+//   so DND syncs across desktop + mobile via the server, not localStorage. The local in-memory
+//   queue stays — it's auxiliary state for UI suppression while DND is active.
 import {
   createContext,
   useContext,
@@ -8,6 +11,7 @@ import {
   useRef,
   type ReactNode,
 } from "react";
+import { useSettings } from "./SettingsContext";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -52,24 +56,7 @@ interface DNDContextValue {
   isCritical: (tag: string) => boolean;
 }
 
-const DND_STORAGE_KEY = "fintheon:dnd-manual";
 const DND_QUEUE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
-
-function loadManualDnd(): boolean {
-  try {
-    return localStorage.getItem(DND_STORAGE_KEY) === "true";
-  } catch {
-    return false;
-  }
-}
-
-function saveManualDnd(active: boolean) {
-  try {
-    localStorage.setItem(DND_STORAGE_KEY, String(active));
-  } catch {
-    // ignore
-  }
-}
 
 const DNDContext = createContext<DNDContextValue>({
   dndActive: false,
@@ -91,16 +78,14 @@ const DNDContext = createContext<DNDContextValue>({
 /* ------------------------------------------------------------------ */
 
 export function DNDProvider({ children }: { children: ReactNode }) {
-  const [manualDnd, setManualDnd] = useState<boolean>(loadManualDnd);
+  // Server-backed manual DND. Reads/writes via SettingsContext → /api/preferences,
+  // which broadcasts a __sync push so other devices flip in real-time.
+  const { preferences, updatePreferences } = useSettings();
+  const manualDnd = Boolean(preferences.notifications.manualDnd);
   const [autoDnd, setAutoDnd] = useState(false);
   const [queue, setQueue] = useState<QueuedNotification[]>([]);
 
   const dndActive = manualDnd || autoDnd;
-
-  // Persist manual DND
-  useEffect(() => {
-    saveManualDnd(manualDnd);
-  }, [manualDnd]);
 
   // Auto-expire queued notifications older than 24h
   useEffect(() => {
@@ -112,8 +97,10 @@ export function DNDProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const toggleManualDnd = useCallback(() => {
-    setManualDnd((prev) => !prev);
-  }, []);
+    updatePreferences({
+      notifications: { ...preferences.notifications, manualDnd: !manualDnd },
+    });
+  }, [manualDnd, preferences.notifications, updatePreferences]);
 
   const isCritical = useCallback((tag: string) => CRITICAL_TYPES.has(tag), []);
 
