@@ -30,6 +30,7 @@ const notificationsSchema = z.object({
   manualDnd: z.boolean().default(false),
   blockedCategories: z.array(z.enum(NOTIFICATION_CATEGORIES)).default([]),
   severityThreshold: z.enum(SEVERITY_VALUES).default("medium"),
+  econOnlyMode: z.boolean().default(false),
 });
 
 const fusePaletteOverrideSchema = z
@@ -71,6 +72,7 @@ const DEFAULT_PREFERENCES: Preferences = {
     manualDnd: false,
     blockedCategories: [],
     severityThreshold: "medium",
+    econOnlyMode: false,
   },
   psychAssistEnabled: false,
   updatedAt: new Date(0).toISOString(),

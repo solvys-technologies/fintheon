@@ -12,6 +12,7 @@ export type Severity = "low" | "medium" | "high" | "critical";
 export interface DeliveryPrefs {
   manualDnd: boolean;
   criticalOnly: boolean;
+  econOnlyMode: boolean;
   severityThreshold: Severity;
   blockedCategories: Set<string>;
   /** Quiet hours window in ET, expressed as minutes since midnight. */
@@ -24,6 +25,7 @@ export interface DeliveryPrefs {
 const DEFAULT_PREFS: DeliveryPrefs = {
   manualDnd: false,
   criticalOnly: false,
+  econOnlyMode: false,
   severityThreshold: "medium",
   blockedCategories: new Set(),
   quietStartMin: 16 * 60, // 16:00 ET — close
@@ -71,6 +73,7 @@ async function loadFromUserPreferences(
     return {
       manualDnd: Boolean(notif.manualDnd),
       criticalOnly: Boolean(notif.criticalOnly),
+      econOnlyMode: Boolean(notif.econOnlyMode),
       severityThreshold:
         typeof notif.severityThreshold === "string" &&
         severityIdx(notif.severityThreshold) >= 0
@@ -182,6 +185,12 @@ export async function evaluateDeliveryGates(
   if (severity === "critical") {
     // Critical bypasses every user gate by design — margin calls, system-down.
     return { allow: true };
+  }
+
+  // econOnlyMode: hard mute every channel except econ_alerts. Lets the user keep
+  // calendar pings without listening to riskflow / regime / brief noise.
+  if (prefs.econOnlyMode && category !== "econ_alerts") {
+    return { allow: false, reason: "econ-only-mode" };
   }
 
   if (prefs.blockedCategories.has(category)) {
