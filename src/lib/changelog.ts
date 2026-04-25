@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-24T22:10:00",
+    agent: "claude-code",
+    summary:
+      "v5.25.0 deploy — S35 unify roll-forward shipped. Merged s37-refinement-polish into s35-unified to capture S36 ClusterBeam (cluster_summaries migration + ClusterBeamPanel/Scrubber/ShockLayer/DensityMeter/ClusterBeamContext + useClusterSummary hook + lib/services/narrative.ts) AND S37 Refinement polish (RefinementEditLockModal + AlgoStatusWidget NothingFuse swap + scoring_user_sensitivity + scoring_presets tables + POST /api/scoring/{presets,sensitivities}) on top of S35 (Arbitrum engine + 17:00 chamber cron + event trigger + routes + Sanctum chart-mode height fix + InstrumentCardsRow rename/wire + side-by-side econ event cards). Backend deployed to fintheon.fly.dev (smokes: /api/diagnostics 200, /api/arbitrum/latest 200, /api/miroshark/latest 404, /api/riskflow/feed 200, /api/riskflow/iv-aggregate 200). Desktop frontend → fintheon-pid235zpu-solvys.vercel.app (alias fintheon-alpha.vercel.app, 200). Mobile PWA → fintheon-mobile-g7j5ft05c-solvys.vercel.app (alias fintheon.pricedinresearch.io, 200). DMG Fintheon-5.25.0-arm64.dmg copied to ~/Desktop and uploaded to GH release v5.25.0 alongside Fintheon-5.25.0-arm64-mac.zip. Older v5.* releases pruned (only v5.25.0 remains; tags retained). Local launchd backend recycled — boot log shows ArbitrumSessionCron registered (0 17 * * 1-5 America/New_York) + RiskFlowEconEnricher started. INSTALL-UPDATE: scripts/fintheon-update.sh UPDATE_VERSION bumped to 5.25.0; fintheon update will pull v5.25.0.",
+    files: [
+      "package.json",
+      "scripts/fintheon-update.sh",
+      "sprint-changelog/S35-ORCHESTRATION.md",
+      "sprint-changelog/S36-BRIEF-clusterbeam.md",
+    ],
+  },
+  {
     date: "2026-04-24T23:30:00",
     agent: "claude-code",
     summary:
