@@ -22,8 +22,7 @@ export function useLayoutState({
   // [claude-code 2026-04-19] Strategium always boots closed per user request.
   // Persisted state would fight with "restore to last route" — keep the panel
   // explicitly hidden on every boot; user re-opens manually if wanted.
-  const [missionControlCollapsed, setMissionControlCollapsed] =
-    useState(true);
+  const [missionControlCollapsed, setMissionControlCollapsed] = useState(true);
   // [S37] Start collapsed=false on boot so users see the RiskFlow feed, not a 168px
   //       mini stub with no feed visible. Toggling from here is explicit — no forced
   //       sync with missionControlCollapsed (that's what made the mini unreachable).

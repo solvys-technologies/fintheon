@@ -111,9 +111,7 @@ export function AlgoStatusWidget() {
             <NothingFuse
               value={algoEnabled ? 1 : 0}
               color={
-                algoEnabled
-                  ? "var(--fintheon-accent)"
-                  : "var(--fintheon-muted)"
+                algoEnabled ? "var(--fintheon-accent)" : "var(--fintheon-muted)"
               }
               orientation="horizontal"
               thickness={6}

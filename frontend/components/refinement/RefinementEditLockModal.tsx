@@ -86,11 +86,7 @@ export function RefinementEditLockModal({ open, onClose, onUnlocked }: Props) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Lock
-            size={14}
-            strokeWidth={2.2}
-            color="var(--fintheon-accent)"
-          />
+          <Lock size={14} strokeWidth={2.2} color="var(--fintheon-accent)" />
           <div
             style={{
               fontFamily: "var(--font-heading)",
