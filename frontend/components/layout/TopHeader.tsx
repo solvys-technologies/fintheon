@@ -40,6 +40,7 @@ import { FluxerCallWidget } from "../consilium/FluxerCallWidget";
 import type { IVScoreResponse } from "../../types/market-data";
 import type { TradingPlatform } from "../TradingBrowser";
 import { useDND } from "../../contexts/DNDContext";
+import { useServerNotifications } from "../../contexts/NotificationsContext";
 
 type NavTab =
   | "feed"
@@ -143,6 +144,9 @@ export function TopHeader({
     left: number;
   } | null>(null);
   const { dndActive, toggleManualDnd, queueCount } = useDND();
+  // [claude-code 2026-04-25] S35-Unified: badge counts server-side notifications + local queue.
+  const { unreadCount: serverUnread } = useServerNotifications();
+  const totalBadgeCount = queueCount + serverUnread;
   const [quickClockPulse, setQuickClockPulse] = useState(false);
   const handleQuickClock = useCallback(async () => {
     const now = new Date();
@@ -503,9 +507,9 @@ export function TopHeader({
               ) : (
                 <Bell className="w-3 h-3" />
               )}
-              {queueCount > 0 && (
+              {totalBadgeCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-500/80 text-white text-[8px] font-bold leading-none">
-                  {queueCount > 99 ? "99+" : queueCount}
+                  {totalBadgeCount > 99 ? "99+" : totalBadgeCount}
                 </span>
               )}
             </button>

@@ -1,4 +1,6 @@
 // [claude-code 2026-04-18] A4: bell glyph + unread badge, opens NotificationDrawer
+// [claude-code 2026-04-25] S35-Unified: pass clearOne/clearAll into the drawer so dismissals
+//   propagate to desktop via the server.
 import { useState } from "react";
 import { Bell } from "lucide-react";
 import { useNotificationHistory } from "../../hooks/useNotificationHistory";
@@ -6,8 +8,14 @@ import { NotificationDrawer } from "./NotificationDrawer";
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const { notifications, unreadCount, markRead, markAllRead } =
-    useNotificationHistory();
+  const {
+    notifications,
+    unreadCount,
+    markRead,
+    markAllRead,
+    clearOne,
+    clearAll,
+  } = useNotificationHistory();
 
   return (
     <>
@@ -66,6 +74,8 @@ export function NotificationBell() {
         notifications={notifications}
         markRead={markRead}
         markAllRead={markAllRead}
+        clearOne={clearOne}
+        clearAll={clearAll}
       />
     </>
   );

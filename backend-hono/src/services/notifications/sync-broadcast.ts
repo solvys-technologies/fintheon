@@ -47,12 +47,12 @@ export async function broadcastSyncToUser(
     category: SYNC_CATEGORY,
   };
   // Attach the structured sync event under a reserved key the SW reads explicitly.
-  (payload as Record<string, unknown>).sync = {
+  payload.sync = {
     kind: event.kind,
     id: event.id,
     originEndpoint: event.originEndpoint,
     updatedAt: event.updatedAt ?? new Date().toISOString(),
-  } satisfies SyncEvent;
+  };
 
   try {
     return await sendToUserDirect(userId, payload);

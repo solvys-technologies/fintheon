@@ -35,6 +35,9 @@ interface Props {
   notifications: NotificationItem[];
   markRead: (ids: string[]) => Promise<void>;
   markAllRead: () => Promise<void>;
+  /** [S35-Unified] Server-side clear endpoints. Clearing here propagates to desktop. */
+  clearOne?: (id: string) => Promise<void>;
+  clearAll?: () => Promise<void>;
 }
 
 function dayLabel(iso: string): string {
@@ -79,6 +82,8 @@ export function NotificationDrawer({
   notifications,
   markRead,
   markAllRead,
+  clearOne,
+  clearAll: clearAllServer,
 }: Props) {
   const { getAccessToken } = useAuth();
   const { open: openDetail } = useNotificationModal();
@@ -137,8 +142,13 @@ export function NotificationDrawer({
       // eslint-disable-next-line no-await-in-loop
       await new Promise((r) => setTimeout(r, CLEAR_STAGGER_MS));
     }
-    void markAllRead();
-  }, [visible, markAllRead]);
+    // [S35-Unified] Hard-clear on the server too so other devices see the empty state.
+    if (clearAllServer) {
+      void clearAllServer();
+    } else {
+      void markAllRead();
+    }
+  }, [visible, markAllRead, clearAllServer]);
 
   // Card tap → mark-read + open detail or navigate.
   const onItemTap = useCallback(
