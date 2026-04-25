@@ -33,6 +33,8 @@ import {
 } from "lucide-react";
 import type { RiskFlowAlert, TradeIdeaDetail } from "../lib/riskflow-feed";
 import { inferDirection } from "../lib/riskflow-feed";
+// [claude-code 2026-04-25] S35: shared catalyst image + handoff link
+import { CatalystImage, SourceHandoffLink } from "./shared/CatalystImage";
 import TradeIdeaModal from "./TradeIdeaModal";
 import { useSourceStatus } from "../hooks/useSourceStatus";
 import {
@@ -342,7 +344,20 @@ function TradeIdeaRow({
       >
         <div className="overflow-hidden">
           <div className="px-3 py-2.5 border-t border-zinc-800/40 bg-zinc-900/40">
+            {alert.imageUrl && (
+              <CatalystImage
+                imageUrl={alert.imageUrl}
+                href={alert.url}
+                maxHeight={140}
+                className="mb-2.5"
+              />
+            )}
             <AgentNoteSection alert={alert} onGenerate={onGenerateNote} />
+            {alert.url && (
+              <div className="mt-2">
+                <SourceHandoffLink url={alert.url} />
+              </div>
+            )}
             {riskType && (
               <div className="flex items-center gap-1.5 mt-2">
                 <RiskTypeBadge riskType={riskType} />
@@ -520,7 +535,20 @@ function AlertRow({
       >
         <div className="overflow-hidden">
           <div className="px-3 py-2.5 border-t border-zinc-800/40 bg-zinc-900/40">
+            {alert.imageUrl && (
+              <CatalystImage
+                imageUrl={alert.imageUrl}
+                href={alert.url}
+                maxHeight={140}
+                className="mb-2.5"
+              />
+            )}
             <AgentNoteSection alert={alert} onGenerate={onGenerateNote} />
+            {alert.url && (
+              <div className="mt-2">
+                <SourceHandoffLink url={alert.url} />
+              </div>
+            )}
 
             {/* S9-T2: Deviation indicators — beat/miss, implied points */}
             {alert.econData?.beatMiss && (

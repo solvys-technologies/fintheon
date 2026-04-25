@@ -84,6 +84,10 @@ export interface CatalystCard {
   tags?: string[]; // user-defined tags for filtering/organizing
   category?: NarrativeCategory;
   riskflowItemId?: string; // link back to scored_riskflow_items
+  /** Source URL for the catalyst — handoff to original article. */
+  sourceUrl?: string | null;
+  /** Hero image URL — RSS enclosure / og:image / twitter:image. */
+  imageUrl?: string | null;
   marketImpact?: {
     nq: { points: number; percent: number } | null;
     es: { points: number; percent: number } | null;

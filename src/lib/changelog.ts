@@ -9,6 +9,43 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T18:00:00",
+    agent: "claude-code",
+    summary:
+      "v5.28.0 — Arbitrum + RiskFlow recovery sweep. (1) News-worker pipeline: Supabase migration adds raw_riskflow_items.url + raw_riskflow_items.image_url + scored_riskflow_items.image_url -- persist.ts had been writing url for weeks but the column never existed (every persist returned `Could not find the 'url' column` with items_ingested:0). Backfilled url from the legacy tags[] 'url:' prefix. (2) news-worker sources extract image_url: RSS enclosure / media:content / media:thumbnail / inline <img> in agent-reach RSS, og:image / twitter:image / hero <img> from browser-harness raw HTML (extractImageFromHtml helper exported from harness.ts so other callers can reuse). image_url plumbed through CollectedNewsItem -> writeRawItems -> writeScoredItems -> FeedItem.imageUrl. (3) Sanctum Update button rewired: ConsiliumHub now POSTs /api/arbitrum/deliberate (was firing dead /api/agent-desk/simulate that returned 500 in prod) and reloads via /api/arbitrum/latest, preset becomes the chamber question. (4) Predictions/outlook: cutoff 48h -> 7d with 24h-half-life recency decay so a single news-worker stall doesn't flatten every fuse to 3.0/neutral/+/-135pts. (5) Image+source rendering: shared CatalystImage + SourceHandoffLink primitives, wired into RiskFlowDetailCard, RiskFlowMini (both AlertRow + TradeIdeaRow expanded), NarrativeResearchCard (Sanctum catalyst surface), and mobile RiskFlowCardExpanded -- click-through opens article in new tab; image hides on load failure. (6) Mobile Arbitrum surface (didn't exist): new useArbitrumLatest hook + ArbitrumVerdictCard slotted as new HomePage page between InstrumentOutlookCards and Risk Signals. (7) Electron crash diagnostics: render-process-gone / child-process-gone / gpu-process-crashed / uncaughtException / unhandledRejection / unexpected backend exits all log to userData/crash.log so the next reproduction of the few-minute auto-close has an upstream signal. Backend bun build, frontend tsc + vite build, mobile tsc + vite build all clean. Migration pushed via supabase db push.",
+    files: [
+      "supabase/migrations/20260425170000_riskflow_url_image_columns.sql",
+      "backend-hono/src/workers/news-worker/persist.ts",
+      "backend-hono/src/workers/news-worker/sources/types.ts",
+      "backend-hono/src/workers/news-worker/sources/agent-reach.ts",
+      "backend-hono/src/workers/news-worker/sources/browser-harness.ts",
+      "backend-hono/src/workers/news-worker/sources/exa.ts",
+      "backend-hono/src/services/agent-reach-service.ts",
+      "backend-hono/src/services/browser/harness.ts",
+      "backend-hono/src/services/supabase-service.ts",
+      "backend-hono/src/services/riskflow/central-scorer.ts",
+      "backend-hono/src/types/riskflow.ts",
+      "backend-hono/src/routes/predictions.ts",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/components/shared/CatalystImage.tsx",
+      "frontend/components/feed/RiskFlowDetailCard.tsx",
+      "frontend/components/RiskFlowMini.tsx",
+      "frontend/components/narrative/NarrativeResearchCard.tsx",
+      "frontend/contexts/RiskFlowContext.tsx",
+      "frontend/lib/services/riskflow.ts",
+      "frontend/lib/riskflow-feed.ts",
+      "frontend/lib/narrative-types.ts",
+      "frontend/lib/narrative-seed-loader.ts",
+      "frontend/types/api.ts",
+      "mobile/contexts/RiskFlowContext.tsx",
+      "mobile/components/riskflow/RiskFlowCardExpanded.tsx",
+      "mobile/hooks/useArbitrumLatest.ts",
+      "mobile/components/home/ArbitrumVerdictCard.tsx",
+      "mobile/components/home/HomePage.tsx",
+      "electron/main.cjs",
+    ],
+  },
+  {
     date: "2026-04-25T17:30:00",
     agent: "claude-code",
     summary:

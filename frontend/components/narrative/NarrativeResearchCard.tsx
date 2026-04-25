@@ -1,3 +1,5 @@
+// [claude-code 2026-04-25] S35: image hero + source-handoff link added under research bullets
+//   so promoted RiskFlow catalysts carry their original article preview into Sanctum.
 // [claude-code 2026-03-27] ChatMind-style research card — bullets, metadata, drill-deeper, highlight support
 import { useState, useCallback, useRef, useEffect } from "react";
 import { RISK_LANE_LABELS } from "../../lib/narrative-grid-layout";
@@ -5,6 +7,7 @@ import type {
   CatalystCard,
   NarrativeCategory,
 } from "../../lib/narrative-types";
+import { CatalystImage, SourceHandoffLink } from "../shared/CatalystImage";
 
 const SENTIMENT_COLORS: Record<string, string> = {
   bullish: "var(--fintheon-bullish)",
@@ -231,6 +234,17 @@ export default function NarrativeResearchCard({
         }}
       />
 
+      {/* [claude-code 2026-04-25] S35: hero image + source link rail */}
+      {catalyst.imageUrl && (
+        <div className="px-3 pb-2">
+          <CatalystImage
+            imageUrl={catalyst.imageUrl}
+            href={catalyst.sourceUrl}
+            maxHeight={compact ? 96 : 140}
+          />
+        </div>
+      )}
+
       {/* ── Research bullets / body ── */}
       <div
         className="px-3 py-2"
@@ -289,6 +303,13 @@ export default function NarrativeResearchCard({
           </div>
         )}
       </div>
+
+      {/* [claude-code 2026-04-25] S35: source handoff under bullets */}
+      {catalyst.sourceUrl && (
+        <div className="px-3 pb-1">
+          <SourceHandoffLink url={catalyst.sourceUrl} />
+        </div>
+      )}
 
       {/* Drill deeper input */}
       <div className="px-3 pb-2.5" onClick={(e) => e.stopPropagation()}>

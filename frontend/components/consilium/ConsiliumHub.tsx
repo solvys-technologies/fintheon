@@ -391,9 +391,9 @@ export function ConsiliumHub() {
           generatedEvents: verdict.upcoming_catalysts ?? [],
           scenarios: [],
           briefing: verdict.digest_text
-            ? { summary: verdict.digest_text }
-            : null,
-          contextSnapshot: null,
+            ? ({ summary: verdict.digest_text } as any)
+            : undefined,
+          contextSnapshot: undefined,
         });
       } catch (err) {
         console.error("[ConsiliumHub] Arbitrum latest fetch failed:", err);
@@ -439,8 +439,10 @@ export function ConsiliumHub() {
       timeSeries: [],
       generatedEvents: verdict?.upcoming_catalysts ?? [],
       scenarios: [],
-      briefing: verdict?.digest_text ? { summary: verdict.digest_text } : null,
-      contextSnapshot: null,
+      briefing: verdict?.digest_text
+        ? ({ summary: verdict.digest_text } as any)
+        : undefined,
+      contextSnapshot: undefined,
     }),
     [],
   );

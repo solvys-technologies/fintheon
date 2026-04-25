@@ -44,6 +44,57 @@ let backendStopInFlight = null;
 let backendOwnedByApp = false;
 
 /* ------------------------------------------------------------------ */
+/*  [claude-code 2026-04-25] S35: Crash diagnostics                     */
+/*  TP reported app auto-closes after a few minutes with no obvious     */
+/*  cause. Without crash output, the next reproduction is a black box.  */
+/*  Log: render-process-gone, child-process-gone, uncaughtException,    */
+/*  unhandledRejection, GPU crashes, and unexpected backend exits.      */
+/*  Lands in userData/crash.log so it survives across restarts.         */
+/* ------------------------------------------------------------------ */
+
+const CRASH_LOG_PATH = path.join(app.getPath("userData"), "crash.log");
+
+function logCrash(event, detail) {
+  const line = JSON.stringify({
+    ts: new Date().toISOString(),
+    event,
+    ...detail,
+  });
+  try {
+    fs.appendFileSync(CRASH_LOG_PATH, line + "\n", "utf8");
+  } catch {
+    /* best-effort */
+  }
+  // Also surface to stderr so launchd / Console.app picks it up.
+  console.error("[Crash]", line);
+}
+
+process.on("uncaughtException", (err) => {
+  logCrash("uncaughtException", {
+    message: err?.message,
+    stack: (err?.stack || "").slice(0, 2000),
+  });
+});
+
+process.on("unhandledRejection", (reason) => {
+  logCrash("unhandledRejection", {
+    reason: typeof reason === "string" ? reason : String(reason),
+  });
+});
+
+app.on("render-process-gone", (_event, _wc, details) => {
+  logCrash("render-process-gone", details);
+});
+
+app.on("child-process-gone", (_event, details) => {
+  logCrash("child-process-gone", details);
+});
+
+app.on("gpu-process-crashed", (_event, killed) => {
+  logCrash("gpu-process-crashed", { killed });
+});
+
+/* ------------------------------------------------------------------ */
 /*  Startup config — persisted to userData/fintheon-startup.json       */
 /* ------------------------------------------------------------------ */
 
@@ -162,8 +213,17 @@ async function startBackend() {
     console.error("[Backend]", data.toString().trim());
   });
 
-  backendProcess.on("exit", (code) => {
-    console.log("[Electron] Backend exited with code", code);
+  backendProcess.on("exit", (code, signal) => {
+    console.log("[Electron] Backend exited with code", code, "signal", signal);
+    // [claude-code 2026-04-25] S35: log unexpected backend exits to crash.log so
+    // the auto-close diagnostic has the upstream cause if it was the backend dying.
+    if (code !== 0 || signal) {
+      logCrash("backend-exit", {
+        code,
+        signal,
+        ownedByApp: backendOwnedByApp,
+      });
+    }
     backendProcess = null;
     backendStopInFlight = null;
     backendOwnedByApp = false;

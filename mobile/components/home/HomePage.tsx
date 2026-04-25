@@ -21,6 +21,10 @@ import { BriefingCard } from "./BriefingCard";
 import { AquariumSummary } from "./AquariumSummary";
 import { InstrumentOutlookCards } from "./InstrumentOutlookCards";
 import { MobileRiskSignalCards } from "./RiskSignalCards";
+// [claude-code 2026-04-25] S35: mobile Arbitrum surface — chamber consensus + dissent
+//   on the home dash. Was missing entirely; risk signals from the chamber were never
+//   reaching the mobile dash because the integration didn't exist.
+import { ArbitrumVerdictCard } from "./ArbitrumVerdictCard";
 import { MiniSessionCalendar } from "./MiniSessionCalendar";
 import { TimelineView } from "./TimelineView";
 import { useIVScore } from "../../hooks/useIVScore";
@@ -386,7 +390,25 @@ export function HomePage() {
         </div>
       </SnapPage>
 
-      {/* Page 4: Risk Signals — same /api/riskflow/risk-signals source as desktop Aquarium */}
+      {/* [claude-code 2026-04-25] S35: Page 4 (new) — Arbitrum chamber verdict.
+          Inserted before Risk Signals so the chamber read sits next to the
+          instruments + IV cards rather than at the very bottom of the dash. */}
+      <SnapPage>
+        <div
+          style={{
+            flex: 1,
+            paddingTop: 24,
+            paddingBottom: 24,
+            overflowY: "auto",
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
+          <ArbitrumVerdictCard />
+        </div>
+      </SnapPage>
+
+      {/* Page 5: Risk Signals — same /api/riskflow/risk-signals source as desktop Aquarium */}
       <SnapPage>
         <div
           style={{

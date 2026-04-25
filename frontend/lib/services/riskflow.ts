@@ -88,6 +88,7 @@ export class RiskFlowService {
             summary: decodeHtmlEntities(item.body || item.content || ""), // Also set summary for compatibility
             source: item.source || "",
             url: item.url,
+            imageUrl: item.imageUrl ?? null,
             publishedAt:
               item.publishedAt || item.published_at || new Date().toISOString(),
             impact: ivScore > 7 ? "high" : ivScore > 4 ? "medium" : "low",

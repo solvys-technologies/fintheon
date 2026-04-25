@@ -22,6 +22,8 @@ export interface MobileRiskFlowAlert {
   severity: AlertSeverity;
   publishedAt: string;
   url?: string;
+  /** Hero image (RSS enclosure / og:image) — for the expanded card image rail. */
+  imageUrl?: string | null;
   symbols?: string[];
   ivScore?: number | null;
   direction?: string | null;
@@ -68,6 +70,7 @@ function mapRawItems(items: any[]): MobileRiskFlowAlert[] {
         ? item.publishedAt
         : new Date(item.publishedAt).toISOString(),
     url: item.url,
+    imageUrl: item.imageUrl ?? null,
     symbols: item.symbols ?? [],
     ivScore: item.ivScore ?? null,
     direction: item.direction ?? null,

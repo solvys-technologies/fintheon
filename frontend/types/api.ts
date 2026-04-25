@@ -49,6 +49,8 @@ export interface RiskFlowItem {
   summary?: string;
   source: string;
   url?: string;
+  /** Hero image (RSS enclosure / og:image / twitter:image) for expanded card render. */
+  imageUrl?: string | null;
   publishedAt: Date | string;
   sentiment?: "positive" | "negative" | "neutral" | "bullish" | "bearish";
   ivImpact?: number;

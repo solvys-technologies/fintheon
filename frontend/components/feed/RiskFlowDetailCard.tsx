@@ -137,6 +137,32 @@ export function RiskFlowDetailCard({
       expandedContent={
         <>
           <div className="px-4 py-3 border-t border-zinc-800/40 bg-[#000]/90">
+            {/* [claude-code 2026-04-25] S35: Hero image + source-link rail. Image is
+                best-effort (RSS enclosure / og:image) — hides on load failure so a
+                broken image never wedges the card. Source link below opens in a new
+                tab and is the primary handoff to the original article. */}
+            {alert.imageUrl && (
+              <a
+                href={alert.url ?? alert.imageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="block mb-3 border border-zinc-800/60 overflow-hidden bg-[var(--fintheon-bg)]"
+              >
+                <img
+                  src={alert.imageUrl}
+                  alt=""
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (
+                      e.currentTarget.parentElement as HTMLElement
+                    ).style.display = "none";
+                  }}
+                  className="w-full max-h-48 object-cover"
+                />
+              </a>
+            )}
             {/* 1. Agent Note (or Generate CTA) */}
             {detailedNote ? (
               <div className="border border-zinc-800/60 px-3 py-2.5 mb-3 bg-[var(--fintheon-bg)]">
