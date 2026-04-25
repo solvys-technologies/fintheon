@@ -79,6 +79,7 @@ export async function writeCollectedItems(
     headline: item.headline,
     body: item.body,
     url: item.url ?? null,
+    image_url: item.image_url ?? null,
     symbols: [] as string[],
     tags: item.url
       ? [`url:${item.url}`, `tier:${item.tier}`]

@@ -49,6 +49,7 @@ export async function collectFromExa(
       headline: r.title,
       body: r.text ?? "",
       url: r.url,
+      image_url: null,
       tier: opts.tier,
       published_at: r.publishedDate ?? new Date().toISOString(),
       fetched_at: new Date().toISOString(),

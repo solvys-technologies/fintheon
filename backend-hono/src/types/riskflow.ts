@@ -51,6 +51,8 @@ export interface FeedItem {
   body?: string;
   /** Source URL for linking back to original article/tweet */
   url?: string;
+  /** Best-effort hero image (RSS enclosure / og:image / twitter:image) for expanded cards. */
+  imageUrl?: string | null;
   symbols: string[];
   tags: string[];
   isBreaking: boolean;

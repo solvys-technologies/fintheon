@@ -278,6 +278,8 @@ export interface RssItem {
   link: string;
   description?: string;
   pubDate?: string;
+  /** First image found via <enclosure type="image/*">, <media:content>, <media:thumbnail>, or inline <img> in description. */
+  imageUrl?: string;
 }
 
 /**
@@ -329,12 +331,29 @@ export async function fetchRss(feedUrl: string): Promise<RssItem[]> {
         block.match(/<published[^>]*>([\s\S]*?)<\/published>/i)?.[1]?.trim() ||
         block.match(/<updated[^>]*>([\s\S]*?)<\/updated>/i)?.[1]?.trim();
 
+      // [claude-code 2026-04-25] S35: extract image — RSS enclosure / media:content /
+      // media:thumbnail / inline <img> in description, in priority order.
+      const imageUrl =
+        block.match(
+          /<enclosure[^>]+url=["']([^"']+)["'][^>]+type=["']image\//i,
+        )?.[1] ||
+        block.match(
+          /<media:content[^>]+url=["']([^"']+)["'][^>]*medium=["']image["']/i,
+        )?.[1] ||
+        block.match(
+          /<media:content[^>]+url=["']([^"']+\.(?:jpg|jpeg|png|webp|gif))["']/i,
+        )?.[1] ||
+        block.match(/<media:thumbnail[^>]+url=["']([^"']+)["']/i)?.[1] ||
+        block.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] ||
+        undefined;
+
       if (title && link) {
         items.push({
           title: htmlToText(title),
           link,
           description: description ? htmlToText(description) : undefined,
           pubDate,
+          imageUrl: imageUrl?.trim(),
         });
       }
     }

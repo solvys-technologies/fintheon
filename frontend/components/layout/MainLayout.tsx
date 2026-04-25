@@ -431,6 +431,23 @@ function MainLayoutInner() {
     [],
   );
 
+  // [claude-code 2026-04-25] Reset Strategium widget order + visibility to defaults.
+  // Wired to the t-dropdown reset button that fades in next to Pencil when edit mode is on.
+  const handleMissionWidgetResetLayout = useCallback(() => {
+    setMissionWidgetOrderState(DEFAULT_MISSION_WIDGET_ORDER);
+    setMissionWidgetOrder(DEFAULT_MISSION_WIDGET_ORDER);
+    const allOn: Record<MissionWidgetId, boolean> = {
+      er: true,
+      autopilot: true,
+      regime: true,
+      account: true,
+      weekly: true,
+      calendar: true,
+    };
+    setMissionWidgetVisibilityState(allOn);
+    setMissionWidgetVisibility(allOn);
+  }, []);
+
   const missionWidgetRegistry = useMemo(
     () => ({
       er: {
@@ -506,6 +523,7 @@ function MainLayoutInner() {
         missionWidgetVisibility={missionWidgetVisibility}
         onReorder={handleMissionWidgetReorder}
         onToggleVisibility={handleMissionWidgetToggleVisibility}
+        onResetLayout={handleMissionWidgetResetLayout}
         collapseFn={collapseFn}
         editMode={layoutEditMode}
         onToggleEditMode={() => setLayoutEditMode(!layoutEditMode)}
@@ -517,6 +535,7 @@ function MainLayoutInner() {
       missionWidgetVisibility,
       handleMissionWidgetReorder,
       handleMissionWidgetToggleVisibility,
+      handleMissionWidgetResetLayout,
       layoutEditMode,
       setLayoutEditMode,
     ],

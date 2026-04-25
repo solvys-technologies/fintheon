@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T17:30:00",
+    agent: "claude-code",
+    summary:
+      "Strategium reset-to-default button: new RotateCcw icon button next to the Pencil edit toggle in MissionControlContent header. Fades + scales in/out via t-dropdown (solvys-transitions) tied to editMode -- when edit mode is off the button is opacity:0 + pointer-events:none + tabIndex=-1 + aria-hidden so it's invisible AND non-interactive; when on it scales up to 1 with the dropdown ease. Click pops a window.confirm; on accept calls handleMissionWidgetResetLayout in MainLayout which resets MissionWidgetOrder to DEFAULT_MISSION_WIDGET_ORDER and visibility to all-true. Frontend tsc + vite build clean.",
+    files: [
+      "frontend/components/layout/MissionControlContent.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+    ],
+  },
+  {
     date: "2026-04-25T17:00:00",
     agent: "claude-code",
     summary:

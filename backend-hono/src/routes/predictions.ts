@@ -1,3 +1,6 @@
+// [claude-code 2026-04-25] S35: cutoff stretched 48h → 7d with exponential recency decay
+//   so the fuses don't collapse to baseline (3.0 / neutral / ±135pts) when the news-worker
+//   pipeline has a hiccup. Adds `staleness` to the response so the UI can flag old reads.
 // [claude-code 2026-04-15] S16-T2: Add priceProposedAt + fuseConfidence to polymarket-outlook response
 // [claude-code 2026-04-10] Serve AI-generated Aquarium outlook (Oracle/Nous) when fresh, fall back to heuristic
 // [claude-code 2026-03-28] S7: Forward-looking performance prediction endpoint
@@ -7,6 +10,9 @@ import { getSupabaseClient } from "../config/supabase.js";
 import { getAIAquariumOutlook } from "../services/riskflow/aquarium-scheduler.js";
 
 const app = new Hono();
+
+const OUTLOOK_LOOKBACK_HOURS = 24 * 7; // 7 days
+const RECENCY_HALF_LIFE_HOURS = 24; // weight halves every 24h
 
 const PREDICTION_INSTRUMENTS = [
   {
@@ -69,14 +75,17 @@ app.get("/outlook", async (c) => {
       });
     }
 
-    // Fetch recent scored items (last 48h)
-    const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    // [claude-code 2026-04-25] S35: 48h → 7d with exponential decay so a single
+    // stalled news-worker shift doesn't flatten every fuse to defaults.
+    const cutoff = new Date(
+      Date.now() - OUTLOOK_LOOKBACK_HOURS * 60 * 60 * 1000,
+    ).toISOString();
     const { data: scoredItems, error: scoredErr } = await sb
       .from("scored_riskflow_items")
       .select("headline, sentiment, iv_score, macro_level, published_at, tags")
       .gte("published_at", cutoff)
       .order("published_at", { ascending: false })
-      .limit(200);
+      .limit(400);
 
     if (scoredErr) {
       console.error(
@@ -134,19 +143,30 @@ app.get("/outlook", async (c) => {
           ).values(),
         ];
 
-        // Aggregate sentiment
+        // [claude-code 2026-04-25] S35: recency-weighted aggregation. Each item's
+        // weight = (iv_score/10) × decay(age_hours). Half-life RECENCY_HALF_LIFE_HOURS,
+        // so a 24h-old level-7 item still contributes ~0.35; a 7d-old item ~0.01.
+        const now = Date.now();
         let bullishWeight = 0;
         let bearishWeight = 0;
-        let totalIV = 0;
+        let totalIVWeighted = 0;
+        let totalDecay = 0;
 
         for (const item of allRelevant) {
-          const weight = (item.iv_score ?? 3) / 10; // Normalize 0-1
+          const ts = item.published_at
+            ? new Date(item.published_at).getTime()
+            : now;
+          const ageHours = Math.max(0, (now - ts) / (60 * 60 * 1000));
+          const decay = Math.pow(0.5, ageHours / RECENCY_HALF_LIFE_HOURS);
+          const ivNorm = (item.iv_score ?? 3) / 10;
+          const weight = ivNorm * decay;
           if (item.sentiment === "bullish") bullishWeight += weight;
           else if (item.sentiment === "bearish") bearishWeight += weight;
-          totalIV += item.iv_score ?? 3;
+          totalIVWeighted += (item.iv_score ?? 3) * decay;
+          totalDecay += decay;
         }
 
-        const avgIV = allRelevant.length > 0 ? totalIV / allRelevant.length : 3;
+        const avgIV = totalDecay > 0 ? totalIVWeighted / totalDecay : 3;
 
         // Determine lean — be humble
         const sentimentDelta = bullishWeight - bearishWeight;
