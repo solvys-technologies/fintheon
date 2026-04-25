@@ -87,6 +87,17 @@ export function RefinementEngine() {
   const [loading, setLoading] = useState(true);
   // [claude-code 2026-04-25] S38: Group Sensitivity collapsible + view-only gating tied to S37 lock.
   const [groupSensOpen, setGroupSensOpen] = useState(true);
+  // Drive t-panel-slide data-open via rAF on open transitions so the entry
+  // tween renders from the closed (translate-Y + blur + opacity:0) state.
+  const [groupSensRevealed, setGroupSensRevealed] = useState(true);
+  useEffect(() => {
+    if (!groupSensOpen) {
+      setGroupSensRevealed(false);
+      return;
+    }
+    const id = requestAnimationFrame(() => setGroupSensRevealed(true));
+    return () => cancelAnimationFrame(id);
+  }, [groupSensOpen]);
   const [editUnlocked, setEditUnlocked] = useState(() =>
     isRefinementEditUnlocked(),
   );
@@ -463,16 +474,21 @@ export function RefinementEngine() {
                       <ChevronRight size={14} color="var(--fintheon-muted)" />
                     )}
                   </button>
-                  {groupSensOpen &&
-                    GROUPS.map((g) => (
-                      <NotchedFuse
-                        key={g}
-                        group={g}
-                        value={pendingSensitivities[g]}
-                        onChange={onDialChange}
-                        disabled={!editUnlocked}
-                      />
-                    ))}
+                  <div
+                    className="t-panel-slide"
+                    data-open={groupSensRevealed ? "true" : "false"}
+                  >
+                    {groupSensOpen &&
+                      GROUPS.map((g) => (
+                        <NotchedFuse
+                          key={g}
+                          group={g}
+                          value={pendingSensitivities[g]}
+                          onChange={onDialChange}
+                          disabled={!editUnlocked}
+                        />
+                      ))}
+                  </div>
                 </div>
 
                 {/* PresetSelector relocated into AdvancedPane below — sits inside the locked region per S38. */}

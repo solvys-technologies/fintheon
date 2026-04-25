@@ -1,3 +1,5 @@
+// [claude-code 2026-04-25] Advanced reveal switched to t-panel-slide (solvys-transitions)
+//   so the pane tweens in with translate-Y + blur + fade instead of an instant mount.
 // [claude-code 2026-04-24] S37: (1) header row is right-justified so the Advanced trigger sits opposite the other section labels, mirroring a "glass of a data center" — always visible, read-only by default. (2) when locked, the pane's mutation surface sits under a click-to-unlock overlay that pops the shared developer-settings password modal. (3) unlocking persists across the session via dev-settings-auth; a lock button in the header locks back on demand.
 // [claude-code 2026-04-18] S24-T4: Advanced pane — collapsible wrapper for per-event / commentator / source tweaks
 import { useEffect, useState, type ReactNode } from "react";
@@ -20,6 +22,18 @@ export function AdvancedPane({
   const [open, setOpen] = useState(defaultOpen);
   const [unlocked, setUnlocked] = useState(() => isRefinementEditUnlocked());
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Drive the t-panel-slide data-open after first paint when opening so the
+  // entry tween renders from the closed (translate-Y + blur + opacity:0) state.
+  const [revealed, setRevealed] = useState(defaultOpen);
+  useEffect(() => {
+    if (!open) {
+      setRevealed(false);
+      return;
+    }
+    const id = requestAnimationFrame(() => setRevealed(true));
+    return () => cancelAnimationFrame(id);
+  }, [open]);
 
   // Re-sync unlocked state when the modal closes (it may have mutated localStorage).
   useEffect(() => {
@@ -145,6 +159,8 @@ export function AdvancedPane({
 
       {open && (
         <div
+          className="t-panel-slide"
+          data-open={revealed ? "true" : "false"}
           style={{
             position: "relative",
             display: "flex",

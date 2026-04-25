@@ -1,5 +1,8 @@
+// [claude-code 2026-04-25] Consensus + chamber-confidence numerals now use DigitGroup
+//   (solvys-transitions number pop-in) so the percentages cascade in on every verdict refresh.
 // [claude-code 2026-04-24] S35-T3: standalone Arbitrum verdict card — consensus, confidence, digest, dissent
 import { NothingFuse } from "../shared/NothingFuse";
+import { DigitGroup } from "../shared/DigitGroup";
 import { DissentBadge } from "./DissentBadge";
 import type { ArbitrumVerdict } from "./types";
 
@@ -31,15 +34,15 @@ export function VerdictCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-baseline gap-2">
-          <span
+          <DigitGroup
+            value={`${pct}`}
+            suffix="%"
             className="text-[var(--fintheon-accent)] leading-none"
             style={{
               fontFamily: "Doto, ui-monospace, monospace",
               fontSize: compact ? 28 : 40,
             }}
-          >
-            {pct}%
-          </span>
+          />
           <span className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/60">
             consensus
           </span>
@@ -52,12 +55,12 @@ export function VerdictCard({
           <span className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/50">
             chamber confidence
           </span>
-          <span
+          <DigitGroup
+            value={`${conf}`}
+            suffix="%"
             className="text-[var(--fintheon-text)]/80 text-xs"
             style={{ fontFamily: "Doto, ui-monospace, monospace" }}
-          >
-            {conf}%
-          </span>
+          />
         </div>
         <NothingFuse
           value={confidence}

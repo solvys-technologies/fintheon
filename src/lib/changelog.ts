@@ -9,6 +9,49 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T17:00:00",
+    agent: "claude-code",
+    summary:
+      "v5.27.0 — solvys-transitions roll-out + Strategium maximize-button removal. Added the new solvys-transitions skill (canonical solvys-skills repo + fintheon mirror) that bundles 9 paste-ready CSS transitions namespaced under --t-* / .t-* with prefers-reduced-motion guard, and applied them across the platform: PriorityFilterMenu + SourceFilterMenu (t-dropdown scale+fade), NotificationCenter (t-panel-slide reveal driven by rAF), IVStack Doto numerals (t-digit-group pop-in via shared DigitGroup helper), Arbitrum VerdictCard / ArbitrumPeek / ArbitrumChamber per-seat numerals (DigitGroup), Refinement Engine AdvancedPane and Group Sensitivity collapsibles (t-panel-slide), and every Settings tab (NotificationsTab, TradingTab, GeneralTab, ApiTab, IframesTab, HermesAdminTab, ThemeSettings, AgenticDesk, DangerTab, DeveloperTab) via a SettingsTabPanel wrapper that replaces animate-fade-in/out-tab. Removed the Maximize/Minimize RiskFlow overlay button that was sitting on top of the refresh button in the Strategium RiskFlow header (TP flagged across 6+ threads); also removed the orphaned 'Widgets · hidden' peek-header. Persisted strategiumPaneMode normalized to 'balanced' on mount so anyone with stale feedOnly/widgetsOnly state isn't stranded. Frontend tsc + vite build clean.",
+    files: [
+      ".claude/skills/solvys-transitions/SKILL.md",
+      ".claude/skills/solvys-transitions/reference/transitions.css",
+      ".claude/skills/solvys-transitions/reference/react-recipes.md",
+      "frontend/styles/transitions.css",
+      "frontend/index.css",
+      "frontend/components/shared/DigitGroup.tsx",
+      "frontend/components/shared/IVStack.tsx",
+      "frontend/components/shared/PriorityFilterMenu.tsx",
+      "frontend/components/feed/SourceFilterMenu.tsx",
+      "frontend/components/NotificationCenter.tsx",
+      "frontend/components/SettingsPanel.tsx",
+      "frontend/components/arbitrum/VerdictCard.tsx",
+      "frontend/components/arbitrum/ArbitrumPeek.tsx",
+      "frontend/components/arbitrum/ArbitrumChamber.tsx",
+      "frontend/components/refinement/AdvancedPane.tsx",
+      "frontend/components/refinement/RefinementEngine.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "package.json",
+      "scripts/fintheon-update.sh",
+    ],
+  },
+  {
+    date: "2026-04-25T16:00:00",
+    agent: "claude-code",
+    summary:
+      "Extended solvys-transitions to Arbitrum, Refinement Engine, and the entire Settings panel. Extracted DigitGroup into a shared frontend/components/shared/DigitGroup.tsx (suffix slot for non-animating trailing labels like '%') so it can be reused across surfaces -- IVStack now consumes the shared one. Arbitrum: VerdictCard consensus + chamber-confidence numerals, ArbitrumPeek consensus + conf, and ArbitrumChamber per-seat probability + confidence all cascade in via t-digit-group on every verdict refresh. Refinement Engine: AdvancedPane reveal converted to t-panel-slide with rAF-driven data-open so the pane translates + blurs + fades in instead of mounting instantly; the Group Sensitivity collapsible got the same treatment. SettingsPanel: replaced animate-fade-in/out-tab with a SettingsTabPanel wrapper that drives t-panel-slide per-tab via rAF so every tab swap (general, hermes-admin, appearance, desk, notifications, trading, api, iframes, developer, danger) shares the same translate-Y + blur entry. Frontend tsc clean, vite build clean.",
+    files: [
+      "frontend/components/shared/DigitGroup.tsx",
+      "frontend/components/shared/IVStack.tsx",
+      "frontend/components/arbitrum/VerdictCard.tsx",
+      "frontend/components/arbitrum/ArbitrumPeek.tsx",
+      "frontend/components/arbitrum/ArbitrumChamber.tsx",
+      "frontend/components/refinement/AdvancedPane.tsx",
+      "frontend/components/refinement/RefinementEngine.tsx",
+      "frontend/components/SettingsPanel.tsx",
+    ],
+  },
+  {
     date: "2026-04-25T15:30:00",
     agent: "claude-code",
     summary:
