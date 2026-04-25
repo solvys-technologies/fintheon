@@ -18,6 +18,7 @@ Fresh worktree off the latest prod tag at `~/Desktop/Codebases/fintheon-s40-ttp-
 - [ ] **Pillar 6**: Time To Print widget — replaces PsychAssist in Strategium slot at T-5min, fades back at T+30s; layout `[🇺🇸 US] CPI (Core, MoM) | Forecast: 0.3% | 04:32` → on print `→ Actual: 0.4% [BEAT]`; pulse on countdown digits at 00:00 until actual or 60s timeout; multi-event collision shows highest-rank only with `+N more` chip → `t-dropdown` (max 4 stacked); PsychAssist auto-floats when `psychAssistAutoStart=true`; US-only commentator filter via institution allowlist + `country` column added to commentators (forward-prep); Refinement Engine country toggle scaffolded with US-enabled-only state
 - [ ] **Pillar 7**: Sector-of-Risk persona overlays + Megacap analyst — `risk_sectors.ts` config (Singularity / Geopolitical / Macro / Earnings / Liquidity); persona metadata `primary_sector` on Oracle/Feucht/Consul/Herald; Agentic Forum dispatch by sector match; Consul-as-megacap-analyst scoped to hardcoded 12-ticker NDX∩SPX>$300B watchlist (AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, AVGO, COST, NFLX, ADBE, ORCL — refresh quarterly); fires on megacap earnings AND on deals where megacap ticker is public counterparty
 - [ ] **Pillar 8**: Megacap earnings ingestion — new `earnings_events` table; FMP MCP integration for earnings dates + post-print beat/miss; weekly cron refresh; feeds Time-To-Print eligibility list
+- [ ] **Pillar 9**: Consul Browser tool — Browserbase liveURL session that snaps into the existing **Zen-mode split-pane** (TradingBrowser's `splitViewEnabled` 2-col grid, generalized into a reusable `DualPaneShell`); a second instance of the same shell mounts in the **Consilium chat surface** so a 50% side-pane appears beside the chat input while the user (or Harper) is browsing; never replaces the user's primary view; registered as a Strands SDK tool in `AUTO_APPROVED_TOOLS` so Harper can invoke it autonomously mid-turn without an approval gate; surfaced as a 32×32 icon directly in the chat input bar's `toolsSlot` row (NOT inside `ToolsDropdown`); pane entrance/exit uses transitions.dev slide-out + retracting-slide effects (extension to `frontend/styles/transitions.css` as `t-pane-slide-in` / `t-pane-retract`)
 
 ## Scope — Excluded (OUT OF BOUNDS)
 
@@ -503,6 +504,192 @@ CREATE INDEX earnings_events_lookahead ON earnings_events(report_date, report_ti
 - Weekly cron Sunday 22:00 ET refreshes next 90 days
 
 **Beat/miss post-print**: separate FMP endpoint `/v3/historical/earning_calendar/<symbol>?limit=1` polled at T+5min after `report_time` to retrieve actual EPS; computes `beat_miss` and `surprise_percent`; updates row + emits SSE.
+
+### Pillar 9 — Consul Browser tool (Browserbase liveURL embed)
+
+**Backend setup:**
+
+- New env: `BROWSERBASE_API_KEY`, `BROWSERBASE_PROJECT_ID` (Fly secrets + local launchd plist)
+- New service `backend-hono/src/services/browserbase/`:
+  - `client.ts` — `@browserbasehq/sdk` wrapper. Exports `createSession()`, `endSession(id)`, `getLiveURL(id)`
+  - `session-manager.ts` — Map of `request_id → { sessionId, liveURL, createdAt }`. TTL 15 min; idle reaper every 60s. Hard cap 1 active session per user (Browserbase charges per session-minute; don't stack).
+- New routes in `backend-hono/src/routes/browserbase/handlers.ts`:
+  - `POST /api/browserbase/sessions` → `{ sessionId, liveURL }` (creates + returns embed URL)
+  - `POST /api/browserbase/sessions/:id/navigate` → `{ url }` (Harper or user navigates the session)
+  - `POST /api/browserbase/sessions/:id/extract` → returns text/HTML at current page (so Harper can read what she's looking at without OCR)
+  - `DELETE /api/browserbase/sessions/:id` → ends session
+  - `GET /api/browserbase/sessions/active` → returns current session for the requesting user, if any (so frontend can resume on remount)
+
+**Strands tool registration** in `backend-hono/src/services/strands/harper-tools.ts`:
+
+```typescript
+tool({
+  name: "consul_browser",
+  description:
+    "Open or use a live web browser session in a side panel. Use when you need to look up real-time information that's not in the news feed (e.g., a company's investor relations page, a regulatory filing, a current news article behind a paywall, a chart you want to examine). The session opens visually in a side-by-side pane next to whatever the user is currently viewing. You can navigate it autonomously without asking. Actions: 'open' (start a session and navigate to a URL), 'navigate' (move existing session to a new URL), 'extract' (read current page text), 'close' (end session).",
+  inputSchema: z.object({
+    action: z.enum(["open", "navigate", "extract", "close"]),
+    url: z.string().url().optional(),
+  }),
+  callback: async (input) => {
+    /* dispatches to /api/browserbase/sessions */
+  },
+});
+```
+
+- Add `"consul_browser"` to `AUTO_APPROVED_TOOLS` so Harper invokes it without an approval gate (per TP: tool should "be invoked by the agent seamlessly, doesn't need to be attached to a user request")
+- Cost guardrail: max 4 sessions/day per user via the existing audit table pattern. Hard error if exceeded.
+
+**Frontend — chat input icon (not dropdown):**
+
+- New component `frontend/components/composer/ConsulBrowserButton.tsx` — 32×32 icon button matching the existing pattern in [chatgpt-prompt-input.tsx:551-580](frontend/components/ui/chatgpt-prompt-input.tsx#L551-L580). Lucide icon `Globe` or `MonitorPlay`; `text-zinc-500` base, `bg-accent/10` hover.
+- Insert into the toolbar row directly (NOT inside `ToolsDropdown`). Mount it next to the existing tools.
+- Click → opens the side-pane with no URL (Browserbase blank session). Subsequent navigation comes from the user typing in the embedded address bar OR Harper calling `consul_browser{action:"navigate"}`.
+
+**Frontend — side-by-side pane:**
+
+- New layout primitive `frontend/components/layout/SideBySideShell.tsx` — flex-row container, equal-width by default, drag-handle in the middle for resize. Each child gets `flex-1 min-w-0` so iframes don't blow out.
+- Modify the Forum surface — wherever `FluxerEmbed.tsx` is mounted today, wrap in `SideBySideShell` with conditional second pane:
+  ```tsx
+  <SideBySideShell>
+    <FluxerEmbed /> {/* user's existing iframe — never replaced */}
+    {consulSession && <ConsulBrowserPane sessionId={consulSession.id} />}
+  </SideBySideShell>
+  ```
+- New component `ConsulBrowserPane.tsx` — wraps the Browserbase `liveURL` in an `<iframe src={liveURL}>` (or `<webview>` in Electron — same dual-mode pattern as `FluxerEmbed.tsx`). Header bar with: current URL display, close (X) button, "Harper is driving" indicator (pulsing dot when an autonomous tool call is mid-flight).
+
+**Autonomous-open UX**:
+
+- When Harper fires `consul_browser{action:"open"}` mid-conversation, the side pane animates in via `t-panel-slide`. A tiny chip in the chat shows `Consul Browser: opened https://...` so the user knows what's happening. The Fluxer iframe shrinks to its half — does NOT unmount.
+- When Harper closes the session, the pane fades out via reverse `t-panel-slide`. Fluxer expands back to full width.
+
+**State plumbing**:
+
+- New context `frontend/contexts/ConsulBrowserContext.tsx` exposing `{ session, openSession, navigateSession, closeSession }`.
+- SSE channel `consul-browser` on the existing `/api/riskflow/stream` (one channel, multiple event types) broadcasting `{action: "opened"|"navigated"|"closed", sessionId, url}` so the frontend reflects backend-initiated changes (Harper actions) without polling.
+
+**Persistence**: don't persist sessions across reload. New tab = fresh session. Sessions auto-end on backend after 15 min idle to control Browserbase cost.
+
+**Security**:
+
+- Browserbase sessions run with a fresh stealth profile. No credential injection from Fintheon — Harper can't log into a user's bank with their cookies.
+- The iframe is sandboxed (`sandbox="allow-scripts allow-same-origin allow-forms"`) so the embedded page can't escape into the parent.
+- Audit log: every `consul_browser` invocation writes to `browser_harness_audit` (existing table) with `tool="consul_browser"`, `action`, `url`.
+
+### Pillar 9 — Consul Browser tool (Browserbase + Zen split + Consilium chat-side pane)
+
+**Reuses the existing Zen-mode split-pane.** The de-facto "Zen mode" today is `TradingBrowser.tsx`'s `splitViewEnabled` flag with `grid grid-cols-2 gap-0` rendering two `EmbeddedBrowserFrame` children (`PLATFORM_URLS` resolution, primary/secondary). It's hardcoded to trading platforms. Pillar 9 generalizes it into `DualPaneShell` that any pane content can snap into — TradingBrowser becomes the first consumer (refactor in place, no behavior change), the Consul Browser becomes the second, and the Consilium chat surface becomes the third.
+
+**Backend setup:**
+- New env: `BROWSERBASE_API_KEY`, `BROWSERBASE_PROJECT_ID` (Fly secrets + local launchd plist; treat per "no key caution lectures" memory — wire silently)
+- New service `backend-hono/src/services/browserbase/`:
+  - `client.ts` — `@browserbasehq/sdk` wrapper. Exports `createSession()`, `endSession(id)`, `getLiveURL(id)`
+  - `session-manager.ts` — Map of `userId → { sessionId, liveURL, createdAt, lastActivityAt }`. TTL 15 min idle; reaper every 60s. Hard cap **1 active session per user** (Browserbase charges per session-minute).
+- New routes in `backend-hono/src/routes/browserbase/handlers.ts`:
+  - `POST /api/browserbase/sessions` → `{ sessionId, liveURL }` (creates + returns embed URL; reuses existing session if active)
+  - `POST /api/browserbase/sessions/:id/navigate` → `{ url }` (Harper or user navigates)
+  - `POST /api/browserbase/sessions/:id/extract` → returns text/HTML at current page (so Harper can read what she's looking at without OCR)
+  - `DELETE /api/browserbase/sessions/:id` → ends session
+  - `GET /api/browserbase/sessions/active` → returns current session for the requesting user (resume on remount)
+
+**Strands tool registration** in `backend-hono/src/services/strands/harper-tools.ts`:
+```typescript
+tool({
+  name: "consul_browser",
+  description: "Open or use a live web browser session in a side-by-side pane. Use when you need to look up real-time information that's not in the news feed (investor relations page, regulatory filing, current article behind a paywall, a chart you want to examine). The session opens visually next to whatever the user is viewing — never replacing it. Navigate it autonomously without asking. Actions: 'open' (start session and navigate to URL), 'navigate' (move existing session to new URL), 'extract' (read current page text), 'close' (end session).",
+  inputSchema: z.object({
+    action: z.enum(["open", "navigate", "extract", "close"]),
+    url: z.string().url().optional(),
+  }),
+  callback: async (input) => { /* dispatches to /api/browserbase/sessions */ },
+})
+```
+- Add `"consul_browser"` to `AUTO_APPROVED_TOOLS` so Harper invokes it without an approval gate (per TP: "doesn't need to actually be attached to a user request for the agent to pull it up")
+- Cost guardrail: max 4 sessions/day per user via `browser_harness_audit` table (existing). Hard error if exceeded.
+
+**Frontend — generalize the Zen split-pane:**
+- Refactor `frontend/components/layout/TradingBrowser.tsx`:
+  - Extract the `grid grid-cols-2 gap-0` 2-col layout into a new primitive `frontend/components/layout/DualPaneShell.tsx`:
+    ```tsx
+    type DualPaneShellProps = {
+      primary: ReactNode;
+      secondary: ReactNode | null;   // null = single-pane mode
+      onClose?: () => void;          // close button on secondary
+      orientation?: "horizontal" | "vertical"; // default horizontal (cols)
+      transitionMode?: "slide-in" | "retract"; // drives t-pane-* classes
+    };
+    ```
+  - Children get `flex-1 min-w-0` so iframes/webviews don't blow out their container.
+  - Drag-handle in the middle for resize (default 50/50, persisted to localStorage `fintheon:dualpane-ratio:v1`). Optional — if it adds complexity, ship 50/50 fixed for v1 and follow up.
+  - Rewire TradingBrowser's existing `splitViewEnabled` rendering to use `DualPaneShell`. Both panes still pass `EmbeddedBrowserFrame`. Behavior unchanged. `FooterToolbar` `SplitSquareVertical` button still toggles `splitBrowserView`.
+
+- New component `frontend/components/consul/ConsulBrowserPane.tsx`:
+  - Wraps the Browserbase `liveURL` in `<iframe src={liveURL}>` (web) or `<webview src={liveURL}>` (Electron) — same dual-mode pattern as `FluxerEmbed.tsx`
+  - Header bar: current URL display, close (X) button, "Harper is driving" pulsing-dot indicator (active when `consul-browser` SSE event is mid-flight)
+  - Sandbox: `sandbox="allow-scripts allow-same-origin allow-forms"` so embedded page can't escape into parent
+
+**Frontend — chat input icon (NOT dropdown):**
+- New component `frontend/components/composer/ConsulBrowserButton.tsx` — 32×32 icon button matching the existing toolbar pattern in [chatgpt-prompt-input.tsx:551-580](frontend/components/ui/chatgpt-prompt-input.tsx#L551-L580). Lucide `Globe` icon; `text-zinc-500` base, `hover:bg-accent/10`.
+- Insert directly into the `toolsSlot` row in `FintheonComposer.tsx`, NOT inside `ToolsDropdown`. Mount it next to existing tool icons.
+- Click → opens an empty Browserbase session in the chat-side pane. User can type a URL into the embedded address bar, OR Harper navigates via `consul_browser{action:"navigate", url:"..."}`.
+
+**Frontend — Consilium chat-side pane (the new TP requirement):**
+- The chat surface in Consilium currently lives at `frontend/components/consilium/` (chat interface). Wrap its outer container in a `DualPaneShell` whose `secondary` slot is conditionally a `ConsulBrowserPane` when an active session exists for the user.
+- Layout: chat (left, 50%) + Consul Browser (right, 50%) when session active. When session closes, secondary collapses (retract animation), chat reflows to full width.
+- Three Consul Browser surfaces total — but ONE backend session per user. The pane is a presentational mirror; opening it from Trading view OR Consilium chat OR any other surface points at the same `liveURL`. If both surfaces are visible (Consilium and TradingBrowser side-by-side via different layout paths), both render the same iframe — Browserbase's liveURL handles concurrent viewers natively.
+- Snap-to behavior: when Harper invokes `consul_browser{action:"open"}` from a chat turn, the Consilium chat-side pane snaps in via `t-pane-slide-in`. When user is in TradingBrowser view, the Zen split-pane on that surface also reflects the active session if `splitViewEnabled=true`.
+
+**Transitions (transitions.dev slide-out / retract):**
+- Add to `frontend/styles/transitions.css` (per "solvys-transitions" skill memory — extension, not new file):
+  ```css
+  .t-pane-slide-in[data-open="true"] {
+    animation: t-pane-slide-in var(--t-panel-open-dur, 400ms) cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .t-pane-retract[data-open="false"] {
+    animation: t-pane-retract var(--t-panel-close-dur, 350ms) cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  @keyframes t-pane-slide-in {
+    from { transform: translateX(100%); opacity: 0; filter: blur(2px); }
+    to   { transform: translateX(0);    opacity: 1; filter: blur(0); }
+  }
+  @keyframes t-pane-retract {
+    from { transform: translateX(0);    opacity: 1; filter: blur(0); }
+    to   { transform: translateX(100%); opacity: 0; filter: blur(2px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .t-pane-slide-in, .t-pane-retract { animation: none !important; }
+  }
+  ```
+- Per "t-panel-slide needs rAF on first paint" memory: drive `data-open` via `requestAnimationFrame` so the entry tween runs from the closed resting state. Do NOT mount with `data-open="true"` directly.
+
+**Autonomous-open UX**:
+- When Harper fires `consul_browser{action:"open"}` mid-conversation, the Consilium chat-side pane animates in via `t-pane-slide-in`. A small chip in the chat thread shows `Consul Browser → opened https://...` so the user knows what's happening. Chat width compresses to 50%; never unmounts.
+- When Harper closes the session, pane retracts via `t-pane-retract`. Chat expands back to full width.
+
+**State plumbing**:
+- New context `frontend/contexts/ConsulBrowserContext.tsx` exposing `{ session, openSession, navigateSession, closeSession }`. Single source of truth — chat input button, Trading footer, and Harper's tool calls all read/write here.
+- New SSE event type `consul-browser` on the existing `/api/riskflow/stream` SSE channel broadcasting `{ action: "opened" | "navigated" | "closed", sessionId, url }` so the frontend reflects backend-initiated changes (Harper actions) without polling.
+
+**Persistence**: don't persist sessions across page reload. New tab = fresh session. Sessions auto-end on backend after 15 min idle. Active session ID is still queryable on remount via `GET /api/browserbase/sessions/active` so brief-tab-switches don't lose state.
+
+**Security**:
+- Browserbase sessions run with a fresh stealth profile. No credential injection from Fintheon — Harper cannot log into a user's bank with their cookies.
+- Iframe sandboxed (`sandbox="allow-scripts allow-same-origin allow-forms"`).
+- Audit log: every `consul_browser` invocation writes to `browser_harness_audit` (existing table) with `tool="consul_browser"`, `action`, `url`, `session_id`.
+
+**Files touched (Pillar 9 summary):**
+- NEW: `backend-hono/src/services/browserbase/client.ts`, `session-manager.ts`
+- NEW: `backend-hono/src/routes/browserbase/handlers.ts`, route registration
+- EDIT: `backend-hono/src/services/strands/harper-tools.ts` (add `consul_browser` tool + AUTO_APPROVED entry)
+- NEW: `frontend/components/layout/DualPaneShell.tsx`
+- EDIT: `frontend/components/layout/TradingBrowser.tsx` (refactor 2-col grid into DualPaneShell consumer; behavior unchanged)
+- NEW: `frontend/components/consul/ConsulBrowserPane.tsx`
+- NEW: `frontend/components/composer/ConsulBrowserButton.tsx`
+- EDIT: `frontend/components/composer/FintheonComposer.tsx` (mount ConsulBrowserButton in toolsSlot row, not dropdown)
+- EDIT: `frontend/components/consilium/<chat-surface>.tsx` (wrap chat in DualPaneShell with conditional ConsulBrowserPane secondary)
+- NEW: `frontend/contexts/ConsulBrowserContext.tsx`
+- EDIT: `frontend/styles/transitions.css` (add `.t-pane-slide-in` and `.t-pane-retract`)
+- EDIT: env-validation, Fly secrets, launchd plist (Browserbase keys)
 
 ### Aesthetic Rules (all pillars)
 
