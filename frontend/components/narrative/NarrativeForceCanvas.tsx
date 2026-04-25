@@ -1,3 +1,7 @@
+// [claude-code 2026-04-24] S36 ClusterBeam — wrapped canvas with ClusterBeamProvider, mounted
+// ClusterBeamPanel + ShockLayer, replaced local expandedGroups state with the panel context,
+// added narrative:echo listener for cross-surface hover pulse, wired shock-on-arrival for new
+// catalysts landing in the currently-open cluster.
 // [claude-code 2026-04-04] Loading sequence, Save Layout button, 3-tier zoom (macro/narratives/themes), skip force sim on saved positions
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -24,6 +28,10 @@ import {
   type SimulationNodeDatum,
 } from "d3-force";
 import { useNarrative } from "../../contexts/NarrativeContext";
+import {
+  ClusterBeamProvider,
+  useActiveCluster,
+} from "../../contexts/ClusterBeamContext";
 import type { CatalystCard } from "../../lib/narrative-types";
 import {
   CROSS_NARRATIVE_ROPE,
@@ -44,6 +52,8 @@ import type { CanvasTool } from "./NarrativeFloatingToolbar";
 import { AggregateCardNode } from "./AggregateCardNode";
 import { NarrativeHubNode } from "./NarrativeHubNode";
 import { TerritoryNode } from "./TerritoryNode";
+import { ClusterBeamPanel } from "./ClusterBeamPanel";
+import { ShockLayer } from "./ShockLayer";
 
 // ── Persistent node positions (localStorage) ──────────────────
 const POSITIONS_KEY = "fintheon-narrative-positions";
@@ -308,8 +318,6 @@ function buildThemeView(
   positions: Map<string, { x: number; y: number }>,
   catalysts: CatalystCard[],
   cardsByThread: Map<string, CatalystCard[]>,
-  expandedGroups: Set<string>,
-  onToggleGroup: (id: string) => void,
 ): { nodes: Node[]; edges: Edge[] } {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
@@ -397,8 +405,8 @@ function buildThemeView(
           label,
           cards: chunk,
           narrativeColor: thread.color,
-          expanded: expandedGroups.has(groupId),
-          onToggle: onToggleGroup,
+          narrativeSlug: thread.slug,
+          narrativeTitle: thread.title,
           groupId,
           ...(isSplit ? { siblingIndex: page, siblingCount: pageCount } : {}),
         },
@@ -533,7 +541,6 @@ function NarrativeFlowCanvas({
   const [forcedView, setForcedView] = useState<SemanticNarrativeView | null>(
     null,
   );
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [loadingPhase, setLoadingPhase] = useState<
     "loading" | "settling" | "ready"
   >(hasSavedPositions() ? "ready" : "loading");
@@ -644,15 +651,6 @@ function NarrativeFlowCanvas({
     return result;
   }, [filteredCatalysts]);
 
-  const toggleExpandedGroup = useCallback((groupId: string) => {
-    setExpandedGroups((previous) => {
-      const next = new Set(previous);
-      if (next.has(groupId)) next.delete(groupId);
-      else next.add(groupId);
-      return next;
-    });
-  }, []);
-
   const applyPersistedPositions = useCallback(
     (nextNodes: Node[]): Node[] =>
       nextNodes.map((node) => {
@@ -678,25 +676,15 @@ function NarrativeFlowCanvas({
         apply(buildNarrativeView(filteredCatalysts, cardsByThread));
         return;
       }
-      apply(
-        buildThemeView(
-          positions,
-          filteredCatalysts,
-          cardsByThread,
-          expandedGroups,
-          toggleExpandedGroup,
-        ),
-      );
+      apply(buildThemeView(positions, filteredCatalysts, cardsByThread));
     },
     [
       applyPersistedPositions,
       cardsByThread,
-      expandedGroups,
       filteredCatalysts,
       positions,
       setEdges,
       setNodes,
-      toggleExpandedGroup,
     ],
   );
 
@@ -727,6 +715,52 @@ function NarrativeFlowCanvas({
       );
     });
   }, [nodes.length, reactFlow]);
+
+  // [S36] Echo + shock-on-arrival. Hover a headline in ClusterBeamPanel → pulse the active
+  // cluster node. New card landed in the currently-open cluster → reverse shock hub → cluster.
+  const activeCluster = useActiveCluster();
+  useEffect(() => {
+    const onEcho = () => {
+      if (!activeCluster) return;
+      document
+        .querySelectorAll<HTMLElement>(".cluster-echo-pulse")
+        .forEach((el) => el.classList.remove("cluster-echo-pulse"));
+      const target = document.querySelector<HTMLElement>(
+        `.react-flow__node[data-id="${activeCluster.clusterNodeId.replace(/([^\w-])/g, "\\$1")}"]`,
+      );
+      if (target) {
+        // Force a reflow so re-adding the same class restarts the animation
+        void target.offsetWidth;
+        target.classList.add("cluster-echo-pulse");
+      }
+    };
+    window.addEventListener("narrative:echo", onEcho as EventListener);
+    return () =>
+      window.removeEventListener("narrative:echo", onEcho as EventListener);
+  }, [activeCluster]);
+
+  // Shock-on-arrival: when the narrative store grows and the new card belongs to the
+  // active cluster, fire a reverse shock (hub → cluster) so the user sees the update land.
+  const prevCatalystCountRef = useRef<number>(state.catalysts.length);
+  useEffect(() => {
+    const prev = prevCatalystCountRef.current;
+    const next = state.catalysts.length;
+    prevCatalystCountRef.current = next;
+    if (next <= prev) return;
+    if (!activeCluster) return;
+    const newCardIds = new Set(state.catalysts.slice(prev).map((c) => c.id));
+    const landed = activeCluster.cards.some((c) => newCardIds.has(c.id));
+    if (!landed) return;
+    window.dispatchEvent(
+      new CustomEvent("narrative:shock", {
+        detail: {
+          fromNodeId: activeCluster.clusterNodeId,
+          toSlug: activeCluster.narrativeSlug,
+          reverse: true,
+        },
+      }),
+    );
+  }, [state.catalysts, activeCluster]);
 
   const handleViewportMove = useCallback(
     (_event: unknown, viewport: { zoom: number }) => {
@@ -780,7 +814,6 @@ function NarrativeFlowCanvas({
   }, [nodes]);
 
   const handleResetLayout = useCallback(() => {
-    setExpandedGroups(new Set());
     persistedPositionsRef.current.clear();
     clearSavedPositions();
 
@@ -1086,6 +1119,9 @@ function NarrativeFlowCanvas({
           </div>
         </Panel>
       </ReactFlow>
+      {/* [S36] ClusterBeam panel + shock layer — siblings of ReactFlow, positioned absolutely */}
+      <ClusterBeamPanel />
+      <ShockLayer />
     </div>
   );
 }
@@ -1093,7 +1129,9 @@ function NarrativeFlowCanvas({
 export default function NarrativeForceCanvas(props: NarrativeForceCanvasProps) {
   return (
     <ReactFlowProvider>
-      <NarrativeFlowCanvas {...props} />
+      <ClusterBeamProvider>
+        <NarrativeFlowCanvas {...props} />
+      </ClusterBeamProvider>
     </ReactFlowProvider>
   );
 }

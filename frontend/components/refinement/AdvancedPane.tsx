@@ -1,6 +1,12 @@
+// [claude-code 2026-04-24] S37: (1) header row is right-justified so the Advanced trigger sits opposite the other section labels, mirroring a "glass of a data center" — always visible, read-only by default. (2) when locked, the pane's mutation surface sits under a click-to-unlock overlay that pops the shared developer-settings password modal. (3) unlocking persists across the session via dev-settings-auth; a lock button in the header locks back on demand.
 // [claude-code 2026-04-18] S24-T4: Advanced pane — collapsible wrapper for per-event / commentator / source tweaks
-import { useState, type ReactNode } from "react";
-import { ChevronDown, SlidersHorizontal } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { ChevronDown, Lock, LockOpen, SlidersHorizontal } from "lucide-react";
+import {
+  isRefinementEditUnlocked,
+  lockRefinementEdit,
+} from "../../lib/dev-settings-auth";
+import { RefinementEditLockModal } from "./RefinementEditLockModal";
 
 export function AdvancedPane({
   children,
@@ -12,6 +18,18 @@ export function AdvancedPane({
   count?: number;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const [unlocked, setUnlocked] = useState(() => isRefinementEditUnlocked());
+  const [modalOpen, setModalOpen] = useState(false);
+
+  // Re-sync unlocked state when the modal closes (it may have mutated localStorage).
+  useEffect(() => {
+    if (!modalOpen) setUnlocked(isRefinementEditUnlocked());
+  }, [modalOpen]);
+
+  const handleLock = () => {
+    lockRefinementEdit();
+    setUnlocked(false);
+  };
 
   return (
     <div
@@ -20,27 +38,81 @@ export function AdvancedPane({
         marginTop: 8,
       }}
     >
-      <button
-        onClick={() => setOpen((v) => !v)}
+      {/* [S37] Header row is right-justified — label/trigger anchor to the right edge. */}
+      <div
         style={{
-          width: "100%",
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
-          padding: "10px 4px",
-          background: "transparent",
-          border: "none",
-          cursor: "pointer",
-          color: "var(--fintheon-text)",
+          justifyContent: "flex-end",
+          gap: 10,
+          padding: "12px 4px",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span
+          style={{
+            fontFamily: "var(--font-data)",
+            fontSize: 10,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "var(--fintheon-muted)",
+          }}
+        >
+          {unlocked ? "Editing unlocked" : "View only"}
+        </span>
+        <button
+          type="button"
+          onClick={() => (unlocked ? handleLock() : setModalOpen(true))}
+          title={unlocked ? "Lock editing" : "Unlock editing"}
+          aria-label={unlocked ? "Lock editing" : "Unlock editing"}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            padding: "4px 8px",
+            background: "transparent",
+            border: `1px solid ${
+              unlocked
+                ? "color-mix(in srgb, var(--fintheon-accent) 55%, transparent)"
+                : "color-mix(in srgb, var(--fintheon-muted) 35%, transparent)"
+            }`,
+            color: unlocked
+              ? "var(--fintheon-accent)"
+              : "var(--fintheon-muted)",
+            fontSize: 10,
+            fontFamily: "var(--font-mono)",
+            letterSpacing: "0.08em",
+            cursor: "pointer",
+            textTransform: "uppercase",
+          }}
+        >
+          {unlocked ? (
+            <LockOpen size={11} strokeWidth={2.2} />
+          ) : (
+            <Lock size={11} strokeWidth={2.2} />
+          )}
+          {unlocked ? "Unlocked" : "Locked"}
+        </button>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "6px 10px",
+            background: "transparent",
+            border:
+              "1px solid color-mix(in srgb, var(--fintheon-accent) 30%, transparent)",
+            cursor: "pointer",
+            color: "var(--fintheon-text)",
+          }}
+        >
           <SlidersHorizontal size={12} color="var(--fintheon-accent)" />
           <span
             style={{
-              fontFamily: "var(--font-data)",
-              fontSize: 11,
-              letterSpacing: "0.1em",
+              fontFamily: "var(--font-heading)",
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: "0.12em",
               textTransform: "uppercase",
               color: "var(--fintheon-text)",
             }}
@@ -50,8 +122,8 @@ export function AdvancedPane({
           {typeof count === "number" && (
             <span
               style={{
-                fontFamily: "var(--font-data)",
-                fontSize: 9,
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
                 letterSpacing: "0.06em",
                 color: "var(--fintheon-muted)",
               }}
@@ -59,19 +131,22 @@ export function AdvancedPane({
               {count} knob{count === 1 ? "" : "s"}
             </span>
           )}
-        </div>
-        <ChevronDown
-          size={12}
-          style={{
-            transform: open ? "rotate(180deg)" : "none",
-            transition: "transform 140ms ease",
-            opacity: 0.6,
-          }}
-        />
-      </button>
+          <ChevronDown
+            size={12}
+            style={{
+              transform: open ? "rotate(180deg)" : "none",
+              transition: "transform 140ms ease",
+              opacity: 0.6,
+              marginLeft: 2,
+            }}
+          />
+        </button>
+      </div>
+
       {open && (
         <div
           style={{
+            position: "relative",
             display: "flex",
             flexDirection: "column",
             gap: 18,
@@ -80,8 +155,35 @@ export function AdvancedPane({
           }}
         >
           {children}
+          {/* Glass-of-a-data-center overlay: content is always visible, but all
+              mutation clicks land on this transparent surface when locked, which
+              pops the password modal instead of the underlying control. */}
+          {!unlocked && (
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              aria-label="Unlock editing to interact with Advanced controls"
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                zIndex: 5,
+              }}
+            />
+          )}
         </div>
       )}
+
+      <RefinementEditLockModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onUnlocked={() => {
+          setUnlocked(true);
+          setModalOpen(false);
+        }}
+      />
     </div>
   );
 }

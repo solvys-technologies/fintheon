@@ -125,6 +125,8 @@ export function registerRoutes(app: Hono): void {
   // Market data — Yahoo Finance quotes/VIX + Unusual Whales GEX/walls/flow (public)
   app.route("/api/market-data", createMarketDataRoutes());
   // Narrative scoring — LLM-scored catalyst candidates
+  // [S36] cluster-summary is auth-gated; rest of the narrative router stays public-read.
+  app.use("/api/narrative/cluster-summary", authMiddleware, requireAuth);
   app.route("/api/narrative", createNarrativeRoutes());
   // Blindspots — public, agent-controllable via ER monitoring
   app.route("/api/blindspots", createBlindspotsRoutes());

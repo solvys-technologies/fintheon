@@ -1,3 +1,4 @@
+// [claude-code 2026-04-24] S37: (1) text typography bumped, (2) S24-T3 placeholder retired — fuses always render with an inline degraded-mode banner on fetch fail, (3) Advanced pane gets a right-justified lock gate via the shared dev-settings password ("glass of a data center" — always readable, mutations gated), (4) regime approval queue clears+fades when the most-recent proposal is approved.
 // [claude-code 2026-04-24] S34-T2: Layout flip — main pane (75%) now carries regime/fuses/presets/advanced; feed shrinks to a 25% right panel (min 280, max 420). GroupSensitivityDial swapped for NotchedFuse (same -1..+1 contract). Nothing-design pass: flat surfaces, accent borders, dotted dividers, Doto numerals. No glass.
 // [claude-code 2026-04-19] S28: RoutinesConsole moved out of Scoring sidebar into the Monitor sub-tab. Scoring sidebar keeps Regime / Sensitivity / Presets / Advanced.
 // [claude-code 2026-04-20] S27 final-sanitation: thread auth token into V4 preset fetches + wrap loadV4State in try/catch so a rejected fetch never deadlocks the loader. Prior release stuck forever on "Loading Refinement Engine...".
@@ -343,10 +344,16 @@ export function RefinementEngine() {
   return (
     <div className="h-full flex flex-col bg-[var(--fintheon-bg)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--fintheon-accent)]/15">
-        <div className="flex items-center gap-2.5">
-          <Wrench className="w-4 h-4 text-[var(--fintheon-accent)]" />
-          <h1 className="text-sm font-bold text-[var(--fintheon-text)] tracking-wide">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--fintheon-accent)]/15">
+        <div className="flex items-center gap-3">
+          <Wrench className="w-5 h-5 text-[var(--fintheon-accent)]" />
+          <h1
+            className="text-base font-bold text-[var(--fintheon-text)]"
+            style={{
+              fontFamily: "var(--font-heading)",
+              letterSpacing: "0.12em",
+            }}
+          >
             REFINEMENT ENGINE
           </h1>
         </div>
@@ -355,13 +362,13 @@ export function RefinementEngine() {
             <>
               <button
                 onClick={onDiscardChanges}
-                className="px-2.5 py-1.5 rounded border border-[var(--fintheon-glass-border)] text-[11px] text-[var(--fintheon-muted)] hover:border-[var(--fintheon-accent)]/40"
+                className="px-3 py-2 border border-[var(--fintheon-glass-border)] text-[12px] font-semibold text-[var(--fintheon-muted)] hover:border-[var(--fintheon-accent)]/40"
               >
                 Discard
               </button>
               <button
                 onClick={onApplyChanges}
-                className="px-3 py-1.5 rounded bg-[var(--fintheon-accent)] text-[var(--fintheon-bg)] text-[11px] font-bold"
+                className="px-4 py-2 bg-[var(--fintheon-accent)] text-[var(--fintheon-bg)] text-[12px] font-bold tracking-wide"
               >
                 Apply Changes
               </button>
@@ -370,12 +377,12 @@ export function RefinementEngine() {
           <button
             onClick={handleRescore}
             disabled={isRescoring}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-[var(--fintheon-accent)]/40 text-[11px] font-semibold text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3.5 py-2 border border-[var(--fintheon-accent)]/40 text-[12px] font-semibold text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors disabled:opacity-50"
           >
             <RefreshCw
-              className={`w-3.5 h-3.5 ${isRescoring ? "animate-spin" : ""}`}
+              className={`w-4 h-4 ${isRescoring ? "animate-spin" : ""}`}
             />
-            {isRescoring ? "Re-Scoring..." : "Re-Score All"}
+            {isRescoring ? "Re-Scoring…" : "Re-Score All"}
           </button>
         </div>
       </div>
@@ -404,12 +411,13 @@ export function RefinementEngine() {
                 >
                   <div
                     style={{
-                      fontFamily: "var(--font-data)",
-                      fontSize: 10,
-                      letterSpacing: "0.1em",
+                      fontFamily: "var(--font-heading)",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      letterSpacing: "0.14em",
                       textTransform: "uppercase",
-                      color: "var(--fintheon-muted)",
-                      marginBottom: 6,
+                      color: "var(--fintheon-accent)",
+                      marginBottom: 10,
                     }}
                   >
                     Group Sensitivity
@@ -458,19 +466,19 @@ export function RefinementEngine() {
               <div
                 style={{
                   marginTop: 16,
-                  padding: "10px 12px",
+                  padding: "12px 14px",
                   border:
                     "1px dashed color-mix(in srgb, var(--fintheon-accent) 35%, transparent)",
                   borderRadius: 0,
-                  fontSize: 11,
+                  fontSize: 13,
                   color: "var(--fintheon-muted)",
-                  fontFamily: "var(--font-data)",
-                  letterSpacing: "0.04em",
+                  fontFamily: "var(--font-body)",
                   lineHeight: 1.5,
                 }}
               >
-                V4 preset API not yet available — group fuses land with T3.
-                Advanced per-event controls still work.
+                V4 preset service unreachable — loading built-in presets and
+                degrading to Advanced per-event controls. Fuses stay usable;
+                changes won&apos;t persist until the service is back.
               </div>
             )}
 

@@ -1,152 +1,112 @@
-# Sprint Brief: T11 — PMDB Chamber Read Integration
+# Sprint Brief: T11 — PMDB Chamber Read Integration (Wave 2)
 
 ## Context
 
-Arbitrum (S35-T1) runs a 5-seat Qwen deliberation at 17:00 ET weekdays and
-persists the digest to `arbitrum_verdicts` with `trigger_type='session'`.
-PMDB fires 15 minutes later (17:15 ET). This track is the last mile: teach
-`brief-generator.ts` to pull the fresh session digest via T1's
-`getLatestChamberRead()` helper and inject it as a "Chamber Read" section
-into the PMDB prompt so the Post-Market Daily Brief leads with the
-consensus + dissent the Chamber just produced.
-
-Hard constraint from the plan: nothing should break. T1 lands the arbitrum
-barrel on its own branch and T12 does the unification merge. T11's branch
-therefore resolves the helper via a **runtime-constructed dynamic import
-path** (`tsc` can't statically resolve it, so the build stays green before
-T1 merges), and T12 swaps that for a direct import once the barrel exists
-in `s35-unified`.
+Arbitrum's 17:00 ET session cron produces a signal-landscape digest. PMDB runs at 17:30 ET (just after). This track wires the bridge: PMDB generator fetches the latest `trigger_type='session'` verdict from `arbitrum_verdicts` and injects its `digest_text` into the PMDB prompt as a "Chamber Read" section. Single-file edit.
 
 ## Branch Target
 
-`s35-t11-pmdb-chamber-read` (off `s34-unified`)
+`s35-t11-pmdb-chamber-read` (off `s34-unified` — gated on T1 landing)
+
+## Gated on
+
+- T1 `backend-hono/src/services/arbitrum/verdict-store.ts` exports `getLatestChamberRead(): Promise<string | null>` and is merged into `s35-unified`
 
 ## Scope — Included
 
-Single-file edit: `backend-hono/src/services/brief-generator.ts`
+- [ ] EDIT `backend-hono/src/services/brief-generator.ts` — single insertion point after line 100 (before prompt injection per plan file reuse inventory):
 
-1. **Top-of-file comment** — add `[claude-code 2026-04-24] S35-T11: ...`
-   header describing the injection and the dynamic-import rationale.
-2. **New module-local helper `fetchChamberRead()`** — placed just before
-   `getCurrentBriefType()`. Uses a runtime-constructed path
-   (`const modulePath = "./arbitrum/index.js"; await import(modulePath)`)
-   to dodge `tsc`'s static resolver, checks for
-   `getLatestChamberRead` being a function, calls it, returns trimmed
-   non-empty text or `null`. Wrapped in `try/catch`: any failure (module
-   missing, helper missing, runtime error) logs a `warn` and returns
-   `null` so brief generation never fails because Arbitrum is down.
-3. **Fetch at the top of `generateBrief()`** — only for
-   `briefType === "PMDB"`; ADB/MDB/WT skip the fetch entirely (zero cost
-   on non-PMDB paths). Build a `chamberSection` string: a newline-framed
-   `## Chamber Read (17:00 Arbitrum Session)\n<digest>\n` if present,
-   empty string otherwise.
-4. **Inject `${chamberSection}`** into the short-form prompt template
-   (the `: \`...\``branch of the`isFull`ternary) between`${feedSummary}`and`## Instructions`.
-5. **PMDB instruction tweak** — when `chamberRead` is truthy, swap the
-   PMDB short-form instruction to: "Write 4-6 bullet points covering new
-   developments since the afternoon brief — post-market moves, after-hours
-   earnings, overnight catalysts. Lead with a 1-sentence restatement of the
-   Chamber Read consensus above, flag any dissent, then the bullets. Be
-   direct and actionable. Max 250 words." When `chamberRead` is null,
-   the original instruction (3-5 bullets, 200 words) stays verbatim.
+```ts
+// After existing feedSummary + econSummary assembly (~line 99-100), BEFORE prompt injection:
+
+// [claude-code 2026-04-24 S35-T11] Chamber Read — Arbitrum session digest
+let chamberRead: string | null = null;
+if (briefType === "PMDB") {
+  try {
+    const { getLatestChamberRead } =
+      await import("../services/arbitrum/verdict-store.js");
+    chamberRead = await getLatestChamberRead();
+  } catch (err) {
+    log.warn(
+      { err },
+      "getLatestChamberRead failed — PMDB proceeds without Chamber Read",
+    );
+    chamberRead = null;
+  }
+}
+```
+
+- [ ] Pipe `chamberRead` into the prompt assembly. Find the PMDB-specific branch of the prompt template (somewhere around lines 114-192 where briefType is checked) and add:
+
+```ts
+// Inside the PMDB prompt branch:
+const chamberSection = chamberRead
+  ? `\n\n## Chamber Read (Arbitrum session ${new Date().toISOString().slice(0, 10)})\n\n${chamberRead}\n`
+  : "";
+// Include chamberSection in the prompt string concatenation.
+```
+
+- [ ] If the prompt is built via template literal, add `${chamberSection}` in the appropriate spot. If built via concat, append similarly.
 
 ## Scope — Excluded (DO NOT TOUCH)
 
-- `backend-hono/src/boot/services.ts` — T12 owns all boot wiring
-- `backend-hono/src/services/arbitrum/*` — T1 owns
-- `supabase/migrations/*` — T2 owns the `arbitrum_verdicts` schema
-- MDB / ADB / WT prompt branches — Chamber Read is PMDB-only
-- `services/brief-generator.ts` regime-detection block (lines 189-239) —
-  unrelated, leave intact
-- Any other file — this track is a single-file edit
+- `services/arbitrum/*` — T1 owns; you only IMPORT `getLatestChamberRead`
+- Any non-PMDB branch of the brief generator — MDB/ADB/TWT prompts stay unchanged
+- `brief-generator.ts` line 100 itself is the insertion point; don't replace existing code, insert beneath
+- boot/services.ts — T12 owns (brief-generator is called at runtime, no boot wire needed)
 
 ## Reuse Inventory
 
-- **T1 export contract** (`backend-hono/src/services/arbitrum/verdict-store.ts`,
-  surfaced via barrel `services/arbitrum/index.ts`):
-  `getLatestChamberRead(): Promise<string | null>` — returns latest
-  `trigger_type='session'` verdict's `digest_text` or `null`
-- **PMDB detection** — `getCurrentBriefType()` at
-  `brief-generator.ts:33-46`; PMDB window is 17:30-06:30 ET (confirms
-  17:00 Arbitrum precedes 17:15 PMDB)
-- **Existing short-form prompt template** at `brief-generator.ts:161-174`
-  (the `: \`...\`` branch of the isFull ternary) — the insertion surface
+- `getLatestChamberRead(): Promise<string | null>` at `backend-hono/src/services/arbitrum/verdict-store.ts` (T1 exports) — returns the latest session-trigger verdict's `digest_text` or null if no session runs exist
+- Existing PMDB branch structure in `brief-generator.ts:64-286`
+- `getCurrentBriefType()` at `brief-generator.ts:33-46` — confirms PMDB time window
 
 ## Known Issues to Preserve
 
-- The dynamic import path MUST be a runtime-constructed variable
-  (`const modulePath = "./arbitrum/index.js"; await import(modulePath)`).
-  Writing the literal string inside `import()` directly will make `tsc`
-  try to resolve it and fail before T1 lands.
-- `getLatestChamberRead()` can legitimately return `null` on a day the
-  chamber didn't fire (market holiday, scheduler crashed, etc.). PMDB
-  must gracefully fall back to its original short-form template — no
-  empty "## Chamber Read" heading, no error surfaced to the user.
-- PMDB is the ONLY brief type that gets the Chamber Read injection.
-  ADB runs at 11:00+ and predates the 17:00 chamber session. MDB runs
-  6:30 AM next day (too stale). WT is its own report.
-- The T1 helper's return value is already a string of the model-produced
-  digest — do NOT re-wrap, re-format, or truncate it. Inject as-is.
+- **PMDB must survive an absent Chamber Read.** If `getLatestChamberRead()` returns null or throws, PMDB generation proceeds without the section — do NOT 500 the whole brief. Logged warn is fine.
+- Use a **dynamic import** (`await import(...)`) if the static import would introduce a circular dependency. Static import first; only switch to dynamic if tsc complains.
+- Date string in the section header uses `new Date().toISOString().slice(0, 10)` for YYYY-MM-DD — matches existing PMDB date formatting if it uses one.
 
 ## Implementation Steps
 
-1. Add `[claude-code 2026-04-24] S35-T11: ...` comment at the top of
-   `backend-hono/src/services/brief-generator.ts`.
-2. Add `fetchChamberRead()` helper between `BRIEF_LABELS` and
-   `getCurrentBriefType()`. Use the runtime-string dynamic-import pattern.
-3. Inside `generateBrief()`, after the `econSummary` block and before
-   the `isFull` constant, add:
-   ```ts
-   const chamberRead = briefType === "PMDB" ? await fetchChamberRead() : null;
-   const chamberSection = chamberRead
-     ? `\n## Chamber Read (17:00 Arbitrum Session)\n${chamberRead}\n`
-     : "";
-   ```
-4. In the short-form prompt template (else branch of `isFull` ternary),
-   add `${chamberSection}` between `${feedSummary}` and `## Instructions`.
-5. In the same template's instructions block, wrap the PMDB branch in
-   a second ternary on `chamberRead` — truthy path gets the 4-6 bullet
-   "lead with consensus" instruction, falsy path keeps the original
-   3-5 bullet instruction verbatim.
-6. Add a changelog entry to `src/lib/changelog.ts` describing the track.
+1. Open `backend-hono/src/services/brief-generator.ts`
+2. Locate line 100 (end of feedSummary + econSummary assembly)
+3. Insert the `chamberRead` fetch block immediately below
+4. Locate the PMDB prompt branch (the `if (briefType === "PMDB") { ... }` block or equivalent; note that after T5's rename, all references to the PMDB string remain — T5 only touches WT/TOTT/TWT)
+5. Build the `chamberSection` string and insert into the prompt template
+6. Run `cd backend-hono && bun run build` — should be clean
+7. Smoke-test locally (if you have a local backend running): `curl -X POST http://localhost:8080/api/data/brief/generate -H "Content-Type: application/json" -d '{"type":"PMDB"}'` and verify the output includes a "Chamber Read" section (empty body acceptable if no session runs yet)
 
 ## Acceptance Criteria
 
-- [ ] `backend-hono/src/services/brief-generator.ts` contains
-      `fetchChamberRead` helper with runtime-constructed import path
-- [ ] PMDB prompt template contains the `${chamberSection}` injection slot
-- [ ] PMDB instruction tweak fires only when `chamberRead` is non-null
-- [ ] `cd backend-hono && bun run build` clean (green before T1 lands)
-- [ ] `cd backend-hono && npx tsc --noEmit` clean
-- [ ] `generateBrief("PMDB")` unit-smoke: no throw when arbitrum module
-      missing; warns and falls back to original short-form prompt
-- [ ] `src/lib/changelog.ts` has S35-T11 entry
+- [ ] `brief-generator.ts` edited with the fetch block after line 100
+- [ ] PMDB prompt branch includes the `chamberSection` template literal
+- [ ] Import resolves (static or dynamic — either is fine)
+- [ ] `cd backend-hono && bun run build` clean
+- [ ] PMDB generation does not 500 when `getLatestChamberRead` returns null
+- [ ] PMDB generation still works for pre-Chamber-Read-era rows (regression)
 
 ## Validation Commands
 
 ```bash
-# Confirm the edits landed
-grep -n "S35-T11" backend-hono/src/services/brief-generator.ts
-grep -n "fetchChamberRead" backend-hono/src/services/brief-generator.ts
-grep -n "Chamber Read (17:00 Arbitrum Session)" backend-hono/src/services/brief-generator.ts
-
-# Build stays green before T1 merges
 cd backend-hono && bun run build
 
-# Post-T12 unification (reference — not on T11 branch):
-#   Direct-import replaces the runtime-string pattern
-#   grep should find: `import { getLatestChamberRead } from "./arbitrum/index.js";`
+# Static smoke — the edit compiles
+grep -nE "getLatestChamberRead|Chamber Read" backend-hono/src/services/brief-generator.ts
+
+# Runtime smoke (needs backend up + any Arbitrum session run present or absent)
+curl -sX POST http://localhost:8080/api/data/brief/generate \
+  -H "Content-Type: application/json" \
+  -d '{"type":"PMDB"}' | head -c 500
 ```
 
-## T12 Handoff Notes
+## Commit Format
 
-- T12 unification: swap the runtime-string dynamic import for a direct
-  top-of-file import once `services/arbitrum/index.ts` exists in
-  `s35-unified`. Drop the try/catch wrapper's module-missing branch
-  (keep the helper-returned-null graceful path).
-- Browser Harness validation in T12 should trigger a manual PMDB
-  generation after the first 17:00 cron fire and confirm the "Chamber
-  Read" section renders in the generated brief.
-- Empty-state acceptable on first deploy — the chamber hasn't fired yet
-  the first day, so PMDB falls back to the original template until the
-  17:00 ET cron produces the first row in `arbitrum_verdicts`.
+```
+[v5.25.0-S35-T11] feat: PMDB Chamber Read section (Arbitrum session bridge)
+
+Wires brief-generator.ts to fetch latest Arbitrum session verdict via
+getLatestChamberRead() and inject digest_text into the PMDB prompt as
+a "Chamber Read" section. Gracefully absent when no session runs yet.
+Single-file edit. Non-PMDB briefs (MDB/ADB/TWT) unchanged.
+```

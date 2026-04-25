@@ -1,50 +1,46 @@
-import { memo, useMemo } from "react";
+// [claude-code 2026-04-24] S36 ClusterBeam — click now opens the right-docked ClusterBeamPanel
+// instead of inline-expanding. Inline expansion block removed (~140 lines). Added DensityMeter
+// sparkline in the collapsed header. Fuse-shimmer strip untouched (feedback_fuses_are_sacred).
+import { memo, useCallback, useMemo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import { Handle, Position } from "@xyflow/react";
 import { ivHeatColor } from "../../types/agent-desk";
 import {
   SEVERITY_COLORS,
-  deriveCyclicality,
   deriveIvScore,
   formatDateShort,
 } from "../../lib/narrative-territory-layout";
 import type { CatalystCard } from "../../lib/narrative-types";
+import { useClusterBeam } from "../../contexts/ClusterBeamContext";
+import { DensityMeter } from "./DensityMeter";
 
 export interface AggregateCardNodeData {
   label: string;
   cards: CatalystCard[];
   narrativeColor: string;
-  expanded: boolean;
+  narrativeSlug?: string;
+  narrativeTitle?: string;
   groupId: string;
-  onToggle?: (id: string) => void;
   siblingIndex?: number;
   siblingCount?: number;
 }
 
-function sentimentDisplay(
-  card: CatalystCard,
-): "bullish" | "bearish" | "neutral" {
-  const rawSentiment = (
-    (card as { sentiment?: string }).sentiment ?? ""
-  ).toLowerCase();
-  if (rawSentiment === "bullish") return "bullish";
-  if (rawSentiment === "bearish") return "bearish";
-  return "neutral";
-}
-
 export const AggregateCardNode = memo(function AggregateCardNode({
+  id,
   data,
 }: NodeProps & { data: AggregateCardNodeData }) {
   const {
     label,
     cards,
     narrativeColor,
-    expanded,
-    onToggle,
+    narrativeSlug,
+    narrativeTitle,
     groupId,
     siblingIndex,
     siblingCount,
   } = data;
+
+  const { active, toggle } = useClusterBeam();
 
   const sortedCards = useMemo(
     () => [...cards].sort((a, b) => (a.date ?? "").localeCompare(b.date ?? "")),
@@ -72,23 +68,47 @@ export const AggregateCardNode = memo(function AggregateCardNode({
     return total / cards.length;
   }, [cards]);
 
+  const isActive = active?.groupId === groupId;
+
+  const handleClick = useCallback(
+    (event: React.MouseEvent) => {
+      event.stopPropagation();
+      toggle({
+        groupId,
+        clusterNodeId: id,
+        narrativeSlug,
+        narrativeTitle,
+        narrativeColor,
+        label,
+        cards,
+      });
+    },
+    [
+      toggle,
+      groupId,
+      id,
+      narrativeSlug,
+      narrativeTitle,
+      narrativeColor,
+      label,
+      cards,
+    ],
+  );
+
   return (
     <div
-      onClick={(event) => {
-        event.stopPropagation();
-        onToggle?.(groupId);
-      }}
+      onClick={handleClick}
+      data-cluster-node="true"
+      data-group-id={groupId}
       style={{
-        minWidth: expanded ? 360 : 260,
-        maxWidth: expanded ? 440 : 300,
+        minWidth: 260,
+        maxWidth: 300,
         borderRadius: 8,
-        border: `1.5px solid ${severityColor}30`,
+        border: `1.5px solid ${isActive ? `${narrativeColor}aa` : `${severityColor}30`}`,
         background: "color-mix(in srgb, #0a0a00 92%, transparent)",
-        backdropFilter: "blur(16px)",
         overflow: "hidden",
         cursor: "pointer",
         transition: "all 0.25s ease",
-        boxShadow: `0 4px 24px ${narrativeColor}08`,
       }}
     >
       <Handle
@@ -216,166 +236,20 @@ export const AggregateCardNode = memo(function AggregateCardNode({
           >
             IV
           </span>
+          <DensityMeter cards={cards} accentColor={narrativeColor} />
         </div>
 
         <span
           style={{
             fontSize: 10,
             color: "var(--fintheon-muted)",
-            opacity: 0.4,
-            transition: "transform 0.2s",
-            transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+            opacity: isActive ? 0.9 : 0.4,
+            transition: "opacity 0.2s",
           }}
         >
-          ▼
+          ▸
         </span>
       </div>
-
-      {expanded && (
-        <div
-          className="aggregate-card-scroll"
-          onWheel={(e) => e.stopPropagation()}
-          style={{ padding: "0 10px 12px", maxHeight: 400, overflowY: "auto" }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {sortedCards.map((card, index) => {
-              const cardSeverityColor = SEVERITY_COLORS[card.severity ?? "low"];
-              const sentiment = sentimentDisplay(card);
-              const sentimentColor =
-                sentiment === "bullish"
-                  ? "var(--fintheon-bullish)"
-                  : sentiment === "bearish"
-                    ? "var(--fintheon-bearish)"
-                    : "var(--fintheon-muted)";
-              const cardIv = deriveIvScore(card);
-              const cyclicality = deriveCyclicality(card);
-              const cyclical = cyclicality === "cyclical";
-
-              return (
-                <div
-                  key={card.id}
-                  style={{
-                    borderRadius: 6,
-                    border: `2px solid ${cardSeverityColor}60`,
-                    background: `${cardSeverityColor}06`,
-                    padding: "8px 10px",
-                    animation: `card-enter 0.2s ease-out ${index * 30}ms both`,
-                    position: "relative",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      justifyContent: "space-between",
-                      gap: 6,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: "var(--fintheon-text)",
-                        fontFamily: "var(--font-body)",
-                        lineHeight: "1.3",
-                        flex: 1,
-                      }}
-                    >
-                      {card.title}
-                    </span>
-
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 800,
-                        flexShrink: 0,
-                        color: sentimentColor,
-                      }}
-                    >
-                      {sentiment === "bullish"
-                        ? "▲"
-                        : sentiment === "bearish"
-                          ? "▼"
-                          : "—"}
-                    </span>
-                  </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 6,
-                      alignItems: "center",
-                      marginTop: 6,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 700,
-                        color: ivHeatColor(cardIv),
-                        fontFamily: "var(--font-mono)",
-                        background: `${ivHeatColor(cardIv)}12`,
-                        padding: "2px 6px",
-                        borderRadius: 4,
-                      }}
-                    >
-                      IV {cardIv.toFixed(1)}
-                    </span>
-
-                    <span
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 700,
-                        textTransform: "uppercase",
-                        color: sentimentColor,
-                        background:
-                          sentiment === "bullish"
-                            ? "#34D39912"
-                            : sentiment === "bearish"
-                              ? "#EF444412"
-                              : "#6B728012",
-                        padding: "2px 6px",
-                        borderRadius: 4,
-                        fontFamily: "var(--font-mono)",
-                      }}
-                    >
-                      {sentiment}
-                    </span>
-
-                    <span
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 600,
-                        textTransform: "uppercase",
-                        color: cyclical ? "#3B82F6" : "#EC4899",
-                        background: cyclical ? "#3B82F612" : "#EC489912",
-                        padding: "2px 6px",
-                        borderRadius: 4,
-                        fontFamily: "var(--font-mono)",
-                      }}
-                    >
-                      {cyclicality}
-                    </span>
-
-                    <span
-                      style={{
-                        fontSize: 9,
-                        color: "var(--fintheon-muted)",
-                        fontFamily: "var(--font-mono)",
-                        opacity: 0.6,
-                        marginLeft: "auto",
-                      }}
-                    >
-                      {formatDateShort(card.date)}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 });

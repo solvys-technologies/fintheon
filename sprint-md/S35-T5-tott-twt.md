@@ -1,5 +1,21 @@
 # Sprint Brief: T5 — TOTT → TWT Rename
 
+## AMENDMENT 2026-04-24 — SCOPE EXPANSION (read first)
+
+**The codebase currently runs three flavors: TOTT (docstrings/prompts), WT (type unions + runtime checks), TWT (TP's locked canonical).** Scope expands accordingly:
+
+1. **WT → TWT in runtime code:**
+   - `backend-hono/src/services/supabase-service.ts:691` — `BriefType = "MDB" | "ADB" | "PMDB" | "WT"` → `"MDB" | "ADB" | "PMDB" | "TWT"`
+   - `backend-hono/src/services/brief-generator.ts:101` — `briefType === "WT"` → `briefType === "TWT"` (any other line with `=== "WT"` too)
+   - `backend-hono/src/routes/data/index.ts:185` — `["MDB", "ADB", "PMDB", "WT"]` → `["MDB", "ADB", "PMDB", "TWT"]`
+   - Any `briefType: "WT"` literal in `services/cron/dispatch-scheduler.ts` (if the 4:30 PM Sunday entry uses WT, rename to TWT)
+
+2. **Legacy alias for 2 weeks (sunset 2026-05-08):** at every input point (`POST /api/data/brief/generate`, `dispatch-brief.ts` script, any other accepting a `type` parameter), normalize incoming `"WT"` or `"TOTT"` → `"TWT"` BEFORE any runtime check. Log the normalization once per invocation: `log.info({received, normalizedTo: "TWT"}, "legacy brief type alias normalized")`. No caller that sends WT or TOTT today breaks.
+
+3. **DB rows already stored as `"WT"`**: no migration required — the normalization handles reads too. After 2026-05-08, follow-up sprint can `UPDATE briefs SET type = 'TWT' WHERE type IN ('WT', 'TOTT')`.
+
+The original TOTT→TWT file list below is unchanged — just add the three runtime-code files above to it.
+
 ## Context
 
 The weekly tribune brief is currently called TOTT ("Tip of the Tape" or "Tale of the Tape" — both appear). TP locked in **TWT** ("The Weekly Tribune") as the canonical name. Rename every live reference. 8 files to edit plus one cron job ID rename. `backend-hono/src/boot/services.ts` has a comment mentioning TOTT on line ~276 — leave that to T12 unification (same file T1/T7 also need unification to edit).
