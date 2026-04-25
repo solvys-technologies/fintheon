@@ -1,4 +1,6 @@
 // [claude-code 2026-04-18] Extended for emit.ts: category/severity/url/fingerprint/suppressed + dedup lookup
+// [claude-code 2026-04-25] S35-Unified: queries respect cleared_at; adds clearOne/clearAll
+//   + dismissed_via origin tracking for cross-device sync
 /**
  * Notifications Database Queries
  * CRUD operations for user notifications (in-app history + push log)
@@ -20,13 +22,18 @@ export async function getNotificationsByUserId(
   const result = unreadOnly
     ? await sql`
         SELECT * FROM notifications
-        WHERE user_id = ${userId} AND read = false AND suppressed = false
+        WHERE user_id = ${userId}
+          AND read = false
+          AND suppressed = false
+          AND cleared_at IS NULL
         ORDER BY created_at DESC
         LIMIT ${limit}
       `
     : await sql`
         SELECT * FROM notifications
-        WHERE user_id = ${userId} AND suppressed = false
+        WHERE user_id = ${userId}
+          AND suppressed = false
+          AND cleared_at IS NULL
         ORDER BY created_at DESC
         LIMIT ${limit}
       `;
@@ -39,7 +46,10 @@ export async function getUnreadCount(userId: string): Promise<number> {
 
   const result = await sql`
     SELECT COUNT(*) as count FROM notifications
-    WHERE user_id = ${userId} AND read = false AND suppressed = false
+    WHERE user_id = ${userId}
+      AND read = false
+      AND suppressed = false
+      AND cleared_at IS NULL
   `;
 
   return Number(result[0]?.count) || 0;
@@ -84,7 +94,52 @@ export async function markAllAsRead(userId: string): Promise<number> {
   const result = await sql`
     UPDATE notifications
     SET read = true, read_at = NOW()
-    WHERE user_id = ${userId} AND read = false
+    WHERE user_id = ${userId} AND read = false AND cleared_at IS NULL
+    RETURNING id
+  `;
+
+  return result.length;
+}
+
+/**
+ * Soft-clear a single notification — keeps the row for audit/replay but removes
+ * it from the bell + toast surfaces. `dismissedVia` records which device tipped
+ * the clear so other devices can ignore self-echo on the __sync push.
+ */
+export async function clearOne(
+  userId: string,
+  notificationId: string,
+  dismissedVia: string | null,
+): Promise<Notification | null> {
+  if (!isDatabaseAvailable() || !sql) return null;
+
+  const result = await sql`
+    UPDATE notifications
+    SET cleared_at = NOW(),
+        read = true,
+        read_at = COALESCE(read_at, NOW()),
+        dismissed_via = ${dismissedVia}
+    WHERE id = ${notificationId} AND user_id = ${userId} AND cleared_at IS NULL
+    RETURNING *
+  `;
+
+  if (result.length === 0) return null;
+  return mapRowToNotification(result[0]);
+}
+
+export async function clearAll(
+  userId: string,
+  dismissedVia: string | null,
+): Promise<number> {
+  if (!isDatabaseAvailable() || !sql) return 0;
+
+  const result = await sql`
+    UPDATE notifications
+    SET cleared_at = NOW(),
+        read = true,
+        read_at = COALESCE(read_at, NOW()),
+        dismissed_via = ${dismissedVia}
+    WHERE user_id = ${userId} AND cleared_at IS NULL AND suppressed = false
     RETURNING id
   `;
 
