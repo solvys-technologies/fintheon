@@ -74,21 +74,56 @@ export function IVStack({
     >
       <Chevron direction={direction} color={resolvedColor} size={chevronSize} />
       {hasScore && (
-        <span
-          style={{
-            fontFamily:
-              "'Doto', 'Readable Digits', var(--font-data, monospace)",
-            fontSize,
-            fontWeight: 600,
-            color: resolvedColor,
-            fontVariantNumeric: "tabular-nums",
-            letterSpacing: "0.02em",
-            lineHeight: 1,
-          }}
-        >
-          {numericScore.toFixed(1)}
-        </span>
+        <DigitGroup
+          value={numericScore.toFixed(1)}
+          color={resolvedColor}
+          fontSize={fontSize}
+        />
       )}
     </div>
+  );
+}
+
+// Renders a numeric string as individual <span class="t-digit"> chars inside a
+// .t-digit-group.is-animating wrapper so the value cascades in via the
+// solvys-transitions number pop-in keyframes. Re-keyed on `value` so any
+// score change replays the animation; no useEffect / reflow gymnastics needed.
+function DigitGroup({
+  value,
+  color,
+  fontSize,
+}: {
+  value: string;
+  color: string;
+  fontSize: number;
+}) {
+  const chars = value.split("");
+  const len = chars.length;
+  return (
+    <span
+      key={value}
+      className="t-digit-group is-animating"
+      style={{
+        fontFamily: "'Doto', 'Readable Digits', var(--font-data, monospace)",
+        fontSize,
+        fontWeight: 600,
+        color,
+        fontVariantNumeric: "tabular-nums",
+        letterSpacing: "0.02em",
+        lineHeight: 1,
+      }}
+    >
+      {chars.map((ch, i) => {
+        // Stagger only the trailing digits so the leftmost (most significant)
+        // appears first and the value reads left-to-right.
+        const fromEnd = len - 1 - i;
+        const stagger = fromEnd === 1 ? "1" : fromEnd === 0 ? "2" : undefined;
+        return (
+          <span key={i} className="t-digit" data-stagger={stagger}>
+            {ch}
+          </span>
+        );
+      })}
+    </span>
   );
 }

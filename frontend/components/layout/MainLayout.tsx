@@ -234,11 +234,25 @@ function MainLayoutInner() {
   const [missionWidgetVisibility, setMissionWidgetVisibilityState] = useState<
     Record<MissionWidgetId, boolean>
   >(getMissionWidgetVisibility);
+  // [claude-code 2026-04-25] Strategium fullscreen modes (feedOnly / widgetsOnly) retired
+  // along with the maximize-RiskFlow overlay button. Any persisted mode is normalized to
+  // "balanced" on mount so users coming in with stale state aren't stranded in a mode
+  // there's no longer a UI control to leave.
   const [strategiumPaneMode, setStrategiumPaneModeState] =
-    useState<StrategiumPaneMode>(() => getStrategiumPaneMode());
+    useState<StrategiumPaneMode>(() => {
+      const m = getStrategiumPaneMode();
+      return m === "balanced" ? m : "balanced";
+    });
   const updateStrategiumPaneMode = useCallback((mode: StrategiumPaneMode) => {
     setStrategiumPaneModeState(mode);
     setStrategiumPaneMode(mode);
+  }, []);
+  useEffect(() => {
+    if (strategiumPaneMode !== "balanced") {
+      updateStrategiumPaneMode("balanced");
+    }
+    // run once on mount to clear stale persisted modes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [psychAssistTarget, setPsychAssistTarget] =
     useState<PsychAssistDockTarget>(() => {

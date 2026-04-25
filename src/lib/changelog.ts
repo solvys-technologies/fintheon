@@ -9,6 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T01:00:00",
+    agent: "claude-code",
+    summary:
+      "Added solvys-transitions to the Solvys Skills suite (canonical repo + fintheon mirror) -- a Solvys-tuned fork of transitions.dev with 9 paste-ready CSS transitions namespaced under --t-* / .t-* and a prefers-reduced-motion guard. Wired transitions.css into frontend/index.css and applied: t-dropdown to PriorityFilterMenu + SourceFilterMenu (scale+fade open/close instead of unmount), t-panel-slide to NotificationCenter (translate-Y + blur + fade reveal driven by a one-frame requestAnimationFrame so the entry animates from the closed resting state), and t-digit-group pop-in to the IVStack Doto numeral so the IV score cascades in left-to-right when a card mounts or the score changes (re-keyed on value to replay). Motion blur is on the animating element only -- never a backdrop-filter -- so this stays inside the no-glass ban. Frontend tsc clean, vite build clean (3394 modules), all 9 t-* classes present in the bundled CSS.",
+    files: [
+      ".claude/skills/solvys-transitions/SKILL.md",
+      ".claude/skills/solvys-transitions/reference/transitions.css",
+      ".claude/skills/solvys-transitions/reference/react-recipes.md",
+      "frontend/styles/transitions.css",
+      "frontend/index.css",
+      "frontend/components/shared/PriorityFilterMenu.tsx",
+      "frontend/components/feed/SourceFilterMenu.tsx",
+      "frontend/components/NotificationCenter.tsx",
+      "frontend/components/shared/IVStack.tsx",
+    ],
+  },
+  {
     date: "2026-04-25T00:15:00",
     agent: "claude-code",
     summary:
