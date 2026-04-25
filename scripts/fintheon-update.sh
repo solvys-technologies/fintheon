@@ -13,7 +13,36 @@ set -eo pipefail
 
 # [claude-code 2026-04-18] Resolve install path: FINTHEON_ROOT env > ~/.fintheon/install-path > default
 FINTHEON_ROOT="${FINTHEON_ROOT:-$(cat "$HOME/.fintheon/install-path" 2>/dev/null || echo "$HOME/Documents/Codebases/fintheon")}"
-UPDATE_VERSION="5.25.1"
+UPDATE_VERSION="5.25.2"
+
+# ── Self-update bootstrap (v5.25.2) ──────────────────────────────────────────
+# Root cause fix: bash loads the entire script into memory at invocation, so
+# `fintheon update` that fixed the repo body but left the script file untouched
+# would keep re-running the stale copy indefinitely — every subsequent run was
+# pinned to whatever logic was baked into fintheon-update.sh at install time.
+# Before we do any real work we fetch tags, check whether our own bytes match
+# the latest v*.*.* release's scripts/fintheon-update.sh blob, overwrite and
+# re-exec if they don't. FINTHEON_SELFUPDATED guards against infinite recursion.
+if [[ -z "${FINTHEON_SELFUPDATED:-}" ]] && [[ -d "$FINTHEON_ROOT/.git" ]]; then
+  export FINTHEON_SELFUPDATED=1
+  SELFUPDATE_LOG="/tmp/fintheon-selfupdate.log"
+  (
+    cd "$FINTHEON_ROOT" || exit 0
+    git fetch --tags --force --quiet origin 2>>"$SELFUPDATE_LOG" || true
+    LATEST_TAG=$(git tag -l --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+    if [[ -n "$LATEST_TAG" ]]; then
+      FRESH_CONTENT=$(git show "$LATEST_TAG:scripts/fintheon-update.sh" 2>/dev/null || true)
+      CURRENT_CONTENT=$(cat scripts/fintheon-update.sh 2>/dev/null || true)
+      if [[ -n "$FRESH_CONTENT" ]] && [[ "$FRESH_CONTENT" != "$CURRENT_CONTENT" ]]; then
+        printf '%s' "$FRESH_CONTENT" > scripts/fintheon-update.sh
+        chmod +x scripts/fintheon-update.sh
+        echo "  · self-update: refreshed fintheon-update.sh to $LATEST_TAG"
+      fi
+    fi
+  ) || true
+  exec bash "$FINTHEON_ROOT/scripts/fintheon-update.sh" "$@"
+fi
+
 SUPABASE_DATABASE_URL="postgresql://postgres:PIR0670963957%24@db.nrcfnzclbjboctptxaxx.supabase.co:5432/postgres"
 
 # ── Solvys Gold ANSI palette ──────────────────────────────────────────────────

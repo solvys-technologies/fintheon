@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T00:15:00",
+    agent: "claude-code",
+    summary:
+      "v5.25.2 — fintheon-update.sh self-update bootstrap. Root cause: `fintheon update` dispatches via /Users/tifos/.local/bin/fintheon → `bash $FINTHEON_ROOT/scripts/fintheon-update.sh`, and bash loads the entire file into memory at invocation, so any `fintheon update` that fixed the repo body but left the script file untouched would keep re-running the stale copy indefinitely — the installer was effectively pinned to whatever logic was baked in at first install (user reported stuck on 5.22.9W). Added a pre-body bootstrap that fetches tags, checks whether the current file bytes match the latest v*.*.* release's scripts/fintheon-update.sh blob, overwrites + re-execs if they've drifted. FINTHEON_SELFUPDATED env flag guards infinite recursion. After one upgrade cycle the installer self-heals on every subsequent run. No changes to the global CLI wrapper — dispatcher already points at the repo copy; the repo copy just refreshes itself now.",
+    files: ["scripts/fintheon-update.sh", "package.json"],
+  },
+  {
     date: "2026-04-24T23:45:00",
     agent: "claude-code",
     summary:
