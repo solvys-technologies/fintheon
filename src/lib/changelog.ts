@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T16:00:00",
+    agent: "claude-code",
+    summary:
+      "v5.26.0 deploy — unified S38 design patches + S35-T10 RiskFlow Worker rename + peer notification system. Backend Fly.io deployed (fintheon.fly.dev/api/diagnostics 200, dual-emit news_worker + riskflow_worker payloads, riskflow/feed + iv-aggregate + arbitrum/latest + econ-calendar all 200). Desktop Vercel + mobile PWA Vercel deployed (fintheon-alpha.vercel.app 200, fintheon.pricedinresearch.io 200). GH release v5.26.0 published with Fintheon-5.26.0-arm64.dmg + Fintheon-Setup-5.26.0.exe attached; older v5.* releases pruned (only v5.26.0 remains). DMG copied to ~/Desktop. Local launchd backend reloaded (localhost:8080 200). UPDATE_VERSION bumped to 5.26.0 in scripts/fintheon-update.sh; package.json bumped to 5.26.0. Sprint planning docs archived to sprint-changelog/ (S38-BRIEF-design-patches.md + S35-T10-riskflow-worker.md). Three-thread unification: S38 (Refinement Engine + voice orb pixel sweep + Sanctum Aquarium→Arbitrum + RiskFlow generate-note structured response + chart-mode persistent right-half), S35-T10 (news-worker → riskflow-worker rename across infra/code/launchd, dual-emit through 2026-05-08), peer notification system (server-side notifications hook in TopHeader, mobile NotificationBell/Drawer/sw.js, NotificationsContext, sync-broadcast.ts via widened PushPayload).",
+    files: [
+      "package.json",
+      "scripts/fintheon-update.sh",
+      "sprint-changelog/S38-BRIEF-design-patches.md",
+      "sprint-changelog/S35-T10-riskflow-worker.md",
+    ],
+  },
+  {
     date: "2026-04-25T11:00:00",
     agent: "claude-code",
     summary:
