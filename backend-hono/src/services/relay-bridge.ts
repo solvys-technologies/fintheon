@@ -1,3 +1,10 @@
+// [claude-code 2026-04-25] S35: forward() now rejects when the local backend's WebSocket
+// closes or errors mid-stream. Previously the generator awaited a Promise that nothing
+// resolved if the WS dropped between frames — the relay route hung indefinitely, mobile
+// got 200 OK with an empty SSE body, no error event, no [DONE], and the user saw a silent
+// non-response (12s watchdog "HARPER SILENT" caption with no assistant bubble). Listen on
+// `close` and `error` and synthesize a `local_offline` error frame so the relay route's
+// catch arm fires and emits both `{type:"error", error:...}` and `[DONE]`.
 // [claude-code 2026-04-18] S21-T1: Relay bridge — adds dispatch state + mirror-message pub/sub so
 // desktop can hand a conversation off to paired mobile and stream mobile-side messages back in real time.
 // [claude-code 2026-04-16] T1: Relay bridge — generalized forward() payload + sendToLocal() for tool-decision
