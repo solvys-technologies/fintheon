@@ -9,6 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T17:30:00",
+    agent: "claude-code",
+    summary:
+      "v5.31.3 — Three-panel toggle group + cleanup. New PanelToggleGroup (left/footer/right VS Code-style icons) mounted in TopHeader right of the VIX widget. Wired through useLayoutState (added navSidebarCollapsed + footerCollapsed). Removed: floating top-right Strategium button, border-l divider on combined panel, RiskFlowSettings block from DeveloperTab, X Feed Authentication / Rettiwt API key field from ApiTab. EconCountdownModal lifted to MainLayout root with fixed top-14 right-3 positioning so the dev 1-min mock trigger fires regardless of active tab. SettingsContext: developerSettings is now device-local (removed remote-overwrite that was clobbering local toggles on reload). Self-update bootstrap in fintheon-update.sh hardened with `git rm --cached` fallback for ignored conflicted paths (was v5.31.2 partial fix; included here for the rolled-up tag). Steel + XActions wiring from v5.31.1 still active and gracefully no-op without STEEL_API_BASE / XACTIONS_API_BASE.",
+    files: [
+      "frontend/hooks/useLayoutState.ts",
+      "frontend/components/layout/PanelToggleGroup.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/feed/EconCountdownModal.tsx",
+      "frontend/components/settings/DeveloperTab.tsx",
+      "frontend/components/settings/ApiTab.tsx",
+      "frontend/contexts/SettingsContext.tsx",
+      "scripts/fintheon-update.sh",
+    ],
+  },
+  {
     date: "2026-04-26T13:55:00",
     agent: "claude-code",
     summary:

@@ -9,6 +9,10 @@ import type { IVScoreResponse } from "../../types/market-data";
 import { TopHeader } from "./TopHeader";
 import { NavSidebar } from "./NavSidebar";
 import { MinimalTapeWidget } from "../feed/MinimalTapeWidget";
+// [claude-code 2026-04-26] Lifted EconCountdownModal to MainLayout root so the
+// Developer-settings 1-min mock trigger fires regardless of active tab. The
+// modal pins itself to fixed top-right viewport coords (z-60).
+import { EconCountdownModal } from "../feed/EconCountdownModal";
 import { TradingBrowser } from "../TradingBrowser";
 import { TimelineOverlay, TimelineToggleButton } from "./TimelineOverlay";
 import { FloatingWidget } from "./FloatingWidget";
@@ -192,6 +196,10 @@ function MainLayoutInner() {
     setRiskFlowCollapsed,
     sidebarOverlayVisible,
     setSidebarOverlayVisible,
+    navSidebarCollapsed,
+    setNavSidebarCollapsed,
+    footerCollapsed,
+    setFooterCollapsed,
   } = useLayoutState({
     topStepXEnabled,
     defaultLayout,
@@ -560,23 +568,13 @@ function MainLayoutInner() {
           key="combined"
           className={`transition-all duration-200 ${
             combinedPanelCollapsed
-              ? "w-0 overflow-visible"
-              : "w-[380px] bg-[var(--fintheon-surface)] border-l border-[var(--fintheon-accent)]/10"
+              ? "w-0 overflow-hidden"
+              : "w-[380px] bg-[var(--fintheon-surface)]"
           }`}
         >
-          {/* [claude-code 2026-04-26] Closed state = floating top-right button.
-              No vertical ruler, no panel chrome — just a square accent-colored
-              affordance pinned to the upper-right corner. Click expands the
-              full panel. */}
-          {combinedPanelCollapsed && (
-            <button
-              onClick={() => setCombinedPanelCollapsed(false)}
-              aria-label="Open Strategium"
-              className="fixed top-3 right-3 z-40 w-9 h-9 flex items-center justify-center bg-[var(--fintheon-bg)]/85 border border-[var(--fintheon-accent)]/30 rounded text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/15 hover:border-[var(--fintheon-accent)]/60 transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          )}
+          {/* [claude-code 2026-04-26] Floating top-right button removed —
+              Strategium toggle now lives in the TopHeader PanelToggleGroup.
+              Border-l divider also dropped per TP. */}
           <div className="h-full flex flex-col">
             {/* (header chevron-only collapsed area retired — now floats top-right) */}
             {false && combinedPanelCollapsed && (
@@ -759,6 +757,10 @@ function MainLayoutInner() {
             background. Doubles as user-mic indicator (when listening) and agent
             voice (when speaking). The previous draggable COACH popup is gone. */}
         <AgentVoiceWaveform />
+        {/* [claude-code 2026-04-26] Global mount — EconCountdown listens for
+            both real /api/econ/active-watch events AND the dev-trigger
+            CustomEvent fired from DeveloperTab, regardless of active tab. */}
+        <EconCountdownModal />
         <TopHeader
           topStepXEnabled={topStepXEnabled}
           onTopStepXToggle={handleBrowserEnable} // [claude-code 2026-03-16] Restore: clicking platform in dropdown enables iframe
@@ -784,6 +786,14 @@ function MainLayoutInner() {
           onForward={goForward}
           hideBranding={topStepXEnabled && sidebarOverlayVisible}
           toolbarEditMode={layoutEditMode}
+          navSidebarCollapsed={navSidebarCollapsed}
+          onToggleNavSidebar={() => setNavSidebarCollapsed(!navSidebarCollapsed)}
+          footerCollapsed={footerCollapsed}
+          onToggleFooter={() => setFooterCollapsed(!footerCollapsed)}
+          rightPanelCollapsed={combinedPanelCollapsed}
+          onToggleRightPanel={() =>
+            setCombinedPanelCollapsed(!combinedPanelCollapsed)
+          }
           psychAssistHeadingWidget={
             topStepXEnabled &&
             layoutOption === "tickers-only" &&
@@ -802,6 +812,7 @@ function MainLayoutInner() {
         {/* S14-T6: Peers panel removed — team status is now in footer Team tab */}
 
         <div className="flex-1 flex overflow-hidden relative">
+          {!navSidebarCollapsed && (
           <div className="relative">
             <NavSidebar
               activeTab={activeTab}
@@ -826,6 +837,7 @@ function MainLayoutInner() {
               onClose={() => setNotificationCenterOpen(false)}
             />
           </div>
+          )}
 
           {/* Left Panels */}
           {leftPanels.length > 0 && <div className="flex">{leftPanels}</div>}
@@ -948,17 +960,19 @@ function MainLayoutInner() {
 
         <SessionCountdownWidget />
 
-        <FooterToolbar
-          topStepXEnabled={topStepXEnabled}
-          primaryPlatform={selectedPlatform}
-          onPrimaryPlatformChange={setSelectedPlatform}
-          secondaryPlatform={secondaryPlatform}
-          onSecondaryPlatformChange={setSecondaryPlatform}
-          splitViewEnabled={splitBrowserView}
-          onSplitViewToggle={() => setSplitBrowserView((v) => !v)}
-          allowSplitView={topStepXEnabled}
-          onPowerOff={handleBrowserToggle}
-        />
+        {!footerCollapsed && (
+          <FooterToolbar
+            topStepXEnabled={topStepXEnabled}
+            primaryPlatform={selectedPlatform}
+            onPrimaryPlatformChange={setSelectedPlatform}
+            secondaryPlatform={secondaryPlatform}
+            onSecondaryPlatformChange={setSecondaryPlatform}
+            splitViewEnabled={splitBrowserView}
+            onSplitViewToggle={() => setSplitBrowserView((v) => !v)}
+            allowSplitView={topStepXEnabled}
+            onPowerOff={handleBrowserToggle}
+          />
+        )}
 
         {/* Preload iframes — hidden, loads TopStepX + Research in background for instant tab switch */}
         {!topStepXEnabled && (

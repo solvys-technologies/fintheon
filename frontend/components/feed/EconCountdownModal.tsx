@@ -273,7 +273,7 @@ export function EconCountdownModal() {
   if (visible.length === 0) return null;
 
   return (
-    <div className="absolute top-3 right-3 z-20 flex flex-col gap-2 pointer-events-none">
+    <div className="fixed top-14 right-3 z-[60] flex flex-col gap-2 pointer-events-none">
       {visible.map(({ card, msUntil }) => (
         <CountdownCard key={card.id} card={card} msUntil={msUntil} />
       ))}

@@ -4,7 +4,9 @@
 import React from "react";
 import Toggle from "../Toggle";
 import { Button } from "../ui/Button";
-import { RiskFlowSettings } from "./RiskFlowSettings";
+// [claude-code 2026-04-26] Removed RiskFlowSettings (Event Weight Calibration /
+// Current Market Regime / Persons of Interest Tiers) per TP — those moved
+// out of Developer settings.
 import { DevPasswordGate } from "./DevPasswordGate";
 
 function fireMockEconCountdown(): void {
@@ -50,10 +52,6 @@ export function DeveloperTab({
 
   return (
     <div className="space-y-6">
-      {/* RiskFlow Settings — new T6 section */}
-      <RiskFlowSettings />
-
-      {/* Existing Developer Settings below */}
       <section>
         <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
           Account Tier

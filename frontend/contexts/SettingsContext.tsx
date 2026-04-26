@@ -590,11 +590,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             ...prev,
             ...(remote.riskSettings as RiskSettings),
           }));
-        if (remote.developerSettings)
-          setDeveloperSettings((prev) => ({
-            ...prev,
-            ...(remote.developerSettings as DeveloperSettings),
-          }));
+        // [claude-code 2026-04-26] Developer settings are per-device dev
+        // tools, not cross-device user preferences. Stale remote was
+        // clobbering fresh local toggles on reload (mount: load local →
+        // fetchBackend → setDeveloperSettings(remote) overwrites). Local-
+        // storage is now authoritative for this slice.
+        // if (remote.developerSettings) [skipped intentionally]
         if (remote.autoPilotSettings)
           setAutoPilotSettings((prev) => ({
             ...prev,

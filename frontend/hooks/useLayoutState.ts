@@ -28,10 +28,15 @@ export function useLayoutState({
   //       sync with missionControlCollapsed (that's what made the mini unreachable).
   const [riskFlowCollapsed, setRiskFlowCollapsed] = useState(false);
   const [tapeCollapsed, setTapeCollapsed] = useState(false);
-  // [claude-code 2026-04-26] Strategium snaps closed by default per TP — when
-  // closed, renders as a floating top-right button (no vertical ruler).
+  // [claude-code 2026-04-26] Strategium snaps closed by default per TP — toggle
+  // is now in the TopHeader panel-toggle group (left of /right of footer).
   const [combinedPanelCollapsed, setCombinedPanelCollapsed] = useState(true);
   const [combinedTapeCollapsed, setCombinedTapeCollapsed] = useState(false);
+  // [claude-code 2026-04-26] Three-panel toggle state per TP — VS Code-style
+  // group of left / footer / right buttons in TopHeader. NavSidebar starts
+  // visible (false). FooterToolbar starts visible (false).
+  const [navSidebarCollapsed, setNavSidebarCollapsed] = useState(false);
+  const [footerCollapsed, setFooterCollapsed] = useState(false);
   const [layoutOption, setLayoutOptionRaw] =
     useState<LayoutOption>(defaultLayout);
   const [prevLayoutOption, setPrevLayoutOption] = useState<LayoutOption | null>(
@@ -105,5 +110,9 @@ export function useLayoutState({
     setRiskFlowCollapsed,
     sidebarOverlayVisible,
     setSidebarOverlayVisible,
+    navSidebarCollapsed,
+    setNavSidebarCollapsed,
+    footerCollapsed,
+    setFooterCollapsed,
   };
 }

@@ -9,6 +9,7 @@ import { createPortal } from "react-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { UpgradeModal } from "../UpgradeModal";
 import { IVScoreCard } from "../IVScoreCard";
+import { PanelToggleGroup } from "./PanelToggleGroup";
 import { useBackend } from "../../lib/backend";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useToast } from "../../contexts/ToastContext";
@@ -91,6 +92,14 @@ interface TopHeaderProps {
   // Rendered next to psychAssistHeadingWidget when activeTab === "performance".
   performanceChatWidget?: React.ReactNode;
   toolbarEditMode?: boolean;
+  // [claude-code 2026-04-26] Three-panel toggle group, mounted right of the
+  // VIX widget. Wired by MainLayout to the layout-state collapse flags.
+  navSidebarCollapsed?: boolean;
+  onToggleNavSidebar?: () => void;
+  footerCollapsed?: boolean;
+  onToggleFooter?: () => void;
+  rightPanelCollapsed?: boolean;
+  onToggleRightPanel?: () => void;
 }
 
 export function TopHeader({
@@ -113,6 +122,12 @@ export function TopHeader({
   voiceRoomWidget,
   performanceChatWidget,
   toolbarEditMode = false,
+  navSidebarCollapsed = false,
+  onToggleNavSidebar,
+  footerCollapsed = false,
+  onToggleFooter,
+  rightPanelCollapsed = false,
+  onToggleRightPanel,
 }: TopHeaderProps) {
   const { tier } = useAuth();
   const backend = useBackend();
@@ -538,6 +553,18 @@ export function TopHeader({
               </span>
             </div>
           </div>
+          {/* [claude-code 2026-04-26] Three-panel toggle group — left/footer/right.
+              Right of the VIX widget per TP. */}
+          {(onToggleNavSidebar || onToggleFooter || onToggleRightPanel) && (
+            <PanelToggleGroup
+              leftCollapsed={navSidebarCollapsed}
+              onToggleLeft={onToggleNavSidebar ?? (() => {})}
+              footerCollapsed={footerCollapsed}
+              onToggleFooter={onToggleFooter ?? (() => {})}
+              rightCollapsed={rightPanelCollapsed}
+              onToggleRight={onToggleRightPanel ?? (() => {})}
+            />
+          )}
           {toolbarOrder.map((id) => {
             const wrapper = (node: React.ReactNode) => (
               <div
