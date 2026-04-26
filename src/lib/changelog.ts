@@ -24,6 +24,16 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
+    date: "2026-04-25T20:30:00",
+    agent: "claude-code",
+    summary:
+      "S35-cleanup follow-up: rerouted econ-backfill-puller from OpenRouter free-tier (meta-llama/llama-3.3-70b:free + mistralai/mistral-large:free, both throttled to 402 insufficient-credits as of today) to Hermes seatChat → DashScope Qwen3-235B-A22B with qwen2.5-72b-instruct fallback. Same free-Qwen path the Arbitrum Lead Analyst seat uses; Groq inside seatChat handles DashScope rate-limits. RawSlicePayload['source'] gained 'hermes-qwen' + 'hermes-qwen-fallback' tags. US slices still enriched via FRED if FRED_API_KEY is set (key e75…a7 lives in .cursor/install.sh + .env.bak, needs `fly secrets set` on prod).",
+    files: [
+      "backend-hono/src/services/cron/econ-backfill-puller.ts",
+      "backend-hono/src/types/econ-backfill.ts",
+    ],
+  },
+  {
     date: "2026-04-25T17:45:00",
     agent: "claude-code",
     summary:

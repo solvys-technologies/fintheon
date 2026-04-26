@@ -1,9 +1,13 @@
+// [claude-code 2026-04-25] S35-cleanup: rerouted puller from OpenRouter free-tier
+// (which has been throttled to 402 insufficient-credits across llama-3.3-70b /
+// mistral-large free models) to Hermes seatChat → DashScope Qwen3-235B-A22B,
+// the same free Qwen path the Arbitrum Lead Analyst seat uses. Groq fallback
+// inside seatChat handles DashScope rate-limits. US slices still enriched with
+// FRED series if FRED_API_KEY is set.
 // [claude-code 2026-04-24] S34-T10: free-tier LLM puller for historical econ events.
-// Called by econ-backfill-orchestrator once per claimed slice.
-// Primary: OpenRouter Llama 3.3 70B (free); fallback: Mistral Large (free).
-// US slices optionally enriched with FRED series if FRED_API_KEY is present.
 
 import { createLogger } from "../../lib/logger.js";
+import { seatChat } from "../arbitrum/adapters.js";
 import type {
   BackfillSlice,
   RawBackfillEvent,
@@ -12,9 +16,12 @@ import type {
 
 const log = createLogger("EconBackfillPuller");
 
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const PRIMARY_MODEL = "meta-llama/llama-3.3-70b-instruct:free";
-const FALLBACK_MODEL = "mistralai/mistral-large:free";
+const PRIMARY_QWEN_MODEL = "qwen3-235b-a22b";
+const FALLBACK_QWEN_MODEL = "qwen2.5-72b-instruct";
+const QWEN_TIMEOUT_MS = 30_000;
+
+const PULLER_SYSTEM_PROMPT =
+  "You are a data extraction tool. Return ONLY valid JSON matching the schema requested. No prose, no markdown fences.";
 
 // FRED series that map cleanly to our 4 categories for US slices.
 const US_FRED_SERIES: Array<{ id: string; name: string }> = [
@@ -25,70 +32,26 @@ const US_FRED_SERIES: Array<{ id: string; name: string }> = [
   { id: "GDP", name: "Gross Domestic Product" },
 ];
 
-interface OpenRouterResponse {
-  choices?: Array<{ message?: { content?: string } }>;
-}
-
-async function sleep(ms: number): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function callOpenRouter(
-  model: string,
+async function callHermesQwen(
+  modelId: string,
   prompt: string,
 ): Promise<string | null> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) return null;
-
-  const backoffs = [250, 1000, 4000];
-  for (let attempt = 0; attempt <= backoffs.length; attempt++) {
-    try {
-      const res = await fetch(OPENROUTER_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are a data extraction tool. Return ONLY valid JSON matching the schema requested. No prose, no markdown fences.",
-            },
-            { role: "user", content: prompt },
-          ],
-          temperature: 0,
-          max_tokens: 4000,
-        }),
-      });
-
-      if (res.status === 429 || res.status === 503) {
-        if (attempt < backoffs.length) {
-          await sleep(backoffs[attempt]);
-          continue;
-        }
-        return null;
-      }
-
-      if (!res.ok) {
-        log.warn(`OpenRouter ${model} HTTP ${res.status}`);
-        return null;
-      }
-
-      const json = (await res.json()) as OpenRouterResponse;
-      return json.choices?.[0]?.message?.content ?? null;
-    } catch (err) {
-      if (attempt < backoffs.length) {
-        await sleep(backoffs[attempt]);
-        continue;
-      }
-      log.warn("OpenRouter fetch failed", { model, error: String(err) });
-      return null;
-    }
+  try {
+    const res = await seatChat({
+      modelId,
+      system: PULLER_SYSTEM_PROMPT,
+      user: prompt,
+      temperature: 0,
+      timeoutMs: QWEN_TIMEOUT_MS,
+    });
+    return res.content && res.content.trim().length > 0 ? res.content : null;
+  } catch (err) {
+    log.warn("Hermes Qwen call failed", {
+      model: modelId,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
   }
-  return null;
 }
 
 function parseJsonArray(raw: string | null): unknown[] {
@@ -212,11 +175,11 @@ export async function pullSliceViaFreeTierLLM(
 ): Promise<RawSlicePayload | null> {
   const prompt = buildPrompt(slice);
 
-  let raw = await callOpenRouter(PRIMARY_MODEL, prompt);
-  let source: RawSlicePayload["source"] = "openrouter-llama";
+  let raw = await callHermesQwen(PRIMARY_QWEN_MODEL, prompt);
+  let source: RawSlicePayload["source"] = "hermes-qwen";
   if (!raw) {
-    raw = await callOpenRouter(FALLBACK_MODEL, prompt);
-    source = "openrouter-mistral";
+    raw = await callHermesQwen(FALLBACK_QWEN_MODEL, prompt);
+    source = "hermes-qwen-fallback";
   }
 
   const llmEvents = parseJsonArray(raw)
