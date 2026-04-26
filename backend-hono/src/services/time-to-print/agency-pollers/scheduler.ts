@@ -52,15 +52,12 @@ function eventKeyFromEcon(name: string): EconEventKey | null {
   if (lower.includes("housing starts")) return "housing-starts";
   if (lower.includes("durable goods")) return "durable-goods";
   if (lower.includes("gdp")) return "gdp";
-  if (lower.includes("pce") || lower.includes("personal income"))
-    return "pce";
+  if (lower.includes("pce") || lower.includes("personal income")) return "pce";
   if (lower.includes("fomc")) return "fomc";
   return null;
 }
 
-function descriptorFor(
-  eventKey: EconEventKey,
-): AgencyReleaseDescriptor | null {
+function descriptorFor(eventKey: EconEventKey): AgencyReleaseDescriptor | null {
   // BLS
   if (eventKey === "cpi") return BLS_RELEASES.cpi;
   if (eventKey === "ppi") return BLS_RELEASES.ppi;
@@ -223,11 +220,14 @@ async function loadAndArm(): Promise<void> {
         forecast: row.forecast ? parseFloat(row.forecast) : null,
         scheduled: null,
       };
-      arm.scheduled = setTimeout(() => {
-        void armOne(arm).catch((err) =>
-          log.warn("armOne threw (swallowed)", { error: String(err) }),
-        );
-      }, Math.max(0, armOffsetMs));
+      arm.scheduled = setTimeout(
+        () => {
+          void armOne(arm).catch((err) =>
+            log.warn("armOne threw (swallowed)", { error: String(err) }),
+          );
+        },
+        Math.max(0, armOffsetMs),
+      );
       pending.set(row.id, arm);
       log.info("Scheduled burst arm", {
         event: row.name,

@@ -15,7 +15,8 @@ export interface AttachedContext {
   cleanedText: string;
 }
 
-const CONTEXT_BLOCK_RE = /\n*\[Context surface=([\w-]+)\]\n([\s\S]*?)(?:\n\n|$)/;
+const CONTEXT_BLOCK_RE =
+  /\n*\[Context surface=([\w-]+)\]\n([\s\S]*?)(?:\n\n|$)/;
 
 export function extractAttachedContext(text: string): AttachedContext | null {
   const m = text.match(CONTEXT_BLOCK_RE);
@@ -32,9 +33,7 @@ export function extractAttachedContext(text: string): AttachedContext | null {
 }
 
 function prettySurface(surface: string): string {
-  return surface
-    .replace(/_/g, " ")
-    .replace(/^./, (c) => c.toUpperCase());
+  return surface.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 }
 
 function formatValue(value: unknown): string {

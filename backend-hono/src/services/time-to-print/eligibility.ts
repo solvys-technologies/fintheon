@@ -104,7 +104,9 @@ export async function getNextEligibleEvents(opts: {
   const tomorrow = horizon.toISOString().slice(0, 10);
   const { data: econRows, error: econErr } = await sb
     .from("economic_events")
-    .select("id, name, date, time, forecast, actual, country, event_key, econ_data")
+    .select(
+      "id, name, date, time, forecast, actual, country, event_key, econ_data",
+    )
     .gte("date", today)
     .lte("date", tomorrow)
     .eq("country", opts.country);
@@ -146,9 +148,7 @@ export async function getNextEligibleEvents(opts: {
     log.warn("earnings query failed", { error: earnErr.message });
   } else {
     for (const row of (earningsRows ?? []) as EarningsRow[]) {
-      const fires = new Date(
-        eventTimeToIso(row.report_date, row.report_time),
-      );
+      const fires = new Date(eventTimeToIso(row.report_date, row.report_time));
       if (fires < now || fires > horizon) continue;
       out.push({
         id: `earnings:${row.id}`,

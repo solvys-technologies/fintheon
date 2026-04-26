@@ -1,3 +1,6 @@
+// [claude-code 2026-04-26] S45.5/F6: services/browserbase/ → services/steel-consul/.
+//   The directory rename is honest about what's actually running (Steel REST,
+//   not the original Browserbase SDK); public route mount stays /api/browserbase/*.
 // [claude-code 2026-04-25] S40-P9 + S42-T5 unified: /api/browserbase/* router.
 // S40 routes (POST/DELETE/GET on /sessions/*, /stream) drive the persistent
 // Consul Browser session. S42 routes (POST/DELETE on /iframe/session) drive
@@ -20,9 +23,9 @@ import {
   createSession as createAgentIframeSession,
   hasBrowserbaseKey,
   runFallbackScreenshotStream,
-} from "../../services/browserbase/agent-iframe.js";
+} from "../../services/steel-consul/agent-iframe.js";
 
-const log = createLogger("BrowserbaseRoute");
+const log = createLogger("SteelConsulRoute");
 
 const IframeSessionRequest = z.object({
   task: z.string().min(1).max(2000),

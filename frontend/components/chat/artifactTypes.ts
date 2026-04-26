@@ -4,7 +4,11 @@
 // "fintheon:artifact" when a CitationChip (T3) is clicked. Both paths funnel into
 // ArtifactPane (web) / ArtifactSheet (mobile).
 
-export type ArtifactKind = "tradingview" | "browserbase" | "report" | "citation";
+export type ArtifactKind =
+  | "tradingview"
+  | "browserbase"
+  | "report"
+  | "citation";
 
 export interface TradingViewArtifact {
   kind: "tradingview";

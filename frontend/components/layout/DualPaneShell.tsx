@@ -40,10 +40,10 @@ export function DualPaneShell({
   }, [hasRight]);
 
   return (
-    <div className={`h-full w-full overflow-hidden ${bgClassName} ${className}`}>
-      <div
-        className={`h-full ${hasRight ? "grid grid-cols-2 gap-0" : ""}`}
-      >
+    <div
+      className={`h-full w-full overflow-hidden ${bgClassName} ${className}`}
+    >
+      <div className={`h-full ${hasRight ? "grid grid-cols-2 gap-0" : ""}`}>
         <div className="h-full w-full overflow-hidden">{left}</div>
         {hasRight && (
           <div

@@ -119,10 +119,7 @@ export function RiskFlowCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, delay: index * 0.04, ease: "easeOut" }}
     >
-      <SwipeAction
-        onSwipeLeft={() => onDismiss(alert.id)}
-        onTap={handleTap}
-      >
+      <SwipeAction onSwipeLeft={() => onDismiss(alert.id)} onTap={handleTap}>
         <motion.div
           whileTap={CARD_PRESS}
           role="button"

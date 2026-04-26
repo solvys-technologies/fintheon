@@ -1,3 +1,13 @@
+// [claude-code 2026-04-26] S45.5/F7: stability review. The chat stream wire
+// format lives in backend-hono/src/services/strands/stream-adapter.ts as
+// `UIEvent` (uses `type:` discriminator). This file is the *frontend-side*
+// activity-rail accumulator contract (uses `kind:` discriminator) — distinct
+// shape, distinct purpose. assistant-ui/react owns the SSE parse on the wire
+// side, so there is no manual `schema.parse()` to wrap with safeParse here;
+// the v5.29.2 / v5.29.4 hotfixes settled the nesting of `data:` payloads in
+// stream-adapter and the contract has held since. If a future surface needs
+// runtime validation of UIEvent, mirror the type into a Zod schema and import
+// it on both sides from a shared lib/contracts/ module.
 // [claude-code 2026-04-25] S42-T3: BridgeStreamEvent type stubs.
 // T1 extends these with payload shapes; this file defines the contract the
 // AgentActivityRail consumes today. When T1 lands, extend the discriminated

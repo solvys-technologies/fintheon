@@ -69,7 +69,9 @@ function mapRawItems(items: any[]): MobileRiskFlowAlert[] {
   return items.map((item) => ({
     id: `backend-${item.id}`,
     title: decodeHtmlEntities(item.headline || item.title || ""),
-    content: decodeHtmlEntities(item.body || item.summary || item.content || ""),
+    content: decodeHtmlEntities(
+      item.body || item.summary || item.content || "",
+    ),
     source: item.source || "",
     severity: macroLevelToSeverity(item.macroLevel ?? 0),
     publishedAt:

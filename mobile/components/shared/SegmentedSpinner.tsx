@@ -17,10 +17,7 @@ interface SegmentedSpinnerProps {
 const SEGMENT_COUNT = 8;
 const ROTATION_PERIOD_MS = 1200;
 
-export function SegmentedSpinner({
-  size = 8,
-  gap = 2,
-}: SegmentedSpinnerProps) {
+export function SegmentedSpinner({ size = 8, gap = 2 }: SegmentedSpinnerProps) {
   const wheelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {

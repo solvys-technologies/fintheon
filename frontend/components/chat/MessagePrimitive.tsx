@@ -50,29 +50,28 @@ interface ContentProps {
   children: ReactNode;
 }
 
-const Content = forwardRef<HTMLDivElement, ContentProps>(function MessageContent(
-  { role, cancelled, className, children },
-  ref,
-) {
-  const isUser = role === "user";
-  return (
-    <div
-      ref={ref}
-      data-content-role={role}
-      className={[
-        "max-w-[82%] rounded-2xl border p-4 backdrop-blur-md transition-colors",
-        isUser
-          ? "fintheon-user-bubble"
-          : cancelled
-            ? "bg-white/[0.03] border-white/5 opacity-50"
-            : "bg-[#0f0f0b]/92 border-white/10 shadow-[0_12px_28px_rgba(0,0,0,0.35)]",
-        className ?? "",
-      ].join(" ")}
-    >
-      {children}
-    </div>
-  );
-});
+const Content = forwardRef<HTMLDivElement, ContentProps>(
+  function MessageContent({ role, cancelled, className, children }, ref) {
+    const isUser = role === "user";
+    return (
+      <div
+        ref={ref}
+        data-content-role={role}
+        className={[
+          "max-w-[82%] rounded-2xl border p-4 backdrop-blur-md transition-colors",
+          isUser
+            ? "fintheon-user-bubble"
+            : cancelled
+              ? "bg-white/[0.03] border-white/5 opacity-50"
+              : "bg-[#0f0f0b]/92 border-white/10 shadow-[0_12px_28px_rgba(0,0,0,0.35)]",
+          className ?? "",
+        ].join(" ")}
+      >
+        {children}
+      </div>
+    );
+  },
+);
 
 function Actions({
   children,

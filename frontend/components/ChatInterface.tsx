@@ -9,7 +9,14 @@
 //   artifact slot are untouched — composer-mount + state-wiring only, per S42-T2 brief.
 // [claude-code 2026-03-29] S9-T5: Replace checkpoint sidebar with real conversation history, Take Note button
 // [claude-code 2026-03-28] S8-T7: Dual-pane layout (left=conversation, right=artifacts) for Chat
-import { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo } from "react";
+import {
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+} from "react";
 import { X, Layers } from "lucide-react";
 import {
   AssistantRuntimeProvider,
@@ -26,10 +33,7 @@ import { FintheonComposer } from "./chat/FintheonComposer";
 import { ConsulBrowserPane } from "./strategium/ConsulBrowserPane";
 import { useConsulBrowser } from "../contexts/ConsulBrowserContext";
 import { MessageQueue, type QueuedMessage } from "./chat/MessageQueue";
-import {
-  CommandPalette,
-  pickRecentUserMessages,
-} from "./chat/CommandPalette";
+import { CommandPalette, pickRecentUserMessages } from "./chat/CommandPalette";
 import { ArtifactPane } from "./chat/ArtifactPane";
 import { ARTIFACT_EVENT, type ArtifactPayload } from "./chat/artifactTypes";
 import { SKILL_PREFIXES } from "../lib/skillPrefixes";
@@ -77,9 +81,8 @@ function ChatInterfaceInner({
   const [showSkills, setShowSkills] = useState(false);
   const { disabledSkills } = useFeatureFlags();
   const [showQuickFintheonModal] = useState(false);
-  const [currentArtifact, setCurrentArtifact] = useState<ArtifactPayload | null>(
-    null,
-  );
+  const [currentArtifact, setCurrentArtifact] =
+    useState<ArtifactPayload | null>(null);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const splitContainerRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLDivElement>(null);
@@ -317,10 +320,7 @@ function ChatInterfaceInner({
     try {
       runtime.append({ role: "user", content: content as any });
     } catch (err) {
-      console.error(
-        "[ChatInterface] persona-override append failed:",
-        err,
-      );
+      console.error("[ChatInterface] persona-override append failed:", err);
     }
     if (pending.prevAgentId) {
       const prev = agents.find((a) => a.id === pending.prevAgentId);

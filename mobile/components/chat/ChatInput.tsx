@@ -84,7 +84,10 @@ export default function ChatInput({
     const tickers = Array.from(new Set(tickerMatches.map((m) => m[1])));
     let outgoing = trimmed;
     if (tickers.length > 0) {
-      outgoing = trimmed.replace(/@([A-Z]{1,5})\b/g, "").replace(/\s{2,}/g, " ").trim();
+      outgoing = trimmed
+        .replace(/@([A-Z]{1,5})\b/g, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
       outgoing += `\n\n---\nTickers attached: ${tickers
         .map((t) => `$${t}`)
         .join(", ")}`;

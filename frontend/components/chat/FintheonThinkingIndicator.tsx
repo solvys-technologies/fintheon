@@ -71,7 +71,10 @@ export function FintheonThinkingIndicator({
             {agentName && (
               <span
                 className="text-[10px]"
-                style={{ color: "color-mix(in oklab, var(--fintheon-text) 45%, transparent)" }}
+                style={{
+                  color:
+                    "color-mix(in oklab, var(--fintheon-text) 45%, transparent)",
+                }}
               >
                 ({agentName})
               </span>
@@ -84,7 +87,8 @@ export function FintheonThinkingIndicator({
                 onClick={() => setExpanded((v) => !v)}
                 className="flex items-center gap-1 text-[11px] transition-colors"
                 style={{
-                  color: "color-mix(in oklab, var(--fintheon-text) 50%, transparent)",
+                  color:
+                    "color-mix(in oklab, var(--fintheon-text) 50%, transparent)",
                 }}
               >
                 {expanded ? (
@@ -98,7 +102,8 @@ export function FintheonThinkingIndicator({
                 <div
                   className="mt-1.5 max-h-[180px] overflow-y-auto pl-2 text-[11px] leading-relaxed whitespace-pre-wrap"
                   style={{
-                    color: "color-mix(in oklab, var(--fintheon-text) 60%, transparent)",
+                    color:
+                      "color-mix(in oklab, var(--fintheon-text) 60%, transparent)",
                   }}
                 >
                   {thinkingContent}
@@ -130,10 +135,7 @@ function NothingFuseStrip() {
     ).matches;
     if (reduced) return;
     const animation = node.animate(
-      [
-        { transform: "translateX(-30%)" },
-        { transform: "translateX(100%)" },
-      ],
+      [{ transform: "translateX(-30%)" }, { transform: "translateX(100%)" }],
       {
         duration: CLUSTER_PERIOD_MS,
         iterations: Infinity,

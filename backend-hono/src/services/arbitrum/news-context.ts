@@ -145,7 +145,8 @@ export function formatNewsContext(
     for (const r of ctx.riskflow) {
       const iv = r.iv != null ? `iv ${r.iv.toFixed(1)}` : "iv —";
       const who = r.speaker ?? r.source ?? "—";
-      const head = r.headline.length > 140 ? r.headline.slice(0, 140) + "…" : r.headline;
+      const head =
+        r.headline.length > 140 ? r.headline.slice(0, 140) + "…" : r.headline;
       lines.push(`  ${r.date ?? "—"} | ${iv.padEnd(7)} | ${who} | ${head}`);
     }
   }
@@ -155,8 +156,7 @@ export function formatNewsContext(
       `Recent Arbitrum verdicts (last ${ctx.verdicts.length}, ${ctx.windowDays}d):`,
     );
     for (const v of ctx.verdicts) {
-      const cons =
-        v.consensus != null ? `p=${v.consensus.toFixed(2)}` : "p=—";
+      const cons = v.consensus != null ? `p=${v.consensus.toFixed(2)}` : "p=—";
       const conf =
         v.confidence != null ? `conf=${v.confidence.toFixed(2)}` : "conf=—";
       const q =

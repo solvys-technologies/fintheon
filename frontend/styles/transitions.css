@@ -479,7 +479,8 @@
    ============================================================ */
 
 @keyframes ttp-pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     text-shadow: 0 0 0 transparent;
     color: var(--fintheon-accent);

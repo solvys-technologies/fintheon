@@ -114,7 +114,11 @@ export async function synthesizeWithPiper(
       }
       // --output_raw emits 22050Hz s16le mono PCM. Wrap it in a WAV header so
       // browsers can play it without an extra decode step.
-      const wav = wrapPcmAsWav(raw, { sampleRate: 22050, channels: 1, bits: 16 });
+      const wav = wrapPcmAsWav(raw, {
+        sampleRate: 22050,
+        channels: 1,
+        bits: 16,
+      });
       resolveFn({
         audioBase64: wav.toString("base64"),
         audioMimeType: "audio/wav",

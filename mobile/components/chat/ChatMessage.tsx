@@ -65,8 +65,7 @@ const formatTime = (iso: string) => {
 
 function ChatMessageInner({ message }: ChatMessageProps) {
   const isUser = message.role === "user";
-  const showFooter =
-    !isUser && message.activity?.complete !== undefined;
+  const showFooter = !isUser && message.activity?.complete !== undefined;
 
   return (
     <motion.div

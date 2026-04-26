@@ -1,18 +1,19 @@
+// [claude-code 2026-04-26] S45.5/F6: services/browserbase/ → services/steel-consul/.
+//   Public route path /api/browserbase/* stays for cache compat; only internal
+//   import paths and directory naming are honest now. v5.31.1 already rewrote
+//   the implementation to call Steel REST while preserving export shape.
 // [claude-code 2026-04-25] S40-P9: /api/browserbase/sessions/* + /stream
 // handlers. Auth required — sessions are per-user resources with a daily cap.
 
 import type { Context } from "hono";
-import {
-  addClient,
-  removeClient,
-} from "../../services/browserbase/sse.js";
+import { addClient, removeClient } from "../../services/steel-consul/sse.js";
 import {
   closeForUser,
   createForUser,
   getActiveForUser,
   getStats,
   touchActivity,
-} from "../../services/browserbase/session-manager.js";
+} from "../../services/steel-consul/session-manager.js";
 
 function userIdOrNull(c: Context): string | null {
   const u = c.get("userId") as string | undefined;

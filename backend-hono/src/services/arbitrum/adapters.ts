@@ -89,9 +89,8 @@ async function vproxyChat(req: SeatChatRequest): Promise<string> {
   // VProxy → claude-opus-4-7 via the local Claude Code subscription. The
   // generateTextViaClaude helper accepts a single prompt, so we synthesize
   // system+user into one input and forward.
-  const { generateTextViaClaude } = await import(
-    "../claude-sdk/process-manager.js"
-  );
+  const { generateTextViaClaude } =
+    await import("../claude-sdk/process-manager.js");
   const prompt = `${req.system}\n\n${req.user}`;
   const text = await generateTextViaClaude(prompt, {
     model: req.modelId,

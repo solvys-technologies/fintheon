@@ -222,8 +222,7 @@ export async function collectFromXHandlesBrowser(
     for (const { tw, cleanHandle, fetch_latency_ms } of batch) {
       const ts = Date.parse(tw.timestamp);
       if (Number.isFinite(ts) && ts < ageCutoff) continue;
-      const headline =
-        tw.text.length > 220 ? tw.text.slice(0, 220) : tw.text;
+      const headline = tw.text.length > 220 ? tw.text.slice(0, 220) : tw.text;
       if (!scoreHeadline(headline)) continue;
       out.push({
         item_id: tw.tweet_id,

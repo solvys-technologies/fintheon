@@ -28,17 +28,18 @@ import { homedir } from "node:os";
 import { createLogger } from "../../lib/logger.js";
 import { isToolApproved, requestApproval } from "../tool-approval-store.js";
 import { browserHarness } from "../browser/harness-tool.js";
-// [claude-code 2026-04-25] S40-P9: Browserbase remote-browser control.
+// [claude-code 2026-04-26] S45.5/F6: ../browserbase/ → ../steel-consul/ rename.
+// [claude-code 2026-04-25] S40-P9: Steel-Consul remote-browser control.
 import {
   closeForUser as consulBrowserClose,
   createForUser as consulBrowserCreate,
   getActiveForUser as consulBrowserActive,
   getStats as consulBrowserStats,
   touchActivity as consulBrowserTouch,
-} from "../browserbase/session-manager.js";
-import { isBrowserbaseAvailable } from "../browserbase/client.js";
-// [claude-code 2026-04-25] S42-T5: Browserbase agent-iframe visible session.
-import { browseVisible } from "../browserbase/agent-iframe.js";
+} from "../steel-consul/session-manager.js";
+import { isBrowserbaseAvailable } from "../steel-consul/client.js";
+// [claude-code 2026-04-25] S42-T5: Steel-Consul agent-iframe visible session.
+import { browseVisible } from "../steel-consul/agent-iframe.js";
 
 const log = createLogger("HarperTools");
 
@@ -435,9 +436,7 @@ export function createHarperTools(
         selector: z
           .string()
           .optional()
-          .describe(
-            "CSS selector for extract; defaults to body innerText",
-          ),
+          .describe("CSS selector for extract; defaults to body innerText"),
       }),
       callback: async (input: {
         action: "create" | "navigate" | "extract" | "close" | "status";
@@ -616,7 +615,9 @@ export function createHarperTools(
                           ? await presetGoldSilverOil()
                           : null;
             if (!data) return ensureNonEmpty('{"error":"missing_preset"}');
-            return ensureNonEmpty(JSON.stringify({ preset: input.preset, data }));
+            return ensureNonEmpty(
+              JSON.stringify({ preset: input.preset, data }),
+            );
           }
           if (input.mode === "quotes") {
             if (!input.symbols || input.symbols.length === 0) {

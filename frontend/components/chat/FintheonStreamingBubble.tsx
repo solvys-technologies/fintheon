@@ -59,7 +59,10 @@ export function FintheonStreamingBubble({
           {compact && (
             <span
               className="ml-0.5 inline-block w-[2px] align-text-bottom bg-[var(--fintheon-accent)]"
-              style={{ height: "12px", animation: "p 1.5s ease-in-out infinite" }}
+              style={{
+                height: "12px",
+                animation: "p 1.5s ease-in-out infinite",
+              }}
               aria-hidden="true"
             />
           )}

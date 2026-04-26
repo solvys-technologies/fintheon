@@ -20,10 +20,7 @@ import {
   MEGACAP_TICKERS,
   type MegacapTicker,
 } from "../earnings/megacap-tickers.js";
-import {
-  classifyToSector,
-  ownerForSector,
-} from "../../config/risk-sectors.js";
+import { classifyToSector, ownerForSector } from "../../config/risk-sectors.js";
 import { spawnSectorDispatch } from "../boardroom-spawner.js";
 
 const log = createLogger("MegacapAnalyst");
@@ -36,9 +33,7 @@ export interface MegacapTrigger {
   context?: Record<string, unknown>;
 }
 
-export function findMegacapInHeadline(
-  headline: string,
-): MegacapTicker | null {
+export function findMegacapInHeadline(headline: string): MegacapTicker | null {
   const upper = headline.toUpperCase();
   // Match $TICKER or whole-word TICKER, longest-first to avoid GOO/GOOGL collisions.
   const sorted = [...MEGACAP_TICKERS].sort((a, b) => b.length - a.length);

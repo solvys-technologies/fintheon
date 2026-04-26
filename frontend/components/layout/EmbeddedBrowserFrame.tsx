@@ -84,9 +84,7 @@ export function EmbeddedBrowserFrame({
       src={src}
       className={className}
       sandbox={DEFAULT_SANDBOX}
-      {...(isBrowserbase
-        ? { allow: "clipboard-read; clipboard-write" }
-        : {})}
+      {...(isBrowserbase ? { allow: "clipboard-read; clipboard-write" } : {})}
     />
   );
 }

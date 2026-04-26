@@ -277,7 +277,9 @@ export async function cleanupOldItems(hoursOld: number = 24): Promise<number> {
  * [claude-code 2026-04-25] S40-P2: hard-delete rows archived more than `days`
  * ago. Runs daily 02:00 ET. Returns the number of rows hard-deleted.
  */
-export async function hardDeleteArchivedItems(days: number = 7): Promise<number> {
+export async function hardDeleteArchivedItems(
+  days: number = 7,
+): Promise<number> {
   if (!isDatabaseAvailable() || !sql) {
     return 0;
   }

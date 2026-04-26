@@ -78,7 +78,9 @@ export function StreamdownText({
 
   // Tags whose children are inline text (where `[N]` can appear directly).
   const components: Components = {
-    p: ({ children, ...props }) => <p {...props}>{walkChildren(children, "p")}</p>,
+    p: ({ children, ...props }) => (
+      <p {...props}>{walkChildren(children, "p")}</p>
+    ),
     li: ({ children, ...props }) => (
       <li {...props}>{walkChildren(children, "li")}</li>
     ),

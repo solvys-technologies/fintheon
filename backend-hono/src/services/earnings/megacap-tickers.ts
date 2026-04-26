@@ -3,7 +3,7 @@
 //
 // Used by:
 //   - Pillar 7 megacap-analyst (boardroom dispatch on earnings + M&A)
-//   - Pillar 8 earnings ingestion (FMP filter)
+//   - Pillar 8 earnings ingestion (TradingView Calendar filter; see megacap-orchestrator.ts)
 //   - Pillar 6 Time-To-Print eligibility list
 
 export const MEGACAP_TICKERS = [

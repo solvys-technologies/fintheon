@@ -314,9 +314,8 @@ export async function ensureEconCoverage(
       hitTV: true,
     };
   }
-  const { upserted, printsWritten, skipped } = await upsertTradingViewEvents(
-    events,
-  );
+  const { upserted, printsWritten, skipped } =
+    await upsertTradingViewEvents(events);
 
   let rowsAfter = rowsBefore + upserted;
   if (sb) {

@@ -37,7 +37,13 @@ export function CitationChip({
     <button
       type="button"
       onClick={handleClick}
-      title={source ? (excerpt ? `${source} — ${excerpt}` : source) : `Citation ${id}`}
+      title={
+        source
+          ? excerpt
+            ? `${source} — ${excerpt}`
+            : source
+          : `Citation ${id}`
+      }
       data-citation-id={id}
       style={{
         display: "inline-flex",

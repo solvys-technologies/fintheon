@@ -1,3 +1,10 @@
+// [claude-code 2026-04-26] S45.5/F7: this UIEvent union IS the chat stream wire
+// format (SSE `data:` payloads emitted to /api/ai/chat + /api/harper/chat).
+// Frontend consumers: @assistant-ui/react's useChat handles parsing; the
+// frontend's BridgeStreamEvent (frontend/types/bridge-stream.ts) is a separate
+// activity-rail accumulator type (uses `kind:` discriminator). Keep this union
+// additive — frontend ignores unknown variants by design. If a runtime contract
+// is ever needed, mirror to Zod in a shared lib/contracts/ module.
 // [claude-code 2026-04-25] S42-T1: extend UIEvent with thinking/tool_call/citation/artifact/complete; wire emission of thinking + tool_call + complete (additive, backwards-compatible)
 // [claude-code 2026-04-05] Strands → UIMessageStream SSE adapter
 // Encodes UIMessageStream events directly as SSE bytes in a single ReadableStream.
@@ -111,7 +118,10 @@ export function strandsToUIStream(
         let promptTokens: number | undefined;
         let completionTokens: number | undefined;
         // [S42-T1] Track open tool_call lifecycles so we can pair start→done with duration_ms
-        const toolStarts = new Map<string, { name: string; startedAt: number }>();
+        const toolStarts = new Map<
+          string,
+          { name: string; startedAt: number }
+        >();
 
         // Heartbeat timer — keeps Bun/Chrome from dropping the connection during tool-call silences
         const heartbeat = setInterval(() => {
@@ -272,14 +282,13 @@ export function strandsToUIStream(
                   name: tname,
                   status: "running",
                 });
-              } else if (
-                inner.type === "messageMetadataEvent" &&
-                inner.usage
-              ) {
+              } else if (inner.type === "messageMetadataEvent" && inner.usage) {
                 // [S42-T1] Capture token counts for the `complete` footer
                 const u = inner.usage;
-                if (typeof u.inputTokens === "number") promptTokens = u.inputTokens;
-                if (typeof u.outputTokens === "number") completionTokens = u.outputTokens;
+                if (typeof u.inputTokens === "number")
+                  promptTokens = u.inputTokens;
+                if (typeof u.outputTokens === "number")
+                  completionTokens = u.outputTokens;
               }
             } else if (ev.type === "toolResultEvent") {
               log.info("Tool result", { tool: ev.result?.toolName });
@@ -287,7 +296,9 @@ export function strandsToUIStream(
               // [S42-T1] Tool lifecycle end — emit done/failed pill with duration
               const tid = String(ev.result?.toolUseId ?? "");
               const open = tid ? toolStarts.get(tid) : undefined;
-              const duration_ms = open ? Date.now() - open.startedAt : undefined;
+              const duration_ms = open
+                ? Date.now() - open.startedAt
+                : undefined;
               const status: "done" | "failed" =
                 ev.result?.status === "error" ? "failed" : "done";
               emit({
@@ -313,8 +324,12 @@ export function strandsToUIStream(
             latency_ms: Date.now() - startTime,
             ...(model !== undefined ? { model } : {}),
             ...(sourceCount !== undefined ? { source_count: sourceCount } : {}),
-            ...(promptTokens !== undefined ? { prompt_tokens: promptTokens } : {}),
-            ...(completionTokens !== undefined ? { completion_tokens: completionTokens } : {}),
+            ...(promptTokens !== undefined
+              ? { prompt_tokens: promptTokens }
+              : {}),
+            ...(completionTokens !== undefined
+              ? { completion_tokens: completionTokens }
+              : {}),
           });
           emit({ type: "finish-step" });
           emit({ type: "finish", finishReason: "error" });
@@ -334,8 +349,12 @@ export function strandsToUIStream(
           latency_ms: Date.now() - startTime,
           ...(model !== undefined ? { model } : {}),
           ...(sourceCount !== undefined ? { source_count: sourceCount } : {}),
-          ...(promptTokens !== undefined ? { prompt_tokens: promptTokens } : {}),
-          ...(completionTokens !== undefined ? { completion_tokens: completionTokens } : {}),
+          ...(promptTokens !== undefined
+            ? { prompt_tokens: promptTokens }
+            : {}),
+          ...(completionTokens !== undefined
+            ? { completion_tokens: completionTokens }
+            : {}),
         });
         emit({ type: "finish", finishReason: "stop" });
 

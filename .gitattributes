@@ -1,0 +1,7 @@
+# [claude-code 2026-04-26] S45.5/F3: track Piper voice models with git-lfs.
+# Run `git lfs install` once per machine before adding *.onnx weights.
+# Without this filter, ~60MB binaries would be committed inline and bloat the
+# repo + break GitHub's 100MB push cap.
+
+*.onnx filter=lfs diff=lfs merge=lfs -text
+*.onnx.json filter=lfs diff=lfs merge=lfs -text

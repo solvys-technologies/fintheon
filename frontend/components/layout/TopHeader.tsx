@@ -577,7 +577,10 @@ export function TopHeader({
               >
                 {layoutOptions.find((opt) => opt.value === layoutOption)?.icon}
                 <span>
-                  {layoutOptions.find((opt) => opt.value === layoutOption)?.label}
+                  {
+                    layoutOptions.find((opt) => opt.value === layoutOption)
+                      ?.label
+                  }
                 </span>
                 <ChevronDown
                   className={`w-3 h-3 transition-transform ${showLayoutDropdown ? "rotate-180" : ""}`}
@@ -604,15 +607,21 @@ export function TopHeader({
                           setShowLayoutDropdown(false);
                         }}
                         className={`w-full px-4 py-3 text-left hover:bg-[var(--fintheon-accent)]/10 transition-colors flex items-start gap-3 ${
-                          layoutOption === option.value ? "bg-[var(--fintheon-accent)]/20" : ""
+                          layoutOption === option.value
+                            ? "bg-[var(--fintheon-accent)]/20"
+                            : ""
                         }`}
                       >
-                        <div className="mt-0.5 text-[var(--fintheon-accent)]">{option.icon}</div>
+                        <div className="mt-0.5 text-[var(--fintheon-accent)]">
+                          {option.icon}
+                        </div>
                         <div className="flex-1">
                           <div className="text-sm font-medium text-[var(--fintheon-accent)] mb-1">
                             {option.label}
                           </div>
-                          <div className="text-xs text-gray-400">{option.description}</div>
+                          <div className="text-xs text-gray-400">
+                            {option.description}
+                          </div>
                         </div>
                       </button>
                     ))}

@@ -33,10 +33,7 @@ export function AiLoader({
     // Slide the 3-segment cluster from off-track-left to off-track-right and
     // loop. translate is in % of the track width.
     const animation = node.animate(
-      [
-        { transform: "translateX(-30%)" },
-        { transform: "translateX(100%)" },
-      ],
+      [{ transform: "translateX(-30%)" }, { transform: "translateX(100%)" }],
       {
         duration: CLUSTER_PERIOD_MS,
         iterations: Infinity,

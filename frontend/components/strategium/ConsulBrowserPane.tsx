@@ -17,7 +17,7 @@ function isElectron(): boolean {
   if (typeof window === "undefined") return false;
   return Boolean(
     (window as unknown as { electron?: unknown }).electron ||
-      (window as unknown as { isElectron?: boolean }).isElectron,
+    (window as unknown as { isElectron?: boolean }).isElectron,
   );
 }
 

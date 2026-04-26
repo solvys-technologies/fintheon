@@ -215,10 +215,7 @@ export async function handleVoiceSample(c: Context) {
   const voice = voiceParam as PiperVoice | "elevenlabs";
   const synth = await synthesizeSample(text, voice);
   if (!synth) {
-    return c.json(
-      { error: "synthesis_unavailable", voice: voiceParam },
-      503,
-    );
+    return c.json({ error: "synthesis_unavailable", voice: voiceParam }, 503);
   }
 
   return c.json({

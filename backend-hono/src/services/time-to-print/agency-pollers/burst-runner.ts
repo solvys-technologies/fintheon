@@ -29,8 +29,7 @@ interface ArmOpts {
   userAgent?: string;
 }
 
-const DEFAULT_USER_AGENT =
-  "Fintheon RiskFlow (tp@pricedinresearch.io)";
+const DEFAULT_USER_AGENT = "Fintheon RiskFlow (tp@pricedinresearch.io)";
 
 function hashBody(body: string): string {
   return createHash("sha256").update(body).digest("hex");

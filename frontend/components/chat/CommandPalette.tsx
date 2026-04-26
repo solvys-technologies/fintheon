@@ -265,5 +265,8 @@ export function pickRecentUserMessages(
 }
 
 export function useRecentUserMessages(messages: any[], count = 10) {
-  return useMemo(() => pickRecentUserMessages(messages, count), [messages, count]);
+  return useMemo(
+    () => pickRecentUserMessages(messages, count),
+    [messages, count],
+  );
 }

@@ -88,7 +88,9 @@ export function AgentActivityRail({
         aria-expanded={open}
       >
         {open ? <ChevronDown size={10} /> : <ChevronUp size={10} />}
-        <span>Activity · {toolCalls.length + citations.length + thoughts.length}</span>
+        <span>
+          Activity · {toolCalls.length + citations.length + thoughts.length}
+        </span>
       </button>
       {open && (
         <div
@@ -103,7 +105,11 @@ export function AgentActivityRail({
             <ToolCallChip key={`tc-${t.id}`} tool={t} />
           ))}
           {citations.map((c) => (
-            <CitationChipRow key={`ci-${c.id}`} citation={c} onClick={handleCitation} />
+            <CitationChipRow
+              key={`ci-${c.id}`}
+              citation={c}
+              onClick={handleCitation}
+            />
           ))}
           {thoughts.map((th) => (
             <ThinkingChip key={`th-${th.id}`} thought={th} />
@@ -223,7 +229,8 @@ function CitationChipRow({
           minWidth: 16,
           height: 16,
           padding: "0 4px",
-          border: "1px solid color-mix(in srgb, var(--accent) 35%, transparent)",
+          border:
+            "1px solid color-mix(in srgb, var(--accent) 35%, transparent)",
           borderRadius: 3,
           background: "color-mix(in srgb, var(--accent) 12%, transparent)",
           color: "var(--accent)",

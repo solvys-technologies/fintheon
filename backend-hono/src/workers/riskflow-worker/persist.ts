@@ -34,8 +34,7 @@ const FLAG_WRITES_LEGACY = "FLAG_NEWS_WORKER_WRITES_RISKFLOW";
 
 function writesEnabled(): boolean {
   // Legacy alias FLAG_NEWS_WORKER_WRITES_RISKFLOW honored until 2026-05-08.
-  const flag =
-    process.env[FLAG_WRITES_NEW] ?? process.env[FLAG_WRITES_LEGACY];
+  const flag = process.env[FLAG_WRITES_NEW] ?? process.env[FLAG_WRITES_LEGACY];
   return flag === "true";
 }
 
@@ -90,10 +89,7 @@ export async function writeCollectedItems(
         tags: item.source_domain ? [item.source_domain] : [],
       })
     ) {
-      perSourceBannedHost.set(
-        src,
-        (perSourceBannedHost.get(src) ?? 0) + 1,
-      );
+      perSourceBannedHost.set(src, (perSourceBannedHost.get(src) ?? 0) + 1);
       continue;
     }
     eligible.push(item);

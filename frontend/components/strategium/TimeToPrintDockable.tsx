@@ -43,7 +43,9 @@ function formatCountdown(secs: number): string {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-function chipClassesFor(beatMiss: TimeToPrintEvent["event"]["beatMiss"]): string {
+function chipClassesFor(
+  beatMiss: TimeToPrintEvent["event"]["beatMiss"],
+): string {
   if (beatMiss === "beat") {
     return "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)] border-[var(--fintheon-accent)]/30";
   }

@@ -2,9 +2,10 @@
 // Fires Sunday 22:00 America/New_York; refreshes next 90 days.
 // Disable via env: MEGACAP_EARNINGS_ENABLED=false.
 
+// [claude-code 2026-04-26] S45.5/F1: import path FMP → megacap-orchestrator (free-stack chain)
 import cron from "node-cron";
 import { createLogger } from "../../lib/logger.js";
-import { refreshMegacapEarnings } from "../earnings/megacap-fmp.js";
+import { refreshMegacapEarnings } from "../earnings/megacap-orchestrator.js";
 
 const log = createLogger("MegacapEarningsRefresh");
 

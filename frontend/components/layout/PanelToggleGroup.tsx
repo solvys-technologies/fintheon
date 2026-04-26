@@ -24,7 +24,9 @@ interface IconProps {
 
 function PanelIcon({ side, active }: IconProps) {
   const accent = "var(--fintheon-accent)";
-  const stroke = active ? accent : `color-mix(in srgb, ${accent} 50%, transparent)`;
+  const stroke = active
+    ? accent
+    : `color-mix(in srgb, ${accent} 50%, transparent)`;
   const fill = active ? accent : "transparent";
   return (
     <svg
@@ -70,7 +72,11 @@ export function PanelToggleGroup({
   const accent = "var(--fintheon-accent)";
   const dimAccent = `color-mix(in srgb, ${accent} 50%, transparent)`;
   return (
-    <div className="flex items-center gap-0.5 flex-shrink-0" role="group" aria-label="Panel toggles">
+    <div
+      className="flex items-center gap-0.5 flex-shrink-0"
+      role="group"
+      aria-label="Panel toggles"
+    >
       <button
         type="button"
         onClick={onToggleLeft}
@@ -81,7 +87,9 @@ export function PanelToggleGroup({
         }}
         className={baseBtn}
         title={leftCollapsed ? "Expand left sidebar" : "Collapse left sidebar"}
-        aria-label={leftCollapsed ? "Expand left sidebar" : "Collapse left sidebar"}
+        aria-label={
+          leftCollapsed ? "Expand left sidebar" : "Collapse left sidebar"
+        }
         aria-pressed={!leftCollapsed}
       >
         <PanelIcon side="left" active={!leftCollapsed} />

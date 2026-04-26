@@ -111,10 +111,7 @@ function extractGenericActual(
   };
 }
 
-function extract(
-  html: string,
-  eventKey: EconEventKey,
-): PrintExtraction | null {
+function extract(html: string, eventKey: EconEventKey): PrintExtraction | null {
   if (eventKey === "cpi") return extractCpiActual(html);
   return extractGenericActual(html, eventKey);
 }

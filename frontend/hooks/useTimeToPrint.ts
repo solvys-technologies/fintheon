@@ -73,7 +73,9 @@ export function useTimeToPrint(): UseTimeToPrintResult {
       es = new EventSource(STREAM_URL);
       es.addEventListener("time-to-print", (msg) => {
         try {
-          const payload = JSON.parse((msg as MessageEvent).data) as TimeToPrintEvent;
+          const payload = JSON.parse(
+            (msg as MessageEvent).data,
+          ) as TimeToPrintEvent;
           if (payload.state === "cleared") {
             if (lastEventIdRef.current === payload.id) {
               setCurrent(null);
@@ -135,12 +137,9 @@ export function useTimeToPrint(): UseTimeToPrintResult {
       if (cancelled) return;
       const remaining = Math.max(
         0,
-        Math.floor(
-          (new Date(current.fires_at).getTime() - Date.now()) / 1000,
-        ),
+        Math.floor((new Date(current.fires_at).getTime() - Date.now()) / 1000),
       );
-      const delay =
-        remaining > 60 ? 60_000 : remaining > 0 ? 30_000 : 1_000;
+      const delay = remaining > 60 ? 60_000 : remaining > 0 ? 30_000 : 1_000;
       timer = setTimeout(() => {
         setTick((t) => t + 1);
         schedule();
@@ -157,9 +156,7 @@ export function useTimeToPrint(): UseTimeToPrintResult {
     if (!current) return 0;
     return Math.max(
       0,
-      Math.floor(
-        (new Date(current.fires_at).getTime() - Date.now()) / 1000,
-      ),
+      Math.floor((new Date(current.fires_at).getTime() - Date.now()) / 1000),
     );
   }, [current, tick]);
 

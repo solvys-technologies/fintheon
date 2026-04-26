@@ -163,7 +163,9 @@ export function RefinementEngine() {
 
   const fetchRegime = useCallback(async () => {
     try {
-      const res = await fetchJson<RegimeState>(`${API_BASE}/api/regime/current`);
+      const res = await fetchJson<RegimeState>(
+        `${API_BASE}/api/regime/current`,
+      );
       setRegime(res);
     } catch {
       /* silent */

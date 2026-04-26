@@ -208,7 +208,9 @@ async function steelGetSession(
     );
     if (!res.ok) return null;
     const json = (await res.json()) as SteelSessionPayload;
-    return { connectUrl: deriveSteelConnectUrl(base, { ...json, id: sessionId }) };
+    return {
+      connectUrl: deriveSteelConnectUrl(base, { ...json, id: sessionId }),
+    };
   } catch {
     return null;
   } finally {
@@ -313,7 +315,10 @@ export async function* runTask(
       const context = browser.contexts()[0] ?? (await browser.newContext());
       const page = context.pages()[0] ?? (await context.newPage());
 
-      await page.goto(target, { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.goto(target, {
+        waitUntil: "domcontentloaded",
+        timeout: 30_000,
+      });
       yield { event: "navigated", detail: { url: target } };
       publish({
         type: "tool_call",
@@ -383,7 +388,10 @@ export async function runFallbackScreenshotStream(
   const ticker = setInterval(async () => {
     if (stopped) return;
     try {
-      const buf = await handle.page.screenshot({ type: "png", fullPage: false });
+      const buf = await handle.page.screenshot({
+        type: "png",
+        fullPage: false,
+      });
       const b64 = buf.toString("base64");
       publish({
         type: "artifact",

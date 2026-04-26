@@ -25,11 +25,7 @@ export interface BackfillSlice {
 // dropped — no paid APIs. Slices now sourced from Hermes (Ollama Cloud
 // Qwen3.5:397b-cloud) and FRED.
 export interface RawSlicePayload {
-  source:
-    | "hermes-qwen"
-    | "hermes-qwen-fallback"
-    | "fred"
-    | "mixed";
+  source: "hermes-qwen" | "hermes-qwen-fallback" | "fred" | "mixed";
   slice_id: string;
   country: string;
   slice_start: string;

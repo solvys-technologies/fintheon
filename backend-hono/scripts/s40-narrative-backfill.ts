@@ -29,9 +29,7 @@ interface RowWithHeadline {
 }
 
 function hashHeadline(headline: string): string {
-  return createHash("sha1")
-    .update(normalizeHeadline(headline))
-    .digest("hex");
+  return createHash("sha1").update(normalizeHeadline(headline)).digest("hex");
 }
 
 async function backfillTable(
@@ -90,7 +88,9 @@ async function backfillTable(
       .is("archived_at", null)
       .order("published_at", { ascending: true });
     if (fetchErr) {
-      console.warn(`[backfill] dedup fallback fetch failed: ${fetchErr.message}`);
+      console.warn(
+        `[backfill] dedup fallback fetch failed: ${fetchErr.message}`,
+      );
     } else {
       const seen = new Map<string, string>(); // hash → first id
       const toArchive: any[] = [];

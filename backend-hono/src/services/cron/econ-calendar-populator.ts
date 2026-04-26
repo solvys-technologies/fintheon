@@ -190,15 +190,16 @@ function tvEventToFFShape(tv: TVEvent): FFEntry | null {
     // FF code expected currency string; we set the country-mapped currency so
     // the existing `ffCurrencyToCountry` round-trip resolves cleanly. Reverse
     // lookup by value from the existing FF map keeps a single mapping source.
-    country: Object.entries({
-      USD: "US",
-      EUR: "EU",
-      GBP: "UK",
-      JPY: "JP",
-      NZD: "NZ",
-      AUD: "AU",
-      CAD: "CA",
-    } as const).find(([, v]) => v === internalCountry)?.[0] ?? "USD",
+    country:
+      Object.entries({
+        USD: "US",
+        EUR: "EU",
+        GBP: "UK",
+        JPY: "JP",
+        NZD: "NZ",
+        AUD: "AU",
+        CAD: "CA",
+      } as const).find(([, v]) => v === internalCountry)?.[0] ?? "USD",
     date: tv.date,
     impact:
       tv.importance === 1
@@ -292,9 +293,7 @@ export async function runEconCalendarPopulator(
   // actuals when they arrive.
   const tvFromIso = new Date().toISOString();
   const tvToIso = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  const tvCountries = Array.from(countries).map((c) =>
-    c === "UK" ? "GB" : c,
-  );
+  const tvCountries = Array.from(countries).map((c) => (c === "UK" ? "GB" : c));
   const [ffRows, tvRows] = await Promise.all([
     fetchForexFactory(),
     fetchTradingViewCalendar({

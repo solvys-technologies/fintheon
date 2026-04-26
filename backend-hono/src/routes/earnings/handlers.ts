@@ -1,10 +1,11 @@
+// [claude-code 2026-04-26] S45.5/F1: switched calendar source FMP → megacap-orchestrator (TV chain)
 // [claude-code 2026-04-25] S40-P8: /api/earnings/* handlers — public reads
 // (lookahead is UI content). Mutations gated through internal cron only.
 
 import type { Context } from "hono";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
-import { refreshMegacapEarnings } from "../../services/earnings/megacap-fmp.js";
+import { refreshMegacapEarnings } from "../../services/earnings/megacap-orchestrator.js";
 
 const log = createLogger("EarningsRoutes");
 

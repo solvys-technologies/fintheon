@@ -847,9 +847,7 @@ function MainLayoutInner() {
           onHideFooter={() => setFooterToggleHidden(true)}
           /* [claude-code 2026-04-26] Right toggle drives strategiumVisible. In
              Castra mode the panel force-shows; the button mirrors actual state. */
-          rightPanelCollapsed={
-            rightToggleHidden ? false : !showStrategium
-          }
+          rightPanelCollapsed={rightToggleHidden ? false : !showStrategium}
           onToggleRightPanel={
             rightToggleHidden
               ? undefined

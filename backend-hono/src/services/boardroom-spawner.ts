@@ -276,9 +276,8 @@ most exposed, and one line on whether a boardroom escalation is warranted.`;
   };
   const agent =
     personaMap[opts.ownerPersona.toLowerCase()] ?? BOARDROOM_AGENTS[0];
-  await spawnAgentResponse(agent, prompt, "spontaneous").catch(
-    (err: unknown) =>
-      console.warn("[BoardroomSpawner] Sector dispatch threw (swallowed)", err),
+  await spawnAgentResponse(agent, prompt, "spontaneous").catch((err: unknown) =>
+    console.warn("[BoardroomSpawner] Sector dispatch threw (swallowed)", err),
   );
 }
 

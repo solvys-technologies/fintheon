@@ -65,16 +65,33 @@ function UsFlag({ size, className }: { size: number; className: string }) {
 
 function EuFlag({ size, className }: { size: number; className: string }) {
   return (
-    <svg viewBox="0 0 60 32" width={size * 1.875} height={size} className={`inline-block ${className}`}>
+    <svg
+      viewBox="0 0 60 32"
+      width={size * 1.875}
+      height={size}
+      className={`inline-block ${className}`}
+    >
       <rect width="60" height="32" fill="#003399" />
-      <circle cx="30" cy="16" r="6" fill="none" stroke="#FFCC00" strokeWidth="1" />
+      <circle
+        cx="30"
+        cy="16"
+        r="6"
+        fill="none"
+        stroke="#FFCC00"
+        strokeWidth="1"
+      />
     </svg>
   );
 }
 
 function UkFlag({ size, className }: { size: number; className: string }) {
   return (
-    <svg viewBox="0 0 60 32" width={size * 1.875} height={size} className={`inline-block ${className}`}>
+    <svg
+      viewBox="0 0 60 32"
+      width={size * 1.875}
+      height={size}
+      className={`inline-block ${className}`}
+    >
       <rect width="60" height="32" fill="#012169" />
       <path d="M0,0 L60,32 M60,0 L0,32" stroke="#ffffff" strokeWidth="3" />
       <path d="M30,0 V32 M0,16 H60" stroke="#ffffff" strokeWidth="6" />
@@ -85,7 +102,12 @@ function UkFlag({ size, className }: { size: number; className: string }) {
 
 function JpFlag({ size, className }: { size: number; className: string }) {
   return (
-    <svg viewBox="0 0 60 32" width={size * 1.875} height={size} className={`inline-block ${className}`}>
+    <svg
+      viewBox="0 0 60 32"
+      width={size * 1.875}
+      height={size}
+      className={`inline-block ${className}`}
+    >
       <rect width="60" height="32" fill="#ffffff" />
       <circle cx="30" cy="16" r="9" fill="#bc002d" />
     </svg>

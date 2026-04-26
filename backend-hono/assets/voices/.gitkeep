@@ -1,0 +1,20 @@
+# [claude-code 2026-04-26] S45.5/F3: Piper voice weights live here.
+#
+# Expected files (committed via git-lfs per ../../.gitattributes):
+#   en_GB-cori-medium.onnx
+#   en_GB-cori-medium.onnx.json
+#
+# Source: https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_GB/cori/medium
+# Download both files (the .onnx is ~63MB) and drop them in this directory,
+# then `git add` will route them through the LFS filter automatically.
+#
+# Until the weights are present:
+#   - isPiperAvailable("cori") returns false
+#   - synthesizeWithPiper returns null
+#   - the voice router falls back to ElevenLabs ("Rachel" default)
+#   - /api/voice/sample?voice=cori returns 503 synthesis_unavailable
+#
+# The Fly Docker image now COPYs this directory (see ../../Dockerfile);
+# once weights land, redeploy backend-hono to pick them up. The Piper binary
+# also needs to be installed in the container (apk add piper or equivalent) —
+# tracked as a Dockerfile follow-up the first time TP wants Cori live.

@@ -261,13 +261,14 @@ export default function ChatPage({ visible }: ChatPageProps) {
       }
     };
     // S42-T7: defer the first check so first paint isn't blocked by network.
-    const idle =
-      (window as unknown as {
+    const idle = (
+      window as unknown as {
         requestIdleCallback?: (
           cb: () => void,
           opts?: { timeout: number },
         ) => number;
-      }).requestIdleCallback;
+      }
+    ).requestIdleCallback;
     let idleHandle: number | undefined;
     let firstCheckTimeout: ReturnType<typeof setTimeout> | undefined;
     if (typeof idle === "function") {
@@ -281,12 +282,15 @@ export default function ChatPage({ visible }: ChatPageProps) {
       clearInterval(id);
       if (
         idleHandle !== undefined &&
-        typeof (window as unknown as {
-          cancelIdleCallback?: (h: number) => void;
-        }).cancelIdleCallback === "function"
+        typeof (
+          window as unknown as {
+            cancelIdleCallback?: (h: number) => void;
+          }
+        ).cancelIdleCallback === "function"
       ) {
-        (window as unknown as { cancelIdleCallback: (h: number) => void })
-          .cancelIdleCallback(idleHandle);
+        (
+          window as unknown as { cancelIdleCallback: (h: number) => void }
+        ).cancelIdleCallback(idleHandle);
       }
       if (firstCheckTimeout !== undefined) clearTimeout(firstCheckTimeout);
     };

@@ -97,7 +97,9 @@ function Activity({
   children: ReactNode;
   style?: CSSProperties;
 }) {
-  return <div style={{ width: "100%", marginTop: 6, ...style }}>{children}</div>;
+  return (
+    <div style={{ width: "100%", marginTop: 6, ...style }}>{children}</div>
+  );
 }
 
 function Actions({

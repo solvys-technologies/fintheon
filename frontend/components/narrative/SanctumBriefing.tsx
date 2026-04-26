@@ -70,8 +70,8 @@ export function SanctumBriefing({
             label="this briefing"
             payload={{
               summary: briefing.summary?.slice(0, 200),
-              key_findings_count: (briefing.keyFindings?.length ?? 0),
-              risk_alerts_count: (briefing.riskAlerts?.length ?? 0),
+              key_findings_count: briefing.keyFindings?.length ?? 0,
+              risk_alerts_count: briefing.riskAlerts?.length ?? 0,
               consensus: briefing.agentConsensus,
             }}
           />

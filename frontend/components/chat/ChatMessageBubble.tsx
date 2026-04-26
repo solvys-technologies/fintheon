@@ -54,8 +54,7 @@ export const ChatMessageBubble = forwardRef<
       : null;
 
   const isAssistant = message.role === "assistant";
-  const showRail =
-    isAssistant && !message.cancelled && activity !== undefined;
+  const showRail = isAssistant && !message.cancelled && activity !== undefined;
   const showFooter =
     isAssistant && !message.cancelled && activity?.complete !== undefined;
 
@@ -106,7 +105,9 @@ export const ChatMessageBubble = forwardRef<
             agent={activity.complete.agent}
             generatedAt={activity.complete.generatedAt}
             latencyMs={activity.complete.latencyMs}
-            sourceCount={activity.complete.sourceCount ?? activity.citations.length}
+            sourceCount={
+              activity.complete.sourceCount ?? activity.citations.length
+            }
             model={activity.complete.model}
           />
         </MessagePrimitive.Footer>

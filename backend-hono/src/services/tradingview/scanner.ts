@@ -206,8 +206,7 @@ function rowToQuote(row: ScannerRow<typeof QUOTE_COLS>): QuoteRow {
     change: Number(f.change ?? 0),
     changeAbs: Number(f.change_abs ?? 0),
     volume: Number(f.volume ?? 0),
-    marketCap:
-      f.market_cap_basic == null ? null : Number(f.market_cap_basic),
+    marketCap: f.market_cap_basic == null ? null : Number(f.market_cap_basic),
     high: Number(f.high ?? 0),
     low: Number(f.low ?? 0),
     open: Number(f.open ?? 0),
@@ -224,7 +223,8 @@ export async function quotes(
   market: ScannerMarket = "america",
 ): Promise<QuoteRow[]> {
   if (symbols.length === 0) return [];
-  const isEquitySegment = market === "america" || market === "nasdaq" || market === "nyse";
+  const isEquitySegment =
+    market === "america" || market === "nasdaq" || market === "nyse";
   const cols = isEquitySegment ? QUOTE_COLS : NONEQUITY_QUOTE_COLS;
   const res = await rawScan<typeof QUOTE_COLS>(market, {
     columns: [...cols],
@@ -254,9 +254,14 @@ export async function topMovers(opts: {
       right: 0,
     },
   ];
-  const minCap = opts.minMarketCap === undefined ? 250_000_000 : opts.minMarketCap;
+  const minCap =
+    opts.minMarketCap === undefined ? 250_000_000 : opts.minMarketCap;
   if (minCap != null) {
-    filter.push({ left: "market_cap_basic", operation: "egreater", right: minCap });
+    filter.push({
+      left: "market_cap_basic",
+      operation: "egreater",
+      right: minCap,
+    });
   }
   const res = await rawScan<typeof QUOTE_COLS>(opts.market, {
     columns: [...QUOTE_COLS],

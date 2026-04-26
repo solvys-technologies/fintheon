@@ -9,6 +9,32 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T22:30:00",
+    agent: "claude-code",
+    summary:
+      "S45.5/F1+F3+F5+F6+F7 — silent-failure cleanup wave 2. F1: replaced megacap-fmp.ts with services/earnings/megacap-orchestrator.ts driving a free-stack chain (services/earnings/sources/{tradingview-calendar, browser-harness-scrape, financial-datasets-mcp, index}.ts). TradingView's public scanner.tradingview.com endpoint is the live primary source for the 12-megacap watchlist (no auth, no key); browser-harness scrape + FinancialDatasets MCP slots are stubs with TODO comments — chain orchestrator degrades gracefully. Wired financial-datasets MCP into .mcp.json (uv command, server.py entrypoint). enrichEarningsActual is now a stub returning {ok:false} until the FD-MCP get_income_statements path is wired or TP greenlights an actuals source — the cron checks ok before firing megacap-analyst dispatch so nothing fires while stubbed. F3: staged Piper cori weights infra — added .gitattributes (*.onnx + *.onnx.json via git-lfs), backend-hono/assets/voices/.gitkeep with download instructions, and a COPY assets ./assets step in backend-hono/Dockerfile. The actual ~63MB en_GB-cori-medium.onnx + .json files need to be downloaded from huggingface.co/rhasspy/piper-voices and dropped in assets/voices/ (TP-action). The piper binary is also not yet in the image (apk add piper, follow-up). Until both land, /api/voice/sample?voice=cori 503s and the router falls back to ElevenLabs. F5: verified the v5.32.0 Arbitrum chamber rebuild — services/arbitrum/seats.ts uses claude-opus-4-7 (Lead) / qwen3.5:397b-cloud (Forecaster, Bear) / minimax-m2.7:cloud (Risk) / mistral-large-3:675b-cloud (Quant). None of the OLD model IDs (qwen3-235b-a22b, qwen2.5-72b-instruct, qwq-32b-preview, qwen2.5-coder-32b, qwen3-14b) remain. F5 is RESOLVED — no code change needed. F6: renamed services/browserbase/ → services/steel-consul/ and routes/browserbase/ → routes/steel-consul/ (git mv preserves history). Updated 6 import sites (routes/index.ts, routes/steel-consul/handlers.ts, routes/steel-consul/index.ts, services/strands/harper-tools.ts × 3). Public route mount stays /api/browserbase/* for desktop/Electron cache compat. Internal symbols like browserbaseEventBus, kind:'browserbase' artifact discriminator, EmbeddedBrowserMode='browserbase' stay — they're API contract identifiers, not path-derived. F7: chat stream contract review — confirmed UIEvent (services/strands/stream-adapter.ts) is the canonical wire format. assistant-ui/react owns SSE parsing, so there is no manual schema.parse() to wrap with safeParse — the v5.29.2/v5.29.4 hotfixes settled the data: nesting and the contract has held since. Added cross-ref headers on both bridge-stream.ts (frontend) and stream-adapter.ts (backend) documenting the dual-contract topology. Backend + frontend tsc clean; frontend vite build clean.",
+    files: [
+      ".gitattributes",
+      ".mcp.json",
+      "backend-hono/Dockerfile",
+      "backend-hono/assets/voices/.gitkeep",
+      "backend-hono/src/routes/earnings/handlers.ts",
+      "backend-hono/src/routes/steel-consul/handlers.ts",
+      "backend-hono/src/routes/steel-consul/index.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/services/cron/megacap-earnings-enrichment.ts",
+      "backend-hono/src/services/cron/megacap-earnings-refresh.ts",
+      "backend-hono/src/services/earnings/megacap-orchestrator.ts",
+      "backend-hono/src/services/earnings/sources/browser-harness-scrape.ts",
+      "backend-hono/src/services/earnings/sources/financial-datasets-mcp.ts",
+      "backend-hono/src/services/earnings/sources/index.ts",
+      "backend-hono/src/services/earnings/sources/tradingview-calendar.ts",
+      "backend-hono/src/services/strands/harper-tools.ts",
+      "backend-hono/src/services/strands/stream-adapter.ts",
+      "frontend/types/bridge-stream.ts",
+    ],
+  },
+  {
     date: "2026-04-26T22:00:00",
     agent: "claude-code",
     summary:
@@ -148,11 +174,7 @@ export const changelog: ChangelogEntry[] = [
     agent: "claude-code",
     summary:
       "v5.30.1 — INSTALL-UPDATE hotfix. (1) Removed dead `omi-reference/` nested repo from tracking — was a public Omi clone vendored during S21 Harper Voice integration, never imported anywhere, polluting `git status` on every install dir and blocking `fintheon update` with submodule-modified noise. (2) Hardened `scripts/fintheon-update.sh` Step 2 to auto-clear unmerged-path residue from aborted cherry-picks/merges before stashing — previously this hung the update loop with `error: could not write index` whenever cross-worktree merges left a flag on the index entry. New flow: detect via `git diff --diff-filter=U`, reset each conflicted path to HEAD (no work lost — committed state is preserved), then proceed to stash any real changes. The fix self-distributes via the existing self-update bootstrap at the top of fintheon-update.sh, so future installs heal automatically.",
-    files: [
-      "omi-reference",
-      "scripts/fintheon-update.sh",
-      "package.json",
-    ],
+    files: ["omi-reference", "scripts/fintheon-update.sh", "package.json"],
   },
   {
     date: "2026-04-26T08:00:00",
@@ -181,16 +203,13 @@ export const changelog: ChangelogEntry[] = [
     agent: "claude-code",
     summary:
       "v5.29.5 — white-screen DMG fix + stash-pop UX. (1) White-screen root cause: v5.29.4 DMG shipped with frontend/dist/index.html containing absolute `/assets/*` paths because the build sequence did `vite build` (relative paths, correct), then `vercel build --prod` (rebuilt dist with VERCEL=1, poisoning to /assets/*), then electron-builder (bundled the poisoned dist). Electron's loadFile resolves /assets/* to file:///assets/* → 404 → white screen. v5.29.5 rebuilds frontend/dist with VERCEL unset BETWEEN the Vercel deploy step and electron-builder per the dmg-after-vercel-build memory. (2) fintheon-update.sh stash-pop warning now prints the exact `cd $FINTHEON_ROOT` command + the stash ref + the actual pop stderr instead of a vague 'run git stash pop manually' that fails when run from $HOME.",
-    files: [
-      "scripts/fintheon-update.sh",
-      "package.json",
-    ],
+    files: ["scripts/fintheon-update.sh", "package.json"],
   },
   {
     date: "2026-04-26T04:25:00",
     agent: "claude-code",
     summary:
-      "v5.29.4 — chat stream Zod fix, take 2. v5.29.2 renamed S42-T1 events to data-* prefix but kept latency_ms/model as flat top-level keys, which still failed assistant-ui v6's Zod validation (unrecognized_keys on the custom arm). Now the emit() in stream-adapter both renames the type AND nests every non-{type,id} field under data: per the SDK's custom data part contract: {type:'data-X', id?, data:{...}}. Verified locally: chat stream now emits data: {\"type\":\"data-complete\",\"data\":{\"latency_ms\":...,\"model\":...}} which Zod accepts. Greeting clears, no more 'Type validation failed' banner.",
+      'v5.29.4 — chat stream Zod fix, take 2. v5.29.2 renamed S42-T1 events to data-* prefix but kept latency_ms/model as flat top-level keys, which still failed assistant-ui v6\'s Zod validation (unrecognized_keys on the custom arm). Now the emit() in stream-adapter both renames the type AND nests every non-{type,id} field under data: per the SDK\'s custom data part contract: {type:\'data-X\', id?, data:{...}}. Verified locally: chat stream now emits data: {"type":"data-complete","data":{"latency_ms":...,"model":...}} which Zod accepts. Greeting clears, no more \'Type validation failed\' banner.',
     files: [
       "backend-hono/src/services/strands/stream-adapter.ts",
       "package.json",
@@ -202,20 +221,14 @@ export const changelog: ChangelogEntry[] = [
     agent: "claude-code",
     summary:
       "v5.29.3 — two-bug hotfix from crash.log diagnosis. (1) Auto-close root cause: electron-updater autoDownload=true + autoInstallOnAppQuit=true caused the running app to silently background-download every new GH release (autoUpdater.checkForUpdates polls every 30 min) and then quit-and-install via the renderer toast IPC. crash.log timestamps clustered around each release publish. Disabled both flags so updates require explicit user click on the toast. (2) 'Changes could not be stashed' silently destroyed uncommitted work: scripts/fintheon-update.sh:122 ran `git stash push 2>/dev/null || true` then proceeded to `git reset --hard $LATEST_TAG`. Now adds -u to capture untracked files, captures stderr to /tmp/fintheon-update-stash.log, and ABORTS with the visible error instead of clobbering the tree.",
-    files: [
-      "electron/main.cjs",
-      "scripts/fintheon-update.sh",
-      "package.json",
-    ],
+    files: ["electron/main.cjs", "scripts/fintheon-update.sh", "package.json"],
   },
   {
     date: "2026-04-25T23:55:00",
     agent: "claude-code",
     summary:
       "S40 shipped: Time-To-Print realtime + Consul Browser. Archived to sprint-changelog/. 9 pillars, 38 files. Sub-track briefs deleted.",
-    files: [
-      "sprint-changelog/S40-BRIEF-time-to-print-news-realtime.md",
-    ],
+    files: ["sprint-changelog/S40-BRIEF-time-to-print-news-realtime.md"],
   },
   {
     date: "2026-04-25T23:55:01",

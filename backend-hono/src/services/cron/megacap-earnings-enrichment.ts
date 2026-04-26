@@ -7,15 +7,15 @@
 //
 // Disable via env: MEGACAP_EARNINGS_ENRICHMENT_ENABLED=false.
 
+// [claude-code 2026-04-26] S45.5/F1: import path FMP → megacap-orchestrator. Note that
+// enrichEarningsActual is currently stubbed (returns ok:false) until either the
+// FinancialDatasets MCP path is wired or TP greenlights an actuals source.
 import cron from "node-cron";
 import { sql, isDatabaseAvailable } from "../../config/database.js";
 import { createLogger } from "../../lib/logger.js";
-import { enrichEarningsActual } from "../earnings/megacap-fmp.js";
+import { enrichEarningsActual } from "../earnings/megacap-orchestrator.js";
 import { triggerMegacapAnalyst } from "../analysts/megacap-analyst.js";
-import {
-  isMegacap,
-  type MegacapTicker,
-} from "../earnings/megacap-tickers.js";
+import { isMegacap, type MegacapTicker } from "../earnings/megacap-tickers.js";
 
 const log = createLogger("MegacapEarningsEnrichment");
 

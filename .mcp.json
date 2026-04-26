@@ -21,6 +21,18 @@
     "claude-peers": {
       "command": "bun",
       "args": ["/Users/tifos/claude-peers-mcp/server.ts"]
+    },
+    "financial-datasets": {
+      "command": "/Users/tifos/.local/bin/uv",
+      "args": [
+        "--directory",
+        "/Users/tifos/Desktop/Codebases/financial-datasets-mcp",
+        "run",
+        "server.py"
+      ],
+      "env": {
+        "FINANCIAL_DATASETS_API_KEY": "${FINANCIAL_DATASETS_API_KEY}"
+      }
     }
   }
 }

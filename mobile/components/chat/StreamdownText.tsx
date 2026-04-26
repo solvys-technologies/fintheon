@@ -69,7 +69,9 @@ export function StreamdownText({
     });
 
   const components: Components = {
-    p: ({ children, ...props }) => <p {...props}>{walkChildren(children, "p")}</p>,
+    p: ({ children, ...props }) => (
+      <p {...props}>{walkChildren(children, "p")}</p>
+    ),
     li: ({ children, ...props }) => (
       <li {...props}>{walkChildren(children, "li")}</li>
     ),

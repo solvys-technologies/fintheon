@@ -175,10 +175,10 @@ function AuthGate() {
                         <ThreadProvider>
                           <VoiceProvider>
                             <ConsulBrowserProvider>
-                            <ERProvider>
-                              <div className="dark">
-                                <VoiceRimFrame />
-                                <style>{`
+                              <ERProvider>
+                                <div className="dark">
+                                  <VoiceRimFrame />
+                                  <style>{`
                   * {
                     scrollbar-width: thin;
                     scrollbar-color: var(--fintheon-accent) var(--fintheon-surface);
@@ -213,15 +213,15 @@ function AuthGate() {
                     pointer-events: none;
                   }
                 `}</style>
-                                <ApiErrorToastBridge />
-                                <VersionChecker />
-                                <MainLayout />
-                                <ConsulControlLayer />
-                                <NotificationContainer />
-                                <ToastContainer />
-                                <PreMarketReminder />
-                              </div>
-                            </ERProvider>
+                                  <ApiErrorToastBridge />
+                                  <VersionChecker />
+                                  <MainLayout />
+                                  <ConsulControlLayer />
+                                  <NotificationContainer />
+                                  <ToastContainer />
+                                  <PreMarketReminder />
+                                </div>
+                              </ERProvider>
                             </ConsulBrowserProvider>
                           </VoiceProvider>
                         </ThreadProvider>

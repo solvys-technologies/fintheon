@@ -136,9 +136,9 @@ export function createMarketScanRoutes() {
     if (symbols.length === 0) {
       return c.json({ ok: false, error: "no_symbols" }, 400);
     }
-    const market = (typeof body.market === "string"
-      ? body.market
-      : "america") as ScannerMarket;
+    const market = (
+      typeof body.market === "string" ? body.market : "america"
+    ) as ScannerMarket;
     try {
       const data = await quotes(symbols, market);
       return c.json({ ok: true, asOf: new Date().toISOString(), data });

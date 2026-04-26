@@ -227,7 +227,8 @@ export async function streamHarperChat(
   // [S42-T1] sourceCount = non-empty RiskFlow context lines this turn.
   // Powers the `complete` footer's source_count field; T3 renders it as the citation chip count.
   const sourceCount = options.riskFlowContext
-    ? options.riskFlowContext.split("\n").filter((l) => l.trim().length > 0).length
+    ? options.riskFlowContext.split("\n").filter((l) => l.trim().length > 0)
+        .length
     : undefined;
   // [S42-T1] Resolved provider model (Strands pins claude-opus-4-6 in createHarperAgent),
   // surfaced in the `complete` footer for the message-meta line.

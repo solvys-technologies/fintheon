@@ -220,10 +220,14 @@ export function FintheonComposer({
         // Skills endpoint not available — use prop defaults
       }
     };
-    const idle =
-      (window as unknown as {
-        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
-      }).requestIdleCallback;
+    const idle = (
+      window as unknown as {
+        requestIdleCallback?: (
+          cb: () => void,
+          opts?: { timeout: number },
+        ) => number;
+      }
+    ).requestIdleCallback;
     let idleHandle: number | undefined;
     let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
     if (typeof idle === "function") {
@@ -235,11 +239,13 @@ export function FintheonComposer({
       cancelled = true;
       if (
         idleHandle !== undefined &&
-        typeof (window as unknown as { cancelIdleCallback?: (h: number) => void })
-          .cancelIdleCallback === "function"
+        typeof (
+          window as unknown as { cancelIdleCallback?: (h: number) => void }
+        ).cancelIdleCallback === "function"
       ) {
-        (window as unknown as { cancelIdleCallback: (h: number) => void })
-          .cancelIdleCallback(idleHandle);
+        (
+          window as unknown as { cancelIdleCallback: (h: number) => void }
+        ).cancelIdleCallback(idleHandle);
       }
       if (timeoutHandle !== undefined) clearTimeout(timeoutHandle);
     };
@@ -296,7 +302,10 @@ export function FintheonComposer({
             }),
           );
         } catch (err) {
-          console.error("[FintheonComposer] persona-override dispatch failed:", err);
+          console.error(
+            "[FintheonComposer] persona-override dispatch failed:",
+            err,
+          );
         }
         // Override path consumes the message — clear active skill, leave chips for
         // ChatInterface to inject when it actually appends.
@@ -310,7 +319,10 @@ export function FintheonComposer({
       const tickerMatches = Array.from(working.matchAll(/@([A-Z]{1,5})\b/g));
       const tickers = Array.from(new Set(tickerMatches.map((m) => m[1])));
       if (tickers.length > 0) {
-        working = working.replace(/@([A-Z]{1,5})\b/g, "").replace(/\s{2,}/g, " ").trim();
+        working = working
+          .replace(/@([A-Z]{1,5})\b/g, "")
+          .replace(/\s{2,}/g, " ")
+          .trim();
       }
 
       let finalText = working;

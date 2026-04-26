@@ -93,7 +93,11 @@ export function AgentActivityRail({
         />
       ))}
       {thoughts.map((th) => (
-        <ThinkingRow key={`th-${th.id}`} thought={th} horizontal={isHorizontal} />
+        <ThinkingRow
+          key={`th-${th.id}`}
+          thought={th}
+          horizontal={isHorizontal}
+        />
       ))}
     </aside>
   );

@@ -14,6 +14,14 @@ COPY src ./src
 COPY scripts ./scripts
 COPY tsconfig.json ./
 
+# [claude-code 2026-04-26] S45.5/F3: Piper voice weights ride along with the
+# image so /api/voice/sample?voice=cori works without an extra mount. The
+# `piper` binary itself is NOT yet installed here — install via `apk add piper`
+# (or build from source) before Cori synth will work in prod. Until then
+# synthesizeWithPiper returns null and the voice router falls back to
+# ElevenLabs.
+COPY assets ./assets
+
 # Build TypeScript
 RUN npm run build
 

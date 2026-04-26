@@ -88,8 +88,10 @@ import { createMaintenanceRoutes } from "./maintenance.js";
 import { createEarningsRoutes } from "./earnings/index.js";
 // [claude-code 2026-04-25] S40-P6: Time-To-Print eligibility lookahead
 import { createTimeToPrintRoutes } from "./time-to-print/index.js";
-// [claude-code 2026-04-25] S40-P9: Consul Browser (Browserbase remote sessions)
-import { createBrowserbaseRoutes } from "./browserbase/index.js";
+// [claude-code 2026-04-26] S45.5/F6: directory renamed to ./steel-consul.
+//   Public mount stays /api/browserbase/* for cache compat (see line ~265).
+// [claude-code 2026-04-25] S40-P9: Consul Browser (Steel-Consul sessions)
+import { createBrowserbaseRoutes } from "./steel-consul/index.js";
 // [claude-code 2026-04-23] Routines Console retired — replaced by in-process schedulers + hooks.
 // [claude-code 2026-04-20] S21: Harper Voice integration (formerly Omi) + PsychAssist fork admin
 import { createHarperVoiceRoutes } from "./harper-voice.js";
