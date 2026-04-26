@@ -15,8 +15,8 @@ import type { ExecutiveKpi } from "./mockExecutiveData";
 import type { TradeIdeaDetail } from "../../lib/riskflow-feed";
 import { KanbanTitle } from "../ui/KanbanTitle";
 import { ExpandableTapeItem } from "./ExpandableTapeItem";
-import { SessionCalendarList } from "./SessionCalendarList";
 import TradeIdeaModal from "../TradeIdeaModal";
+import { DayCard } from "../narrative/DayCard";
 import { RegimeCard } from "../dashboard/RegimeCard";
 import { RegimeTrackerModal } from "../regimes/RegimeTrackerModal";
 import {
@@ -64,6 +64,11 @@ export function MainDashboard({
   );
   const [showInterview, setShowInterview] = useState(false);
   const [riskFlowCollapsed, setRiskFlowCollapsed] = useState(false);
+  // [claude-code 2026-04-26] Core KPI row collapsed by default — chevron in header.
+  const [kpisCollapsed, setKpisCollapsed] = useState(true);
+  // [claude-code 2026-04-26] Regime Tracker is now a chevron-collapsible row
+  // matching Core KPIs / RiskFlow header style. Default collapsed for parity.
+  const [regimeCollapsed, setRegimeCollapsed] = useState(true);
 
   const handleInterviewComplete = useCallback(
     (data: {
@@ -372,71 +377,132 @@ export function MainDashboard({
                   />
                 </div>
 
-                {/* Right: Econ Calendar (50%) */}
+                {/* Right: Day Plan (50%) — replaces lightweight session calendar */}
                 <div className="flex-1 min-w-0 overflow-y-auto p-4 flex flex-col">
                   <KanbanTitle
-                    title="Session Calendar"
+                    title="Today's Plan"
                     tone="cyan"
                     headerRight={
                       <span className="text-[9px] tracking-[0.22em] uppercase border rounded-full px-2 py-0.5 text-[#67e8f9] border-[#06b6d4]/30">
-                        Upcoming Events
+                        Day Card
                       </span>
                     }
                   />
                   <div className="mt-2 flex-1 min-h-0 overflow-y-auto pr-1 relative">
-                    {!scheduleLoaded ? (
-                      <div className="text-xs text-zinc-500 py-3 px-1">
-                        Loading session calendar...
-                      </div>
-                    ) : scheduleItems.length === 0 ? (
-                      <div className="text-xs text-zinc-500 py-3 px-1">
-                        No economic events available. Start the backend or check
-                        Supabase connection.
-                      </div>
-                    ) : (
-                      <SessionCalendarList items={scheduleItems} />
-                    )}
+                    <DayCard />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Row 2: Core KPIs — single horizontal row, static */}
+            {/* Row 2: Core KPIs — chevron-collapsible (default collapsed) */}
             <div className="shrink-0 mb-5 mt-4">
-              <KanbanTitle title="Core KPIs" tone="emerald" />
-              {!kpisLoaded ? (
-                <div className="mt-2 text-xs text-zinc-500 px-1 py-3">
-                  Loading KPI data...
-                </div>
-              ) : kpis.length === 0 ? (
-                <div className="mt-2 text-xs text-zinc-500 px-1 py-3">
-                  No performance data connected.
-                </div>
-              ) : (
-                <div className="mt-2 grid grid-cols-2 xl:grid-cols-4 gap-3">
-                  {kpis.map((kpi) => (
-                    <div
-                      key={kpi.label}
-                      className="bg-[#0b0b08] px-4 py-3 border border-[var(--fintheon-accent)]/10 rounded"
-                    >
-                      <div className="text-[10px] tracking-[0.2em] uppercase text-gray-500">
-                        {kpi.label}
+              <KanbanTitle
+                title="Core KPIs"
+                tone="emerald"
+                headerRight={
+                  <button
+                    type="button"
+                    onClick={() => setKpisCollapsed((v) => !v)}
+                    className="p-1 rounded hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-400 transition-colors"
+                    title={
+                      kpisCollapsed ? "Expand Core KPIs" : "Collapse Core KPIs"
+                    }
+                  >
+                    {kpisCollapsed ? (
+                      <ChevronDown className="w-3 h-3" />
+                    ) : (
+                      <ChevronUp className="w-3 h-3" />
+                    )}
+                  </button>
+                }
+              />
+              <div
+                className="transition-all duration-300 ease-in-out"
+                style={{
+                  maxHeight: kpisCollapsed ? "0px" : "9999px",
+                  opacity: kpisCollapsed ? 0 : 1,
+                  overflow: kpisCollapsed ? "hidden" : undefined,
+                }}
+              >
+                {!kpisLoaded ? (
+                  <div className="mt-2 text-xs text-zinc-500 px-1 py-3">
+                    Loading KPI data...
+                  </div>
+                ) : kpis.length === 0 ? (
+                  <div className="mt-2 text-xs text-zinc-500 px-1 py-3">
+                    No performance data connected.
+                  </div>
+                ) : (
+                  <div className="mt-2 grid grid-cols-2 xl:grid-cols-4 gap-3">
+                    {kpis.map((kpi) => (
+                      <div
+                        key={kpi.label}
+                        className="bg-[#0b0b08] px-4 py-3 border border-[var(--fintheon-accent)]/10 rounded"
+                      >
+                        <div className="text-[10px] tracking-[0.2em] uppercase text-gray-500">
+                          {kpi.label}
+                        </div>
+                        <div className="mt-1.5 text-2xl font-semibold text-white">
+                          {kpi.value}
+                        </div>
+                        <div className="mt-1 text-xs text-gray-400">
+                          {kpi.meta}
+                        </div>
                       </div>
-                      <div className="mt-1.5 text-2xl font-semibold text-white">
-                        {kpi.value}
-                      </div>
-                      <div className="mt-1 text-xs text-gray-400">
-                        {kpi.meta}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Row 2.5: Regime Tracker preview */}
+            {/* Row 2.5: Regime Tracker — KanbanTitle header + chevron, aligned
+                with Core KPIs / RiskFlow row starts (no extra px-4 indent). */}
             <div className="shrink-0 mb-5">
-              <RegimeCard onOpenTracker={() => setShowRegimeTracker(true)} />
+              <KanbanTitle
+                title="Regime Tracker"
+                tone="gold"
+                headerRight={
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowRegimeTracker(true)}
+                      className="text-[9px] text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] transition-colors tracking-wider uppercase px-1"
+                    >
+                      Open
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRegimeCollapsed((v) => !v)}
+                      className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
+                      title={
+                        regimeCollapsed
+                          ? "Expand Regime Tracker"
+                          : "Collapse Regime Tracker"
+                      }
+                    >
+                      {regimeCollapsed ? (
+                        <ChevronDown className="w-3 h-3" />
+                      ) : (
+                        <ChevronUp className="w-3 h-3" />
+                      )}
+                    </button>
+                  </div>
+                }
+              />
+              <div
+                className="transition-all duration-300 ease-in-out"
+                style={{
+                  maxHeight: regimeCollapsed ? "0px" : "9999px",
+                  opacity: regimeCollapsed ? 0 : 1,
+                  overflow: regimeCollapsed ? "hidden" : undefined,
+                }}
+              >
+                <RegimeCard
+                  onOpenTracker={() => setShowRegimeTracker(true)}
+                  hideHeader
+                />
+              </div>
             </div>
 
             {/* Row 3: RiskFlow — fills remaining space, expandable items, recency fade */}
