@@ -9,6 +9,33 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T20:30:00",
+    agent: "claude-code",
+    summary:
+      "S42-T6 — Ask About This + RiskFlow expanded refactor. New shared AskAboutThis primitive on web (frontend/components/chat/AskAboutThis.tsx) and mobile (mobile/components/chat/AskAboutThis.tsx); MessageSquare icon button, hover-revealed in card headers, dispatches the `fintheon:open-chat-with-context` CustomEvent with {surface, payload, label} and writes `fintheon:current-surface` to localStorage so the existing harper-handler surface flag picks it up. MainLayout listens and pops the sliding ChatPanel; ChatSidebar + ChatInterface listen and inject a Harper-readable prompt that includes the surface payload as JSON. Buttons added to ArbitrumChamber, TradePlanCard, dashboard RegimeCard, narrative CatalystCard, SanctumBriefing, SanctumNarratives, SanctumRiskAssessment, SanctumTheses, MissionControlPanel (Strategium), and on mobile to ArbitrumVerdictCard, CatalystCards, MiniRegimeTracker. RiskFlow expanded refactor: mobile RiskFlowCardExpanded gets a flat surface + accent top border + header strip with Source CTA + Ask AI; desktop RiskFlowDetailCard's expanded body swaps the dim glass background for flat fintheon-bg with a 2px accent top border and the same Source/Ask header. Collapsed RiskFlow card anatomy is preserved per the card-anatomy memory; TradingView Sanctum chart is untouched. tsc + vite build clean on both frontend and mobile.",
+    files: [
+      "frontend/components/chat/AskAboutThis.tsx",
+      "mobile/components/chat/AskAboutThis.tsx",
+      "frontend/components/ChatInterface.tsx",
+      "frontend/components/chat/ChatSidebar.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/arbitrum/ArbitrumChamber.tsx",
+      "frontend/components/proposals/TradePlanCard.tsx",
+      "frontend/components/dashboard/RegimeCard.tsx",
+      "frontend/components/narrative/CatalystCard.tsx",
+      "frontend/components/narrative/SanctumBriefing.tsx",
+      "frontend/components/narrative/SanctumNarratives.tsx",
+      "frontend/components/narrative/SanctumRiskAssessment.tsx",
+      "frontend/components/narrative/SanctumTheses.tsx",
+      "frontend/components/mission-control/MissionControlPanel.tsx",
+      "frontend/components/feed/RiskFlowDetailCard.tsx",
+      "mobile/components/riskflow/RiskFlowCardExpanded.tsx",
+      "mobile/components/home/ArbitrumVerdictCard.tsx",
+      "mobile/components/home/CatalystCards.tsx",
+      "mobile/components/home/MiniRegimeTracker.tsx",
+    ],
+  },
+  {
     date: "2026-04-25T19:30:00",
     agent: "claude-code",
     summary:

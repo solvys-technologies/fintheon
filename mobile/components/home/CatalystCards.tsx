@@ -7,6 +7,7 @@ import { useCatalysts, type Catalyst } from "../../hooks/useCatalysts";
 import { useNotificationModal } from "../../contexts/NotificationModalContext";
 import { useHaptic } from "../../hooks/useHaptic";
 import { CARD_PRESS } from "../../lib/sheet-motion";
+import { AskAboutThis } from "../chat/AskAboutThis";
 
 const sentimentColor = {
   bullish: "var(--success)",
@@ -98,15 +99,28 @@ function CatalystCard({ catalyst }: { catalyst: Catalyst }) {
             {catalyst.sentiment}
           </span>
         </div>
-        <span
-          style={{
-            fontFamily: "var(--font-data)",
-            fontSize: 9,
-            color: "var(--text-disabled)",
-          }}
-        >
-          {dateStr} {timeStr}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            style={{
+              fontFamily: "var(--font-data)",
+              fontSize: 9,
+              color: "var(--text-disabled)",
+            }}
+          >
+            {dateStr} {timeStr}
+          </span>
+          <AskAboutThis
+            surface="catalyst_card"
+            label="this catalyst"
+            size={12}
+            payload={{
+              catalyst_id: catalyst.id,
+              title: catalyst.title,
+              sentiment: catalyst.sentiment,
+              severity: catalyst.severity,
+            }}
+          />
+        </div>
       </div>
 
       {/* Title */}

@@ -373,6 +373,16 @@ function MainLayoutInner() {
     };
   }, []);
 
+  // [claude-code 2026-04-25] S42-T6: Open the sliding chat panel when any output
+  //   card's "Ask about this" button fires `fintheon:open-chat-with-context`.
+  //   ChatSidebar handles the actual context-injected message dispatch.
+  useEffect(() => {
+    const open = () => setShowChat(true);
+    window.addEventListener("fintheon:open-chat-with-context", open);
+    return () =>
+      window.removeEventListener("fintheon:open-chat-with-context", open);
+  }, []);
+
   // Normalize ER score from -10 to 10 range to 0-1 range for display
   const normalizedCombinedPanelResonance = Math.max(
     0,

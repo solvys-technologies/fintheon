@@ -7,6 +7,7 @@ import {
   partitionCatalystTags,
   CatalystLinkChip,
 } from "../../lib/catalyst-tag-utils";
+import { AskAboutThis } from "../chat/AskAboutThis";
 
 const SENTIMENT_COLORS: Record<string, string> = {
   bullish: "var(--fintheon-bullish)",
@@ -86,7 +87,7 @@ export default function CatalystCard({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={[
-        "rounded-xl cursor-pointer select-none transition-all duration-200",
+        "group relative rounded-xl cursor-pointer select-none transition-all duration-200",
         compact ? "px-2 py-1.5" : "px-3 py-2.5",
         compact ? "w-[120px]" : "w-[160px]",
         selected ? "catalyst-card-pulse" : "",
@@ -106,9 +107,27 @@ export default function CatalystCard({
         minHeight: compact ? "auto" : "80px",
       }}
     >
+      <div
+        className="absolute top-1 right-1 z-10"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <AskAboutThis
+          surface="catalyst_card"
+          label="this catalyst"
+          size={10}
+          payload={{
+            catalyst_id: catalyst.id,
+            title: catalyst.title,
+            sentiment: catalyst.sentiment,
+            severity: catalyst.severity,
+            source: catalyst.source,
+          }}
+        />
+      </div>
+
       {/* Title */}
       <p
-        className="font-semibold leading-tight truncate"
+        className="font-semibold leading-tight truncate pr-5"
         style={{
           fontSize: compact ? "10px" : "11px",
           color: "var(--fintheon-text)",

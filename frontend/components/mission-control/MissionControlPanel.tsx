@@ -13,6 +13,7 @@ import { WeeklyPerformanceWidget } from "./WeeklyPerformanceWidget";
 import { AlgoStatusWidget } from "./AlgoStatusWidget";
 import { AccountTrackerWidget } from "./AccountTrackerWidget";
 import { RegimeMini } from "./RegimeMini";
+import { AskAboutThis } from "../chat/AskAboutThis";
 
 import { PanelPosition } from "../layout/DraggablePanel";
 
@@ -65,7 +66,7 @@ export function MissionControlPanel({
 
   return (
     <div
-      className={`relative bg-[var(--fintheon-bg)] transition-all duration-200 ease-out ${panelWidth}`}
+      className={`group relative bg-[var(--fintheon-bg)] transition-all duration-200 ease-out ${panelWidth}`}
       onMouseEnter={handleCollapsedEnter}
       onMouseLeave={handleCollapsedLeave}
       style={{ minWidth: collapsed && !peekOpen ? "12px" : undefined }}
@@ -92,6 +93,12 @@ export function MissionControlPanel({
           </h2>
 
           <div className="flex items-center gap-1">
+            <AskAboutThis
+              surface="strategium_mission_control"
+              label="mission control"
+              size={11}
+              payload={{ er_score: erScore }}
+            />
             {/* TopStepX controls */}
             {topStepXEnabled && onPositionChange && (
               <>

@@ -17,6 +17,7 @@ import { YouTubeLogo } from "../../lib/shared-icons";
 import { timeAgo } from "../../lib/time-utils";
 import { linkifyText } from "../../lib/linkify";
 import { SourcePreview } from "./SourcePreview";
+import { AskAboutThis } from "../chat/AskAboutThis";
 
 export type RiskFlowDetailSurface = "full" | "timeline" | "mini";
 
@@ -136,7 +137,41 @@ export function RiskFlowDetailCard({
       }
       expandedContent={
         <>
-          <div className="px-4 py-3 border-t border-zinc-800/40 bg-[#000]/90">
+          <div className="px-4 py-3 border-t-2 border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-bg)]">
+            {/* [claude-code 2026-04-25] S42-T6: Expanded header — flat surface,
+                accent top border, Ask AI affordance, source CTA promoted. */}
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[9px] uppercase tracking-[0.16em] text-[var(--fintheon-muted)]/55">
+                Detail
+              </span>
+              <div
+                className="flex items-center gap-3"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {alert.url && (
+                  <a
+                    href={alert.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] uppercase tracking-[0.06em] text-[var(--fintheon-accent)] hover:underline flex items-center gap-1"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    Source
+                  </a>
+                )}
+                <AskAboutThis
+                  surface="riskflow_card"
+                  label="this RiskFlow item"
+                  hoverReveal={false}
+                  payload={{
+                    itemId: alert.id,
+                    headline: alert.headline,
+                    severity: alert.severity,
+                    ivScore: alert.ivScore,
+                  }}
+                />
+              </div>
+            </div>
             {/* [claude-code 2026-04-25] S35: Hero image + source-link rail. Image is
                 best-effort (RSS enclosure / og:image) — hides on load failure so a
                 broken image never wedges the card. Source link below opens in a new

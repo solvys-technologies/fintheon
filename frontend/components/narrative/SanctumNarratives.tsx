@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { Diff, TrendingDown, Minus, Info } from "lucide-react";
 import type { SanctumNarrative } from "../../types/agent-desk";
+import { AskAboutThis } from "../chat/AskAboutThis";
 
 interface SanctumNarrativesProps {
   narratives?: SanctumNarrative[];
@@ -192,7 +193,7 @@ export function SanctumNarratives({
   const hasNarratives = narratives && narratives.length > 0;
 
   return (
-    <div className="flex flex-col">
+    <div className="group flex flex-col">
       <div className="flex items-center justify-between px-3 py-2">
         <span
           className="text-[10px] tracking-[0.22em] uppercase text-[var(--fintheon-accent)]/85"
@@ -200,15 +201,31 @@ export function SanctumNarratives({
         >
           Active Narratives
         </span>
-        <button
-          type="button"
-          onClick={() => setLexiconOpen((v) => !v)}
-          className="flex items-center gap-1 text-[9px] tracking-[0.18em] uppercase text-[var(--fintheon-muted)]/55 hover:text-[var(--fintheon-accent)] transition-colors"
-          title="Crowding scale reference"
-        >
-          <Info size={10} />
-          Lexicon
-        </button>
+        <div className="flex items-center gap-2">
+          <AskAboutThis
+            surface="sanctum_narratives"
+            label="active narratives"
+            size={10}
+            payload={{
+              count: narratives?.length ?? 0,
+              titles: (narratives ?? []).slice(0, 6).map((n) => ({
+                id: n.id,
+                title: n.title,
+                bias: n.directionBias,
+                health: n.healthScore,
+              })),
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setLexiconOpen((v) => !v)}
+            className="flex items-center gap-1 text-[9px] tracking-[0.18em] uppercase text-[var(--fintheon-muted)]/55 hover:text-[var(--fintheon-accent)] transition-colors"
+            title="Crowding scale reference"
+          >
+            <Info size={10} />
+            Lexicon
+          </button>
+        </div>
       </div>
 
       {/* Lexicon drawer */}

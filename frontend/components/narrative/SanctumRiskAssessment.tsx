@@ -14,6 +14,7 @@ import { RISK_CATEGORY_LABELS, ivHeatColor } from "../../types/agent-desk";
 import { NothingFuse } from "../shared/NothingFuse";
 import { IVStack } from "../shared/IVStack";
 import { severityFromScore } from "../../lib/fuse-palette";
+import { AskAboutThis } from "../chat/AskAboutThis";
 
 interface SanctumRiskAssessmentProps {
   riskflowItems: RiskFlowCatalyst[];
@@ -294,7 +295,23 @@ export function SanctumRiskAssessment({
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="group flex flex-col gap-3">
+      <div className="flex justify-end">
+        <AskAboutThis
+          surface="sanctum_risk"
+          label="this risk assessment"
+          payload={{
+            risk_type_counts: [...grouped.entries()].map(([type, items]) => ({
+              type,
+              count: items.length,
+            })),
+            category_scores: relevantScores.map((cs) => ({
+              category: cs.category,
+              ivScore: cs.ivScore,
+            })),
+          }}
+        />
+      </div>
       {/* Category score headers */}
       {relevantScores.length > 0 && (
         <div className="flex gap-3">

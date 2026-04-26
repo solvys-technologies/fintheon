@@ -82,6 +82,32 @@ function ChatInterfaceInner({
       window.removeEventListener("fintheon:open-chat-skill", handler);
   }, [handleSkillSend]);
 
+  // [claude-code 2026-04-25] S42-T6: Mirror the ChatSidebar listener so the
+  //   full Chat tab also picks up "Ask about this" dispatches when the user is
+  //   on the Chat surface instead of the sliding panel.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as
+        | { surface?: string; payload?: unknown; label?: string }
+        | undefined;
+      if (!detail?.surface) return;
+      const surface = detail.surface;
+      const head = detail.label
+        ? `Tell me about this ${detail.label}.`
+        : `Tell me about this ${surface.replace(/_/g, " ")}.`;
+      let body = "";
+      try {
+        body = JSON.stringify(detail.payload ?? {}, null, 2);
+      } catch {
+        body = String(detail.payload);
+      }
+      handleSend(`${head}\n\n[Context surface=${surface}]\n${body}`);
+    };
+    window.addEventListener("fintheon:open-chat-with-context", handler);
+    return () =>
+      window.removeEventListener("fintheon:open-chat-with-context", handler);
+  }, [handleSend]);
+
   const handleNewChat = useCallback(() => {
     clearConversationId();
   }, [clearConversationId]);

@@ -9,6 +9,7 @@ import {
   getCurrentETTime,
   getUpcomingRegimes,
 } from "../../lib/regime-time";
+import { AskAboutThis } from "../chat/AskAboutThis";
 import type { TradingRegime } from "../../lib/regimes";
 
 function BiasIcon({ bias }: { bias: TradingRegime["bias"] }) {
@@ -45,7 +46,7 @@ export function RegimeCard({ onOpenTracker }: RegimeCardProps) {
   const activeCount = regimes.filter((r) => isRegimeActive(r, now)).length;
 
   return (
-    <div className="px-4 py-3">
+    <div className="group px-4 py-3">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           <Clock className="w-3 h-3 text-[var(--fintheon-accent)]" />
@@ -58,12 +59,28 @@ export function RegimeCard({ onOpenTracker }: RegimeCardProps) {
             </span>
           )}
         </div>
-        <button
-          onClick={onOpenTracker}
-          className="text-[9px] text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] transition-colors tracking-wider uppercase"
-        >
-          Open
-        </button>
+        <div className="flex items-center gap-2">
+          <AskAboutThis
+            surface="regime_card"
+            label="the regime tracker"
+            size={10}
+            payload={{
+              active_count: activeCount,
+              top_regimes: topRegimes.map((r) => ({
+                id: r.id,
+                name: r.name,
+                bias: r.bias,
+                active: isRegimeActive(r, now),
+              })),
+            }}
+          />
+          <button
+            onClick={onOpenTracker}
+            className="text-[9px] text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] transition-colors tracking-wider uppercase"
+          >
+            Open
+          </button>
+        </div>
       </div>
 
       {topRegimes.length === 0 ? (

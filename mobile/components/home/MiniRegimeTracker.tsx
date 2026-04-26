@@ -4,6 +4,7 @@ import { SurfaceCard } from "../shared/SurfaceCard";
 import { SegmentedBar } from "../shared/SegmentedBar";
 import { BottomSheet } from "../shared/BottomSheet";
 import { useRegimeTracker, formatTime12H } from "../../hooks/useRegimeTracker";
+import { AskAboutThis } from "../chat/AskAboutThis";
 import type { TradingRegime } from "@frontend/lib/regimes";
 
 const BIAS_LABELS: Record<string, string> = {
@@ -25,17 +26,42 @@ export function MiniRegimeTracker() {
   return (
     <>
       <SurfaceCard accentBorder="left">
-        <span
+        <div
           style={{
-            fontFamily: "var(--font-data)",
-            fontSize: 11,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            color: "var(--text-secondary)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
           }}
         >
-          ACTIVE REGIMES
-        </span>
+          <span
+            style={{
+              fontFamily: "var(--font-data)",
+              fontSize: 11,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "var(--text-secondary)",
+            }}
+          >
+            ACTIVE REGIMES
+          </span>
+          <AskAboutThis
+            surface="regime_card"
+            label="active regimes"
+            size={12}
+            payload={{
+              active_count: activeRegimes.length,
+              upcoming_count: upcomingRegimes.length,
+              primary: primary
+                ? {
+                    id: primary.id,
+                    name: primary.name,
+                    bias: primary.bias,
+                    confidence: primary.confidence,
+                  }
+                : null,
+            }}
+          />
+        </div>
 
         {primary ? (
           <div

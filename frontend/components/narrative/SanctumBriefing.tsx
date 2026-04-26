@@ -2,6 +2,7 @@
 // [claude-code 2026-03-23] AgentDesk briefing panel — agent reasoning synthesis
 // [claude-code 2026-04-17] Slop-fallback rendering: compact empty-state with Aquarium trigger link when backend emits SLOP_FALLBACK
 import type { AgentDeskBriefing } from "../../types/agent-desk";
+import { AskAboutThis } from "../chat/AskAboutThis";
 
 const SLOP_FALLBACK = "No new agentic updates. Trigger an update in Aquarium.";
 
@@ -58,15 +59,27 @@ export function SanctumBriefing({
   }
 
   return (
-    <div className="rounded bg-[var(--fintheon-surface)]/30 overflow-hidden">
+    <div className="group rounded bg-[var(--fintheon-surface)]/30 overflow-hidden">
       {/* Summary — lead paragraph */}
       <div
-        className={`px-5 py-4 rounded ${noBorder ? "" : "border border-[var(--fintheon-accent)]/10"}`}
+        className={`relative px-5 py-4 rounded ${noBorder ? "" : "border border-[var(--fintheon-accent)]/10"}`}
       >
+        <div className="absolute top-2 right-2">
+          <AskAboutThis
+            surface="sanctum_briefing"
+            label="this briefing"
+            payload={{
+              summary: briefing.summary?.slice(0, 200),
+              key_findings_count: briefing.keyFindings.length,
+              risk_alerts_count: briefing.riskAlerts.length,
+              consensus: briefing.agentConsensus,
+            }}
+          />
+        </div>
         <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1.5">
           Analysis
         </span>
-        <p className="text-[11px] text-[var(--fintheon-text)]/80 leading-relaxed">
+        <p className="text-[11px] text-[var(--fintheon-text)]/80 leading-relaxed pr-8">
           {briefing.summary}
         </p>
       </div>
