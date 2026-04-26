@@ -152,8 +152,10 @@ function PanelToggleButton({ side, label }: PanelToggleButtonProps) {
 
 export function PanelToggleGroup() {
   return (
+    // [claude-code 2026-04-26] Transparent group — no bg/border container per
+    // TP. Buttons sit naked next to the iFrame dropdown + VIX ticker.
     <div
-      className="flex items-center gap-0.5 bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-1 h-7 flex-shrink-0"
+      className="flex items-center gap-0.5 h-7 flex-shrink-0"
       role="group"
       aria-label="Panel toggles"
     >

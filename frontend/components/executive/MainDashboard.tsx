@@ -365,31 +365,16 @@ export function MainDashboard({
                   />
                 </div>
 
-                {/* Needle divider — fades at top/bottom 25% */}
-                <div className="w-px relative shrink-0">
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      background:
-                        "linear-gradient(to bottom, transparent 0%, var(--fintheon-accent) 25%, var(--fintheon-accent) 75%, transparent 100%)",
-                      opacity: 0.15,
-                    }}
-                  />
-                </div>
-
-                {/* Right: Day Plan (50%) — replaces lightweight session calendar */}
+                {/* Right: Day Plan (50%) — bare DayCard, day-of-week header */}
                 <div className="flex-1 min-w-0 overflow-y-auto p-4 flex flex-col">
                   <KanbanTitle
-                    title="Today's Plan"
-                    tone="cyan"
-                    headerRight={
-                      <span className="text-[9px] tracking-[0.22em] uppercase border rounded-full px-2 py-0.5 text-[#67e8f9] border-[#06b6d4]/30">
-                        Day Card
-                      </span>
-                    }
+                    title={new Date().toLocaleDateString("en-US", {
+                      weekday: "long",
+                    })}
+                    tone="gold"
                   />
                   <div className="mt-2 flex-1 min-h-0 overflow-y-auto pr-1 relative">
-                    <DayCard />
+                    <DayCard bare />
                   </div>
                 </div>
               </div>

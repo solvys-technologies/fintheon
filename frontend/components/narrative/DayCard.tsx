@@ -30,6 +30,10 @@ interface DayCardProps {
   /** Anchor id used by the Strategium daycard tab to scrollIntoView. */
   id?: string;
   className?: string;
+  /** [claude-code 2026-04-26] When the parent container already supplies the
+   * surface (e.g. MainDashboard's brief/plan split), drop the inner bg + p-3
+   * so the content stretches to fill flush. */
+  bare?: boolean;
 }
 
 function fmtPrice(v: number | null): string {
@@ -53,7 +57,11 @@ function fmtExpectedMove(pct: number | null): string {
   return `± ${pct.toFixed(2)}%`;
 }
 
-export function DayCard({ id = "day-card-anchor", className }: DayCardProps) {
+export function DayCard({
+  id = "day-card-anchor",
+  className,
+  bare,
+}: DayCardProps) {
   const { data, isLoading } = useDayPlan();
   const { data: streak } = useStreak();
   const { data: drift } = useDriftStatus();
@@ -64,14 +72,12 @@ export function DayCard({ id = "day-card-anchor", className }: DayCardProps) {
 
   const driftVisual: DriftKind | "in-window" = drift?.kind ?? "in-window";
 
+  const baseSurface = bare ? "" : "bg-[var(--fintheon-surface)] rounded-lg p-3";
+
   return (
     <section
       id={id}
-      className={
-        className
-          ? `bg-[var(--fintheon-surface)] rounded-lg p-3 ${className}`
-          : "bg-[var(--fintheon-surface)] rounded-lg p-3"
-      }
+      className={[baseSurface, className].filter(Boolean).join(" ").trim()}
       aria-label="Day card"
       data-tour-target="day-card"
     >

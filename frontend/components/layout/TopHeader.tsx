@@ -531,6 +531,139 @@ export function TopHeader({
           <WhatsNewButton />
           {psychAssistHeadingWidget}
           {activeTab === "performance" && performanceChatWidget}
+          {/* [claude-code 2026-04-26] Per TP: layout buttons sit FIRST, then
+              the iFrame/Browser dropdown, then the VIX ticker, then the rest
+              of the toolbar. PanelToggleGroup is transparent (no bg/border).
+              The platform/iFrame slot is rendered inline here so the order is
+              fixed; toolbarOrder.map skips id==="platform" further down. */}
+          <PanelToggleGroup />
+          {topStepXEnabled && onLayoutOptionChange ? (
+            // iFrame active → Castra/Zen layout dropdown
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setShowLayoutDropdown(!showLayoutDropdown)}
+                className="px-2.5 h-7 rounded-lg text-xs font-medium bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
+                title="Layout Options"
+              >
+                {layoutOptions.find((opt) => opt.value === layoutOption)?.icon}
+                <span>
+                  {
+                    layoutOptions.find((opt) => opt.value === layoutOption)
+                      ?.label
+                  }
+                </span>
+                <ChevronDown
+                  className={`w-3 h-3 transition-transform ${showLayoutDropdown ? "rotate-180" : ""}`}
+                />
+              </button>
+              {showLayoutDropdown &&
+                layoutDropdownPos &&
+                createPortal(
+                  <div
+                    ref={layoutPortalRef}
+                    style={{
+                      position: "fixed",
+                      top: layoutDropdownPos.top,
+                      left: layoutDropdownPos.left,
+                      zIndex: 9999,
+                    }}
+                    className="w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden animate-dropdown-enter"
+                  >
+                    {layoutOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => {
+                          onLayoutOptionChange(option.value);
+                          setShowLayoutDropdown(false);
+                        }}
+                        className={`w-full px-4 py-3 text-left hover:bg-[var(--fintheon-accent)]/10 transition-colors flex items-start gap-3 ${
+                          layoutOption === option.value
+                            ? "bg-[var(--fintheon-accent)]/20"
+                            : ""
+                        }`}
+                      >
+                        <div className="mt-0.5 text-[var(--fintheon-accent)]">
+                          {option.icon}
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-[var(--fintheon-accent)] mb-1">
+                            {option.label}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {option.description}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>,
+                  document.body,
+                )}
+            </div>
+          ) : (
+            // iFrame off → platform/browser selection dropdown
+            <div className="relative" ref={platformDropdownRef}>
+              <button
+                onClick={() => setShowPlatformDropdown(!showPlatformDropdown)}
+                className="px-2.5 h-7 rounded-lg text-xs font-medium bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
+                title="Select trading platform"
+              >
+                {!isElectron() && <Monitor className="w-3 h-3" />}
+                <span>{selectedPlatformLabel}</span>
+                <ChevronDown
+                  className={`w-3 h-3 transition-transform ${showPlatformDropdown ? "rotate-180" : ""}`}
+                />
+              </button>
+              {showPlatformDropdown &&
+                platformDropdownPos &&
+                createPortal(
+                  <div
+                    ref={platformPortalRef}
+                    style={{
+                      position: "fixed",
+                      top: platformDropdownPos.top,
+                      left: platformDropdownPos.left,
+                      zIndex: 9999,
+                    }}
+                    className="w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden py-1 animate-dropdown-enter"
+                  >
+                    {platformOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => {
+                          onPlatformSelect?.(option.value);
+                          setShowPlatformDropdown(false);
+                        }}
+                        className={`w-full px-4 py-3 text-left transition-colors ${
+                          selectedPlatform === option.value
+                            ? "bg-[var(--fintheon-accent)]/15"
+                            : "hover:bg-[var(--fintheon-accent)]/8"
+                        }`}
+                      >
+                        <div
+                          className={`text-xs font-semibold tracking-[0.14em] uppercase ${
+                            selectedPlatform === option.value
+                              ? "text-[var(--fintheon-accent)]"
+                              : "text-gray-200"
+                          }`}
+                        >
+                          {option.label}
+                        </div>
+                        <div
+                          className={`text-[10px] mt-0.5 ${
+                            selectedPlatform === option.value
+                              ? "text-[var(--fintheon-accent)]/60"
+                              : "text-gray-500"
+                          }`}
+                        >
+                          {option.description}
+                        </div>
+                      </button>
+                    ))}
+                  </div>,
+                  document.body,
+                )}
+            </div>
+          )}
           <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-2.5 h-7 flex items-center flex-shrink-0">
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] text-gray-500">VIX</span>
@@ -539,12 +672,6 @@ export function TopHeader({
               </span>
             </div>
           </div>
-          {/* [claude-code 2026-04-26] VS Code-style three-panel toggle group:
-              left = NavSidebar, footer = FooterToolbar panel
-              (Team/Harper Ops/Changelog/Terminal/Errors), right = Strategium.
-              Each icon has a permanent divider line so the side it controls is
-              identifiable even when the panel is closed. */}
-          <PanelToggleGroup />
           {toolbarOrder.map((id) => {
             const wrapper = (node: React.ReactNode) => (
               <div
@@ -572,7 +699,11 @@ export function TopHeader({
                 {node}
               </div>
             );
-            if (id === "platform") {
+            // [claude-code 2026-04-26] platform slot rendered inline above
+            // (before VIX) to enforce: layout buttons → browser dropdown → VIX.
+            if (id === "platform") return null;
+            // Dead branch retained below in case future ordering re-folds platform back in:
+            if (false && id === "platform") {
               if (topStepXEnabled && onLayoutOptionChange) {
                 // iFrame active → show layout dropdown (Castra/Zen) in the platform slot
                 return wrapper(

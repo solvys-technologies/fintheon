@@ -9,6 +9,21 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T22:40:00",
+    agent: "claude-code",
+    summary:
+      "S46 TV Calendar Final Integration: Electron intercepts TradingView .ics downloads (will-download on defaultSession + persist:fintheon, loose host+path match) and POSTs them to new /api/desk/calendar/ingest-ics. Inline RFC5545 parser + idempotent upsert on ics_uid into new desk_calendar_events table. EconCalendar header gains queue badge + tradingWeekKey() re-mount that auto-rolls Fri 16:00 ET so the embed always boots into the current trading week.",
+    files: [
+      "supabase/migrations/20260426223451_desk_calendar_events.sql",
+      "backend-hono/src/routes/desk-calendar/index.ts",
+      "backend-hono/src/routes/desk-calendar/handlers.ts",
+      "backend-hono/src/routes/desk-calendar/ics-parser.ts",
+      "backend-hono/src/routes/index.ts",
+      "electron/main.cjs",
+      "frontend/components/econ/EconCalendar.tsx",
+    ],
+  },
+  {
     date: "2026-04-26T22:30:30",
     agent: "claude-code",
     summary:

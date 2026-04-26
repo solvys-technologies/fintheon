@@ -582,6 +582,80 @@ function createWindow(apiBase) {
     console.warn("[Electron] Failed to install media permission handler:", err);
   }
 
+  // [claude-code 2026-04-26] S46: TV Calendar Final Integration.
+  // Intercept .ics downloads from tradingview.com (any path/suffix), POST the
+  // body to our Desk Calendar ingest endpoint, then delete the temp file.
+  // Cross-origin DOM access is blocked, but download interception is not —
+  // session.on('will-download') fires regardless of which iframe triggered it.
+  try {
+    const { session: electronSession } = require("electron");
+    const targets = [
+      electronSession.defaultSession,
+      electronSession.fromPartition("persist:fintheon"),
+    ];
+    const apiBase = process.env.FINTHEON_API_BASE || "http://127.0.0.1:8080";
+    for (const sess of targets) {
+      sess.on("will-download", (_evt, item) => {
+        let host = "";
+        let pathname = "";
+        try {
+          const u = new URL(item.getURL());
+          host = u.hostname;
+          pathname = u.pathname.toLowerCase();
+        } catch {
+          return;
+        }
+        const isTV = host.endsWith("tradingview.com");
+        const looksLikeIcs =
+          pathname.includes("/calendar") ||
+          pathname.endsWith(".ics") ||
+          item.getMimeType() === "text/calendar" ||
+          item.getFilename().toLowerCase().endsWith(".ics");
+        if (!isTV || !looksLikeIcs) return;
+        const tmpFile = path.join(
+          require("os").tmpdir(),
+          `fintheon-tv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.ics`,
+        );
+        try {
+          item.setSavePath(tmpFile);
+        } catch (err) {
+          console.warn("[DeskCal] setSavePath failed:", err);
+          return;
+        }
+        item.once("done", async (_e, state) => {
+          if (state !== "completed") return;
+          try {
+            const ics = await fs.promises.readFile(tmpFile, "utf8");
+            const res = await fetch(`${apiBase}/api/desk/calendar/ingest-ics`, {
+              method: "POST",
+              headers: { "Content-Type": "text/calendar" },
+              body: ics,
+            });
+            if (res.ok) {
+              const body = await res.json().catch(() => ({}));
+              console.log(
+                `[DeskCal] Ingested ${body.ingested ?? 0} TV event(s) into desk queue.`,
+              );
+            } else {
+              console.warn(
+                `[DeskCal] Ingest failed: ${res.status} ${res.statusText}`,
+              );
+            }
+          } catch (err) {
+            console.warn("[DeskCal] Ingest error:", err);
+          } finally {
+            fs.promises.unlink(tmpFile).catch(() => {});
+          }
+        });
+      });
+    }
+    console.log(
+      "[DeskCal] TV .ics download interceptor armed (defaultSession + persist:fintheon).",
+    );
+  } catch (err) {
+    console.warn("[DeskCal] Failed to arm download interceptor:", err);
+  }
+
   const rendererPath = path.join(
     __dirname,
     "..",
