@@ -9,6 +9,25 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T22:30:00",
+    agent: "claude-code",
+    summary:
+      "v5.32.2 — Dashboard refactor + Vercel build fixes + S45.5 partial. Briefing/Calendar split 55/45 → 50/50; right pane now mounts the new S45-T2 DayCard (Today's Plan) instead of the lightweight SessionCalendarList. Core KPIs now chevron-collapsible, default collapsed. Regime Tracker lifted to a KanbanTitle row at the same indent as Core KPIs / RiskFlow (no more px-4 left bias), chevron-collapsible (default collapsed); Open button preserved alongside the chevron. RegimeCard gains a hideHeader prop so the parent owns the section title. Restored frontend/components/layout/PanelToggleGroup.tsx (deleted in 84aa8e47): VS Code-style three-button group (left / footer / right) with permanent thin divider lines so each icon's target panel is identifiable when inactive; the active panel's compartment fills with accent gold. Mounted in TopHeader to the right of the VIX widget. Window-event bus wires the buttons to NavSidebar (toggle manualExpand), FooterToolbar (toggle panelOpen — opens Team / Harper Ops / Changelog / Terminal / Errors / Tabs), and Strategium (toggle missionControlCollapsed in MainLayout). Strategium slide transition restored: wrapper keeps its width transition; inner expanded content uses animate-in fade-in slide-in-from-right-2 duration-300, so it slides in from the right edge instead of instantly swapping. Vercel build chain fixed (3 stacked failures): (1) auto-checkpoint had overwritten the repo-root index.html with a stale dist artifact — restored canonical version that points to /frontend/main.tsx; (2) Bun 1.3.6 on Vercel was bombing with ENOENT on node_modules right after startup — switched installCommand from bun install to npm install --legacy-peer-deps and buildCommand to npx vite build; (3) streamdown lives in frontend/package.json only — installCommand now also runs npm install --legacy-peer-deps inside frontend/. Preview build green at fintheon-af886vr7m-solvys.vercel.app.",
+    files: [
+      "frontend/components/executive/MainDashboard.tsx",
+      "frontend/components/dashboard/RegimeCard.tsx",
+      "frontend/components/layout/PanelToggleGroup.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/layout/NavSidebar.tsx",
+      "frontend/components/layout/FooterToolbar.tsx",
+      "vercel.json",
+      "index.html",
+      "package.json",
+      "scripts/fintheon-update.sh",
+    ],
+  },
+  {
     date: "2026-04-26T17:50:00",
     agent: "claude-code",
     summary:
