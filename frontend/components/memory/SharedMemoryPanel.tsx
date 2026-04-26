@@ -105,36 +105,41 @@ export function SharedMemoryPanel({
   );
 
   // ── Fileroom mode: read-only context bank with side-by-side layout ──
+  // [claude-code 2026-04-26] solvys-feels pass: bumped sidebar min-width so
+  // search/filter row doesn't kiss the divider, layered the panel as glass
+  // over the base, and added entry transition.
   if (isFileroom) {
     return (
-      <div className="flex h-full bg-[#050402]">
-        {/* Left: Card preview list */}
-        <div className="flex flex-col w-72 flex-shrink-0 border-r border-[#c79f4a]/10">
+      <div className="flex h-full bg-[var(--fintheon-bg)] t-fade-in">
+        {/* Left: Card preview list — flat surface with accent border */}
+        <div className="relative flex flex-col w-[420px] min-w-[400px] flex-shrink-0 bg-[var(--fintheon-surface)] border-r border-[var(--fintheon-accent)]/15">
           {/* Header */}
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-[#c79f4a]/10">
-            <Brain size={16} className="text-[#c79f4a]" />
-            <h2 className="text-sm font-medium text-[#f0ead6]">Fileroom</h2>
-            <span className="text-[10px] text-[#f0ead6]/30 ml-auto">
+          <div className="flex items-center gap-2 px-5 py-3 border-b border-[var(--fintheon-accent)]/10">
+            <Brain size={16} className="text-[var(--fintheon-accent)]" />
+            <h2 className="text-sm font-medium text-[var(--fintheon-text)]">
+              Fileroom
+            </h2>
+            <span className="text-[10px] text-[var(--fintheon-text)]/30 ml-auto tabular-nums">
               {entries.length} items
             </span>
           </div>
 
-          {/* Search + filter */}
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-[#c79f4a]/5">
-            <div className="flex-1 flex items-center gap-1 bg-[#0a0a08] border border-[#c79f4a]/10 rounded px-2 py-1">
-              <Search size={12} className="text-[#f0ead6]/25" />
+          {/* Search + filter — extra padding so dropdown clears the divider */}
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--fintheon-accent)]/5">
+            <div className="flex-1 flex items-center gap-1.5 bg-[var(--fintheon-bg)]/60 border border-[var(--fintheon-accent)]/10 rounded px-2.5 py-1.5 transition-colors focus-within:border-[var(--fintheon-accent)]/30">
+              <Search size={12} className="text-[var(--fintheon-text)]/25" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search context bank..."
-                className="flex-1 bg-transparent text-xs text-[#f0ead6] placeholder:text-[#f0ead6]/20 outline-none"
+                className="flex-1 bg-transparent text-xs text-[var(--fintheon-text)] placeholder:text-[var(--fintheon-text)]/20 outline-none"
               />
             </div>
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="bg-[#0a0a08] border border-[#c79f4a]/10 rounded px-2 py-1 text-xs text-[#f0ead6]/70 outline-none"
+              className="bg-[var(--fintheon-bg)]/60 border border-[var(--fintheon-accent)]/10 rounded px-2.5 py-1.5 text-xs text-[var(--fintheon-text)]/70 outline-none transition-colors focus:border-[var(--fintheon-accent)]/30"
             >
               <option value="">All</option>
               {CATEGORIES.map((c) => (

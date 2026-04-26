@@ -9,6 +9,28 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T08:00:00",
+    agent: "claude-code",
+    summary:
+      "v5.30.0 — Source pipeline rewrite + RiskFlow card overhaul + econ-calendar swap. (1) Source allowlist: news-worker web ingest locked to .gov + bank research desks (web-allowlist.ts: Treasury/Fed/SEC/CFTC/BLS/BEA/ECB/BOE/BOJ/BoC/RBA/SNB/IMF/BIS/OECD + Goldman/JPM/MS/BofA/Citi/UBS/Barclays/HSBC/DB/CS/Nomura/Mizuho/RBC/BMO/BlackRock/PIMCO). Exa collector now passes includeDomains; persist.ts gates non-Twitter sources via isAllowedWebDomain. Twitter ingest stays gated by designated handles in the Refinement Engine. (2) Domain-only mainstream-media bans: Reuters/Bloomberg/CNBC/Fox News/MSNBC/CNN/NBC/ABC/CBS News/NYT/WaPo/USA Today/HuffPost/BuzzFeed/Vox/Daily Beast/Newsweek/Daily Mail/MarketWatch/Yahoo Finance/Seeking Alpha/Motley Fool/Barron's/Benzinga/ZeroHedge/Investopedia/BBC/Guardian/FT/Economist/Al Jazeera/Axios/Politico/Semafor/Business Insider/Punchbowl/Puck/The Information/Daily Wire/Newsmax/OANN/Mother Jones/Slate/Salon/The Hill/NPR/PBS — blocked when URL points to their domain; text mentions in curated Twitter relays pass through. (3) RiskFlow card overhaul: Generate-Note button retired, full-headline display (no truncate), legacy url:tag stripped from chip strip and persist no longer writes it, AINoteModal primitive (iOS-rounded 14px, accent border, Hide text button top-right with fade-out), AskRiskFlowModal CTA fetches /api/riskflow/:id/generate-note and pipes response into the modal — chat sidebar untouched. (4) Refresh = HARD reset-refill (clear local alerts + reset cursor to 50 + DB-only re-read); ships through standard fintheon-update.sh → DMG path. (5) Desktop Econ Calendar tab swapped to TradingView calendar iframe via EmbeddedBrowserFrame. (6) SanctumBriefing length-guard fix (Arbitrum verdict synthesis path was crashing the Aquarium with `Cannot read properties of undefined (reading 'length')` because briefing.keyFindings/riskAlerts were undefined when synthesized from an Arbitrum verdict's digest_text). (7) Fileroom polish: 420px sidebar with extra inner padding so the dropdown doesn't kiss the divider. (8) DB hygiene: 715+ rows purged across the session — Reuters/Bloomberg + dedupe + 4 mainstream-media sweeps including url-tag strip on existing rows.",
+    files: [
+      "backend-hono/src/services/riskflow/content-guard.ts",
+      "backend-hono/src/workers/news-worker/persist.ts",
+      "backend-hono/src/workers/news-worker/sources/exa.ts",
+      "backend-hono/src/workers/news-worker/sources/web-allowlist.ts",
+      "frontend/components/feed/RiskFlowDetailCard.tsx",
+      "frontend/components/feed/AINoteModal.tsx",
+      "frontend/components/feed/AskRiskFlowModal.tsx",
+      "frontend/components/econ/TradingViewCalendar.tsx",
+      "frontend/components/layout/TabRenderer.tsx",
+      "frontend/components/narrative/SanctumBriefing.tsx",
+      "frontend/components/memory/SharedMemoryPanel.tsx",
+      "frontend/contexts/RiskFlowContext.tsx",
+      "scripts/fintheon-update.sh",
+      "package.json",
+    ],
+  },
+  {
     date: "2026-04-26T05:15:00",
     agent: "claude-code",
     summary:

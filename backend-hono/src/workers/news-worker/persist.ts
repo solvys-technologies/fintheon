@@ -23,7 +23,37 @@
 
 import { getSupabaseClient } from "../../config/supabase.js";
 import { bumpCounter } from "../../services/riskflow/drop-counters.js";
+import { isBannedPublisher } from "../../services/riskflow/content-guard.js";
+import { isAllowedWebDomain } from "./sources/web-allowlist.js";
 import type { CollectedNewsItem } from "./sources/types.js";
+
+// [claude-code 2026-04-26] Sources that bypass the web-allowlist gate. Twitter
+// pipeline collectors carry their own designated-handle gating via the
+// Refinement Engine, so they don't need a domain check.
+const TWITTER_SOURCES = new Set<string>([
+  "twitter",
+  "twitter:wire",
+  "twitter:macro",
+  "twitter:standard",
+  "rettiwt",
+  "browserbase-twitter",
+  "streaming-watcher",
+]);
+
+function isTwitterSource(source: string | undefined): boolean {
+  if (!source) return false;
+  if (TWITTER_SOURCES.has(source)) return true;
+  return source.startsWith("twitter:") || source.startsWith("rettiwt:");
+}
+
+function hostnameFromUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return null;
+  }
+}
 
 const FLAG_WRITES = "FLAG_NEWS_WORKER_WRITES_RISKFLOW";
 
@@ -59,16 +89,50 @@ export async function writeCollectedItems(
   // the upsert silently.
   const eligible: CollectedNewsItem[] = [];
   const perSourceMissing = new Map<string, number>();
+  const perSourcePublisherBanned = new Map<string, number>();
+  const perSourceWebOff = new Map<string, number>();
   for (const item of items) {
     const src = item.source || "unknown";
     if (!item.item_id || !item.headline || !item.headline.trim()) {
       perSourceMissing.set(src, (perSourceMissing.get(src) ?? 0) + 1);
       continue;
     }
+    // [claude-code 2026-04-26] Domain ban: never accept items pulled directly
+    // from a banned publisher's site. Text mentions in curated Twitter relays
+    // are fine — the gate is on URL/host, not on headline phrase.
+    if (
+      isBannedPublisher({
+        url: item.url,
+        tags: item.source_domain ? [item.source_domain] : [],
+      })
+    ) {
+      perSourcePublisherBanned.set(
+        src,
+        (perSourcePublisherBanned.get(src) ?? 0) + 1,
+      );
+      continue;
+    }
+    // [claude-code 2026-04-26] Web allowlist defense-in-depth: non-Twitter
+    // ingest must come from .gov or bank research desks. Twitter sources have
+    // their own designated-handle gating in the Refinement Engine and bypass
+    // this gate.
+    if (!isTwitterSource(src)) {
+      const host = item.source_domain ?? hostnameFromUrl(item.url);
+      if (host && !isAllowedWebDomain(host)) {
+        perSourceWebOff.set(src, (perSourceWebOff.get(src) ?? 0) + 1);
+        continue;
+      }
+    }
     eligible.push(item);
   }
   for (const [src, count] of perSourceMissing) {
     bumpCounter(src, "persist", "dropped_missing_fields", count);
+  }
+  for (const [src, count] of perSourcePublisherBanned) {
+    bumpCounter(src, "persist", "dropped_banned_publisher", count);
+  }
+  for (const [src, count] of perSourceWebOff) {
+    bumpCounter(src, "persist", "dropped_web_off_allowlist", count);
   }
   if (eligible.length === 0) return 0;
 
@@ -81,9 +145,9 @@ export async function writeCollectedItems(
     url: item.url ?? null,
     image_url: item.image_url ?? null,
     symbols: [] as string[],
-    tags: item.url
-      ? [`url:${item.url}`, `tier:${item.tier}`]
-      : [`tier:${item.tier}`],
+    // [claude-code 2026-04-26] url: tag dropped — `url` is a real column now,
+    // and the legacy tag was leaking publisher domains into rendered chips.
+    tags: [`tier:${item.tier}`],
     is_breaking: item.tier === "breaking",
     urgency: item.tier === "breaking" ? 8 : 4,
     published_at: item.published_at,

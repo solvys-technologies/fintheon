@@ -6,7 +6,9 @@ import { RiskFlowMain } from "../feed/RiskFlowMain";
 import { ConsiliumHub } from "../consilium/ConsiliumHub";
 import { MainDashboard } from "../executive/MainDashboard";
 import { EconCalendarProvider } from "../../contexts/EconCalendarContext";
-import { EconCalendar } from "../econ/EconCalendar";
+// [claude-code 2026-04-26] Desktop Econ tab now embeds TradingView's calendar
+// via EmbeddedBrowserFrame; native EconCalendar still mounted on mobile/chat.
+import { TradingViewCalendar } from "../econ/TradingViewCalendar";
 import { NarrativeProvider } from "../../contexts/NarrativeContext";
 import { NarrativeMap } from "../narrative/NarrativeMap";
 import { PerformanceJournal } from "../journal/PerformanceJournal";
@@ -88,7 +90,7 @@ export function TabRenderer({
           className={`h-full w-full ${animClass}`}
         >
           <EconCalendarProvider>
-            <EconCalendar />
+            <TradingViewCalendar />
           </EconCalendarProvider>
         </div>
       )}

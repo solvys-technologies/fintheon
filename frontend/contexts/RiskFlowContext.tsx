@@ -392,13 +392,27 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
     [seenIds],
   );
 
+  // [claude-code 2026-04-26] Refresh is a HARD reset-refill that reads from
+  // the DB cache only — it does NOT re-poll upstream sources. Flow:
+  //   1. Clear local alerts state
+  //   2. Reset loadedCountRef back to 50
+  //   3. Re-read scored_riskflow_items via backend.riskflow.list (DB only)
+  // Source polling lives elsewhere (news-worker schedulers + Self Team Card
+  // Doctor button); this path purely refills the visible feed from whatever
+  // the DB currently holds. Ships in the standard fintheon-update.sh →
+  // GH-release → DMG path so all desktop users get the reset behavior on
+  // next update.
   // [claude-code 2026-04-18] S25-T3: "Refresh" no longer triggers a backend poll. It only
   // re-fetches the latest scored items from the backend cache. Manual poll triggers live
   // exclusively on the self Team Card (Doctor button, cooldown-gated).
   const refresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      setFetchStatus("Fetching latest...");
+      setFetchStatus("Resetting feed…");
+      setBackendAlerts([]);
+      setHasMore(true);
+      loadedCountRef.current = 50;
+      // pollBackendFeed → backend.riskflow.list → /api/riskflow/feed (DB read).
       await pollBackendFeed();
       setFetchStatus("Feed updated");
       setTimeout(() => setFetchStatus(""), 2000);

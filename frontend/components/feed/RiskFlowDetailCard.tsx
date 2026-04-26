@@ -17,7 +17,7 @@ import { YouTubeLogo } from "../../lib/shared-icons";
 import { timeAgo } from "../../lib/time-utils";
 import { linkifyText } from "../../lib/linkify";
 import { SourcePreview } from "./SourcePreview";
-import { AskAboutThis } from "../chat/AskAboutThis";
+import { AskRiskFlowModal } from "./AskRiskFlowModal";
 
 export type RiskFlowDetailSurface = "full" | "timeline" | "mini";
 
@@ -159,16 +159,12 @@ export function RiskFlowDetailCard({
                     Source
                   </a>
                 )}
-                <AskAboutThis
-                  surface="riskflow_card"
-                  label="this RiskFlow item"
+                <AskRiskFlowModal
+                  itemId={alert.id}
+                  headline={alert.headline}
+                  sourceUrl={alert.url ?? null}
+                  cachedNote={alert.agentNote ?? null}
                   hoverReveal={false}
-                  payload={{
-                    itemId: alert.id,
-                    headline: alert.headline,
-                    severity: alert.severity,
-                    ivScore: alert.ivScore,
-                  }}
                 />
               </div>
             </div>
@@ -198,7 +194,8 @@ export function RiskFlowDetailCard({
                 />
               </a>
             )}
-            {/* 1. Agent Note (or Generate CTA) */}
+            {/* 1. Analyst Note inline — modal flow is reserved for chat-driven
+                responses (see AskAboutThis); passive notes display inline. */}
             {detailedNote ? (
               <div className="border border-zinc-800/60 px-3 py-2.5 mb-3 bg-[var(--fintheon-bg)]">
                 <div className="flex items-center gap-1.5 mb-1">
@@ -212,7 +209,7 @@ export function RiskFlowDetailCard({
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="block mb-1.5 text-[11px] text-[var(--fintheon-accent)] hover:underline truncate"
+                    className="block mb-1.5 text-[11px] text-[var(--fintheon-accent)] hover:underline break-words"
                   >
                     {alert.headline}
                   </a>
@@ -251,15 +248,7 @@ export function RiskFlowDetailCard({
                   </p>
                 )}
               </div>
-            ) : (
-              <button
-                onClick={handleGenerateNote}
-                disabled={generating}
-                className="flex items-center gap-1.5 text-[10px] text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors mb-3 px-1 disabled:opacity-50"
-              >
-                <span>{generating ? "Generating..." : "Generate Note +"}</span>
-              </button>
-            )}
+            ) : null}
 
             {/* 2. Econ Data — beat/miss + A/F/P (econ items only) */}
             {hasEconData && alert.econData && (
@@ -343,16 +332,19 @@ export function RiskFlowDetailCard({
 
             {/* 5. Tags + Author + Source link */}
             <div className="flex items-center gap-2 flex-wrap">
-              {alert.tags.length > 0 && (
+              {alert.tags.filter((t) => !t.startsWith("url:")).length > 0 && (
                 <div className="flex gap-1">
-                  {alert.tags.slice(0, 4).map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-[9px] px-1.5 py-0.5 bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/20"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+                  {alert.tags
+                    .filter((t) => !t.startsWith("url:"))
+                    .slice(0, 4)
+                    .map((tag) => (
+                      <span
+                        key={tag}
+                        className="text-[9px] px-1.5 py-0.5 bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/20"
+                      >
+                        {tag}
+                      </span>
+                    ))}
                 </div>
               )}
               {alert.authorHandle && (
