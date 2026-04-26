@@ -500,3 +500,69 @@
 [2026-04-25T16:37:51Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-23T15:10:32.000Z itemAge=49.5h cacheAge=75298ms rateLimited=False
 [2026-04-25T16:47:17Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-23T15:10:32.000Z itemAge=49.6h cacheAge=15451ms rateLimited=False
 [2026-04-25T16:52:48Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-23T15:10:32.000Z itemAge=49.7h cacheAge=17831ms rateLimited=False
+[2026-04-25T17:05:46Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-25T18:12:39Z] status=stale cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T16:56:16.000Z itemAge=1.3h cacheAge=3150866ms rateLimited=False
+[2026-04-25T18:15:05Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T16:56:16.000Z itemAge=1.3h cacheAge=118477ms rateLimited=False
+[2026-04-25T18:20:28Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T16:56:16.000Z itemAge=1.4h cacheAge=2941ms rateLimited=False
+[2026-04-25T18:31:23Z] status=stale cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T16:56:16.000Z itemAge=1.6h cacheAge=631484ms rateLimited=False
+[2026-04-25T18:40:04Z] status=stale cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T16:56:16.000Z itemAge=1.7h cacheAge=496237ms rateLimited=False
+[2026-04-25T18:43:44Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-25T19:20:46Z] status=stale cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T18:35:46.003Z itemAge=0.8h cacheAge=2198534ms rateLimited=False
+[2026-04-25T19:26:31Z] status=stale cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T19:00:00.000Z itemAge=0.4h cacheAge=312233ms rateLimited=False
+[2026-04-25T19:39:04Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T19:00:00.000Z itemAge=0.7h cacheAge=38317ms rateLimited=False
+[2026-04-25T19:49:01Z] status=stale cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T19:00:00.000Z itemAge=0.8h cacheAge=558068ms rateLimited=False
+[2026-04-25T19:51:49Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T19:00:00.000Z itemAge=0.9h cacheAge=121398ms rateLimited=False
+[2026-04-25T19:52:41Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T19:00:00.000Z itemAge=0.9h cacheAge=5181ms rateLimited=False
+[2026-04-25T19:53:20Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-25T19:54:01Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T19:00:00.000Z itemAge=0.9h cacheAge=1716ms rateLimited=False
+[2026-04-25T20:04:21Z] status=stale cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T19:00:00.000Z itemAge=1.1h cacheAge=574930ms rateLimited=False
+[2026-04-25T20:04:48Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-25T20:05:33Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T19:00:00.000Z itemAge=1.1h cacheAge=1185ms rateLimited=False
+[2026-04-25T20:56:17Z] status=stale cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T19:00:00.000Z itemAge=1.9h cacheAge=2999077ms rateLimited=False
+[2026-04-25T20:56:34Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T20:00:00.000Z itemAge=0.9h cacheAge=10928ms rateLimited=False
+[2026-04-25T20:58:45Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-25T20:59:56Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-25T21:00:32Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T20:00:00.000Z itemAge=1.0h cacheAge=11827ms rateLimited=False
+[2026-04-25T21:05:55Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T20:00:00.000Z itemAge=1.1h cacheAge=12764ms rateLimited=False
+[2026-04-25T21:30:25Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T20:00:00.000Z itemAge=1.5h cacheAge=31852ms rateLimited=False
+[2026-04-25T21:34:43Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-25T21:39:30Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T20:57:56.000Z itemAge=0.7h cacheAge=260330ms rateLimited=False
+[2026-04-25T21:42:34Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T20:57:56.000Z itemAge=0.7h cacheAge=122365ms rateLimited=False
+[2026-04-25T21:42:46Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-25T21:43:21Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-25T21:48:01Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T21:35:30.000Z itemAge=0.2h cacheAge=227548ms rateLimited=False
+[2026-04-25T22:26:21Z] status=stale cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T21:35:30.000Z itemAge=0.8h cacheAge=2266740ms rateLimited=False
+[2026-04-25T22:34:01Z] status=stale cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T21:35:30.000Z itemAge=1.0h cacheAge=427855ms rateLimited=False
+[2026-04-25T22:34:04Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-25T22:36:24Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T21:35:30.000Z itemAge=1.0h cacheAge=16464ms rateLimited=False
+[2026-04-25T22:39:14Z] status=healthy cache=500 poller=True scorer=True unscored=1457 newest=2026-04-25T21:35:30.000Z itemAge=1.1h cacheAge=135183ms rateLimited=False
+[2026-04-25T22:43:40Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T22:36:45.850Z itemAge=0.1h cacheAge=219649ms rateLimited=False
+[2026-04-25T22:52:58Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T22:36:45.850Z itemAge=0.3h cacheAge=255615ms rateLimited=False
+[2026-04-25T22:52:59Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T22:36:45.850Z itemAge=0.3h cacheAge=256116ms rateLimited=False
+[2026-04-25T22:53:00Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T22:36:45.850Z itemAge=0.3h cacheAge=255204ms rateLimited=False
+[2026-04-25T22:53:00Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T22:36:45.850Z itemAge=0.3h cacheAge=257629ms rateLimited=False
+[2026-04-25T22:53:06Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-25T22:53:08Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-25T22:53:10Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-25T22:54:58Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-25T23:08:57Z] status=healthy cache=500 poller=True scorer=True unscored=1465 newest=2026-04-25T22:36:45.850Z itemAge=0.5h cacheAge=59173ms rateLimited=False
+[2026-04-26T00:07:23Z] status=stale cache=500 poller=True scorer=True unscored=1469 newest=2026-04-25T22:36:45.850Z itemAge=1.5h cacheAge=3270540ms rateLimited=False
+[2026-04-26T00:10:27Z] status=healthy cache=500 poller=True scorer=True unscored=1469 newest=2026-04-25T16:56:16.000Z itemAge=7.2h cacheAge=107885ms rateLimited=False
+[2026-04-26T00:13:40Z] status=healthy cache=500 poller=True scorer=True unscored=1469 newest=2026-04-25T16:56:16.000Z itemAge=7.3h cacheAge=43363ms rateLimited=False
+[2026-04-26T00:13:51Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-26T00:20:54Z] status=stale cache=500 poller=True scorer=True unscored=1469 newest=2026-04-25T16:56:16.000Z itemAge=7.4h cacheAge=367347ms rateLimited=False
+[2026-04-26T00:22:44Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-26T00:26:51Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-26T00:28:23Z] status=healthy cache=500 poller=True scorer=True unscored=1470 newest=2026-04-25T16:56:16.000Z itemAge=7.5h cacheAge=63645ms rateLimited=False
+[2026-04-26T00:29:18Z] status=healthy cache=500 poller=True scorer=True unscored=1470 newest=2026-04-25T16:56:16.000Z itemAge=7.6h cacheAge=32510ms rateLimited=False
+[2026-04-26T01:34:19Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-26T01:34:36Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-26T01:56:48Z] status=stale cache=500 poller=True scorer=True unscored=1459 newest=2026-04-25T16:56:16.000Z itemAge=9.0h cacheAge=1306602ms rateLimited=False
+[2026-04-26T01:57:52Z] status=healthy cache=500 poller=True scorer=True unscored=1459 newest=2026-04-25T16:56:16.000Z itemAge=9.0h cacheAge=34769ms rateLimited=False
+[2026-04-26T01:59:16Z] status=healthy cache=500 poller=True scorer=True unscored=1459 newest=2026-04-25T16:56:16.000Z itemAge=9.1h cacheAge=55635ms rateLimited=False
+[2026-04-26T02:03:03Z] status=healthy cache=500 poller=True scorer=True unscored=1459 newest=2026-04-25T16:56:16.000Z itemAge=9.1h cacheAge=78016ms rateLimited=False
+[2026-04-26T02:09:55Z] status=stale cache=500 poller=True scorer=True unscored=1459 newest=2026-04-25T16:56:16.000Z itemAge=9.2h cacheAge=385471ms rateLimited=False
+[2026-04-26T02:09:58Z] status=healthy cache=500 poller=True scorer=True unscored=1459 newest=2026-04-25T16:56:16.000Z itemAge=9.2h cacheAge=843ms rateLimited=False
+[2026-04-26T02:12:14Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
+[2026-04-26T02:14:09Z] status=healthy cache=500 poller=True scorer=True unscored=1459 newest=2026-04-25T16:56:16.000Z itemAge=9.3h cacheAge=86917ms rateLimited=False
+[2026-04-26T02:15:14Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health

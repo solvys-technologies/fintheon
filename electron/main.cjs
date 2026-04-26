@@ -1,3 +1,9 @@
+// [claude-code 2026-04-25] S35: window-close + app-quit instrumentation. The S35 crash.log
+// captured render-process-gone cascades but never WHY — macOS log show revealed AppKit
+// `windowShouldClose:` events at every crash timestamp, so the closes were either
+// programmatic, accessibility-driven, or a stray Cmd+W. Hook BrowserWindow `close` /
+// `closed`, `app.before-quit`, `app.quit`, and process SIGTERM/SIGINT so the next
+// reproduction lands the trigger in crash.log instead of silence.
 // [claude-code 2026-04-23] Rollback: drop github.com OAuth popup allowlist (provider retired)
 // [claude-code 2026-04-16] Lifecycle v2: token refresh on open, smart kill on close, idle shutdown for routine-started backends
 // [claude-code 2026-02-26] Ensure OAuth popups work for embedded webviews.
@@ -586,6 +592,21 @@ function createWindow(apiBase) {
   );
   win.loadFile(rendererPath);
   mainWindow = win;
+
+  // [claude-code 2026-04-25] S35: log the BrowserWindow close trigger so a
+  // user-clicked X, a Cmd+W, an IPC-driven close, or a renderer-initiated
+  // window.close() are all distinguishable in crash.log.
+  win.on("close", (_event) => {
+    closeReason = closeReason ?? "browserwindow-close";
+    logCrash("browserwindow-close", {
+      isFocused: win.isFocused?.() ?? null,
+      isVisible: win.isVisible?.() ?? null,
+    });
+  });
+  win.webContents.on("render-process-gone", (_event, details) => {
+    closeReason =
+      closeReason ?? `renderer-gone:${details?.reason ?? "unknown"}`;
+  });
 
   // [claude-code 2026-04-19] S27-T5 W2c: install voice-chrome ipc hook once the
   // window exists. Idempotent — installVoiceChromeHook only registers the

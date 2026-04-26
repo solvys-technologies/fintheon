@@ -93,6 +93,8 @@ import { createBrowserbaseRoutes } from "./browserbase/index.js";
 // [claude-code 2026-04-20] S21: Harper Voice integration (formerly Omi) + PsychAssist fork admin
 import { createHarperVoiceRoutes } from "./harper-voice.js";
 import { createPsychAssistForkRoutes } from "./admin/psych-assist-fork.js";
+// [claude-code 2026-04-25] S35-cleanup: manual trigger for econ-backfill-orchestrator drain
+import { createEconBackfillRoutes } from "./admin/econ-backfill.js";
 // [claude-code 2026-04-23] Harper Vision — screen + audio perception layer
 import { createHarperVisionRoutes } from "./harper-vision/index.js";
 // [claude-code 2026-04-23] S31-T9 predictive knowledge graph — usage telemetry + Harper feature proposals
@@ -418,6 +420,10 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/admin/psych-assist-fork", authMiddleware, requireAuth);
   app.use("/api/admin/psych-assist-fork/*", authMiddleware, requireAuth);
   app.route("/api/admin/psych-assist-fork", createPsychAssistForkRoutes());
+
+  // [claude-code 2026-04-25] S35-cleanup: manual trigger for econ-backfill drain.
+  //   Gated internally on x-routine-secret matching ROUTINE_SECRET.
+  app.route("/api/admin/econ", createEconBackfillRoutes());
 
   // [S29-T4] Catalysts — date-filtered RiskFlow headlines for calendar panel
   app.route("/api/catalysts", createCatalystsByDateRoute());

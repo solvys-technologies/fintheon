@@ -352,6 +352,28 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
+    date: "2026-04-25T19:10:00",
+    agent: "claude-code",
+    summary:
+      "S35-cleanup: (1) Backend DB purge — 544 Reuters/Bloomberg headlines removed (176 scored_riskflow_items + 151 raw_riskflow_items + 35 news_feed_items + 182 narrative_card_links) and 1,566 duplicate-headline rows deduped (846 scored + 656 orphan links + 48 raw + 16 news_feed). (2) Arbitrum econ-context wiring — new services/arbitrum/econ-context.ts loads last-21d econ_prints + next-7d economic_events on every chamber run; seats.ts buildUserPrompt + buildDistillPrompt now thread that context into Qwen seats so they reason over the same data the Aquarium event-card surfaces; ArbitrumDeliberateInput gained econ_context. (3) Manual backfill trigger — POST /api/admin/econ/backfill-tick + /backfill-drain (gated on x-routine-secret) so the dormant econ-backfill-orchestrator can drain the 7 April-2026 country slices that have been pending since Mar 26 (econ_prints went silent that day; only 1 of 79 economic_events in the last 30d had `actual` populated). (4) Bridge — services/econ/bridge-actuals.ts copies populated economic_events.actual rows into econ_prints (idempotent on lowercased headline + day), so /api/econ/synthesize and EconEventCard print history populate immediately after a drain instead of waiting for riskflow-econ-enricher's daily roll-over. backfill-drain auto-runs the bridge after each drain; standalone POST /api/admin/econ/bridge-actuals also added.",
+    files: [
+      "backend-hono/src/routes/admin/econ-backfill.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/services/arbitrum/types.ts",
+      "backend-hono/src/services/arbitrum/seats.ts",
+      "backend-hono/src/services/arbitrum/engine.ts",
+      "backend-hono/src/services/arbitrum/econ-context.ts",
+      "backend-hono/src/services/econ/bridge-actuals.ts",
+    ],
+  },
+  {
+    date: "2026-04-25T17:45:00",
+    agent: "claude-code",
+    summary:
+      "S35 debug: two critical bugs. (1) Mobile chat no-response — relay-bridge.ts forward() generator hung forever when the local backend's WS dropped between frames, so relay.ts streamed 200 OK with an empty SSE body and mobile sat on the 12s 'HARPER SILENT' watchdog with no error bubble; added close/error listeners that synthesize a local_offline error so relay.ts's catch arm emits {type:error}+[DONE] and mobile renders [ERROR: Local backend disconnected]. Send call also now wrapped so a between-isConnected-and-send race hits the same path. (2) Electron 'error-closes after 5 min' — macOS log show revealed AppKit windowShouldClose: at every crash.log timestamp, but no instrumentation captured WHO triggered it; added BrowserWindow close, render-process-gone, app before-quit/will-quit/quit, and process SIGTERM/SIGINT/SIGHUP loggers that all attribute via a shared closeReason so the next repro lands a definitive trigger in crash.log instead of just the cascade.",
+    files: ["backend-hono/src/services/relay-bridge.ts", "electron/main.cjs"],
+  },
+  {
     date: "2026-04-25T18:00:00",
     agent: "claude-code",
     summary:

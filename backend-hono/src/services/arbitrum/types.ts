@@ -46,11 +46,33 @@ export interface ArbitrumIvSimulation {
   dissent_delta?: number;
 }
 
+export interface ArbitrumEconPrintLine {
+  date: string | null;
+  name: string;
+  actual: number | null;
+  forecast: number | null;
+  previous: number | null;
+  surprise: number | null;
+  direction: "beat" | "miss" | "inline" | null;
+}
+
+export interface ArbitrumEconContext {
+  windowDays: number;
+  prints: ArbitrumEconPrintLine[];
+  upcoming: Array<{
+    date: string;
+    time: string | null;
+    name: string;
+    country: string | null;
+  }>;
+}
+
 export interface ArbitrumDeliberateInput {
   question: string;
   category: string;
   context?: string;
   iv_simulation?: ArbitrumIvSimulation | null;
+  econ_context?: ArbitrumEconContext | null;
 }
 
 export interface ArbitrumDissent {

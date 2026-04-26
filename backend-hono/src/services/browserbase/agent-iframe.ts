@@ -15,8 +15,8 @@
 import { EventEmitter } from "node:events";
 import Browserbase from "@browserbasehq/sdk";
 import { createLogger } from "../../lib/logger.js";
-import { browseTask } from "./operator.js";
-import { acquirePage } from "./pool.js";
+import { browseTask } from "../browser/operator.js";
+import { acquirePage } from "../browser/pool.js";
 
 const log = createLogger("Browserbase");
 
