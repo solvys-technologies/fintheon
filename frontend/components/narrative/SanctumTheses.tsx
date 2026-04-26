@@ -4,6 +4,7 @@ import type {
   AgentDeskScenario,
   AgentDeskCategoryScore,
 } from "../../types/agent-desk";
+import { AskAboutThis } from "../chat/AskAboutThis";
 
 const API_BASE = (
   import.meta.env.VITE_API_URL || "http://localhost:8080"
@@ -68,9 +69,23 @@ export function SanctumTheses({
   }
 
   return (
-    <div
-      className={`grid gap-3 ${expanded ? "grid-cols-1 xl:grid-cols-2" : "grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3"}`}
-    >
+    <div className="group flex flex-col gap-2">
+      <div className="flex justify-end">
+        <AskAboutThis
+          surface="sanctum_forecast"
+          label="these forecasts"
+          payload={{
+            top_theses: sorted.slice(0, 5).map((t) => ({
+              label: t.label,
+              projected_score: t.projectedScore,
+            })),
+            composite_avg: compositeAvg,
+          }}
+        />
+      </div>
+      <div
+        className={`grid gap-3 ${expanded ? "grid-cols-1 xl:grid-cols-2" : "grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3"}`}
+      >
       {sorted.map((thesis, idx) => {
         const volatility = Math.abs(thesis.projectedScore - compositeAvg);
         const isTop = idx === 0;
@@ -128,6 +143,7 @@ export function SanctumTheses({
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

@@ -1,3 +1,7 @@
+// [claude-code 2026-04-25] S42-T6: Visual cleanup — flat surface + accent border (no
+//   glassmorphic), readable typography. Header strip carries an Ask AI affordance that
+//   routes through the shared chat-context dispatcher; collapsed-card anatomy upstream
+//   in RiskFlowCard is preserved.
 // [claude-code 2026-04-20] Footer row added: horizontal IV bar picks up the
 //   juice from the preview card's drained vertical fuse (fills 0→IV on mount),
 //   paperclip icon right-justified links to the original source, and the IV
@@ -8,10 +12,11 @@
 //   timeline surface, the expanded card shows the scraped body in a SourcePreview block
 //   with YouTube + open-original CTAs; mini surfaces keep the legacy [OPEN SOURCE] link.
 import { motion } from "framer-motion";
-import { Paperclip } from "lucide-react";
+import { ExternalLink, Paperclip } from "lucide-react";
 import type { MobileRiskFlowAlert } from "../../contexts/RiskFlowContext";
 import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
 import { SourcePreview } from "./SourcePreview";
+import { AskAboutThis } from "../chat/AskAboutThis";
 
 export type RiskFlowExpandedSurface = "full" | "timeline" | "mini";
 
@@ -86,9 +91,69 @@ export function RiskFlowCardExpanded({
       style={{ overflow: "hidden" }}
     >
       <div
-        className="pb-4 pt-2 fade-divider-top"
-        style={{ borderTop: "none", padding: "8px 12px 16px 26px" }}
+        style={{
+          padding: "10px 14px 16px 14px",
+          borderTop: `1px solid ${severityColor ?? "var(--accent)"}`,
+          background: "var(--surface, #0a0904)",
+        }}
       >
+        {/* Header strip: Ask AI + source-handoff link */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 10,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-data)",
+              fontSize: 10,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "var(--text-secondary)",
+            }}
+          >
+            DETAIL
+          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {alert.url && (
+              <a
+                href={alert.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontFamily: "var(--font-data)",
+                  fontSize: 10,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: "var(--accent)",
+                  textDecoration: "none",
+                }}
+                aria-label="Open original source"
+              >
+                <ExternalLink size={11} />
+                Source
+              </a>
+            )}
+            <AskAboutThis
+              surface="riskflow_card"
+              label="this RiskFlow item"
+              size={12}
+              payload={{
+                itemId: alert.id,
+                headline: alert.title,
+                severity: alert.severity,
+                ivScore: ivScore,
+              }}
+            />
+          </div>
+        </div>
         {/* [claude-code 2026-04-25] S35: hero image — RSS enclosure / og:image, hidden
             on load failure so a broken image never breaks the expanded card. */}
         {alert.imageUrl && (

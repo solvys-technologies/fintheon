@@ -150,13 +150,44 @@ function ChatSidebarInner({
       if (id) withViewTransition(() => setConversationId(id));
     };
 
+    // [claude-code 2026-04-25] S42-T6: Auto-inject surface context when an "Ask
+    //   about this" button is clicked anywhere in the app. The event carries
+    //   {surface, payload, label}; we render it as a Harper-readable prompt and
+    //   send it through the existing runtime path.
+    const onOpenWithContext = (e: Event) => {
+      const detail = (e as CustomEvent).detail as
+        | { surface?: string; payload?: unknown; label?: string }
+        | undefined;
+      if (!detail?.surface) return;
+      const surface = detail.surface;
+      const head = detail.label
+        ? `Tell me about this ${detail.label}.`
+        : `Tell me about this ${surface.replace(/_/g, " ")}.`;
+      let body = "";
+      try {
+        body = JSON.stringify(detail.payload ?? {}, null, 2);
+      } catch {
+        body = String(detail.payload);
+      }
+      const msg = `${head}\n\n[Context surface=${surface}]\n${body}`;
+      handleSend(msg);
+    };
+
     window.addEventListener("fintheon:chat-new", onNewChat);
     window.addEventListener("fintheon:chat-run-report", onRunReport);
     window.addEventListener("fintheon:chat-load-session", onLoadSession);
+    window.addEventListener(
+      "fintheon:open-chat-with-context",
+      onOpenWithContext,
+    );
     return () => {
       window.removeEventListener("fintheon:chat-new", onNewChat);
       window.removeEventListener("fintheon:chat-run-report", onRunReport);
       window.removeEventListener("fintheon:chat-load-session", onLoadSession);
+      window.removeEventListener(
+        "fintheon:open-chat-with-context",
+        onOpenWithContext,
+      );
     };
   }, [clearConversationId, handleSend, isRunning, setConversationId]);
 

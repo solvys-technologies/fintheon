@@ -6,6 +6,7 @@ import {
   useArbitrumLatest,
   type ArbitrumSeat,
 } from "../../hooks/useArbitrumLatest";
+import { AskAboutThis } from "../chat/AskAboutThis";
 
 const SEAT_ROLES: ReadonlyArray<ArbitrumSeat["role"]> = [
   "Lead",
@@ -21,7 +22,13 @@ function seatLetter(role: string): string {
   return role.charAt(0).toUpperCase();
 }
 
-function HeaderRow({ trigger }: { trigger?: string }) {
+function HeaderRow({
+  trigger,
+  askPayload,
+}: {
+  trigger?: string;
+  askPayload?: Record<string, unknown>;
+}) {
   return (
     <div
       style={{
@@ -42,19 +49,29 @@ function HeaderRow({ trigger }: { trigger?: string }) {
       >
         ARBITRUM CHAMBER
       </span>
-      {trigger && (
-        <span
-          style={{
-            fontFamily: "var(--font-data)",
-            fontSize: "9px",
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            color: "var(--text-disabled)",
-          }}
-        >
-          {trigger}
-        </span>
-      )}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {trigger && (
+          <span
+            style={{
+              fontFamily: "var(--font-data)",
+              fontSize: "9px",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "var(--text-disabled)",
+            }}
+          >
+            {trigger}
+          </span>
+        )}
+        {askPayload && (
+          <AskAboutThis
+            surface="arbitrum_verdict"
+            label="this verdict"
+            size={12}
+            payload={askPayload}
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -187,7 +204,19 @@ export function ArbitrumVerdictCard() {
         padding: "16px 20px",
       }}
     >
-      <HeaderRow trigger={verdict?.trigger_type?.toUpperCase()} />
+      <HeaderRow
+        trigger={verdict?.trigger_type?.toUpperCase()}
+        askPayload={
+          verdict
+            ? {
+                verdict_id: verdict.id,
+                consensus_probability: verdict.consensus_probability,
+                confidence: verdict.confidence,
+                dissent_count: verdict.dissent?.count ?? 0,
+              }
+            : undefined
+        }
+      />
 
       {!verdict && (
         <div
