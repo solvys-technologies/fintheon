@@ -110,11 +110,18 @@ export async function backfillRiskFlowHeadlines(opts: {
       });
       for (const hit of hits) {
         if (!hit.url || !hit.title) continue;
-        // Filter to hits whose publishedDate matches the silent day if Exa
-        // provides one; otherwise keep (date-pinned via published_at below).
+        // Accept hits within ±3 days of the silent day if Exa provides a
+        // publishedDate; if none, accept (we pin published_at to the silent
+        // day at insert time anyway). The earlier strict same-day match
+        // eliminated all results because Exa rarely returns publishedDate
+        // matching the exact requested day.
         if (hit.publishedDate) {
-          const hitDay = hit.publishedDate.slice(0, 10);
-          if (hitDay !== day) continue;
+          const hitMs = Date.parse(hit.publishedDate);
+          const dayMs = Date.parse(`${day}T12:00:00Z`);
+          if (Number.isFinite(hitMs) && Number.isFinite(dayMs)) {
+            const diffDays = Math.abs(hitMs - dayMs) / (24 * 60 * 60 * 1000);
+            if (diffDays > 3) continue;
+          }
         }
         const tweet_id = makeTweetId(hit.url, hit.title, day);
         if (dayItems.has(tweet_id)) continue;

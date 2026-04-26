@@ -1,11 +1,12 @@
+// [claude-code 2026-04-26] S35-cleanup: rerouted Harper normalize from raw
+// OpenRouter (Anthropic Opus, key returns 401 on prod) to invokeAgent which
+// flows VProxy → Ollama Qwen3.5:397b-cloud via Hermes → Nous → OpenRouter.
 // [claude-code 2026-04-24] S34-T10: Harper batch categorization pass for backfilled econ events.
-// Reads unnormalized econ_backfill_queue rows, sends to Claude Opus (via OpenRouter),
-// receives a JSON array of normalized events with category + event_key, then returns them
-// for idempotent upsert into economic_events.
 
 import { createHash } from "node:crypto";
 import { createLogger } from "../../lib/logger.js";
 import { getSupabaseClient } from "../../config/supabase.js";
+import { invokeAgent } from "../strands/invoke-helper.js";
 import type {
   NormalizedBackfillEvent,
   RawBackfillEvent,
@@ -14,21 +15,10 @@ import type {
 
 const log = createLogger("EconBackfillHarper");
 
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const HARPER_MODEL = "anthropic/claude-opus-4";
 const WEEKLY_TOKEN_CAP = 500_000;
 
 let tokensSpentThisWeek = 0;
 let weekStartMs = Date.now();
-
-interface OpenRouterResponse {
-  choices?: Array<{ message?: { content?: string } }>;
-  usage?: {
-    prompt_tokens?: number;
-    completion_tokens?: number;
-    total_tokens?: number;
-  };
-}
 
 function rolloverWeek(): void {
   const weekMs = 7 * 24 * 60 * 60 * 1000;
@@ -162,44 +152,19 @@ async function callHarper(prompt: string): Promise<{
   text: string | null;
   tokens: number;
 }> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) return { text: null, tokens: 0 };
-
   try {
-    const res = await fetch(OPENROUTER_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: HARPER_MODEL,
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a strict JSON-only categorizer. Return only the requested JSON array — no prose, no markdown.",
-          },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0,
-        max_tokens: 8000,
-      }),
+    const { text } = await invokeAgent({
+      systemPrompt:
+        "You are a strict JSON-only categorizer. Return only the requested JSON array — no prose, no markdown.",
+      userPrompt: prompt,
+      model: { temperature: 0, maxTokens: 8000 },
     });
-
-    if (!res.ok) {
-      log.warn(`Harper OpenRouter HTTP ${res.status}`);
-      return { text: null, tokens: 0 };
-    }
-
-    const json = (await res.json()) as OpenRouterResponse;
-    const tokens = json.usage?.total_tokens ?? 0;
-    return {
-      text: json.choices?.[0]?.message?.content ?? null,
-      tokens,
-    };
+    if (!text || text.trim().length === 0) return { text: null, tokens: 0 };
+    // invokeAgent doesn't surface usage; estimate ~4 chars/token for cap accounting.
+    const approxTokens = Math.ceil((prompt.length + text.length) / 4);
+    return { text, tokens: approxTokens };
   } catch (err) {
-    log.warn("Harper call failed", { error: String(err) });
+    log.warn("Harper invokeAgent failed", { error: String(err) });
     return { text: null, tokens: 0 };
   }
 }

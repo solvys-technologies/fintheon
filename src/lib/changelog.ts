@@ -24,6 +24,17 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
+    date: "2026-04-26T00:50:00",
+    agent: "claude-code",
+    summary:
+      "S35-cleanup hotfix: prod OpenRouter key returns 401 'User not found' (account/key revoked). Rerouted both econ-backfill-puller and econ-backfill-harper from raw OpenRouter calls to invokeAgent (Strands fallback chain VProxy → Ollama Qwen3.5:397b-cloud via HERMES_SIDECAR_URL → Nous → OpenRouter). HERMES_BASE_URL is set on prod so the Ollama-Qwen rung is the active path. Also relaxed RiskFlow backfill-headlines Exa publishedDate filter from strict same-day match to ±3 days (the strict filter eliminated every Exa hit because Exa rarely returns publishedDate matching the exact requested day).",
+    files: [
+      "backend-hono/src/services/cron/econ-backfill-puller.ts",
+      "backend-hono/src/services/cron/econ-backfill-harper.ts",
+      "backend-hono/src/services/riskflow/backfill-headlines.ts",
+    ],
+  },
+  {
     date: "2026-04-26T00:30:00",
     agent: "claude-code",
     summary:
