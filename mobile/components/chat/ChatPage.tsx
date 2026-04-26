@@ -48,6 +48,8 @@ import ConnectionStatus, { type RelayState } from "./ConnectionStatus";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import { ToolCallCard } from "./ToolCallCard";
 import { ToolApprovalCard } from "./ToolApprovalCard";
+// [claude-code 2026-04-25] S42-T4: artifact bottom sheet (TradingView/browserbase/report/citation)
+import { ArtifactSheet } from "./ArtifactSheet";
 import { useToolApprovals } from "../../hooks/useToolApprovals";
 import MessageQueue, { type QueuedMessage } from "./MessageQueue";
 import MobileCommandPalette from "./MobileCommandPalette";
@@ -949,6 +951,11 @@ export default function ChatPage({ visible }: ChatPageProps) {
       )}
 
       {/* Session list removed S21-T1 — mobile is remote-control only. */}
+
+      {/* S42-T4: artifact bottom sheet — mounted at shell level so it overlays
+          the composer without disturbing the sticky-bottom flex column.
+          Listens to fintheon:artifact CustomEvent (T3 citation chip / T1 stream relay). */}
+      <ArtifactSheet />
     </div>
   );
 }
