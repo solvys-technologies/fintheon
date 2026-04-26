@@ -101,6 +101,8 @@ import { createProjectXTradesRoute } from "./projectx/trades.js";
 import { createCalendarRoutes } from "./calendar/next-event.js";
 import { createAdvisoryRoutes } from "./advisory/index.js";
 import { createWatchoutsRoutes } from "./watchouts/index.js";
+// [claude-code 2026-04-26] S45-T1: Day Card data brain — day_plans, drift, streak, feedback
+import { createDayPlanRoutes } from "./day-plan/index.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -172,6 +174,8 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/econ-filters", createEconFiltersRoutes());
   // Calibration — scoring weight management, annotations, observations, bulk ingest (public, admin)
   app.route("/api/calibration", createCalibrationRoutes());
+  // [S45-T1] Day Card — /today, /week public; /streak, /drift-status, /feedback auth-gated inside handlers
+  app.route("/api/day-plan", createDayPlanRoutes());
   // Scoring — V4 shadow stats + rescore-status [S24-T3]
   app.use("/api/scoring", authMiddleware, requireAuth);
   app.use("/api/scoring/*", authMiddleware, requireAuth);

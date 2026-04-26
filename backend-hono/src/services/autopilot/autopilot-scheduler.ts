@@ -1,3 +1,4 @@
+// [claude-code 2026-04-26] S45-T1: recordAutopilotTrade now includes user_id sourced from SYSTEM_USER_ID env (autopilot has no session/auth context).
 // [claude-code 2026-04-22] S29-T1: Added recordAutopilotTrade — tags autopilot fills with origin='autopilot'
 // [claude-code 2026-03-11] Autopilot scheduler — manages RTH session detection, daily limits, and proposal expiry
 
@@ -108,12 +109,14 @@ export async function recordAutopilotTrade(trade: {
   entryPrice: number;
 }): Promise<void> {
   try {
+    const userId = process.env.SYSTEM_USER_ID ?? null;
     await query(
-      `INSERT INTO trades (id, contract, entry_at, side, qty, entry_price, origin)
-       VALUES ($1, $2, $3, $4, $5, $6, 'autopilot')
+      `INSERT INTO trades (id, user_id, contract, entry_at, side, qty, entry_price, origin)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'autopilot')
        ON CONFLICT (id) DO NOTHING`,
       [
         trade.id,
+        userId,
         trade.contract,
         trade.entryAt,
         trade.side,

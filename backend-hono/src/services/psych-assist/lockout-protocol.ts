@@ -1,3 +1,6 @@
+// [claude-code 2026-04-26] S45-T1: Desk-Drift offset hook. Drift events apply
+// a non-healing -5 ER score that persists for the trading day. Stored in an
+// in-memory map keyed by user/date — purged on next-day rollover.
 // [claude-code 2026-03-22] Source of Truth fusion — lockout protocol with escalation
 
 /**
@@ -142,4 +145,35 @@ export function createLockoutSession(): LockoutSessionState {
     activeLockout: null,
     completedDebriefs: [],
   };
+}
+
+// ─── Desk-Drift ER offset (S45-T1) ──────────────────────────────────────────
+// The drift monitor calls applyDeskDriftOffset on every confirmed drift fill.
+// The offset is non-healing for the rest of the trading day; downstream
+// PsychAssist consumers fold it into the live ER score via getDeskDriftOffset.
+
+const driftOffsets = new Map<string, number>();
+
+function offsetKey(userId: string, dateIso: string): string {
+  return `${userId}::${dateIso}`;
+}
+
+export function applyDeskDriftOffset(
+  userId: string,
+  dateIso: string,
+  delta: number,
+): number {
+  const key = offsetKey(userId, dateIso);
+  const next = (driftOffsets.get(key) ?? 0) + delta;
+  driftOffsets.set(key, next);
+  return next;
+}
+
+export function getDeskDriftOffset(userId: string, dateIso: string): number {
+  return driftOffsets.get(offsetKey(userId, dateIso)) ?? 0;
+}
+
+/** Test / next-day rollover hook. */
+export function clearDeskDriftOffsets(): void {
+  driftOffsets.clear();
 }

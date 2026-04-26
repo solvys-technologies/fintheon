@@ -1,3 +1,4 @@
+// [claude-code 2026-04-26] S45-T1: CAO override path — detects "redo today's plan" intents and pre-runs day-plan-service.regenerate so Harper's reply can reference the freshly-generated DayPlan via injected context.
 // [claude-code 2026-04-19] S27-T9 W2e: Harper CLI bridge invocation now records a routing_decisions row via llmCall wrapper — even though the model is pinned to Opus via Claude Code CLI, the telemetry feeds diagnostics + GEPA metrics.
 // [claude-code 2026-04-19] S27-T8 W1d: Harper system prompt now loads from SOUL.md (grounded on CLAUDE.md literal import). Hardcoded HARPER_BASE_SYSTEM_PROMPT retained as fallback only.
 // [claude-code 2026-04-17] S23-T3: buildAquariumContext now exported + enhanced with "how to read this" preamble + surface-gated injection (Harper reads her own AgentDesk output as ground truth)
@@ -392,6 +393,27 @@ export async function harperChat(
     });
   }
 
+  // [S45-T1] CAO override: "redo today's plan" / "regenerate the day plan"
+  // triggers day-plan-service.regenerate before the chat stream so Harper's
+  // reply can quote the freshly-generated DayPlan from injected context.
+  if (detectRegeneratePlanIntent(message)) {
+    try {
+      const reason = extractOverrideReason(message);
+      const { regenerateDayPlan } =
+        await import("./day-plan/day-plan-service.js");
+      const result = await regenerateDayPlan({ overrideReason: reason });
+      systemPrompt += renderRegeneratedPlanContext(result.plan, reason);
+      log.info("Harper regenerate_plan intent — day-plan refreshed", {
+        date: result.plan.date,
+        windowCount: result.plan.windows.length,
+      });
+    } catch (err) {
+      log.warn("Harper regenerate_plan handling failed (non-fatal)", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
   log.info("Harper chat request", {
     conversationId,
     persona: persona ?? "harper-opus",
@@ -463,4 +485,52 @@ async function recordHarperRoutingDecision(args: {
       error: String(err),
     });
   }
+}
+
+// ─── S45-T1: regenerate_plan intent ─────────────────────────────────────────
+
+const REGENERATE_PLAN_PATTERNS: RegExp[] = [
+  /\b(redo|regenerate|rebuild|refresh|rerun|recompute)\b[^.\n]{0,40}\b(today's |today |the )?(day[- ]?plan|day card|plan)\b/i,
+  /\bnew\s+(day[- ]?plan|day card)\b/i,
+];
+
+function detectRegeneratePlanIntent(message: string): boolean {
+  if (!message) return false;
+  return REGENERATE_PLAN_PATTERNS.some((re) => re.test(message));
+}
+
+function extractOverrideReason(message: string): string {
+  const becauseMatch = message.match(/because\s+(.+)/i);
+  if (becauseMatch) return becauseMatch[1].trim().slice(0, 240);
+  return message.slice(0, 240);
+}
+
+function renderRegeneratedPlanContext(
+  plan: import("../types/day-plan.js").DayPlan,
+  reason: string,
+): string {
+  const lines: string[] = [
+    "",
+    "--- DAY-PLAN OVERRIDE (CAO regenerated) ---",
+    `Reason: ${reason}`,
+    `Date: ${plan.date}`,
+  ];
+  if (plan.eventName) lines.push(`Event: ${plan.eventName}`);
+  if (plan.deskTheme) lines.push(`Desk Theme: ${plan.deskTheme}`);
+  for (const w of plan.windows) {
+    lines.push(`Window ${w.windowIndex}: ${w.startTime}-${w.endTime} ET`);
+    if (w.pricesOfInterest.length > 0) {
+      lines.push(`  Prices: ${w.pricesOfInterest.join(", ")}`);
+    }
+    if (w.invalidation != null) lines.push(`  Invalidation: ${w.invalidation}`);
+    if (w.profitTarget != null)
+      lines.push(`  Profit target: ${w.profitTarget}`);
+    if (w.expectedMovePct != null) {
+      lines.push(`  Expected move: ${w.expectedMovePct.toFixed(2)}%`);
+    }
+  }
+  lines.push(
+    "Tell the user the plan has been regenerated and quote these levels back to them.",
+  );
+  return lines.join("\n");
 }

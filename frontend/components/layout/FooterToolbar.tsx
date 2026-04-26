@@ -490,6 +490,25 @@ export function FooterToolbar({
   const { status: gatewayStatus } = useGateway();
   const togglePanel = () => setPanelOpen((v) => !v);
 
+  // [claude-code 2026-04-26] Listen for the header PanelToggleGroup footer
+  // button. Mirrors togglePanel so the panel (Team / Harper Ops / Changelog /
+  // Terminal / Errors / Tabs) opens from anywhere. State broadcast keeps the
+  // header icon's filled-bottom indicator in sync.
+  useEffect(() => {
+    const onToggle = () => setPanelOpen((v) => !v);
+    window.addEventListener("fintheon:toggle-footer-panel", onToggle);
+    return () =>
+      window.removeEventListener("fintheon:toggle-footer-panel", onToggle);
+  }, []);
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("fintheon:footer-panel-state", {
+        detail: { open: panelOpen },
+      }),
+    );
+  }, [panelOpen]);
+
   const openTab = (tab: PanelTab) => {
     if (panelOpen && activeTab === tab) {
       setPanelOpen(false);

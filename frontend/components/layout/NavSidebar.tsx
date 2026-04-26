@@ -149,6 +149,24 @@ export function NavSidebar({
     };
   }, []);
 
+  // [claude-code 2026-04-26] Listen for the header PanelToggleGroup left button.
+  // Toggles manualExpand (mirrors the click-to-expand path) so the rail can be
+  // pinned-open from anywhere; emits state back so the icon reflects open/closed.
+  useEffect(() => {
+    const onToggle = () => setManualExpand((v) => !v);
+    window.addEventListener("fintheon:toggle-nav-sidebar", onToggle);
+    return () =>
+      window.removeEventListener("fintheon:toggle-nav-sidebar", onToggle);
+  }, []);
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("fintheon:nav-sidebar-state", {
+        detail: { open: expanded },
+      }),
+    );
+  }, [expanded]);
+
   useEffect(() => {
     setOrder(getSidebarOrder());
   }, []);

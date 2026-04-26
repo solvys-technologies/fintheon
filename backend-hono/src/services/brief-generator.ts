@@ -1,8 +1,11 @@
+// [claude-code 2026-04-26] S45-T1: Inline Desk Theme block — pulls today's day_plan + windows and renders a monospace gutter (titles left / values right) before invokeAgent so MDB / ADB / PMDB / TWT all carry the prescriptive Day Card context.
 // [claude-code 2026-04-24] S35-T11: Inject Arbitrum "Chamber Read" (17:00 session digest) into PMDB prompt. Dynamic import of getLatestChamberRead so build stays green before T1/T12 lands the arbitrum barrel.
 // [claude-code 2026-04-19] S24-T1: MDB no longer writes regime directly — it proposes. Live behind SCORING_V4 env flag so V3 is a one-toggle rollback. Root cause: 2026-04-17 TP manually set BULL_TREND; MDB silently overwrote it 10h later via setRegime(). Kills the silent-override footgun.
 // [claude-code 2026-04-05] Strands Phase 8: Replace generateText + OpenRouter fallback with invokeAgent
 // [claude-code 2026-03-26] S2-T2: Add regime classification to MDB prompt + auto-parse after generation
 import { invokeAgent } from "./strands/index.js";
+import { readDayPlan } from "./day-plan/day-plan-service.js";
+import type { DayPlan } from "../types/day-plan.js";
 import {
   writeBrief,
   readLatestBrief,
@@ -52,6 +55,51 @@ async function fetchChamberRead(): Promise<string | null> {
     });
     return null;
   }
+}
+
+/**
+ * [S45-T1] Pull today's day_plan and render a pre-formatted Desk Theme block
+ * — titles left, values right, monospace gutter — for inline injection into
+ * MDB / ADB / PMDB / TWT prompts. Returns null when no plan is persisted.
+ */
+async function fetchDeskThemeBlock(dateIso: string): Promise<string | null> {
+  try {
+    const plan = await readDayPlan("pic", dateIso);
+    if (!plan) return null;
+    return formatDeskThemeBlock(plan);
+  } catch (err) {
+    log.warn("Desk Theme block fetch failed (non-fatal)", {
+      error: String(err),
+    });
+    return null;
+  }
+}
+
+function formatDeskThemeBlock(plan: DayPlan): string {
+  const lines: string[] = ["## Desk Theme", "```"];
+  if (plan.eventName) lines.push(padRow("Event", plan.eventName));
+  if (plan.deskTheme) lines.push(padRow("Theme", plan.deskTheme));
+  for (const w of plan.windows) {
+    lines.push(padRow("Window", `${w.startTime}-${w.endTime} ET`));
+    if (w.pricesOfInterest.length > 0) {
+      lines.push(padRow("Prices", w.pricesOfInterest.join(" / ")));
+    }
+    if (w.invalidation != null) {
+      lines.push(padRow("Invalidation", String(w.invalidation)));
+    }
+    if (w.profitTarget != null) {
+      lines.push(padRow("Profit target", String(w.profitTarget)));
+    }
+    if (w.expectedMovePct != null) {
+      lines.push(padRow("Expected move", `${w.expectedMovePct.toFixed(2)}%`));
+    }
+  }
+  lines.push("```");
+  return lines.join("\n");
+}
+
+function padRow(label: string, value: string): string {
+  return `${label.padEnd(16, " ")}${value}`;
 }
 
 export function getCurrentBriefType(): BriefType {
@@ -129,6 +177,11 @@ export async function generateBrief(
     ? `\n## Chamber Read (17:00 Arbitrum Session)\n${chamberRead}\n`
     : "";
 
+  // [S45-T1] Inline Desk Theme block — pre-formatted, monospace gutter,
+  // pulled from today's day_plan. MDB / ADB / PMDB / TWT all carry it.
+  const deskThemeBlock = await fetchDeskThemeBlock(today);
+  const deskThemeSection = deskThemeBlock ? `\n${deskThemeBlock}\n` : "";
+
   const isFull = briefType === "MDB" || briefType === "TWT";
 
   const prompt = isFull
@@ -139,7 +192,7 @@ ${econSummary}
 
 ## Recent RiskFlow Headlines
 ${feedSummary}
-
+${deskThemeSection}
 ## Instructions
 ${
   briefType === "MDB"
@@ -196,7 +249,7 @@ ${econSummary}
 
 ## Recent RiskFlow Headlines
 ${feedSummary}
-${chamberSection}
+${chamberSection}${deskThemeSection}
 ## Instructions
 ${
   briefType === "ADB"
