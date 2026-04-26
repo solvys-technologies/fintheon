@@ -404,6 +404,10 @@ export function registerRoutes(app: Hono): void {
   //   Gated internally on x-routine-secret matching ROUTINE_SECRET.
   app.route("/api/admin/econ", createEconBackfillRoutes());
 
+  // [claude-code 2026-04-26] S35-cleanup: RiskFlow high/critical headline
+  //   backfill for news-worker silence windows. Same x-routine-secret gate.
+  app.route("/api/admin/riskflow", createRiskFlowBackfillRoutes());
+
   // [S29-T4] Catalysts — date-filtered RiskFlow headlines for calendar panel
   app.route("/api/catalysts", createCatalystsByDateRoute());
 

@@ -24,13 +24,16 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    date: "2026-04-25T20:30:00",
+    date: "2026-04-26T00:30:00",
     agent: "claude-code",
     summary:
-      "S35-cleanup follow-up: rerouted econ-backfill-puller from OpenRouter free-tier (meta-llama/llama-3.3-70b:free + mistralai/mistral-large:free, both throttled to 402 insufficient-credits as of today) to Hermes seatChat → DashScope Qwen3-235B-A22B with qwen2.5-72b-instruct fallback. Same free-Qwen path the Arbitrum Lead Analyst seat uses; Groq inside seatChat handles DashScope rate-limits. RawSlicePayload['source'] gained 'hermes-qwen' + 'hermes-qwen-fallback' tags. US slices still enriched via FRED if FRED_API_KEY is set (key e75…a7 lives in .cursor/install.sh + .env.bak, needs `fly secrets set` on prod).",
+      "S35-cleanup follow-up: (1) econ-backfill-puller now routes through OpenRouter Qwen (qwen/qwen-2.5-72b-instruct primary, qwen/qwen3-235b-a22b fallback) using the same OPENROUTER_API_KEY that fronts every Hermes call on prod — DashScope/Groq paths skipped because those keys aren't on the fly app. Free-tier :free model variants 402 with $0 OpenRouter balance, paid model IDs work as long as the key has any credit. (2) FRED date window padded -60 days backward in pullFromFred so monthly series whose observation date falls in the prior reporting month (e.g. CPI for March 2026 dated 2026-03-01, released April) still land inside the slice window. (3) New POST /api/admin/riskflow/backfill-headlines (gated on x-routine-secret) runs Exa search across a fixed macro query menu for each silent day, writes hits into raw_riskflow_items with published_at pinned to the silent day, then drives scoringCycle until the inbox drains — fills the news-worker silence windows (2026-04-04..05, 04-09, 04-24..25, plus the partial 04-25 thinning).",
     files: [
       "backend-hono/src/services/cron/econ-backfill-puller.ts",
       "backend-hono/src/types/econ-backfill.ts",
+      "backend-hono/src/routes/admin/riskflow-backfill.ts",
+      "backend-hono/src/services/riskflow/backfill-headlines.ts",
+      "backend-hono/src/routes/index.ts",
     ],
   },
   {
