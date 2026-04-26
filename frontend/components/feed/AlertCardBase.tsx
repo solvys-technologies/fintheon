@@ -40,6 +40,11 @@ interface AlertCardBaseProps {
   expandedContent?: React.ReactNode;
   /** Optional action buttons for the collapsed header row */
   headerActions?: React.ReactNode;
+  /** [claude-code 2026-04-26] Tags rendered LEFT-justified inside the footer
+   *  bar when the card is expanded. Severity stays right-justified. The card
+   *  consumer (RiskFlowDetailCard) passes its tags here instead of rendering
+   *  them in the body so the footer is a single, unified surface. */
+  footerTags?: string[];
   /** Thumbs-down callback — marks item as not relevant, with optional reason */
   onNotRelevant?: (id: string, reason?: string) => void;
   /** Override outer container className (variant-specific borders, bg, opacity) */
@@ -55,6 +60,7 @@ export function AlertCardBase({
   expandedContent,
   headerActions,
   onNotRelevant,
+  footerTags,
   className,
   style,
 }: AlertCardBaseProps) {
@@ -158,68 +164,12 @@ export function AlertCardBase({
         </div>
       </div>
 
-      {/* ── Footer bar: time-strip is gone; keep priority + dismiss controls ── */}
-      <div
-        className="flex items-center px-3 py-1 bg-zinc-900/60 border-t border-zinc-800/40 cursor-pointer"
-        onClick={onToggle}
-      >
-        <span
-          className={`inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border`}
-        >
-          {sev.label}
-        </span>
-
-        {alert.riskType && (
-          <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 text-[9px] font-medium tracking-wider uppercase border border-zinc-700 text-zinc-400">
-            {alert.riskType}
-          </span>
-        )}
-
-        <span className="flex-1" />
-
-        {onNotRelevant && (
-          <div className="relative" ref={reasonRef}>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowReasonPicker((v) => !v);
-              }}
-              className="inline-flex p-0.5 rounded text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100"
-              style={{ transition: "opacity 1.2s ease, color 0.2s ease" }}
-              title="Not relevant"
-            >
-              <ThumbsDown className="w-2.5 h-2.5" />
-            </button>
-            {showReasonPicker && (
-              <div
-                className="absolute right-0 bottom-full mb-1 z-50 min-w-[140px] py-1 bg-zinc-900 border border-zinc-700 rounded shadow-lg"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {DISMISS_REASONS.map((r) => (
-                  <button
-                    key={r.value}
-                    onClick={() => {
-                      setShowReasonPicker(false);
-                      onNotRelevant(alert.id, r.value);
-                    }}
-                    className="block w-full text-left px-3 py-1.5 text-[10px] text-zinc-300 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)] transition-colors"
-                  >
-                    {r.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        <span className="ml-2 text-zinc-600">
-          {expanded ? (
-            <ChevronUp className="w-3 h-3" />
-          ) : (
-            <ChevronDown className="w-3 h-3" />
-          )}
-        </span>
-      </div>
+      {/* [claude-code 2026-04-26] Restructured per TP: footer bar slides to
+          BELOW expanded content so collapsed/expanded both read as one card,
+          not two stacked cards. Severity word on right, no border/background,
+          slightly larger. Top-border on the footer is removed when collapsed
+          (just sits flush) and renders only when expanded so it acts as the
+          divider between body and footer of the unified card. */}
 
       {/* ── Expanded content: smooth grid-template-rows transition ────────── */}
       <div
@@ -240,6 +190,95 @@ export function AlertCardBase({
             />
           )}
         </div>
+      </div>
+
+      {/* ── Footer bar (single, unified): tags left (only when expanded), severity right ── */}
+      <div
+        className={`flex items-center px-3 py-1.5 cursor-pointer ${
+          expanded ? "border-t border-zinc-800/40" : ""
+        }`}
+        onClick={onToggle}
+      >
+        {/* Left: tags chips (expanded only) + riskType */}
+        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+          {expanded &&
+            footerTags &&
+            footerTags
+              .filter(
+                (t) =>
+                  !t.startsWith("url:") &&
+                  !/^https?:\/\//i.test(t) &&
+                  !/\.[a-z]{2,}\//.test(t) &&
+                  !t.includes("://"),
+              )
+              .slice(0, 4)
+              .map((tag) => (
+                <span
+                  key={tag}
+                  className="text-[9px] px-1.5 py-0.5 bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]/85"
+                >
+                  {tag}
+                </span>
+              ))}
+          {alert.riskType && (
+            <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-medium tracking-wider uppercase text-zinc-500">
+              {alert.riskType}
+            </span>
+          )}
+        </div>
+
+        <span className="flex-1" />
+
+        {onNotRelevant && (
+          <div className="relative mr-2" ref={reasonRef}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowReasonPicker((v) => !v);
+              }}
+              className="inline-flex p-0.5 rounded text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100"
+              style={{ transition: "opacity 1.2s ease, color 0.2s ease" }}
+              title="Not relevant"
+            >
+              <ThumbsDown className="w-2.5 h-2.5" />
+            </button>
+            {showReasonPicker && (
+              <div
+                className="absolute right-0 bottom-full mb-1 z-50 min-w-[140px] py-1 bg-zinc-900 border border-zinc-700/60 rounded"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {DISMISS_REASONS.map((r) => (
+                  <button
+                    key={r.value}
+                    onClick={() => {
+                      setShowReasonPicker(false);
+                      onNotRelevant(alert.id, r.value);
+                    }}
+                    className="block w-full text-left px-3 py-1.5 text-[10px] text-zinc-300 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)] transition-colors"
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Severity — text-only, severity-colored, slightly larger, RIGHT side */}
+        <span
+          className={`text-[11px] font-bold tracking-[0.18em] uppercase ${sev.text}`}
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
+          {sev.label}
+        </span>
+
+        <span className="ml-2 text-zinc-600">
+          {expanded ? (
+            <ChevronUp className="w-3 h-3" />
+          ) : (
+            <ChevronDown className="w-3 h-3" />
+          )}
+        </span>
       </div>
     </div>
   );

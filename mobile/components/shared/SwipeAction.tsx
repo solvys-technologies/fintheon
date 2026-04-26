@@ -1,3 +1,9 @@
+// [claude-code 2026-04-26] Added onTap passthrough — framer-motion's drag
+// wrapper was swallowing inner onClick handlers when iOS touch jitter
+// triggered a 0-px drag, so taps on the headline body of a RiskFlow card
+// looked dead. onTap fires only when no drag is detected, so the parent
+// (RiskFlowCard) gets a reliable tap signal regardless of where the finger
+// lands inside the card.
 // [claude-code 2026-04-15] T5: Swipe-to-action wrapper — left swipe reveals error bg, triggers callback
 import { type ReactNode } from "react";
 import {
@@ -10,12 +16,14 @@ import {
 interface SwipeActionProps {
   children: ReactNode;
   onSwipeLeft?: () => void;
+  onTap?: () => void;
   threshold?: number;
 }
 
 export function SwipeAction({
   children,
   onSwipeLeft,
+  onTap,
   threshold = 100,
 }: SwipeActionProps) {
   const x = useMotionValue(0);
@@ -62,6 +70,7 @@ export function SwipeAction({
         dragConstraints={{ left: -200, right: 0 }}
         dragElastic={0.1}
         onDragEnd={handleDragEnd}
+        onTap={onTap}
         animate={controls}
         style={{ x, opacity }}
       >

@@ -1,3 +1,13 @@
+// [claude-code 2026-04-26] Added TradingView Economic Calendar
+// (https://economic-calendar.tradingview.com/events) as a parallel feed
+// alongside ForexFactory. TradingView ships actuals faster than FF on
+// non-US releases (TR/EU/JP/UK), and its `importance` field maps cleanly to
+// our low/medium/high. Both feeds upsert through the same idempotent
+// economic_events keying (event_key = sha256 of name|date|time|country) so
+// duplicates collapse for free; whichever feed lands first wins, and the
+// other refreshes the actual when it arrives. Headers are set verbatim per
+// the TV reference docs (origin/referer/user-agent required) — without them
+// the endpoint returns 403.
 // [claude-code 2026-04-24] S34-T9: populator honors econ_watch_filters (T1) — skip upserts for (country, category) combos that TP has disabled in the Refinement Engine.
 // [claude-code 2026-04-24] S34-T3: Econ calendar populator.
 // - Sunday 22:00 America/New_York: weekly pull of ForexFactory ff_calendar_thisweek.json
@@ -24,6 +34,49 @@ const log = createLogger("EconCalendarPopulator");
 const FF_WEEKLY_URL = "https://nfs.faireconomy.media/ff_calendar_thisweek.json";
 const FETCH_TIMEOUT_MS = 20_000;
 const USER_AGENT = "fintheon-econ-populator/1.0 (+https://fintheon.fly.dev)";
+
+// TradingView Economic Calendar — public endpoint, but spoof a real browser
+// in the headers exactly as the reference docs specify. The endpoint 403s on
+// any deviation from this exact set.
+const TV_CALENDAR_URL = "https://economic-calendar.tradingview.com/events";
+const TV_BROWSER_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36";
+
+interface TVEvent {
+  id?: string;
+  title?: string;
+  country?: string; // ISO2: "US", "EU", "TR", "GB", "JP", …
+  indicator?: string;
+  ticker?: string;
+  actual?: number | null;
+  previous?: number | null;
+  forecast?: number | null;
+  unit?: string | null;
+  scale?: string | null;
+  importance?: -1 | 0 | 1; // -1=low, 0=medium, 1=high
+  date?: string; // ISO 8601 UTC
+}
+
+// TradingView uses ISO2 country codes; "GB" maps to our internal "UK".
+const TV_COUNTRY_TO_INTERNAL: Record<string, EconCountryCode> = {
+  US: "US",
+  EU: "EU",
+  GB: "UK",
+  UK: "UK",
+  JP: "JP",
+  NZ: "NZ",
+  AU: "AU",
+  CA: "CA",
+};
+
+function tvImpactToImpact(
+  importance: TVEvent["importance"],
+): "low" | "medium" | "high" | undefined {
+  if (importance === 1) return "high";
+  if (importance === 0) return "medium";
+  if (importance === -1) return "low";
+  return undefined;
+}
 
 interface FFEntry {
   title?: string;
@@ -80,6 +133,94 @@ function splitDateTime(iso?: string): { date: string; time: string } | null {
   // en-CA hour can come back as "24" at midnight; normalize.
   const time = `${hh === "24" ? "00" : hh}:${mm}`;
   return { date, time };
+}
+
+async function fetchTradingViewCalendar(opts: {
+  fromIso: string;
+  toIso: string;
+  countries: readonly string[];
+}): Promise<TVEvent[] | null> {
+  const params = new URLSearchParams({
+    from: opts.fromIso,
+    to: opts.toIso,
+    countries: opts.countries.join(","),
+  });
+  const url = `${TV_CALENDAR_URL}?${params.toString()}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        Accept: "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
+        Origin: "https://www.tradingview.com",
+        Referer: "https://www.tradingview.com/",
+        "User-Agent": TV_BROWSER_UA,
+      },
+    });
+    if (!res.ok) {
+      log.warn("TradingView calendar fetch non-OK", { status: res.status });
+      return null;
+    }
+    const json = (await res.json()) as { status?: string; result?: TVEvent[] };
+    if (json.status !== "ok" || !Array.isArray(json.result)) {
+      log.warn("TradingView calendar returned non-ok payload", {
+        status: json.status,
+      });
+      return null;
+    }
+    return json.result;
+  } catch (err) {
+    log.error("TradingView calendar fetch failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function tvEventToFFShape(tv: TVEvent): FFEntry | null {
+  if (!tv.title || !tv.country || !tv.date) return null;
+  const internalCountry = TV_COUNTRY_TO_INTERNAL[tv.country.toUpperCase()];
+  if (!internalCountry) return null;
+  return {
+    title: tv.title,
+    // FF code expected currency string; we set the country-mapped currency so
+    // the existing `ffCurrencyToCountry` round-trip resolves cleanly. Reverse
+    // lookup by value from the existing FF map keeps a single mapping source.
+    country: Object.entries({
+      USD: "US",
+      EUR: "EU",
+      GBP: "UK",
+      JPY: "JP",
+      NZD: "NZ",
+      AUD: "AU",
+      CAD: "CA",
+    } as const).find(([, v]) => v === internalCountry)?.[0] ?? "USD",
+    date: tv.date,
+    impact:
+      tv.importance === 1
+        ? "High"
+        : tv.importance === 0
+          ? "Medium"
+          : tv.importance === -1
+            ? "Low"
+            : "",
+    forecast:
+      tv.forecast === null || tv.forecast === undefined
+        ? undefined
+        : String(tv.forecast),
+    previous:
+      tv.previous === null || tv.previous === undefined
+        ? undefined
+        : String(tv.previous),
+    actual:
+      tv.actual === null || tv.actual === undefined
+        ? undefined
+        : String(tv.actual),
+  };
 }
 
 async function fetchForexFactory(): Promise<FFEntry[] | null> {
@@ -144,8 +285,34 @@ export async function runEconCalendarPopulator(
     skippedFilter: 0,
   };
 
-  const rows = await fetchForexFactory();
-  if (!rows) return result;
+  // Pull both feeds in parallel. ForexFactory returns the whole week;
+  // TradingView is queried for a 7-day forward window so its actuals/forecasts
+  // for upcoming releases land in the same upsert pass. Idempotent eventKey
+  // collapsing means whichever feed lands first wins, the other refreshes
+  // actuals when they arrive.
+  const tvFromIso = new Date().toISOString();
+  const tvToIso = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const tvCountries = Array.from(countries).map((c) =>
+    c === "UK" ? "GB" : c,
+  );
+  const [ffRows, tvRows] = await Promise.all([
+    fetchForexFactory(),
+    fetchTradingViewCalendar({
+      fromIso: tvFromIso,
+      toIso: tvToIso,
+      countries: tvCountries,
+    }),
+  ]);
+
+  const rows: FFEntry[] = [];
+  if (ffRows) rows.push(...ffRows);
+  if (tvRows) {
+    for (const tv of tvRows) {
+      const mapped = tvEventToFFShape(tv);
+      if (mapped) rows.push(mapped);
+    }
+  }
+  if (rows.length === 0) return result;
   result.fetched = rows.length;
 
   // [S34-T9] T1 watch-filters: build an active-set once per run. If the service

@@ -157,6 +157,14 @@ const SCRAPER_ARTIFACT_PATTERNS = [
   /you('ve| have) been blocked/i,
   /too many requests/i,
   /rate limit/i,
+  // [claude-code 2026-04-26] .gov throttle pages — SEC EDGAR, Federal Reserve,
+  // BLS, BEA, etc. all serve these when a poller hits ratelimit. Headline
+  // shape: "<Domain> | Request Rate Threshold Exceeded" / "Your access has
+  // been blocked" / "undeclared automated tools".
+  /request rate threshold exceeded/i,
+  /undeclared automated tools/i,
+  /your request rate has triggered/i,
+  /your access has been blocked/i,
   /service unavailable/i,
   /502 bad gateway/i,
   /503 service/i,

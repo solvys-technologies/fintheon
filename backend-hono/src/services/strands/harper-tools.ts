@@ -1,8 +1,26 @@
+// [claude-code 2026-04-26] Added market_scan (TradingView Scanner) — Harper
+//   can quote arbitrary symbols, fetch top movers, and pull index/FX/metals
+//   snapshots in a single tool call. No auth, no quota documented; cached
+//   30s in-process by the underlying scanner client.
+// [claude-code 2026-04-26] Added market_scan — TradingView Scanner-backed
+//   tool. Harper can quote arbitrary symbols (cash equities, FX, metals,
+//   crypto, futures continuous contracts) and pull prebuilt snapshots
+//   (futures, indices, commodities, rates, FX, top movers) in one call.
 // [claude-code 2026-04-04] Harper CAO tools — ported from Vercel AI SDK to Strands
 // [claude-code 2026-04-23] S32-T8 added browser_harness (Harper-only web control)
 // [claude-code 2026-04-25] S42-T5 added browse_visible (Browserbase visible session)
 import { tool } from "@strands-agents/sdk";
 import { z } from "zod";
+import {
+  quotes as scannerQuotes,
+  topMovers as scannerTopMovers,
+  presetUsFutures,
+  presetCommodityFutures,
+  presetRateFutures,
+  presetMajorFx,
+  presetGoldSilverOil,
+  presetUsIndices,
+} from "../tradingview/scanner.js";
 import { spawn } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -495,6 +513,143 @@ export function createHarperTools(
             hint: "Live extraction observed via liveUrl iframe; structured pull via Browserbase REPL is the next step",
           }),
         );
+      },
+    }),
+
+    // [2026-04-26] market_scan — TradingView Scanner. Quote arbitrary symbols
+    // OR pull a prebuilt snapshot. Cached 30s in-process so rapid follow-ups
+    // don't re-hit TV.
+    tool({
+      name: "market_scan",
+      description:
+        "Pull live market data from TradingView's Scanner. Either pass a `preset` (us-futures, indices, commodities, rates, fx, metals-spot) for a curated snapshot, or pass `quotes` with a list of TV-prefixed symbols (e.g. NASDAQ:AAPL, FX:EURUSD, COMEX:GC1!). For top movers, set `mode: 'top-movers'` with `side` (gainers|losers) and optional `market`. Returns symbol, last, % change, volume, market cap, OHLC. Use this for daily perf, sector context, futures snapshots, FX/commodity quotes, or any ad-hoc ticker lookup.",
+      inputSchema: z.object({
+        mode: z
+          .enum(["preset", "quotes", "top-movers"])
+          .describe(
+            "preset = curated snapshot, quotes = ticker list, top-movers = gainers/losers ranked by volume",
+          ),
+        preset: z
+          .enum([
+            "us-futures",
+            "indices",
+            "commodities",
+            "rates",
+            "fx",
+            "metals-spot",
+          ])
+          .optional()
+          .describe("Required when mode=preset"),
+        symbols: z
+          .array(z.string())
+          .max(50)
+          .optional()
+          .describe("Required when mode=quotes — TV-prefixed symbols"),
+        market: z
+          .enum([
+            "america",
+            "nasdaq",
+            "nyse",
+            "forex",
+            "cfd",
+            "crypto",
+            "turkey",
+            "global",
+          ])
+          .optional()
+          .describe("Market segment for quotes / top-movers (default america)"),
+        side: z
+          .enum(["gainers", "losers"])
+          .optional()
+          .describe("Required when mode=top-movers"),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(50)
+          .optional()
+          .describe("Top movers result count (default 10)"),
+      }),
+      callback: async (input: {
+        mode: "preset" | "quotes" | "top-movers";
+        preset?:
+          | "us-futures"
+          | "indices"
+          | "commodities"
+          | "rates"
+          | "fx"
+          | "metals-spot";
+        symbols?: string[];
+        market?:
+          | "america"
+          | "nasdaq"
+          | "nyse"
+          | "forex"
+          | "cfd"
+          | "crypto"
+          | "turkey"
+          | "global";
+        side?: "gainers" | "losers";
+        limit?: number;
+      }) => {
+        log.info("Harper tool: market_scan", {
+          mode: input.mode,
+          preset: input.preset,
+          symbolCount: input.symbols?.length,
+          market: input.market,
+          side: input.side,
+        });
+        try {
+          if (input.mode === "preset") {
+            const data =
+              input.preset === "us-futures"
+                ? await presetUsFutures()
+                : input.preset === "indices"
+                  ? await presetUsIndices()
+                  : input.preset === "commodities"
+                    ? await presetCommodityFutures()
+                    : input.preset === "rates"
+                      ? await presetRateFutures()
+                      : input.preset === "fx"
+                        ? await presetMajorFx()
+                        : input.preset === "metals-spot"
+                          ? await presetGoldSilverOil()
+                          : null;
+            if (!data) return ensureNonEmpty('{"error":"missing_preset"}');
+            return ensureNonEmpty(JSON.stringify({ preset: input.preset, data }));
+          }
+          if (input.mode === "quotes") {
+            if (!input.symbols || input.symbols.length === 0) {
+              return ensureNonEmpty('{"error":"no_symbols"}');
+            }
+            const data = await scannerQuotes(
+              input.symbols,
+              input.market ?? "america",
+            );
+            return ensureNonEmpty(JSON.stringify({ data }));
+          }
+          if (input.mode === "top-movers") {
+            const data = await scannerTopMovers({
+              market: input.market ?? "america",
+              side: input.side ?? "gainers",
+              limit: input.limit ?? 10,
+            });
+            return ensureNonEmpty(
+              JSON.stringify({
+                side: input.side ?? "gainers",
+                market: input.market ?? "america",
+                data,
+              }),
+            );
+          }
+          return ensureNonEmpty('{"error":"unknown_mode"}');
+        } catch (err) {
+          return ensureNonEmpty(
+            JSON.stringify({
+              error: (err as Error).message ?? "scanner_error",
+            }),
+          );
+        }
       },
     }),
 

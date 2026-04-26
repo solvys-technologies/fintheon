@@ -28,7 +28,9 @@ export function useLayoutState({
   //       sync with missionControlCollapsed (that's what made the mini unreachable).
   const [riskFlowCollapsed, setRiskFlowCollapsed] = useState(false);
   const [tapeCollapsed, setTapeCollapsed] = useState(false);
-  const [combinedPanelCollapsed, setCombinedPanelCollapsed] = useState(false);
+  // [claude-code 2026-04-26] Strategium snaps closed by default per TP — when
+  // closed, renders as a floating top-right button (no vertical ruler).
+  const [combinedPanelCollapsed, setCombinedPanelCollapsed] = useState(true);
   const [combinedTapeCollapsed, setCombinedTapeCollapsed] = useState(false);
   const [layoutOption, setLayoutOptionRaw] =
     useState<LayoutOption>(defaultLayout);

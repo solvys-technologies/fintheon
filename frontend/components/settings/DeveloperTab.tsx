@@ -1,9 +1,27 @@
+// [claude-code 2026-04-26] Added Econ Countdown 1-min mock trigger so TP can
+// verify the modal end-to-end without waiting for a real economic print.
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — developer settings tab
 import React from "react";
 import Toggle from "../Toggle";
 import { Button } from "../ui/Button";
 import { RiskFlowSettings } from "./RiskFlowSettings";
 import { DevPasswordGate } from "./DevPasswordGate";
+
+function fireMockEconCountdown(): void {
+  window.dispatchEvent(
+    new CustomEvent("fintheon:econ-mock-countdown", {
+      detail: {
+        durationMs: 60_000,
+        eventName: "MOCK · Test Print (1m)",
+        country: "US",
+        category: "Mock",
+        forecast: 0.5,
+        previous: 0.4,
+        actual: 0.7,
+      },
+    }),
+  );
+}
 
 interface DeveloperTabProps {
   devAuthenticated: boolean;
@@ -95,6 +113,26 @@ export function DeveloperTab({
           <p className="text-xs text-gray-500">
             Show a button on the Tape to trigger a mock trading proposal for UX
             testing
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
+          Econ Countdown
+        </h3>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="secondary"
+            onClick={fireMockEconCountdown}
+            className="text-xs"
+          >
+            Trigger 1-Min Mock Countdown
+          </Button>
+          <p className="text-xs text-gray-500">
+            Inserts a mock event scheduled 60s from now and fires a synthetic
+            print on expiry — exercises fade-in, mm:ss tick, and printed-state
+            cross-fade end-to-end.
           </p>
         </div>
       </section>

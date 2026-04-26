@@ -26,7 +26,9 @@ import { useVoice } from "../../contexts/VoiceContext";
 
 const ACCENT = "#c79f4a";
 const ERROR = "#ef4444";
-const RIM_THICKNESS = 6;
+// [claude-code 2026-04-26] Doubled rim thickness so voice mode reads as a
+// stronger frame on the chrome — TP feedback "add more width to the borders".
+const RIM_THICKNESS = 12;
 // 8-stop conic — alternating bright + trough alpha around the rect gives the
 // rim a "dithered" feel at the corners instead of a flat line.
 const RIM_DITHER_STOPS = [

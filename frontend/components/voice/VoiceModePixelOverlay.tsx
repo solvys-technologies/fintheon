@@ -1,38 +1,29 @@
+// [claude-code 2026-04-26] Removed the corner-to-circle-to-corner mask sweep
+// and the deterministic-flicker loop per TP: "whatever that shit is that
+// swirls all over the screen needs to come out." Replaced with a simple
+// fade-in to a static pixelated dim and a fade-out on deactivation.
+// Pixel grid is identical (8px cells, deterministic on/off, accent color);
+// only the animation behavior changed.
 // [claude-code 2026-04-25] S38: Viewport pixel sweep overlay for voice-mode activation.
-// Corner-to-circle-to-corner WAAPI animation, then deterministic corner flicker while active.
 import { useEffect, useRef } from "react";
 
 interface VoiceModePixelOverlayProps {
   active: boolean;
 }
 
-// Deterministic 8x8 cell pattern — stable hash of grid coords decides on/off.
-// No randomness at runtime; same pattern every activation.
 function cellOn(col: number, row: number): boolean {
   const h = (col * 73856093) ^ (row * 19349663);
   return (h >>> 0) % 7 < 3;
 }
 
 const CELL_PX = 8;
-const CORNER_RADIUS_PCT = 18;
-const CIRCLE_RADIUS_PCT = 60;
-const SWEEP_IN_MS = 450;
-const HOLD_MS = 150;
-const SWEEP_OUT_MS = 450;
-
-// Deterministic flicker schedule — pre-computed on/off frames at ~500ms cadence.
-const FLICKER_SCHEDULE_MS = [
-  0, 520, 980, 1480, 2020, 2540, 3060, 3540, 4080, 4600,
-];
-const FLICKER_OPACITIES = [
-  0.42, 0.34, 0.46, 0.38, 0.44, 0.36, 0.48, 0.4, 0.42, 0.36,
-];
+const FADE_IN_MS = 320;
+const FADE_OUT_MS = 220;
+const ACTIVE_OPACITY = 0.34;
 
 export function VoiceModePixelOverlay({ active }: VoiceModePixelOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
-  const flickerTimerRef = useRef<number | null>(null);
-  const flickerIndexRef = useRef(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -71,90 +62,13 @@ export function VoiceModePixelOverlay({ active }: VoiceModePixelOverlayProps) {
     const overlay = overlayRef.current;
     if (!overlay) return;
 
-    if (active) {
-      const cornerMask = `radial-gradient(circle at 0% 0%, black ${CORNER_RADIUS_PCT}%, transparent ${CORNER_RADIUS_PCT + 4}%), radial-gradient(circle at 100% 0%, black ${CORNER_RADIUS_PCT}%, transparent ${CORNER_RADIUS_PCT + 4}%), radial-gradient(circle at 0% 100%, black ${CORNER_RADIUS_PCT}%, transparent ${CORNER_RADIUS_PCT + 4}%), radial-gradient(circle at 100% 100%, black ${CORNER_RADIUS_PCT}%, transparent ${CORNER_RADIUS_PCT + 4}%)`;
-      const circleMask = `radial-gradient(circle at 50% 50%, black ${CIRCLE_RADIUS_PCT}%, transparent ${CIRCLE_RADIUS_PCT + 4}%), radial-gradient(circle at 50% 50%, black ${CIRCLE_RADIUS_PCT}%, transparent ${CIRCLE_RADIUS_PCT + 4}%), radial-gradient(circle at 50% 50%, black ${CIRCLE_RADIUS_PCT}%, transparent ${CIRCLE_RADIUS_PCT + 4}%), radial-gradient(circle at 50% 50%, black ${CIRCLE_RADIUS_PCT}%, transparent ${CIRCLE_RADIUS_PCT + 4}%)`;
-
-      const sweep = overlay.animate(
-        [
-          {
-            opacity: 0,
-            webkitMaskImage: cornerMask,
-            maskImage: cornerMask,
-          } as Keyframe,
-          {
-            opacity: 0.55,
-            webkitMaskImage: circleMask,
-            maskImage: circleMask,
-            offset: SWEEP_IN_MS / (SWEEP_IN_MS + HOLD_MS + SWEEP_OUT_MS),
-          } as Keyframe,
-          {
-            opacity: 0.55,
-            webkitMaskImage: circleMask,
-            maskImage: circleMask,
-            offset:
-              (SWEEP_IN_MS + HOLD_MS) / (SWEEP_IN_MS + HOLD_MS + SWEEP_OUT_MS),
-          } as Keyframe,
-          {
-            opacity: 0,
-            webkitMaskImage: cornerMask,
-            maskImage: cornerMask,
-          } as Keyframe,
-        ],
-        {
-          duration: SWEEP_IN_MS + HOLD_MS + SWEEP_OUT_MS,
-          easing: "cubic-bezier(0.16, 1, 0.3, 1)",
-          fill: "forwards",
-        },
-      );
-
-      const startFlicker = () => {
-        overlay.style.maskImage = cornerMask;
-        (
-          overlay.style as CSSStyleDeclaration & { webkitMaskImage?: string }
-        ).webkitMaskImage = cornerMask;
-        flickerIndexRef.current = 0;
-        const tick = () => {
-          if (!overlayRef.current) return;
-          const idx = flickerIndexRef.current % FLICKER_OPACITIES.length;
-          overlayRef.current.style.opacity = String(FLICKER_OPACITIES[idx]);
-          flickerIndexRef.current += 1;
-          const next =
-            FLICKER_SCHEDULE_MS[
-              flickerIndexRef.current % FLICKER_SCHEDULE_MS.length
-            ];
-          const cur = FLICKER_SCHEDULE_MS[idx];
-          const delay = next > cur ? next - cur : 520;
-          flickerTimerRef.current = window.setTimeout(tick, delay);
-        };
-        tick();
-      };
-
-      sweep.onfinish = () => {
-        startFlicker();
-      };
-
-      return () => {
-        sweep.cancel();
-        if (flickerTimerRef.current !== null) {
-          clearTimeout(flickerTimerRef.current);
-          flickerTimerRef.current = null;
-        }
-      };
-    } else {
-      if (flickerTimerRef.current !== null) {
-        clearTimeout(flickerTimerRef.current);
-        flickerTimerRef.current = null;
-      }
-      overlay.animate(
-        [{ opacity: parseFloat(overlay.style.opacity || "0") }, { opacity: 0 }],
-        {
-          duration: 220,
-          easing: "cubic-bezier(0.4, 0, 0.2, 1)",
-          fill: "forwards",
-        },
-      );
-    }
+    const start = parseFloat(overlay.style.opacity || "0");
+    const target = active ? ACTIVE_OPACITY : 0;
+    overlay.animate([{ opacity: start }, { opacity: target }], {
+      duration: active ? FADE_IN_MS : FADE_OUT_MS,
+      easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+      fill: "forwards",
+    });
   }, [active]);
 
   return (

@@ -45,8 +45,10 @@ function SeatCard({
   index: number;
   visible: boolean;
 }) {
-  const pct = Math.round(seat.probability * 100);
-  const conf = Math.round(seat.confidence * 100);
+  // [claude-code 2026-04-26] Per TP: seat cards are view-only; drop the
+  // numeric % / conf% display and the model name (model lives in settings
+  // only). Surface the seat role + rationale + a confidence fuse for
+  // quick read; dissent stays as a left-border accent.
   const dissented = Boolean(seat.dissented);
   const borderLeft = dissented
     ? "border-l-2 border-l-[var(--fintheon-accent)]/70"
@@ -61,40 +63,19 @@ function SeatCard({
         transition: `opacity 260ms ease-out ${index * 200}ms, transform 260ms ease-out ${index * 200}ms`,
       }}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span
-            className="inline-flex items-center justify-center w-5 h-5 text-[10px] border border-[var(--fintheon-accent)]/50 text-[var(--fintheon-accent)]"
-            aria-hidden
-          >
-            {seatLetter(seat.role)}
-          </span>
-          <span className="text-[11px] uppercase tracking-wider text-[var(--fintheon-text)]/80">
-            {seat.role}
-          </span>
-        </div>
-        <span className="text-[9px] uppercase tracking-wider text-[var(--fintheon-text)]/40">
-          {seat.model}
+      <div className="flex items-center gap-2">
+        <span
+          className="inline-flex items-center justify-center w-5 h-5 text-[10px] border border-[var(--fintheon-accent)]/50 text-[var(--fintheon-accent)]"
+          aria-hidden
+        >
+          {seatLetter(seat.role)}
+        </span>
+        <span className="text-[11px] uppercase tracking-wider text-[var(--fintheon-text)]/80">
+          {seat.role}
         </span>
       </div>
 
-      <div className="mt-2 flex items-baseline gap-2">
-        <DigitGroup
-          value={`${pct}`}
-          suffix="%"
-          className="text-[var(--fintheon-accent)] leading-none"
-          style={{
-            fontFamily: "Doto, ui-monospace, monospace",
-            fontSize: 26,
-          }}
-        />
-        <span className="text-[10px] text-[var(--fintheon-text)]/50 inline-flex items-baseline gap-1">
-          conf
-          <DigitGroup value={`${conf}`} suffix="%" />
-        </span>
-      </div>
-
-      <div className="mt-2">
+      <div className="mt-3">
         <NothingFuse
           value={seat.confidence}
           color="var(--fintheon-accent)"
@@ -103,7 +84,7 @@ function SeatCard({
         />
       </div>
 
-      <p className="mt-2 text-[11px] text-[var(--fintheon-text)]/75 line-clamp-2">
+      <p className="mt-2 text-[11px] text-[var(--fintheon-text)]/75 line-clamp-3">
         {seat.rationale}
       </p>
     </div>
@@ -180,10 +161,46 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
   const { onSynthesisComplete } = props;
   const { verdict, isLoading, error } = useArbitrumLatest();
 
+  // [claude-code 2026-04-26] Backend ships ArbitrumSeatTranscript ({rounds: [...]})
+  // which the flat ArbitrumSeat shape can't read directly — Math.round(undefined * 100)
+  // = NaN, which is what TP saw rendered for every seat. Adapter pulls the LATEST
+  // round's probability/confidence/rationale into the flat shape the card expects.
   const seats = useMemo<ArbitrumSeat[]>(() => {
     const supplied = verdict?.seats ?? [];
-    if (supplied.length >= 5) return supplied.slice(0, 5);
-    const bySlot = new Map(supplied.map((s) => [s.role, s] as const));
+    const flatten = (s: any): ArbitrumSeat => {
+      const lastRound =
+        Array.isArray(s?.rounds) && s.rounds.length > 0
+          ? s.rounds[s.rounds.length - 1]
+          : null;
+      const probability = Number.isFinite(s?.probability)
+        ? s.probability
+        : Number.isFinite(lastRound?.probability)
+          ? lastRound.probability
+          : 0;
+      const confidence = Number.isFinite(s?.confidence)
+        ? s.confidence
+        : Number.isFinite(lastRound?.confidence)
+          ? lastRound.confidence
+          : 0;
+      const rationale =
+        typeof s?.rationale === "string" && s.rationale
+          ? s.rationale
+          : typeof lastRound?.rationale === "string"
+            ? lastRound.rationale
+            : "";
+      return {
+        role: s?.role ?? "Lead",
+        model: s?.model ?? "—",
+        probability,
+        confidence,
+        rationale,
+        dissented: Boolean(s?.dissented),
+      };
+    };
+
+    if (supplied.length >= 5) return supplied.slice(0, 5).map(flatten);
+    const flat = supplied.map(flatten);
+    const bySlot = new Map(flat.map((s) => [s.role, s] as const));
     return DEFAULT_ROLES.map(
       (role): ArbitrumSeat =>
         bySlot.get(role) ?? {

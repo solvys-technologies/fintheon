@@ -20,8 +20,16 @@ import {
   getTriggerStats,
   runEconKeywordSweep,
 } from "../../services/riskflow/econ-keyword-trigger.js";
+// [claude-code 2026-04-26] On-demand TradingView coverage for active-watch.
+import { ensureEconCoverage } from "../../services/econ/tradingview-coverage.js";
+import { ECON_DEFAULT_COUNTRIES } from "../../services/econ-calendar-service.js";
 
 const log = createLogger("EconSynthesize");
+
+// Throttle TV ensureCoverage on /active-watch to one pull per 5 min so a
+// long-polling client can't hammer TradingView.
+let lastTVRefreshAt = 0;
+const TV_REFRESH_THROTTLE_MS = 5 * 60 * 1000;
 
 interface PrintRow {
   id?: string;
@@ -134,12 +142,16 @@ export function createEconRoutes() {
   // Returns upcoming + freshly-printed events within window [-2min, +30min]
   // joined against active econ_watch_filters. Returns [] gracefully if either
   // table is missing (fresh dev DB) so the frontend never 500s.
+  // [claude-code 2026-04-26] When the window is empty, fall back to a
+  // TradingView ensureCoverage for today and re-query. Throttled to one
+  // pull per 5 min so a long-polling client can't hammer TV.
   app.get("/active-watch", async (c) => {
     if (!isDatabaseAvailable()) {
       return c.json({ events: [] });
     }
-    try {
-      const rows = (await sql`
+
+    const runQuery = async () =>
+      (await sql`
         SELECT
           ee.id,
           ee.event_name,
@@ -160,6 +172,37 @@ export function createEconRoutes() {
         ORDER BY ee.scheduled_at ASC
         LIMIT 20
       `) as ActiveWatchRow[];
+
+    try {
+      let rows = await runQuery();
+
+      if (rows.length === 0) {
+        const now = Date.now();
+        if (now - lastTVRefreshAt > TV_REFRESH_THROTTLE_MS) {
+          lastTVRefreshAt = now;
+          try {
+            const today = new Date().toISOString().slice(0, 10);
+            const tomorrow = new Date(now + 24 * 60 * 60 * 1000)
+              .toISOString()
+              .slice(0, 10);
+            const result = await ensureEconCoverage({
+              from: today,
+              to: tomorrow,
+              countries: ECON_DEFAULT_COUNTRIES,
+              forceRefresh: true,
+            });
+            console.log(
+              `[EconActiveWatch] TV fallback fetched=${result.fetched} upserted=${result.upserted}`,
+            );
+            rows = await runQuery();
+          } catch (err) {
+            console.warn(
+              "[EconActiveWatch] TV ensureCoverage failed:",
+              (err as Error)?.message ?? err,
+            );
+          }
+        }
+      }
 
       const events = rows.map((r) => ({
         id: r.id,

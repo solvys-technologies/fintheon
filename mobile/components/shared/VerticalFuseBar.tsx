@@ -1,3 +1,8 @@
+// [claude-code 2026-04-26] Fixed height + vertical-center alignment so the
+//   fuse no longer morphs card-to-card based on headline line count. Per TP:
+//   "fuses look stupid... should be the same size. Just center it" + horizontal
+//   positioning stays left. Outer wrapper now picks a constant 56px height
+//   and self-centers; segments still flex 1:1 so the bar reads uniform.
 // [claude-code 2026-04-25] S42-T8: Nothing-design pass — slow per-segment transition
 //   from 150ms to 220ms ease-out and bump the staggered delay from 18ms to 32ms per
 //   segment for a more deliberate fill (~320ms total bottom-up). No glow, no shadow,
@@ -58,7 +63,8 @@ export function VerticalFuseBar({
       style={{
         position: "relative",
         width: 4,
-        alignSelf: "stretch",
+        height: 56,
+        alignSelf: "center",
         flexShrink: 0,
       }}
     >

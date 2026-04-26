@@ -17,7 +17,12 @@ import { YouTubeLogo } from "../../lib/shared-icons";
 import { timeAgo } from "../../lib/time-utils";
 import { linkifyText } from "../../lib/linkify";
 import { SourcePreview } from "./SourcePreview";
-import { AskRiskFlowModal } from "./AskRiskFlowModal";
+import {
+  useRiskFlowNote,
+  RiskFlowNoteTrigger,
+  RiskFlowNotePanel,
+} from "./AskRiskFlowModal";
+import { NothingFuse } from "../shared/NothingFuse";
 
 export type RiskFlowDetailSurface = "full" | "timeline" | "mini";
 
@@ -68,6 +73,12 @@ export function RiskFlowDetailCard({
   const [expanded, setExpanded] = useState(false);
   const [detailedNote, setDetailedNote] = useState<DetailedNote | null>(null);
   const [generating, setGenerating] = useState(false);
+  const noteState = useRiskFlowNote({
+    itemId: alert.id,
+    headline: alert.headline,
+    sourceUrl: alert.url ?? null,
+    cachedNote: alert.agentNote ?? null,
+  });
   const { addToast } = useToast();
   const hasEconData = alert.econData && alert.econData.beatMiss;
   const showSourcePreview = surface === "full" || surface === "timeline";
@@ -122,6 +133,7 @@ export function RiskFlowDetailCard({
       expanded={expanded}
       onToggle={() => setExpanded(!expanded)}
       onNotRelevant={onNotRelevant}
+      footerTags={alert.tags}
       className={`${
         expanded
           ? "border-b border-[var(--fintheon-accent)]/30"
@@ -137,13 +149,21 @@ export function RiskFlowDetailCard({
       }
       expandedContent={
         <>
-          <div className="px-4 py-3 border-t-2 border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-bg)]">
-            {/* [claude-code 2026-04-25] S42-T6: Expanded header — flat surface,
-                accent top border, Ask AI affordance, source CTA promoted. */}
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[9px] uppercase tracking-[0.16em] text-[var(--fintheon-muted)]/55">
-                Detail
-              </span>
+          <div className="px-4 py-3 bg-[var(--fintheon-bg)]">
+            {/* [claude-code 2026-04-26] Top fading ruler replaces solid accent
+                border; "Detail" label retired per TP — affordances move to
+                a clean right-aligned action row. */}
+            <div className="h-px relative mb-3">
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(to right, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
+                  opacity: 0.18,
+                }}
+              />
+            </div>
+            <div className="flex items-center justify-end mb-3">
               <div
                 className="flex items-center gap-3"
                 onClick={(e) => e.stopPropagation()}
@@ -159,15 +179,13 @@ export function RiskFlowDetailCard({
                     Source
                   </a>
                 )}
-                <AskRiskFlowModal
-                  itemId={alert.id}
-                  headline={alert.headline}
-                  sourceUrl={alert.url ?? null}
-                  cachedNote={alert.agentNote ?? null}
-                  hoverReveal={false}
-                />
+                <RiskFlowNoteTrigger state={noteState} hoverReveal={false} />
               </div>
             </div>
+
+            {/* Persistent inline analyst note panel. Renders only when there's
+                a note AND user hasn't hidden it. Survives re-expansion. */}
+            <RiskFlowNotePanel state={noteState} />
             {/* [claude-code 2026-04-25] S35: Hero image + source-link rail. Image is
                 best-effort (RSS enclosure / og:image) — hides on load failure so a
                 broken image never wedges the card. Source link below opens in a new
@@ -194,61 +212,10 @@ export function RiskFlowDetailCard({
                 />
               </a>
             )}
-            {/* 1. Analyst Note inline — modal flow is reserved for chat-driven
-                responses (see AskAboutThis); passive notes display inline. */}
-            {detailedNote ? (
-              <div className="border border-zinc-800/60 px-3 py-2.5 mb-3 bg-[var(--fintheon-bg)]">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--fintheon-accent)]">
-                    Oracle
-                  </span>
-                </div>
-                {detailedNote.source_url && (
-                  <a
-                    href={detailedNote.source_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="block mb-1.5 text-[11px] text-[var(--fintheon-accent)] hover:underline break-words"
-                  >
-                    {alert.headline}
-                  </a>
-                )}
-                <p className="text-[11px] text-[var(--fintheon-text)] leading-relaxed mb-1.5">
-                  {detailedNote.summary}
-                </p>
-                <span
-                  className={`inline-block text-[9px] font-bold tracking-[0.12em] uppercase ${
-                    detailedNote.direction === "bullish"
-                      ? "text-emerald-400"
-                      : detailedNote.direction === "bearish"
-                        ? "text-red-400"
-                        : "text-[var(--fintheon-accent)]"
-                  }`}
-                >
-                  {directionLabel(
-                    detailedNote.direction,
-                    detailedNote.instrument,
-                  )}
-                </span>
-              </div>
-            ) : alert.agentNote ? (
-              <div className="border border-zinc-800/60 px-3 py-2.5 mb-3 bg-[var(--fintheon-bg)]">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--fintheon-accent)]">
-                    Oracle
-                  </span>
-                </div>
-                <p className="text-[11px] text-[var(--fintheon-text)] leading-relaxed">
-                  {alert.agentNote}
-                </p>
-                {alert.agentNoteGeneratedAt && (
-                  <p className="text-[8px] text-zinc-600 mt-1.5 tabular-nums">
-                    {timeAgo(alert.agentNoteGeneratedAt)}
-                  </p>
-                )}
-              </div>
-            ) : null}
+            {/* [claude-code 2026-04-26] Legacy inline Oracle blocks retired —
+                analyst notes now flow through RiskFlowNotePanel above. The
+                duplicate-headline and bordered-card pattern is gone; panel
+                persists across re-expansions until the user clicks Hide. */}
 
             {/* 2. Econ Data — beat/miss + A/F/P (econ items only) */}
             {hasEconData && alert.econData && (
@@ -292,7 +259,9 @@ export function RiskFlowDetailCard({
               </div>
             )}
 
-            {/* S9-T2: Deviation indicators — IV score + implied points */}
+            {/* [claude-code 2026-04-26] Beat/miss chip retained for econ items
+                without a hero hasEconData row; pure-IV display removed — IV
+                rating now lives in the bottom fuse footer. */}
             <div className="flex items-center gap-2 mb-3 flex-wrap">
               {alert.econData?.beatMiss && !hasEconData && (
                 <span
@@ -305,11 +274,6 @@ export function RiskFlowDetailCard({
                   }`}
                 >
                   {alert.econData.beatMiss.toUpperCase()}
-                </span>
-              )}
-              {alert.ivScore != null && (
-                <span className="text-[9px] font-mono text-[var(--fintheon-muted)]/60">
-                  IV {Number(alert.ivScore).toFixed(1)}
                 </span>
               )}
             </div>
@@ -330,23 +294,10 @@ export function RiskFlowDetailCard({
               </div>
             )}
 
-            {/* 5. Tags + Author + Source link */}
+            {/* [claude-code 2026-04-26] Tags moved to AlertCardBase footer
+                (left-justified, expanded only). Body retains author + footer
+                CTAs only. */}
             <div className="flex items-center gap-2 flex-wrap">
-              {alert.tags.filter((t) => !t.startsWith("url:")).length > 0 && (
-                <div className="flex gap-1">
-                  {alert.tags
-                    .filter((t) => !t.startsWith("url:"))
-                    .slice(0, 4)
-                    .map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-[9px] px-1.5 py-0.5 bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/20"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                </div>
-              )}
               {alert.authorHandle && (
                 <span className="text-[9px] text-[var(--fintheon-accent)]/60">
                   @{alert.authorHandle}

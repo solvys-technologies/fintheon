@@ -3,6 +3,15 @@
 // [claude-code 2026-04-24] S34-T3: extended EconEventRecord with country/category/event_key; added upsertEconEvent + readUpcomingEconEvents for the calendar populator + /api/econ/upcoming.
 import { getSupabaseClient, isSupabaseConfigured } from "../config/supabase.js";
 import { sql as dbSql, isDatabaseAvailable } from "../config/database.js";
+// [claude-code 2026-04-26] Banned-publisher gate at the raw write layer —
+// closes the FinancialJuice/EconomicCalendar leak where Bloomberg/CNBC URLs
+// were entering the inbox via main backend pollers (the news-worker gate
+// alone never covered them).
+import { isBannedPublisher as _isBannedPublisher } from "./riskflow/content-guard.js";
+// [claude-code 2026-04-26] HTML-entity decode at the same write layer so
+// `&#x2019;` / `&#xA3;` / `&amp;` never reach the DB. Desktop and mobile both
+// decode at render too, but doing it here is single-source.
+import { decodeHtmlEntities as _decodeHtmlEntities } from "../lib/html-entities.js";
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -76,6 +85,35 @@ export interface ConsiliumMessageRecord {
 
 export async function writeRawItems(items: RawRiskFlowItem[]): Promise<number> {
   if (items.length === 0) return 0;
+
+  const beforeCount = items.length;
+  items = items.filter(
+    (item) =>
+      !_isBannedPublisher({
+        url: item.url,
+        tags: item.tags ?? [],
+      }),
+  );
+  const dropped = beforeCount - items.length;
+  if (dropped > 0) {
+    console.log(
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        service: "supabase-service",
+        stage: "writeRawItems_banned_publisher_drop",
+        dropped,
+        kept: items.length,
+      }),
+    );
+  }
+  if (items.length === 0) return 0;
+
+  // Decode HTML entities so the DB stores readable strings.
+  items = items.map((item) => ({
+    ...item,
+    headline: _decodeHtmlEntities(item.headline),
+    body: item.body ? _decodeHtmlEntities(item.body) : item.body,
+  }));
 
   // [claude-code 2026-04-06] Primary: raw SQL (Supabase JS upsert silently fails)
   if (isDatabaseAvailable() && dbSql) {
@@ -215,6 +253,31 @@ export async function readUnscoredItems(
 export async function writeScoredItems(
   items: ScoredRiskFlowItem[],
 ): Promise<number> {
+  if (items.length === 0) return 0;
+
+  // [claude-code 2026-04-26] Final-line URL/host gate. Even after raw-write +
+  // central-scorer drops, any path that hand-builds a scored row still must
+  // pass this check so no banned publisher ever reaches the user-facing feed.
+  const beforeCount = items.length;
+  items = items.filter(
+    (item) =>
+      !_isBannedPublisher({
+        url: item.url,
+        tags: item.tags ?? [],
+      }),
+  );
+  const dropped = beforeCount - items.length;
+  if (dropped > 0) {
+    console.log(
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        service: "supabase-service",
+        stage: "writeScoredItems_banned_publisher_drop",
+        dropped,
+        kept: items.length,
+      }),
+    );
+  }
   if (items.length === 0) return 0;
 
   // [claude-code 2026-04-06] Primary: raw SQL (Supabase JS upsert was silently failing)

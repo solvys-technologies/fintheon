@@ -49,6 +49,18 @@ export function TabRenderer({
       ? "animate-fade-out-tab"
       : "animate-fade-in-tab";
 
+  // [claude-code 2026-04-26] Per TP: all iframes preserve history. Switched
+  // from conditional render (which unmounts the previous tab on every switch
+  // and resets every iframe inside) to display:none toggling on persistent
+  // siblings. The DOM stays mounted, browsers retain each iframe's history
+  // stack and scroll position automatically. Cost is upfront mount of every
+  // tab on first paint — acceptable for a desktop trading surface.
+  const tabStyle = (tab: NavTab): React.CSSProperties => ({
+    display: !showRefinement && activeTab === tab ? "block" : "none",
+    height: "100%",
+    width: "100%",
+  });
+
   return (
     <div className="flex-1 min-h-0 overflow-hidden">
       {showRefinement && (
@@ -56,89 +68,86 @@ export function TabRenderer({
           <AdminShell />
         </div>
       )}
-      {!showRefinement && activeTab === "dashboard" && (
-        <div
-          key="dashboard"
-          data-tour-target="dashboard"
-          className={`h-full w-full section-fade-corners ${animClass}`}
-        >
-          <MainDashboard onNavigateTab={(tab) => navigateTab(tab as NavTab)} />
-        </div>
-      )}
-      {!showRefinement && activeTab === "analysis" && (
-        <div
-          key="analysis"
-          data-tour-target="chat"
-          className={`h-full w-full section-fade-corners ${animClass}`}
-        >
-          <ConsiliumHub />
-        </div>
-      )}
-      {!showRefinement && activeTab === "riskflow" && (
-        <div
-          key="riskflow"
-          data-tour-target="riskflow"
-          className={`h-full w-full section-fade-corners ${animClass}`}
-        >
-          <RiskFlowMain />
-        </div>
-      )}
-      {!showRefinement && activeTab === "econ" && (
-        <div
-          key="econ"
-          data-tour-target="econ"
-          className={`h-full w-full ${animClass}`}
-        >
-          <EconCalendarProvider>
-            <TradingViewCalendar />
-          </EconCalendarProvider>
-        </div>
-      )}
-      {!showRefinement && activeTab === "narrative" && (
-        <div
-          key="narrative"
-          data-tour-target="narrative"
-          className={`h-full w-full ${animClass}`}
-        >
-          <NarrativeProvider>
-            <NarrativeMap />
-          </NarrativeProvider>
-        </div>
-      )}
-      {!showRefinement && activeTab === "apparatus" && (
-        <div
-          key="apparatus"
-          data-tour-target="apparatus"
-          className={`h-full w-full ${animClass}`}
-        >
-          <ApparatusMap />
-        </div>
-      )}
-      {/* S14-T5: scriptorium, documents, memory tabs removed — now in ConsiliumHub dropdowns */}
-      {!showRefinement && activeTab === "proposals" && (
-        <div
-          key="proposals"
-          data-tour-target="proposals"
-          className={`h-full w-full ${animClass}`}
-        >
-          <ProposalWidget />
-        </div>
-      )}
-      {!showRefinement && activeTab === "performance" && (
-        <div
-          key="performance"
-          data-tour-target="performance"
-          className={`h-full w-full ${animClass}`}
-        >
-          <PerformanceJournal />
-        </div>
-      )}
-      {/* S14-T5: research tab removed — now in ConsiliumHub Boardroom > Imperium */}
-      {!showRefinement && activeTab === "settings" && (
-        <div key="settings" className={`h-full w-full ${animClass}`}>
-          <SettingsPage />
-        </div>
-      )}
+
+      <div
+        key="dashboard"
+        data-tour-target="dashboard"
+        className={`section-fade-corners ${animClass}`}
+        style={tabStyle("dashboard")}
+      >
+        <MainDashboard onNavigateTab={(tab) => navigateTab(tab as NavTab)} />
+      </div>
+
+      <div
+        key="analysis"
+        data-tour-target="chat"
+        className={`section-fade-corners ${animClass}`}
+        style={tabStyle("analysis")}
+      >
+        <ConsiliumHub />
+      </div>
+
+      <div
+        key="riskflow"
+        data-tour-target="riskflow"
+        className={`section-fade-corners ${animClass}`}
+        style={tabStyle("riskflow")}
+      >
+        <RiskFlowMain />
+      </div>
+
+      <div
+        key="econ"
+        data-tour-target="econ"
+        className={animClass}
+        style={tabStyle("econ")}
+      >
+        <EconCalendarProvider>
+          <TradingViewCalendar />
+        </EconCalendarProvider>
+      </div>
+
+      <div
+        key="narrative"
+        data-tour-target="narrative"
+        className={animClass}
+        style={tabStyle("narrative")}
+      >
+        <NarrativeProvider>
+          <NarrativeMap />
+        </NarrativeProvider>
+      </div>
+
+      <div
+        key="apparatus"
+        data-tour-target="apparatus"
+        className={animClass}
+        style={tabStyle("apparatus")}
+      >
+        <ApparatusMap />
+      </div>
+
+      <div
+        key="proposals"
+        data-tour-target="proposals"
+        className={animClass}
+        style={tabStyle("proposals")}
+      >
+        <ProposalWidget />
+      </div>
+
+      <div
+        key="performance"
+        data-tour-target="performance"
+        className={animClass}
+        style={tabStyle("performance")}
+      >
+        <PerformanceJournal />
+      </div>
+
+      <div key="settings" className={animClass} style={tabStyle("settings")}>
+        <SettingsPage />
+      </div>
     </div>
   );
 }

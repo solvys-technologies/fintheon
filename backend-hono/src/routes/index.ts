@@ -63,6 +63,7 @@ import { createHarperRoutes } from "./harper/index.js";
 import { createHarperOpsRoutes } from "./harper-ops/index.js";
 import { createOpsRoutes } from "./ops/index.js";
 import { createEconRoutes } from "./econ/index.js";
+import { createMarketScanRoutes } from "./market-scan/index.js";
 import { createPeersRoutes } from "./peers/index.js";
 import predictionsRoutes from "./predictions.js";
 import { createDocumentRoutes } from "./documents/index.js";
@@ -253,6 +254,7 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/ops", createOpsRoutes());
   // Econ Intelligence — event cards, filters, KPI/instrument fuses (Track 4a/4b)
   app.route("/api/econ", createEconRoutes());
+  app.route("/api/market-scan", createMarketScanRoutes());
   // [claude-code 2026-04-25] S40-P8: megacap earnings (public read, internal-trigger gated refresh)
   app.route("/api/earnings", createEarningsRoutes());
   // [claude-code 2026-04-25] S40-P6: Time-To-Print eligibility (public read)

@@ -1,3 +1,9 @@
+// [claude-code 2026-04-26] HTML-entity decode at the single mobile ingest
+// site. Backend ships RSS-sourced headlines with raw &#x2019; (’) and &#xA3;
+// (£); the desktop frontend already decodes via lib/services/riskflow.ts —
+// mobile had no equivalent and was rendering the entities raw across
+// RiskFlow, NarrativeFlow, and timelines. One decode here covers every
+// downstream consumer (cards, chips, sheets, headers).
 // [claude-code 2026-04-16] Rewrite: direct fetch() bypassing ApiClient, localStorage cache, no Agent Reach
 import {
   createContext,
@@ -9,6 +15,7 @@ import {
   type ReactNode,
 } from "react";
 import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
+import { decodeHtmlEntities } from "../lib/html-entities";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 const CACHE_KEY = "riskflow-cache";
@@ -61,8 +68,8 @@ function macroLevelToSeverity(level: number): AlertSeverity {
 function mapRawItems(items: any[]): MobileRiskFlowAlert[] {
   return items.map((item) => ({
     id: `backend-${item.id}`,
-    title: item.headline || item.title || "",
-    content: item.body || item.summary || item.content || "",
+    title: decodeHtmlEntities(item.headline || item.title || ""),
+    content: decodeHtmlEntities(item.body || item.summary || item.content || ""),
     source: item.source || "",
     severity: macroLevelToSeverity(item.macroLevel ?? 0),
     publishedAt:

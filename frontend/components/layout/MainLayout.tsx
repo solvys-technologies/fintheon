@@ -558,10 +558,28 @@ function MainLayoutInner() {
       rightPanels.push(
         <div
           key="combined"
-          className={`bg-[var(--fintheon-surface)] border-l border-[var(--fintheon-accent)]/10 transition-all duration-200 ${combinedPanelCollapsed ? "w-16" : "w-[380px]"}`}
+          className={`transition-all duration-200 ${
+            combinedPanelCollapsed
+              ? "w-0 overflow-visible"
+              : "w-[380px] bg-[var(--fintheon-surface)] border-l border-[var(--fintheon-accent)]/10"
+          }`}
         >
+          {/* [claude-code 2026-04-26] Closed state = floating top-right button.
+              No vertical ruler, no panel chrome — just a square accent-colored
+              affordance pinned to the upper-right corner. Click expands the
+              full panel. */}
+          {combinedPanelCollapsed && (
+            <button
+              onClick={() => setCombinedPanelCollapsed(false)}
+              aria-label="Open Strategium"
+              className="fixed top-3 right-3 z-40 w-9 h-9 flex items-center justify-center bg-[var(--fintheon-bg)]/85 border border-[var(--fintheon-accent)]/30 rounded text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/15 hover:border-[var(--fintheon-accent)]/60 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          )}
           <div className="h-full flex flex-col">
-            {combinedPanelCollapsed && (
+            {/* (header chevron-only collapsed area retired — now floats top-right) */}
+            {false && combinedPanelCollapsed && (
               <div className="h-12 flex-shrink-0 flex items-center justify-center border-b border-[var(--fintheon-accent)]/20">
                 <button
                   onClick={() => setCombinedPanelCollapsed(false)}

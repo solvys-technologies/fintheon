@@ -1,3 +1,8 @@
+// [claude-code 2026-04-26] Added `fintheon:econ-mock-countdown` listener so
+// Developer settings can fire a 1-min mock card without backend involvement.
+// The mock event flows the same code path as a real /api/econ/active-watch
+// row, so the test verifies the modal end-to-end (fade-in, tick-down,
+// printed-state cross-fade triggered by a mock SSE frame after countdown).
 // [claude-code 2026-04-24] S34-T8: Econ countdown modal.
 // Fades in at T-5min, Doto mm:ss countdown, cross-fades to Actual/Forecast on
 // SSE econ-print arrival, fades out 20s after print (or 15min after scheduled
@@ -161,6 +166,63 @@ export function EconCountdownModal() {
   }, []);
 
   useEconPrintStream(handlePrint);
+
+  // [claude-code 2026-04-26] Dev-mode mock countdown — DeveloperTab dispatches
+  // `fintheon:econ-mock-countdown` with optional { durationMs, eventName,
+  // country, category, forecast, previous, actual }. Defaults to 60s.
+  useEffect(() => {
+    function onMock(ev: Event) {
+      const detail = (ev as CustomEvent).detail ?? {};
+      const durationMs =
+        typeof detail.durationMs === "number" ? detail.durationMs : 60_000;
+      const id = `mock-${Date.now()}`;
+      const scheduledAt = new Date(Date.now() + durationMs).toISOString();
+      const mockCard: CardState = {
+        id,
+        eventName: detail.eventName ?? "MOCK · Test Print (1m)",
+        country: detail.country ?? "US",
+        category: detail.category ?? "Mock",
+        scheduledAt,
+        forecast: detail.forecast ?? 0.5,
+        previous: detail.previous ?? 0.4,
+        actual: null,
+        status: "upcoming",
+        flashKey: 0,
+      };
+      setCards((prev) => ({ ...prev, [id]: mockCard }));
+
+      // Fire a synthetic print after the countdown so the printed-state
+      // transition is exercised end-to-end, mirroring real SSE arrival.
+      const actual = detail.actual ?? 0.7;
+      const forecast = mockCard.forecast ?? 0.5;
+      const beatMiss: "beat" | "miss" | "inline" =
+        actual > forecast ? "beat" : actual < forecast ? "miss" : "inline";
+      const surprisePercent =
+        forecast !== 0 ? ((actual - forecast) / forecast) * 100 : null;
+      const printAt = durationMs + 250;
+      const timer = window.setTimeout(() => {
+        handlePrint({
+          eventName: mockCard.eventName,
+          actual,
+          forecast,
+          previous: mockCard.previous,
+          surprisePercent,
+          beatMiss,
+          printedAt: new Date().toISOString(),
+        });
+      }, printAt);
+      return () => window.clearTimeout(timer);
+    }
+    window.addEventListener(
+      "fintheon:econ-mock-countdown",
+      onMock as EventListener,
+    );
+    return () =>
+      window.removeEventListener(
+        "fintheon:econ-mock-countdown",
+        onMock as EventListener,
+      );
+  }, [handlePrint]);
 
   const visible = useMemo(() => {
     return Object.values(cards)
