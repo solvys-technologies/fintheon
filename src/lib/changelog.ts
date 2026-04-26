@@ -9,6 +9,22 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T19:55:00",
+    agent: "claude-code",
+    summary:
+      "S42-T5 Browserbase agent-iframe plugin. New services/browser/browserbase.ts wraps @browserbasehq/sdk: createSession + closeSession + runTask drive a managed remote Chromium session and yield navigation events; the debuggerFullscreenUrl returned by sessions.debug() is the live URL the frontend ArtifactPane mounts as an iframe so the user watches the agent navigate. Forward-compatible browserbaseEventBus (EventEmitter) publishes BrowserbaseArtifactEvent + BrowserbaseToolCallEvent + BrowserbaseScreenshotEvent shapes that match T1's BridgeStreamEvent additions (artifact + tool_call) — T5 does NOT modify the union; T1 wires the converter on merge. Fallback path activates when BROWSERBASE_API_KEY is missing: runFallbackScreenshotStream uses the existing Playwright pool + 1.5s screenshot ticks dispatched as report-artifact events so the artifact pane shows a slideshow. New routes/browserbase.ts exposes POST/DELETE /api/browserbase/session (registered in routes/index.ts at the public + local-only tier). New browse_visible Strands tool registered in services/strands/harper-tools.ts (auto-approved alongside browser_harness — the user is already watching). Frontend layout/EmbeddedBrowserFrame.tsx gains optional mode='browserbase' prop that adds clipboard-read/clipboard-write allow flag and a useEffect-bound postMessage listener (origin-checked against the iframe src) which forwards nav events through onNavEvent; default behaviour preserved when mode is undefined so SanctumChart, ConsiliumHub, MainLayout preload, and TradingBrowser callers keep working. backend-hono/.env.example adds BROWSERBASE_API_KEY + BROWSERBASE_PROJECT_ID under a new S42-T5 block.",
+    files: [
+      "backend-hono/package.json",
+      "backend-hono/bun.lock",
+      "backend-hono/src/services/browser/browserbase.ts",
+      "backend-hono/src/routes/browserbase.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/services/strands/harper-tools.ts",
+      "backend-hono/.env.example",
+      "frontend/components/layout/EmbeddedBrowserFrame.tsx",
+    ],
+  },
+  {
     date: "2026-04-25T19:50:00",
     agent: "claude-code",
     summary:
