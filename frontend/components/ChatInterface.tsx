@@ -1,3 +1,7 @@
+// [claude-code 2026-04-25] S42-T7 mount-perf: chat-web mount telemetry markers wired
+// at component-top (markMountStart) and right after composer first paints
+// (markComposerVisible via useLayoutEffect+rAF). isHydrating from useHermesRuntime
+// gates HistorySkeletonList in FintheonThread and emits markHistoryReady.
 // [claude-code 2026-04-25] S42-T4: dual-pane → real ArtifactPane (TradingView/browserbase/report/citation)
 // [claude-code 2026-04-25] S42-T2: Cmd+K palette + Esc cancel/close + MessageQueue wiring
 //   (queue-while-streaming + offline-localStorage persistence) + slash-command persona override
@@ -5,7 +9,7 @@
 //   artifact slot are untouched — composer-mount + state-wiring only, per S42-T2 brief.
 // [claude-code 2026-03-29] S9-T5: Replace checkpoint sidebar with real conversation history, Take Note button
 // [claude-code 2026-03-28] S8-T7: Dual-pane layout (left=conversation, right=artifacts) for Chat
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo } from "react";
 import { X, Layers } from "lucide-react";
 import {
   AssistantRuntimeProvider,
@@ -27,6 +31,11 @@ import { ARTIFACT_EVENT, type ArtifactPayload } from "./chat/artifactTypes";
 import { SKILL_PREFIXES } from "../lib/skillPrefixes";
 import QuickFintheonModal from "./analysis/QuickFintheonModal";
 import { useFeatureFlags } from "../hooks/useFeatureFlags";
+import {
+  markComposerVisible,
+  markHistoryReady,
+  markMountStart,
+} from "../lib/mountTelemetry";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -43,6 +52,7 @@ function ChatInterfaceInner({
   setThinkHarder,
   lastRequestId,
   dualPane = false,
+  isHydrating,
 }: {
   conversationId: string | undefined;
   setConversationId: (id: string) => void;
@@ -52,6 +62,7 @@ function ChatInterfaceInner({
   setThinkHarder: (v: boolean) => void;
   lastRequestId: string | null;
   dualPane?: boolean;
+  isHydrating?: boolean;
 }) {
   const { activeAgent, agents, setActiveAgent } = useFintheonAgents();
   const runtime = useThreadRuntime();
@@ -67,6 +78,7 @@ function ChatInterfaceInner({
   );
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const splitContainerRef = useRef<HTMLDivElement | null>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
 
   // ── S42-T2 state ──────────────────────────────────────────────────────────
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -93,6 +105,33 @@ function ChatInterfaceInner({
     () => pickRecentUserMessages(messages as any[], 10),
     [messages],
   );
+
+  // S42-T7: stamp composer-visible after the composer has actually painted.
+  useLayoutEffect(() => {
+    let raf1 = 0;
+    let raf2 = 0;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        if (composerRef.current) markComposerVisible("chat-web");
+      });
+    });
+    return () => {
+      if (raf1) cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
+  }, []);
+
+  // S42-T7: history skeleton ⇒ content swap.
+  const hadHydrationRef = useRef(false);
+  useEffect(() => {
+    if (isHydrating) {
+      hadHydrationRef.current = true;
+      return;
+    }
+    if (hadHydrationRef.current) {
+      markHistoryReady("chat-web");
+    }
+  }, [isHydrating]);
 
   const handleSend = useCallback(
     (msg: string) => {
@@ -411,6 +450,7 @@ function ChatInterfaceInner({
             messageRefs={messageRefs}
             lastError={lastError}
             lastRequestId={lastRequestId}
+            isHydrating={isHydrating}
           />
           {/* Subtle fade above composer — matches Boardroom style */}
           <div
@@ -421,7 +461,7 @@ function ChatInterfaceInner({
                 "linear-gradient(to bottom, transparent 0%, var(--fintheon-bg) 100%)",
             }}
           />
-          <div className="relative z-20 shrink-0">
+          <div ref={composerRef} className="relative z-20 shrink-0">
             {/* S42-T2: queued messages above composer; rendering self-gates to
                 null when queue is empty, so this adds zero DOM in the common
                 case. Edit/remove buttons are wired to local state. */}
@@ -507,6 +547,9 @@ export default function ChatInterface({
 }: {
   surfaceId?: string;
 }) {
+  // S42-T7: stamp mount-start before any hooks fire so the relative timings
+  // include hook-init cost (useHermesRuntime → useHermesChat → useChat).
+  markMountStart("chat-web");
   const { activeAgent } = useFintheonAgents();
   const [thinkHarderState, setThinkHarderState] = useState(false);
   const {
@@ -516,6 +559,7 @@ export default function ChatInterface({
     clearConversationId,
     lastError,
     lastRequestId,
+    isHydrating,
   } = useHermesRuntime(
     activeAgent?.id ?? "default",
     thinkHarderState,
@@ -536,6 +580,7 @@ export default function ChatInterface({
         setThinkHarder={setThinkHarderState}
         lastRequestId={lastRequestId}
         dualPane={isDualPane}
+        isHydrating={isHydrating}
       />
     </AssistantRuntimeProvider>
   );

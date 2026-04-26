@@ -34,14 +34,32 @@
 // list + history browsing removed — mobile only shows the conversation that
 // was dispatched from desktop, and is idle otherwise. Conversation history
 // is still persisted server-side; we just don't surface it on mobile anymore.
+// [claude-code 2026-04-25] S42-T7 mount-perf: initial /api/relay/health fetch was firing
+// synchronously on mount, contending with first paint. Deferred to requestIdleCallback
+// (with setTimeout(200ms) fallback for Safari < iOS 17). 20s polling cadence preserved.
+// markMountStart fires before hooks; markComposerVisible fires after first paint via
+// useLayoutEffect+rAF. mobile is per-dispatch only so historyMs only fires when a
+// pending dispatch is hydrated from sessionStorage.
 // [claude-code 2026-04-16] T3/T6: Full-screen Harper chat — SSE streaming via relay, background recovery
 // Memory: feedback_keep_chat_mounted — use display:none not conditional render, streams survive navigation
 // Memory: feedback_uimessagestream_framing — start/finish events in SSE stream
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+} from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSettings } from "../../contexts/SettingsContext";
 import { getMobileBackend } from "../../lib/backend";
+import {
+  markComposerVisible,
+  markHistoryReady,
+  markMountStart,
+} from "../../lib/mountTelemetry";
 import ChatMessage, { type ChatMessageData } from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import ConnectionStatus, { type RelayState } from "./ConnectionStatus";
@@ -65,6 +83,8 @@ interface ChatPageProps {
 }
 
 export default function ChatPage({ visible }: ChatPageProps) {
+  // S42-T7: stamp before any hooks fire so timings include hook-init cost.
+  markMountStart("chat-mobile");
   const { getAccessToken } = useAuth();
   const { settings } = useSettings();
   const [messages, setMessages] = useState<ChatMessageData[]>([]);
@@ -87,9 +107,25 @@ export default function ChatPage({ visible }: ChatPageProps) {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
   // Ref to track conversationId without stale closure (memory: feedback_useChat_stale_closure)
   const conversationIdRef = useRef(conversationId);
   conversationIdRef.current = conversationId;
+
+  // S42-T7: stamp composer-visible after first paint via rAF double-tick.
+  useLayoutEffect(() => {
+    let raf1 = 0;
+    let raf2 = 0;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        if (composerRef.current) markComposerVisible("chat-mobile");
+      });
+    });
+    return () => {
+      if (raf1) cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
+  }, []);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -156,6 +192,8 @@ export default function ChatPage({ visible }: ChatPageProps) {
           })),
         );
         setConversationId(data.id ?? convId);
+        // S42-T7: stamp history-ready when a pending dispatch finishes hydrating.
+        markHistoryReady("chat-mobile");
       } catch {
         // Swallow — mobile shows "standing by" if the fetch fails.
       }
@@ -189,6 +227,8 @@ export default function ChatPage({ visible }: ChatPageProps) {
   // Poll /api/relay/health every 20s: if desktop dispatched us here, show the
   // "FROM DESKTOP" badge and auto-load the dispatched conversation when we
   // don't already have one active.
+  // [claude-code 2026-04-25] S42-T7: first check is idle-deferred so it can't
+  // contend with first paint; the 20s polling cadence is unchanged.
   useEffect(() => {
     let cancelled = false;
     const check = async () => {
@@ -220,11 +260,35 @@ export default function ChatPage({ visible }: ChatPageProps) {
         /* ignore transient errors */
       }
     };
-    void check();
+    // S42-T7: defer the first check so first paint isn't blocked by network.
+    const idle =
+      (window as unknown as {
+        requestIdleCallback?: (
+          cb: () => void,
+          opts?: { timeout: number },
+        ) => number;
+      }).requestIdleCallback;
+    let idleHandle: number | undefined;
+    let firstCheckTimeout: ReturnType<typeof setTimeout> | undefined;
+    if (typeof idle === "function") {
+      idleHandle = idle(() => void check(), { timeout: 1500 });
+    } else {
+      firstCheckTimeout = setTimeout(() => void check(), 200);
+    }
     const id = setInterval(check, 20_000);
     return () => {
       cancelled = true;
       clearInterval(id);
+      if (
+        idleHandle !== undefined &&
+        typeof (window as unknown as {
+          cancelIdleCallback?: (h: number) => void;
+        }).cancelIdleCallback === "function"
+      ) {
+        (window as unknown as { cancelIdleCallback: (h: number) => void })
+          .cancelIdleCallback(idleHandle);
+      }
+      if (firstCheckTimeout !== undefined) clearTimeout(firstCheckTimeout);
     };
   }, [getAccessToken, loadRelayConversation]);
 
@@ -823,6 +887,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
           keyboard-covering-the-input bug and no more dead spacer below the
           thread. */}
       <div
+        ref={composerRef}
         style={{
           position: "sticky",
           bottom: 0,

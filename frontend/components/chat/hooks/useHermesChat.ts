@@ -41,6 +41,10 @@ export function useHermesChat(
   const [lastError, setLastError] = useState<string | null>(null);
   // [claude-code 2026-03-10] Track requestId from X-Request-Id header for cognition stream
   const [lastRequestId, setLastRequestId] = useState<string | null>(null);
+  // [claude-code 2026-04-25] S42-T7: surface hydration in flight so the thread can
+  // render a skeleton list (HistorySkeletonList) instead of an empty greeting screen
+  // while messages are being fetched from /api/ai/conversations/:id.
+  const [isHydrating, setIsHydrating] = useState(false);
   const hydratedRef = useRef<string | undefined>(undefined);
   // Abort controller ref — allows stop button to kill the active fetch
   const abortRef = useRef<AbortController | null>(null);
@@ -371,6 +375,7 @@ export function useHermesChat(
     setUseChatMessages([]);
     // Reset hydrated ref so useChat with new id starts clean
     hydratedRef.current = undefined;
+    setIsHydrating(true);
 
     (async () => {
       try {
@@ -414,6 +419,8 @@ export function useHermesChat(
         }
       } catch (err) {
         console.error("[useHermesChat] Conversation hydration failed:", err);
+      } finally {
+        if (!cancelled) setIsHydrating(false);
       }
     })();
 
@@ -446,5 +453,6 @@ export function useHermesChat(
     lastError,
     clearError: () => setLastError(null),
     lastRequestId,
+    isHydrating,
   };
 }

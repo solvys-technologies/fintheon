@@ -1,3 +1,6 @@
+// [claude-code 2026-04-25] S42-T7 mount-perf: HistorySkeletonList rendered while
+// useHermesChat is hydrating an existing conversation. Replaces the empty greeting
+// flash users used to see between mount and first hydrated message. No spinner.
 // [claude-code 2026-04-10] S9-T4: Extract MessageActions, MessageErrorBoundary, ChainOfThought
 // [claude-code 2026-03-28] S8-T7: Kill kanban borders on assistant messages, add agent name header
 // [claude-code 2026-03-11] T2b: Image part in user bubbles, T2c: CoT auto-open/close via useEffect
@@ -33,6 +36,7 @@ import {
 } from "../../lib/artifact-parser";
 import { ArtifactCard } from "./ArtifactCard";
 import { useNarrative } from "../../contexts/NarrativeContext";
+import { HistorySkeletonList } from "./HistorySkeletonList";
 
 /* ------------------------------------------------------------------ */
 /*  Markdown renderer                                                   */
@@ -545,6 +549,8 @@ interface FintheonThreadProps {
   lastError?: string | null;
   lastRequestId?: string | null;
   compact?: boolean;
+  /** S42-T7: rendered as gray-line outlines while hydration is in flight. */
+  isHydrating?: boolean;
 }
 
 export function FintheonThread({
@@ -555,6 +561,7 @@ export function FintheonThread({
   lastError,
   lastRequestId,
   compact,
+  isHydrating,
 }: FintheonThreadProps) {
   const { activeAgent } = useFintheonAgents();
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -574,12 +581,14 @@ export function FintheonThread({
           className="flex-1 overflow-y-auto p-6 pb-8"
         >
           <div className="max-w-full mx-auto space-y-4 mb-8">
-            {/* Greeting screen — shown when thread is empty */}
-            {!compact && messages.length === 0 && (
+            {/* S42-T7: skeleton outlines while hydrating an existing conversation */}
+            {messages.length === 0 && isHydrating && <HistorySkeletonList />}
+            {/* Greeting screen — shown when thread is empty and not hydrating */}
+            {!compact && messages.length === 0 && !isHydrating && (
               <ChatGreeting onSend={onSend} isLoading={isLoading} />
             )}
             {/* Sidebar compact greeting */}
-            {compact && messages.length === 0 && (
+            {compact && messages.length === 0 && !isHydrating && (
               <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                 <p className="text-sm text-[var(--fintheon-accent)]/60 font-medium">
                   Ave, Trader.

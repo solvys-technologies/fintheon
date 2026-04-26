@@ -9,6 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T20:35:00",
+    agent: "claude-code",
+    summary:
+      "[v5.29.0] perf: T7 chat mount-time skeleton + deferred fetches (target <50ms web + mobile). Audited cold-mount blocking work on web ChatInterface and mobile ChatPage. (1) frontend/lib/mountTelemetry.ts + mobile/lib/mountTelemetry.ts: tiny perf-mark/once-per-session helper. Exposes markMountStart / markComposerVisible / markHistoryReady; drains as soon as composer-visible fires (history is best-effort with 5s fallback). Logs `{ surface, mountMs, composerMs, historyMs }` to console + dispatches a fintheon:mount-telemetry CustomEvent for any downstream pipe. (2) frontend/components/chat/HistorySkeletonList.tsx: gray-line outline (4 alternating rows, no spinner, no glassmorphic) shown by FintheonThread when isHydrating=true and messages.length===0 — replaces the empty greeting flash users used to see between mount and first hydrated message. (3) FintheonComposer skills fetch (/api/ai/skills) was firing in a mount-time useEffect — moved to requestIdleCallback (with setTimeout(200ms) fallback for Safari < iOS 17) and a force-fetch on first skills-picker open so users who open it within the idle window still see fresh data. (4) useHermesChat exposes new isHydrating flag that reflects whether /api/ai/conversations/:id is in flight; threaded through useHermesRuntime → ChatInterface → FintheonThread to gate the skeleton. (5) ChatInterface: markMountStart at the outer entry, markComposerVisible after first paint via useLayoutEffect+rAF double-tick on a composerRef, markHistoryReady when isHydrating transitions to false. (6) Mobile ChatPage: same telemetry pattern (composerRef on the sticky ChatInput wrapper); /api/relay/health initial check is now idle-deferred so it can't compete with first paint, polling cadence (20s) preserved; markHistoryReady fires when a pending sessionStorage relay-dispatch hydrates. (7) Required-at-mount fetches that we did NOT defer and their justification: (a) /api/ai/conversations/:id — runs only when localStorage already has a stored conversationId; doesn't block paint (it's async + we render a skeleton); (b) /api/relay/health — already idle-deferred but still required for the FROM-DESKTOP badge. tsc clean for both surfaces; frontend + mobile vite build clean.",
+    files: [
+      "frontend/lib/mountTelemetry.ts",
+      "frontend/components/chat/HistorySkeletonList.tsx",
+      "frontend/components/ChatInterface.tsx",
+      "frontend/components/chat/FintheonComposer.tsx",
+      "frontend/components/chat/FintheonThread.tsx",
+      "frontend/components/chat/useHermesRuntime.ts",
+      "frontend/components/chat/hooks/useHermesChat.ts",
+      "mobile/lib/mountTelemetry.ts",
+      "mobile/components/chat/ChatPage.tsx",
+    ],
+  },
+  {
     date: "2026-04-25T20:30:00",
     agent: "claude-code",
     summary:
