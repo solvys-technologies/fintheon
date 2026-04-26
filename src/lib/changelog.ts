@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T05:15:00",
+    agent: "claude-code",
+    summary:
+      "v5.29.5 — white-screen DMG fix + stash-pop UX. (1) White-screen root cause: v5.29.4 DMG shipped with frontend/dist/index.html containing absolute `/assets/*` paths because the build sequence did `vite build` (relative paths, correct), then `vercel build --prod` (rebuilt dist with VERCEL=1, poisoning to /assets/*), then electron-builder (bundled the poisoned dist). Electron's loadFile resolves /assets/* to file:///assets/* → 404 → white screen. v5.29.5 rebuilds frontend/dist with VERCEL unset BETWEEN the Vercel deploy step and electron-builder per the dmg-after-vercel-build memory. (2) fintheon-update.sh stash-pop warning now prints the exact `cd $FINTHEON_ROOT` command + the stash ref + the actual pop stderr instead of a vague 'run git stash pop manually' that fails when run from $HOME.",
+    files: [
+      "scripts/fintheon-update.sh",
+      "package.json",
+    ],
+  },
+  {
     date: "2026-04-26T04:25:00",
     agent: "claude-code",
     summary:

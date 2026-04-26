@@ -13,7 +13,7 @@ set -eo pipefail
 
 # [claude-code 2026-04-18] Resolve install path: FINTHEON_ROOT env > ~/.fintheon/install-path > default
 FINTHEON_ROOT="${FINTHEON_ROOT:-$(cat "$HOME/.fintheon/install-path" 2>/dev/null || echo "$HOME/Documents/Codebases/fintheon")}"
-UPDATE_VERSION="5.29.4"
+UPDATE_VERSION="5.29.5"
 
 # ── Self-update bootstrap (v5.25.2) ──────────────────────────────────────────
 # Root cause fix: bash loads the entire script into memory at invocation, so
@@ -552,9 +552,31 @@ else
 fi
 
 # ── Restore stashed changes ─────────────────────────────────────────────────
+# [claude-code 2026-04-26] v5.29.5 hotfix: previous flow silently swallowed pop
+# errors and left the stash on the stack with a one-line warning. We now (a)
+# capture pop stderr (b) on conflict, surface the conflicting paths AND the
+# exact `git stash list` ref so the user can recover or drop without guessing
+# (c) on success print the count of restored files.
 
 if [[ "$HAS_CHANGES" == "true" ]]; then
-  git stash pop --quiet 2>/dev/null || warn "Could not restore stashed changes — run 'git stash pop' manually"
+  POP_LOG="/tmp/fintheon-update-stash-pop.log"
+  : > "$POP_LOG"
+  if git stash pop --quiet >>"$POP_LOG" 2>&1; then
+    POP_FILES=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+    ok "Restored $POP_FILES local file(s) from stash"
+  else
+    STASH_REF=$(git stash list 2>/dev/null | head -1 | cut -d: -f1)
+    warn "Stash pop hit a conflict — your local changes are SAFE on the stash stack."
+    info "  Stash ref:  ${STASH_REF:-<none found>}"
+    info "  Recover from inside the fintheon repo (NOT from \$HOME):"
+    info "      cd $FINTHEON_ROOT"
+    info "      git stash pop          # opens conflict markers in affected files"
+    info "      git status             # see which files conflict"
+    info "  If you want to discard the local changes instead:"
+    info "      cd $FINTHEON_ROOT && git stash drop"
+    info "  Pop output:"
+    sed 's/^/      /' "$POP_LOG" | head -8
+  fi
 fi
 
 # ── Done ─────────────────────────────────────────────────────────────────────
