@@ -9,6 +9,40 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T20:30:00",
+    agent: "claude-code",
+    summary:
+      "v5.32.0 — S35-T13: Arbitrum chamber rebuilt. Original 5-seat framework (Lead/Forecaster/Risk/Quant/Bear @ 30/30/20/10/10 + 2-layer MoA + JSON schema + rounds) preserved; each seat now binds to a real PIC agent persona via getAgentSystemPrompt() (Harper/Oracle/Feucht/Consul/Herald) + a different free model lineage + a Wall Street great's swing-trader characteristics (Druckenmiller/PTJ/Raschke/Minervini/Burry). Models: Lead→claude-opus-4-7 via VProxy, Forecaster→qwen3.5:397b-cloud, Risk→minimax-m2.7:cloud, Quant→mistral-large-3:675b-cloud (glm-5.1 + kimi-k2.6 both 403 paid-tier), Bear→qwen3.5:397b-cloud. Output schema gains forward_5d{thesis,catalysts_to_watch,confidence}. New news-context.ts loads top-80 scored_riskflow_items + last 10 verdicts from past 30d; econ window bumped 21d→30d back / 7d→5d forward. Engine throttles seats to batches of 2 (was hitting 429 on Ollama Cloud free tier). DEFAULT_TIMEOUT_MS bumped 18s→90s for cloud reasoning models. Live smoke test: spread 37pp, std 13.4pp, 0/5 stubs — DIVERGENT, no groupthink.",
+    files: [
+      "backend-hono/src/services/arbitrum/seats.ts",
+      "backend-hono/src/services/arbitrum/engine.ts",
+      "backend-hono/src/services/arbitrum/adapters.ts",
+      "backend-hono/src/services/arbitrum/news-context.ts",
+      "backend-hono/src/services/arbitrum/econ-context.ts",
+      "backend-hono/src/services/arbitrum/types.ts",
+      "backend-hono/src/services/hermes-service.ts",
+    ],
+  },
+  {
+    date: "2026-04-26T20:15:00",
+    agent: "claude-code",
+    summary:
+      "v5.32.0 — S35-T12: OpenRouter completely stripped per TP — no paid APIs. Every model call now routes through the free chain (VProxy → Ollama Cloud qwen3.5:397b-cloud via Hermes → Nous Research). Calling-site rewrites to invokeAgent: hermes-handler (drops OpenRouter fallback + warm-up), voice-sentiment, browser/operator, knowledge-graph/llm, conversation-store, econ-backfill-orchestrator. Type/config: HERMES_TASK_MODEL_MAP every key now resolves to claude-opus-4-7 or qwen3.5:397b-cloud (no anthropic/* OpenRouter strings). RoutingProvider narrows to anthropic|hermes-sidecar; AiProviderType drops openrouter; econ-backfill drops openrouter-llama/openrouter-mistral; ai-config getPrimaryProvider defaults to claude-local; all 8 ai-config providerType:openrouter → ollama-hermes.",
+    files: [
+      "backend-hono/src/services/hermes-handler.ts",
+      "backend-hono/src/services/voice-sentiment.ts",
+      "backend-hono/src/services/browser/operator.ts",
+      "backend-hono/src/services/knowledge-graph/llm.ts",
+      "backend-hono/src/services/ai/conversation-store.ts",
+      "backend-hono/src/services/ai/routing.ts",
+      "backend-hono/src/services/cron/econ-backfill-orchestrator.ts",
+      "backend-hono/src/services/arbitrum/adapters.ts",
+      "backend-hono/src/types/ai-types.ts",
+      "backend-hono/src/types/econ-backfill.ts",
+      "backend-hono/src/config/ai-config.ts",
+    ],
+  },
+  {
     date: "2026-04-26T19:30:00",
     agent: "claude-code",
     summary:
