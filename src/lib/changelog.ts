@@ -9,6 +9,21 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T23:25:00",
+    agent: "claude-code",
+    summary:
+      "v5.29.2 — three-part hotfix on top of v5.29.0 unified ship. (1) Harper chat 401: /api/harper had no authMiddleware mount so c.get('userId') was undefined; chat handler hard-rejected. Mounted authMiddleware (permissive — local-user under BYPASS_AUTH, decodes JWT in prod). (2) 'Type validation failed' + greeting-not-disappearing: S42-T1 added five additive event variants (thinking / tool_call / citation / artifact / complete) but assistant-ui v6's UIMessageStream Zod rejects unknown top-level types so the validator threw and aborted the stream before the assistant message could commit. Stream-adapter now renames these to data-* prefix on emit so the SDK accepts them as custom data parts. (3) Ask About This UX: was inlining a JSON blob into the user message; replaced with theme-sensitive ContextAttachmentCard mounted via solvys-transitions t-panel-slide. Bonus: FintheonThinkingIndicator pulsing gold dot replaced with Nothing-design segmented horizontal fuse (3-segment WAAPI cluster) and re-keyed to var(--fintheon-accent)/var(--fintheon-text); 'thinking pane' label → 'Thought'.",
+    files: [
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/services/strands/stream-adapter.ts",
+      "frontend/components/chat/ContextAttachmentCard.tsx",
+      "frontend/components/chat/FintheonThinkingIndicator.tsx",
+      "frontend/components/chat/parts/TextPart.tsx",
+      "package.json",
+      "scripts/fintheon-update.sh",
+    ],
+  },
+  {
     date: "2026-04-25T22:30:00",
     agent: "claude-code",
     summary:
