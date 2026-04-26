@@ -1,20 +1,34 @@
+// [claude-code 2026-04-25] S42-T3: bubble re-shaped around MessagePrimitive
+//   slots (Root → Content → Activity → Footer → Actions). Markdown text now
+//   flows through StreamdownText with `[N]` citation chip parsing. The Take
+//   Note bookmark moves into the Actions slot. AgentActivityRail renders the
+//   per-message activity (tool_call / citation / thinking) when present.
 // [claude-code 2026-03-29] S9-T5: Checkpoint → Take Note (saves to Harper memory via Context Bank)
 import { forwardRef } from "react";
 import { Bookmark } from "lucide-react";
 import type { ChatMessage } from "./types";
 import { MessagePartRenderer } from "./parts/MessagePartRenderer";
 import { isReportHtml, ReportViewer } from "./ReportViewer";
+import { MessagePrimitive } from "./MessagePrimitive";
+import { MessageFooter } from "./MessageFooter";
+import { AgentActivityRail } from "./AgentActivityRail";
+import type { MessageActivity } from "../../types/bridge-stream";
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
   isStreaming?: boolean;
   onTakeNote?: (messageId: string, content: string) => void;
+  /** Live agent activity (tool calls, citations, thinking) for this message. */
+  activity?: MessageActivity;
 }
 
 export const ChatMessageBubble = forwardRef<
   HTMLDivElement,
   ChatMessageBubbleProps
->(function ChatMessageBubble({ message, isStreaming, onTakeNote }, ref) {
+>(function ChatMessageBubble(
+  { message, isStreaming, onTakeNote, activity },
+  ref,
+) {
   const formatTimestamp = (date: Date) => {
     const mm = String(date.getMonth() + 1).padStart(2, "0");
     const dd = String(date.getDate()).padStart(2, "0");
@@ -27,13 +41,11 @@ export const ChatMessageBubble = forwardRef<
     return `${mm}/${dd}/${yy} ${time}`;
   };
 
-  // Extract full text content for checkpoint excerpt
   const textContent = message.parts
     .filter((p): p is { type: "text"; text: string } => p.type === "text")
     .map((p) => p.text)
     .join("\n");
 
-  // Check if any text part is a report
   const reportHtml =
     message.role === "assistant" && !message.cancelled
       ? message.parts.find(
@@ -41,20 +53,18 @@ export const ChatMessageBubble = forwardRef<
         )
       : null;
 
+  const isAssistant = message.role === "assistant";
+  const showRail =
+    isAssistant && !message.cancelled && activity !== undefined;
+  const showFooter =
+    isAssistant && !message.cancelled && activity?.complete !== undefined;
+
   return (
-    <div
-      className={`group/msg flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
-    >
-      <div
+    <MessagePrimitive.Root role={message.role} cancelled={message.cancelled}>
+      <MessagePrimitive.Content
         ref={ref}
-        className={[
-          "max-w-[82%] rounded-2xl p-4 backdrop-blur-md border transition-colors",
-          message.role === "user"
-            ? "fintheon-user-bubble"
-            : message.cancelled
-              ? "bg-white/[0.03] border-white/5 opacity-50"
-              : "bg-[#0f0f0b]/92 border-white/10 shadow-[0_12px_28px_rgba(0,0,0,0.35)]",
-        ].join(" ")}
+        role={message.role}
+        cancelled={message.cancelled}
       >
         {message.role === "assistant" ? (
           <div
@@ -73,6 +83,7 @@ export const ChatMessageBubble = forwardRef<
               <MessagePartRenderer
                 parts={message.parts}
                 isStreaming={isStreaming}
+                citations={activity?.citations}
               />
             )}
           </div>
@@ -81,9 +92,27 @@ export const ChatMessageBubble = forwardRef<
             {textContent}
           </p>
         )}
-      </div>
-      {/* Timestamp + Take Note — visible on hover beneath bubble */}
-      <div className="flex items-center gap-2 mt-1 px-2 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-200">
+      </MessagePrimitive.Content>
+
+      {showRail && activity && (
+        <MessagePrimitive.Activity>
+          <AgentActivityRail activity={activity} variant="vertical" />
+        </MessagePrimitive.Activity>
+      )}
+
+      {showFooter && activity?.complete && (
+        <MessagePrimitive.Footer>
+          <MessageFooter
+            agent={activity.complete.agent}
+            generatedAt={activity.complete.generatedAt}
+            latencyMs={activity.complete.latencyMs}
+            sourceCount={activity.complete.sourceCount ?? activity.citations.length}
+            model={activity.complete.model}
+          />
+        </MessagePrimitive.Footer>
+      )}
+
+      <MessagePrimitive.Actions>
         <span
           className={`text-[9px] font-mono ${message.cancelled ? "text-zinc-700" : "text-zinc-600"}`}
         >
@@ -99,7 +128,7 @@ export const ChatMessageBubble = forwardRef<
             <span className="text-[9px]">Note</span>
           </button>
         )}
-      </div>
-    </div>
+      </MessagePrimitive.Actions>
+    </MessagePrimitive.Root>
   );
 });

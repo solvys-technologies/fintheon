@@ -1,3 +1,9 @@
+// [claude-code 2026-04-25] S42-T3: bubble re-shaped around MessagePrimitive
+//   slots + StreamdownText. Markdown rendering moves from react-markdown to
+//   streamdown for code blocks / tables / KaTeX. `[N]` citation markers are
+//   resolved against `activity.citations`; click dispatches the platform-
+//   shared `fintheon:artifact` CustomEvent. Footer shows the `complete` event
+//   stats when present and collapses gracefully otherwise.
 // [claude-code 2026-04-18] v5.22 S2: per-user-message delivery status. Status flips
 //   sending → sent on res.ok, sending/sent → error on transport errors. Renders as a
 //   plain-text caption under the user bubble (FROM DESKTOP badge style — no glyphs,
@@ -6,10 +12,12 @@
 // [claude-code 2026-04-15] T6: Chat message bubble — markdown rendering, agent badge, streaming-ready
 
 import { memo } from "react";
-import Markdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { motion } from "framer-motion";
 import AgentBadge from "./AgentBadge";
+import { MessagePrimitive } from "./MessagePrimitive";
+import { StreamdownText } from "./StreamdownText";
+import { MessageFooter } from "./MessageFooter";
+import type { MessageActivity } from "@frontend/types/bridge-stream";
 
 export type ChatMessageStatus = "sending" | "sent" | "error";
 
@@ -25,10 +33,15 @@ export interface ChatMessageData {
    *  (e.g. "HARPER SILENT — CHECK DESKTOP RELAY") so the stream stays open while the
    *  user is told nothing has come back yet. */
   silentHint?: string;
+  /** Live agent activity (tool calls, citations, thinking). When undefined the
+   *  rail + footer are simply not rendered. */
+  activity?: MessageActivity;
+  /** When true the streaming caret blinks at the tail of the assistant text. */
+  isStreaming?: boolean;
 }
 
 const STATUS_LABEL: Record<ChatMessageStatus, string> = {
-  sending: "\u2026",
+  sending: "…",
   sent: "SENT",
   error: "FAILED",
 };
@@ -52,178 +65,109 @@ const formatTime = (iso: string) => {
 
 function ChatMessageInner({ message }: ChatMessageProps) {
   const isUser = message.role === "user";
+  const showFooter =
+    !isUser && message.activity?.complete !== undefined;
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      style={{
-        display: "flex",
-        flexDirection: isUser ? "row-reverse" : "row",
-        alignItems: "flex-start",
-        gap: 8,
-        padding: "4px 16px",
-      }}
     >
-      {!isUser && <AgentBadge />}
-      <div
-        style={{
-          maxWidth: "78%",
-          display: "flex",
-          flexDirection: "column",
-          gap: 4,
-        }}
-      >
+      <MessagePrimitive.Root role={message.role}>
+        {!isUser && <AgentBadge />}
         <div
           style={{
-            background: isUser ? "var(--surface-raised)" : "var(--surface)",
-            border: isUser ? "none" : "1px solid var(--border)",
-            borderRadius: 12,
-            padding: "12px 16px",
+            maxWidth: "78%",
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
           }}
         >
-          {isUser ? (
-            <p
+          <MessagePrimitive.Content role={message.role}>
+            {isUser ? (
+              <p
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 15,
+                  color: "var(--text-primary)",
+                  margin: 0,
+                  lineHeight: 1.5,
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {message.content}
+              </p>
+            ) : (
+              <StreamdownText
+                className="chat-markdown"
+                content={message.content}
+                isStreaming={message.isStreaming}
+                citations={message.activity?.citations}
+              />
+            )}
+          </MessagePrimitive.Content>
+          <span
+            style={{
+              fontFamily: "var(--font-data)",
+              fontSize: 10,
+              color: "var(--text-disabled)",
+              alignSelf: isUser ? "flex-end" : "flex-start",
+              paddingLeft: isUser ? 0 : 4,
+              paddingRight: isUser ? 4 : 0,
+            }}
+          >
+            {formatTime(message.timestamp)}
+          </span>
+          {showFooter && message.activity?.complete && (
+            <MessageFooter
+              agent={message.activity.complete.agent}
+              generatedAt={message.activity.complete.generatedAt}
+              latencyMs={message.activity.complete.latencyMs}
+              sourceCount={
+                message.activity.complete.sourceCount ??
+                message.activity.citations.length
+              }
+              model={message.activity.complete.model}
+            />
+          )}
+          {isUser && message.status && (
+            <span
+              aria-live="polite"
               style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 15,
-                color: "var(--text-primary)",
-                margin: 0,
-                lineHeight: 1.5,
-                whiteSpace: "pre-wrap",
+                fontFamily: "var(--font-data)",
+                fontSize: 8,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: STATUS_COLOR[message.status],
+                alignSelf: "flex-end",
+                paddingRight: 4,
+                lineHeight: 1,
               }}
             >
-              {message.content}
-            </p>
-          ) : (
-            <div className="chat-markdown">
-              <Markdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  p: ({ children }) => (
-                    <p
-                      style={{
-                        fontFamily: "var(--font-body)",
-                        fontSize: 14,
-                        color: "var(--text-primary)",
-                        margin: "0 0 8px 0",
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {children}
-                    </p>
-                  ),
-                  code: ({ children, className }) => {
-                    const isBlock = className?.includes("language-");
-                    return isBlock ? (
-                      <pre
-                        style={{
-                          background: "var(--surface-raised)",
-                          borderRadius: 8,
-                          padding: 12,
-                          overflowX: "auto",
-                          margin: "8px 0",
-                        }}
-                      >
-                        <code
-                          style={{
-                            fontFamily: "var(--font-data)",
-                            fontSize: 12,
-                            color: "var(--text-primary)",
-                          }}
-                        >
-                          {children}
-                        </code>
-                      </pre>
-                    ) : (
-                      <code
-                        style={{
-                          fontFamily: "var(--font-data)",
-                          fontSize: 12,
-                          color: "var(--accent)",
-                          background: "var(--surface-raised)",
-                          padding: "2px 6px",
-                          borderRadius: 4,
-                        }}
-                      >
-                        {children}
-                      </code>
-                    );
-                  },
-                  strong: ({ children }) => (
-                    <strong
-                      style={{ color: "var(--text-display)", fontWeight: 500 }}
-                    >
-                      {children}
-                    </strong>
-                  ),
-                  a: ({ href, children }) => (
-                    <a
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        color: "var(--accent)",
-                        textDecoration: "underline",
-                      }}
-                    >
-                      {children}
-                    </a>
-                  ),
-                }}
-              />
-            </div>
+              {STATUS_LABEL[message.status]}
+            </span>
+          )}
+          {isUser && message.silentHint && (
+            <span
+              role="status"
+              style={{
+                fontFamily: "var(--font-data)",
+                fontSize: 8,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "var(--warning, #d4a843)",
+                alignSelf: "flex-end",
+                paddingRight: 4,
+                lineHeight: 1.2,
+                maxWidth: "100%",
+              }}
+            >
+              {message.silentHint}
+            </span>
           )}
         </div>
-        <span
-          style={{
-            fontFamily: "var(--font-data)",
-            fontSize: 10,
-            color: "var(--text-disabled)",
-            alignSelf: isUser ? "flex-end" : "flex-start",
-            paddingLeft: isUser ? 0 : 4,
-            paddingRight: isUser ? 4 : 0,
-          }}
-        >
-          {formatTime(message.timestamp)}
-        </span>
-        {isUser && message.status && (
-          <span
-            aria-live="polite"
-            style={{
-              fontFamily: "var(--font-data)",
-              fontSize: 8,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: STATUS_COLOR[message.status],
-              alignSelf: "flex-end",
-              paddingRight: 4,
-              lineHeight: 1,
-            }}
-          >
-            {STATUS_LABEL[message.status]}
-          </span>
-        )}
-        {isUser && message.silentHint && (
-          <span
-            role="status"
-            style={{
-              fontFamily: "var(--font-data)",
-              fontSize: 8,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: "var(--warning, #d4a843)",
-              alignSelf: "flex-end",
-              paddingRight: 4,
-              lineHeight: 1.2,
-              maxWidth: "100%",
-            }}
-          >
-            {message.silentHint}
-          </span>
-        )}
-      </div>
+      </MessagePrimitive.Root>
     </motion.div>
   );
 }

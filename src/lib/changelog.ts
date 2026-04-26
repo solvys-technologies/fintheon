@@ -9,6 +9,33 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T19:30:00",
+    agent: "claude-code",
+    summary:
+      "S42-T3 — Message render upgrade. (1) New BridgeStreamEvent types (frontend/types/bridge-stream.ts) with tool_call / citation / thinking / complete variants + reduceBridgeEvent fold helper for per-message activity accumulation. (2) MessagePrimitive composition shim (Root / Content / Footer / Activity / Actions) on both web and mobile -- mirrors the @assistant-ui/react MessagePrimitive shape so the bubble structure can be slotted today and swapped to the official runtime when it lands. (3) StreamdownText adapter wraps Streamdown (frontend keeps the existing slot system: catalyst-card / narrative-preview / psych-table / perf-table / vision-insight / tv-chart) and overlays inline [N] citation chip parsing via component overrides for p / li / td / th / strong / em / blockquote -- streaming caret stays at the tail. (4) CitationChip on web + mobile: numeric accent-bordered chip; click dispatches fintheon:artifact CustomEvent so T4 ArtifactPane can listen platform-wide. Lookup populated from activity.citations. (5) MessageFooter renders agent dot gen HH:MM:SS dot Ns dot N sources from the complete event; collapses gracefully when fields are absent. (6) AgentActivityRail (vertical web rail / horizontal collapsible mobile strip) renders tool_call rows with NothingFuse-style segmented progress (web reuses NothingFuse from frontend/components/shared without modifying it; mobile uses inline equivalent), citation rows, and expand/collapse thinking rows. Empty state hides the rail entirely so the bubble is unchanged when T1 is dark. (7) FintheonStreamingBubble + ChatMessageBubble reshaped around the primitive slots; ConsiliumMessage slotted inside MessagePrimitive.Root (layout=false to keep its row layout) while @mention parsing / AgentBadge / ContextInjectionBadge stay untouched. Take Note bookmark moves into MessagePrimitive.Actions. (8) Mobile ChatMessage swaps react-markdown for StreamdownText. Frontend adds @assistant-ui/react-streamdown^0.1.11; mobile adds it plus @assistant-ui/react^0.12.26. tsc + vite build clean on both surfaces.",
+    files: [
+      "frontend/types/bridge-stream.ts",
+      "frontend/components/chat/MessagePrimitive.tsx",
+      "frontend/components/chat/StreamdownText.tsx",
+      "frontend/components/chat/MessageFooter.tsx",
+      "frontend/components/chat/CitationChip.tsx",
+      "frontend/components/chat/AgentActivityRail.tsx",
+      "frontend/components/chat/FintheonStreamingBubble.tsx",
+      "frontend/components/chat/ChatMessageBubble.tsx",
+      "frontend/components/chat/parts/MessagePartRenderer.tsx",
+      "frontend/components/chat/parts/TextPart.tsx",
+      "frontend/components/consilium/ConsiliumMessage.tsx",
+      "mobile/components/chat/MessagePrimitive.tsx",
+      "mobile/components/chat/StreamdownText.tsx",
+      "mobile/components/chat/MessageFooter.tsx",
+      "mobile/components/chat/CitationChip.tsx",
+      "mobile/components/chat/AgentActivityRail.tsx",
+      "mobile/components/chat/ChatMessage.tsx",
+      "frontend/package.json",
+      "mobile/package.json",
+    ],
+  },
+  {
     date: "2026-04-25T18:00:00",
     agent: "claude-code",
     summary:

@@ -1,5 +1,8 @@
+// [claude-code 2026-04-25] S42-T3: thread citations through to TextPartRenderer
+//   so `[N]` markers route to CitationChip lookup.
 // [claude-code 2026-03-06] Composite renderer dispatching each MessagePart to its typed renderer
 import type { MessagePart, ToolResultPart } from "../types";
+import type { CitationEvent } from "../../../types/bridge-stream";
 import { TextPartRenderer } from "./TextPart";
 import { ReasoningPartRenderer } from "./ReasoningPart";
 import { ToolCallPartRenderer } from "./ToolCallPart";
@@ -7,11 +10,13 @@ import { ToolCallPartRenderer } from "./ToolCallPart";
 interface MessagePartRendererProps {
   parts: MessagePart[];
   isStreaming?: boolean;
+  citations?: readonly CitationEvent[];
 }
 
 export function MessagePartRenderer({
   parts,
   isStreaming,
+  citations,
 }: MessagePartRendererProps) {
   // Build lookup of tool-result parts keyed by toolInvocationId
   const resultMap = new Map<string, ToolResultPart>();
@@ -42,6 +47,7 @@ export function MessagePartRenderer({
                 key={key}
                 text={part.text}
                 isStreaming={isStreaming && i === lastTextIndex}
+                citations={citations}
               />
             );
           case "reasoning":
