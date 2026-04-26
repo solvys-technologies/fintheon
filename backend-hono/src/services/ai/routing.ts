@@ -20,7 +20,10 @@ export type TaskType =
   | "voice"
   | "structured-extraction";
 
-export type RoutingProvider = "anthropic" | "openrouter" | "hermes-sidecar";
+// [claude-code 2026-04-26] S35-T12: "openrouter" removed from RoutingProvider;
+// "anthropic" routes through VProxy (free Claude Code subscription),
+// "hermes-sidecar" routes through Ollama Cloud (qwen3.5:397b-cloud).
+export type RoutingProvider = "anthropic" | "hermes-sidecar";
 
 export interface RoutingRule {
   agent: AgentId;

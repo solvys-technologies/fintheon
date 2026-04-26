@@ -1,14 +1,15 @@
+// [claude-code 2026-04-26] S35-T12: OpenRouter dropped per TP — no paid APIs.
+// Active providers are all free: VProxy (claude-local), Hermes sidecar
+// (Qwen3.5:397b-cloud via ollama-hermes), Nous Research direct (nous-direct).
 // [claude-code 2026-04-23] Rollback: drop GitHub-backed inference provider type
-// [claude-code 2026-03-14] Default: OpenRouter (Nous) + Opus 4.6
 /**
  * Shared AI types for multi-provider architecture
- * OpenRouter (Nous subscription) + Claude Opus 4.6 primary
- * Hermes integration for P.I.C. agentic backend (OpenRouter Opus 4.6)
+ * Free chain: VProxy (Claude Code subscription) → Ollama Cloud via Hermes →
+ * Nous Research (Hermes-4 405B).
  */
 
 // Provider type discriminator
 export type AiProviderType =
-  | "openrouter"
   | "vercel-gateway"
   | "hermes"
   | "claude-local"

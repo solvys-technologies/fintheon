@@ -130,16 +130,16 @@ const HERMES_AGENTS: Record<
   },
 };
 
-// [claude-code 2026-04-21] S28: All sub-agents locked to Qwen3.5:397b-cloud via Hermes.
-// Harper toggles via HARPER_DEFAULT_PROVIDER=qwen|anthropic (default: anthropic).
-// [claude-code 2026-04-26] S35-T11: All Arbitrum seats also locked to
-// qwen3.5:397b-cloud via Ollama Cloud. DashScope removed (paid, no key).
-// resolveProvider() now returns 'ollama' for every Hermes-routed Qwen task;
-// OpenRouter remains reserved for harper-cao's Claude-Opus path.
+// [claude-code 2026-04-26] S35-T12: Every Hermes-routed agent — INCLUDING
+// harper-cao + cao-approval + cao-consolidation — now resolves to
+// qwen3.5:397b-cloud via Ollama Cloud. OpenRouter is no longer in the
+// resolution path. The legacy Claude-Opus OpenRouter rung was retired per
+// TP: "There shouldn't be any openrouter instances. They should all route
+// thru the ollama cloud provider via hermes."
 export const HERMES_TASK_MODEL_MAP: Record<string, string> = {
-  "harper-cao": "anthropic/claude-opus-4.7",
-  "cao-approval": "anthropic/claude-opus-4.7",
-  "cao-consolidation": "anthropic/claude-opus-4.7",
+  "harper-cao": "qwen3.5:397b-cloud",
+  "cao-approval": "qwen3.5:397b-cloud",
+  "cao-consolidation": "qwen3.5:397b-cloud",
   "pma-merged": "qwen3.5:397b-cloud",
   "prediction-market": "qwen3.5:397b-cloud",
   "futures-desk": "qwen3.5:397b-cloud",
@@ -156,18 +156,17 @@ export const HERMES_TASK_MODEL_MAP: Record<string, string> = {
   "arbitrum-seat-bear": "qwen3.5:397b-cloud",
 };
 
-// [claude-code 2026-04-26] S35-T11: Provider-routing abstraction. DashScope
-// removed. Any model id not in ARBITRUM_MODEL_PROVIDER_MAP defaults to
-// 'openrouter' — this preserves harper-cao's existing Claude-Opus OpenRouter
-// path verbatim.
-export type ArbitrumProvider = "ollama" | "groq" | "openrouter";
+// [claude-code 2026-04-26] S35-T12: Provider-routing abstraction collapsed
+// to ollama-only at the Hermes/Arbitrum layer. Groq retained as an explicit
+// alternate that callers can pin via ARBITRUM_MODEL_PROVIDER_MAP if needed.
+export type ArbitrumProvider = "ollama" | "groq";
 
 const ARBITRUM_MODEL_PROVIDER_MAP: Record<string, ArbitrumProvider> = {
   "qwen3.5:397b-cloud": "ollama",
 };
 
 export function resolveProvider(modelId: string): ArbitrumProvider {
-  return ARBITRUM_MODEL_PROVIDER_MAP[modelId] ?? "openrouter";
+  return ARBITRUM_MODEL_PROVIDER_MAP[modelId] ?? "ollama";
 }
 
 /**

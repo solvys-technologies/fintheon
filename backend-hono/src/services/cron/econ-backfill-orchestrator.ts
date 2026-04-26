@@ -1,7 +1,9 @@
 // [claude-code 2026-04-24] S34-T10: backfill orchestrator cron.
 // Monday 02:00 ET — claims 2 oldest pending slices, pulls raw econ events via free-tier LLM,
 // queues raw, then batch-normalizes via Harper and upserts into economic_events idempotently.
-// Gated on ECON_BACKFILL_ENABLED; no-op if OPENROUTER_API_KEY missing (warn, don't crash).
+// [claude-code 2026-04-26] S35-T12: OpenRouter gate removed; runs on the
+// Strands free chain (VProxy → Ollama Cloud → Nous).
+// Gated on ECON_BACKFILL_ENABLED only.
 
 import cron from "node-cron";
 import { createLogger } from "../../lib/logger.js";
@@ -165,10 +167,10 @@ export async function runBackfillTickOnce(): Promise<{
 }> {
   lastRunAt = new Date().toISOString();
 
-  if (!process.env.OPENROUTER_API_KEY) {
-    log.warn("OPENROUTER_API_KEY missing — skipping backfill tick");
-    return { processed: 0, failed: 0 };
-  }
+  // [claude-code 2026-04-26] S35-T12: OpenRouter gating removed. Backfill
+  // runs on the Strands free chain (VProxy → Ollama Cloud → Nous); no key
+  // dependency. The orchestrator's downstream callers handle their own
+  // provider availability.
 
   const slices = await claimSlices(SLICES_PER_TICK);
   if (slices.length === 0) {

@@ -351,11 +351,11 @@ async function runLlmExtraction(
   bodyText: string,
   budget: number,
 ): Promise<LlmExtractionOutcome> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    throw new OperatorLlmUnavailableError("OPENROUTER_API_KEY not set");
-  }
-
+  // [claude-code 2026-04-26] S35-T12: OpenRouter stripped — extraction now
+  // routes through invokeAgent (VProxy → Ollama Cloud → Nous, all free).
+  // Budget check retained as a no-op safety: cost is effectively $0 on the
+  // free chain, but we still track + clamp for parity with caller contracts.
+  const { invokeAgent } = await import("../strands/invoke-helper.js");
   const prompt = promptForExtract(
     opts.objective,
     opts.url,
@@ -363,44 +363,29 @@ async function runLlmExtraction(
     bodyText,
   );
 
-  const response = await fetch(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "anthropic/claude-haiku-4-5",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 800,
-        temperature: 0,
-      }),
-      signal: AbortSignal.timeout(20_000),
-    },
-  );
-
-  if (!response.ok) {
-    throw new Error(`OpenRouter HTTP ${response.status}`);
+  let content: string;
+  try {
+    const out = await invokeAgent({
+      systemPrompt:
+        "You are a strict JSON extractor. Return only the requested JSON object — no markdown, no commentary.",
+      userPrompt: prompt,
+    });
+    content = out.text ?? "";
+  } catch (err) {
+    throw new OperatorLlmUnavailableError(
+      `Strands chain failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
 
-  const json = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-    usage?: { prompt_tokens?: number; completion_tokens?: number };
-  };
-
-  const content = json.choices?.[0]?.message?.content ?? "";
-  const input_tokens =
-    json.usage?.prompt_tokens ?? Math.ceil(prompt.length / 4);
-  const output_tokens =
-    json.usage?.completion_tokens ?? Math.ceil(content.length / 4);
-  const cost_usd = Number(
-    (
-      (input_tokens / 1_000_000) * HAIKU_IN_PER_MTOK +
-      (output_tokens / 1_000_000) * HAIKU_OUT_PER_MTOK
-    ).toFixed(6),
-  );
+  // Token counts approximated from char length since the Strands chain
+  // doesn't surface per-call usage; this preserves the audit-row shape.
+  const input_tokens = Math.ceil(prompt.length / 4);
+  const output_tokens = Math.ceil(content.length / 4);
+  const cost_usd = 0;
+  void HAIKU_IN_PER_MTOK;
+  void HAIKU_OUT_PER_MTOK;
+  void input_tokens;
+  void output_tokens;
 
   if (cost_usd > budget) {
     throw new OperatorBudgetExceededError(opts.url, budget, cost_usd);

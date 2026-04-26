@@ -169,14 +169,15 @@ export const resolveModelKey = (value?: string): AiModelKey | undefined => {
   return modelAliases[value.toLowerCase()];
 };
 
-// Determine primary provider from env
+// [claude-code 2026-04-26] S35-T12: openrouter primary path stripped — VProxy
+// (claude-local) is the default; AI_PRIMARY_PROVIDER can override to hermes
+// (Ollama Cloud) or vercel-gateway.
 const getPrimaryProvider = (): AiProviderType => {
   const envValue = getEnv("AI_PRIMARY_PROVIDER");
   if (envValue === "vercel-gateway") return "vercel-gateway";
-  if (envValue === "openrouter") return "openrouter";
   if (envValue === "hermes") return "hermes";
-  // Default to openrouter if API key is present
-  return getEnv("OPENROUTER_API_KEY") ? "openrouter" : "vercel-gateway";
+  if (envValue === "ollama-hermes") return "ollama-hermes";
+  return "claude-local";
 };
 
 const enableProviderFallback =
@@ -229,7 +230,7 @@ export const defaultAiConfig: AiConfig = {
       id: "anthropic/claude-sonnet-4",
       displayName: "Claude Sonnet 4.5 (OpenRouter)",
       provider: "openai-compatible",
-      providerType: "openrouter",
+      providerType: "ollama-hermes",
       apiKeyEnv: "OPENROUTER_API_KEY",
       baseUrl: openRouterBaseUrl,
       temperature: 0.4,
@@ -245,7 +246,7 @@ export const defaultAiConfig: AiConfig = {
       id: "x-ai/grok-4",
       displayName: "Grok 4.1 (OpenRouter)",
       provider: "openai-compatible",
-      providerType: "openrouter",
+      providerType: "ollama-hermes",
       apiKeyEnv: "OPENROUTER_API_KEY",
       baseUrl: openRouterBaseUrl,
       temperature: 0.3,
@@ -261,7 +262,7 @@ export const defaultAiConfig: AiConfig = {
       id: "x-ai/grok-4.20",
       displayName: "Grok 4.20 (OpenRouter / Scoring Fallback)",
       provider: "openai-compatible",
-      providerType: "openrouter",
+      providerType: "ollama-hermes",
       apiKeyEnv: "OPENROUTER_API_KEY",
       baseUrl: openRouterBaseUrl,
       temperature: 0.25,
@@ -277,7 +278,7 @@ export const defaultAiConfig: AiConfig = {
       id: "anthropic/claude-opus-4.6",
       displayName: "Claude Opus 4.6 (OpenRouter / Nous)",
       provider: "openai-compatible",
-      providerType: "openrouter",
+      providerType: "ollama-hermes",
       apiKeyEnv: "OPENROUTER_API_KEY",
       baseUrl: openRouterBaseUrl,
       temperature: 0.4,
@@ -295,7 +296,7 @@ export const defaultAiConfig: AiConfig = {
       id: "anthropic/claude-opus-4.6",
       displayName: "Claude Opus 4.6 (Hermes CAO)",
       provider: "openai-compatible",
-      providerType: "openrouter",
+      providerType: "ollama-hermes",
       apiKeyEnv: "OPENROUTER_API_KEY",
       baseUrl: openRouterBaseUrl,
       temperature: 0.3,
@@ -311,7 +312,7 @@ export const defaultAiConfig: AiConfig = {
       id: "anthropic/claude-opus-4.6",
       displayName: "Claude Opus 4.6 (Hermes Research)",
       provider: "openai-compatible",
-      providerType: "openrouter",
+      providerType: "ollama-hermes",
       apiKeyEnv: "OPENROUTER_API_KEY",
       baseUrl: openRouterBaseUrl,
       temperature: 0.4,
@@ -327,7 +328,7 @@ export const defaultAiConfig: AiConfig = {
       id: "anthropic/claude-opus-4.6",
       displayName: "Claude Opus 4.6 (Hermes Fast)",
       provider: "openai-compatible",
-      providerType: "openrouter",
+      providerType: "ollama-hermes",
       apiKeyEnv: "OPENROUTER_API_KEY",
       baseUrl: openRouterBaseUrl,
       temperature: 0.25,
@@ -343,7 +344,7 @@ export const defaultAiConfig: AiConfig = {
       id: "anthropic/claude-opus-4.6",
       displayName: "Claude Opus 4.6 (Hermes Realtime)",
       provider: "openai-compatible",
-      providerType: "openrouter",
+      providerType: "ollama-hermes",
       apiKeyEnv: "OPENROUTER_API_KEY",
       baseUrl: openRouterBaseUrl,
       temperature: 0.3,

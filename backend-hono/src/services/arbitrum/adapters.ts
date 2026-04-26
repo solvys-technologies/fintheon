@@ -1,8 +1,8 @@
-// [claude-code 2026-04-26] S35-T11: Provider adapters for Arbitrum seats.
-// All seats route through Ollama Cloud (qwen3.5:397b-cloud). Groq remains
-// available as an explicit alternate provider; DashScope was removed (paid,
-// no key). Harper-cao's OpenRouter path lives in hermes-handler.ts and is
-// NOT touched by this module.
+// [claude-code 2026-04-26] S35-T12: Provider adapters for Arbitrum seats.
+// Every seat routes through Ollama Cloud (qwen3.5:397b-cloud). Groq remains
+// available as an explicit alternate provider. OpenRouter has been removed
+// from this layer — every Hermes-routed agent (including harper-cao) now
+// resolves to Ollama Cloud.
 
 import { resolveProvider, type ArbitrumProvider } from "../hermes-service.js";
 
@@ -106,8 +106,8 @@ async function groqChat(req: SeatChatRequest): Promise<string> {
 /**
  * Route a chat request to the seat's resolved provider. Ollama Cloud is the
  * primary path for every Arbitrum seat (qwen3.5:397b-cloud). Groq is kept as
- * an explicit alternate when a model id is mapped to it. Never touches
- * OpenRouter — that path is reserved for harper-cao.
+ * an explicit alternate when a model id is mapped to it via
+ * ARBITRUM_MODEL_PROVIDER_MAP. OpenRouter has been removed entirely.
  */
 export async function seatChat(req: SeatChatRequest): Promise<SeatChatResult> {
   const provider = resolveProvider(req.modelId);
@@ -119,11 +119,12 @@ export async function seatChat(req: SeatChatRequest): Promise<SeatChatResult> {
         return ollamaChat(req);
       case "groq":
         return groqChat(req);
-      case "openrouter":
-      default:
+      default: {
+        const exhaustive: never = provider;
         throw new ProviderUnavailable(
-          `Arbitrum seats cannot use provider=${provider}; harper-cao path is protected`,
+          `Unknown Arbitrum provider: ${exhaustive as string}`,
         );
+      }
     }
   };
 

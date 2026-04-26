@@ -21,10 +21,11 @@ export interface BackfillSlice {
 }
 
 /** Raw LLM output for one slice, stored verbatim in econ_backfill_queue.raw_payload. */
+// [claude-code 2026-04-26] S35-T12: openrouter-llama / openrouter-mistral
+// dropped — no paid APIs. Slices now sourced from Hermes (Ollama Cloud
+// Qwen3.5:397b-cloud) and FRED.
 export interface RawSlicePayload {
   source:
-    | "openrouter-llama"
-    | "openrouter-mistral"
     | "hermes-qwen"
     | "hermes-qwen-fallback"
     | "fred"

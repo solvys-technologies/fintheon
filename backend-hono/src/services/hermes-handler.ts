@@ -1,4 +1,10 @@
-// [claude-code 2026-04-19] S27-T9 W2e: Live Smart Model Routing — OpenRouter call now picks the per-agent model via selectModel() + llmCall() (budget-aware degrade, telemetry to routing_decisions).
+// [claude-code 2026-04-26] S35-T12: OpenRouter completely stripped per TP —
+//   no paid APIs. Fallback chain is now VProxy (free Claude Code subscription)
+//   → Ollama Cloud (qwen3.5:397b-cloud via Hermes sidecar) → Nous Research
+//   (free Hermes-4 405B). All three reachable through invokeAgent().
+// [claude-code 2026-04-19] S27-T9 W2e (legacy): Smart Model Routing originally
+//   wrapped OpenRouter — replaced by invokeAgent's chain so this file no longer
+//   touches openrouter.ai.
 // [claude-code 2026-03-14] Hermes routes to OpenRouter (Nous subscription) + Claude Sonnet 4.6
 // [claude-code 2026-03-14] Model routing fix: default→Sonnet 4.6, thinkHarder→Opus via chat.ts
 // [claude-code 2026-03-14] Fintheon rebrand: Weekly Tribune intent, updated agent display names (Consul/Censori/Herald)
@@ -27,9 +33,7 @@ import { getContextForAgent } from "./agent-context-bank-service.js";
 import type { AgentMemoryEntry } from "./agent-context-bank-service.js";
 import { createLogger } from "../lib/logger.js";
 import { checkVProxyHealth, isVProxyEnabled } from "./strands/index.js";
-import { llmCall } from "./ai/llm-call.js";
-import { toRoutingAgent } from "./ai/agent-map.js";
-import type { TaskType } from "./ai/routing.js";
+import { invokeAgent } from "./strands/invoke-helper.js";
 
 const log = createLogger("Hermes");
 
@@ -529,7 +533,6 @@ ${agent === "herald" ? "- News sentiment analysis\n- Social signal detection\n- 
 *Hermes local processing is active.*`;
 }
 
-const OPENROUTER_OPUS_MODEL = "anthropic/claude-sonnet-4-6";
 let hermesAvailable = false;
 
 export function isHermesAvailable(): boolean {
@@ -687,124 +690,54 @@ export async function handleHermesChat(
       }
     }
   } catch (cliErr) {
-    log.warn("Harper provider failed, falling back to OpenRouter", {
+    log.warn("Harper provider failed, falling back to Strands chain", {
       error: String(cliErr),
     });
   }
 
-  // Fallback: OpenRouter via Smart Model Routing (T9 W2e) — per-agent model,
-  //   budget-aware degrade, telemetry to routing_decisions.
-  const apiKey = process.env.OPENROUTER_API_KEY ?? "";
-  const baseUrl = "https://openrouter.ai/api/v1";
-
-  if (!apiKey) {
-    log.warn(
-      "OPENROUTER_API_KEY not set and Claude CLI failed, using local fallback",
-    );
-    return generateLocalResponse(request, agentInfo);
-  }
-
-  const routingAgent = toRoutingAgent(agentInfo.agent);
-  const routingTask = agentInfoToTaskType(agentInfo.intent);
-
+  // [claude-code 2026-04-26] S35-T12: OpenRouter fallback removed. invokeAgent
+  // walks the free chain: VProxy → Ollama Cloud (qwen3.5:397b-cloud via
+  // Hermes) → Nous Research (free Hermes-4 405B). VProxy was already tried
+  // above for harper-cao, so the retry there fails fast and the chain
+  // proceeds to Ollama Cloud.
   try {
-    const outcome = await llmCall({
-      agent: routingAgent,
-      task: routingTask,
-      conversationId: request.conversationId ?? "adhoc",
-      userId: request.userId,
-      invoke: async (rule) => {
-        log.info("Calling OpenRouter via selectModel", {
-          agent: routingAgent,
-          model: rule.model,
-          provider: rule.provider,
-        });
-        const response = await fetch(`${baseUrl}/chat/completions`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-            "HTTP-Referer":
-              process.env.OPENROUTER_APP_URL ??
-              "https://fintheon-solvys.vercel.app",
-            "X-Title": process.env.OPENROUTER_APP_NAME ?? "Fintheon-AI-Gateway",
-          },
-          body: JSON.stringify({
-            model: toOpenRouterModel(rule.model),
-            messages,
-            max_tokens: 8192,
-          }),
-        });
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`OpenRouter ${response.status}: ${errorText}`);
-        }
-        const data = (await response.json()) as {
-          choices?: { message?: { content?: string } }[];
-          usage?: { prompt_tokens?: number; completion_tokens?: number };
-        };
-        const content = data.choices?.[0]?.message?.content ?? "";
-        return {
-          result: content,
-          input_tokens: data.usage?.prompt_tokens,
-          output_tokens: data.usage?.completion_tokens,
-          user_id: request.userId,
-        };
-      },
+    const userMessage = messages
+      .filter((m) => m.role === "user")
+      .map((m) => (typeof m.content === "string" ? m.content : "[multimodal]"))
+      .join("\n");
+    const { text } = await invokeAgent({
+      systemPrompt,
+      userPrompt: userMessage,
     });
-
-    const content = outcome.result;
-    if (!content) {
-      log.warn("Empty response from OpenRouter, using local fallback");
-      return generateLocalResponse(request, agentInfo);
+    if (text) {
+      log.info("Strands chain response received", {
+        agent: agentInfo.agent,
+        preview: text.substring(0, 50),
+      });
+      return {
+        content: text,
+        agent: agentInfo.agent,
+        confidence: agentInfo.confidence,
+        metadata: {
+          intent: agentInfo.intent,
+          symbols: extractSymbols(request.message),
+          injections: injectionAudit,
+        },
+      };
     }
-
-    log.info("OpenRouter response received", {
-      agent: routingAgent,
-      model: outcome.rule.model,
-      latency_ms: outcome.latency_ms,
-      cost_usd: outcome.cost_usd,
-      degraded: outcome.degraded,
-    });
-
-    return {
-      content,
-      agent: agentInfo.agent,
-      confidence: agentInfo.confidence,
-      metadata: {
-        intent: agentInfo.intent,
-        symbols: extractSymbols(request.message),
-        injections: injectionAudit,
-      },
-    };
+    log.warn("Strands chain returned empty, using local fallback");
+    return generateLocalResponse(request, agentInfo);
   } catch (error) {
-    log.error("OpenRouter request failed", { error: String(error) });
+    log.error("Strands chain failed", { error: String(error) });
     return generateLocalResponse(request, agentInfo);
   }
-}
-
-// Anthropic models routed through OpenRouter need the `anthropic/` prefix.
-function toOpenRouterModel(model: string): string {
-  if (model.includes("/")) return model;
-  if (model.startsWith("claude-")) return `anthropic/${model}`;
-  return model;
-}
-
-// Map hermes intent buckets → routing TaskType so the router can specialize on task.
-function agentInfoToTaskType(intent: string): TaskType | undefined {
-  if (intent === "prediction-market") return "probability";
-  if (intent === "news-sentiment") return "news";
-  if (intent === "futures-trade" || intent === "technical") return "tape";
-  if (intent === "fed-analysis" || intent === "political-analysis") {
-    return "macro";
-  }
-  return undefined;
 }
 
 /**
  * Initialize Hermes agent on startup:
  * 1. Optionally launch Hermes gateway process if configured
- * 2. Warm up OpenRouter (Sonnet 4.6) connection with a Harper (CAO) ping
+ * 2. Warm up VProxy (free Claude Code subscription) connection
+ *    [claude-code 2026-04-26] OpenRouter warm-up removed — no paid APIs.
  */
 export async function initHermesAgent(): Promise<void> {
   const hermesEnabled = process.env.HERMES_ENABLED !== "false";
@@ -880,58 +813,8 @@ export async function initHermesAgent(): Promise<void> {
     }
   }
 
-  const apiKey = process.env.OPENROUTER_API_KEY ?? "";
-  if (!apiKey) {
-    log.info("OPENROUTER_API_KEY not set — skipping OpenRouter warm-up");
-    return;
-  }
-
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15_000);
-    const response = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer":
-            process.env.OPENROUTER_APP_URL ??
-            "https://fintheon-solvys.vercel.app",
-          "X-Title": process.env.OPENROUTER_APP_NAME ?? "Fintheon-AI-Gateway",
-        },
-        body: JSON.stringify({
-          model: OPENROUTER_OPUS_MODEL,
-          messages: [
-            {
-              role: "system",
-              content: "You are Harper, CAO of Priced In Capital.",
-            },
-            {
-              role: "user",
-              content:
-                "[SYSTEM] Agent initialization ping — confirm availability.",
-            },
-          ],
-          max_tokens: 64,
-        }),
-        signal: controller.signal,
-      },
-    );
-    clearTimeout(timeout);
-    if (response.ok) {
-      log.info("OpenRouter warm-up complete (harper-cao ready)");
-    } else {
-      log.warn("OpenRouter warm-up failed (non-fatal)", {
-        status: response.status,
-      });
-    }
-  } catch (error) {
-    log.warn("OpenRouter warm-up failed (non-fatal)", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
+  // [claude-code 2026-04-26] OpenRouter warm-up removed. The Strands chain
+  // (VProxy → Ollama Cloud → Nous) lazy-warms on first request via invokeAgent.
 }
 
 /**

@@ -1,6 +1,8 @@
-// [claude-code 2026-03-14] Voice sentiment via OpenRouter (Opus 4.6); no ANTHROPIC_API_KEY
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const SENTIMENT_MODEL = "anthropic/claude-opus-4.6";
+// [claude-code 2026-04-26] S35-T12: OpenRouter stripped per TP — voice
+// sentiment now routes through invokeAgent (VProxy → Ollama Cloud → Nous,
+// all free). No more OPENROUTER_API_KEY dependency.
+// [claude-code 2026-03-14] (legacy) Voice sentiment via OpenRouter (Opus 4.6).
+import { invokeAgent } from "./strands/invoke-helper.js";
 
 export interface SentimentAnalysisInput {
   transcript: string;
@@ -13,7 +15,7 @@ export interface SentimentAnalysisResult {
   keywords: string[];
   tiltIndicators: string[];
   summary: string;
-  provider: "openrouter" | "fallback";
+  provider: "strands" | "fallback";
 }
 
 const TILT_KEYWORDS = [
@@ -70,13 +72,6 @@ export async function analyzeSentiment(
     };
   }
 
-  if (!OPENROUTER_API_KEY) {
-    console.warn(
-      "[VoiceSentiment] No OPENROUTER_API_KEY, using fallback keyword detection",
-    );
-    return fallbackSentiment(input.transcript);
-  }
-
   try {
     const systemPrompt = `You are a trading psychology sentiment analyzer. Analyze the trader's speech for emotional state and tilt indicators.
 
@@ -101,44 +96,21 @@ Tilt indicators to watch for:
       ? `Context: ${input.context}\n\nTrader speech: "${input.transcript}"`
       : `Trader speech: "${input.transcript}"`;
 
-    const response = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer":
-            process.env.OPENROUTER_APP_URL ??
-            "https://fintheon-solvys.vercel.app",
-          "X-Title": process.env.OPENROUTER_APP_NAME ?? "Fintheon-AI-Gateway",
-        },
-        body: JSON.stringify({
-          model: SENTIMENT_MODEL,
-          max_tokens: 300,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userMessage },
-          ],
-        }),
-      },
-    );
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error(
-        `[VoiceSentiment] OpenRouter error (${response.status}):`,
-        errText,
-      );
-      return fallbackSentiment(input.transcript);
-    }
-
-    const data = (await response.json()) as {
-      choices?: { message?: { content?: string } }[];
-    };
-
-    const text = data.choices?.[0]?.message?.content?.trim() ?? "";
-    const parsed = JSON.parse(text) as {
+    const { text } = await invokeAgent({
+      systemPrompt,
+      userPrompt: userMessage,
+    });
+    const cleaned = text
+      .trim()
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/i, "");
+    const firstBrace = cleaned.indexOf("{");
+    const lastBrace = cleaned.lastIndexOf("}");
+    const jsonSlice =
+      firstBrace >= 0 && lastBrace > firstBrace
+        ? cleaned.slice(firstBrace, lastBrace + 1)
+        : cleaned;
+    const parsed = JSON.parse(jsonSlice) as {
       sentiment: number;
       confidence: number;
       keywords: string[];
@@ -154,7 +126,7 @@ Tilt indicators to watch for:
         ? parsed.tiltIndicators
         : [],
       summary: parsed.summary || "Analysis complete",
-      provider: "openrouter",
+      provider: "strands",
     };
   } catch (err) {
     console.error("[VoiceSentiment] Analysis failed, using fallback:", err);

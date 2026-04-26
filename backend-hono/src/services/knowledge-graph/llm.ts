@@ -83,58 +83,17 @@ export async function callHarperForProposals(
   userId: string,
   surfaces: SurfaceSummary[],
 ): Promise<ProposalDraft[]> {
-  const apiKey = process.env.OPENROUTER_API_KEY ?? "";
-  if (!apiKey) {
-    console.warn(`${LOG} OPENROUTER_API_KEY not set; skipping LLM call`);
-    return [];
-  }
-
-  const baseUrl = "https://openrouter.ai/api/v1";
+  // [claude-code 2026-04-26] S35-T12: OpenRouter stripped — proposals route
+  // through invokeAgent (VProxy → Ollama Cloud → Nous, all free).
+  const { invokeAgent } = await import("../strands/invoke-helper.js");
   const userPayload = JSON.stringify(surfaces.slice(0, 8));
 
   try {
-    const outcome = await llmCall<string>({
-      agent: "harper",
-      task: "chat",
-      conversationId: `kg-proposer-${userId}`,
-      userId,
-      invoke: async (rule) => {
-        const response = await fetch(`${baseUrl}/chat/completions`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-            "HTTP-Referer":
-              process.env.OPENROUTER_APP_URL ??
-              "https://fintheon-solvys.vercel.app",
-            "X-Title": process.env.OPENROUTER_APP_NAME ?? "Fintheon-AI-Gateway",
-          },
-          body: JSON.stringify({
-            model: rule.model,
-            messages: [
-              { role: "system", content: PROPOSER_SYSTEM_PROMPT },
-              { role: "user", content: userPayload },
-            ],
-            max_tokens: 1024,
-            temperature: 0.4,
-          }),
-        });
-        if (!response.ok) {
-          throw new Error(`OpenRouter ${response.status}`);
-        }
-        const data = (await response.json()) as {
-          choices?: { message?: { content?: string } }[];
-          usage?: { prompt_tokens?: number; completion_tokens?: number };
-        };
-        return {
-          result: data.choices?.[0]?.message?.content ?? "",
-          input_tokens: data.usage?.prompt_tokens,
-          output_tokens: data.usage?.completion_tokens,
-        };
-      },
+    const { text } = await invokeAgent({
+      systemPrompt: PROPOSER_SYSTEM_PROMPT,
+      userPrompt: userPayload,
     });
-
-    return parseProposalArray(outcome.result);
+    return parseProposalArray(text ?? "");
   } catch (err) {
     console.error(`${LOG} LLM call failed for user ${userId}:`, err);
     return [];
