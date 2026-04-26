@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T18:30:00",
+    agent: "claude-code",
+    summary:
+      "S35-T11: All Hermes agents + Arbitrum seats locked to qwen3.5:397b-cloud via Ollama Cloud. DashScope provider stripped from the codebase (paid + no key). HERMES_TASK_MODEL_MAP now points every arbitrum-seat-* key to qwen3.5:397b-cloud; ARBITRUM_MODEL_PROVIDER_MAP collapsed to a single ollama entry; ArbitrumProvider type narrowed to ollama|groq|openrouter. seats.ts: all 5 seats use SEAT_MODEL constant; MoA L1 drafters share the same model — divergence comes from independent samples at temperature 0.8. Removed dashscopeChat() + dashscope/groq fallback branch in adapters.ts. CLAUDE.md Arbitrum table updated.",
+    files: [
+      "backend-hono/src/services/hermes-service.ts",
+      "backend-hono/src/services/arbitrum/seats.ts",
+      "backend-hono/src/services/arbitrum/adapters.ts",
+      "CLAUDE.md",
+    ],
+  },
+  {
     date: "2026-04-25T19:10:00",
     agent: "claude-code",
     summary:
