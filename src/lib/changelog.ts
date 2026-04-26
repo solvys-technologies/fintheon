@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T22:50:00",
+    agent: "claude-code",
+    summary:
+      "v5.32.3 — Dashboard split polish + TopHeader reorder. Removed the gold needle divider between the Brief and the Day Plan column (parent container now provides the only border). Brief/Plan split is true 50/50 (both flex-1). Right column header replaced 'Today's Plan' / 'Day Card' pill with the live day-of-week (e.g. SUNDAY) rendered through the same gold KanbanTitle as the Brief side. DayCard gained a `bare` prop that drops its inner bg/rounded/p-3 so the content stretches flush — used by MainDashboard; Sanctum keeps the surfaced look. PanelToggleGroup wrapper is transparent (no bg, no border, no rounded-lg, no px-1). TopHeader reordered per TP: PanelToggleGroup → iFrame/browser dropdown → VIX → power/chat/voice/heartbeat/bulletin/ivScore. Platform slot rendered inline before VIX; the in-loop platform branch is gone, map skips id==='platform'. Note for TP: no current trading plan is correct — useDayPlan returns null until the S45 backend publishes a plan row, so DayCard renders 'No plan published for today.' That populates once the day-plan brief-splice cron fires.",
+    files: [
+      "frontend/components/executive/MainDashboard.tsx",
+      "frontend/components/narrative/DayCard.tsx",
+      "frontend/components/layout/PanelToggleGroup.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "package.json",
+      "scripts/fintheon-update.sh",
+    ],
+  },
+  {
     date: "2026-04-26T22:40:00",
     agent: "claude-code",
     summary:

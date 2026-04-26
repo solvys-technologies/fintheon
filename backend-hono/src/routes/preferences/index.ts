@@ -21,6 +21,21 @@ const THEME_VALUES = [
 
 const SEVERITY_VALUES = ["low", "medium", "high", "critical"] as const;
 
+// [claude-code 2026-04-26] S46: RiskFlow filter selections persist server-side so
+// the same severity+bucket choices apply across desktop, mobile, and web for one user.
+const RISKFLOW_BUCKETS = [
+  "OSINT",
+  "General",
+  "Commentary",
+  "Econ",
+  "Geopolitical",
+] as const;
+
+const riskflowFiltersSchema = z.object({
+  severities: z.array(z.enum(SEVERITY_VALUES)).default([]),
+  buckets: z.array(z.enum(RISKFLOW_BUCKETS)).default([]),
+});
+
 const notificationsSchema = z.object({
   rth: z.boolean(),
   extendedHours: z.boolean(),
