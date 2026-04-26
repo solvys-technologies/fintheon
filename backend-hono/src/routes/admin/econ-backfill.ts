@@ -7,6 +7,7 @@
 
 import { Hono } from "hono";
 import { runBackfillTickOnce } from "../../services/cron/econ-backfill-orchestrator.js";
+import { bridgeRecentActualsToEconPrints } from "../../services/econ/bridge-actuals.js";
 import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger("EconBackfillAdmin");
@@ -56,12 +57,42 @@ export function createEconBackfillRoutes() {
       if (tick.processed === 0 && tick.failed === 0) break;
     }
 
+    // Bridge any newly-populated economic_events.actual rows into econ_prints
+    // so /api/econ/synthesize (and EconEventCard history rows) can read them.
+    const bridge = await bridgeRecentActualsToEconPrints({ windowDays: 35 });
+
     log.info("Backfill drain complete", {
       ticks,
       totalProcessed,
       totalFailed,
+      bridge,
     });
-    return c.json({ ok: true, ticks, totalProcessed, totalFailed });
+    return c.json({
+      ok: true,
+      ticks,
+      totalProcessed,
+      totalFailed,
+      bridge,
+    });
+  });
+
+  // POST /api/admin/econ/bridge-actuals { windowDays?: number }
+  // One-shot: copy economic_events rows with actual IS NOT NULL into econ_prints
+  // for the given window, deduping on (headline, printed_at::date).
+  router.post("/bridge-actuals", async (c) => {
+    let body: { windowDays?: unknown } = {};
+    try {
+      body = await c.req.json();
+    } catch {
+      // empty body OK
+    }
+    const requested =
+      typeof body.windowDays === "number" && Number.isFinite(body.windowDays)
+        ? Math.floor(body.windowDays)
+        : 35;
+    const windowDays = Math.max(1, Math.min(requested, 365));
+    const result = await bridgeRecentActualsToEconPrints({ windowDays });
+    return c.json({ ok: true, ...result });
   });
 
   return router;
