@@ -1,7 +1,8 @@
 // [claude-code 2026-04-26] S45-T2: StreakBadge — Doto numeral, gold pulse on
-//   milestone crossings (5/10/21/50). Pulse uses solvys-transitions t-badge
-//   keyframe on the inline ring. The numeral itself reuses DigitGroup so it
-//   matches every other Doto count in the app (IV stack, RiskFlow card, etc.).
+//   milestone crossings (5/10/21/50). Detects milestone by watching the streak
+//   count change and firing the pulse only when the new value HITS one of the
+//   milestone numbers (i.e. green-day landed exactly on it). Reuses DigitGroup
+//   so the count matches every other Doto count in the app.
 import { useEffect, useRef, useState } from "react";
 import { DigitGroup } from "../shared/DigitGroup";
 
@@ -10,8 +11,6 @@ const MILESTONES = [5, 10, 21, 50] as const;
 interface StreakBadgeProps {
   /** Current green-day streak. */
   current: number;
-  /** Most recent milestone crossed — pulse fires when this changes. */
-  lastMilestone?: number | null;
   /** Numeral font size in px. Default 18. */
   fontSize?: number;
   className?: string;
@@ -19,25 +18,26 @@ interface StreakBadgeProps {
 
 export function StreakBadge({
   current,
-  lastMilestone = null,
   fontSize = 18,
   className,
 }: StreakBadgeProps) {
-  const previousMilestone = useRef<number | null>(lastMilestone);
+  const previous = useRef<number | null>(null);
   const [pulsing, setPulsing] = useState(false);
 
   useEffect(() => {
-    if (lastMilestone == null) return;
-    if (previousMilestone.current === lastMilestone) return;
-    if (!MILESTONES.includes(lastMilestone as (typeof MILESTONES)[number])) {
-      previousMilestone.current = lastMilestone;
-      return;
+    const prev = previous.current;
+    previous.current = current;
+    if (prev == null) return; // first paint: don't pulse
+    if (current === prev) return;
+    if (
+      current > prev &&
+      MILESTONES.includes(current as (typeof MILESTONES)[number])
+    ) {
+      setPulsing(true);
+      const t = window.setTimeout(() => setPulsing(false), 1400);
+      return () => window.clearTimeout(t);
     }
-    previousMilestone.current = lastMilestone;
-    setPulsing(true);
-    const t = window.setTimeout(() => setPulsing(false), 1400);
-    return () => window.clearTimeout(t);
-  }, [lastMilestone]);
+  }, [current]);
 
   return (
     <span

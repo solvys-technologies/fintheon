@@ -1,13 +1,13 @@
 // [claude-code 2026-04-26] S45-T2: useDriftStatus — GET /api/day-plan/drift-status,
 //   60s poll. Drives the Strategium header DriftIndicator pill.
 import { useState, useEffect, useRef } from "react";
-import type { DriftStatusResponse } from "../types/day-plan";
+import type { DriftStatus } from "../types/day-plan";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const POLL_INTERVAL = 60_000;
 
 export function useDriftStatus() {
-  const [data, setData] = useState<DriftStatusResponse | null>(null);
+  const [data, setData] = useState<DriftStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -25,7 +25,7 @@ export function useDriftStatus() {
           }
           return;
         }
-        const json = (await res.json()) as DriftStatusResponse;
+        const json = (await res.json()) as DriftStatus;
         if (!cancelled) {
           setData(json);
           setError(null);

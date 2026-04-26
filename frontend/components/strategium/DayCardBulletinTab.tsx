@@ -1,7 +1,8 @@
 // [claude-code 2026-04-26] S45-T2: DayCardBulletinTab — 5 rows Mon–Fri preview
 //   inside the StickyBulletin "Day Card" tab. Each row: [DAY] [IV (Doto)]
 //   [N windows] [event truncated]. Tap row scrolls Sanctum DayCard into view.
-//   NO expansion, NO modal, NO inline detail. Dividers = FadingRuler.
+//   NO expansion, NO modal, NO inline detail. Dividers = FadingRuler. Field
+//   names mirror T1 backend WeekDayEntry: day / ivScore / windowCount / eventName.
 import { useDayPlanWeek } from "../../hooks/useDayPlanWeek";
 import { FadingRuler } from "../shared/FadingRuler";
 import { DigitGroup } from "../shared/DigitGroup";
@@ -20,7 +21,7 @@ function truncate(s: string, n = 28): string {
 
 export function DayCardBulletinTab() {
   const { data, isLoading } = useDayPlanWeek();
-  const days = data?.days ?? [];
+  const days = data ?? [];
 
   return (
     <div className="space-y-1 animate-in fade-in duration-150">
@@ -52,7 +53,7 @@ export function DayCardBulletinTab() {
               type="button"
               onClick={scrollToDayCard}
               className="w-full flex items-center gap-3 py-2 text-left transition-colors hover:bg-white/[0.02] rounded-md px-1.5"
-              aria-label={`${d.day_label} ${d.event_label} ${d.windows_count} windows`}
+              aria-label={`${d.day} ${d.eventName ?? "no event"} ${d.windowCount} windows`}
             >
               <span
                 className="text-[10px] font-semibold uppercase tracking-[0.16em] w-9 shrink-0"
@@ -61,13 +62,13 @@ export function DayCardBulletinTab() {
                   fontFamily: "var(--font-data, monospace)",
                 }}
               >
-                {d.day_label}
+                {d.day}
               </span>
               <span
                 className="w-9 shrink-0 text-right"
                 style={{ minWidth: 36 }}
               >
-                {d.iv_score == null ? (
+                {d.ivScore == null ? (
                   <span
                     className="text-[12px]"
                     style={{ color: "var(--fintheon-muted)" }}
@@ -76,13 +77,13 @@ export function DayCardBulletinTab() {
                   </span>
                 ) : (
                   <DigitGroup
-                    value={d.iv_score.toFixed(1)}
+                    value={d.ivScore.toFixed(1)}
                     style={{
                       fontFamily:
                         "'Doto', 'Readable Digits', var(--font-data, monospace)",
                       fontSize: 13,
                       fontWeight: 600,
-                      color: ivHeatColor(d.iv_score),
+                      color: ivHeatColor(d.ivScore),
                       fontVariantNumeric: "tabular-nums",
                       letterSpacing: "0.02em",
                       lineHeight: 1,
@@ -98,7 +99,7 @@ export function DayCardBulletinTab() {
                   textAlign: "right",
                 }}
               >
-                {d.windows_count}w
+                {d.windowCount}w
               </span>
               <span
                 className="flex-1 text-[11px] truncate"
@@ -106,9 +107,9 @@ export function DayCardBulletinTab() {
                   color: "var(--fintheon-text)",
                   fontFamily: "var(--font-body)",
                 }}
-                title={d.event_label}
+                title={d.eventName ?? undefined}
               >
-                {truncate(d.event_label || "—")}
+                {truncate(d.eventName ?? "—")}
               </span>
             </button>
           </div>

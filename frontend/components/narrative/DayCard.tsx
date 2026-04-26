@@ -2,26 +2,28 @@
 //   Lays out Desk Theme + data table + streak/drift footer. NO border on the
 //   container; FadingRuler primitives carry the visual character. Titles
 //   left-justified, values right-justified (Doto), monospace gutter via
-//   font-mono. Two prices max, one target.
+//   font-mono. Two prices max, one target. Field names mirror T1 backend types
+//   (DayPlan: deskTheme/eventName + windows[]; DayPlanWindow: startTime/endTime,
+//   pricesOfInterest, invalidation, profitTarget, expectedMovePct).
 import { useDayPlan } from "../../hooks/useDayPlan";
 import { useStreak } from "../../hooks/useStreak";
 import { useDriftStatus } from "../../hooks/useDriftStatus";
 import { FadingRuler } from "../shared/FadingRuler";
 import { StreakBadge } from "../streak/StreakBadge";
-import type { DriftState } from "../../types/day-plan";
+import type { DayPlanWindow, DriftKind } from "../../types/day-plan";
 
-const DRIFT_LABELS: Record<DriftState, string> = {
+const DRIFT_LABELS: Record<DriftKind | "in-window", string> = {
   "in-window": "in-window",
-  "drift-alert": "drift alert",
-  "tilt-stop": "tilt stop",
-  "dead-volume": "dead volume",
+  drift_alert: "drift alert",
+  tilt_stop: "tilt stop",
+  dead_volume: "dead volume",
 };
 
-const DRIFT_COLORS: Record<DriftState, string> = {
+const DRIFT_COLORS: Record<DriftKind | "in-window", string> = {
   "in-window": "rgba(240, 234, 214, 0.45)",
-  "drift-alert": "rgba(199, 159, 74, 0.95)",
-  "tilt-stop": "rgba(220, 80, 80, 0.95)",
-  "dead-volume": "rgba(199, 159, 74, 0.95)",
+  drift_alert: "rgba(199, 159, 74, 0.95)",
+  tilt_stop: "rgba(220, 80, 80, 0.95)",
+  dead_volume: "rgba(199, 159, 74, 0.95)",
 };
 
 interface DayCardProps {
@@ -30,12 +32,25 @@ interface DayCardProps {
   className?: string;
 }
 
-function fmtPrice(v: number): string {
+function fmtPrice(v: number | null): string {
+  if (v == null) return "—";
   return v.toFixed(2);
 }
 
 function fmtPrices(values: number[]): string {
-  return values.slice(0, 2).map(fmtPrice).join(", ");
+  return values
+    .slice(0, 2)
+    .map((v) => v.toFixed(2))
+    .join(", ");
+}
+
+function fmtTradingWindow(w: DayPlanWindow): string {
+  return `${w.startTime}-${w.endTime}`;
+}
+
+function fmtExpectedMove(pct: number | null): string {
+  if (pct == null) return "—";
+  return `± ${pct.toFixed(2)}%`;
 }
 
 export function DayCard({ id = "day-card-anchor", className }: DayCardProps) {
@@ -43,8 +58,11 @@ export function DayCard({ id = "day-card-anchor", className }: DayCardProps) {
   const { data: streak } = useStreak();
   const { data: drift } = useDriftStatus();
 
-  const window = data?.windows?.[0] ?? null;
+  const plan = data;
+  const window = plan?.windows?.[0] ?? null;
   const hasWindow = !!window;
+
+  const driftVisual: DriftKind | "in-window" = drift?.kind ?? "in-window";
 
   return (
     <section
@@ -67,12 +85,12 @@ export function DayCard({ id = "day-card-anchor", className }: DayCardProps) {
         >
           Desk Theme
         </span>
-        {data?.brief_source && (
+        {plan?.sourceBriefId && (
           <span
             className="text-[8px] uppercase tracking-widest"
             style={{ color: "var(--fintheon-muted, #908774)" }}
           >
-            {data.brief_source}
+            brief
           </span>
         )}
       </header>
@@ -87,27 +105,23 @@ export function DayCard({ id = "day-card-anchor", className }: DayCardProps) {
       >
         {isLoading
           ? "Loading…"
-          : data?.desk_theme || "No plan published for today."}
+          : plan?.deskTheme || "No plan published for today."}
       </p>
 
       <FadingRuler />
 
       <dl className="font-mono text-[12px] py-3 space-y-1.5">
-        <Row
-          label="Event"
-          value={hasWindow ? (window!.event ?? "—") : "—"}
-          loading={isLoading}
-        />
+        <Row label="Event" value={plan?.eventName ?? "—"} loading={isLoading} />
         <Row
           label="Trading Window"
-          value={hasWindow ? window!.trading_window : "—"}
+          value={hasWindow ? fmtTradingWindow(window!) : "—"}
           loading={isLoading}
         />
         <Row
           label="Prices of Interest"
           value={
-            hasWindow && window!.prices_of_interest.length > 0
-              ? fmtPrices(window!.prices_of_interest)
+            hasWindow && window!.pricesOfInterest.length > 0
+              ? fmtPrices(window!.pricesOfInterest)
               : "—"
           }
           loading={isLoading}
@@ -115,19 +129,19 @@ export function DayCard({ id = "day-card-anchor", className }: DayCardProps) {
         />
         <Row
           label="Invalidation Point"
-          value={hasWindow ? fmtPrice(window!.invalidation_point) : "—"}
+          value={hasWindow ? fmtPrice(window!.invalidation) : "—"}
           loading={isLoading}
           doto
         />
         <Row
           label="Profit Target"
-          value={hasWindow ? fmtPrice(window!.profit_target) : "—"}
+          value={hasWindow ? fmtPrice(window!.profitTarget) : "—"}
           loading={isLoading}
           doto
         />
         <Row
           label="Expected Move"
-          value={hasWindow ? window!.expected_move : "—"}
+          value={hasWindow ? fmtExpectedMove(window!.expectedMovePct) : "—"}
           loading={isLoading}
           doto
         />
@@ -136,16 +150,12 @@ export function DayCard({ id = "day-card-anchor", className }: DayCardProps) {
       <FadingRuler />
 
       <footer className="flex items-center justify-between pt-3">
-        <StreakBadge
-          current={streak?.current ?? 0}
-          lastMilestone={streak?.last_milestone ?? null}
-          fontSize={16}
-        />
+        <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={16} />
         {drift && (
           <span
             className="inline-flex items-center gap-1.5"
-            title={drift.message}
-            aria-label={`Drift ${DRIFT_LABELS[drift.state]} — ${drift.message}`}
+            title={drift.message ?? undefined}
+            aria-label={`Drift ${DRIFT_LABELS[driftVisual]}${drift.message ? ` — ${drift.message}` : ""}`}
           >
             <span
               className="text-[9px] uppercase tracking-[0.16em]"
@@ -162,7 +172,7 @@ export function DayCard({ id = "day-card-anchor", className }: DayCardProps) {
                 width: 6,
                 height: 6,
                 borderRadius: "50%",
-                background: DRIFT_COLORS[drift.state],
+                background: DRIFT_COLORS[driftVisual],
                 display: "inline-block",
               }}
             />
@@ -170,7 +180,7 @@ export function DayCard({ id = "day-card-anchor", className }: DayCardProps) {
               className="text-[10px]"
               style={{ color: "var(--fintheon-text)" }}
             >
-              {DRIFT_LABELS[drift.state]}
+              {DRIFT_LABELS[driftVisual]}
             </span>
           </span>
         )}

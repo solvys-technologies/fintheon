@@ -1,14 +1,16 @@
 // [claude-code 2026-04-26] S45-T2: DriftIndicator — 6px dot in Strategium header.
-//   4 visual states gated by useDriftStatus. Tooltip shows the Harper-voiced
-//   message text. No animation for in-window / drift-alert; slow pulse on
-//   tilt-stop and dead-volume.
+//   4 visual states derived from DriftStatus = {inWindow, kind, ...}. Tooltip
+//   shows the Harper-voiced message. No animation for in-window / drift_alert;
+//   slow pulse on tilt_stop and dead_volume.
 import { useDriftStatus } from "../../hooks/useDriftStatus";
-import type { DriftState } from "../../types/day-plan";
+import type { DriftKind } from "../../types/day-plan";
 
 const DOT_SIZE = 6;
 
+type DriftVisualState = "in-window" | DriftKind;
+
 const STATE_STYLES: Record<
-  DriftState,
+  DriftVisualState,
   { color: string; pulse: boolean; label: string }
 > = {
   "in-window": {
@@ -16,17 +18,17 @@ const STATE_STYLES: Record<
     pulse: false,
     label: "In window",
   },
-  "drift-alert": {
+  drift_alert: {
     color: "rgba(199, 159, 74, 0.85)",
     pulse: false,
     label: "Drift alert",
   },
-  "tilt-stop": {
+  tilt_stop: {
     color: "rgba(220, 80, 80, 0.95)",
     pulse: true,
     label: "Tilt stop",
   },
-  "dead-volume": {
+  dead_volume: {
     color: "rgba(199, 159, 74, 0.95)",
     pulse: true,
     label: "Dead volume",
@@ -40,14 +42,18 @@ interface DriftIndicatorProps {
 export function DriftIndicator({ className }: DriftIndicatorProps) {
   const { data, isLoading } = useDriftStatus();
   if (isLoading || !data) return null;
-  const cfg = STATE_STYLES[data.state];
+
+  const visual: DriftVisualState =
+    data.kind ?? (data.inWindow ? "in-window" : "in-window");
+  const cfg = STATE_STYLES[visual];
   if (!cfg) return null;
+  const tooltip = data.message ?? cfg.label;
 
   return (
     <span
       className={className}
-      title={data.message}
-      aria-label={`${cfg.label} — ${data.message}`}
+      title={tooltip}
+      aria-label={`${cfg.label} — ${tooltip}`}
       style={{
         display: "inline-flex",
         alignItems: "center",

@@ -9,6 +9,36 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T19:30:00",
+    agent: "claude-code",
+    summary:
+      'S45-T2: DayCard + Strategium daycard tab + mobile parity + journal PlanFeedbackBlock + DriftIndicator + StreakBadge + FadingRuler primitive. New surfaces use the fading-ruler-line divider (linear-gradient transparent → low-opacity gold → transparent) instead of borders — locked as the singular visual character of S45. DayCard renders under Volatility Read in Sanctum (non-chart-mode), shows Desk Theme + 6 data lines (Event / Trading Window / Prices of Interest / Invalidation / Profit Target / Expected Move) + streak/drift footer; titles left-justified, values right-justified Doto, monospace gutter. StickyBulletin grew a 5th tab "Day Card" with Mon–Fri preview pills (no expansion — tap scrolls Sanctum DayCard into view via id day-card-anchor). MobileBulletin grew a parity 5th tab using the mobile token system (mobile keeps its own inline copy due to token-system divergence — same pattern as RiskFlowCard / CatalystImage). Strategium header gained a DriftIndicator pill (4 states: in-window / drift-alert / tilt-stop / dead-volume; pulse on tilt-stop + dead-volume). StreakBadge (Doto numeral, gold pulse on milestones 5/10/21/50) lives in DayCard footer. PlanFeedbackBlock injected into SessionJournalPanel — one block per window in today\'s day plan; Followed/Faded/Sat-out triad + reason chips when Faded; free-text only when Tilt or FOMO; circular ArrowUp submit (memory pin). Hooks: useDayPlan + useDriftStatus (60s poll), useDayPlanWeek + useStreak (5min poll), usePlanFeedback (POST). day-plan types mirrored in frontend/types/day-plan.ts and mobile/types/day-plan.ts (T1 publishes the canonical backend type — orchestrator validates parity at unification).',
+    files: [
+      "frontend/components/shared/FadingRuler.tsx",
+      "frontend/styles/fading-ruler.css",
+      "frontend/index.css",
+      "frontend/components/narrative/DayCard.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+      "frontend/components/strategium/DayCardBulletinTab.tsx",
+      "frontend/components/strategium/DriftIndicator.tsx",
+      "frontend/components/streak/StreakBadge.tsx",
+      "frontend/components/journal/PlanFeedbackBlock.tsx",
+      "frontend/components/journal/SessionJournalPanel.tsx",
+      "frontend/components/StickyBulletin.tsx",
+      "frontend/components/layout/MissionControlContent.tsx",
+      "frontend/hooks/useStickyBulletin.ts",
+      "frontend/hooks/useDayPlan.ts",
+      "frontend/hooks/useDayPlanWeek.ts",
+      "frontend/hooks/useDriftStatus.ts",
+      "frontend/hooks/useStreak.ts",
+      "frontend/hooks/usePlanFeedback.ts",
+      "frontend/types/day-plan.ts",
+      "mobile/components/bulletin/MobileBulletin.tsx",
+      "mobile/components/bulletin/MobileBulletinDayCard.tsx",
+      "mobile/types/day-plan.ts",
+    ],
+  },
+  {
     date: "2026-04-26T18:30:00",
     agent: "claude-code",
     summary:

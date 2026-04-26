@@ -1,75 +1,76 @@
 // [claude-code 2026-04-26] S45-T2: Day-plan types (mobile copy) — mirrors
-//   frontend/types/day-plan.ts and backend-hono/src/types/day-plan.ts.
-//   Mobile keeps its own inline copy because the mobile bundle does not import
-//   from frontend/ (separate vite build, separate token system).
+//   backend-hono/src/types/day-plan.ts verbatim. Mobile keeps its own inline
+//   copy because the mobile bundle does not import from frontend/ (separate
+//   vite build, separate token system).
 
-export type DriftState =
-  | "in-window"
-  | "drift-alert"
-  | "tilt-stop"
-  | "dead-volume";
+export type DriftKind = "drift_alert" | "tilt_stop" | "dead_volume";
 
-export type PlanFeedbackAction = "followed" | "faded" | "sat-out";
+export type DailyColor = "green" | "red" | "flat";
 
-export type PlanFeedbackReasonCode =
-  | "better-setup-elsewhere"
-  | "plan-felt-wrong"
-  | "news-override"
-  | "tilt"
-  | "fomo"
-  | "risk-off"
-  | "other";
+export type FeedbackAction = "followed" | "faded" | "sat_out";
 
 export interface DayPlanWindow {
-  window_id: string;
-  event: string | null;
-  trading_window: string;
-  prices_of_interest: number[];
-  invalidation_point: number;
-  profit_target: number;
-  expected_move: string;
+  id: string;
+  dayPlanId: string;
+  windowIndex: number;
+  startTime: string;
+  endTime: string;
+  pricesOfInterest: number[];
+  invalidation: number | null;
+  profitTarget: number | null;
+  expectedMovePct: number | null;
 }
 
 export interface DayPlan {
+  id: string;
+  teamId: string;
   date: string;
-  desk_theme: string;
+  eventName: string | null;
+  deskTheme: string | null;
+  generatedBy: string;
+  generatedAt: string;
+  sourceBriefId: string | null;
   windows: DayPlanWindow[];
-  brief_source?: string;
-  published_at?: string;
 }
 
-export interface DayPlanWeekDay {
+export interface DayPlanFeedback {
+  id: string;
+  windowId: string;
+  userId: string | null;
+  action: FeedbackAction;
+  reasonCode: string | null;
+  reasonText: string | null;
+  fillPrice: number | null;
+  outcomePnl: number | null;
+  createdAt: string;
+}
+
+export interface DayPlanStreak {
+  id: string;
+  userId: string;
   date: string;
-  day_label: string;
-  iv_score: number | null;
-  windows_count: number;
-  event_label: string;
+  dailyPnl: number;
+  dailyColor: DailyColor;
+  streakAtClose: number;
+  createdAt: string;
 }
 
-export interface DayPlanWeekResponse {
-  days: DayPlanWeekDay[];
+export interface DriftStatus {
+  inWindow: boolean;
+  kind: DriftKind | null;
+  firedAt: string | null;
+  message: string | null;
 }
 
-export interface DriftStatusResponse {
-  state: DriftState;
-  message: string;
-  computed_at: string;
+export interface WeekDayEntry {
+  date: string;
+  day: string;
+  ivScore: number | null;
+  windowCount: number;
+  eventName: string | null;
 }
 
 export interface StreakResponse {
-  current: number;
-  last_milestone: number | null;
-  last_green_day: string | null;
-}
-
-export interface PlanFeedbackPayload {
-  window_id: string;
-  action: PlanFeedbackAction;
-  reason_code?: PlanFeedbackReasonCode | null;
-  reason_text?: string | null;
-}
-
-export interface PlanFeedbackResponse {
-  ok: boolean;
-  feedback: PlanFeedbackPayload & { id: string; submitted_at: string };
+  streakAtClose: number;
+  last30: Array<{ date: string; color: DailyColor }>;
 }

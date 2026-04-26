@@ -1,47 +1,49 @@
 // [claude-code 2026-04-26] S45-T2: PlanFeedbackBlock — one row per window in
-//   today's day plan. 3-segment NothingFuse triad: Followed / Faded / Sat-out.
-//   When Faded selected, right-stacked chevron expands a reason-chip row.
-//   Free-text "why" only when Tilt or FOMO selected. Submit = circular ArrowUp
-//   (memory pin: never paper-airplane).
+//   today's day plan. 3-segment triad: Followed / Faded / Sat-out. When Faded
+//   selected, right-stacked chevron expands a reason-chip row. Free-text "why"
+//   only when Tilt or FOMO selected. Submit = circular ArrowUp (memory pin:
+//   never paper-airplane). Field names mirror T1 backend FeedbackAction
+//   ("followed" | "faded" | "sat_out") + DayPlanWindow shape (id, startTime,
+//   endTime).
 import { useState } from "react";
 import { ArrowUp, ChevronRight } from "lucide-react";
 import { usePlanFeedback } from "../../hooks/usePlanFeedback";
-import type {
-  DayPlanWindow,
-  PlanFeedbackAction,
-  PlanFeedbackReasonCode,
-} from "../../types/day-plan";
+import type { DayPlanWindow, FeedbackAction } from "../../types/day-plan";
 
-const ACTIONS: { id: PlanFeedbackAction; label: string }[] = [
+const ACTIONS: { id: FeedbackAction; label: string }[] = [
   { id: "followed", label: "Followed" },
   { id: "faded", label: "Faded" },
-  { id: "sat-out", label: "Sat-out" },
+  { id: "sat_out", label: "Sat-out" },
 ];
 
-const REASON_CHIPS: { id: PlanFeedbackReasonCode; label: string }[] = [
-  { id: "better-setup-elsewhere", label: "Better setup elsewhere" },
-  { id: "plan-felt-wrong", label: "Plan felt wrong" },
-  { id: "news-override", label: "News override" },
+type ReasonCode =
+  | "better_setup_elsewhere"
+  | "plan_felt_wrong"
+  | "news_override"
+  | "tilt"
+  | "fomo"
+  | "risk_off"
+  | "other";
+
+const REASON_CHIPS: { id: ReasonCode; label: string }[] = [
+  { id: "better_setup_elsewhere", label: "Better setup elsewhere" },
+  { id: "plan_felt_wrong", label: "Plan felt wrong" },
+  { id: "news_override", label: "News override" },
   { id: "tilt", label: "Tilt" },
   { id: "fomo", label: "FOMO" },
-  { id: "risk-off", label: "Risk-off" },
+  { id: "risk_off", label: "Risk-off" },
   { id: "other", label: "Other" },
 ];
 
-const NEEDS_REASON_TEXT: ReadonlySet<PlanFeedbackReasonCode> = new Set([
-  "tilt",
-  "fomo",
-]);
+const NEEDS_REASON_TEXT: ReadonlySet<ReasonCode> = new Set(["tilt", "fomo"]);
 
 interface PlanFeedbackBlockProps {
   window: DayPlanWindow;
 }
 
 export function PlanFeedbackBlock({ window }: PlanFeedbackBlockProps) {
-  const [action, setAction] = useState<PlanFeedbackAction | null>(null);
-  const [reasonCode, setReasonCode] = useState<PlanFeedbackReasonCode | null>(
-    null,
-  );
+  const [action, setAction] = useState<FeedbackAction | null>(null);
+  const [reasonCode, setReasonCode] = useState<ReasonCode | null>(null);
   const [reasonText, setReasonText] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const { submit, isSubmitting } = usePlanFeedback();
@@ -58,25 +60,27 @@ export function PlanFeedbackBlock({ window }: PlanFeedbackBlockProps) {
     !submitted &&
     (action !== "faded" || !!reasonCode);
 
+  const tradingWindow = `${window.startTime}-${window.endTime}`;
+
   const onSubmit = async () => {
     if (!canSubmit || !action) return;
     const res = await submit({
-      window_id: window.window_id,
+      windowId: window.id,
       action,
-      reason_code: action === "faded" ? reasonCode : null,
-      reason_text:
+      reasonCode: action === "faded" ? reasonCode : null,
+      reasonText:
         action === "faded" && reasonCode && NEEDS_REASON_TEXT.has(reasonCode)
           ? reasonText.trim() || null
           : null,
     });
-    if (res?.ok) setSubmitted(true);
+    if (res) setSubmitted(true);
   };
 
   return (
     <div
       className="space-y-2"
-      data-window-id={window.window_id}
-      aria-label={`Plan feedback for ${window.trading_window}`}
+      data-window-id={window.id}
+      aria-label={`Plan feedback for ${tradingWindow}`}
     >
       <div className="flex items-baseline justify-between">
         <span
@@ -86,17 +90,8 @@ export function PlanFeedbackBlock({ window }: PlanFeedbackBlockProps) {
             fontFamily: "var(--font-data, monospace)",
           }}
         >
-          {window.trading_window}
+          {tradingWindow}
         </span>
-        {window.event && (
-          <span
-            className="text-[10px] truncate ml-2"
-            style={{ color: "var(--fintheon-text)" }}
-            title={window.event}
-          >
-            {window.event}
-          </span>
-        )}
       </div>
 
       <div className="flex items-center gap-2">

@@ -2,6 +2,7 @@
 //   mount + 5min refresh. Drives the Day Card StreakBadge.
 import { useState, useEffect, useRef } from "react";
 import type { StreakResponse } from "../types/day-plan";
+// StreakResponse: { streakAtClose: number, last30: Array<{date, color}> }
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const POLL_INTERVAL = 5 * 60_000;

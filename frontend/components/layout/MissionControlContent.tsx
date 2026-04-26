@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { KanbanTitle } from "../ui/KanbanTitle";
 import type { MissionWidgetId } from "../../lib/layoutOrderStorage";
+import { DriftIndicator } from "../strategium/DriftIndicator";
 
 const MISSION_WIDGETS_PER_PAGE = 2;
 
@@ -147,6 +148,7 @@ export function MissionControlContent({
         tone="gold"
         headerRight={
           <div className="flex items-center gap-0.5">
+            <DriftIndicator className="mr-1" />
             {onToggleEditMode && (
               <button
                 onClick={onToggleEditMode}

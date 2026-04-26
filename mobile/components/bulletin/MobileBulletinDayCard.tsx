@@ -3,10 +3,11 @@
 //   Card lives on the dashboard, reachable via the main nav). Mobile keeps its
 //   own inline copy because the mobile bundle does not import from frontend/
 //   (separate vite build, separate token system) — same pattern as
-//   CatalystImage / RiskFlowCard memory pin.
+//   CatalystImage / RiskFlowCard memory pin. Field names mirror T1 backend
+//   WeekDayEntry: day / ivScore / windowCount / eventName.
 import { useEffect, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import type { DayPlanWeekDay, DayPlanWeekResponse } from "../../types/day-plan";
+import type { WeekDayEntry } from "../../types/day-plan";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
@@ -25,7 +26,7 @@ function truncate(s: string, n = 26): string {
 
 export function MobileBulletinDayCard() {
   const { getAccessToken } = useAuth();
-  const [days, setDays] = useState<DayPlanWeekDay[]>([]);
+  const [days, setDays] = useState<WeekDayEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -43,9 +44,12 @@ export function MobileBulletinDayCard() {
           if (!cancelled) setLoaded(true);
           return;
         }
-        const json = (await res.json()) as DayPlanWeekResponse;
+        const json = (await res.json()) as
+          | WeekDayEntry[]
+          | { days: WeekDayEntry[] };
+        const items = Array.isArray(json) ? json : (json.days ?? []);
         if (!cancelled) {
-          setDays(json.days ?? []);
+          setDays(items);
           setLoaded(true);
         }
       } catch {
@@ -97,7 +101,7 @@ export function MobileBulletinDayCard() {
                     flexShrink: 0,
                   }}
                 >
-                  {d.day_label}
+                  {d.day}
                 </span>
                 <span
                   style={{
@@ -105,14 +109,14 @@ export function MobileBulletinDayCard() {
                       "'Doto', 'Readable Digits', var(--font-data, monospace)",
                     fontSize: 16,
                     fontWeight: 600,
-                    color: ivColor(d.iv_score),
+                    color: ivColor(d.ivScore),
                     fontVariantNumeric: "tabular-nums",
                     width: 40,
                     textAlign: "right",
                     flexShrink: 0,
                   }}
                 >
-                  {d.iv_score == null ? "—" : d.iv_score.toFixed(1)}
+                  {d.ivScore == null ? "—" : d.ivScore.toFixed(1)}
                 </span>
                 <span
                   style={{
@@ -124,7 +128,7 @@ export function MobileBulletinDayCard() {
                     flexShrink: 0,
                   }}
                 >
-                  {d.windows_count}w
+                  {d.windowCount}w
                 </span>
                 <span
                   style={{
@@ -137,9 +141,9 @@ export function MobileBulletinDayCard() {
                     whiteSpace: "nowrap",
                     textOverflow: "ellipsis",
                   }}
-                  title={d.event_label}
+                  title={d.eventName ?? undefined}
                 >
-                  {truncate(d.event_label || "—")}
+                  {truncate(d.eventName ?? "—")}
                 </span>
               </div>
             </div>
