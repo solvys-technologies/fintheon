@@ -22,7 +22,13 @@ export interface BackfillSlice {
 
 /** Raw LLM output for one slice, stored verbatim in econ_backfill_queue.raw_payload. */
 export interface RawSlicePayload {
-  source: "openrouter-llama" | "openrouter-mistral" | "fred" | "mixed";
+  source:
+    | "openrouter-llama"
+    | "openrouter-mistral"
+    | "hermes-qwen"
+    | "hermes-qwen-fallback"
+    | "fred"
+    | "mixed";
   slice_id: string;
   country: string;
   slice_start: string;

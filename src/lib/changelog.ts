@@ -437,6 +437,30 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
+    date: "2026-04-26T00:50:00",
+    agent: "claude-code",
+    summary:
+      "S35-cleanup hotfix: prod OpenRouter key returns 401 'User not found' (account/key revoked). Rerouted both econ-backfill-puller and econ-backfill-harper from raw OpenRouter calls to invokeAgent (Strands fallback chain VProxy → Ollama Qwen3.5:397b-cloud via HERMES_SIDECAR_URL → Nous → OpenRouter). HERMES_BASE_URL is set on prod so the Ollama-Qwen rung is the active path. Also relaxed RiskFlow backfill-headlines Exa publishedDate filter from strict same-day match to ±3 days (the strict filter eliminated every Exa hit because Exa rarely returns publishedDate matching the exact requested day).",
+    files: [
+      "backend-hono/src/services/cron/econ-backfill-puller.ts",
+      "backend-hono/src/services/cron/econ-backfill-harper.ts",
+      "backend-hono/src/services/riskflow/backfill-headlines.ts",
+    ],
+  },
+  {
+    date: "2026-04-26T00:30:00",
+    agent: "claude-code",
+    summary:
+      "S35-cleanup follow-up: (1) econ-backfill-puller now routes through OpenRouter Qwen (qwen/qwen-2.5-72b-instruct primary, qwen/qwen3-235b-a22b fallback) using the same OPENROUTER_API_KEY that fronts every Hermes call on prod — DashScope/Groq paths skipped because those keys aren't on the fly app. Free-tier :free model variants 402 with $0 OpenRouter balance, paid model IDs work as long as the key has any credit. (2) FRED date window padded -60 days backward in pullFromFred so monthly series whose observation date falls in the prior reporting month (e.g. CPI for March 2026 dated 2026-03-01, released April) still land inside the slice window. (3) New POST /api/admin/riskflow/backfill-headlines (gated on x-routine-secret) runs Exa search across a fixed macro query menu for each silent day, writes hits into raw_riskflow_items with published_at pinned to the silent day, then drives scoringCycle until the inbox drains — fills the news-worker silence windows (2026-04-04..05, 04-09, 04-24..25, plus the partial 04-25 thinning).",
+    files: [
+      "backend-hono/src/services/cron/econ-backfill-puller.ts",
+      "backend-hono/src/types/econ-backfill.ts",
+      "backend-hono/src/routes/admin/riskflow-backfill.ts",
+      "backend-hono/src/services/riskflow/backfill-headlines.ts",
+      "backend-hono/src/routes/index.ts",
+    ],
+  },
+  {
     date: "2026-04-25T17:45:00",
     agent: "claude-code",
     summary:

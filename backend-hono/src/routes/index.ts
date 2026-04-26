@@ -95,6 +95,8 @@ import { createHarperVoiceRoutes } from "./harper-voice.js";
 import { createPsychAssistForkRoutes } from "./admin/psych-assist-fork.js";
 // [claude-code 2026-04-25] S35-cleanup: manual trigger for econ-backfill-orchestrator drain
 import { createEconBackfillRoutes } from "./admin/econ-backfill.js";
+// [claude-code 2026-04-26] S35-cleanup: RiskFlow high/critical headline backfill
+import { createRiskFlowBackfillRoutes } from "./admin/riskflow-backfill.js";
 // [claude-code 2026-04-23] Harper Vision — screen + audio perception layer
 import { createHarperVisionRoutes } from "./harper-vision/index.js";
 // [claude-code 2026-04-23] S31-T9 predictive knowledge graph — usage telemetry + Harper feature proposals
@@ -431,6 +433,10 @@ export function registerRoutes(app: Hono): void {
   // [claude-code 2026-04-25] S35-cleanup: manual trigger for econ-backfill drain.
   //   Gated internally on x-routine-secret matching ROUTINE_SECRET.
   app.route("/api/admin/econ", createEconBackfillRoutes());
+
+  // [claude-code 2026-04-26] S35-cleanup: RiskFlow high/critical headline
+  //   backfill for news-worker silence windows. Same x-routine-secret gate.
+  app.route("/api/admin/riskflow", createRiskFlowBackfillRoutes());
 
   // [S29-T4] Catalysts — date-filtered RiskFlow headlines for calendar panel
   app.route("/api/catalysts", createCatalystsByDateRoute());
