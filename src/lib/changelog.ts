@@ -9,6 +9,29 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T23:55:00",
+    agent: "claude-code",
+    summary:
+      "S40 shipped: Time-To-Print realtime + Consul Browser. Archived to sprint-changelog/. 9 pillars, 38 files. Sub-track briefs deleted.",
+    files: [
+      "sprint-changelog/S40-BRIEF-time-to-print-news-realtime.md",
+    ],
+  },
+  {
+    date: "2026-04-25T23:55:01",
+    agent: "claude-code",
+    summary:
+      "S42 shipped: Chat SOTA. Archived to sprint-changelog/. 9 tracks (T1 stream / T2 composer / T3 render / T4 artifact / T5 browserbase / T6 ask / T7 perf / T8 nothing / T9 unify), 80 files.",
+    files: ["sprint-changelog/S42-ORCHESTRATION.md"],
+  },
+  {
+    date: "2026-04-25T23:55:02",
+    agent: "claude-code",
+    summary:
+      "S40↔S42 unify shipped: single deploy bundle. Archived to sprint-changelog/. 2 merge commits (S42→S40 + Browserbase reconciliation under services/browserbase/).",
+    files: ["sprint-changelog/S40-S42-UNIFY-BRIEF.md"],
+  },
+  {
     date: "2026-04-25T23:25:00",
     agent: "claude-code",
     summary:
