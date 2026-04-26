@@ -1,3 +1,8 @@
+// [claude-code 2026-04-25] S42-T8: Nothing-design pass — slow per-segment transition
+//   from 150ms to 220ms ease-out and bump the staggered delay from 18ms to 32ms per
+//   segment for a more deliberate fill (~320ms total bottom-up). No glow, no shadow,
+//   no shimmer — segments are flat blocks against the empty-track border colour. The
+//   320ms total still slots cleanly inside the existing 220ms drain choreography.
 // [claude-code 2026-04-20] `animateIn` — when true, the fuse mounts empty and
 //   fills bottom-up, one segment at a time, so new scored items arriving at
 //   the top of the feed visibly "charge up". Staggered delays mirror the
@@ -75,13 +80,15 @@ export function VerticalFuseBar({
               borderRadius: 1,
               background: i < filled ? color : "var(--border)",
               // Drain reads top-down (i=9 first, i=0 last), mount-fill reads
-              // bottom-up (i=0 first, i=9 last). 18ms per segment × 10 = 180ms.
+              // bottom-up (i=0 first, i=9 last). 32ms per segment × 10 = 320ms
+              // — deliberate Nothing-design pacing.
               transitionDelay: draining
-                ? `${(segments - 1 - i) * 18}ms`
+                ? `${(segments - 1 - i) * 32}ms`
                 : animateIn
-                  ? `${i * 18}ms`
+                  ? `${i * 32}ms`
                   : "0ms",
-              transition: "background 150ms ease-out",
+              transition: "background 220ms ease-out",
+              boxShadow: "none",
             }}
           />
         ))}

@@ -1,6 +1,10 @@
+// [claude-code 2026-04-25] S42-T8: Numeric cells (signals, trades, P&L, clock) render
+//   in Doto via --font-display for monumental display typography.
 // [claude-code 2026-03-11] Track 3: Session status bar — RTH dot, session name, counters, P&L, EST clock
 import { useState, useEffect } from "react";
 import type { AutopilotStatus } from "./AutopilotDashboard";
+
+const NUM_FONT: React.CSSProperties = { fontFamily: "var(--font-display)" };
 
 interface SessionStatusBarProps {
   status: AutopilotStatus | null;
@@ -77,13 +81,15 @@ export function SessionStatusBar({ status }: SessionStatusBarProps) {
       {/* Signals Today */}
       <div className="flex items-center gap-1.5">
         <span className="text-[#f0ead680]">Signals:</span>
-        <span className="text-[#f0ead6]">{signalsToday}</span>
+        <span className="text-[#f0ead6]" style={NUM_FONT}>
+          {signalsToday}
+        </span>
       </div>
 
       {/* Trades Today */}
       <div className="flex items-center gap-1.5">
         <span className="text-[#f0ead680]">Trades:</span>
-        <span className="text-[#f0ead6]">
+        <span className="text-[#f0ead6]" style={NUM_FONT}>
           {tradesToday}/{maxTrades}
         </span>
       </div>
@@ -93,7 +99,10 @@ export function SessionStatusBar({ status }: SessionStatusBarProps) {
         <span className="text-[#f0ead680]">P&L:</span>
         <span
           className="font-bold"
-          style={pnlCssColor ? { color: pnlCssColor } : { color: "#f0ead680" }}
+          style={{
+            color: pnlCssColor ?? "#f0ead680",
+            fontFamily: "var(--font-display)",
+          }}
         >
           {formatCurrency(dailyPnL)}
         </span>
@@ -102,7 +111,9 @@ export function SessionStatusBar({ status }: SessionStatusBarProps) {
       {/* EST Clock */}
       <div className="flex items-center gap-1.5">
         <span className="text-[#f0ead680]">EST</span>
-        <span className="text-[#f0ead6]">{estTime}</span>
+        <span className="text-[#f0ead6]" style={NUM_FONT}>
+          {estTime}
+        </span>
       </div>
     </div>
   );

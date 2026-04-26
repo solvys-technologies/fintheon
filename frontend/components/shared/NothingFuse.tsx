@@ -1,16 +1,14 @@
+// [claude-code 2026-04-25] S42-T8: Nothing-design pass — drop the .nothing-fuse-shimmer
+//   overlay, slow the fill transition from 520ms to 600ms ease-out, and document the
+//   primitive contract in JSDoc so other tracks (T3 AgentActivityRail, T7 mount perf)
+//   can adopt without touching internals. Segmented anatomy preserved: continuous fill
+//   with N-1 perpendicular tick dividers cut into the bar so it reads as 10 discrete
+//   steps. Severity-coloured fill stays (callers depend on it). No glow, no gradient,
+//   no shimmer, no drop-shadow.
 // [claude-code 2026-04-20] `animateIn` — when true, the fuse mounts at 0 and
 //   transitions to `value` on the next frame, so new items arriving in the
 //   feed visibly "charge up". Vertical orientation fills bottom-up (matches
 //   the mobile segmented bar); horizontal fills left→right.
-// [claude-code 2026-04-19] v5.22 S1: Nothing-design fuse bar. Sharp 2px corners, opaque
-//   --fintheon-surface track, no inner glow, slow 4.2s shimmer with ~1s dead time between
-//   sweeps. Color resolves from the shared fuse-palette via colorForSeverity / colorForScore.
-// [claude-code 2026-04-19] RiskFlow card polish: segmented ruler ticks inside the fuse.
-//   When `segments` is set (default 10 on both orientations), renders N-1 perpendicular
-//   divider lines at equal intervals over the continuous fill. Shimmer is preserved on the
-//   filled portion; the ticks sit above as a thin divider overlay so the bar reads as a
-//   discrete 10-step scale while retaining the continuous shimmer. This matches the
-//   vertical fuse anatomy on Fintheon Mobile RiskFlow cards.
 import { useEffect, useState, type CSSProperties } from "react";
 import {
   type FusePalette,
@@ -22,6 +20,29 @@ import {
 
 type Orientation = "horizontal" | "vertical";
 
+/**
+ * NothingFuse — Nothing-design segmented fuse bar.
+ *
+ * Used by activity rails (T3), RiskFlow cards, BlendedVIXCard, InstrumentFusesPanel,
+ * NextSessionForecastCard, NarrativeCanvas IV displays, and any caller that needs a
+ * thin "charging" indicator anchored to a 0-1 value.
+ *
+ * Visual contract:
+ * - Filled portion: severity-resolved colour (defaults to accent #c79f4a via the
+ *   shared fuse-palette). For non-severity callers the resolved colour is accent.
+ * - Empty track: opaque `--fintheon-surface` so the segments read as cuts in solid
+ *   material rather than painted-on lines.
+ * - Tick dividers: N-1 thin perpendicular cuts coloured `--fintheon-bg`, giving the
+ *   bar a discrete 10-step ruler look while the underlying fill stays continuous.
+ * - Fill transition: 600ms ease-out — deliberate, not snappy. Animates whenever
+ *   `value` changes (not just on mount).
+ *
+ * Banned ornaments (do not re-add): gradient fills, drop-shadow, inner glow,
+ * shimmer overlays, AI-sparkle effects.
+ *
+ * Layout: `thickness` controls the cross-axis dimension; the long axis fills its
+ * container (100%). Width/height props preserved for caller layout stability.
+ */
 export interface NothingFuseProps {
   /** Fill percent, 0-1. */
   value: number;
@@ -42,6 +63,8 @@ export interface NothingFuseProps {
   animateIn?: boolean;
   className?: string;
 }
+
+const FILL_TRANSITION = "600ms cubic-bezier(0.16, 0.8, 0.24, 1)";
 
 export function NothingFuse({
   value,
@@ -80,6 +103,7 @@ export function NothingFuse({
     ? { height: thickness, width: "100%" }
     : { width: thickness, height: "100%" };
 
+  // Animate value changes deliberately (600ms), not just first mount.
   const fillStyle: CSSProperties = isHorizontal
     ? {
         width: pct,
@@ -88,9 +112,7 @@ export function NothingFuse({
         position: "absolute",
         left: 0,
         top: 0,
-        transition: animateIn
-          ? "width 520ms cubic-bezier(0.16, 0.8, 0.24, 1)"
-          : undefined,
+        transition: `width ${FILL_TRANSITION}`,
       }
     : {
         width: "100%",
@@ -99,13 +121,9 @@ export function NothingFuse({
         position: "absolute",
         left: 0,
         bottom: 0,
-        transition: animateIn
-          ? "height 520ms cubic-bezier(0.16, 0.8, 0.24, 1)"
-          : undefined,
+        transition: `height ${FILL_TRANSITION}`,
       };
 
-  // Ruler ticks — N-1 thin perpendicular dividers at equal intervals across the track.
-  // Color is the fuse track color so they read as "cuts" in the bar rather than painted on.
   const tickCount = segments > 1 ? segments - 1 : 0;
   const ticks = Array.from({ length: tickCount }, (_, i) => {
     const offsetPct = ((i + 1) / segments) * 100;
@@ -136,9 +154,7 @@ export function NothingFuse({
       className={`relative rounded-[2px] bg-[var(--fintheon-surface)] overflow-hidden${className ? ` ${className}` : ""}`}
       style={trackStyle}
     >
-      <div className="rounded-[2px]" style={fillStyle}>
-        <span className="nothing-fuse-shimmer" aria-hidden />
-      </div>
+      <div className="rounded-[2px]" style={fillStyle} />
       {ticks}
     </div>
   );
