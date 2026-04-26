@@ -5,7 +5,7 @@
 // Usage: node scripts/smoke-browserbase-route.mjs
 
 import { Hono } from "hono";
-import { createBrowserbaseRoutes } from "../dist/routes/browserbase.js";
+import { createBrowserbaseRoutes } from "../dist/routes/browserbase/index.js";
 
 const app = new Hono();
 app.route("/api/browserbase", createBrowserbaseRoutes());
@@ -34,18 +34,18 @@ async function del(path) {
 const previousKey = process.env.BROWSERBASE_API_KEY;
 delete process.env.BROWSERBASE_API_KEY;
 
-const fallback = await post("/api/browserbase/session", {
+const fallback = await post("/api/browserbase/iframe/session", {
   task: "navigate to https://www.sec.gov",
   conversationId: "smoke-fallback",
 });
 console.log("[fallback] status =", fallback.status);
 console.log("[fallback] body   =", fallback.body);
 
-const invalid = await post("/api/browserbase/session", { task: "" });
+const invalid = await post("/api/browserbase/iframe/session", { task: "" });
 console.log("[invalid]  status =", invalid.status);
 console.log("[invalid]  body   =", invalid.body);
 
-const closed = await del("/api/browserbase/session/sess_smoke_id");
+const closed = await del("/api/browserbase/iframe/session/sess_smoke_id");
 console.log("[delete]   status =", closed.status);
 console.log("[delete]   body   =", closed.body);
 

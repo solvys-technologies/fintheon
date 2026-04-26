@@ -103,8 +103,6 @@ import { createFeatureProposalsWeeklyRoute } from "./harper-ops/feature-proposal
 import { createCatalystsByDateRoute } from "./catalysts/by-date.js";
 // [S29-T1] ProjectX trades history — calendar heatmap data layer
 import { createProjectXTradesRoute } from "./projectx/trades.js";
-// [claude-code 2026-04-25] S42-T5: Browserbase visible remote-browser sessions
-import { createBrowserbaseRoutes } from "./browserbase.js";
 // [claude-code 2026-04-23] S32-T7: Advisory layer — calendar pill, size hint, watchouts log.
 import { createCalendarRoutes } from "./calendar/next-event.js";
 import { createAdvisoryRoutes } from "./advisory/index.js";
@@ -427,10 +425,8 @@ export function registerRoutes(app: Hono): void {
   // [S29-T1] ProjectX trades history — public (BYPASS_AUTH compatible)
   app.route("/api/projectx", createProjectXTradesRoute());
 
-  // [S42-T5] Browserbase — provisions a remote Chromium session whose live URL
-  // the frontend ArtifactPane mounts as an iframe. Public + local-only; the
-  // Browserbase API key authenticates upstream. Returns a fallback shape when
-  // BROWSERBASE_API_KEY is absent so the agent can still emit a screenshot
-  // stream via the report-artifact channel.
-  app.route("/api/browserbase", createBrowserbaseRoutes());
+  // [S40-P9 + S42-T5 unified] Browserbase router mounted once with auth gate.
+  // S40 routes: /sessions/* + /stream (persistent Consul Browser).
+  // S42 routes: /iframe/session (transient agent-iframe artifact pane).
+  // Auth middleware applied earlier in the registration order above.
 }

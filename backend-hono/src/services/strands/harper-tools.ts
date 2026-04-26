@@ -20,7 +20,7 @@ import {
 } from "../browserbase/session-manager.js";
 import { isBrowserbaseAvailable } from "../browserbase/client.js";
 // [claude-code 2026-04-25] S42-T5: Browserbase agent-iframe visible session.
-import { browseVisible } from "../browser/browserbase.js";
+import { browseVisible } from "../browserbase/agent-iframe.js";
 
 const log = createLogger("HarperTools");
 
