@@ -1,54 +1,71 @@
-// [claude-code 2026-04-16] Circular radar sweep spinner — 8 pixelated segments, Nothing Design
-import { motion } from "framer-motion";
+// [claude-code 2026-04-25] S42-T8: Nothing-design pass — replaced the 8-segment
+//   framer-motion radar with a single thin SVG line sweeping clockwise at 1500ms.
+//   Driven by WAAPI (element.animate()) per the SVG-animation memory rule. No
+//   trail, no fade, no glow. Caller API preserved (size, color).
+// [claude-code 2026-04-16] Circular radar sweep spinner — Nothing Design
+import { useEffect, useRef } from "react";
 
 interface RadarSpinnerProps {
   size?: number;
   color?: string;
 }
 
-const SEGMENT_COUNT = 8;
-const ANGLE_STEP = 360 / SEGMENT_COUNT;
+const SWEEP_PERIOD_MS = 1500;
 
 export function RadarSpinner({
   size = 22,
-  color = "var(--black, #000)",
+  color = "var(--fintheon-accent, #c79f4a)",
 }: RadarSpinnerProps) {
-  const r = size / 2;
-  const segW = 3;
-  const segH = r * 0.42;
+  const lineRef = useRef<SVGLineElement | null>(null);
+
+  useEffect(() => {
+    const node = lineRef.current;
+    if (!node) return;
+    const reduced = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (reduced) return;
+    const animation = node.animate(
+      [{ transform: "rotate(0deg)" }, { transform: "rotate(360deg)" }],
+      { duration: SWEEP_PERIOD_MS, iterations: Infinity, easing: "linear" },
+    );
+    return () => animation.cancel();
+  }, []);
+
+  const half = size / 2;
+  // Sweep line runs from centre to outer edge, leaving a small inset so it
+  // doesn't kiss the container boundary.
+  const inset = Math.max(1, Math.round(size * 0.08));
+  const tip = half - inset;
 
   return (
-    <motion.div
-      animate={{ rotate: 360 }}
-      transition={{ repeat: Infinity, duration: 1.4, ease: "linear" }}
-      style={{
-        width: size,
-        height: size,
-        position: "relative",
-      }}
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      role="status"
+      aria-label="Loading"
     >
-      {Array.from({ length: SEGMENT_COUNT }, (_, i) => {
-        const angle = i * ANGLE_STEP;
-        // Sweep effect: stagger opacity so leading segment is bright
-        const opacity = 0.2 + (i / SEGMENT_COUNT) * 0.8;
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              top: r - segH,
-              left: r - segW / 2,
-              width: segW,
-              height: segH,
-              borderRadius: 1,
-              background: color,
-              opacity,
-              transformOrigin: `${segW / 2}px ${segH}px`,
-              transform: `rotate(${angle}deg) translateY(-${r * 0.15}px)`,
-            }}
-          />
-        );
-      })}
-    </motion.div>
+      <line
+        ref={lineRef}
+        x1={half}
+        y1={half}
+        x2={half}
+        y2={inset}
+        stroke={color}
+        strokeWidth={1.25}
+        strokeLinecap="square"
+        style={{ transformOrigin: `${half}px ${half}px` }}
+      />
+      <circle
+        cx={half}
+        cy={half}
+        r={tip}
+        fill="none"
+        stroke={color}
+        strokeWidth={0.75}
+        opacity={0.25}
+      />
+    </svg>
   );
 }

@@ -92,6 +92,10 @@ html *::-webkit-scrollbar {
   --font-heading:
     "Readable Digits", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
+  /* [claude-code 2026-04-25] S42-T8: Doto display font for monumental numerals.
+     Mirrors the mobile pattern at mobile/index.css. Doto @font-face declaration
+     lives in frontend/fonts.css. */
+  --font-display: "Doto", ui-monospace, "SF Mono", Menlo, Monaco, monospace;
 
   --radius: 0.625rem;
   --background: oklch(1 0 0);
@@ -174,40 +178,12 @@ html *::-webkit-scrollbar {
   }
 }
 
-/* [claude-code 2026-04-19] v5.22 S1: Nothing-design fuse shimmer — slow 4.2s sweep with
- *   ~1s dwell between sweeps (no AI sparkle). Apply as absolutely-positioned overlay
- *   inside every desktop fuse fill. Disabled under prefers-reduced-motion. */
-@keyframes nothing-fuse-shimmer {
-  0%,
-  76%,
-  100% {
-    background-position: -200% 0;
-    opacity: 0;
-  }
-  38% {
-    background-position: 200% 0;
-    opacity: 0.45;
-  }
-}
+/* [claude-code 2026-04-25] S42-T8: nothing-fuse-shimmer keyframes + class removed —
+ *   NothingFuse no longer paints a shimmer overlay (banned ornament). Class kept
+ *   defined here as a no-op so any straggling consumers degrade silently rather
+ *   than throwing a CSS error. */
 .nothing-fuse-shimmer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--fintheon-text, #f0ead6) 50%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  mix-blend-mode: overlay;
-  animation: nothing-fuse-shimmer 4.2s linear infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .nothing-fuse-shimmer {
-    animation: none;
-    opacity: 0;
-  }
+  display: none;
 }
 
 /* Horizontal fuse shimmer for RiskFlow expanded card footer */

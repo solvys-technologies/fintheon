@@ -1,3 +1,9 @@
+// [claude-code 2026-04-25] S42-T8 audit: every variant in this file is Braille,
+// geometric block, or ASCII line-art — none are stars, sparkles, or dot-cluster
+// AI shimmers. All callers (RiskFlowMain refresh, AquariumPredictionCards,
+// SessionsModal, App refresh) are kept on the existing presets. FintheonThread's
+// AiLoader was migrated off HelixVertical onto the new horizontal Nothing fuse
+// in ui/ai-loader.tsx. No removals.
 // [claude-code 2026-04-19] Unicode spinner bank — Braille/ASCII-first microinteractions
 // inspired by Irfan Aziz's Unicode Spinner (unicode.framer.website). Zero runtime deps.
 // Every spinner is driven by two vars: `severity` (color) and `priority` (speed),

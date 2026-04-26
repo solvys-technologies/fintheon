@@ -9,6 +9,26 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T19:30:00",
+    agent: "claude-code",
+    summary:
+      "S42-T8 [v5.29.0] Nothing-design fuses + spinners + Doto display font on desktop. (1) frontend NothingFuse refactor: dropped the .nothing-fuse-shimmer overlay (banned ornament), slowed the fill transition from 520ms to 600ms ease-out for deliberate Nothing pacing, kept the segmented anatomy (continuous fill with N-1 perpendicular tick dividers cut into the bar) and the severity-coloured fill (callers like RiskFlowMini, InstrumentFusesPanel, BlendedVIXCard depend on it), added JSDoc documenting the primitive contract for downstream tracks (T3 AgentActivityRail, T7 mount perf). (2) mobile VerticalFuseBar: same Nothing language, slowed per-segment transition from 150ms to 220ms and bumped staggered delay 18ms->32ms (~320ms total bottom-up fill). (3) mobile RadarSpinner: replaced 8-segment framer-motion with a single thin SVG line sweeping clockwise at 1500ms via WAAPI element.animate() per the SVG-animation-WAAPI memory; outer circle hint at 0.25 opacity, no glow, no trail. (4) mobile SegmentedSpinner: replaced setInterval step-walk with WAAPI rotation, 8 segments arranged on a tight (2*size+gap) disc, steps(8,end) easing so the lead segment walks discretely; outer bounding box preserved so ThinkingIndicator + App init layouts don't shift. (5) frontend ai-loader: stripped the HelixVertical Braille glyph (read as decorative shimmer at small sizes) and replaced with a horizontal indeterminate Nothing fuse -- a 3-segment cluster slides left-to-right on a surface track at 1500ms via WAAPI. FintheonThread.AiLoader migrated onto the same primitive so the chat 'Loading conversation' surface gets the same treatment. (6) UnicodeSpinners audit: every variant is Braille / geometric block / ASCII line-art -- no stars, sparkles, or dot-cluster AI shimmers; no removals. (7) Doto on desktop: --font-display CSS var added to frontend :root mirroring mobile/index.css; @font-face already lived in frontend/fonts.css. Doto applied to KPICard numerals + mini-pie inner percent label, AccountSummary balance/equity/margin/dailyPnL, SessionStatusBar signals/trades/P&L/EST clock. nothing-fuse-shimmer keyframes + class removed from index.css (replaced with display:none stub for any straggling consumers). All four validations clean (frontend tsc, mobile tsc, frontend vite build, mobile vite build); doto.woff2 verified bundled at frontend/dist/fonts/doto.woff2.",
+    files: [
+      "frontend/components/shared/NothingFuse.tsx",
+      "frontend/components/ui/ai-loader.tsx",
+      "frontend/components/chat/FintheonThread.tsx",
+      "frontend/components/icon-bank/UnicodeSpinners.tsx",
+      "frontend/components/journal/KPICard.tsx",
+      "frontend/components/AccountSummary.tsx",
+      "frontend/components/SessionStatusBar.tsx",
+      "frontend/index.css",
+      "mobile/components/shared/VerticalFuseBar.tsx",
+      "mobile/components/shared/RadarSpinner.tsx",
+      "mobile/components/shared/SegmentedSpinner.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-25T18:00:00",
     agent: "claude-code",
     summary:

@@ -1,7 +1,11 @@
+// [claude-code 2026-04-25] S42-T8: Account Summary currency values render in Doto
+//   via --font-display for monumental display typography across the dashboard.
 import { useEffect, useState } from "react";
 import { useBackend } from "../lib/backend";
 import { useAuth } from "../contexts/AuthContext";
 import type { Account } from "../types/api";
+
+const NUM_FONT: React.CSSProperties = { fontFamily: "var(--font-display)" };
 
 export default function AccountSummary() {
   const backend = useBackend();
@@ -74,21 +78,21 @@ export default function AccountSummary() {
       <div className="space-y-2">
         <div className="flex justify-between items-baseline">
           <span className="text-[10px] text-zinc-500">Balance</span>
-          <span className="text-sm font-mono text-white">
+          <span className="text-sm text-white" style={NUM_FONT}>
             ${account.balance.toLocaleString()}
           </span>
         </div>
 
         <div className="flex justify-between items-baseline">
           <span className="text-[10px] text-zinc-500">Equity</span>
-          <span className="text-sm font-mono text-white">
+          <span className="text-sm text-white" style={NUM_FONT}>
             ${(account.equity ?? account.balance).toLocaleString()}
           </span>
         </div>
 
         <div className="flex justify-between items-baseline">
           <span className="text-[10px] text-zinc-500">Margin Used</span>
-          <span className="text-sm font-mono text-zinc-400">
+          <span className="text-sm text-zinc-400" style={NUM_FONT}>
             ${(account.marginUsed ?? 0).toLocaleString()}
           </span>
         </div>
@@ -99,11 +103,12 @@ export default function AccountSummary() {
           <span className="text-[10px] text-zinc-500">Daily P&L</span>
           <div className="text-right">
             <div
-              className="text-sm font-mono font-bold"
+              className="text-sm font-bold"
               style={{
                 color: isPositive
                   ? "var(--fintheon-bullish)"
                   : "var(--fintheon-bearish)",
+                fontFamily: "var(--font-display)",
               }}
             >
               {isPositive ? "+" : ""}

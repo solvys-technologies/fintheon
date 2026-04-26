@@ -18,7 +18,7 @@ import remarkGfm from "remark-gfm";
 import { AlertCircle, ArrowDown } from "lucide-react";
 import { ChatGreeting } from "./ChatGreeting";
 import { FintheonThinkingIndicator } from "./FintheonThinkingIndicator";
-import { HelixVertical } from "../icon-bank/UnicodeSpinners";
+import { AiLoader as NothingAiLoader } from "../ui/ai-loader";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 import { CognitionPanel } from "./CognitionPanel";
 import { ToolApprovalCard } from "./ToolApprovalCard";
@@ -428,12 +428,12 @@ const ScrollToBottomButton: FC<{
 /*  AI Loader — initial hydration spinner                               */
 /* ------------------------------------------------------------------ */
 
+// [claude-code 2026-04-25] S42-T8: replaced HelixVertical Braille glyph with the
+//   Nothing-design indeterminate fuse from ui/ai-loader. Same component now drives
+//   every "loading conversation" surface.
 export const AiLoader: FC = () => (
-  <div className="flex flex-col items-center justify-center py-16 gap-3">
-    <HelixVertical size={14} rows={5} />
-    <span className="text-[11px] text-zinc-500 tracking-[0.18em] uppercase">
-      Loading conversation
-    </span>
+  <div className="py-16">
+    <NothingAiLoader text="Loading conversation" size={48} />
   </div>
 );
 
