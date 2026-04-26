@@ -1,13 +1,12 @@
-// [claude-code 2026-04-25] S35-cleanup: rerouted puller from OpenRouter free-tier
-// (which has been throttled to 402 insufficient-credits across llama-3.3-70b /
-// mistral-large free models) to Hermes seatChat → DashScope Qwen3-235B-A22B,
-// the same free Qwen path the Arbitrum Lead Analyst seat uses. Groq fallback
-// inside seatChat handles DashScope rate-limits. US slices still enriched with
-// FRED series if FRED_API_KEY is set.
+// [claude-code 2026-04-26] S35-cleanup: routed puller through OpenRouter Qwen
+// (qwen/qwen-2.5-72b-instruct primary, qwen/qwen3-235b-a22b fallback) — same
+// OPENROUTER_API_KEY that already fronts every Hermes call on prod. Free-tier
+// :free variants 402 with $0 balance, so we use paid model IDs. FRED date
+// window padded -60 days backward so monthly series whose observation_date
+// falls in the prior reporting month still land inside the slice window.
 // [claude-code 2026-04-24] S34-T10: free-tier LLM puller for historical econ events.
 
 import { createLogger } from "../../lib/logger.js";
-import { seatChat } from "../arbitrum/adapters.js";
 import type {
   BackfillSlice,
   RawBackfillEvent,
@@ -16,12 +15,14 @@ import type {
 
 const log = createLogger("EconBackfillPuller");
 
-const PRIMARY_QWEN_MODEL = "qwen3-235b-a22b";
-const FALLBACK_QWEN_MODEL = "qwen2.5-72b-instruct";
-const QWEN_TIMEOUT_MS = 30_000;
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const PRIMARY_MODEL = "qwen/qwen-2.5-72b-instruct";
+const FALLBACK_MODEL = "qwen/qwen3-235b-a22b";
 
 const PULLER_SYSTEM_PROMPT =
   "You are a data extraction tool. Return ONLY valid JSON matching the schema requested. No prose, no markdown fences.";
+
+const FRED_BACKWARD_PAD_DAYS = 60;
 
 // FRED series that map cleanly to our 4 categories for US slices.
 const US_FRED_SERIES: Array<{ id: string; name: string }> = [
@@ -32,26 +33,70 @@ const US_FRED_SERIES: Array<{ id: string; name: string }> = [
   { id: "GDP", name: "Gross Domestic Product" },
 ];
 
-async function callHermesQwen(
-  modelId: string,
+interface OpenRouterResponse {
+  choices?: Array<{ message?: { content?: string } }>;
+}
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function callOpenRouterQwen(
+  model: string,
   prompt: string,
 ): Promise<string | null> {
-  try {
-    const res = await seatChat({
-      modelId,
-      system: PULLER_SYSTEM_PROMPT,
-      user: prompt,
-      temperature: 0,
-      timeoutMs: QWEN_TIMEOUT_MS,
-    });
-    return res.content && res.content.trim().length > 0 ? res.content : null;
-  } catch (err) {
-    log.warn("Hermes Qwen call failed", {
-      model: modelId,
-      error: err instanceof Error ? err.message : String(err),
-    });
-    return null;
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) return null;
+
+  const backoffs = [250, 1000, 4000];
+  for (let attempt = 0; attempt <= backoffs.length; attempt++) {
+    try {
+      const res = await fetch(OPENROUTER_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: PULLER_SYSTEM_PROMPT },
+            { role: "user", content: prompt },
+          ],
+          temperature: 0,
+          max_tokens: 4000,
+        }),
+      });
+
+      if (res.status === 429 || res.status === 503) {
+        if (attempt < backoffs.length) {
+          await sleep(backoffs[attempt]);
+          continue;
+        }
+        return null;
+      }
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        log.warn(`OpenRouter ${model} HTTP ${res.status}`, {
+          body: text.slice(0, 200),
+        });
+        return null;
+      }
+
+      const json = (await res.json()) as OpenRouterResponse;
+      const content = json.choices?.[0]?.message?.content ?? null;
+      return content && content.trim().length > 0 ? content : null;
+    } catch (err) {
+      if (attempt < backoffs.length) {
+        await sleep(backoffs[attempt]);
+        continue;
+      }
+      log.warn("OpenRouter fetch failed", { model, error: String(err) });
+      return null;
+    }
   }
+  return null;
 }
 
 function parseJsonArray(raw: string | null): unknown[] {
@@ -132,12 +177,19 @@ async function pullFromFred(slice: BackfillSlice): Promise<RawBackfillEvent[]> {
   const key = process.env.FRED_API_KEY;
   if (!key || slice.country !== "US") return [];
 
+  // FRED dates monthly series at the FIRST of the reporting month, but the
+  // release prints ~3 weeks later. Pad backward so a slice starting 2026-04-01
+  // still picks up CPI/Payrolls dated 2026-03-01 (March data, released April).
+  const paddedStart = new Date(slice.slice_start);
+  paddedStart.setUTCDate(paddedStart.getUTCDate() - FRED_BACKWARD_PAD_DAYS);
+  const observation_start = paddedStart.toISOString().slice(0, 10);
+
   const events: RawBackfillEvent[] = [];
   for (const series of US_FRED_SERIES) {
     const observations = await fetchFredSeries(
       series.id,
       key,
-      slice.slice_start,
+      observation_start,
       slice.slice_end,
     );
     for (const obs of observations) {
@@ -175,10 +227,10 @@ export async function pullSliceViaFreeTierLLM(
 ): Promise<RawSlicePayload | null> {
   const prompt = buildPrompt(slice);
 
-  let raw = await callHermesQwen(PRIMARY_QWEN_MODEL, prompt);
+  let raw = await callOpenRouterQwen(PRIMARY_MODEL, prompt);
   let source: RawSlicePayload["source"] = "hermes-qwen";
   if (!raw) {
-    raw = await callHermesQwen(FALLBACK_QWEN_MODEL, prompt);
+    raw = await callOpenRouterQwen(FALLBACK_MODEL, prompt);
     source = "hermes-qwen-fallback";
   }
 
