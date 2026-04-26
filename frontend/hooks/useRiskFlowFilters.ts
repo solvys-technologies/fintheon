@@ -10,13 +10,18 @@
 //   stays multi-select; source is now also multi-select. Backward-compat
 //   `sourceFilter: SourceFilter` / `setSourceFilter` shim preserves the old
 //   single-value "twitter" / "financial-juice" etc. API for any holdover callers.
-import { useState, useCallback, useMemo, useEffect } from "react";
+// [claude-code 2026-04-26] S46: severities + buckets now flow through SettingsContext
+//   → /api/preferences so the same selection follows the user across desktop/mobile/web.
+//   localStorage stays as an offline cache + one-time migration source for users whose
+//   pre-S46 selections live there. `showProposals` stays local — it's a session toggle.
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import type { AlertSeverity, RiskFlowAlert } from "../lib/riskflow-feed";
 import {
   bucketOf,
   matchesBuckets,
   type SourceBucket,
 } from "../lib/source-buckets";
+import { useSettings } from "../contexts/SettingsContext";
 
 const STORAGE_KEY = "fintheon:riskflow-filters:v2";
 const VALID_SEVERITIES: ReadonlySet<AlertSeverity> = new Set([

@@ -71,6 +71,7 @@ const preferencesSchema = z.object({
   notifications: notificationsSchema,
   fusePalette: fusePaletteOverrideSchema.optional(),
   psychAssistEnabled: z.boolean().optional(),
+  riskflowFilters: riskflowFiltersSchema.optional(),
   updatedAt: z.string(),
 });
 
@@ -90,6 +91,7 @@ const DEFAULT_PREFERENCES: Preferences = {
     econOnlyMode: false,
   },
   psychAssistEnabled: false,
+  riskflowFilters: { severities: [], buckets: [] },
   updatedAt: new Date(0).toISOString(),
 };
 
@@ -122,6 +124,10 @@ export function createPreferencesRoutes(): Hono {
       notifications: {
         ...DEFAULT_PREFERENCES.notifications,
         ...(stored.notifications ?? {}),
+      },
+      riskflowFilters: stored.riskflowFilters ?? {
+        severities: [],
+        buckets: [],
       },
       updatedAt: data?.updated_at ?? DEFAULT_PREFERENCES.updatedAt,
     };
