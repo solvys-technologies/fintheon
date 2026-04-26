@@ -1,3 +1,7 @@
+// [claude-code 2026-04-26] S45.5/F2+F4: dropped startEconPoller (rettiwt poller),
+//   initRettiwtPool, startNewsWorkerAuditScheduler, startNewsWorkerMaintenance,
+//   and the RETTIWT_REENABLE branches. Rettiwt + the deprecated news-worker tree
+//   are deleted. The "rettiwt" peer capability string is also gone.
 // [claude-code 2026-04-16] S20-T9: Two-phase boot — bootCritical() before listen, bootBackground() after via queueMicrotask
 // [claude-code 2026-04-03] Added AgentDesk daily cron (6:00 AM ET weekdays) to boot sequence
 // [claude-code 2026-03-29] Added catalyst promoter to boot sequence (graduates scored items → narrative catalysts)
@@ -13,7 +17,6 @@ import { seedCacheFromDb } from "../services/riskflow/feed-service.js";
 import { startRiskFlowEconEnricher } from "../services/cron/riskflow-econ-enricher.js";
 import { startEconCalendarPopulator } from "../services/cron/econ-calendar-populator.js";
 import { startFiscalSpeakerPopulator } from "../services/cron/fiscal-speaker-populator.js";
-import { startEconPoller } from "../services/riskflow/econ-rettiwt-poller.js";
 import { startExaScheduledMonitor } from "../services/riskflow/exa-scheduled-monitor.js";
 import { initClaudeSDK } from "../services/claude-sdk/process-manager.js";
 import { initToolApprovalStore } from "../services/tool-approval-store.js";
@@ -34,15 +37,10 @@ import {
   startDispatchScheduler,
   catchUpMissedBriefs,
 } from "../services/cron/dispatch-scheduler.js";
-import { startNewsWorkerAuditScheduler } from "../services/cron/news-worker-audit-scheduler.js";
 // [claude-code 2026-04-25] S40-P8: megacap earnings refresh (Sun 22:00 ET)
 import { startMegacapEarningsRefresh } from "../services/cron/megacap-earnings-refresh.js";
 // [claude-code 2026-04-25] S40-P8: post-print enrichment scheduler
 import { startMegacapEarningsEnrichment } from "../services/cron/megacap-earnings-enrichment.js";
-// [claude-code 2026-04-25] S40-P2: news-worker maintenance — soft-delete sweep,
-// hard-delete sweep, source auto-downweight. Runs in backend-hono since it's
-// pure Supabase work (no scheduler coupling).
-import { startNewsWorkerMaintenance } from "../services/cron/news-worker-maintenance.js";
 // [claude-code 2026-04-25] S40-P6: Time-To-Print scheduler — emits SSE state
 // transitions for the TTP widget.
 import { startTimeToPrintScheduler } from "../services/time-to-print/scheduler.js";
@@ -76,7 +74,6 @@ import { restoreAgentDeskRunningState } from "../services/agent-desk/agent-desk-
 import { startDivergenceDetector } from "../services/polymarket-kalshi-divergence.js";
 import { startPredictionResolver } from "../services/polymarket-prediction-resolver.js";
 import { bootHarperAutonomous } from "../services/harper-autonomous/index.js";
-import { initRettiwtPool } from "../services/rettiwt-service.js";
 import { cleanupOldRawItems } from "../services/supabase-service.js";
 import { startRelayConnector } from "../services/relay-connector.js";
 import { startOracleResearch } from "../services/cron/oracle-research-scheduler.js";
@@ -107,7 +104,6 @@ async function registerLocalPeerOnBoot(): Promise<void> {
 
   const hermesAvailable = isHermesAvailable();
   const capabilities = ["claude-cli"];
-  if (process.env.PEER_ENABLE_TWITTER !== "false") capabilities.push("rettiwt");
   if (hermesAvailable) capabilities.push("hermes");
 
   const peer = await registerPeer(userId, {
@@ -204,41 +200,13 @@ export async function bootBackground(): Promise<void> {
   startFeedPoller();
   log.info("FeedPoller started");
 
-  // [claude-code 2026-04-19] S27-T4: Rettiwt cut from Herald dispatcher. Pool init and
-  // econ-rettiwt-poller start are gated behind RETTIWT_REENABLE=true so we can reactivate
-  // without a code change if browser-harness coverage falls short in the 48h review.
-  if (process.env.RETTIWT_REENABLE === "true") {
-    await initRettiwtPool();
-    log.info("Rettiwt key pool initialized (RETTIWT_REENABLE=true)");
-
-    const poolReloadTimer = setInterval(() => {
-      initRettiwtPool().catch((err) =>
-        log.warn("Rettiwt pool reload failed (non-fatal)", {
-          error: String(err),
-        }),
-      );
-    }, 15 * 60_000);
-    poolReloadTimer.unref?.();
-    log.info("Rettiwt pool reload scheduled (15 min)");
-  } else {
-    log.info(
-      "Rettiwt key pool skipped — S27-T4 cut from dispatcher (set RETTIWT_REENABLE=true to restore)",
-    );
-  }
+  // [claude-code 2026-04-26] S45.5/F2: Rettiwt + econ-rettiwt-poller deleted.
+  // Twitter ingest now flows through workers/riskflow-worker/sources/x-handles-browser.ts
+  // (syndication primary, xactions secondary, agent-reach Nitter tertiary).
 
   // Poll watchdog — detects stalled Agent Reach, soft-nudges then restarts if needed
   startPollWatchdog();
   log.info("PollWatchdog started");
-
-  if (process.env.RETTIWT_REENABLE === "true") {
-    // Econ-triggered Rettiwt poller (replaces twitter-cli)
-    startEconPoller();
-    log.info("EconRettiwtPoller started (RETTIWT_REENABLE=true)");
-  } else {
-    log.info(
-      "EconRettiwtPoller skipped — S27-T4 (set RETTIWT_REENABLE=true to restore)",
-    );
-  }
 
   // Exa scheduled-event monitor (supplementary discovery, not headline ingestion)
   startExaScheduledMonitor();
@@ -292,9 +260,9 @@ export async function bootBackground(): Promise<void> {
   startDispatchScheduler();
   log.info("DispatchScheduler started");
 
-  // [claude-code 2026-04-19] S28: News-worker audit gates — 6:00am/11:30am/4:00pm ET, non-negotiable
-  startNewsWorkerAuditScheduler();
-  log.info("NewsWorkerAuditScheduler started");
+  // [claude-code 2026-04-26] S45.5/F4: news-worker audit + maintenance crons
+  // deleted alongside the deprecated workers/news-worker/ tree. RiskFlow worker
+  // is now the only news pipeline.
 
   // [claude-code 2026-04-25] S40-P8: megacap earnings refresh (Sunday 22:00 ET, +90d window)
   startMegacapEarningsRefresh();
@@ -303,10 +271,6 @@ export async function bootBackground(): Promise<void> {
   // [claude-code 2026-04-25] S40-P8: T+5min post-print enrichment (every 5 min, scans last 6h)
   startMegacapEarningsEnrichment();
   log.info("MegacapEarningsEnrichment started");
-
-  // [claude-code 2026-04-25] S40-P2: news-worker maintenance crons.
-  startNewsWorkerMaintenance();
-  log.info("NewsWorkerMaintenance started");
 
   // [claude-code 2026-04-25] S40-P6: Time-To-Print scheduler.
   startTimeToPrintScheduler();

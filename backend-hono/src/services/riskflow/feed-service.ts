@@ -34,12 +34,12 @@ import {
 } from "../iv-scoring/index.js";
 import { broadcastLevel4 } from "./sse-broadcaster.js";
 import { getMatchedKeywords } from "../headline-parser.js";
+// [claude-code 2026-04-26] S45.5/F2: dropped pollForEconNews + isRettiwtAvailable
+//   imports. Rettiwt is dead; X intake flows through riskflow-worker now.
 // [claude-code 2026-03-27] S3: Rewired data pipeline — raw → scored Supabase tables, deprecating news_feed_items
 import * as newsCache from "./news-cache.js";
 import { fetchEconomicFeed } from "./economic-feed.js";
 import type { NewsSource as AnalysisNewsSource } from "../../types/news-analysis.js";
-import { pollForEconNews, getWarmCacheItems } from "./econ-rettiwt-poller.js";
-import { isRettiwtAvailable } from "../rettiwt-service.js";
 import {
   estimatePoints,
   shouldUncapNarrativePressure,
@@ -742,28 +742,19 @@ function isForeignEconPrint(headline: string): boolean {
 }
 
 /**
- * Fetch fresh feed from Rettiwt + economic prints + Polymarket odds
+ * Fetch fresh feed from economic prints + Polymarket odds.
+ * [claude-code 2026-04-26] S45.5/F2: rettiwt branch + warm cache removed.
+ *   Twitter intake is now exclusively riskflow-worker's responsibility.
  */
 async function fetchFreshFeed(): Promise<FeedItem[]> {
   try {
-    const [econItems, rettiwtItems] = await Promise.all([
-      fetchEconomicFeed(),
-      isRettiwtAvailable()
-        ? pollForEconNews().catch(() => [] as FeedItem[])
-        : Promise.resolve([] as FeedItem[]),
-    ]);
+    const econItems = await fetchEconomicFeed();
 
-    // Include warm-cached Critical/High posts seeded at startup
-    const warmItems = getWarmCacheItems();
-
-    // Merge and dedupe by id
-    const merged = [...econItems, ...rettiwtItems, ...warmItems].filter(
+    const merged = econItems.filter(
       (item, idx, arr) => idx === arr.findIndex((i) => i.id === item.id),
     );
 
-    log.info(
-      ` fetchFreshFeed: Merged ${merged.length} items (${econItems.length} econ, ${rettiwtItems.length} rettiwt)`,
-    );
+    log.info(` fetchFreshFeed: Merged ${merged.length} econ items`);
 
     // S3: Write raw items to raw_riskflow_items for central scorer pipeline
     const cleanMerged = filterWithContentGuard(

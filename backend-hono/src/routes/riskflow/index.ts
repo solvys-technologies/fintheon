@@ -3,11 +3,11 @@
  * Route registration for /api/riskflow endpoints
  */
 
+// [claude-code 2026-04-26] S45.5/F2+F4: dropped /health (news-worker watchdog
+//   consumer; news-worker tree deleted) and /rettiwt-refresh (rettiwt-service
+//   deleted). Tier health is surfaced through /api/diagnostics.
+
 import { Hono } from "hono";
-// [claude-code 2026-04-25] S40-P2: /api/riskflow/health — used by the
-// news-worker watchdog and external monitors. Lives in services/, not
-// handlers.ts, so it's reachable from cron without circular imports.
-import { getHealthSnapshot } from "../../workers/news-worker/watchdog.js";
 import {
   handleGetFeed,
   handleGetBreaking,
@@ -40,12 +40,6 @@ import {
 
 export function createRiskFlowRoutes(): Hono {
   const router = new Hono();
-
-  // [claude-code 2026-04-25] S40-P2: news-worker health probe.
-  router.get("/health", async (c) => {
-    const snap = await getHealthSnapshot();
-    return c.json(snap);
-  });
 
   // GET /api/riskflow/feed - Get news feed
   router.get("/feed", handleGetFeed);
@@ -124,16 +118,6 @@ export function createRiskFlowRoutes(): Hono {
 
   // GET /api/riskflow/items/:id — single-item lookup for the mobile DetailSheet modal (S25)
   router.get("/items/:id", handleGetItemById);
-
-  // POST /api/riskflow/rettiwt-refresh — force-reload keys from DB + reset cooldowns
-  // [claude-code 2026-04-16] Called on app startup to ensure X feed polling is immediately healthy
-  router.post("/rettiwt-refresh", async (c) => {
-    const { forceRefreshPool, getPoolStatus } =
-      await import("../../services/rettiwt-service.js");
-    const result = await forceRefreshPool();
-    const status = getPoolStatus();
-    return c.json({ ...result, pool: status });
-  });
 
   return router;
 }

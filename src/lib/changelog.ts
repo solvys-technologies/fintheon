@@ -9,6 +9,27 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T22:00:00",
+    agent: "claude-code",
+    summary:
+      "S45.5/F2+F4 — silent-failure cleanup wave 1. Rewrote /api/diagnostics X Feed check from the dead RETTIWT_AUTH_TOKEN gate to a live syndication.twitter.com probe (no auth, canary handle DeItaone, parses __NEXT_DATA__). Deleted the entire rettiwt surface: services/rettiwt-service.ts, services/twitter/ (pipeline/streaming-watcher/rettiwt-fallback/types), services/riskflow/{econ-rettiwt-poller, rettiwt-poller-accounts, rettiwt-poller-econ, rettiwt-poller-transform}.ts, plus the deprecated workers/news-worker/ tree, Dockerfile.news-worker, fly.news-worker.toml, services/cron/news-worker-{audit-handler,audit-scheduler,maintenance}.ts, and tests/catalyst-priority.integration.test.ts. Cleaned consumers: boot/services.ts (4 imports + RETTIWT_REENABLE branches + 'rettiwt' peer capability gone), routes/settings/index.ts (3 /rettiwt routes removed), routes/riskflow/index.ts (/health + /rettiwt-refresh removed), routes/riskflow/handlers.ts (handleDoctor + handleGetSources rettiwt branches dropped; rettiwt fields kept as static-shim back-compat for now-frozen frontend consumers), services/riskflow/feed-{service,poller}.ts (curated-timeline branch + manualRefresh path removed), services/riskflow/commentary-scraper.ts (no-op stub; coverage moved to riskflow-worker), exa-service.ts header. Pulled the four pure utilities (PRE_/POST_EVENT_MINUTES, extractActualFromText, matchTweetToEvent) out of the deleted rettiwt-poller-econ.ts into a fresh services/riskflow/econ-print-utils.ts. Stripped RETTIWT_AUTH_TOKEN, RETTIWT_REENABLE, PEER_ENABLE_TWITTER from .env.example. RiskFlow worker is now the only news pipeline. Backend tsc clean.",
+    files: [
+      "backend-hono/.env.example",
+      "backend-hono/fly.toml",
+      "backend-hono/src/boot/services.ts",
+      "backend-hono/src/routes/diagnostics/index.ts",
+      "backend-hono/src/routes/riskflow/handlers.ts",
+      "backend-hono/src/routes/riskflow/index.ts",
+      "backend-hono/src/routes/settings/index.ts",
+      "backend-hono/src/services/exa-service.ts",
+      "backend-hono/src/services/riskflow/commentary-scraper.ts",
+      "backend-hono/src/services/riskflow/econ-keyword-trigger.ts",
+      "backend-hono/src/services/riskflow/econ-print-utils.ts",
+      "backend-hono/src/services/riskflow/feed-poller.ts",
+      "backend-hono/src/services/riskflow/feed-service.ts",
+    ],
+  },
+  {
     date: "2026-04-26T20:45:00",
     agent: "claude-code",
     summary:

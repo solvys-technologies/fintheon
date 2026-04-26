@@ -868,12 +868,11 @@ export async function handleRefresh(c: Context) {
       polled = true;
     }
 
-    // 1b. If Rettiwt is rate-limited (or not owner), run scrape fallback
-    const { isRettiwtRateLimited: isRateLimited } =
-      await import("../../services/riskflow/econ-rettiwt-poller.js");
+    // 1b. If owner poll didn't run (non-owner) run scrape fallback.
+    // [claude-code 2026-04-26] S45.5/F2: rettiwt rate-limit branch dropped — rettiwt is gone.
     const { runScrapeFallback } =
       await import("../../services/riskflow/feed-poller.js");
-    if (isRateLimited() || !polled) {
+    if (!polled) {
       await runScrapeFallback();
       exaFallbackRan = true;
     }
@@ -1126,14 +1125,14 @@ export async function handleNotRelevant(c: Context) {
 }
 
 /** GET /api/riskflow/sources — connection status for data source indicators
+ * [claude-code 2026-04-26] S45.5/F2: rettiwt fields removed entirely. Twitter
+ *   intake now flows through workers/riskflow-worker/sources/x-handles-browser.ts;
+ *   the feed-poller lastRunAt covers it.
  * [claude-code 2026-04-18] S25-T2: expanded with multi-source health + per-user polling stats.
  */
 export async function handleGetSources(c: Context) {
-  const { isRettiwtRateLimited, getRettiwtCooldownMs } =
-    await import("../../services/riskflow/econ-rettiwt-poller.js");
   const { getCurrentPollingOwner, getActivePollingUsers, getAllUserPollStats } =
     await import("../../services/riskflow/user-polling-registry.js");
-  const { getPoolStatus } = await import("../../services/rettiwt-service.js");
   const { getStatus: getHealthStatus } =
     await import("../../services/health-registry.js");
   const { getDomainStatus } =
@@ -1142,12 +1141,6 @@ export async function handleGetSources(c: Context) {
     await import("../../services/riskflow/agent-reach-poller.js");
 
   const supabaseUp = isSupabaseConfigured();
-  const pool = getPoolStatus();
-  const rettiwtUp = pool.availableKeys > 0;
-  const rateLimited = isRettiwtRateLimited();
-  const cooldownSec = rateLimited
-    ? Math.round(getRettiwtCooldownMs() / 1000)
-    : 0;
 
   // Per-source health from the registry
   const health = getHealthStatus();
@@ -1164,7 +1157,6 @@ export async function handleGetSources(c: Context) {
   };
 
   const ar = lookup(AGENT_REACH_POLLER_NAME);
-  // feed-poller handles the econ + Rettiwt branch; its lastRunAt represents both.
   const fp = lookup("feed-poller");
 
   const sources = {
@@ -1173,12 +1165,6 @@ export async function handleGetSources(c: Context) {
       lastRunAt: ar.lastRunAt,
       domains: getDomainStatus(),
     },
-    rettiwt: {
-      active: fp.active && rettiwtUp,
-      lastRunAt: fp.lastRunAt,
-      rateLimited,
-      poolKeys: pool.totalKeys,
-    },
     feedPoller: {
       active: fp.active,
       lastRunAt: fp.lastRunAt,
@@ -1186,31 +1172,29 @@ export async function handleGetSources(c: Context) {
   };
 
   const anyActive = sources.agentReach.active || sources.feedPoller.active;
-
   const anyTripped = Object.values(sources.agentReach.domains).some(
     (s) => s === "tripped",
   );
 
   const newsfeedHealthy = anyActive;
-  const newsfeedDegraded = anyActive && (anyTripped || rateLimited);
+  const newsfeedDegraded = anyActive && anyTripped;
 
   return c.json({
-    // Legacy fields (kept for backward compat)
+    // [claude-code 2026-04-26] S45.5/F2: rettiwt fields kept as static shims so
+    // legacy frontend consumers (TeamPresenceContext, useSourceStatus) keep
+    // rendering. Real X feed health is in sources.feedPoller now. Frontend
+    // cleanup is a follow-up; nothing currently writes "true" into these.
     supabase: supabaseUp,
-    rettiwt: rettiwtUp,
-    rettiwtRateLimited: rateLimited,
-    rettiwtCooldownSec: cooldownSec,
-    rettiwtPool: pool,
+    rettiwt: false,
+    rettiwtRateLimited: false,
+    rettiwtCooldownSec: 0,
+    rettiwtPool: { totalKeys: 0, availableKeys: 0, cooldownKeys: 0 },
     pollingOwner: getCurrentPollingOwner(),
     activePollers: getActivePollingUsers(),
     xApi: false,
-
-    // NEW — multi-source health
     sources,
     newsfeedHealthy,
     newsfeedDegraded,
-
-    // NEW — per-user polling attribution (keyed by userId or "backend" sentinel)
     userPollStats: getAllUserPollStats(),
   });
 }
@@ -1352,22 +1336,15 @@ export async function handleDoctor(c: Context) {
   }
   doctorCooldowns.set(userId, now);
 
-  const { forceRefreshPool } =
-    await import("../../services/rettiwt-service.js");
+  // [claude-code 2026-04-26] S45.5/F2: dropped Rettiwt pool refresh — service deleted.
   const { setUserPollingState, recordUserPollSuccess, getUserPollStats } =
     await import("../../services/riskflow/user-polling-registry.js");
   const { agentReachTick } =
     await import("../../services/riskflow/agent-reach-poller.js");
 
-  // 1. Reset Rettiwt pool cooldowns + reload keys
-  let poolRefreshed = { totalKeys: 0, resetCount: 0 };
-  try {
-    poolRefreshed = await forceRefreshPool();
-  } catch (err) {
-    console.warn("[Doctor] forceRefreshPool failed (continuing):", err);
-  }
+  const poolRefreshed = { totalKeys: 0, resetCount: 0 };
 
-  // 2. Ensure user is not killed
+  // Ensure user is not killed
   setUserPollingState(userId, false);
 
   // 3. Catchup: score backlog, seed cache, one Agent Reach tick

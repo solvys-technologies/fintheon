@@ -1,3 +1,8 @@
+// [claude-code 2026-04-26] S45.5/F2: rewire X Feed diagnostic to probe
+//   syndication.twitter.com (no auth, no key) and drop dead rettiwt-service +
+//   econ-rettiwt-poller imports. The old check returned "RETTIWT_AUTH_TOKEN not
+//   set" because rettiwt was decomissioned but the diagnostic was never
+//   updated; that's the textbook silent-failure pattern.
 // [claude-code 2026-04-24] S34-T4: GET /source-quality — merges v_source_signal_noise
 //   with in-memory drop-counter snapshot + recent riskflow_drop_counters rows.
 //   The "items_ingested: 0, errors: 0" silent-drop pattern now has a trace.
@@ -14,14 +19,6 @@ import { getCurrentSnapshot as getDropCounterSnapshot } from "../../services/ris
 import { supabaseAuthHealth } from "../../services/supabase-auth.js";
 import { isPollingActive } from "../../services/riskflow/feed-poller.js";
 import { getFeedHealth } from "../../services/riskflow/feed-service.js";
-import {
-  isRettiwtAvailable,
-  getPoolStatus,
-} from "../../services/rettiwt-service.js";
-import {
-  isRettiwtRateLimited,
-  getRettiwtCooldownMs,
-} from "../../services/riskflow/econ-rettiwt-poller.js";
 import { initHermesAgent } from "../../services/hermes-handler.js";
 import { createLogger } from "../../lib/logger.js";
 import {
@@ -208,28 +205,47 @@ function checkRiskFlowPoller(): ServiceDiagnostic {
   };
 }
 
-function checkRettiwt(): ServiceDiagnostic {
-  if (!isRettiwtAvailable()) {
+// [claude-code 2026-04-26] S45.5/F2: probe the public syndication endpoint
+// (no auth, no key) for a canary handle and confirm we got the __NEXT_DATA__
+// payload back. Mirrors the live primary path in
+// workers/riskflow-worker/sources/x-handles-browser.ts.
+const X_FEED_CANARY_HANDLE = "DeItaone";
+const X_FEED_USER_AGENT =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
+  "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+async function checkXFeed(): Promise<ServiceDiagnostic> {
+  try {
+    const res = await fetch(
+      `https://syndication.twitter.com/srv/timeline-profile/screen-name/${X_FEED_CANARY_HANDLE}`,
+      {
+        headers: { "user-agent": X_FEED_USER_AGENT },
+        signal: AbortSignal.timeout(5_000),
+      },
+    );
+    if (!res.ok) {
+      return {
+        name: "X Feed",
+        status: "degraded",
+        detail: `syndication ${res.status}`,
+      };
+    }
+    const html = await res.text();
+    const hasNextData = html.includes("__NEXT_DATA__");
+    return hasNextData
+      ? { name: "X Feed", status: "ok", detail: "syndication endpoint live" }
+      : {
+          name: "X Feed",
+          status: "degraded",
+          detail: "no __NEXT_DATA__ in syndication response",
+        };
+  } catch (err) {
     return {
       name: "X Feed",
       status: "unavailable",
-      detail: "RETTIWT_AUTH_TOKEN not set",
-      fix: "Add RETTIWT_AUTH_TOKEN to backend-hono/.env",
+      detail: err instanceof Error ? err.message : "fetch failed",
     };
   }
-  if (isRettiwtRateLimited()) {
-    const cooldownSec = Math.round(getRettiwtCooldownMs() / 1000);
-    return {
-      name: "X Feed",
-      status: "degraded",
-      detail: `Rate limited — cooldown ${cooldownSec}s remaining`,
-    };
-  }
-  return {
-    name: "X Feed",
-    status: "ok",
-    detail: "Token configured",
-  };
 }
 
 function checkSupabaseAuth(): ServiceDiagnostic {
@@ -408,7 +424,7 @@ export function createDiagnosticsRoutes(): Hono {
         Promise.all([
           checkHermesAI(),
           checkDatabase(),
-          Promise.resolve(checkRettiwt()),
+          checkXFeed(),
           Promise.resolve(checkSupabaseAuth()),
         ]),
         getBrowseTaskStats24h(),
@@ -618,7 +634,6 @@ export function createDiagnosticsRoutes(): Hono {
       scorerRunning,
       unscoredBacklog: unscoredCount,
       ...health,
-      rettiwtPool: getPoolStatus(),
     });
   });
 

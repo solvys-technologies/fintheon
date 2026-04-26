@@ -1,8 +1,9 @@
+// [claude-code 2026-04-26] S45.5/F2: utilities moved from deleted
+// rettiwt-poller-econ.ts to econ-print-utils.ts; import path updated.
 // [claude-code 2026-04-24] S34-T6: Keyword "Actual/Forecast" trigger + event-window promoter.
 // Scans recent raw_riskflow_items for the keyword, checks whether any currently-subscribed
 // (country, category) event window covers the item's timestamp, and promotes it via
 // scored_riskflow_items with macro_level=4 / risk_type='Macro' / tags=['econ-print', ...].
-// Numeric extraction still runs downstream in rettiwt-poller-econ as best-effort enrichment.
 
 import { createLogger } from "../../lib/logger.js";
 import { fetchEconCalendar, type EconEvent } from "../econ-calendar-service.js";
@@ -19,7 +20,7 @@ import {
   POST_EVENT_MINUTES,
   extractActualFromText,
   matchTweetToEvent,
-} from "./rettiwt-poller-econ.js";
+} from "./econ-print-utils.js";
 
 const log = createLogger("EconKeywordTrigger");
 

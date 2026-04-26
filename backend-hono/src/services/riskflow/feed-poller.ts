@@ -20,7 +20,6 @@ import { isSupabaseConfigured } from "../../config/supabase.js";
 import { getPollingConfig } from "./polling-config.js";
 import { pollCommentary } from "./commentary-scraper.js";
 import { checkForScheduledEvents } from "./exa-scheduled-monitor.js";
-import { getAccountHandles } from "../source-accounts/source-accounts-service.js";
 import {
   areAllUsersKilled,
   advancePollingOwner,
@@ -40,19 +39,10 @@ import {
 const FEED_POLLER_HEALTH_NAME = "feed-poller";
 registerService(FEED_POLLER_HEALTH_NAME);
 
-// [claude-code 2026-04-19] S27-T4: inert Rettiwt stubs. Dispatcher compiles + runs
-// without Rettiwt; if the curated-timeline path is ever needed again, restore by
-// re-importing from ../rettiwt-service.js + ./econ-rettiwt-poller.js.
-const hasAuthenticatedKeys = (): boolean => false;
-const isRettiwtRateLimited = (): boolean => false;
-const markRettiwtPollSuccess = (): void => {};
-const markRettiwtPollEmpty = (): void => {};
-const pollForEconNews = async (): Promise<FeedItem[]> => [];
-const manualRefresh = async (): Promise<FeedItem[]> => [];
-const rettiwtUserTimeline = async (
-  _handle: string,
-  _opts: { count: number },
-): Promise<Array<{ text: string; url?: string; publishedDate?: string }>> => [];
+// [claude-code 2026-04-26] S45.5/F2: deleted Rettiwt stubs entirely. The
+// curated-timeline scrape branch in runScrapeFallback() never fired anyway
+// (hasAuthenticatedKeys always false post-S27-T4); X intake is now exclusively
+// workers/riskflow-worker/sources/x-handles-browser.ts.
 
 /** Convert a FeedItem to a RawRiskFlowItem for the raw_riskflow_items inbox */
 function feedItemToRaw(item: FeedItem): RawRiskFlowItem {
@@ -152,79 +142,19 @@ function maybeLogHealth(): void {
   _itemsSinceLastLog = 0;
 }
 
-// ── Curated Timeline Fallback (runs when main poller is rate-limited) ──────
-// [claude-code 2026-04-12] Replaced open rettiwtSearch + Exa with curated timeline pulls
-
-const fallbackSeenIds = new Set<string>();
-
-function hashForDedup(s: string): string {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = (h << 5) - h + s.charCodeAt(i);
-    h |= 0;
-  }
-  return Math.abs(h).toString(36);
-}
+// ── Scrape Fallback (commentary + scheduled-event scrapers) ──────
+// [claude-code 2026-04-26] S45.5/F2: curated-timeline fallback retired with
+// rettiwt; what remains is the commentary + scheduled-event scrape paths.
 
 export async function runScrapeFallback(): Promise<number> {
   if (!isSupabaseConfigured()) return 0;
 
-  log.info("[ScrapeFallback] Running curated timeline + Agent-Reach fallback");
-  let totalWritten = 0;
+  log.info("[ScrapeFallback] Running commentary + scheduled-event scrapers");
+  const totalWritten = 0;
 
-  // ── Step 1: Pull curated account timelines ──
-  // [claude-code 2026-04-16] Use hasAuthenticatedKeys() — isRettiwtAvailable() returns true even when
-  // all keys are on cooldown, causing silent failures in timeline fetches.
-  if (hasAuthenticatedKeys()) {
-    const handles = await getAccountHandles();
-    for (const handle of handles) {
-      try {
-        const results = await rettiwtUserTimeline(handle, { count: 10 });
-        const items: RawRiskFlowItem[] = [];
-        for (const r of results) {
-          const title = r.text?.trim().slice(0, 280);
-          if (!title || title.length < 15) continue;
-
-          const id = `fb-${handle}-${hashForDedup(title.toLowerCase())}`;
-          if (fallbackSeenIds.has(id)) continue;
-          fallbackSeenIds.add(id);
-
-          const isBreaking = /\b(breaking|urgent|alert|flash)\b/i.test(title);
-
-          items.push({
-            tweet_id: id,
-            source: "CuratedTimeline",
-            headline: title,
-            body: r.text.length > 280 ? r.text.slice(280, 600) : undefined,
-            url: r.url || undefined,
-            symbols: [],
-            tags: [],
-            is_breaking: isBreaking,
-            urgency: isBreaking ? "immediate" : "normal",
-            published_at: r.publishedDate ?? new Date().toISOString(),
-            submitted_by: `feed-poller:timeline-${handle}`,
-          });
-        }
-
-        const cleanItems = filterWithContentGuard(
-          items,
-          (i) => `${i.headline} ${i.body || ""}`,
-          { source: `feed-poller:timeline-${handle}` },
-        );
-        if (cleanItems.length > 0) {
-          const written = await writeRawItems(cleanItems);
-          totalWritten += written;
-        }
-      } catch (err) {
-        log.warn(`[ScrapeFallback] @${handle} timeline failed`, {
-          error: String(err),
-        });
-      }
-    }
-    log.info(
-      `[ScrapeFallback] Timeline phase done — ${totalWritten} items written`,
-    );
-  }
+  // [claude-code 2026-04-26] S45.5/F2: curated-timeline phase deleted —
+  // hasAuthenticatedKeys() was a permanent-false stub since S27-T4, so the
+  // entire block was dead code. X intake now flows through riskflow-worker.
 
   // [claude-code 2026-04-18] S25-T1: Agent-Reach scrape removed from this fallback.
   // The dedicated agent-reach-poller now runs on its own schedule with UA rotation, per-domain
@@ -293,17 +223,10 @@ async function pollForNewItems(): Promise<void> {
       return;
     }
 
-    // ── Scrape fallback when Rettiwt is rate-limited ──
-    if (isRettiwtRateLimited()) {
-      await runScrapeFallback();
-      consecutivePollingFailures = 0;
-      return;
-    }
-
-    // [claude-code 2026-04-24] S34-T5: Rettiwt secondary branch removed. DB-driven
-    // Agent-Reach (news-worker tier coordinators) now covers Wire+Macro handles via
-    // Nitter mirrors. Rettiwt utilities remain inert stubs above for future re-enable
-    // behind RETTIWT_REENABLE. Economic feed + scrape fallback paths are preserved.
+    // [claude-code 2026-04-26] S45.5/F2: rettiwt utilities + RETTIWT_REENABLE
+    // gate fully retired. DB-driven Agent-Reach (riskflow-worker tier sources)
+    // covers Wire+Macro handles via Nitter mirrors; econ feed + scrape fallback
+    // paths are preserved.
     const econItems = await fetchEconomicFeed().catch((err) => {
       log.warn("Economic feed fetch failed:", { error: String(err) });
       return [] as FeedItem[];
@@ -454,13 +377,10 @@ export async function forcePoll(): Promise<void> {
 
   isPolling = true;
   try {
-    // Manual refresh path — Rettiwt + Agent-Reach + economic feed
-    const [rettiwtItems, econItems] = await Promise.all([
-      manualRefresh().catch(() => []),
-      fetchEconomicFeed().catch(() => []),
-    ]);
-
-    const rawItems: FeedItem[] = [...econItems, ...rettiwtItems];
+    // [claude-code 2026-04-26] S45.5/F2: dropped manualRefresh (rettiwt) branch.
+    const rawItems: FeedItem[] = await fetchEconomicFeed().catch(
+      () => [] as FeedItem[],
+    );
     if (rawItems.length === 0) return;
 
     const itemIds = rawItems.map((i) => i.id);
