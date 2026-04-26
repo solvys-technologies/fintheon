@@ -5,9 +5,12 @@
 // POST /api/admin/riskflow/backfill-headlines
 //   body: { from: "2026-04-04", to: "2026-04-05", queries?: string[] }
 //   Returns { ok, days, exaHits, rawWritten, scoringCycles, scoredWritten }.
+// GET /api/admin/riskflow/silence-status
+//   Returns { lastHeadlineAt, lastHighCritAt, silentHours, suggestedFrom, suggestedTo }.
 
 import { Hono } from "hono";
 import { backfillRiskFlowHeadlines } from "../../services/riskflow/backfill-headlines.js";
+import { getSupabaseClient } from "../../config/supabase.js";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
