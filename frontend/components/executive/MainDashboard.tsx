@@ -326,8 +326,8 @@ export function MainDashboard({
             {/* Main content — Brief left, Calendar right */}
             <div className="flex-1 min-h-[520px] flex mt-2">
               <div className="flex-1 flex border border-[var(--fintheon-accent)]/12 rounded-xl overflow-hidden mx-1 my-1">
-                {/* Left: Morning Daily Brief (55%) */}
-                <div className="flex-[55] min-w-0 overflow-y-auto p-4 flex flex-col">
+                {/* Left: Morning Daily Brief (50%) */}
+                <div className="flex-1 min-w-0 overflow-y-auto p-4 flex flex-col">
                   <KanbanTitle
                     title={briefLabel}
                     tone="gold"
@@ -372,8 +372,8 @@ export function MainDashboard({
                   />
                 </div>
 
-                {/* Right: Econ Calendar (45%) */}
-                <div className="flex-[45] min-w-0 overflow-y-auto p-4 flex flex-col">
+                {/* Right: Econ Calendar (50%) */}
+                <div className="flex-1 min-w-0 overflow-y-auto p-4 flex flex-col">
                   <KanbanTitle
                     title="Session Calendar"
                     tone="cyan"
