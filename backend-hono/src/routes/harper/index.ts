@@ -92,7 +92,7 @@ export function createHarperRoutes() {
         persona?: string;
         riskFlowContext?: string;
         activeConnectors?: string[];
-        provider?: "local" | "nous" | "orouter";
+        provider?: "local" | "ollama-qwen" | "nous";
         /** Explicit boardroom surface flag — triggers multi-agent DAG dispatch */
         surface?: string;
         boardroom?: boolean;
@@ -453,9 +453,9 @@ export function createHarperRoutes() {
 
       const providerLabel =
         body.provider === "nous"
-          ? "Nous (Arcee/Qwen)"
-          : body.provider === "orouter"
-            ? "OpenRouter Opus"
+          ? "Nous Research (Hermes-4)"
+          : body.provider === "ollama-qwen"
+            ? "Ollama Qwen (Mac)"
             : "VProxy Local";
       cognition.step(
         "agent-route",

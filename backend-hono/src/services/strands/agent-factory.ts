@@ -20,18 +20,18 @@ import { getAgentSystemPrompt } from "../ai/agent-instructions/index.js";
 const log = createLogger("StrandsFactory");
 
 /** Provider override — which backend to route through */
+// [claude-code 2026-04-26] Removed "orouter" — paid path retired per TP.
+// "grok" kept as a labeled provider but it routes through Nous Research's
+// inference API now too, since OpenRouter is no longer a sanctioned backend.
 // [claude-code 2026-04-23] S32-T3 added "ollama-qwen" fallback chain provider
-export type HarperProvider =
-  | "local"
-  | "ollama-qwen"
-  | "nous"
-  | "orouter"
-  | "grok";
+export type HarperProvider = "local" | "ollama-qwen" | "nous" | "grok";
 
-/** Nous fallback model chain — tried in order */
+/** Nous fallback model chain — tried in order. Hits inference-api.nousresearch.com
+ *  directly with NOUS_API_KEY. These are the actually-free Hermes models, not
+ *  OpenRouter routes. */
 export const NOUS_MODELS = [
-  "arcee-ai/trinity-large-preview:free",
-  "qwen/qwen3.6-plus",
+  "nousresearch/hermes-4-405b",
+  "nousresearch/hermes-4-70b",
 ];
 
 export interface CreateAgentOptions {
@@ -49,45 +49,23 @@ export interface CreateAgentOptions {
   nousModelId?: string;
 }
 
-/** Create an OpenRouter model for Strands */
-function createOpenRouterModel(
-  modelId: string,
-  temperature = 0.3,
-  maxTokens = 16384,
-): OpenAIModel {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) throw new Error("OPENROUTER_API_KEY not set");
-  return new OpenAIModel({
-    api: "chat",
-    apiKey,
-    clientConfig: { baseURL: "https://openrouter.ai/api/v1" },
-    modelId,
-    temperature,
-    maxTokens,
-  });
-}
+// [claude-code 2026-04-26] OpenRouter rung removed entirely. createNousModelWithId
+// now hits Nous Research's direct inference API at inference-api.nousresearch.com
+// with NOUS_API_KEY — gives us the free Hermes-4 405B and 70B models without
+// touching OpenRouter at all.
 
-/** Create a Nous/Hermes model for Strands — Qwen3-Coder via OpenRouter (Nous subscription) */
-function createNousModel(temperature = 0.3, maxTokens = 16384): OpenAIModel {
-  return createNousModelWithId(
-    "qwen/qwen3-coder-480b-a35b",
-    temperature,
-    maxTokens,
-  );
-}
-
-/** Create any model via Nous/OpenRouter subscription */
+/** Create any model via Nous Research's direct inference API */
 function createNousModelWithId(
   modelId: string,
   temperature = 0.3,
   maxTokens = 16384,
 ): OpenAIModel {
-  const apiKey = process.env.OPENROUTER_API_KEY || process.env.NOUS_API_KEY;
-  if (!apiKey) throw new Error("NOUS_API_KEY / OPENROUTER_API_KEY not set");
+  const apiKey = process.env.NOUS_API_KEY;
+  if (!apiKey) throw new Error("NOUS_API_KEY not set");
   return new OpenAIModel({
     api: "chat",
     apiKey,
-    clientConfig: { baseURL: "https://openrouter.ai/api/v1" },
+    clientConfig: { baseURL: "https://inference-api.nousresearch.com/v1" },
     modelId,
     temperature,
     maxTokens,
@@ -100,16 +78,6 @@ export function createAgent(options: CreateAgentOptions): Agent {
   let model: OpenAIModel;
 
   switch (provider) {
-    case "orouter":
-      log.info("Creating Strands agent (OpenRouter Opus)", {
-        name: options.name,
-      });
-      model = createOpenRouterModel(
-        "anthropic/claude-opus-4.6",
-        options.model?.temperature,
-        options.model?.maxTokens,
-      );
-      break;
     case "nous":
       // eslint-disable-next-line no-case-declarations
       const nousId = options.nousModelId ?? NOUS_MODELS[0];

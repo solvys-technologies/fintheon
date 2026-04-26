@@ -23,6 +23,7 @@
 
 import { getSupabaseClient } from "../../config/supabase.js";
 import { bumpCounter } from "../../services/riskflow/drop-counters.js";
+import { isBannedPublisher } from "../../services/riskflow/content-guard.js";
 import type { CollectedNewsItem } from "./sources/types.js";
 
 const FLAG_WRITES = "FLAG_NEWS_WORKER_WRITES_RISKFLOW";
@@ -59,16 +60,35 @@ export async function writeCollectedItems(
   // the upsert silently.
   const eligible: CollectedNewsItem[] = [];
   const perSourceMissing = new Map<string, number>();
+  const perSourcePublisherBanned = new Map<string, number>();
   for (const item of items) {
     const src = item.source || "unknown";
     if (!item.item_id || !item.headline || !item.headline.trim()) {
       perSourceMissing.set(src, (perSourceMissing.get(src) ?? 0) + 1);
       continue;
     }
+    // [claude-code 2026-04-26] Reuters/Bloomberg block at the front door — TP
+    // banned both publishers; this catches them via headline+body+url+tags.
+    if (
+      isBannedPublisher({
+        text: `${item.headline} ${item.body ?? ""}`,
+        url: item.url,
+        tags: item.source_domain ? [item.source_domain] : [],
+      })
+    ) {
+      perSourcePublisherBanned.set(
+        src,
+        (perSourcePublisherBanned.get(src) ?? 0) + 1,
+      );
+      continue;
+    }
     eligible.push(item);
   }
   for (const [src, count] of perSourceMissing) {
     bumpCounter(src, "persist", "dropped_missing_fields", count);
+  }
+  for (const [src, count] of perSourcePublisherBanned) {
+    bumpCounter(src, "persist", "dropped_banned_publisher", count);
   }
   if (eligible.length === 0) return 0;
 
@@ -81,9 +101,10 @@ export async function writeCollectedItems(
     url: item.url ?? null,
     image_url: item.image_url ?? null,
     symbols: [] as string[],
-    tags: item.url
-      ? [`url:${item.url}`, `tier:${item.tier}`]
-      : [`tier:${item.tier}`],
+    // [claude-code 2026-04-26] url: tag dropped — `url` is a real column now,
+    // and the legacy tag was leaking publisher domains into the rendered tag
+    // chip strip on RiskFlow detail cards.
+    tags: [`tier:${item.tier}`],
     is_breaking: item.tier === "breaking",
     urgency: item.tier === "breaking" ? 8 : 4,
     published_at: item.published_at,

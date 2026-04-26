@@ -1,3 +1,7 @@
+// [claude-code 2026-04-26] Dropped "orouter" rung from FALLBACK_CHAIN per TP —
+// every paid path is gone. Chain is now local (VProxy on Mac) → ollama-qwen
+// (Mac via HERMES_SIDECAR_URL tunnel) → nous (Nous Research direct, free
+// Hermes-4 405B). If all three fail the agent throws.
 // [claude-code 2026-04-08] Nous provider tries NOUS_MODELS chain (arcee trinity → qwen3.6-plus)
 // [claude-code 2026-04-07] Strands invoke helper with provider fallback chain: local → nous → orouter
 // Creates a lightweight Strands agent, invokes once, and returns { text }.
@@ -26,16 +30,11 @@ export interface InvokeAgentOptions {
 
 // [claude-code 2026-04-23] S32-T3: inject ollama-qwen as second-in-chain after VProxy
 /** Provider fallback chain for silent/background tasks */
-const FALLBACK_CHAIN: HarperProvider[] = [
-  "local",
-  "ollama-qwen",
-  "nous",
-  "orouter",
-];
+const FALLBACK_CHAIN: HarperProvider[] = ["local", "ollama-qwen", "nous"];
 
 /**
  * One-shot text generation via a Strands agent.
- * Automatically falls back through local → nous → orouter if a provider fails.
+ * Automatically falls back through local → ollama-qwen → nous if a provider fails.
  */
 export async function invokeAgent(
   options: InvokeAgentOptions,

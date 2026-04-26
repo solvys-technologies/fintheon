@@ -72,13 +72,13 @@ export function SanctumBriefing({
       </div>
 
       {/* Key Findings */}
-      {briefing.keyFindings.length > 0 && (
+      {(briefing.keyFindings?.length ?? 0) > 0 && (
         <div className="px-5 py-3 border-t border-[var(--fintheon-border)]/10">
           <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-2">
             Key Findings
           </span>
           <div className="flex flex-col gap-1.5">
-            {briefing.keyFindings.map((finding, i) => (
+            {(briefing.keyFindings ?? []).map((finding, i) => (
               <div key={i} className="flex gap-2">
                 <span className="text-[10px] font-mono text-[var(--fintheon-accent)]/60 w-4 shrink-0">
                   {i + 1}.
@@ -93,13 +93,13 @@ export function SanctumBriefing({
       )}
 
       {/* Risk Alerts */}
-      {briefing.riskAlerts.length > 0 && (
+      {(briefing.riskAlerts?.length ?? 0) > 0 && (
         <div className="px-5 py-3 border-t border-[var(--fintheon-border)]/10">
           <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-2">
             Risk Alerts
           </span>
           <div className="flex flex-col gap-1.5">
-            {briefing.riskAlerts.map((alert, i) => {
+            {(briefing.riskAlerts ?? []).map((alert, i) => {
               const isSevere = /elevated|extreme|critical|high.heat/i.test(
                 alert,
               );

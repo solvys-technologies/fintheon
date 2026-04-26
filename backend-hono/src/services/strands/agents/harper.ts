@@ -36,7 +36,7 @@ export interface HarperChatOptions {
   /** [S23-T3] Active Consilium surface — auto-enables surface-specific context injection (e.g. "aquarium"). */
   surface?: string;
   userContext?: UserContext;
-  /** AI provider override: local (VProxy), nous (Sonnet via Nous), orouter (Opus via OpenRouter) */
+  /** AI provider override: local (VProxy), ollama-qwen (Mac Ollama via tunnel), nous (Hermes-4 via Nous Research direct) */
   provider?: HarperProvider;
   /** When true, tool approvals block indefinitely (no 30s auto-approve) — mobile user decides */
   relayOriginated?: boolean;
@@ -69,15 +69,19 @@ export async function createHarperAgent(
       : undefined;
 
   // Auto-fallback: when no explicit provider, prefer VProxy (local Opus subscription);
-  // if it's unreachable, transparently fall back to OpenRouter Opus so chat still works.
+  // if it's unreachable, fall back to Nous Research direct (free Hermes-4 405B).
+  // OpenRouter rung removed 2026-04-26.
   let effectiveProvider = opts?.provider;
   if (!effectiveProvider) {
     const health = await checkVProxyHealth();
-    effectiveProvider = health.available ? "local" : "orouter";
+    effectiveProvider = health.available ? "local" : "nous";
     if (!health.available) {
-      log.warn("VProxy unreachable — falling back to OpenRouter Opus", {
-        error: health.error,
-      });
+      log.warn(
+        "VProxy unreachable — falling back to Nous Research (Hermes-4)",
+        {
+          error: health.error,
+        },
+      );
     }
   }
 

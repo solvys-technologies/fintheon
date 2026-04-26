@@ -334,8 +334,38 @@ export interface ContentGuardResult {
  * Returns { blocked: true, reason } if the item should be dropped.
  * Call this BEFORE writing to raw_riskflow_items.
  */
+// [claude-code 2026-04-26] Banned publishers — Reuters & Bloomberg headlines
+// (or any item citing them, including via URL/tags) get blocked at ingest. TP
+// purged 544 + 168 such rows tonight and the live news-worker keeps re-ingesting
+// fresh ones via agent-reach RSS / browser-harness. This stops them at the
+// front door. Pattern scans headline + body + url + tags simultaneously.
+const BANNED_PUBLISHER_PATTERNS: RegExp[] = [/\breuters\b/i, /\bbloomberg\b/i];
+
+export interface BannedPublisherProbe {
+  text?: string;
+  url?: string | null;
+  tags?: string[];
+}
+
+export function isBannedPublisher(probe: BannedPublisherProbe): boolean {
+  const blob = [
+    probe.text ?? "",
+    probe.url ?? "",
+    (probe.tags ?? []).join(" "),
+  ].join(" ");
+  return BANNED_PUBLISHER_PATTERNS.some((p) => p.test(blob));
+}
+
 export function checkContentGuard(text: string): ContentGuardResult {
-  // 0. Platform ads / promos — fast reject before anything else
+  // 0. Banned publishers (headline/body only — call isBannedPublisher() for
+  //    the full URL+tags check at the news-worker layer).
+  for (const pattern of BANNED_PUBLISHER_PATTERNS) {
+    if (pattern.test(text)) {
+      return { blocked: true, reason: "banned-publisher" };
+    }
+  }
+
+  // 0a. Platform ads / promos — fast reject before anything else
   for (const pattern of PLATFORM_AD_PATTERNS) {
     if (pattern.test(text)) {
       return { blocked: true, reason: "platform-ad" };
