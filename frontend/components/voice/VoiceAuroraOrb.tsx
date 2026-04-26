@@ -1,4 +1,5 @@
 // [claude-code 2026-04-03] SiriOrb-based voice indicator — gold idle/listening, green speaking, red error/infraction
+// [claude-code 2026-04-25] S38: Ring color routed through --accent-primary CSS variable (theme-swappable). Speaking/error/infraction states keep their state-specific overrides.
 import { useMemo } from "react";
 import type { VoiceOrbState } from "../../types/voice";
 
@@ -16,14 +17,14 @@ const STATE_CONFIG: Record<
     c2: "oklch(68% 0.10 55)",
     c3: "oklch(75% 0.14 80)",
     speed: 24,
-    border: "var(--fintheon-accent)",
+    border: "var(--accent-primary)",
   },
   listening: {
     c1: "oklch(72% 0.14 70)",
     c2: "oklch(70% 0.12 60)",
     c3: "oklch(78% 0.16 75)",
     speed: 14,
-    border: "var(--fintheon-accent)",
+    border: "var(--accent-primary)",
   },
   speaking: {
     c1: "oklch(72% 0.18 145)",
@@ -37,7 +38,7 @@ const STATE_CONFIG: Record<
     c2: "oklch(68% 0.10 55)",
     c3: "oklch(75% 0.14 80)",
     speed: 6,
-    border: "var(--fintheon-accent)",
+    border: "var(--accent-primary)",
   },
   error: {
     c1: "oklch(60% 0.20 25)",

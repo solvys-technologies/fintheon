@@ -1,11 +1,10 @@
-// [claude-code 2026-04-24] S35-T1: Provider adapters for Arbitrum seats.
-// Ollama + DashScope + Groq are OpenAI-compatible chat endpoints. Harper-cao's
-// OpenRouter path lives in hermes-handler.ts and is NOT touched by this module.
+// [claude-code 2026-04-26] S35-T11: Provider adapters for Arbitrum seats.
+// All seats route through Ollama Cloud (qwen3.5:397b-cloud). Groq remains
+// available as an explicit alternate provider; DashScope was removed (paid,
+// no key). Harper-cao's OpenRouter path lives in hermes-handler.ts and is
+// NOT touched by this module.
 
-import { createLogger } from "../../lib/logger.js";
 import { resolveProvider, type ArbitrumProvider } from "../hermes-service.js";
-
-const log = createLogger("ArbitrumAdapter");
 
 const DEFAULT_TIMEOUT_MS = 18_000;
 
@@ -82,29 +81,6 @@ async function ollamaChat(req: SeatChatRequest): Promise<string> {
   return data.message?.content ?? "";
 }
 
-async function dashscopeChat(req: SeatChatRequest): Promise<string> {
-  const apiKey = process.env.DASHSCOPE_API_KEY;
-  if (!apiKey) throw new ProviderUnavailable("DASHSCOPE_API_KEY not set");
-  const url =
-    "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
-  const data = await postJson<{
-    choices?: { message?: { content?: string } }[];
-  }>(
-    url,
-    {
-      model: req.modelId,
-      temperature: req.temperature,
-      messages: [
-        { role: "system", content: req.system },
-        { role: "user", content: req.user },
-      ],
-    },
-    { Authorization: `Bearer ${apiKey}` },
-    req.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-  );
-  return data.choices?.[0]?.message?.content ?? "";
-}
-
 async function groqChat(req: SeatChatRequest): Promise<string> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new ProviderUnavailable("GROQ_API_KEY not set");
@@ -128,9 +104,10 @@ async function groqChat(req: SeatChatRequest): Promise<string> {
 }
 
 /**
- * Route a chat request to the seat's resolved provider. Falls back to Groq
- * only when the primary is DashScope (DashScope free-tier rate-limit fallback).
- * Never touches OpenRouter — that path is reserved for harper-cao.
+ * Route a chat request to the seat's resolved provider. Ollama Cloud is the
+ * primary path for every Arbitrum seat (qwen3.5:397b-cloud). Groq is kept as
+ * an explicit alternate when a model id is mapped to it. Never touches
+ * OpenRouter — that path is reserved for harper-cao.
  */
 export async function seatChat(req: SeatChatRequest): Promise<SeatChatResult> {
   const provider = resolveProvider(req.modelId);
@@ -140,8 +117,6 @@ export async function seatChat(req: SeatChatRequest): Promise<SeatChatResult> {
     switch (provider) {
       case "ollama":
         return ollamaChat(req);
-      case "dashscope":
-        return dashscopeChat(req);
       case "groq":
         return groqChat(req);
       case "openrouter":
@@ -152,33 +127,11 @@ export async function seatChat(req: SeatChatRequest): Promise<SeatChatResult> {
     }
   };
 
-  try {
-    const content = await runPrimary();
-    return {
-      content,
-      modelId: req.modelId,
-      provider,
-      latency_ms: Date.now() - started,
-    };
-  } catch (err) {
-    if (provider === "dashscope") {
-      log.warn("DashScope failed, falling back to Groq", {
-        error: err instanceof Error ? err.message : String(err),
-      });
-      try {
-        const content = await groqChat(req);
-        return {
-          content,
-          modelId: req.modelId,
-          provider: "groq",
-          latency_ms: Date.now() - started,
-        };
-      } catch (groqErr) {
-        throw new Error(
-          `dashscope+groq both failed for ${req.modelId}: ${String(groqErr)}`,
-        );
-      }
-    }
-    throw err;
-  }
+  const content = await runPrimary();
+  return {
+    content,
+    modelId: req.modelId,
+    provider,
+    latency_ms: Date.now() - started,
+  };
 }

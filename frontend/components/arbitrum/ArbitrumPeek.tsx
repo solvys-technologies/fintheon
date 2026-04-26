@@ -1,5 +1,8 @@
+// [claude-code 2026-04-25] Consensus % numeral now uses DigitGroup (solvys-transitions
+//   number pop-in) so the chamber read cascades in on each refresh.
 // [claude-code 2026-04-24] S35-T3: compact peek for IV hover portal — consensus + dissent + digest line
 import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
+import { DigitGroup } from "../shared/DigitGroup";
 import { DissentBadge } from "./DissentBadge";
 
 const EMPTY_COPY =
@@ -35,14 +38,15 @@ export function ArbitrumPeek() {
   return (
     <div className="border-t border-[var(--fintheon-accent)]/20 pt-2 mt-3 text-xs">
       <div className="flex items-center gap-2 flex-wrap">
-        <span
+        <DigitGroup
+          value={`${Math.round(consensus_probability * 100)}`}
+          suffix="%"
           className="text-[var(--fintheon-accent)] text-sm leading-none"
           style={{ fontFamily: "Doto, ui-monospace, monospace" }}
-        >
-          {Math.round(consensus_probability * 100)}%
-        </span>
-        <span className="text-[var(--fintheon-text)]/70">
-          conf {Math.round(confidence * 100)}%
+        />
+        <span className="text-[var(--fintheon-text)]/70 inline-flex items-baseline gap-1">
+          conf
+          <DigitGroup value={`${Math.round(confidence * 100)}`} suffix="%" />
         </span>
         {dissent && <DissentBadge dissent={dissent} />}
       </div>

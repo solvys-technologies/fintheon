@@ -89,6 +89,42 @@ export function RiskFlowCardExpanded({
         className="pb-4 pt-2 fade-divider-top"
         style={{ borderTop: "none", padding: "8px 12px 16px 26px" }}
       >
+        {/* [claude-code 2026-04-25] S35: hero image — RSS enclosure / og:image, hidden
+            on load failure so a broken image never breaks the expanded card. */}
+        {alert.imageUrl && (
+          <a
+            href={alert.url ?? alert.imageUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              display: "block",
+              marginBottom: "12px",
+              borderRadius: "8px",
+              overflow: "hidden",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <img
+              src={alert.imageUrl}
+              alt=""
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                const wrap = e.currentTarget
+                  .parentElement as HTMLElement | null;
+                if (wrap) wrap.style.display = "none";
+              }}
+              style={{
+                width: "100%",
+                maxHeight: "200px",
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+          </a>
+        )}
+
         {/* Source preview (full/timeline) or plain content text (mini) */}
         {showSourcePreview ? (
           <SourcePreview alert={alert} />

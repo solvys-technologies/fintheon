@@ -9,6 +9,7 @@ import { Mic, MicOff } from "lucide-react";
 import { useVoice } from "../../contexts/VoiceContext";
 import { resolveVoiceOrbState } from "../../types/voice";
 import { VoiceAuroraOrb } from "./VoiceAuroraOrb";
+import { VoiceModePixelOverlay } from "./VoiceModePixelOverlay";
 import { useHarperVoiceSession } from "../../hooks/useHarperVoiceSession";
 
 const INFRACTION_HOLD_MS = 8_000;
@@ -214,32 +215,35 @@ export function HeaderVoiceControl({
   const showOrb = enabled && orbState !== "idle";
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={isDisabled}
-      className={`relative rounded-full transition-colors ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:opacity-90"}`}
-      title={getTitle()}
-    >
-      {showOrb ? (
-        <VoiceAuroraOrb state={orbState} compact={compact} />
-      ) : (
-        /* Dormant/idle state: bordered mic icon — Mic when enabled, MicOff when disabled */
-        <div
-          className="rounded-full bg-[#070704] flex items-center justify-center"
-          style={{
-            width: compact ? "24px" : "28px",
-            height: compact ? "24px" : "28px",
-            border: `1.5px solid var(--fintheon-accent)`,
-          }}
-        >
-          {enabled ? (
-            <Mic className="w-3 h-3 text-[var(--fintheon-accent)]/60" />
-          ) : (
-            <MicOff className="w-3 h-3 text-zinc-500" />
-          )}
-        </div>
-      )}
-    </button>
+    <>
+      <VoiceModePixelOverlay active={enabled} />
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={isDisabled}
+        className={`relative rounded-full transition-colors ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:opacity-90"}`}
+        title={getTitle()}
+      >
+        {showOrb ? (
+          <VoiceAuroraOrb state={orbState} compact={compact} />
+        ) : (
+          /* Dormant/idle state: bordered mic icon — Mic when enabled, MicOff when disabled */
+          <div
+            className="rounded-full bg-[#070704] flex items-center justify-center"
+            style={{
+              width: compact ? "24px" : "28px",
+              height: compact ? "24px" : "28px",
+              border: `1.5px solid var(--fintheon-accent)`,
+            }}
+          >
+            {enabled ? (
+              <Mic className="w-3 h-3 text-[var(--fintheon-accent)]/60" />
+            ) : (
+              <MicOff className="w-3 h-3 text-zinc-500" />
+            )}
+          </div>
+        )}
+      </button>
+    </>
   );
 }

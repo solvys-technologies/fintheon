@@ -10,7 +10,9 @@ import {
   StickyNote,
   X,
   Zap,
+  TrendingUp,
 } from "lucide-react";
+import { MobileBulletinDayCard } from "./MobileBulletinDayCard";
 // [claude-code 2026-04-19] Use SnapSheet so the bulletin rises under the dash fuse row,
 //   matching the notification drawer's sizing per TP.
 import { SnapSheet } from "../shared/SnapSheet";
@@ -22,7 +24,7 @@ const API_BASE = import.meta.env.VITE_API_URL || "";
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const INSTRUMENTS = ["ES", "NQ", "YM", "RTY", "CL", "GC", "SI", "BTC"];
 
-type SectionId = "catalyst" | "antilag" | "event" | "notes";
+type SectionId = "catalyst" | "antilag" | "event" | "notes" | "daycard";
 
 interface AntilagEntry {
   time: string;
@@ -45,6 +47,7 @@ const SECTIONS: { id: SectionId; icon: typeof Crosshair; label: string }[] = [
   { id: "antilag", icon: Clock, label: "Antilag" },
   { id: "event", icon: CalendarDays, label: "Event" },
   { id: "notes", icon: StickyNote, label: "Notes" },
+  { id: "daycard", icon: TrendingUp, label: "Day Card" },
 ];
 
 interface MobileBulletinProps {
@@ -476,6 +479,8 @@ export function MobileBulletin({ isOpen, onClose }: MobileBulletinProps) {
           )}
         </div>
       )}
+
+      {section === "daycard" && <MobileBulletinDayCard />}
 
       {section === "catalyst" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

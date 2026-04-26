@@ -17,9 +17,11 @@ import {
   ChevronUp,
   Zap,
   GripVertical,
+  TrendingUp,
 } from "lucide-react";
 import { useStickyBulletin, DAY_LABELS } from "../hooks/useStickyBulletin";
 import { useDraggable } from "../hooks/useDraggable";
+import { DayCardBulletinTab } from "./strategium/DayCardBulletinTab";
 
 interface StickyBulletinProps {
   open: boolean;
@@ -32,6 +34,7 @@ const SECTIONS = [
   { id: "antilag" as const, icon: Clock, label: "Antilag" },
   { id: "event" as const, icon: CalendarDays, label: "Event" },
   { id: "notes" as const, icon: StickyNote, label: "Notes" },
+  { id: "daycard" as const, icon: TrendingUp, label: "Day Card" },
 ];
 
 export function StickyBulletin({
@@ -913,6 +916,9 @@ export function StickyBulletin({
               )}
             </div>
           )}
+
+          {/* ═══ Section 5: Day Card preview (S45-T2) ═══ */}
+          {b.activeSection === "daycard" && <DayCardBulletinTab />}
         </div>
 
         {/* Footer — subtle accent line */}

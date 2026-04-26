@@ -366,77 +366,37 @@ export function ConsiliumHub() {
     fetchContext();
   }, [fetchContext]);
 
-  // Load persisted AgentDesk report on mount + auto-run if stale (not run today)
+  // [claude-code 2026-04-25] S35: load latest Arbitrum verdict on mount. The Sanctum
+  // header reads `compositeIV` / `confidence` / `regimeShiftProbability` off
+  // agentDeskData; we synthesize those from the verdict so "Update" actually drives
+  // the chamber (was wired to the deprecated /api/agent-desk simulator that returns 500).
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        // Load latest cached report for immediate display
-        const res = await fetch(`${API_BASE}/api/agent-desk/latest`);
-        if (res.ok) {
-          const report = await res.json();
-          if (!cancelled && report) {
-            setAgentDeskData({
-              simulationId: report.simulationId ?? "",
-              status: "complete",
-              compositeIV: report.compositeIV ?? 0,
-              confidence: report.confidence ?? 0,
-              regimeShiftProbability: report.regimeShiftProbability ?? 0,
-              categoryScores: report.categoryScores ?? [],
-              timeSeries: report.timeSeries ?? [],
-              generatedEvents: report.generatedEvents ?? [],
-              scenarios: report.scenarios ?? [],
-              briefing: report.briefing ?? null,
-              contextSnapshot: report.contextSnapshot ?? null,
-            });
-          }
-        }
-
-        // Check if we need an auto-run (minimum 1/day)
-        if (cancelled) return;
-        const autoCheck = await fetch(
-          `${API_BASE}/api/agent-desk/auto-run-check`,
-        );
-        if (!autoCheck.ok) return;
-        const { shouldRun } = await autoCheck.json();
-        if (shouldRun && !cancelled) {
-          console.log(
-            "[ConsiliumHub] AgentDesk stale — triggering daily auto-run",
-          );
-          // Run simulation in background — don't block the UI
-          const simRes = await fetch(`${API_BASE}/api/agent-desk/simulate`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              preset: "full-brief",
-              narrativeState: { lanes: [], catalysts: [], ropes: [] },
-            }),
-          });
-          if (simRes.ok && !cancelled) {
-            const { simulationId } = await simRes.json();
-            const reportRes = await fetch(
-              `${API_BASE}/api/agent-desk/report/${simulationId}`,
-            );
-            if (reportRes.ok && !cancelled) {
-              const report = await reportRes.json();
-              setAgentDeskData({
-                simulationId: simulationId,
-                status: "complete",
-                compositeIV: report.compositeIV ?? report.nextSessionScore ?? 0,
-                confidence: report.confidence ?? 0,
-                regimeShiftProbability: report.regimeShiftProbability ?? 0,
-                categoryScores: report.categoryScores ?? [],
-                timeSeries: report.timeSeries ?? [],
-                generatedEvents: report.generatedEvents ?? [],
-                scenarios: report.scenarios ?? [],
-                briefing: report.briefing ?? null,
-                contextSnapshot: report.contextSnapshot ?? null,
-              });
-            }
-          }
-        }
+        const res = await fetch(`${API_BASE}/api/arbitrum/latest`);
+        if (!res.ok) return;
+        const body = (await res.json()) as { verdict: any | null };
+        const verdict = body?.verdict ?? null;
+        if (!verdict || cancelled) return;
+        setAgentDeskData({
+          simulationId: verdict.id ?? verdict.verdict_id ?? "",
+          status: "complete",
+          compositeIV: Math.round((verdict.consensus_probability ?? 0) * 10),
+          confidence: verdict.confidence ?? 0,
+          regimeShiftProbability:
+            verdict.iv_simulation?.regime_shift_probability ?? 0,
+          categoryScores: [],
+          timeSeries: [],
+          generatedEvents: verdict.upcoming_catalysts ?? [],
+          scenarios: [],
+          briefing: verdict.digest_text
+            ? ({ summary: verdict.digest_text } as any)
+            : undefined,
+          contextSnapshot: undefined,
+        });
       } catch (err) {
-        console.error("[ConsiliumHub] Failed to load/auto-run AgentDesk:", err);
+        console.error("[ConsiliumHub] Arbitrum latest fetch failed:", err);
       }
     })();
     return () => {
@@ -464,16 +424,40 @@ export function ConsiliumHub() {
     [fetchContext],
   );
 
+  // [claude-code 2026-04-25] S35: Update button now drives Arbitrum, not the deprecated
+  // /api/agent-desk/simulate route (which has been returning 500 in prod for weeks since
+  // MiroShark→Arbitrum cutover). On click: POST /api/arbitrum/deliberate with the current
+  // narrative as context, then re-pull /api/arbitrum/latest for the verdict.
+  const arbitrumVerdictToReport = useCallback(
+    (verdict: any): Record<string, any> => ({
+      simulationId: verdict?.id ?? verdict?.verdict_id ?? "",
+      compositeIV: Math.round((verdict?.consensus_probability ?? 0) * 10),
+      confidence: verdict?.confidence ?? 0,
+      regimeShiftProbability:
+        verdict?.iv_simulation?.regime_shift_probability ?? 0,
+      categoryScores: [],
+      timeSeries: [],
+      generatedEvents: verdict?.upcoming_catalysts ?? [],
+      scenarios: [],
+      briefing: verdict?.digest_text
+        ? ({ summary: verdict.digest_text } as any)
+        : undefined,
+      contextSnapshot: undefined,
+    }),
+    [],
+  );
+
   const reloadLatestReport = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/agent-desk/latest`);
+      const res = await fetch(`${API_BASE}/api/arbitrum/latest`);
       if (!res.ok) return;
-      const report = await res.json();
-      if (report) applyReport(report);
+      const body = (await res.json()) as { verdict: any | null };
+      const verdict = body?.verdict ?? null;
+      if (verdict) applyReport(arbitrumVerdictToReport(verdict));
     } catch {
       // silent — next poll / trigger will retry
     }
-  }, [applyReport]);
+  }, [applyReport, arbitrumVerdictToReport]);
 
   const handleRunAgentDesk = useCallback(
     async (
@@ -497,32 +481,69 @@ export function ConsiliumHub() {
       );
 
       try {
-        // Always kick off a fresh simulation when the user clicks Update
-        const simRes = await fetch(`${API_BASE}/api/agent-desk/simulate`, {
+        const presetQuestion =
+          preset === "chart-focus"
+            ? "Read the next session — chart focus"
+            : preset === "econ-watch"
+              ? "Read the next session — econ catalysts"
+              : preset === "risk-scan"
+                ? "Read the next session — risk scan"
+                : "Read the next session — full brief";
+
+        const ns = narrativeState ?? { lanes: [], catalysts: [], ropes: [] };
+        const contextLines: string[] = [];
+        if (ns.lanes?.length)
+          contextLines.push(
+            `Lanes: ${ns.lanes
+              .map((l: any) => l?.label ?? l?.id ?? "")
+              .filter(Boolean)
+              .slice(0, 6)
+              .join(", ")}`,
+          );
+        if (ns.catalysts?.length)
+          contextLines.push(
+            `Catalysts in play: ${ns.catalysts
+              .map((c: any) => c?.headline ?? c?.title ?? "")
+              .filter(Boolean)
+              .slice(0, 6)
+              .join(" | ")}`,
+          );
+
+        const delibRes = await fetch(`${API_BASE}/api/arbitrum/deliberate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            preset: preset ?? "full-brief",
-            narrativeState: narrativeState ?? {
-              lanes: [],
-              catalysts: [],
-              ropes: [],
-            },
+            question: presetQuestion,
+            category: "session-read",
+            context:
+              contextLines.length > 0 ? contextLines.join("\n") : undefined,
           }),
         });
 
-        if (!simRes.ok) throw new Error(`Simulation failed: ${simRes.status}`);
-        const { simulationId } = await simRes.json();
+        if (!delibRes.ok)
+          throw new Error(`Chamber deliberate failed: ${delibRes.status}`);
+        const delib = (await delibRes.json()) as {
+          verdict_id?: string;
+          consensus_probability?: number;
+          confidence?: number;
+          digest_text?: string;
+        };
 
-        const reportRes = await fetch(
-          `${API_BASE}/api/agent-desk/report/${simulationId}`,
-        );
-        if (!reportRes.ok)
-          throw new Error(`Report fetch failed: ${reportRes.status}`);
-        const report = await reportRes.json();
-        applyReport(report, simulationId);
+        // Pull the full verdict so seats/dissent/upcoming catalysts flow into
+        // Sanctum surfaces (ArbitrumChamber reads from useArbitrumLatest separately).
+        const latestRes = await fetch(`${API_BASE}/api/arbitrum/latest`);
+        const latestBody = latestRes.ok
+          ? ((await latestRes.json()) as { verdict: any | null })
+          : null;
+        const verdict = latestBody?.verdict ?? {
+          id: delib.verdict_id,
+          consensus_probability: delib.consensus_probability ?? 0,
+          confidence: delib.confidence ?? 0,
+          digest_text: delib.digest_text,
+        };
+        applyReport(arbitrumVerdictToReport(verdict), verdict.id);
       } catch (err) {
-        console.error("[AgentDesk] Run failed:", err);
+        console.error("[Arbitrum] Run failed:", err);
         setAgentDeskData((prev) =>
           prev
             ? {
@@ -534,7 +555,7 @@ export function ConsiliumHub() {
         );
       }
     },
-    [applyReport],
+    [applyReport, arbitrumVerdictToReport],
   );
 
   const activeSanctumSub =

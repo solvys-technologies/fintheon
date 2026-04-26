@@ -58,6 +58,7 @@ export async function collectFromBrowserHarness(
       headline,
       body,
       url,
+      image_url: result.image_url ?? null,
       tier: opts.tier,
       published_at: result.rendered_at ?? new Date().toISOString(),
       fetched_at: new Date().toISOString(),

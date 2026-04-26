@@ -1,5 +1,8 @@
 // [claude-code 2026-04-19] S24-T1: added V4 categories (regimeProposals, lexiconProposals, walkBackReverts). Critical severity already bypasses quiet hours.
 // [claude-code 2026-04-18] S2: unified emit helper — always log, push only if subscribed+allowed+not-suppressed
+// [claude-code 2026-04-25] S35-Unified: delivery gate now reads server-side user_preferences
+//   (manualDnd, blockedCategories, severityThreshold, quietHours) so prefs sync across devices.
+//   Critical bypasses all gates; everything else routes through evaluateDeliveryGates.
 /**
  * Notification emit helper
  *
@@ -24,7 +27,7 @@ import {
   insertNotification,
   hasRecentFingerprint,
 } from "../notification-service.js";
-import { isInQuietHours } from "./quiet-hours.js";
+import { evaluateDeliveryGates } from "./user-prefs-gate.js";
 
 const log = createLogger("NotifEmit");
 
@@ -52,6 +55,9 @@ export const NOTIFICATION_CATEGORIES = [
   // [S26-P2 T9] Agent-proposed maintenance requests — super-admin commit/deploy/deny.
   "maintenance_request",
   "chat_relay",
+  // [S35-Unified] Economic-event alerts (FOMC/CPI/NFP/etc.) — distinct from riskflow so
+  //   users can mute speculative riskflow chatter while keeping calendar pings, or vice versa.
+  "econ_alerts",
   "test",
   "system",
 ] as const;
@@ -122,6 +128,8 @@ async function emitForSingleUser(
   }
 
   if (shouldPush) {
+    // First gate: does the user have *any* subscription for this category?
+    // (web_push_subscriptions.categories drives per-device channel subscription.)
     const can = await canDeliverToUser(userId, input.category, input.severity);
     if (!can) {
       shouldPush = false;
@@ -129,11 +137,18 @@ async function emitForSingleUser(
     }
   }
 
-  if (shouldPush && input.severity !== "critical") {
-    const quiet = await isInQuietHours(userId);
-    if (quiet) {
+  if (shouldPush) {
+    // Second gate: server-authoritative user preferences (DND, blocklist,
+    // severity floor, quiet hours). Critical severity bypasses all of these
+    // by design — handled inside evaluateDeliveryGates.
+    const verdict = await evaluateDeliveryGates(
+      userId,
+      input.category,
+      input.severity,
+    );
+    if (!verdict.allow) {
       shouldPush = false;
-      reason = "quiet-hours";
+      reason = verdict.reason ?? "blocked";
     }
   }
 

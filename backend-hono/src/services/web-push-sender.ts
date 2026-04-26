@@ -43,6 +43,15 @@ export interface PushPayload {
   /** [S26-P2 T9] Maintenance request ID — only set for maintenance_request category.
    *  SW uses it for lock-screen commit/deploy/deny actions + modal deep-link. */
   requestId?: string;
+  /** [claude-code 2026-04-25] S35-Unified: structured sync event piggybacked on a silent
+   *  push so the SW can update the notification bell + DND state across devices without
+   *  rendering a banner. Only set when category === "__sync". */
+  sync?: {
+    kind: string;
+    id?: string;
+    originEndpoint?: string;
+    updatedAt: string;
+  };
 }
 
 export const SEVERITY_ORDER = ["low", "medium", "high", "critical"] as const;

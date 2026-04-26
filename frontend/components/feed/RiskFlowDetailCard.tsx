@@ -1,3 +1,7 @@
+// [claude-code 2026-04-25] S38: Generate Note CTA now produces a structured detailed
+//   note — original headline link + ≤200-char summary + bullish/bearish/neutral read
+//   conditioned on the user's selected instrument (localStorage `fintheon:selected-instrument`,
+//   default /ES). Renders link + summary + direction badge in the expanded card.
 // [claude-code 2026-04-10] S9-T2: Refactored to use AlertCardBase — detail variant
 // [claude-code 2026-04-19] Surface-gated SourcePreview — expanded card now shows
 //   scraped source body with YouTube + Open-original CTAs (surface="full" or
@@ -16,6 +20,34 @@ import { SourcePreview } from "./SourcePreview";
 
 export type RiskFlowDetailSurface = "full" | "timeline" | "mini";
 
+interface DetailedNote {
+  source_url: string | null;
+  summary: string;
+  direction: "bullish" | "bearish" | "neutral";
+  instrument: string;
+}
+
+const API_BASE = (
+  import.meta.env.VITE_API_URL || "http://localhost:8080"
+).replace(/\/$/, "");
+
+function readSelectedInstrument(): string {
+  try {
+    return localStorage.getItem("fintheon:selected-instrument") || "/ES";
+  } catch {
+    return "/ES";
+  }
+}
+
+function directionLabel(
+  d: DetailedNote["direction"],
+  instrument: string,
+): string {
+  const head =
+    d === "bullish" ? "Bullish" : d === "bearish" ? "Bearish" : "Neutral";
+  return `${head} for ${instrument}`;
+}
+
 interface RiskFlowDetailCardProps {
   alert: RiskFlowAlert;
   seen?: boolean;
@@ -33,20 +65,52 @@ export function RiskFlowDetailCard({
   surface = "mini",
 }: RiskFlowDetailCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [detailedNote, setDetailedNote] = useState<DetailedNote | null>(null);
+  const [generating, setGenerating] = useState(false);
   const { addToast } = useToast();
   const hasEconData = alert.econData && alert.econData.beatMiss;
   const showSourcePreview = surface === "full" || surface === "timeline";
 
   const handleGenerateNote = useCallback(
-    (e: React.MouseEvent) => {
+    async (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (onGenerateNote) {
-        const rawId = alert.id.replace(/^backend-/, "");
-        onGenerateNote(rawId);
-        addToast("Generating analyst note...", "info");
+      const rawId = alert.id.replace(/^backend-/, "");
+      const instrument = readSelectedInstrument();
+      setGenerating(true);
+      addToast("Generating analyst note...", "info");
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/riskflow/${encodeURIComponent(rawId)}/generate-note`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ instrument }),
+          },
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = (await res.json()) as Partial<DetailedNote>;
+        if (
+          typeof data.summary === "string" &&
+          (data.direction === "bullish" ||
+            data.direction === "bearish" ||
+            data.direction === "neutral")
+        ) {
+          setDetailedNote({
+            source_url: data.source_url ?? alert.url ?? null,
+            summary: data.summary,
+            direction: data.direction,
+            instrument: data.instrument ?? instrument,
+          });
+        }
+        if (onGenerateNote) onGenerateNote(rawId);
+      } catch (err) {
+        console.warn("[RiskFlow] Generate note failed:", err);
+        addToast("Note generation failed", "error");
+      } finally {
+        setGenerating(false);
       }
     },
-    [alert.id, onGenerateNote, addToast],
+    [alert.id, alert.url, onGenerateNote, addToast],
   );
 
   return (
@@ -73,8 +137,70 @@ export function RiskFlowDetailCard({
       expandedContent={
         <>
           <div className="px-4 py-3 border-t border-zinc-800/40 bg-[#000]/90">
+            {/* [claude-code 2026-04-25] S35: Hero image + source-link rail. Image is
+                best-effort (RSS enclosure / og:image) — hides on load failure so a
+                broken image never wedges the card. Source link below opens in a new
+                tab and is the primary handoff to the original article. */}
+            {alert.imageUrl && (
+              <a
+                href={alert.url ?? alert.imageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="block mb-3 border border-zinc-800/60 overflow-hidden bg-[var(--fintheon-bg)]"
+              >
+                <img
+                  src={alert.imageUrl}
+                  alt=""
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (
+                      e.currentTarget.parentElement as HTMLElement
+                    ).style.display = "none";
+                  }}
+                  className="w-full max-h-48 object-cover"
+                />
+              </a>
+            )}
             {/* 1. Agent Note (or Generate CTA) */}
-            {alert.agentNote ? (
+            {detailedNote ? (
+              <div className="border border-zinc-800/60 px-3 py-2.5 mb-3 bg-[var(--fintheon-bg)]">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--fintheon-accent)]">
+                    Oracle
+                  </span>
+                </div>
+                {detailedNote.source_url && (
+                  <a
+                    href={detailedNote.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="block mb-1.5 text-[11px] text-[var(--fintheon-accent)] hover:underline break-words"
+                  >
+                    {alert.headline}
+                  </a>
+                )}
+                <p className="text-[11px] text-[var(--fintheon-text)] leading-relaxed mb-1.5">
+                  {detailedNote.summary}
+                </p>
+                <span
+                  className={`inline-block text-[9px] font-bold tracking-[0.12em] uppercase ${
+                    detailedNote.direction === "bullish"
+                      ? "text-emerald-400"
+                      : detailedNote.direction === "bearish"
+                        ? "text-red-400"
+                        : "text-[var(--fintheon-accent)]"
+                  }`}
+                >
+                  {directionLabel(
+                    detailedNote.direction,
+                    detailedNote.instrument,
+                  )}
+                </span>
+              </div>
+            ) : alert.agentNote ? (
               <div className="border border-zinc-800/60 px-3 py-2.5 mb-3 bg-[var(--fintheon-bg)]">
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--fintheon-accent)]">
@@ -90,13 +216,6 @@ export function RiskFlowDetailCard({
                   </p>
                 )}
               </div>
-            ) : onGenerateNote ? (
-              <button
-                onClick={handleGenerateNote}
-                className="flex items-center gap-1.5 text-[10px] text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors mb-3 px-1"
-              >
-                <span>Generate Note +</span>
-              </button>
             ) : null}
 
             {/* 2. Econ Data — beat/miss + A/F/P (econ items only) */}
@@ -181,16 +300,19 @@ export function RiskFlowDetailCard({
 
             {/* 5. Tags + Author + Source link */}
             <div className="flex items-center gap-2 flex-wrap">
-              {alert.tags.length > 0 && (
+              {alert.tags.filter((t) => !t.startsWith("url:")).length > 0 && (
                 <div className="flex gap-1">
-                  {alert.tags.slice(0, 4).map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-[9px] px-1.5 py-0.5 bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/20"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+                  {alert.tags
+                    .filter((t) => !t.startsWith("url:"))
+                    .slice(0, 4)
+                    .map((tag) => (
+                      <span
+                        key={tag}
+                        className="text-[9px] px-1.5 py-0.5 bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/20"
+                      >
+                        {tag}
+                      </span>
+                    ))}
                 </div>
               )}
               {alert.authorHandle && (

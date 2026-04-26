@@ -1,3 +1,4 @@
+// [claude-code 2026-04-26] S45-T1: trades INSERT now includes user_id sourced from PROJECTX_USER_ID (per-account override) or SYSTEM_USER_ID (autopilot fallback). Historical NULL rows backfilled by orchestrator at unification — out of scope here.
 // [claude-code 2026-04-22] S29-T1: ProjectX trades sync worker — polls every 15 min, upserts to Supabase
 
 import { createLogger } from "../lib/logger.js";
@@ -63,17 +64,21 @@ async function runSyncCycle(): Promise<void> {
       return;
     }
 
+    const userId = resolveUserId();
+
     let upserted = 0;
     for (const t of trades) {
       await query(
-        `INSERT INTO trades (id, contract, entry_at, exit_at, side, qty, entry_price, exit_price, realized_pnl, origin)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'user')
+        `INSERT INTO trades (id, user_id, contract, entry_at, exit_at, side, qty, entry_price, exit_price, realized_pnl, origin)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'user')
          ON CONFLICT (id) DO UPDATE
            SET exit_at       = EXCLUDED.exit_at,
                exit_price    = EXCLUDED.exit_price,
-               realized_pnl  = EXCLUDED.realized_pnl`,
+               realized_pnl  = EXCLUDED.realized_pnl,
+               user_id       = COALESCE(trades.user_id, EXCLUDED.user_id)`,
         [
           t.id,
+          userId,
           t.contract,
           t.entryAt,
           t.exitAt,
@@ -97,6 +102,13 @@ async function runSyncCycle(): Promise<void> {
   } finally {
     status.isRunning = false;
   }
+}
+
+function resolveUserId(): string | null {
+  const explicit = process.env.PROJECTX_USER_ID;
+  if (explicit) return explicit;
+  const fallback = process.env.SYSTEM_USER_ID;
+  return fallback ?? null;
 }
 
 let syncTimer: ReturnType<typeof setInterval> | null = null;

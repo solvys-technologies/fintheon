@@ -1,3 +1,6 @@
+// [claude-code 2026-04-25] S38: Econ Pulse (EconKpiFuses) wrapped in a collapsible header row;
+//   InstrumentCardsRow swapped for AquariumPredictionCards (horizontal heat bars, matches
+//   Sanctum Command tab); EconInstrumentFuses dead-file deleted.
 // [claude-code 2026-04-24] S35-T12 Phase B: Reflowed Econ Intel header — KPI fuses get
 //   their own full-width row (was squeezed left half), InstrumentCardsRow takes the
 //   next full-width row (replaces the orphaned EconInstrumentFuses right-column variant),
@@ -7,13 +10,12 @@
 //   with staggered fade-in; each expands to a CAO synthesis + per-print rows + AI-confidence
 //   fuse footer. categoryScores + context props kept for back-compat (unused here).
 import { useEffect, useMemo, useState } from "react";
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, ChevronDown, ChevronRight } from "lucide-react";
 import type {
   SimulationContext,
   AgentDeskCategoryScore,
 } from "../../types/agent-desk";
 import { EconKpiFuses } from "./econ/EconKpiFuses";
-import { InstrumentCardsRow } from "./InstrumentCardsRow";
 import { EconEventFilter, type EconTimespan } from "./econ/EconEventFilter";
 import { EconEventCard, type EconEventCardData } from "./econ/EconEventCard";
 
@@ -128,6 +130,7 @@ export function SanctumEconIntel(_props: SanctumEconIntelProps) {
     timespan: EconTimespan;
   } | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [pulseOpen, setPulseOpen] = useState(true);
 
   // Enrich catalogue from /api/data/econ-calendar (next release dates, release counts)
   useEffect(() => {
@@ -229,21 +232,42 @@ export function SanctumEconIntel(_props: SanctumEconIntelProps) {
 
   return (
     <div className="flex flex-col gap-4 h-full min-h-0">
-      {/* ── Econ Pulse fuses — full width row ── */}
-      <div className="shrink-0 rounded-md overflow-hidden">
-        <EconKpiFuses
-          catalogue={catalogue}
-          inflationPulse={pulses.inflation}
-          laborPulse={pulses.labor}
-          supplyPulse={pulses.supply}
-        />
-      </div>
-
-      {/* ── Instrument cards row — full-width 5-col grid (renamed from
-            InstrumentFusesPanel; reads /api/predictions/outlook). Stretches
-            across the row instead of stacking vertically in a right column. ── */}
-      <div className="shrink-0">
-        <InstrumentCardsRow />
+      {/* ── Econ Pulse — collapsible header + fuses block ── */}
+      <div className="shrink-0 flex flex-col">
+        <button
+          type="button"
+          onClick={() => setPulseOpen((v) => !v)}
+          aria-expanded={pulseOpen}
+          className="flex items-center justify-between w-full py-2 group cursor-pointer text-left"
+        >
+          <span
+            className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--fintheon-accent)]/85 group-hover:text-[var(--fintheon-accent)] transition-colors"
+            style={{ fontFamily: "var(--font-heading)" }}
+          >
+            Econ Pulse
+          </span>
+          {pulseOpen ? (
+            <ChevronDown
+              size={14}
+              className="text-[var(--fintheon-muted)]/70 group-hover:text-[var(--fintheon-accent)] transition-colors"
+            />
+          ) : (
+            <ChevronRight
+              size={14}
+              className="text-[var(--fintheon-muted)]/70 group-hover:text-[var(--fintheon-accent)] transition-colors"
+            />
+          )}
+        </button>
+        {pulseOpen && (
+          <div className="rounded-md overflow-hidden">
+            <EconKpiFuses
+              catalogue={catalogue}
+              inflationPulse={pulses.inflation}
+              laborPulse={pulses.labor}
+              supplyPulse={pulses.supply}
+            />
+          </div>
+        )}
       </div>
 
       {/* Fading horizontal ruler */}

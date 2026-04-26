@@ -1,0 +1,37 @@
+/* [claude-code 2026-04-26] S45-T2: Fading-ruler-line primitive — replaces
+   borders on every new S45 surface (DayCard, Strategium daycard tab, journal
+   PlanFeedbackBlock). Gradient stops are intentional: transparent → low-opacity
+   gold → transparent reads as a divider, NOT a fill. The "no gradients-as-fills"
+   rule is honored because this paints a 1px line, never a surface. */
+
+.fading-ruler {
+  display: block;
+  width: 100%;
+  height: 1px;
+  border: none;
+  margin: 0;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(199, 159, 74, 0) 5%,
+    rgba(199, 159, 74, 0.35) 50%,
+    rgba(199, 159, 74, 0) 95%,
+    transparent 100%
+  );
+}
+
+.fading-ruler--vertical {
+  display: block;
+  width: 1px;
+  height: 100%;
+  border: none;
+  margin: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(199, 159, 74, 0) 5%,
+    rgba(199, 159, 74, 0.35) 50%,
+    rgba(199, 159, 74, 0) 95%,
+    transparent 100%
+  );
+}

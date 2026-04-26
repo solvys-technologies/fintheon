@@ -72,7 +72,6 @@ import {
   type StrategiumPaneMode,
 } from "../../lib/layoutOrderStorage";
 import { StrategiumPeekBar } from "./StrategiumPeekBar";
-import { Maximize2, Minimize2 } from "lucide-react";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { useLayoutState } from "../../hooks/useLayoutState";
 import { useBrowserTransition } from "../../hooks/useBrowserTransition";
@@ -234,12 +233,44 @@ function MainLayoutInner() {
   const [missionWidgetVisibility, setMissionWidgetVisibilityState] = useState<
     Record<MissionWidgetId, boolean>
   >(getMissionWidgetVisibility);
+  // [claude-code 2026-04-25] Strategium fullscreen modes (feedOnly / widgetsOnly) retired
+  // along with the maximize-RiskFlow overlay button. Any persisted mode is normalized to
+  // "balanced" on mount so users coming in with stale state aren't stranded in a mode
+  // there's no longer a UI control to leave.
   const [strategiumPaneMode, setStrategiumPaneModeState] =
-    useState<StrategiumPaneMode>(() => getStrategiumPaneMode());
+    useState<StrategiumPaneMode>(() => {
+      const m = getStrategiumPaneMode();
+      return m === "balanced" ? m : "balanced";
+    });
   const updateStrategiumPaneMode = useCallback((mode: StrategiumPaneMode) => {
     setStrategiumPaneModeState(mode);
     setStrategiumPaneMode(mode);
   }, []);
+  useEffect(() => {
+    if (strategiumPaneMode !== "balanced") {
+      updateStrategiumPaneMode("balanced");
+    }
+    // run once on mount to clear stale persisted modes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // [claude-code 2026-04-26] Header PanelToggleGroup right-button wiring.
+  // Toggles the Strategium right-panel collapse + broadcasts state back so the
+  // header icon's filled-right indicator stays in sync.
+  useEffect(() => {
+    const onToggle = () => setMissionControlCollapsed(!missionControlCollapsed);
+    window.addEventListener("fintheon:toggle-strategium", onToggle);
+    return () =>
+      window.removeEventListener("fintheon:toggle-strategium", onToggle);
+  }, [missionControlCollapsed, setMissionControlCollapsed]);
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("fintheon:strategium-state", {
+        detail: { open: !missionControlCollapsed },
+      }),
+    );
+  }, [missionControlCollapsed]);
   const [psychAssistTarget, setPsychAssistTarget] =
     useState<PsychAssistDockTarget>(() => {
       try {
@@ -418,6 +449,23 @@ function MainLayoutInner() {
     [],
   );
 
+  // [claude-code 2026-04-25] Reset Strategium widget order + visibility to defaults.
+  // Wired to the t-dropdown reset button that fades in next to Pencil when edit mode is on.
+  const handleMissionWidgetResetLayout = useCallback(() => {
+    setMissionWidgetOrderState(DEFAULT_MISSION_WIDGET_ORDER);
+    setMissionWidgetOrder(DEFAULT_MISSION_WIDGET_ORDER);
+    const allOn: Record<MissionWidgetId, boolean> = {
+      er: true,
+      autopilot: true,
+      regime: true,
+      account: true,
+      weekly: true,
+      calendar: true,
+    };
+    setMissionWidgetVisibilityState(allOn);
+    setMissionWidgetVisibility(allOn);
+  }, []);
+
   const missionWidgetRegistry = useMemo(
     () => ({
       er: {
@@ -493,6 +541,7 @@ function MainLayoutInner() {
         missionWidgetVisibility={missionWidgetVisibility}
         onReorder={handleMissionWidgetReorder}
         onToggleVisibility={handleMissionWidgetToggleVisibility}
+        onResetLayout={handleMissionWidgetResetLayout}
         collapseFn={collapseFn}
         editMode={layoutEditMode}
         onToggleEditMode={() => setLayoutEditMode(!layoutEditMode)}
@@ -504,6 +553,7 @@ function MainLayoutInner() {
       missionWidgetVisibility,
       handleMissionWidgetReorder,
       handleMissionWidgetToggleVisibility,
+      handleMissionWidgetResetLayout,
       layoutEditMode,
       setLayoutEditMode,
     ],
@@ -587,6 +637,11 @@ function MainLayoutInner() {
       activeTab === "settings";
     if (!hideRightPanel) {
       rightPanels.push(
+        // [claude-code 2026-04-26] Strategium slide restoration. Wrapper keeps
+        // its width transition (12px ↔ 380px); the inner content gets a paired
+        // opacity + translate-x animation so it slides in/out instead of
+        // instantly swapping. Combined effect = panel slides off the right
+        // edge when collapsed, slides back in when reopened.
         <div
           key="right-stack"
           className={`flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--fintheon-accent)]/10 transition-[width] duration-300 ease-in-out overflow-hidden ${
@@ -596,7 +651,7 @@ function MainLayoutInner() {
           }`}
         >
           {missionControlCollapsed ? (
-            <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="flex-1 flex flex-col items-center justify-center transition-opacity duration-300">
               <button
                 onClick={() => setMissionControlCollapsed(false)}
                 className="p-2 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
@@ -606,16 +661,10 @@ function MainLayoutInner() {
               </button>
             </div>
           ) : (
-            <>
-              {/* Widget peek-header (only visible in feedOnly mode so user can restore widgets) */}
-              {strategiumPaneMode === "feedOnly" && (
-                <StrategiumPeekBar
-                  variant="header"
-                  label="Widgets · hidden"
-                  onRestore={() => updateStrategiumPaneMode("balanced")}
-                />
-              )}
-
+            // [claude-code 2026-04-26] Inner expanded content fades + slides in
+            // from the right (paired with the wrapper's width transition). Uses
+            // opacity-100 animate-in so React's mount triggers the slide.
+            <div className="flex-1 min-h-0 flex flex-col w-[380px] animate-in fade-in slide-in-from-right-2 duration-300">
               {/* Widgets pane — shown in balanced + widgetsOnly.
                   [claude-code 2026-04-24] min-h-0 is CRITICAL in widgetsOnly:
                   without it, flex-1 + inner content force the pane taller than
@@ -652,31 +701,6 @@ function MainLayoutInner() {
                           : "h-1/2"
                     } flex flex-col transition-all duration-300 relative`}
                   >
-                    {/* Pane-mode toggle overlay — top-right of RiskFlow section */}
-                    <div className="absolute top-1.5 right-8 z-20 flex items-center gap-0.5 pointer-events-none">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          updateStrategiumPaneMode(
-                            strategiumPaneMode === "feedOnly"
-                              ? "balanced"
-                              : "feedOnly",
-                          )
-                        }
-                        className="pointer-events-auto p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] transition-colors"
-                        title={
-                          strategiumPaneMode === "feedOnly"
-                            ? "Restore widgets"
-                            : "Maximize RiskFlow"
-                        }
-                      >
-                        {strategiumPaneMode === "feedOnly" ? (
-                          <Minimize2 className="w-3 h-3" />
-                        ) : (
-                          <Maximize2 className="w-3 h-3" />
-                        )}
-                      </button>
-                    </div>
                     <div className="flex-1 min-h-0 overflow-y-auto">
                       <RiskFlowMini
                         collapsed={riskFlowCollapsed}
@@ -717,7 +741,7 @@ function MainLayoutInner() {
                   }}
                 />
               )}
-            </>
+            </div>
           )}
         </div>,
       );

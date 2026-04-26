@@ -1,9 +1,12 @@
+// [claude-code 2026-04-25] Seat probability + confidence numerals now use DigitGroup
+//   (solvys-transitions number pop-in) so each seat's percentages cascade in.
 // [claude-code 2026-04-24] S35-T3: Arbitrum chamber — 5 seats + round indicator + digest footer.
 // Replaces AgentDeskDebatePanel inside Sanctum. /solvys-feels: flat surfaces,
 // single Solvys Gold accent, no gradients/glass/emojis/shimmer-for-show.
 import { useEffect, useMemo, useState } from "react";
 import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
 import { NothingFuse } from "../shared/NothingFuse";
+import { DigitGroup } from "../shared/DigitGroup";
 import { VerdictCard } from "./VerdictCard";
 import type { ArbitrumSeat, ArbitrumVerdict } from "./types";
 
@@ -75,17 +78,18 @@ function SeatCard({
       </div>
 
       <div className="mt-2 flex items-baseline gap-2">
-        <span
+        <DigitGroup
+          value={`${pct}`}
+          suffix="%"
           className="text-[var(--fintheon-accent)] leading-none"
           style={{
             fontFamily: "Doto, ui-monospace, monospace",
             fontSize: 26,
           }}
-        >
-          {pct}%
-        </span>
-        <span className="text-[10px] text-[var(--fintheon-text)]/50">
-          conf {conf}%
+        />
+        <span className="text-[10px] text-[var(--fintheon-text)]/50 inline-flex items-baseline gap-1">
+          conf
+          <DigitGroup value={`${conf}`} suffix="%" />
         </span>
       </div>
 

@@ -53,7 +53,10 @@ import {
   type StackedEvent,
 } from "../../services/iv-scoring/index.js";
 import { estimatePoints } from "../../services/market-data/point-estimator.js";
-import { generateNoteForItem } from "../../services/riskflow/agent-notes.js";
+import {
+  generateNoteForItem,
+  generateNoteForItemDetailed,
+} from "../../services/riskflow/agent-notes.js";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { scoringCycle } from "../../services/riskflow/central-scorer.js";
 import { seedCacheFromDb } from "../../services/riskflow/feed-service.js";
@@ -932,11 +935,32 @@ export async function handleRefresh(c: Context) {
   }
 }
 
-/** POST /api/riskflow/:id/generate-note — manual agent note generation trigger */
+/** POST /api/riskflow/:id/generate-note — manual agent note generation trigger
+ *  [claude-code 2026-04-25] S38: When body carries `instrument`, returns the structured
+ *  detailed note (source_url + summary + direction). Without an instrument, falls back to
+ *  the legacy plain-text path so cron and older callers stay working.
+ */
 export async function handleGenerateNote(c: Context) {
   try {
     const itemId = c.req.param("id");
     if (!itemId) return c.json({ error: "Missing item ID" }, 400);
+
+    let body: { instrument?: string } = {};
+    try {
+      body = await c.req.json<{ instrument?: string }>();
+    } catch {
+      /* no body — legacy path */
+    }
+
+    if (body && typeof body.instrument === "string" && body.instrument.trim()) {
+      const detailed = await generateNoteForItemDetailed(
+        itemId,
+        body.instrument,
+      );
+      if (!detailed)
+        return c.json({ error: "Item not found or generation failed" }, 404);
+      return c.json(detailed);
+    }
 
     const note = await generateNoteForItem(itemId);
     if (!note)

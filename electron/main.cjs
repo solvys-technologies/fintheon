@@ -1,3 +1,9 @@
+// [claude-code 2026-04-25] S35: window-close + app-quit instrumentation. The S35 crash.log
+// captured render-process-gone cascades but never WHY — macOS log show revealed AppKit
+// `windowShouldClose:` events at every crash timestamp, so the closes were either
+// programmatic, accessibility-driven, or a stray Cmd+W. Hook BrowserWindow `close` /
+// `closed`, `app.before-quit`, `app.quit`, and process SIGTERM/SIGINT so the next
+// reproduction lands the trigger in crash.log instead of silence.
 // [claude-code 2026-04-23] Rollback: drop github.com OAuth popup allowlist (provider retired)
 // [claude-code 2026-04-16] Lifecycle v2: token refresh on open, smart kill on close, idle shutdown for routine-started backends
 // [claude-code 2026-02-26] Ensure OAuth popups work for embedded webviews.
@@ -42,6 +48,84 @@ let backendStopInFlight = null;
 
 // [claude-code 2026-04-16] Track whether WE spawned the backend or found it already running
 let backendOwnedByApp = false;
+
+/* ------------------------------------------------------------------ */
+/*  [claude-code 2026-04-25] S35: Crash diagnostics                     */
+/*  TP reported app auto-closes after a few minutes with no obvious     */
+/*  cause. Without crash output, the next reproduction is a black box.  */
+/*  Log: render-process-gone, child-process-gone, uncaughtException,    */
+/*  unhandledRejection, GPU crashes, and unexpected backend exits.      */
+/*  Lands in userData/crash.log so it survives across restarts.         */
+/* ------------------------------------------------------------------ */
+
+const CRASH_LOG_PATH = path.join(app.getPath("userData"), "crash.log");
+
+function logCrash(event, detail) {
+  const line = JSON.stringify({
+    ts: new Date().toISOString(),
+    event,
+    ...detail,
+  });
+  try {
+    fs.appendFileSync(CRASH_LOG_PATH, line + "\n", "utf8");
+  } catch {
+    /* best-effort */
+  }
+  // Also surface to stderr so launchd / Console.app picks it up.
+  console.error("[Crash]", line);
+}
+
+process.on("uncaughtException", (err) => {
+  logCrash("uncaughtException", {
+    message: err?.message,
+    stack: (err?.stack || "").slice(0, 2000),
+  });
+});
+
+process.on("unhandledRejection", (reason) => {
+  logCrash("unhandledRejection", {
+    reason: typeof reason === "string" ? reason : String(reason),
+  });
+});
+
+app.on("render-process-gone", (_event, _wc, details) => {
+  logCrash("render-process-gone", details);
+});
+
+app.on("child-process-gone", (_event, details) => {
+  logCrash("child-process-gone", details);
+});
+
+app.on("gpu-process-crashed", (_event, killed) => {
+  logCrash("gpu-process-crashed", { killed });
+});
+
+// [claude-code 2026-04-25] S35: capture every close/quit pathway so the next
+// repro of "fintheon error-closes after 5 minutes" lands a definitive trigger
+// in crash.log. The existing render-process-gone cascade only fires AFTER the
+// decision to quit has been made — we need to know WHO made it.
+
+let closeReason = null; // Set by the listener that fires first; read by quit hooks
+
+app.on("before-quit", (_event) => {
+  logCrash("app-before-quit", { reason: closeReason ?? "unknown" });
+});
+
+app.on("will-quit", (_event) => {
+  logCrash("app-will-quit", { reason: closeReason ?? "unknown" });
+});
+
+app.on("quit", (_event, exitCode) => {
+  logCrash("app-quit", { exitCode, reason: closeReason ?? "unknown" });
+});
+
+const sigHandler = (signal) => {
+  logCrash("process-signal", { signal });
+  closeReason = closeReason ?? `signal:${signal}`;
+};
+process.on("SIGTERM", () => sigHandler("SIGTERM"));
+process.on("SIGINT", () => sigHandler("SIGINT"));
+process.on("SIGHUP", () => sigHandler("SIGHUP"));
 
 /* ------------------------------------------------------------------ */
 /*  Startup config — persisted to userData/fintheon-startup.json       */
@@ -162,8 +246,17 @@ async function startBackend() {
     console.error("[Backend]", data.toString().trim());
   });
 
-  backendProcess.on("exit", (code) => {
-    console.log("[Electron] Backend exited with code", code);
+  backendProcess.on("exit", (code, signal) => {
+    console.log("[Electron] Backend exited with code", code, "signal", signal);
+    // [claude-code 2026-04-25] S35: log unexpected backend exits to crash.log so
+    // the auto-close diagnostic has the upstream cause if it was the backend dying.
+    if (code !== 0 || signal) {
+      logCrash("backend-exit", {
+        code,
+        signal,
+        ownedByApp: backendOwnedByApp,
+      });
+    }
     backendProcess = null;
     backendStopInFlight = null;
     backendOwnedByApp = false;
@@ -498,6 +591,21 @@ function createWindow(apiBase) {
   );
   win.loadFile(rendererPath);
   mainWindow = win;
+
+  // [claude-code 2026-04-25] S35: log the BrowserWindow close trigger so a
+  // user-clicked X, a Cmd+W, an IPC-driven close, or a renderer-initiated
+  // window.close() are all distinguishable in crash.log.
+  win.on("close", (_event) => {
+    closeReason = closeReason ?? "browserwindow-close";
+    logCrash("browserwindow-close", {
+      isFocused: win.isFocused?.() ?? null,
+      isVisible: win.isVisible?.() ?? null,
+    });
+  });
+  win.webContents.on("render-process-gone", (_event, details) => {
+    closeReason =
+      closeReason ?? `renderer-gone:${details?.reason ?? "unknown"}`;
+  });
 
   // [claude-code 2026-04-19] S27-T5 W2c: install voice-chrome ipc hook once the
   // window exists. Idempotent — installVoiceChromeHook only registers the

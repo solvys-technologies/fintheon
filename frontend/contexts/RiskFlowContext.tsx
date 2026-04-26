@@ -179,6 +179,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         headline: item.title,
         summary: item.summary || item.content || "",
         url: item.url,
+        imageUrl: (item as any).imageUrl ?? null,
         publishedAt:
           typeof item.publishedAt === "string"
             ? item.publishedAt
@@ -245,6 +246,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         headline: item.title,
         summary: item.summary || item.content || "",
         url: item.url,
+        imageUrl: (item as any).imageUrl ?? null,
         publishedAt:
           typeof item.publishedAt === "string"
             ? item.publishedAt

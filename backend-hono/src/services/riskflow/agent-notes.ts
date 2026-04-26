@@ -1,3 +1,7 @@
+// [claude-code 2026-04-25] S38: generateNoteForItemDetailed adds structured response —
+//   server-injected source_url, ≤200-char summary, bullish/bearish/neutral direction
+//   conditioned on the user's selected instrument. Existing generateNoteForItem kept for
+//   cron + auto paths.
 // [claude-code 2026-03-26] T2 — Oracle agent notes cron + manual generate-note endpoint
 // Generates 1-2 sentence tactical desk analyst notes for high/critical RiskFlow items
 
@@ -76,6 +80,7 @@ interface ScoredRow {
   tags?: string[] | null;
   econ_data?: Record<string, unknown> | null;
   sub_scores?: Record<string, unknown> | null;
+  url?: string | null;
 }
 
 /**
@@ -115,7 +120,7 @@ async function fetchItemById(itemId: string): Promise<ScoredRow | null> {
 
   const { data, error } = await sb
     .from("scored_riskflow_items")
-    .select("id, headline, body, macro_level, tags, econ_data, sub_scores")
+    .select("id, headline, body, macro_level, tags, econ_data, sub_scores, url")
     .eq("tweet_id", itemId)
     .single();
 
@@ -341,6 +346,107 @@ export async function generateNotesForEconItems(): Promise<number> {
     log.info(`Auto-generated ${generated} notes for econ data items`);
   }
   return generated;
+}
+
+// ── S38: structured note ────────────────────────────────────────────────────
+
+const DIRECTIONAL_SYSTEM_PROMPT = `You are a senior macro trader's desk analyst. Given a market event AND the user's selected futures instrument, produce a STRICT JSON object with two fields:
+  - "summary": one tight sentence (max 200 characters) describing the event and likely short-term price action. No hedging.
+  - "direction": one of "bullish", "bearish", or "neutral", reflecting the likely impact on the user's selected instrument over the next 1-2 sessions.
+Return ONLY the JSON object — no markdown, no commentary, no fences.`;
+
+export interface DetailedNote {
+  source_url: string | null;
+  summary: string;
+  direction: "bullish" | "bearish" | "neutral";
+  instrument: string;
+}
+
+function truncate(s: string, n: number): string {
+  if (s.length <= n) return s;
+  return s.slice(0, n - 1).trimEnd() + "…";
+}
+
+function parseDirectional(raw: string): {
+  summary: string;
+  direction: DetailedNote["direction"];
+} {
+  const cleaned = raw
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "");
+  try {
+    const obj = JSON.parse(cleaned);
+    const summary = typeof obj.summary === "string" ? obj.summary.trim() : "";
+    const dir =
+      typeof obj.direction === "string"
+        ? obj.direction.toLowerCase().trim()
+        : "";
+    const direction: DetailedNote["direction"] =
+      dir === "bullish" || dir === "bearish" ? dir : "neutral";
+    return { summary, direction };
+  } catch {
+    return { summary: raw.trim(), direction: "neutral" };
+  }
+}
+
+/**
+ * S38: generate a structured note with server-injected source link, ≤200-char summary,
+ * and bullish/bearish/neutral direction conditioned on the user's selected instrument.
+ */
+export async function generateNoteForItemDetailed(
+  itemId: string,
+  instrument: string,
+): Promise<DetailedNote | null> {
+  const item = await fetchItemById(itemId);
+  if (!item) {
+    log.warn("Item not found for detailed note generation", { itemId });
+    return null;
+  }
+
+  const inst = instrument.trim() || "unknown";
+
+  let userPrompt = `Headline: ${item.headline}`;
+  if (item.body) userPrompt += `\nSummary: ${item.body}`;
+  userPrompt += `\nSeverity: ${macroLevelToSeverity(item.macro_level)}`;
+  if (item.tags && item.tags.length > 0)
+    userPrompt += `\nTags: ${item.tags.join(", ")}`;
+  if (item.econ_data) {
+    const econ = item.econ_data as Record<string, unknown>;
+    const parts: string[] = [];
+    if (econ.actual != null) parts.push(`Actual: ${econ.actual}`);
+    if (econ.forecast != null) parts.push(`Forecast: ${econ.forecast}`);
+    if (econ.previous != null) parts.push(`Previous: ${econ.previous}`);
+    if (econ.beatMiss) parts.push(`Result: ${econ.beatMiss}`);
+    if (parts.length > 0) userPrompt += `\nEcon Data: ${parts.join(" | ")}`;
+  }
+  userPrompt += `\nUser's selected instrument: ${inst}`;
+
+  const { text } = await invokeAgent({
+    systemPrompt: DIRECTIONAL_SYSTEM_PROMPT,
+    userPrompt,
+    model: { temperature: 0.2, maxTokens: 240 },
+  });
+
+  const parsed = parseDirectional(text);
+  const summary = truncate(parsed.summary || text.trim(), 200);
+
+  // Server-side injection — never trust the LLM with the canonical URL.
+  const detailed: DetailedNote = {
+    source_url: item.url ?? null,
+    summary,
+    direction: parsed.direction,
+    instrument: inst,
+  };
+
+  // Persist the summary into agent_note for back-compat with the cron path.
+  await writeNoteToItem(item.id, summary);
+
+  log.info("Detailed note generated", {
+    itemId,
+    direction: detailed.direction,
+  });
+  return detailed;
 }
 
 /**

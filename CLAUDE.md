@@ -106,21 +106,21 @@ When TP directs an agent to "fix X," these are the authoritative names. Any inte
 
 ## Arbitrum (deliberation engine, replaces MiroShark)
 
-**What:** 5-seat Qwen-family debate via Hermes. Output is a signal digest (consensus probability, confidence, dissent summary, digest text, IV simulation, upcoming catalysts). NO trade tickets, NO auto-actions — human makes the call.
+**What:** 5-seat Qwen3.5:397b-cloud debate via Hermes (Ollama Cloud). Output is a signal digest (consensus probability, confidence, dissent summary, digest text, IV simulation, upcoming catalysts). NO trade tickets, NO auto-actions — human makes the call.
 
-**Seats:**
+**Seats:** all 5 seats run `qwen3.5:397b-cloud` via Ollama Cloud. Divergence comes from persona/role + temperature, not separate model IDs.
 
-| Seat | Role         | Model                                   | Provider            | Weight | Persona voice       |
-| ---- | ------------ | --------------------------------------- | ------------------- | ------ | ------------------- |
-| 1    | Lead Analyst | Qwen3-235B-A22B                         | DashScope free-tier | 30%    | Harper (CAO)        |
-| 2    | Forecaster   | Qwen2.5-72B-Instruct                    | Ollama              | 30%    | Oracle              |
-| 3    | Risk Manager | QwQ-32B-Preview                         | Ollama              | 20%    | Feucht              |
-| 4    | Quantitative | Qwen2.5-Coder-32B                       | Ollama              | 10%    | Consul              |
-| 5    | Bear Case    | Qwen3-14B (w/ non-Qwen Ollama fallback) | Ollama              | 10%    | Feucht alt / Herald |
+| Seat | Role         | Model              | Provider     | Weight | Persona voice       |
+| ---- | ------------ | ------------------ | ------------ | ------ | ------------------- |
+| 1    | Lead Analyst | qwen3.5:397b-cloud | Ollama Cloud | 30%    | Harper (CAO)        |
+| 2    | Forecaster   | qwen3.5:397b-cloud | Ollama Cloud | 30%    | Oracle              |
+| 3    | Risk Manager | qwen3.5:397b-cloud | Ollama Cloud | 20%    | Feucht              |
+| 4    | Quantitative | qwen3.5:397b-cloud | Ollama Cloud | 10%    | Consul              |
+| 5    | Bear Case    | qwen3.5:397b-cloud | Ollama Cloud | 10%    | Feucht alt / Herald |
 
 **Cadence:** event-driven (scored_riskflow_items.iv_score ≥ 8.5 AND speaker is top-10 commentator OR party-of-interest) + session cron 17:00 ET weekdays (feeds into PMDB as "Chamber Read" section at 17:15).
 
-**Routing:** Hermes-only, never OpenRouter. Harper-CAO keeps its existing Claude-Opus path for chat; Arbitrum seats route through Hermes → Ollama/DashScope/Groq.
+**Routing:** Hermes-only, never OpenRouter. Harper-CAO keeps its existing Claude-Opus path for chat; Arbitrum seats route through Hermes → Ollama Cloud (qwen3.5:397b-cloud). DashScope removed 2026-04-26 (paid, no key); Groq retained as an explicit alternate provider but not currently mapped to any seat.
 
 **Engine surface vs UI surface:** the engine is `services/arbitrum/`. The user sees output inside Sanctum's Aquarium surface and as a peek textbox in the IV scoring widget hover modal.
 

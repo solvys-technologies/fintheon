@@ -322,6 +322,8 @@ export function alertToCatalyst(a: RiskFlowAlert): CatalystCard {
     position: null,
     tags: a.tags ?? [],
     riskflowItemId: a.id,
+    sourceUrl: a.url ?? null,
+    imageUrl: a.imageUrl ?? null,
     narrative: threads[0] ?? undefined,
     narrativeThreads: threads,
     directionBias:

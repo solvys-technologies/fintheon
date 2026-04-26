@@ -15,6 +15,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { useDND } from "../../contexts/DNDContext";
+import { useServerNotifications } from "../../contexts/NotificationsContext";
 import {
   getSidebarOrder,
   setSidebarOrder,
@@ -109,6 +110,9 @@ export function NavSidebar({
   refinementActive = false,
 }: NavSidebarProps) {
   const { dndActive, toggleManualDnd, queueCount } = useDND();
+  // [claude-code 2026-04-25] S35-Unified: badge reflects server unread + local queue.
+  const { unreadCount: serverUnread } = useServerNotifications();
+  const totalBadgeCount = queueCount + serverUnread;
   const [hovered, setHovered] = useState(false);
   const [manualExpand, setManualExpand] = useState(false);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -144,6 +148,24 @@ export function NavSidebar({
       if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
     };
   }, []);
+
+  // [claude-code 2026-04-26] Listen for the header PanelToggleGroup left button.
+  // Toggles manualExpand (mirrors the click-to-expand path) so the rail can be
+  // pinned-open from anywhere; emits state back so the icon reflects open/closed.
+  useEffect(() => {
+    const onToggle = () => setManualExpand((v) => !v);
+    window.addEventListener("fintheon:toggle-nav-sidebar", onToggle);
+    return () =>
+      window.removeEventListener("fintheon:toggle-nav-sidebar", onToggle);
+  }, []);
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("fintheon:nav-sidebar-state", {
+        detail: { open: expanded },
+      }),
+    );
+  }, [expanded]);
 
   useEffect(() => {
     setOrder(getSidebarOrder());
@@ -328,7 +350,7 @@ export function NavSidebar({
         {!topStepXEnabled && (
           <button
             onClick={() => {
-              if (queueCount > 0) {
+              if (totalBadgeCount > 0) {
                 onNotificationCenterToggle?.();
               } else {
                 toggleManualDnd();
@@ -354,9 +376,9 @@ export function NavSidebar({
             ) : (
               <Bell className="w-4 h-4 shrink-0" />
             )}
-            {queueCount > 0 && (
+            {totalBadgeCount > 0 && (
               <span className="absolute top-0.5 right-0.5 inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-red-500/80 text-white text-[9px] font-bold leading-none">
-                {queueCount > 99 ? "99+" : queueCount}
+                {totalBadgeCount > 99 ? "99+" : totalBadgeCount}
               </span>
             )}
             {expanded && (
@@ -369,7 +391,9 @@ export function NavSidebar({
                 <div
                   className={`text-[9px] truncate ${dndActive ? "text-[var(--fintheon-accent)]/60" : "text-gray-500"}`}
                 >
-                  {dndActive ? `${queueCount} queued` : "Click to enable DND"}
+                  {dndActive
+                    ? `${totalBadgeCount} queued`
+                    : "Click to enable DND"}
                 </div>
               </div>
             )}

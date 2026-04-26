@@ -19,6 +19,7 @@ import {
   type ToolbarItemId,
 } from "../../lib/layoutOrderStorage";
 import { HeaderVoiceControl } from "../voice/HeaderVoiceControl";
+import { PanelToggleGroup } from "./PanelToggleGroup";
 import {
   GripVertical,
   Layers,
@@ -40,6 +41,7 @@ import { FluxerCallWidget } from "../consilium/FluxerCallWidget";
 import type { IVScoreResponse } from "../../types/market-data";
 import type { TradingPlatform } from "../TradingBrowser";
 import { useDND } from "../../contexts/DNDContext";
+import { useServerNotifications } from "../../contexts/NotificationsContext";
 
 type NavTab =
   | "feed"
@@ -143,6 +145,9 @@ export function TopHeader({
     left: number;
   } | null>(null);
   const { dndActive, toggleManualDnd, queueCount } = useDND();
+  // [claude-code 2026-04-25] S35-Unified: badge counts server-side notifications + local queue.
+  const { unreadCount: serverUnread } = useServerNotifications();
+  const totalBadgeCount = queueCount + serverUnread;
   const [quickClockPulse, setQuickClockPulse] = useState(false);
   const handleQuickClock = useCallback(async () => {
     const now = new Date();
@@ -435,12 +440,12 @@ export function TopHeader({
         <div
           className={`flex items-center gap-3 transition-opacity duration-150 ${hideBranding ? "opacity-0 pointer-events-none" : "opacity-100"}`}
         >
+          {/* [claude-code 2026-04-25] S38: "Priced In Capital" brand string removed from
+              header — now lives in the FooterToolbar desk-name slot. Leaves the instance
+              name + time-of-day greeting. */}
           <div className="flex flex-col leading-tight">
             <span className="text-[12px] font-semibold tracking-[0.22em] text-[var(--fintheon-accent)] uppercase">
               {instanceName}
-            </span>
-            <span className="text-[10px] tracking-[0.18em] text-gray-500 uppercase hidden lg:block">
-              Priced In Capital
             </span>
             <span className="text-[9px] text-gray-600 italic hidden xl:block">
               {(() => {
@@ -503,9 +508,9 @@ export function TopHeader({
               ) : (
                 <Bell className="w-3 h-3" />
               )}
-              {queueCount > 0 && (
+              {totalBadgeCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-500/80 text-white text-[8px] font-bold leading-none">
-                  {queueCount > 99 ? "99+" : queueCount}
+                  {totalBadgeCount > 99 ? "99+" : totalBadgeCount}
                 </span>
               )}
             </button>
@@ -534,6 +539,12 @@ export function TopHeader({
               </span>
             </div>
           </div>
+          {/* [claude-code 2026-04-26] VS Code-style three-panel toggle group:
+              left = NavSidebar, footer = FooterToolbar panel
+              (Team/Harper Ops/Changelog/Terminal/Errors), right = Strategium.
+              Each icon has a permanent divider line so the side it controls is
+              identifiable even when the panel is closed. */}
+          <PanelToggleGroup />
           {toolbarOrder.map((id) => {
             const wrapper = (node: React.ReactNode) => (
               <div

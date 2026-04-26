@@ -4,6 +4,10 @@
 
 @import "./fonts.css";
 
+@import "./styles/transitions.css";
+
+@import "./styles/fading-ruler.css";
+
 /* Hide all scrollbars app-wide — pagination dots serve as position indicators.
    Uses !important + html-scoped selector to override Tailwind preflight and any
    component-level scrollbar resets. Applies to every element in the document. */
@@ -41,6 +45,8 @@ html *::-webkit-scrollbar {
   --fintheon-surface: #0a0a00;
   --fintheon-border: #d4af37;
   --fintheon-muted: #6b7280;
+  /* [S38] Theme-swappable accent alias — voice orb ring + pixel sweep route through this */
+  --accent-primary: var(--fintheon-accent);
   /* Liquid glass surface — translucent with accent tint */
   --fintheon-glass-bg: color-mix(
     in srgb,

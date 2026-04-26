@@ -16,6 +16,9 @@ import {
 } from "lucide-react";
 import { useBackend } from "../../lib/backend";
 import type { SessionJournal } from "../../../shared";
+import { useDayPlan } from "../../hooks/useDayPlan";
+import { PlanFeedbackBlock } from "./PlanFeedbackBlock";
+import { FadingRuler } from "../shared/FadingRuler";
 
 const SCORE_MIN = 0;
 const SCORE_MAX = 10;
@@ -39,6 +42,7 @@ function formatScore(value: number): string {
 export function SessionJournalPanel() {
   const backend = useBackend();
   const date = useMemo(() => todayIso(), []);
+  const { data: dayPlan } = useDayPlan();
   const [infractions, setInfractions] = useState(0);
   const [discipline, setDiscipline] = useState(5.0);
   const [emotional, setEmotional] = useState(5.0);
@@ -142,6 +146,27 @@ export function SessionJournalPanel() {
           {saving ? "Saving…" : "Submit"}
         </button>
       </div>
+
+      {dayPlan && dayPlan.windows.length > 0 && (
+        <div className="mt-4">
+          <div className="mb-2">
+            <span
+              className="text-[10px] font-semibold uppercase tracking-[0.16em]"
+              style={{ color: "var(--fintheon-accent)" }}
+            >
+              Plan Feedback
+            </span>
+          </div>
+          <div className="flex flex-col gap-3">
+            {dayPlan.windows.map((w, i) => (
+              <div key={w.id} className="flex flex-col gap-3">
+                {i > 0 && <FadingRuler />}
+                <PlanFeedbackBlock window={w} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

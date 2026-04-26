@@ -132,9 +132,10 @@ const HERMES_AGENTS: Record<
 
 // [claude-code 2026-04-21] S28: All sub-agents locked to Qwen3.5:397b-cloud via Hermes.
 // Harper toggles via HARPER_DEFAULT_PROVIDER=qwen|anthropic (default: anthropic).
-// [claude-code 2026-04-24] S35-T1: Added arbitrum-seat-* task keys for the
-// 5-seat Arbitrum chamber. These route to Ollama/DashScope/Groq via
-// resolveProvider(), NOT OpenRouter (OpenRouter path is reserved for harper-cao).
+// [claude-code 2026-04-26] S35-T11: All Arbitrum seats also locked to
+// qwen3.5:397b-cloud via Ollama Cloud. DashScope removed (paid, no key).
+// resolveProvider() now returns 'ollama' for every Hermes-routed Qwen task;
+// OpenRouter remains reserved for harper-cao's Claude-Opus path.
 export const HERMES_TASK_MODEL_MAP: Record<string, string> = {
   "harper-cao": "anthropic/claude-opus-4.7",
   "cao-approval": "anthropic/claude-opus-4.7",
@@ -148,25 +149,21 @@ export const HERMES_TASK_MODEL_MAP: Record<string, string> = {
   "earnings-analysis": "qwen3.5:397b-cloud",
   "tech-mega-cap": "qwen3.5:397b-cloud",
   herald: "qwen3.5:397b-cloud",
-  "arbitrum-seat-lead": "qwen3-235b-a22b",
-  "arbitrum-seat-forecaster": "qwen2.5-72b-instruct",
-  "arbitrum-seat-risk": "qwq-32b-preview",
-  "arbitrum-seat-quant": "qwen2.5-coder-32b",
-  "arbitrum-seat-bear": "qwen3-14b",
+  "arbitrum-seat-lead": "qwen3.5:397b-cloud",
+  "arbitrum-seat-forecaster": "qwen3.5:397b-cloud",
+  "arbitrum-seat-risk": "qwen3.5:397b-cloud",
+  "arbitrum-seat-quant": "qwen3.5:397b-cloud",
+  "arbitrum-seat-bear": "qwen3.5:397b-cloud",
 };
 
-// [claude-code 2026-04-24] S35-T1: Provider-routing abstraction.
-// Any model id not in ARBITRUM_MODEL_PROVIDER_MAP defaults to 'openrouter' —
-// this preserves harper-cao's existing Claude-Opus OpenRouter path verbatim.
-export type ArbitrumProvider = "ollama" | "dashscope" | "groq" | "openrouter";
+// [claude-code 2026-04-26] S35-T11: Provider-routing abstraction. DashScope
+// removed. Any model id not in ARBITRUM_MODEL_PROVIDER_MAP defaults to
+// 'openrouter' — this preserves harper-cao's existing Claude-Opus OpenRouter
+// path verbatim.
+export type ArbitrumProvider = "ollama" | "groq" | "openrouter";
 
 const ARBITRUM_MODEL_PROVIDER_MAP: Record<string, ArbitrumProvider> = {
-  "qwen3-235b-a22b": "dashscope",
-  "qwen2.5-72b-instruct": "ollama",
-  "qwq-32b-preview": "ollama",
-  "qwen2.5-coder-32b": "ollama",
-  "qwen3-14b": "ollama",
-  "llama3.3-70b": "ollama",
+  "qwen3.5:397b-cloud": "ollama",
 };
 
 export function resolveProvider(modelId: string): ArbitrumProvider {

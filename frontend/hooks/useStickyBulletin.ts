@@ -10,7 +10,7 @@ const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export { DAY_LABELS };
 
-export type SectionId = "idea" | "antilag" | "event" | "notes";
+export type SectionId = "idea" | "antilag" | "event" | "notes" | "daycard";
 
 export interface HotTimeEntry {
   bucket: string;

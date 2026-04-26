@@ -1,9 +1,13 @@
+// [claude-code 2026-04-26] S35-cleanup: routed puller through invokeAgent
+// (Strands fallback chain: VProxy → Ollama Qwen3.5:397b-cloud via HERMES_SIDECAR_URL
+// → Nous → OpenRouter). The prod OpenRouter key returns 401 "User not found",
+// so Ollama-Qwen via Hermes is the active rung. FRED date window padded -60
+// days backward so monthly series whose observation_date falls in the prior
+// reporting month still land inside the slice window.
 // [claude-code 2026-04-24] S34-T10: free-tier LLM puller for historical econ events.
-// Called by econ-backfill-orchestrator once per claimed slice.
-// Primary: OpenRouter Llama 3.3 70B (free); fallback: Mistral Large (free).
-// US slices optionally enriched with FRED series if FRED_API_KEY is present.
 
 import { createLogger } from "../../lib/logger.js";
+import { invokeAgent } from "../strands/invoke-helper.js";
 import type {
   BackfillSlice,
   RawBackfillEvent,
@@ -12,9 +16,10 @@ import type {
 
 const log = createLogger("EconBackfillPuller");
 
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const PRIMARY_MODEL = "meta-llama/llama-3.3-70b-instruct:free";
-const FALLBACK_MODEL = "mistralai/mistral-large:free";
+const PULLER_SYSTEM_PROMPT =
+  "You are a data extraction tool. Return ONLY valid JSON matching the schema requested. No prose, no markdown fences.";
+
+const FRED_BACKWARD_PAD_DAYS = 60;
 
 // FRED series that map cleanly to our 4 categories for US slices.
 const US_FRED_SERIES: Array<{ id: string; name: string }> = [
@@ -25,70 +30,20 @@ const US_FRED_SERIES: Array<{ id: string; name: string }> = [
   { id: "GDP", name: "Gross Domestic Product" },
 ];
 
-interface OpenRouterResponse {
-  choices?: Array<{ message?: { content?: string } }>;
-}
-
-async function sleep(ms: number): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function callOpenRouter(
-  model: string,
-  prompt: string,
-): Promise<string | null> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) return null;
-
-  const backoffs = [250, 1000, 4000];
-  for (let attempt = 0; attempt <= backoffs.length; attempt++) {
-    try {
-      const res = await fetch(OPENROUTER_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are a data extraction tool. Return ONLY valid JSON matching the schema requested. No prose, no markdown fences.",
-            },
-            { role: "user", content: prompt },
-          ],
-          temperature: 0,
-          max_tokens: 4000,
-        }),
-      });
-
-      if (res.status === 429 || res.status === 503) {
-        if (attempt < backoffs.length) {
-          await sleep(backoffs[attempt]);
-          continue;
-        }
-        return null;
-      }
-
-      if (!res.ok) {
-        log.warn(`OpenRouter ${model} HTTP ${res.status}`);
-        return null;
-      }
-
-      const json = (await res.json()) as OpenRouterResponse;
-      return json.choices?.[0]?.message?.content ?? null;
-    } catch (err) {
-      if (attempt < backoffs.length) {
-        await sleep(backoffs[attempt]);
-        continue;
-      }
-      log.warn("OpenRouter fetch failed", { model, error: String(err) });
-      return null;
-    }
+async function callHermesQwen(prompt: string): Promise<string | null> {
+  try {
+    const { text } = await invokeAgent({
+      systemPrompt: PULLER_SYSTEM_PROMPT,
+      userPrompt: prompt,
+      model: { temperature: 0, maxTokens: 4000 },
+    });
+    return text && text.trim().length > 0 ? text : null;
+  } catch (err) {
+    log.warn("Hermes invokeAgent failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
   }
-  return null;
 }
 
 function parseJsonArray(raw: string | null): unknown[] {
@@ -169,12 +124,19 @@ async function pullFromFred(slice: BackfillSlice): Promise<RawBackfillEvent[]> {
   const key = process.env.FRED_API_KEY;
   if (!key || slice.country !== "US") return [];
 
+  // FRED dates monthly series at the FIRST of the reporting month, but the
+  // release prints ~3 weeks later. Pad backward so a slice starting 2026-04-01
+  // still picks up CPI/Payrolls dated 2026-03-01 (March data, released April).
+  const paddedStart = new Date(slice.slice_start);
+  paddedStart.setUTCDate(paddedStart.getUTCDate() - FRED_BACKWARD_PAD_DAYS);
+  const observation_start = paddedStart.toISOString().slice(0, 10);
+
   const events: RawBackfillEvent[] = [];
   for (const series of US_FRED_SERIES) {
     const observations = await fetchFredSeries(
       series.id,
       key,
-      slice.slice_start,
+      observation_start,
       slice.slice_end,
     );
     for (const obs of observations) {
@@ -212,12 +174,8 @@ export async function pullSliceViaFreeTierLLM(
 ): Promise<RawSlicePayload | null> {
   const prompt = buildPrompt(slice);
 
-  let raw = await callOpenRouter(PRIMARY_MODEL, prompt);
-  let source: RawSlicePayload["source"] = "openrouter-llama";
-  if (!raw) {
-    raw = await callOpenRouter(FALLBACK_MODEL, prompt);
-    source = "openrouter-mistral";
-  }
+  const raw = await callHermesQwen(prompt);
+  let source: RawSlicePayload["source"] = "hermes-qwen";
 
   const llmEvents = parseJsonArray(raw)
     .map(coerceEvent)

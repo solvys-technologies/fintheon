@@ -1,6 +1,9 @@
+// [claude-code 2026-04-25] Settings tab content swap now uses t-panel-slide (solvys-transitions)
+//   for translate-Y + blur + fade entry per tab. Replaces animate-fade-in-tab / animate-fade-out-tab.
 // [claude-code 2026-04-03] Refactored: thin shell that imports tab sub-components
 // [claude-code 2026-03-22] T5: Wire Change Plan -> UpgradeModal, add logout button in Danger Zone
 import React from "react";
+import type { ReactNode } from "react";
 import {
   Settings,
   Bell,
@@ -138,6 +141,33 @@ const TABS = [
     description: "Reset analysts, clear data, and export config",
   },
 ];
+
+// Per-tab wrapper that drives t-panel-slide entry on mount via a one-frame rAF so
+// the new tab content tweens in from the closed (translate-Y + blur + opacity:0)
+// resting state. When SettingsPage flips `tabTransitioning`, every mounted panel
+// flips data-open back to "false" for a synchronized exit.
+function SettingsTabPanel({
+  transitioning,
+  children,
+}: {
+  transitioning: boolean;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (transitioning) {
+      setOpen(false);
+      return;
+    }
+    const id = requestAnimationFrame(() => setOpen(true));
+    return () => cancelAnimationFrame(id);
+  }, [transitioning]);
+  return (
+    <div className="t-panel-slide" data-open={open ? "true" : "false"}>
+      {children}
+    </div>
+  );
+}
 
 export function SettingsPage() {
   const { tier, setTier, isAuthenticated } = useAuth();
@@ -298,115 +328,93 @@ export function SettingsPage() {
     fetchData();
   }, [backend, isAuthenticated, setAPIKeys]);
 
-  const animClass =
-    tabTransitioning && prevTab
-      ? "animate-fade-out-tab"
-      : "animate-fade-in-tab";
-
   const renderTabContent = () => {
+    const wrap = (key: SettingsTab, child: ReactNode) => (
+      <SettingsTabPanel key={key} transitioning={tabTransitioning}>
+        {child}
+      </SettingsTabPanel>
+    );
     switch (activeTab) {
       case "notifications":
-        return (
-          <div key="notifications" className={animClass}>
-            <NotificationsTab
-              alertConfig={alertConfig}
-              setAlertConfig={setAlertConfig}
-              voiceMemory={voiceMemory}
-            />
-          </div>
+        return wrap(
+          "notifications",
+          <NotificationsTab
+            alertConfig={alertConfig}
+            setAlertConfig={setAlertConfig}
+            voiceMemory={voiceMemory}
+          />,
         );
       case "trading":
-        return (
-          <div key="trading" className={animClass}>
-            <TradingTab
-              riskSettings={riskSettings}
-              setRiskSettings={setRiskSettings}
-              contractsPerTrade={contractsPerTrade}
-              setContractsPerTrade={setContractsPerTrade}
-              primaryBroker={primaryBroker}
-              setPrimaryBroker={setPrimaryBroker}
-              autoPilotSettings={autoPilotSettings}
-              setAutoPilotSettings={setAutoPilotSettings}
-              tradingModels={tradingModels}
-              setTradingModels={setTradingModels}
-            />
-          </div>
+        return wrap(
+          "trading",
+          <TradingTab
+            riskSettings={riskSettings}
+            setRiskSettings={setRiskSettings}
+            contractsPerTrade={contractsPerTrade}
+            setContractsPerTrade={setContractsPerTrade}
+            primaryBroker={primaryBroker}
+            setPrimaryBroker={setPrimaryBroker}
+            autoPilotSettings={autoPilotSettings}
+            setAutoPilotSettings={setAutoPilotSettings}
+            tradingModels={tradingModels}
+            setTradingModels={setTradingModels}
+          />,
         );
       case "general":
-        return (
-          <div key="general" className={animClass}>
-            <GeneralTab
-              traderName={traderName}
-              setTraderName={setTraderName}
-              selectedSymbol={selectedSymbol}
-              setSelectedSymbol={setSelectedSymbol}
-              availableSymbols={AVAILABLE_SYMBOLS}
-              tier={tier}
-              onShowUpgradeModal={() => setShowUpgradeModal(true)}
-            />
-          </div>
+        return wrap(
+          "general",
+          <GeneralTab
+            traderName={traderName}
+            setTraderName={setTraderName}
+            selectedSymbol={selectedSymbol}
+            setSelectedSymbol={setSelectedSymbol}
+            availableSymbols={AVAILABLE_SYMBOLS}
+            tier={tier}
+            onShowUpgradeModal={() => setShowUpgradeModal(true)}
+          />,
         );
       case "api":
-        return (
-          <div key="api" className={animClass}>
-            <ApiTab apiKeys={apiKeys} setAPIKeys={setAPIKeys} />
-          </div>
+        return wrap(
+          "api",
+          <ApiTab apiKeys={apiKeys} setAPIKeys={setAPIKeys} />,
         );
       case "iframes":
-        return (
-          <div key="iframes" className={animClass}>
-            <IframesTab
-              iframeUrls={iframeUrls}
-              setIframeUrls={setIframeUrls}
-              defaultLayout={defaultLayout}
-              setDefaultLayout={setDefaultLayout}
-              defaultPlatform={defaultPlatform}
-              setDefaultPlatform={setDefaultPlatform}
-              proposerIframeSources={proposerIframeSources}
-              setProposerIframeSources={setProposerIframeSources}
-              proposerDefaultIframe={proposerDefaultIframe}
-              setProposerDefaultIframe={setProposerDefaultIframe}
-            />
-          </div>
+        return wrap(
+          "iframes",
+          <IframesTab
+            iframeUrls={iframeUrls}
+            setIframeUrls={setIframeUrls}
+            defaultLayout={defaultLayout}
+            setDefaultLayout={setDefaultLayout}
+            defaultPlatform={defaultPlatform}
+            setDefaultPlatform={setDefaultPlatform}
+            proposerIframeSources={proposerIframeSources}
+            setProposerIframeSources={setProposerIframeSources}
+            proposerDefaultIframe={proposerDefaultIframe}
+            setProposerDefaultIframe={setProposerDefaultIframe}
+          />,
         );
       case "hermes-admin":
-        return (
-          <div key="hermes-admin" className={animClass}>
-            <HermesAdminTab />
-          </div>
-        );
+        return wrap("hermes-admin", <HermesAdminTab />);
       case "appearance":
-        return (
-          <div key="appearance" className={animClass}>
-            <ThemeSettings />
-          </div>
-        );
+        return wrap("appearance", <ThemeSettings />);
       case "desk":
-        return (
-          <div key="desk" className={animClass}>
-            <AgenticDesk />
-          </div>
-        );
+        return wrap("desk", <AgenticDesk />);
       case "danger":
-        return (
-          <div key="danger" className={animClass}>
-            <DangerTab />
-          </div>
-        );
+        return wrap("danger", <DangerTab />);
       case "developer":
-        return (
-          <div key="developer" className={animClass}>
-            <DeveloperTab
-              devAuthenticated={devAuthenticated}
-              onAuthenticated={() => setDevAuthenticated(true)}
-              tier={tier}
-              setTier={setTier}
-              mockDataEnabled={mockDataEnabled}
-              setMockDataEnabled={setMockDataEnabled}
-              developerSettings={developerSettings}
-              setDeveloperSettings={setDeveloperSettings}
-            />
-          </div>
+        return wrap(
+          "developer",
+          <DeveloperTab
+            devAuthenticated={devAuthenticated}
+            onAuthenticated={() => setDevAuthenticated(true)}
+            tier={tier}
+            setTier={setTier}
+            mockDataEnabled={mockDataEnabled}
+            setMockDataEnabled={setMockDataEnabled}
+            developerSettings={developerSettings}
+            setDeveloperSettings={setDeveloperSettings}
+          />,
         );
       default:
         return null;

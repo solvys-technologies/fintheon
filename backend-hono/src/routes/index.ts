@@ -83,6 +83,10 @@ import { createMaintenanceRoutes } from "./maintenance.js";
 // [claude-code 2026-04-20] S21: Harper Voice integration (formerly Omi) + PsychAssist fork admin
 import { createHarperVoiceRoutes } from "./harper-voice.js";
 import { createPsychAssistForkRoutes } from "./admin/psych-assist-fork.js";
+// [claude-code 2026-04-25] S35-cleanup: manual trigger for econ-backfill-orchestrator drain
+import { createEconBackfillRoutes } from "./admin/econ-backfill.js";
+// [claude-code 2026-04-26] S35-cleanup: RiskFlow high/critical headline backfill
+import { createRiskFlowBackfillRoutes } from "./admin/riskflow-backfill.js";
 // [claude-code 2026-04-23] Harper Vision — screen + audio perception layer
 import { createHarperVisionRoutes } from "./harper-vision/index.js";
 // [claude-code 2026-04-23] S31-T9 predictive knowledge graph — usage telemetry + Harper feature proposals
@@ -97,6 +101,8 @@ import { createProjectXTradesRoute } from "./projectx/trades.js";
 import { createCalendarRoutes } from "./calendar/next-event.js";
 import { createAdvisoryRoutes } from "./advisory/index.js";
 import { createWatchoutsRoutes } from "./watchouts/index.js";
+// [claude-code 2026-04-26] S45-T1: Day Card data brain — day_plans, drift, streak, feedback
+import { createDayPlanRoutes } from "./day-plan/index.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -168,6 +174,8 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/econ-filters", createEconFiltersRoutes());
   // Calibration — scoring weight management, annotations, observations, bulk ingest (public, admin)
   app.route("/api/calibration", createCalibrationRoutes());
+  // [S45-T1] Day Card — /today, /week public; /streak, /drift-status, /feedback auth-gated inside handlers
+  app.route("/api/day-plan", createDayPlanRoutes());
   // Scoring — V4 shadow stats + rescore-status [S24-T3]
   app.use("/api/scoring", authMiddleware, requireAuth);
   app.use("/api/scoring/*", authMiddleware, requireAuth);
@@ -395,6 +403,14 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/admin/psych-assist-fork", authMiddleware, requireAuth);
   app.use("/api/admin/psych-assist-fork/*", authMiddleware, requireAuth);
   app.route("/api/admin/psych-assist-fork", createPsychAssistForkRoutes());
+
+  // [claude-code 2026-04-25] S35-cleanup: manual trigger for econ-backfill drain.
+  //   Gated internally on x-routine-secret matching ROUTINE_SECRET.
+  app.route("/api/admin/econ", createEconBackfillRoutes());
+
+  // [claude-code 2026-04-26] S35-cleanup: RiskFlow high/critical headline
+  //   backfill for news-worker silence windows. Same x-routine-secret gate.
+  app.route("/api/admin/riskflow", createRiskFlowBackfillRoutes());
 
   // [S29-T4] Catalysts — date-filtered RiskFlow headlines for calendar panel
   app.route("/api/catalysts", createCatalystsByDateRoute());

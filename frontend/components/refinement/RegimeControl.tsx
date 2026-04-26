@@ -1,3 +1,7 @@
+// [claude-code 2026-04-25] S38: Renamed "Active Regime" → "Active Market Environment" (UI only;
+//   `regime` stays in backend), right-justified, bumped header type, larger override dropdown trigger.
+// [claude-code 2026-04-25] S38: Renamed "Active Regime" → "Active Market Environment" (UI only;
+//   `regime` stays in backend). Right-justified, bumped header type, larger override dropdown trigger.
 // [claude-code 2026-03-27] S2-T7: Regime control panel — display + manual override
 import { useState, useEffect } from "react";
 import { Shield, ChevronDown } from "lucide-react";
@@ -83,15 +87,15 @@ export function RegimeControl({ regime, onRegimeChanged }: RegimeControlProps) {
     REGIME_COLORS[currentRegime] ?? REGIME_COLORS.CONSOLIDATION;
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2 text-[11px] font-semibold text-[var(--fintheon-text)]/70 uppercase tracking-wider">
-        <Shield className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
-        Active Regime
+    <div className="flex flex-col items-end text-right space-y-2 min-h-[88px] py-1">
+      <div className="flex items-center gap-2 text-[14px] font-semibold text-[var(--fintheon-text)]/85 uppercase tracking-[0.18em]">
+        <Shield className="w-4 h-4 text-[var(--fintheon-accent)]" />
+        Active Market Environment
       </div>
 
-      {/* Current regime badge */}
+      {/* Current environment badge */}
       <div
-        className={`inline-flex items-center gap-2 px-2.5 py-1.5 text-[11px] font-bold tracking-wide ${colorClass}`}
+        className={`inline-flex items-center gap-2 px-3 py-1.5 text-[14px] font-bold tracking-wide ${colorClass}`}
       >
         {REGIME_LABELS[currentRegime]}
       </div>
@@ -105,24 +109,24 @@ export function RegimeControl({ regime, onRegimeChanged }: RegimeControlProps) {
         <div>Source: {regime?.detectedBy ?? "unknown"}</div>
       </div>
 
-      {/* Override dropdown */}
+      {/* Override dropdown \u2014 bumped target size for finger/pointer comfort */}
       <div className="relative">
         <button
           onClick={() => setDropdownOpen(!dropdownOpen)}
           disabled={overriding}
-          className="flex items-center gap-1.5 px-2 py-1 rounded border border-zinc-700 text-[10px] text-zinc-400 hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/30 transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-3 py-2 rounded border border-zinc-700 text-[12px] text-zinc-300 hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/40 transition-colors disabled:opacity-50 min-w-[112px] justify-between"
         >
           {overriding ? "Overriding..." : "Override"}
-          <ChevronDown className="w-3 h-3" />
+          <ChevronDown className="w-3.5 h-3.5" />
         </button>
 
         {dropdownOpen && (
-          <div className="absolute z-20 mt-1 left-0 w-52 rounded border border-zinc-700 bg-[var(--fintheon-surface)] shadow-lg py-1">
+          <div className="absolute z-20 mt-1 right-0 w-60 rounded border border-zinc-700 bg-[var(--fintheon-surface)] shadow-lg py-1">
             {MARKET_REGIMES.map((r) => (
               <button
                 key={r}
                 onClick={() => handleOverride(r)}
-                className={`w-full text-left px-3 py-1.5 text-[10px] transition-colors hover:bg-[var(--fintheon-accent)]/10 ${
+                className={`w-full text-right px-3 py-2 text-[11px] transition-colors hover:bg-[var(--fintheon-accent)]/10 ${
                   r === currentRegime
                     ? "text-[var(--fintheon-accent)] font-bold"
                     : "text-zinc-400"

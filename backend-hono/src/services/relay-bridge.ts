@@ -1,3 +1,10 @@
+// [claude-code 2026-04-25] S35: forward() now rejects when the local backend's WebSocket
+// closes or errors mid-stream. Previously the generator awaited a Promise that nothing
+// resolved if the WS dropped between frames — the relay route hung indefinitely, mobile
+// got 200 OK with an empty SSE body, no error event, no [DONE], and the user saw a silent
+// non-response (12s watchdog "HARPER SILENT" caption with no assistant bubble). Listen on
+// `close` and `error` and synthesize a `local_offline` error frame so the relay route's
+// catch arm fires and emits both `{type:"error", error:...}` and `[DONE]`.
 // [claude-code 2026-04-18] S21-T1: Relay bridge — adds dispatch state + mirror-message pub/sub so
 // desktop can hand a conversation off to paired mobile and stream mobile-side messages back in real time.
 // [claude-code 2026-04-16] T1: Relay bridge — generalized forward() payload + sendToLocal() for tool-decision
@@ -140,16 +147,46 @@ class RelayBridge {
       }
     };
 
-    conn.ws.addEventListener("message", onMessage);
+    // If the local backend's WS drops between frames, surface it as a real error
+    // instead of hanging the generator. relay.ts's catch arm will then emit
+    // `{type:"error",error:"Local backend disconnected"}` + `[DONE]` so mobile
+    // shows a visible error bubble instead of a silent non-response.
+    const onClose = () => {
+      if (done || error) return;
+      error = new Error("local_offline");
+      waiting?.();
+      waiting = null;
+    };
+    const onError = () => {
+      if (done || error) return;
+      error = new Error("local_offline");
+      waiting?.();
+      waiting = null;
+    };
 
-    // Send the request to local backend
-    conn.ws.send(
-      JSON.stringify({
-        type: "chat",
-        requestId,
-        payload,
-      }),
-    );
+    conn.ws.addEventListener("message", onMessage);
+    conn.ws.addEventListener("close", onClose);
+    conn.ws.addEventListener("error", onError);
+
+    // Send the request to local backend. If the WS already closed between
+    // isConnected() and now, send() throws — convert to local_offline so the
+    // generator surfaces the same error path as a mid-stream drop.
+    try {
+      conn.ws.send(
+        JSON.stringify({
+          type: "chat",
+          requestId,
+          payload,
+        }),
+      );
+    } catch (sendErr) {
+      conn.ws.removeEventListener("message", onMessage);
+      conn.ws.removeEventListener("close", onClose);
+      conn.ws.removeEventListener("error", onError);
+      throw new Error(
+        sendErr instanceof Error ? sendErr.message : "local_offline",
+      );
+    }
 
     try {
       while (true) {
@@ -168,6 +205,8 @@ class RelayBridge {
       }
     } finally {
       conn.ws.removeEventListener("message", onMessage);
+      conn.ws.removeEventListener("close", onClose);
+      conn.ws.removeEventListener("error", onError);
     }
   }
 

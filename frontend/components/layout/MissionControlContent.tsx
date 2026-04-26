@@ -1,3 +1,5 @@
+// [claude-code 2026-04-25] Reset-to-default button next to the Pencil — fades in/out via
+//   t-dropdown (solvys-transitions) tied to editMode so it only appears in edit mode.
 // [claude-code 2026-04-03] Extracted from MainLayout.tsx — Strategium snap deck with widget pages
 // [claude-code 2026-04-17] Gear→Edit toggle; drag-reorder widget cards with microinteractions; unified edit mode
 import React, {
@@ -7,9 +9,17 @@ import React, {
   useEffect,
   useMemo,
 } from "react";
-import { ChevronRight, Pencil, GripVertical, Eye, EyeOff } from "lucide-react";
+import {
+  ChevronRight,
+  Pencil,
+  GripVertical,
+  Eye,
+  EyeOff,
+  RotateCcw,
+} from "lucide-react";
 import { KanbanTitle } from "../ui/KanbanTitle";
 import type { MissionWidgetId } from "../../lib/layoutOrderStorage";
+import { DriftIndicator } from "../strategium/DriftIndicator";
 
 const MISSION_WIDGETS_PER_PAGE = 2;
 
@@ -28,6 +38,8 @@ interface MissionControlContentProps {
   collapseFn?: () => void;
   editMode?: boolean;
   onToggleEditMode?: () => void;
+  /** Restore Strategium widget order + visibility to defaults. */
+  onResetLayout?: () => void;
 }
 
 export function MissionControlContent({
@@ -39,6 +51,7 @@ export function MissionControlContent({
   collapseFn,
   editMode = false,
   onToggleEditMode,
+  onResetLayout,
 }: MissionControlContentProps) {
   const missionDeckRef = useRef<HTMLDivElement>(null);
   const [missionDeckPage, setMissionDeckPage] = useState(0);
@@ -135,6 +148,7 @@ export function MissionControlContent({
         tone="gold"
         headerRight={
           <div className="flex items-center gap-0.5">
+            <DriftIndicator className="mr-1" />
             {onToggleEditMode && (
               <button
                 onClick={onToggleEditMode}
@@ -147,6 +161,27 @@ export function MissionControlContent({
                 aria-pressed={editMode}
               >
                 <Pencil className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {onResetLayout && (
+              <button
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      "Reset Strategium widget order and visibility to defaults?",
+                    )
+                  ) {
+                    onResetLayout();
+                  }
+                }}
+                className={`t-dropdown p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] ${editMode ? "is-open" : ""}`}
+                data-origin="top-right"
+                title="Reset Strategium to defaults"
+                aria-label="Reset Strategium to defaults"
+                aria-hidden={!editMode}
+                tabIndex={editMode ? 0 : -1}
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
               </button>
             )}
             {collapseFn && (

@@ -17,6 +17,32 @@ import {
 
 const log = createLogger("BrowserHarness");
 
+// [claude-code 2026-04-25] S35: og:image / twitter:image / first hero img extractor.
+// Cheap regex over raw HTML — no DOM parse on the hot path. Returns undefined if no hit.
+export function extractImageFromHtml(rawHtml: string): string | undefined {
+  if (!rawHtml || rawHtml.length === 0) return undefined;
+  const og =
+    rawHtml.match(
+      /<meta[^>]+property=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["']/i,
+    )?.[1] ||
+    rawHtml.match(
+      /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image(?::secure_url)?["']/i,
+    )?.[1];
+  if (og) return og.trim();
+  const tw =
+    rawHtml.match(
+      /<meta[^>]+name=["']twitter:image(?::src)?["'][^>]+content=["']([^"']+)["']/i,
+    )?.[1] ||
+    rawHtml.match(
+      /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image(?::src)?["']/i,
+    )?.[1];
+  if (tw) return tw.trim();
+  const heroImg = rawHtml.match(
+    /<img[^>]+src=["'](https?:\/\/[^"']+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^"']*)?)["']/i,
+  )?.[1];
+  return heroImg?.trim();
+}
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export type BrowseMode = "allowlist" | "universal";
@@ -45,6 +71,8 @@ export interface BrowseResult<T = unknown> {
   self_heal_occurred?: boolean;
   cached_xpath_used?: boolean;
   cost_usd?: number;
+  /** Best-effort og:image / twitter:image / first hero <img> from the page. */
+  image_url?: string;
 }
 
 // ── Error types ────────────────────────────────────────────────────────────
@@ -349,6 +377,7 @@ export async function browseRead<T = unknown>(
     const rawHtml = await handle.page.content();
     const textOnly = opts.textOnly !== false;
     const body = textOnly ? htmlToText(stripHtmlTags(rawHtml)) : rawHtml;
+    const image_url = extractImageFromHtml(rawHtml);
 
     let fields: T | undefined;
     if (opts.extract) {
@@ -398,6 +427,7 @@ export async function browseRead<T = unknown>(
       self_heal_occurred: selfHealOccurred,
       cached_xpath_used: false,
       cost_usd: costUsd,
+      image_url,
     };
   } catch (err) {
     failureReason =
@@ -455,6 +485,7 @@ export async function browseReadWithFallback(
       });
       const html = await res.text();
       const text = htmlToText(stripHtmlTags(html));
+      const image_url = extractImageFromHtml(html);
       return {
         url: opts.url,
         title: "",
@@ -464,6 +495,7 @@ export async function browseReadWithFallback(
         self_heal_occurred: false,
         cached_xpath_used: false,
         cost_usd: 0,
+        image_url,
       };
     } catch {
       return null;

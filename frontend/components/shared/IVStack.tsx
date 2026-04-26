@@ -1,3 +1,5 @@
+// [claude-code 2026-04-24] Doto numeral now uses t-digit-group pop-in (solvys-transitions) so the
+//   IV score cascades in when the card mounts or the score changes.
 // [claude-code 2026-04-19] RiskFlow card polish: shared right-column IV stack used by every
 //   desktop RiskFlow card variant. Direction chevron sits ABOVE the IV number, both rendered
 //   right-aligned in the Nothing Design display font (Doto). Mirrors the Fintheon Mobile
@@ -6,6 +8,7 @@
 import { ChevronUp, ChevronDown, Minus } from "lucide-react";
 import type { CSSProperties } from "react";
 import { ivHeatColor } from "../../types/agent-desk";
+import { DigitGroup } from "./DigitGroup";
 
 export type IVStackDirection = "Bullish" | "Bearish" | "Neutral" | null;
 
@@ -72,7 +75,8 @@ export function IVStack({
     >
       <Chevron direction={direction} color={resolvedColor} size={chevronSize} />
       {hasScore && (
-        <span
+        <DigitGroup
+          value={numericScore.toFixed(1)}
           style={{
             fontFamily:
               "'Doto', 'Readable Digits', var(--font-data, monospace)",
@@ -83,9 +87,7 @@ export function IVStack({
             letterSpacing: "0.02em",
             lineHeight: 1,
           }}
-        >
-          {numericScore.toFixed(1)}
-        </span>
+        />
       )}
     </div>
   );

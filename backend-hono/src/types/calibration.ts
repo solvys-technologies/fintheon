@@ -28,7 +28,8 @@ export type FlawTag =
   | "wrong_sentiment"
   | "missing_context"
   | "commentator_misweight"
-  | "regime_mismatch";
+  | "regime_mismatch"
+  | "desk-drift";
 
 export interface CalibrationObservation {
   id: string;

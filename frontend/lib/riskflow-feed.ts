@@ -51,6 +51,8 @@ export interface RiskFlowAlert {
   headline: string;
   summary: string;
   url?: string;
+  /** Hero image URL (RSS enclosure / og:image / twitter:image) for expanded card render. */
+  imageUrl?: string | null;
   publishedAt: string;
   source: AlertSource;
   severity: AlertSeverity;

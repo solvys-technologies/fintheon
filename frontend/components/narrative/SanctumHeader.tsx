@@ -2,6 +2,7 @@
 // [claude-code 2026-03-24] Persistence refactor: Run → Update button label when data exists
 // [claude-code 2026-03-23] Persistent Sanctum header — presets, run button, status, rolling period
 // [claude-code 2026-03-25] Theme-sensitive fonts — use var(--font-heading) and var(--font-body)
+// [claude-code 2026-04-25] S38: Aquarium → Arbitrum UI surface rename. Header lockup bumped, "shark tank" subtitle removed.
 import { useState, useCallback } from "react";
 import { Zap, Loader2, Upload, X } from "lucide-react";
 import type { SanctumPreset } from "../../types/agent-desk";
@@ -36,16 +37,10 @@ export function SanctumHeader({
       <div className="shrink-0 flex items-center justify-between px-5 py-3 border-b border-[var(--fintheon-border)]/10">
         <div className="flex items-center gap-3">
           <span
-            className="text-[10px] font-bold text-[var(--fintheon-accent)]/70 uppercase tracking-widest"
+            className="text-[15px] font-bold text-[var(--fintheon-accent)]/85 uppercase tracking-widest"
             style={{ fontFamily: "var(--font-heading)" }}
           >
-            Aquarium
-          </span>
-          <span
-            className="text-[8px] italic text-[var(--fintheon-muted)]/40 tracking-wide"
-            style={{ fontFamily: "var(--font-body)" }}
-          >
-            shark tank
+            Arbitrum
           </span>
           {status === "complete" && (
             <span

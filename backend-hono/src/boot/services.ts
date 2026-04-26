@@ -37,6 +37,10 @@ import {
 import { startNewsWorkerAuditScheduler } from "../services/cron/news-worker-audit-scheduler.js";
 import { startEconKeywordScheduler } from "../services/cron/econ-keyword-scheduler.js";
 import { startArbitrumSessionScheduler } from "../services/cron/arbitrum-session-scheduler.js";
+// [claude-code 2026-04-26] S45-T1: day-plan / streak / drift-monitor crons
+import { startDayPlanCron } from "../services/cron/day-plan-cron.js";
+import { startStreakCron } from "../services/cron/streak-cron.js";
+import { startDriftMonitorCron } from "../services/cron/drift-monitor-cron.js";
 // [claude-code 2026-04-24] S34-T10: historical econ backfill cron
 import { startEconBackfillOrchestrator } from "../services/cron/econ-backfill-orchestrator.js";
 // [claude-code 2026-03-27] cleanupOldItems import removed — feed items retained for calibration
@@ -295,6 +299,15 @@ export async function bootBackground(): Promise<void> {
   // digest persists to arbitrum_verdicts with trigger_type=session; PMDB picks
   // it up at 17:15 ET via getLatestChamberRead() (T11).
   startArbitrumSessionScheduler();
+
+  // [claude-code 2026-04-26] S45-T1: Day Card brain — three weekday crons.
+  // Day-plan 06:15 ET, streak 16:00 ET, drift-monitor every 15 min 08-17 ET.
+  startDayPlanCron();
+  log.info("DayPlanCron started");
+  startStreakCron();
+  log.info("StreakCron started");
+  startDriftMonitorCron();
+  log.info("DriftMonitorCron started");
 
   // Catch-up: generate any briefs that should have fired today but were missed (backend wasn't running)
   catchUpMissedBriefs().catch((err) =>
