@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T03:55:00",
+    agent: "claude-code",
+    summary:
+      "v5.29.3 — two-bug hotfix from crash.log diagnosis. (1) Auto-close root cause: electron-updater autoDownload=true + autoInstallOnAppQuit=true caused the running app to silently background-download every new GH release (autoUpdater.checkForUpdates polls every 30 min) and then quit-and-install via the renderer toast IPC. crash.log timestamps clustered around each release publish. Disabled both flags so updates require explicit user click on the toast. (2) 'Changes could not be stashed' silently destroyed uncommitted work: scripts/fintheon-update.sh:122 ran `git stash push 2>/dev/null || true` then proceeded to `git reset --hard $LATEST_TAG`. Now adds -u to capture untracked files, captures stderr to /tmp/fintheon-update-stash.log, and ABORTS with the visible error instead of clobbering the tree.",
+    files: [
+      "electron/main.cjs",
+      "scripts/fintheon-update.sh",
+      "package.json",
+    ],
+  },
+  {
     date: "2026-04-25T23:55:00",
     agent: "claude-code",
     summary:

@@ -13,7 +13,7 @@ set -eo pipefail
 
 # [claude-code 2026-04-18] Resolve install path: FINTHEON_ROOT env > ~/.fintheon/install-path > default
 FINTHEON_ROOT="${FINTHEON_ROOT:-$(cat "$HOME/.fintheon/install-path" 2>/dev/null || echo "$HOME/Documents/Codebases/fintheon")}"
-UPDATE_VERSION="5.29.2"
+UPDATE_VERSION="5.29.3"
 
 # ── Self-update bootstrap (v5.25.2) ──────────────────────────────────────────
 # Root cause fix: bash loads the entire script into memory at invocation, so
@@ -62,6 +62,7 @@ _BOLD='\033[1m'
 ok()   { echo -e "  ${_GREEN}✓${_R} ${_CREAM}$1${_R}"; }
 warn() { echo -e "  ${_YELLOW}⚠${_R} ${_CREAM}$1${_R}"; }
 info() { echo -e "  ${_DIM}·${_R} ${_CREAM}$1${_R}"; }
+fail() { echo -e "  ${_RED}✗${_R} ${_CREAM}$1${_R}" >&2; }
 step() { echo -e "  ${_GOLD}[$1]${_R} ${_CREAM}$2${_R}"; }
 
 torch_banner() {
@@ -114,13 +115,28 @@ sleep 1
 ok "Stopped"
 
 # ── Step 2: Stash local changes ─────────────────────────────────────────────
+# [claude-code 2026-04-26] v5.29.3 hotfix: previously this swallowed stash
+# failures with `2>/dev/null || true` and proceeded to hard-reset, which
+# silently DESTROYED uncommitted work whenever stash actually failed (untracked
+# files, mid-merge, mid-rebase). Now we (a) include untracked files via -u
+# (b) capture stash stderr to a tmp log (c) ABORT with that error visible
+# instead of clobbering the tree.
 
 step "2/12" "Checking for local changes..."
 HAS_CHANGES=false
 if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
   HAS_CHANGES=true
-  git stash push -m "fintheon-update-$(date +%Y%m%d-%H%M%S)" --quiet 2>/dev/null || true
-  info "Local changes stashed"
+  STASH_LOG="/tmp/fintheon-update-stash.log"
+  : > "$STASH_LOG"
+  if git stash push -u -m "fintheon-update-$(date +%Y%m%d-%H%M%S)" --quiet >>"$STASH_LOG" 2>&1; then
+    info "Local changes stashed (untracked included)"
+  else
+    fail "Could not stash local changes — refusing to overwrite your tree."
+    fail "Stash error:"
+    sed 's/^/    /' "$STASH_LOG" | head -10
+    fail "Resolve manually (commit or 'git stash push -u' yourself) and re-run."
+    exit 1
+  fi
 else
   ok "Clean working directory"
 fi

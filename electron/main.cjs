@@ -413,9 +413,15 @@ async function smartShutdownBackend() {
 /* ------------------------------------------------------------------ */
 
 function setupAutoUpdater() {
-  // Auto-download in background — toast appears when ready to install
-  autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true;
+  // [claude-code 2026-04-26] v5.29.3 hotfix: auto-close root cause. Background
+  // auto-download + autoInstallOnAppQuit caused the app to silently quit and
+  // re-install whenever a new GH release appeared (which happened multiple
+  // times per ship cycle). The renderer toast was effectively auto-clicking
+  // Install via the `update-install` IPC handler. Updates now require the user
+  // to explicitly click "Download" then "Install" — toast still appears via
+  // the `update-available` channel because checkForUpdates still polls.
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = false;
 
   autoUpdater.on("update-available", (info) => {
     console.log("[Updater] Update available:", info.version);
