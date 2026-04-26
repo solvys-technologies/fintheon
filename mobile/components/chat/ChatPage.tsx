@@ -1,3 +1,11 @@
+// [claude-code 2026-04-25] S42-T2 mobile: MessageQueue + MobileCommandPalette wiring.
+//   - Queue-while-streaming + offline localStorage persistence per
+//     `fintheon:msgQueue:<conversationId>`.
+//   - Listens for fintheon:persona-override (composer slash-commands) and routes that
+//     turn through sendMessage; the persona signal is a window event since /api/relay/chat
+//     doesn't accept an agent override yet (no backend changes per S42-T2 brief).
+//   - Swipe-up on the composer opens MobileCommandPalette as a bottom sheet; long-press
+//     send opens the queue editor (Edit-on-tap + Remove-on-tap chips).
 // [claude-code 2026-04-18] v5.22 S2: TP saw a hollow "thinking bubble" appear before any
 // text streamed. Root cause: ChatPage pre-created the assistant message with content:""
 // at send-time, and ChatMessage renders the bubble chrome unconditionally. Fix: defer the
@@ -30,7 +38,7 @@
 // Memory: feedback_keep_chat_mounted — use display:none not conditional render, streams survive navigation
 // Memory: feedback_uimessagestream_framing — start/finish events in SSE stream
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSettings } from "../../contexts/SettingsContext";
 import { getMobileBackend } from "../../lib/backend";
@@ -41,8 +49,14 @@ import { ThinkingIndicator } from "./ThinkingIndicator";
 import { ToolCallCard } from "./ToolCallCard";
 import { ToolApprovalCard } from "./ToolApprovalCard";
 import { useToolApprovals } from "../../hooks/useToolApprovals";
+import MessageQueue, { type QueuedMessage } from "./MessageQueue";
+import MobileCommandPalette from "./MobileCommandPalette";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
+
+const QUEUE_STORAGE_KEY = (convId: string | null) =>
+  `fintheon:msgQueue:${convId ?? "anon"}`;
+const HEALTH_POLL_MS = 10_000;
 
 interface ChatPageProps {
   visible: boolean;
@@ -62,6 +76,12 @@ export default function ChatPage({ visible }: ChatPageProps) {
   } | null>(null);
   const { approvals, addApproval, resolveApproval, resolveFromEvent } =
     useToolApprovals();
+
+  // ── S42-T2 mobile state ───────────────────────────────────────────────────
+  const [pendingMessages, setPendingMessages] = useState<QueuedMessage[]>([]);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [showQueueEditor, setShowQueueEditor] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -206,12 +226,102 @@ export default function ChatPage({ visible }: ChatPageProps) {
     };
   }, [getAccessToken, loadRelayConversation]);
 
+  // ── S42-T2: history + recent feed for the palette ────────────────────────
+  const historyMessages = useMemo(
+    () =>
+      messages
+        .filter((m) => m.role === "user")
+        .slice(-10)
+        .map((m) => m.content),
+    [messages],
+  );
+  const recentForPalette = useMemo(
+    () =>
+      messages
+        .filter((m) => m.role === "user")
+        .slice(-10)
+        .reverse()
+        .map((m, i) => ({
+          id: m.id ?? `recent-${i}`,
+          text:
+            m.content.length > 120 ? `${m.content.slice(0, 117)}…` : m.content,
+        })),
+    [messages],
+  );
+
+  // ── S42-T2: queue handlers ───────────────────────────────────────────────
+  const enqueue = useCallback((text: string) => {
+    const queued: QueuedMessage = {
+      id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      text,
+      timestamp: Date.now(),
+    };
+    setPendingMessages((prev) => [...prev, queued]);
+  }, []);
+  const handleQueueEdit = useCallback((id: string, newText: string) => {
+    setPendingMessages((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, text: newText } : m)),
+    );
+  }, []);
+  const handleQueueRemove = useCallback((id: string) => {
+    setPendingMessages((prev) => prev.filter((m) => m.id !== id));
+  }, []);
+
+  // ── S42-T2: localStorage hydrate / persist ───────────────────────────────
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(QUEUE_STORAGE_KEY(conversationId));
+      if (!raw) return;
+      const hydrated = JSON.parse(raw) as QueuedMessage[];
+      if (Array.isArray(hydrated) && hydrated.length > 0) {
+        setPendingMessages(hydrated);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [conversationId]);
+  useEffect(() => {
+    try {
+      const key = QUEUE_STORAGE_KEY(conversationId);
+      if (pendingMessages.length === 0) localStorage.removeItem(key);
+      else localStorage.setItem(key, JSON.stringify(pendingMessages));
+    } catch {
+      /* ignore */
+    }
+  }, [pendingMessages, conversationId]);
+
+  // ── S42-T2: offline detection (poll /api/diagnostics) ────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    const probe = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/diagnostics`, {
+          method: "GET",
+          signal: AbortSignal.timeout(4_000),
+        });
+        if (!cancelled) setIsOnline(res.ok);
+      } catch {
+        if (!cancelled) setIsOnline(false);
+      }
+    };
+    void probe();
+    const id = setInterval(probe, HEALTH_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+
   const sendMessage = useCallback(
     async (
       text: string,
       opts?: { images?: string[]; riskFlowContext?: string },
     ) => {
-      if (isLoading) return;
+      // S42-T2: queue while streaming or offline; flush effect picks up later.
+      if (isLoading || !isOnline) {
+        enqueue(text);
+        return;
+      }
 
       const userId = `user-${Date.now()}`;
       const userMsg: ChatMessageData = {
@@ -470,12 +580,42 @@ export default function ChatPage({ visible }: ChatPageProps) {
     },
     [
       isLoading,
+      isOnline,
+      enqueue,
       getAccessToken,
       settings.traderName,
       addApproval,
       resolveFromEvent,
     ],
   );
+
+  // ── S42-T2: drain queue whenever idle + online + non-empty ───────────────
+  // Each drain shifts one head and calls sendMessage, which sets isLoading=true
+  // → effect re-fires → no-op until streaming finishes → re-fires → next drain.
+  useEffect(() => {
+    if (isLoading || !isOnline) return;
+    if (pendingMessages.length === 0) return;
+    const [head, ...rest] = pendingMessages;
+    setPendingMessages(rest);
+    void sendMessage(head.text);
+  }, [isLoading, isOnline, pendingMessages, sendMessage]);
+
+  // ── S42-T2: persona-override listener ────────────────────────────────────
+  // Composer slash-commands dispatch this; mobile relays the stripped text
+  // through sendMessage. /api/relay/chat doesn't currently route per-persona,
+  // so this is a forward-pass for parity — backend wiring lands separately.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as
+        | { personaId?: string; text?: string }
+        | undefined;
+      if (typeof detail?.text !== "string") return;
+      void sendMessage(detail.text);
+    };
+    window.addEventListener("fintheon:persona-override", handler);
+    return () =>
+      window.removeEventListener("fintheon:persona-override", handler);
+  }, [sendMessage]);
 
   const isOffline = relayState === "offline";
   // Informational flag — true when there's nothing loaded yet. We no longer
@@ -690,12 +830,123 @@ export default function ChatPage({ visible }: ChatPageProps) {
           flexShrink: 0,
         }}
       >
+        {/* S42-T2: queued strip + offline notice above the composer */}
+        <MessageQueue
+          queue={pendingMessages}
+          onEdit={handleQueueEdit}
+          onRemove={handleQueueRemove}
+        />
+        {!isOnline && pendingMessages.length > 0 && (
+          <div
+            style={{
+              padding: "0 16px 6px",
+              fontSize: 11,
+              color: "var(--accent, #c79f4a)",
+              opacity: 0.7,
+            }}
+          >
+            Offline — {pendingMessages.length} queued, will flush on reconnect.
+          </div>
+        )}
         <ChatInput
           onSend={sendMessage}
           isLoading={isLoading}
           disabled={isOffline}
+          historyMessages={historyMessages}
+          onLongPressSend={() => setShowQueueEditor(true)}
+          onSwipeUp={() => setPaletteOpen(true)}
         />
       </div>
+
+      {/* S42-T2: bottom-sheet command palette (swipe-up from composer) */}
+      <MobileCommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        recent={recentForPalette}
+        onPickPersona={(personaId) => {
+          // Persona pick = open the textarea pre-filled with the slash so the
+          // user can type the rest of the prompt; mobile relay doesn't yet
+          // route per-persona, so we surface the intent visually.
+          window.dispatchEvent(
+            new CustomEvent("fintheon:composer-fill", {
+              detail: { text: `/${personaId} ` },
+            }),
+          );
+        }}
+        onPickRecent={(text) => {
+          window.dispatchEvent(
+            new CustomEvent("fintheon:composer-fill", { detail: { text } }),
+          );
+        }}
+      />
+
+      {/* S42-T2: queue editor sheet (long-press send opens it) */}
+      {showQueueEditor && (
+        <div
+          onClick={() => setShowQueueEditor(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9998,
+            background: "rgba(5,4,2,0.65)",
+            display: "flex",
+            alignItems: "flex-end",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxHeight: "60vh",
+              background: "#050402",
+              borderTop: "1px solid rgba(199,159,74,0.3)",
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              padding: "12px 0 24px",
+              overflowY: "auto",
+            }}
+          >
+            <div
+              style={{
+                width: 36,
+                height: 3,
+                background: "rgba(199,159,74,0.3)",
+                borderRadius: 2,
+                margin: "0 auto 8px",
+              }}
+            />
+            <div
+              style={{
+                fontSize: 10,
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                color: "var(--accent, #c79f4a)",
+                padding: "0 16px 8px",
+              }}
+            >
+              Queue editor
+            </div>
+            {pendingMessages.length === 0 ? (
+              <div
+                style={{
+                  padding: "16px",
+                  fontSize: 12,
+                  color: "var(--text-disabled)",
+                  textAlign: "center",
+                }}
+              >
+                Nothing queued.
+              </div>
+            ) : (
+              <MessageQueue
+                queue={pendingMessages}
+                onEdit={handleQueueEdit}
+                onRemove={handleQueueRemove}
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Session list removed S21-T1 — mobile is remote-control only. */}
     </div>

@@ -9,6 +9,24 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T19:30:00",
+    agent: "claude-code",
+    summary:
+      "S42-T2 Composer + cmdk Palette + MessageQueue wiring (web + mobile). FintheonComposer wrapped in <ComposerPrimitive.Root>; toolbar slots (ToolsDropdown + MCP servers + PersonaDropdown + ProviderDropdown + Relay + Attach + Headline picker) preserved verbatim. New CommandPalette.tsx (cmdk) opens on Cmd+K from any chat surface with Agents (slash personas) + Surfaces (Sanctum/Arbitrum/Strategium jumps) + Recent (last 10 user msgs) groups; Esc closes the palette or cancels an in-flight stream. Up/Down in an empty PromptBox cycles through last 10 user messages; typing exits recall mode. Slash-command persona override (/oracle /feucht /consul /herald) strips the prefix and dispatches fintheon:persona-override which ChatInterface uses to swap activeAgent for one turn then restore. @TICKER inline injection strips $TICKER mentions and appends a 'Tickers attached' context block. MessageQueue.tsx (orphan since 2026-03) wired into ChatInterface state above the composer: queue-while-streaming via onQueueWhileStreaming callback, drain on idle+online, persistent localStorage under fintheon:msgQueue:<conversationId>, /api/diagnostics offline polling every 10s with reconnect drain. Mobile mirrors the desktop shape: new mobile/components/chat/MessageQueue.tsx, MobileCommandPalette.tsx (bottom-sheet, no cmdk dep), ChatInput wrapped in ComposerPrimitive.Root with swipe-up-to-open-palette and long-press-send-to-open-queue-editor; ChatPage hydrates+persists the queue, listens for fintheon:persona-override, drains on idle+online. ChatGreeting (greeting + 4 suggestion chips) and FintheonAttachPopup are unmodified — composer-mount and state-wiring only. Frontend + mobile vite builds clean; tsc clean for all touched files (pre-existing zod/playwright errors unrelated).",
+    files: [
+      "frontend/components/chat/FintheonComposer.tsx",
+      "frontend/components/chat/CommandPalette.tsx",
+      "frontend/components/ChatInterface.tsx",
+      "frontend/components/ui/chatgpt-prompt-input.tsx",
+      "mobile/components/chat/ChatInput.tsx",
+      "mobile/components/chat/ChatPage.tsx",
+      "mobile/components/chat/MessageQueue.tsx",
+      "mobile/components/chat/MobileCommandPalette.tsx",
+      "frontend/package.json",
+      "mobile/package.json",
+    ],
+  },
+  {
     date: "2026-04-25T18:00:00",
     agent: "claude-code",
     summary:
