@@ -9,6 +9,26 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T22:30:30",
+    agent: "claude-code",
+    summary:
+      "S45 shipped: DayCard live on the Dashboard right pane (replaces lightweight SessionCalendarList) + Strategium DayCardBulletinTab. Archived to sprint-changelog/. 2 tracks (T1 data/brain, T2 surfaces), ~30 files. Sub-track briefs S45-T1/T2 left in sprint-md until a follow-up deletion sweep.",
+    files: ["sprint-changelog/S45-ORCHESTRATION.md"],
+  },
+  {
+    date: "2026-04-26T22:30:25",
+    agent: "claude-code",
+    summary:
+      "Archive sweep: S38 design-patches, S40 Time-To-Print + news realtime, S40-S42 unify brief, S42 chat SOTA orchestration, and S45 open-questions all moved sprint-md/ → sprint-changelog/. Each shipped in earlier v5.x deploys; the main plans were leftover in sprint-md/ from missed prior debriefs.",
+    files: [
+      "sprint-changelog/S38-BRIEF-design-patches.md",
+      "sprint-changelog/S40-BRIEF-time-to-print-news-realtime.md",
+      "sprint-changelog/S40-S42-UNIFY-BRIEF.md",
+      "sprint-changelog/S42-ORCHESTRATION.md",
+      "sprint-changelog/S45-OPEN-QUESTIONS.md",
+    ],
+  },
+  {
     date: "2026-04-26T22:30:00",
     agent: "claude-code",
     summary:
