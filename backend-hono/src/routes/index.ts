@@ -229,7 +229,14 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/maintenance", authMiddleware);
   app.use("/api/maintenance/*", authMiddleware);
   app.route("/api/maintenance", createMaintenanceRoutes());
-  // Harper — Claude CLI chat via SDK bridge (public, local-only)
+  // Harper — Claude CLI chat via SDK bridge.
+  // [claude-code 2026-04-25] Hotfix: chat handler reads c.get("userId") and
+  // rejects on undefined / "anonymous"; without authMiddleware running, userId
+  // stays undefined and every chat request returned 401. authMiddleware is
+  // permissive (anonymous flows through) — in BYPASS_AUTH mode it sets
+  // userId="local-user" and in prod it decodes the Supabase JWT bearer.
+  app.use("/api/harper", authMiddleware);
+  app.use("/api/harper/*", authMiddleware);
   app.route("/api/harper", createHarperRoutes());
   // [claude-code 2026-04-23] S31-T9 predictive knowledge graph — Routine-secret-gated
   // weekly proposer trigger. Mounted BEFORE the harper-ops catch-all so the more
