@@ -67,7 +67,7 @@ export function ConsulBrowserPane({ className = "" }: ConsulBrowserPaneProps) {
 
       <div className="flex-1 min-h-0 bg-black">
         {supportsWebview ? (
-          // @ts-expect-error — webview is an Electron-only element
+          // @ts-ignore — webview is an Electron-only element
           <webview
             src={session.liveUrl}
             // Sandbox + fresh stealth profile per brief — no credential injection.
