@@ -22,6 +22,7 @@ Each act gets desktop 1440×900 + mobile 390×844 paired side-by-side. Acts that
 ### Scroll-storyboard diagram (top of Page 6)
 
 Single horizontal strip diagram showing scroll progress 0% → 100% mapped to acts 0 → 9, with video timecode anchors marked at:
+
 - 0:00 (Act 1 enters)
 - 0:24 (Act 4 enters)
 - 1:14 (Act 9 enters)
@@ -37,6 +38,7 @@ This diagram tells T9 where to bind GSAP ScrollTriggers.
 ### Act 1 — Hero keynote video
 
 **Desktop**:
+
 - Full-bleed `<video>` placeholder (16:9, max-width 1440px, centered)
 - 1px gold border around video
 - Caption beneath in mono 14px: "Fintheon — the Integrated Trading Environment."
@@ -47,6 +49,7 @@ This diagram tells T9 where to bind GSAP ScrollTriggers.
 ### Act 2 — Problem
 
 **Desktop**:
+
 - Black canvas, type-only
 - Three Doto lines stacked, 96px each, 80px gaps:
   - "Bloomberg costs $24,000/yr."
@@ -59,6 +62,7 @@ This diagram tells T9 where to bind GSAP ScrollTriggers.
 ### Act 3 — Consilium Boardroom
 
 **Desktop**:
+
 - 1440-wide cinematic still of Consilium UI (placeholder image — TP supplies via T3 captures)
 - Frame UI like a Vermeer: dark canvas, single warm key from upper-left implied
 - Caption beneath in mono 14px: "Where signals are deliberated, not just displayed."
@@ -70,6 +74,7 @@ This diagram tells T9 where to bind GSAP ScrollTriggers.
 For each agent (Harper, Oracle, Feucht, Consul, Herald):
 
 **Desktop frame per sub-act**:
+
 - Left half (720px): Doto numeral "01" through "05" at 224px, color `#c79f4a`
 - Below numeral: grotesk agent name at 48px, role at 18px (opacity 60%)
 - Right half (720px): 16:9 video placeholder for the captured UI loop, 1px gold border
@@ -81,6 +86,7 @@ For each agent (Harper, Oracle, Feucht, Consul, Herald):
 ### Act 5 — Arbitrum chamber
 
 **Desktop**:
+
 - Centered Arbitrum chamber visualization (Hyperframes-generated, placeholder for now)
 - 12s loop of 5-seat token traverse
 - Heading above in Doto 96px: "FIVE SEATS. ONE VERDICT."
@@ -92,6 +98,7 @@ For each agent (Harper, Oracle, Feucht, Consul, Herald):
 ### Act 6 — RiskFlow + NarrativeFlow
 
 **Desktop**:
+
 - Side-by-side 16:9 placeholders, 1px gold borders, 24px gap between
 - Left labeled "RiskFlow" in mono, right labeled "NarrativeFlow"
 - Caption below spanning both in mono 14px: "Headlines scored. Narratives tracked. IV-weighted."
@@ -101,6 +108,7 @@ For each agent (Harper, Oracle, Feucht, Consul, Herald):
 ### Act 7 — Execution rail
 
 **Desktop**:
+
 - Single horizontal rail, three logos rendered in `#f0ead6` bone:
   - TopStepX
   - Kalshi
@@ -113,6 +121,7 @@ For each agent (Harper, Oracle, Feucht, Consul, Herald):
 ### Act 8 — Lifetime tier
 
 **Desktop**:
+
 - Big Doto numeral with the price (TP supplies — placeholder "$XXXX") at 320px, color `#c79f4a`
 - Below in grotesk 24px: "One-time. Lifetime access."
 - Below in CTA button: "REQUEST ACCESS →" — 1px gold border, transparent fill, 24px grotesk text
@@ -123,6 +132,7 @@ For each agent (Harper, Oracle, Feucht, Consul, Herald):
 ### Act 9 — Closing keynote frame
 
 **Desktop**:
+
 - Final still from Hyperframes Act 7 (closing frame "INTELLIGENCE THAT LEADS." on black)
 - Frame label: "VIDEO ANCHOR · timecode 1:14–1:30 · holds as poster"
 - Footer matches Page 1 footer (3 lines, mono, left-aligned)
