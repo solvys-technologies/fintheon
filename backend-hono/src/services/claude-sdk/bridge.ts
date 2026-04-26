@@ -1,3 +1,4 @@
+// [claude-code 2026-04-25] S42-T1: extend BridgeStreamEvent with thinking/tool_call/citation/artifact + complete (additive, backwards-compatible)
 // [claude-code 2026-04-23] S32-T3 Ollama fallback chain — bridge streams via chain, tools only on VProxy path
 // [claude-code 2026-04-04] Switch VProxy from textStream→fullStream to capture text across multi-step tool calls
 // [claude-code 2026-03-10] Claude SDK Bridge — relays Fintheon chat to Claude Code CLI stream-json
@@ -47,20 +48,63 @@ export interface BridgeChatRequest {
   requestId?: string;
 }
 
-export interface BridgeStreamEvent {
-  type:
-    | "reasoning-start"
-    | "reasoning-delta"
-    | "reasoning-end"
-    | "text-start"
-    | "text-delta"
-    | "text-end"
-    | "tool-use"
-    | "error";
-  id: string;
-  delta?: string;
-  metadata?: Record<string, unknown>;
-}
+/**
+ * Stream event union shared between the legacy CLI bridge and any consumer
+ * that imports BridgeStreamEvent for type compat.
+ *
+ * [S42-T1] New variants below are additive — frontend consumers ignore unknown
+ * types until T2/T3/T4 wire them up. Mirrored in services/strands/stream-adapter.ts
+ * (UIEvent), which is the live SSE wire format for /api/harper/chat.
+ *
+ *   thinking   — provider-exposed reasoning tokens for the thinking-trace surface (T3)
+ *   tool_call  — tool-use lifecycle pill (T3) with running/done/failed status
+ *   citation   — source chip from RiskFlow / SEC fetcher / Arbitrum verdicts (T3)
+ *   artifact   — out-of-band payload for TradingView / Browserbase / report cards (T4)
+ *   complete   — message footer with latency_ms / source_count / model / token counts (T2)
+ */
+export type BridgeStreamEvent =
+  | {
+      type:
+        | "reasoning-start"
+        | "reasoning-delta"
+        | "reasoning-end"
+        | "text-start"
+        | "text-delta"
+        | "text-end"
+        | "tool-use"
+        | "error";
+      id: string;
+      delta?: string;
+      metadata?: Record<string, unknown>;
+    }
+  | { type: "thinking"; token: string }
+  | {
+      type: "tool_call";
+      id: string;
+      name: string;
+      status: "pending" | "running" | "done" | "failed";
+      duration_ms?: number;
+    }
+  | {
+      type: "citation";
+      id: number;
+      source: string;
+      url?: string;
+      snippet?: string;
+    }
+  | {
+      type: "artifact";
+      kind: "tradingview" | "browserbase" | "report" | "citation";
+      payload: Record<string, unknown>;
+    }
+  | {
+      type: "complete";
+      latency_ms?: number;
+      source_count?: number;
+      model?: string;
+      prompt_tokens?: number;
+      completion_tokens?: number;
+    };
 
 export interface BridgeChatResult {
   /** Async iterator of stream events */

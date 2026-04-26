@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T19:30:00",
+    agent: "claude-code",
+    summary:
+      "[v5.29.0] S42-T1 stream protocol upgrade — extended the SSE event union with five additive variants so downstream tracks (T2 footer / T3 thinking + tool pills + citation chips / T4 artifact cards) can render rich state without renegotiating the wire format. Variants added to both BridgeStreamEvent (legacy bridge) and UIEvent (live Strands wire path in services/strands/stream-adapter.ts): thinking { token }, tool_call { id, name, status, duration_ms? }, citation { id, source, url?, snippet? }, artifact { kind, payload }, complete { latency_ms?, source_count?, model?, prompt_tokens?, completion_tokens? }. Wired emission inside strandsToUIStream: reasoning-delta now also emits thinking { token }; toolUse start emits tool_call { running }, toolResultEvent emits tool_call { done|failed, duration_ms }; messageMetadataEvent.usage captures prompt/completion tokens; complete event fires immediately before finish on both happy and error paths with latency_ms = stream-duration. streamHarperChat threads sourceCount (non-empty RiskFlow context line count) and provider-resolved model into the adapter. Fully backwards-compatible: frontend consumers ignore unknown event types until T2/T3/T4 wire them up. No changes to MCP routes, brief generators, persona prompts, Supabase migrations, or .mcp.json. Backend bun build clean; frontend tsc errors at base v5.28.0 unchanged (T1 introduces zero new errors).",
+    files: [
+      "backend-hono/src/services/claude-sdk/bridge.ts",
+      "backend-hono/src/services/strands/stream-adapter.ts",
+      "backend-hono/src/services/strands/agents/harper.ts",
+    ],
+  },
+  {
     date: "2026-04-25T18:00:00",
     agent: "claude-code",
     summary:
