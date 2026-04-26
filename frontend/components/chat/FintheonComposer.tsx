@@ -1,3 +1,9 @@
+// [claude-code 2026-04-25] S42-T2: wrap return in <ComposerPrimitive.Root> (assistant-ui),
+// add slash-command persona override (/oracle /feucht /consul /herald → strip prefix +
+// dispatch fintheon:persona-override for one turn), add @TICKER inline injection (regex
+// strip + headline-style context attachment), expose onQueueRequested for queue-while-
+// streaming. All toolbar slots (Tools, MCP, Persona, Provider, Relay, Attach, Headline)
+// preserved verbatim — wrap is additive, not a rewrite.
 // [claude-code 2026-04-18] S21-T1 polish: guard isDispatchedHere against undefined-on-both-sides
 // false positives (after 404-clear of stale convo, both conversationId and dispatchedConversationId
 // can briefly be undefined → banner would linger). Also added a "dispatching" title for the relay
@@ -10,8 +16,12 @@
 // [claude-code 2026-03-12] Switched from independent useVoiceAssistant() to shared VoiceContext
 // [claude-code 2026-04-11] S14-T5: Headline attachment via HeadlinePickerPopover + context injection
 // [claude-code 2026-03-22] Track 4: persona pills → PersonaDropdown, Plug2+Wrench → ToolsDropdown
-import { useEffect, useState, useCallback } from "react";
-import { useThread, useThreadRuntime } from "@assistant-ui/react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import {
+  ComposerPrimitive,
+  useThread,
+  useThreadRuntime,
+} from "@assistant-ui/react";
 import { Radio, Unplug, Loader2, Globe } from "lucide-react";
 import { useConsulBrowser } from "../../contexts/ConsulBrowserContext";
 import { PromptBox } from "../ui/chatgpt-prompt-input";
@@ -54,6 +64,14 @@ interface FintheonComposerProps {
    * and without this prop the user stays stuck with a broken relay button.
    */
   onConversationGone?: () => void;
+  /**
+   * S42-T2: when set and assistant is currently streaming, the composer pushes the
+   * outgoing message into the parent's queue instead of calling runtime.append.
+   * Returns true if queued (so we still clear the textarea / draft).
+   */
+  onQueueWhileStreaming?: (text: string, images?: string[]) => boolean;
+  /** Last 10 user-message texts — drives PromptBox ↑↓ history recall. */
+  historyMessages?: string[];
 }
 
 // [claude-code 2026-04-25] S40-P9: 32x32 Globe button — opens Consul Browser
@@ -103,6 +121,8 @@ export function FintheonComposer({
   compact,
   conversationId,
   onConversationGone,
+  onQueueWhileStreaming,
+  historyMessages,
 }: FintheonComposerProps) {
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
@@ -176,10 +196,15 @@ export function FintheonComposer({
     setHeadlineChips([]);
   }, []);
 
-  // Fetch skills from backend — merge with prop-level disabled skills
+  // [claude-code 2026-04-25] S42-T7 mount-perf: deferred to idle so it can't
+  // contend with first paint of the composer. The disabled-skills map is only
+  // consulted by the skills picker, which is hidden by default — fetching at
+  // mount was pure mount-cost for zero immediate benefit. We also force-fetch
+  // the first time the picker opens, so users who open it in the first ~50ms
+  // still see fresh data.
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const run = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/ai/skills`);
         if (!res.ok) return;
@@ -194,25 +219,125 @@ export function FintheonComposer({
       } catch {
         // Skills endpoint not available — use prop defaults
       }
+    };
+    const idle =
+      (window as unknown as {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      }).requestIdleCallback;
+    let idleHandle: number | undefined;
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+    if (typeof idle === "function") {
+      idleHandle = idle(() => void run(), { timeout: 1500 });
+    } else {
+      timeoutHandle = setTimeout(() => void run(), 200);
+    }
+    return () => {
+      cancelled = true;
+      if (
+        idleHandle !== undefined &&
+        typeof (window as unknown as { cancelIdleCallback?: (h: number) => void })
+          .cancelIdleCallback === "function"
+      ) {
+        (window as unknown as { cancelIdleCallback: (h: number) => void })
+          .cancelIdleCallback(idleHandle);
+      }
+      if (timeoutHandle !== undefined) clearTimeout(timeoutHandle);
+    };
+  }, []);
+
+  // Force-fetch on first picker open in case the idle tick hasn't fired yet.
+  const skillsFreshRef = useRef(false);
+  useEffect(() => {
+    if (!showSkills || skillsFreshRef.current) return;
+    skillsFreshRef.current = true;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/ai/skills`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const disabled: Record<string, { reason: string }> = {};
+        for (const skill of data.skills ?? []) {
+          if (!skill.enabled) {
+            disabled[skill.id] = { reason: skill.reason ?? "Disabled" };
+          }
+        }
+        if (!cancelled) setApiDisabledSkills(disabled);
+      } catch {
+        /* ignore */
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [showSkills]);
 
   const mergedDisabledSkills = { ...apiDisabledSkills, ...propDisabledSkills };
 
   const handleSend = useCallback(
     (msg: string, images?: string[]) => {
-      let finalText = msg;
+      let working = msg;
+
+      // S42-T2: slash-command persona override — strip prefix, dispatch
+      // fintheon:persona-override which ChatInterface listens for and routes the
+      // turn through the named persona before restoring the prior agent.
+      const slashMatch = working.match(/^\/(oracle|feucht|consul|herald)\s+/i);
+      if (slashMatch) {
+        const personaId = slashMatch[1].toLowerCase() as
+          | "oracle"
+          | "feucht"
+          | "consul"
+          | "herald";
+        const stripped = working.slice(slashMatch[0].length);
+        try {
+          window.dispatchEvent(
+            new CustomEvent("fintheon:persona-override", {
+              detail: { personaId, text: stripped, images },
+            }),
+          );
+        } catch (err) {
+          console.error("[FintheonComposer] persona-override dispatch failed:", err);
+        }
+        // Override path consumes the message — clear active skill, leave chips for
+        // ChatInterface to inject when it actually appends.
+        onSelectSkill(null);
+        return;
+      }
+
+      // S42-T2: @TICKER injection — strip the inline mention and attach as a
+      // ticker-context block (mirrors the headline-context shape so the assistant
+      // sees a uniform "Context attached" footer).
+      const tickerMatches = Array.from(working.matchAll(/@([A-Z]{1,5})\b/g));
+      const tickers = Array.from(new Set(tickerMatches.map((m) => m[1])));
+      if (tickers.length > 0) {
+        working = working.replace(/@([A-Z]{1,5})\b/g, "").replace(/\s{2,}/g, " ").trim();
+      }
+
+      let finalText = working;
       if (activeSkill && SKILL_PREFIXES[activeSkill]) {
-        finalText = SKILL_PREFIXES[activeSkill] + "\n\n" + msg;
+        finalText = SKILL_PREFIXES[activeSkill] + "\n\n" + working;
       }
       // Inject attached headline context
       if (headlineChips.length > 0) {
         finalText += formatHeadlineContext(headlineChips);
         setHeadlineChips([]);
       }
+      // Append ticker context block (uniform with headline footer)
+      if (tickers.length > 0) {
+        finalText += `\n\n---\nTickers attached: ${tickers.map((t) => `$${t}`).join(", ")}`;
+      }
+
+      // S42-T2: queue while streaming — defer to parent if streaming and a queue
+      // handler is wired. PromptBox already cleared its textarea; we just don't
+      // call runtime.append here.
+      if (isRunning && onQueueWhileStreaming) {
+        const queued = onQueueWhileStreaming(finalText, images);
+        if (queued) {
+          onSelectSkill(null);
+          return;
+        }
+      }
+
       const content: Array<{ type: string; text?: string; image?: string }> = [
         { type: "text", text: finalText },
       ];
@@ -245,7 +370,14 @@ export function FintheonComposer({
         console.error("[FintheonComposer] Failed to append message:", err);
       }
     },
-    [runtime, activeSkill, onSelectSkill, headlineChips],
+    [
+      runtime,
+      activeSkill,
+      onSelectSkill,
+      headlineChips,
+      isRunning,
+      onQueueWhileStreaming,
+    ],
   );
 
   const handleStop = useCallback(() => {
@@ -327,38 +459,47 @@ export function FintheonComposer({
     </div>
   ) : null;
 
+  // S42-T2: <ComposerPrimitive.Root> wraps the existing PromptBox so assistant-ui
+  // recognizes the composer as a first-class primitive (enables future hookups
+  // like ComposerPrimitive.If). Form submission is a no-op here — PromptBox
+  // owns its own send via the circular ArrowUp button (memory: send-button
+  // style is locked). asChild forwards the form element onto PromptBox's outer
+  // container so we don't add an extra DOM node.
   return (
-    <PromptBox
-      onSend={handleSend}
-      onStop={handleStop}
-      isProcessing={isRunning}
-      thinkHarder={thinkHarder}
-      setThinkHarder={setThinkHarder}
-      lastError={lastError}
-      activeSkill={activeSkill}
-      onSelectSkill={onSelectSkill}
-      showSkills={showSkills}
-      onToggleSkills={onToggleSkills}
-      disabledSkills={mergedDisabledSkills}
-      compact={compact}
-      voiceEnabled={voice.enabled}
-      voiceState={voice.runtimeState}
-      onToggleVoice={voice.toggleEnabled}
-      providerSlot={providerEl}
-      personaSlot={personaEl}
-      toolsSlot={toolsEl}
-      relaySlot={relayEl}
-      dispatchBanner={dispatchBannerEl}
-      disabled={isDispatchedHere}
-      placeholder={
-        isDispatchedHere
-          ? `Chatting on ${relay.deviceLabel ?? "mobile"} — click Disconnect to resume here`
-          : undefined
-      }
-      headlineAlerts={alerts}
-      headlineChips={headlineChips}
-      onHeadlineToggle={handleHeadlineToggle}
-      onHeadlineClear={handleHeadlineClear}
-    />
+    <ComposerPrimitive.Root onSubmit={(e) => e.preventDefault()}>
+      <PromptBox
+        onSend={handleSend}
+        onStop={handleStop}
+        isProcessing={isRunning}
+        thinkHarder={thinkHarder}
+        setThinkHarder={setThinkHarder}
+        lastError={lastError}
+        activeSkill={activeSkill}
+        onSelectSkill={onSelectSkill}
+        showSkills={showSkills}
+        onToggleSkills={onToggleSkills}
+        disabledSkills={mergedDisabledSkills}
+        compact={compact}
+        voiceEnabled={voice.enabled}
+        voiceState={voice.runtimeState}
+        onToggleVoice={voice.toggleEnabled}
+        providerSlot={providerEl}
+        personaSlot={personaEl}
+        toolsSlot={toolsEl}
+        relaySlot={relayEl}
+        dispatchBanner={dispatchBannerEl}
+        disabled={isDispatchedHere}
+        placeholder={
+          isDispatchedHere
+            ? `Chatting on ${relay.deviceLabel ?? "mobile"} — click Disconnect to resume here`
+            : undefined
+        }
+        headlineAlerts={alerts}
+        headlineChips={headlineChips}
+        onHeadlineToggle={handleHeadlineToggle}
+        onHeadlineClear={handleHeadlineClear}
+        historyMessages={historyMessages}
+      />
+    </ComposerPrimitive.Root>
   );
 }

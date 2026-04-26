@@ -1,3 +1,9 @@
+// [claude-code 2026-04-25] S42-T3: Boardroom message slotted inside the
+//   shared MessagePrimitive composition. @mention parsing, AgentBadge,
+//   ContextInjectionBadge and the autonomous/huddle/briefing affordances
+//   are all preserved — the surface around them just routes through the
+//   primitive Root → Content → Actions slots so per-message footers and
+//   activity rails can hang off the same scaffold in future sprints.
 // [claude-code 2026-03-24] Boardroom UX overhaul — removed hover discoloration, added inline copy, date+time timestamps
 // [claude-code 2026-03-26] T3: Rich @mention parsing + "show full analysis" button
 import { useState, useCallback } from "react";
@@ -5,6 +11,7 @@ import { Copy, Check, Bot } from "lucide-react";
 import { AgentBadge, type BoardroomAgent } from "./AgentBadge";
 import { AgentMention, EveryoneMention } from "./AgentMention";
 import { ContextInjectionBadge } from "./ContextInjectionBadge";
+import { MessagePrimitive } from "../chat/MessagePrimitive";
 
 export interface BoardroomMessage {
   id: string;
@@ -129,8 +136,10 @@ export function ConsiliumMessage({
   const maxWidth = isBriefing ? "max-w-[90%]" : "max-w-[75%]";
 
   return (
-    <div
-      className={`group/msg flex gap-3 px-4 py-3 ${isUser ? "flex-row-reverse" : ""}`}
+    <MessagePrimitive.Root
+      role={message.role}
+      layout={false}
+      className={`flex gap-3 px-4 py-3 ${isUser ? "flex-row-reverse" : ""}`}
     >
       {!isUser && (
         <div className="flex items-center gap-1">
@@ -211,6 +220,6 @@ export function ConsiliumMessage({
           </button>
         </div>
       </div>
-    </div>
+    </MessagePrimitive.Root>
   );
 }

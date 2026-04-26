@@ -1,5 +1,6 @@
 // [claude-code 2026-04-04] Harper CAO tools — ported from Vercel AI SDK to Strands
 // [claude-code 2026-04-23] S32-T8 added browser_harness (Harper-only web control)
+// [claude-code 2026-04-25] S42-T5 added browse_visible (Browserbase visible session)
 import { tool } from "@strands-agents/sdk";
 import { z } from "zod";
 import { spawn } from "node:child_process";
@@ -18,6 +19,8 @@ import {
   touchActivity as consulBrowserTouch,
 } from "../browserbase/session-manager.js";
 import { isBrowserbaseAvailable } from "../browserbase/client.js";
+// [claude-code 2026-04-25] S42-T5: Browserbase agent-iframe visible session.
+import { browseVisible } from "../browser/browserbase.js";
 
 const log = createLogger("HarperTools");
 
@@ -39,6 +42,9 @@ const AUTO_APPROVED_TOOLS = new Set([
   // live by the user via Consul Browser pane. Capped at 4 sessions/day per user
   // and 15-min idle TTL. Every call audited to browser_harness_audit.
   "consul_browser",
+  // [S42-T5] User-visible Browserbase session — the user is watching the iframe
+  // in the artifact pane, so action approval would defeat the demo.
+  "browse_visible",
 ]);
 
 /** Ensure tool results are never empty — VProxy/OpenAI rejects empty content */
@@ -489,6 +495,35 @@ export function createHarperTools(
             hint: "Live extraction observed via liveUrl iframe; structured pull via Browserbase REPL is the next step",
           }),
         );
+      },
+    }),
+
+    // [S42-T5] browse_visible — drive a Browserbase remote browser whose live
+    // session URL streams to the user as an artifact event so they watch the
+    // navigation in real time. Falls back to local Playwright + 1.5s
+    // screenshot stream when BROWSERBASE_API_KEY is missing.
+    tool({
+      name: "browse_visible",
+      description:
+        "Drive a visible browser session the user can watch in real time. Use for showing earnings PRs, SEC filings, news articles, or any web research the user benefits from seeing. Returns a session URL the artifact pane mounts as a live iframe.",
+      inputSchema: z.object({
+        task: z
+          .string()
+          .describe(
+            "The browsing objective in natural language. Include a URL when possible — the agent will navigate there and the user will watch.",
+          ),
+        ticker: z
+          .string()
+          .optional()
+          .describe("Optional ticker the task relates to (e.g. NVDA, SPY)."),
+      }),
+      callback: async (input: { task: string; ticker?: string }) => {
+        log.info("Harper tool: browse_visible", {
+          task: input.task.slice(0, 200),
+          ticker: input.ticker,
+        });
+        const result = await browseVisible(input.task, requestId);
+        return ensureNonEmpty(JSON.stringify(result));
       },
     }),
   ];

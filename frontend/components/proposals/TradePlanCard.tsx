@@ -10,6 +10,7 @@ import {
   Shield,
 } from "lucide-react";
 import { useBackend } from "../../lib/backend";
+import { AskAboutThis } from "../chat/AskAboutThis";
 import type { TradePlanData } from "../../types/feed";
 
 const TREND_LABELS: Record<string, { label: string; color: string }> = {
@@ -58,7 +59,7 @@ export function TradePlanCard({
   }
 
   return (
-    <div className="rounded-lg border border-[#c79f4a]/20 bg-[#0a0805] p-4 space-y-3">
+    <div className="group rounded-lg border border-[#c79f4a]/20 bg-[#0a0805] p-4 space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -78,6 +79,17 @@ export function TradePlanCard({
           >
             {isLong ? "LONG" : "SHORT"} {instrument}
           </span>
+          <AskAboutThis
+            surface="trade_plan"
+            label="this trade plan"
+            payload={{
+              proposal_id: proposalId,
+              instrument,
+              direction,
+              timeframe: tradePlan.timeframe,
+              trend_template: tradePlan.trendTemplate,
+            }}
+          />
           <button
             onClick={handleRegenerate}
             disabled={regenerating}

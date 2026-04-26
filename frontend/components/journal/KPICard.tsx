@@ -1,3 +1,5 @@
+// [claude-code 2026-04-25] S42-T8: KPI numerals route through --font-display (Doto)
+//   for monumental display typography. Mini-pie inner percent label also uses Doto.
 // [claude-code 2026-03-16] T4: KPI card with mini pie chart for journal dashboard
 import type { ReactNode } from "react";
 
@@ -53,7 +55,7 @@ function MiniPie({ value, max, color }: PieData & { color: string }) {
         dominantBaseline="central"
         fill={color}
         fontSize={9}
-        fontFamily="monospace"
+        fontFamily="var(--font-display)"
         fontWeight={600}
       >
         {Math.round(pct * 100)}
@@ -79,8 +81,8 @@ export function KPICard({
           {label}
         </div>
         <div
-          className="text-lg font-bold font-mono mt-0.5 truncate"
-          style={{ color }}
+          className="text-lg font-bold mt-0.5 truncate"
+          style={{ color, fontFamily: "var(--font-display)" }}
         >
           {value}
         </div>

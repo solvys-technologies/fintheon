@@ -1,3 +1,4 @@
+// [claude-code 2026-04-25] S42-T1: thread model + sourceCount through to strandsToUIStream so the new `complete` footer event surfaces them
 // [claude-code 2026-04-05] Harper agent — Strands-based CAO with tools + streaming + cognition telemetry
 import { createAgent, type HarperProvider } from "../agent-factory.js";
 import { createHarperTools } from "../harper-tools.js";
@@ -219,8 +220,24 @@ export async function streamHarperChat(
     });
   }
 
+  // [S42-T1] sourceCount = non-empty RiskFlow context lines this turn.
+  // Powers the `complete` footer's source_count field; T3 renders it as the citation chip count.
+  const sourceCount = options.riskFlowContext
+    ? options.riskFlowContext.split("\n").filter((l) => l.trim().length > 0).length
+    : undefined;
+  // [S42-T1] Resolved provider model (Strands pins claude-opus-4-6 in createHarperAgent),
+  // surfaced in the `complete` footer for the message-meta line.
+  const completeModel =
+    options.provider === "nous"
+      ? "nous-arcee"
+      : options.provider === "orouter"
+        ? "anthropic/claude-opus-4-6"
+        : "claude-opus-4-6";
+
   const stream = strandsToUIStream(agent, agentInput, {
     messageId: `harper-${Date.now()}`,
+    model: completeModel,
+    sourceCount,
     onFinish: async (text) => {
       cleanupCognition();
       log.info("Harper response complete", { requestId, textLen: text.length });

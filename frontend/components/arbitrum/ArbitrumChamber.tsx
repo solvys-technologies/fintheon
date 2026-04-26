@@ -8,6 +8,7 @@ import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
 import { NothingFuse } from "../shared/NothingFuse";
 import { DigitGroup } from "../shared/DigitGroup";
 import { VerdictCard } from "./VerdictCard";
+import { AskAboutThis } from "../chat/AskAboutThis";
 import type { ArbitrumSeat, ArbitrumVerdict } from "./types";
 
 interface ArbitrumChamberProps {
@@ -216,7 +217,7 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
   const hasRealSeats = (verdict?.seats?.length ?? 0) > 0;
 
   return (
-    <div className="flex flex-col min-h-0 min-w-0 gap-3">
+    <div className="group flex flex-col min-h-0 min-w-0 gap-3">
       {/* Round indicator */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -230,9 +231,25 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
             Round {roundsComplete} of {roundsTotal}
           </span>
         </div>
-        <span className="text-[9px] uppercase tracking-wider text-[var(--fintheon-text)]/35">
-          {phase}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[9px] uppercase tracking-wider text-[var(--fintheon-text)]/35">
+            {phase}
+          </span>
+          {hasVerdict && verdict && (
+            <AskAboutThis
+              surface="arbitrum_verdict"
+              label="this verdict"
+              payload={{
+                verdict_id: verdict.id,
+                phase,
+                rounds_complete: roundsComplete,
+                rounds_total: roundsTotal,
+                consensus_probability: verdict.consensus_probability,
+                confidence: verdict.confidence,
+              }}
+            />
+          )}
+        </div>
       </div>
       <NothingFuse
         value={roundsValue}
