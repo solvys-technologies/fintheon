@@ -7,8 +7,6 @@ import {
   LayoutDashboard,
   CalendarDays,
   GripVertical,
-  ChevronsRight,
-  ChevronsLeft,
   BookOpenCheck,
   Bell,
   BellOff,
@@ -47,6 +45,9 @@ interface NavSidebarProps {
   onRefinementClick?: () => void;
   refinementEnabled?: boolean;
   refinementActive?: boolean;
+  /** [claude-code 2026-04-26] When provided, overrides internal manualExpand —
+   *  drives expand state from the TopHeader PanelToggleGroup left button. */
+  controlledManualExpand?: boolean;
 }
 
 const NAV_ITEMS_MAP: Record<
@@ -108,13 +109,15 @@ export function NavSidebar({
   onRefinementClick,
   refinementEnabled = false,
   refinementActive = false,
+  controlledManualExpand,
 }: NavSidebarProps) {
   const { dndActive, toggleManualDnd, queueCount } = useDND();
   // [claude-code 2026-04-25] S35-Unified: badge reflects server unread + local queue.
   const { unreadCount: serverUnread } = useServerNotifications();
   const totalBadgeCount = queueCount + serverUnread;
   const [hovered, setHovered] = useState(false);
-  const [manualExpand, setManualExpand] = useState(false);
+  const [manualExpand] = useState(false);
+  const effectiveManualExpand = controlledManualExpand ?? manualExpand;
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [localEditMode, setLocalEditMode] = useState(false);
   const editMode = controlledEditMode ?? localEditMode;
@@ -128,7 +131,7 @@ export function NavSidebar({
   );
   const [order, setOrder] = useState<NavTabId[]>(() => getSidebarOrder());
 
-  const expanded = hovered || manualExpand;
+  const expanded = hovered || effectiveManualExpand;
 
   const handleMouseEnter = useCallback(() => {
     hoverTimerRef.current = setTimeout(() => setHovered(true), 3000);
@@ -140,7 +143,6 @@ export function NavSidebar({
       hoverTimerRef.current = null;
     }
     setHovered(false);
-    setManualExpand(false);
   }, []);
 
   useEffect(() => {
@@ -212,22 +214,9 @@ export function NavSidebar({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Expand/collapse toggle */}
-      <div className="px-1.5 mb-1">
-        <button
-          type="button"
-          onClick={() => setManualExpand((v) => !v)}
-          className="w-full flex items-center justify-center py-1 rounded-md fintheon-nav-inactive transition-colors"
-          title={expanded ? "Collapse sidebar" : "Expand sidebar"}
-        >
-          {expanded ? (
-            <ChevronsLeft className="w-3.5 h-3.5" />
-          ) : (
-            <ChevronsRight className="w-3.5 h-3.5" />
-          )}
-        </button>
-      </div>
-
+      {/* [claude-code 2026-04-26] Chevron expand button removed — sidebar
+          expansion is now driven by the TopHeader PanelToggleGroup left
+          button (or hover). Icons start flush to the top. */}
       {expanded && (
         <div className="px-2 mb-2 flex justify-end">
           <button

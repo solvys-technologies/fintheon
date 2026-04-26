@@ -200,6 +200,14 @@ function MainLayoutInner() {
     setNavSidebarCollapsed,
     footerCollapsed,
     setFooterCollapsed,
+    strategiumVisible,
+    setStrategiumVisible,
+    leftToggleHidden,
+    setLeftToggleHidden,
+    footerToggleHidden,
+    setFooterToggleHidden,
+    rightToggleHidden,
+    setRightToggleHidden,
   } = useLayoutState({
     topStepXEnabled,
     defaultLayout,
@@ -209,6 +217,35 @@ function MainLayoutInner() {
 
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [showRefinement, setShowRefinement] = useState(false);
+  // [claude-code 2026-04-26] Defer the heavy iframe preloads + 5-min IV poll
+  // off the critical-paint path. Flips true once the browser is idle.
+  const [preloadReady, setPreloadReady] = useState(false);
+  useEffect(() => {
+    const w = window as Window & {
+      requestIdleCallback?: (
+        cb: () => void,
+        opts?: { timeout: number },
+      ) => number;
+    };
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let idleId: number | null = null;
+    if (typeof w.requestIdleCallback === "function") {
+      idleId = w.requestIdleCallback(() => setPreloadReady(true), {
+        timeout: 1500,
+      });
+    } else {
+      timer = setTimeout(() => setPreloadReady(true), 1500);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+      if (idleId !== null) {
+        const cancel = (
+          window as Window & { cancelIdleCallback?: (id: number) => void }
+        ).cancelIdleCallback;
+        if (typeof cancel === "function") cancel(idleId);
+      }
+    };
+  }, []);
   const [timelineOverlayOpen, setTimelineOverlayOpen] = useState(false);
   const refinementEnabled =
     typeof window !== "undefined" &&
@@ -332,8 +369,11 @@ function MainLayoutInner() {
     toggleManualDnd,
   });
 
-  // Fetch blended IV score from backend for floating widget
+  // [claude-code 2026-04-26] Defer IV score fetch (FloatingWidget only) until
+  // after the app is interactive. TopHeader already streams IV via SSE; this
+  // poll is a 5-minute fallback for the floating widget on the Zen layout.
   useEffect(() => {
+    if (!preloadReady) return;
     const fetchIVScore = async () => {
       try {
         const data = await backend.marketData.getIVScore();
@@ -348,7 +388,7 @@ function MainLayoutInner() {
     fetchIVScore();
     const interval = setInterval(fetchIVScore, 300000);
     return () => clearInterval(interval);
-  }, [backend]);
+  }, [backend, preloadReady]);
 
   // Fetch account data for combined panel collapsed state (waits for auth)
   useEffect(() => {
@@ -559,6 +599,12 @@ function MainLayoutInner() {
     ],
   );
 
+  // [claude-code 2026-04-26] Castra mode = topStepXEnabled + combined layout.
+  // When Castra is on, Strategium force-shows. Outside Castra, Strategium
+  // only shows when the user clicks the right toggle button.
+  const castraMode = topStepXEnabled && layoutOption === "combined";
+  const showStrategium = castraMode || strategiumVisible;
+
   // When TopStepX is enabled, render panels based on layout option
   if (topStepXEnabled) {
     if (layoutOption === "combined") {
@@ -633,8 +679,11 @@ function MainLayoutInner() {
     }
     // For 'tickers-only', no panels are shown (only floating widget)
   } else {
-    // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
+    // [claude-code 2026-04-26] Strategium hidden by default. Only renders when
+    // the user opens it via the TopHeader right toggle button (strategiumVisible).
+    // No more w-12 collapsed-rail fallback — the rail was reading as a divider.
     const hideRightPanel =
+      !showStrategium ||
       showRefinement ||
       activeTab === "analysis" ||
       activeTab === "econ" ||
@@ -647,13 +696,9 @@ function MainLayoutInner() {
       rightPanels.push(
         <div
           key="right-stack"
-          className={`flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--fintheon-accent)]/10 transition-[width] duration-300 ease-in-out overflow-hidden ${
-            missionControlCollapsed
-              ? "w-12 bg-[var(--fintheon-bg)]"
-              : "w-[380px]"
-          }`}
+          className="flex-shrink-0 h-full min-w-0 flex flex-col w-[380px] border-l border-[var(--fintheon-accent)]/10 overflow-hidden"
         >
-          {missionControlCollapsed ? (
+          {false ? (
             <div className="flex-1 flex flex-col items-center justify-center">
               <button
                 onClick={() => setMissionControlCollapsed(false)}
@@ -786,14 +831,38 @@ function MainLayoutInner() {
           onForward={goForward}
           hideBranding={topStepXEnabled && sidebarOverlayVisible}
           toolbarEditMode={layoutEditMode}
-          navSidebarCollapsed={navSidebarCollapsed}
-          onToggleNavSidebar={() => setNavSidebarCollapsed(!navSidebarCollapsed)}
-          footerCollapsed={footerCollapsed}
-          onToggleFooter={() => setFooterCollapsed(!footerCollapsed)}
-          rightPanelCollapsed={combinedPanelCollapsed}
-          onToggleRightPanel={() =>
-            setCombinedPanelCollapsed(!combinedPanelCollapsed)
+          navSidebarCollapsed={leftToggleHidden ? false : navSidebarCollapsed}
+          onToggleNavSidebar={
+            leftToggleHidden
+              ? undefined
+              : () => setNavSidebarCollapsed(!navSidebarCollapsed)
           }
+          onHideNavSidebar={() => setLeftToggleHidden(true)}
+          footerCollapsed={footerToggleHidden ? false : footerCollapsed}
+          onToggleFooter={
+            footerToggleHidden
+              ? undefined
+              : () => setFooterCollapsed(!footerCollapsed)
+          }
+          onHideFooter={() => setFooterToggleHidden(true)}
+          /* [claude-code 2026-04-26] Right toggle drives strategiumVisible. In
+             Castra mode the panel force-shows; the button mirrors actual state. */
+          rightPanelCollapsed={
+            rightToggleHidden ? false : !showStrategium
+          }
+          onToggleRightPanel={
+            rightToggleHidden
+              ? undefined
+              : () => {
+                  if (castraMode) {
+                    // Castra force-shows; toggle the inner combined panel instead
+                    setCombinedPanelCollapsed(!combinedPanelCollapsed);
+                  } else {
+                    setStrategiumVisible(!strategiumVisible);
+                  }
+                }
+          }
+          onHideRightPanel={() => setRightToggleHidden(true)}
           psychAssistHeadingWidget={
             topStepXEnabled &&
             layoutOption === "tickers-only" &&
@@ -812,7 +881,9 @@ function MainLayoutInner() {
         {/* S14-T6: Peers panel removed — team status is now in footer Team tab */}
 
         <div className="flex-1 flex overflow-hidden relative">
-          {!navSidebarCollapsed && (
+          {/* [claude-code 2026-04-26] NavSidebar always mounted. The TopHeader
+              left toggle drives `controlledManualExpand`; hover-expand still
+              works inside NavSidebar. */}
           <div className="relative">
             <NavSidebar
               activeTab={activeTab}
@@ -831,13 +902,13 @@ function MainLayoutInner() {
               onRefinementClick={() => setShowRefinement((v) => !v)}
               refinementEnabled={refinementEnabled}
               refinementActive={showRefinement}
+              controlledManualExpand={!navSidebarCollapsed}
             />
             <NotificationCenter
               open={notificationCenterOpen}
               onClose={() => setNotificationCenterOpen(false)}
             />
           </div>
-          )}
 
           {/* Left Panels */}
           {leftPanels.length > 0 && <div className="flex">{leftPanels}</div>}
@@ -892,6 +963,27 @@ function MainLayoutInner() {
 
           {/* Right Panels */}
           {rightPanels.length > 0 && <div className="flex">{rightPanels}</div>}
+
+          {/* [claude-code 2026-04-26] Hover-trigger strip on the right edge
+              when Strategium is hidden — mirrors the NavSidebar hover-expand
+              affordance on the left. Click to open Strategium. */}
+          {!showStrategium &&
+            !showRefinement &&
+            activeTab !== "analysis" &&
+            activeTab !== "econ" &&
+            activeTab !== "narrative" &&
+            activeTab !== "apparatus" &&
+            activeTab !== "performance" &&
+            activeTab !== "proposals" &&
+            activeTab !== "settings" && (
+              <button
+                type="button"
+                onClick={() => setStrategiumVisible(true)}
+                title="Open Strategium"
+                aria-label="Open Strategium"
+                className="absolute top-0 right-0 h-full w-2 hover:w-1.5 hover:bg-[var(--fintheon-accent)]/20 transition-all z-20 cursor-pointer"
+              />
+            )}
 
           {/* Floating Widget */}
           {showFloatingWidget && (
@@ -974,8 +1066,12 @@ function MainLayoutInner() {
           />
         )}
 
-        {/* Preload iframes — hidden, loads TopStepX + Research in background for instant tab switch */}
-        {!topStepXEnabled && (
+        {/* [claude-code 2026-04-26] Iframe preloads gated behind idle callback
+            so first paint isn't blocked by two full external sites loading in
+            hidden frames. Preloads still happen — just AFTER the app is
+            interactive. preloadReady flips on requestIdleCallback (or 1.5s
+            fallback) once the user has reached MainLayout. */}
+        {!topStepXEnabled && preloadReady && (
           <div
             style={{
               position: "fixed",

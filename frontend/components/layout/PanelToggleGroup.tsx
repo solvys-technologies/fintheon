@@ -1,25 +1,24 @@
-// [claude-code 2026-04-26] VS Code-style three-panel toggle group. Lives in
-// TopHeader to the right of the VIX/IV scoring widget per TP. Each button
-// shows a 14×14 rect glyph with the active side filled in accent gold; the
-// inactive sides are outlined at accent/30. Click toggles its respective
-// panel collapse state.
-//
-// Order (matches the IDE convention TP referenced):
-//   left   = NavSidebar   (collapses leftmost rail)
-//   footer = FooterToolbar (collapses bottom toolbar)
-//   right  = Strategium   (collapses combined panel)
+// [claude-code 2026-04-26] Three-panel toggle group lives at the LEFT of the
+// VIX widget per TP. Bare icon buttons (no outer pill bg/border). Left & footer
+// use the custom rect glyph; right uses Lucide LayoutDashboard to read clearly
+// as the Strategium toggle. Right-click on any button hides that panel
+// entirely (onHide* callback) — left-click expands/collapses.
+import { LayoutDashboard } from "lucide-react";
 
 interface PanelToggleGroupProps {
   leftCollapsed: boolean;
   onToggleLeft: () => void;
+  onHideLeft?: () => void;
   footerCollapsed: boolean;
   onToggleFooter: () => void;
+  onHideFooter?: () => void;
   rightCollapsed: boolean;
   onToggleRight: () => void;
+  onHideRight?: () => void;
 }
 
 interface IconProps {
-  side: "left" | "footer" | "right";
+  side: "left" | "footer";
   active: boolean;
 }
 
@@ -27,8 +26,6 @@ function PanelIcon({ side, active }: IconProps) {
   const accent = "var(--fintheon-accent)";
   const stroke = active ? accent : `color-mix(in srgb, ${accent} 50%, transparent)`;
   const fill = active ? accent : "transparent";
-  // Outer 14x14 frame with internal divider; the side adjacent to the
-  // toggle's panel is filled when active = panel is OPEN.
   return (
     <svg
       viewBox="0 0 14 14"
@@ -37,7 +34,6 @@ function PanelIcon({ side, active }: IconProps) {
       aria-hidden="true"
       className="shrink-0"
     >
-      {/* Outer frame */}
       <rect
         x="1.5"
         y="2.5"
@@ -48,12 +44,8 @@ function PanelIcon({ side, active }: IconProps) {
         stroke={stroke}
         strokeWidth="1"
       />
-      {/* Active panel fill */}
       {side === "left" && (
         <rect x="1.5" y="2.5" width="3.5" height="9" rx="1" fill={fill} />
-      )}
-      {side === "right" && (
-        <rect x="9" y="2.5" width="3.5" height="9" rx="1" fill={fill} />
       )}
       {side === "footer" && (
         <rect x="1.5" y="8" width="11" height="3.5" rx="1" fill={fill} />
@@ -65,25 +57,31 @@ function PanelIcon({ side, active }: IconProps) {
 export function PanelToggleGroup({
   leftCollapsed,
   onToggleLeft,
+  onHideLeft,
   footerCollapsed,
   onToggleFooter,
+  onHideFooter,
   rightCollapsed,
   onToggleRight,
+  onHideRight,
 }: PanelToggleGroupProps) {
   const baseBtn =
     "w-7 h-7 flex items-center justify-center rounded transition-colors hover:bg-[var(--fintheon-accent)]/10";
+  const accent = "var(--fintheon-accent)";
+  const dimAccent = `color-mix(in srgb, ${accent} 50%, transparent)`;
   return (
-    <div
-      className="flex items-center gap-0.5 bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-1 h-7 flex-shrink-0"
-      role="group"
-      aria-label="Panel toggles"
-    >
+    <div className="flex items-center gap-0.5 flex-shrink-0" role="group" aria-label="Panel toggles">
       <button
         type="button"
         onClick={onToggleLeft}
+        onContextMenu={(e) => {
+          if (!onHideLeft) return;
+          e.preventDefault();
+          onHideLeft();
+        }}
         className={baseBtn}
-        title={leftCollapsed ? "Show left panel" : "Hide left panel"}
-        aria-label={leftCollapsed ? "Show left panel" : "Hide left panel"}
+        title={leftCollapsed ? "Expand left sidebar" : "Collapse left sidebar"}
+        aria-label={leftCollapsed ? "Expand left sidebar" : "Collapse left sidebar"}
         aria-pressed={!leftCollapsed}
       >
         <PanelIcon side="left" active={!leftCollapsed} />
@@ -91,6 +89,11 @@ export function PanelToggleGroup({
       <button
         type="button"
         onClick={onToggleFooter}
+        onContextMenu={(e) => {
+          if (!onHideFooter) return;
+          e.preventDefault();
+          onHideFooter();
+        }}
         className={baseBtn}
         title={footerCollapsed ? "Show footer" : "Hide footer"}
         aria-label={footerCollapsed ? "Show footer" : "Hide footer"}
@@ -101,12 +104,20 @@ export function PanelToggleGroup({
       <button
         type="button"
         onClick={onToggleRight}
+        onContextMenu={(e) => {
+          if (!onHideRight) return;
+          e.preventDefault();
+          onHideRight();
+        }}
         className={baseBtn}
-        title={rightCollapsed ? "Show right panel" : "Hide right panel"}
-        aria-label={rightCollapsed ? "Show right panel" : "Hide right panel"}
+        title={rightCollapsed ? "Open Strategium" : "Close Strategium"}
+        aria-label={rightCollapsed ? "Open Strategium" : "Close Strategium"}
         aria-pressed={!rightCollapsed}
       >
-        <PanelIcon side="right" active={!rightCollapsed} />
+        <LayoutDashboard
+          className="w-3.5 h-3.5 shrink-0"
+          style={{ color: rightCollapsed ? dimAccent : accent }}
+        />
       </button>
     </div>
   );

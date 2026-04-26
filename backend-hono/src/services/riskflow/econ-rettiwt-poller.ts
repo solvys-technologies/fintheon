@@ -8,10 +8,40 @@ import { getPollingConfig } from "./polling-config.js";
 import { storeFeedItems } from "./news-cache.js";
 import {
   getAccountsForCycle,
-  FJ_ACCOUNTS,
   ALL_CONTINUOUS_ACCOUNTS,
   TIMELINE_LIMIT,
 } from "./rettiwt-poller-accounts.js";
+import {
+  getActiveAccounts,
+  getAccountHandles,
+} from "../source-accounts/source-accounts-service.js";
+
+// [claude-code 2026-04-26] User-managed source accounts now drive every poll
+// path. Hardcoded ALL_CONTINUOUS_ACCOUNTS / FJ_ACCOUNTS is a fallback for cold
+// boots only. Wire/Macro categories are treated as "burst-priority" — they're
+// what fire when a high-impact econ event triggers a burst.
+async function dbAccountsOrFallback(): Promise<string[]> {
+  try {
+    const handles = await getAccountHandles();
+    if (handles.length > 0) return handles;
+  } catch {
+    /* fall through */
+  }
+  return [...ALL_CONTINUOUS_ACCOUNTS];
+}
+
+async function dbBurstAccountsOrFallback(): Promise<string[]> {
+  try {
+    const active = await getActiveAccounts();
+    const burst = active
+      .filter((a) => a.category === "Wire" || a.category === "Macro")
+      .map((a) => a.handle);
+    if (burst.length > 0) return burst;
+  } catch {
+    /* fall through */
+  }
+  return ["financialjuice"];
+}
 import {
   fetchActiveEvents,
   processActualsFromTweets,
@@ -93,10 +123,10 @@ async function initFetchHighPriorityPosts(): Promise<void> {
 
   try {
     console.log(
-      "[EconRettiwtPoller] Init fetch: pulling last 30 Medium+ posts from all continuous accounts...",
+      "[EconRettiwtPoller] Init fetch: pulling last 30 Medium+ posts from user-managed source accounts...",
     );
 
-    const allAccounts = [...ALL_CONTINUOUS_ACCOUNTS];
+    const allAccounts = await dbAccountsOrFallback();
     const batches = await Promise.allSettled(
       allAccounts.map((account) =>
         rettiwtLimiter.schedule(
@@ -159,8 +189,9 @@ function scheduleBurst(event: EconEvent): void {
       }
 
       try {
+        const burstAccounts = await dbBurstAccountsOrFallback();
         const batches = await Promise.allSettled(
-          FJ_ACCOUNTS.map((account) =>
+          burstAccounts.map((account) =>
             rettiwtLimiter.schedule(
               () => rettiwtUserTimeline(account, { count: 10 }),
               { bucket: "rettiwt-timeline" },
@@ -232,7 +263,7 @@ export async function pollForEconNews(): Promise<FeedItem[]> {
   }
 
   // 2. Poll accounts using rotation (timelines work with guest auth)
-  const cycleAccounts = getAccountsForCycle();
+  const cycleAccounts = await getAccountsForCycle();
   const allTweetPromises: Promise<
     Array<{ id: string; text: string; author: string; publishedDate: string }>
   >[] = [];
@@ -288,7 +319,7 @@ export async function manualRefresh(): Promise<FeedItem[]> {
 
   // 1. Rettiwt timeline fetch
   if (isRettiwtAvailable() && !isRettiwtRateLimited()) {
-    const cycleAccounts = getAccountsForCycle();
+    const cycleAccounts = await getAccountsForCycle();
     console.log(
       `[ManualRefresh] Fetching ${cycleAccounts.length} accounts via Rettiwt`,
     );
@@ -369,7 +400,7 @@ async function nightPoll(): Promise<void> {
   if (!isNightWindowEST() || !isRettiwtAvailable()) return;
 
   console.log("[NightPoller] Hourly night poll running (7PM-7AM EST)");
-  const allAccounts = [...ALL_CONTINUOUS_ACCOUNTS];
+  const allAccounts = await dbAccountsOrFallback();
   const batches = await Promise.allSettled(
     allAccounts.map((account) =>
       rettiwtLimiter.schedule(

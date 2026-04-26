@@ -92,14 +92,17 @@ interface TopHeaderProps {
   // Rendered next to psychAssistHeadingWidget when activeTab === "performance".
   performanceChatWidget?: React.ReactNode;
   toolbarEditMode?: boolean;
-  // [claude-code 2026-04-26] Three-panel toggle group, mounted right of the
-  // VIX widget. Wired by MainLayout to the layout-state collapse flags.
+  // [claude-code 2026-04-26] Three-panel toggle group + iframe dropdown sit
+  // LEFT of the VIX widget. Right-click on a toggle hides the panel entirely.
   navSidebarCollapsed?: boolean;
   onToggleNavSidebar?: () => void;
+  onHideNavSidebar?: () => void;
   footerCollapsed?: boolean;
   onToggleFooter?: () => void;
+  onHideFooter?: () => void;
   rightPanelCollapsed?: boolean;
   onToggleRightPanel?: () => void;
+  onHideRightPanel?: () => void;
 }
 
 export function TopHeader({
@@ -124,10 +127,13 @@ export function TopHeader({
   toolbarEditMode = false,
   navSidebarCollapsed = false,
   onToggleNavSidebar,
+  onHideNavSidebar,
   footerCollapsed = false,
   onToggleFooter,
+  onHideFooter,
   rightPanelCollapsed = false,
   onToggleRightPanel,
+  onHideRightPanel,
 }: TopHeaderProps) {
   const { tier } = useAuth();
   const backend = useBackend();
@@ -545,6 +551,141 @@ export function TopHeader({
           <WhatsNewButton />
           {psychAssistHeadingWidget}
           {activeTab === "performance" && performanceChatWidget}
+          {/* [claude-code 2026-04-26] Panel toggles + platform/layout dropdown
+              moved to LEFT of VIX per TP. No outer pill on the toggle group;
+              platform dropdown rendered bare (no bg/border). */}
+          {(onToggleNavSidebar || onToggleFooter || onToggleRightPanel) && (
+            <PanelToggleGroup
+              leftCollapsed={navSidebarCollapsed}
+              onToggleLeft={onToggleNavSidebar ?? (() => {})}
+              onHideLeft={onHideNavSidebar}
+              footerCollapsed={footerCollapsed}
+              onToggleFooter={onToggleFooter ?? (() => {})}
+              onHideFooter={onHideFooter}
+              rightCollapsed={rightPanelCollapsed}
+              onToggleRight={onToggleRightPanel ?? (() => {})}
+              onHideRight={onHideRightPanel}
+            />
+          )}
+          {/* Platform / layout dropdown — bare button (no bg/border) */}
+          {topStepXEnabled && onLayoutOptionChange ? (
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setShowLayoutDropdown(!showLayoutDropdown)}
+                className="px-2 h-7 rounded text-xs font-medium text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors flex items-center gap-1.5"
+                title="Layout Options"
+              >
+                {layoutOptions.find((opt) => opt.value === layoutOption)?.icon}
+                <span>
+                  {layoutOptions.find((opt) => opt.value === layoutOption)?.label}
+                </span>
+                <ChevronDown
+                  className={`w-3 h-3 transition-transform ${showLayoutDropdown ? "rotate-180" : ""}`}
+                />
+              </button>
+              {showLayoutDropdown &&
+                layoutDropdownPos &&
+                createPortal(
+                  <div
+                    ref={layoutPortalRef}
+                    style={{
+                      position: "fixed",
+                      top: layoutDropdownPos.top,
+                      left: layoutDropdownPos.left,
+                      zIndex: 9999,
+                    }}
+                    className="w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden animate-dropdown-enter"
+                  >
+                    {layoutOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => {
+                          onLayoutOptionChange(option.value);
+                          setShowLayoutDropdown(false);
+                        }}
+                        className={`w-full px-4 py-3 text-left hover:bg-[var(--fintheon-accent)]/10 transition-colors flex items-start gap-3 ${
+                          layoutOption === option.value ? "bg-[var(--fintheon-accent)]/20" : ""
+                        }`}
+                      >
+                        <div className="mt-0.5 text-[var(--fintheon-accent)]">{option.icon}</div>
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-[var(--fintheon-accent)] mb-1">
+                            {option.label}
+                          </div>
+                          <div className="text-xs text-gray-400">{option.description}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>,
+                  document.body,
+                )}
+            </div>
+          ) : (
+            !topStepXEnabled && (
+              <div className="relative" ref={platformDropdownRef}>
+                <button
+                  onClick={() => setShowPlatformDropdown(!showPlatformDropdown)}
+                  className="px-2 h-7 rounded text-xs font-medium text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors flex items-center gap-1.5"
+                  title="Select trading platform"
+                >
+                  {!isElectron() && <Monitor className="w-3 h-3" />}
+                  <span>{selectedPlatformLabel}</span>
+                  <ChevronDown
+                    className={`w-3 h-3 transition-transform ${showPlatformDropdown ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {showPlatformDropdown &&
+                  platformDropdownPos &&
+                  createPortal(
+                    <div
+                      ref={platformPortalRef}
+                      style={{
+                        position: "fixed",
+                        top: platformDropdownPos.top,
+                        left: platformDropdownPos.left,
+                        zIndex: 9999,
+                      }}
+                      className="w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden py-1 animate-dropdown-enter"
+                    >
+                      {platformOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            onPlatformSelect?.(option.value);
+                            setShowPlatformDropdown(false);
+                          }}
+                          className={`w-full px-4 py-3 text-left transition-colors ${
+                            selectedPlatform === option.value
+                              ? "bg-[var(--fintheon-accent)]/15"
+                              : "hover:bg-[var(--fintheon-accent)]/8"
+                          }`}
+                        >
+                          <div
+                            className={`text-xs font-semibold tracking-[0.14em] uppercase ${
+                              selectedPlatform === option.value
+                                ? "text-[var(--fintheon-accent)]"
+                                : "text-gray-200"
+                            }`}
+                          >
+                            {option.label}
+                          </div>
+                          <div
+                            className={`text-[10px] mt-0.5 ${
+                              selectedPlatform === option.value
+                                ? "text-[var(--fintheon-accent)]/60"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            {option.description}
+                          </div>
+                        </button>
+                      ))}
+                    </div>,
+                    document.body,
+                  )}
+              </div>
+            )
+          )}
           <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-2.5 h-7 flex items-center flex-shrink-0">
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] text-gray-500">VIX</span>
@@ -553,18 +694,6 @@ export function TopHeader({
               </span>
             </div>
           </div>
-          {/* [claude-code 2026-04-26] Three-panel toggle group — left/footer/right.
-              Right of the VIX widget per TP. */}
-          {(onToggleNavSidebar || onToggleFooter || onToggleRightPanel) && (
-            <PanelToggleGroup
-              leftCollapsed={navSidebarCollapsed}
-              onToggleLeft={onToggleNavSidebar ?? (() => {})}
-              footerCollapsed={footerCollapsed}
-              onToggleFooter={onToggleFooter ?? (() => {})}
-              rightCollapsed={rightPanelCollapsed}
-              onToggleRight={onToggleRightPanel ?? (() => {})}
-            />
-          )}
           {toolbarOrder.map((id) => {
             const wrapper = (node: React.ReactNode) => (
               <div
@@ -593,142 +722,9 @@ export function TopHeader({
               </div>
             );
             if (id === "platform") {
-              if (topStepXEnabled && onLayoutOptionChange) {
-                // iFrame active → show layout dropdown (Castra/Zen) in the platform slot
-                return wrapper(
-                  <div className="relative" ref={dropdownRef}>
-                    <button
-                      onClick={() => setShowLayoutDropdown(!showLayoutDropdown)}
-                      className="px-2.5 h-7 rounded-lg text-xs font-medium bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
-                      title="Layout Options"
-                    >
-                      {
-                        layoutOptions.find((opt) => opt.value === layoutOption)
-                          ?.icon
-                      }
-                      <span>
-                        {
-                          layoutOptions.find(
-                            (opt) => opt.value === layoutOption,
-                          )?.label
-                        }
-                      </span>
-                      <ChevronDown
-                        className={`w-3 h-3 transition-transform ${showLayoutDropdown ? "rotate-180" : ""}`}
-                      />
-                    </button>
-                    {showLayoutDropdown &&
-                      layoutDropdownPos &&
-                      createPortal(
-                        <div
-                          ref={layoutPortalRef}
-                          style={{
-                            position: "fixed",
-                            top: layoutDropdownPos.top,
-                            left: layoutDropdownPos.left,
-                            zIndex: 9999,
-                          }}
-                          className="w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden animate-dropdown-enter"
-                        >
-                          {layoutOptions.map((option) => (
-                            <button
-                              key={option.value}
-                              onClick={() => {
-                                onLayoutOptionChange(option.value);
-                                setShowLayoutDropdown(false);
-                              }}
-                              className={`w-full px-4 py-3 text-left hover:bg-[var(--fintheon-accent)]/10 transition-colors flex items-start gap-3 ${
-                                layoutOption === option.value
-                                  ? "bg-[var(--fintheon-accent)]/20"
-                                  : ""
-                              }`}
-                            >
-                              <div className="mt-0.5 text-[var(--fintheon-accent)]">
-                                {option.icon}
-                              </div>
-                              <div className="flex-1">
-                                <div className="text-sm font-medium text-[var(--fintheon-accent)] mb-1">
-                                  {option.label}
-                                </div>
-                                <div className="text-xs text-gray-400">
-                                  {option.description}
-                                </div>
-                              </div>
-                            </button>
-                          ))}
-                        </div>,
-                        document.body,
-                      )}
-                  </div>,
-                );
-              }
-              // iFrame off → platform selection dropdown (select FIRST, then power ON)
-              return wrapper(
-                <div className="relative" ref={platformDropdownRef}>
-                  <button
-                    onClick={() =>
-                      setShowPlatformDropdown(!showPlatformDropdown)
-                    }
-                    className="px-2.5 h-7 rounded-lg text-xs font-medium bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
-                    title="Select trading platform"
-                  >
-                    {!isElectron() && <Monitor className="w-3 h-3" />}
-                    <span>{selectedPlatformLabel}</span>
-                    <ChevronDown
-                      className={`w-3 h-3 transition-transform ${showPlatformDropdown ? "rotate-180" : ""}`}
-                    />
-                  </button>
-                  {showPlatformDropdown &&
-                    platformDropdownPos &&
-                    createPortal(
-                      <div
-                        ref={platformPortalRef}
-                        style={{
-                          position: "fixed",
-                          top: platformDropdownPos.top,
-                          left: platformDropdownPos.left,
-                          zIndex: 9999,
-                        }}
-                        className="w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden py-1 animate-dropdown-enter"
-                      >
-                        {platformOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            onClick={() => {
-                              onPlatformSelect?.(option.value);
-                              setShowPlatformDropdown(false);
-                            }}
-                            className={`w-full px-4 py-3 text-left transition-colors ${
-                              selectedPlatform === option.value
-                                ? "bg-[var(--fintheon-accent)]/15"
-                                : "hover:bg-[var(--fintheon-accent)]/8"
-                            }`}
-                          >
-                            <div
-                              className={`text-xs font-semibold tracking-[0.14em] uppercase ${
-                                selectedPlatform === option.value
-                                  ? "text-[var(--fintheon-accent)]"
-                                  : "text-gray-200"
-                              }`}
-                            >
-                              {option.label}
-                            </div>
-                            <div
-                              className={`text-[10px] mt-0.5 ${
-                                selectedPlatform === option.value
-                                  ? "text-[var(--fintheon-accent)]/60"
-                                  : "text-gray-500"
-                              }`}
-                            >
-                              {option.description}
-                            </div>
-                          </button>
-                        ))}
-                      </div>,
-                      document.body,
-                    )}
-                </div>,
-              );
+              // [claude-code 2026-04-26] Platform/layout dropdown is now
+              // rendered inline LEFT of VIX. Skip this slot.
+              return null;
             }
             if (id === "power" && onTopStepXDisable) {
               return wrapper(

@@ -9,6 +9,31 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T19:15:00",
+    agent: "claude-code",
+    summary:
+      "Init speedup + Refinement Engine deadlock fix + user-source ingest. (1) Iframe preloads (TopStepX + Research) deferred behind requestIdleCallback (1.5s fallback) so the two heavy hidden iframes no longer block first paint. The duplicate IV-score 5-min poll in MainLayout (FloatingWidget) is also gated on preloadReady — TopHeader streams IV via SSE in the meantime. (2) RefinementEngine fetches now go through a shared fetchJson helper with an 8s AbortController timeout; loadAll switched from Promise.all to Promise.allSettled inside a try/finally so a single hung endpoint can't deadlock the loader on 'Loading Refinement Engine…'. (3) econ-rettiwt-poller no longer reads from hardcoded ALL_CONTINUOUS_ACCOUNTS / FJ_ACCOUNTS at runtime — initFetchHighPriorityPosts, scheduleBurst, manualRefresh, and nightPoll all read user-managed handles from riskflow_source_accounts (DB) with a hardcoded fallback. getAccountsForCycle() is async + DB-aware: Wire+Macro categories drive the priority slot, everything else rotates. Refinement Engine adds/removes now actually drive what the worker pulls.",
+    files: [
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/refinement/RefinementEngine.tsx",
+      "backend-hono/src/services/riskflow/econ-rettiwt-poller.ts",
+      "backend-hono/src/services/riskflow/rettiwt-poller-accounts.ts",
+    ],
+  },
+  {
+    date: "2026-04-26T18:30:00",
+    agent: "claude-code",
+    summary:
+      "Header reorder + Strategium hidden by default. Panel toggle group + iFrame/layout dropdown moved to LEFT of VIX. Outer pill chrome stripped from the toggle group; iFrame dropdown rendered as a bare button (no bg/border). Right toggle now drives strategiumVisible (default false) — Castra mode (topStepX + combined) force-shows it. Right-click on any toggle hides it from the header until next reload. NavSidebar always mounts; TopHeader left toggle drives controlledManualExpand (hover-expand still works inside the rail). NavSidebar chevron expand button removed; icons sit flush to the top. Right-edge hover-trigger strip restores Strategium when hidden. Right SVG glyph swapped for Lucide LayoutDashboard so the Strategium toggle reads distinct from the rect-frame left/footer icons.",
+    files: [
+      "frontend/components/layout/PanelToggleGroup.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/layout/NavSidebar.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/hooks/useLayoutState.ts",
+    ],
+  },
+  {
     date: "2026-04-26T17:30:00",
     agent: "claude-code",
     summary:

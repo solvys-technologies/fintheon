@@ -50,6 +50,22 @@ const API_BASE = (
   import.meta.env.VITE_API_URL || "http://localhost:8080"
 ).replace(/\/$/, "");
 
+// [claude-code 2026-04-26] Hard timeout on refinement fetches — prior versions
+// could hang forever on a single slow endpoint and leave the engine stuck on
+// "Loading Refinement Engine...". 8s is generous enough for cold Fly machines.
+const FETCH_TIMEOUT_MS = 8000;
+async function fetchJson<T = unknown>(url: string): Promise<T> {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { signal: ac.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()) as T;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 interface RegimeState {
   regime: MarketRegime;
   confidence: number;
@@ -136,8 +152,8 @@ export function RefinementEngine() {
 
   const fetchFeed = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/riskflow/feed`).then((r) =>
-        r.json(),
+      const res = await fetchJson<{ items?: RiskFlowAlert[] }>(
+        `${API_BASE}/api/riskflow/feed`,
       );
       setItems(res.items ?? []);
     } catch {
@@ -147,9 +163,7 @@ export function RefinementEngine() {
 
   const fetchRegime = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/regime/current`).then((r) =>
-        r.json(),
-      );
+      const res = await fetchJson<RegimeState>(`${API_BASE}/api/regime/current`);
       setRegime(res);
     } catch {
       /* silent */
@@ -158,8 +172,8 @@ export function RefinementEngine() {
 
   const fetchWeights = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/calibration/weights`).then((r) =>
-        r.json(),
+      const res = await fetchJson<{ weights?: CalibrationEntry[] }>(
+        `${API_BASE}/api/calibration/weights`,
       );
       setWeights(res.weights ?? []);
     } catch {
@@ -169,8 +183,8 @@ export function RefinementEngine() {
 
   const fetchRegistry = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/commentator/registry`).then(
-        (r) => r.json(),
+      const res = await fetchJson<{ registry?: CommentatorEntry[] }>(
+        `${API_BASE}/api/commentator/registry`,
       );
       setRegistry(res.registry ?? []);
     } catch {
@@ -180,8 +194,8 @@ export function RefinementEngine() {
 
   const fetchSourceAccounts = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/source-accounts`).then((r) =>
-        r.json(),
+      const res = await fetchJson<{ accounts?: SourceAccount[] }>(
+        `${API_BASE}/api/source-accounts`,
       );
       setSourceAccounts(res.accounts ?? []);
     } catch {
@@ -192,8 +206,8 @@ export function RefinementEngine() {
   // [claude-code 2026-04-24] S34-T1
   const fetchEconFilters = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/econ-filters`).then((r) =>
-        r.json(),
+      const res = await fetchJson<{ filters?: EconWatchFilter[] }>(
+        `${API_BASE}/api/econ-filters`,
       );
       setEconFilters(res.filters ?? []);
     } catch {
@@ -234,16 +248,21 @@ export function RefinementEngine() {
   useEffect(() => {
     const loadAll = async () => {
       setLoading(true);
-      await Promise.all([
-        fetchFeed(),
-        fetchRegime(),
-        fetchWeights(),
-        fetchRegistry(),
-        fetchSourceAccounts(),
-        fetchEconFilters(),
-        loadV4State(),
-      ]);
-      setLoading(false);
+      try {
+        // Each fetcher is silent-on-failure; allSettled guarantees we always
+        // resolve and never strand the loader on "Loading Refinement Engine...".
+        await Promise.allSettled([
+          fetchFeed(),
+          fetchRegime(),
+          fetchWeights(),
+          fetchRegistry(),
+          fetchSourceAccounts(),
+          fetchEconFilters(),
+          loadV4State(),
+        ]);
+      } finally {
+        setLoading(false);
+      }
     };
     void loadAll();
   }, [

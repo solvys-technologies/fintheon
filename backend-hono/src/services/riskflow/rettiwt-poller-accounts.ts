@@ -2,9 +2,12 @@
 // [claude-code 2026-04-12] Rettiwt poller accounts — DB-backed with hardcoded fallback
 // Reads from riskflow_source_accounts table. Falls back to hardcoded lists if DB unreachable.
 
-import { getAccountHandles } from "../source-accounts/source-accounts-service.js";
+import {
+  getAccountHandles,
+  getActiveAccounts,
+} from "../source-accounts/source-accounts-service.js";
 
-// ── Hardcoded fallback (used when DB is unreachable) ──────────────────────
+// ── Hardcoded fallback (used when DB is unreachable on cold boot) ────────
 
 export const FJ_ACCOUNTS = ["financialjuice"] as const;
 export const TRUSTED_ACCOUNTS = ["NickTimiraos"] as const;
@@ -28,8 +31,6 @@ export const ALL_CONTINUOUS_ACCOUNTS = [
   ...GEOPOLITICAL_ACCOUNTS,
 ] as const;
 
-// Priority accounts polled EVERY cycle
-const PRIORITY_HANDLES = new Set<string>([...FJ_ACCOUNTS, ...WIRE_ACCOUNTS]);
 const ROTATION_BATCH_SIZE = 3;
 let rotationIndex = 0;
 
@@ -44,18 +45,44 @@ export async function getActiveAccountHandles(): Promise<string[]> {
   return [...ALL_CONTINUOUS_ACCOUNTS];
 }
 
-/** Get accounts for this poll cycle: priority + next batch of rotating accounts */
-export function getAccountsForCycle(): string[] {
-  // Synchronous — uses hardcoded lists for immediate use
-  // The econ-rettiwt-poller calls this synchronously; async DB reads happen at higher level
-  const batch: string[] = [...PRIORITY_HANDLES];
-  const rotating = [...ALL_CONTINUOUS_ACCOUNTS].filter(
-    (a) => !PRIORITY_HANDLES.has(a),
-  );
-  for (let i = 0; i < ROTATION_BATCH_SIZE; i++) {
-    batch.push(rotating[(rotationIndex + i) % rotating.length]);
+/**
+ * [claude-code 2026-04-26] Get accounts for this poll cycle: priority (Wire +
+ * Macro categories from the user-managed DB list) + a rotating batch of all
+ * other active accounts. Now async + DB-driven so adds/removes from the
+ * Refinement Engine actually drive what news the worker pulls. Falls back to
+ * hardcoded ALL_CONTINUOUS_ACCOUNTS when the DB is unreachable.
+ */
+export async function getAccountsForCycle(): Promise<string[]> {
+  let priority: string[] = [];
+  let rotating: string[] = [];
+  try {
+    const active = await getActiveAccounts();
+    if (active.length > 0) {
+      const wireMacro = active
+        .filter((a) => a.category === "Wire" || a.category === "Macro")
+        .map((a) => a.handle);
+      const others = active
+        .filter((a) => a.category !== "Wire" && a.category !== "Macro")
+        .map((a) => a.handle);
+      priority = wireMacro;
+      rotating = others;
+    }
+  } catch {
+    /* DB unreachable — fall through */
   }
-  rotationIndex = (rotationIndex + ROTATION_BATCH_SIZE) % rotating.length;
+  if (priority.length === 0 && rotating.length === 0) {
+    priority = [...FJ_ACCOUNTS, ...WIRE_ACCOUNTS];
+    rotating = [...ALL_CONTINUOUS_ACCOUNTS].filter(
+      (a) => !priority.includes(a),
+    );
+  }
+  const batch: string[] = [...priority];
+  if (rotating.length > 0) {
+    for (let i = 0; i < ROTATION_BATCH_SIZE; i++) {
+      batch.push(rotating[(rotationIndex + i) % rotating.length]);
+    }
+    rotationIndex = (rotationIndex + ROTATION_BATCH_SIZE) % rotating.length;
+  }
   return [...new Set(batch)];
 }
 

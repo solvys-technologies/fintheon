@@ -32,11 +32,20 @@ export function useLayoutState({
   // is now in the TopHeader panel-toggle group (left of /right of footer).
   const [combinedPanelCollapsed, setCombinedPanelCollapsed] = useState(true);
   const [combinedTapeCollapsed, setCombinedTapeCollapsed] = useState(false);
-  // [claude-code 2026-04-26] Three-panel toggle state per TP — VS Code-style
-  // group of left / footer / right buttons in TopHeader. NavSidebar starts
-  // visible (false). FooterToolbar starts visible (false).
-  const [navSidebarCollapsed, setNavSidebarCollapsed] = useState(false);
+  // [claude-code 2026-04-26] Three-panel toggle state. navSidebarCollapsed
+  // semantics: true = narrow rail (default), false = expanded. The TopHeader
+  // left button flips this; NavSidebar still hover-expands independently.
+  // footerCollapsed: false on boot so the footer is visible.
+  // strategiumVisible: false on boot. Castra mode (topStepX + combined)
+  // force-shows it via showStrategium logic in MainLayout.
+  // *ToggleHidden: right-click on a panel-toggle button hides it from the
+  // header until reload (no persistence — fresh boot brings them back).
+  const [navSidebarCollapsed, setNavSidebarCollapsed] = useState(true);
   const [footerCollapsed, setFooterCollapsed] = useState(false);
+  const [strategiumVisible, setStrategiumVisible] = useState(false);
+  const [leftToggleHidden, setLeftToggleHidden] = useState(false);
+  const [footerToggleHidden, setFooterToggleHidden] = useState(false);
+  const [rightToggleHidden, setRightToggleHidden] = useState(false);
   const [layoutOption, setLayoutOptionRaw] =
     useState<LayoutOption>(defaultLayout);
   const [prevLayoutOption, setPrevLayoutOption] = useState<LayoutOption | null>(
@@ -114,5 +123,13 @@ export function useLayoutState({
     setNavSidebarCollapsed,
     footerCollapsed,
     setFooterCollapsed,
+    strategiumVisible,
+    setStrategiumVisible,
+    leftToggleHidden,
+    setLeftToggleHidden,
+    footerToggleHidden,
+    setFooterToggleHidden,
+    rightToggleHidden,
+    setRightToggleHidden,
   };
 }
