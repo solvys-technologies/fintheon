@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T09:30:00",
+    agent: "claude-code",
+    summary:
+      "v5.30.1 — INSTALL-UPDATE hotfix. (1) Removed dead `omi-reference/` nested repo from tracking — was a public Omi clone vendored during S21 Harper Voice integration, never imported anywhere, polluting `git status` on every install dir and blocking `fintheon update` with submodule-modified noise. (2) Hardened `scripts/fintheon-update.sh` Step 2 to auto-clear unmerged-path residue from aborted cherry-picks/merges before stashing — previously this hung the update loop with `error: could not write index` whenever cross-worktree merges left a flag on the index entry. New flow: detect via `git diff --diff-filter=U`, reset each conflicted path to HEAD (no work lost — committed state is preserved), then proceed to stash any real changes. The fix self-distributes via the existing self-update bootstrap at the top of fintheon-update.sh, so future installs heal automatically.",
+    files: [
+      "omi-reference",
+      "scripts/fintheon-update.sh",
+      "package.json",
+    ],
+  },
+  {
     date: "2026-04-26T08:00:00",
     agent: "claude-code",
     summary:

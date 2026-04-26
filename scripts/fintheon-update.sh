@@ -13,7 +13,7 @@ set -eo pipefail
 
 # [claude-code 2026-04-18] Resolve install path: FINTHEON_ROOT env > ~/.fintheon/install-path > default
 FINTHEON_ROOT="${FINTHEON_ROOT:-$(cat "$HOME/.fintheon/install-path" 2>/dev/null || echo "$HOME/Documents/Codebases/fintheon")}"
-UPDATE_VERSION="5.30.0"
+UPDATE_VERSION="5.30.1"
 
 # ── Self-update bootstrap (v5.25.2) ──────────────────────────────────────────
 # Root cause fix: bash loads the entire script into memory at invocation, so
@@ -124,6 +124,30 @@ ok "Stopped"
 
 step "2/12" "Checking for local changes..."
 HAS_CHANGES=false
+
+# [claude-code 2026-04-26] v5.30.x hotfix: detect "needs merge" / "both modified"
+# residue from aborted cherry-picks or merges in the install dir. Git can't stash
+# an index with unmerged paths, so the previous flow bailed with "Resolve manually"
+# and the user had to clear it by hand every time we cross-worktree-merged on
+# the dev side. Now we (a) detect unmerged paths via `git ls-files -u`, (b) reset
+# each conflicted path to HEAD (their committed state — no work lost), then
+# proceed to stash any remaining real changes.
+UNMERGED_PATHS=$(git diff --name-only --diff-filter=U 2>/dev/null)
+if [[ -n "$UNMERGED_PATHS" ]]; then
+  warn "Detected unmerged paths from a prior aborted merge/cherry-pick:"
+  echo "$UNMERGED_PATHS" | sed 's/^/    /'
+  while IFS= read -r path; do
+    [[ -z "$path" ]] && continue
+    git checkout HEAD -- "$path" 2>/dev/null || true
+  done <<< "$UNMERGED_PATHS"
+  if [[ -z "$(git diff --name-only --diff-filter=U 2>/dev/null)" ]]; then
+    ok "Cleared unmerged residue (reset to HEAD)"
+  else
+    fail "Could not auto-clear unmerged paths. Run \`git status\` and resolve manually."
+    exit 1
+  fi
+fi
+
 if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
   HAS_CHANGES=true
   STASH_LOG="/tmp/fintheon-update-stash.log"
