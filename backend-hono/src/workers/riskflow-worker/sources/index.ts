@@ -16,6 +16,7 @@
 import { collectFromBrowserHarness } from "./browser-harness.js";
 import { collectFromExa } from "./exa.js";
 import { collectFromAgentReach } from "./agent-reach.js";
+import { collectFromXHandlesBrowser } from "./x-handles-browser.js";
 import { writeCollectedItems } from "../persist.js";
 import {
   getWireHandles,
@@ -50,19 +51,27 @@ async function safeCollect(
 }
 
 export async function runBreakingTier(): Promise<TierRunResult> {
-  const results = await Promise.all([
-    // Wire handles from the Refinement Engine (riskflow_source_accounts).
-    // This is the only Breaking-tier intake by policy: curated Twitter
-    // accounts are the primary signal source for breaking market news.
-    safeCollect("agent-reach:wire-handles", async () => {
-      const handles = await getWireHandles();
-      if (handles.length === 0) return [];
-      return collectFromAgentReach({ handles, tier: "breaking" });
-    }),
-  ]);
+  // PRIMARY: Browserbase / Playwright-driven X.com timeline scrape per
+  // curated handle. Public Nitter mirrors are mostly dead, so this is the
+  // first attempt every tick. Returns tweet-granularity items keyed on
+  // tweet_id for clean dedupe.
+  const wireHandles = await getWireHandles().catch(() => []);
+  const primary = await safeCollect("x-handles-browser:wire", () =>
+    collectFromXHandlesBrowser({ handles: wireHandles, tier: "breaking" }),
+  );
 
-  const items = results.flatMap((r) => r.items);
-  const errors = results.reduce((sum, r) => sum + r.errors, 0);
+  // SECONDARY: agent-reach Nitter RSS — only fires if the primary returned
+  // nothing for a handle (Playwright crash, X login wall, etc.). Idempotent
+  // tweet_id collapsing means duplicates collapse if both win.
+  const fallback =
+    primary.items.length === 0 && wireHandles.length > 0
+      ? await safeCollect("agent-reach:wire-handles", () =>
+          collectFromAgentReach({ handles: wireHandles, tier: "breaking" }),
+        )
+      : { items: [] as CollectedNewsItem[], errors: 0 };
+
+  const items = [...primary.items, ...fallback.items];
+  const errors = primary.errors + fallback.errors;
   const ingested = await writeCollectedItems(items);
   return { ingested, errors };
 }
@@ -93,6 +102,14 @@ export async function runStandardTier(): Promise<TierRunResult> {
         tier: "standard",
       }),
     ),
+    // PRIMARY for macro handles — Browserbase/Playwright. Falls through to
+    // Nitter (next entry) only if the browser path returned nothing for a
+    // handle.
+    safeCollect("x-handles-browser:macro", async () => {
+      const handles = await getMacroHandles();
+      if (handles.length === 0) return [];
+      return collectFromXHandlesBrowser({ handles, tier: "standard" });
+    }),
     safeCollect("agent-reach:macro-handles", async () => {
       const handles = await getMacroHandles();
       if (handles.length === 0) return [];

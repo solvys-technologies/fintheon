@@ -4,7 +4,11 @@
 
 export type NewsTier = "breaking" | "standard";
 
-export type NewsSource = "browser-harness" | "exa" | "agent-reach";
+export type NewsSource =
+  | "browser-harness"
+  | "exa"
+  | "agent-reach"
+  | `twitter:${string}`;
 
 export interface CollectedNewsItem {
   item_id: string;

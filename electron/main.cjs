@@ -619,20 +619,9 @@ function createWindow(apiBase) {
   // listener on first call because ipcMain.on is additive.
   installVoiceChromeHook({ ipcMain, getWindow: () => mainWindow });
 
-  // [claude-code 2026-04-25] S35-unified Bug #2: log the BrowserWindow close
-  // trigger so user-clicked X / Cmd+W / IPC-driven close / window.close() are
-  // distinguishable in crash.log.
-  win.on("close", () => {
-    closeReason = closeReason ?? "browserwindow-close";
-    logCrash("browserwindow-close", {
-      isFocused: win.isFocused?.() ?? null,
-      isVisible: win.isVisible?.() ?? null,
-    });
-  });
-  win.webContents.on("render-process-gone", (_event, details) => {
-    closeReason =
-      closeReason ?? `renderer-gone:${details?.reason ?? "unknown"}`;
-  });
+  // [claude-code 2026-04-26] Removed duplicate win.on("close") + render-process-gone
+  // handlers — they were registered twice during S35 instrumentation, doubling
+  // every browserwindow-close entry in crash.log and confusing diagnosis.
 }
 
 // [claude-code 2026-03-23] Browser Use Phase 2 — enable CDP for browser-use CLI
@@ -654,6 +643,12 @@ app.on("open-url", (event, url) => {
 // Windows/Linux: second-instance receives the deep link URL in argv
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
+  // [claude-code 2026-04-26] Tag this quit so before-quit gets a real reason
+  // in crash.log instead of "unknown". When `fintheon update` pkill-restarts
+  // the app, the new instance can race and fail the lock before the dying
+  // instance fully releases — that path was un-instrumented and showed up as
+  // mysterious auto-closes.
+  closeReason = "single-instance-lock-failed";
   app.quit();
 } else {
   app.on("second-instance", (_event, argv) => {

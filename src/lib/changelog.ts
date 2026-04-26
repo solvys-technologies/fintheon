@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T13:55:00",
+    agent: "claude-code",
+    summary:
+      "v5.31.1 — Browserbase replaced by Steel + XActions wired as secondary X-handle fallback. services/browserbase/client.ts and agent-iframe.ts now call Steel REST (POST /v1/sessions, DELETE /v1/sessions/{id}, CDP via ws://host:9223/devtools/browser/{id}); export names preserved so every consumer keeps working without import edits. New services/xactions/client.ts posts JSON-RPC tools/call x_get_tweets to XACTIONS_API_BASE/mcp, returning a tolerant tweet-shape harvester. workers/riskflow-worker/sources/x-handles-browser.ts now flows browser-harness primary -> XActions secondary on syndication 429 / empty / error. Both fallbacks gracefully no-op when STEEL_API_BASE / XACTIONS_API_BASE unset. Drops the legacy BROWSERBASE_API_KEY / BROWSERBASE_PROJECT_ID env reads.",
+    files: [
+      "backend-hono/src/services/browserbase/client.ts",
+      "backend-hono/src/services/browserbase/agent-iframe.ts",
+      "backend-hono/src/services/xactions/client.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/x-handles-browser.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/index.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/types.ts",
+    ],
+  },
+  {
     date: "2026-04-26T09:30:00",
     agent: "claude-code",
     summary:

@@ -13,7 +13,7 @@
 // → SessionLiveURLs (debuggerFullscreenUrl is the user-visible iframe target).
 
 import { EventEmitter } from "node:events";
-import Browserbase from "@browserbasehq/sdk";
+// [claude-code 2026-04-26] Browserbase SDK removed — Steel REST replaces it.
 import { createLogger } from "../../lib/logger.js";
 import { browseTask } from "../browser/operator.js";
 import { acquirePage } from "../browser/pool.js";
@@ -85,26 +85,157 @@ function publish(event: BrowserbaseEvent): void {
   browserbaseEventBus.emit("event", event);
 }
 
-// ── Client + env ───────────────────────────────────────────────────────────
+// ── Steel client (replaces Browserbase per TP) ─────────────────────────────
+// [claude-code 2026-04-26] Swapped Browserbase SDK for Steel REST. We keep
+// `hasBrowserbaseKey()` / `createSession()` / `closeSession()` names so
+// every consumer (harper-tools, browse_visible, ChatInterface) keeps its
+// imports unchanged — only the underlying transport flipped.
 
-let client: Browserbase | null = null;
+const STEEL_FETCH_TIMEOUT_MS = 25_000;
+
+function steelBase(): string | null {
+  const raw = process.env.STEEL_API_BASE?.trim();
+  if (!raw) return null;
+  return raw.replace(/\/+$/, "");
+}
+
+function steelAuthHeaders(): Record<string, string> {
+  const key = process.env.STEEL_API_KEY?.trim();
+  return key ? { Authorization: `Bearer ${key}` } : {};
+}
 
 export function hasBrowserbaseKey(): boolean {
-  return Boolean(process.env.BROWSERBASE_API_KEY);
+  // Naming preserved for back-compat. Steel is the actual provider now.
+  return Boolean(steelBase());
 }
 
-function getClient(): Browserbase {
-  if (client) return client;
-  const apiKey = process.env.BROWSERBASE_API_KEY;
-  if (!apiKey) {
-    throw new Error("BROWSERBASE_API_KEY missing");
+interface SteelSessionPayload {
+  id?: string;
+  sessionId?: string;
+  connectUrl?: string;
+  websocketUrl?: string;
+  debugUrl?: string;
+  liveViewUrl?: string;
+  sessionViewerUrl?: string;
+}
+
+function deriveSteelLiveUrl(
+  base: string,
+  payload: SteelSessionPayload,
+): string {
+  if (payload.liveViewUrl) return payload.liveViewUrl;
+  if (payload.sessionViewerUrl) return payload.sessionViewerUrl;
+  const id = payload.id ?? payload.sessionId ?? "";
+  return id ? `${base}/ui/sessions/${id}` : `${base}/ui`;
+}
+
+function deriveSteelConnectUrl(
+  base: string,
+  payload: SteelSessionPayload,
+): string {
+  if (payload.connectUrl) return payload.connectUrl;
+  if (payload.websocketUrl) return payload.websocketUrl;
+  if (payload.debugUrl) return payload.debugUrl;
+  const id = payload.id ?? payload.sessionId ?? "";
+  const host = base
+    .replace(/^https?:\/\//, "")
+    .replace(/:\d+$/, "")
+    .replace(/\/+$/, "");
+  return id ? `ws://${host}:9223/devtools/browser/${id}` : "";
+}
+
+async function steelCreateSession(): Promise<{
+  id: string;
+  connectUrl: string;
+  liveUrl: string;
+} | null> {
+  const base = steelBase();
+  if (!base) return null;
+  const proxyUrl = process.env.STEEL_PROXY_URL?.trim() || undefined;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), STEEL_FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${base}/v1/sessions`, {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...steelAuthHeaders(),
+      },
+      body: JSON.stringify({
+        blockAds: true,
+        ...(proxyUrl ? { proxyUrl } : {}),
+        dimensions: { width: 1280, height: 800 },
+      }),
+    });
+    if (!res.ok) {
+      log.warn("Steel /v1/sessions non-OK", { status: res.status });
+      return null;
+    }
+    const json = (await res.json()) as SteelSessionPayload;
+    const id = json.id ?? json.sessionId;
+    if (!id) return null;
+    return {
+      id,
+      connectUrl: deriveSteelConnectUrl(base, json),
+      liveUrl: deriveSteelLiveUrl(base, json),
+    };
+  } catch (err) {
+    log.warn("Steel session create threw", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  } finally {
+    clearTimeout(timer);
   }
-  client = new Browserbase({ apiKey });
-  return client;
 }
 
-function getProjectId(): string | undefined {
-  return process.env.BROWSERBASE_PROJECT_ID || undefined;
+async function steelGetSession(
+  sessionId: string,
+): Promise<{ connectUrl: string } | null> {
+  const base = steelBase();
+  if (!base) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), STEEL_FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(
+      `${base}/v1/sessions/${encodeURIComponent(sessionId)}`,
+      {
+        signal: controller.signal,
+        headers: { Accept: "application/json", ...steelAuthHeaders() },
+      },
+    );
+    if (!res.ok) return null;
+    const json = (await res.json()) as SteelSessionPayload;
+    return { connectUrl: deriveSteelConnectUrl(base, { ...json, id: sessionId }) };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function steelDeleteSession(sessionId: string): Promise<boolean> {
+  const base = steelBase();
+  if (!base) return false;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), STEEL_FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(
+      `${base}/v1/sessions/${encodeURIComponent(sessionId)}`,
+      {
+        method: "DELETE",
+        signal: controller.signal,
+        headers: { Accept: "application/json", ...steelAuthHeaders() },
+      },
+    );
+    return res.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 // ── Session lifecycle ──────────────────────────────────────────────────────
@@ -118,35 +249,24 @@ function getProjectId(): string | undefined {
  * `hasBrowserbaseKey()` first and pick the fallback path.
  */
 export async function createSession(task: string): Promise<CreatedSession> {
-  const c = getClient();
-  const projectId = getProjectId();
-  log.info("createSession", { task: task.slice(0, 120), projectId });
-
-  const session = await c.sessions.create(
-    projectId ? { projectId } : ({} as { projectId?: string }),
-  );
-  const live = await c.sessions.debug(session.id);
+  log.info("createSession (Steel)", { task: task.slice(0, 120) });
+  const session = await steelCreateSession();
+  if (!session) {
+    throw new Error("STEEL_API_BASE missing or session-create failed");
+  }
   return {
     sessionId: session.id,
-    sessionUrl: live.debuggerFullscreenUrl,
+    sessionUrl: session.liveUrl,
   };
 }
 
 export async function closeSession(sessionId: string): Promise<void> {
   if (!hasBrowserbaseKey()) return;
-  try {
-    const c = getClient();
-    const projectId = getProjectId();
-    await c.sessions.update(sessionId, {
-      status: "REQUEST_RELEASE",
-      ...(projectId ? { projectId } : {}),
-    });
-    log.info("closeSession", { sessionId });
-  } catch (err) {
-    log.warn("closeSession failed", {
-      sessionId,
-      error: err instanceof Error ? err.message : String(err),
-    });
+  const ok = await steelDeleteSession(sessionId);
+  if (!ok) {
+    log.warn("closeSession (Steel) returned non-OK", { sessionId });
+  } else {
+    log.info("closeSession (Steel)", { sessionId });
   }
 }
 
@@ -177,13 +297,12 @@ export async function* runTask(
     extractUrl(instruction) ??
     `https://www.google.com/search?q=${encodeURIComponent(instruction)}`;
 
-  // Browserbase path — drive via Playwright over the SDK connectUrl. The
-  // session was already created in createSession(); we just navigate the
-  // user-visible browser. Errors yield a `done` so the agent can move on.
+  // Steel path — drive via Playwright over the CDP connectUrl Steel returned
+  // when the session was created. Errors yield a `done` so the agent can
+  // move on.
   try {
-    const c = getClient();
-    const session = await c.sessions.retrieve(sessionId);
-    const connectUrl = session.connectUrl;
+    const session = await steelGetSession(sessionId);
+    const connectUrl = session?.connectUrl;
     if (!connectUrl) {
       throw new Error("session has no connectUrl");
     }
