@@ -33,6 +33,7 @@ import { AquariumPredictionCards } from "./AquariumPredictionCards";
 import { ConsolidatedTradeLedger } from "./ConsolidatedTradeLedger";
 import { BlendedVIXCard } from "./BlendedVIXCard";
 import { NextSessionForecastCard } from "./NextSessionForecastCard";
+import { DayCard } from "./DayCard";
 import { RiskSignalCards } from "./RiskSignalCards";
 import { useIVScoreData } from "./useIVScoreData";
 // [claude-code 2026-04-24] S35-T3: swap AgentDeskDebatePanel -> ArbitrumChamber
@@ -254,6 +255,7 @@ export function Sanctum({
                           data={ivData}
                           isLoading={ivLoading}
                         />
+                        <DayCard id="day-card-anchor" />
                       </div>
 
                       {/* Fading vertical ruler between Volatility Read and Deliberation */}
