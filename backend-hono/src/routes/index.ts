@@ -398,6 +398,10 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/admin/psych-assist-fork/*", authMiddleware, requireAuth);
   app.route("/api/admin/psych-assist-fork", createPsychAssistForkRoutes());
 
+  // [claude-code 2026-04-25] S35-cleanup: manual trigger for econ-backfill drain.
+  //   Gated internally on x-routine-secret matching ROUTINE_SECRET.
+  app.route("/api/admin/econ", createEconBackfillRoutes());
+
   // [S29-T4] Catalysts — date-filtered RiskFlow headlines for calendar panel
   app.route("/api/catalysts", createCatalystsByDateRoute());
 

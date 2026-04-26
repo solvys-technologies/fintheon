@@ -11,6 +11,7 @@ import { ARBITRUM_SEATS, invokeMoA } from "./seats.js";
 import { synthesize } from "./facilitator.js";
 import { computeGates } from "./gates.js";
 import { saveVerdict } from "./verdict-store.js";
+import { loadArbitrumEconContext } from "./econ-context.js";
 import type {
   ArbitrumDeliberateInput,
   ArbitrumSeatRound,
@@ -67,6 +68,19 @@ export async function runChamber(
   const t0 = Date.now();
   const rounds = clampRounds(opts.rounds);
 
+  // Load recent econ prints + upcoming releases so every seat reasons over the
+  // same data the Aquarium event-card surfaces. Caller-supplied context wins.
+  const econ_context =
+    input.econ_context !== undefined
+      ? input.econ_context
+      : await loadArbitrumEconContext().catch((err) => {
+          log.warn("Econ context load failed — proceeding without it", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+          return null;
+        });
+  const enrichedInput: ArbitrumDeliberateInput = { ...input, econ_context };
+
   const transcripts: ArbitrumSeatTranscript[] = ARBITRUM_SEATS.map((seat) => ({
     id: seat.id,
     role: seat.role,
@@ -91,7 +105,7 @@ export async function runChamber(
 
     const results = await Promise.all(
       ARBITRUM_SEATS.map((seat) =>
-        invokeMoA(seat, input, { round, peerDraftsSummary }),
+        invokeMoA(seat, enrichedInput, { round, peerDraftsSummary }),
       ),
     );
 
@@ -102,8 +116,8 @@ export async function runChamber(
   // Silence unused var lint on summarizePeerDrafts when MAX_ROUNDS=1 path.
   void summarizePeerDrafts;
 
-  const synthesis = synthesize(transcripts, input);
-  const gates = computeGates(transcripts, input.category);
+  const synthesis = synthesize(transcripts, enrichedInput);
+  const gates = computeGates(transcripts, enrichedInput.category);
 
   const verdict: ArbitrumVerdict = {
     verdict_id: randomUUID(),

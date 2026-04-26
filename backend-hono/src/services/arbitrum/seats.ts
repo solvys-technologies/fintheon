@@ -9,6 +9,7 @@ import { createLogger } from "../../lib/logger.js";
 import { seatChat, type SeatChatResult } from "./adapters.js";
 import type {
   ArbitrumDeliberateInput,
+  ArbitrumEconContext,
   ArbitrumSeatConfig,
   ArbitrumSeatRound,
 } from "./types.js";
@@ -80,6 +81,34 @@ Your job: produce a calibrated probabilistic answer to the chamber's question wi
 Return ONLY the JSON object. No markdown fences, no commentary.`;
 }
 
+function formatEconContext(
+  econ: ArbitrumEconContext | null | undefined,
+): string | null {
+  if (!econ) return null;
+  const lines: string[] = [];
+  if (econ.prints.length > 0) {
+    lines.push(`Recent econ prints (last ${econ.windowDays}d, newest first):`);
+    for (const p of econ.prints.slice(0, 12)) {
+      const surprise =
+        p.surprise != null
+          ? `${p.surprise > 0 ? "+" : ""}${p.surprise.toFixed(2)}%`
+          : "—";
+      lines.push(
+        `  ${p.date ?? "—"} | ${p.name} | actual ${p.actual ?? "—"} vs fc ${p.forecast ?? "—"} vs prev ${p.previous ?? "—"} → ${p.direction ?? "—"} (${surprise})`,
+      );
+    }
+  }
+  if (econ.upcoming.length > 0) {
+    lines.push(`Upcoming releases:`);
+    for (const u of econ.upcoming.slice(0, 8)) {
+      lines.push(
+        `  ${u.date}${u.time ? " " + u.time : ""} | ${u.country ?? "?"} | ${u.name}`,
+      );
+    }
+  }
+  return lines.length > 0 ? lines.join("\n") : null;
+}
+
 function buildUserPrompt(
   input: ArbitrumDeliberateInput,
   ctx: MoAInvocationContext,
@@ -88,6 +117,8 @@ function buildUserPrompt(
   parts.push(`Question: ${input.question}`);
   parts.push(`Category: ${input.category}`);
   if (input.context) parts.push(`Context:\n${input.context}`);
+  const econLines = formatEconContext(input.econ_context);
+  if (econLines) parts.push(`Econ data:\n${econLines}`);
   if (input.iv_simulation) {
     parts.push(`IV simulation: ${JSON.stringify(input.iv_simulation)}`);
   }
@@ -103,10 +134,12 @@ function buildDistillPrompt(
   l1Drafts: string[],
   ctx: MoAInvocationContext,
 ): string {
+  const econLines = formatEconContext(input.econ_context);
   return [
     `Task:\n${input.question}`,
     `Category: ${input.category}`,
     input.context ? `Context:\n${input.context}` : "",
+    econLines ? `Econ data:\n${econLines}` : "",
     `Round: ${ctx.round}`,
     ctx.peerDraftsSummary
       ? `Peer drafts (for revision):\n${ctx.peerDraftsSummary}`
