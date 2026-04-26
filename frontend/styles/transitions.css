@@ -401,6 +401,102 @@
 }
 
 /* ============================================================
+   S40-P9: Consul Browser pane slide-in / retract
+   Used by DualPaneShell when the right pane mounts. Honors the
+   reduced-motion guard below.
+   ============================================================ */
+
+.t-pane-slide-in {
+  transform: translateX(8%);
+  opacity: 0;
+  transition:
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.t-pane-slide-in[data-open="true"] {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.t-pane-retract {
+  transform: translateX(0);
+  opacity: 1;
+  transition:
+    transform 200ms cubic-bezier(0.4, 0, 1, 1),
+    opacity 160ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+.t-pane-retract[data-closing="true"] {
+  transform: translateX(8%);
+  opacity: 0;
+}
+
+/* ============================================================
+   S40-P9: Consul Browser pane slide-in / retract
+   Slides the right pane in from the right edge over 320ms,
+   retracts in 220ms. Drive via data-open on the pane container;
+   parent controls mounting via DualPaneShell.
+   ============================================================ */
+
+:root {
+  --t-pane-slide-dur: 320ms;
+  --t-pane-retract-dur: 220ms;
+  --t-pane-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.t-pane-slide-in {
+  transform: translateX(8%);
+  opacity: 0;
+  transition:
+    transform var(--t-pane-slide-dur) var(--t-pane-ease),
+    opacity var(--t-pane-slide-dur) var(--t-pane-ease);
+  will-change: transform, opacity;
+}
+
+.t-pane-slide-in[data-open="true"] {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.t-pane-retract {
+  transform: translateX(0);
+  opacity: 1;
+  transition:
+    transform var(--t-pane-retract-dur) var(--t-pane-ease),
+    opacity var(--t-pane-retract-dur) var(--t-pane-ease);
+}
+
+.t-pane-retract[data-closing="true"] {
+  transform: translateX(8%);
+  opacity: 0;
+}
+
+/* ============================================================
+   S40-P6: Time-To-Print countdown pulse
+   At T-0:00 the countdown digits glow with the Solvys Gold accent
+   until the actual arrives or 60s elapses (whichever is first).
+   ============================================================ */
+
+@keyframes ttp-pulse {
+  0%, 100% {
+    transform: scale(1);
+    text-shadow: 0 0 0 transparent;
+    color: var(--fintheon-accent);
+  }
+  50% {
+    transform: scale(1.04);
+    text-shadow: 0 0 8px rgba(199, 159, 74, 0.55);
+    color: var(--fintheon-accent);
+  }
+}
+
+.ttp-pulse {
+  animation: ttp-pulse 800ms cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  display: inline-block;
+}
+
+/* ============================================================
    prefers-reduced-motion guard
    ============================================================ */
 
@@ -414,7 +510,10 @@
   .t-text-swap,
   .t-modal,
   .t-page-slide .t-page,
-  .t-digit-group .t-digit {
+  .t-digit-group .t-digit,
+  .t-pane-slide-in,
+  .t-pane-retract,
+  .ttp-pulse {
     animation: none !important;
     transition: none !important;
   }

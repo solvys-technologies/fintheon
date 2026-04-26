@@ -7,6 +7,12 @@ import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
 import type { ScoredRiskFlowItem } from "../supabase-service.js";
 import { normalizeHeadline } from "./text-utils.js";
+// [claude-code 2026-04-25] S40-P7: sector-aware dispatch + megacap analyst.
+import {
+  dispatchBySector,
+  isMegacapDealCatalyst,
+  triggerMegacapAnalyst,
+} from "../analysts/megacap-analyst.js";
 
 const log = createLogger("CatalystPromoter");
 
@@ -58,23 +64,42 @@ const THREAD_KEYWORDS: Record<string, string[]> = {
     "redemption cap",
     "illiquid",
   ],
+  // [claude-code 2026-04-25] S40-P5: Singularity rewrite. Removed generic
+  // "data center" / "datacenter" — they bled into geopolitical / real-estate
+  // headlines (e.g. Iranian cooling-data-center attacks, Singapore data-center
+  // build commentary). Replaced with stricter compound + entity matches.
+  // Pair with shouldExcludeFromSingularity() below.
   "ai-singularity": [
     "ai ",
     " ai",
     "artificial intelligence",
-    "nvidia",
-    "nvda",
-    "openai",
-    "gpu",
-    "semiconductor",
-    "chip",
-    "datacenter",
-    "data center",
+    "ai data center",
+    "ai datacenter",
+    "ai infrastructure",
+    "gpu cluster",
+    "h100",
+    "b200",
+    "compute build",
+    "training cluster",
+    "model training",
+    "foundation model",
     "machine learning",
     "llm",
+    "ai deal",
+    "ai partnership",
+    "ai compute deal",
+    "compute deal",
+    "chip deal",
+    "nvidia",
+    "nvda",
     "anthropic",
+    "openai",
+    "xai",
+    "mistral",
+    "deepmind",
     "google ai",
     "deepseek",
+    "tpu",
   ],
   "usd-jpy-carry-trade": [
     "yen",
@@ -208,6 +233,24 @@ function isJunkHeadline(headline: string): boolean {
   return JUNK_HEADLINE_PATTERNS.some((pattern) => pattern.test(headline));
 }
 
+// [claude-code 2026-04-25] S40-P5: Singularity exclusion guard. When the
+// headline carries clear geopolitical riskType but no AI-specific token, we
+// prevent it from spilling into ai-singularity through generic "datacenter"
+// or "infrastructure" overlap. Replays the Anthropic-Google fixture under
+// ai-singularity, NOT middle-east-conflict.
+function shouldExcludeFromSingularity(
+  headline: string,
+  riskType?: string | null,
+): boolean {
+  const isGeopolitical = riskType === "geopolitical";
+  if (!isGeopolitical) return false;
+  const hasAiToken =
+    /\b(AI|model|GPU|chip|compute|training|inference|H100|B200|TPU|Anthropic|OpenAI|xAI|DeepMind|Mistral)\b/i.test(
+      headline,
+    );
+  return !hasAiToken;
+}
+
 function classifyNarrativeThreads(
   headline: string,
   riskType?: string | null,
@@ -218,6 +261,15 @@ function classifyNarrativeThreads(
 
   for (const [thread, keywords] of Object.entries(THREAD_KEYWORDS)) {
     if (keywords.some((kw) => text.includes(kw))) {
+      // [S40-P5] Drop ai-singularity for geopolitical headlines without AI
+      // tokens. Stops the "Iran retaliates against US bases" → Singularity
+      // misclassification we kept seeing in NarrativeFlow.
+      if (
+        thread === "ai-singularity" &&
+        shouldExcludeFromSingularity(headline, riskType)
+      ) {
+        continue;
+      }
       matched.push(thread);
     }
   }
@@ -338,7 +390,19 @@ export async function promotionCycle(): Promise<number> {
       continue;
     }
 
-    if (threads.length === 0 && sentiment === "neutral" && ivScore < 5) {
+    // [claude-code 2026-04-25] S40-P5: softened junk filter. Items with
+    // entity tags or ticker references survive even when neutral + no
+    // narrative match — Anthropic-Google class deals come in with a ticker
+    // ($GOOGL) and would have been silently dropped under the old gate.
+    const hasEntityTags = Array.isArray(item.tags) && item.tags.length > 0;
+    const hasTickerReference = /\$[A-Z]{1,5}\b/.test(item.headline);
+    if (
+      threads.length === 0 &&
+      sentiment === "neutral" &&
+      ivScore < 5 &&
+      !hasEntityTags &&
+      !hasTickerReference
+    ) {
       junkFiltered++;
       // Mark as promoted with junk category so promoter doesn't retry
       await sb
@@ -377,6 +441,38 @@ export async function promotionCycle(): Promise<number> {
 
     promotedIds.push(item.tweet_id);
     categoryUpdates.push({ tweet_id: item.tweet_id, category });
+
+    // [claude-code 2026-04-25] S40-P7: sector dispatch. For deals where a
+    // megacap ticker is the public counterparty, route through
+    // triggerMegacapAnalyst (Consul-scoped). Otherwise hand to the sector
+    // owner. Both are fire-and-forget — failure must not block the promotion.
+    void (async () => {
+      try {
+        const dealClass = isMegacapDealCatalyst({
+          headline: item.headline,
+          riskType,
+        });
+        if (dealClass.ok && dealClass.symbol) {
+          await triggerMegacapAnalyst({
+            source: "news",
+            symbol: dealClass.symbol,
+            headline: item.headline,
+            riskType,
+          });
+        } else {
+          await dispatchBySector({
+            headline: item.headline,
+            riskType,
+            symbol: null,
+          });
+        }
+      } catch (err) {
+        log.warn("Sector dispatch threw (swallowed)", {
+          tweet_id: item.tweet_id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    })();
   }
 
   if (junkFiltered > 0) {

@@ -4,6 +4,10 @@
  */
 
 import { Hono } from "hono";
+// [claude-code 2026-04-25] S40-P2: /api/riskflow/health — used by the
+// news-worker watchdog and external monitors. Lives in services/, not
+// handlers.ts, so it's reachable from cron without circular imports.
+import { getHealthSnapshot } from "../../workers/news-worker/watchdog.js";
 import {
   handleGetFeed,
   handleGetBreaking,
@@ -36,6 +40,12 @@ import {
 
 export function createRiskFlowRoutes(): Hono {
   const router = new Hono();
+
+  // [claude-code 2026-04-25] S40-P2: news-worker health probe.
+  router.get("/health", async (c) => {
+    const snap = await getHealthSnapshot();
+    return c.json(snap);
+  });
 
   // GET /api/riskflow/feed - Get news feed
   router.get("/feed", handleGetFeed);

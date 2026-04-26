@@ -90,4 +90,48 @@ export const DEFAULT_SOURCE_ACCOUNTS: Omit<
     category: "OSINT",
     active: true,
   },
+  // [claude-code 2026-04-25] S40-P3: 8 Macro handles promoted to breaking
+  // tier. NickTimiraos already exists above; the other 7 below.
+  {
+    handle: "unusual_whales",
+    display_name: "unusual_whales",
+    category: "Macro",
+    active: true,
+  },
+  {
+    handle: "WalterBloomberg",
+    display_name: "Walter Bloomberg",
+    category: "Macro",
+    active: true,
+  },
+  {
+    handle: "LiveSquawk",
+    display_name: "LiveSquawk",
+    category: "Macro",
+    active: true,
+  },
+  {
+    handle: "FXHedge",
+    display_name: "FXHedge",
+    category: "Macro",
+    active: true,
+  },
+  {
+    handle: "WallStreetBets",
+    display_name: "WallStreetBets",
+    category: "Macro",
+    active: true,
+  },
+  {
+    handle: "SquawkCNBC",
+    display_name: "Squawk CNBC",
+    category: "Macro",
+    active: true,
+  },
+  {
+    handle: "zerohedge",
+    display_name: "zerohedge",
+    category: "Macro",
+    active: true,
+  },
 ];

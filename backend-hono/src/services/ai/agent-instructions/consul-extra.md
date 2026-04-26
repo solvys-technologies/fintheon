@@ -1,3 +1,9 @@
+---
+name: consul
+primary_sector: Earnings
+secondary_sectors: [Singularity]
+---
+
 # Consul — Extra Dossier (Domain Detail)
 
 ## Worldview

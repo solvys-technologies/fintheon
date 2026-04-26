@@ -12,7 +12,8 @@
 // [claude-code 2026-03-22] Track 4: persona pills → PersonaDropdown, Plug2+Wrench → ToolsDropdown
 import { useEffect, useState, useCallback } from "react";
 import { useThread, useThreadRuntime } from "@assistant-ui/react";
-import { Radio, Unplug, Loader2 } from "lucide-react";
+import { Radio, Unplug, Loader2, Globe } from "lucide-react";
+import { useConsulBrowser } from "../../contexts/ConsulBrowserContext";
 import { PromptBox } from "../ui/chatgpt-prompt-input";
 import { SKILL_PREFIXES } from "../../lib/skillPrefixes";
 import { SKILLS } from "../../lib/skills";
@@ -53,6 +54,41 @@ interface FintheonComposerProps {
    * and without this prop the user stays stuck with a broken relay button.
    */
   onConversationGone?: () => void;
+}
+
+// [claude-code 2026-04-25] S40-P9: 32x32 Globe button — opens Consul Browser
+// pane via ConsulBrowserContext. NOT in the dropdown per brief.
+function ConsulBrowserButton() {
+  const { session, isLoading, open, close } = useConsulBrowser();
+  const active = Boolean(session);
+  const handleClick = () => {
+    if (active) {
+      void close();
+    } else {
+      void open();
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={isLoading}
+      title={
+        active
+          ? "Consul Browser — close session"
+          : "Consul Browser — open browsing pane"
+      }
+      aria-label="Consul Browser"
+      aria-pressed={active}
+      className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+        active
+          ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10 hover:bg-[var(--fintheon-accent)]/20"
+          : "text-zinc-400 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
+      }`}
+    >
+      <Globe size={16} />
+    </button>
+  );
 }
 
 export function FintheonComposer({
@@ -227,15 +263,19 @@ export function FintheonComposer({
   const personaEl = compact ? undefined : <PersonaDropdown />;
 
   const toolsEl = (
-    <ToolsDropdown
-      skills={SKILLS}
-      activeSkill={activeSkill}
-      onSelectSkill={onSelectSkill}
-      disabledSkills={mergedDisabledSkills}
-      servers={servers}
-      activeConnectorIds={activeIds}
-      onToggleConnector={toggleConnector}
-    />
+    <div className="flex items-center gap-1.5">
+      <ToolsDropdown
+        skills={SKILLS}
+        activeSkill={activeSkill}
+        onSelectSkill={onSelectSkill}
+        disabledSkills={mergedDisabledSkills}
+        servers={servers}
+        activeConnectorIds={activeIds}
+        onToggleConnector={toggleConnector}
+      />
+      {/* [claude-code 2026-04-25] S40-P9: Globe icon — opens Consul Browser pane */}
+      <ConsulBrowserButton />
+    </div>
   );
 
   // ── Relay button (leftmost in composer action cluster) ───────────────────────

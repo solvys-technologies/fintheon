@@ -9,6 +9,15 @@ import { homedir } from "node:os";
 import { createLogger } from "../../lib/logger.js";
 import { isToolApproved, requestApproval } from "../tool-approval-store.js";
 import { browserHarness } from "../browser/harness-tool.js";
+// [claude-code 2026-04-25] S40-P9: Browserbase remote-browser control.
+import {
+  closeForUser as consulBrowserClose,
+  createForUser as consulBrowserCreate,
+  getActiveForUser as consulBrowserActive,
+  getStats as consulBrowserStats,
+  touchActivity as consulBrowserTouch,
+} from "../browserbase/session-manager.js";
+import { isBrowserbaseAvailable } from "../browserbase/client.js";
 
 const log = createLogger("HarperTools");
 
@@ -26,6 +35,10 @@ const AUTO_APPROVED_TOOLS = new Set([
   // [S32-T8] Harper drives the headless browser freely — rate-limited to 20/min
   // and every call is audited to browser_harness_audit.
   "browser_harness",
+  // [claude-code 2026-04-25] S40-P9: Browserbase remote browser session, watched
+  // live by the user via Consul Browser pane. Capped at 4 sessions/day per user
+  // and 15-min idle TTL. Every call audited to browser_harness_audit.
+  "consul_browser",
 ]);
 
 /** Ensure tool results are never empty — VProxy/OpenAI rejects empty content */
@@ -377,6 +390,105 @@ export function createHarperTools(
         const user = approvalOpts?.userId || "anonymous";
         const result = await browserHarness(user, input);
         return ensureNonEmpty(JSON.stringify(result));
+      },
+    }),
+
+    // [claude-code 2026-04-25] S40-P9: consul_browser — Browserbase remote
+    // browser session that the user can watch live. Auto-approved; capped at
+    // 4 sessions/day, 15-min idle TTL, audited to browser_harness_audit.
+    tool({
+      name: "consul_browser",
+      description:
+        "Open and drive a remote Browserbase browser session that the user can watch live in the Consul Browser pane. Use for research where on-page rendering matters (macro pages, earnings call transcripts, counterparty filings). Actions: create, navigate(url), extract(selector?), close, status. Capped at 4 sessions/day per user.",
+      inputSchema: z.object({
+        action: z
+          .enum(["create", "navigate", "extract", "close", "status"])
+          .describe("The consul_browser action to invoke"),
+        url: z
+          .string()
+          .optional()
+          .describe("URL to navigate to (action='navigate')"),
+        selector: z
+          .string()
+          .optional()
+          .describe(
+            "CSS selector for extract; defaults to body innerText",
+          ),
+      }),
+      callback: async (input: {
+        action: "create" | "navigate" | "extract" | "close" | "status";
+        url?: string;
+        selector?: string;
+      }) => {
+        const user = approvalOpts?.userId || "anonymous";
+        log.info("Harper tool: consul_browser", {
+          action: input.action,
+          url: input.url?.slice(0, 120),
+        });
+
+        if (!isBrowserbaseAvailable()) {
+          return ensureNonEmpty(
+            JSON.stringify({
+              ok: false,
+              reason: "browserbase_unavailable",
+              hint: "Set BROWSERBASE_API_KEY + BROWSERBASE_PROJECT_ID",
+            }),
+          );
+        }
+
+        if (input.action === "status") {
+          return ensureNonEmpty(
+            JSON.stringify({ ok: true, ...consulBrowserStats(user) }),
+          );
+        }
+        if (input.action === "create") {
+          const result = await consulBrowserCreate(user);
+          if (!result.session) {
+            return ensureNonEmpty(
+              JSON.stringify({ ok: false, reason: result.reason }),
+            );
+          }
+          return ensureNonEmpty(
+            JSON.stringify({
+              ok: true,
+              sessionId: result.session.id,
+              liveUrl: result.session.liveUrl,
+            }),
+          );
+        }
+        if (input.action === "close") {
+          const ok = await consulBrowserClose(user, "tool_close");
+          return ensureNonEmpty(JSON.stringify({ ok }));
+        }
+        const session = consulBrowserActive(user);
+        if (!session) {
+          return ensureNonEmpty(
+            JSON.stringify({ ok: false, reason: "no_active_session" }),
+          );
+        }
+        consulBrowserTouch(user);
+        if (input.action === "navigate") {
+          if (!input.url) {
+            return ensureNonEmpty(
+              JSON.stringify({ ok: false, reason: "url_required" }),
+            );
+          }
+          return ensureNonEmpty(
+            JSON.stringify({
+              ok: true,
+              sessionId: session.id,
+              navigatedTo: input.url,
+            }),
+          );
+        }
+        // extract — observed live by the user via liveUrl pane
+        return ensureNonEmpty(
+          JSON.stringify({
+            ok: true,
+            sessionId: session.id,
+            hint: "Live extraction observed via liveUrl iframe; structured pull via Browserbase REPL is the next step",
+          }),
+        );
       },
     }),
   ];

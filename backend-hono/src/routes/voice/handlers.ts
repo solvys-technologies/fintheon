@@ -4,7 +4,11 @@ import { handleHermesChat } from "../../services/hermes-handler.js";
 import { transcribeVoice } from "../../services/voice-service.js";
 import { analyzeSentiment } from "../../services/voice-sentiment.js";
 import { speakToUser } from "../../services/harper-voice/speak.js";
-import { synthesizeWithElevenLabs } from "../../services/voice-tts.js";
+import {
+  synthesize,
+  synthesizeSample,
+} from "../../services/voice-tts/index.js";
+import type { PiperVoice } from "../../services/voice-tts/types.js";
 
 function getUserId(c: Context): string | null {
   const userId = c.get("userId") as string | undefined;
@@ -155,7 +159,9 @@ export async function handleSpeak(c: Context) {
     let audioMimeType: string | undefined;
     let ttsProvider: string | undefined;
     if (wantsAudio) {
-      const synth = await synthesizeWithElevenLabs(response.content);
+      // [S40-P1] Routed through voice-tts/ — Piper en_GB-cori-medium first,
+      // ElevenLabs fallback. HARPER_TTS_PROVIDER env switch overrides.
+      const synth = await synthesize(response.content);
       if (synth) {
         audioBase64 = synth.audioBase64;
         audioMimeType = synth.audioMimeType;
@@ -178,6 +184,49 @@ export async function handleSpeak(c: Context) {
       error instanceof Error ? error.message : "Voice response failed";
     return c.json({ error: message }, 500);
   }
+}
+
+// [claude-code 2026-04-25] S40-P1: voice sample endpoint — TP curls this with
+// ?voice=cori|jenny_dioco|elevenlabs&text=... to A/B candidate voices. Returns
+// { audioBase64, mimeType, provider, voiceId }. Mounted unauthed in the parent
+// app so a quick curl from TP's terminal works without a JWT.
+export async function handleVoiceSample(c: Context) {
+  const voiceParam = (c.req.query("voice") ?? "cori").toLowerCase();
+  const text = (c.req.query("text") ?? "").trim();
+
+  if (!text) {
+    return c.json({ error: "text query param required" }, 400);
+  }
+  if (text.length > 500) {
+    return c.json({ error: "text too long (500 char max)" }, 400);
+  }
+
+  const allowed = new Set(["cori", "jenny_dioco", "elevenlabs"]);
+  if (!allowed.has(voiceParam)) {
+    return c.json(
+      {
+        error: "invalid voice",
+        allowed: ["cori", "jenny_dioco", "elevenlabs"],
+      },
+      400,
+    );
+  }
+
+  const voice = voiceParam as PiperVoice | "elevenlabs";
+  const synth = await synthesizeSample(text, voice);
+  if (!synth) {
+    return c.json(
+      { error: "synthesis_unavailable", voice: voiceParam },
+      503,
+    );
+  }
+
+  return c.json({
+    audioBase64: synth.audioBase64,
+    mimeType: synth.audioMimeType,
+    provider: synth.provider,
+    voiceId: synth.voiceId,
+  });
 }
 
 // [claude-code 2026-03-11] Track 7B: Claude Haiku sentiment analysis for VAD-triggered speech

@@ -52,6 +52,20 @@ export const CATALYST_LEVEL_CRITERIA = {
       "opec",
       "pipeline closure",
       "proxy attack",
+      // [claude-code 2026-04-25] S40-P5: M&A + AI deal keywords. Anthropic-
+      // Google class deals were getting stuck at level 2 ("Medium" - no push)
+      // — promoting them to level 3 ("High" - Consilium push) restores the
+      // signal volume TP expects.
+      "merger",
+      "acquisition",
+      "partnership",
+      "strategic deal",
+      "multi-billion deal",
+      "anthropic",
+      "openai",
+      "xai",
+      "compute deal",
+      "chip deal",
     ],
   },
   2: {

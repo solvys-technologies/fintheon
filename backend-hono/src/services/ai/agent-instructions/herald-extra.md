@@ -1,3 +1,9 @@
+---
+name: herald
+primary_sector: Singularity
+secondary_sectors: [Earnings]
+---
+
 # Herald — Extra Dossier (Domain Detail)
 
 ## Worldview

@@ -140,16 +140,47 @@ class RelayBridge {
       }
     };
 
-    conn.ws.addEventListener("message", onMessage);
+    // [claude-code 2026-04-25] Bug #1 fix (s35-unified): if the local backend's
+    // WS drops between frames, surface it as a real error instead of hanging
+    // the generator. relay.ts's catch arm then emits
+    // `{type:"error",error:"Local backend disconnected"}` + `[DONE]` so mobile
+    // shows a visible error bubble instead of the silent "HARPER SILENT" state.
+    const onClose = () => {
+      if (done || error) return;
+      error = new Error("local_offline");
+      waiting?.();
+      waiting = null;
+    };
+    const onError = () => {
+      if (done || error) return;
+      error = new Error("local_offline");
+      waiting?.();
+      waiting = null;
+    };
 
-    // Send the request to local backend
-    conn.ws.send(
-      JSON.stringify({
-        type: "chat",
-        requestId,
-        payload,
-      }),
-    );
+    conn.ws.addEventListener("message", onMessage);
+    conn.ws.addEventListener("close", onClose);
+    conn.ws.addEventListener("error", onError);
+
+    // Send the request to local backend. If the WS already closed between
+    // isConnected() and now, send() throws — convert to local_offline so the
+    // generator surfaces the same error path as a mid-stream drop.
+    try {
+      conn.ws.send(
+        JSON.stringify({
+          type: "chat",
+          requestId,
+          payload,
+        }),
+      );
+    } catch (sendErr) {
+      conn.ws.removeEventListener("message", onMessage);
+      conn.ws.removeEventListener("close", onClose);
+      conn.ws.removeEventListener("error", onError);
+      throw new Error(
+        sendErr instanceof Error ? sendErr.message : "local_offline",
+      );
+    }
 
     try {
       while (true) {
@@ -168,6 +199,8 @@ class RelayBridge {
       }
     } finally {
       conn.ws.removeEventListener("message", onMessage);
+      conn.ws.removeEventListener("close", onClose);
+      conn.ws.removeEventListener("error", onError);
     }
   }
 

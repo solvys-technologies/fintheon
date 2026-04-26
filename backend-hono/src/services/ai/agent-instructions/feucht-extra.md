@@ -1,3 +1,9 @@
+---
+name: feucht
+primary_sector: Geopolitical
+secondary_sectors: [Macro]
+---
+
 # Feucht — Extra Dossier (Domain Detail)
 
 ## Worldview

@@ -232,6 +232,56 @@ What action should we take? Be concise and decisive.`;
   console.log(`[BoardroomSpawner] Breaking news response complete`);
 }
 
+/**
+ * [claude-code 2026-04-25] S40-P7: sector-aware dispatch. Catalyst promoter
+ * calls this with a classified catalyst; we resolve the sector → owner persona
+ * and route a focused prompt to that agent only. Megacap analyst path piggybacks
+ * here when the trigger comes through `triggerMegacapAnalyst`.
+ */
+export async function spawnSectorDispatch(opts: {
+  headline: string;
+  riskType?: string | null;
+  symbol?: string | null;
+  sector: string;
+  ownerPersona: string;
+  scoringFocus?: string[];
+}): Promise<void> {
+  const focus = opts.scoringFocus?.length
+    ? `\nScoring focus: ${opts.scoringFocus.join(", ")}`
+    : "";
+  const symbolLine = opts.symbol ? `\nSymbol: ${opts.symbol}` : "";
+  const prompt = `[SECTOR DISPATCH — ${opts.sector.toUpperCase()}]
+Headline: ${opts.headline}${symbolLine}
+Risk type: ${opts.riskType ?? "n/a"}${focus}
+
+You are the sector owner for ${opts.sector}. Provide a tight sector-specific
+read: what this means inside your sector's mental model, what positions are
+most exposed, and one line on whether a boardroom escalation is warranted.`;
+  console.log(
+    `[BoardroomSpawner] Sector dispatch → ${opts.ownerPersona} (${opts.sector})`,
+  );
+  // Map persona id → AgentStandupConfig from BOARDROOM_AGENTS so the spawner
+  // signature stays narrow (no string role overload). Unknown personas fall
+  // back to Harper.
+  const personaMap: Record<string, AgentStandupConfig> = {
+    "harper-cao": BOARDROOM_AGENTS[0],
+    harper: BOARDROOM_AGENTS[0],
+    "futures-desk": BOARDROOM_AGENTS[1],
+    feucht: BOARDROOM_AGENTS[1],
+    "fundamentals-desk": BOARDROOM_AGENTS[2],
+    consul: BOARDROOM_AGENTS[2],
+    "pma-merged": BOARDROOM_AGENTS[3],
+    oracle: BOARDROOM_AGENTS[3],
+    herald: BOARDROOM_AGENTS[4],
+  };
+  const agent =
+    personaMap[opts.ownerPersona.toLowerCase()] ?? BOARDROOM_AGENTS[0];
+  await spawnAgentResponse(agent, prompt, "spontaneous").catch(
+    (err: unknown) =>
+      console.warn("[BoardroomSpawner] Sector dispatch threw (swallowed)", err),
+  );
+}
+
 // ─── @everyone Broadcast ─────────────────────────────────────────────
 
 /** Keyword sets for determining agent relevance to a user message */

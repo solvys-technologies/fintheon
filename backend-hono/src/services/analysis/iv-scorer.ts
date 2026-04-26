@@ -91,7 +91,11 @@ const EVENT_WEIGHTS: Record<string, number> = {
   jobless: 4,
   housing: 4,
   sectorNews: 3,
-  merger: 3,
+  // [claude-code 2026-04-25] S40-P5: bumped merger 3→6 + new partnership_deal
+  // bucket. Anthropic-Google class deals were scoring sub-5 and getting
+  // junk-filtered before they could reach NarrativeFlow.
+  merger: 6,
+  partnership_deal: 7,
   other: 2.5,
   default: 2,
 };

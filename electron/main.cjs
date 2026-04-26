@@ -94,6 +94,34 @@ app.on("gpu-process-crashed", (_event, killed) => {
   logCrash("gpu-process-crashed", { killed });
 });
 
+// [claude-code 2026-04-25] S35-unified Bug #2 instrumentation: capture every
+// close/quit pathway so the next repro of "Fintheon error-closes after ~5min"
+// lands a definitive trigger source in crash.log. The render-process-gone
+// cascade only fires AFTER the decision to quit has been made — closeReason
+// is set by whichever listener fires first and read by the quit hooks.
+
+let closeReason = null;
+
+app.on("before-quit", () => {
+  logCrash("app-before-quit", { reason: closeReason ?? "unknown" });
+});
+
+app.on("will-quit", () => {
+  logCrash("app-will-quit", { reason: closeReason ?? "unknown" });
+});
+
+app.on("quit", (_event, exitCode) => {
+  logCrash("app-quit", { exitCode, reason: closeReason ?? "unknown" });
+});
+
+const sigHandler = (signal) => {
+  logCrash("process-signal", { signal });
+  closeReason = closeReason ?? `signal:${signal}`;
+};
+process.on("SIGTERM", () => sigHandler("SIGTERM"));
+process.on("SIGINT", () => sigHandler("SIGINT"));
+process.on("SIGHUP", () => sigHandler("SIGHUP"));
+
 /* ------------------------------------------------------------------ */
 /*  Startup config — persisted to userData/fintheon-startup.json       */
 /* ------------------------------------------------------------------ */
@@ -563,6 +591,21 @@ function createWindow(apiBase) {
   // window exists. Idempotent — installVoiceChromeHook only registers the
   // listener on first call because ipcMain.on is additive.
   installVoiceChromeHook({ ipcMain, getWindow: () => mainWindow });
+
+  // [claude-code 2026-04-25] S35-unified Bug #2: log the BrowserWindow close
+  // trigger so user-clicked X / Cmd+W / IPC-driven close / window.close() are
+  // distinguishable in crash.log.
+  win.on("close", () => {
+    closeReason = closeReason ?? "browserwindow-close";
+    logCrash("browserwindow-close", {
+      isFocused: win.isFocused?.() ?? null,
+      isVisible: win.isVisible?.() ?? null,
+    });
+  });
+  win.webContents.on("render-process-gone", (_event, details) => {
+    closeReason =
+      closeReason ?? `renderer-gone:${details?.reason ?? "unknown"}`;
+  });
 }
 
 // [claude-code 2026-03-23] Browser Use Phase 2 — enable CDP for browser-use CLI

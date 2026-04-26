@@ -12,6 +12,10 @@ import { useHermesRuntime } from "./chat/useHermesRuntime";
 import { ChatHeader } from "./chat/ChatHeader";
 import { FintheonThread, AiLoader } from "./chat/FintheonThread";
 import { FintheonComposer } from "./chat/FintheonComposer";
+// [claude-code 2026-04-25] S40-P9: Consul Browser pane wraps the chat surface
+// in a 50/50 split when active; otherwise renders the chat full-width.
+import { ConsulBrowserPane } from "./strategium/ConsulBrowserPane";
+import { useConsulBrowser } from "../contexts/ConsulBrowserContext";
 import { SKILL_PREFIXES } from "../lib/skillPrefixes";
 import QuickFintheonModal from "./analysis/QuickFintheonModal";
 import { useFeatureFlags } from "../hooks/useFeatureFlags";
@@ -158,6 +162,10 @@ function ChatInterfaceInner({
           </div>
         </div>
 
+        {/* [S40-P9] Consul Browser pane — peers with the chat surface as a
+            50/50 split when an active session exists. */}
+        <ConsulBrowserPaneSlot />
+
         {/* Preview pane — right side, only in dual-pane mode (Chat main) */}
         {dualPane && showArtifacts && (
           <div className="flex-shrink-0 w-96 border-l border-[var(--fintheon-accent)]/15 transition-[width] duration-[240ms] ease-in-out overflow-hidden">
@@ -189,6 +197,19 @@ function ChatInterfaceInner({
         onClose={() => {}}
         onAnalysisComplete={() => {}}
       />
+    </div>
+  );
+}
+
+// [claude-code 2026-04-25] S40-P9: hooked into ConsulBrowserContext so the
+// pane mounts only when there's an active session. Lives outside the chat
+// column so it doesn't push the composer or thread layout around.
+function ConsulBrowserPaneSlot() {
+  const { session } = useConsulBrowser();
+  if (!session) return null;
+  return (
+    <div className="flex-shrink-0 w-[50%] min-w-[480px] max-w-[840px] overflow-hidden">
+      <ConsulBrowserPane className="h-full" />
     </div>
   );
 }

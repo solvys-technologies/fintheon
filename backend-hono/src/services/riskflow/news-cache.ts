@@ -139,11 +139,13 @@ export async function getCachedFeed(options: {
       Date.now() - hoursBack * 60 * 60 * 1000,
     ).toISOString();
 
+    // [claude-code 2026-04-25] S40-P2: filter soft-deleted items.
     const result = await sql`
       SELECT * FROM news_feed_items
       WHERE published_at >= ${cutoffDate}
         AND (macro_level IS NULL OR macro_level >= ${minMacroLevel})
-      ORDER BY 
+        AND archived_at IS NULL
+      ORDER BY
         CASE WHEN is_breaking THEN 0 ELSE 1 END,
         macro_level DESC NULLS LAST,
         published_at DESC
@@ -219,16 +221,81 @@ export async function getLastFetchTime(): Promise<Date | null> {
 }
 
 /**
- * DISABLED — RiskFlow items are NEVER deleted. Retained permanently for calibration + narrative tracking.
- * @deprecated Do not call. Items are sacred. — TP directive 2026-03-28
+ * [claude-code 2026-04-25] S40-P2: re-enabled as SOFT DELETE.
+ *
+ * Items older than `hoursOld` (default 24h) with iv_score < 3 AND no narrative
+ * link get archived_at = now(). The frontend feed query filters
+ * archived_at IS NULL so users never see junk; calibration analysts can still
+ * read it via SELECT * (no filter). Daily 02:00 ET sweep hard-deletes rows
+ * archived more than 7 days ago; that lives in cron/news-cache-prune.ts.
+ *
+ * Returns the number of items archived in this pass.
  */
-export async function cleanupOldItems(
-  _hoursOld: number = 720,
-): Promise<number> {
-  console.warn(
-    "[NewsCache] cleanupOldItems called but DISABLED — items are never deleted",
-  );
-  return 0;
+export async function cleanupOldItems(hoursOld: number = 24): Promise<number> {
+  if (!isDatabaseAvailable() || !sql) {
+    return 0;
+  }
+  try {
+    const cutoff = new Date(
+      Date.now() - hoursOld * 60 * 60 * 1000,
+    ).toISOString();
+    // The brief calls this "iv_score < 3 AND narrative_id IS NULL". The schema
+    // here doesn't have a direct narrative_id on news_feed_items (link is via
+    // scored_riskflow_items → narrative_card_links). iv_score < 3 is a strong
+    // enough proxy: anything that promoted to a narrative scored well above
+    // that threshold. We pair it with a tag-presence check so flagged
+    // narrative-of-record items survive even if they never got a numeric score.
+    const result = await sql`
+      UPDATE news_feed_items
+      SET archived_at = NOW()
+      WHERE archived_at IS NULL
+        AND published_at < ${cutoff}
+        AND (iv_score IS NULL OR iv_score < 3)
+        AND COALESCE(array_length(tags, 1), 0) = 0
+      RETURNING id
+    `;
+    const archived = result.length;
+    if (archived > 0) {
+      console.log(
+        JSON.stringify({
+          ts: new Date().toISOString(),
+          service: "news-cache",
+          stage: "soft_delete_sweep",
+          archived,
+          olderThanHours: hoursOld,
+        }),
+      );
+    }
+    return archived;
+  } catch (err) {
+    console.warn("[NewsCache] cleanupOldItems failed", err);
+    return 0;
+  }
+}
+
+/**
+ * [claude-code 2026-04-25] S40-P2: hard-delete rows archived more than `days`
+ * ago. Runs daily 02:00 ET. Returns the number of rows hard-deleted.
+ */
+export async function hardDeleteArchivedItems(days: number = 7): Promise<number> {
+  if (!isDatabaseAvailable() || !sql) {
+    return 0;
+  }
+  try {
+    const cutoff = new Date(
+      Date.now() - days * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const result = await sql`
+      DELETE FROM news_feed_items
+      WHERE archived_at IS NOT NULL
+        AND archived_at < ${cutoff}
+      RETURNING id
+    `;
+    return result.length;
+  } catch (err) {
+    console.warn("[NewsCache] hardDeleteArchivedItems failed", err);
+    return 0;
+  }
 }
 
 /**

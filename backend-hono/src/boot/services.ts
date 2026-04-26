@@ -35,6 +35,20 @@ import {
   catchUpMissedBriefs,
 } from "../services/cron/dispatch-scheduler.js";
 import { startNewsWorkerAuditScheduler } from "../services/cron/news-worker-audit-scheduler.js";
+// [claude-code 2026-04-25] S40-P8: megacap earnings refresh (Sun 22:00 ET)
+import { startMegacapEarningsRefresh } from "../services/cron/megacap-earnings-refresh.js";
+// [claude-code 2026-04-25] S40-P8: post-print enrichment scheduler
+import { startMegacapEarningsEnrichment } from "../services/cron/megacap-earnings-enrichment.js";
+// [claude-code 2026-04-25] S40-P2: news-worker maintenance — soft-delete sweep,
+// hard-delete sweep, source auto-downweight. Runs in backend-hono since it's
+// pure Supabase work (no scheduler coupling).
+import { startNewsWorkerMaintenance } from "../services/cron/news-worker-maintenance.js";
+// [claude-code 2026-04-25] S40-P6: Time-To-Print scheduler — emits SSE state
+// transitions for the TTP widget.
+import { startTimeToPrintScheduler } from "../services/time-to-print/scheduler.js";
+// [claude-code 2026-04-25] S40-P4: agency burst pollers (BLS first; BEA/FRB/
+// Census/EDGAR/Treasury wired as their modules land).
+import { startAgencyBurstScheduler } from "../services/time-to-print/agency-pollers/scheduler.js";
 import { startEconKeywordScheduler } from "../services/cron/econ-keyword-scheduler.js";
 import { startArbitrumSessionScheduler } from "../services/cron/arbitrum-session-scheduler.js";
 // [claude-code 2026-04-24] S34-T10: historical econ backfill cron
@@ -281,6 +295,26 @@ export async function bootBackground(): Promise<void> {
   // [claude-code 2026-04-19] S28: News-worker audit gates — 6:00am/11:30am/4:00pm ET, non-negotiable
   startNewsWorkerAuditScheduler();
   log.info("NewsWorkerAuditScheduler started");
+
+  // [claude-code 2026-04-25] S40-P8: megacap earnings refresh (Sunday 22:00 ET, +90d window)
+  startMegacapEarningsRefresh();
+  log.info("MegacapEarningsRefresh started");
+
+  // [claude-code 2026-04-25] S40-P8: T+5min post-print enrichment (every 5 min, scans last 6h)
+  startMegacapEarningsEnrichment();
+  log.info("MegacapEarningsEnrichment started");
+
+  // [claude-code 2026-04-25] S40-P2: news-worker maintenance crons.
+  startNewsWorkerMaintenance();
+  log.info("NewsWorkerMaintenance started");
+
+  // [claude-code 2026-04-25] S40-P6: Time-To-Print scheduler.
+  startTimeToPrintScheduler();
+  log.info("TimeToPrintScheduler started");
+
+  // [claude-code 2026-04-25] S40-P4: agency burst pollers.
+  startAgencyBurstScheduler();
+  log.info("AgencyBurstScheduler started");
 
   // [claude-code 2026-04-24] S34-T6: Econ keyword trigger — every minute, scans for
   // "Actual"/"Forecast" inside active event windows and promotes to macro_level=4.

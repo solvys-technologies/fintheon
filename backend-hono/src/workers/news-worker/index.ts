@@ -11,6 +11,12 @@ import {
   stopScheduler,
   getSchedulerSnapshot,
 } from "./scheduler.js";
+// [claude-code 2026-04-25] S40-P2: contract assertion + watchdog
+import { assertNewsWorkerContract } from "./boot.js";
+import { NEWS_WORKER_CONTRACT } from "./contract.js";
+import { startNewsWorkerWatchdog } from "./watchdog.js";
+// [claude-code 2026-04-25] S40-P3: Twitter streaming watcher (Browserbase XHR intercept)
+import { startTwitterStreamingWatcher } from "../../services/twitter/streaming-watcher.js";
 
 const PORT = Number(process.env.NEWS_WORKER_PORT ?? 8082);
 const START_AT = new Date().toISOString();
@@ -32,7 +38,26 @@ async function main() {
     writes_enabled: process.env.FLAG_NEWS_WORKER_WRITES_RISKFLOW === "true",
   });
 
+  // [claude-code 2026-04-25] S40-P2: contract assertion runs BEFORE the
+  // scheduler so any drift is logged + auto-restored before the first tick.
+  await assertNewsWorkerContract({
+    BREAKING_INTERVAL_MS: NEWS_WORKER_CONTRACT.BREAKING_INTERVAL_MS,
+    STANDARD_INTERVAL_MS: NEWS_WORKER_CONTRACT.STANDARD_INTERVAL_MS,
+  }).catch((err) => log("contract_assertion_error", { error: String(err) }));
+
   startScheduler();
+
+  // [claude-code 2026-04-25] S40-P2: watchdog. Pings /api/riskflow/health
+  // (via direct Supabase read) every 60s; restarts process if stale > 5min.
+  startNewsWorkerWatchdog();
+
+  // [claude-code 2026-04-25] S40-P3: Twitter streaming watcher — Browserbase
+  // Playwright + GraphQL XHR intercept on UserTweets/HomeLatestTimeline.
+  startTwitterStreamingWatcher().catch((err) =>
+    log("twitter_streaming_boot_error", {
+      error: err instanceof Error ? err.message : String(err),
+    }),
+  );
 
   const app = new Hono();
 

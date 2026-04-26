@@ -23,6 +23,10 @@ import { createArbitrumRoutes } from "./arbitrum/index.js";
 import { createConsulControlRoutes } from "./consul-control/index.js";
 import { createERRoutes } from "./er/index.js";
 import { createVoiceRoutes } from "./voice/index.js";
+// [claude-code 2026-04-25] S40-P1: voice sample endpoint mounted unauthed so TP
+// can curl it directly. Imported separately and registered before the
+// /api/voice auth middleware so the sample path short-circuits auth.
+import { handleVoiceSample } from "./voice/handlers.js";
 import { livekit } from "./livekit/index.js";
 import { createRegimeRoutes } from "./regimes/index.js";
 import { createMarketRegimeRoutes } from "./regime/index.js";
@@ -79,6 +83,12 @@ import { createWebPushRoutes } from "./web-push.js";
 import { createOracleRoutes } from "./oracle.js";
 import { createMeRoutes } from "./me/index.js";
 import { createMaintenanceRoutes } from "./maintenance.js";
+// [claude-code 2026-04-25] S40-P8: megacap earnings ingestion + lookahead
+import { createEarningsRoutes } from "./earnings/index.js";
+// [claude-code 2026-04-25] S40-P6: Time-To-Print eligibility lookahead
+import { createTimeToPrintRoutes } from "./time-to-print/index.js";
+// [claude-code 2026-04-25] S40-P9: Consul Browser (Browserbase remote sessions)
+import { createBrowserbaseRoutes } from "./browserbase/index.js";
 // [claude-code 2026-04-23] Routines Console retired — replaced by in-process schedulers + hooks.
 // [claude-code 2026-04-20] S21: Harper Voice integration (formerly Omi) + PsychAssist fork admin
 import { createHarperVoiceRoutes } from "./harper-voice.js";
@@ -108,6 +118,11 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/setup", createSetupRoutes());
   // Version check (public, used by auto-update prompt)
   app.route("/api/version", createVersionRoutes());
+  // [claude-code 2026-04-25] S40-P1: voice sample (public, no auth) — TP A/Bs
+  // candidate Harper voices via curl. Registered before the /api/voice auth
+  // middleware so this exact GET path is exempt while /api/voice/speak etc.
+  // remain auth-gated.
+  app.get("/api/voice/sample", handleVoiceSample);
   // Phase 2: Market routes - VIX is public
   app.route("/api/market", createMarketRoutes());
   app.route("/api/boardroom", createBoardroomRoutes());
@@ -227,6 +242,14 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/ops", createOpsRoutes());
   // Econ Intelligence — event cards, filters, KPI/instrument fuses (Track 4a/4b)
   app.route("/api/econ", createEconRoutes());
+  // [claude-code 2026-04-25] S40-P8: megacap earnings (public read, internal-trigger gated refresh)
+  app.route("/api/earnings", createEarningsRoutes());
+  // [claude-code 2026-04-25] S40-P6: Time-To-Print eligibility (public read)
+  app.route("/api/time-to-print", createTimeToPrintRoutes());
+  // [claude-code 2026-04-25] S40-P9: Consul Browser sessions — auth required.
+  app.use("/api/browserbase", authMiddleware, requireAuth);
+  app.use("/api/browserbase/*", authMiddleware, requireAuth);
+  app.route("/api/browserbase", createBrowserbaseRoutes());
   // MCP registry — live read/write of ~/.claude/mcp.json (public, local-only)
   app.route("/api/mcp", createMcpRoutes());
 

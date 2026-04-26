@@ -441,17 +441,19 @@ export async function getCatalysts(c: Context) {
       Date.now() - daysParam * 24 * 60 * 60 * 1000,
     ).toISOString();
 
-    // Fetch promoted scored items with their narrative thread links
-    // Only items with IV >= 5.0 qualify for NarrativeFlow
+    // [claude-code 2026-04-25] S40-P5: hybrid gate — IV >= 4.5 OR top-N per
+    // 24h. The hard 5.0 cutoff was rejecting Anthropic-Google class deals
+    // that scored 4.7 (correctly mid-bucket) and leaving NarrativeFlow with
+    // crickets. We pull the top 200 by iv_score within the lookback window
+    // and post-filter to the union of (iv_score >= 4.5) ∪ (top 50 in window).
     let query = sb
       .from("scored_riskflow_items")
       .select(
         "tweet_id, headline, body, symbols, tags, sentiment, iv_score, macro_level, published_at, promoted_at, category, status, price_brain_score, risk_type, market_impact, agent_note",
       )
       .not("promoted_at", "is", null)
-      .gte("iv_score", 5.0)
       .gte("published_at", lookback)
-      .order("published_at", { ascending: false })
+      .order("iv_score", { ascending: false, nullsFirst: false })
       .limit(200);
 
     if (sinceParam) {
@@ -462,8 +464,23 @@ export async function getCatalysts(c: Context) {
     if (error) throw error;
     if (!items || items.length === 0) return c.json({ catalysts: [] });
 
+    // [S40-P5] Post-filter: keep iv_score >= 4.5 OR top 50 by iv_score in
+    // the 24h window. The query is already ordered by iv_score DESC, so
+    // top-N is just the prefix.
+    const TOP_N_PER_DAY = 50;
+    const ABSOLUTE_THRESHOLD = 4.5;
+    const filtered = items.filter((it, idx) => {
+      const score = (it.iv_score as number | null) ?? 0;
+      return score >= ABSOLUTE_THRESHOLD || idx < TOP_N_PER_DAY;
+    });
+    if (filtered.length === 0) return c.json({ catalysts: [] });
+    // Re-order by published_at desc for the rendering layer.
+    filtered.sort((a, b) =>
+      (b.published_at as string).localeCompare(a.published_at as string),
+    );
+
     // Fetch narrative_card_links for these items
-    const tweetIds = items.map((i) => i.tweet_id);
+    const tweetIds = filtered.map((i) => i.tweet_id);
     const { data: links } = await sb
       .from("narrative_card_links")
       .select("card_id, thread_slug, confidence")
@@ -478,7 +495,7 @@ export async function getCatalysts(c: Context) {
     }
 
     // Map to CatalystCard-compatible shape
-    const catalysts = items.map((item) => {
+    const catalysts = filtered.map((item) => {
       const pbs = item.price_brain_score as Record<string, any> | null;
       const threads = threadMap.get(item.tweet_id) ?? [];
       const macroLevel = item.macro_level ?? 1;

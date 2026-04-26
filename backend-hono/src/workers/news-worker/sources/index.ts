@@ -4,15 +4,23 @@
 // [claude-code 2026-04-24] S34-T5: add DB-driven handle collectors — Wire in
 // Breaking tier, Macro in Standard tier — sourced from riskflow_source_accounts
 // via source-accounts-service (30s cache). Closes the Refinement Engine loop.
+// [claude-code 2026-04-25] S40-P2/P3: Reuters/Bloomberg dropped from breaking
+// (rate-limit pollution); agent-reach retired in Pillar 3 — all Twitter intake
+// flows through services/twitter/streaming-watcher.ts (Browserbase XHR
+// intercept) + services/twitter/rettiwt-fallback.ts. The handle helpers stay
+// here as a thin adapter that shells out to the new Twitter pipeline.
 
 import { collectFromBrowserHarness } from "./browser-harness.js";
 import { collectFromExa } from "./exa.js";
-import { collectFromAgentReach } from "./agent-reach.js";
 import { writeCollectedItems } from "../persist.js";
 import {
   getWireHandles,
   getMacroHandles,
 } from "../../../services/source-accounts/source-accounts-service.js";
+import {
+  collectFromTwitterPipeline,
+  type TwitterPipelineMode,
+} from "../../../services/twitter/pipeline.js";
 import type { CollectedNewsItem } from "./types.js";
 
 export interface TierRunResult {
@@ -43,28 +51,28 @@ async function safeCollect(
 
 export async function runBreakingTier(): Promise<TierRunResult> {
   const results = await Promise.all([
-    safeCollect("browser-harness", () =>
+    // Browser harness: SEC + FOMC fast paths only. Reuters/Bloomberg dropped
+    // (S40-P2) — they were eating browser-harness budget for headlines that
+    // arrive faster via the Twitter wire pool anyway.
+    safeCollect("browser-harness:fast", () =>
       collectFromBrowserHarness({
-        urls: [
-          "https://www.reuters.com/markets/",
-          "https://www.bloomberg.com/markets",
-        ],
+        urls: ["https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent"],
         tier: "breaking",
       }),
     ),
-    safeCollect("agent-reach", () =>
-      collectFromAgentReach({
-        rssFeeds: [
-          "https://feeds.reuters.com/reuters/marketsNews",
-          "https://feeds.bloomberg.com/markets/news.rss",
-        ],
-        tier: "breaking",
-      }),
-    ),
-    safeCollect("agent-reach:wire-handles", async () => {
+    // [S40-P3] Twitter pipeline — Browserbase XHR intercept primary,
+    // rettiwt-api guest-mode fallback, $-flag commercial firehose emergency.
+    safeCollect("twitter:wire", async () => {
       const handles = await getWireHandles();
       if (handles.length === 0) return [];
-      return collectFromAgentReach({ handles, tier: "breaking" });
+      return collectFromTwitterPipeline({ handles, tier: "breaking" });
+    }),
+    safeCollect("twitter:macro", async () => {
+      // [S40-P2] Promoted to breaking — the 8 Macro handles drive the
+      // econ-print storyline and beat any RSS feed by 5-10 seconds.
+      const handles = await getMacroHandles();
+      if (handles.length === 0) return [];
+      return collectFromTwitterPipeline({ handles, tier: "breaking" });
     }),
   ]);
 
@@ -91,19 +99,16 @@ export async function runStandardTier(): Promise<TierRunResult> {
         tier: "standard",
       }),
     ),
-    safeCollect("agent-reach", () =>
-      collectFromAgentReach({
-        rssFeeds: [
-          "https://www.sec.gov/rss/news/press.xml",
-          "https://home.treasury.gov/news/press-releases/feed",
-        ],
-        tier: "standard",
-      }),
-    ),
-    safeCollect("agent-reach:macro-handles", async () => {
+    // Standard-tier Twitter handles cover lower-frequency commentators
+    // (whose iv-score average is moderate). Keep the cadence at 1h.
+    safeCollect("twitter:standard", async () => {
       const handles = await getMacroHandles();
       if (handles.length === 0) return [];
-      return collectFromAgentReach({ handles, tier: "standard" });
+      return collectFromTwitterPipeline({
+        handles,
+        tier: "standard",
+        mode: "fallback-only" as TwitterPipelineMode,
+      });
     }),
   ]);
 

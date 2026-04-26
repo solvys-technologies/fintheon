@@ -1,3 +1,9 @@
+---
+name: oracle
+primary_sector: Macro
+secondary_sectors: [Liquidity]
+---
+
 # Oracle — Extra Dossier (Domain Detail)
 
 ## Worldview

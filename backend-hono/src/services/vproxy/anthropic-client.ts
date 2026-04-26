@@ -201,6 +201,8 @@ const AUTO_APPROVED_TOOLS = new Set([
   "read_file",
   "read_mcp_config",
   "get_fintheon_paths",
+  // [claude-code 2026-04-25] S40-P9: consul_browser auto-approved for Harper.
+  "consul_browser",
 ]);
 
 const PROJECT_ROOT = resolve(

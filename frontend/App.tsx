@@ -18,6 +18,8 @@ import { RiskFlowProvider } from "./contexts/RiskFlowContext";
 import { ContextBankProvider } from "./contexts/ContextBankContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { VoiceProvider } from "./contexts/VoiceContext";
+// [claude-code 2026-04-25] S40-P9: Consul Browser session context.
+import { ConsulBrowserProvider } from "./contexts/ConsulBrowserContext";
 import { VoiceRimFrame } from "./components/voice/VoiceRimFrame";
 import { ERProvider } from "./contexts/ERContext";
 import { MainLayout } from "./components/layout/MainLayout";
@@ -172,6 +174,7 @@ function AuthGate() {
                       <ContextBankProvider>
                         <ThreadProvider>
                           <VoiceProvider>
+                            <ConsulBrowserProvider>
                             <ERProvider>
                               <div className="dark">
                                 <VoiceRimFrame />
@@ -219,6 +222,7 @@ function AuthGate() {
                                 <PreMarketReminder />
                               </div>
                             </ERProvider>
+                            </ConsulBrowserProvider>
                           </VoiceProvider>
                         </ThreadProvider>
                       </ContextBankProvider>

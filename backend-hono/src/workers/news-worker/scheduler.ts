@@ -1,13 +1,15 @@
 // [claude-code 2026-04-19] S27-T7 (W2d): scheduler — two tiers.
-// Breaking (60s): Reuters, Bloomberg, X/Twitter via browser-harness.
-// Standard (5m): SEC, FOMC, newsletters via Exa + RSS + AgentReach scrape.
-// Upserts heartbeats per tier so /api/diagnostics can show news_worker_age_seconds.
+// [claude-code 2026-04-25] S40-P2: cadence locked — see NEWS_WORKER_CONTRACT.md.
+//   Breaking 60s → 180s, Standard 5m → 1h. Reuters/Bloomberg dropped from
+//   breaking; promoted Macro Twitter handles take their slot. Boot-time
+//   assertion in boot.ts overrides drift before this scheduler starts.
 
 import { runBreakingTier, runStandardTier } from "./sources/index.js";
 import { upsertHeartbeat } from "./persist.js";
+import { NEWS_WORKER_CONTRACT } from "./contract.js";
 
-const BREAKING_INTERVAL_MS = 60_000;
-const STANDARD_INTERVAL_MS = 5 * 60_000;
+const BREAKING_INTERVAL_MS = NEWS_WORKER_CONTRACT.BREAKING_INTERVAL_MS;
+const STANDARD_INTERVAL_MS = NEWS_WORKER_CONTRACT.STANDARD_INTERVAL_MS;
 
 interface TierState {
   tier: "breaking" | "standard";
