@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T17:50:00",
+    agent: "claude-code",
+    summary:
+      "S45 Wave 2 unification: T1 (data/brain) and T2 (surfaces) merged on s45-day-card, type parity validated across backend/frontend/mobile day-plan.ts (shape-identical, mobile drops JSDoc per separate-bundle convention), full validation suite green — backend tsc + bun build, frontend tsc + clean vite build, mobile tsc + clean vite build. Migration 20260426161822_day_plan_tables.sql confirmed pushed to Supabase (4 tables + RLS). Local smoke pass on /api/day-plan/{today,week} (200 with real plan + 5-day window scheduler output); /streak, /drift-status, /feedback correctly auth-gated (401). Trades.user_id forward-fix verified in projectx-sync + autopilot/autopilot-scheduler (PROJECTX_USER_ID || SYSTEM_USER_ID resolve). One-time backfill script scripts/backfill-trades-user-id.ts shipped; execution deferred until TP provisions SYSTEM_USER_ID in Fly secrets (script supports --dry-run + --user-id flag). Browser Harness Playwright pass deferred to /solvys-deploy step. Open: TV Computer Use cost envelope to be proposed to TP post-PR.",
+    files: [
+      "backend-hono/scripts/backfill-trades-user-id.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-26T19:30:00",
     agent: "claude-code",
     summary:
