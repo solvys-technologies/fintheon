@@ -130,16 +130,16 @@ const HERMES_AGENTS: Record<
   },
 };
 
-// [claude-code 2026-04-26] S35-T12: Every Hermes-routed agent — INCLUDING
-// harper-cao + cao-approval + cao-consolidation — now resolves to
-// qwen3.5:397b-cloud via Ollama Cloud. OpenRouter is no longer in the
-// resolution path. The legacy Claude-Opus OpenRouter rung was retired per
-// TP: "There shouldn't be any openrouter instances. They should all route
-// thru the ollama cloud provider via hermes."
+// [claude-code 2026-04-26] S35-T13: Arbitrum seats now bind the original
+// 5-seat framework (Lead/Forecaster/Risk/Quant/Bear) to PIC's actual agent
+// personas with cross-family Ollama Cloud diversity. Harper-CAO's seat
+// alone runs on VProxy → claude-opus-4-7 (free via Claude Code subscription)
+// because synthesis is its native role. Sub-agent task keys remain on
+// qwen3.5:397b-cloud per S35-T11.
 export const HERMES_TASK_MODEL_MAP: Record<string, string> = {
-  "harper-cao": "qwen3.5:397b-cloud",
-  "cao-approval": "qwen3.5:397b-cloud",
-  "cao-consolidation": "qwen3.5:397b-cloud",
+  "harper-cao": "claude-opus-4-7",
+  "cao-approval": "claude-opus-4-7",
+  "cao-consolidation": "claude-opus-4-7",
   "pma-merged": "qwen3.5:397b-cloud",
   "prediction-market": "qwen3.5:397b-cloud",
   "futures-desk": "qwen3.5:397b-cloud",
@@ -149,20 +149,27 @@ export const HERMES_TASK_MODEL_MAP: Record<string, string> = {
   "earnings-analysis": "qwen3.5:397b-cloud",
   "tech-mega-cap": "qwen3.5:397b-cloud",
   herald: "qwen3.5:397b-cloud",
-  "arbitrum-seat-lead": "qwen3.5:397b-cloud",
+  "arbitrum-seat-lead": "claude-opus-4-7",
   "arbitrum-seat-forecaster": "qwen3.5:397b-cloud",
-  "arbitrum-seat-risk": "qwen3.5:397b-cloud",
-  "arbitrum-seat-quant": "qwen3.5:397b-cloud",
+  "arbitrum-seat-risk": "minimax-m2.7:cloud",
+  "arbitrum-seat-quant": "mistral-large-3:675b-cloud",
   "arbitrum-seat-bear": "qwen3.5:397b-cloud",
 };
 
-// [claude-code 2026-04-26] S35-T12: Provider-routing abstraction collapsed
-// to ollama-only at the Hermes/Arbitrum layer. Groq retained as an explicit
-// alternate that callers can pin via ARBITRUM_MODEL_PROVIDER_MAP if needed.
-export type ArbitrumProvider = "ollama" | "groq";
+// [claude-code 2026-04-26] S35-T13: Added "vproxy" provider so Harper's
+// Arbitrum seat can route through the local Claude Code subscription
+// (free Opus 4.7) instead of Ollama Cloud. Groq retained as an explicit
+// alternate. OpenRouter remains stripped.
+export type ArbitrumProvider = "ollama" | "vproxy" | "groq";
 
 const ARBITRUM_MODEL_PROVIDER_MAP: Record<string, ArbitrumProvider> = {
   "qwen3.5:397b-cloud": "ollama",
+  "minimax-m2.7:cloud": "ollama",
+  "mistral-large-3:675b-cloud": "ollama",
+  "deepseek-v3.2:cloud": "ollama",
+  "claude-opus-4-7": "vproxy",
+  "claude-opus-4-6": "vproxy",
+  "claude-sonnet-4-6": "vproxy",
 };
 
 export function resolveProvider(modelId: string): ArbitrumProvider {

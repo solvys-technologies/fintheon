@@ -9,8 +9,11 @@ import {
 } from "../supabase-service.js";
 import type { ArbitrumEconContext, ArbitrumEconPrintLine } from "./types.js";
 
-const DEFAULT_WINDOW_DAYS = 21;
-const DEFAULT_UPCOMING_DAYS = 7;
+// [claude-code 2026-04-26] S35-T13: Window bumped to 30d back / 5d forward
+// per TP — chamber must reason against the full 30-day macro tape and project
+// 5 days out. Forward window matches the seat output schema's forward_5d field.
+const DEFAULT_WINDOW_DAYS = 30;
+const DEFAULT_UPCOMING_DAYS = 5;
 
 function parseNumeric(v: unknown): number | null {
   if (v == null) return null;

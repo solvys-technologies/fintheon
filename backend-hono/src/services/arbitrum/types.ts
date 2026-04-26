@@ -23,12 +23,22 @@ export interface ArbitrumSeatConfig {
   fallback?: ArbitrumSeatFallback;
 }
 
+// [claude-code 2026-04-26] S35-T13: forward_5d added so seats project
+// 5 days out from the current chamber question. Optional for backwards
+// compat; older verdicts may lack it.
+export interface ArbitrumForward5d {
+  thesis: string;
+  catalysts_to_watch: string[];
+  confidence: number;
+}
+
 export interface ArbitrumSeatRound {
   round: number;
   probability: number;
   confidence: number;
   rationale: string;
   risks: string[];
+  forward_5d?: ArbitrumForward5d | null;
 }
 
 export interface ArbitrumSeatTranscript {
@@ -67,12 +77,34 @@ export interface ArbitrumEconContext {
   }>;
 }
 
+// [claude-code 2026-04-26] S35-T13: 30d RiskFlow tape + recent verdicts
+// fed into every chamber run so seats reason against the full landscape.
+export interface ArbitrumNewsContextRef {
+  windowDays: number;
+  riskflow: Array<{
+    date: string | null;
+    iv: number | null;
+    speaker: string | null;
+    source: string | null;
+    headline: string;
+  }>;
+  verdicts: Array<{
+    date: string | null;
+    category: string | null;
+    question: string;
+    consensus: number | null;
+    confidence: number | null;
+    dissent: string | null;
+  }>;
+}
+
 export interface ArbitrumDeliberateInput {
   question: string;
   category: string;
   context?: string;
   iv_simulation?: ArbitrumIvSimulation | null;
   econ_context?: ArbitrumEconContext | null;
+  news_context?: ArbitrumNewsContextRef | null;
 }
 
 export interface ArbitrumDissent {

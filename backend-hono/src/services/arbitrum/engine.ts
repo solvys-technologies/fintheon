@@ -12,6 +12,7 @@ import { synthesize } from "./facilitator.js";
 import { computeGates } from "./gates.js";
 import { saveVerdict } from "./verdict-store.js";
 import { loadArbitrumEconContext } from "./econ-context.js";
+import { loadArbitrumNewsContext } from "./news-context.js";
 import type {
   ArbitrumDeliberateInput,
   ArbitrumSeatRound,
@@ -68,18 +69,33 @@ export async function runChamber(
   const t0 = Date.now();
   const rounds = clampRounds(opts.rounds);
 
-  // Load recent econ prints + upcoming releases so every seat reasons over the
-  // same data the Aquarium event-card surfaces. Caller-supplied context wins.
-  const econ_context =
+  // [claude-code 2026-04-26] S35-T13: every chamber run loads BOTH the 30d
+  // econ tape and the 30d RiskFlow tape (top by IV) + last few verdicts, so
+  // seats reason against the full landscape, not just the triggering catalyst.
+  // Caller-supplied context wins; missing fields trigger autoload.
+  const [econ_context, news_context] = await Promise.all([
     input.econ_context !== undefined
-      ? input.econ_context
-      : await loadArbitrumEconContext().catch((err) => {
+      ? Promise.resolve(input.econ_context)
+      : loadArbitrumEconContext().catch((err) => {
           log.warn("Econ context load failed — proceeding without it", {
             error: err instanceof Error ? err.message : String(err),
           });
           return null;
-        });
-  const enrichedInput: ArbitrumDeliberateInput = { ...input, econ_context };
+        }),
+    input.news_context !== undefined
+      ? Promise.resolve(input.news_context)
+      : loadArbitrumNewsContext().catch((err) => {
+          log.warn("News context load failed — proceeding without it", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+          return null;
+        }),
+  ]);
+  const enrichedInput: ArbitrumDeliberateInput = {
+    ...input,
+    econ_context,
+    news_context,
+  };
 
   const transcripts: ArbitrumSeatTranscript[] = ARBITRUM_SEATS.map((seat) => ({
     id: seat.id,
@@ -103,11 +119,23 @@ export async function runChamber(
             .join("\n---\n")
         : undefined;
 
-    const results = await Promise.all(
-      ARBITRUM_SEATS.map((seat) =>
-        invokeMoA(seat, enrichedInput, { round, peerDraftsSummary }),
-      ),
-    );
+    // [claude-code 2026-04-26] S35-T13: seats run in batches of 2 to stay
+    // under Ollama Cloud's concurrent-request cap. Earlier full-parallel
+    // runs hit "429 too many concurrent requests" on free tier. Each seat's
+    // L1 MoA still fires its 2 cross-family drafts in parallel inside the
+    // batch — so 2 seats × (1 L2 + 2 L1) = ≤6 concurrent calls peak, well
+    // under the cap.
+    const SEAT_BATCH_SIZE = 2;
+    const results: ArbitrumSeatRound[] = [];
+    for (let i = 0; i < ARBITRUM_SEATS.length; i += SEAT_BATCH_SIZE) {
+      const batch = ARBITRUM_SEATS.slice(i, i + SEAT_BATCH_SIZE);
+      const batchResults = await Promise.all(
+        batch.map((seat) =>
+          invokeMoA(seat, enrichedInput, { round, peerDraftsSummary }),
+        ),
+      );
+      results.push(...batchResults);
+    }
 
     for (let i = 0; i < transcripts.length; i++) {
       transcripts[i].rounds.push(results[i]);

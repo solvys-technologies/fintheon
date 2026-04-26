@@ -1,12 +1,16 @@
-// [claude-code 2026-04-26] S35-T12: Provider adapters for Arbitrum seats.
-// Every seat routes through Ollama Cloud (qwen3.5:397b-cloud). Groq remains
-// available as an explicit alternate provider. OpenRouter has been removed
-// from this layer — every Hermes-routed agent (including harper-cao) now
-// resolves to Ollama Cloud.
+// [claude-code 2026-04-26] S35-T13: Provider adapters for Arbitrum seats.
+// Three free providers:
+//   - ollama  → Ollama Cloud (cross-family models via local `:cloud` proxy)
+//   - vproxy  → Claude Code subscription (claude-opus-4-7 via local CLI)
+//   - groq    → explicit alternate when a model id is mapped to it
+// OpenRouter is permanently removed from this layer.
 
 import { resolveProvider, type ArbitrumProvider } from "../hermes-service.js";
 
-const DEFAULT_TIMEOUT_MS = 18_000;
+// [claude-code 2026-04-26] S35-T13: bumped 18s → 90s. Cloud reasoning models
+// (qwen3.5:397b, deepseek-v3.2, mistral-large-3) routinely take 20-60s for
+// the reasoning phase before content emits. 18s aborted them mid-thought.
+const DEFAULT_TIMEOUT_MS = 90_000;
 
 export interface SeatChatRequest {
   modelId: string;
@@ -81,6 +85,21 @@ async function ollamaChat(req: SeatChatRequest): Promise<string> {
   return data.message?.content ?? "";
 }
 
+async function vproxyChat(req: SeatChatRequest): Promise<string> {
+  // VProxy → claude-opus-4-7 via the local Claude Code subscription. The
+  // generateTextViaClaude helper accepts a single prompt, so we synthesize
+  // system+user into one input and forward.
+  const { generateTextViaClaude } = await import(
+    "../claude-sdk/process-manager.js"
+  );
+  const prompt = `${req.system}\n\n${req.user}`;
+  const text = await generateTextViaClaude(prompt, {
+    model: req.modelId,
+    timeoutMs: req.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+  });
+  return text ?? "";
+}
+
 async function groqChat(req: SeatChatRequest): Promise<string> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new ProviderUnavailable("GROQ_API_KEY not set");
@@ -117,6 +136,8 @@ export async function seatChat(req: SeatChatRequest): Promise<SeatChatResult> {
     switch (provider) {
       case "ollama":
         return ollamaChat(req);
+      case "vproxy":
+        return vproxyChat(req);
       case "groq":
         return groqChat(req);
       default: {
