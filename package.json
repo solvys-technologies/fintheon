@@ -1,6 +1,6 @@
 {
   "name": "fintheon",
-  "version": "5.32.0",
+  "version": "5.32.1",
   "type": "module",
   "packageManager": "bun",
   "dependencies": {
@@ -60,9 +60,9 @@
     "frontend:install": "cd frontend && bun install",
     "frontend:build": "cd frontend && bun run build",
     "desktop:build": "bun run frontend:build && electron-builder --mac dmg",
-    "release:mac": "bun run frontend:build && cd backend-hono && bun run build && cd .. && bunx electron-builder --mac dmg",
+    "release:mac": "bun run frontend:build && cd backend-hono && bun run build && cd .. && bunx electron-builder --mac dmg --publish always",
     "frontend:build:windows": "cd frontend && bun run build:windows",
-    "release:win": "bun run frontend:build:windows && bunx electron-builder --win nsis --publish never",
+    "release:win": "bun run frontend:build:windows && bunx electron-builder --win nsis --publish always",
     "release": "bash scripts/build-release.sh",
     "setup": "bun run scripts/setup.ts",
     "update": "bun run scripts/update.ts"

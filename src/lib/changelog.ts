@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T20:45:00",
+    agent: "claude-code",
+    summary:
+      "v5.32.1 — SOTA auto-update flow. Electron-updater autoDownload back to true (silent background fetch from GitHub release); autoInstallOnAppQuit STAYS false to prevent the v5.29.3 auto-close regression. New renderer behavior in VersionChecker.tsx: when running inside Electron, subscribe to onUpdateDownloaded — show a single 'Fintheon update ready / Relaunch to apply' toast with a Relaunch CTA; clicking it calls window.electron.installUpdate() which runs autoUpdater.quitAndInstall(false, true) and restarts on the new version. Web/PWA path retains the existing version-check polling + Reload CTA as a fallback. release:mac + release:win bumped to --publish always so latest-mac.yml + latest.yml + .blockmap files land on the GH release alongside the DMG/EXE — without those metadata files, the updater client has nothing to compare against and silently no-ops.",
+    files: [
+      "electron/main.cjs",
+      "frontend/components/VersionChecker.tsx",
+      "package.json",
+      "scripts/fintheon-update.sh",
+    ],
+  },
+  {
     date: "2026-04-26T20:30:00",
     agent: "claude-code",
     summary:
