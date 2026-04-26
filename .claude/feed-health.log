@@ -602,3 +602,4 @@
 [2026-04-26T07:05:15Z] status=healthy cache=500 poller=True scorer=True unscored=1027 newest=2026-04-26T07:03:45.817Z itemAge=0.0h cacheAge=32504ms rateLimited=False
 [2026-04-26T07:15:52Z] status=healthy cache=500 poller=True scorer=True unscored=1095 newest=2026-04-26T07:03:45.817Z itemAge=0.2h cacheAge=54922ms rateLimited=False
 [2026-04-26T07:22:58Z] status=stale cache=500 poller=True scorer=True unscored=1089 newest=2026-04-25T18:35:46.003Z itemAge=12.8h cacheAge=422688ms rateLimited=False
+[2026-04-26T07:23:04Z] status=healthy cache=500 poller=True scorer=True unscored=1082 newest=2026-04-26T00:25:18.000Z itemAge=7.0h cacheAge=4373ms rateLimited=False
