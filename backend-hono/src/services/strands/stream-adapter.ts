@@ -1,3 +1,4 @@
+// [claude-code 2026-04-25] S42-T1: extend UIEvent with thinking/tool_call/citation/artifact/complete; wire emission of thinking + tool_call + complete (additive, backwards-compatible)
 // [claude-code 2026-04-05] Strands → UIMessageStream SSE adapter
 // Encodes UIMessageStream events directly as SSE bytes in a single ReadableStream.
 // Avoids pipeThrough(TransformStream) which causes ERR_INCOMPLETE_CHUNKED_ENCODING in Bun.
@@ -9,7 +10,15 @@ import type { HermesAgentId } from "../agent-bus/types.js";
 const log = createLogger("StrandsStream");
 
 /**
- * UIMessageStream event types expected by @assistant-ui/react
+ * UIMessageStream event types expected by @assistant-ui/react.
+ *
+ * [S42-T1] The variants below `error` are additive Fintheon extensions.
+ * Frontend consumers ignore unknown event types until the matching track wires them up:
+ *   thinking   — reasoning-token stream for the thinking-trace surface (T3)
+ *   tool_call  — tool-use lifecycle pill with running/done/failed status (T3)
+ *   citation   — RiskFlow / SEC fetcher / Arbitrum source chip (T3)
+ *   artifact   — out-of-band payload for TradingView / Browserbase / report cards (T4)
+ *   complete   — message footer with latency_ms / source_count / model / token counts (T2)
  */
 type UIEvent =
   | { type: "start"; messageId: string }
@@ -22,7 +31,35 @@ type UIEvent =
   | { type: "reasoning-end"; id: string }
   | { type: "finish-step" }
   | { type: "finish"; finishReason: string }
-  | { type: "error"; errorText: string };
+  | { type: "error"; errorText: string }
+  | { type: "thinking"; token: string }
+  | {
+      type: "tool_call";
+      id: string;
+      name: string;
+      status: "pending" | "running" | "done" | "failed";
+      duration_ms?: number;
+    }
+  | {
+      type: "citation";
+      id: number;
+      source: string;
+      url?: string;
+      snippet?: string;
+    }
+  | {
+      type: "artifact";
+      kind: "tradingview" | "browserbase" | "report" | "citation";
+      payload: Record<string, unknown>;
+    }
+  | {
+      type: "complete";
+      latency_ms?: number;
+      source_count?: number;
+      model?: string;
+      prompt_tokens?: number;
+      completion_tokens?: number;
+    };
 
 const encoder = new TextEncoder();
 const SSE_HEARTBEAT = encoder.encode(": heartbeat\n\n");
@@ -47,15 +84,22 @@ export function strandsToUIStream(
     onFinish?: (text: string) => Promise<void>;
     /** When set, each SSE event payload includes `agentId` for multi-stream merger labelling */
     agentId?: HermesAgentId;
+    /** [S42-T1] Surfaces in the `complete` event footer */
+    model?: string;
+    /** [S42-T1] Number of citation sources injected into the prompt this turn */
+    sourceCount?: number;
   },
 ): ReadableStream<Uint8Array> {
   const messageId = options?.messageId ?? `msg-${Date.now()}`;
   const agentId = options?.agentId;
+  const model = options?.model;
+  const sourceCount = options?.sourceCount;
   let cancelled = false;
 
   return new ReadableStream<Uint8Array>({
     start(controller) {
       (async () => {
+        const startTime = Date.now();
         let fullText = "";
         let stepCount = 0;
         let textStarted = false;
@@ -64,6 +108,10 @@ export function strandsToUIStream(
         let currentTextId = "";
         let currentReasoningId = "";
         let inToolPhase = false;
+        let promptTokens: number | undefined;
+        let completionTokens: number | undefined;
+        // [S42-T1] Track open tool_call lifecycles so we can pair start→done with duration_ms
+        const toolStarts = new Map<string, { name: string; startedAt: number }>();
 
         // Heartbeat timer — keeps Bun/Chrome from dropping the connection during tool-call silences
         const heartbeat = setInterval(() => {
@@ -175,11 +223,52 @@ export function strandsToUIStream(
                     id: currentReasoningId,
                     delta: delta.text,
                   });
+                  // [S42-T1] Mirror provider reasoning tokens onto the new
+                  // `thinking` channel so T3 can render the thinking trace
+                  // without coupling to the legacy reasoning-* events.
+                  emit({ type: "thinking", token: delta.text });
                 }
+              } else if (
+                inner.type === "modelContentBlockStartEvent" &&
+                inner.start?.toolUse
+              ) {
+                // [S42-T1] Tool lifecycle start — emit running pill
+                const tu = inner.start.toolUse;
+                const tid = String(tu.toolUseId ?? `tool-${Date.now()}`);
+                const tname = String(tu.name ?? "tool");
+                toolStarts.set(tid, { name: tname, startedAt: Date.now() });
+                emit({
+                  type: "tool_call",
+                  id: tid,
+                  name: tname,
+                  status: "running",
+                });
+              } else if (
+                inner.type === "messageMetadataEvent" &&
+                inner.usage
+              ) {
+                // [S42-T1] Capture token counts for the `complete` footer
+                const u = inner.usage;
+                if (typeof u.inputTokens === "number") promptTokens = u.inputTokens;
+                if (typeof u.outputTokens === "number") completionTokens = u.outputTokens;
               }
             } else if (ev.type === "toolResultEvent") {
               log.info("Tool result", { tool: ev.result?.toolName });
               inToolPhase = true;
+              // [S42-T1] Tool lifecycle end — emit done/failed pill with duration
+              const tid = String(ev.result?.toolUseId ?? "");
+              const open = tid ? toolStarts.get(tid) : undefined;
+              const duration_ms = open ? Date.now() - open.startedAt : undefined;
+              const status: "done" | "failed" =
+                ev.result?.status === "error" ? "failed" : "done";
+              emit({
+                type: "tool_call",
+                id: tid || `tool-${Date.now()}`,
+                name: String(ev.result?.toolName ?? open?.name ?? "tool"),
+                status,
+                ...(duration_ms !== undefined ? { duration_ms } : {}),
+              });
+              if (tid) toolStarts.delete(tid);
             }
           }
         } catch (err) {
@@ -188,6 +277,16 @@ export function strandsToUIStream(
 
           closeStep();
           emit({ type: "error", errorText });
+          // [S42-T1] Footer fires on error path too so the UI can still render
+          // latency / model in the message footer when a stream half-completes.
+          emit({
+            type: "complete",
+            latency_ms: Date.now() - startTime,
+            ...(model !== undefined ? { model } : {}),
+            ...(sourceCount !== undefined ? { source_count: sourceCount } : {}),
+            ...(promptTokens !== undefined ? { prompt_tokens: promptTokens } : {}),
+            ...(completionTokens !== undefined ? { completion_tokens: completionTokens } : {}),
+          });
           emit({ type: "finish-step" });
           emit({ type: "finish", finishReason: "error" });
 
@@ -199,6 +298,16 @@ export function strandsToUIStream(
 
         // Clean close
         closeStep();
+        // [S42-T1] Message footer event — fields are all optional so older
+        // frontends that don't recognise the type discard it harmlessly.
+        emit({
+          type: "complete",
+          latency_ms: Date.now() - startTime,
+          ...(model !== undefined ? { model } : {}),
+          ...(sourceCount !== undefined ? { source_count: sourceCount } : {}),
+          ...(promptTokens !== undefined ? { prompt_tokens: promptTokens } : {}),
+          ...(completionTokens !== undefined ? { completion_tokens: completionTokens } : {}),
+        });
         emit({ type: "finish", finishReason: "stop" });
 
         if (options?.onFinish) {
