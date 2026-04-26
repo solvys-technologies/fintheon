@@ -1,6 +1,10 @@
+// [claude-code 2026-04-25] S42-T7 mount-perf: chat-web mount telemetry markers wired
+// at component-top (markMountStart) and right after composer first paints
+// (markComposerVisible via useLayoutEffect+rAF). isHydrating from useHermesRuntime
+// gates HistorySkeletonList in FintheonThread and emits markHistoryReady.
 // [claude-code 2026-03-29] S9-T5: Replace checkpoint sidebar with real conversation history, Take Note button
 // [claude-code 2026-03-28] S8-T7: Dual-pane layout (left=conversation, right=artifacts) for Chat
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useLayoutEffect } from "react";
 import { X, Layers } from "lucide-react";
 import {
   AssistantRuntimeProvider,
@@ -15,6 +19,11 @@ import { FintheonComposer } from "./chat/FintheonComposer";
 import { SKILL_PREFIXES } from "../lib/skillPrefixes";
 import QuickFintheonModal from "./analysis/QuickFintheonModal";
 import { useFeatureFlags } from "../hooks/useFeatureFlags";
+import {
+  markComposerVisible,
+  markHistoryReady,
+  markMountStart,
+} from "../lib/mountTelemetry";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -27,6 +36,7 @@ function ChatInterfaceInner({
   setThinkHarder,
   lastRequestId,
   dualPane = false,
+  isHydrating,
 }: {
   conversationId: string | undefined;
   setConversationId: (id: string) => void;
@@ -36,6 +46,7 @@ function ChatInterfaceInner({
   setThinkHarder: (v: boolean) => void;
   lastRequestId: string | null;
   dualPane?: boolean;
+  isHydrating?: boolean;
 }) {
   const { activeAgent } = useFintheonAgents();
   const runtime = useThreadRuntime();
@@ -47,6 +58,40 @@ function ChatInterfaceInner({
   const [showQuickFintheonModal] = useState(false);
   const [showArtifacts, setShowArtifacts] = useState(false);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const composerRef = useRef<HTMLDivElement>(null);
+
+  // S42-T7: stamp composer-visible after the composer has actually painted.
+  // useLayoutEffect runs after DOM mutation but before browser paint — the rAF
+  // double-tick pushes the mark to immediately after the first frame is on
+  // screen, which is the value the brief asks us to measure.
+  useLayoutEffect(() => {
+    let raf1 = 0;
+    let raf2 = 0;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        if (composerRef.current) markComposerVisible("chat-web");
+      });
+    });
+    return () => {
+      if (raf1) cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
+  }, []);
+
+  // S42-T7: history skeleton ⇒ content swap. Stamps once when isHydrating
+  // transitions to false (i.e. /api/ai/conversations/:id has resolved). If
+  // there was no stored conversationId, isHydrating stays false and the
+  // 5s fallback inside mountTelemetry will drain with historyMs=null.
+  const hadHydrationRef = useRef(false);
+  useEffect(() => {
+    if (isHydrating) {
+      hadHydrationRef.current = true;
+      return;
+    }
+    if (hadHydrationRef.current) {
+      markHistoryReady("chat-web");
+    }
+  }, [isHydrating]);
 
   const handleSend = useCallback(
     (msg: string) => {
@@ -132,6 +177,7 @@ function ChatInterfaceInner({
             messageRefs={messageRefs}
             lastError={lastError}
             lastRequestId={lastRequestId}
+            isHydrating={isHydrating}
           />
           {/* Subtle fade above composer — matches Boardroom style */}
           <div
@@ -142,7 +188,7 @@ function ChatInterfaceInner({
                 "linear-gradient(to bottom, transparent 0%, var(--fintheon-bg) 100%)",
             }}
           />
-          <div className="relative z-20 shrink-0">
+          <div ref={composerRef} className="relative z-20 shrink-0">
             <FintheonComposer
               thinkHarder={thinkHarder}
               setThinkHarder={setThinkHarder}
@@ -198,6 +244,9 @@ export default function ChatInterface({
 }: {
   surfaceId?: string;
 }) {
+  // S42-T7: stamp mount-start before any hooks fire so the relative timings
+  // include hook-init cost (useHermesRuntime → useHermesChat → useChat).
+  markMountStart("chat-web");
   const { activeAgent } = useFintheonAgents();
   const [thinkHarderState, setThinkHarderState] = useState(false);
   const {
@@ -207,6 +256,7 @@ export default function ChatInterface({
     clearConversationId,
     lastError,
     lastRequestId,
+    isHydrating,
   } = useHermesRuntime(
     activeAgent?.id ?? "default",
     thinkHarderState,
@@ -227,6 +277,7 @@ export default function ChatInterface({
         setThinkHarder={setThinkHarderState}
         lastRequestId={lastRequestId}
         dualPane={isDualPane}
+        isHydrating={isHydrating}
       />
     </AssistantRuntimeProvider>
   );

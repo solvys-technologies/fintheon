@@ -10,7 +10,7 @@
 // [claude-code 2026-03-12] Switched from independent useVoiceAssistant() to shared VoiceContext
 // [claude-code 2026-04-11] S14-T5: Headline attachment via HeadlinePickerPopover + context injection
 // [claude-code 2026-03-22] Track 4: persona pills → PersonaDropdown, Plug2+Wrench → ToolsDropdown
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useThread, useThreadRuntime } from "@assistant-ui/react";
 import { Radio, Unplug, Loader2 } from "lucide-react";
 import { PromptBox } from "../ui/chatgpt-prompt-input";
@@ -140,10 +140,15 @@ export function FintheonComposer({
     setHeadlineChips([]);
   }, []);
 
-  // Fetch skills from backend — merge with prop-level disabled skills
+  // [claude-code 2026-04-25] S42-T7 mount-perf: deferred to idle so it can't
+  // contend with first paint of the composer. The disabled-skills map is only
+  // consulted by the skills picker, which is hidden by default — fetching at
+  // mount was pure mount-cost for zero immediate benefit. We also force-fetch
+  // the first time the picker opens, so users who open it in the first ~50ms
+  // still see fresh data.
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const run = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/ai/skills`);
         if (!res.ok) return;
@@ -158,11 +163,58 @@ export function FintheonComposer({
       } catch {
         // Skills endpoint not available — use prop defaults
       }
+    };
+    const idle =
+      (window as unknown as {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      }).requestIdleCallback;
+    let idleHandle: number | undefined;
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+    if (typeof idle === "function") {
+      idleHandle = idle(() => void run(), { timeout: 1500 });
+    } else {
+      timeoutHandle = setTimeout(() => void run(), 200);
+    }
+    return () => {
+      cancelled = true;
+      if (
+        idleHandle !== undefined &&
+        typeof (window as unknown as { cancelIdleCallback?: (h: number) => void })
+          .cancelIdleCallback === "function"
+      ) {
+        (window as unknown as { cancelIdleCallback: (h: number) => void })
+          .cancelIdleCallback(idleHandle);
+      }
+      if (timeoutHandle !== undefined) clearTimeout(timeoutHandle);
+    };
+  }, []);
+
+  // Force-fetch on first picker open in case the idle tick hasn't fired yet.
+  const skillsFreshRef = useRef(false);
+  useEffect(() => {
+    if (!showSkills || skillsFreshRef.current) return;
+    skillsFreshRef.current = true;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/ai/skills`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const disabled: Record<string, { reason: string }> = {};
+        for (const skill of data.skills ?? []) {
+          if (!skill.enabled) {
+            disabled[skill.id] = { reason: skill.reason ?? "Disabled" };
+          }
+        }
+        if (!cancelled) setApiDisabledSkills(disabled);
+      } catch {
+        /* ignore */
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [showSkills]);
 
   const mergedDisabledSkills = { ...apiDisabledSkills, ...propDisabledSkills };
 
