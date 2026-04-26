@@ -1,4 +1,8 @@
-import { useState, useEffect } from "react";
+// [claude-code 2026-04-25] v5.29.2 hotfix: replaced the pulsing gold dot with
+//   the Nothing-design AiLoader (segmented horizontal indeterminate fuse) and
+//   re-keyed all colors to --fintheon-accent / --fintheon-text so the strip is
+//   theme-sensitive. Pane label updated from "thinking pane" to "Thought".
+import { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 const THINKING_PHRASES = [
@@ -54,19 +58,7 @@ export function FintheonThinkingIndicator({
       }}
     >
       <div className="flex items-start gap-3">
-        {/* Pulse dot — Solvys gold on dim bg */}
-        <div className="mt-0.5 h-6 w-6 flex-shrink-0 flex items-center justify-center">
-          <span
-            style={{
-              display: "inline-block",
-              width: "8px",
-              height: "8px",
-              borderRadius: "50%",
-              backgroundColor: "#c79f4a",
-              animation: "p 1.5s ease-in-out infinite",
-            }}
-          />
-        </div>
+        <NothingFuseStrip />
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -77,7 +69,12 @@ export function FintheonThinkingIndicator({
               {phrase}
             </span>
             {agentName && (
-              <span className="text-[10px] text-zinc-500">({agentName})</span>
+              <span
+                className="text-[10px]"
+                style={{ color: "color-mix(in oklab, var(--fintheon-text) 45%, transparent)" }}
+              >
+                ({agentName})
+              </span>
             )}
           </div>
 
@@ -85,22 +82,90 @@ export function FintheonThinkingIndicator({
             <div className="mt-1.5">
               <button
                 onClick={() => setExpanded((v) => !v)}
-                className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+                className="flex items-center gap-1 text-[11px] transition-colors"
+                style={{
+                  color: "color-mix(in oklab, var(--fintheon-text) 50%, transparent)",
+                }}
               >
                 {expanded ? (
                   <ChevronDown size={12} />
                 ) : (
                   <ChevronRight size={12} />
                 )}
-                {expanded ? "Hide thinking pane" : "Show thinking pane"}
+                {expanded ? "Hide Thought" : "Show Thought"}
               </button>
               {expanded && (
-                <div className="mt-1.5 max-h-[180px] overflow-y-auto pl-2 text-[11px] leading-relaxed text-zinc-400 whitespace-pre-wrap">
+                <div
+                  className="mt-1.5 max-h-[180px] overflow-y-auto pl-2 text-[11px] leading-relaxed whitespace-pre-wrap"
+                  style={{
+                    color: "color-mix(in oklab, var(--fintheon-text) 60%, transparent)",
+                  }}
+                >
                   {thinkingContent}
                 </div>
               )}
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Nothing-design horizontal segmented fuse — same primitive used by the chat
+// AiLoader. 3-segment cluster slides L→R on a 10-segment track at 1500ms.
+const STRIP_WIDTH = 56;
+const STRIP_HEIGHT = 3;
+const CLUSTER_PERIOD_MS = 1500;
+const CLUSTER_SEGMENTS = 3;
+const TRACK_SEGMENTS = 10;
+
+function NothingFuseStrip() {
+  const clusterRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const node = clusterRef.current;
+    if (!node) return;
+    const reduced = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (reduced) return;
+    const animation = node.animate(
+      [
+        { transform: "translateX(-30%)" },
+        { transform: "translateX(100%)" },
+      ],
+      {
+        duration: CLUSTER_PERIOD_MS,
+        iterations: Infinity,
+        easing: "cubic-bezier(0.45, 0, 0.55, 1)",
+      },
+    );
+    return () => animation.cancel();
+  }, []);
+
+  const segWidth = STRIP_WIDTH / TRACK_SEGMENTS;
+  const clusterWidth = segWidth * CLUSTER_SEGMENTS - 2;
+
+  return (
+    <div className="mt-1 flex-shrink-0">
+      <div
+        className="relative overflow-hidden rounded-sm"
+        style={{
+          width: STRIP_WIDTH,
+          height: STRIP_HEIGHT,
+          background:
+            "color-mix(in oklab, var(--fintheon-accent) 12%, transparent)",
+        }}
+      >
+        <div
+          ref={clusterRef}
+          className="absolute top-0 left-0 h-full"
+          style={{ width: clusterWidth }}
+        >
+          <div
+            className="h-full w-full rounded-sm"
+            style={{ background: "var(--fintheon-accent)" }}
+          />
         </div>
       </div>
     </div>

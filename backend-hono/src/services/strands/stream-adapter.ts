@@ -124,9 +124,30 @@ export function strandsToUIStream(
           }
         }, HEARTBEAT_INTERVAL_MS);
 
+        // [claude-code 2026-04-25] v5.29.2 hotfix: S42-T1 added five additive event
+        // variants (thinking / tool_call / citation / artifact / complete) but
+        // assistant-ui v6's UIMessageStream Zod schema rejects any top-level type
+        // it doesn't recognize, so the validator throws and the entire stream
+        // aborts before the frontend can render the assistant message. Custom
+        // events MUST be prefixed `data-` to pass through the SDK as data parts.
+        // We rename on emit so the wire format stays compatible with both old
+        // and new consumers; T3 frontend reads BridgeStreamEvent.type which is
+        // updated in the same hotfix.
+        const T1_RENAMES: Record<string, string> = {
+          thinking: "data-thinking",
+          tool_call: "data-tool_call",
+          citation: "data-citation",
+          artifact: "data-artifact",
+          complete: "data-complete",
+        };
+
         function emit(event: UIEvent) {
+          const renamed = T1_RENAMES[(event as { type: string }).type];
+          const safeEvent = renamed
+            ? { ...event, type: renamed }
+            : event;
           // When agentId is set, stamp it onto the payload for multi-stream merger labelling
-          const payload = agentId ? { ...event, agentId } : event;
+          const payload = agentId ? { ...safeEvent, agentId } : safeEvent;
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify(payload)}\n\n`),
           );
