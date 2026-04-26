@@ -1,3 +1,6 @@
+// [claude-code 2026-04-25] S42-T2: ↑/↓ recall last 10 user messages when textarea empty.
+//   Cycle index resets when the user types or sends. ↑↓ inside non-empty text moves caret
+//   normally (no hijack).
 // [claude-code 2026-04-18] Composer polish: (1) IME composition guard on Enter so submitting an
 //   IME candidate with Enter no longer sends the message mid-composition; (2) Attach popup auto-
 //   dismisses when the user starts typing; (3) Queue chips show "+N more" hint when > 2 jobs
@@ -110,6 +113,9 @@ export interface PromptBoxProps {
   headlineChips?: HeadlineChip[];
   onHeadlineToggle?: (chip: HeadlineChip) => void;
   onHeadlineClear?: () => void;
+  // S42-T2: ↑/↓ history recall — last 10 user messages, oldest → newest.
+  // Newest at end; ↑ from empty starts at the most recent.
+  historyMessages?: string[];
 }
 
 /* ------------------------------------------------------------------ */
@@ -147,6 +153,7 @@ export function PromptBox({
   headlineChips,
   onHeadlineToggle,
   onHeadlineClear,
+  historyMessages,
 }: PromptBoxProps) {
   const [text, setText] = useState("");
   const [images, setImages] = useState<string[]>([]);
@@ -165,6 +172,25 @@ export function PromptBox({
     const draft = localStorage.getItem(draftKey);
     if (draft) setText(draft);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* S42-T2: listen for fintheon:composer-fill (CommandPalette "recent" pick)
+     — replace the current draft with the picked text and focus the textarea. */
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { text?: string };
+      if (typeof detail?.text !== "string") return;
+      setText(detail.text);
+      requestAnimationFrame(() => {
+        const el = textareaRef.current;
+        if (el) {
+          el.focus();
+          el.setSelectionRange(detail.text!.length, detail.text!.length);
+        }
+      });
+    };
+    window.addEventListener("fintheon:composer-fill", handler);
+    return () => window.removeEventListener("fintheon:composer-fill", handler);
   }, []);
 
   /* Draft persistence — save on change */
@@ -207,11 +233,20 @@ export function PromptBox({
         textareaRef.current.style.height = "auto";
       }
       setVanishing(false);
+      // S42-T2: reset history-recall cursor after a successful send so next ↑
+      // starts at the most recent (which is now the message we just sent).
+      historyIdxRef.current = -1;
+      draftBeforeRecallRef.current = "";
     }, 300);
   }, [text, images, onSend, draftKey]);
 
   /* Keyboard shortcuts */
   const lastSpaceRef = useRef(0);
+  // S42-T2: history-recall cursor. -1 = not in recall mode; otherwise index into
+  // historyMessages (oldest → newest); when at length, the recall is exhausted
+  // (returns to a clean draft).
+  const historyIdxRef = useRef(-1);
+  const draftBeforeRecallRef = useRef("");
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -233,6 +268,36 @@ export function PromptBox({
         onStop();
       }
       lastSpaceRef.current = now;
+    }
+    // S42-T2: ↑/↓ history recall when textarea is empty (or when actively
+    // walking through history). Skip when IME composing or when there's nothing
+    // to recall.
+    const hist = historyMessages ?? [];
+    if ((e.key === "ArrowUp" || e.key === "ArrowDown") && hist.length > 0) {
+      const inRecall = historyIdxRef.current !== -1;
+      const empty = text.length === 0;
+      if (!empty && !inRecall) return; // free-edit mode, leave caret movement alone
+
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (!inRecall) {
+          draftBeforeRecallRef.current = text;
+          historyIdxRef.current = hist.length - 1;
+        } else if (historyIdxRef.current > 0) {
+          historyIdxRef.current -= 1;
+        }
+        setText(hist[historyIdxRef.current] ?? "");
+      } else if (e.key === "ArrowDown" && inRecall) {
+        e.preventDefault();
+        if (historyIdxRef.current < hist.length - 1) {
+          historyIdxRef.current += 1;
+          setText(hist[historyIdxRef.current] ?? "");
+        } else {
+          historyIdxRef.current = -1;
+          setText(draftBeforeRecallRef.current);
+          draftBeforeRecallRef.current = "";
+        }
+      }
     }
   };
 
@@ -508,6 +573,12 @@ export function PromptBox({
             onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
               const val = e.target.value;
               setText(val);
+              // S42-T2: any keystroke-driven change exits history-recall mode so
+              // the user can edit a recalled message without ↓ snapping back.
+              if (historyIdxRef.current !== -1) {
+                historyIdxRef.current = -1;
+                draftBeforeRecallRef.current = "";
+              }
               // Auto-dismiss the attach popup once the user starts composing a message —
               // otherwise the popup hangs over the input and blocks the first word or two.
               if (val.length > 0 && showAttach) setShowAttach(false);
