@@ -13,7 +13,7 @@ set -eo pipefail
 
 # [claude-code 2026-04-18] Resolve install path: FINTHEON_ROOT env > ~/.fintheon/install-path > default
 FINTHEON_ROOT="${FINTHEON_ROOT:-$(cat "$HOME/.fintheon/install-path" 2>/dev/null || echo "$HOME/Documents/Codebases/fintheon")}"
-UPDATE_VERSION="5.31.1"
+UPDATE_VERSION="5.31.2"
 
 # ── Self-update bootstrap (v5.25.2) ──────────────────────────────────────────
 # Root cause fix: bash loads the entire script into memory at invocation, so
@@ -138,10 +138,19 @@ if [[ -n "$UNMERGED_PATHS" ]]; then
   echo "$UNMERGED_PATHS" | sed 's/^/    /'
   while IFS= read -r path; do
     [[ -z "$path" ]] && continue
-    git checkout HEAD -- "$path" 2>/dev/null || true
+    # First try checkout HEAD — works for tracked files we want to keep.
+    if git checkout HEAD -- "$path" 2>/dev/null; then
+      continue
+    fi
+    # Fallback: drop the conflicted index entry while preserving the
+    # working-tree file. This is the right move for paths that should be
+    # gitignored (backend-hono/.env, .env.local, *.env) but were tracked
+    # historically and are now stuck as conflicted index entries. The
+    # working-tree file (with the user's local secrets) is untouched.
+    git rm --cached -- "$path" 2>/dev/null || true
   done <<< "$UNMERGED_PATHS"
   if [[ -z "$(git diff --name-only --diff-filter=U 2>/dev/null)" ]]; then
-    ok "Cleared unmerged residue (reset to HEAD)"
+    ok "Cleared unmerged residue (reset to HEAD or dropped from index)"
   else
     fail "Could not auto-clear unmerged paths. Run \`git status\` and resolve manually."
     exit 1
