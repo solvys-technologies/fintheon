@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T04:25:00",
+    agent: "claude-code",
+    summary:
+      "v5.29.4 — chat stream Zod fix, take 2. v5.29.2 renamed S42-T1 events to data-* prefix but kept latency_ms/model as flat top-level keys, which still failed assistant-ui v6's Zod validation (unrecognized_keys on the custom arm). Now the emit() in stream-adapter both renames the type AND nests every non-{type,id} field under data: per the SDK's custom data part contract: {type:'data-X', id?, data:{...}}. Verified locally: chat stream now emits data: {\"type\":\"data-complete\",\"data\":{\"latency_ms\":...,\"model\":...}} which Zod accepts. Greeting clears, no more 'Type validation failed' banner.",
+    files: [
+      "backend-hono/src/services/strands/stream-adapter.ts",
+      "package.json",
+      "scripts/fintheon-update.sh",
+    ],
+  },
+  {
     date: "2026-04-26T03:55:00",
     agent: "claude-code",
     summary:
