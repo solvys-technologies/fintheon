@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-25T19:30:00",
+    agent: "claude-code",
+    summary:
+      "S42-T4: Dual-pane ArtifactPane (web) + ArtifactSheet (mobile) for Chat. Replaced the placeholder right-rail in ChatInterface.tsx with a real artifact preview pane that listens to the `fintheon:artifact` CustomEvent (T3 dispatches from CitationChip; T1 will dispatch from BridgeStreamEvent {type:'artifact'} in the SSE relay) and switches across four kinds: tradingview (EmbeddedBrowserFrame at tradingview.com chart URL), browserbase (EmbeddedBrowserFrame in browserbase mode — T5 wires the mode prop), report (ReportViewer srcDoc HTML), citation (flat surface with snippet + Open source link). Web pane is resizable (drag the left edge, 25–70% range, persisted to localStorage `fintheon:artifactSplit`, default 40%) and slides in via solvys-transitions `t-panel-slide` driven by a one-frame rAF on artifact arrival (memory: t-panel-slide-first-paint-rAF). Mobile sheet has three snap points (closed / peek 40vh / full 95vh) with framer-motion drag → swipe-up advances, swipe-down retreats, X dismisses. Mobile inlines a sandboxed iframe rather than reusing EmbeddedBrowserFrame (which pulls in `frontend/lib/platform.ts` Electron-window typing not available in mobile tsconfig). New shared discriminated union `frontend/components/chat/artifactTypes.ts` (ArtifactPayload + ARTIFACT_EVENT) consumed by both surfaces. Pane mounts only when surfaceId === 'chat' (memory: surfaceId-pattern); other surfaces unaffected. Persists across messages until user closes or new artifact replaces. Frontend tsc + vite build clean; mobile tsc + vite build clean.",
+    files: [
+      "frontend/components/chat/artifactTypes.ts",
+      "frontend/components/chat/ArtifactPane.tsx",
+      "frontend/components/chat/ArtifactSlot.tsx",
+      "frontend/components/ChatInterface.tsx",
+      "mobile/components/chat/ArtifactSheet.tsx",
+      "mobile/components/chat/ChatPage.tsx",
+    ],
+  },
+  {
     date: "2026-04-25T18:00:00",
     agent: "claude-code",
     summary:
