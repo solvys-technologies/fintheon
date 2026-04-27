@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-27T04:50:00",
+    agent: "claude-code",
+    summary:
+      "v5.33.0 deploy shipped (S46.4 RiskFlow narrowing + Calendar restore + DeskTheme + miniplayer + video_url chain). Backend + worker + desktop + mobile all green; UPDATE_VERSION bumped 5.32.4→5.33.0; older v5.* releases pruned to one. Archived S43 + S44 + S45.5 main plans to sprint-changelog/. Sanitation WARN: routes/admin/riskflow-bulk.ts at 379 lines exceeds the 300-line file-size rule (post-deploy split tracked).",
+    files: [
+      "sprint-changelog/S43-PIR-SITE-REDESIGN.md",
+      "sprint-changelog/S44-ORCHESTRATION.md",
+      "sprint-changelog/S45.5-BRIEF-silent-failure-cleanup.md",
+    ],
+  },
+  {
     date: "2026-04-27T04:30:00",
     agent: "claude-code",
     summary:
