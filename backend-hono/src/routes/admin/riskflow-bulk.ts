@@ -87,18 +87,20 @@ export function createRiskFlowBulkRoutes() {
       Date.now() - days * 24 * 60 * 60 * 1000,
     ).toISOString();
 
-    // Pull every scored row in window with the columns we need to attribute
-    // back to a source. The classification rule:
-    //   - source_domain like "twitter:%" or "nitter:%" → polling_type = social,
-    //     source = the handle suffix.
-    //   - any other source_domain → polling_type = web, source = the host.
+    // [claude-code 2026-04-27] v5.33.6: scored_riskflow_items doesn't have
+    // a source_domain column (only raw_riskflow_items does), so we read
+    // `source` and `tags` and reconstruct the polling-type classification:
+    //   - source starting with "twitter:" → polling_type = social, key = source.
+    //   - tags carry the original source_domain when the worker writes them
+    //     (e.g. ["url:https://...", "tier:standard"]).
+    //   - everything else → polling_type = web, key = source.
     const PAGE = 1000;
     const counts = new Map<string, SourceStat>();
     let from = 0;
     while (true) {
       const { data, error } = await sb
         .from("scored_riskflow_items")
-        .select("source_domain, source")
+        .select("source, tags")
         .gte("published_at", sinceIso)
         .range(from, from + PAGE - 1);
       if (error) {
@@ -109,26 +111,19 @@ export function createRiskFlowBulkRoutes() {
       }
       const rows = data ?? [];
       for (const row of rows) {
-        const sd = (row as { source_domain?: string | null }).source_domain;
         const src = (row as { source?: string | null }).source;
+        if (typeof src !== "string" || src.length === 0) continue;
         let key: string;
         let pollingType: "social" | "web";
-        if (typeof sd === "string" && sd.length > 0) {
-          if (sd.startsWith("twitter:")) {
-            key = sd;
-            pollingType = "social";
-          } else if (sd.startsWith("nitter:")) {
-            key = `twitter:${sd.slice("nitter:".length)}`;
-            pollingType = "social";
-          } else {
-            key = sd;
-            pollingType = "web";
-          }
-        } else if (typeof src === "string" && src.length > 0) {
+        if (src.startsWith("twitter:")) {
+          key = src;
+          pollingType = "social";
+        } else if (src.startsWith("nitter:")) {
+          key = `twitter:${src.slice("nitter:".length)}`;
+          pollingType = "social";
+        } else {
           key = src;
           pollingType = "web";
-        } else {
-          continue;
         }
         const existing = counts.get(key);
         if (existing) {
@@ -204,18 +199,24 @@ export function createRiskFlowBulkRoutes() {
     let rawQ = sb.from("raw_riskflow_items").delete({ count: "exact" });
 
     if (sources.length > 0) {
-      // Sources may be either "twitter:<handle>" (social) or a host string (web).
-      // Match against source_domain for both shapes; nitter:<handle> historical
-      // rows are normalized into twitter:<handle> via OR.
-      const orParts: string[] = [];
+      // [claude-code 2026-04-27] v5.33.6: scored_riskflow_items has no
+      // source_domain column — match scored on `source` (which IS on both
+      // tables and stores "twitter:<handle>" / "browser-harness" / etc.);
+      // raw_riskflow_items keeps the source_domain check since it has the
+      // column and worker writes the publisher host there.
+      const scoredOrParts: string[] = [];
+      const rawOrParts: string[] = [];
       for (const s of sources) {
-        orParts.push(`source_domain.eq.${s}`);
+        scoredOrParts.push(`source.eq.${s}`);
+        rawOrParts.push(`source_domain.eq.${s}`);
         if (s.startsWith("twitter:")) {
-          orParts.push(`source_domain.eq.nitter:${s.slice("twitter:".length)}`);
+          const handle = s.slice("twitter:".length);
+          scoredOrParts.push(`source.eq.nitter:${handle}`);
+          rawOrParts.push(`source_domain.eq.nitter:${handle}`);
         }
       }
-      scoredQ = scoredQ.or(orParts.join(","));
-      rawQ = rawQ.or(orParts.join(","));
+      scoredQ = scoredQ.or(scoredOrParts.join(","));
+      rawQ = rawQ.or(rawOrParts.join(","));
     }
     if (from) {
       const startIso = new Date(`${from}T00:00:00Z`).toISOString();
@@ -360,14 +361,17 @@ export function createRiskFlowBulkRoutes() {
     }
     const orClause = orParts.join(",");
 
+    // [claude-code 2026-04-27] v5.33.6: scored_riskflow_items has no
+    // source_domain column (only raw does), so the wire-relay exemption
+    // checks the `source` column instead. Worker writes "twitter:<handle>"
+    // / "nitter:<handle>" into source for X relays — those rows stay in
+    // the feed even if their body mentions Reuters/Bloomberg.
     function applyFilters<
       T extends { or: Function; not: Function; gte: Function; lt: Function },
     >(q: T): T {
       let out: T = q.or(orClause) as T;
-      // Wire-relay exemption: drop nothing whose source_domain marks it
-      // as a Twitter / Nitter handle ingest.
-      out = out.not("source_domain", "ilike", "twitter:%") as T;
-      out = out.not("source_domain", "ilike", "nitter:%") as T;
+      out = out.not("source", "ilike", "twitter:%") as T;
+      out = out.not("source", "ilike", "nitter:%") as T;
       if (fromIso) out = out.gte("published_at", fromIso) as T;
       if (toIso) out = out.lt("published_at", toIso) as T;
       return out;
@@ -377,7 +381,7 @@ export function createRiskFlowBulkRoutes() {
       const sampleQ = applyFilters(
         sb
           .from("scored_riskflow_items")
-          .select("id, headline, source_domain, published_at, url"),
+          .select("id, headline, source, published_at, url"),
       );
       const { data: sample, error: sampleErr } = await sampleQ
         .order("published_at", { ascending: false })
@@ -400,13 +404,23 @@ export function createRiskFlowBulkRoutes() {
           500,
         );
       }
+      // [claude-code 2026-04-27] v5.33.6: alias `source` → `source_domain`
+      // in the response so the existing CatalystStatsDrawer audit display
+      // keeps rendering without a frontend type churn.
+      const aliasedSample = (sample ?? []).map((row: any) => ({
+        id: row.id,
+        headline: row.headline,
+        source_domain: row.source ?? null,
+        published_at: row.published_at,
+        url: row.url,
+      }));
       return c.json({
         confirmed: false,
         scope,
         from: fromIso,
         to: toIso,
         candidate_count: count ?? 0,
-        sample: sample ?? [],
+        sample: aliasedSample,
         needles: MSM_NEEDLES,
       });
     }

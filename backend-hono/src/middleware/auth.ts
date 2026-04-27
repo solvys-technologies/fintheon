@@ -123,6 +123,12 @@ async function resolveAdminIds(): Promise<Set<string>> {
 }
 
 export const requireSuperadmin = async (c: Context, next: Next) => {
+  // [claude-code 2026-04-27] v5.33.6: BYPASS_AUTH=true is the dev/electron
+  // local-mode flag — env-validation already rejects it in production, so
+  // honoring it here just means the local launchd backend grants admin to
+  // the desktop app without requiring TP to set SUPER_ADMIN_EMAIL twice.
+  if (BYPASS_AUTH) return await next();
+
   const userId = c.get("userId");
   const email = (c.get("email") as string | undefined) ?? "";
   if (!userId || userId === "anonymous") {
