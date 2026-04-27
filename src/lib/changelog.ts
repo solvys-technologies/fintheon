@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T23:00:00",
+    agent: "claude-code",
+    summary:
+      "S46 RiskFlow filter globalization: severities + buckets now flow through SettingsContext → /api/preferences so a user's Critical/High + OSINT/Commentary selection follows them across every RiskFlow surface on desktop, mobile, and web. Backend preferences zod schema gains optional riskflowFilters; both shared contracts mirror the field. Hooks reconcile once on mount (remote wins; if remote empty + localStorage has prior selection, migrate localStorage up once). 30s preferences poll picks up cross-device updates. localStorage stays as offline cache.",
+    files: [
+      "backend-hono/src/routes/preferences/index.ts",
+      "frontend/lib/user-preferences.ts",
+      "mobile/lib/user-preferences.ts",
+      "frontend/hooks/useRiskFlowFilters.ts",
+      "mobile/hooks/useRiskFlowFilters.ts",
+    ],
+  },
+  {
     date: "2026-04-26T22:50:00",
     agent: "claude-code",
     summary:

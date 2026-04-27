@@ -6,7 +6,10 @@
 //   Commentary / Econ / Geopolitical) matching the desktop surface. Old per-source
 //   `activeSources: Set<string>` is migrated into the new `activeBuckets: Set<SourceBucket>`
 //   at load time so persisted state carries over cleanly.
-import { useState, useMemo, useCallback, useEffect } from "react";
+// [claude-code 2026-04-26] S46: severities + buckets sync via SettingsContext →
+//   /api/preferences so the same selection follows the user across desktop + mobile.
+//   localStorage stays as offline cache + one-time migration source.
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
 import type { MobileRiskFlowAlert } from "../contexts/RiskFlowContext";
 import {
@@ -14,6 +17,7 @@ import {
   matchesBuckets,
   type SourceBucket,
 } from "../lib/source-buckets";
+import { useSettings } from "../contexts/SettingsContext";
 
 interface UseRiskFlowFiltersOptions {
   alerts: MobileRiskFlowAlert[];
@@ -68,7 +72,23 @@ function savePersisted(state: PersistedState): void {
   } catch {}
 }
 
+function setsEqual<T>(a: Set<T>, b: Set<T>): boolean {
+  if (a.size !== b.size) return false;
+  for (const v of a) if (!b.has(v)) return false;
+  return true;
+}
+
+function arraysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
+  if (a.length !== b.length) return false;
+  const setB = new Set(b);
+  for (const v of a) if (!setB.has(v)) return false;
+  return true;
+}
+
 export function useRiskFlowFilters({ alerts }: UseRiskFlowFiltersOptions) {
+  const { preferences, setPreferences } = useSettings();
+  const remoteFilters = preferences.riskflowFilters;
+
   const [activeSeverities, setActiveSeverities] = useState<Set<AlertSeverity>>(
     () => {
       const persisted = loadPersisted();
@@ -80,12 +100,60 @@ export function useRiskFlowFilters({ alerts }: UseRiskFlowFiltersOptions) {
     return new Set(persisted?.buckets ?? []);
   });
 
+  // Server preferences are the source of truth once loaded. First reconcile
+  // adopts the remote selection if present; otherwise migrates the user's
+  // existing localStorage selection up to the server one time.
+  const reconciled = useRef(false);
+  useEffect(() => {
+    if (reconciled.current) return;
+    if (preferences.updatedAt === new Date(0).toISOString()) return;
+    reconciled.current = true;
+    if (remoteFilters) {
+      setActiveSeverities(new Set(remoteFilters.severities as AlertSeverity[]));
+      setActiveBuckets(new Set(remoteFilters.buckets as SourceBucket[]));
+      return;
+    }
+    const persisted = loadPersisted();
+    if (
+      persisted &&
+      (persisted.severities.length || persisted.buckets.length)
+    ) {
+      void setPreferences({
+        riskflowFilters: {
+          severities: persisted.severities,
+          buckets: persisted.buckets,
+        },
+      });
+    }
+  }, [preferences.updatedAt, remoteFilters, setPreferences]);
+
+  useEffect(() => {
+    if (!reconciled.current || !remoteFilters) return;
+    const remoteSev = new Set(remoteFilters.severities as AlertSeverity[]);
+    const remoteBucket = new Set(remoteFilters.buckets as SourceBucket[]);
+    setActiveSeverities((prev) =>
+      setsEqual(prev, remoteSev) ? prev : remoteSev,
+    );
+    setActiveBuckets((prev) =>
+      setsEqual(prev, remoteBucket) ? prev : remoteBucket,
+    );
+  }, [remoteFilters]);
+
   useEffect(() => {
     savePersisted({
       severities: Array.from(activeSeverities),
       buckets: Array.from(activeBuckets),
     });
-  }, [activeSeverities, activeBuckets]);
+    if (!reconciled.current) return;
+    const sev = Array.from(activeSeverities);
+    const buc = Array.from(activeBuckets);
+    const remoteSev = remoteFilters?.severities ?? [];
+    const remoteBuc = remoteFilters?.buckets ?? [];
+    if (arraysEqual(sev, remoteSev) && arraysEqual(buc, remoteBuc)) return;
+    void setPreferences({
+      riskflowFilters: { severities: sev, buckets: buc },
+    });
+  }, [activeSeverities, activeBuckets, remoteFilters, setPreferences]);
 
   const toggleSeverity = useCallback((level: AlertSeverity) => {
     setActiveSeverities((prev) => {

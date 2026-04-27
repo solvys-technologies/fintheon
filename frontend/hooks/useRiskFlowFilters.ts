@@ -67,6 +67,19 @@ function loadPersisted(): PersistedFilterState | null {
   }
 }
 
+function setsEqual<T>(a: Set<T>, b: Set<T>): boolean {
+  if (a.size !== b.size) return false;
+  for (const v of a) if (!b.has(v)) return false;
+  return true;
+}
+
+function arraysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
+  if (a.length !== b.length) return false;
+  const setB = new Set(b);
+  for (const v of a) if (!setB.has(v)) return false;
+  return true;
+}
+
 function savePersisted(state: PersistedFilterState): void {
   if (typeof window === "undefined") return;
   try {
@@ -108,6 +121,9 @@ interface UseRiskFlowFiltersReturn {
 }
 
 export function useRiskFlowFilters(): UseRiskFlowFiltersReturn {
+  const { preferences, updatePreferences } = useSettings();
+  const remoteFilters = preferences.riskflowFilters;
+
   const [severitySet, setSeveritySet] = useState<Set<AlertSeverity>>(() => {
     const persisted = loadPersisted();
     return new Set(persisted?.severities ?? []);
@@ -121,13 +137,63 @@ export function useRiskFlowFilters(): UseRiskFlowFiltersReturn {
     return persisted?.proposals ?? false;
   });
 
+  // Reconcile with server preferences. First sync after preferences load
+  // (updatedAt > epoch) wins — local state is overwritten with the server's
+  // truth. If the server has nothing yet but localStorage has a v2 selection,
+  // push the localStorage state up once so it propagates to other devices.
+  const reconciled = useRef(false);
+  useEffect(() => {
+    if (reconciled.current) return;
+    if (preferences.updatedAt === new Date(0).toISOString()) return;
+    reconciled.current = true;
+    if (remoteFilters) {
+      setSeveritySet(new Set(remoteFilters.severities));
+      setBucketSet(new Set(remoteFilters.buckets));
+      return;
+    }
+    const persisted = loadPersisted();
+    if (
+      persisted &&
+      (persisted.severities.length || persisted.buckets.length)
+    ) {
+      updatePreferences({
+        riskflowFilters: {
+          severities: persisted.severities,
+          buckets: persisted.buckets,
+        },
+      });
+    }
+  }, [preferences.updatedAt, remoteFilters, updatePreferences]);
+
+  // React to cross-device updates from the 30s preferences poll.
+  useEffect(() => {
+    if (!reconciled.current || !remoteFilters) return;
+    const remoteSev = new Set(remoteFilters.severities);
+    const remoteBucket = new Set(remoteFilters.buckets);
+    setSeveritySet((prev) => (setsEqual(prev, remoteSev) ? prev : remoteSev));
+    setBucketSet((prev) =>
+      setsEqual(prev, remoteBucket) ? prev : remoteBucket,
+    );
+  }, [remoteFilters]);
+
   useEffect(() => {
     savePersisted({
       severities: Array.from(severitySet),
       buckets: Array.from(bucketSet),
       proposals: showProposals,
     });
-  }, [severitySet, bucketSet, showProposals]);
+    if (!reconciled.current) return;
+    const sev = Array.from(severitySet);
+    const buc = Array.from(bucketSet);
+    const remoteSev = remoteFilters?.severities ?? [];
+    const remoteBuc = remoteFilters?.buckets ?? [];
+    if (arraysEqual(sev, remoteSev) && arraysEqual(buc, remoteBuc)) {
+      return;
+    }
+    updatePreferences({
+      riskflowFilters: { severities: sev, buckets: buc },
+    });
+  }, [severitySet, bucketSet, showProposals, remoteFilters, updatePreferences]);
 
   const toggleSeverity = useCallback((s: AlertSeverity) => {
     setSeveritySet((prev) => {
