@@ -9,7 +9,13 @@
 // [claude-code 2026-04-18] S24-T4: Rebuilt — 5 group dials + presets + advanced pane + toasts + rescore preview
 // [claude-code 2026-03-27] S2-T7: Refinement Engine — scoring calibration workbench
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { ChevronDown, ChevronRight, RefreshCw, Wrench } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  RefreshCw,
+  Wrench,
+  BarChart3,
+} from "lucide-react";
 import { isRefinementEditUnlocked } from "../../lib/dev-settings-auth";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import type { CalibrationEntry } from "../../../backend-hono/src/types/calibration";
@@ -22,8 +28,10 @@ import { QuickWeightEditor } from "./QuickWeightEditor";
 import { CommentatorManager } from "./CommentatorManager";
 import { SourceAccountsManager } from "./SourceAccountsManager";
 import { EconFiltersManager } from "./EconFiltersManager";
-import { AnnotatableItem } from "./AnnotatableItem";
-import { CatalystStatsPanel } from "./CatalystStatsPanel";
+// AnnotatableItem retained for the legacy right-rail feed preview, no longer
+// used after S46.4 right-rail replacement. CatalystStatsPanel superseded by
+// CatalystStatsDrawer.
+import { CatalystStatsDrawer } from "./CatalystStatsDrawer";
 import { NotchedFuse } from "./NotchedFuse";
 import {
   SENSITIVITY_DEFAULTS,
@@ -81,7 +89,12 @@ export function RefinementEngine() {
   const { addToast } = useToast();
   const { getAccessToken } = useAuth();
 
+  // [claude-code 2026-04-27] v5.33.4: feed preview moved off the right rail
+  // when the rail became drawer-only. items state retained because the rescore
+  // pipeline still needs a feed-cache invalidation hook (handleRescore →
+  // fetchFeed). Rendered nowhere now; kept for parity with the rescore handler.
   const [items, setItems] = useState<RiskFlowAlert[]>([]);
+  const [showStatsDrawer, setShowStatsDrawer] = useState(false);
   const [regime, setRegime] = useState<RegimeState | null>(null);
   const [weights, setWeights] = useState<CalibrationEntry[]>([]);
   const [registry, setRegistry] = useState<CommentatorEntry[]>([]);
@@ -375,7 +388,7 @@ export function RefinementEngine() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[var(--fintheon-bg)]">
+    <div className="h-full flex flex-col bg-[var(--fintheon-bg)] relative">
       {/* [claude-code 2026-04-25] S38: Header toolbar min-height bumped ~12% so chrome breathes */}
       <div className="flex items-center justify-between px-5 py-4 min-h-[60px] border-b border-[var(--fintheon-accent)]/15">
         <div className="flex items-center gap-3">
@@ -416,6 +429,21 @@ export function RefinementEngine() {
               className={`w-4 h-4 ${isRescoring ? "animate-spin" : ""}`}
             />
             {isRescoring ? "Re-Scoring…" : "Re-Score All"}
+          </button>
+          {/* [claude-code 2026-04-27] v5.33.4: Catalyst Stats moved off the
+              always-visible right rail into a slide-in drawer per TP. This
+              top-right button is the only entry point. */}
+          <button
+            onClick={() => setShowStatsDrawer((v) => !v)}
+            className={`flex items-center gap-1.5 px-3.5 py-2 border text-[12px] font-semibold transition-colors ${
+              showStatsDrawer
+                ? "border-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]"
+                : "border-[var(--fintheon-accent)]/40 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
+            }`}
+            title="Catalyst Stats"
+          >
+            <BarChart3 className="w-4 h-4" />
+            Stats
           </button>
         </div>
       </div>
@@ -608,42 +636,20 @@ export function RefinementEngine() {
             </AdvancedPane>
           </div>
 
-          {/* Right panel (25%, min 280, max 420) — Catalyst Stats over the
-              annotatable feed preview. */}
-          <div className="w-1/4 min-w-[280px] max-w-[420px] shrink-0 border-l border-[var(--fintheon-accent)]/20 overflow-y-auto p-3 space-y-4">
-            <CatalystStatsPanel disabled={!editUnlocked} />
-            <div className="border-t border-[var(--fintheon-glass-border)] pt-3 space-y-2">
-              <div
-                style={{
-                  fontFamily: "var(--font-data)",
-                  fontSize: 10,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  color: "var(--fintheon-muted)",
-                  marginBottom: 4,
-                }}
-              >
-                Feed Preview · {items.length} item
-                {items.length !== 1 ? "s" : ""}
-              </div>
-
-              {items.length === 0 ? (
-                <div className="text-center py-12 text-[11px] text-zinc-600">
-                  No feed items. Backend may need to be running.
-                </div>
-              ) : (
-                items.map((item) => (
-                  <AnnotatableItem
-                    key={item.id}
-                    item={item}
-                    onAnnotationSaved={() => {}}
-                  />
-                ))
-              )}
-            </div>
-          </div>
+          {/* [claude-code 2026-04-27] v5.33.4: Right rail (Catalyst Stats +
+              feed preview) removed. Stats now live in CatalystStatsDrawer
+              triggered by the top-right "Stats" button. Main pane spans
+              full width. */}
         </div>
       )}
+
+      {/* Slide-in Catalyst Stats drawer — popover behaviour matches
+          components/layout/ChatPanel: absolute right-0, w-[420px], translate-x. */}
+      <CatalystStatsDrawer
+        open={showStatsDrawer}
+        onClose={() => setShowStatsDrawer(false)}
+        disabled={!editUnlocked}
+      />
     </div>
   );
 }

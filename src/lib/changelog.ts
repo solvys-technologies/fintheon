@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-27T06:30:00",
+    agent: "claude-code",
+    summary:
+      "v5.33.4 — Refinement Engine right-rail refactor + middleware DB-fallback. Right-rail (CatalystStatsPanel + AnnotatableItem feed preview) deleted; replaced by CatalystStatsDrawer that mirrors the ChatPanel popover (absolute right-0, w-[420px], translate-x animation). Drawer is only accessible via a new top-right 'Stats' BarChart3 button next to Re-Score All. Drawer body redesigned per TP: per-category aggregate rows with Doto numerals right-aligned, then ruler-divided per-source rows under each category with right-aligned counts; bulk-handling controls (delete / refill / MSM Audit today / MSM Audit all-time) below. Backend middleware/auth.ts requireSuperadmin now reads SUPER_ADMIN_USER_ID with a DB fallback to SELECT id FROM users WHERE role='admin' (60s in-memory cache), mirroring notify-superadmins' resolution — works without TP setting the env var first as long as their users row has role='admin'.",
+    files: [
+      "frontend/components/refinement/RefinementEngine.tsx",
+      "frontend/components/refinement/CatalystStatsDrawer.tsx",
+      "backend-hono/src/middleware/auth.ts",
+    ],
+  },
+  {
     date: "2026-04-27T06:00:00",
     agent: "claude-code",
     summary:

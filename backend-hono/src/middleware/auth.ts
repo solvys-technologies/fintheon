@@ -73,26 +73,71 @@ export const requireAuth = async (c: Context, next: Next) => {
 
 /**
  * [claude-code 2026-04-27] Require Superadmin — rejects non-admin users.
- * Reads SUPER_ADMIN_USER_ID (comma-split UUID list) from env and matches
- * against the JWT-derived userId. Mirrors notify-superadmins resolution so
- * the admin set has one source of truth. Stack AFTER authMiddleware.
+ *
+ * Resolution mirrors services/notifications/notify-superadmins.ts so the
+ * admin set has one source of truth across push escalation + admin routes:
+ *   1. SUPER_ADMIN_USER_ID env var (comma-split UUID list), if set.
+ *   2. DB fallback: SELECT id FROM users WHERE role = 'admin'.
+ *
+ * Result is cached in-memory for 60s to avoid a DB hit on every admin call.
+ * Stack AFTER authMiddleware.
  */
+let cachedAdminIds: Set<string> | null = null;
+let cachedAt = 0;
+const ADMIN_CACHE_MS = 60_000;
+
+async function resolveAdminIds(): Promise<Set<string>> {
+  const now = Date.now();
+  if (cachedAdminIds && now - cachedAt < ADMIN_CACHE_MS) {
+    return cachedAdminIds;
+  }
+  const envAllow = (process.env.SUPER_ADMIN_USER_ID || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (envAllow.length > 0) {
+    cachedAdminIds = new Set(envAllow);
+    cachedAt = now;
+    return cachedAdminIds;
+  }
+  // DB fallback — defer the import so middleware load doesn't pull config/database.
+  try {
+    const { sql, isDatabaseAvailable } = await import("../config/database.js");
+    if (!isDatabaseAvailable() || !sql) {
+      cachedAdminIds = new Set();
+      cachedAt = now;
+      return cachedAdminIds;
+    }
+    const rows =
+      (await sql`SELECT id FROM users WHERE role = 'admin'`) as Array<{
+        id: string;
+      }>;
+    cachedAdminIds = new Set(rows.map((r) => String(r.id)));
+    cachedAt = now;
+    return cachedAdminIds;
+  } catch {
+    cachedAdminIds = new Set();
+    cachedAt = now;
+    return cachedAdminIds;
+  }
+}
+
 export const requireSuperadmin = async (c: Context, next: Next) => {
   const userId = c.get("userId");
   if (!userId || userId === "anonymous") {
     return c.json({ error: "Authentication required" }, 401);
   }
-  const allow = (process.env.SUPER_ADMIN_USER_ID || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (allow.length === 0) {
+  const allow = await resolveAdminIds();
+  if (allow.size === 0) {
     return c.json(
-      { error: "SUPER_ADMIN_USER_ID not configured on the server" },
+      {
+        error: "Superadmin set not configured",
+        hint: "Set SUPER_ADMIN_USER_ID env or assign role='admin' in users",
+      },
       503,
     );
   }
-  if (!allow.includes(String(userId))) {
+  if (!allow.has(String(userId))) {
     return c.json({ error: "Superadmin only" }, 403);
   }
   return await next();
