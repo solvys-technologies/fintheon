@@ -70,9 +70,35 @@ export async function writeCollectedItems(
   // [claude-code 2026-04-24] S34-T4: pre-filter missing-field items so the
   // dedup math below isn't polluted by schema rejects that would short-circuit
   // the upsert silently.
+  // [claude-code 2026-04-27] Per TP: scrub bot-wall / rate-limit / captcha
+  // noise that makes it past the source layer when a scraper tripped a wall
+  // and ingested the wall page itself. Patterns cover the canonical Twitter
+  // / Cloudflare / Google / SEC throttle surfaces.
+  const NOISE_PATTERNS: RegExp[] = [
+    /\bare you a robot\b/i,
+    /\brate[- ]?limit(?:ed|ing|s)?\b/i,
+    /\btoo many requests\b/i,
+    /\b429\b.*(?:limit|throttle)/i,
+    /\bcaptcha\b/i,
+    /\brecaptcha\b/i,
+    /\bcloudflare\b.*(?:check|verify|just a moment)/i,
+    /\bjust a moment\.\.\./i,
+    /\bplease (?:complete|verify) the security check\b/i,
+    /\brequest rate threshold exceeded\b/i, // SEC EDGAR throttle page
+    /\bunusual traffic from your computer network\b/i, // Google bot wall
+    /\bplease verify you are a human\b/i,
+    /\bsign in to (?:x|twitter)\b/i, // X login wall scraped as headline
+    /\bsomething went wrong\.? try reloading\b/i, // X soft error page
+  ];
+  function isNoiseHeadline(headline: string, body: string): boolean {
+    const blob = `${headline} ${body}`.slice(0, 500);
+    return NOISE_PATTERNS.some((p) => p.test(blob));
+  }
+
   const eligible: CollectedNewsItem[] = [];
   const perSourceMissing = new Map<string, number>();
   const perSourceBannedHost = new Map<string, number>();
+  const perSourceNoise = new Map<string, number>();
   for (const item of items) {
     const src = item.source || "unknown";
     if (!item.item_id || !item.headline || !item.headline.trim()) {
@@ -92,6 +118,11 @@ export async function writeCollectedItems(
       perSourceBannedHost.set(src, (perSourceBannedHost.get(src) ?? 0) + 1);
       continue;
     }
+    // [claude-code 2026-04-27] Bot-wall / rate-limit / captcha scrub.
+    if (isNoiseHeadline(item.headline, item.body)) {
+      perSourceNoise.set(src, (perSourceNoise.get(src) ?? 0) + 1);
+      continue;
+    }
     eligible.push(item);
   }
   for (const [src, count] of perSourceMissing) {
@@ -100,8 +131,15 @@ export async function writeCollectedItems(
   for (const [src, count] of perSourceBannedHost) {
     bumpCounter(src, "persist", "dropped_banned_publisher_host", count);
   }
+  for (const [src, count] of perSourceNoise) {
+    bumpCounter(src, "persist", "dropped_bot_wall_noise", count);
+  }
   if (eligible.length === 0) return 0;
 
+  // [claude-code 2026-04-27] image_url + url are the two display fields the
+  // frontend RiskFlow card depends on (RiskFlowDetailCard.tsx renders an <img>
+  // wrapped in <a href={alert.url ?? alert.imageUrl}>). Persist both — the
+  // central-scorer copies them straight through to scored_riskflow_items.
   const rows = eligible.map((item) => ({
     tweet_id: item.item_id,
     source: item.source,
@@ -109,6 +147,7 @@ export async function writeCollectedItems(
     headline: item.headline,
     body: item.body,
     url: item.url ?? null,
+    image_url: item.image_url ?? null,
     symbols: [] as string[],
     tags: item.url
       ? [`url:${item.url}`, `tier:${item.tier}`]

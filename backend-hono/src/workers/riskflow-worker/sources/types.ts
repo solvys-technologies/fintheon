@@ -16,7 +16,15 @@ export interface CollectedNewsItem {
   source_domain: string;
   headline: string;
   body: string;
+  /** Permalink to the original post / source page. Required — every card
+   *  links here when the user taps "open original". */
   url: string;
+  /** Photo / hero image URL associated with the headline. Optional but
+   *  strongly preferred — RiskFlow detail cards render it as a tappable
+   *  image that deep-links to `url`. Pulled from tweet media for Twitter,
+   *  og:image / twitter:image for browser-harness, <enclosure> /
+   *  <media:thumbnail> for RSS. */
+  image_url?: string | null;
   tier: NewsTier;
   published_at: string;
   fetched_at: string;

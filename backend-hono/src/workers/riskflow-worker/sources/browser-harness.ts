@@ -58,6 +58,10 @@ export async function collectFromBrowserHarness(
       headline,
       body,
       url,
+      // [claude-code 2026-04-27] og:image / twitter:image / first hero <img>
+      // already extracted by extractImageFromHtml inside browseReadWithFallback;
+      // pass it straight through to RiskFlowDetailCard.
+      image_url: result.image_url ?? null,
       tier: opts.tier,
       published_at: result.rendered_at ?? new Date().toISOString(),
       fetched_at: new Date().toISOString(),

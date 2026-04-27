@@ -32,6 +32,10 @@ interface ExtractedTweet {
   text: string;
   timestamp: string;
   permalink: string;
+  /** First media URL attached to the tweet (photo or video thumbnail).
+   *  Pulled from extended_entities.media[0].media_url_https with
+   *  entities.media[0].media_url_https as fallback. */
+  image_url?: string | null;
 }
 
 function stripHandle(h: string): string {
@@ -72,6 +76,24 @@ function extractTweetsFromNextData(
     ) {
       seen.add(idStr);
       const ts = Date.parse(created);
+      // [claude-code 2026-04-27] Capture first photo from tweet media —
+      // extended_entities is the canonical container (multi-media tweets);
+      // entities is the legacy fallback. Both shapes nest media[] under the
+      // tweet object, so this lookup runs at the same level as id_str/text.
+      let imageUrl: string | null = null;
+      const extEntities = obj.extended_entities as
+        | { media?: Array<{ media_url_https?: string; type?: string }> }
+        | undefined;
+      const entities = obj.entities as
+        | { media?: Array<{ media_url_https?: string }> }
+        | undefined;
+      const mediaArr = extEntities?.media ?? entities?.media;
+      if (Array.isArray(mediaArr) && mediaArr.length > 0) {
+        const firstUrl = mediaArr[0]?.media_url_https;
+        if (typeof firstUrl === "string" && firstUrl.length > 0) {
+          imageUrl = firstUrl;
+        }
+      }
       out.push({
         tweet_id: idStr,
         text: text.trim(),
@@ -79,6 +101,7 @@ function extractTweetsFromNextData(
           ? new Date(ts).toISOString()
           : new Date().toISOString(),
         permalink: `https://x.com/${cleanHandle}/status/${idStr}`,
+        image_url: imageUrl,
       });
       // Don't return — tweets can nest (quote tweets, retweets), we want
       // the full timeline, not just the outermost level.
@@ -220,6 +243,9 @@ async function fetchSyndicationTweets(
       text: t.text,
       timestamp: t.timestamp,
       permalink: t.permalink,
+      // XActions client returns image_url when the tweet has media; the
+      // tolerant tweet-shape harvester walks media_url_https variants.
+      image_url: (t as { image_url?: string | null }).image_url ?? null,
     }));
   }
 
@@ -271,6 +297,7 @@ export async function collectFromXHandlesBrowser(
         headline,
         body: tw.text,
         url: tw.permalink,
+        image_url: tw.image_url ?? null,
         tier: opts.tier,
         published_at: tw.timestamp || new Date().toISOString(),
         fetched_at: new Date().toISOString(),

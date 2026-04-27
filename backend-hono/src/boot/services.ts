@@ -189,53 +189,15 @@ export async function bootBackground(): Promise<void> {
   const t0 = Date.now();
   log.info("Background boot starting");
 
-  // [claude-code 2026-04-18] S25-T1: Agent-Reach is the PRIMARY news source. It runs on its
-  // own schedule with UA pool + per-domain token bucket, hits RSS first then HTML fallback,
-  // and needs no credentials — so it keeps the feed alive even when Rettiwt has zero keys.
-  startAgentReachPoller();
-  log.info("AgentReachPoller started (primary news source)");
-
-  // RiskFlow Level 4 detection feed — now handles econ + Rettiwt (secondary)
-  startFeedPoller();
-  log.info("FeedPoller started");
-
-  // [claude-code 2026-04-19] S27-T4: Rettiwt cut from Herald dispatcher. Pool init and
-  // econ-rettiwt-poller start are gated behind RETTIWT_REENABLE=true so we can reactivate
-  // without a code change if browser-harness coverage falls short in the 48h review.
-  if (process.env.RETTIWT_REENABLE === "true") {
-    await initRettiwtPool();
-    log.info("Rettiwt key pool initialized (RETTIWT_REENABLE=true)");
-
-    const poolReloadTimer = setInterval(() => {
-      initRettiwtPool().catch((err) =>
-        log.warn("Rettiwt pool reload failed (non-fatal)", {
-          error: String(err),
-        }),
-      );
-    }, 15 * 60_000);
-    poolReloadTimer.unref?.();
-    log.info("Rettiwt pool reload scheduled (15 min)");
-  } else {
-    log.info(
-      "Rettiwt key pool skipped — S27-T4 cut from dispatcher (set RETTIWT_REENABLE=true to restore)",
-    );
-  }
-
-  // Poll watchdog — detects stalled Agent Reach, soft-nudges then restarts if needed
-  startPollWatchdog();
-  log.info("PollWatchdog started");
-
-  if (process.env.RETTIWT_REENABLE === "true") {
-    // Econ-triggered Rettiwt poller (replaces twitter-cli)
-    startEconPoller();
-    log.info("EconRettiwtPoller started (RETTIWT_REENABLE=true)");
-  } else {
-    log.info(
-      "EconRettiwtPoller skipped — S27-T4 (set RETTIWT_REENABLE=true to restore)",
-    );
-  }
-
-  // Exa scheduled-event monitor (supplementary discovery, not headline ingestion)
+  // [claude-code 2026-04-27] S46.3: legacy ingest pollers DELETED from boot.
+  // The riskflow-worker (separate Fly app fintheon-riskflow-worker, see
+  // workers/riskflow-worker/) is the SINGLE writer to raw_riskflow_items now.
+  // Removed: startAgentReachPoller (mainstream RSS noise), startFeedPoller
+  // (Rettiwt curated timelines), Rettiwt pool init + econ-rettiwt-poller
+  // (Rettiwt dead per S45.5/F2), startPollWatchdog (watched the legacy pollers).
+  // One pipeline = one banned-publisher gate = no leaks. Exa scheduled-event
+  // monitor is kept — it's not a news ingester, it's a forward-looking event
+  // discovery feed for Sanctum narratives.
   startExaScheduledMonitor();
   log.info("ExaScheduledMonitor started");
 
