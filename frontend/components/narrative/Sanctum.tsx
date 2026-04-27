@@ -33,6 +33,7 @@ import { AquariumPredictionCards } from "./AquariumPredictionCards";
 import { ConsolidatedTradeLedger } from "./ConsolidatedTradeLedger";
 import { BlendedVIXCard } from "./BlendedVIXCard";
 import { NextSessionForecastCard } from "./NextSessionForecastCard";
+import { BlendedIVForecastCard } from "./BlendedIVForecastCard";
 import { DayCard } from "./DayCard";
 import { RiskSignalCards } from "./RiskSignalCards";
 import { useIVScoreData } from "./useIVScoreData";
@@ -225,11 +226,8 @@ export function Sanctum({
                       noBorder
                     />
                   )}
-                  <BlendedVIXCard data={ivData} isLoading={ivLoading} />
-                  <NextSessionForecastCard
-                    data={ivData}
-                    isLoading={ivLoading}
-                  />
+                  {/* [claude-code 2026-04-27] S46.4/K: combined IV+forecast card */}
+                  <BlendedIVForecastCard data={ivData} isLoading={ivLoading} />
                   <AquariumPredictionCards />
                 </div>
               ) : (
@@ -250,8 +248,8 @@ export function Sanctum({
                             <Loader2 className="w-3 h-3 text-[var(--fintheon-accent)] animate-spin" />
                           )}
                         </div>
-                        <BlendedVIXCard data={ivData} isLoading={ivLoading} />
-                        <NextSessionForecastCard
+                        {/* [claude-code 2026-04-27] S46.4/K: combined IV+forecast card */}
+                        <BlendedIVForecastCard
                           data={ivData}
                           isLoading={ivLoading}
                         />

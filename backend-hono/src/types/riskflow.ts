@@ -74,6 +74,11 @@ export interface FeedItem {
   agentNoteGeneratedAt?: string | null;
   /** YouTube video URL — populated when source URL is a YouTube link (e.g. Fed speech) */
   video_url?: string | null;
+  /** [claude-code 2026-04-27] S46.4/I: Direct .mp4 attached to a tweet
+   *  (highest-bitrate variant from extended_entities.media[0].video_info.variants[]).
+   *  Distinct from video_url which is a YouTube *page* URL — this is the raw
+   *  media URL the frontend renders inside <video controls>. */
+  videoUrl?: string | null;
   /** Structured economic data for econ prints */
   econData?: {
     actual?: number | null;

@@ -203,6 +203,10 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         agentNote: item.agentNote ?? null,
         agentNoteGeneratedAt: item.agentNoteGeneratedAt ?? null,
         videoUrl:
+          // [claude-code 2026-04-27] S46.4/I: prefer the worker-extracted .mp4
+          // URL (camelCased videoUrl) over the legacy snake_case video_url
+          // field. Falls back to the YouTube page URL when neither is set.
+          (item as { videoUrl?: string | null }).videoUrl ??
           item.video_url ??
           (item.url && /youtube\.com|youtu\.be/.test(item.url)
             ? item.url
@@ -270,6 +274,10 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         agentNote: item.agentNote ?? null,
         agentNoteGeneratedAt: item.agentNoteGeneratedAt ?? null,
         videoUrl:
+          // [claude-code 2026-04-27] S46.4/I: prefer the worker-extracted .mp4
+          // URL (camelCased videoUrl) over the legacy snake_case video_url
+          // field. Falls back to the YouTube page URL when neither is set.
+          (item as { videoUrl?: string | null }).videoUrl ??
           item.video_url ??
           (item.url && /youtube\.com|youtu\.be/.test(item.url)
             ? item.url

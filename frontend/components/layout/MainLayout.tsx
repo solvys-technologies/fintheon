@@ -20,6 +20,7 @@ import { EmotionalResonanceMonitor } from "../mission-control/EmotionalResonance
 import { WeeklyPerformanceWidget } from "../mission-control/WeeklyPerformanceWidget";
 import { AccountTrackerWidget } from "../mission-control/AccountTrackerWidget";
 import { AlgoStatusWidget } from "../mission-control/AlgoStatusWidget";
+import { DeskThemeWidget } from "../mission-control/DeskThemeWidget";
 import { PanelNotificationWidget } from "./PanelNotificationWidget";
 import { MinimalERMeter } from "../MinimalERMeter";
 // [claude-code 2026-04-03] S14-T5: Scriptorium standalone tab removed — knowledge archive accessed via Apparatus dropdown
@@ -43,6 +44,7 @@ import { AgentVoiceWaveform } from "../voice/AgentVoiceWaveform";
 import { FooterToolbar } from "./FooterToolbar";
 import { EmbeddedBrowserFrame } from "./EmbeddedBrowserFrame";
 import { ScheduleProvider } from "../../contexts/ScheduleContext";
+import { YouTubeMiniplayerProvider } from "../../contexts/YouTubeMiniplayerContext";
 // [claude-code 2026-04-03] S14-T5: Removed DocumentsView, SharedMemoryPanel, ResearchBoard standalone imports — now in ConsiliumHub
 import { FirstTimeTour } from "../onboarding/FirstTimeTour";
 // [claude-code 2026-03-16] Hermes moved from standalone page into Settings tab
@@ -461,6 +463,7 @@ function MainLayoutInner() {
       account: true,
       weekly: true,
       calendar: true,
+      deskTheme: true,
     };
     setMissionWidgetVisibilityState(allOn);
     setMissionWidgetVisibility(allOn);
@@ -506,6 +509,13 @@ function MainLayoutInner() {
         id: "calendar" as const,
         label: "Session Calendar",
         node: <SessionCalendarMini />,
+      },
+      // [claude-code 2026-04-27] S46.4/G: Desk Theme widget — pulls deskTheme
+      // from /api/day-plan/today + tap-to-expand into the matching brief.
+      deskTheme: {
+        id: "deskTheme" as const,
+        label: "Desk Theme",
+        node: <DeskThemeWidget />,
       },
     }),
     [],
@@ -732,246 +742,253 @@ function MainLayoutInner() {
 
   return (
     <ScheduleProvider>
-      <div
-        className={`h-screen flex flex-col bg-[var(--fintheon-bg)] text-white ${topStepXEnabled ? "topstepx-active" : ""}`}
-      >
-        {/* [claude-code 2026-04-24] Standalone waveform overlay — no border, no
+      <YouTubeMiniplayerProvider>
+        <div
+          className={`h-screen flex flex-col bg-[var(--fintheon-bg)] text-white ${topStepXEnabled ? "topstepx-active" : ""}`}
+        >
+          {/* [claude-code 2026-04-24] Standalone waveform overlay — no border, no
             background. Doubles as user-mic indicator (when listening) and agent
             voice (when speaking). The previous draggable COACH popup is gone. */}
-        <AgentVoiceWaveform />
-        <TopHeader
-          topStepXEnabled={topStepXEnabled}
-          onTopStepXToggle={handleBrowserEnable} // [claude-code 2026-03-16] Restore: clicking platform in dropdown enables iframe
-          onTopStepXDisable={handleBrowserToggle}
-          selectedPlatform={selectedPlatform}
-          onPlatformSelect={setSelectedPlatform}
-          layoutOption={layoutOption}
-          onLayoutOptionChange={setLayoutOption}
-          chatOpen={showChat}
-          onChatToggle={() =>
-            setShowChat((prev) => {
-              // Opening chat in Castra → auto-switch to Zen so panels don't fight for space
-              if (!prev && topStepXEnabled && layoutOption === "combined") {
-                setLayoutOption("tickers-only");
-              }
-              return !prev;
-            })
-          }
-          activeTab={activeTab}
-          tabHistory={tabHistory}
-          historyIndex={historyIndex}
-          onBack={goBack}
-          onForward={goForward}
-          hideBranding={topStepXEnabled && sidebarOverlayVisible}
-          toolbarEditMode={layoutEditMode}
-          psychAssistHeadingWidget={
-            topStepXEnabled &&
-            layoutOption === "tickers-only" &&
-            psychAssistTarget === "header" ? (
-              <PsychAssistDockable
-                target="header"
-                onDockToHeader={() => setPsychAssistTarget("header")}
-                onUndockToFloating={() => setPsychAssistTarget("floating")}
-              />
-            ) : undefined
-          }
-          /* [claude-code 2026-04-24] performanceChatWidget removed — orb is
-             the only voice trigger now. */
-        />
-
-        {/* S14-T6: Peers panel removed — team status is now in footer Team tab */}
-
-        <div className="flex-1 flex overflow-hidden relative">
-          <div className="relative">
-            <NavSidebar
-              activeTab={activeTab}
-              onTabChange={(tab) => {
-                setShowRefinement(false);
-                handleTabChange(tab);
-              }}
-              onLogout={handleLogout}
-              topStepXEnabled={topStepXEnabled}
-              onOverlayVisibilityChange={setSidebarOverlayVisible}
-              editMode={layoutEditMode}
-              onEditModeChange={setLayoutEditMode}
-              onNotificationCenterToggle={() =>
-                setNotificationCenterOpen((v) => !v)
-              }
-              onRefinementClick={() => setShowRefinement((v) => !v)}
-              refinementEnabled={refinementEnabled}
-              refinementActive={showRefinement}
-            />
-            <NotificationCenter
-              open={notificationCenterOpen}
-              onClose={() => setNotificationCenterOpen(false)}
-            />
-          </div>
-
-          {/* Left Panels */}
-          {leftPanels.length > 0 && <div className="flex">{leftPanels}</div>}
-
-          {/* Center Content - TopStepX or Main Content with crossfade */}
-          <div className="flex-1 overflow-hidden relative min-w-0 flex flex-col">
-            {/* Timeline overlay — slides over browser, does not affect iframe sizing */}
-            <TimelineOverlay
-              open={timelineOverlayOpen}
-              onClose={() => setTimelineOverlayOpen(false)}
-            />
-            {topStepXEnabled && !timelineOverlayOpen && (
-              <TimelineToggleButton
-                onClick={() => setTimelineOverlayOpen(true)}
-              />
-            )}
-
-            {/* Browser layer */}
-            {topStepXEnabled && (
-              <div
-                className={`absolute inset-0 z-10 ${isStone ? "bg-black" : ""} ${browserVisible ? "animate-browser-in" : "animate-browser-out"}`}
-              >
-                <TradingBrowser
-                  primaryPlatform={selectedPlatform}
-                  onPrimaryPlatformChange={setSelectedPlatform}
-                  secondaryPlatform={secondaryPlatform}
-                  onSecondaryPlatformChange={setSecondaryPlatform}
-                  splitViewEnabled={splitBrowserView}
-                  onSplitViewEnabledChange={setSplitBrowserView}
-                  allowSplitView={topStepXEnabled}
+          <AgentVoiceWaveform />
+          <TopHeader
+            topStepXEnabled={topStepXEnabled}
+            onTopStepXToggle={handleBrowserEnable} // [claude-code 2026-03-16] Restore: clicking platform in dropdown enables iframe
+            onTopStepXDisable={handleBrowserToggle}
+            selectedPlatform={selectedPlatform}
+            onPlatformSelect={setSelectedPlatform}
+            layoutOption={layoutOption}
+            onLayoutOptionChange={setLayoutOption}
+            chatOpen={showChat}
+            onChatToggle={() =>
+              setShowChat((prev) => {
+                // Opening chat in Castra → auto-switch to Zen so panels don't fight for space
+                if (!prev && topStepXEnabled && layoutOption === "combined") {
+                  setLayoutOption("tickers-only");
+                }
+                return !prev;
+              })
+            }
+            activeTab={activeTab}
+            tabHistory={tabHistory}
+            historyIndex={historyIndex}
+            onBack={goBack}
+            onForward={goForward}
+            hideBranding={topStepXEnabled && sidebarOverlayVisible}
+            toolbarEditMode={layoutEditMode}
+            psychAssistHeadingWidget={
+              topStepXEnabled &&
+              layoutOption === "tickers-only" &&
+              psychAssistTarget === "header" ? (
+                <PsychAssistDockable
+                  target="header"
+                  onDockToHeader={() => setPsychAssistTarget("header")}
+                  onUndockToFloating={() => setPsychAssistTarget("floating")}
                 />
-              </div>
-            )}
+              ) : undefined
+            }
+            /* [claude-code 2026-04-24] performanceChatWidget removed — orb is
+             the only voice trigger now. */
+          />
 
-            {/* Main content layer */}
-            <div
-              className={`h-full relative flex-1 flex flex-col ${topStepXEnabled ? "pointer-events-none" : ""}`}
-              style={{
-                opacity: topStepXEnabled ? 0 : 1,
-                transition: "opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
-              }}
-            >
-              <TabRenderer
+          {/* S14-T6: Peers panel removed — team status is now in footer Team tab */}
+
+          <div className="flex-1 flex overflow-hidden relative">
+            <div className="relative">
+              <NavSidebar
                 activeTab={activeTab}
-                tabTransitioning={tabTransitioning}
-                prevTab={prevTab}
-                showRefinement={showRefinement}
-                navigateTab={navigateTab}
+                onTabChange={(tab) => {
+                  setShowRefinement(false);
+                  handleTabChange(tab);
+                }}
+                onLogout={handleLogout}
+                topStepXEnabled={topStepXEnabled}
+                onOverlayVisibilityChange={setSidebarOverlayVisible}
+                editMode={layoutEditMode}
+                onEditModeChange={setLayoutEditMode}
+                onNotificationCenterToggle={() =>
+                  setNotificationCenterOpen((v) => !v)
+                }
+                onRefinementClick={() => setShowRefinement((v) => !v)}
+                refinementEnabled={refinementEnabled}
+                refinementActive={showRefinement}
+              />
+              <NotificationCenter
+                open={notificationCenterOpen}
+                onClose={() => setNotificationCenterOpen(false)}
               />
             </div>
-          </div>
 
-          {/* Right Panels */}
-          {rightPanels.length > 0 && <div className="flex">{rightPanels}</div>}
+            {/* Left Panels */}
+            {leftPanels.length > 0 && <div className="flex">{leftPanels}</div>}
 
-          {/* Floating Widget */}
-          {showFloatingWidget && (
-            <FloatingWidget
-              ivData={ivData}
-              ivLoading={ivLoading}
-              layoutOption={layoutOption}
-              onClose={() => {}}
-            />
-          )}
+            {/* Center Content - TopStepX or Main Content with crossfade */}
+            <div className="flex-1 overflow-hidden relative min-w-0 flex flex-col">
+              {/* Timeline overlay — slides over browser, does not affect iframe sizing */}
+              <TimelineOverlay
+                open={timelineOverlayOpen}
+                onClose={() => setTimelineOverlayOpen(false)}
+              />
+              {topStepXEnabled && !timelineOverlayOpen && (
+                <TimelineToggleButton
+                  onClick={() => setTimelineOverlayOpen(true)}
+                />
+              )}
 
-          {/* Zen Layout: dockable PsychAssist widget (float ↔ header) */}
-          {topStepXEnabled &&
-            layoutOption === "tickers-only" &&
-            psychAssistTarget === "floating" && (
-              <PsychAssistDockable
-                target="floating"
-                onDockToHeader={() => setPsychAssistTarget("header")}
-                onUndockToFloating={() => setPsychAssistTarget("floating")}
+              {/* Browser layer */}
+              {topStepXEnabled && (
+                <div
+                  className={`absolute inset-0 z-10 ${isStone ? "bg-black" : ""} ${browserVisible ? "animate-browser-in" : "animate-browser-out"}`}
+                >
+                  <TradingBrowser
+                    primaryPlatform={selectedPlatform}
+                    onPrimaryPlatformChange={setSelectedPlatform}
+                    secondaryPlatform={secondaryPlatform}
+                    onSecondaryPlatformChange={setSecondaryPlatform}
+                    splitViewEnabled={splitBrowserView}
+                    onSplitViewEnabledChange={setSplitBrowserView}
+                    allowSplitView={topStepXEnabled}
+                  />
+                </div>
+              )}
+
+              {/* Main content layer */}
+              <div
+                className={`h-full relative flex-1 flex flex-col ${topStepXEnabled ? "pointer-events-none" : ""}`}
+                style={{
+                  opacity: topStepXEnabled ? 0 : 1,
+                  transition: "opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+                }}
+              >
+                <TabRenderer
+                  activeTab={activeTab}
+                  tabTransitioning={tabTransitioning}
+                  prevTab={prevTab}
+                  showRefinement={showRefinement}
+                  navigateTab={navigateTab}
+                />
+              </div>
+            </div>
+
+            {/* Right Panels */}
+            {rightPanels.length > 0 && (
+              <div className="flex">{rightPanels}</div>
+            )}
+
+            {/* Floating Widget */}
+            {showFloatingWidget && (
+              <FloatingWidget
+                ivData={ivData}
+                ivLoading={ivLoading}
+                layoutOption={layoutOption}
+                onClose={() => {}}
               />
             )}
 
-          {/* Panel Notification Widgets */}
-          {showMissionControlNotification && (
-            <PanelNotificationWidget
-              panelName="Mission Control"
-              onRestore={() => {
-                setMissionControlPosition("right");
-                setShowMissionControlNotification(false);
-              }}
-              onDismiss={() => setShowMissionControlNotification(false)}
-            />
-          )}
-          {showTapeNotification && (
-            <PanelNotificationWidget
-              panelName="RiskFlow"
-              onRestore={() => {
-                setTapePosition("right");
-                setShowTapeNotification(false);
-              }}
-              onDismiss={() => setShowTapeNotification(false)}
-            />
-          )}
+            {/* Zen Layout: dockable PsychAssist widget (float ↔ header) */}
+            {topStepXEnabled &&
+              layoutOption === "tickers-only" &&
+              psychAssistTarget === "floating" && (
+                <PsychAssistDockable
+                  target="floating"
+                  onDockToHeader={() => setPsychAssistTarget("header")}
+                  onUndockToFloating={() => setPsychAssistTarget("floating")}
+                />
+              )}
 
-          {/* YouTube floating miniplayer — persists independent of TradingBrowser */}
-          {showYouTubeMiniplayer && (
-            <YouTubeMiniplayer
-              onClose={() => {
-                setShowYouTubeMiniplayer(false);
-                try {
-                  localStorage.setItem("fintheon:yt-miniplayer-open", "false");
-                } catch {
-                  /* ignore */
-                }
-              }}
-            />
-          )}
+            {/* Panel Notification Widgets */}
+            {showMissionControlNotification && (
+              <PanelNotificationWidget
+                panelName="Mission Control"
+                onRestore={() => {
+                  setMissionControlPosition("right");
+                  setShowMissionControlNotification(false);
+                }}
+                onDismiss={() => setShowMissionControlNotification(false)}
+              />
+            )}
+            {showTapeNotification && (
+              <PanelNotificationWidget
+                panelName="RiskFlow"
+                onRestore={() => {
+                  setTapePosition("right");
+                  setShowTapeNotification(false);
+                }}
+                onDismiss={() => setShowTapeNotification(false)}
+              />
+            )}
 
-          {/* Global chat panel — slide in/out from right */}
-          <ChatPanel
-            showChat={showChat}
-            onClose={() => setShowChat(false)}
-            navigateTab={(tab) => navigateTab(tab as NavTab)}
-          />
-        </div>
+            {/* YouTube floating miniplayer — persists independent of TradingBrowser */}
+            {showYouTubeMiniplayer && (
+              <YouTubeMiniplayer
+                onClose={() => {
+                  setShowYouTubeMiniplayer(false);
+                  try {
+                    localStorage.setItem(
+                      "fintheon:yt-miniplayer-open",
+                      "false",
+                    );
+                  } catch {
+                    /* ignore */
+                  }
+                }}
+              />
+            )}
 
-        <SessionCountdownWidget />
-
-        <FooterToolbar
-          topStepXEnabled={topStepXEnabled}
-          primaryPlatform={selectedPlatform}
-          onPrimaryPlatformChange={setSelectedPlatform}
-          secondaryPlatform={secondaryPlatform}
-          onSecondaryPlatformChange={setSecondaryPlatform}
-          splitViewEnabled={splitBrowserView}
-          onSplitViewToggle={() => setSplitBrowserView((v) => !v)}
-          allowSplitView={topStepXEnabled}
-          onPowerOff={handleBrowserToggle}
-        />
-
-        {/* Preload iframes — hidden, loads TopStepX + Research in background for instant tab switch */}
-        {!topStepXEnabled && (
-          <div
-            style={{
-              position: "fixed",
-              left: "-9999px",
-              width: "1px",
-              height: "1px",
-              overflow: "hidden",
-            }}
-          >
-            <EmbeddedBrowserFrame
-              title="TopStepX (preload)"
-              src="https://www.topstepx.com"
-            />
-            <EmbeddedBrowserFrame
-              title="Research (preload)"
-              src={iframeUrls.research || ""}
+            {/* Global chat panel — slide in/out from right */}
+            <ChatPanel
+              showChat={showChat}
+              onClose={() => setShowChat(false)}
+              navigateTab={(tab) => navigateTab(tab as NavTab)}
             />
           </div>
-        )}
 
-        {/* Global overlays */}
-        <SearchModal
-          open={showSearchModal}
-          onClose={() => setShowSearchModal(false)}
-          onNavigateTab={(tab) => navigateTab(tab as NavTab)}
-        />
+          <SessionCountdownWidget />
 
-        {/* First-time user tour + interview + setup wizard */}
-        <FirstTimeTour onNavigate={(tab) => navigateTab(tab as NavTab)} />
-      </div>
+          <FooterToolbar
+            topStepXEnabled={topStepXEnabled}
+            primaryPlatform={selectedPlatform}
+            onPrimaryPlatformChange={setSelectedPlatform}
+            secondaryPlatform={secondaryPlatform}
+            onSecondaryPlatformChange={setSecondaryPlatform}
+            splitViewEnabled={splitBrowserView}
+            onSplitViewToggle={() => setSplitBrowserView((v) => !v)}
+            allowSplitView={topStepXEnabled}
+            onPowerOff={handleBrowserToggle}
+          />
+
+          {/* Preload iframes — hidden, loads TopStepX + Research in background for instant tab switch */}
+          {!topStepXEnabled && (
+            <div
+              style={{
+                position: "fixed",
+                left: "-9999px",
+                width: "1px",
+                height: "1px",
+                overflow: "hidden",
+              }}
+            >
+              <EmbeddedBrowserFrame
+                title="TopStepX (preload)"
+                src="https://www.topstepx.com"
+              />
+              <EmbeddedBrowserFrame
+                title="Research (preload)"
+                src={iframeUrls.research || ""}
+              />
+            </div>
+          )}
+
+          {/* Global overlays */}
+          <SearchModal
+            open={showSearchModal}
+            onClose={() => setShowSearchModal(false)}
+            onNavigateTab={(tab) => navigateTab(tab as NavTab)}
+          />
+
+          {/* First-time user tour + interview + setup wizard */}
+          <FirstTimeTour onNavigate={(tab) => navigateTab(tab as NavTab)} />
+        </div>
+      </YouTubeMiniplayerProvider>
     </ScheduleProvider>
   );
 }

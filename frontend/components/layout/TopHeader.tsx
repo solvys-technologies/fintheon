@@ -540,9 +540,12 @@ export function TopHeader({
           {topStepXEnabled && onLayoutOptionChange ? (
             // iFrame active → Castra/Zen layout dropdown
             <div className="relative" ref={dropdownRef}>
+              {/* [claude-code 2026-04-27] S46.4/F: chip chrome stripped per TP —
+                  trigger sits flush with the toolbar like other icon buttons.
+                  Resting state: no bg + no border. Hover keeps the accent flash. */}
               <button
                 onClick={() => setShowLayoutDropdown(!showLayoutDropdown)}
-                className="px-2.5 h-7 rounded-lg text-xs font-medium bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
+                className="px-2.5 h-7 rounded-lg text-xs font-medium text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
                 title="Layout Options"
               >
                 {layoutOptions.find((opt) => opt.value === layoutOption)?.icon}
@@ -602,9 +605,10 @@ export function TopHeader({
           ) : (
             // iFrame off → platform/browser selection dropdown
             <div className="relative" ref={platformDropdownRef}>
+              {/* [claude-code 2026-04-27] S46.4/F: chip chrome stripped per TP. */}
               <button
                 onClick={() => setShowPlatformDropdown(!showPlatformDropdown)}
-                className="px-2.5 h-7 rounded-lg text-xs font-medium bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
+                className="px-2.5 h-7 rounded-lg text-xs font-medium text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
                 title="Select trading platform"
               >
                 {!isElectron() && <Monitor className="w-3 h-3" />}

@@ -9,6 +9,33 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-27T04:30:00",
+    agent: "claude-code",
+    summary:
+      "S46.4 Phase 2: F TopHeader platform/layout dropdown chip chrome stripped (resting state has no bg/border, hover keeps the accent flash). G Strategium widget pane gains a DeskTheme widget that pulls from /api/day-plan/today + tap-to-expand into the matching MDB/ADB/PMDB brief (pickBriefType picks by ET hour); Autopilot widget moved to the LAST default slot (final order: er→regime→account→weekly→calendar→deskTheme→autopilot); MISSION_WIDGET_ORDER_KEY bumped v5→v6 acts as the localStorage normalize-on-mount per feedback_persisted_state_normalize_on_mount.md. H YouTubeMiniplayerContext bridges the existing draggable layout/YouTubeMiniplayer to RiskFlowDetailCard tap-throughs via a `yt-miniplayer:set-video` CustomEvent + shared localStorage key; commentary-category cards whose URL parses to a YouTube ID open inside the miniplayer instead of a new tab; Bloomberg Originals (channel UCqRhOzHM-c6L1JV-CV2j2_g) is the idle homepage embed (NOT a polling source — publisher-blocklist + content-guard MSM ban unchanged); IntersectionObserver auto-pauses the iframe via postMessage when scrolled off-screen. K (TP mid-stream) Sanctum Volatility Read + Next Session Forecast collapsed into a single transparent BlendedIVForecastCard — $/contract footer removed, forecast Doto numeral + confidence fuse take its place; grey bg-[var(--fintheon-surface)] stripped from both the IV scoring card and the DeskTheme widget; section dividers swapped to fading rulers (no borders) per TP. I video_url end-to-end: migration 20260427030000_add_video_url.sql adds video_url TEXT to raw + scored riskflow tables (push pending TP go-ahead — sandbox blocked supabase db push); worker x-handles-browser extracts highest-bitrate mp4 from extended_entities.media[].video_info.variants[] and threads through CollectedNewsItem → persist → RawRiskFlowItem → ScoredRiskFlowItem → FeedItem.videoUrl; central-scorer raw→scored + scored→FeedItem mappers updated alongside image_url; supabase-service raw + scored INSERT statements include video_url + COALESCE on conflict; RiskFlowDetailCard renders <video controls poster={imageUrl} src={videoUrl}> wrapped in <a href={url}>, with data-osint-video attribute for OSINT-source highlighting; RiskFlowContext mapper prefers camelCased videoUrl over legacy snake_case video_url.",
+    files: [
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/lib/layoutOrderStorage.ts",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/mission-control/DeskThemeWidget.tsx",
+      "frontend/lib/youtube.ts",
+      "frontend/contexts/YouTubeMiniplayerContext.tsx",
+      "frontend/components/layout/YouTubeMiniplayer.tsx",
+      "frontend/types/electron.d.ts",
+      "frontend/components/feed/RiskFlowDetailCard.tsx",
+      "frontend/components/narrative/BlendedIVForecastCard.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+      "frontend/contexts/RiskFlowContext.tsx",
+      "supabase/migrations/20260427030000_add_video_url.sql",
+      "backend-hono/src/workers/riskflow-worker/sources/types.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/x-handles-browser.ts",
+      "backend-hono/src/workers/riskflow-worker/persist.ts",
+      "backend-hono/src/services/riskflow/central-scorer.ts",
+      "backend-hono/src/services/supabase-service.ts",
+      "backend-hono/src/types/riskflow.ts",
+    ],
+  },
+  {
     date: "2026-04-27T03:30:00",
     agent: "claude-code",
     summary:

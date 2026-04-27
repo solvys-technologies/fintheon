@@ -5,7 +5,10 @@
 
 const SIDEBAR_ORDER_KEY = "fintheon:sidebar-nav-order";
 const TOOLBAR_ORDER_KEY = "fintheon:toolbar-order";
-const MISSION_WIDGET_ORDER_KEY = "fintheon:mission-widget-order:v5"; // v5: blindspots → weekly (S30-T2 widget swap)
+// v6 (S46.4/G): added deskTheme widget, autopilot moved to last slot. Bumped
+// key acts as the normalize-on-mount per feedback_persisted_state_normalize_on_mount.md
+// — users with v5 persisted order get the new default automatically.
+const MISSION_WIDGET_ORDER_KEY = "fintheon:mission-widget-order:v6";
 const MISSION_WIDGET_VISIBILITY_KEY = "fintheon:mission-widget-visibility";
 const RIGHT_PANEL_ORDER_KEY = "fintheon:right-panel-order";
 
@@ -57,15 +60,20 @@ export type MissionWidgetId =
   | "regime"
   | "account"
   | "weekly"
-  | "calendar";
+  | "calendar"
+  | "deskTheme";
 
+// [claude-code 2026-04-27] S46.4/G: autopilot moved to LAST. New deskTheme
+// widget inserted between calendar and autopilot per TP brief (final
+// strategium order: Mission Control surfaces → Calendar → DeskTheme → Autopilot).
 export const DEFAULT_MISSION_WIDGET_ORDER: MissionWidgetId[] = [
   "er",
-  "autopilot",
   "regime",
   "account",
   "weekly",
   "calendar",
+  "deskTheme",
+  "autopilot",
 ];
 
 // S30-T2: "blindspots" widget replaced by "weekly" (WeeklyPerformanceWidget).
@@ -134,6 +142,7 @@ export function getMissionWidgetVisibility(): Record<MissionWidgetId, boolean> {
     account: true,
     weekly: true,
     calendar: true,
+    deskTheme: true,
   };
   try {
     const raw = localStorage.getItem(MISSION_WIDGET_VISIBILITY_KEY);

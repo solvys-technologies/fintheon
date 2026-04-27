@@ -1,8 +1,18 @@
+// [claude-code 2026-04-27] S46.4/H: Listens for `yt-miniplayer:set-video`
+// CustomEvent so RiskFlowDetailCard tap-throughs land here. When opened
+// with no current video, falls through to the Bloomberg Originals YouTube
+// channel embed as a passive idle homepage (NOT a polling source — the
+// publisher-blocklist + content-guard MSM ban is unchanged). IntersectionObserver
+// auto-pauses the iframe when scrolled off-screen.
 // [claude-code 2026-04-17] Migrated drag to useDraggable hook; resize migrated to pointer events + rAF; removed glass/shadow effects per Nothing-Design
 import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Minus, Maximize2, GripVertical, Play, Youtube } from "lucide-react";
 import { isElectron } from "../../lib/platform";
 import { useDraggable } from "../../hooks/useDraggable";
+import {
+  bloombergOriginalsHomepage,
+  buildYouTubeEmbed,
+} from "../../lib/youtube";
 
 interface YouTubeMiniplayerProps {
   onClose: () => void;
@@ -88,6 +98,53 @@ export function YouTubeMiniplayer({ onClose }: YouTubeMiniplayerProps) {
       /* ignore */
     }
   }, [videoId]);
+
+  // [claude-code 2026-04-27] S46.4/H: pick up programmatic openVideo() calls
+  // from the YouTubeMiniplayerContext so RiskFlowDetailCard tap-throughs land
+  // here without needing to refactor the existing draggable/resizable state.
+  useEffect(() => {
+    function onSet(evt: Event) {
+      const detail = (evt as CustomEvent<{ videoId: string | null }>).detail;
+      setVideoId(detail?.videoId ?? null);
+    }
+    window.addEventListener("yt-miniplayer:set-video", onSet as EventListener);
+    return () =>
+      window.removeEventListener(
+        "yt-miniplayer:set-video",
+        onSet as EventListener,
+      );
+  }, []);
+
+  // [claude-code 2026-04-27] S46.4/H: auto-pause the iframe when the panel
+  // scrolls off-screen. YouTube's embed accepts the postMessage "pauseVideo"
+  // command without loading the IFrame API SDK.
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  useEffect(() => {
+    const el = iframeRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) continue;
+          try {
+            el.contentWindow?.postMessage(
+              JSON.stringify({
+                event: "command",
+                func: "pauseVideo",
+                args: [],
+              }),
+              "*",
+            );
+          } catch {
+            /* sandboxed iframe — best-effort */
+          }
+        }
+      },
+      { threshold: 0.25 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [videoId, minimized]);
 
   // Debounced size persistence
   useEffect(() => {
@@ -401,7 +458,13 @@ export function YouTubeMiniplayer({ onClose }: YouTubeMiniplayerProps) {
         </div>
       </div>
 
-      {/* Content — fills remaining space */}
+      {/* Content — fills remaining space.
+          [claude-code 2026-04-27] S46.4/H: when there is no current videoId
+          we render Bloomberg Originals as the idle homepage instead of a
+          paste-URL form. The form moves to a thin overlay strip at the top
+          so TP can still type a URL when desired. Bloomberg Originals is
+          NOT a polling source — it is passive idle entertainment only. The
+          MSM publisher-blocklist + content-guard remain unchanged. */}
       {videoId ? (
         <div className="flex-1 min-h-0 bg-black">
           {isElectron() ? (
@@ -415,8 +478,9 @@ export function YouTubeMiniplayer({ onClose }: YouTubeMiniplayerProps) {
             />
           ) : (
             <iframe
+              ref={iframeRef}
               title="YouTube miniplayer"
-              src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`}
+              src={`${buildYouTubeEmbed(videoId)}&autoplay=1&enablejsapi=1`}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               referrerPolicy="no-referrer"
               allowFullScreen
@@ -425,34 +489,37 @@ export function YouTubeMiniplayer({ onClose }: YouTubeMiniplayerProps) {
           )}
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="flex flex-col items-center gap-3 w-full max-w-sm">
-            <div className="text-center">
-              <Youtube className="w-10 h-10 text-red-500/40 mx-auto mb-2" />
-              <p className="text-xs text-[var(--fintheon-text)]/50">
-                Paste a YouTube URL or video ID
-              </p>
-            </div>
-            <form onSubmit={handleSubmit} className="w-full flex gap-2">
-              <input
-                ref={inputRef}
-                type="text"
-                value={urlInput}
-                onChange={(e) => setUrlInput(e.target.value)}
-                placeholder="https://youtube.com/watch?v=..."
-                className="flex-1 bg-[var(--fintheon-bg)]/60 border border-[var(--fintheon-accent)]/20 rounded-xl px-3 py-2 text-xs text-[var(--fintheon-text)] placeholder-[var(--fintheon-text)]/30 outline-none focus:border-[var(--fintheon-accent)]/50 transition-colors"
-                autoFocus
-              />
-              <button
-                type="submit"
-                disabled={!urlInput.trim()}
-                className="p-2 bg-red-500/20 hover:bg-red-500/30 disabled:opacity-30 disabled:cursor-not-allowed rounded-xl text-red-400 transition-colors"
-                title="Play"
-              >
-                <Play className="w-4 h-4" />
-              </button>
-            </form>
-          </div>
+        <div className="flex-1 min-h-0 flex flex-col bg-black">
+          <iframe
+            ref={iframeRef}
+            title="Bloomberg Originals (idle)"
+            src={`${bloombergOriginalsHomepage()}&enablejsapi=1`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            referrerPolicy="no-referrer"
+            allowFullScreen
+            className="w-full flex-1 min-h-0"
+          />
+          <form
+            onSubmit={handleSubmit}
+            className="flex gap-2 p-2 border-t border-[var(--fintheon-accent)]/15"
+          >
+            <input
+              ref={inputRef}
+              type="text"
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              placeholder="Paste a YouTube URL or video ID"
+              className="flex-1 bg-[var(--fintheon-bg)]/60 border border-[var(--fintheon-accent)]/20 rounded-lg px-2 py-1 text-[11px] text-[var(--fintheon-text)] placeholder-[var(--fintheon-text)]/30 outline-none focus:border-[var(--fintheon-accent)]/50 transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={!urlInput.trim()}
+              className="p-1.5 bg-red-500/20 hover:bg-red-500/30 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg text-red-400 transition-colors"
+              title="Play"
+            >
+              <Play className="w-3.5 h-3.5" />
+            </button>
+          </form>
         </div>
       )}
     </div>

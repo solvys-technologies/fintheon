@@ -17,6 +17,7 @@ import { YouTubeLogo } from "../../lib/shared-icons";
 import { timeAgo } from "../../lib/time-utils";
 import { linkifyText } from "../../lib/linkify";
 import { SourcePreview } from "./SourcePreview";
+import { useYouTubeMiniplayer } from "../../contexts/YouTubeMiniplayerContext";
 
 export type RiskFlowDetailSurface = "full" | "timeline" | "mini";
 
@@ -68,6 +69,7 @@ export function RiskFlowDetailCard({
   const [detailedNote, setDetailedNote] = useState<DetailedNote | null>(null);
   const [generating, setGenerating] = useState(false);
   const { addToast } = useToast();
+  const { openVideo } = useYouTubeMiniplayer();
   const hasEconData = alert.econData && alert.econData.beatMiss;
   const showSourcePreview = surface === "full" || surface === "timeline";
 
@@ -141,7 +143,33 @@ export function RiskFlowDetailCard({
                 best-effort (RSS enclosure / og:image) — hides on load failure so a
                 broken image never wedges the card. Source link below opens in a new
                 tab and is the primary handoff to the original article. */}
-            {alert.imageUrl && (
+            {/* [claude-code 2026-04-27] S46.4/I: when alert.videoUrl is set
+                (worker-extracted .mp4 from a tweet attachment), render
+                <video controls> with the photo as poster. OSINT-source items
+                carry a data-osint-video attribute so future styling can
+                highlight them. Falls back to <img> when only imageUrl is
+                available. */}
+            {alert.videoUrl ? (
+              <a
+                href={alert.url ?? alert.videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="block mb-3 overflow-hidden bg-[var(--fintheon-bg)]"
+              >
+                <video
+                  src={alert.videoUrl}
+                  poster={alert.imageUrl ?? undefined}
+                  controls
+                  preload="metadata"
+                  data-osint-video={
+                    alert.source.startsWith("twitter:OSINT") ||
+                    alert.source.toLowerCase().includes("osint")
+                  }
+                  className="w-full max-h-96 rounded-lg"
+                />
+              </a>
+            ) : alert.imageUrl ? (
               <a
                 href={alert.url ?? alert.imageUrl}
                 target="_blank"
@@ -162,7 +190,7 @@ export function RiskFlowDetailCard({
                   className="w-full max-h-48 object-cover"
                 />
               </a>
-            )}
+            ) : null}
             {/* 1. Agent Note (or Generate CTA) */}
             {detailedNote ? (
               <div className="border border-zinc-800/60 px-3 py-2.5 mb-3 bg-[var(--fintheon-bg)]">
@@ -342,7 +370,22 @@ export function RiskFlowDetailCard({
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[10px] text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors flex items-center gap-1"
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // [claude-code 2026-04-27] S46.4/H: commentary-category
+                        // YouTube URLs open in the floating miniplayer instead
+                        // of leaving the app. Non-YouTube URLs fall through to
+                        // the default new-tab behaviour. Publisher-blocklist is
+                        // unchanged — banned-publisher YouTube channels are
+                        // already dropped at the persist boundary.
+                        if (
+                          alert.category === "commentary" &&
+                          alert.url &&
+                          openVideo(alert.url)
+                        ) {
+                          e.preventDefault();
+                        }
+                      }}
                     >
                       <ExternalLink className="w-3 h-3" />
                       Source

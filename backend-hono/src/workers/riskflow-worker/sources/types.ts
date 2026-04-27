@@ -25,6 +25,11 @@ export interface CollectedNewsItem {
    *  og:image / twitter:image for browser-harness, <enclosure> /
    *  <media:thumbnail> for RSS. */
   image_url?: string | null;
+  /** Direct .mp4 URL for tweets attaching a video / animated_gif.
+   *  Highest-bitrate variant from extended_entities.media[].video_info.variants[].
+   *  RiskFlowDetailCard renders it inline as <video controls poster={image_url}>
+   *  when present; falls back to <img> otherwise. */
+  video_url?: string | null;
   tier: NewsTier;
   published_at: string;
   fetched_at: string;

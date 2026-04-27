@@ -140,6 +140,8 @@ export async function writeCollectedItems(
   // frontend RiskFlow card depends on (RiskFlowDetailCard.tsx renders an <img>
   // wrapped in <a href={alert.url ?? alert.imageUrl}>). Persist both — the
   // central-scorer copies them straight through to scored_riskflow_items.
+  // [claude-code 2026-04-27] S46.4/I: video_url threaded through for tweet
+  // attachments (highest-bitrate mp4 from extended_entities.media[].video_info).
   const rows = eligible.map((item) => ({
     tweet_id: item.item_id,
     source: item.source,
@@ -148,6 +150,7 @@ export async function writeCollectedItems(
     body: item.body,
     url: item.url ?? null,
     image_url: item.image_url ?? null,
+    video_url: item.video_url ?? null,
     symbols: [] as string[],
     tags: item.url
       ? [`url:${item.url}`, `tier:${item.tier}`]
