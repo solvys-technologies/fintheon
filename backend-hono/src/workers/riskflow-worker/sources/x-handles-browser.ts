@@ -18,6 +18,7 @@
 import type { CollectedNewsItem, NewsTier } from "./types.js";
 import { scoreHeadline } from "../score.js";
 import { getTweetsViaXActions } from "../../../services/xactions/client.js";
+import { browseRead } from "../../../services/browser/index.js";
 
 const SYNDICATION_BASE = "https://syndication.twitter.com";
 const FETCH_TIMEOUT_MS = 12_000;
@@ -116,10 +117,49 @@ async function fetchSyndicationTweets(
     cleanHandle,
   )}?language=en`;
 
-  // PRIMARY: direct fetch (browser-harness is the local Playwright path
-  // that already runs in worker; here we use plain fetch since the syndication
-  // endpoint returns a static HTML doc, no JS rendering needed). Cheap when it
-  // works.
+  // [claude-code 2026-04-27] PRIMARY: route through browser-harness Playwright
+  // pool (services/browser/harness.ts → browseRead with textOnly:false so the
+  // <script id="__NEXT_DATA__"> survives). The pool ships a real Chromium with
+  // realistic headers + circuit breaker + Steel CDP fallback baked in, which
+  // bypasses Twitter's 429 wall on Fly's IAD shared IP that plain fetch hits
+  // immediately. If the pool itself errors (no browsers available, allowlist
+  // miss, circuit tripped), we fall through to plain fetch as a last-ditch
+  // before XActions.
+  try {
+    const result = await browseRead({
+      url,
+      mode: "allowlist",
+      textOnly: false,
+      waitFor: "load",
+    });
+    if (result?.body && result.body.length > 0) {
+      const tweets = parseSyndicationHtml(result.body, cleanHandle);
+      if (tweets.length > 0) return tweets;
+    }
+    console.warn(
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        service: "riskflow-worker",
+        stage: "syndication_harness_empty",
+        handle: cleanHandle,
+        status: result?.status ?? null,
+      }),
+    );
+  } catch (err) {
+    console.warn(
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        service: "riskflow-worker",
+        stage: "syndication_harness_error",
+        handle: cleanHandle,
+        error: err instanceof Error ? err.message : String(err),
+      }),
+    );
+  }
+
+  // Last-ditch plain fetch — kept for the local-dev path where the Playwright
+  // pool might be unavailable (no browsers installed on the dev machine). On
+  // Fly this almost always 429s, but the no-cost retry is fine before XActions.
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
