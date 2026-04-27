@@ -70,17 +70,12 @@ interface SourceStat {
 
 export function createRiskFlowBulkRoutes() {
   const router = new Hono();
-
-  router.use("*", async (c, next) => {
-    const secret = process.env.ROUTINE_SECRET;
-    if (!secret) {
-      return c.json({ error: "ROUTINE_SECRET not configured" }, 503);
-    }
-    if (c.req.header("x-routine-secret") !== secret) {
-      return c.json({ error: "unauthorized" }, 401);
-    }
-    await next();
-  });
+  // [claude-code 2026-04-27] v5.33.3: gate swapped from x-routine-secret to
+  // Supabase JWT + superadmin allow-list per TP. Route mount in routes/index.ts
+  // stacks authMiddleware + requireAuth + requireSuperadmin upstream — no
+  // per-route secret check needed here. The Refinement Engine UI now passes
+  // the user's JWT via Authorization: Bearer <token> instead of having TP
+  // paste a routine secret into the panel.
 
   // GET /source-stats — counts per source for the Refinement Engine panel.
   router.get("/source-stats", async (c) => {
@@ -300,6 +295,16 @@ export function createRiskFlowBulkRoutes() {
   });
 
   // POST /msm-purge — audit + confirm-gated mainstream-media row removal.
+  // [claude-code 2026-04-27] v5.33.3:
+  //   - body.from / body.to (YYYY-MM-DD) scope the purge by published_at;
+  //     defaults to TODAY in America/New_York when both are omitted.
+  //   - body.scope: "today" (default), "all", or "range" — "today" forces
+  //     the ET-midnight window even if from/to are passed.
+  //   - Wire-relay exemption: rows whose source_domain starts with
+  //     "twitter:" / "nitter:" are EXCLUDED from the match. Approved-handle
+  //     wire tweets that quote MSM names inline ("Fed announces XYZ:
+  //     REUTERS" from FinancialJuice) stay in the feed; only MSM URLs +
+  //     MSM-published text (web scrapes) get dropped.
   router.post("/msm-purge", async (c) => {
     const sb = getSupabaseClient();
     if (!sb) return c.json({ error: "supabase_unavailable" }, 503);
@@ -309,8 +314,44 @@ export function createRiskFlowBulkRoutes() {
       unknown
     >;
     const confirm = body.confirm === true;
+    const scope = typeof body.scope === "string" ? body.scope : "today";
 
-    // Build the OR clause once — every needle hits headline + body + url.
+    // Resolve date window. "today" = America/New_York calendar day.
+    let fromIso: string | null = null;
+    let toIso: string | null = null;
+    if (scope === "all") {
+      fromIso = null;
+      toIso = null;
+    } else if (
+      scope === "range" &&
+      typeof body.from === "string" &&
+      typeof body.to === "string" &&
+      ISO_DATE.test(body.from) &&
+      ISO_DATE.test(body.to)
+    ) {
+      fromIso = new Date(`${body.from}T00:00:00Z`).toISOString();
+      toIso = new Date(
+        Date.parse(`${body.to}T00:00:00Z`) + 86_400_000,
+      ).toISOString();
+    } else {
+      // "today" — ET calendar day
+      const etYmd = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/New_York",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(new Date());
+      // ET midnight → UTC. Use a synthetic date string + Date math; en-CA
+      // gives YYYY-MM-DD already.
+      const etMidnight = new Date(`${etYmd}T00:00:00-04:00`);
+      // EDT vs EST: -04 in DST, -05 outside. America/New_York observes DST
+      // most of the year; the 1-hour skew at boundaries is acceptable for
+      // a purge window. Caller can pass scope=range for surgical control.
+      fromIso = etMidnight.toISOString();
+      toIso = new Date(etMidnight.getTime() + 86_400_000).toISOString();
+    }
+
+    // Build the OR clause — every needle hits headline + body + url.
     const orParts: string[] = [];
     for (const needle of MSM_NEEDLES) {
       orParts.push(`headline.ilike.%${needle}%`);
@@ -319,11 +360,26 @@ export function createRiskFlowBulkRoutes() {
     }
     const orClause = orParts.join(",");
 
+    function applyFilters<
+      T extends { or: Function; not: Function; gte: Function; lt: Function },
+    >(q: T): T {
+      let out: T = q.or(orClause) as T;
+      // Wire-relay exemption: drop nothing whose source_domain marks it
+      // as a Twitter / Nitter handle ingest.
+      out = out.not("source_domain", "ilike", "twitter:%") as T;
+      out = out.not("source_domain", "ilike", "nitter:%") as T;
+      if (fromIso) out = out.gte("published_at", fromIso) as T;
+      if (toIso) out = out.lt("published_at", toIso) as T;
+      return out;
+    }
+
     if (!confirm) {
-      const { data: sample, error: sampleErr } = await sb
-        .from("scored_riskflow_items")
-        .select("id, headline, source_domain, published_at, url")
-        .or(orClause)
+      const sampleQ = applyFilters(
+        sb
+          .from("scored_riskflow_items")
+          .select("id, headline, source_domain, published_at, url"),
+      );
+      const { data: sample, error: sampleErr } = await sampleQ
         .order("published_at", { ascending: false })
         .limit(20);
       if (sampleErr) {
@@ -332,10 +388,12 @@ export function createRiskFlowBulkRoutes() {
           500,
         );
       }
-      const { count, error: countErr } = await sb
-        .from("scored_riskflow_items")
-        .select("id", { count: "exact", head: true })
-        .or(orClause);
+      const countQ = applyFilters(
+        sb
+          .from("scored_riskflow_items")
+          .select("id", { count: "exact", head: true }),
+      );
+      const { count, error: countErr } = await countQ;
       if (countErr) {
         return c.json(
           { error: "audit_count_failed", detail: countErr.message },
@@ -344,32 +402,38 @@ export function createRiskFlowBulkRoutes() {
       }
       return c.json({
         confirmed: false,
+        scope,
+        from: fromIso,
+        to: toIso,
         candidate_count: count ?? 0,
         sample: sample ?? [],
         needles: MSM_NEEDLES,
       });
     }
 
-    const { count: scoredDeleted, error: scoredErr } = await sb
-      .from("scored_riskflow_items")
-      .delete({ count: "exact" })
-      .or(orClause);
+    const scoredDelQ = applyFilters(
+      sb.from("scored_riskflow_items").delete({ count: "exact" }),
+    );
+    const { count: scoredDeleted, error: scoredErr } = await scoredDelQ;
     if (scoredErr) {
       return c.json(
         { error: "scored_purge_failed", detail: scoredErr.message },
         500,
       );
     }
-    const { count: rawDeleted, error: rawErr } = await sb
-      .from("raw_riskflow_items")
-      .delete({ count: "exact" })
-      .or(orClause);
+    const rawDelQ = applyFilters(
+      sb.from("raw_riskflow_items").delete({ count: "exact" }),
+    );
+    const { count: rawDeleted, error: rawErr } = await rawDelQ;
     if (rawErr) {
       return c.json({ error: "raw_purge_failed", detail: rawErr.message }, 500);
     }
 
     return c.json({
       confirmed: true,
+      scope,
+      from: fromIso,
+      to: toIso,
       scored_deleted: scoredDeleted ?? 0,
       raw_deleted: rawDeleted ?? 0,
     });

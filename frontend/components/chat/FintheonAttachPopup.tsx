@@ -22,6 +22,7 @@ interface FintheonAttachPopupProps {
   open: boolean;
   onClose: () => void;
   onAttachImage?: (dataUrl: string) => void;
+  onAttachDocument?: (payload: { filename: string; text: string }) => void;
   /** Scored RiskFlow alerts available for attachment */
   riskflowAlerts?: RiskFlowAlert[];
   /** Callback when headlines are selected and confirmed */
@@ -67,6 +68,7 @@ export function FintheonAttachPopup({
   open,
   onClose,
   onAttachImage,
+  onAttachDocument,
   riskflowAlerts = [],
   onAttachHeadlines,
 }: FintheonAttachPopupProps) {
@@ -76,6 +78,7 @@ export function FintheonAttachPopup({
   const [tabAnimating, setTabAnimating] = useState(false);
   const [visibleTab, setVisibleTab] = useState<AttachTab>("media");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const docsInputRef = useRef<HTMLInputElement>(null);
 
   // RiskFlow inline picker state
   const [rfQuery, setRfQuery] = useState("");
@@ -134,6 +137,40 @@ export function FintheonAttachPopup({
       }
     },
     [onAttachImage, onClose],
+  );
+
+  const handleDocumentFile = useCallback(
+    async (file: File) => {
+      const lower = file.name.toLowerCase();
+      const isMarkdown = lower.endsWith(".md") || file.type === "text/markdown";
+      const isPdf = lower.endsWith(".pdf") || file.type === "application/pdf";
+      if (!isMarkdown && !isPdf) {
+        setError("Only .pdf and .md files are supported.");
+        return;
+      }
+      setError(null);
+
+      if (isMarkdown) {
+        try {
+          const text = await file.text();
+          onAttachDocument?.({
+            filename: file.name,
+            text: text.slice(0, 20_000),
+          });
+          onClose();
+        } catch {
+          setError("Failed to read markdown file.");
+        }
+        return;
+      }
+
+      onAttachDocument?.({
+        filename: file.name,
+        text: `[PDF Attachment: ${file.name}]`,
+      });
+      onClose();
+    },
+    [onAttachDocument, onClose],
   );
 
   const handleDrop = useCallback(
@@ -247,9 +284,31 @@ export function FintheonAttachPopup({
         }}
       >
         {visibleTab === "docs" && (
-          <div className="text-center text-[12px] text-gray-500">
-            <FileText size={24} className="mx-auto mb-2 text-gray-600" />
-            <p>Document attachment coming soon.</p>
+          <div className="text-center">
+            <div
+              onClick={() => docsInputRef.current?.click()}
+              className="cursor-pointer flex flex-col items-center gap-2 border-2 border-dashed rounded-lg p-4 w-full transition-colors border-[var(--fintheon-accent)]/20 hover:border-[var(--fintheon-accent)]/40"
+            >
+              <FileText size={24} className="text-gray-600" />
+              <span className="text-[12px] text-gray-400">
+                Click to attach .pdf or .md
+              </span>
+              <span className="text-[10px] text-gray-500">
+                Markdown text is attached inline for CAO context.
+              </span>
+              <input
+                ref={docsInputRef}
+                type="file"
+                accept=".md,.pdf,text/markdown,application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleDocumentFile(file);
+                  e.target.value = "";
+                }}
+              />
+            </div>
+            {error && <p className="mt-2 text-[11px] text-red-400">{error}</p>}
           </div>
         )}
         {visibleTab === "media" && (

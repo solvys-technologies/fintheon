@@ -1,6 +1,6 @@
 // [claude-code 2026-04-19] S25-T4a: Chevron event card for Econ Intelligence — CAO description (placeholder until 4b), third-order thinking, conditional forecast (only on beat/miss), per-print rows (Date | Variant | Previous | Forecast | Actual | Deviation priority-colored), AI-synthesis confidence Nothing-Design fuse footer. Magical fade-in via parent-supplied delay.
 import { useState, useEffect, useRef } from "react";
-import { ChevronDown, Sparkles } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import type { EconHistoryPrint } from "../../../types/agent-desk";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -200,10 +200,6 @@ export function EconEventCard({ event, appearDelay }: EconEventCardProps) {
               {/* CAO description + third-order thinking */}
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-1.5">
-                  <Sparkles
-                    size={11}
-                    className="text-[var(--fintheon-accent)]"
-                  />
                   <span
                     className="text-[9px] tracking-[0.2em] uppercase text-[var(--fintheon-accent)]/80"
                     style={{ fontFamily: "var(--font-heading)" }}

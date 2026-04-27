@@ -1,22 +1,24 @@
-// [claude-code 2026-04-27] S46.4: Catalyst Stats panel — counts every
+// [claude-code 2026-04-27] v5.33.3: Catalyst Stats panel — counts every
 // catalyst-producing source (last 30 d), grouped by category × polling type.
 // Surfaces TP's bulk-handling controls: mass delete by source/category/date,
-// MSM purge audit + confirm, and the 14-day mass refill across selected
-// sources with tail rate-limit. Backend routes require the ROUTINE_SECRET
-// header — TP enters it once into the panel and we persist in localStorage.
+// MSM purge (today-scoped + all-time variants) with audit + confirm, and
+// 14-day mass refill across selected sources with tail rate-limit.
 //
-// All destructive actions are confirm-gated. Refill prompts for sources +
-// from-date; the audit pass runs first and TP must confirm the candidate
-// list before any rows are deleted.
+// Auth: backend admin routes are gated on Supabase JWT + superadmin allow-list
+// (SUPER_ADMIN_USER_ID). The panel passes the user's access token via
+// Authorization: Bearer <token> automatically — no manual secret paste.
+//
+// All destructive actions are confirm-gated. The MSM audit pass shows a
+// candidate list and a sample of up to 20 headlines before TP confirms.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Trash2, Download, ShieldAlert, RefreshCw } from "lucide-react";
 import { useToast } from "../../contexts/ToastContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 const API_BASE = (
   import.meta.env.VITE_API_URL || "http://localhost:8080"
 ).replace(/\/$/, "");
-const SECRET_LS_KEY = "fintheon-routine-secret";
 
 interface SourceStat {
   source: string;
@@ -27,6 +29,9 @@ interface SourceStat {
 
 interface MsmAuditResponse {
   confirmed: false;
+  scope: "today" | "all" | "range";
+  from: string | null;
+  to: string | null;
   candidate_count: number;
   sample: Array<{
     id: string;
@@ -38,23 +43,13 @@ interface MsmAuditResponse {
   needles: string[];
 }
 
-function loadSecret(): string {
-  return localStorage.getItem(SECRET_LS_KEY) ?? "";
-}
-
-function saveSecret(value: string): void {
-  if (value) localStorage.setItem(SECRET_LS_KEY, value);
-  else localStorage.removeItem(SECRET_LS_KEY);
-}
-
 interface Props {
   disabled: boolean;
 }
 
 export function CatalystStatsPanel({ disabled }: Props) {
   const { addToast } = useToast();
-  const [secret, setSecret] = useState<string>(() => loadSecret());
-  const [showSecret, setShowSecret] = useState(false);
+  const { getAccessToken } = useAuth();
   const [stats, setStats] = useState<SourceStat[]>([]);
   const [loading, setLoading] = useState(false);
   const [windowDays] = useState(30);
@@ -69,18 +64,27 @@ export function CatalystStatsPanel({ disabled }: Props) {
   const [auditResult, setAuditResult] = useState<MsmAuditResponse | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
-  const headers = useMemo<Record<string, string>>(
-    () => ({
+  // Build authed headers. Returns null if no token — caller short-circuits.
+  const buildHeaders = useCallback(async (): Promise<Record<
+    string,
+    string
+  > | null> => {
+    const token = await getAccessToken();
+    if (!token) return null;
+    return {
       "Content-Type": "application/json",
-      "x-routine-secret": secret,
-    }),
-    [secret],
-  );
+      Authorization: `Bearer ${token}`,
+    };
+  }, [getAccessToken]);
 
   const fetchStats = useCallback(async () => {
-    if (!secret) return;
     setLoading(true);
     try {
+      const headers = await buildHeaders();
+      if (!headers) {
+        addToast("Sign in required", "info");
+        return;
+      }
       const res = await fetch(
         `${API_BASE}/api/admin/riskflow/source-stats?days=${windowDays}`,
         { headers },
@@ -105,7 +109,7 @@ export function CatalystStatsPanel({ disabled }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [secret, headers, windowDays, addToast]);
+  }, [buildHeaders, windowDays, addToast]);
 
   useEffect(() => {
     void fetchStats();
@@ -132,12 +136,6 @@ export function CatalystStatsPanel({ disabled }: Props) {
     });
   };
 
-  const onSecretSave = () => {
-    saveSecret(secret);
-    addToast("Routine secret saved", "success");
-    void fetchStats();
-  };
-
   const onBulkDelete = async () => {
     if (selected.size === 0) {
       addToast("Pick at least one source first", "info");
@@ -152,6 +150,8 @@ export function CatalystStatsPanel({ disabled }: Props) {
       return;
     setBusy("delete");
     try {
+      const headers = await buildHeaders();
+      if (!headers) return;
       const res = await fetch(`${API_BASE}/api/admin/riskflow/bulk-delete`, {
         method: "POST",
         headers,
@@ -192,6 +192,8 @@ export function CatalystStatsPanel({ disabled }: Props) {
     }
     setBusy("refill");
     try {
+      const headers = await buildHeaders();
+      if (!headers) return;
       const res = await fetch(`${API_BASE}/api/admin/riskflow/refill`, {
         method: "POST",
         headers,
@@ -218,7 +220,9 @@ export function CatalystStatsPanel({ disabled }: Props) {
         return;
       }
       addToast(
-        `Refill ingested ${json.ingested_total ?? 0} item(s) across ${json.sources_total ?? 0} source(s)`,
+        `Refill ingested ${json.ingested_total ?? 0} item(s) across ${
+          json.sources_total ?? 0
+        } source(s)`,
         "success",
       );
       await fetchStats();
@@ -227,13 +231,15 @@ export function CatalystStatsPanel({ disabled }: Props) {
     }
   };
 
-  const onMsmAudit = async () => {
+  const onMsmAudit = async (scope: "today" | "all") => {
     setBusy("audit");
     try {
+      const headers = await buildHeaders();
+      if (!headers) return;
       const res = await fetch(`${API_BASE}/api/admin/riskflow/msm-purge`, {
         method: "POST",
         headers,
-        body: JSON.stringify({}),
+        body: JSON.stringify({ scope }),
       });
       const json = (await res.json()) as
         | MsmAuditResponse
@@ -258,16 +264,18 @@ export function CatalystStatsPanel({ disabled }: Props) {
     if (!auditResult) return;
     if (
       !window.confirm(
-        `Hard-delete ${auditResult.candidate_count} catalyst(s) matching mainstream-media patterns from BOTH scored + raw tables?`,
+        `Hard-delete ${auditResult.candidate_count} catalyst(s) matching mainstream-media patterns from BOTH scored + raw tables (scope=${auditResult.scope})?`,
       )
     )
       return;
     setBusy("purge");
     try {
+      const headers = await buildHeaders();
+      if (!headers) return;
       const res = await fetch(`${API_BASE}/api/admin/riskflow/msm-purge`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ confirm: true }),
+        body: JSON.stringify({ confirm: true, scope: auditResult.scope }),
       });
       const json = (await res.json()) as {
         scored_deleted?: number;
@@ -314,40 +322,11 @@ export function CatalystStatsPanel({ disabled }: Props) {
         catalysts · {stats.length} sources
       </div>
 
-      {!secret && (
-        <div className="border border-dashed border-[var(--fintheon-accent)]/40 px-3 py-2 text-[11px] text-[var(--fintheon-muted)]">
-          Paste ROUTINE_SECRET to enable Catalyst Stats + bulk handling.
-        </div>
-      )}
-      <div className="flex items-center gap-2">
-        <input
-          type={showSecret ? "text" : "password"}
-          value={secret}
-          onChange={(e) => setSecret(e.target.value)}
-          placeholder="ROUTINE_SECRET"
-          disabled={disabled}
-          className="flex-1 bg-transparent border border-[var(--fintheon-glass-border)] px-2 py-1 text-[11px] font-mono text-[var(--fintheon-text)] placeholder:text-zinc-700 focus:outline-none focus:border-[var(--fintheon-accent)]/60"
-        />
-        <button
-          onClick={() => setShowSecret((v) => !v)}
-          className="text-[10px] uppercase tracking-wider text-zinc-500 hover:text-[var(--fintheon-accent)]"
-        >
-          {showSecret ? "Hide" : "Show"}
-        </button>
-        <button
-          onClick={onSecretSave}
-          disabled={disabled}
-          className="text-[10px] uppercase tracking-wider px-2 py-1 border border-[var(--fintheon-accent)]/40 text-[var(--fintheon-accent)] disabled:opacity-50"
-        >
-          Save
-        </button>
-      </div>
-
       <div className="flex items-center justify-between gap-2 text-[10px] text-zinc-500 uppercase tracking-wider">
         <span>{loading ? "loading…" : `${stats.length} sources`}</span>
         <button
           onClick={fetchStats}
-          disabled={!secret || loading}
+          disabled={loading}
           className="inline-flex items-center gap-1 hover:text-[var(--fintheon-accent)]"
         >
           <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
@@ -388,7 +367,7 @@ export function CatalystStatsPanel({ disabled }: Props) {
             </ul>
           </div>
         ))}
-        {grouped.length === 0 && !loading && secret && (
+        {grouped.length === 0 && !loading && (
           <div className="text-center py-8 text-[11px] text-zinc-600">
             No catalysts in window.
           </div>
@@ -423,9 +402,7 @@ export function CatalystStatsPanel({ disabled }: Props) {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={onBulkDelete}
-            disabled={
-              disabled || !secret || busy !== null || selected.size === 0
-            }
+            disabled={disabled || busy !== null || selected.size === 0}
             className="inline-flex items-center gap-1 px-2 py-1 border border-red-500/40 text-[11px] text-red-400 hover:bg-red-500/10 disabled:opacity-50"
           >
             <Trash2 className="w-3 h-3" />
@@ -433,21 +410,27 @@ export function CatalystStatsPanel({ disabled }: Props) {
           </button>
           <button
             onClick={onRefill}
-            disabled={
-              disabled || !secret || busy !== null || selected.size === 0
-            }
+            disabled={disabled || busy !== null || selected.size === 0}
             className="inline-flex items-center gap-1 px-2 py-1 border border-[var(--fintheon-accent)]/40 text-[11px] text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 disabled:opacity-50"
           >
             <Download className="w-3 h-3" />
             {busy === "refill" ? "Refilling…" : "Refill 14d"}
           </button>
           <button
-            onClick={onMsmAudit}
-            disabled={disabled || !secret || busy !== null}
+            onClick={() => onMsmAudit("today")}
+            disabled={disabled || busy !== null}
             className="inline-flex items-center gap-1 px-2 py-1 border border-amber-500/40 text-[11px] text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
           >
             <ShieldAlert className="w-3 h-3" />
-            {busy === "audit" ? "Auditing…" : "MSM Audit"}
+            {busy === "audit" ? "Auditing…" : "MSM Audit · today"}
+          </button>
+          <button
+            onClick={() => onMsmAudit("all")}
+            disabled={disabled || busy !== null}
+            className="inline-flex items-center gap-1 px-2 py-1 border border-amber-500/40 text-[11px] text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
+          >
+            <ShieldAlert className="w-3 h-3" />
+            MSM Audit · all-time
           </button>
         </div>
       </div>
@@ -455,8 +438,13 @@ export function CatalystStatsPanel({ disabled }: Props) {
       {auditResult && (
         <div className="border border-amber-500/40 bg-amber-500/5 p-2 flex flex-col gap-2">
           <div className="text-[11px] text-amber-300">
-            {auditResult.candidate_count} candidate(s) match MSM patterns. Top
-            sample below — confirm to hard-delete from scored + raw tables.
+            {auditResult.candidate_count} candidate(s) match MSM patterns (scope
+            = {auditResult.scope}
+            {auditResult.from
+              ? ` · ${auditResult.from.slice(0, 10)} → ${(auditResult.to ?? "").slice(0, 10)}`
+              : ""}
+            ). Wire-relay tweets exempt. Top sample below — confirm to
+            hard-delete from scored + raw tables.
           </div>
           <ul className="max-h-[180px] overflow-y-auto text-[10px] text-zinc-400 font-mono divide-y divide-amber-500/10">
             {auditResult.sample.map((row) => (

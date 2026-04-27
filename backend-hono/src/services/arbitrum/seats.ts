@@ -39,7 +39,7 @@ export const ARBITRUM_SEATS: readonly ArbitrumSeatConfig[] = [
   },
   {
     id: "risk",
-    role: "Risk Manager",
+    role: "Future PM",
     model: SEAT_MODEL,
     provider: "ollama",
     weight: 0.2,
@@ -55,11 +55,11 @@ export const ARBITRUM_SEATS: readonly ArbitrumSeatConfig[] = [
   },
   {
     id: "bear",
-    role: "Bear Case",
+    role: "Skeptic",
     model: SEAT_MODEL,
     provider: "ollama",
     weight: 0.1,
-    persona: "feucht-alt",
+    persona: "herald",
   },
 ] as const;
 

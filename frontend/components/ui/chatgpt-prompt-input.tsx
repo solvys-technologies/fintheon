@@ -43,7 +43,7 @@ import {
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 
 /* ------------------------------------------------------------------ */
-/*  Think Harder SVG — Claude-style sparkle shape                     */
+/*  Deep Research icon                                                */
 /* ------------------------------------------------------------------ */
 
 const ThinkHarderIcon: FC<{ active: boolean }> = ({ active }) => (
@@ -60,10 +60,9 @@ const ThinkHarderIcon: FC<{ active: boolean }> = ({ active }) => (
       active ? "animate-[pulse-icon_1.5s_ease-in-out_infinite]" : "opacity-50"
     }
   >
-    {/* Sparkle / thinking shape */}
-    <path d="M8 1v3M8 12v3M1 8h3M12 8h3" />
-    <path d="M3.5 3.5l2 2M10.5 10.5l2 2M3.5 12.5l2-2M10.5 5.5l2-2" />
-    <circle cx="8" cy="8" r="2" />
+    <circle cx="8" cy="8" r="4.5" />
+    <circle cx="8" cy="8" r="2.2" />
+    <path d="M8 1.5v1.6M8 12.9v1.6M1.5 8h1.6M12.9 8h1.6" />
   </svg>
 );
 
@@ -380,6 +379,11 @@ export function PromptBox({
           open={showAttach}
           onClose={() => setShowAttach(false)}
           onAttachImage={handleAttachImage}
+          onAttachDocument={({ filename, text }) => {
+            const attached = `\n\n[Attached Document: ${filename}]\n${text}`;
+            setText((prev) => `${prev}${attached}`);
+            setShowAttach(false);
+          }}
           riskflowAlerts={headlineAlerts}
           onAttachHeadlines={(items: HeadlineAttachment[]) => {
             if (onHeadlineToggle) {
@@ -569,9 +573,7 @@ export function PromptBox({
               {/* Think Harder toggle */}
               <button
                 onClick={() => setThinkHarder(!thinkHarder)}
-                title={
-                  thinkHarder ? "Extended thinking ON" : "Extended thinking OFF"
-                }
+                title={thinkHarder ? "Deep Research ON" : "Deep Research OFF"}
                 className="flex items-center justify-center rounded-lg transition-all text-zinc-500 hover:text-[var(--fintheon-accent)]"
                 style={{ width: "32px", height: "32px" }}
               >

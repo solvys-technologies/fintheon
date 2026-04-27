@@ -23,9 +23,9 @@ interface ArbitrumChamberProps {
 const DEFAULT_ROLES: ReadonlyArray<ArbitrumSeat["role"]> = [
   "Lead",
   "Forecaster",
-  "Risk",
+  "Future PM",
   "Quant",
-  "Bear",
+  "Skeptic",
 ];
 
 const EMPTY_COPY =
@@ -45,7 +45,7 @@ function SeatCard({
   visible: boolean;
 }) {
   const pct = Math.round(seat.probability * 100);
-  const conf = Math.round(seat.confidence * 100);
+  const confScore = Math.max(0, Math.min(10, seat.confidence * 10));
   const dissented = Boolean(seat.dissented);
   const borderLeft = dissented
     ? "border-l-2 border-l-[var(--fintheon-accent)]/70"
@@ -89,7 +89,7 @@ function SeatCard({
         />
         <span className="text-[10px] text-[var(--fintheon-text)]/50 inline-flex items-baseline gap-1">
           conf
-          <DigitGroup value={`${conf}`} suffix="%" />
+          <DigitGroup value={confScore.toFixed(1)} suffix="/10" />
         </span>
       </div>
 

@@ -232,7 +232,7 @@ export function SanctumEconIntel(_props: SanctumEconIntelProps) {
 
   return (
     <div className="flex flex-col gap-4 h-full min-h-0">
-      {/* ── Econ Pulse — collapsible header + fuses block ── */}
+      {/* ── Pulse — collapsible header + fuses block ── */}
       <div className="shrink-0 flex flex-col">
         <button
           type="button"
@@ -244,7 +244,7 @@ export function SanctumEconIntel(_props: SanctumEconIntelProps) {
             className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--fintheon-accent)]/85 group-hover:text-[var(--fintheon-accent)] transition-colors"
             style={{ fontFamily: "var(--font-heading)" }}
           >
-            Econ Pulse
+            Pulse
           </span>
           {pulseOpen ? (
             <ChevronDown

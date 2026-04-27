@@ -6,9 +6,9 @@
 export type ArbitrumSeatRole =
   | "Lead"
   | "Forecaster"
-  | "Risk"
+  | "Future PM"
   | "Quant"
-  | "Bear";
+  | "Skeptic";
 
 export interface ArbitrumSeat {
   role: ArbitrumSeatRole;

@@ -411,9 +411,8 @@ const ScrollToBottomButton: FC<{
           style={{
             width: "36px",
             height: "36px",
-            bottom: "140px",
-            left: "50%",
-            transform: "translateX(-50%)",
+            bottom: "96px",
+            right: "24px",
           }}
           title="Scroll to bottom"
         >

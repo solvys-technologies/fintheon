@@ -97,7 +97,7 @@ export function DeskThemeWidget() {
         <div className="flex items-center gap-2 min-w-0">
           <BookOpen className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
           <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--fintheon-accent)]">
-            Desk Theme
+            Desk Plan
           </h3>
           <span className="text-[9px] uppercase tracking-wider text-zinc-500">
             {briefType}
@@ -133,7 +133,7 @@ export function DeskThemeWidget() {
           </>
         ) : (
           <span className="text-zinc-600 text-[11px]">
-            No desk theme published for today.
+            No desk plan published for today.
           </span>
         )}
       </div>

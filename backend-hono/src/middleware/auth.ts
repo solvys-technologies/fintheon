@@ -70,3 +70,30 @@ export const requireAuth = async (c: Context, next: Next) => {
   }
   return await next();
 };
+
+/**
+ * [claude-code 2026-04-27] Require Superadmin — rejects non-admin users.
+ * Reads SUPER_ADMIN_USER_ID (comma-split UUID list) from env and matches
+ * against the JWT-derived userId. Mirrors notify-superadmins resolution so
+ * the admin set has one source of truth. Stack AFTER authMiddleware.
+ */
+export const requireSuperadmin = async (c: Context, next: Next) => {
+  const userId = c.get("userId");
+  if (!userId || userId === "anonymous") {
+    return c.json({ error: "Authentication required" }, 401);
+  }
+  const allow = (process.env.SUPER_ADMIN_USER_ID || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (allow.length === 0) {
+    return c.json(
+      { error: "SUPER_ADMIN_USER_ID not configured on the server" },
+      503,
+    );
+  }
+  if (!allow.includes(String(userId))) {
+    return c.json({ error: "Superadmin only" }, 403);
+  }
+  return await next();
+};

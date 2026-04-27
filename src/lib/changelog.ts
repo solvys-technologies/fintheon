@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-27T06:00:00",
+    agent: "claude-code",
+    summary:
+      "v5.33.3 — Refinement Engine MSM purge hardening + auth gate swap. Backend: /api/admin/riskflow/* now gated on Supabase JWT + SUPER_ADMIN_USER_ID allow-list (new requireSuperadmin middleware) instead of x-routine-secret — TP no longer pastes a secret into the panel; the user's access token flows through automatically. msm-purge route gains scope=today|all|range with from/to date filtering AND a wire-relay exemption (rows whose source_domain starts with twitter:%/nitter:% are EXCLUDED), so approved-handle wire tweets that quote MSM names inline ('Fed announces XYZ: REUTERS' from FinancialJuice/DeItaone) stay in the feed; only direct MSM URLs + non-wire MSM-text rows get purged. Frontend: CatalystStatsPanel rebuilt — secret input deleted, useAuth().getAccessToken() drives Authorization: Bearer, two MSM Audit buttons (today | all-time), audit result shows scope + window + sample + wire-relay-exemption note before TP confirms. Worker untouched.",
+    files: [
+      "backend-hono/src/middleware/auth.ts",
+      "backend-hono/src/routes/admin/riskflow-bulk.ts",
+      "backend-hono/src/routes/index.ts",
+      "frontend/components/refinement/CatalystStatsPanel.tsx",
+    ],
+  },
+  {
     date: "2026-04-27T05:30:00",
     agent: "claude-code",
     summary:

@@ -4,7 +4,11 @@
  */
 
 import type { Hono } from "hono";
-import { authMiddleware, requireAuth } from "../middleware/auth.js";
+import {
+  authMiddleware,
+  requireAuth,
+  requireSuperadmin,
+} from "../middleware/auth.js";
 import { createAccountRoutes } from "./account/index.js";
 import { createMarketRoutes } from "./market/index.js";
 import { createNotificationRoutes } from "./notifications/index.js";
@@ -426,9 +430,18 @@ export function registerRoutes(app: Hono): void {
   //   route deleted alongside backfill-headlines.ts (Exa-only, stripped
   //   platform-wide).
   // [claude-code 2026-04-27] S46.4: bulk delete / refill / MSM-purge audit.
-  //   Mounted on the same /api/admin/riskflow prefix; route-level paths
-  //   distinguish (source-stats, bulk-delete, refill, msm-purge). Same
-  //   x-routine-secret gate as the backfill router above.
+  //   Mounted on the /api/admin/riskflow prefix; route-level paths
+  //   distinguish (source-stats, bulk-delete, refill, msm-purge).
+  // [claude-code 2026-04-27] v5.33.3: gate swapped from x-routine-secret to
+  //   Supabase JWT + superadmin allow-list (SUPER_ADMIN_USER_ID). The
+  //   Refinement Engine UI passes the user's token via Authorization header
+  //   automatically — no manual secret paste.
+  app.use(
+    "/api/admin/riskflow/*",
+    authMiddleware,
+    requireAuth,
+    requireSuperadmin,
+  );
   app.route("/api/admin/riskflow", createRiskFlowBulkRoutes());
 
   // [S29-T4] Catalysts — date-filtered RiskFlow headlines for calendar panel
