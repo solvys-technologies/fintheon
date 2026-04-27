@@ -25,6 +25,15 @@ const MAX_CACHE_ENTRIES = 256;
 
 const cache = new Map<string, { at: number; preview: OgPreview }>();
 
+// [claude-code 2026-04-27] v5.33.5: Mainstream-media hosts STRIPPED from the
+// OG-preview allow-list. Bloomberg / Reuters / FT / WSJ / CNBC / MarketWatch /
+// NYT / WaPo / Economist / Barron's / SeekingAlpha / ZeroHedge / Axios /
+// Politico / AP News all removed — they are banned at the ingest boundary
+// (publisher-blocklist.ts BLOCKED_HOSTS), so no card should ever carry their
+// URLs in the first place. Allowing the OG scraper to fetch them anyway was
+// dead weight + a passive surface for stale leaks. financialjuice.com kept
+// (approved wire), x.com / twitter.com kept, YouTube hosts kept, prediction
+// markets + crypto pubs kept (these are research-grade, not MSM).
 const ALLOWED_HOSTS = [
   // Social & video
   "x.com",
@@ -34,39 +43,7 @@ const ALLOWED_HOSTS = [
   "www.youtube.com",
   "m.youtube.com",
   "youtu.be",
-  // Major news wires + finance
-  "bloomberg.com",
-  "www.bloomberg.com",
-  "reuters.com",
-  "www.reuters.com",
-  "ft.com",
-  "www.ft.com",
-  "wsj.com",
-  "www.wsj.com",
-  "cnbc.com",
-  "www.cnbc.com",
-  "marketwatch.com",
-  "www.marketwatch.com",
-  "axios.com",
-  "www.axios.com",
-  "politico.com",
-  "www.politico.com",
-  "apnews.com",
-  "www.apnews.com",
-  "nytimes.com",
-  "www.nytimes.com",
-  "washingtonpost.com",
-  "www.washingtonpost.com",
-  "economist.com",
-  "www.economist.com",
-  "barrons.com",
-  "www.barrons.com",
-  "seekingalpha.com",
-  "www.seekingalpha.com",
-  "investing.com",
-  "www.investing.com",
-  "zerohedge.com",
-  "www.zerohedge.com",
+  // Approved wires + research-grade pubs
   "financialjuice.com",
   "www.financialjuice.com",
   "polymarket.com",

@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-27T07:00:00",
+    agent: "claude-code",
+    summary:
+      "v5.33.5 — MSM hardcoded-URL strip + auto-update CTA fix. Backend: agent-reach-poller.ts (RSS_FEEDS reuters/bloomberg/cnbc/marketwatch/seekingalpha/zerohedge), econ-rettiwt-poller.ts (AGENT_REACH_URLS reuters/cnbc/zerohedge), poll-watchdog.ts all replaced with no-op shims that preserve their export surface (start/stop/tick + isRettiwtRateLimited / pollForEconNews / getWarmCacheItems / manualRefresh / getRettiwtCooldownMs / startEconPoller / AGENT_REACH_POLLER_NAME) — every import site (boot/services.ts, routes/{riskflow/handlers,diagnostics/index}.ts, services/riskflow/{feed-service,feed-poller}.ts) keeps compiling but no MSM URL is reachable. og-scraper.ts ALLOWED_HOSTS purged of bloomberg/reuters/ft/wsj/cnbc/marketwatch/nytimes/washingtonpost/economist/barrons/seekingalpha/zerohedge/axios/politico/apnews — kept x.com / twitter.com / youtube hosts / financialjuice / polymarket / kalshi / tradingview / coindesk / theblock. Frontend: VersionChecker rewritten — Electron path now subscribes to electron.onUpdateDownloaded so the bottom-left 'Install Now' toast ONLY fires after electron-updater finishes downloading the DMG (autoDownload=true was already set in main.cjs). Web path keeps the polling-version-check + Reload CTA. package.json release:mac now passes --publish always so latest-mac.yml + .dmg.blockmap upload to the GH release for electron-updater to find.",
+    files: [
+      "backend-hono/src/services/riskflow/agent-reach-poller.ts",
+      "backend-hono/src/services/riskflow/econ-rettiwt-poller.ts",
+      "backend-hono/src/services/riskflow/poll-watchdog.ts",
+      "backend-hono/src/services/preview/og-scraper.ts",
+      "frontend/components/VersionChecker.tsx",
+      "package.json",
+    ],
+  },
+  {
     date: "2026-04-27T06:30:00",
     agent: "claude-code",
     summary:
