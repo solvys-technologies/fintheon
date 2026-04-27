@@ -1,3 +1,15 @@
+// [claude-code 2026-04-27] S46.4 source narrowing per TP:
+//   - SEC EDGAR + Treasury press REMOVED from standard tier.
+//   - Exa DISABLED (call site commented; collector file kept in tree per
+//     feedback_exa_off.md).
+//   - Standard tier .gov set narrowed to TP-approved trio:
+//       1) COT (Commitment of Traders) — CFTC weekly Friday 15:30 ET via
+//          browser-harness (HTML page; no clean RSS).
+//       2) FOMC Minutes — federalreserve.gov/feeds/press_monetary.xml,
+//          post-filtered to titles starting with "Minutes of the Federal
+//          Open Market Committee" (drops every other press release).
+//       3) Speech transcripts — federalreserve.gov/feeds/speeches.xml, full feed.
+//   - Macro X-handle path unchanged.
 // [claude-code 2026-04-26] Removed direct mainstream-media scrape URLs from
 // breaking tier (reuters.com, bloomberg.com browser-harness + RSS). Policy:
 // no website pulls from mainstream media. Twitter wire-handles + .gov + bank
@@ -14,7 +26,9 @@
 // via source-accounts-service (30s cache). Closes the Refinement Engine loop.
 
 import { collectFromBrowserHarness } from "./browser-harness.js";
-import { collectFromExa } from "./exa.js";
+// [claude-code 2026-04-27] Exa import retained for future re-enable; do not
+// delete (TP wants the collector code in tree, just gated off).
+// import { collectFromExa } from "./exa.js";
 import { collectFromAgentReach } from "./agent-reach.js";
 import { collectFromXHandlesBrowser } from "./x-handles-browser.js";
 import { writeCollectedItems } from "../persist.js";
@@ -23,6 +37,16 @@ import {
   getMacroHandles,
 } from "../../../services/source-accounts/source-accounts-service.js";
 import type { CollectedNewsItem } from "./types.js";
+
+// FOMC Minutes title prefix — press_monetary.xml mixes minutes with every other
+// monetary press release (intermeeting statements, FAQ updates, etc.). TP only
+// wants the meeting minutes; drop the rest.
+const FOMC_MINUTES_TITLE_PREFIX =
+  "Minutes of the Federal Open Market Committee";
+
+// CFTC Commitment of Traders weekly report — public HTML page updated Friday
+// 15:30 ET. Browser-harness already strips boilerplate and pulls the body.
+const COT_REPORT_URL = "https://www.cftc.gov/dea/futures/deacmesf.htm";
 
 export interface TierRunResult {
   ingested: number;
@@ -78,27 +102,42 @@ export async function runBreakingTier(): Promise<TierRunResult> {
 
 export async function runStandardTier(): Promise<TierRunResult> {
   const results = await Promise.all([
-    safeCollect("browser-harness", () =>
+    // [claude-code 2026-04-27] S46.4: only the COT weekly report is left from
+    // the gov-website pulls. SEC EDGAR + Federal Reserve press-releases page
+    // were noisy and overlap with the FOMC Minutes/Speech RSS we pull below;
+    // SEC EDGAR + Treasury press dropped per TP. Keep the wrapper so the
+    // browser-harness pool stays warm for COT.
+    safeCollect("browser-harness:cot", () =>
       collectFromBrowserHarness({
-        urls: [
-          "https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent",
-          "https://www.federalreserve.gov/newsevents/pressreleases.htm",
-        ],
+        urls: [COT_REPORT_URL],
         tier: "standard",
       }),
     ),
-    safeCollect("exa", () =>
-      collectFromExa({
-        query: "macro policy OR FOMC OR Treasury OR inflation headline",
+    // [claude-code 2026-04-27] Exa OFF (feedback_exa_off.md). Re-enable only
+    // when TP says "turn Exa back on". Collector file kept in tree.
+    // safeCollect("exa", () =>
+    //   collectFromExa({
+    //     query: "macro policy OR FOMC OR Treasury OR inflation headline",
+    //     tier: "standard",
+    //   }),
+    // ),
+    // [claude-code 2026-04-27] FOMC Minutes — pulled from press_monetary.xml
+    // and post-filtered to titles starting with the canonical minutes prefix.
+    // The press_monetary feed mixes minutes with intermeeting statements,
+    // FAQ updates, and admin notes; TP only wants the actual meeting minutes.
+    safeCollect("agent-reach:fomc-minutes", async () => {
+      const items = await collectFromAgentReach({
+        rssFeeds: ["https://www.federalreserve.gov/feeds/press_monetary.xml"],
         tier: "standard",
-      }),
-    ),
-    safeCollect("agent-reach", () =>
+      });
+      return items.filter((it) =>
+        it.headline.startsWith(FOMC_MINUTES_TITLE_PREFIX),
+      );
+    }),
+    // [claude-code 2026-04-27] Fed speech transcripts — full feed.
+    safeCollect("agent-reach:fed-speeches", () =>
       collectFromAgentReach({
-        rssFeeds: [
-          "https://www.sec.gov/rss/news/press.xml",
-          "https://home.treasury.gov/news/press-releases/feed",
-        ],
+        rssFeeds: ["https://www.federalreserve.gov/feeds/speeches.xml"],
         tier: "standard",
       }),
     ),
