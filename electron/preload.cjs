@@ -28,6 +28,26 @@ ipcRenderer.on("auth-callback", (_event, url) => {
   if (typeof authCallbackHandler === "function") authCallbackHandler(url);
 });
 
+// [claude-code 2026-04-27] S46.4 Desk Calendar IPC bridge — TV iframe .ics
+// downloads are intercepted in main.cjs and emitted as saving/saved/failed
+// events. The renderer listens via electron.deskCalendar.on*Status to drive
+// the green status text + success toast in TradingViewCalendar.
+let deskCalendarSavingCallback = null;
+let deskCalendarSavedCallback = null;
+let deskCalendarFailedCallback = null;
+ipcRenderer.on("desk-calendar:saving", (_event, payload) => {
+  if (typeof deskCalendarSavingCallback === "function")
+    deskCalendarSavingCallback(payload);
+});
+ipcRenderer.on("desk-calendar:saved", (_event, payload) => {
+  if (typeof deskCalendarSavedCallback === "function")
+    deskCalendarSavedCallback(payload);
+});
+ipcRenderer.on("desk-calendar:failed", (_event, payload) => {
+  if (typeof deskCalendarFailedCallback === "function")
+    deskCalendarFailedCallback(payload);
+});
+
 // Auto-update event forwarding
 let updateAvailableCallback = null;
 let updateProgressCallback = null;
@@ -98,6 +118,19 @@ contextBridge.exposeInMainWorld("electron", {
   browserUse: {
     runCommand: (args) => ipcRenderer.invoke("browser-use-command", args),
     getStatus: () => ipcRenderer.invoke("browser-use-status"),
+  },
+
+  // [claude-code 2026-04-27] S46.4 Desk Calendar — silent .ics ingest events.
+  deskCalendar: {
+    onSaving: (cb) => {
+      deskCalendarSavingCallback = typeof cb === "function" ? cb : null;
+    },
+    onSaved: (cb) => {
+      deskCalendarSavedCallback = typeof cb === "function" ? cb : null;
+    },
+    onFailed: (cb) => {
+      deskCalendarFailedCallback = typeof cb === "function" ? cb : null;
+    },
   },
 
   // [claude-code 2026-04-23] Harper Vision — screen + audio capture bridge

@@ -1,3 +1,7 @@
+// [claude-code 2026-04-27] S46.4: Right rail now stacks Catalyst Stats panel
+// (counts per source × category, bulk delete + 14d refill + MSM purge audit)
+// over the Annotatable Feed Preview. The new panel reuses the S37 edit-lock
+// to gate destructive controls.
 // [claude-code 2026-04-24] S37: (1) text typography bumped, (2) S24-T3 placeholder retired — fuses always render with an inline degraded-mode banner on fetch fail, (3) Advanced pane gets a right-justified lock gate via the shared dev-settings password ("glass of a data center" — always readable, mutations gated), (4) regime approval queue clears+fades when the most-recent proposal is approved.
 // [claude-code 2026-04-24] S34-T2: Layout flip — main pane (75%) now carries regime/fuses/presets/advanced; feed shrinks to a 25% right panel (min 280, max 420). GroupSensitivityDial swapped for NotchedFuse (same -1..+1 contract). Nothing-design pass: flat surfaces, accent borders, dotted dividers, Doto numerals. No glass.
 // [claude-code 2026-04-19] S28: RoutinesConsole moved out of Scoring sidebar into the Monitor sub-tab. Scoring sidebar keeps Regime / Sensitivity / Presets / Advanced.
@@ -19,6 +23,7 @@ import { CommentatorManager } from "./CommentatorManager";
 import { SourceAccountsManager } from "./SourceAccountsManager";
 import { EconFiltersManager } from "./EconFiltersManager";
 import { AnnotatableItem } from "./AnnotatableItem";
+import { CatalystStatsPanel } from "./CatalystStatsPanel";
 import { NotchedFuse } from "./NotchedFuse";
 import {
   SENSITIVITY_DEFAULTS,
@@ -603,34 +608,39 @@ export function RefinementEngine() {
             </AdvancedPane>
           </div>
 
-          {/* Right panel (25%, min 280, max 420) — annotatable feed preview */}
-          <div className="w-1/4 min-w-[280px] max-w-[420px] shrink-0 border-l border-[var(--fintheon-accent)]/20 overflow-y-auto p-3 space-y-2">
-            <div
-              style={{
-                fontFamily: "var(--font-data)",
-                fontSize: 10,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: "var(--fintheon-muted)",
-                marginBottom: 4,
-              }}
-            >
-              Feed Preview · {items.length} item{items.length !== 1 ? "s" : ""}
-            </div>
-
-            {items.length === 0 ? (
-              <div className="text-center py-12 text-[11px] text-zinc-600">
-                No feed items. Backend may need to be running.
+          {/* Right panel (25%, min 280, max 420) — Catalyst Stats over the
+              annotatable feed preview. */}
+          <div className="w-1/4 min-w-[280px] max-w-[420px] shrink-0 border-l border-[var(--fintheon-accent)]/20 overflow-y-auto p-3 space-y-4">
+            <CatalystStatsPanel disabled={!editUnlocked} />
+            <div className="border-t border-[var(--fintheon-glass-border)] pt-3 space-y-2">
+              <div
+                style={{
+                  fontFamily: "var(--font-data)",
+                  fontSize: 10,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: "var(--fintheon-muted)",
+                  marginBottom: 4,
+                }}
+              >
+                Feed Preview · {items.length} item
+                {items.length !== 1 ? "s" : ""}
               </div>
-            ) : (
-              items.map((item) => (
-                <AnnotatableItem
-                  key={item.id}
-                  item={item}
-                  onAnnotationSaved={() => {}}
-                />
-              ))
-            )}
+
+              {items.length === 0 ? (
+                <div className="text-center py-12 text-[11px] text-zinc-600">
+                  No feed items. Backend may need to be running.
+                </div>
+              ) : (
+                items.map((item) => (
+                  <AnnotatableItem
+                    key={item.id}
+                    item={item}
+                    onAnnotationSaved={() => {}}
+                  />
+                ))
+              )}
+            </div>
           </div>
         </div>
       )}

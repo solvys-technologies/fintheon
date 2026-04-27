@@ -66,6 +66,22 @@ export interface ElectronAPI {
     getStatus: () => Promise<{ running: boolean; sessions?: string }>;
   };
 
+  // [claude-code 2026-04-27] S46.4 Desk Calendar — silent .ics ingest events
+  // emitted by main.cjs when Electron intercepts a TV iframe .ics download.
+  deskCalendar: {
+    onSaving: (cb: (() => void) | null) => void;
+    onSaved: (
+      cb:
+        | ((payload: {
+            ingested: number;
+            title: string | null;
+            starts_at: string | null;
+          }) => void)
+        | null,
+    ) => void;
+    onFailed: (cb: ((payload: { reason: string }) => void) | null) => void;
+  };
+
   // [claude-code 2026-04-23] Harper Vision — screen + audio capture bridge
   harperVision: {
     captureScreen: () => Promise<{

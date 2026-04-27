@@ -9,6 +9,27 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-27T03:30:00",
+    agent: "claude-code",
+    summary:
+      "S46.4 RiskFlow narrowing + Calendar restoration. Worker standard tier stripped to TP-approved gov trio (COT weekly via browser-harness, FOMC Minutes via press_monetary.xml filtered to title-prefix 'Minutes of the Federal Open Market Committee', Fed speeches via speeches.xml full feed); SEC EDGAR + Treasury press removed; Exa call site commented (collector retained per feedback_exa_off.md). ECON_BURST_INTERVAL_MS bumped 500ms → 1000ms (1Hz inside the burst window). ForexFactory dropped from econ-calendar-populator — TradingView is now the sole econ source; dedupe still enforced by existing UNIQUE INDEX on economic_events.event_key. CALENDAR navtab restored to live TradingView iframe (TradingViewCalendar.tsx) via EmbeddedBrowserFrame; Electron .ics interceptor now emits desk-calendar:saving / :saved / :failed IPC events that drive a green 'Saving event to desk queue…' status + success toast — no Google Calendar window, no chooser dialog, no app-leaving navigation. Backend storage: economic_events (TV API) + desk_calendar_events (iframe CTA, idempotent on ics_uid). New admin routes /api/admin/riskflow/{source-stats, bulk-delete, refill, msm-purge} (gated on x-routine-secret), driven by Refinement Engine right-rail Catalyst Stats panel: counts per source × category, multi-select bulk delete, 14d mass refill with 1.5s tail rate-limit, and MSM purge audit + confirm flow that hard-deletes from scored_riskflow_items + raw_riskflow_items.",
+    files: [
+      "backend-hono/src/workers/riskflow-worker/contract.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/index.ts",
+      "backend-hono/src/services/cron/econ-calendar-populator.ts",
+      "backend-hono/src/services/riskflow/refill-driver.ts",
+      "backend-hono/src/routes/admin/riskflow-bulk.ts",
+      "backend-hono/src/routes/index.ts",
+      "frontend/components/econ/TradingViewCalendar.tsx",
+      "frontend/components/layout/TabRenderer.tsx",
+      "frontend/components/refinement/CatalystStatsPanel.tsx",
+      "frontend/components/refinement/RefinementEngine.tsx",
+      "frontend/types/electron.d.ts",
+      "electron/main.cjs",
+      "electron/preload.cjs",
+    ],
+  },
+  {
     date: "2026-04-27T02:20:00",
     agent: "claude-code",
     summary:

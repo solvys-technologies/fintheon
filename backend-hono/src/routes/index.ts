@@ -91,6 +91,8 @@ import { createPsychAssistForkRoutes } from "./admin/psych-assist-fork.js";
 import { createEconBackfillRoutes } from "./admin/econ-backfill.js";
 // [claude-code 2026-04-26] S35-cleanup: RiskFlow high/critical headline backfill
 import { createRiskFlowBackfillRoutes } from "./admin/riskflow-backfill.js";
+// [claude-code 2026-04-27] S46.4: bulk delete + refill + MSM purge audit
+import { createRiskFlowBulkRoutes } from "./admin/riskflow-bulk.js";
 // [claude-code 2026-04-23] Harper Vision — screen + audio perception layer
 import { createHarperVisionRoutes } from "./harper-vision/index.js";
 // [claude-code 2026-04-23] S31-T9 predictive knowledge graph — usage telemetry + Harper feature proposals
@@ -425,6 +427,12 @@ export function registerRoutes(app: Hono): void {
   // [claude-code 2026-04-26] S35-cleanup: RiskFlow high/critical headline
   //   backfill for news-worker silence windows. Same x-routine-secret gate.
   app.route("/api/admin/riskflow", createRiskFlowBackfillRoutes());
+
+  // [claude-code 2026-04-27] S46.4: bulk delete / refill / MSM-purge audit.
+  //   Mounted on the same /api/admin/riskflow prefix; route-level paths
+  //   distinguish (source-stats, bulk-delete, refill, msm-purge). Same
+  //   x-routine-secret gate as the backfill router above.
+  app.route("/api/admin/riskflow", createRiskFlowBulkRoutes());
 
   // [S29-T4] Catalysts — date-filtered RiskFlow headlines for calendar panel
   app.route("/api/catalysts", createCatalystsByDateRoute());
