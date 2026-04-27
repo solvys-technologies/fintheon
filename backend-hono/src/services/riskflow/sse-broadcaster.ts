@@ -111,3 +111,38 @@ export function broadcastEconPrint(payload: EconPrintPayload) {
     }
   });
 }
+
+// [claude-code 2026-04-25] S40-P6: Time-To-Print widget channel.
+//   imminent → live → printed → cleared.
+// Frontend's useTimeToPrint reads this and drives TimeToPrintDockable.
+export interface TimeToPrintPayload {
+  id: string;
+  fires_at: string; // ISO; the scheduled release time
+  state: "imminent" | "live" | "printed" | "cleared";
+  event: {
+    name: string;
+    country: string; // ISO code, e.g. "US"
+    forecast?: string | null;
+    actual?: string | null;
+    beatMiss?: "beat" | "miss" | "inline" | null;
+    surprisePercent?: number | null;
+    impactRank?: number | null;
+  };
+}
+
+export function broadcastTimeToPrint(payload: TimeToPrintPayload) {
+  const frame = `event: time-to-print\ndata: ${JSON.stringify(payload)}\n\n`;
+  const encoder = new TextEncoder();
+
+  clients.forEach((client) => {
+    try {
+      client.controller.enqueue(encoder.encode(frame));
+    } catch (error) {
+      console.warn(
+        "[SSE] Removing client due to time-to-print enqueue failure",
+        error,
+      );
+      removeClient(client.controller);
+    }
+  });
+}
