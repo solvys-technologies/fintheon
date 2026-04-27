@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T23:10:00",
+    agent: "claude-code",
+    summary:
+      "v5.32.4 — Merge s46-tv-calendar-final into main: ships v5.32.3's dashboard polish + TopHeader reorder alongside the S46 TV calendar integration (Electron .ics interception → /api/desk/calendar/ingest-ics + RFC5545 parser + idempotent upsert into desk_calendar_events; EconCalendar queue badge + tradingWeekKey() Fri 16:00 ET roll) and the S46 RiskFlow filter sync (server-side persistence on user_preferences.riskflowFilters with first-load reconcile + cross-device propagation). package.json + scripts/fintheon-update.sh bumped to 5.32.4. No new failures vs v5.32.3 baseline; backend tsc + frontend tsc + frontend vite build all clean.",
+    files: ["package.json", "scripts/fintheon-update.sh"],
+  },
+  {
     date: "2026-04-26T23:00:00",
     agent: "claude-code",
     summary:
