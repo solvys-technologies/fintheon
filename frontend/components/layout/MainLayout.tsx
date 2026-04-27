@@ -635,114 +635,96 @@ function MainLayoutInner() {
       activeTab === "performance" ||
       activeTab === "proposals" ||
       activeTab === "settings";
-    if (!hideRightPanel) {
+    if (!hideRightPanel && !missionControlCollapsed) {
       rightPanels.push(
-        // [claude-code 2026-04-26] Strategium slide restoration. Wrapper keeps
-        // its width transition (12px ↔ 380px); the inner content gets a paired
-        // opacity + translate-x animation so it slides in/out instead of
-        // instantly swapping. Combined effect = panel slides off the right
-        // edge when collapsed, slides back in when reopened.
+        // [claude-code 2026-04-26] Per TP: when Strategium is collapsed, render
+        // NOTHING — no rail, no divider, no chevron. The only ways to expand are
+        // (a) the layout button in the heading toolbar (PanelToggleGroup), or
+        // (b) the in-panel chevron on the expanded panel (which can only collapse).
         <div
           key="right-stack"
-          className={`flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--fintheon-accent)]/10 transition-[width] duration-300 ease-in-out overflow-hidden ${
-            missionControlCollapsed
-              ? "w-12 bg-[var(--fintheon-bg)]"
-              : "w-[380px]"
-          }`}
+          className="flex-shrink-0 h-full min-w-0 flex flex-col w-[380px] overflow-hidden"
         >
-          {missionControlCollapsed ? (
-            <div className="flex-1 flex flex-col items-center justify-center transition-opacity duration-300">
-              <button
-                onClick={() => setMissionControlCollapsed(false)}
-                className="p-2 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
-                title="Expand Strategium"
-              >
-                <ChevronLeft className="w-4 h-4 text-[var(--fintheon-accent)]/60" />
-              </button>
-            </div>
-          ) : (
-            // [claude-code 2026-04-26] Inner expanded content fades + slides in
-            // from the right (paired with the wrapper's width transition). Uses
-            // opacity-100 animate-in so React's mount triggers the slide.
-            <div className="flex-1 min-h-0 flex flex-col w-[380px] animate-in fade-in slide-in-from-right-2 duration-300">
-              {/* Widgets pane — shown in balanced + widgetsOnly.
+          {/* [claude-code 2026-04-26] Inner expanded content fades + slides in
+              from the right. Uses opacity-100 animate-in so mount triggers slide. */}
+          <div className="flex-1 min-h-0 flex flex-col w-[380px] animate-in fade-in slide-in-from-right-2 duration-300">
+            {/* Widgets pane — shown in balanced + widgetsOnly.
                   [claude-code 2026-04-24] min-h-0 is CRITICAL in widgetsOnly:
                   without it, flex-1 + inner content force the pane taller than
                   the viewport and push the RiskFlow peek-footer off-screen. */}
-              {strategiumPaneMode !== "feedOnly" && (
+            {strategiumPaneMode !== "feedOnly" && (
+              <div
+                className={`${
+                  strategiumPaneMode === "widgetsOnly"
+                    ? "flex-1 min-h-0"
+                    : riskFlowCollapsed
+                      ? "flex-1 min-h-0"
+                      : "h-1/2 min-h-0"
+                } flex flex-col transition-all duration-300 bg-[var(--fintheon-surface)] relative`}
+              >
+                <div className="flex-1 min-h-0 overflow-y-auto">
+                  <div className="p-3 h-full">
+                    {renderMissionControl(() =>
+                      setMissionControlCollapsed(true),
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* RiskFlow pane — shown in balanced + feedOnly (and only when not fully-collapsed-in-feedOnly) */}
+            {strategiumPaneMode !== "widgetsOnly" &&
+              !(strategiumPaneMode === "feedOnly" && riskFlowCollapsed) && (
                 <div
                   className={`${
-                    strategiumPaneMode === "widgetsOnly"
-                      ? "flex-1 min-h-0"
+                    strategiumPaneMode === "feedOnly"
+                      ? "flex-1"
                       : riskFlowCollapsed
-                        ? "flex-1 min-h-0"
-                        : "h-1/2 min-h-0"
-                  } flex flex-col transition-all duration-300 bg-[var(--fintheon-surface)] relative`}
+                        ? "h-[168px] shrink-0"
+                        : "h-1/2"
+                  } flex flex-col transition-all duration-300 relative`}
                 >
                   <div className="flex-1 min-h-0 overflow-y-auto">
-                    <div className="p-3 h-full">
-                      {renderMissionControl(() =>
-                        setMissionControlCollapsed(true),
-                      )}
-                    </div>
+                    <RiskFlowMini
+                      collapsed={riskFlowCollapsed}
+                      onToggleCollapsed={() => {
+                        // [S37] Balanced-mode collapse now reaches the 168px mini card instead
+                        // of jumping to widgetsOnly (which fully hid the feed and left the user
+                        // unable to restore). In each mode we toggle the riskFlowCollapsed flag
+                        // directly — balanced + collapsed = 168px mini, feedOnly + collapsed
+                        // = peek-footer, widgetsOnly still relies on its own peek-footer.
+                        if (strategiumPaneMode === "feedOnly") {
+                          setRiskFlowCollapsed(true);
+                        } else {
+                          setRiskFlowCollapsed((v) => !v);
+                        }
+                      }}
+                      onNavigateToFeed={() => navigateTab("riskflow")}
+                    />
                   </div>
                 </div>
               )}
 
-              {/* RiskFlow pane — shown in balanced + feedOnly (and only when not fully-collapsed-in-feedOnly) */}
-              {strategiumPaneMode !== "widgetsOnly" &&
-                !(strategiumPaneMode === "feedOnly" && riskFlowCollapsed) && (
-                  <div
-                    className={`${
-                      strategiumPaneMode === "feedOnly"
-                        ? "flex-1"
-                        : riskFlowCollapsed
-                          ? "h-[168px] shrink-0"
-                          : "h-1/2"
-                    } flex flex-col transition-all duration-300 relative`}
-                  >
-                    <div className="flex-1 min-h-0 overflow-y-auto">
-                      <RiskFlowMini
-                        collapsed={riskFlowCollapsed}
-                        onToggleCollapsed={() => {
-                          // [S37] Balanced-mode collapse now reaches the 168px mini card instead
-                          // of jumping to widgetsOnly (which fully hid the feed and left the user
-                          // unable to restore). In each mode we toggle the riskFlowCollapsed flag
-                          // directly — balanced + collapsed = 168px mini, feedOnly + collapsed
-                          // = peek-footer, widgetsOnly still relies on its own peek-footer.
-                          if (strategiumPaneMode === "feedOnly") {
-                            setRiskFlowCollapsed(true);
-                          } else {
-                            setRiskFlowCollapsed((v) => !v);
-                          }
-                        }}
-                        onNavigateToFeed={() => navigateTab("riskflow")}
-                      />
-                    </div>
-                  </div>
-                )}
-
-              {/* RiskFlow peek-footer — visible whenever the feed is fully hidden so users can always bring it back */}
-              {(strategiumPaneMode === "widgetsOnly" ||
-                (strategiumPaneMode === "feedOnly" && riskFlowCollapsed)) && (
-                <StrategiumPeekBar
-                  variant="footer"
-                  label="RiskFlow"
-                  unreadCount={
-                    riskFlowAlerts.filter((a: { id: string }) => !isSeen(a.id))
-                      .length
+            {/* RiskFlow peek-footer — visible whenever the feed is fully hidden so users can always bring it back */}
+            {(strategiumPaneMode === "widgetsOnly" ||
+              (strategiumPaneMode === "feedOnly" && riskFlowCollapsed)) && (
+              <StrategiumPeekBar
+                variant="footer"
+                label="RiskFlow"
+                unreadCount={
+                  riskFlowAlerts.filter((a: { id: string }) => !isSeen(a.id))
+                    .length
+                }
+                onRestore={() => {
+                  if (strategiumPaneMode === "widgetsOnly") {
+                    updateStrategiumPaneMode("balanced");
+                  } else {
+                    setRiskFlowCollapsed(false);
                   }
-                  onRestore={() => {
-                    if (strategiumPaneMode === "widgetsOnly") {
-                      updateStrategiumPaneMode("balanced");
-                    } else {
-                      setRiskFlowCollapsed(false);
-                    }
-                  }}
-                />
-              )}
-            </div>
-          )}
+                }}
+              />
+            )}
+          </div>
         </div>,
       );
     }

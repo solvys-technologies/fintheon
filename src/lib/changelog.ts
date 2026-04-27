@@ -9,6 +9,22 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T23:55:00",
+    agent: "claude-code",
+    summary:
+      "S46.1 last-night patches per TP: (1) duplicate <PanelToggleGroup/> at TopHeader.tsx:680 removed; (2) double-chevron expand button stripped from NavSidebar.tsx top — hover + heading-toolbar layout button are the only triggers now; (3) Strategium collapsed-state rail/divider/chevron deleted from MainLayout.tsx — when collapsed the right column renders nothing, expand happens only via the heading toolbar layout button or the in-panel chevron on the expanded panel; (4) RiskFlow source-filter overhaul: agent-reach RSS list cut from Reuters/Bloomberg/CNBC/MarketWatch/SeekingAlpha/ZeroHedge → FRED + BLS + Federal Reserve only; browser allowlist news-tier (reuters/bloomberg/wsj/ft) stripped, FRED + stlouisfed.org added; new universal services/riskflow/publisher-blocklist.ts wired into supabase-service.writeRawItems so every poller's writes are filtered uniformly by host + headline pattern + Twitter handle (@business, @markets, @CNBC, @FoxNews, @MSNBC, @CNN, @Reuters etc) regardless of submitter; (5) backfill-headlines query menu widened to cover the Iran/Israel ceasefire + Trump assassination-attempt surfaces + macro core. Last-5-days backfill scheduled post-deploy.",
+    files: [
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/layout/NavSidebar.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "backend-hono/src/services/riskflow/agent-reach-poller.ts",
+      "backend-hono/src/services/browser/allowlist.ts",
+      "backend-hono/src/services/riskflow/publisher-blocklist.ts",
+      "backend-hono/src/services/supabase-service.ts",
+      "backend-hono/src/services/riskflow/backfill-headlines.ts",
+    ],
+  },
+  {
     date: "2026-04-26T23:10:00",
     agent: "claude-code",
     summary:

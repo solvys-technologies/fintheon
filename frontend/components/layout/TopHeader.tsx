@@ -672,12 +672,6 @@ export function TopHeader({
               </span>
             </div>
           </div>
-          {/* [claude-code 2026-04-26] VS Code-style three-panel toggle group:
-              left = NavSidebar, footer = FooterToolbar panel
-              (Team/Harper Ops/Changelog/Terminal/Errors), right = Strategium.
-              Each icon has a permanent divider line so the side it controls is
-              identifiable even when the panel is closed. */}
-          <PanelToggleGroup />
           {toolbarOrder.map((id) => {
             const wrapper = (node: React.ReactNode) => (
               <div

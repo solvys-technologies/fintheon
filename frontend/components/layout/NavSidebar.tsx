@@ -7,8 +7,6 @@ import {
   LayoutDashboard,
   CalendarDays,
   GripVertical,
-  ChevronsRight,
-  ChevronsLeft,
   BookOpenCheck,
   Bell,
   BellOff,
@@ -230,21 +228,9 @@ export function NavSidebar({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Expand/collapse toggle */}
-      <div className="px-1.5 mb-1">
-        <button
-          type="button"
-          onClick={() => setManualExpand((v) => !v)}
-          className="w-full flex items-center justify-center py-1 rounded-md fintheon-nav-inactive transition-colors"
-          title={expanded ? "Collapse sidebar" : "Expand sidebar"}
-        >
-          {expanded ? (
-            <ChevronsLeft className="w-3.5 h-3.5" />
-          ) : (
-            <ChevronsRight className="w-3.5 h-3.5" />
-          )}
-        </button>
-      </div>
+      {/* [claude-code 2026-04-26] Sidebar expand/collapse chevron removed per TP.
+          Hover-driven expansion (handleMouseEnter/Leave) is the only trigger;
+          the layout buttons in the heading toolbar control visibility. */}
 
       {expanded && (
         <div className="px-2 mb-2 flex justify-end">

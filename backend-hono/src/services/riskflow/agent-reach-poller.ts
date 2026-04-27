@@ -1,5 +1,10 @@
 // [claude-code 2026-04-18] S25-T1: Dedicated Agent-Reach poller — primary news source
 // Runs independently of Rettiwt. RSS preferred, HTML scraping as fallback.
+// [claude-code 2026-04-26] S46.1: Mainstream RSS feeds (Reuters, Bloomberg,
+// MarketWatch, CNBC, SeekingAlpha, ZeroHedge) PERMANENTLY REMOVED per TP.
+// Only Twitter ingest + FRED/BLS/Federal Reserve government feeds are allowed
+// off-Internet. Don't add mainstream-media RSS back here without explicit TP
+// signoff — they keep getting reverted otherwise.
 
 import { createBasePoller, type PollResult } from "../ingestion/base-poller.js";
 import {
@@ -18,29 +23,34 @@ type PollerLogger = ReturnType<typeof createLogger>;
 
 export const AGENT_REACH_POLLER_NAME = "agent-reach";
 
-// RSS feeds preferred — more structured, lower rate-limit friction
+// [claude-code 2026-04-26] Approved off-Internet sources: government data only.
+// Anything not from Twitter or these feeds is NOISE per TP.
 const RSS_FEEDS: { url: string; source: string }[] = [
-  { url: "https://www.reuters.com/rssFeed/businessNews", source: "Reuters" },
+  // Federal Reserve — press, speeches, FOMC, monetary policy
   {
-    url: "https://feeds.marketwatch.com/marketwatch/topstories",
-    source: "MarketWatch",
+    url: "https://www.federalreserve.gov/feeds/press_all.xml",
+    source: "FederalReserve",
   },
   {
-    url: "https://www.cnbc.com/id/100003114/device/rss/rss.html",
-    source: "CNBC",
+    url: "https://www.federalreserve.gov/feeds/speeches.xml",
+    source: "FederalReserve",
   },
   {
-    url: "https://seekingalpha.com/market_currents.xml",
-    source: "SeekingAlpha",
+    url: "https://www.federalreserve.gov/feeds/press_monetary.xml",
+    source: "FederalReserve",
   },
-  { url: "https://www.zerohedge.com/fullrss.xml", source: "ZeroHedge" },
-  { url: "https://feeds.bloomberg.com/markets/news.rss", source: "Bloomberg" },
+  // BLS — jobs, CPI, PPI, productivity
+  { url: "https://www.bls.gov/feed/news_release.rss", source: "BLS" },
+  { url: "https://www.bls.gov/feed/bls_latest.rss", source: "BLS" },
+  // FRED — economic data + research blog from St. Louis Fed
+  {
+    url: "https://fredblog.stlouisfed.org/feed/",
+    source: "FRED",
+  },
 ];
 
-// HTML scraping fallback when RSS is absent or fails
-const HTML_TARGETS: { url: string; source: string }[] = [
-  { url: "https://financialjuice.com", source: "FinancialJuice" },
-];
+// HTML scraping fallback — disabled (FinancialJuice covered via Twitter handle).
+const HTML_TARGETS: { url: string; source: string }[] = [];
 
 function hashForId(s: string): string {
   let h = 0;

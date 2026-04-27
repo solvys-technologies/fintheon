@@ -1,12 +1,16 @@
 // [claude-code 2026-04-19] S27-T4 (W1c): tiered allow-list with per-domain daily quotas.
 // Mirrored to browser_quota_ledger so counts survive restarts. UTC midnight reset.
+// [claude-code 2026-04-26] S46.1: News-tier hosts (Reuters, Bloomberg, WSJ, FT)
+// PERMANENTLY REMOVED per TP. Only government data sources + Twitter +
+// prediction markets + FRED are allowed. Don't re-add mainstream news domains
+// without explicit TP signoff.
 
 import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger("BrowserAllowlist");
 
-export type BrowserAllowTier = "regulatory" | "market" | "social" | "news";
+export type BrowserAllowTier = "regulatory" | "market" | "social" | "data";
 
 export interface BrowserAllowlistEntry {
   domain: string;
@@ -15,18 +19,20 @@ export interface BrowserAllowlistEntry {
 }
 
 export const BROWSER_ALLOWLIST: BrowserAllowlistEntry[] = [
+  // Regulatory + government data (TP-approved)
   { domain: "sec.gov", tier: "regulatory", dailyQuota: 200 },
-  { domain: "federalreserve.gov", tier: "regulatory", dailyQuota: 50 },
-  { domain: "bls.gov", tier: "regulatory", dailyQuota: 50 },
-  { domain: "treasury.gov", tier: "regulatory", dailyQuota: 50 },
+  { domain: "federalreserve.gov", tier: "regulatory", dailyQuota: 100 },
+  { domain: "bls.gov", tier: "regulatory", dailyQuota: 100 },
+  { domain: "treasury.gov", tier: "regulatory", dailyQuota: 100 },
+  // FRED (St. Louis Fed) — economic data
+  { domain: "stlouisfed.org", tier: "data", dailyQuota: 100 },
+  { domain: "fred.stlouisfed.org", tier: "data", dailyQuota: 100 },
+  // Prediction markets
   { domain: "polymarket.com", tier: "market", dailyQuota: 100 },
   { domain: "kalshi.com", tier: "market", dailyQuota: 100 },
+  // Twitter
   { domain: "x.com", tier: "social", dailyQuota: 500 },
   { domain: "twitter.com", tier: "social", dailyQuota: 500 },
-  { domain: "reuters.com", tier: "news", dailyQuota: 200 },
-  { domain: "bloomberg.com", tier: "news", dailyQuota: 100 },
-  { domain: "wsj.com", tier: "news", dailyQuota: 100 },
-  { domain: "ft.com", tier: "news", dailyQuota: 100 },
 ];
 
 const allowlistByDomain = new Map(BROWSER_ALLOWLIST.map((e) => [e.domain, e]));

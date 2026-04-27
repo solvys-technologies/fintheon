@@ -1,8 +1,11 @@
 // [claude-code 2026-03-20] Supabase cloud service — full data layer replacing Notion + scoring, ER, settings, consilium
 // [claude-code 2026-03-19] Supabase cloud service — centralized scoring, ER persistence, user settings, consilium
 // [claude-code 2026-04-24] S34-T3: extended EconEventRecord with country/category/event_key; added upsertEconEvent + readUpcomingEconEvents for the calendar populator + /api/econ/upcoming.
+// [claude-code 2026-04-26] S46.1: writeRawItems now applies the publisher-blocklist
+// (Bloomberg/Reuters/CNBC/Fox/MSNBC/CNN/etc) to every ingest path uniformly.
 import { getSupabaseClient, isSupabaseConfigured } from "../config/supabase.js";
 import { sql as dbSql, isDatabaseAvailable } from "../config/database.js";
+import { filterBlockedPublishers } from "./riskflow/publisher-blocklist.js";
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -75,6 +78,24 @@ export interface ConsiliumMessageRecord {
 // ─── Raw Items (all instances push) ─────────────────────────────
 
 export async function writeRawItems(items: RawRiskFlowItem[]): Promise<number> {
+  if (items.length === 0) return 0;
+
+  // [claude-code 2026-04-26] S46.1: drop blocked-publisher items at the persist
+  // boundary so every ingest path (Rettiwt, Agent-Reach, Exa, browser) inherits
+  // the same filter without per-poller plumbing.
+  const filtered = filterBlockedPublishers(items);
+  if (filtered.dropped.length > 0) {
+    console.log(
+      `[Supabase] publisher-blocklist dropped ${filtered.dropped.length}/${items.length} item(s):`,
+      filtered.dropped.slice(0, 5).map((d) => ({
+        host: d.item.url ? new URL(d.item.url).hostname : "(no url)",
+        reason: d.reason.reason,
+        detail: d.reason.detail,
+        headline: (d.item.headline ?? "").slice(0, 80),
+      })),
+    );
+  }
+  items = filtered.kept;
   if (items.length === 0) return 0;
 
   // [claude-code 2026-04-06] Primary: raw SQL (Supabase JS upsert silently fails)

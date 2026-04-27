@@ -14,16 +14,30 @@ import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger("RiskFlowBackfillHeadlines");
 
+// [claude-code 2026-04-26] S46.1: widened to cover the Iran/Israel ceasefire
+// surface and Trump-assassination-attempt arc TP says he was missing, plus the
+// macro/Fed/BLS/Treasury core. Publisher-blocklist runs at writeRawItems so
+// mainstream-media hits Exa returns are dropped automatically.
 const DEFAULT_QUERIES: string[] = [
-  "Federal Reserve interest rate decision Powell",
-  "ECB rate decision Lagarde inflation",
-  "Bank of Japan policy yen intervention",
-  "OPEC oil production cut Saudi",
+  // Geopolitics (Iran/Israel ceasefire + Trump assassination arc)
+  "Iran Israel ceasefire negotiations tape",
+  "Iran Israel war oil supply Strait of Hormuz",
+  "Trump assassination attempt rally shooting",
+  "Trump rally security incident gunman",
+  "Middle East ceasefire Hamas Hezbollah",
+  "Iran nuclear program enrichment IAEA",
+  // Central banks
+  "Federal Reserve interest rate decision Powell FOMC",
+  "ECB rate decision Lagarde inflation eurozone",
+  "Bank of Japan policy yen intervention Ueda",
+  "China PBOC stimulus yuan",
+  // US data
   "US CPI inflation report consumer prices",
-  "US nonfarm payrolls jobs unemployment",
-  "China economic stimulus PBOC yuan",
-  "geopolitical crisis Middle East Iran Israel",
+  "US nonfarm payrolls jobs unemployment BLS",
+  "US PPI producer price index",
   "Treasury yields 10-year auction",
+  // Energy + earnings
+  "OPEC oil production cut Saudi crude",
   "S&P 500 earnings guidance megacap",
 ];
 
