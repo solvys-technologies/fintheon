@@ -9,6 +9,15 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-27T07:30:00",
+    agent: "claude-code",
+    summary:
+      "v5.33.6 — Refinement Engine MSM-purge gate unblocked. requireSuperadmin gains a SUPER_ADMIN_EMAIL allow-list (comma-split, case-insensitive) so TP can authorize without digging up the Supabase auth UUID. Resolution order: SUPER_ADMIN_EMAIL → SUPER_ADMIN_USER_ID → DB users.role='admin'. Fly secret SUPER_ADMIN_EMAIL=tp@pricedinresearch.io set; same value appended to the local launchd backend's .env. Local launchd plist WorkingDirectory updated from the stale ~/Desktop/Codebases/fintheon-s40-s42-unified worktree to /Users/tifos/Documents/Codebases/fintheon — backend now serves the active dev tree (was returning the old 'ROUTINE_SECRET not configured' 503 from a v5.32.1 build until this fix). .env copied + SUPER_ADMIN_EMAIL line appended.",
+    files: [
+      "backend-hono/src/middleware/auth.ts",
+    ],
+  },
+  {
     date: "2026-04-27T07:00:00",
     agent: "claude-code",
     summary:

@@ -124,15 +124,32 @@ async function resolveAdminIds(): Promise<Set<string>> {
 
 export const requireSuperadmin = async (c: Context, next: Next) => {
   const userId = c.get("userId");
+  const email = (c.get("email") as string | undefined) ?? "";
   if (!userId || userId === "anonymous") {
     return c.json({ error: "Authentication required" }, 401);
   }
+
+  // [claude-code 2026-04-27] v5.33.6: SUPER_ADMIN_EMAIL allow-list — TP can
+  // set this without needing to dig up the Supabase auth UUID. Comma-split
+  // email list, case-insensitive. Resolves the gate immediately when set.
+  const emailAllow = (process.env.SUPER_ADMIN_EMAIL || "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  if (
+    emailAllow.length > 0 &&
+    email &&
+    emailAllow.includes(email.toLowerCase())
+  ) {
+    return await next();
+  }
+
   const allow = await resolveAdminIds();
-  if (allow.size === 0) {
+  if (allow.size === 0 && emailAllow.length === 0) {
     return c.json(
       {
         error: "Superadmin set not configured",
-        hint: "Set SUPER_ADMIN_USER_ID env or assign role='admin' in users",
+        hint: "Set SUPER_ADMIN_EMAIL or SUPER_ADMIN_USER_ID env, or assign role='admin' in users",
       },
       503,
     );
