@@ -42,7 +42,7 @@ import {
   generateNotesForEconItems,
 } from "./agent-notes.js";
 import { tagHeadlineSubjects } from "./headline-tagger.js";
-import { checkContentGuard } from "./content-guard.js";
+import { checkContentGuard, isBannedPublisher } from "./content-guard.js";
 import { bumpCounter } from "./drop-counters.js";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { normalizeHeadline } from "./text-utils.js";
@@ -160,8 +160,26 @@ export async function scoringCycle(): Promise<number> {
     });
 
     // Content guard safety net
+    // [claude-code 2026-04-26] Banned-publisher URL/host gate added alongside
+    // text content-guard. The main-backend ingest path (FinancialJuice /
+    // EconomicCalendar relays) was writing rows whose URL pointed at
+    // bloomberg.com / cnbc.com / etc. because the text-only guard never
+    // checked the link target. This is the single source of the leak that
+    // kept resurrecting purged headlines.
     const blockedIds = new Set<string>();
     const guardedFeedItems = feedItems.filter((item) => {
+      if (isBannedPublisher({ url: item.url, tags: item.tags ?? [] })) {
+        blockedIds.add(item.id);
+        bumpCounter(
+          item.source || "unknown",
+          "central-scorer",
+          "banned-publisher-host",
+        );
+        log.info(
+          `Banned-publisher host blocked: ${item.url} — ${item.headline.slice(0, 80)}`,
+        );
+        return false;
+      }
       const result = checkContentGuard(`${item.headline} ${item.body || ""}`);
       if (result.blocked) {
         blockedIds.add(item.id);

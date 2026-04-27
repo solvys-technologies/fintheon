@@ -157,6 +157,14 @@ const SCRAPER_ARTIFACT_PATTERNS = [
   /you('ve| have) been blocked/i,
   /too many requests/i,
   /rate limit/i,
+  // [claude-code 2026-04-26] .gov throttle pages — SEC EDGAR, Federal Reserve,
+  // BLS, BEA, etc. all serve these when a poller hits ratelimit. Headline
+  // shape: "<Domain> | Request Rate Threshold Exceeded" / "Your access has
+  // been blocked" / "undeclared automated tools".
+  /request rate threshold exceeded/i,
+  /undeclared automated tools/i,
+  /your request rate has triggered/i,
+  /your access has been blocked/i,
   /service unavailable/i,
   /502 bad gateway/i,
   /503 service/i,
@@ -334,12 +342,94 @@ export interface ContentGuardResult {
  * Returns { blocked: true, reason } if the item should be dropped.
  * Call this BEFORE writing to raw_riskflow_items.
  */
-// [claude-code 2026-04-26] Banned publishers — Reuters & Bloomberg headlines
-// (or any item citing them, including via URL/tags) get blocked at ingest. TP
-// purged 544 + 168 such rows tonight and the live news-worker keeps re-ingesting
-// fresh ones via agent-reach RSS / browser-harness. This stops them at the
-// front door. Pattern scans headline + body + url + tags simultaneously.
-const BANNED_PUBLISHER_PATTERNS: RegExp[] = [/\breuters\b/i, /\bbloomberg\b/i];
+// [claude-code 2026-04-26] Domain-only mainstream-media ban per TP:
+//   "We just DO NOT want shit pulled from their website. Same goes for Reuters
+//    & Bloomberg too." Text mentions in curated Twitter relays are fine —
+//    Walter Bloomberg / DeItaone / etc. routinely quote wire headlines, and
+//    those should pass through.
+//
+// Pipeline hierarchy:
+//   1. Twitter handles designated in the Refinement Engine (primary intake)
+//   2. .gov + bank research desks via the news-worker web-allowlist
+//   3. Everything else dropped
+//
+// This list is the defense-in-depth — if the allowlist somehow lets a rehost
+// or redirect through, the URL/host pattern catches it.
+const BANNED_DOMAIN_PATTERNS: RegExp[] = [
+  // Wires
+  /(^|\.)reuters\.com$/i,
+  /(^|\.)bloomberg\.com$/i,
+  /(^|\.)bloomberglaw\.com$/i,
+  /(^|\.)bloombergquint\.com$/i,
+  // US cable / network
+  /(^|\.)cnbc\.com$/i,
+  /(^|\.)foxnews\.com$/i,
+  /(^|\.)foxbusiness\.com$/i,
+  /(^|\.)msnbc\.com$/i,
+  /(^|\.)nbcnews\.com$/i,
+  /(^|\.)abcnews\.go\.com$/i,
+  /(^|\.)cbsnews\.com$/i,
+  /(^|\.)cnn\.com$/i,
+  // US prestige / general
+  /(^|\.)nytimes\.com$/i,
+  /(^|\.)washingtonpost\.com$/i,
+  /(^|\.)usatoday\.com$/i,
+  /(^|\.)huffpost\.com$/i,
+  /(^|\.)huffingtonpost\.com$/i,
+  /(^|\.)buzzfeed\.com$/i,
+  /(^|\.)buzzfeednews\.com$/i,
+  /(^|\.)vox\.com$/i,
+  // Tabloid / opinion noise
+  /(^|\.)thedailybeast\.com$/i,
+  /(^|\.)newsweek\.com$/i,
+  /(^|\.)dailymail\.co\.uk$/i,
+  // Finance noise
+  /(^|\.)marketwatch\.com$/i,
+  /(^|\.)finance\.yahoo\.com$/i,
+  /(^|\.)yahoo\.com$/i,
+  /(^|\.)seekingalpha\.com$/i,
+  /(^|\.)fool\.com$/i,
+  /(^|\.)barrons\.com$/i,
+  /(^|\.)benzinga\.com$/i,
+  /(^|\.)zerohedge\.com$/i,
+  /(^|\.)investopedia\.com$/i,
+  // International prestige
+  /(^|\.)bbc\.co\.uk$/i,
+  /(^|\.)bbc\.com$/i,
+  /(^|\.)theguardian\.com$/i,
+  /(^|\.)ft\.com$/i,
+  /(^|\.)economist\.com$/i,
+  /(^|\.)aljazeera\.com$/i,
+  /(^|\.)abc\.net\.au$/i,
+  // Scoop outlets — domain-banned per TP "we DO NOT want shit pulled from
+  // their website" — but their content reaching us via curated Twitter is OK.
+  /(^|\.)axios\.com$/i,
+  /(^|\.)politico\.com$/i,
+  /(^|\.)semafor\.com$/i,
+  /(^|\.)businessinsider\.com$/i,
+  /(^|\.)insider\.com$/i,
+  /(^|\.)theinformation\.com$/i,
+  /(^|\.)punchbowl\.news$/i,
+  /(^|\.)puck\.news$/i,
+  // Other outlets explicitly cited as noise
+  /(^|\.)dailywire\.com$/i,
+  /(^|\.)newsmax\.com$/i,
+  /(^|\.)oann\.com$/i,
+  /(^|\.)motherjones\.com$/i,
+  /(^|\.)slate\.com$/i,
+  /(^|\.)salon\.com$/i,
+  /(^|\.)thehill\.com$/i,
+  /(^|\.)npr\.org$/i,
+  /(^|\.)pbs\.org$/i,
+];
+
+function extractHost(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return url.toLowerCase().replace(/^www\./, "");
+  }
+}
 
 export interface BannedPublisherProbe {
   text?: string;
@@ -348,24 +438,29 @@ export interface BannedPublisherProbe {
 }
 
 export function isBannedPublisher(probe: BannedPublisherProbe): boolean {
-  const blob = [
-    probe.text ?? "",
-    probe.url ?? "",
-    (probe.tags ?? []).join(" "),
-  ].join(" ");
-  return BANNED_PUBLISHER_PATTERNS.some((p) => p.test(blob));
+  // URL host check — primary domain match.
+  if (probe.url) {
+    const host = extractHost(probe.url);
+    if (BANNED_DOMAIN_PATTERNS.some((p) => p.test(host))) return true;
+  }
+  // Tags often carry `source_domain` from the news-worker; the Twitter
+  // pipeline carries handle metadata that won't match these patterns.
+  for (const tag of probe.tags ?? []) {
+    const tagHost = tag.startsWith("url:")
+      ? extractHost(tag.slice(4))
+      : tag.toLowerCase().replace(/^www\./, "");
+    if (BANNED_DOMAIN_PATTERNS.some((p) => p.test(tagHost))) return true;
+  }
+  return false;
 }
 
 export function checkContentGuard(text: string): ContentGuardResult {
-  // 0. Banned publishers (headline/body only — call isBannedPublisher() for
-  //    the full URL+tags check at the news-worker layer).
-  for (const pattern of BANNED_PUBLISHER_PATTERNS) {
-    if (pattern.test(text)) {
-      return { blocked: true, reason: "banned-publisher" };
-    }
-  }
+  // [claude-code 2026-04-26] Banned-publisher check moved off the text scanner —
+  // we no longer phrase-block mainstream-media mentions. Curated Twitter relays
+  // can quote a Reuters/Bloomberg headline freely. Use isBannedPublisher() for
+  // the URL/host gate at the news-worker layer.
 
-  // 0a. Platform ads / promos — fast reject before anything else
+  // 0. Platform ads / promos — fast reject before anything else
   for (const pattern of PLATFORM_AD_PATTERNS) {
     if (pattern.test(text)) {
       return { blocked: true, reason: "platform-ad" };

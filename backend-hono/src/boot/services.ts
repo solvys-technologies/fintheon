@@ -35,6 +35,11 @@ import {
   catchUpMissedBriefs,
 } from "../services/cron/dispatch-scheduler.js";
 import { startNewsWorkerAuditScheduler } from "../services/cron/news-worker-audit-scheduler.js";
+// [claude-code 2026-04-26] S40-P8: megacap earnings refresh (Sun 22:00 ET) +
+// post-print enrichment (every 5 min). Cherry-picked from s455-cleanup alongside
+// the riskflow-worker restoration.
+import { startMegacapEarningsRefresh } from "../services/cron/megacap-earnings-refresh.js";
+import { startMegacapEarningsEnrichment } from "../services/cron/megacap-earnings-enrichment.js";
 import { startEconKeywordScheduler } from "../services/cron/econ-keyword-scheduler.js";
 import { startArbitrumSessionScheduler } from "../services/cron/arbitrum-session-scheduler.js";
 // [claude-code 2026-04-26] S45-T1: day-plan / streak / drift-monitor crons
@@ -285,6 +290,14 @@ export async function bootBackground(): Promise<void> {
   // [claude-code 2026-04-19] S28: News-worker audit gates — 6:00am/11:30am/4:00pm ET, non-negotiable
   startNewsWorkerAuditScheduler();
   log.info("NewsWorkerAuditScheduler started");
+
+  // [claude-code 2026-04-26] S40-P8: megacap earnings refresh (Sunday 22:00 ET, +90d window)
+  startMegacapEarningsRefresh();
+  log.info("MegacapEarningsRefresh started");
+
+  // [claude-code 2026-04-26] S40-P8: T+5min post-print enrichment (every 5 min, scans last 6h)
+  startMegacapEarningsEnrichment();
+  log.info("MegacapEarningsEnrichment started");
 
   // [claude-code 2026-04-24] S34-T6: Econ keyword trigger — every minute, scans for
   // "Actual"/"Forecast" inside active event windows and promotes to macro_level=4.

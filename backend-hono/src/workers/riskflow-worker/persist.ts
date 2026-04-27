@@ -1,3 +1,6 @@
+// [claude-code 2026-04-24] S35-T10: renamed dir from workers/news-worker. Heartbeat table
+//   now writes to riskflow_worker_heartbeats (legacy view alias preserved through 2026-05-08).
+//   submitted_by tag updated to "riskflow-worker"; FLAG_WRITES env var has legacy fallback.
 // [claude-code 2026-04-19] S27-T7 (W2d): Supabase write layer. Worker and
 // backend-hono never talk HTTP — this is the contract. Dry-run mode skips
 // writes while still upserting heartbeats, so load tests don't pollute the
@@ -26,10 +29,19 @@ import { bumpCounter } from "../../services/riskflow/drop-counters.js";
 import { isBannedPublisher } from "../../services/riskflow/content-guard.js";
 import type { CollectedNewsItem } from "./sources/types.js";
 
-const FLAG_WRITES = "FLAG_NEWS_WORKER_WRITES_RISKFLOW";
+const FLAG_WRITES_NEW = "FLAG_RISKFLOW_WORKER_WRITES_RISKFLOW";
+const FLAG_WRITES_LEGACY = "FLAG_NEWS_WORKER_WRITES_RISKFLOW";
 
 function writesEnabled(): boolean {
-  return process.env[FLAG_WRITES] === "true";
+  // Legacy alias FLAG_NEWS_WORKER_WRITES_RISKFLOW honored until 2026-05-08.
+  const flag = process.env[FLAG_WRITES_NEW] ?? process.env[FLAG_WRITES_LEGACY];
+  return flag === "true";
+}
+
+function flagDisplay(): string {
+  return process.env[FLAG_WRITES_NEW] !== undefined
+    ? FLAG_WRITES_NEW
+    : FLAG_WRITES_LEGACY;
 }
 
 export async function writeCollectedItems(
@@ -43,9 +55,9 @@ export async function writeCollectedItems(
     console.log(
       JSON.stringify({
         ts: new Date().toISOString(),
-        service: "news-worker",
+        service: "riskflow-worker",
         stage: "dry_run_skip",
-        reason: `${FLAG_WRITES} != true`,
+        reason: `${flagDisplay()} != true`,
         would_write: items.length,
       }),
     );
@@ -60,26 +72,24 @@ export async function writeCollectedItems(
   // the upsert silently.
   const eligible: CollectedNewsItem[] = [];
   const perSourceMissing = new Map<string, number>();
-  const perSourcePublisherBanned = new Map<string, number>();
+  const perSourceBannedHost = new Map<string, number>();
   for (const item of items) {
     const src = item.source || "unknown";
     if (!item.item_id || !item.headline || !item.headline.trim()) {
       perSourceMissing.set(src, (perSourceMissing.get(src) ?? 0) + 1);
       continue;
     }
-    // [claude-code 2026-04-26] Reuters/Bloomberg block at the front door — TP
-    // banned both publishers; this catches them via headline+body+url+tags.
+    // [claude-code 2026-04-26] Banned-publisher URL/host gate. Worker writes
+    // bypass supabase-service.ts:writeRawItems (uses raw Supabase client),
+    // so the gate has to live here too. Twitter relays mentioning a banned
+    // outlet by name still pass — only direct URL hits drop.
     if (
       isBannedPublisher({
-        text: `${item.headline} ${item.body ?? ""}`,
         url: item.url,
         tags: item.source_domain ? [item.source_domain] : [],
       })
     ) {
-      perSourcePublisherBanned.set(
-        src,
-        (perSourcePublisherBanned.get(src) ?? 0) + 1,
-      );
+      perSourceBannedHost.set(src, (perSourceBannedHost.get(src) ?? 0) + 1);
       continue;
     }
     eligible.push(item);
@@ -87,8 +97,8 @@ export async function writeCollectedItems(
   for (const [src, count] of perSourceMissing) {
     bumpCounter(src, "persist", "dropped_missing_fields", count);
   }
-  for (const [src, count] of perSourcePublisherBanned) {
-    bumpCounter(src, "persist", "dropped_banned_publisher", count);
+  for (const [src, count] of perSourceBannedHost) {
+    bumpCounter(src, "persist", "dropped_banned_publisher_host", count);
   }
   if (eligible.length === 0) return 0;
 
@@ -99,16 +109,14 @@ export async function writeCollectedItems(
     headline: item.headline,
     body: item.body,
     url: item.url ?? null,
-    image_url: item.image_url ?? null,
     symbols: [] as string[],
-    // [claude-code 2026-04-26] url: tag dropped — `url` is a real column now,
-    // and the legacy tag was leaking publisher domains into the rendered tag
-    // chip strip on RiskFlow detail cards.
-    tags: [`tier:${item.tier}`],
+    tags: item.url
+      ? [`url:${item.url}`, `tier:${item.tier}`]
+      : [`tier:${item.tier}`],
     is_breaking: item.tier === "breaking",
     urgency: item.tier === "breaking" ? 8 : 4,
     published_at: item.published_at,
-    submitted_by: "news-worker",
+    submitted_by: "riskflow-worker",
     fetched_at: item.fetched_at,
     fetch_latency_ms: item.fetch_latency_ms,
   }));
@@ -122,7 +130,7 @@ export async function writeCollectedItems(
       console.warn(
         JSON.stringify({
           ts: new Date().toISOString(),
-          service: "news-worker",
+          service: "riskflow-worker",
           stage: "persist_error",
           error: error.message,
         }),
@@ -168,7 +176,7 @@ export async function writeCollectedItems(
     console.warn(
       JSON.stringify({
         ts: new Date().toISOString(),
-        service: "news-worker",
+        service: "riskflow-worker",
         stage: "persist_exception",
         error: err instanceof Error ? err.message : String(err),
       }),
@@ -193,14 +201,14 @@ export async function upsertHeartbeat(row: {
   const sb = getSupabaseClient();
   if (!sb) return;
   try {
-    await sb.from("news_worker_heartbeats").upsert(row, {
+    await sb.from("riskflow_worker_heartbeats").upsert(row, {
       onConflict: "tier",
     });
   } catch (err) {
     console.warn(
       JSON.stringify({
         ts: new Date().toISOString(),
-        service: "news-worker",
+        service: "riskflow-worker",
         stage: "heartbeat_error",
         error: err instanceof Error ? err.message : String(err),
       }),

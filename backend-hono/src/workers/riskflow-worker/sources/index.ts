@@ -1,23 +1,26 @@
+// [claude-code 2026-04-26] Removed direct mainstream-media scrape URLs from
+// breaking tier (reuters.com, bloomberg.com browser-harness + RSS). Policy:
+// no website pulls from mainstream media. Twitter wire-handles + .gov + bank
+// research are the only intake. Standard tier kept .gov / Treasury / Exa
+// unchanged. Mainstream content still flows through curated Twitter relays
+// when those handles re-quote a headline.
+// [claude-code 2026-04-24] S35-T10: renamed dir from workers/news-worker. Tier-coordinator
+//   semantics unchanged; service log strings now emit "riskflow-worker".
 // [claude-code 2026-04-19] S27-T7 (W2d): tier coordinators — compose source
 // collectors and hand off to persist.ts. Per-source failures are isolated so
 // one bad source never kills the tier (AgentReach pattern).
 // [claude-code 2026-04-24] S34-T5: add DB-driven handle collectors — Wire in
 // Breaking tier, Macro in Standard tier — sourced from riskflow_source_accounts
 // via source-accounts-service (30s cache). Closes the Refinement Engine loop.
-// [claude-code 2026-04-26] S46.1: BREAKING TIER IS TWITTER-ONLY. Reuters/
-// Bloomberg URLs and RSS feeds removed permanently — they are noise, not signal.
-// The only breaking-tier sources are the Refinement Engine wire handles
-// (riskflow_source_accounts.category = 'Wire'). Standard tier remains
-// government data + Exa (gov-only sites + macro keywords).
 
 import { collectFromBrowserHarness } from "./browser-harness.js";
 import { collectFromExa } from "./exa.js";
 import { collectFromAgentReach } from "./agent-reach.js";
+import { collectFromXHandlesBrowser } from "./x-handles-browser.js";
 import { writeCollectedItems } from "../persist.js";
 import {
   getWireHandles,
   getMacroHandles,
-  getActiveAccounts,
 } from "../../../services/source-accounts/source-accounts-service.js";
 import type { CollectedNewsItem } from "./types.js";
 
@@ -37,7 +40,7 @@ async function safeCollect(
     console.warn(
       JSON.stringify({
         ts: new Date().toISOString(),
-        service: "news-worker",
+        service: "riskflow-worker",
         stage: "collector_error",
         source: label,
         error: err instanceof Error ? err.message : String(err),
@@ -47,41 +50,34 @@ async function safeCollect(
   }
 }
 
-// [claude-code 2026-04-26] Returns every active handle in the Refinement Engine
-// — Wire + OSINT + Geopolitical + Macro + Custom. Breaking tier hits ALL of
-// them so Iran/Trump/geopolitics tape lands in the feed alongside Wire flashes.
-async function getAllRefinementHandles(): Promise<string[]> {
-  const accounts = await getActiveAccounts();
-  return accounts.map((a) => a.handle);
-}
-
 export async function runBreakingTier(): Promise<TierRunResult> {
-  const results = await Promise.all([
-    // [claude-code 2026-04-26] Twitter-only breaking tier. Wire handles get
-    // their own dedicated pull so Wire latency is measurable per source; the
-    // wider OSINT/Geopolitical/Macro pull catches everything else.
-    safeCollect("agent-reach:wire-handles", async () => {
-      const handles = await getWireHandles();
-      if (handles.length === 0) return [];
-      return collectFromAgentReach({ handles, tier: "breaking" });
-    }),
-    safeCollect("agent-reach:all-refinement-handles", async () => {
-      const handles = await getAllRefinementHandles();
-      if (handles.length === 0) return [];
-      return collectFromAgentReach({ handles, tier: "breaking" });
-    }),
-  ]);
+  // PRIMARY: Browserbase / Playwright-driven X.com timeline scrape per
+  // curated handle. Public Nitter mirrors are mostly dead, so this is the
+  // first attempt every tick. Returns tweet-granularity items keyed on
+  // tweet_id for clean dedupe.
+  const wireHandles = await getWireHandles().catch(() => []);
+  const primary = await safeCollect("x-handles-browser:wire", () =>
+    collectFromXHandlesBrowser({ handles: wireHandles, tier: "breaking" }),
+  );
 
-  const items = results.flatMap((r) => r.items);
-  const errors = results.reduce((sum, r) => sum + r.errors, 0);
+  // SECONDARY: agent-reach Nitter RSS — only fires if the primary returned
+  // nothing for a handle (Playwright crash, X login wall, etc.). Idempotent
+  // tweet_id collapsing means duplicates collapse if both win.
+  const fallback =
+    primary.items.length === 0 && wireHandles.length > 0
+      ? await safeCollect("agent-reach:wire-handles", () =>
+          collectFromAgentReach({ handles: wireHandles, tier: "breaking" }),
+        )
+      : { items: [] as CollectedNewsItem[], errors: 0 };
+
+  const items = [...primary.items, ...fallback.items];
+  const errors = primary.errors + fallback.errors;
   const ingested = await writeCollectedItems(items);
   return { ingested, errors };
 }
 
 export async function runStandardTier(): Promise<TierRunResult> {
   const results = await Promise.all([
-    // [claude-code 2026-04-26] Standard tier is government-data only. SEC EDGAR
-    // + Federal Reserve press are TP-approved off-Internet sources.
     safeCollect("browser-harness", () =>
       collectFromBrowserHarness({
         urls: [
@@ -97,23 +93,23 @@ export async function runStandardTier(): Promise<TierRunResult> {
         tier: "standard",
       }),
     ),
-    // [claude-code 2026-04-26] Government RSS only — SEC + Treasury + Fed +
-    // BLS + FRED. No mainstream wire feeds.
     safeCollect("agent-reach", () =>
       collectFromAgentReach({
         rssFeeds: [
           "https://www.sec.gov/rss/news/press.xml",
           "https://home.treasury.gov/news/press-releases/feed",
-          "https://www.federalreserve.gov/feeds/press_all.xml",
-          "https://www.federalreserve.gov/feeds/speeches.xml",
-          "https://www.federalreserve.gov/feeds/press_monetary.xml",
-          "https://www.bls.gov/feed/news_release.rss",
-          "https://www.bls.gov/feed/bls_latest.rss",
-          "https://fredblog.stlouisfed.org/feed/",
         ],
         tier: "standard",
       }),
     ),
+    // PRIMARY for macro handles — Browserbase/Playwright. Falls through to
+    // Nitter (next entry) only if the browser path returned nothing for a
+    // handle.
+    safeCollect("x-handles-browser:macro", async () => {
+      const handles = await getMacroHandles();
+      if (handles.length === 0) return [];
+      return collectFromXHandlesBrowser({ handles, tier: "standard" });
+    }),
     safeCollect("agent-reach:macro-handles", async () => {
       const handles = await getMacroHandles();
       if (handles.length === 0) return [];

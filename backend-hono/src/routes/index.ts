@@ -59,6 +59,10 @@ import { createHarperRoutes } from "./harper/index.js";
 import { createHarperOpsRoutes } from "./harper-ops/index.js";
 import { createOpsRoutes } from "./ops/index.js";
 import { createEconRoutes } from "./econ/index.js";
+// [claude-code 2026-04-26] S40-P5/P8: TradingView scanner + megacap earnings.
+// Cherry-picked from s455-cleanup alongside the riskflow-worker restoration.
+import { createMarketScanRoutes } from "./market-scan/index.js";
+import { createEarningsRoutes } from "./earnings/index.js";
 import { createPeersRoutes } from "./peers/index.js";
 import predictionsRoutes from "./predictions.js";
 import { createDocumentRoutes } from "./documents/index.js";
@@ -239,6 +243,12 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/ops", createOpsRoutes());
   // Econ Intelligence — event cards, filters, KPI/instrument fuses (Track 4a/4b)
   app.route("/api/econ", createEconRoutes());
+  // [claude-code 2026-04-26] S40-P5: TradingView scanner — /futures, /indices,
+  // /commodities, /rates, /fx, /metals, /top-movers, /quotes
+  app.route("/api/market-scan", createMarketScanRoutes());
+  // [claude-code 2026-04-26] S40-P8: megacap earnings (public read,
+  // internal-trigger gated refresh)
+  app.route("/api/earnings", createEarningsRoutes());
   // MCP registry — live read/write of ~/.claude/mcp.json (public, local-only)
   app.route("/api/mcp", createMcpRoutes());
 
