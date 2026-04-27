@@ -622,8 +622,27 @@ function createWindow(apiBase) {
           console.warn("[DeskCal] setSavePath failed:", err);
           return;
         }
+        // [claude-code 2026-04-27] S46.4: emit IPC events to the renderer so
+        // the TradingViewCalendar surface can show a green "Saving event…"
+        // status and a success toast — no Google Calendar window, no chooser
+        // dialog, no app-leaving navigation. The .ics is captured silently
+        // by setSavePath above.
+        const sendStatus = (channel, payload) => {
+          try {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send(channel, payload ?? {});
+            }
+          } catch {
+            /* renderer torn down; nothing to send */
+          }
+        };
+        sendStatus("desk-calendar:saving");
         item.once("done", async (_e, state) => {
-          if (state !== "completed") return;
+          if (state !== "completed") {
+            sendStatus("desk-calendar:failed", { reason: state });
+            fs.promises.unlink(tmpFile).catch(() => {});
+            return;
+          }
           try {
             const ics = await fs.promises.readFile(tmpFile, "utf8");
             const res = await fetch(`${apiBase}/api/desk/calendar/ingest-ics`, {
@@ -633,16 +652,29 @@ function createWindow(apiBase) {
             });
             if (res.ok) {
               const body = await res.json().catch(() => ({}));
+              const ingested = Number(body.ingested ?? 0);
+              const first = Array.isArray(body.events) ? body.events[0] : null;
               console.log(
-                `[DeskCal] Ingested ${body.ingested ?? 0} TV event(s) into desk queue.`,
+                `[DeskCal] Ingested ${ingested} TV event(s) into desk queue.`,
               );
+              sendStatus("desk-calendar:saved", {
+                ingested,
+                title: first?.title ?? null,
+                starts_at: first?.starts_at ?? null,
+              });
             } else {
               console.warn(
                 `[DeskCal] Ingest failed: ${res.status} ${res.statusText}`,
               );
+              sendStatus("desk-calendar:failed", {
+                reason: `${res.status} ${res.statusText}`,
+              });
             }
           } catch (err) {
             console.warn("[DeskCal] Ingest error:", err);
+            sendStatus("desk-calendar:failed", {
+              reason: err instanceof Error ? err.message : String(err),
+            });
           } finally {
             fs.promises.unlink(tmpFile).catch(() => {});
           }

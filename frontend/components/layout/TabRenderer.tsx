@@ -1,3 +1,8 @@
+// [claude-code 2026-04-27] S46.4: ECON navtab now renders the live TradingView
+// calendar iframe (TradingViewCalendar) so TP can use the "Add to Calendar"
+// CTA — the resulting .ics download is intercepted by Electron and POSTed to
+// /api/desk/calendar/ingest-ics. The lightweight EconCalendar widget is
+// retained for chat/mobile surfaces but is no longer in the navtab.
 // [claude-code 2026-04-18] S24-T4: Admin surface now wraps Refinement/Approvals/Monitor via AdminShell
 // [claude-code 2026-04-03] Extracted from MainLayout.tsx — tab content rendering
 import React from "react";
@@ -6,7 +11,7 @@ import { RiskFlowMain } from "../feed/RiskFlowMain";
 import { ConsiliumHub } from "../consilium/ConsiliumHub";
 import { MainDashboard } from "../executive/MainDashboard";
 import { EconCalendarProvider } from "../../contexts/EconCalendarContext";
-import { EconCalendar } from "../econ/EconCalendar";
+import { TradingViewCalendar } from "../econ/TradingViewCalendar";
 import { NarrativeProvider } from "../../contexts/NarrativeContext";
 import { NarrativeMap } from "../narrative/NarrativeMap";
 import { PerformanceJournal } from "../journal/PerformanceJournal";
@@ -88,7 +93,7 @@ export function TabRenderer({
           className={`h-full w-full ${animClass}`}
         >
           <EconCalendarProvider>
-            <EconCalendar />
+            <TradingViewCalendar />
           </EconCalendarProvider>
         </div>
       )}
