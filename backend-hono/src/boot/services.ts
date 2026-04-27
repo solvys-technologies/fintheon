@@ -14,7 +14,6 @@ import { startRiskFlowEconEnricher } from "../services/cron/riskflow-econ-enrich
 import { startEconCalendarPopulator } from "../services/cron/econ-calendar-populator.js";
 import { startFiscalSpeakerPopulator } from "../services/cron/fiscal-speaker-populator.js";
 import { startEconPoller } from "../services/riskflow/econ-rettiwt-poller.js";
-import { startExaScheduledMonitor } from "../services/riskflow/exa-scheduled-monitor.js";
 import { initClaudeSDK } from "../services/claude-sdk/process-manager.js";
 import { initToolApprovalStore } from "../services/tool-approval-store.js";
 import { startPersistentSession } from "../services/claude-sdk/session-manager.js";
@@ -194,12 +193,9 @@ export async function bootBackground(): Promise<void> {
   // workers/riskflow-worker/) is the SINGLE writer to raw_riskflow_items now.
   // Removed: startAgentReachPoller (mainstream RSS noise), startFeedPoller
   // (Rettiwt curated timelines), Rettiwt pool init + econ-rettiwt-poller
-  // (Rettiwt dead per S45.5/F2), startPollWatchdog (watched the legacy pollers).
-  // One pipeline = one banned-publisher gate = no leaks. Exa scheduled-event
-  // monitor is kept — it's not a news ingester, it's a forward-looking event
-  // discovery feed for Sanctum narratives.
-  startExaScheduledMonitor();
-  log.info("ExaScheduledMonitor started");
+  // (Rettiwt dead per S45.5/F2), startPollWatchdog (watched the legacy pollers),
+  // startExaScheduledMonitor (Exa stripped entirely in v5.33.2 per TP — "no
+  // use, persistent glitches"). One pipeline = one banned-publisher gate.
 
   // Autopilot scheduler (30s cycle — proposal expiry, session detection)
   startAutopilotScheduler();

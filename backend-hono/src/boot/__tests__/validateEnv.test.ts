@@ -115,16 +115,13 @@ describe("validateEnv", () => {
   });
 
   it("warns but does not exit when OPTIONAL vars are missing", () => {
-    withEnv(
-      { ...FULL_VALID_ENV, EXA_API_KEY: undefined, FRED_API_KEY: undefined },
-      () => {
-        const result = validateEnv();
-        expect(result.ok).toBe(true);
-        expect(result.warnings.some((w) => w.includes("EXA_API_KEY"))).toBe(
-          true,
-        );
-      },
-    );
+    withEnv({ ...FULL_VALID_ENV, FRED_API_KEY: undefined }, () => {
+      const result = validateEnv();
+      expect(result.ok).toBe(true);
+      expect(result.warnings.some((w) => w.includes("FRED_API_KEY"))).toBe(
+        true,
+      );
+    });
   });
 
   it("warns on partial LiveKit config", () => {

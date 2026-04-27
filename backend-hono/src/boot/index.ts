@@ -49,7 +49,6 @@ const CRITICAL_VARS: VarSpec[] = [
 ];
 
 const REQUIRED_VARS: VarSpec[] = [
-  { name: "EXA_API_KEY" },
   { name: "FRED_API_KEY" },
   { name: "CRON_SECRET_TOKEN" },
 ];
@@ -213,7 +212,6 @@ export const env = {
     process.env.VPROXY_ANTHROPIC_MODEL ?? "claude-opus-4-6",
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   VERCEL_AI_GATEWAY_API_KEY: process.env.VERCEL_AI_GATEWAY_API_KEY,
-  EXA_API_KEY: process.env.EXA_API_KEY,
   FRED_API_KEY: process.env.FRED_API_KEY,
   ENABLE_CENTRAL_SCORING: process.env.ENABLE_CENTRAL_SCORING === "true",
   ENABLE_AI_ANALYSIS: process.env.ENABLE_AI_ANALYSIS !== "false",

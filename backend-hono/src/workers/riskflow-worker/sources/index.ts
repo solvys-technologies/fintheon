@@ -1,7 +1,7 @@
 // [claude-code 2026-04-27] S46.4 source narrowing per TP:
 //   - SEC EDGAR + Treasury press REMOVED from standard tier.
-//   - Exa DISABLED (call site commented; collector file kept in tree per
-//     feedback_exa_off.md).
+//   - Exa STRIPPED entirely (worker no longer imports the Exa collector;
+//     sources/exa.ts deleted in v5.33.2 per TP "turn off Exa completely").
 //   - Standard tier .gov set narrowed to TP-approved trio:
 //       1) COT (Commitment of Traders) — CFTC weekly Friday 15:30 ET via
 //          browser-harness (HTML page; no clean RSS).
@@ -26,9 +26,6 @@
 // via source-accounts-service (30s cache). Closes the Refinement Engine loop.
 
 import { collectFromBrowserHarness } from "./browser-harness.js";
-// [claude-code 2026-04-27] Exa import retained for future re-enable; do not
-// delete (TP wants the collector code in tree, just gated off).
-// import { collectFromExa } from "./exa.js";
 import { collectFromAgentReach } from "./agent-reach.js";
 import { collectFromXHandlesBrowser } from "./x-handles-browser.js";
 import { writeCollectedItems } from "../persist.js";
@@ -113,14 +110,6 @@ export async function runStandardTier(): Promise<TierRunResult> {
         tier: "standard",
       }),
     ),
-    // [claude-code 2026-04-27] Exa OFF (feedback_exa_off.md). Re-enable only
-    // when TP says "turn Exa back on". Collector file kept in tree.
-    // safeCollect("exa", () =>
-    //   collectFromExa({
-    //     query: "macro policy OR FOMC OR Treasury OR inflation headline",
-    //     tier: "standard",
-    //   }),
-    // ),
     // [claude-code 2026-04-27] FOMC Minutes — pulled from press_monetary.xml
     // and post-filtered to titles starting with the canonical minutes prefix.
     // The press_monetary feed mixes minutes with intermeeting statements,

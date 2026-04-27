@@ -13,7 +13,6 @@ export interface EnvConfig {
   BYPASS_AUTH: boolean;
   VERCEL_AI_GATEWAY_API_KEY: string | undefined;
   FRED_API_KEY: string | undefined;
-  EXA_API_KEY: string | undefined;
   OPENAI_API_KEY: string | undefined;
   LIVEKIT_API_KEY: string | undefined;
   LIVEKIT_API_SECRET: string | undefined;
@@ -31,7 +30,6 @@ export function getEnvConfig(): EnvConfig {
     BYPASS_AUTH: process.env.BYPASS_AUTH === "true",
     VERCEL_AI_GATEWAY_API_KEY: process.env.VERCEL_AI_GATEWAY_API_KEY,
     FRED_API_KEY: process.env.FRED_API_KEY,
-    EXA_API_KEY: process.env.EXA_API_KEY,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     LIVEKIT_API_KEY: process.env.LIVEKIT_API_KEY,
     LIVEKIT_API_SECRET: process.env.LIVEKIT_API_SECRET,

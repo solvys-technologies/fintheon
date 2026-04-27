@@ -4,13 +4,6 @@
       "command": "node",
       "args": ["/Users/tifos/Desktop/Codebases/tradingview-mcp/src/server.js"]
     },
-    "exa": {
-      "command": "npx",
-      "args": ["-y", "exa-mcp-server"],
-      "env": {
-        "EXA_API_KEY": "${EXA_API_KEY}"
-      }
-    },
     "notion": {
       "command": "npx",
       "args": ["-y", "@notionhq/notion-mcp-server"],

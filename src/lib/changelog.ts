@@ -9,6 +9,34 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-27T05:30:00",
+    agent: "claude-code",
+    summary:
+      "v5.33.2 — Exa STRIPPED platform-wide per TP ('no use, persistent glitches'). Files deleted: workers/riskflow-worker/sources/exa.ts, services/riskflow/exa-scheduled-monitor.ts, services/riskflow/backfill-headlines.ts, routes/admin/riskflow-backfill.ts, services/exa-service.ts. References removed: worker sources/index.ts (commented Exa block + import), boot/services.ts (startExaScheduledMonitor wiring), services/riskflow/feed-poller.ts (checkForScheduledEvents import + scheduled-event scrape branch in runScrapeFallback), routes/riskflow/handlers.ts (dynamic-import scheduled-event scrape during refresh), services/agent-desk/agent-desk-client.ts (fetchExaForOfficial fn + DB-miss fallback, now returns []), services/agent-desk/agent-desk-context.ts (fetchExaFallback fn + < 5 supplement branch), routes/index.ts (createRiskFlowBackfillRoutes mount + import), boot/index.ts (EXA_API_KEY required-var entry + getEnvConfig field), config/env.ts (EXA_API_KEY interface + getter), routes/diagnostics/index.ts (RECOMMENDED_ENV_VARS), routes/mcp/index.ts (KNOWN_SERVERS exa entry), .mcp.json (exa MCP server entry), .env.example (EXA_API_KEY line), validateEnv.test.ts (EXA_API_KEY warning case → FRED_API_KEY). Worker now ticks COT + FOMC Minutes + Fed Speeches only.",
+    files: [
+      "backend-hono/src/workers/riskflow-worker/sources/exa.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/index.ts",
+      "backend-hono/src/services/riskflow/exa-scheduled-monitor.ts",
+      "backend-hono/src/services/riskflow/backfill-headlines.ts",
+      "backend-hono/src/services/riskflow/feed-poller.ts",
+      "backend-hono/src/services/riskflow/refill-driver.ts",
+      "backend-hono/src/services/exa-service.ts",
+      "backend-hono/src/services/agent-desk/agent-desk-client.ts",
+      "backend-hono/src/services/agent-desk/agent-desk-context.ts",
+      "backend-hono/src/routes/admin/riskflow-backfill.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/routes/riskflow/handlers.ts",
+      "backend-hono/src/routes/diagnostics/index.ts",
+      "backend-hono/src/routes/mcp/index.ts",
+      "backend-hono/src/boot/services.ts",
+      "backend-hono/src/boot/index.ts",
+      "backend-hono/src/boot/__tests__/validateEnv.test.ts",
+      "backend-hono/src/config/env.ts",
+      "backend-hono/.env.example",
+      ".mcp.json",
+    ],
+  },
+  {
     date: "2026-04-27T05:00:00",
     agent: "claude-code",
     summary:

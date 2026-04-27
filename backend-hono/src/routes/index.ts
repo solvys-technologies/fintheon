@@ -89,8 +89,6 @@ import { createHarperVoiceRoutes } from "./harper-voice.js";
 import { createPsychAssistForkRoutes } from "./admin/psych-assist-fork.js";
 // [claude-code 2026-04-25] S35-cleanup: manual trigger for econ-backfill-orchestrator drain
 import { createEconBackfillRoutes } from "./admin/econ-backfill.js";
-// [claude-code 2026-04-26] S35-cleanup: RiskFlow high/critical headline backfill
-import { createRiskFlowBackfillRoutes } from "./admin/riskflow-backfill.js";
 // [claude-code 2026-04-27] S46.4: bulk delete + refill + MSM purge audit
 import { createRiskFlowBulkRoutes } from "./admin/riskflow-bulk.js";
 // [claude-code 2026-04-23] Harper Vision — screen + audio perception layer
@@ -424,10 +422,9 @@ export function registerRoutes(app: Hono): void {
   //   Gated internally on x-routine-secret matching ROUTINE_SECRET.
   app.route("/api/admin/econ", createEconBackfillRoutes());
 
-  // [claude-code 2026-04-26] S35-cleanup: RiskFlow high/critical headline
-  //   backfill for news-worker silence windows. Same x-routine-secret gate.
-  app.route("/api/admin/riskflow", createRiskFlowBackfillRoutes());
-
+  // [claude-code 2026-04-27] v5.33.2: /api/admin/riskflow/backfill-headlines
+  //   route deleted alongside backfill-headlines.ts (Exa-only, stripped
+  //   platform-wide).
   // [claude-code 2026-04-27] S46.4: bulk delete / refill / MSM-purge audit.
   //   Mounted on the same /api/admin/riskflow prefix; route-level paths
   //   distinguish (source-stats, bulk-delete, refill, msm-purge). Same

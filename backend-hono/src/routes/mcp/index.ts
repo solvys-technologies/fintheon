@@ -90,15 +90,6 @@ loadDisabledList().catch(() => {});
 // ── Known server metadata ─────────────────────────────────────────────────
 
 const KNOWN_SERVERS: Record<string, Partial<McpServerEntry>> = {
-  exa: {
-    name: "Exa Search",
-    description: "Neural web search for financial research",
-    category: "search",
-    toolCount: 3,
-    requiresApiKey: true,
-    apiKeyEnvVar: "EXA_API_KEY",
-  },
-
   framer: {
     name: "Framer",
     description: "Framer website builder and CMS",

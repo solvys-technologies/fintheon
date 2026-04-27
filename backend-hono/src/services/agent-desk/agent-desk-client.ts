@@ -4,7 +4,6 @@
 import { invokeAgent } from "../strands/index.js";
 import { isSkillEnabled } from "../../config/feature-flags.js";
 import { getSupabaseClient } from "../../config/supabase.js";
-import { exaSearch, isExaAvailable } from "../exa-service.js";
 import type {
   AgentDeskSeed,
   AgentDeskReport,
@@ -104,41 +103,9 @@ const GOV_OFFICIALS: GovOfficialAgent[] = [
 ];
 
 // ── Headline Augmentation (14-day decay) ────────────────────────────────────
-
-async function fetchExaForOfficial(
-  searchTerms: string[],
-  name: string,
-): Promise<string[]> {
-  // [claude-code 2026-04-27] S46.4 hotfix: MSM includeDomains list (Reuters,
-  // Bloomberg, FT, CNBC, WSJ) was leaking mainstream-media headlines INTO
-  // the GovOfficial agent persona context as "[EXA] {title}" strings, which
-  // the agent then surfaced back into Arbitrum / AgentDesk synthesis text —
-  // bypassing publisher-blocklist (which only runs at writeRawItems). TP
-  // saw a Bloomberg "catalyst" rendered in the UI from this path. Whitelist
-  // killed; entire call gated behind EXA_POLLING_ENABLED per
-  // feedback_exa_off.md ("Exa is OFF — do not call exaSearch from cron /
-  // backfill paths"). Keep the function so call sites stay valid; it just
-  // returns [] until Exa is explicitly re-enabled.
-  if (process.env.EXA_POLLING_ENABLED !== "true") return [];
-  if (!isExaAvailable()) return [];
-  try {
-    const query = `${searchTerms.slice(0, 3).join(" OR ")} market impact 2026`;
-    const results = await exaSearch(query, {
-      numResults: 8,
-      type: "auto",
-      useAutoprompt: true,
-    });
-    return results
-      .filter((r) => r.title && r.title.length > 15)
-      .slice(0, 6)
-      .map(
-        (r) => `[EXA] ${r.title}${r.text ? ` — ${r.text.slice(0, 100)}` : ""}`,
-      );
-  } catch (err) {
-    console.warn(`[AgentDesk] Exa search failed for ${name}:`, String(err));
-    return [];
-  }
-}
+// [claude-code 2026-04-27] v5.33.2: Exa fallback STRIPPED (TP "turn off Exa
+// completely"). When the DB has no matching headlines for an official, we
+// return [] — the agent persona just runs without augmentation that tick.
 
 async function fetchRecentHeadlinesForOfficial(
   agent: GovOfficialAgent,
@@ -148,7 +115,6 @@ async function fetchRecentHeadlinesForOfficial(
 
   const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
 
-  // Search for headlines mentioning this official's search terms
   const { data, error } = await sb
     .from("scored_riskflow_items")
     .select("headline, body, created_at, macro_level, sentiment")
@@ -156,34 +122,20 @@ async function fetchRecentHeadlinesForOfficial(
     .order("created_at", { ascending: false })
     .limit(200);
 
-  if (error || !data?.length) {
-    return fetchExaForOfficial(agent.searchTerms, agent.name);
-  }
+  if (error || !data?.length) return [];
 
-  // Filter headlines that mention any of the official's search terms
   const lowerTerms = agent.searchTerms.map((t) => t.toLowerCase());
   const matching = data.filter((row) => {
     const text = `${row.headline} ${row.body ?? ""}`.toLowerCase();
     return lowerTerms.some((term) => text.includes(term));
   });
 
-  const dbHeadlines = matching
+  return matching
     .slice(0, 10)
     .map(
       (row) =>
         `[${row.created_at.slice(0, 10)}] ${row.headline}${row.body ? ` — ${row.body.slice(0, 120)}` : ""}`,
     );
-
-  // If DB has fewer than 3 relevant headlines, supplement with Exa search
-  if (dbHeadlines.length < 3) {
-    const exaHeadlines = await fetchExaForOfficial(
-      agent.searchTerms,
-      agent.name,
-    );
-    return [...dbHeadlines, ...exaHeadlines].slice(0, 12);
-  }
-
-  return dbHeadlines;
 }
 
 function buildAgentSystemPrompt(persona: string, headlines: string[]): string {

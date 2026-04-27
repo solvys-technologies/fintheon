@@ -18,7 +18,6 @@ import {
 import { getVix } from "../market-data/yahoo-market.js";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { readRecentEconPrintStats } from "../supabase-service.js";
-import { exaSearch, isExaAvailable } from "../exa-service.js";
 
 /**
  * Assemble a SimulationContext bundle by fetching live data from all available sources.
@@ -163,20 +162,22 @@ export interface FilteredHeadline {
   tier: "CRITICAL" | "HIGH" | "MED" | "LOW";
   headline: string;
   sentiment: string | null;
-  source: "db" | "exa";
+  source: "db";
 }
 
 /**
  * Fetch headlines from scored_riskflow_items filtered by agent's subject tags.
  * Returns formatted headline strings ready for prompt injection.
- * Falls back to Exa search when DB has < 5 relevant headlines.
+ *
+ * [claude-code 2026-04-27] v5.33.2: Exa fallback STRIPPED (TP "turn off Exa
+ * completely"). DB miss = empty list; agent runs without augmentation.
  */
 export async function fetchFilteredHeadlines(
   subjects: string[],
-  agentName: string,
+  _agentName: string,
 ): Promise<string[]> {
   const sb = getSupabaseClient();
-  if (!sb) return fetchExaFallback(subjects, agentName);
+  if (!sb) return [];
 
   const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -189,11 +190,8 @@ export async function fetchFilteredHeadlines(
     .order("created_at", { ascending: false })
     .limit(200);
 
-  if (error || !data?.length) {
-    return fetchExaFallback(subjects, agentName);
-  }
+  if (error || !data?.length) return [];
 
-  // Filter by subject tag overlap
   const subjectSet = new Set(subjects);
   const matching: typeof data = [];
   const nonMatching: typeof data = [];
@@ -210,13 +208,12 @@ export async function fetchFilteredHeadlines(
     }
   }
 
-  // Take top 12 matching + 3 cross-domain samples (prevents total information isolation)
   const primary = matching.slice(0, 12);
   const crossDomain = nonMatching
     .filter((r) => (r.macro_level ?? 0) >= 3)
     .slice(0, 3);
 
-  const dbLines = [...primary, ...crossDomain].map((row) => {
+  return [...primary, ...crossDomain].map((row) => {
     const level = row.macro_level ?? 1;
     const tier =
       level >= 4
@@ -229,57 +226,6 @@ export async function fetchFilteredHeadlines(
     const sent = row.sentiment ? ` (${row.sentiment})` : "";
     return `[${tier}] ${row.headline}${sent}`;
   });
-
-  // If DB has fewer than 5 relevant headlines, supplement with Exa search
-  if (dbLines.length < 5) {
-    const exaHeadlines = await fetchExaFallback(subjects, agentName);
-    return [...dbLines, ...exaHeadlines].slice(0, 15);
-  }
-
-  return dbLines;
-}
-
-async function fetchExaFallback(
-  searchTerms: string[],
-  agentName: string,
-): Promise<string[]> {
-  // [claude-code 2026-04-27] S46.4 hotfix: same MSM-includeDomains leak as
-  // agent-desk-client.ts — Bloomberg/Reuters/FT/CNBC/WSJ/MarketWatch/
-  // ForexLive/ZeroHedge whitelist injected MSM headlines as "[EXA] {title}"
-  // strings into agent context, which the agent surfaced back into the UI.
-  // Whitelist killed + entire call gated behind EXA_POLLING_ENABLED per
-  // feedback_exa_off.md.
-  if (process.env.EXA_POLLING_ENABLED !== "true") return [];
-  if (!isExaAvailable()) return [];
-
-  try {
-    const query = `${searchTerms.slice(0, 3).join(" OR ")} market impact 2026`;
-    const results = await exaSearch(query, {
-      numResults: 8,
-      type: "auto",
-      useAutoprompt: true,
-    });
-
-    const headlines = results
-      .filter((r) => r.title && r.title.length > 15)
-      .slice(0, 6)
-      .map(
-        (r) => `[EXA] ${r.title}${r.text ? ` — ${r.text.slice(0, 100)}` : ""}`,
-      );
-
-    if (headlines.length > 0) {
-      console.log(
-        `[AgentDesk] Exa supplemented ${headlines.length} headlines for ${agentName}`,
-      );
-    }
-    return headlines;
-  } catch (err) {
-    console.warn(
-      `[AgentDesk] Exa search failed for ${agentName}:`,
-      String(err),
-    );
-    return [];
-  }
 }
 
 // ─── Calibration Upload Context ─────────────────────────────────

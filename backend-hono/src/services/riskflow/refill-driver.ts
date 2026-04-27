@@ -13,8 +13,8 @@
 // recent ~12 tweets per handle (~3-7 days depending on cadence). The
 // {from, to} window is recorded for telemetry but the underlying collector
 // caps at MAX_AGE_MS internally — the refill therefore only reaches as deep
-// as the upstream API exposes. Use exa-scheduled-monitor / browser-harness
-// scraping paths for older windows.
+// as the upstream API exposes. browser-harness scraping is the only path
+// for older windows now (Exa stripped in v5.33.2).
 
 import { collectFromXHandlesBrowser } from "../../workers/riskflow-worker/sources/x-handles-browser.js";
 import { collectFromBrowserHarness } from "../../workers/riskflow-worker/sources/browser-harness.js";

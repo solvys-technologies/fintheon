@@ -19,7 +19,6 @@ import { writeRawItems, type RawRiskFlowItem } from "../supabase-service.js";
 import { isSupabaseConfigured } from "../../config/supabase.js";
 import { getPollingConfig } from "./polling-config.js";
 import { pollCommentary } from "./commentary-scraper.js";
-import { checkForScheduledEvents } from "./exa-scheduled-monitor.js";
 import { getAccountHandles } from "../source-accounts/source-accounts-service.js";
 import {
   areAllUsersKilled,
@@ -230,19 +229,13 @@ export async function runScrapeFallback(): Promise<number> {
   // The dedicated agent-reach-poller now runs on its own schedule with UA rotation, per-domain
   // token bucket, and circuit breaker. Letting both run double-dipped the domain rate budgets.
 
-  // Also run commentary + scheduled event scrapers
-  await Promise.all([
-    pollCommentary().catch((err) =>
-      log.warn("[ScrapeFallback] Commentary scrape failed:", {
-        error: String(err),
-      }),
-    ),
-    checkForScheduledEvents().catch((err) =>
-      log.warn("[ScrapeFallback] Scheduled events failed:", {
-        error: String(err),
-      }),
-    ),
-  ]);
+  // Also run commentary scraper. Scheduled-event scraper (Exa) stripped in
+  // v5.33.2 per TP — Exa is off platform-wide.
+  await pollCommentary().catch((err) =>
+    log.warn("[ScrapeFallback] Commentary scrape failed:", {
+      error: String(err),
+    }),
+  );
 
   log.info(
     `[ScrapeFallback] Done — ${totalWritten} new items written to raw_riskflow_items`,
