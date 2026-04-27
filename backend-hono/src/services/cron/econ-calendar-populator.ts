@@ -1,3 +1,10 @@
+// [claude-code 2026-04-27] S46.4: ForexFactory dropped per TP. TradingView is
+// the single source of truth — its actuals/forecasts ship faster than FF on
+// non-US releases, the `importance` field is cleaner than FF's "Low/Medium/
+// High" string, and dropping FF removes a second source of upsert collisions
+// that depend on event_key sha256 hashing for de-dupe. Idempotent dedupe is
+// now enforced by a UNIQUE INDEX on economic_events.event_key (migration
+// 20260427000000_econ_events_unique_event_key.sql).
 // [claude-code 2026-04-26] Added TradingView Economic Calendar
 // (https://economic-calendar.tradingview.com/events) as a parallel feed
 // alongside ForexFactory. TradingView ships actuals faster than FF on
@@ -31,6 +38,9 @@ import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger("EconCalendarPopulator");
 
+// [claude-code 2026-04-27] FF_WEEKLY_URL + USER_AGENT retained as dead-code
+// constants so a future rollback diff stays small if TP wants FF back. The
+// fetchForexFactory function is unwired from runEconCalendarPopulator below.
 const FF_WEEKLY_URL = "https://nfs.faireconomy.media/ff_calendar_thisweek.json";
 const FETCH_TIMEOUT_MS = 20_000;
 const USER_AGENT = "fintheon-econ-populator/1.0 (+https://fintheon.fly.dev)";
@@ -286,25 +296,20 @@ export async function runEconCalendarPopulator(
     skippedFilter: 0,
   };
 
-  // Pull both feeds in parallel. ForexFactory returns the whole week;
-  // TradingView is queried for a 7-day forward window so its actuals/forecasts
-  // for upcoming releases land in the same upsert pass. Idempotent eventKey
-  // collapsing means whichever feed lands first wins, the other refreshes
-  // actuals when they arrive.
+  // [claude-code 2026-04-27] S46.4: TradingView is the single source of truth.
+  // ForexFactory dropped per TP — its weekly JSON had stale actuals on
+  // non-US releases and the schema-by-currency caused upsert collisions.
+  // Idempotent dedupe via UNIQUE INDEX on economic_events.event_key.
   const tvFromIso = new Date().toISOString();
   const tvToIso = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
   const tvCountries = Array.from(countries).map((c) => (c === "UK" ? "GB" : c));
-  const [ffRows, tvRows] = await Promise.all([
-    fetchForexFactory(),
-    fetchTradingViewCalendar({
-      fromIso: tvFromIso,
-      toIso: tvToIso,
-      countries: tvCountries,
-    }),
-  ]);
+  const tvRows = await fetchTradingViewCalendar({
+    fromIso: tvFromIso,
+    toIso: tvToIso,
+    countries: tvCountries,
+  });
 
   const rows: FFEntry[] = [];
-  if (ffRows) rows.push(...ffRows);
   if (tvRows) {
     for (const tv of tvRows) {
       const mapped = tvEventToFFShape(tv);
