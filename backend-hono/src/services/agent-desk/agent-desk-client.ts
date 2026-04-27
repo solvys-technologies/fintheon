@@ -109,6 +109,17 @@ async function fetchExaForOfficial(
   searchTerms: string[],
   name: string,
 ): Promise<string[]> {
+  // [claude-code 2026-04-27] S46.4 hotfix: MSM includeDomains list (Reuters,
+  // Bloomberg, FT, CNBC, WSJ) was leaking mainstream-media headlines INTO
+  // the GovOfficial agent persona context as "[EXA] {title}" strings, which
+  // the agent then surfaced back into Arbitrum / AgentDesk synthesis text —
+  // bypassing publisher-blocklist (which only runs at writeRawItems). TP
+  // saw a Bloomberg "catalyst" rendered in the UI from this path. Whitelist
+  // killed; entire call gated behind EXA_POLLING_ENABLED per
+  // feedback_exa_off.md ("Exa is OFF — do not call exaSearch from cron /
+  // backfill paths"). Keep the function so call sites stay valid; it just
+  // returns [] until Exa is explicitly re-enabled.
+  if (process.env.EXA_POLLING_ENABLED !== "true") return [];
   if (!isExaAvailable()) return [];
   try {
     const query = `${searchTerms.slice(0, 3).join(" OR ")} market impact 2026`;
@@ -116,13 +127,6 @@ async function fetchExaForOfficial(
       numResults: 8,
       type: "auto",
       useAutoprompt: true,
-      includeDomains: [
-        "reuters.com",
-        "bloomberg.com",
-        "ft.com",
-        "cnbc.com",
-        "wsj.com",
-      ],
     });
     return results
       .filter((r) => r.title && r.title.length > 15)

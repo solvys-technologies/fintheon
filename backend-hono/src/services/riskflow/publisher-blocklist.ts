@@ -39,8 +39,13 @@ const BLOCKED_HOSTS = [
 
 // Headline prefixes / inline-attribution patterns mainstream wire reposts use.
 // Twitter relays often include "Reuters:", "BLOOMBERG —", "via @business" etc.
+// [claude-code 2026-04-27] S46.4 hotfix: added [EXA] prefix to the drop list
+// so any agent-desk Exa fallback that ever leaks back into writeRawItems gets
+// caught here too. The MSM word-boundary pattern below already covers the
+// title body; this catches the wrapper format defensively.
 const BLOCKED_PATTERNS: RegExp[] = [
-  /\b(reuters|bloomberg|cnbc|fox\s?news|fox\s?business|msnbc|cnn|marketwatch|wsj|wall\s+street\s+journal|financial\s+times|barron'?s|nbc\s+news|abc\s+news|cbs\s+news|usa\s+today|business\s+insider|seeking\s+alpha|zero\s+hedge)\b/i,
+  /\b(reuters|bloomberg|cnbc|fox\s?news|fox\s?business|msnbc|cnn|marketwatch|wsj|wall\s+street\s+journal|financial\s+times|barron'?s|nbc\s+news|abc\s+news|cbs\s+news|usa\s+today|business\s+insider|seeking\s+alpha|zero\s+hedge|forexlive)\b/i,
+  /^\s*\[EXA\]\s/i,
 ];
 
 // Twitter handle relays for the blocked publishers (with or without @).
@@ -103,7 +108,7 @@ export interface BlockReason {
 }
 
 export function shouldBlockItem(item: RawRiskFlowItem): BlockReason | null {
-  // 1. URL host check
+  // 1. URL host check — direct MSM hits (any path: browser, Exa, RSS)
   const host = hostnameOf(item.url);
   if (host) {
     for (const blocked of BLOCKED_HOSTS) {
@@ -128,7 +133,25 @@ export function shouldBlockItem(item: RawRiskFlowItem): BlockReason | null {
     }
   }
 
-  // 3. Headline + body pattern check (catches Twitter relays like "Reuters: ...")
+  // 3. Source-channel exemption: approved Twitter wire handles legitimately
+  // quote MSM names inline ("Fed announces XYZ: REUTERS") — TP wants those
+  // KEPT. Skip the body-pattern check when the item came from a
+  // twitter:<handle> source AND the handle isn't itself in BLOCKED_HANDLES.
+  // [claude-code 2026-04-27] S46.4 hotfix: this block prevents the
+  // BLOCKED_PATTERNS regex from false-positive-dropping FinancialJuice /
+  // DeItaone tweets that mention Reuters/Bloomberg by name.
+  const sourceStr =
+    typeof (item as { source?: unknown }).source === "string"
+      ? ((item as { source: string }).source as string)
+      : "";
+  const isApprovedWireRelay =
+    sourceStr.toLowerCase().startsWith("twitter:") &&
+    !BLOCKED_HANDLES.has(sourceStr.slice("twitter:".length).toLowerCase());
+  if (isApprovedWireRelay) return null;
+
+  // 4. Headline + body pattern check — only fires for non-wire, non-approved
+  // ingest paths (web scrapes, Exa fallback, RSS). Catches MSM URLs that
+  // hide behind redirects + the [EXA] {title} text-injection format.
   const haystack = `${item.headline ?? ""} ${item.body ?? ""}`;
   for (const re of BLOCKED_PATTERNS) {
     const match = re.exec(haystack);

@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-27T05:00:00",
+    agent: "claude-code",
+    summary:
+      "v5.33.1 hotfix — kill MSM whitelist leak through Exa + protect Wire-relay tweets from false-positive drops. Root cause: agent-desk-client.ts + agent-desk-context.ts called exaSearch with includeDomains:[reuters,bloomberg,ft,cnbc,wsj,marketwatch,forexlive,zerohedge] then injected '[EXA] {title}' headlines into GovOfficial agent persona context, which the agent surfaced back into Arbitrum/AgentDesk synthesis text — bypassing publisher-blocklist (which only runs at writeRawItems). TP saw a Bloomberg 'catalyst' rendered in the UI from this path. Both whitelists deleted; both Exa calls + exa-scheduled-monitor cron + /api/admin/riskflow/backfill-headlines admin route now gated behind EXA_POLLING_ENABLED='true' (default false), matching the worker. publisher-blocklist BLOCKED_PATTERNS hardened with /^\\s*\\[EXA\\]\\s/i + 'forexlive', AND shouldBlockItem now exempts approved Twitter wire handles (twitter:<handle> where handle is NOT in BLOCKED_HANDLES) from the body-pattern check — wire tweets like 'Fed announces XYZ: REUTERS' from FinancialJuice/DeItaone stay in the feed; only direct MSM URLs + non-wire MSM text get dropped.",
+    files: [
+      "backend-hono/src/services/agent-desk/agent-desk-client.ts",
+      "backend-hono/src/services/agent-desk/agent-desk-context.ts",
+      "backend-hono/src/services/riskflow/exa-scheduled-monitor.ts",
+      "backend-hono/src/services/riskflow/backfill-headlines.ts",
+      "backend-hono/src/services/riskflow/publisher-blocklist.ts",
+    ],
+  },
+  {
     date: "2026-04-27T04:50:00",
     agent: "claude-code",
     summary:

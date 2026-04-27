@@ -243,6 +243,13 @@ async function fetchExaFallback(
   searchTerms: string[],
   agentName: string,
 ): Promise<string[]> {
+  // [claude-code 2026-04-27] S46.4 hotfix: same MSM-includeDomains leak as
+  // agent-desk-client.ts — Bloomberg/Reuters/FT/CNBC/WSJ/MarketWatch/
+  // ForexLive/ZeroHedge whitelist injected MSM headlines as "[EXA] {title}"
+  // strings into agent context, which the agent surfaced back into the UI.
+  // Whitelist killed + entire call gated behind EXA_POLLING_ENABLED per
+  // feedback_exa_off.md.
+  if (process.env.EXA_POLLING_ENABLED !== "true") return [];
   if (!isExaAvailable()) return [];
 
   try {
@@ -251,16 +258,6 @@ async function fetchExaFallback(
       numResults: 8,
       type: "auto",
       useAutoprompt: true,
-      includeDomains: [
-        "reuters.com",
-        "bloomberg.com",
-        "ft.com",
-        "cnbc.com",
-        "wsj.com",
-        "marketwatch.com",
-        "forexlive.com",
-        "zerohedge.com",
-      ],
     });
 
     const headlines = results

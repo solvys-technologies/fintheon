@@ -105,6 +105,15 @@ export async function backfillRiskFlowHeadlines(opts: {
     scoredWritten: 0,
   };
 
+  // [claude-code 2026-04-27] S46.4 hotfix: gated behind EXA_POLLING_ENABLED
+  // per feedback_exa_off.md. Don't call exaSearch from backfill paths until
+  // TP says "turn Exa back on".
+  if (process.env.EXA_POLLING_ENABLED !== "true") {
+    log.warn(
+      "EXA_POLLING_ENABLED is not 'true' — backfill is a no-op until TP re-enables Exa",
+    );
+    return result;
+  }
   if (!isExaAvailable()) {
     log.warn("EXA_API_KEY not set — cannot backfill headlines");
     return result;

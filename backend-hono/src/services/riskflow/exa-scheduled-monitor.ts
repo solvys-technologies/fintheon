@@ -185,7 +185,13 @@ export async function checkForScheduledEvents(): Promise<void> {
   }
 
   // ── Step 3: Exa as tertiary fallback ──
-  if (allResults.length === 0 && isExaAvailable()) {
+  // [claude-code 2026-04-27] S46.4 hotfix: gated behind EXA_POLLING_ENABLED
+  // per feedback_exa_off.md. Exa is OFF until TP says "turn Exa back on".
+  if (
+    allResults.length === 0 &&
+    process.env.EXA_POLLING_ENABLED === "true" &&
+    isExaAvailable()
+  ) {
     const exaResults = await Promise.all(
       SCHEDULED_EVENT_QUERIES.map((query) =>
         exaSearch(query, {
