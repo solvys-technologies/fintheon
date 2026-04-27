@@ -4,6 +4,11 @@
 // [claude-code 2026-04-24] S34-T5: add DB-driven handle collectors — Wire in
 // Breaking tier, Macro in Standard tier — sourced from riskflow_source_accounts
 // via source-accounts-service (30s cache). Closes the Refinement Engine loop.
+// [claude-code 2026-04-26] S46.1: BREAKING TIER IS TWITTER-ONLY. Reuters/
+// Bloomberg URLs and RSS feeds removed permanently — they are noise, not signal.
+// The only breaking-tier sources are the Refinement Engine wire handles
+// (riskflow_source_accounts.category = 'Wire'). Standard tier remains
+// government data + Exa (gov-only sites + macro keywords).
 
 import { collectFromBrowserHarness } from "./browser-harness.js";
 import { collectFromExa } from "./exa.js";
@@ -12,6 +17,7 @@ import { writeCollectedItems } from "../persist.js";
 import {
   getWireHandles,
   getMacroHandles,
+  getActiveAccounts,
 } from "../../../services/source-accounts/source-accounts-service.js";
 import type { CollectedNewsItem } from "./types.js";
 
@@ -41,28 +47,26 @@ async function safeCollect(
   }
 }
 
+// [claude-code 2026-04-26] Returns every active handle in the Refinement Engine
+// — Wire + OSINT + Geopolitical + Macro + Custom. Breaking tier hits ALL of
+// them so Iran/Trump/geopolitics tape lands in the feed alongside Wire flashes.
+async function getAllRefinementHandles(): Promise<string[]> {
+  const accounts = await getActiveAccounts();
+  return accounts.map((a) => a.handle);
+}
+
 export async function runBreakingTier(): Promise<TierRunResult> {
   const results = await Promise.all([
-    safeCollect("browser-harness", () =>
-      collectFromBrowserHarness({
-        urls: [
-          "https://www.reuters.com/markets/",
-          "https://www.bloomberg.com/markets",
-        ],
-        tier: "breaking",
-      }),
-    ),
-    safeCollect("agent-reach", () =>
-      collectFromAgentReach({
-        rssFeeds: [
-          "https://feeds.reuters.com/reuters/marketsNews",
-          "https://feeds.bloomberg.com/markets/news.rss",
-        ],
-        tier: "breaking",
-      }),
-    ),
+    // [claude-code 2026-04-26] Twitter-only breaking tier. Wire handles get
+    // their own dedicated pull so Wire latency is measurable per source; the
+    // wider OSINT/Geopolitical/Macro pull catches everything else.
     safeCollect("agent-reach:wire-handles", async () => {
       const handles = await getWireHandles();
+      if (handles.length === 0) return [];
+      return collectFromAgentReach({ handles, tier: "breaking" });
+    }),
+    safeCollect("agent-reach:all-refinement-handles", async () => {
+      const handles = await getAllRefinementHandles();
       if (handles.length === 0) return [];
       return collectFromAgentReach({ handles, tier: "breaking" });
     }),
@@ -76,6 +80,8 @@ export async function runBreakingTier(): Promise<TierRunResult> {
 
 export async function runStandardTier(): Promise<TierRunResult> {
   const results = await Promise.all([
+    // [claude-code 2026-04-26] Standard tier is government-data only. SEC EDGAR
+    // + Federal Reserve press are TP-approved off-Internet sources.
     safeCollect("browser-harness", () =>
       collectFromBrowserHarness({
         urls: [
@@ -91,11 +97,19 @@ export async function runStandardTier(): Promise<TierRunResult> {
         tier: "standard",
       }),
     ),
+    // [claude-code 2026-04-26] Government RSS only — SEC + Treasury + Fed +
+    // BLS + FRED. No mainstream wire feeds.
     safeCollect("agent-reach", () =>
       collectFromAgentReach({
         rssFeeds: [
           "https://www.sec.gov/rss/news/press.xml",
           "https://home.treasury.gov/news/press-releases/feed",
+          "https://www.federalreserve.gov/feeds/press_all.xml",
+          "https://www.federalreserve.gov/feeds/speeches.xml",
+          "https://www.federalreserve.gov/feeds/press_monetary.xml",
+          "https://www.bls.gov/feed/news_release.rss",
+          "https://www.bls.gov/feed/bls_latest.rss",
+          "https://fredblog.stlouisfed.org/feed/",
         ],
         tier: "standard",
       }),
