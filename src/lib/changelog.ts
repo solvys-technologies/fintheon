@@ -9,6 +9,94 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-26T23:10:00",
+    agent: "claude-code",
+    summary:
+      "v5.32.4 — Merge s46-tv-calendar-final into main: ships v5.32.3's dashboard polish + TopHeader reorder alongside the S46 TV calendar integration (Electron .ics interception → /api/desk/calendar/ingest-ics + RFC5545 parser + idempotent upsert into desk_calendar_events; EconCalendar queue badge + tradingWeekKey() Fri 16:00 ET roll) and the S46 RiskFlow filter sync (server-side persistence on user_preferences.riskflowFilters with first-load reconcile + cross-device propagation). package.json + scripts/fintheon-update.sh bumped to 5.32.4. No new failures vs v5.32.3 baseline; backend tsc + frontend tsc + frontend vite build all clean.",
+    files: ["package.json", "scripts/fintheon-update.sh"],
+  },
+  {
+    date: "2026-04-26T23:00:00",
+    agent: "claude-code",
+    summary:
+      "S46 RiskFlow filter globalization: severities + buckets now flow through SettingsContext → /api/preferences so a user's Critical/High + OSINT/Commentary selection follows them across every RiskFlow surface on desktop, mobile, and web. Backend preferences zod schema gains optional riskflowFilters; both shared contracts mirror the field. Hooks reconcile once on mount (remote wins; if remote empty + localStorage has prior selection, migrate localStorage up once). 30s preferences poll picks up cross-device updates. localStorage stays as offline cache.",
+    files: [
+      "backend-hono/src/routes/preferences/index.ts",
+      "frontend/lib/user-preferences.ts",
+      "mobile/lib/user-preferences.ts",
+      "frontend/hooks/useRiskFlowFilters.ts",
+      "mobile/hooks/useRiskFlowFilters.ts",
+    ],
+  },
+  {
+    date: "2026-04-26T22:50:00",
+    agent: "claude-code",
+    summary:
+      "v5.32.3 — Dashboard split polish + TopHeader reorder. Removed the gold needle divider between the Brief and the Day Plan column (parent container now provides the only border). Brief/Plan split is true 50/50 (both flex-1). Right column header replaced 'Today's Plan' / 'Day Card' pill with the live day-of-week (e.g. SUNDAY) rendered through the same gold KanbanTitle as the Brief side. DayCard gained a `bare` prop that drops its inner bg/rounded/p-3 so the content stretches flush — used by MainDashboard; Sanctum keeps the surfaced look. PanelToggleGroup wrapper is transparent (no bg, no border, no rounded-lg, no px-1). TopHeader reordered per TP: PanelToggleGroup → iFrame/browser dropdown → VIX → power/chat/voice/heartbeat/bulletin/ivScore. Platform slot rendered inline before VIX; the in-loop platform branch is gone, map skips id==='platform'. Note for TP: no current trading plan is correct — useDayPlan returns null until the S45 backend publishes a plan row, so DayCard renders 'No plan published for today.' That populates once the day-plan brief-splice cron fires.",
+    files: [
+      "frontend/components/executive/MainDashboard.tsx",
+      "frontend/components/narrative/DayCard.tsx",
+      "frontend/components/layout/PanelToggleGroup.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "package.json",
+      "scripts/fintheon-update.sh",
+    ],
+  },
+  {
+    date: "2026-04-26T22:40:00",
+    agent: "claude-code",
+    summary:
+      "S46 TV Calendar Final Integration: Electron intercepts TradingView .ics downloads (will-download on defaultSession + persist:fintheon, loose host+path match) and POSTs them to new /api/desk/calendar/ingest-ics. Inline RFC5545 parser + idempotent upsert on ics_uid into new desk_calendar_events table. EconCalendar header gains queue badge + tradingWeekKey() re-mount that auto-rolls Fri 16:00 ET so the embed always boots into the current trading week.",
+    files: [
+      "supabase/migrations/20260426223451_desk_calendar_events.sql",
+      "backend-hono/src/routes/desk-calendar/index.ts",
+      "backend-hono/src/routes/desk-calendar/handlers.ts",
+      "backend-hono/src/routes/desk-calendar/ics-parser.ts",
+      "backend-hono/src/routes/index.ts",
+      "electron/main.cjs",
+      "frontend/components/econ/EconCalendar.tsx",
+    ],
+  },
+  {
+    date: "2026-04-26T22:30:30",
+    agent: "claude-code",
+    summary:
+      "S45 shipped: DayCard live on the Dashboard right pane (replaces lightweight SessionCalendarList) + Strategium DayCardBulletinTab. Archived to sprint-changelog/. 2 tracks (T1 data/brain, T2 surfaces), ~30 files. Sub-track briefs S45-T1/T2 left in sprint-md until a follow-up deletion sweep.",
+    files: ["sprint-changelog/S45-ORCHESTRATION.md"],
+  },
+  {
+    date: "2026-04-26T22:30:25",
+    agent: "claude-code",
+    summary:
+      "Archive sweep: S38 design-patches, S40 Time-To-Print + news realtime, S40-S42 unify brief, S42 chat SOTA orchestration, and S45 open-questions all moved sprint-md/ → sprint-changelog/. Each shipped in earlier v5.x deploys; the main plans were leftover in sprint-md/ from missed prior debriefs.",
+    files: [
+      "sprint-changelog/S38-BRIEF-design-patches.md",
+      "sprint-changelog/S40-BRIEF-time-to-print-news-realtime.md",
+      "sprint-changelog/S40-S42-UNIFY-BRIEF.md",
+      "sprint-changelog/S42-ORCHESTRATION.md",
+      "sprint-changelog/S45-OPEN-QUESTIONS.md",
+    ],
+  },
+  {
+    date: "2026-04-26T22:30:00",
+    agent: "claude-code",
+    summary:
+      "v5.32.2 — Dashboard refactor + Vercel build fixes + S45.5 partial. Briefing/Calendar split 55/45 → 50/50; right pane now mounts the new S45-T2 DayCard (Today's Plan) instead of the lightweight SessionCalendarList. Core KPIs now chevron-collapsible, default collapsed. Regime Tracker lifted to a KanbanTitle row at the same indent as Core KPIs / RiskFlow (no more px-4 left bias), chevron-collapsible (default collapsed); Open button preserved alongside the chevron. RegimeCard gains a hideHeader prop so the parent owns the section title. Restored frontend/components/layout/PanelToggleGroup.tsx (deleted in 84aa8e47): VS Code-style three-button group (left / footer / right) with permanent thin divider lines so each icon's target panel is identifiable when inactive; the active panel's compartment fills with accent gold. Mounted in TopHeader to the right of the VIX widget. Window-event bus wires the buttons to NavSidebar (toggle manualExpand), FooterToolbar (toggle panelOpen — opens Team / Harper Ops / Changelog / Terminal / Errors / Tabs), and Strategium (toggle missionControlCollapsed in MainLayout). Strategium slide transition restored: wrapper keeps its width transition; inner expanded content uses animate-in fade-in slide-in-from-right-2 duration-300, so it slides in from the right edge instead of instantly swapping. Vercel build chain fixed (3 stacked failures): (1) auto-checkpoint had overwritten the repo-root index.html with a stale dist artifact — restored canonical version that points to /frontend/main.tsx; (2) Bun 1.3.6 on Vercel was bombing with ENOENT on node_modules right after startup — switched installCommand from bun install to npm install --legacy-peer-deps and buildCommand to npx vite build; (3) streamdown lives in frontend/package.json only — installCommand now also runs npm install --legacy-peer-deps inside frontend/. Preview build green at fintheon-af886vr7m-solvys.vercel.app.",
+    files: [
+      "frontend/components/executive/MainDashboard.tsx",
+      "frontend/components/dashboard/RegimeCard.tsx",
+      "frontend/components/layout/PanelToggleGroup.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/layout/NavSidebar.tsx",
+      "frontend/components/layout/FooterToolbar.tsx",
+      "vercel.json",
+      "index.html",
+      "package.json",
+      "scripts/fintheon-update.sh",
+    ],
+  },
+  {
     date: "2026-04-26T17:50:00",
     agent: "claude-code",
     summary:

@@ -40,12 +40,29 @@ export interface NotificationPrefs {
   econOnlyMode: boolean;
 }
 
+// [claude-code 2026-04-26] S46: per-user RiskFlow filter persistence — mobile mirror
+// of frontend/lib/user-preferences.ts. Empty arrays = "show all".
+export const RISKFLOW_BUCKET_VALUES = [
+  "OSINT",
+  "General",
+  "Commentary",
+  "Econ",
+  "Geopolitical",
+] as const;
+export type RiskFlowBucket = (typeof RISKFLOW_BUCKET_VALUES)[number];
+
+export interface RiskFlowFilterPrefs {
+  severities: Severity[];
+  buckets: RiskFlowBucket[];
+}
+
 export interface UserPreferences {
   theme: ThemeMode;
   traderName?: string;
   notifications: NotificationPrefs;
   fusePalette?: Partial<FusePalette>;
   psychAssistEnabled?: boolean;
+  riskflowFilters?: RiskFlowFilterPrefs;
   updatedAt: string;
 }
 
@@ -63,6 +80,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
     econOnlyMode: false,
   },
   psychAssistEnabled: false,
+  riskflowFilters: { severities: [], buckets: [] },
   updatedAt: new Date(0).toISOString(),
 };
 

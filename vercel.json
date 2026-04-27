@@ -1,5 +1,5 @@
 {
-  "installCommand": "bun install",
-  "buildCommand": "bunx vite build",
+  "installCommand": "npm install --legacy-peer-deps && cd frontend && npm install --legacy-peer-deps && cd ..",
+  "buildCommand": "npx vite build",
   "outputDirectory": "dist"
 }

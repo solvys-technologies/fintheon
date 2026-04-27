@@ -103,6 +103,8 @@ import { createAdvisoryRoutes } from "./advisory/index.js";
 import { createWatchoutsRoutes } from "./watchouts/index.js";
 // [claude-code 2026-04-26] S45-T1: Day Card data brain — day_plans, drift, streak, feedback
 import { createDayPlanRoutes } from "./day-plan/index.js";
+// [claude-code 2026-04-26] S46: Desk Calendar — ingest TV .ics + queue for Desk Theme
+import { createDeskCalendarRoutes } from "./desk-calendar/index.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -176,6 +178,8 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/calibration", createCalibrationRoutes());
   // [S45-T1] Day Card — /today, /week public; /streak, /drift-status, /feedback auth-gated inside handlers
   app.route("/api/day-plan", createDayPlanRoutes());
+  // [S46] Desk Calendar — Electron-intercepted TV .ics → Desk Theme queue (public read; ingest accepts text/calendar)
+  app.route("/api/desk/calendar", createDeskCalendarRoutes());
   // Scoring — V4 shadow stats + rescore-status [S24-T3]
   app.use("/api/scoring", authMiddleware, requireAuth);
   app.use("/api/scoring/*", authMiddleware, requireAuth);

@@ -683,3 +683,15 @@
 [2026-04-26T21:55:49Z] WARN: Backend unreachable at http://localhost:8080/api/diagnostics/feed-health
 [2026-04-26T21:56:42Z] status=healthy cache=66 poller=True scorer=True unscored=0 newest=2026-04-26T21:35:34.000Z itemAge=0.4h cacheAge=33497ms rateLimited=False
 [2026-04-26T22:02:01Z] status=healthy cache=66 poller=True scorer=True unscored=0 newest=2026-04-26T21:35:34.000Z itemAge=0.4h cacheAge=299483ms rateLimited=False
+[2026-04-26T22:02:26Z] status=healthy cache=66 poller=True scorer=True unscored=0 newest=2026-04-26T21:35:34.000Z itemAge=0.4h cacheAge=3772ms rateLimited=False
+[2026-04-26T22:07:16Z] status=healthy cache=66 poller=True scorer=True unscored=0 newest=2026-04-26T21:35:34.000Z itemAge=0.5h cacheAge=270114ms rateLimited=False
+[2026-04-26T22:09:43Z] status=healthy cache=66 poller=True scorer=True unscored=0 newest=2026-04-26T21:35:34.000Z itemAge=0.6h cacheAge=126597ms rateLimited=False
+[2026-04-26T22:10:22Z] status=healthy cache=66 poller=True scorer=True unscored=0 newest=2026-04-26T21:35:34.000Z itemAge=0.6h cacheAge=17169ms rateLimited=False
+[2026-04-26T22:19:26Z] status=stale cache=66 poller=True scorer=True unscored=0 newest=2026-04-26T21:35:34.000Z itemAge=0.7h cacheAge=524042ms rateLimited=False
+[2026-04-26T22:22:12Z] status=healthy cache=66 poller=True scorer=True unscored=0 newest=2026-04-26T21:35:34.000Z itemAge=0.8h cacheAge=145333ms rateLimited=False
+[2026-04-26T22:24:36Z] status=healthy cache=66 poller=True scorer=True unscored=0 newest=2026-04-26T21:35:34.000Z itemAge=0.8h cacheAge=122276ms rateLimited=False
+[2026-04-26T22:28:12Z] status=healthy cache=68 poller=True scorer=True unscored=0 newest=2026-04-26T22:19:00.000Z itemAge=0.2h cacheAge=43825ms rateLimited=False
+[2026-04-26T22:31:18Z] status=healthy cache=68 poller=True scorer=True unscored=0 newest=2026-04-26T22:19:00.000Z itemAge=0.2h cacheAge=160447ms rateLimited=False
+[2026-04-26T22:31:31Z] status=healthy cache=68 poller=True scorer=True unscored=0 newest=2026-04-26T22:19:00.000Z itemAge=0.2h cacheAge=10964ms rateLimited=False
+[2026-04-26T22:33:31Z] status=healthy cache=68 poller=True scorer=True unscored=0 newest=2026-04-26T22:19:00.000Z itemAge=0.2h cacheAge=76794ms rateLimited=False
+[2026-04-26T22:33:43Z] status=healthy cache=68 poller=True scorer=True unscored=1 newest=2026-04-26T22:19:00.000Z itemAge=0.2h cacheAge=10033ms rateLimited=False

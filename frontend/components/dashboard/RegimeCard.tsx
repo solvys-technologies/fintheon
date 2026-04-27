@@ -25,9 +25,13 @@ function BiasIcon({ bias }: { bias: TradingRegime["bias"] }) {
 
 interface RegimeCardProps {
   onOpenTracker: () => void;
+  /** [claude-code 2026-04-26] When the parent already provides a header
+   * (e.g. MainDashboard wrapping us in a KanbanTitle row), suppress the
+   * inline header + outer padding so we align flush with sibling sections. */
+  hideHeader?: boolean;
 }
 
-export function RegimeCard({ onOpenTracker }: RegimeCardProps) {
+export function RegimeCard({ onOpenTracker, hideHeader }: RegimeCardProps) {
   const { regimes } = useRegimes();
   const [now, setNow] = useState(getCurrentETTime);
 
@@ -45,26 +49,28 @@ export function RegimeCard({ onOpenTracker }: RegimeCardProps) {
   const activeCount = regimes.filter((r) => isRegimeActive(r, now)).length;
 
   return (
-    <div className="px-4 py-3">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <Clock className="w-3 h-3 text-[var(--fintheon-accent)]" />
-          <span className="text-[10px] tracking-[0.2em] uppercase text-[var(--fintheon-accent)] font-semibold">
-            Regime Tracker
-          </span>
-          {activeCount > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] text-[8px] font-bold regime-badge-shimmer">
-              {activeCount}
+    <div className={hideHeader ? "mt-2" : "px-4 py-3"}>
+      {!hideHeader && (
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3 h-3 text-[var(--fintheon-accent)]" />
+            <span className="text-[10px] tracking-[0.2em] uppercase text-[var(--fintheon-accent)] font-semibold">
+              Regime Tracker
             </span>
-          )}
+            {activeCount > 0 && (
+              <span className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] text-[8px] font-bold regime-badge-shimmer">
+                {activeCount}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={onOpenTracker}
+            className="text-[9px] text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] transition-colors tracking-wider uppercase"
+          >
+            Open
+          </button>
         </div>
-        <button
-          onClick={onOpenTracker}
-          className="text-[9px] text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] transition-colors tracking-wider uppercase"
-        >
-          Open
-        </button>
-      </div>
+      )}
 
       {topRegimes.length === 0 ? (
         <div className="text-[10px] text-zinc-600">
