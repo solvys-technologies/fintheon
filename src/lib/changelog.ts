@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-27T20:35:00",
+    agent: "claude-code",
+    summary:
+      "Feed quality fix: added plain 'bloomberg' to BLOCKED_HANDLES in publisher-blocklist.ts. Previously only Twitter handles (@business, @markets, @BloombergTV) were listed, so agent-reach:rss:bloomberg submitted_by tags bypassed the handle check. Agent-reach RSS is already a no-op shim, but this closes the defensive gap for any residual DB items.",
+    files: ["backend-hono/src/services/riskflow/publisher-blocklist.ts"],
+  },
+  {
     date: "2026-04-27T07:30:00",
     agent: "claude-code",
     summary:
