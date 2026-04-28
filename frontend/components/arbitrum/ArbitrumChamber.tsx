@@ -57,13 +57,10 @@ function SeatCard({
   const pct = Math.round(seat.probability * 100);
   const confScore = Math.max(0, Math.min(10, seat.confidence * 10));
   const dissented = Boolean(seat.dissented);
-  const borderLeft = dissented
-    ? "border-l-2 border-l-[var(--fintheon-accent)]/70"
-    : "border-l border-l-[var(--fintheon-accent)]/10";
 
   return (
     <div
-      className={`bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/25 ${borderLeft} p-3 flex flex-col min-w-0`}
+      className={`bg-[var(--fintheon-bg)] border p-3 flex flex-col min-w-0 ${dissented ? "border-[var(--fintheon-accent)]/50" : "border-[var(--fintheon-accent)]/25"}`}
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(4px)",
@@ -155,9 +152,16 @@ function EmptySeat({
   );
 }
 
+function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
+  );
+}
+
 function useStaggeredReveal(count: number, stepMs = 200): boolean[] {
   const [revealed, setRevealed] = useState<boolean[]>(() =>
-    Array<boolean>(count).fill(false),
+    Array<boolean>(count).fill(prefersReducedMotion()),
   );
 
   useEffect(() => {
@@ -165,7 +169,9 @@ function useStaggeredReveal(count: number, stepMs = 200): boolean[] {
       setRevealed([]);
       return;
     }
-    setRevealed(Array<boolean>(count).fill(false));
+    const reduced = prefersReducedMotion();
+    setRevealed(Array<boolean>(count).fill(reduced));
+    if (reduced) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
     for (let i = 0; i < count; i++) {
       timers.push(
@@ -187,7 +193,7 @@ function useStaggeredReveal(count: number, stepMs = 200): boolean[] {
 
 export function ArbitrumChamber(props: ArbitrumChamberProps) {
   const { onSynthesisComplete } = props;
-  const { verdict, isLoading, error } = useArbitrumLatest();
+  const { verdict, isLoading, error, refresh } = useArbitrumLatest();
 
   const seats = useMemo<ArbitrumSeat[]>(() => {
     const supplied = verdict?.seats ?? [];
@@ -280,7 +286,16 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
           {isLoading ? (
             <SolvysLoader text="Loading chamber read" size={12} />
           ) : error ? (
-            `Chamber unreachable (${error})`
+            <div className="flex flex-col gap-1.5">
+              <span>Chamber unreachable ({error})</span>
+              <button
+                onClick={() => void refresh()}
+                disabled={isLoading}
+                className="self-start px-2 py-0.5 text-[10px] uppercase tracking-wider border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 disabled:opacity-40 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
           ) : (
             EMPTY_COPY
           )}

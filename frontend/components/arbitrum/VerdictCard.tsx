@@ -77,7 +77,7 @@ export function VerdictCard({
       </p>
 
       <div className="mt-3 flex items-center justify-between text-[10px] text-[var(--fintheon-text)]/40">
-        <span>
+        <span className="tabular-nums">
           {new Date(created_at).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",

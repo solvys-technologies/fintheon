@@ -9,6 +9,26 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-28T23:30:00",
+    agent: "claude-code",
+    summary:
+      "Solvys UI cleanup pass: banned patterns, state coverage, typography, motion. Removed gradient dividers from Sanctum (replaced with solid accent borders at 10% opacity). Removed side-stripe borders from ArbitrumChamber seat cards (replaced with uniform border opacity; dissented seats get 50% accent border). Removed generic shadow-lg from AccountTrackerWidget dropdown and RiskFlowMini shimmer gradient. Removed decorative animate-pulse/ping from AccountTrackerWidget live indicator and Radio icon. Added reactive prefers-reduced-motion listener to SolvysLoader. Added reduced-motion guards to Sanctum scrollIntoView, ArbitrumChamber staggered reveal, FintheonThread scrollToBottom, and animate-fade-slide-in CSS. Added tabular-nums to VerdictCard timestamps, SanctumNarratives dates, AccountTrackerWidget P&L, and EconEventCard print row values. Improved empty states in AccountTrackerWidget, DeskThemeWidget, and RiskFlowMini. Improved error states in Sanctum (retry button), ArbitrumChamber (retry button), DeskThemeWidget (no longer silent), and EconEventCard (synthesis failure message). Fixed EconEventCard motion timing: duration-500 → duration-300. Fixed Sanctum page indicator off-palette gray colors.",
+    files: [
+      "frontend/components/narrative/Sanctum.tsx",
+      "frontend/components/arbitrum/ArbitrumChamber.tsx",
+      "frontend/components/arbitrum/VerdictCard.tsx",
+      "frontend/components/narrative/SanctumNarratives.tsx",
+      "frontend/components/mission-control/AccountTrackerWidget.tsx",
+      "frontend/components/mission-control/DeskThemeWidget.tsx",
+      "frontend/components/narrative/econ/EconEventCard.tsx",
+      "frontend/components/RiskFlowMini.tsx",
+      "frontend/components/chat/FintheonThread.tsx",
+      "frontend/components/shared/SolvysLoader.tsx",
+      "frontend/index.css",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-28T22:00:00",
     agent: "claude-code",
     summary:

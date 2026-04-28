@@ -112,7 +112,7 @@ function NarrativeRow({
       </div>
 
       {/* Status + date */}
-      <div className="flex flex-col items-end text-[8px] font-mono text-[var(--fintheon-muted)]/40 shrink-0">
+      <div className="flex flex-col items-end text-[8px] font-mono text-[var(--fintheon-muted)]/40 shrink-0 tabular-nums">
         <span className="uppercase tracking-wider">{narrative.status}</span>
         <span>{narrative.dateRange.start.slice(5)}</span>
       </div>

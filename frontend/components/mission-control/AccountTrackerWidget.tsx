@@ -147,8 +147,8 @@ export function AccountTrackerWidget({
           </h3>
           {uplinked && (
             <div className="relative">
-              <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-              <div className="absolute inset-0 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping opacity-75" />
+              <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
+              <div className="absolute inset-0 w-1.5 h-1.5 bg-emerald-400 rounded-full opacity-40" />
             </div>
           )}
         </div>
@@ -168,7 +168,7 @@ export function AccountTrackerWidget({
                   ?.accountName || "Select Account"}
               </button>
               {showAccountDropdown && (
-                <div className="absolute left-0 right-0 top-full mt-1 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded shadow-lg z-10 min-w-[180px]">
+                <div className="absolute left-0 right-0 top-full mt-1 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded z-10 min-w-[180px]">
                   {projectxAccounts.map((account) => (
                     <button
                       key={account.accountId}
@@ -193,8 +193,11 @@ export function AccountTrackerWidget({
               )}
             </>
           ) : (
-            <div className="w-full px-2 py-1 text-[10px] text-gray-500 text-center">
-              No accounts
+            <div className="w-full px-2 py-1.5 text-[10px] text-[var(--fintheon-text)]/30 text-center">
+              No accounts linked
+              <span className="block text-[9px] mt-0.5 text-[var(--fintheon-text)]/20">
+                Uplink a broker to track P&L
+              </span>
             </div>
           )}
         </div>
@@ -210,7 +213,7 @@ export function AccountTrackerWidget({
               : "bg-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/90 text-black border border-[var(--fintheon-accent)]"
           } disabled:opacity-50 disabled:cursor-not-allowed`}
         >
-          <Radio className={`w-3 h-3 ${uplinked ? "animate-pulse" : ""}`} />
+          <Radio className="w-3 h-3" />
           {uplinking
             ? "Establishing Uplink..."
             : uplinked
@@ -239,7 +242,7 @@ export function AccountTrackerWidget({
         <div className="text-right">
           <p className="text-[10px] text-gray-500">Day P&L</p>
           <span
-            className="text-sm font-bold"
+            className="text-sm font-bold tabular-nums"
             style={{
               color:
                 currentPnL >= 0

@@ -119,8 +119,15 @@ export function Sanctum({
     const el = containerRef.current;
     if (!el) return;
     const pages = el.querySelectorAll("[data-aud-page]");
-    if (pages[idx])
-      pages[idx].scrollIntoView({ behavior: "smooth", block: "start" });
+    if (pages[idx]) {
+      const reduced =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      pages[idx].scrollIntoView({
+        behavior: reduced ? "auto" : "smooth",
+        block: "start",
+      });
+    }
   }, []);
 
   // Listen for cross-component navigation (right-rail Sanctum drawer dispatches this)
@@ -253,17 +260,8 @@ export function Sanctum({
                         <DayCard id="day-card-anchor" />
                       </div>
 
-                      {/* Fading vertical ruler between Volatility Read and Deliberation */}
-                      <div className="w-px relative shrink-0">
-                        <div
-                          className="absolute inset-0"
-                          style={{
-                            background:
-                              "linear-gradient(to bottom, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
-                            opacity: 0.18,
-                          }}
-                        />
-                      </div>
+                      {/* Vertical ruler between Volatility Read and Deliberation */}
+                      <div className="w-px shrink-0 bg-[var(--fintheon-accent)]/10" />
 
                       {/* Right: AgentDesk Deliberation with SIGNAL/REGIME/HEAT fuses at bottom (50%) */}
                       <div className="flex-1 min-w-0 min-h-0 flex flex-col">
@@ -299,6 +297,13 @@ export function Sanctum({
                   <p className="text-sm text-[var(--fintheon-severe)]/70 max-w-md mx-auto">
                     {data.error}
                   </p>
+                  <button
+                    onClick={() => handleRun()}
+                    disabled={running}
+                    className="mt-2 px-3 py-1 text-[10px] uppercase tracking-wider border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 disabled:opacity-40 transition-colors"
+                  >
+                    {running ? "Retrying..." : "Retry"}
+                  </button>
                 </div>
               )}
             </div>
@@ -367,17 +372,8 @@ export function Sanctum({
                       </div>
                     </div>
 
-                    {/* Fading vertical ruler */}
-                    <div className="w-px shrink-0 relative mx-2">
-                      <div
-                        className="absolute inset-0"
-                        style={{
-                          background:
-                            "linear-gradient(to bottom, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
-                          opacity: 0.18,
-                        }}
-                      />
-                    </div>
+                    {/* Vertical ruler */}
+                    <div className="w-px shrink-0 bg-[var(--fintheon-accent)]/10 mx-2" />
 
                     {/* Right: Active Narratives */}
                     <div className="flex-1 min-w-0 flex flex-col">
@@ -390,17 +386,8 @@ export function Sanctum({
                     </div>
                   </div>
 
-                  {/* Fading horizontal ruler */}
-                  <div className="h-px relative">
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        background:
-                          "linear-gradient(to right, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
-                        opacity: 0.18,
-                      }}
-                    />
-                  </div>
+                  {/* Horizontal ruler */}
+                  <div className="h-px bg-[var(--fintheon-accent)]/10" />
 
                   {/* Consolidated Trade Ledger — replaces Polymarket kanban */}
                   <div>
@@ -452,7 +439,7 @@ export function Sanctum({
                   className={`transition-all duration-300 rounded-full ${
                     activePage === i
                       ? "w-[3px] h-8 bg-[var(--fintheon-accent)]"
-                      : "w-[2px] h-5 bg-gray-700 hover:bg-gray-500"
+                      : "w-[2px] h-5 bg-[var(--fintheon-text)]/20 hover:bg-[var(--fintheon-text)]/35"
                   }`}
                 />
               </button>

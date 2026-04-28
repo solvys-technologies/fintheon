@@ -36,17 +36,26 @@ export function SolvysLoader({
   style,
 }: SolvysLoaderProps) {
   const [frameIdx, setFrameIdx] = useState(0);
-  const reduced = useRef(prefersReducedMotion());
+  const [reduced, setReduced] = useState(prefersReducedMotion);
 
   useEffect(() => {
-    if (reduced.current) return;
+    if (typeof window === "undefined") return;
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onChange = () => setReduced(mql.matches);
+    mql.addEventListener?.("change", onChange);
+    setReduced(mql.matches);
+    return () => mql.removeEventListener?.("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (reduced) return;
     const id = window.setInterval(() => {
       setFrameIdx((i) => (i + 1) % BRAILLE_BEAT_FRAMES.length);
     }, 90);
     return () => window.clearInterval(id);
-  }, []);
+  }, [reduced]);
 
-  const glyph = reduced.current ? "●" : BRAILLE_BEAT_FRAMES[frameIdx];
+  const glyph = reduced ? "●" : BRAILLE_BEAT_FRAMES[frameIdx];
   const resolvedColor = color ?? "var(--fintheon-accent)";
 
   const glyphStyle: CSSProperties = {

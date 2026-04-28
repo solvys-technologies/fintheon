@@ -59,8 +59,10 @@ export function DeskThemeWidget() {
       ]);
       setPlan(planRes?.plan ?? null);
       setBrief(briefRes ?? null);
-    } catch {
-      /* silent */
+    } catch (err) {
+      setPlan(null);
+      setBrief(null);
+      console.warn("[DeskThemeWidget] fetch failed:", err);
     } finally {
       setLoading(false);
     }
@@ -133,7 +135,10 @@ export function DeskThemeWidget() {
           </>
         ) : (
           <span className="text-zinc-600 text-[11px]">
-            No desk plan published for today.
+            No desk plan published yet.
+            <span className="block text-[9px] mt-0.5 text-zinc-700">
+              Desk plans publish at 06:30 ET.
+            </span>
           </span>
         )}
       </div>
@@ -146,12 +151,7 @@ export function DeskThemeWidget() {
         >
           <div
             aria-hidden="true"
-            style={{
-              height: 1,
-              background:
-                "linear-gradient(to right, transparent 0%, color-mix(in srgb, var(--fintheon-accent) 35%, transparent) 50%, transparent 100%)",
-              marginBottom: 8,
-            }}
+            className="h-px bg-[var(--fintheon-accent)]/10 mb-2"
           />
           <pre className="text-[11px] leading-relaxed text-zinc-300 whitespace-pre-wrap font-mono max-h-[260px] overflow-y-auto pr-1">
             {fullBrief}

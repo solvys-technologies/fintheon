@@ -392,9 +392,12 @@ const ScrollToBottomButton: FC<{
   }, [containerRef]);
 
   const scrollToBottom = useCallback(() => {
+    const reduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     containerRef.current?.scrollTo({
       top: containerRef.current.scrollHeight,
-      behavior: "smooth",
+      behavior: reduced ? "auto" : "smooth",
     });
   }, [containerRef]);
 
