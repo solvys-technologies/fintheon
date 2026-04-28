@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-28T23:45:00",
+    agent: "claude-code",
+    summary:
+      "v5.34.0 deploy — S47 T1-T7 shipped to production. Backend: Fly.io fintheon (rolling update, health checks passed). Desktop frontend: Vercel solvys/frontend. Mobile PWA: Vercel solvys/mobile. DMG: Fintheon-5.34.0-arm64.dmg built and copied to Desktop. GitHub release v5.34.0 created; old v5 releases pruned. Local backend restarted. Sprint markdowns archived: S47-ORCHESTRATION.md, S47-BUG-REPAIR-PLAN.md, S47-TOOLING-STARS-AUDIT.md → sprint-changelog/. Sub-track briefs S47-T0–T7 deleted.",
+    files: [
+      "package.json",
+      "scripts/fintheon-update.sh",
+      "sprint-changelog/S47-ORCHESTRATION.md",
+      "sprint-changelog/S47-BUG-REPAIR-PLAN.md",
+      "sprint-changelog/S47-TOOLING-STARS-AUDIT.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-28T23:30:00",
     agent: "claude-code",
     summary:
