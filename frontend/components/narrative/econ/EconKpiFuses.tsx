@@ -1,6 +1,8 @@
+// [claude-code 2026-04-28] T6: Inline Fuse replaced with NothingFuse for visual consistency.
 // [claude-code 2026-04-19] S25-T4a: Econ Intelligence KPI fuses (left column of Econ page header). Vertically stacked, clear headers, Doto numbers. Aggregates the same /api/data/econ-calendar payload Sanctum already pulls.
 import { useMemo } from "react";
 import type { EconEventCardData } from "./EconEventCard";
+import { NothingFuse } from "../../shared/NothingFuse";
 
 interface EconKpiFusesProps {
   /** Catalogue of events with releasesCollected populated; same shape as EconEventFilter consumes */
@@ -72,17 +74,7 @@ function Fuse({
   value?: number;
   coverage?: number;
 }) {
-  const pct = value != null ? Math.max(0, Math.min(10, value)) * 10 : 0;
-  const color =
-    value == null
-      ? "var(--fintheon-muted)"
-      : value >= 7
-        ? "var(--fintheon-severe)"
-        : value >= 5
-          ? "var(--fintheon-neutral-severe)"
-          : value >= 3
-            ? "var(--fintheon-accent)"
-            : "var(--fintheon-low)";
+  const score = value != null ? Math.max(0, Math.min(10, value)) : 0;
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-baseline justify-between">
@@ -101,21 +93,32 @@ function Fuse({
           <span
             className="text-[14px] font-bold"
             style={{
-              color,
               fontFamily: "Doto, ui-monospace, monospace",
               letterSpacing: "0.02em",
+              color:
+                value == null
+                  ? "var(--fintheon-muted)"
+                  : value >= 7
+                    ? "var(--fintheon-severe)"
+                    : value >= 5
+                      ? "var(--fintheon-neutral-severe)"
+                      : value >= 3
+                        ? "var(--fintheon-accent)"
+                        : "var(--fintheon-low)",
             }}
           >
             {value != null ? value.toFixed(1) : "—"}
           </span>
         </div>
       </div>
-      <div className="h-[3px] rounded-full bg-[var(--fintheon-border)]/12 overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${pct}%`, backgroundColor: color }}
-        />
-      </div>
+      <NothingFuse
+        value={score / 10}
+        score={score}
+        orientation="horizontal"
+        thickness={3}
+        segments={10}
+        animateIn
+      />
     </div>
   );
 }

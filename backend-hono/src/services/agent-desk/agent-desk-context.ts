@@ -15,7 +15,7 @@ import {
   getCachedFredIndicators,
   getFredFetchedAt,
 } from "../systemic/fred-service.js";
-import { getVix } from "../market-data/yahoo-market.js";
+import { fetchVIX } from "../market-data/router.js";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { readRecentEconPrintStats } from "../supabase-service.js";
 
@@ -34,7 +34,7 @@ export async function assembleSimulationContext(
 
   const [vixResult, fredResult, riskflowResult, econResult] =
     await Promise.allSettled([
-      fetchVix ? getVix().then((v) => v.value) : Promise.resolve(null),
+      fetchVix ? fetchVIX().then((r) => r.vix.value) : Promise.resolve(null),
       fetchFred
         ? fetchFredIndicators()
         : Promise.resolve(getCachedFredIndicators()),

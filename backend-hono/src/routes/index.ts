@@ -173,6 +173,9 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/dag", createDagRoutes());
   // Agent Dream Room — autonomous agent reflection channel
   app.route("/api/agent-bus/dreams", createDreamRoutes());
+  // Proposal charting is public/local; resolution writes are auth-gated.
+  app.use("/api/proposals/resolve", authMiddleware, requireAuth);
+  app.use("/api/proposals/performance", authMiddleware, requireAuth);
   // Proposal charting — Playwright automation for TopStepX (public, local only)
   app.route("/api/proposals", createProposalRoutes());
   // Trade ideas — merged proposals + Supabase trade ideas (public)

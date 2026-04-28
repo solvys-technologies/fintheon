@@ -9,7 +9,7 @@ import { createLogger } from "../../lib/logger.js";
 import { readEconEvents } from "../supabase-service.js";
 import { getFeed } from "../riskflow/feed-service.js";
 import { getCurrentRegime } from "../regime/regime-service.js";
-import { getVix } from "../market-data/yahoo-market.js";
+import { fetchVIX } from "../market-data/router.js";
 import { continuousVIXMultiplier } from "../iv-scoring/computation.js";
 import { fetchInstrumentBars } from "./tv-bars-fetcher.js";
 import {
@@ -67,7 +67,7 @@ export async function generateDayPlan(
     readEconEvents({ from: dateIso, to: dateIso }).catch(() => []),
     getFeed("system", { limit: 20 }).catch(() => ({ items: [] }) as never),
     getCurrentRegime().catch(() => null),
-    getVix().catch(() => null),
+    fetchVIX().then((r) => r.vix).catch(() => null),
   ]);
 
   const planned = planDay(reference, econEvents);

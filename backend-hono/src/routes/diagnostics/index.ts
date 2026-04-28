@@ -34,6 +34,18 @@ import { getBrowserHarnessStats24h } from "../../services/browser/harness-tool.j
 import { getFiscalSpeakerStats } from "../../services/cron/fiscal-speaker-populator.js";
 import { getEconBackfillDiagnostics } from "../../services/cron/econ-backfill-orchestrator.js";
 import type { BackfillDiagnostics } from "../../types/econ-backfill.js";
+import {
+  getLastVixAttempts,
+  getRouterHealthSnapshot,
+  type RouterAttempt,
+} from "../../services/market-data/router.js";
+import {
+  getAccounts,
+  getAccountHandles,
+} from "../../services/source-accounts/source-accounts-service.js";
+import { getDeskCalendarDiagnostics } from "../desk-calendar/handlers.js";
+import { getSttProviderDiagnostics } from "../../services/voice-stt-provider.js";
+import { getTranscriptStats24h } from "../../services/commentary-transcript.js";
 
 const log = createLogger("Diagnostics");
 
@@ -82,6 +94,50 @@ interface DiagnosticsResponse {
     };
   };
   econ_backfill?: BackfillDiagnostics;
+  desk_calendar?: {
+    queue_count: number | null;
+    last_ingest_at: string | null;
+    latest_error: string | null;
+  };
+  source_accounts?: {
+    total: number;
+    active: number;
+    handles: string[];
+    cache_last_refresh: string | null;
+  };
+  market_data_router?: {
+    vix_attempts: RouterAttempt[];
+    vix_last_source: string | null;
+    vix_last_success: boolean;
+    vix_last_latency_ms: number | null;
+    recent_symbols: string[];
+  };
+  riskflow_sources?: {
+    window: string;
+    sources: Array<{
+      source: string;
+      ingested: number;
+      scored_total: number;
+      promoted: number;
+      drop_rate: number;
+      avg_score: number;
+    }>;
+  };
+  voice_stt?: {
+    provider: string;
+    model: string;
+    available: boolean;
+    reason?: string;
+    sidecar_enabled: boolean;
+    voice_sidecar_disabled: boolean;
+    vibevoice_configured: boolean;
+    openai_configured: boolean;
+  };
+  commentary_transcripts?: {
+    count_24h: number;
+    last_capture_at: string | null;
+    last_failure: string | null;
+  };
 }
 
 async function getNewsWorkerSnapshot(): Promise<
@@ -393,6 +449,62 @@ async function loadGepaSnapshot(): Promise<{
 }
 
 /* ------------------------------------------------------------------ */
+/*  Source-account diagnostics                                          */
+/* ------------------------------------------------------------------ */
+
+async function loadSourceAccountDiagnostics(): Promise<
+  DiagnosticsResponse["source_accounts"]
+> {
+  try {
+    const accounts = await getAccounts();
+    const active = accounts.filter((a) => a.active);
+    const handles = await getAccountHandles();
+    return {
+      total: accounts.length,
+      active: active.length,
+      handles,
+      cache_last_refresh: new Date().toISOString(),
+    };
+  } catch (err) {
+    log.warn("source-account diagnostics failed", { error: String(err) });
+    return { total: 0, active: 0, handles: [], cache_last_refresh: null };
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  RiskFlow source stats                                               */
+/* ------------------------------------------------------------------ */
+
+async function loadRiskFlowSourceStats(): Promise<
+  DiagnosticsResponse["riskflow_sources"]
+> {
+  try {
+    const { getSupabaseClient } = await import("../../config/supabase.js");
+    const sb = getSupabaseClient();
+    if (!sb) return { window: "48h", sources: [] };
+    const { data, error } = await sb.from("v_source_signal_noise").select("*");
+    if (error) {
+      log.warn("riskflow source stats failed", { error: error.message });
+      return { window: "48h", sources: [] };
+    }
+    return {
+      window: "48h",
+      sources: (data ?? []) as Array<{
+        source: string;
+        ingested: number;
+        scored_total: number;
+        promoted: number;
+        drop_rate: number;
+        avg_score: number;
+      }>,
+    };
+  } catch (err) {
+    log.warn("riskflow source stats failed", { error: String(err) });
+    return { window: "48h", sources: [] };
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /*  Route                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -402,18 +514,28 @@ export function createDiagnosticsRoutes(): Hono {
   router.get("/", async (c) => {
     const start = Date.now();
 
-    const [services, browserStats, newsWorker, econBackfill] =
-      await Promise.all([
-        Promise.all([
-          checkHermesAI(),
-          checkDatabase(),
-          Promise.resolve(checkRettiwt()),
-          Promise.resolve(checkSupabaseAuth()),
-        ]),
-        getBrowseTaskStats24h(),
-        getNewsWorkerSnapshot(),
-        getEconBackfillDiagnostics().catch(() => null),
-      ]);
+    const [
+      services,
+      browserStats,
+      newsWorker,
+      econBackfill,
+      sourceAccounts,
+      riskflowSources,
+      transcriptStats,
+    ] = await Promise.all([
+      Promise.all([
+        checkHermesAI(),
+        checkDatabase(),
+        Promise.resolve(checkRettiwt()),
+        Promise.resolve(checkSupabaseAuth()),
+      ]),
+      getBrowseTaskStats24h(),
+      getNewsWorkerSnapshot(),
+      getEconBackfillDiagnostics().catch(() => null),
+      loadSourceAccountDiagnostics(),
+      loadRiskFlowSourceStats(),
+      getTranscriptStats24h().catch(() => ({ count: 0, lastCaptureAt: null, lastFailure: null })),
+    ]);
 
     const missingEnvVars = auditEnvVars();
 
@@ -430,6 +552,43 @@ export function createDiagnosticsRoutes(): Hono {
       loadGepaSnapshot(),
     ]);
 
+    // [claude-code 2026-04-28] S47-T2: desk calendar diagnostics
+    let deskCalendarDiag: DiagnosticsResponse["desk_calendar"] = {
+      queue_count: null,
+      last_ingest_at: null,
+      latest_error: null,
+    };
+    try {
+      const { getSupabaseClient } = await import("../../config/supabase.js");
+      const sb = getSupabaseClient();
+      if (sb) {
+        const now = new Date().toISOString();
+        const horizon = new Date(Date.now() + 14 * 86_400_000).toISOString();
+        const { count } = await sb
+          .from("desk_calendar_events")
+          .select("id", { count: "exact", head: true })
+          .gte("starts_at", now)
+          .lt("starts_at", horizon);
+        const { data: latest } = await sb
+          .from("desk_calendar_events")
+          .select("ingested_at")
+          .order("ingested_at", { ascending: false })
+          .limit(1);
+        deskCalendarDiag = {
+          queue_count: count ?? 0,
+          last_ingest_at: latest?.[0]?.ingested_at ?? null,
+          latest_error: getDeskCalendarDiagnostics().last_ingest_error,
+        };
+      }
+    } catch {
+      // Non-fatal
+    }
+
+    // Market-data router health
+    const vixAttempts = getLastVixAttempts();
+    const vixAttempt = vixAttempts[vixAttempts.length - 1];
+    const routerHealth = getRouterHealthSnapshot();
+
     const response: DiagnosticsResponse & {
       routing?: unknown;
       gepa?: unknown;
@@ -442,6 +601,34 @@ export function createDiagnosticsRoutes(): Hono {
       browser_operator: browserStats,
       news_worker: newsWorker,
       econ_backfill: econBackfill ?? undefined,
+      desk_calendar: deskCalendarDiag,
+      source_accounts: sourceAccounts,
+      market_data_router: {
+        vix_attempts: vixAttempts,
+        vix_last_source: vixAttempt?.source ?? null,
+        vix_last_success: vixAttempt?.success ?? false,
+        vix_last_latency_ms: vixAttempt?.latencyMs ?? null,
+        recent_symbols: routerHealth.recent_symbols,
+      },
+      riskflow_sources: riskflowSources,
+      voice_stt: (() => {
+        const d = getSttProviderDiagnostics();
+        return {
+          provider: d.provider,
+          model: d.model,
+          available: d.available,
+          reason: d.reason,
+          sidecar_enabled: process.env.HERMES_SIDECAR_ENABLED === "true",
+          voice_sidecar_disabled: process.env.VOICE_SIDECAR_DISABLED === "true",
+          vibevoice_configured: Boolean(process.env.VIBEVOICE_ASR_URL),
+          openai_configured: Boolean(process.env.OPENAI_API_KEY),
+        };
+      })(),
+      commentary_transcripts: {
+        count_24h: transcriptStats.count,
+        last_capture_at: transcriptStats.lastCaptureAt,
+        last_failure: transcriptStats.lastFailure,
+      },
       routing,
       gepa,
       fiscal_speakers: getFiscalSpeakerStats(),

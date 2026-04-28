@@ -1101,6 +1101,14 @@ html *::-webkit-scrollbar {
   animation: fadeSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-slide-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* Think Harder toggle — accent opacity pulse */
 @keyframes thinkPulse {
   0%,

@@ -9,6 +9,7 @@ import {
   DEFAULT_SOURCE_ACCOUNTS,
   type SourceAccount,
   type SourceAccountCategory,
+  type SourceAccountMethod,
 } from "../../types/source-account.js";
 
 const log = createLogger("SourceAccountsService");
@@ -50,6 +51,7 @@ export async function getAccounts(): Promise<SourceAccount[]> {
           handle: account.handle,
           display_name: account.display_name,
           category: account.category,
+          method: account.method,
           active: account.active,
         },
         { onConflict: "handle" },
@@ -94,6 +96,7 @@ export async function addAccount(
   handle: string,
   displayName: string | null,
   category: SourceAccountCategory,
+  method: SourceAccountMethod = "rettiwt",
 ): Promise<SourceAccount | null> {
   const sb = getSupabaseClient();
   if (!sb) return null;
@@ -104,6 +107,7 @@ export async function addAccount(
       handle: handle.replace(/^@/, ""),
       display_name: displayName,
       category,
+      method,
     })
     .select()
     .single();
@@ -120,7 +124,7 @@ export async function addAccount(
 export async function updateAccount(
   id: string,
   fields: Partial<
-    Pick<SourceAccount, "handle" | "display_name" | "category" | "active">
+    Pick<SourceAccount, "handle" | "display_name" | "category" | "method" | "active">
   >,
 ): Promise<void> {
   const sb = getSupabaseClient();
@@ -150,4 +154,25 @@ export async function removeAccount(id: string): Promise<void> {
     log.warn("Failed to remove source account", { error: error.message });
   }
   clearCache();
+}
+
+/**
+ * Fire-and-forget mandatory rescore when scoring-affecting config changes.
+ * Uses the lightweight in-memory feed rescore; does NOT block the caller.
+ */
+export function triggerMandatoryRescore(reason: string): void {
+  Promise.resolve().then(async () => {
+    try {
+      const { rescoreInMemoryFeed } = await import(
+        "../riskflow/feed-service.js"
+      );
+      const count = await rescoreInMemoryFeed();
+      log.info("Mandatory rescore completed", { reason, count });
+    } catch (err) {
+      log.warn("Mandatory rescore failed", {
+        reason,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  });
 }

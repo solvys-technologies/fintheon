@@ -1,6 +1,7 @@
 // [claude-code 2026-04-19] S25-T4a: Chevron event card for Econ Intelligence — CAO description (placeholder until 4b), third-order thinking, conditional forecast (only on beat/miss), per-print rows (Date | Variant | Previous | Forecast | Actual | Deviation priority-colored), AI-synthesis confidence Nothing-Design fuse footer. Magical fade-in via parent-supplied delay.
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown } from "lucide-react";
+import { SolvysLoader } from "../../shared/SolvysLoader";
 import type { EconHistoryPrint } from "../../../types/agent-desk";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -117,7 +118,7 @@ export function EconEventCard({ event, appearDelay }: EconEventCardProps) {
 
   return (
     <div
-      className="w-full transition-all duration-500 ease-out"
+      className="w-full transition-all duration-300 ease-out"
       style={{
         opacity: appeared ? 1 : 0,
         transform: appeared ? "translateY(0)" : "translateY(8px)",
@@ -179,7 +180,7 @@ export function EconEventCard({ event, appearDelay }: EconEventCardProps) {
 
       {/* Expanded body */}
       <div
-        className="overflow-hidden transition-[max-height,opacity] duration-400 ease-out"
+        className="overflow-hidden transition-[max-height,opacity] duration-300 ease-out"
         style={{
           maxHeight: expanded ? "1200px" : "0px",
           opacity: expanded ? 1 : 0,
@@ -190,9 +191,21 @@ export function EconEventCard({ event, appearDelay }: EconEventCardProps) {
           <FadingHRule />
 
           {loading && (
-            <p className="text-[10px] text-[var(--fintheon-muted)]/40">
-              Synthesizing…
-            </p>
+            <div className="py-1">
+              <SolvysLoader text="Synthesizing" size={11} />
+            </div>
+          )}
+
+          {!loading && !synthesis && (
+            <div className="py-2 text-[10px] text-[var(--fintheon-severe)]/60">
+              [SYNTHESIS FAILED]
+              <button
+                onClick={() => setExpanded(false)}
+                className="ml-2 underline hover:text-[var(--fintheon-severe)]"
+              >
+                Close
+              </button>
+            </div>
           )}
 
           {synthesis && (
@@ -270,20 +283,20 @@ function PrintRow({
   const deviationColor = priorityDeviationColor(print.surprise);
   return (
     <div className="grid grid-cols-[60px_1fr_48px_48px_48px_56px] gap-2 px-1 py-1.5 border-b border-[var(--fintheon-border)]/5 text-[10px]">
-      <span className="text-[var(--fintheon-muted)]/55 font-mono">
+      <span className="text-[var(--fintheon-muted)]/55 font-mono tabular-nums">
         {print.date ?? "—"}
       </span>
       <span className="text-[var(--fintheon-text)]/60 truncate">
         {variant ?? "—"}
       </span>
-      <span className="text-right text-[var(--fintheon-text)]/45 font-mono">
+      <span className="text-right text-[var(--fintheon-text)]/45 font-mono tabular-nums">
         {print.previous ?? "—"}
       </span>
-      <span className="text-right text-[var(--fintheon-text)]/65 font-mono">
+      <span className="text-right text-[var(--fintheon-text)]/65 font-mono tabular-nums">
         {print.forecast ?? "—"}
       </span>
       <span
-        className="text-right font-mono"
+        className="text-right font-mono tabular-nums"
         style={{
           fontFamily: "Doto, ui-monospace, monospace",
           color: "var(--fintheon-text)",
@@ -293,7 +306,7 @@ function PrintRow({
         {print.actual ?? "—"}
       </span>
       <span
-        className="text-right font-mono font-semibold"
+        className="text-right font-mono font-semibold tabular-nums"
         style={{ color: deviationColor }}
       >
         {print.surprise != null

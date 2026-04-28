@@ -25,7 +25,8 @@ const SEVERITY_VALUES = ["low", "medium", "high", "critical"] as const;
 // the same severity+bucket choices apply across desktop, mobile, and web for one user.
 const RISKFLOW_BUCKETS = [
   "OSINT",
-  "General",
+  "Wire",
+  "Macro",
   "Commentary",
   "Econ",
   "Geopolitical",

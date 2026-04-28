@@ -12,6 +12,7 @@ import { synthesize } from "./facilitator.js";
 import { computeGates } from "./gates.js";
 import { saveVerdict } from "./verdict-store.js";
 import { loadArbitrumEconContext } from "./econ-context.js";
+import { loadArbitrumCommentaryContext } from "./commentary-context.js";
 import type {
   ArbitrumDeliberateInput,
   ArbitrumSeatRound,
@@ -70,23 +71,39 @@ export async function runChamber(
 
   // Load recent econ prints + upcoming releases so every seat reasons over the
   // same data the Aquarium event-card surfaces. Caller-supplied context wins.
-  const econ_context =
+  const [econ_context, commentary_context] = await Promise.all([
     input.econ_context !== undefined
-      ? input.econ_context
-      : await loadArbitrumEconContext().catch((err) => {
+      ? Promise.resolve(input.econ_context)
+      : loadArbitrumEconContext().catch((err) => {
           log.warn("Econ context load failed — proceeding without it", {
             error: err instanceof Error ? err.message : String(err),
           });
           return null;
-        });
-  const enrichedInput: ArbitrumDeliberateInput = { ...input, econ_context };
+        }),
+    input.commentary_context !== undefined
+      ? Promise.resolve(input.commentary_context)
+      : loadArbitrumCommentaryContext().catch((err) => {
+          log.warn("Commentary context load failed — proceeding without it", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+          return null;
+        }),
+  ]);
+  const enrichedInput: ArbitrumDeliberateInput = {
+    ...input,
+    econ_context,
+    commentary_context,
+  };
 
   const transcripts: ArbitrumSeatTranscript[] = ARBITRUM_SEATS.map((seat) => ({
     id: seat.id,
     role: seat.role,
+    roleSubtitle: seat.roleSubtitle,
+    displayName: seat.displayName,
     model: seat.model,
     provider: seat.provider,
     weight: seat.weight,
+    temperature: seat.temperature,
     rounds: [],
   }));
 

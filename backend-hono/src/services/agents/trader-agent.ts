@@ -170,7 +170,7 @@ function buildPrompt(input: TraderInput): string {
 
   sections.push("\n=== RESEARCH DEBATE ===");
   sections.push(
-    `Consensus: ${input.debate.consensusScore > 0 ? "Bullish" : input.debate.consensusScore < 0 ? "Bearish" : "Neutral"} (${input.debate.consensusScore.toFixed(2)})`,
+    `Consensus: ${input.debate.consensusScore > 0 ? "Bullish" : input.debate.consensusScore < 0 ? "Bearish" : "Chop"} (${input.debate.consensusScore.toFixed(2)})`,
   );
   sections.push(
     `Recommendation: ${input.debate.finalAssessment.recommendation} (${input.debate.finalAssessment.confidence}% confidence)`,

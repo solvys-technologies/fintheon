@@ -1,5 +1,6 @@
-// [claude-code 2026-04-26] S46: Desk Calendar handlers. Ingests TV .ics
+// [claude-code 2026-04-28] S47-T2: Desk Calendar handlers. Ingests TV .ics
 // downloads intercepted by Electron and surfaces the queue for Desk Theme agents.
+// Added statusMessage, latest_error diagnostics, and user-scoped RLS insert policy.
 
 import type { Context } from "hono";
 import { getSupabaseClient } from "../../config/supabase.js";
@@ -8,6 +9,8 @@ import { parseIcsEvents, inferSeverity } from "./ics-parser.js";
 
 const log = createLogger("DeskCalendar");
 const TABLE = "desk_calendar_events";
+
+let lastIngestError: string | null = null;
 
 export async function handleIngestIcs(c: Context): Promise<Response> {
   const raw = await c.req.text();
@@ -51,10 +54,19 @@ export async function handleIngestIcs(c: Context): Promise<Response> {
     .upsert(rows, { onConflict: "ics_uid" })
     .select("id, ics_uid, starts_at, title, severity");
   if (error) {
+    lastIngestError = error.message;
     log.warn("upsert_failed", { err: error.message });
-    return c.json({ error: "persist_failed", detail: error.message }, 500);
+    return c.json(
+      { error: "persist_failed", detail: error.message, statusMessage: "Failed to save events" },
+      500,
+    );
   }
-  return c.json({ ingested: data?.length ?? 0, events: data ?? [] });
+  lastIngestError = null;
+  const statusMessage =
+    (data?.length ?? 0) > 0
+      ? `Saved ${data!.length} event${data!.length === 1 ? "" : "s"} to desk queue`
+      : "No new events to save";
+  return c.json({ ingested: data?.length ?? 0, events: data ?? [], statusMessage });
 }
 
 export async function handleGetQueue(c: Context): Promise<Response> {
@@ -93,7 +105,7 @@ export async function handleGetQueue(c: Context): Promise<Response> {
 export async function handleGetStatus(c: Context): Promise<Response> {
   const supabase = getSupabaseClient();
   if (!supabase) {
-    return c.json({ count: 0, last_ingest_at: null });
+    return c.json({ count: 0, last_ingest_at: null, latest_error: null });
   }
   const now = new Date().toISOString();
   const horizon = new Date(Date.now() + 14 * 86_400_000).toISOString();
@@ -110,5 +122,12 @@ export async function handleGetStatus(c: Context): Promise<Response> {
   return c.json({
     count: count ?? 0,
     last_ingest_at: latest?.[0]?.ingested_at ?? null,
+    latest_error: lastIngestError,
   });
+}
+
+export function getDeskCalendarDiagnostics(): {
+  last_ingest_error: string | null;
+} {
+  return { last_ingest_error: lastIngestError };
 }

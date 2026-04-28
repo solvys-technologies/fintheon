@@ -86,7 +86,7 @@ function NarrativeRow({
       type="button"
       onClick={() => onNavigate?.(narrative.id)}
       title="View on Observatory map"
-      className={`w-full grid grid-cols-[20px_1fr_auto_100px_100px] gap-3 items-center px-3 py-2 text-left transition-colors hover:bg-[var(--fintheon-accent)]/5 ${
+      className={`w-full grid grid-cols-[20px_1fr_auto_100px] gap-3 items-center px-3 py-2 text-left transition-colors hover:bg-[var(--fintheon-accent)]/5 ${
         isLast ? "" : "border-b border-[var(--fintheon-border)]/6"
       }`}
     >
@@ -95,9 +95,6 @@ function NarrativeRow({
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-[11px] font-medium text-[var(--fintheon-text)] truncate">
             {narrative.title}
-          </span>
-          <span className="text-[8px] font-mono text-[var(--fintheon-muted)]/55 uppercase tracking-wider">
-            {narrative.category}
           </span>
         </div>
         {narrative.instruments.length > 0 && (
@@ -115,26 +112,17 @@ function NarrativeRow({
       </div>
 
       {/* Status + date */}
-      <div className="flex flex-col items-end text-[8px] font-mono text-[var(--fintheon-muted)]/40 shrink-0">
+      <div className="flex flex-col items-end text-[8px] font-mono text-[var(--fintheon-muted)]/40 shrink-0 tabular-nums">
         <span className="uppercase tracking-wider">{narrative.status}</span>
         <span>{narrative.dateRange.start.slice(5)}</span>
       </div>
 
-      {/* Health fuse */}
+      {/* Confidence rating (formerly Health fuse) */}
       <Fuse
-        label="HEALTH"
+        label="CONFIDENCE"
         value={narrative.healthScore}
         maxValue={100}
         color={healthColor(narrative.healthScore)}
-      />
-
-      {/* Crowding fuse */}
-      <Fuse
-        label="CROWD"
-        value={crowding}
-        maxValue={10}
-        color={cColor}
-        decimals={1}
       />
     </button>
   );

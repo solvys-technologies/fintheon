@@ -30,15 +30,14 @@ export type StandupTask =
 interface AgentStandupConfig {
   role: HermesAgentRole;
   displayName: string;
-  emoji: string;
 }
 
 const BOARDROOM_AGENTS: AgentStandupConfig[] = [
-  { role: "harper-cao", displayName: "Harper", emoji: "🎩" },
-  { role: "futures-desk", displayName: "Feucht", emoji: "⚡" },
-  { role: "fundamentals-desk", displayName: "Consul", emoji: "📜" },
-  { role: "pma-merged", displayName: "Oracle", emoji: "📊" },
-  { role: "herald", displayName: "Herald", emoji: "👴" },
+  { role: "harper-cao", displayName: "Harper" },
+  { role: "futures-desk", displayName: "Feucht" },
+  { role: "fundamentals-desk", displayName: "Consul" },
+  { role: "pma-merged", displayName: "Oracle" },
+  { role: "herald", displayName: "Herald" },
 ];
 
 /** Prompts for each standup phase */
@@ -141,7 +140,7 @@ async function spawnAgentResponse(
     });
 
     // Post brief to boardroom with thought ID in metadata
-    const briefContent = `${agent.emoji} **${agent.displayName}**: ${parsed.briefSummary}`;
+    const briefContent = `**${agent.displayName}**: ${parsed.briefSummary}`;
     const messageId = await appendToBoardroom(briefContent, "assistant", {
       thoughtId: thought.id,
     });
@@ -156,7 +155,7 @@ async function spawnAgentResponse(
     );
   } catch (error) {
     console.error(`[BoardroomSpawner] ${agent.displayName} failed:`, error);
-    const fallback = `${agent.emoji} **${agent.displayName}**: _[Agent unavailable — check OpenRouter connection]_`;
+    const fallback = `**${agent.displayName}**: _[Agent unavailable — check OpenRouter connection]_`;
     await appendToBoardroom(fallback, "assistant");
   }
 }
@@ -183,7 +182,7 @@ export async function spawnBoardroomStandup(
 
   // Harper opens the standup
   const harper = BOARDROOM_AGENTS[0];
-  const openingMessage = `🎩 **Harper** — _Opening ${task.replace(/-/g, " ")} at ${timestamp} ET_\n\nAll agents, report in.`;
+  const openingMessage = `**Harper** — _Opening ${task.replace(/-/g, " ")} at ${timestamp} ET_\n\nAll agents, report in.`;
   await appendToBoardroom(openingMessage, "assistant");
 
   // Spawn Harper first (as moderator)

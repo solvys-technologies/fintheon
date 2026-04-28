@@ -4,9 +4,9 @@ import type { Context } from "hono";
 import { streamSSE } from "hono/streaming";
 import {
   getMarketContext,
-  yahooMarket,
   unusualWhales,
 } from "../../services/market-data/index.js";
+import { fetchQuote, fetchVIX } from "../../services/market-data/router.js";
 import {
   calculateBlendedIVScore,
   classifyEventType,
@@ -86,8 +86,8 @@ export async function handleQuote(c: Context) {
   const symbol = c.req.param("symbol");
   if (!symbol) return c.json({ error: "Symbol is required" }, 400);
   try {
-    const quote = await yahooMarket.getQuote(symbol.toUpperCase());
-    return c.json(quote);
+    const result = await fetchQuote(symbol.toUpperCase());
+    return c.json(result.quote);
   } catch (err: any) {
     console.error("[market-data] quote error:", err.message);
     return c.json(
@@ -99,8 +99,8 @@ export async function handleQuote(c: Context) {
 
 export async function handleVix(c: Context) {
   try {
-    const vix = await yahooMarket.getVix();
-    return c.json(vix);
+    const result = await fetchVIX();
+    return c.json(result.vix);
   } catch (err: any) {
     console.error("[market-data] VIX error:", err.message);
     return c.json(

@@ -54,7 +54,7 @@ export function NarrativePreviewSlot({
         </div>
       )}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {d.symbols.map((s) => (
+        {d.symbols.map((s: string) => (
           <span
             key={s}
             style={{

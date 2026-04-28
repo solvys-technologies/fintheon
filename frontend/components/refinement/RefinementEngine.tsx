@@ -333,6 +333,40 @@ export function RefinementEngine() {
     );
   }, [isDirty, pendingSensitivities, getAccessToken, addToast]);
 
+  const onApplyAndRescore = useCallback(async () => {
+    setIsRescoring(true);
+    try {
+      const token = (await getAccessToken()) ?? undefined;
+      // Save sensitivities first if dirty
+      if (isDirty) {
+        const saveRes = await applySensitivities(pendingSensitivities, token);
+        if (!isNotReady(saveRes)) {
+          setAppliedSensitivities(pendingSensitivities);
+        }
+      }
+      // Trigger rescore
+      const res = await triggerRescore(token);
+      if (isNotReady(res)) {
+        await fetch(`${API_BASE}/api/riskflow/rescore`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({}),
+        }).then((r) => r.json());
+        addToast("Rescore (V3)", "info", "V4 rescore-all not live yet.");
+      } else {
+        addToast("Saved & rescored", "success");
+      }
+      await fetchFeed();
+    } catch {
+      addToast("Save/rescore failed", "error");
+    } finally {
+      setIsRescoring(false);
+    }
+  }, [isDirty, pendingSensitivities, getAccessToken, addToast, fetchFeed]);
+
   const onDiscardChanges = useCallback(() => {
     setPendingSensitivities(appliedSensitivities);
     const match = presets.find((p) =>
@@ -420,6 +454,16 @@ export function RefinementEngine() {
               </button>
             </>
           )}
+          <button
+            onClick={onApplyAndRescore}
+            disabled={isRescoring}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-[var(--fintheon-accent)] text-[var(--fintheon-bg)] text-[12px] font-bold tracking-wide hover:bg-[var(--fintheon-accent)]/90 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw
+              className={`w-4 h-4 ${isRescoring ? "animate-spin" : ""}`}
+            />
+            {isRescoring ? "Applying…" : "Save & Re-Score"}
+          </button>
           <button
             onClick={handleRescore}
             disabled={isRescoring}

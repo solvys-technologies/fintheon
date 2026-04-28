@@ -16,11 +16,26 @@ export interface ArbitrumSeatFallback {
 export interface ArbitrumSeatConfig {
   id: ArbitrumSeatId;
   role: string;
+  roleSubtitle: string;
+  displayName: string;
   model: string;
   provider: ArbitrumProvider;
   weight: number;
   persona: string;
+  temperature: number;
   fallback?: ArbitrumSeatFallback;
+}
+
+export interface ArbitrumSeatTranscript {
+  id: ArbitrumSeatId;
+  role: string;
+  roleSubtitle: string;
+  displayName: string;
+  model: string;
+  provider: ArbitrumProvider;
+  weight: number;
+  temperature: number;
+  rounds: ArbitrumSeatRound[];
 }
 
 export interface ArbitrumSeatRound {
@@ -29,15 +44,6 @@ export interface ArbitrumSeatRound {
   confidence: number;
   rationale: string;
   risks: string[];
-}
-
-export interface ArbitrumSeatTranscript {
-  id: ArbitrumSeatId;
-  role: string;
-  model: string;
-  provider: ArbitrumProvider;
-  weight: number;
-  rounds: ArbitrumSeatRound[];
 }
 
 export interface ArbitrumIvSimulation {
@@ -67,12 +73,23 @@ export interface ArbitrumEconContext {
   }>;
 }
 
+export interface ArbitrumCommentaryContext {
+  windowHours: number;
+  entries: Array<{
+    title: string;
+    sourceUrl: string;
+    watchedAt: string;
+    summary: string;
+  }>;
+}
+
 export interface ArbitrumDeliberateInput {
   question: string;
   category: string;
   context?: string;
   iv_simulation?: ArbitrumIvSimulation | null;
   econ_context?: ArbitrumEconContext | null;
+  commentary_context?: ArbitrumCommentaryContext | null;
 }
 
 export interface ArbitrumDissent {

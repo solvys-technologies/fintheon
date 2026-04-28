@@ -571,18 +571,20 @@ function AlertRow({
             <div className="flex items-center mt-2.5">
               {alert.ivScore != null ? (
                 <div className="relative flex-1 flex items-center h-[18px]">
-                  {/* Fuse wire — 2px shimmer, edge to edge */}
+                  {/* Fuse wire — solid low-opacity line */}
                   <div
-                    className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[2px] riskflow-fuse-shimmer"
+                    className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[2px]"
                     style={{
-                      background: `linear-gradient(90deg, transparent, ${ivHeatColor(Number(alert.ivScore))}60, transparent)`,
-                      backgroundSize: "200% 100%",
+                      backgroundColor: `${ivHeatColor(Number(alert.ivScore))}20`,
                     }}
                   />
                   {/* IV score KPI — sits on the fuse wire */}
                   <span
-                    className="relative z-10 text-[9px] font-mono font-bold tabular-nums px-1 bg-zinc-900/90"
-                    style={{ color: ivHeatColor(Number(alert.ivScore)) }}
+                    className="relative z-10 text-[9px] font-mono font-bold tabular-nums px-1"
+                    style={{
+                      color: ivHeatColor(Number(alert.ivScore)),
+                      backgroundColor: "var(--fintheon-bg)",
+                    }}
                   >
                     IV {Number(alert.ivScore).toFixed(1)}
                   </span>
@@ -970,12 +972,19 @@ export default function RiskFlowMini({
           {/* Alert list */}
           <div className="flex-1 min-w-0 overflow-y-auto">
             {filtered.length === 0 ? (
-              <div className="flex items-center justify-center h-24 text-zinc-700 text-xs">
-                {alerts.length === 0
-                  ? initialLoaded
-                    ? "Waiting for signals..."
-                    : "Loading feed..."
-                  : "No matching alerts"}
+              <div className="flex flex-col items-center justify-center h-24 text-zinc-700 text-xs gap-1">
+                <span>
+                  {alerts.length === 0
+                    ? initialLoaded
+                      ? "Waiting for signals..."
+                      : "Loading feed..."
+                    : "No matching alerts"}
+                </span>
+                {alerts.length > 0 && (
+                  <span className="text-[10px] text-zinc-800">
+                    Adjust filters to see more signals
+                  </span>
+                )}
               </div>
             ) : (
               filtered.map((alert) =>

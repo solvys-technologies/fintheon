@@ -50,8 +50,9 @@ export interface NotificationPrefs {
 // severity+bucket selection follows the user across desktop/mobile/web. Empty
 // arrays = "show all" (matches the legacy localStorage default).
 export const RISKFLOW_BUCKET_VALUES = [
+  "Wire",
+  "Macro",
   "OSINT",
-  "General",
   "Commentary",
   "Econ",
   "Geopolitical",

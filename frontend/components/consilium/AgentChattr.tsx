@@ -4,16 +4,14 @@
 // [claude-code 2026-03-22] Track 3: Boardroom with PromptBox replacing built-in textarea
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  RefreshCw,
-  WifiOff,
   ChevronDown,
   X,
-  Search,
+  History,
+  Clock,
   Square,
 } from "lucide-react";
 import { ConsiliumMessage, type BoardroomMessage } from "./ConsiliumMessage";
 import { AGENT_MAP, type BoardroomAgent } from "./AgentBadge";
-import { ConsiliumFilterBar } from "./ConsiliumFilterBar";
 import { PromptBox } from "../ui/chatgpt-prompt-input";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import {
@@ -29,6 +27,7 @@ import {
   saveThread,
   createThread as createBoardroomThread,
   syncFromSupabase,
+  type BoardroomThread,
 } from "../../lib/boardroomThreadStore";
 import type { HermesAgentId } from "../../../backend-hono/src/services/agent-bus/types";
 
@@ -62,30 +61,11 @@ const PERSONA_META: Record<BoardroomAgent, { label: string }> = {
   Unknown: { label: "Unknown" },
 };
 
-/** Animated WiFi bars — pulses 1→2→3 bars when connected */
-function WifiBars() {
-  return (
-    <div className="flex items-end gap-[2px] h-3">
-      <div
-        className="w-[2px] rounded-full bg-[#c79f4a] animate-[wifi-pulse_1.2s_ease-in-out_infinite]"
-        style={{ height: 4 }}
-      />
-      <div
-        className="w-[2px] rounded-full bg-[#c79f4a] animate-[wifi-pulse_1.2s_ease-in-out_0.2s_infinite]"
-        style={{ height: 7 }}
-      />
-      <div
-        className="w-[2px] rounded-full bg-[#c79f4a] animate-[wifi-pulse_1.2s_ease-in-out_0.4s_infinite]"
-        style={{ height: 10 }}
-      />
-      <style>{`
-        @keyframes wifi-pulse {
-          0%, 100% { opacity: 0.3; }
-          50% { opacity: 1; }
-        }
-      `}</style>
-    </div>
-  );
+/** Format elapsed seconds into mm:ss */
+function formatElapsed(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
 function getAgentColor(_agent: BoardroomAgent): string {
@@ -195,31 +175,15 @@ function AgentDropdown({
   );
 }
 
-function getDateRangeSince(
-  range: "today" | "7d" | "30d" | "all",
-): string | undefined {
-  if (range === "all") return undefined;
-  const now = new Date();
-  if (range === "today")
-    return new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-    ).toISOString();
-  if (range === "7d")
-    return new Date(now.getTime() - 7 * 86400000).toISOString();
-  if (range === "30d")
-    return new Date(now.getTime() - 30 * 86400000).toISOString();
-  return undefined;
-}
-
 export function AgentChattr({
   headerSlot,
 }: { headerSlot?: React.ReactNode } = {}) {
   const [messages, setMessages] = useState<BoardroomMessage[]>([]);
   const [input, setInput] = useState("");
-  const [isOnline, setIsOnline] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [showHistory, setShowHistory] = useState(false);
+  const [runHistory, setRunHistory] = useState<BoardroomThread[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<BoardroomAgent | null>(
     null,
   );
@@ -245,22 +209,32 @@ export function AgentChattr({
   const dagIsActive = dag.status === "dispatching" || dag.status === "running";
   const dagIsDone = dag.status === "complete" || dag.status === "error";
 
-  // Auto-collapse analysis panels once Harper begins streaming
-  const harperOut = dag.agentOutputs["harper"];
-  const harperActive =
-    harperOut?.status === "streaming" || harperOut?.status === "complete";
-  const [analystsCollapsed, setAnalystsCollapsed] = useState(false);
+  // Elapsed-time timer while DAG is active
+  useEffect(() => {
+    if (!dagIsActive) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setElapsedSeconds((s) => s + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [dagIsActive]);
+
+  // Load run history when toggled
+  const loadRunHistory = useCallback(async () => {
+    try {
+      const { getAllThreads } = await import("../../lib/boardroomThreadStore");
+      const threads = await getAllThreads();
+      setRunHistory(threads.slice(0, 20));
+    } catch {
+      setRunHistory([]);
+    }
+  }, []);
 
   useEffect(() => {
-    if (harperActive && !analystsCollapsed) {
-      // Delay collapse slightly so transition is visible
-      const timer = setTimeout(() => setAnalystsCollapsed(true), 800);
-      return () => clearTimeout(timer);
-    }
-    if (dag.status === "idle") {
-      setAnalystsCollapsed(false);
-    }
-  }, [harperActive, analystsCollapsed, dag.status]);
+    if (showHistory) void loadRunHistory();
+  }, [showHistory, loadRunHistory]);
 
   // KPI signal aggregation from agent JSON extraction
   const [kpiSignals, setKpiSignals] = useState<Record<string, KPISignals>>({});
@@ -274,14 +248,6 @@ export function AgentChattr({
     if (dag.status === "idle") setKpiSignals({});
   }, [dag.status]);
 
-  // Filter state
-  const [filterSearch, setFilterSearch] = useState("");
-  const [filterDateRange, setFilterDateRange] = useState<
-    "today" | "7d" | "30d" | "all"
-  >("all");
-  const [totalMessages, setTotalMessages] = useState(0);
-  const lastSeenCount = useRef(0);
-  const [newMessageCount, setNewMessageCount] = useState(0);
   const [isVisible, setIsVisible] = useState(!document.hidden);
 
   // Pause polling when tab not visible
@@ -302,32 +268,15 @@ export function AgentChattr({
 
   const fetchMessages = useCallback(async () => {
     try {
-      const params = new URLSearchParams();
-      if (filterSearch) params.set("search", filterSearch);
-      const since = getDateRangeSince(filterDateRange);
-      if (since) params.set("since", since);
-      const qs = params.toString();
-      const res = await fetch(
-        `${API_BASE}/api/boardroom/messages${qs ? `?${qs}` : ""}`,
-      );
+      const res = await fetch(`${API_BASE}/api/boardroom/messages`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setMessages(data.messages || []);
-      const total = data.total ?? data.messages?.length ?? 0;
-      setTotalMessages(total);
-      // Track new messages since last seen
-      if (lastSeenCount.current > 0) {
-        setNewMessageCount(Math.max(0, total - lastSeenCount.current));
-      } else {
-        lastSeenCount.current = total;
-      }
-      setIsOnline(true);
       setIsLoading(false);
     } catch {
-      setIsOnline(false);
       setIsLoading(false);
     }
-  }, [filterSearch, filterDateRange]);
+  }, []);
 
   // Sync boardroom threads from Supabase on mount
   useEffect(() => {
@@ -425,68 +374,74 @@ export function AgentChattr({
 
   return (
     <div className="relative flex h-full flex-col">
-      {/* Unified status + filter bar — single row, no bottom border */}
+      {/* Status bar — run history + elapsed time during deliberation */}
       <div className="flex items-center gap-3 px-4 py-2">
-        {/* Search input */}
-        <div className="relative flex-shrink-0">
-          <Search
-            size={14}
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--fintheon-text)]/30"
-          />
-          <input
-            type="text"
-            value={filterSearch}
-            onChange={(e) => setFilterSearch(e.target.value)}
-            placeholder="Search messages..."
-            className="w-[180px] rounded-full border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] py-1.5 pl-8 pr-3 text-xs text-[var(--fintheon-text)] placeholder-[var(--fintheon-text)]/20 outline-none transition-colors focus:border-[var(--fintheon-accent)]/40"
-          />
-        </div>
+        <button
+          onClick={() => setShowHistory((v) => !v)}
+          className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] font-medium transition-colors border ${
+            showHistory
+              ? "border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
+              : "border-[var(--fintheon-accent)]/15 text-[var(--fintheon-text)]/50 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]"
+          }`}
+          title="Run history"
+        >
+          <History size={12} />
+          Runs
+        </button>
 
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Message count */}
-        <span
-          className={`text-[10px] font-mono ${
-            newMessageCount > 0
-              ? "text-[var(--fintheon-accent)]"
-              : "text-[var(--fintheon-muted)]/40"
-          }`}
-          style={
-            newMessageCount > 0
-              ? { animation: "msg-pulse 2s ease-in-out infinite" }
-              : undefined
-          }
-          onClick={() => {
-            lastSeenCount.current = totalMessages;
-            setNewMessageCount(0);
-          }}
-        >
-          {newMessageCount > 0
-            ? `${newMessageCount} new messages`
-            : `${totalMessages} messages`}
-        </span>
-        <button
-          onClick={fetchMessages}
-          className="rounded-full p-1.5 text-[var(--fintheon-accent)]/40 transition-colors hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
-          title="Refresh"
-        >
-          <RefreshCw size={14} />
-        </button>
-        <div className="flex items-center gap-1.5">
-          {isOnline ? (
-            <WifiBars />
-          ) : (
-            <WifiOff size={12} className="text-red-500/60" />
-          )}
-          <span
-            className={`text-[10px] ${isOnline ? "text-[#c79f4a]/70" : "text-[var(--fintheon-text)]/30"}`}
-          >
-            {isOnline ? "Connected" : "Offline"}
-          </span>
-        </div>
+        {/* Elapsed time during deliberation */}
+        {dagIsActive && (
+          <div className="flex items-center gap-1.5 text-[10px] text-[var(--fintheon-accent)]/70">
+            <Clock size={12} className="animate-pulse" />
+            <span className="font-mono tabular-nums">
+              {formatElapsed(elapsedSeconds)}
+            </span>
+          </div>
+        )}
         {headerSlot}
       </div>
+
+      {/* Run history overlay */}
+      {showHistory && (
+        <div className="absolute top-10 left-3 z-40 w-72 max-h-80 overflow-y-auto rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-xl">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--fintheon-accent)]/10">
+            <span className="text-[10px] text-[var(--fintheon-accent)]/60 uppercase tracking-wider">
+              Recent Runs
+            </span>
+            <button
+              onClick={() => setShowHistory(false)}
+              className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
+            >
+              <X size={12} />
+            </button>
+          </div>
+          {runHistory.length === 0 ? (
+            <div className="px-3 py-4 text-[10px] text-zinc-600 text-center">
+              No saved runs yet
+            </div>
+          ) : (
+            runHistory.map((thread) => (
+              <button
+                key={thread.id}
+                onClick={() => {
+                  setMessages(thread.messages);
+                  setShowHistory(false);
+                }}
+                className="w-full text-left px-3 py-2 text-[10px] text-[var(--fintheon-text)]/70 hover:bg-[var(--fintheon-accent)]/5 transition-colors border-b border-zinc-800/40 last:border-0"
+              >
+                <p className="truncate font-medium">{thread.title}</p>
+                <p className="text-zinc-600 mt-0.5">
+                  {thread.participants.join(", ")} &middot;{" "}
+                  {new Date(thread.updatedAt).toLocaleDateString()}
+                </p>
+              </button>
+            ))
+          )}
+        </div>
+      )}
 
       {/* Floating KPI overlay during deliberation */}
       {(dagIsActive || dagIsDone) && (
@@ -527,14 +482,8 @@ export function AgentChattr({
 
             return (
               <>
-                {/* Sub-analyst panels — collapse after Harper begins synthesis */}
-                <div
-                  className="overflow-hidden transition-all duration-500"
-                  style={{
-                    maxHeight: analystsCollapsed ? 0 : 600,
-                    opacity: analystsCollapsed ? 0 : 1,
-                  }}
-                >
+                {/* Sub-analyst panels — persist and remain expandable */}
+                <div className="overflow-hidden transition-all duration-500">
                   <div
                     className={`grid gap-2 ${
                       visibleAnalysis.length === 1
@@ -657,6 +606,7 @@ export function AgentChattr({
             headlineChips={headlineChips}
             onHeadlineToggle={handleHeadlineToggle}
             onHeadlineClear={handleHeadlineClear}
+            hideThinkHarder
           />
         )}
       </div>

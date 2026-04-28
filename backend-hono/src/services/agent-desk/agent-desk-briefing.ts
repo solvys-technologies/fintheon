@@ -190,7 +190,7 @@ export function generateBriefing(
     if (highImpact.length > 0) {
       const byType = new Map<string, number>();
       for (const h of highImpact) {
-        const type = h.risk_type ?? "General";
+        const type = h.risk_type ?? "Custom";
         byType.set(type, (byType.get(type) ?? 0) + 1);
       }
       const breakdown = [...byType.entries()]

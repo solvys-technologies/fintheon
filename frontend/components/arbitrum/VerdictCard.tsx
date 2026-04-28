@@ -26,7 +26,7 @@ export function VerdictCard({
     trigger,
   } = verdict;
   const pct = Math.round(consensus_probability * 100);
-  const conf = Math.round(confidence * 100);
+  const conf = Math.max(0, Math.min(10, confidence * 10));
 
   return (
     <div
@@ -56,8 +56,8 @@ export function VerdictCard({
             chamber confidence
           </span>
           <DigitGroup
-            value={`${conf}`}
-            suffix="%"
+            value={conf.toFixed(1)}
+            suffix="/10"
             className="text-[var(--fintheon-text)]/80 text-xs"
             style={{ fontFamily: "Doto, ui-monospace, monospace" }}
           />
@@ -77,7 +77,7 @@ export function VerdictCard({
       </p>
 
       <div className="mt-3 flex items-center justify-between text-[10px] text-[var(--fintheon-text)]/40">
-        <span>
+        <span className="tabular-nums">
           {new Date(created_at).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",

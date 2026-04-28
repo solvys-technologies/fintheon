@@ -14,7 +14,7 @@ import {
   useLayoutEffect,
   useEffect,
 } from "react";
-import { Loader2 } from "lucide-react";
+import { SolvysLoader } from "../shared/SolvysLoader";
 import type {
   SanctumData,
   SanctumPreset,
@@ -28,11 +28,8 @@ import { SanctumEconIntel } from "./SanctumEconIntel";
 import { SanctumHeader } from "./SanctumHeader";
 import { SanctumBriefing } from "./SanctumBriefing";
 import { SanctumNarratives } from "./SanctumNarratives";
-import { AgentScorecard } from "../consilium/AgentScorecard";
 import { AquariumPredictionCards } from "./AquariumPredictionCards";
 import { ConsolidatedTradeLedger } from "./ConsolidatedTradeLedger";
-import { BlendedVIXCard } from "./BlendedVIXCard";
-import { NextSessionForecastCard } from "./NextSessionForecastCard";
 import { BlendedIVForecastCard } from "./BlendedIVForecastCard";
 import { DayCard } from "./DayCard";
 import { RiskSignalCards } from "./RiskSignalCards";
@@ -122,8 +119,15 @@ export function Sanctum({
     const el = containerRef.current;
     if (!el) return;
     const pages = el.querySelectorAll("[data-aud-page]");
-    if (pages[idx])
-      pages[idx].scrollIntoView({ behavior: "smooth", block: "start" });
+    if (pages[idx]) {
+      const reduced =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      pages[idx].scrollIntoView({
+        behavior: reduced ? "auto" : "smooth",
+        block: "start",
+      });
+    }
   }, []);
 
   // Listen for cross-component navigation (right-rail Sanctum drawer dispatches this)
@@ -235,8 +239,8 @@ export function Sanctum({
                   {/* Brief-pattern top container — Volatility Read left (55%), Deliberation right (45%) — no outer border, fading ruler divides */}
                   <div className="min-h-[520px] flex">
                     <div className="flex-1 flex overflow-hidden mx-1 my-1">
-                      {/* Left: Volatility Read — Blended IV + Next Session Forecast (55%) */}
-                      <div className="flex-[55] min-w-0 overflow-y-auto p-4 flex flex-col gap-3">
+                      {/* Left: Volatility Read — Blended IV + Next Session Forecast (50%) */}
+                      <div className="flex-1 min-w-0 overflow-y-auto p-4 flex flex-col gap-3">
                         <div className="flex items-center gap-2">
                           <span
                             className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
@@ -245,7 +249,7 @@ export function Sanctum({
                             Volatility Read
                           </span>
                           {isLoading && (
-                            <Loader2 className="w-3 h-3 text-[var(--fintheon-accent)] animate-spin" />
+                            <SolvysLoader size={12} />
                           )}
                         </div>
                         {/* [claude-code 2026-04-27] S46.4/K: combined IV+forecast card */}
@@ -256,20 +260,11 @@ export function Sanctum({
                         <DayCard id="day-card-anchor" />
                       </div>
 
-                      {/* Fading vertical ruler between Volatility Read and Deliberation */}
-                      <div className="w-px relative shrink-0">
-                        <div
-                          className="absolute inset-0"
-                          style={{
-                            background:
-                              "linear-gradient(to bottom, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
-                            opacity: 0.18,
-                          }}
-                        />
-                      </div>
+                      {/* Vertical ruler between Volatility Read and Deliberation */}
+                      <div className="w-px shrink-0 bg-[var(--fintheon-accent)]/10" />
 
-                      {/* Right: AgentDesk Deliberation with SIGNAL/REGIME/HEAT fuses at bottom (45%) */}
-                      <div className="flex-[45] min-w-0 min-h-0 flex flex-col">
+                      {/* Right: AgentDesk Deliberation with SIGNAL/REGIME/HEAT fuses at bottom (50%) */}
+                      <div className="flex-1 min-w-0 min-h-0 flex flex-col">
                         <ArbitrumChamber
                           simulationId={data?.simulationId ?? null}
                           onSynthesisComplete={onSynthesisComplete}
@@ -302,6 +297,13 @@ export function Sanctum({
                   <p className="text-sm text-[var(--fintheon-severe)]/70 max-w-md mx-auto">
                     {data.error}
                   </p>
+                  <button
+                    onClick={() => handleRun()}
+                    disabled={running}
+                    className="mt-2 px-3 py-1 text-[10px] uppercase tracking-wider border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 disabled:opacity-40 transition-colors"
+                  >
+                    {running ? "Retrying..." : "Retry"}
+                  </button>
                 </div>
               )}
             </div>
@@ -370,17 +372,8 @@ export function Sanctum({
                       </div>
                     </div>
 
-                    {/* Fading vertical ruler */}
-                    <div className="w-px shrink-0 relative mx-2">
-                      <div
-                        className="absolute inset-0"
-                        style={{
-                          background:
-                            "linear-gradient(to bottom, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
-                          opacity: 0.18,
-                        }}
-                      />
-                    </div>
+                    {/* Vertical ruler */}
+                    <div className="w-px shrink-0 bg-[var(--fintheon-accent)]/10 mx-2" />
 
                     {/* Right: Active Narratives */}
                     <div className="flex-1 min-w-0 flex flex-col">
@@ -393,49 +386,14 @@ export function Sanctum({
                     </div>
                   </div>
 
-                  {/* Fading horizontal ruler */}
-                  <div className="h-px relative">
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        background:
-                          "linear-gradient(to right, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
-                        opacity: 0.18,
-                      }}
-                    />
-                  </div>
+                  {/* Horizontal ruler */}
+                  <div className="h-px bg-[var(--fintheon-accent)]/10" />
 
                   {/* Consolidated Trade Ledger — replaces Polymarket kanban */}
                   <div>
                     <ConsolidatedTradeLedger />
                   </div>
 
-                  {/* Fading horizontal ruler */}
-                  <div className="h-px relative">
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        background:
-                          "linear-gradient(to right, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
-                        opacity: 0.18,
-                      }}
-                    />
-                  </div>
-
-                  {/* Agent Performance — scorecards only (risk signals moved up; no bordered container) */}
-                  <div>
-                    <div className="px-1 pb-2">
-                      <span
-                        className="text-[10px] tracking-[0.22em] uppercase text-[var(--fintheon-accent)]/85"
-                        style={{ fontFamily: "var(--font-heading)" }}
-                      >
-                        Agent Performance
-                      </span>
-                    </div>
-                    <div className="max-h-[350px] overflow-y-auto">
-                      <AgentScorecard />
-                    </div>
-                  </div>
                 </div>
               ) : (
                 <div className="flex-1 flex items-center justify-center">
@@ -481,7 +439,7 @@ export function Sanctum({
                   className={`transition-all duration-300 rounded-full ${
                     activePage === i
                       ? "w-[3px] h-8 bg-[var(--fintheon-accent)]"
-                      : "w-[2px] h-5 bg-gray-700 hover:bg-gray-500"
+                      : "w-[2px] h-5 bg-[var(--fintheon-text)]/20 hover:bg-[var(--fintheon-text)]/35"
                   }`}
                 />
               </button>

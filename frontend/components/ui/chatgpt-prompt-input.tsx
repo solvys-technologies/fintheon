@@ -26,9 +26,9 @@ import {
   MicOff,
   X,
   Maximize2,
-  Loader2,
   Clock,
 } from "lucide-react";
+import { SolvysLoader } from "../shared/SolvysLoader";
 import { FintheonSlashPicker } from "../chat/FintheonSlashPicker";
 import {
   FintheonAttachPopup,
@@ -41,6 +41,39 @@ import {
   type HeadlineChip,
 } from "../chat/HeadlinePickerPopover";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
+
+/* ------------------------------------------------------------------ */
+/*  RiskFlow preview builder                                          */
+/* ------------------------------------------------------------------ */
+
+function buildRiskFlowPreview(data: {
+  headline?: string;
+  summary?: string;
+  ticker?: string;
+  direction?: string;
+  source?: string;
+  ivScore?: number;
+  publishedAt?: string;
+}): string | null {
+  if (!data.headline) return null;
+  const parts: string[] = [];
+  parts.push(`[RiskFlow Context]`);
+  parts.push(`Headline: ${data.headline}`);
+  if (data.source) parts.push(`Source: ${data.source}`);
+  if (data.ivScore != null) parts.push(`IV Score: ${data.ivScore.toFixed(1)}`);
+  if (data.ticker) parts.push(`Ticker: ${data.ticker}`);
+  if (data.direction) parts.push(`Direction: ${data.direction}`);
+  if (data.publishedAt) {
+    const ago = Math.round(
+      (Date.now() - new Date(data.publishedAt).getTime()) / 60000,
+    );
+    parts.push(`Time: ${ago}m ago`);
+  }
+  if (data.summary && data.summary !== data.headline) {
+    parts.push(`Summary: ${data.summary}`);
+  }
+  return parts.join("\n");
+}
 
 /* ------------------------------------------------------------------ */
 /*  Deep Research icon                                                */
@@ -104,6 +137,8 @@ export interface PromptBoxProps {
   dispatchBanner?: React.ReactNode;
   // Boardroom: swap pulsing icon for newspaper RiskFlow picker
   onRiskFlowPick?: () => void;
+  // Hide the Think Harder toggle (used in Agentic Forum where deep-research is always on)
+  hideThinkHarder?: boolean;
   // Headline attachment (multi-select from scored feed items)
   headlineAlerts?: RiskFlowAlert[];
   headlineChips?: HeadlineChip[];
@@ -146,6 +181,7 @@ export function PromptBox({
   headlineChips,
   onHeadlineToggle,
   onHeadlineClear,
+  hideThinkHarder,
 }: PromptBoxProps) {
   const [text, setText] = useState("");
   const [images, setImages] = useState<string[]>([]);
@@ -305,17 +341,13 @@ export function PromptBox({
         summary?: string;
         ticker?: string;
         direction?: string;
+        source?: string;
+        ivScore?: number;
+        publishedAt?: string;
       };
-      const parts: string[] = [];
-      if (data.headline) parts.push(data.headline);
-      if (data.ticker) parts.push(`Ticker: ${data.ticker}`);
-      if (data.direction) parts.push(`Direction: ${data.direction}`);
-      if (data.summary && data.summary !== data.headline)
-        parts.push(data.summary);
-      if (parts.length > 0) {
-        setText((prev) =>
-          prev ? `${prev}\n\n${parts.join("\n")}` : parts.join("\n"),
-        );
+      const preview = buildRiskFlowPreview(data);
+      if (preview) {
+        setText((prev) => (prev ? `${prev}\n\n${preview}` : preview));
       }
     } catch {
       // Not valid riskflow data — ignore
@@ -432,10 +464,7 @@ export function PromptBox({
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded border border-[var(--fintheon-accent)]/20 bg-[#0d0c09]/80 text-[11px] text-[#f0ead6]/60"
               >
                 {job.status === "processing" ? (
-                  <Loader2
-                    size={10}
-                    className="animate-spin text-[var(--fintheon-accent)]"
-                  />
+                  <SolvysLoader size={10} />
                 ) : (
                   <Clock size={10} className="text-zinc-600" />
                 )}
@@ -571,14 +600,16 @@ export function PromptBox({
               {toolsSlot}
 
               {/* Think Harder toggle */}
-              <button
-                onClick={() => setThinkHarder(!thinkHarder)}
-                title={thinkHarder ? "Deep Research ON" : "Deep Research OFF"}
-                className="flex items-center justify-center rounded-lg transition-all text-zinc-500 hover:text-[var(--fintheon-accent)]"
-                style={{ width: "32px", height: "32px" }}
-              >
-                <ThinkHarderIcon active={thinkHarder} />
-              </button>
+              {!hideThinkHarder && (
+                <button
+                  onClick={() => setThinkHarder(!thinkHarder)}
+                  title={thinkHarder ? "Deep Research ON" : "Deep Research OFF"}
+                  className="flex items-center justify-center rounded-lg transition-all text-zinc-500 hover:text-[var(--fintheon-accent)]"
+                  style={{ width: "32px", height: "32px" }}
+                >
+                  <ThinkHarderIcon active={thinkHarder} />
+                </button>
+              )}
             </div>
 
             {/* Right: Persona + Usage + Send/Stop */}

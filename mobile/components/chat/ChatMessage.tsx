@@ -172,7 +172,9 @@ function ChatMessageInner({ message }: ChatMessageProps) {
                     </a>
                   ),
                 }}
-              />
+              >
+                {message.content}
+              </Markdown>
             </div>
           )}
         </div>

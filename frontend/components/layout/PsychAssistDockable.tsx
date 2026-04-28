@@ -1,5 +1,5 @@
 // [claude-code 2026-04-17] Migrated drag to useDraggable hook (pointer events + rAF); grip-only; dock-on-release via onDragEnd
-// [claude-code 2026-04-20] S21: Added Omi voice activation button + live white-waveform indicator
+// [claude-code 2026-04-20] S21: Voice activation button + live waveform indicator
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { GripVertical, PictureInPicture2, X } from "lucide-react";
 import { CompactERMonitor } from "../mission-control/CompactERMonitor";

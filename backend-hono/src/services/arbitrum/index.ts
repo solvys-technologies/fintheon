@@ -8,6 +8,7 @@ export {
   getLatest,
   getLatestByTrigger,
   getLatestChamberRead,
+  getChamberReadFreshness,
 } from "./verdict-store.js";
 export { ARBITRUM_SEATS, invokeMoA } from "./seats.js";
 export { synthesize, type SynthesisResult } from "./facilitator.js";

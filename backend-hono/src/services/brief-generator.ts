@@ -177,6 +177,22 @@ export async function generateBrief(
     ? `\n## Chamber Read (17:00 Arbitrum Session)\n${chamberRead}\n`
     : "";
 
+  // [claude-code 2026-04-28] S47-T2: diagnostic timestamp comparison
+  if (briefType === "PMDB") {
+    try {
+      const { getChamberReadFreshness } = await import("./arbitrum/index.js");
+      const freshness = await getChamberReadFreshness();
+      log.info("PMDB Chamber Read freshness", {
+        latest_pmdb_at: freshness.latest_pmdb_at,
+        latest_session_verdict_at: freshness.latest_session_verdict_at,
+        gap_minutes: freshness.gap_minutes,
+        chamberReadPresent: !!chamberRead,
+      });
+    } catch {
+      // Non-fatal diagnostic
+    }
+  }
+
   // [S45-T1] Inline Desk Theme block — pre-formatted, monospace gutter,
   // pulled from today's day_plan. MDB / ADB / PMDB / TWT all carry it.
   const deskThemeBlock = await fetchDeskThemeBlock(today);

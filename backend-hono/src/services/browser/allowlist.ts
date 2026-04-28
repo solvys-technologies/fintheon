@@ -30,6 +30,9 @@ export const BROWSER_ALLOWLIST: BrowserAllowlistEntry[] = [
   // Prediction markets
   { domain: "polymarket.com", tier: "market", dailyQuota: 100 },
   { domain: "kalshi.com", tier: "market", dailyQuota: 100 },
+  // Yahoo Finance — market-data router last-resort page scrape
+  { domain: "finance.yahoo.com", tier: "data", dailyQuota: 200 },
+  { domain: "yahoo.com", tier: "data", dailyQuota: 200 },
   // Twitter
   { domain: "x.com", tier: "social", dailyQuota: 500 },
   { domain: "twitter.com", tier: "social", dailyQuota: 500 },
