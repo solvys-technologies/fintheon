@@ -1,5 +1,6 @@
+// [claude-code 2026-04-28] S47-T1: Route quote + VIX through 4-tier market-data router
 // [claude-code 2026-03-14] Unified market data — Yahoo Finance replaces FMP (no API key needed)
-import * as yahooMarket from "./yahoo-market.js";
+import { fetchQuote, fetchVIX } from "./router.js";
 import * as unusualWhales from "./unusual-whales.js";
 import type { MarketContext } from "./types.js";
 
@@ -11,8 +12,8 @@ import type { MarketContext } from "./types.js";
 export async function getMarketContext(symbol: string): Promise<MarketContext> {
   const [quoteResult, vixResult, gexResult, wallsResult, flowResult] =
     await Promise.allSettled([
-      yahooMarket.getQuote(symbol),
-      yahooMarket.getVix(),
+      fetchQuote(symbol).then((r) => r.quote),
+      fetchVIX().then((r) => r.vix),
       unusualWhales.isAvailable()
         ? unusualWhales.getGammaExposure(symbol)
         : Promise.resolve(null),
@@ -43,5 +44,5 @@ export async function getMarketContext(symbol: string): Promise<MarketContext> {
   };
 }
 
-export { yahooMarket, unusualWhales };
+export { unusualWhales };
 export * from "./types.js";

@@ -103,28 +103,21 @@ export function startVIXPolling(): void {
 }
 
 /**
- * Fetch VIX from Yahoo Finance — no API key required.
- * Extracts price from Yahoo's v8 chart API — no API key required.
+ * Fetch VIX through the 4-tier market-data router.
+ * Replaces inline TradingView + Yahoo logic with the canonical router.
  */
-async function fetchFromYahoo(): Promise<number | null> {
-  // Yahoo blocked intraday (1m) — fall back to daily (1d) which still works
-  // Yahoo blocked 1m interval — 2m still works and meta.regularMarketPrice is real-time
-  const url =
-    "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1d&interval=2m";
+async function fetchFromSources(): Promise<number | null> {
   try {
-    const res = await fetch(url, {
-      signal: AbortSignal.timeout(5000),
-      headers: { "User-Agent": "Mozilla/5.0" },
-    });
-    if (!res.ok) throw new Error(`Yahoo HTTP ${res.status}`);
-    const json = await res.json();
-    const meta = json?.chart?.result?.[0]?.meta;
-    const price = meta?.regularMarketPrice;
-    if (typeof price === "number" && price > 0) return price;
-    throw new Error("Invalid Yahoo VIX price");
+    const { fetchVIX } = await import("./market-data/router.js");
+    const result = await fetchVIX();
+    console.log(
+      `[VIX] Router returned ${result.vix.value.toFixed(2)} via tiers:`,
+      result.attempts.map((a) => a.source).join(" → "),
+    );
+    return result.vix.value;
   } catch (err) {
     console.warn(
-      "[VIX] Yahoo fetch failed:",
+      "[VIX] Market-data router failed:",
       err instanceof Error ? err.message : err,
     );
     return null;
@@ -142,7 +135,7 @@ export async function fetchVIX(): Promise<VIXData> {
     return buildVIXData(vixCache, now);
   }
 
-  const newLevel = await fetchFromYahoo();
+  const newLevel = await fetchFromSources();
 
   if (newLevel !== null) {
     const previousLevel = vixCache?.level ?? newLevel;

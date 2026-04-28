@@ -4,10 +4,13 @@
 // [claude-code 2026-04-24] S34-T3: added GET /api/econ/upcoming?country=X&category=Y — reads from the economic_events table now populated by econ-calendar-populator.
 // [claude-code 2026-04-19] S25-T4b: Backend econ CAO synthesis. POST /api/econ/synthesize takes {tickers, timeframe?} and returns CAO-generated description + third-order thinking per ticker. Forecast only populated when latest print conclusively beat/missed. Uses invokeAgent (Strands) with a JSON-output prompt; falls back to heuristic derivation if the LLM call fails so the UI never shows a blank card.
 import { Hono } from "hono";
+import { createHash } from "node:crypto";
 import { invokeAgent } from "../../services/strands/index.js";
 import {
   readEconHistory,
   readUpcomingEconEvents,
+  readEconSynthesisCache,
+  writeEconSynthesisCache,
 } from "../../services/supabase-service.js";
 import { sql, isDatabaseAvailable } from "../../config/database.js";
 import { createLogger } from "../../lib/logger.js";
@@ -67,6 +70,21 @@ function fmtPrints(prints: PrintRow[]): string {
         `${p.date ?? "—"} | actual ${p.actual ?? "—"} vs forecast ${p.forecast ?? "—"} vs prev ${p.previous ?? "—"} → ${p.direction ?? "—"} (${p.surprise != null ? `${p.surprise > 0 ? "+" : ""}${p.surprise.toFixed(2)}%` : "—"}, IV ${p.ivScore ?? "—"})`,
     )
     .join("\n");
+}
+
+function fingerprintHistory(
+  tickers: string[],
+  printsByTicker: Map<string, PrintRow[]>,
+): string {
+  const parts: string[] = [];
+  for (const t of tickers) {
+    const prints = printsByTicker.get(t) ?? [];
+    const ids = prints
+      .map((p) => p.id ?? `${p.date}:${p.actual}`)
+      .join(",");
+    parts.push(`${t}=[${ids}]`);
+  }
+  return createHash("sha256").update(parts.join("|")).digest("hex").slice(0, 24);
 }
 
 function extractJson(text: string): {
@@ -190,7 +208,7 @@ export function createEconRoutes() {
 
   // POST /api/econ/synthesize { tickers: string[], timeframe?: string }
   app.post("/synthesize", async (c) => {
-    let body: { tickers?: unknown; timeframe?: unknown };
+    let body: { tickers?: unknown; timeframe?: unknown; skipCache?: unknown };
     try {
       body = await c.req.json();
     } catch {
@@ -203,49 +221,89 @@ export function createEconRoutes() {
       : [];
     const timeframe =
       typeof body.timeframe === "string" ? body.timeframe : "3m";
+    const skipCache = body.skipCache === true;
 
     if (tickers.length === 0) {
       return c.json({ error: "tickers_required" }, 400);
     }
 
-    const events: EventSynthesis[] = await Promise.all(
-      tickers.map(async (ticker) => {
-        const { prints: rawPrints } = await readEconHistory(ticker, 12);
-        const prints: PrintRow[] = rawPrints.map((p) => {
-          const actual =
-            p.actual_value != null ? parseFloat(p.actual_value) : null;
-          const forecast =
-            p.forecast_value != null ? parseFloat(p.forecast_value) : null;
-          const previous =
-            p.previous_value != null ? parseFloat(p.previous_value) : null;
-          let surprise: number | null = null;
-          let direction: "beat" | "miss" | "inline" | null = null;
-          if (actual != null && forecast != null && forecast !== 0) {
-            surprise = ((actual - forecast) / Math.abs(forecast)) * 100;
-            direction =
-              Math.abs(surprise) < 2
-                ? "inline"
-                : surprise > 0
-                  ? "beat"
-                  : "miss";
-          }
-          return {
-            id: p.id,
-            date: p.printed_at
-              ? new Date(p.printed_at).toISOString().slice(0, 10)
-              : null,
-            actual,
-            forecast,
-            previous,
-            surprise:
-              surprise != null ? Math.round(surprise * 100) / 100 : null,
-            direction,
-            ivScore: p.iv_score ?? null,
-          };
-        });
+    // [claude-code 2026-04-28] S47-T2: fetch histories first so the cache key
+    // is keyed by actual print/event IDs, not just ticker names.
+    const historyByTicker = new Map<
+      string,
+      { prints: PrintRow[]; rawIds: string[] }
+    >();
+    for (const ticker of tickers) {
+      const { prints: rawPrints } = await readEconHistory(ticker, 12);
+      const prints: PrintRow[] = rawPrints.map((p) => {
+        const actual =
+          p.actual_value != null ? parseFloat(p.actual_value) : null;
+        const forecast =
+          p.forecast_value != null ? parseFloat(p.forecast_value) : null;
+        const previous =
+          p.previous_value != null ? parseFloat(p.previous_value) : null;
+        let surprise: number | null = null;
+        let direction: "beat" | "miss" | "inline" | null = null;
+        if (actual != null && forecast != null && forecast !== 0) {
+          surprise = ((actual - forecast) / Math.abs(forecast)) * 100;
+          direction =
+            Math.abs(surprise) < 2
+              ? "inline"
+              : surprise > 0
+                ? "beat"
+                : "miss";
+        }
+        return {
+          id: p.id,
+          date: p.printed_at
+            ? new Date(p.printed_at).toISOString().slice(0, 10)
+            : null,
+          actual,
+          forecast,
+          previous,
+          surprise:
+            surprise != null ? Math.round(surprise * 100) / 100 : null,
+          direction,
+          ivScore: p.iv_score ?? null,
+        };
+      });
+      const rawIds = rawPrints.map((p) => p.id ?? "none").filter(Boolean);
+      historyByTicker.set(ticker, { prints, rawIds });
+    }
 
-        // Call CAO synthesis
-        const userPrompt = `TICKER: ${ticker}
+    const cacheKey = {
+      eventFamily: tickers.sort().join(","),
+      dateRange: timeframe,
+      version: `v1-${fingerprintHistory(tickers, new Map([...historyByTicker.entries()].map(([k, v]) => [k, v.prints])))}`,
+    };
+
+    if (!skipCache) {
+      const cached = await readEconSynthesisCache(cacheKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached.synthesis_text) as {
+            events: EventSynthesis[];
+          };
+          if (parsed?.events) {
+            return c.json({
+              timeframe,
+              events: parsed.events,
+              generatedAt: cached.created_at,
+              cached: true,
+            });
+          }
+        } catch {
+          // Cache parse failed — fall through to generation
+        }
+      }
+    }
+
+    const events: EventSynthesis[] = [];
+    for (const ticker of tickers) {
+      const { prints } = historyByTicker.get(ticker) ?? { prints: [] };
+
+      // Call CAO synthesis
+      const userPrompt = `TICKER: ${ticker}
 TIMEFRAME: ${timeframe}
 
 Recent prints (newest first):
@@ -253,54 +311,97 @@ ${fmtPrints(prints)}
 
 Return the JSON schema specified in the system prompt.`;
 
-        try {
-          const { text } = await invokeAgent({
-            systemPrompt: SYSTEM_PROMPT,
-            userPrompt,
-            model: { temperature: 0.35, maxTokens: 380 },
-          });
-          const parsed = extractJson(text);
-          if (!parsed || !parsed.description) {
-            throw new Error("empty_synthesis");
-          }
-          const latest = prints[0];
-          const directionFromLLM =
-            parsed.forecastDirection === "beat" ||
-            parsed.forecastDirection === "miss"
-              ? parsed.forecastDirection
-              : null;
-          const latestConclusive =
-            latest?.direction === "beat" || latest?.direction === "miss";
-          const finalDirection =
-            directionFromLLM ?? (latestConclusive ? latest.direction : null);
-
-          return {
-            ticker,
-            description: parsed.description,
-            thirdOrder: parsed.thirdOrder ?? "",
-            forecast:
-              finalDirection && finalDirection !== "inline"
-                ? {
-                    direction: finalDirection,
-                    deviation: latest?.surprise ?? null,
-                  }
-                : null,
-            confidence: Math.min(1, 0.55 + Math.min(prints.length, 10) * 0.04),
-            prints,
-          } as EventSynthesis;
-        } catch (err) {
-          log.warn(`CAO synthesis failed for ${ticker} — heuristic fallback`, {
-            error: String(err),
-          });
-          return heuristicFallback(ticker, prints);
+      try {
+        const { text } = await invokeAgent({
+          systemPrompt: SYSTEM_PROMPT,
+          userPrompt,
+          model: { temperature: 0.35, maxTokens: 380 },
+        });
+        const parsed = extractJson(text);
+        if (!parsed || !parsed.description) {
+          throw new Error("empty_synthesis");
         }
-      }),
-    );
+        const latest = prints[0];
+        const directionFromLLM =
+          parsed.forecastDirection === "beat" ||
+          parsed.forecastDirection === "miss"
+            ? parsed.forecastDirection
+            : null;
+        const latestConclusive =
+          latest?.direction === "beat" || latest?.direction === "miss";
+        const finalDirection =
+          directionFromLLM ?? (latestConclusive ? latest.direction : null);
+
+        events.push({
+          ticker,
+          description: parsed.description,
+          thirdOrder: parsed.thirdOrder ?? "",
+          forecast:
+            finalDirection && finalDirection !== "inline"
+              ? {
+                  direction: finalDirection,
+                  deviation: latest?.surprise ?? null,
+                }
+              : null,
+          confidence: Math.min(1, 0.55 + Math.min(prints.length, 10) * 0.04),
+          prints,
+        });
+      } catch (err) {
+        log.warn(`CAO synthesis failed for ${ticker} — heuristic fallback`, {
+          error: String(err),
+        });
+        events.push(heuristicFallback(ticker, prints));
+      }
+    }
+
+    // [claude-code 2026-04-28] S47-T2: write synthesis to cache
+    const selectedEventIds: string[] = [];
+    for (const ticker of tickers) {
+      const { rawIds } = historyByTicker.get(ticker) ?? { rawIds: [] };
+      selectedEventIds.push(...rawIds);
+    }
+    void writeEconSynthesisCache({
+      event_family: cacheKey.eventFamily,
+      date_range: cacheKey.dateRange,
+      version: cacheKey.version,
+      selected_event_ids: selectedEventIds.length > 0 ? selectedEventIds : tickers,
+      raw_normalized_rows: events.map((e) => ({
+        ticker: e.ticker,
+        confidence: e.confidence,
+        printsCount: e.prints.length,
+      })),
+      synthesis_text: JSON.stringify({ events }),
+      model: "strands-vproxy",
+      user_id: null,
+    });
 
     return c.json({
       timeframe,
       events,
       generatedAt: new Date().toISOString(),
+      cached: false,
+    });
+  });
+
+  // [claude-code 2026-04-28] S47-T2: countdown test events — returns a synthetic
+  // upcoming event for frontend clock/check validation without waiting for real prints.
+  app.get("/test-event", (c) => {
+    const now = new Date();
+    const scheduledAt = new Date(now.getTime() + 5 * 60 * 1000); // 5 min from now
+    return c.json({
+      events: [
+        {
+          id: `test-${now.getTime()}`,
+          eventName: "Test Event (S47-T2)",
+          country: "US",
+          category: "Employment",
+          scheduledAt: scheduledAt.toISOString(),
+          forecast: 200,
+          previous: 180,
+          actual: null,
+          status: "upcoming",
+        },
+      ],
     });
   });
 

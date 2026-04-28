@@ -1690,6 +1690,129 @@ export async function writeObservationsBatch(
   return data?.length ?? 0;
 }
 
+// ─── Econ Synthesis Cache ───────────────────────────────────────
+
+export interface EconSynthesisCacheRecord {
+  id?: string;
+  event_family: string;
+  date_range: string;
+  selected_event_ids: string[];
+  raw_normalized_rows: unknown[];
+  synthesis_text: string;
+  model: string;
+  version: string;
+  user_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export async function readEconSynthesisCache(opts: {
+  eventFamily: string;
+  dateRange: string;
+  version: string;
+}): Promise<EconSynthesisCacheRecord | null> {
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+  const { data, error } = await sb
+    .from("econ_synthesis_cache")
+    .select("*")
+    .eq("event_family", opts.eventFamily)
+    .eq("date_range", opts.dateRange)
+    .eq("version", opts.version)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.error("[Supabase] readEconSynthesisCache error:", error.message);
+    return null;
+  }
+  return data as EconSynthesisCacheRecord | null;
+}
+
+export async function writeEconSynthesisCache(
+  record: Omit<EconSynthesisCacheRecord, "id" | "created_at" | "updated_at">,
+): Promise<EconSynthesisCacheRecord | null> {
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+  const { data, error } = await sb
+    .from("econ_synthesis_cache")
+    .upsert(
+      { ...record, updated_at: new Date().toISOString() },
+      { onConflict: "event_family,date_range,version" },
+    )
+    .select()
+    .single();
+  if (error) {
+    console.error("[Supabase] writeEconSynthesisCache error:", error.message);
+    return null;
+  }
+  return data as EconSynthesisCacheRecord | null;
+}
+
+// ─── Agent Proposal Outcomes ────────────────────────────────────
+
+export interface AgentProposalOutcomeRecord {
+  id?: string;
+  proposal_id: string;
+  proposal_type: "prediction" | "trade" | "arbitrum";
+  agent_name: string;
+  agent_role?: string;
+  direction: "long" | "short" | "flat";
+  instrument: string;
+  entry_price?: number;
+  exit_price?: number;
+  outcome: "win" | "loss" | "push" | "expired" | "pending";
+  pnl?: number;
+  resolved_at?: string;
+  market_close_countdown_minutes?: number;
+  rationale?: string;
+  metadata?: Record<string, unknown>;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export async function writeAgentProposalOutcome(
+  record: Omit<AgentProposalOutcomeRecord, "id" | "created_at" | "updated_at">,
+): Promise<AgentProposalOutcomeRecord | null> {
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+  const { data, error } = await sb
+    .from("agent_proposal_outcomes")
+    .upsert(
+      { ...record, updated_at: new Date().toISOString() },
+      { onConflict: "proposal_id,proposal_type,agent_name" },
+    )
+    .select()
+    .single();
+  if (error) {
+    console.error("[Supabase] writeAgentProposalOutcome error:", error.message);
+    return null;
+  }
+  return data as AgentProposalOutcomeRecord | null;
+}
+
+export async function readAgentProposalOutcomes(filter?: {
+  agentName?: string;
+  outcome?: string;
+  limit?: number;
+}): Promise<AgentProposalOutcomeRecord[]> {
+  const sb = getSupabaseClient();
+  if (!sb) return [];
+  let query = sb
+    .from("agent_proposal_outcomes")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(filter?.limit ?? 100);
+  if (filter?.agentName) query = query.eq("agent_name", filter.agentName);
+  if (filter?.outcome) query = query.eq("outcome", filter.outcome);
+  const { data, error } = await query;
+  if (error) {
+    console.error("[Supabase] readAgentProposalOutcomes error:", error.message);
+    return [];
+  }
+  return (data ?? []) as AgentProposalOutcomeRecord[];
+}
+
 // ─── Health Check ───────────────────────────────────────────────
 
 export async function checkSupabaseHealth(): Promise<boolean> {

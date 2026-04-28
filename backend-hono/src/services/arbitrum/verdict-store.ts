@@ -143,13 +143,119 @@ export async function getLatest(): Promise<ArbitrumVerdict | null> {
   return fromRow(data as Record<string, unknown>);
 }
 
+function getTimeZoneOffsetMs(date: Date, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "00";
+  const asUtc = Date.UTC(
+    Number(get("year")),
+    Number(get("month")) - 1,
+    Number(get("day")),
+    Number(get("hour")),
+    Number(get("minute")),
+    Number(get("second")),
+  );
+  return asUtc - date.getTime();
+}
+
+function getNewYorkNoonIso(now = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "1";
+  const localNoonAsUtc = Date.UTC(
+    Number(get("year")),
+    Number(get("month")) - 1,
+    Number(get("day")),
+    12,
+    0,
+    0,
+  );
+  const offsetMs = getTimeZoneOffsetMs(
+    new Date(localNoonAsUtc),
+    "America/New_York",
+  );
+  return new Date(localNoonAsUtc - offsetMs).toISOString();
+}
+
 /**
  * Helper consumed by T11 (PMDB Chamber Read injection). Returns the
- * digest_text of the latest `session`-triggered verdict, or null if none
- * exist. Must stay a cheap read — brief-generator.ts calls it on every
- * PMDB run.
+ * digest_text of the latest `session`-triggered verdict from the current
+ * trading day (since 12:00 ET), or null if none exist. Must stay a cheap
+ * read — brief-generator.ts calls it on every PMDB run.
+ *
+ * [claude-code 2026-04-28] S47-T2: narrowed from "latest of all time" to
+ * "latest within the intended day/session window" so PMDB never injects
+ * a stale prior-day Chamber Read.
  */
 export async function getLatestChamberRead(): Promise<string | null> {
-  const v = await getLatestByTrigger("session");
-  return v?.digest_text ?? null;
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+  // Session window: today since 12:00 ET (covers the 17:00 ET session).
+  const sessionWindowStart = getNewYorkNoonIso();
+  const { data, error } = await sb
+    .from(TABLE)
+    .select("digest_text, created_at")
+    .eq("trigger_type", "session")
+    .gte("created_at", sessionWindowStart)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    log.error("getLatestChamberRead failed", { error: error.message });
+    return null;
+  }
+  return data?.digest_text ?? null;
+}
+
+/**
+ * Diagnostic helper comparing latest PMDB and latest Arbitrum session
+ * verdict timestamps. Returns nulls when either side is missing.
+ */
+export async function getChamberReadFreshness(): Promise<{
+  latest_pmdb_at: string | null;
+  latest_session_verdict_at: string | null;
+  gap_minutes: number | null;
+}> {
+  const sb = getSupabaseClient();
+  if (!sb) {
+    return { latest_pmdb_at: null, latest_session_verdict_at: null, gap_minutes: null };
+  }
+  const [{ data: pmdb }, { data: verdict }] = await Promise.all([
+    sb
+      .from("briefs")
+      .select("created_at")
+      .eq("brief_type", "PMDB")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    sb
+      .from(TABLE)
+      .select("created_at")
+      .eq("trigger_type", "session")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  const latest_pmdb_at = (pmdb?.created_at as string) ?? null;
+  const latest_session_verdict_at = (verdict?.created_at as string) ?? null;
+  let gap_minutes: number | null = null;
+  if (latest_pmdb_at && latest_session_verdict_at) {
+    gap_minutes = Math.round(
+      (new Date(latest_pmdb_at).getTime() - new Date(latest_session_verdict_at).getTime()) /
+        60_000,
+    );
+  }
+  return { latest_pmdb_at, latest_session_verdict_at, gap_minutes };
 }

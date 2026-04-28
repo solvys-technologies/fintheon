@@ -1,7 +1,8 @@
+// [claude-code 2026-04-28] S47-T1: Route quotes through 4-tier market-data router
 // [claude-code 2026-03-14] Market handlers — Yahoo Finance (FMP removed)
 import type { Context } from "hono";
 import { fetchVIX } from "../../services/vix-service.js";
-import * as yahooMarket from "../../services/market-data/yahoo-market.js";
+import { fetchQuote } from "../../services/market-data/router.js";
 import {
   calculateIVScoreV2,
   type IVScoringConfig,
@@ -69,8 +70,8 @@ export async function handleGetQuote(c: Context) {
   if (!symbol) return c.json({ error: "Symbol is required" }, 400);
 
   try {
-    const quote = await yahooMarket.getQuote(symbol.toUpperCase());
-    return c.json(quote);
+    const result = await fetchQuote(symbol.toUpperCase());
+    return c.json(result.quote);
   } catch (error) {
     console.error("[Market] Quote fetch error:", error);
     return c.json({ error: "Failed to fetch quote" }, 500);
