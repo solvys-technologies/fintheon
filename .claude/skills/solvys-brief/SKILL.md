@@ -17,6 +17,14 @@ Use `/solvys-orchestrate` when work is big enough to need 2+ agents running in p
 - Check `src/lib/changelog.ts` before finalizing scope -- recent entries are intentional
 - Obey the Solvys design system: no gradients, no emojis, no Kanban borders, no box-shadows, flat surfaces with thin accent borders. Accent = `#c79f4a`.
 
+## Architectural Reference Intake
+
+Approved external references are used as thinking tools, not implementation permission. A GitHub star, article, gallery, or skill can inform vocabulary, decomposition, diagnostics, UI detail checks, loading behavior, chart structure, voice feasibility, or tool-security posture. It does not authorize importing skills, adding dependencies, enabling services, copying code, or changing runtime architecture.
+
+When a brief uses an external reference, write the Solvys-native principle it contributes and the boundary it must not cross. Examples: "diagnose with reproduce/minimize/hypothesize/instrument/fix/regression-test" instead of installing a diagnosis skill; "apply Jakub-style tabular numbers and optical alignment" instead of copying a component; "evaluate VibeVoice as a server-side ASR shape" instead of embedding a CUDA Python runtime.
+
+Load `reference/engineering-guidelines.md` before writing any implementation flow. For UI work, also load `/solvys-feels` and `reference/design-guidelines.md` from that skill.
+
 ## Phase 1 -- Discovery (MANDATORY)
 
 Enter plan mode. Do NOT proceed until you have answers to ALL of the following:
@@ -61,7 +69,8 @@ Before implementation, think through the DESIGN. This is what separates `/solvys
 ### For UI work
 
 - Sketch the layout in plain language: what lives where, what is primary vs. secondary
-- Match the Solvys aesthetic (see `/solvys-feels`): flat surfaces, `#c79f4a` accent, thin borders, no glass blur, no gradients
+- Match the Solvys aesthetic (see `/solvys-feels`): warm near-black canvas, `#c79f4a` accent, thin borders, frosted-glass surfaces where useful, no gradients
+- For new UI, scan devl.dev for relevant layout/component patterns and run the Jakub detail checklist before finalizing the brief
 - State the interaction model: what happens on hover, click, load, error, empty?
 - Call out which existing components to reuse vs. which to build
 
@@ -71,6 +80,7 @@ Before implementation, think through the DESIGN. This is what separates `/solvys
 - Identify the service boundary: I/O module vs. prompting module vs. validation module
 - State the fallback behavior when env vars are missing (in-memory, bypass auth, degraded AI)
 - Note which route file the endpoint attaches to and why
+- Include the diagnosis/feedback loop for risky work: reproduce, minimize, hypothesize, instrument, fix, regression-test
 
 ### For data / agent work
 
@@ -140,8 +150,8 @@ Exit plan mode. Produce ONE standalone markdown briefing file.
 
 ### Aesthetic Rules
 
-- Flat surfaces, thin `#c79f4a` border where separation is needed
-- No gradients, no emojis, no glass blur, no Kanban borders, no box-shadows
+- Frosted-glass surfaces or flat rows where separation is needed, with thin low-opacity `#c79f4a` borders
+- No gradients, no emojis, no Kanban borders, no AI sparkles, no generic box-shadows
 - Typography and spacing per `/solvys-feels`
 
 ## Development Flow

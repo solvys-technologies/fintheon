@@ -30,6 +30,15 @@ The `fly.news-worker.toml` pins `dockerfile = "Dockerfile.news-worker"` and `app
 - `src/boot/services.ts` -- Service initialization
 - `src/services/harper-handler.ts` -- Harper chat handler
 
+## Backend Engineering Doctrine
+
+- Keep routes thin. Put business logic in services, validation at boundaries, and prompting in dedicated prompt/instruction modules.
+- Use Zod or equivalent runtime validation for external inputs and outputs.
+- Diagnose failures by reproducing, minimizing, hypothesizing, instrumenting, fixing, and regression-testing.
+- Every optional integration must degrade when its env var is missing. Required env vars must be documented.
+- Approved external references are architecture heuristics only. Do not import external skills, tool brokers, paid APIs, or runtime dependencies without TP approval.
+- TP-vetoed S47 references must not influence backend architecture or source ingestion: `Xquik-dev/x-twitter-scraper`, `EveryInc/compound-engineering-plugin`, `jamiepine/voicebox`, `elder-plinius/CL4R1T4S`, `Bitterbot-AI/bitterbot-desktop`.
+
 ## After Changes
 
 1. `bun run build`
