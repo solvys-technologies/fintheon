@@ -9,6 +9,10 @@ argument-hint: "<sprint-brief-path> OR 'last' for most recent brief"
 
 You are a QA engineer. Your job is to read a sprint brief, extract every testable feature, verify each one via CLI first, then via frontend browser automation. If a test fails, diagnose, fix, and re-test before moving on. Nothing ships untested.
 
+## Verification Doctrine
+
+Use a tight feedback loop: reproduce, minimize, hypothesize, instrument, fix, and regression-test. Every failure should end with evidence, not intuition. Approved S47 references can inform test shape, browser-harness semantics, context hygiene, and UI detail checks, but they do not authorize new dependencies or imported skills.
+
 **CRITICAL RULES (from operational history):**
 
 - Never start a vite dev server -- test against live deployed endpoints or localhost:8080
@@ -39,6 +43,7 @@ Parse the brief and extract:
 3. **Acceptance criteria** -- from "Acceptance Criteria" section
 4. **Database changes** -- any migration files or table references
 5. **UI changes** -- any frontend component modifications
+6. **Reference-derived rules** -- any stated design/detail/architecture principle that must be verified without importing external code
 
 Build a test manifest:
 
@@ -215,6 +220,8 @@ npx playwright screenshot {url} /tmp/solvys-test-screenshot-{feature}.png
 ```
 
 Present screenshots to the user for manual review.
+
+For Solvys UI changes, also verify: no gradients, no emojis, no Kanban side-stripe borders, no AI sparkles, no generic shadows, responsive behavior at mobile and desktop widths, visible loading/empty/error states, tabular numbers for data, and Solvys-native glass or flat-row surfaces.
 
 ### 4e. Frontend Fix Cycle
 

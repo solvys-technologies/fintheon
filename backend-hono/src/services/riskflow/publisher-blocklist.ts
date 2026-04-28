@@ -1,3 +1,6 @@
+// [claude-code 2026-04-27] Feed-quality fix: added plain "bloomberg", "reuters",
+// "cnbc" to BLOCKED_HANDLES so agent-reach:rss:<publisher> submitted_by tags
+// get caught. Previously only Twitter handles were listed, not RSS feed names.
 // [claude-code 2026-04-26] S46.1: Universal publisher block-list applied at the
 // raw-persist boundary (writeRawItems). Blocks mainstream-media noise
 // regardless of which poller submitted the item — Twitter, RSS, Exa, browser.
@@ -54,6 +57,7 @@ const BLOCKED_HANDLES = new Set(
     "Reuters",
     "ReutersBiz",
     "ReutersWorld",
+    "bloomberg", // RSS submitted_by tag: agent-reach:rss:bloomberg
     "business", // @business is Bloomberg
     "markets", // @markets is Bloomberg
     "BloombergTV",

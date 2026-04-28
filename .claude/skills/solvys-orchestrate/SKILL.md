@@ -15,6 +15,21 @@ You are a sprint architect. Your job is to decompose a large task into parallel 
 - Deploy track (if included) must hit all 3 targets: backend (Fly.io), desktop (Vercel), mobile (Vercel)
 - Check `src/lib/changelog.ts` before finalizing track ownership -- recent entries are intentional
 
+## Architectural Reference Intake
+
+When planning a sprint, use approved external references as architecture inputs only. Stars, articles, component galleries, and skills repos can inform how to think about decomposition, diagnostics, state boundaries, review gates, UI detail checks, chart composition, loading states, voice feasibility, and tool-broker security. They do not authorize importing external skills, adding dependencies, enabling paid services, copying runtime code, or changing product architecture without an explicit TP decision.
+
+For every track brief that cites an external reference, state the extracted principle in Solvys terms. Examples: "use Matt Pocock-style red-green feedback loops" not "install `/tdd`"; "use Executor-style typed tool catalogs and approval gates" not "add Executor"; "use dotmatrix-style compact loading cadence" not "install dotmatrix".
+
+Never use TP-vetoed references as planning inputs: `Xquik-dev/x-twitter-scraper`, `EveryInc/compound-engineering-plugin`, `jamiepine/voicebox`, `elder-plinius/CL4R1T4S`, or `Bitterbot-AI/bitterbot-desktop`.
+
+Track briefs should encode the relevant Solvys-native principle:
+
+- Engineering tracks: small vertical slices, diagnosis loop, service boundaries, Zod at edges, feedback gates.
+- UI tracks: devl.dev reference scan, Jakub detail checklist, `/solvys-feels` material rules, responsive and state coverage.
+- Agent/tooling tracks: typed catalogs, explicit scopes, approval gates, audit logs, context hygiene.
+- Voice tracks: server-side feasibility, privacy, fallback modes, and deployment constraints.
+
 ## Phase 1 -- Discovery (MANDATORY, AUTO-PILOT)
 
 **Auto-behavior on skill invocation:**
@@ -217,5 +232,5 @@ State which approach you chose and why.
 - Check `src/lib/changelog.ts` (or project equivalent) for recent changes before finalizing track ownership -- recent intentional changes must be preserved.
 - Every track's validation commands must include `rm -rf dist` before build.
 - Never include `npx vite` or dev server commands in track briefs.
-- **Design tracks obey `/solvys-feels`**: no gradients, no emojis, no Kanban borders, no AI sparkles. State this banned-ornaments list inside any brief that includes UI work.
+- **Design tracks obey `/solvys-feels`**: Solvys Gold, warm near-black, frosted-glass surfaces where appropriate, no gradients, no emojis, no Kanban borders, no AI sparkles, no generic shadows. State this inside any brief that includes UI work.
 - **No live coordination layer.** Tracks do not message each other during execution. File ownership + reuse inventory in each brief is how conflicts are prevented.

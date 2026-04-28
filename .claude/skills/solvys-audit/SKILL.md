@@ -1,19 +1,18 @@
 ---
 name: solvys-audit
 description: Single-agent audit, debug, and pre-flight checks. Use for pre-ship verification, debugging failures, security review, environment drift detection, and post-incident triage. Invoke with an error message to enter debug mode.
+version: 0.1.0
 ---
 
 # Solvys Audit -- Pre-flight, Debug, and Security Scan
 
 You are a systems auditor. Run every check methodically. Report findings as PASS / WARN / FAIL with evidence. Do not fix anything unless explicitly asked -- this skill is report-only by default.
 
-**CRITICAL RULES (from operational history):**
+## Audit Doctrine
 
-- Never start a vite dev server -- verify via `tsc --noEmit` + `vite build` only
-- Backend is launchd-managed (`io.solvys.fintheon-backend`) on port 8080
-- Backend deploys to Fly.io app `fintheon` -- never `pulse-api-*`
-- All 3 targets must be checked: backend (Fly.io), desktop (Vercel), mobile (Vercel)
-- `rm -rf dist` before any vite build to avoid stale bundle false positives
+Apply Solvys engineering guidance, not external skill behavior. Diagnose with reproduce, minimize, hypothesize, instrument, fix recommendation, and regression-test plan. Treat approved references as heuristics only. Do not recommend importing skills, packages, paid services, or runtime code unless TP explicitly approved that implementation.
+
+For UI audits, use `/solvys-feels` plus `reference/design-guidelines.md`: Solvys Gold, warm near-black, frosted-glass surfaces where appropriate, no gradients, no emojis, no Kanban borders, no AI sparkles, no generic shadows, and no copied upstream visual language.
 
 ## Mode Detection
 
@@ -28,7 +27,6 @@ You are a systems auditor. Run every check methodically. Report findings as PASS
 Verify the development/deployment environment is correctly configured.
 
 ### 1a. Runtime Versions
-
 ```bash
 node --version    # Expected: 20+
 bun --version     # Expected: 1.0+
@@ -42,7 +40,7 @@ Report version mismatches as WARN.
 
 ```bash
 # Find all env vars referenced in source
-grep -roh "process\.env\.[A-Z_]*" src/ backend-hono/src/ frontend/ --include="*.ts" 2>/dev/null | sed 's/process\.env\.//' | sort -u > /tmp/env-used.txt
+grep -roh "process\.env\.[A-Z_]*" src/ --include="*.ts" 2>/dev/null | sed 's/process\.env\.//' | sort -u > /tmp/env-used.txt
 
 # Find all documented in .env.example
 grep "^[A-Z_]" .env.example 2>/dev/null | cut -d= -f1 | sort -u > /tmp/env-documented.txt
@@ -57,40 +55,26 @@ comm -23 /tmp/env-used.txt /tmp/env-documented.txt
 
 ### 1c. Required CLI Tools
 
-Check for: `git`, `gh`, `bun`/`node`, `fly` (for backend deploy), `vercel` (for frontend deploy), `electron-builder` (if building DMG).
+Check for: `git`, `gh`, `bun`/`node`, `vercel` (if deploying), `electron-builder` (if building DMG).
 
 Report missing tools as FAIL with install instructions.
-
-### 1d. Deploy Infrastructure
-
-```bash
-# Verify Fly.io app exists and is correct
-fly status -a fintheon 2>/dev/null || echo "WARN: Cannot reach Fly.io app 'fintheon'"
-
-# Verify local backend is running
-curl -s http://localhost:8080/api/diagnostics || echo "WARN: Local backend not running"
-```
 
 ---
 
 ## Phase 2 -- Build Verification
 
 ```bash
-# TypeScript check (frontend)
-npx tsc --noEmit --project frontend/tsconfig.json
+# TypeScript check
+npx tsc --noEmit
 
-# Clean and build frontend
-rm -rf dist && npx vite build
-
-# Backend build
-cd backend-hono && bun run build && cd ..
+# Full build
+npx vite build
+# OR: bun run build (check package.json for the correct command)
 ```
 
 - PASS if build succeeds with no errors
 - WARN if build succeeds with warnings
 - FAIL if build fails -- include the first 20 lines of error output
-
-**Never start a dev server.** Build verification only.
 
 ---
 
@@ -98,14 +82,13 @@ cd backend-hono && bun run build && cd ..
 
 ### 3a. File Size Enforcement
 
-Scan all `.ts`, `.tsx`, `.css` files in `src/`, `frontend/`, and `backend-hono/src/`. Flag any file over 300 lines.
+Scan all `.ts`, `.tsx`, `.css` files in `src/` and `frontend/`. Flag any file over 300 lines.
 
 Format: `WARN: {path} -- {line_count} lines (limit: 300)`
 
 ### 3b. Dead Code Detection
 
 Look for:
-
 - Exported functions/components with zero imports elsewhere
 - Files not imported by any other file
 - Unused dependencies in `package.json`
@@ -115,13 +98,17 @@ Report as WARN (not FAIL -- dead code is a smell, not a blocker).
 ### 3c. Changelog Compliance
 
 If `src/lib/changelog.ts` exists, verify:
-
 - Most recent entry is within the last 24 hours (for active development)
 - Entry format matches expected schema
 
-### 3d. Install/Update Script Currency
+### 3d. Boundary And Feedback Scan
 
-If install/update scripts exist, verify they reference the current `package.json` version. WARN if outdated.
+For modified source files, verify:
+
+- I/O, validation, prompting, routing, and presentation are not collapsed into one growing file.
+- Zod or equivalent runtime validation exists at external boundaries.
+- Optional environment variables have degraded behavior; required variables are documented.
+- Risky changes include a direct validation path: typecheck, build, curl, test, or browser-harness.
 
 ---
 
@@ -168,19 +155,23 @@ WARN on moderate vulnerabilities, FAIL on high/critical.
 
 Search source files for:
 
-| Pattern                                  | Risk              | Severity                  |
-| ---------------------------------------- | ----------------- | ------------------------- |
-| `eval(`                                  | Code injection    | FAIL                      |
-| `dangerouslySetInnerHTML`                | XSS               | WARN (check if sanitized) |
-| `innerHTML =`                            | XSS               | WARN                      |
-| `new Function(`                          | Code injection    | FAIL                      |
-| `child_process.exec(` with string concat | Command injection | FAIL                      |
-| `fs.writeFileSync` with user input       | Path traversal    | WARN                      |
-| `fetch(` with variable URL not validated | SSRF              | WARN                      |
+| Pattern | Risk | Severity |
+|---------|------|----------|
+| `eval(` | Code injection | FAIL |
+| `dangerouslySetInnerHTML` | XSS | WARN (check if sanitized) |
+| `innerHTML =` | XSS | WARN |
+| `new Function(` | Code injection | FAIL |
+| `child_process.exec(` with string concat | Command injection | FAIL |
+| `fs.writeFileSync` with user input in path | Path traversal | WARN |
+| `fetch(` with variable URL not validated | SSRF | WARN |
 
 ### 5d. Auth Guard Verification
 
-Verify that protected routes in `backend-hono/src/routes/` have Supabase JWT auth middleware applied. Report unguarded routes as WARN.
+If the project has route definitions, verify that protected routes have auth middleware/guards applied. Report unguarded routes as WARN.
+
+### 5e. Reference Intake Guard
+
+Fail if code, prompts, docs, or comments newly cite TP-vetoed S47 sources as guidance: `Xquik-dev/x-twitter-scraper`, `EveryInc/compound-engineering-plugin`, `jamiepine/voicebox`, `elder-plinius/CL4R1T4S`, or `Bitterbot-AI/bitterbot-desktop`.
 
 ---
 
@@ -192,14 +183,13 @@ Activated when invoked with an error message.
 
 Determine the error category:
 
-| Category    | Indicators                                                     |
-| ----------- | -------------------------------------------------------------- |
-| Build       | `tsc`, `vite`, `esbuild`, `Module not found`, `Cannot find`    |
-| Runtime     | `TypeError`, `ReferenceError`, stack trace with line numbers   |
+| Category | Indicators |
+|----------|-----------|
+| Build | `tsc`, `vite`, `esbuild`, `Module not found`, `Cannot find` |
+| Runtime | `TypeError`, `ReferenceError`, stack trace with line numbers |
 | Environment | `ENOENT`, `ECONNREFUSED`, `env`, `undefined` for config values |
-| Dependency  | `Could not resolve`, version conflicts, peer dep warnings      |
-| State       | `null is not an object`, `Cannot read properties of undefined` |
-| Deploy      | `fly deploy`, `vercel`, HTTP errors from live endpoints        |
+| Dependency | `Could not resolve`, version conflicts, peer dep warnings |
+| State | `null is not an object`, `Cannot read properties of undefined` |
 
 ### Step 2: Isolate
 
@@ -210,7 +200,6 @@ Determine the error category:
 ### Step 3: Root Cause Analysis
 
 Apply the 5-whys method:
-
 1. What failed?
 2. Why did it fail?
 3. Why was that the case?
@@ -220,7 +209,6 @@ Apply the 5-whys method:
 ### Step 4: Propose Fix
 
 Present:
-
 - **Root cause**: one sentence
 - **Fix**: exact file path, line number, and code change
 - **Risk**: what else could this fix affect?

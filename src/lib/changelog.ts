@@ -9,6 +9,144 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-28T12:27:06",
+    agent: "claude-code",
+    summary:
+      "Added /solvys-ui-cleanup as a Solvys-native UI polish process for overlooked state-of-the-art design touches: state coverage, interaction detail, typography, alignment, responsive behavior, motion, charts, loaders, and Solvys material consistency.",
+    files: [
+      ".claude/skills/solvys-ui-cleanup/SKILL.md",
+      ".claude/takeover-import/fintheon-agent-takeover/skills/solvys-skills/.claude/skills/solvys-ui-cleanup/SKILL.md",
+      ".claude/takeover-import/fintheon-agent-takeover/skills/solvys-skills/README.md",
+      "sprint-md/S47-TOOLING-STARS-AUDIT.md",
+    ],
+  },
+  {
+    date: "2026-04-28T12:21:26",
+    agent: "claude-code",
+    summary:
+      "Created six Solvys-native single skills from essential non-vetoed starred skill sets: diagnose, backend-quality, tech-debt, context, browser-verify, and UI-detail, mirrored them into the imported Solvys suite source, and documented their influence mapping.",
+    files: [
+      ".claude/skills/solvys-diagnose/SKILL.md",
+      ".claude/skills/solvys-backend-quality/SKILL.md",
+      ".claude/skills/solvys-tech-debt/SKILL.md",
+      ".claude/skills/solvys-context/SKILL.md",
+      ".claude/skills/solvys-browser-verify/SKILL.md",
+      ".claude/skills/solvys-ui-detail/SKILL.md",
+      ".claude/takeover-import/fintheon-agent-takeover/skills/solvys-skills/README.md",
+      ".claude/takeover-import/fintheon-agent-takeover/skills/solvys-skills/.claude/skills/solvys-diagnose/SKILL.md",
+      ".claude/takeover-import/fintheon-agent-takeover/skills/solvys-skills/.claude/skills/solvys-backend-quality/SKILL.md",
+      ".claude/takeover-import/fintheon-agent-takeover/skills/solvys-skills/.claude/skills/solvys-tech-debt/SKILL.md",
+      ".claude/takeover-import/fintheon-agent-takeover/skills/solvys-skills/.claude/skills/solvys-context/SKILL.md",
+      ".claude/takeover-import/fintheon-agent-takeover/skills/solvys-skills/.claude/skills/solvys-browser-verify/SKILL.md",
+      ".claude/takeover-import/fintheon-agent-takeover/skills/solvys-skills/.claude/skills/solvys-ui-detail/SKILL.md",
+      "sprint-md/S47-TOOLING-STARS-AUDIT.md",
+    ],
+  },
+  {
+    date: "2026-04-28T12:15:24",
+    agent: "claude-code",
+    summary:
+      "Scrupulously updated Solvys skills and design guidance from the non-vetoed S47 reference set: added engineering/design doctrine references, reconciled frosted-glass surfaces with banned ornaments, and strengthened audit/test/brief/orchestration/inform rules around architectural influence rather than imports.",
+    files: [
+      ".claude/skills/solvys-feels/reference/design-guidelines.md",
+      ".claude/skills/solvys-brief/reference/engineering-guidelines.md",
+      ".claude/takeover-import/fintheon-agent-takeover/skills/solvys-skills/README.md",
+      ".claude/takeover-import/fintheon-agent-takeover/skills/solvys-skills/.claude/skills/solvys-feels/reference/design-guidelines.md",
+      ".claude/takeover-import/fintheon-agent-takeover/skills/solvys-skills/.claude/skills/solvys-feels/SKILL.md",
+      ".claude/takeover-import/fintheon-agent-takeover/skills/solvys-skills/.claude/skills/solvys-audit/SKILL.md",
+      ".claude/takeover-import/fintheon-agent-takeover/skills/solvys-skills/.claude/skills/solvys-test/SKILL.md",
+      ".claude/takeover-import/fintheon-agent-takeover/skills/solvys-skills/.claude/skills/solvys-inform/SKILL.md",
+      ".claude/takeover-import/fintheon-agent-takeover/skills/solvys-skills/.claude/skills/solvys-transitions/SKILL.md",
+      ".claude/skills/solvys-feels/SKILL.md",
+      ".claude/skills/solvys-brief/SKILL.md",
+      ".claude/skills/solvys-orchestrate/SKILL.md",
+      ".claude/skills/solvys-audit/SKILL.md",
+      ".claude/skills/solvys-test/SKILL.md",
+      ".claude/skills/solvys-inform/SKILL.md",
+      ".claude/skills/solvys-transitions/SKILL.md",
+      "CLAUDE.md",
+      "backend-hono/CLAUDE.md",
+      "sprint-md/S47-TOOLING-STARS-AUDIT.md",
+      "sprint-md/S47-T0-skills-stars-tooling.md",
+    ],
+  },
+  {
+    date: "2026-04-28T12:14:17",
+    agent: "claude-code",
+    summary:
+      "Marked TP's S47 Track 0 GitHub Stars vetoes so X Twitter Scraper, Compound Engineering Plugin, voicebox, CL4R1T4S, and Bitterbot Desktop are excluded from Solvys architectural synthesis.",
+    files: [
+      "sprint-md/S47-TOOLING-STARS-AUDIT.md",
+      "sprint-md/S47-ORCHESTRATION.md",
+      "sprint-md/S47-T0-skills-stars-tooling.md",
+    ],
+  },
+  {
+    date: "2026-04-28T12:08:37",
+    agent: "claude-code",
+    summary:
+      "Corrected S47 Wave 0 into a full solvys GitHub Stars veto sheet and reframed external references as architectural thinking sources only, not skills/dependencies/runtime imports.",
+    files: [
+      ".claude/takeover-import/fintheon-agent-takeover/skills/solvys-skills/README.md",
+      ".claude/takeover-import/fintheon-agent-takeover/skills/solvys-skills/.claude/skills/solvys-feels/SKILL.md",
+      ".claude/takeover-import/fintheon-agent-takeover/skills/solvys-skills/.claude/skills/solvys-orchestrate/SKILL.md",
+      ".claude/skills/solvys-feels/SKILL.md",
+      ".claude/skills/solvys-orchestrate/SKILL.md",
+      ".claude/skills/solvys-brief/SKILL.md",
+      "sprint-md/S47-TOOLING-STARS-AUDIT.md",
+      "sprint-md/S47-ORCHESTRATION.md",
+      "sprint-md/S47-T0-skills-stars-tooling.md",
+    ],
+  },
+  {
+    date: "2026-04-28T12:05:18",
+    agent: "claude-code",
+    summary:
+      "Recorded S47 Wave 0 tooling recommendations, installed the approved Impeccable v3 single-skill import for Claude Code, and marked devl.dev/Jakub detail checks as required UI references while leaving unapproved tooling as recommendation-only.",
+    files: [
+      ".claude/skills/impeccable/",
+      "skills-lock.json",
+      "sprint-md/S47-TOOLING-STARS-AUDIT.md",
+      "sprint-md/S47-ORCHESTRATION.md",
+      "sprint-md/S47-T0-skills-stars-tooling.md",
+    ],
+  },
+  {
+    date: "2026-04-28T11:38:00",
+    agent: "claude-code",
+    summary:
+      "Expanded S47 planning into turnkey multi-track briefs after orchestration discovery: tooling/GH Stars intake, RiskFlow data integrity, calendar/Arbitrum backend, Arbitrum UI, chat/Agentic Forum/mobile, VibeVoice transcripts, shared design primitives, and final unification.",
+    files: [
+      "sprint-md/S47-ORCHESTRATION.md",
+      "sprint-md/S47-T0-skills-stars-tooling.md",
+      "sprint-md/S47-T1-riskflow-refinement-data.md",
+      "sprint-md/S47-T2-calendar-econ-arbitrum-backend.md",
+      "sprint-md/S47-T3-arbitrum-sanctum-performance-ui.md",
+      "sprint-md/S47-T4-chat-agentic-forum-mobile.md",
+      "sprint-md/S47-T5-vibevoice-transcripts.md",
+      "sprint-md/S47-T6-design-icons-spinners-charts.md",
+      "sprint-md/S47-T7-unify-validate-release.md",
+    ],
+  },
+  {
+    date: "2026-04-28T11:26:02",
+    agent: "claude-code",
+    summary:
+      "Imported the Desktop takeover bundle into .claude/takeover-import, refreshed bundled Solvys/impeccable skills, verified SOUL persona files already match, and drafted S47's repo-issue bug repair plan covering open issues #231-#236.",
+    files: [
+      ".claude/takeover-import/fintheon-agent-takeover/",
+      ".claude/skills/",
+      "sprint-md/S47-BUG-REPAIR-PLAN.md",
+    ],
+  },
+  {
+    date: "2026-04-27T20:35:00",
+    agent: "claude-code",
+    summary:
+      "Feed quality fix: added plain 'bloomberg' to BLOCKED_HANDLES in publisher-blocklist.ts. Previously only Twitter handles (@business, @markets, @BloombergTV) were listed, so agent-reach:rss:bloomberg submitted_by tags bypassed the handle check. Agent-reach RSS is already a no-op shim, but this closes the defensive gap for any residual DB items.",
+    files: ["backend-hono/src/services/riskflow/publisher-blocklist.ts"],
+  },
+  {
     date: "2026-04-27T07:30:00",
     agent: "claude-code",
     summary:

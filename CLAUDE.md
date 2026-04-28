@@ -45,6 +45,22 @@ Protocol: "Harper orchestrates, Oracle analyzes, Feucht guards, Consul validates
 - Use Zod for runtime validation at system boundaries.
 - Every service must work when its env var is missing (in-memory fallback, bypass auth, degraded AI).
 
+## Development Doctrine
+
+- Work in small vertical slices with a direct validation path.
+- Diagnose bugs by reproducing, minimizing, hypothesizing, instrumenting, fixing, and regression-testing.
+- Separate I/O, validation, prompting, routing, and presentation. Do not collapse boundaries into one growing file.
+- Treat approved GitHub stars and external references as architectural thinking sources only: patterns, vocabulary, constraints, failure modes, and review heuristics. Do not import external skills, dependencies, services, prompt text, or runtime code without TP approval.
+- TP-vetoed S47 references must not influence architecture, prompts, code, or review language: `Xquik-dev/x-twitter-scraper`, `EveryInc/compound-engineering-plugin`, `jamiepine/voicebox`, `elder-plinius/CL4R1T4S`, `Bitterbot-AI/bitterbot-desktop`.
+
+## Design Doctrine
+
+- Solvys visual language is industrial-luxe: warm near-black canvas, Solvys Gold accent, warm off-white text, precise typography, and restrained motion.
+- Prefer frosted-glass surfaces over Kanban/card-grid layouts when separation is needed: translucent warm dark fill, subtle backdrop blur, and thin low-opacity gold border.
+- No gradients, emojis, AI sparkles, Kanban side-stripe borders, generic shadows, or copied upstream visual language.
+- New UI briefs must review devl.dev for layout/component references and apply Jakub detail checks: text wrapping, concentric radii, tabular numbers, optical alignment, antialiasing, interruptible transitions, and contextual icon motion.
+- Use charts, loaders, and motion only to clarify state or decision-making. Re-skin any inspiration to Solvys materials.
+
 ## Key Paths
 
 - `frontend/` — React 19 + Vite + Tailwind
