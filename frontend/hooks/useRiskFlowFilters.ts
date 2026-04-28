@@ -31,8 +31,9 @@ const VALID_SEVERITIES: ReadonlySet<AlertSeverity> = new Set([
   "low",
 ]);
 const VALID_BUCKETS: ReadonlySet<SourceBucket> = new Set([
+  "Wire",
+  "Macro",
   "OSINT",
-  "General",
   "Commentary",
   "Econ",
   "Geopolitical",
@@ -236,7 +237,7 @@ export function useRiskFlowFilters(): UseRiskFlowFiltersReturn {
 
   // Legacy source-filter shim. Maps the old single-value filter onto the new
   // bucket set so components that still call `setSourceFilter("twitter")`
-  // compile and produce roughly equivalent behavior (twitter → General).
+  // compile and produce roughly equivalent behavior (twitter → Wire).
   const setSourceFilter = useCallback((f: SourceFilter) => {
     if (f === "all") {
       setBucketSet(new Set());
@@ -250,7 +251,7 @@ export function useRiskFlowFilters(): UseRiskFlowFiltersReturn {
           : f === "econ-calendar" || f === "polymarket-kalshi"
             ? "Econ"
             : f === "twitter" || f === "financial-juice" || f === "deitaone"
-              ? "General"
+              ? "Wire"
               : null;
     setBucketSet(mapped ? new Set<SourceBucket>([mapped]) : new Set());
   }, []);

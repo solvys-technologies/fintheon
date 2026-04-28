@@ -88,8 +88,6 @@ interface TopHeaderProps {
   hideBranding?: boolean;
   psychAssistHeadingWidget?: React.ReactNode;
   voiceRoomWidget?: React.ReactNode;
-  // [S21] Performance-tab-scoped chat trigger for Omi voice coaching session.
-  // Rendered next to psychAssistHeadingWidget when activeTab === "performance".
   performanceChatWidget?: React.ReactNode;
   toolbarEditMode?: boolean;
 }

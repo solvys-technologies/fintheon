@@ -43,8 +43,9 @@ export interface NotificationPrefs {
 // [claude-code 2026-04-26] S46: per-user RiskFlow filter persistence — mobile mirror
 // of frontend/lib/user-preferences.ts. Empty arrays = "show all".
 export const RISKFLOW_BUCKET_VALUES = [
+  "Wire",
+  "Macro",
   "OSINT",
-  "General",
   "Commentary",
   "Econ",
   "Geopolitical",

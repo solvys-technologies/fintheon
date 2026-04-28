@@ -164,7 +164,7 @@ export function AlertCardBase({
         onClick={onToggle}
       >
         <span
-          className={`inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border`}
+          className={`inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider ${sev.bg} ${sev.text}`}
         >
           {sev.label}
         </span>

@@ -44,6 +44,8 @@ import {
   getAccountHandles,
 } from "../../services/source-accounts/source-accounts-service.js";
 import { getDeskCalendarDiagnostics } from "../desk-calendar/handlers.js";
+import { getSttProviderDiagnostics } from "../../services/voice-stt-provider.js";
+import { getTranscriptStats24h } from "../../services/commentary-transcript.js";
 
 const log = createLogger("Diagnostics");
 
@@ -120,6 +122,21 @@ interface DiagnosticsResponse {
       drop_rate: number;
       avg_score: number;
     }>;
+  };
+  voice_stt?: {
+    provider: string;
+    model: string;
+    available: boolean;
+    reason?: string;
+    sidecar_enabled: boolean;
+    voice_sidecar_disabled: boolean;
+    vibevoice_configured: boolean;
+    openai_configured: boolean;
+  };
+  commentary_transcripts?: {
+    count_24h: number;
+    last_capture_at: string | null;
+    last_failure: string | null;
   };
 }
 
@@ -497,20 +514,28 @@ export function createDiagnosticsRoutes(): Hono {
   router.get("/", async (c) => {
     const start = Date.now();
 
-    const [services, browserStats, newsWorker, econBackfill, sourceAccounts, riskflowSources] =
-      await Promise.all([
-        Promise.all([
-          checkHermesAI(),
-          checkDatabase(),
-          Promise.resolve(checkRettiwt()),
-          Promise.resolve(checkSupabaseAuth()),
-        ]),
-        getBrowseTaskStats24h(),
-        getNewsWorkerSnapshot(),
-        getEconBackfillDiagnostics().catch(() => null),
-        loadSourceAccountDiagnostics(),
-        loadRiskFlowSourceStats(),
-      ]);
+    const [
+      services,
+      browserStats,
+      newsWorker,
+      econBackfill,
+      sourceAccounts,
+      riskflowSources,
+      transcriptStats,
+    ] = await Promise.all([
+      Promise.all([
+        checkHermesAI(),
+        checkDatabase(),
+        Promise.resolve(checkRettiwt()),
+        Promise.resolve(checkSupabaseAuth()),
+      ]),
+      getBrowseTaskStats24h(),
+      getNewsWorkerSnapshot(),
+      getEconBackfillDiagnostics().catch(() => null),
+      loadSourceAccountDiagnostics(),
+      loadRiskFlowSourceStats(),
+      getTranscriptStats24h().catch(() => ({ count: 0, lastCaptureAt: null, lastFailure: null })),
+    ]);
 
     const missingEnvVars = auditEnvVars();
 
@@ -586,6 +611,24 @@ export function createDiagnosticsRoutes(): Hono {
         recent_symbols: routerHealth.recent_symbols,
       },
       riskflow_sources: riskflowSources,
+      voice_stt: (() => {
+        const d = getSttProviderDiagnostics();
+        return {
+          provider: d.provider,
+          model: d.model,
+          available: d.available,
+          reason: d.reason,
+          sidecar_enabled: process.env.HERMES_SIDECAR_ENABLED === "true",
+          voice_sidecar_disabled: process.env.VOICE_SIDECAR_DISABLED === "true",
+          vibevoice_configured: Boolean(process.env.VIBEVOICE_ASR_URL),
+          openai_configured: Boolean(process.env.OPENAI_API_KEY),
+        };
+      })(),
+      commentary_transcripts: {
+        count_24h: transcriptStats.count,
+        last_capture_at: transcriptStats.lastCaptureAt,
+        last_failure: transcriptStats.lastFailure,
+      },
       routing,
       gepa,
       fiscal_speakers: getFiscalSpeakerStats(),

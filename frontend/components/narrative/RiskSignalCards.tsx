@@ -209,8 +209,18 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
 
                 {signal.relatedHeadlines.length > 0 && (
                   <div>
-                    <div className="text-[7px] text-[var(--fintheon-muted)]/30 uppercase tracking-wider mb-1">
-                      Related Headlines
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[7px] text-[var(--fintheon-muted)]/30 uppercase tracking-wider">
+                        Related Headlines
+                      </span>
+                      <span className="text-[7px] text-[var(--fintheon-muted)]/30">
+                        {(() => {
+                          const h = Math.max(0, (Date.now() - new Date(signal.generatedAt).getTime()) / 3_600_000);
+                          if (h < 1) return "just now";
+                          if (h < 24) return `${Math.round(h)}h ago`;
+                          return `${Math.floor(h / 24)}d ago`;
+                        })()}
+                      </span>
                     </div>
                     {signal.relatedHeadlines.map((h, i) => (
                       <div

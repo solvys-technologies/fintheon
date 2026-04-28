@@ -9,6 +9,103 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-28T22:00:00",
+    agent: "claude-code",
+    summary:
+      "S47-T7: Unify, validate, and release-prep. Fixed NarrativePreviewSlot.tsx implicit-any parameter. Verified SanctumHeader.tsx has no dangling Upload reference. Validated backend build (pass) and frontend typecheck (pass). Confirmed MainLayout.tsx onChatAlert contract is compatible with RiskFlowAlert. Committed Wave 2 (T3-T5) and Wave 3 (T6) changes. Residual risks: commentary_transcripts migration pending supabase db push; T4 pre-run plan modal and T3 proposal pane migration deferred to follow-up.",
+    files: [
+      "frontend/components/chat/slots/NarrativePreviewSlot.tsx",
+      "frontend/components/narrative/SanctumHeader.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-28T20:00:00",
+    agent: "claude-code",
+    summary:
+      "S47-T6: Design system, icons, spinners, fuses, and charts. Standardized EconKpiFuses to use shared NothingFuse with segments=10. Added GlobeIcon, OfficialIcon, NetworkIcon, ChartSourceIcon, and TradeIdeaIcon under frontend/components/icons/; removed banned emoji glyph from SourceIcon. Created SolvysLoader and SolvysLoaderCentered with Braille-beat dotmatrix animation, Solvys Gold palette, and prefers-reduced-motion support. Replaced ad hoc Loader2 spinners in Chat (FintheonThread, chatgpt-prompt-input), Sanctum IV loading, EconEventCard synthesizing state, and ArbitrumChamber loading state. Redesigned RiskFlowDetailCard expanded area: transparent bg matching parent, clean header row with source icon/headline/time/IV, removed bordered severity tags (AlertCardBase), rounded-[2px] concentric radii on tags, text-wrap pretty on headlines. Skipped Evil Charts install since Recharts is not present and brief says avoid until necessary.",
+    files: [
+      "frontend/components/icons/GlobeIcon.tsx",
+      "frontend/components/icons/OfficialIcon.tsx",
+      "frontend/components/icons/NetworkIcon.tsx",
+      "frontend/components/icons/ChartSourceIcon.tsx",
+      "frontend/components/icons/TradeIdeaIcon.tsx",
+      "frontend/components/icons/index.ts",
+      "frontend/components/shared/SolvysLoader.tsx",
+      "frontend/lib/shared-icons.tsx",
+      "frontend/components/narrative/econ/EconKpiFuses.tsx",
+      "frontend/components/feed/AlertCardBase.tsx",
+      "frontend/components/feed/RiskFlowDetailCard.tsx",
+      "frontend/components/chat/FintheonThread.tsx",
+      "frontend/components/ui/chatgpt-prompt-input.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+      "frontend/components/narrative/econ/EconEventCard.tsx",
+      "frontend/components/arbitrum/ArbitrumChamber.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-28T18:30:00",
+    agent: "claude-code",
+    summary:
+      "S47-T4: Chat, Agentic Forum, Mobile response, Attachments, and Approvals. Fixed chat greeting reappearing after send by adding !isLoading guard in FintheonThread. Fixed mobile chat final response not rendering by adding missing {message.content} inside Markdown component in ChatMessage. Purged visible Omi connector references from frontend comments (TopHeader, PsychAssistDockable, MainLayout). Added PDF and .md document attachment support with client-side toast rejection for unsupported types. Fixed attach modal/jump-to-bottom false positive by adding 80px rootMargin to IntersectionObserver. Replaced RiskFlow Chat CTA raw JSON injection with structured preview card context via buildRiskFlowPreview helper; wired onChatAlert through MainLayout to dispatch fintheon:send-chat-text events. Added shared ApprovalModal component for tools/Narratives/Catalyst Watch/Refinement edits with optional admin password gate via dev-settings-auth. Reworked Agentic Forum UX: removed search, refresh, activity, and thinking buttons; replaced online/offline status with elapsed thought-time timer; removed auto-collapse of analyst panels; added run history button with BoardroomThread list; passed hideThinkHarder to PromptBox. Cleaned backend boardroom-spawner.ts emoji strings from agent messages and opening message.",
+    files: [
+      "frontend/components/chat/FintheonThread.tsx",
+      "frontend/components/chat/FintheonAttachPopup.tsx",
+      "frontend/components/ui/chatgpt-prompt-input.tsx",
+      "frontend/components/ChatInterface.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/layout/PsychAssistDockable.tsx",
+      "frontend/components/consilium/AgentChattr.tsx",
+      "frontend/components/shared/ApprovalModal.tsx",
+      "mobile/components/chat/ChatMessage.tsx",
+      "backend-hono/src/services/boardroom-spawner.ts",
+    ],
+  },
+  {
+    date: "2026-04-28T17:00:00",
+    agent: "claude-code",
+    summary:
+      "S47-T3: Arbitrum, Sanctum, Performance, and Proposal UI repairs. Arbitrum chamber seat labels mapped to Harper/Oracle/Feucht/Consul/Herald while preserving backend contract roles. Desk Theme renamed to Desk Plan in visible UI (DayCard + MainLayout widget label). Volatility Read and Arbitrum Chamber hero split changed from 55/45 to 50/50. Upload button removed from SanctumHeader; Update lightning icon replaced with RefreshCw. Arbitrum confidence displays converted from percent to 0.0-10.0 scale (VerdictCard + ArbitrumPeek). Crowd fuse removed from Active Narratives; Health fuse renamed to Confidence Rating. Agent Performance section removed from Sanctum Page 2. Trade Ledger gained Resolve countdown column using closeTime. Risk Signal related headlines section gained time-ago stamp. ProposalWidget hardcoded colors normalized to CSS custom properties where semantically appropriate.",
+    files: [
+      "frontend/components/arbitrum/ArbitrumChamber.tsx",
+      "frontend/components/arbitrum/VerdictCard.tsx",
+      "frontend/components/arbitrum/ArbitrumPeek.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+      "frontend/components/narrative/SanctumHeader.tsx",
+      "frontend/components/narrative/DayCard.tsx",
+      "frontend/components/narrative/SanctumNarratives.tsx",
+      "frontend/components/narrative/RiskSignalCards.tsx",
+      "frontend/components/narrative/ConsolidatedTradeLedger.tsx",
+      "frontend/components/proposals/ProposalWidget.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-28T16:00:00",
+    agent: "claude-code",
+    summary:
+      "S47-T5: VibeVoice STT provider abstraction + commentary transcript context + Arbitrum integration. Evaluated VibeVoice-ASR (7B GPU model — not suitable for backend without GPU sidecar) and mpaepper/vibevoice (desktop dictation — not suitable). Added VOICE_STT_PROVIDER env abstraction with vibevoice|sidecar|whisper|fallback chain. Sidecar remains primary; OpenAI Whisper added as second option; fallback degrades gracefully. Created commentary_transcripts table with RLS. Added recordWatchEvent/getRecentTranscripts service with naive summarization. Wired YouTubeMiniplayer to report commentary watch events to POST /api/voice/commentary. Added GET /api/voice/transcripts for recent transcripts. Arbitrum engine loads commentary_context via loadArbitrumCommentaryContext and feeds formatted summaries into seat prompts (buildUserPrompt + buildDistillPrompt). Diagnostics extended with voice_stt (provider, availability, config flags) and commentary_transcripts (count_24h, last_capture_at).",
+    files: [
+      "backend-hono/src/services/voice-stt-provider.ts",
+      "backend-hono/src/services/commentary-transcript.ts",
+      "backend-hono/src/services/arbitrum/commentary-context.ts",
+      "backend-hono/src/services/arbitrum/types.ts",
+      "backend-hono/src/services/arbitrum/seats.ts",
+      "backend-hono/src/services/arbitrum/engine.ts",
+      "backend-hono/src/services/voice-service.ts",
+      "backend-hono/src/routes/voice/index.ts",
+      "backend-hono/src/routes/voice/handlers.ts",
+      "backend-hono/src/routes/diagnostics/index.ts",
+      "frontend/components/layout/YouTubeMiniplayer.tsx",
+      "supabase/migrations/20260428000000_commentary_transcripts.sql",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-28T15:30:00",
     agent: "claude-code",
     summary:

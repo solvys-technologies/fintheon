@@ -14,7 +14,7 @@ import {
   useLayoutEffect,
   useEffect,
 } from "react";
-import { Loader2 } from "lucide-react";
+import { SolvysLoader } from "../shared/SolvysLoader";
 import type {
   SanctumData,
   SanctumPreset,
@@ -28,11 +28,8 @@ import { SanctumEconIntel } from "./SanctumEconIntel";
 import { SanctumHeader } from "./SanctumHeader";
 import { SanctumBriefing } from "./SanctumBriefing";
 import { SanctumNarratives } from "./SanctumNarratives";
-import { AgentScorecard } from "../consilium/AgentScorecard";
 import { AquariumPredictionCards } from "./AquariumPredictionCards";
 import { ConsolidatedTradeLedger } from "./ConsolidatedTradeLedger";
-import { BlendedVIXCard } from "./BlendedVIXCard";
-import { NextSessionForecastCard } from "./NextSessionForecastCard";
 import { BlendedIVForecastCard } from "./BlendedIVForecastCard";
 import { DayCard } from "./DayCard";
 import { RiskSignalCards } from "./RiskSignalCards";
@@ -235,8 +232,8 @@ export function Sanctum({
                   {/* Brief-pattern top container — Volatility Read left (55%), Deliberation right (45%) — no outer border, fading ruler divides */}
                   <div className="min-h-[520px] flex">
                     <div className="flex-1 flex overflow-hidden mx-1 my-1">
-                      {/* Left: Volatility Read — Blended IV + Next Session Forecast (55%) */}
-                      <div className="flex-[55] min-w-0 overflow-y-auto p-4 flex flex-col gap-3">
+                      {/* Left: Volatility Read — Blended IV + Next Session Forecast (50%) */}
+                      <div className="flex-1 min-w-0 overflow-y-auto p-4 flex flex-col gap-3">
                         <div className="flex items-center gap-2">
                           <span
                             className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
@@ -245,7 +242,7 @@ export function Sanctum({
                             Volatility Read
                           </span>
                           {isLoading && (
-                            <Loader2 className="w-3 h-3 text-[var(--fintheon-accent)] animate-spin" />
+                            <SolvysLoader size={12} />
                           )}
                         </div>
                         {/* [claude-code 2026-04-27] S46.4/K: combined IV+forecast card */}
@@ -268,8 +265,8 @@ export function Sanctum({
                         />
                       </div>
 
-                      {/* Right: AgentDesk Deliberation with SIGNAL/REGIME/HEAT fuses at bottom (45%) */}
-                      <div className="flex-[45] min-w-0 min-h-0 flex flex-col">
+                      {/* Right: AgentDesk Deliberation with SIGNAL/REGIME/HEAT fuses at bottom (50%) */}
+                      <div className="flex-1 min-w-0 min-h-0 flex flex-col">
                         <ArbitrumChamber
                           simulationId={data?.simulationId ?? null}
                           onSynthesisComplete={onSynthesisComplete}
@@ -410,32 +407,6 @@ export function Sanctum({
                     <ConsolidatedTradeLedger />
                   </div>
 
-                  {/* Fading horizontal ruler */}
-                  <div className="h-px relative">
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        background:
-                          "linear-gradient(to right, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
-                        opacity: 0.18,
-                      }}
-                    />
-                  </div>
-
-                  {/* Agent Performance — scorecards only (risk signals moved up; no bordered container) */}
-                  <div>
-                    <div className="px-1 pb-2">
-                      <span
-                        className="text-[10px] tracking-[0.22em] uppercase text-[var(--fintheon-accent)]/85"
-                        style={{ fontFamily: "var(--font-heading)" }}
-                      >
-                        Agent Performance
-                      </span>
-                    </div>
-                    <div className="max-h-[350px] overflow-y-auto">
-                      <AgentScorecard />
-                    </div>
-                  </div>
                 </div>
               ) : (
                 <div className="flex-1 flex items-center justify-center">

@@ -31,8 +31,9 @@ const VALID_SEVERITIES: ReadonlySet<AlertSeverity> = new Set([
   "low",
 ]);
 const VALID_BUCKETS: ReadonlySet<SourceBucket> = new Set([
+  "Wire",
+  "Macro",
   "OSINT",
-  "General",
   "Commentary",
   "Econ",
   "Geopolitical",

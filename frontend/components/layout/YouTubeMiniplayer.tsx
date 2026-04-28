@@ -13,6 +13,7 @@ import {
   bloombergOriginalsHomepage,
   buildYouTubeEmbed,
 } from "../../lib/youtube";
+import { getAccessToken } from "../../lib/supabase";
 
 interface YouTubeMiniplayerProps {
   onClose: () => void;
@@ -25,6 +26,31 @@ const DEFAULT_HEIGHT = 400;
 
 const POS_KEY = "fintheon:yt-miniplayer-pos";
 const SIZE_KEY = "fintheon:yt-miniplayer-size";
+
+async function reportCommentaryWatch(videoId: string, title?: string) {
+  try {
+    const token = await getAccessToken().catch(() => null);
+    const base =
+      import.meta.env.VITE_API_URL !== undefined &&
+      import.meta.env.VITE_API_URL !== null
+        ? (import.meta.env.VITE_API_URL as string)
+        : "http://localhost:8080";
+    await fetch(`${base}/api/voice/commentary`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
+        sourceUrl: `https://www.youtube.com/watch?v=${videoId}`,
+        title: title || undefined,
+      }),
+    });
+  } catch {
+    // Non-fatal: backend may be unreachable during local dev
+  }
+}
 
 function extractVideoId(input: string): string | null {
   const trimmed = input.trim();
@@ -88,7 +114,7 @@ export function YouTubeMiniplayer({ onClose }: YouTubeMiniplayerProps) {
     bounds: "viewport",
   });
 
-  // Persist video ID
+  // Persist video ID + report commentary watch
   useEffect(() => {
     try {
       if (videoId)
@@ -96,6 +122,9 @@ export function YouTubeMiniplayer({ onClose }: YouTubeMiniplayerProps) {
       else localStorage.removeItem("fintheon:yt-miniplayer-video");
     } catch {
       /* ignore */
+    }
+    if (videoId) {
+      void reportCommentaryWatch(videoId);
     }
   }, [videoId]);
 

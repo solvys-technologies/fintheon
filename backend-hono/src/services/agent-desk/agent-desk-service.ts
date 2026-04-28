@@ -136,7 +136,7 @@ export async function startPrediction(
         const key =
           threads.length > 0
             ? threads[0]
-            : (h.category ?? h.risk_type ?? "general");
+            : (h.category ?? h.risk_type ?? "Custom");
         if (!threadGroups.has(key)) threadGroups.set(key, []);
         threadGroups.get(key)!.push(h);
       }
@@ -733,7 +733,7 @@ async function generateHarperAnalysis(
   const topHeadlines = context.riskflowHeadlines
     .slice(0, 10)
     .map(
-      (h) => `[${h.risk_type ?? "General"}] ${h.headline} (IV: ${h.iv_score})`,
+      (h) => `[${h.risk_type ?? "Custom"}] ${h.headline} (IV: ${h.iv_score})`,
     )
     .join("\n");
 

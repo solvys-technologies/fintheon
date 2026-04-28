@@ -33,7 +33,7 @@ import {
   PsychAssistDockable,
   type PsychAssistDockTarget,
 } from "./PsychAssistDockable";
-// [claude-code 2026-04-20] S21: Omi voice layer — Performance chat button + app-wide agent popup
+// [claude-code 2026-04-20] S21: Voice layer — Performance chat button + app-wide agent popup
 // [claude-code 2026-04-24] PerformanceChatButton retired — heading-toolbar chat
 // button had no clear purpose; the orb is the single voice trigger now.
 // import { PerformanceChatButton } from "../performance/PerformanceChatButton";
@@ -219,6 +219,38 @@ function MainLayoutInner() {
   const [combinedPanelAlgoEnabled, setCombinedPanelAlgoEnabled] =
     useState(false);
   const [showChat, setShowChat] = useState(false);
+  const handleChatAlert = useCallback(
+    (alert: {
+      headline: string;
+      summary?: string | null;
+      source?: string;
+      ivScore?: number | null;
+      publishedAt?: string;
+    }) => {
+      setShowChat(true);
+      const parts: string[] = [];
+      parts.push(`[RiskFlow Context]`);
+      parts.push(`Headline: ${alert.headline}`);
+      if (alert.source) parts.push(`Source: ${alert.source}`);
+      if (alert.ivScore != null)
+        parts.push(`IV Score: ${alert.ivScore.toFixed(1)}`);
+      if (alert.publishedAt) {
+        const ago = Math.round(
+          (Date.now() - new Date(alert.publishedAt).getTime()) / 60000,
+        );
+        parts.push(`Time: ${ago}m ago`);
+      }
+      if (alert.summary && alert.summary !== alert.headline) {
+        parts.push(`Summary: ${alert.summary}`);
+      }
+      window.dispatchEvent(
+        new CustomEvent("fintheon:send-chat-text", {
+          detail: { text: parts.join("\n") },
+        }),
+      );
+    },
+    [],
+  );
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showYouTubeMiniplayer, setShowYouTubeMiniplayer] = useState(() => {
     try {
@@ -510,11 +542,12 @@ function MainLayoutInner() {
         label: "Session Calendar",
         node: <SessionCalendarMini />,
       },
-      // [claude-code 2026-04-27] S46.4/G: Desk Theme widget — pulls deskTheme
+      // [claude-code 2026-04-28] T3: Renamed Desk Theme -> Desk Plan in visible UI.
+      // [claude-code 2026-04-27] S46.4/G: Desk Plan widget — pulls deskTheme
       // from /api/day-plan/today + tap-to-expand into the matching brief.
       deskTheme: {
         id: "deskTheme" as const,
-        label: "Desk Theme",
+        label: "Desk Plan",
         node: <DeskThemeWidget />,
       },
     }),
@@ -611,6 +644,7 @@ function MainLayoutInner() {
                       setCombinedTapeCollapsed(!combinedTapeCollapsed)
                     }
                     onNavigateToFeed={() => navigateTab("riskflow")}
+                    onChatAlert={handleChatAlert}
                   />
                 </section>
               </div>
@@ -710,6 +744,7 @@ function MainLayoutInner() {
                         }
                       }}
                       onNavigateToFeed={() => navigateTab("riskflow")}
+                      onChatAlert={handleChatAlert}
                     />
                   </div>
                 </div>

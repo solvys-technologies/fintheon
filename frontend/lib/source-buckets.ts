@@ -1,20 +1,21 @@
-// [claude-code 2026-04-19] Source bucket taxonomy — collapses the 11 raw source
-// values into 5 user-facing buckets. Used by the desktop filter dropdown,
-// mobile filter sheet, and every card surface that prints a source chip.
-// Geopolitical is a cross-cut classification that layers on top of the bucket;
-// see `isGeopolitical()` for the additive rule.
+// [claude-code 2026-04-28] S47-T1: General bucket stripped; Wire added as the
+// primary catch-all for wire/rapid-news sources. Source bucket taxonomy
+// collapses raw source values into user-facing buckets.
+// Geopolitical is a cross-cut classification that layers on top of the bucket.
 
 import type { RiskFlowAlert } from "./riskflow-feed";
 
 export type SourceBucket =
+  | "Wire"
   | "OSINT"
-  | "General"
+  | "Macro"
   | "Commentary"
   | "Econ"
   | "Geopolitical";
 
 export const SOURCE_BUCKETS: SourceBucket[] = [
-  "General",
+  "Wire",
+  "Macro",
   "OSINT",
   "Commentary",
   "Econ",
@@ -31,9 +32,7 @@ export function bucketOf(alert: {
   const submittedBy = (alert.submittedBy ?? "").toString();
   const riskType = alert.riskType ?? null;
 
-  // Geopolitical is additive but wins when present — a card authored by a
-  // geopolitical source (e.g. OSINT) reads more naturally under the
-  // Geopolitical bucket than its raw source bucket.
+  // Geopolitical is additive but wins when present
   if (riskType === "Geopolitical") return "Geopolitical";
 
   // OSINT
@@ -55,10 +54,14 @@ export function bucketOf(alert: {
     return "Econ";
   }
 
-  return "General";
+  // Macro — explicit macro risk type or macro-labelled sources
+  if (riskType === "Macro") return "Macro";
+
+  // Wire — everything else (FinancialJuice, DeItaOne, TwitterCli, etc.)
+  return "Wire";
 }
 
-/** Additive membership — a General/OSINT item can ALSO be geopolitical. */
+/** Additive membership — a Wire/OSINT item can ALSO be geopolitical. */
 export function isGeopolitical(riskType?: string | null): boolean {
   return riskType === "Geopolitical";
 }
@@ -75,10 +78,6 @@ export function matchesBuckets(
   if (selected.size === 0) return true;
   const primary = bucketOf(alert);
   if (selected.has(primary)) return true;
-  // Additive: selecting Geopolitical should also surface non-Geopol primary
-  // cards whose riskType is Geopolitical (handled by bucketOf above), but we
-  // also want selecting "General" to still surface a Geopol-primary item whose
-  // raw source is General. Guard with riskType check.
   if (selected.has("Geopolitical") && isGeopolitical(alert.riskType))
     return true;
   return false;

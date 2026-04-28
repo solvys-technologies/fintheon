@@ -48,11 +48,21 @@ function ageHours(row: PolymarketOutlook): number {
   return Math.max(0, ms / 3_600_000);
 }
 
-function ageLabel(hours: number): string {
+  function ageLabel(hours: number): string {
   if (hours < 1) return "just now";
   if (hours < 24) return `${Math.round(hours)}h`;
   const days = Math.floor(hours / 24);
   return `${days}d`;
+}
+
+function resolveCountdown(closeTime?: string): string {
+  if (!closeTime) return "";
+  const ms = new Date(closeTime).getTime() - Date.now();
+  if (ms <= 0) return "closed";
+  const h = Math.ceil(ms / 3_600_000);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  return `${d}d`;
 }
 
 function tractionScore(row: PolymarketOutlook): number {
@@ -136,12 +146,13 @@ export function ConsolidatedTradeLedger() {
       </div>
 
       {/* Column headers */}
-      <div className="grid grid-cols-[1fr_44px_60px_78px_60px_48px] gap-2 px-2 py-1.5 text-[8px] tracking-[0.18em] uppercase text-[var(--fintheon-muted)]/40 border-b border-[var(--fintheon-border)]/8">
+      <div className="grid grid-cols-[1fr_44px_60px_78px_60px_52px_48px] gap-2 px-2 py-1.5 text-[8px] tracking-[0.18em] uppercase text-[var(--fintheon-muted)]/40 border-b border-[var(--fintheon-border)]/8">
         <span>Question</span>
         <span className="text-right">Side</span>
         <span className="text-right">Entry</span>
         <span className="text-right">Traction</span>
         <span className="text-right">Origin</span>
+        <span className="text-right">Resolve</span>
         <span className="text-right">Age</span>
       </div>
 
@@ -215,7 +226,7 @@ function LedgerRow({
       href={`https://polymarket.com/market/${row.slug}`}
       target="_blank"
       rel="noreferrer"
-      className={`grid grid-cols-[1fr_44px_60px_78px_60px_48px] gap-2 px-2 py-1.5 items-center text-[10px] border-b border-[var(--fintheon-border)]/6 hover:bg-[var(--fintheon-accent)]/4 transition-colors group ${
+      className={`grid grid-cols-[1fr_44px_60px_78px_60px_52px_48px] gap-2 px-2 py-1.5 items-center text-[10px] border-b border-[var(--fintheon-border)]/6 hover:bg-[var(--fintheon-accent)]/4 transition-colors group ${
         dimmed ? "opacity-55 hover:opacity-90" : ""
       }`}
     >
@@ -265,6 +276,9 @@ function LedgerRow({
         title={`Volume ${formatVolume(row.volume)}`}
       >
         {originLabel(row.origin)}
+      </span>
+      <span className="text-right text-[9px] text-[var(--fintheon-muted)]/50 font-mono">
+        {resolveCountdown(row.closeTime) || "—"}
       </span>
       <span className="text-right text-[9px] text-[var(--fintheon-muted)]/50 font-mono">
         {ageLabel(age)}

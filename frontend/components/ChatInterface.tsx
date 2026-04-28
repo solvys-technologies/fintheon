@@ -82,6 +82,19 @@ function ChatInterfaceInner({
       window.removeEventListener("fintheon:open-chat-skill", handler);
   }, [handleSkillSend]);
 
+  // Listen for direct chat text injection (e.g. RiskFlow preview card)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.text) {
+        handleSend(detail.text);
+      }
+    };
+    window.addEventListener("fintheon:send-chat-text", handler);
+    return () =>
+      window.removeEventListener("fintheon:send-chat-text", handler);
+  }, [handleSend]);
+
   const handleNewChat = useCallback(() => {
     clearConversationId();
   }, [clearConversationId]);

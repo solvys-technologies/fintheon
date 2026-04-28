@@ -1,4 +1,12 @@
-// [claude-code 2026-04-10] S9-T1: Shared SVG source logos — extracted from RiskFlowDetailCard, RiskFlowMini, ExpandableTapeItem, FloatingWidget
+// [claude-code 2026-04-28] T6: Shared SVG source logos — added Globe, Official, Network,
+//   ChartSource, and TradeIdea icons. Removed banned emoji glyph.
+import {
+  GlobeIcon,
+  OfficialIcon,
+  NetworkIcon,
+  ChartSourceIcon,
+  TradeIdeaIcon,
+} from "../components/icons";
 
 export function XLogo({ className }: { className?: string }) {
   return (
@@ -55,22 +63,35 @@ export function SourceIcon({
   className?: string;
 }) {
   const s = source.toLowerCase();
+
+  // X / Twitter / Wire handles
   if (
     s === "rettiwt" ||
     s === "twitter-cli" ||
     s === "twittercli" ||
     s.includes("twitter") ||
     s === "financialjuice" ||
-    s === "financial-juice"
+    s === "financial-juice" ||
+    s === "osintsources" ||
+    s === "osint" ||
+    s.includes("osint") ||
+    s === "curatedtimeline" ||
+    s === "curated"
   ) {
     return <XLogo className={className} />;
   }
+
+  // Trade idea
   if (s === "trade-idea") {
-    return <span className={className}>💡</span>;
+    return <TradeIdeaIcon className={className} />;
   }
+
+  // MarketWatch
   if (s === "marketwatch" || s.includes("marketwatch")) {
     return <MarketWatchLogo className={className} />;
   }
+
+  // Kalshi
   if (s === "kalshi-whale" || s === "kalshi") {
     return (
       <span
@@ -80,32 +101,53 @@ export function SourceIcon({
       </span>
     );
   }
-  if (
-    s === "osintsources" ||
-    s === "osint" ||
-    s.includes("osint") ||
-    s === "curatedtimeline" ||
-    s === "curated"
-  ) {
-    return <XLogo className={className} />;
-  }
+
+  // Econ / Calendar
   if (
     s === "econcalendar" ||
     s === "econ" ||
     s.includes("economic") ||
     s.includes("calendar")
   ) {
-    return (
-      <span
-        className={`font-bold text-[8px] uppercase leading-none text-emerald-400 ${className}`}
-      >
-        EC
-      </span>
-    );
+    return <ChartSourceIcon className={className} />;
   }
+
+  // Official / Government (BLS, Fed, etc.)
+  if (
+    s.includes("bls") ||
+    s.includes("fed") ||
+    s.includes("federal") ||
+    s.includes("reserve") ||
+    s.includes("government") ||
+    s.includes("official") ||
+    s.includes("treasury") ||
+    s.includes("sec") ||
+    s.includes("cftc")
+  ) {
+    return <OfficialIcon className={className} />;
+  }
+
+  // Custom / Agent-reach / Generic agent
   if (s === "custom" || s === "agentreach" || s.includes("agent")) {
-    return <XLogo className={className} />;
+    return <NetworkIcon className={className} />;
   }
+
+  // RSS / Generic web
+  if (s === "rss" || s.includes("rss") || s.includes("feed")) {
+    return <GlobeIcon className={className} />;
+  }
+
+  // Chart / data providers
+  if (
+    s.includes("tradingview") ||
+    s.includes("chart") ||
+    s.includes("data") ||
+    s.includes("quote")
+  ) {
+    return <ChartSourceIcon className={className} />;
+  }
+
+  // Fallback: first initial
   return (
     <span
       className={`font-bold text-[8px] uppercase leading-none ${className}`}

@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
 import { NothingFuse } from "../shared/NothingFuse";
 import { DigitGroup } from "../shared/DigitGroup";
+import { SolvysLoader } from "../shared/SolvysLoader";
 import { VerdictCard } from "./VerdictCard";
 import type { ArbitrumSeat, ArbitrumVerdict } from "./types";
 
@@ -28,11 +29,20 @@ const DEFAULT_ROLES: ReadonlyArray<ArbitrumSeat["role"]> = [
   "Skeptic",
 ];
 
+const ROLE_DISPLAY_NAMES: Record<ArbitrumSeat["role"], string> = {
+  Lead: "Harper",
+  Forecaster: "Oracle",
+  "Future PM": "Feucht",
+  Quant: "Consul",
+  Skeptic: "Herald",
+};
+
 const EMPTY_COPY =
   "No fresh read — chamber convenes at 17:00 ET or on IV ≥ 8.5.";
 
 function seatLetter(role: string): string {
-  return role.charAt(0).toUpperCase();
+  const display = ROLE_DISPLAY_NAMES[role as ArbitrumSeat["role"]] ?? role;
+  return display.charAt(0).toUpperCase();
 }
 
 function SeatCard({
@@ -69,7 +79,7 @@ function SeatCard({
             {seatLetter(seat.role)}
           </span>
           <span className="text-[11px] uppercase tracking-wider text-[var(--fintheon-text)]/80">
-            {seat.role}
+            {ROLE_DISPLAY_NAMES[seat.role] ?? seat.role}
           </span>
         </div>
         <span className="text-[9px] uppercase tracking-wider text-[var(--fintheon-text)]/40">
@@ -135,7 +145,7 @@ function EmptySeat({
           {seatLetter(role)}
         </span>
         <span className="text-[11px] uppercase tracking-wider text-[var(--fintheon-text)]/45">
-          {role}
+          {ROLE_DISPLAY_NAMES[role] ?? role}
         </span>
       </div>
       <p className="mt-3 text-[11px] text-[var(--fintheon-text)]/30">
@@ -267,11 +277,13 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
         <VerdictCard verdict={verdict as ArbitrumVerdict} compact />
       ) : (
         <div className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 p-3 text-xs text-[var(--fintheon-text)]/55">
-          {isLoading
-            ? "Loading chamber read…"
-            : error
-              ? `Chamber unreachable (${error})`
-              : EMPTY_COPY}
+          {isLoading ? (
+            <SolvysLoader text="Loading chamber read" size={12} />
+          ) : error ? (
+            `Chamber unreachable (${error})`
+          ) : (
+            EMPTY_COPY
+          )}
         </div>
       )}
     </div>

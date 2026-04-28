@@ -8,6 +8,8 @@
 import { sidecarClient, isSidecarEnabled } from "./ai/sidecar-client.js";
 import { selectModel } from "./ai/routing.js";
 import { createLogger } from "../lib/logger.js";
+import { getActiveSttProvider, getSttProviderDiagnostics } from "./voice-stt-provider.js";
+import { transcribeWithOpenAI } from "./voice-whisper-client.js";
 
 const log = createLogger("VoiceService");
 
@@ -28,9 +30,10 @@ export interface VoiceTranscribeInput {
 export interface VoiceTranscribeResult {
   text: string;
   model: string;
-  provider: "hermes-sidecar" | "fallback";
+  provider: "vibevoice" | "hermes-sidecar" | "openai-whisper" | "fallback";
   words?: { word: string; start: number; end: number }[];
   confidence?: number;
+  fallbackReason?: string;
 }
 
 export interface VoiceSynthesisResult {
@@ -73,22 +76,53 @@ export async function transcribeVoice(
     return { text: "", model: "none", provider: "fallback" };
   }
 
-  if (!isVoiceEnabled()) {
-    log.warn("transcribeVoice called with sidecar disabled");
-    return { text: "", model: "sidecar-disabled", provider: "fallback" };
+  const provider = getActiveSttProvider();
+  const normalized = normalizeBase64Audio(input.audioBase64);
+
+  if (provider === "vibevoice") {
+    log.info("VibeVoice STT not yet wired — requires GPU sidecar");
+    return {
+      text: "",
+      model: "vibevoice-asr-7b",
+      provider: "vibevoice",
+      fallbackReason: "VibeVoice requires GPU sidecar (not deployed)",
+    };
   }
 
-  const normalized = normalizeBase64Audio(input.audioBase64);
-  const result = await sidecarClient.voice.stt({
-    audio_bytes: normalized,
-    lang: input.language,
-  });
+  if (provider === "whisper") {
+    return transcribeWithOpenAI(normalized, input.language);
+  }
 
+  if (provider === "sidecar") {
+    const result = await sidecarClient.voice.stt({
+      audio_bytes: normalized,
+      lang: input.language,
+    });
+    return {
+      text: result.transcript.trim(),
+      model: "whisper-turbo",
+      provider: "hermes-sidecar",
+      words: result.words,
+    };
+  }
+
+  // fallback
+  log.warn("transcribeVoice: no STT provider available", { provider });
   return {
-    text: result.transcript.trim(),
-    model: "whisper-turbo",
-    provider: "hermes-sidecar",
-    words: result.words,
+    text: "",
+    model: "none",
+    provider: "fallback",
+    fallbackReason: "no STT provider configured",
+  };
+}
+
+export function getVoiceDiagnostics() {
+  return {
+    stt: getSttProviderDiagnostics(),
+    sidecarEnabled: isSidecarEnabled(),
+    voiceSidecarDisabled: process.env.VOICE_SIDECAR_DISABLED === "true",
+    vibevoiceConfigured: Boolean(process.env.VIBEVOICE_ASR_URL),
+    openaiConfigured: Boolean(process.env.OPENAI_API_KEY),
   };
 }
 

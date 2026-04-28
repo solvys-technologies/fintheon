@@ -128,6 +128,24 @@ function formatEconContext(
   return lines.length > 0 ? lines.join("\n") : null;
 }
 
+function formatCommentaryContext(
+  commentary: ArbitrumCommentaryContext | null | undefined,
+): string | null {
+  if (!commentary || commentary.entries.length === 0) return null;
+  const lines: string[] = [];
+  lines.push(`Recent commentary watched (last ${commentary.windowHours}h):`);
+  for (const e of commentary.entries.slice(0, 5)) {
+    const date = e.watchedAt ? new Date(e.watchedAt).toISOString().slice(0, 10) : "—";
+    lines.push(`  ${date} | ${e.title}`);
+    if (e.summary) {
+      const summary = e.summary.replace(/\n/g, " ");
+      lines.push(`    Summary: ${summary.slice(0, 240)}${summary.length > 240 ? "…" : ""}`);
+    }
+    lines.push(`    Source: ${e.sourceUrl}`);
+  }
+  return lines.join("\n");
+}
+
 function buildUserPrompt(
   input: ArbitrumDeliberateInput,
   ctx: MoAInvocationContext,
@@ -138,6 +156,8 @@ function buildUserPrompt(
   if (input.context) parts.push(`Context:\n${input.context}`);
   const econLines = formatEconContext(input.econ_context);
   if (econLines) parts.push(`Econ data:\n${econLines}`);
+  const commentaryLines = formatCommentaryContext(input.commentary_context);
+  if (commentaryLines) parts.push(`Commentary context:\n${commentaryLines}`);
   if (input.iv_simulation) {
     parts.push(`IV simulation: ${JSON.stringify(input.iv_simulation)}`);
   }
@@ -154,11 +174,13 @@ function buildDistillPrompt(
   ctx: MoAInvocationContext,
 ): string {
   const econLines = formatEconContext(input.econ_context);
+  const commentaryLines = formatCommentaryContext(input.commentary_context);
   return [
     `Task:\n${input.question}`,
     `Category: ${input.category}`,
     input.context ? `Context:\n${input.context}` : "",
     econLines ? `Econ data:\n${econLines}` : "",
+    commentaryLines ? `Commentary context:\n${commentaryLines}` : "",
     `Round: ${ctx.round}`,
     ctx.peerDraftsSummary
       ? `Peer drafts (for revision):\n${ctx.peerDraftsSummary}`

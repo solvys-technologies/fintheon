@@ -13,9 +13,10 @@ import { useToast } from "../../contexts/ToastContext";
 import { BeatMissBadge } from "./BeatMissBadge";
 import { DetailFooter } from "./DetailFooter";
 import { AlertCardBase } from "./AlertCardBase";
-import { YouTubeLogo } from "../../lib/shared-icons";
+import { SourceIcon, YouTubeLogo } from "../../lib/shared-icons";
 import { timeAgo } from "../../lib/time-utils";
 import { linkifyText } from "../../lib/linkify";
+import { bucketOfAlert } from "../../lib/source-buckets";
 import { SourcePreview } from "./SourcePreview";
 import { useYouTubeMiniplayer } from "../../contexts/YouTubeMiniplayerContext";
 
@@ -138,24 +139,42 @@ export function RiskFlowDetailCard({
       }
       expandedContent={
         <>
-          <div className="px-4 py-3 border-t border-zinc-800/40 bg-[#000]/90">
-            {/* [claude-code 2026-04-25] S35: Hero image + source-link rail. Image is
-                best-effort (RSS enclosure / og:image) — hides on load failure so a
-                broken image never wedges the card. Source link below opens in a new
-                tab and is the primary handoff to the original article. */}
-            {/* [claude-code 2026-04-27] S46.4/I: when alert.videoUrl is set
-                (worker-extracted .mp4 from a tweet attachment), render
-                <video controls> with the photo as poster. OSINT-source items
-                carry a data-osint-video attribute so future styling can
-                highlight them. Falls back to <img> when only imageUrl is
-                available. */}
+          <div className="px-4 py-3 border-t border-zinc-800/40 bg-transparent">
+            {/* ── Expanded header: source / headline / time / IV fuse ── */}
+            <div className="flex items-center gap-2 mb-2.5">
+              <SourceIcon
+                source={alert.source}
+                className="w-3 h-3 text-[var(--fintheon-muted)] flex-shrink-0"
+              />
+              <span className="text-[9px] tracking-[0.08em] uppercase text-[var(--fintheon-muted)]/60">
+                {bucketOfAlert(alert)}
+              </span>
+              <span className="text-zinc-700">&middot;</span>
+              <span className="text-[9px] text-[var(--fintheon-muted)]/40 tabular-nums">
+                {timeAgo(alert.publishedAt)}
+              </span>
+              {alert.ivScore != null && (
+                <span className="ml-auto text-[9px] font-mono text-[var(--fintheon-muted)]/50 tabular-nums">
+                  IV {Number(alert.ivScore).toFixed(1)}
+                </span>
+              )}
+            </div>
+
+            <p
+              className="text-xs font-medium leading-snug mb-2.5"
+              style={{ color: "var(--fintheon-text)", textWrap: "pretty" }}
+            >
+              {linkifyText(alert.headline)}
+            </p>
+
+            {/* [claude-code 2026-04-25] S35: Hero image + source-link rail. */}
             {alert.videoUrl ? (
               <a
                 href={alert.url ?? alert.videoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="block mb-3 overflow-hidden bg-[var(--fintheon-bg)]"
+                className="block mb-3 overflow-hidden"
               >
                 <video
                   src={alert.videoUrl}
@@ -175,7 +194,7 @@ export function RiskFlowDetailCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="block mb-3 border border-zinc-800/60 overflow-hidden bg-[var(--fintheon-bg)]"
+                className="block mb-3 overflow-hidden"
               >
                 <img
                   src={alert.imageUrl}
@@ -187,13 +206,14 @@ export function RiskFlowDetailCard({
                       e.currentTarget.parentElement as HTMLElement
                     ).style.display = "none";
                   }}
-                  className="w-full max-h-48 object-cover"
+                  className="w-full max-h-48 object-cover rounded-lg"
                 />
               </a>
             ) : null}
-            {/* 1. Agent Note (or Generate CTA) */}
+
+            {/* Agent Note */}
             {detailedNote ? (
-              <div className="border border-zinc-800/60 px-3 py-2.5 mb-3 bg-[var(--fintheon-bg)]">
+              <div className="border border-zinc-800/40 px-3 py-2.5 mb-3 bg-[var(--fintheon-surface)]/30 rounded-[2px]">
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--fintheon-accent)]">
                     Oracle
@@ -229,7 +249,7 @@ export function RiskFlowDetailCard({
                 </span>
               </div>
             ) : alert.agentNote ? (
-              <div className="border border-zinc-800/60 px-3 py-2.5 mb-3 bg-[var(--fintheon-bg)]">
+              <div className="border border-zinc-800/40 px-3 py-2.5 mb-3 bg-[var(--fintheon-surface)]/30 rounded-[2px]">
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--fintheon-accent)]">
                     Oracle
@@ -246,7 +266,7 @@ export function RiskFlowDetailCard({
               </div>
             ) : null}
 
-            {/* 2. Econ Data — beat/miss + A/F/P (econ items only) */}
+            {/* Econ Data */}
             {hasEconData && alert.econData && (
               <div className="flex items-start gap-4 mb-3">
                 <BeatMissBadge
@@ -288,11 +308,11 @@ export function RiskFlowDetailCard({
               </div>
             )}
 
-            {/* S9-T2: Deviation indicators — IV score + implied points */}
-            <div className="flex items-center gap-2 mb-3 flex-wrap">
-              {alert.econData?.beatMiss && !hasEconData && (
+            {/* Deviation / beat-miss badge */}
+            {alert.econData?.beatMiss && !hasEconData && (
+              <div className="flex items-center gap-2 mb-3">
                 <span
-                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded-[2px] ${
                     alert.econData.beatMiss === "beat"
                       ? "bg-emerald-500/15 text-emerald-400"
                       : alert.econData.beatMiss === "miss"
@@ -302,15 +322,10 @@ export function RiskFlowDetailCard({
                 >
                   {alert.econData.beatMiss.toUpperCase()}
                 </span>
-              )}
-              {alert.ivScore != null && (
-                <span className="text-[9px] font-mono text-[var(--fintheon-muted)]/60">
-                  IV {Number(alert.ivScore).toFixed(1)}
-                </span>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* 3. Summary (if exists and differs from headline) */}
+            {/* Summary */}
             {!showSourcePreview &&
               alert.summary &&
               alert.summary !== alert.headline && (
@@ -319,14 +334,14 @@ export function RiskFlowDetailCard({
                 </p>
               )}
 
-            {/* Source preview — scraped body + YouTube + open-original CTAs */}
+            {/* Source preview */}
             {showSourcePreview && (
               <div className="mb-3">
                 <SourcePreview alert={alert} />
               </div>
             )}
 
-            {/* 5. Tags + Author + Source link */}
+            {/* Tags + Author + Source link */}
             <div className="flex items-center gap-2 flex-wrap">
               {alert.tags.filter((t) => !t.startsWith("url:")).length > 0 && (
                 <div className="flex gap-1">
@@ -336,7 +351,7 @@ export function RiskFlowDetailCard({
                     .map((tag) => (
                       <span
                         key={tag}
-                        className="text-[9px] px-1.5 py-0.5 bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/20"
+                        className="text-[9px] px-1.5 py-0.5 bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/20 rounded-[2px]"
                       >
                         {tag}
                       </span>
@@ -348,8 +363,6 @@ export function RiskFlowDetailCard({
                   @{alert.authorHandle}
                 </span>
               )}
-              {/* Footer CTAs only shown on mini surfaces — SourcePreview owns
-                  these links when surface is full/timeline. */}
               {!showSourcePreview && (
                 <div className="ml-auto flex items-center gap-3">
                   {alert.videoUrl && (
@@ -372,12 +385,6 @@ export function RiskFlowDetailCard({
                       className="text-[10px] text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors flex items-center gap-1"
                       onClick={(e) => {
                         e.stopPropagation();
-                        // [claude-code 2026-04-27] S46.4/H: commentary-category
-                        // YouTube URLs open in the floating miniplayer instead
-                        // of leaving the app. Non-YouTube URLs fall through to
-                        // the default new-tab behaviour. Publisher-blocklist is
-                        // unchanged — banned-publisher YouTube channels are
-                        // already dropped at the persist boundary.
                         if (
                           alert.category === "commentary" &&
                           alert.url &&
@@ -396,7 +403,6 @@ export function RiskFlowDetailCard({
             </div>
           </div>
 
-          {/* S3: Plain text detail footer — IV, deviation, beat/miss, sub-scores, speaker, regime */}
           <DetailFooter alert={alert} />
         </>
       }

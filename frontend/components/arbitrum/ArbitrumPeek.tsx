@@ -46,7 +46,7 @@ export function ArbitrumPeek() {
         />
         <span className="text-[var(--fintheon-text)]/70 inline-flex items-baseline gap-1">
           conf
-          <DigitGroup value={`${Math.round(confidence * 100)}`} suffix="%" />
+          <DigitGroup value={(Math.max(0, Math.min(10, confidence * 10))).toFixed(1)} suffix="/10" />
         </span>
         {dissent && <DissentBadge dissent={dissent} />}
       </div>

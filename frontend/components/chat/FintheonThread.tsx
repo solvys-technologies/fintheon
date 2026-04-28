@@ -18,7 +18,7 @@ import remarkGfm from "remark-gfm";
 import { AlertCircle, ArrowDown } from "lucide-react";
 import { ChatGreeting } from "./ChatGreeting";
 import { FintheonThinkingIndicator } from "./FintheonThinkingIndicator";
-import { HelixVertical } from "../icon-bank/UnicodeSpinners";
+import { SolvysLoaderCentered } from "../shared/SolvysLoader";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 import { CognitionPanel } from "./CognitionPanel";
 import { ToolApprovalCard } from "./ToolApprovalCard";
@@ -384,7 +384,7 @@ const ScrollToBottomButton: FC<{
       ([entry]) => {
         setShowButton(!entry.isIntersecting);
       },
-      { root: containerRef.current, threshold: 0.1 },
+      { root: containerRef.current, threshold: 0.1, rootMargin: "80px 0px 0px 0px" },
     );
 
     observer.observe(sentinel);
@@ -428,12 +428,7 @@ const ScrollToBottomButton: FC<{
 /* ------------------------------------------------------------------ */
 
 export const AiLoader: FC = () => (
-  <div className="flex flex-col items-center justify-center py-16 gap-3">
-    <HelixVertical size={14} rows={5} />
-    <span className="text-[11px] text-zinc-500 tracking-[0.18em] uppercase">
-      Loading conversation
-    </span>
-  </div>
+  <SolvysLoaderCentered text="Loading conversation" size={16} />
 );
 
 /* ------------------------------------------------------------------ */
@@ -573,8 +568,8 @@ export function FintheonThread({
           className="flex-1 overflow-y-auto p-6 pb-8"
         >
           <div className="max-w-full mx-auto space-y-4 mb-8">
-            {/* Greeting screen — shown when thread is empty */}
-            {!compact && messages.length === 0 && (
+            {/* Greeting screen — shown when thread is empty and not streaming */}
+            {!compact && messages.length === 0 && !isLoading && (
               <ChatGreeting onSend={onSend} isLoading={isLoading} />
             )}
             {/* Sidebar compact greeting */}

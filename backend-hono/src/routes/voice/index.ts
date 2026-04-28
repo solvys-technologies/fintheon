@@ -7,6 +7,8 @@ import {
   handleSpeak,
   handleTranscribe,
   handleAnalyzeSentiment,
+  handleRecordCommentary,
+  handleGetTranscripts,
 } from "./handlers.js";
 
 export function createVoiceRoutes(): Hono {
@@ -15,6 +17,8 @@ export function createVoiceRoutes(): Hono {
   router.post("/transcribe", handleTranscribe);
   router.post("/speak", handleSpeak);
   router.post("/analyze-sentiment", handleAnalyzeSentiment);
+  router.post("/commentary", handleRecordCommentary);
+  router.get("/transcripts", handleGetTranscripts);
 
   return router;
 }

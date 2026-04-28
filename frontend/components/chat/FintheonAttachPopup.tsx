@@ -8,6 +8,7 @@ import {
 } from "react";
 import { X, FileText, Image, Activity, Check, Search } from "lucide-react";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
+import { useToast } from "../../contexts/ToastContext";
 
 type AttachTab = "docs" | "media" | "riskflow";
 
@@ -72,6 +73,7 @@ export function FintheonAttachPopup({
   riskflowAlerts = [],
   onAttachHeadlines,
 }: FintheonAttachPopupProps) {
+  const { addToast } = useToast();
   const [tab, setTab] = useState<AttachTab>("media");
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -120,10 +122,12 @@ export function FintheonAttachPopup({
   const handleFile = useCallback(
     async (file: File) => {
       if (!file.type.startsWith("image/")) {
+        addToast("Only image files are supported in Media tab.", "error");
         setError("Only image files are supported.");
         return;
       }
       if (file.size > 10 * 1024 * 1024) {
+        addToast("Image must be under 10 MB.", "error");
         setError("Image must be under 10 MB.");
         return;
       }
@@ -133,10 +137,11 @@ export function FintheonAttachPopup({
         onAttachImage?.(dataUrl);
         onClose();
       } catch {
+        addToast("Failed to process image.", "error");
         setError("Failed to process image.");
       }
     },
-    [onAttachImage, onClose],
+    [onAttachImage, onClose, addToast],
   );
 
   const handleDocumentFile = useCallback(
@@ -145,6 +150,7 @@ export function FintheonAttachPopup({
       const isMarkdown = lower.endsWith(".md") || file.type === "text/markdown";
       const isPdf = lower.endsWith(".pdf") || file.type === "application/pdf";
       if (!isMarkdown && !isPdf) {
+        addToast("Only .pdf and .md files are supported.", "error");
         setError("Only .pdf and .md files are supported.");
         return;
       }
@@ -157,8 +163,10 @@ export function FintheonAttachPopup({
             filename: file.name,
             text: text.slice(0, 20_000),
           });
+          addToast(`Markdown file "${file.name}" attached.`, "success");
           onClose();
         } catch {
+          addToast("Failed to read markdown file.", "error");
           setError("Failed to read markdown file.");
         }
         return;
@@ -168,9 +176,10 @@ export function FintheonAttachPopup({
         filename: file.name,
         text: `[PDF Attachment: ${file.name}]`,
       });
+      addToast(`PDF "${file.name}" attached (content preview only).`, "info");
       onClose();
     },
-    [onAttachDocument, onClose],
+    [onAttachDocument, onClose, addToast],
   );
 
   const handleDrop = useCallback(

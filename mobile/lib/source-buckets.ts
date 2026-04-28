@@ -1,16 +1,18 @@
-// [claude-code 2026-04-19] Mirror of frontend/lib/source-buckets.ts — kept as
-// a sibling copy instead of a cross-import so the mobile bundle stays
-// independent of frontend's build graph.
+// [claude-code 2026-04-28] S47-T1: General stripped; Wire/Macro added.
+// Mirror of frontend/lib/source-buckets.ts — kept as a sibling copy so the
+// mobile bundle stays independent of frontend's build graph.
 
 export type SourceBucket =
+  | "Wire"
   | "OSINT"
-  | "General"
+  | "Macro"
   | "Commentary"
   | "Econ"
   | "Geopolitical";
 
 export const SOURCE_BUCKETS: SourceBucket[] = [
-  "General",
+  "Wire",
+  "Macro",
   "OSINT",
   "Commentary",
   "Econ",
@@ -40,7 +42,8 @@ export function bucketOf(alert: {
   ) {
     return "Econ";
   }
-  return "General";
+  if (riskType === "Macro") return "Macro";
+  return "Wire";
 }
 
 export function isGeopolitical(riskType?: string | null): boolean {

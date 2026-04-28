@@ -5,6 +5,10 @@ import { transcribeVoice } from "../../services/voice-service.js";
 import { analyzeSentiment } from "../../services/voice-sentiment.js";
 import { speakToUser } from "../../services/harper-voice/speak.js";
 import { synthesizeWithElevenLabs } from "../../services/voice-tts.js";
+import {
+  recordWatchEvent,
+  getRecentTranscripts,
+} from "../../services/commentary-transcript.js";
 
 function getUserId(c: Context): string | null {
   const userId = c.get("userId") as string | undefined;
@@ -232,6 +236,75 @@ export async function handleAnalyzeSentiment(c: Context) {
     console.error("[Voice] Sentiment analysis failed:", error);
     const message =
       error instanceof Error ? error.message : "Sentiment analysis failed";
+    return c.json({ error: message }, 500);
+  }
+}
+
+// [claude-code 2026-04-28] S47-T5: Record a commentary watch event.
+export async function handleRecordCommentary(c: Context) {
+  const userId = getUserId(c);
+  if (!userId) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const body = await c.req
+    .json<{
+      videoUrl?: string;
+      sourceUrl?: string;
+      title?: string;
+      transcriptText?: string;
+    }>()
+    .catch(() => null);
+
+  if (!body?.videoUrl) {
+    return c.json({ error: "videoUrl is required" }, 400);
+  }
+
+  try {
+    const record = await recordWatchEvent({
+      videoUrl: body.videoUrl,
+      sourceUrl: body.sourceUrl,
+      title: body.title,
+      transcriptText: body.transcriptText,
+      userId,
+    });
+
+    if (!record) {
+      return c.json({ error: "Failed to record commentary" }, 503);
+    }
+
+    return c.json({ ok: true, record });
+  } catch (error) {
+    console.error("[Voice] Record commentary failed:", error);
+    const message =
+      error instanceof Error ? error.message : "Failed to record commentary";
+    return c.json({ error: message }, 500);
+  }
+}
+
+// [claude-code 2026-04-28] S47-T5: Get recent commentary transcripts.
+export async function handleGetTranscripts(c: Context) {
+  const userId = getUserId(c);
+  if (!userId) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const hours = Math.min(
+    168,
+    Math.max(1, Number(c.req.query("hours") ?? "24")),
+  );
+  const limit = Math.min(
+    50,
+    Math.max(1, Number(c.req.query("limit") ?? "20")),
+  );
+
+  try {
+    const transcripts = await getRecentTranscripts({ userId, hours, limit });
+    return c.json({ transcripts });
+  } catch (error) {
+    console.error("[Voice] Get transcripts failed:", error);
+    const message =
+      error instanceof Error ? error.message : "Failed to get transcripts";
     return c.json({ error: message }, 500);
   }
 }
