@@ -256,6 +256,7 @@ fi
 LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
 mkdir -p "$LAUNCH_AGENTS_DIR" 2>/dev/null || true
 
+UNLOADED_LABELS=()
 for PLIST_PAIR in \
   "$FINTHEON_ROOT/hermes-sidecar/launchd/io.solvys.fintheon-hermes.plist:io.solvys.fintheon-hermes.plist" \
   "$FINTHEON_ROOT/launchd/io.solvys.fintheon-news-worker.plist:io.solvys.fintheon-news-worker.plist" \
@@ -267,9 +268,17 @@ for PLIST_PAIR in \
     if [[ ! -L "$DEST" && ! -f "$DEST" ]]; then
       ln -s "$SRC" "$DEST" 2>/dev/null && ok "Linked launchd plist: $NAME"
     fi
+    LABEL="${NAME%.plist}"
+    if ! launchctl list 2>/dev/null | awk '{print $3}' | grep -qx "$LABEL"; then
+      UNLOADED_LABELS+=("$LABEL")
+    fi
   fi
 done
-info "S27 launchd plists linked but NOT loaded — run 'launchctl load -w ~/Library/LaunchAgents/io.solvys.fintheon-{hermes,news-worker,gepa}.plist' when ready"
+if (( ${#UNLOADED_LABELS[@]} > 0 )); then
+  info "S27 launchd plists linked but NOT loaded: ${UNLOADED_LABELS[*]} — run 'launchctl load -w ~/Library/LaunchAgents/<label>.plist' when ready"
+else
+  ok "S27 launchd plists loaded (hermes, news-worker, gepa)"
+fi
 
 # ── Step 6: Verify VProxy Anthropic OAuth ──────────────────────────────────
 
