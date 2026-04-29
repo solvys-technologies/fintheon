@@ -9,6 +9,31 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-29T14:30:00",
+    agent: "claude-code",
+    summary:
+      "S48 shipped: News Feed pipeline control + econ fix + Kalshi whale tracker + speculation-filter + CountdownFuse + layout polish. Archived to sprint-changelog/. 5 tracks, ~50 files. v5.35.0 deployed to Fly.io + 2x Vercel.",
+    files: ["sprint-changelog/S48-ORCHESTRATION.md"],
+  },
+  {
+    date: "2026-04-29T14:25:00",
+    agent: "claude-code",
+    summary:
+      "[v5.35.0] /solvys-deploy: 3-target deploy complete. Fly.io fintheon + Vercel desktop (fintheon-alpha) + Vercel mobile (fintheon.pricedinresearch.io). GH release v5.35.0 published, v5.34.0 pruned. Bumped UPDATE_VERSION to 5.35.0. Repaired peer auto-rename Harper21Voice identifier mangling across 17 files. PersonaDropdown / ConsiliumMessage duplicate-key collisions cleaned. Local backend restarted.",
+    files: [
+      "package.json",
+      "scripts/fintheon-update.sh",
+      "frontend/components/chat/PersonaDropdown.tsx",
+      "frontend/components/consilium/ConsiliumMessage.tsx",
+      "frontend/components/voice/HeaderVoiceControl.tsx",
+      "frontend/hooks/useHarper21VoiceSession.ts",
+      "frontend/lib/harper-2.1-voice.ts",
+      "backend-hono/src/routes/harper-2.1-voice.ts",
+      "backend-hono/src/routes/index.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-29T14:15:00",
     agent: "claude-code",
     summary:
