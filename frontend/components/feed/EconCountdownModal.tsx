@@ -1,31 +1,25 @@
 // [claude-code 2026-04-24] S34-T8: Econ countdown modal.
+// [claude-code 2026-04-29] S53-T3: Replaced internal active-watch poll with
+// useEconWatchHealth — surfaces backend-health vs natural-empty differentiation +
+// degraged reason display. Dev logging gated on import.meta.env.DEV.
 // Fades in at T-5min, Doto mm:ss countdown, cross-fades to Actual/Forecast on
 // SSE econ-print arrival, fades out 20s after print (or 15min after scheduled
 // if no print lands). No glass, no box-shadow, no gradient, no emoji — flat
 // #050402 + 1px #c79f4a border per feedback_no_glass_effects.
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import {
+  useEconWatchHealth,
+  type ActiveWatchEvent,
+} from "../../hooks/useEconWatchHealth";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
-const POLL_INTERVAL_MS = 30_000;
 const VISIBLE_WINDOW_MS = 5 * 60 * 1000; // T-5min gate
 const POST_PRINT_HOLD_MS = 20_000; // 20s visible after actual
 const STALE_WINDOW_MS = 15 * 60 * 1000; // mark missed after T+15min
 const MAX_STACK = 3;
 
 type Status = "upcoming" | "printed" | "missed";
-
-interface ActiveWatchEvent {
-  id: string;
-  eventName: string;
-  country: string | null;
-  category: string | null;
-  scheduledAt: string;
-  forecast: number | null;
-  previous: number | null;
-  actual: number | null;
-  status: Status;
-}
 
 interface EconPrintFrame {
   eventName: string;
@@ -50,32 +44,6 @@ function formatCountdown(ms: number): string {
   const mm = String(Math.floor(total / 60)).padStart(2, "0");
   const ss = String(total % 60).padStart(2, "0");
   return `${mm}:${ss}`;
-}
-
-function useEconActiveWatch(): ActiveWatchEvent[] {
-  const [events, setEvents] = useState<ActiveWatchEvent[]>([]);
-
-  useEffect(() => {
-    let mounted = true;
-    const fetchWatch = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/econ/active-watch`);
-        if (!res.ok) return;
-        const json = (await res.json()) as { events?: ActiveWatchEvent[] };
-        if (mounted && Array.isArray(json.events)) setEvents(json.events);
-      } catch {
-        // Silent — endpoint may not be live yet in dev.
-      }
-    };
-    void fetchWatch();
-    const id = window.setInterval(fetchWatch, POLL_INTERVAL_MS);
-    return () => {
-      mounted = false;
-      window.clearInterval(id);
-    };
-  }, []);
-
-  return events;
 }
 
 function useEconPrintStream(onPrint: (frame: EconPrintFrame) => void): void {
@@ -112,9 +80,20 @@ function useTick(intervalMs: number): number {
 }
 
 export function EconCountdownModal() {
-  const active = useEconActiveWatch();
+  const { events: active, state: watchState, emptyReason } = useEconWatchHealth();
   const now = useTick(1_000);
   const [cards, setCards] = useState<Record<string, CardState>>({});
+
+  // Dev logging — surfacing pipeline vs natural-empty differentiation
+  if (import.meta.env.DEV) {
+    useEffect(() => {
+      if (active.length === 0 && emptyReason) {
+        console.debug(
+          `[EconCountdown] empty active-watch (${watchState}): ${emptyReason}`,
+        );
+      }
+    }, [active.length, emptyReason, watchState]);
+  }
 
   useEffect(() => {
     setCards((prev) => {
@@ -208,7 +187,30 @@ export function EconCountdownModal() {
     });
   }, [cards, now]);
 
-  if (visible.length === 0) return null;
+  if (visible.length === 0) {
+    // Show degraded indicator when pipeline is unhealthy but no events visible
+    if (emptyReason && watchState !== "loading" && watchState !== "idle") {
+      return (
+        <div className="absolute top-3 right-3 z-20 pointer-events-none">
+          <div className="pointer-events-auto w-[260px] px-3 py-2.5 text-[#f0ead6]"
+            style={{
+              backgroundColor: "#050402",
+              border: "1px solid #94a3b8",
+              opacity: 0.85,
+            }}
+          >
+            <div className="text-[9px] uppercase tracking-[0.14em] text-[#f0ead6]/55 mb-1">
+              Econ Watch
+            </div>
+            <div className="text-[11px] leading-snug text-[#f0ead6]/70">
+              {emptyReason}
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  }
 
   return (
     <div className="absolute top-3 right-3 z-20 flex flex-col gap-2 pointer-events-none">

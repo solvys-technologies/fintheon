@@ -1,6 +1,8 @@
 // [claude-code 2026-04-28] S47-T1: Method field added, normalized body keys, field-level errors, General stripped.
 // [claude-code 2026-04-25] S38: Body text bumped one tier (text-[10px] → text-[12px], text-[9px] → text-[11px]) for legibility on the Refinement Engine surface.
 // [claude-code 2026-04-12] Source accounts manager — CRUD UI for curated X timeline accounts
+// [claude-code 2026-04-29] S53-T2: Added lastAppliedAt, isMutating, degradedReason
+// status indicators for module-level runtime display.
 import { useState, useCallback } from "react";
 import {
   Rss,
@@ -28,6 +30,9 @@ const API_BASE = (
 interface SourceAccountsManagerProps {
   accounts: SourceAccount[];
   onAccountsChanged: () => void;
+  lastAppliedAt?: Date | null;
+  isMutating?: boolean;
+  degradedReason?: string | null;
 }
 
 const CATEGORY_BADGE: Record<SourceAccountCategory, { color: string }> = {
@@ -48,9 +53,26 @@ const METHOD_ICON: Record<SourceAccountMethod, string> = {
   api: "API",
 };
 
+const STATUS_BAR: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  fontSize: 10,
+  fontFamily: "var(--font-mono)",
+  marginBottom: 6,
+  padding: "3px 6px",
+  background:
+    "color-mix(in srgb, var(--fintheon-accent) 5%, transparent)",
+  borderLeft:
+    "2px solid color-mix(in srgb, var(--fintheon-accent) 30%, transparent)",
+};
+
 export function SourceAccountsManager({
   accounts,
   onAccountsChanged,
+  lastAppliedAt,
+  isMutating,
+  degradedReason,
 }: SourceAccountsManagerProps) {
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -205,6 +227,40 @@ export function SourceAccountsManager({
           {accounts.filter((a) => a.active).length}/{accounts.length} active
         </span>
       </div>
+
+      {degradedReason && (
+        <div style={STATUS_BAR}>
+          <span style={{ color: "var(--fintheon-bearish)" }}>degraded</span>
+          <span style={{ color: "var(--fintheon-muted)" }}>
+            {degradedReason}
+          </span>
+        </div>
+      )}
+      {isMutating && (
+        <div style={STATUS_BAR}>
+          <span
+            style={{
+              display: "inline-block",
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: "var(--fintheon-accent)",
+              animation: "fuse-shimmer 1.5s infinite",
+            }}
+          />
+          <span style={{ color: "var(--fintheon-accent)" }}>
+            mutating...
+          </span>
+        </div>
+      )}
+      {lastAppliedAt && !isMutating && !degradedReason && (
+        <div style={STATUS_BAR}>
+          <span style={{ color: "var(--fintheon-accent)" }}>ok</span>
+          <span style={{ color: "var(--fintheon-muted)" }}>
+            last applied {lastAppliedAt.toLocaleTimeString()}
+          </span>
+        </div>
+      )}
 
       {/* Account list */}
       <div className="space-y-0.5 max-h-[280px] overflow-y-auto">

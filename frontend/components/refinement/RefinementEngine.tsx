@@ -1,3 +1,9 @@
+// [claude-code 2026-04-29] S53-T2: RefinementEngine refactored into a module shell.
+// Runtime health (pipeline stats/states, source accounts, econ filters) now
+// flows through useRiskflowRuntime — one canonical payload. Child panels receive
+// standardized lastAppliedAt / isMutating / degradedReason props. Scoring logic
+// (presets, sensitivities, rescore) stays in this shell since it orchestrates
+// across pipeline + V4 calibration concerns.
 // [claude-code 2026-04-28] S48-T3: Group Sensitivity NotchedFuse section removed
 // and replaced with PipelineHealth table + PipelineToggles. CountdownFuse added.
 // Error handling hardened: silent catch blocks replaced with inline error states.
@@ -9,7 +15,7 @@
 // [claude-code 2026-04-18] S24-T4: Rebuilt scoring calibration workbench.
 // [claude-code 2026-03-27] S2-T7: Refinement Engine
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { RefreshCw, Wrench, BarChart3 } from "lucide-react";
+import { RefreshCw, Wrench, BarChart3, AlertTriangle } from "lucide-react";
 import { isRefinementEditUnlocked } from "../../lib/dev-settings-auth";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import type { CalibrationEntry } from "../../../backend-hono/src/types/calibration";
@@ -26,6 +32,9 @@ import { EconFilterEditor } from "./EconFilterEditor";
 import { CatalystStatsDrawer } from "./CatalystStatsDrawer";
 import { PipelineHealth } from "./PipelineHealth";
 import { PipelineToggles } from "./PipelineToggles";
+import { OperatorTimeline } from "./OperatorTimeline";
+import { SourcePolicyPanel } from "./SourcePolicyPanel";
+import { DoctoringPanel } from "./DoctoringPanel";
 import {
   PresetSelector,
   BUILTIN_PRESETS,
@@ -37,8 +46,7 @@ import { LexiconEditor } from "./LexiconEditor";
 import { ScoreImpactPreview } from "../ui/InlineDiff";
 import { useToast } from "../../contexts/ToastContext";
 import { useAuth } from "../../contexts/AuthContext";
-import { usePipelineStats } from "../../hooks/usePipelineStats";
-import { usePipelineState } from "../../hooks/usePipelineState";
+import { useRiskflowRuntime } from "../../hooks/useRiskflowRuntime";
 import {
   fetchPresets,
   fetchCurrentSensitivities,
@@ -53,8 +61,6 @@ const API_BASE = (
   import.meta.env.VITE_API_URL || "http://localhost:8080"
 ).replace(/\/$/, "");
 
-// Inlined from GroupSensitivityDial — PresetSelector still needs these types
-// for scoring preset matching even though the NotchedFuse dials are removed.
 type SensitivityGroup =
   | "macro"
   | "geopolitical"
@@ -104,38 +110,37 @@ export function RefinementEngine() {
   const { addToast } = useToast();
   const { getAccessToken } = useAuth();
 
-  // [claude-code 2026-04-27] v5.33.4: feed preview moved off the right rail
-  // when the rail became drawer-only. items state retained because the rescore
-  // pipeline still needs a feed-cache invalidation hook (handleRescore →
-  // fetchFeed). Rendered nowhere now; kept for parity with the rescore handler.
+  // --- Runtime health (one canonical payload) ---
+  const {
+    pipelineStats,
+    pipelineStates,
+    sourceAccounts: sourceSummary,
+    econFilters: econSummary,
+    statsLoading,
+    statesLoading,
+    statsError,
+    statesError,
+    lastAppliedAt,
+    isMutating,
+    degradedReason,
+    refetchStats,
+    togglePipeline,
+  } = useRiskflowRuntime();
+
+  // --- Feed cache (retained for rescore invalidation) ---
   const [items, setItems] = useState<RiskFlowAlert[]>([]);
   const [showStatsDrawer, setShowStatsDrawer] = useState(false);
+
+  // --- Scoring state ---
   const [regime, setRegime] = useState<RegimeState | null>(null);
   const [weights, setWeights] = useState<CalibrationEntry[]>([]);
   const [registry, setRegistry] = useState<CommentatorEntry[]>([]);
   const [sourceAccounts, setSourceAccounts] = useState<SourceAccount[]>([]);
-  // [claude-code 2026-04-24] S34-T1
   const [econFilters, setEconFilters] = useState<EconWatchFilter[]>([]);
   const [isRescoring, setIsRescoring] = useState(false);
   const [loading, setLoading] = useState(true);
-  // [claude-code 2026-04-28] S48-T3: Group Sensitivity collapsible removed.
-  // Pipeline health and toggles replace the former NotchedFuse section.
-  const {
-    stats: pipelineStats,
-    loading: statsLoading,
-    error: statsError,
-    refetch: refetchStats,
-  } = usePipelineStats();
-  const {
-    pipelines: pipelineStates,
-    loading: statesLoading,
-    error: statesError,
-    togglePipeline: handleTogglePipeline,
-  } = usePipelineState();
-  const [sourceAccountsError, setSourceAccountsError] = useState<string | null>(
-    null,
-  );
-  const [econFiltersError, setEconFiltersError] = useState<string | null>(null);
+
+  // --- Edit lock ---
   const [editUnlocked, setEditUnlocked] = useState(() =>
     isRefinementEditUnlocked(),
   );
@@ -151,7 +156,7 @@ export function RefinementEngine() {
     };
   }, []);
 
-  // V4: group sensitivities + preset state
+  // --- V4 scoring state ---
   const [appliedSensitivities, setAppliedSensitivities] =
     useState<SensitivityValues>(SENSITIVITY_DEFAULTS);
   const [pendingSensitivities, setPendingSensitivities] =
@@ -172,6 +177,7 @@ export function RefinementEngine() {
     [appliedSensitivities, pendingSensitivities],
   );
 
+  // --- Scoring fetchers (kept in shell — calibration concerns) ---
   const fetchFeed = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/riskflow/feed`).then((r) =>
@@ -179,7 +185,7 @@ export function RefinementEngine() {
       );
       setItems(res.items ?? []);
     } catch {
-      /* silent — empty list preserved */
+      /* silent */
     }
   }, []);
 
@@ -216,32 +222,28 @@ export function RefinementEngine() {
     }
   }, []);
 
+  // Source accounts + econ filters fetched for AdvancedPane CRUD managers.
+  // Summaries come from useRiskflowRuntime; full arrays are needed for the
+  // inline editors.
   const fetchSourceAccounts = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/source-accounts`).then((r) =>
         r.json(),
       );
       setSourceAccounts(res.accounts ?? []);
-      setSourceAccountsError(null);
-    } catch (err) {
-      setSourceAccountsError(
-        err instanceof Error ? err.message : "Failed to load source accounts",
-      );
+    } catch {
+      /* silent */
     }
   }, []);
 
-  // [claude-code 2026-04-24] S34-T1
   const fetchEconFilters = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/econ-filters`).then((r) =>
         r.json(),
       );
       setEconFilters(res.filters ?? []);
-      setEconFiltersError(null);
-    } catch (err) {
-      setEconFiltersError(
-        err instanceof Error ? err.message : "Failed to load econ filters",
-      );
+    } catch {
+      /* silent */
     }
   }, []);
 
@@ -260,17 +262,12 @@ export function RefinementEngine() {
       setPresets(combined);
       setAppliedSensitivities(currentRes);
       setPendingSensitivities(currentRes);
-      // Select closest matching preset, fall back to neutral
       const match = combined.find((p) =>
         sameSensitivities(p.sensitivities, currentRes),
       );
       setSelectedPresetId(match?.id ?? null);
       setV4Available(true);
     } catch {
-      // Any unexpected failure here must NOT deadlock the loader — the
-      // other fetchers are silent-on-failure, so loadV4State matches
-      // that contract by flagging V4 unavailable and letting the
-      // Advanced pane + built-in presets still render.
       setV4Available(false);
     }
   }, [getAccessToken]);
@@ -300,7 +297,7 @@ export function RefinementEngine() {
     loadV4State,
   ]);
 
-  // Debounced rescore preview when sensitivities change
+  // --- Debounced rescore preview ---
   useEffect(() => {
     if (!v4Available || !isDirty) {
       setPreview(null);
@@ -320,6 +317,7 @@ export function RefinementEngine() {
     return () => clearTimeout(timer);
   }, [pendingSensitivities, isDirty, v4Available]);
 
+  // --- Scoring actions ---
   const onPresetSelect = useCallback((preset: ScoringPreset) => {
     setPendingSensitivities(preset.sensitivities);
     setSelectedPresetId(preset.id);
@@ -349,14 +347,12 @@ export function RefinementEngine() {
     setIsRescoring(true);
     try {
       const token = (await getAccessToken()) ?? undefined;
-      // Save sensitivities first if dirty
       if (isDirty) {
         const saveRes = await applySensitivities(pendingSensitivities, token);
         if (!isNotReady(saveRes)) {
           setAppliedSensitivities(pendingSensitivities);
         }
       }
-      // Trigger rescore
       const res = await triggerRescore(token);
       if (isNotReady(res)) {
         await fetch(`${API_BASE}/api/riskflow/rescore`, {
@@ -410,7 +406,6 @@ export function RefinementEngine() {
     setIsRescoring(true);
     try {
       const token = (await getAccessToken()) ?? undefined;
-      // Prefer rescore-all (V4); fall back to legacy /rescore on 404
       const res = await triggerRescore(token);
       if (isNotReady(res)) {
         await fetch(`${API_BASE}/api/riskflow/rescore`, {
@@ -435,7 +430,7 @@ export function RefinementEngine() {
 
   return (
     <div className="h-full flex flex-col bg-[var(--fintheon-bg)] relative">
-      {/* [claude-code 2026-04-25] S38: Header toolbar min-height bumped ~12% so chrome breathes */}
+      {/* Header toolbar */}
       <div className="flex items-center justify-between px-5 py-4 min-h-[60px] border-b border-[var(--fintheon-accent)]/15">
         <div className="flex items-center gap-3">
           <Wrench className="w-5 h-5 text-[var(--fintheon-accent)]" />
@@ -486,9 +481,6 @@ export function RefinementEngine() {
             />
             {isRescoring ? "Re-Scoring…" : "Re-Score All"}
           </button>
-          {/* [claude-code 2026-04-27] v5.33.4: Catalyst Stats moved off the
-              always-visible right rail into a slide-in drawer per TP. This
-              top-right button is the only entry point. */}
           <button
             onClick={() => setShowStatsDrawer((v) => !v)}
             className={`flex items-center gap-1.5 px-3.5 py-2 border text-[12px] font-semibold transition-colors ${
@@ -512,24 +504,64 @@ export function RefinementEngine() {
         </div>
       ) : (
         <div className="flex-1 min-h-0 flex">
-          {/* Main pane (75%) — regime / fuses / presets / advanced */}
+          {/* Main pane — regime / pipeline panels / presets / advanced */}
           <div className="flex-1 min-w-0 overflow-y-auto p-4">
             <RegimeControl regime={regime} onRegimeChanged={fetchRegime} />
 
-            {/* S48-T3: PipelineHealth + PipelineToggles replace the former NotchedFuse section */}
+            {/* Shared runtime status bar (one payload → one view) */}
+            {degradedReason && (
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: "6px 10px",
+                  background:
+                    "color-mix(in srgb, var(--fintheon-accent) 6%, transparent)",
+                  borderLeft:
+                    "3px solid color-mix(in srgb, var(--fintheon-accent) 50%, transparent)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 10,
+                  fontFamily: "var(--font-mono)",
+                }}
+              >
+                <AlertTriangle className="w-3 h-3 text-[var(--fintheon-accent)]" />
+                <span style={{ color: "var(--fintheon-accent)" }}>
+                  degraded
+                </span>
+                <span style={{ color: "var(--fintheon-muted)" }}>
+                  {degradedReason}
+                </span>
+              </div>
+            )}
+
             <PipelineHealth
               stats={pipelineStats}
               loading={statsLoading}
               error={statsError}
               onRetry={refetchStats}
+              lastAppliedAt={lastAppliedAt}
+              isMutating={isMutating}
+              degradedReason={degradedReason}
             />
             <PipelineToggles
               pipelines={pipelineStates}
-              onToggle={handleTogglePipeline}
+              onToggle={togglePipeline}
               disabled={!editUnlocked}
               loading={statesLoading}
               error={statesError}
+              lastAppliedAt={lastAppliedAt}
+              isMutating={isMutating}
+              degradedReason={degradedReason}
             />
+
+            {/* [claude-code 2026-04-29] S53-T4B: Operator hardening panels —
+                source policy enforcement visibility, ingest activity timeline,
+                and doctoring queue. Independent degrade — one failure doesn't
+                blank other controls. */}
+            <SourcePolicyPanel />
+            <OperatorTimeline />
+            <DoctoringPanel />
 
             {v4Available ? (
               <>
@@ -579,8 +611,6 @@ export function RefinementEngine() {
             <AdvancedPane
               count={weights.length + registry.length + sourceAccounts.length}
             >
-              {/* [claude-code 2026-04-25] S38: Preset dropdown moved INSIDE the locked Advanced
-                  pane — read-only when locked, interactive when unlocked. */}
               <PresetSelector
                 presets={presets}
                 selectedId={selectedPresetId}
@@ -631,29 +661,31 @@ export function RefinementEngine() {
               <SourceAccountsManager
                 accounts={sourceAccounts}
                 onAccountsChanged={fetchSourceAccounts}
+                lastAppliedAt={lastAppliedAt}
+                isMutating={isMutating}
+                degradedReason={
+                  sourceSummary.error ?? degradedReason
+                }
               />
               <div
                 style={{ borderTop: "1px solid var(--fintheon-glass-border)" }}
               />
-              {/* [claude-code 2026-04-24] S34-T1: Econ watch filters */}
               <EconFiltersManager
                 filters={econFilters}
                 onFiltersChanged={fetchEconFilters}
               />
-              {/* [claude-code 2026-04-28] S48-T3: Econ filter editor table */}
-              <EconFilterEditor />
+              <EconFilterEditor
+                lastAppliedAt={lastAppliedAt}
+                isMutating={isMutating}
+                degradedReason={
+                  econSummary.error ?? degradedReason
+                }
+              />
             </AdvancedPane>
           </div>
-
-          {/* [claude-code 2026-04-27] v5.33.4: Right rail (Catalyst Stats +
-              feed preview) removed. Stats now live in CatalystStatsDrawer
-              triggered by the top-right "Stats" button. Main pane spans
-              full width. */}
         </div>
       )}
 
-      {/* Slide-in Catalyst Stats drawer — popover behaviour matches
-          components/layout/ChatPanel: absolute right-0, w-[420px], translate-x. */}
       <CatalystStatsDrawer
         open={showStatsDrawer}
         onClose={() => setShowStatsDrawer(false)}

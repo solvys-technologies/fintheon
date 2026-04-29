@@ -3,9 +3,14 @@
 // [claude-code 2026-04-24] S34-T3: extended EconEventRecord with country/category/event_key; added upsertEconEvent + readUpcomingEconEvents for the calendar populator + /api/econ/upcoming.
 // [claude-code 2026-04-26] S46.1: writeRawItems now applies the publisher-blocklist
 // (Bloomberg/Reuters/CNBC/Fox/MSNBC/CNN/etc) to every ingest path uniformly.
+// [claude-code 2026-04-29] S53-T4B: source-policy enforcement at writeRawItems boundary —
+// only approved X handles and official .gov domains may enter the feed. Everything else
+// is blocked here with ledger recording.
 import { getSupabaseClient, isSupabaseConfigured } from "../config/supabase.js";
 import { sql as dbSql, isDatabaseAvailable } from "../config/database.js";
 import { filterBlockedPublishers } from "./riskflow/publisher-blocklist.js";
+import { checkSourcePolicy } from "./riskflow/source-policy.js";
+import { recordIngestAttempt, recordLeakEvent } from "./riskflow/ingest-ledger.js";
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -100,6 +105,40 @@ export async function writeRawItems(items: RawRiskFlowItem[]): Promise<number> {
     );
   }
   items = filtered.kept;
+  if (items.length === 0) return 0;
+
+  // [claude-code 2026-04-29] S53-T4B: source-policy enforcement — deny by default.
+  // Only approved X handles and official .gov domains pass.
+  const policyPassed: RawRiskFlowItem[] = [];
+  for (const item of items) {
+    const verdict = checkSourcePolicy(item.source, item.url);
+    if (verdict.decision === "allowed") {
+      policyPassed.push(item);
+      recordIngestAttempt({
+        source: item.source,
+        pipeline: item.ingest_pipeline ?? "unknown",
+        decision: "accepted",
+        reason: verdict.reason,
+        headlinePreview: item.headline?.slice(0, 80),
+      });
+    } else {
+      recordIngestAttempt({
+        source: item.source,
+        pipeline: item.ingest_pipeline ?? "unknown",
+        decision: "blocked_by_policy",
+        reason: verdict.reason,
+        headlinePreview: item.headline?.slice(0, 80),
+      });
+      recordLeakEvent(`${verdict.decision}: ${item.source} — ${item.headline?.slice(0, 60) ?? "(no headline)"}`);
+    }
+  }
+  if (policyPassed.length < items.length) {
+    console.log(
+      `[SourcePolicy] blocked ${items.length - policyPassed.length}/${items.length} item(s) — ` +
+      `sources not in allowlist`,
+    );
+  }
+  items = policyPassed;
   if (items.length === 0) return 0;
 
   // [claude-code 2026-04-06] Primary: raw SQL (Supabase JS upsert silently fails)

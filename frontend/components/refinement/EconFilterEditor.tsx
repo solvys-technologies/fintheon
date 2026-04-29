@@ -1,5 +1,9 @@
 // [claude-code 2026-04-28] S48-T3: Econ filter editor — table of emoji/word classification
 // rules that tag events as Econ/ASAP info. Inline editing with mock data fallback.
+// [claude-code 2026-04-29] S53-T2: Added lastAppliedAt, isMutating, degradedReason
+// status indicators for module-level runtime display.
+// [claude-code 2026-04-29] S53-T4: fix endpoint path /api/econ/filters → /api/econ-filters
+// (contract mismatch — route was registered at /api/econ-filters).
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -9,6 +13,12 @@ interface EconFilter {
   pattern: string;
   macroLevel: number;
   category: string;
+}
+
+interface Props {
+  lastAppliedAt?: Date | null;
+  isMutating?: boolean;
+  degradedReason?: string | null;
 }
 
 const API_BASE = (
@@ -81,7 +91,25 @@ const INPUT_STYLE: React.CSSProperties = {
   padding: "1px 3px",
 };
 
-export function EconFilterEditor() {
+const STATUS_BAR: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  fontSize: 10,
+  fontFamily: "var(--font-mono)",
+  marginBottom: 6,
+  padding: "3px 6px",
+  background:
+    "color-mix(in srgb, var(--fintheon-accent) 5%, transparent)",
+  borderLeft:
+    "2px solid color-mix(in srgb, var(--fintheon-accent) 30%, transparent)",
+};
+
+export function EconFilterEditor({
+  lastAppliedAt,
+  isMutating,
+  degradedReason,
+}: Props) {
   const { getAccessToken } = useAuth();
   const [filters, setFilters] = useState<EconFilter[]>(MOCK_FILTERS);
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +122,7 @@ export function EconFilterEditor() {
       const token = await getAccessToken();
       const headers: Record<string, string> = {};
       if (token) headers.Authorization = `Bearer ${token}`;
-      const res = await fetch(`${API_BASE}/api/econ/filters`, { headers });
+      const res = await fetch(`${API_BASE}/api/econ-filters`, { headers });
       if (res.ok) {
         const json = (await res.json()) as { filters?: EconFilter[] };
         if (json.filters?.length) setFilters(json.filters);
@@ -156,6 +184,39 @@ export function EconFilterEditor() {
       >
         Econ Filter Editor
       </div>
+      {degradedReason && (
+        <div style={STATUS_BAR}>
+          <span style={{ color: "var(--fintheon-bearish)" }}>degraded</span>
+          <span style={{ color: "var(--fintheon-muted)" }}>
+            {degradedReason}
+          </span>
+        </div>
+      )}
+      {isMutating && (
+        <div style={STATUS_BAR}>
+          <span
+            style={{
+              display: "inline-block",
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: "var(--fintheon-accent)",
+              animation: "fuse-shimmer 1.5s infinite",
+            }}
+          />
+          <span style={{ color: "var(--fintheon-accent)" }}>
+            applying changes...
+          </span>
+        </div>
+      )}
+      {lastAppliedAt && !isMutating && !degradedReason && (
+        <div style={STATUS_BAR}>
+          <span style={{ color: "var(--fintheon-accent)" }}>ok</span>
+          <span style={{ color: "var(--fintheon-muted)" }}>
+            last applied {lastAppliedAt.toLocaleTimeString()}
+          </span>
+        </div>
+      )}
       {error ? (
         <div
           style={{

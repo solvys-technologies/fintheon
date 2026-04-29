@@ -1,6 +1,8 @@
 // [claude-code 2026-04-28] S48-T3: Pipeline stats hook — fetches 24h headline/error counts
 // per pipeline from the admin API. Polls every 30s when tab is visible. Degrades to
 // empty array on auth failure or network error (backend may not be live yet).
+// [claude-code 2026-04-29] S53-T2: Evolved with degradedReason for module-level
+// runtime status display per canonical backend payload.
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -22,6 +24,7 @@ interface UsePipelineStatsResult {
   stats: PipelineRow[];
   loading: boolean;
   error: string | null;
+  degradedReason: string | null;
   refetch: () => void;
 }
 
@@ -30,6 +33,7 @@ export function usePipelineStats(): UsePipelineStatsResult {
   const [stats, setStats] = useState<PipelineRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [degradedReason, setDegradedReason] = useState<string | null>(null);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -40,17 +44,30 @@ export function usePipelineStats(): UsePipelineStatsResult {
         headers,
       });
       if (!res.ok) {
-        setError(`Pipeline stats unavailable (${res.status})`);
+        const msg = `Pipeline stats unavailable (${res.status})`;
+        setError(msg);
+        setDegradedReason(msg);
         setStats([]);
         return;
       }
       const json = (await res.json()) as { pipelines?: PipelineRow[] };
-      setStats(json.pipelines ?? []);
+      const rows = json.pipelines ?? [];
+      setStats(rows);
       setError(null);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load pipeline stats",
+      // Degraded if any pipeline has uptime below threshold
+      const degraded = rows.filter(
+        (r) => r.enabled && r.uptimePct < 95,
       );
+      setDegradedReason(
+        degraded.length > 0
+          ? `${degraded.length} pipeline(s) below 95% uptime`
+          : null,
+      );
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Failed to load pipeline stats";
+      setError(msg);
+      setDegradedReason(msg);
       setStats([]);
     }
   }, [getAccessToken]);
@@ -71,5 +88,5 @@ export function usePipelineStats(): UsePipelineStatsResult {
     };
   }, [fetchStats]);
 
-  return { stats, loading, error, refetch: fetchStats };
+  return { stats, loading, error, degradedReason, refetch: fetchStats };
 }

@@ -322,6 +322,14 @@ export async function bootBackground(): Promise<void> {
   // [claude-code 2026-04-24] S34-T4: silent-drop counters (60s flush → riskflow_drop_counters)
   startDropCounterFlush();
 
+  // [claude-code 2026-04-29] S53-T4B: source-policy allowlist refresh + ingest ledger flush
+  // (60s interval — activity log, leak sentinel, continuity counters)
+  const { refreshAllowlist } = await import("../services/riskflow/source-policy.js");
+  const { startLedgerFlush } = await import("../services/riskflow/ingest-ledger.js");
+  await refreshAllowlist();
+  startLedgerFlush();
+  log.info("SourcePolicy + IngestLedger started");
+
   // [claude-code 2026-04-18] S24-T4: V4 monitoring loop (2h — proposes regime/lexicon/walk-back changes)
   // Gated by ENABLE_MONITORING_LOOP env var. Turn on after T1/T2/T3 migrations land.
   startMonitoringLoop();

@@ -1,3 +1,7 @@
+// [claude-code 2026-04-29] S53-T1: riskflow_runtime section on GET / —
+//   pipelines enabled/disabled, source accounts by category, econ populator/
+//   scheduler health, drop-counter snapshot, feed poller, headlines_24h.
+//   Canonical control-plane payload for Refinement Engine (T2).
 // [claude-code 2026-04-24] S34-T4: GET /source-quality — merges v_source_signal_noise
 //   with in-memory drop-counter snapshot + recent riskflow_drop_counters rows.
 //   The "items_ingested: 0, errors: 0" silent-drop pattern now has a trace.
@@ -10,7 +14,6 @@
 
 import { Hono } from "hono";
 import { pingDb } from "../../db/optimized.js";
-import { getCurrentSnapshot as getDropCounterSnapshot } from "../../services/riskflow/drop-counters.js";
 import { supabaseAuthHealth } from "../../services/supabase-auth.js";
 import { isPollingActive } from "../../services/riskflow/feed-poller.js";
 import { getFeedHealth } from "../../services/riskflow/feed-service.js";
@@ -42,7 +45,19 @@ import {
 import {
   getAccounts,
   getAccountHandles,
+  getWireHandles,
+  getMacroHandles,
 } from "../../services/source-accounts/source-accounts-service.js";
+import { getEconPopulatorStatus } from "../../services/cron/econ-calendar-populator.js";
+import {
+  getLastEconKeywordResult,
+  isEconKeywordSchedulerActive,
+} from "../../services/cron/econ-keyword-scheduler.js";
+import {
+  getCurrentSnapshot as getDropCounterSnapshot,
+  isDropCounterFlushRunning,
+} from "../../services/riskflow/drop-counters.js";
+import { getPipelineStateSnapshot } from "../../services/riskflow/pipeline-gate.js";
 import { getDeskCalendarDiagnostics } from "../desk-calendar/handlers.js";
 import { getSttProviderDiagnostics } from "../../services/voice-stt-provider.js";
 import { getTranscriptStats24h } from "../../services/commentary-transcript.js";
@@ -137,6 +152,36 @@ interface DiagnosticsResponse {
     count_24h: number;
     last_capture_at: string | null;
     last_failure: string | null;
+  };
+  riskflow_runtime?: {
+    pipelines: Record<string, boolean>;
+    source_accounts_by_category: Record<string, number>;
+    econ_populator: {
+      running: boolean;
+      last_result: {
+        fetched: number;
+        upserted: number;
+        actualsBridged: number;
+        skippedCountry: number;
+        skippedDate: number;
+        skippedFilter: number;
+      } | null;
+    };
+    econ_keyword_scheduler: {
+      running: boolean;
+      last_result: { scanned: number; promoted: number } | null;
+    };
+    drop_counters: {
+      flush_running: boolean;
+      snapshot: {
+        window_start: string;
+        window_end: string;
+        total_dropped: number;
+        counter_count: number;
+      };
+    };
+    feed_poller_running: boolean;
+    headlines_24h: number;
   };
 }
 
@@ -505,6 +550,92 @@ async function loadRiskFlowSourceStats(): Promise<
 }
 
 /* ------------------------------------------------------------------ */
+/*  RiskFlow Runtime — canonical control-plane status payload          */
+/* ------------------------------------------------------------------ */
+
+async function loadRiskFlowRuntime(): Promise<
+  DiagnosticsResponse["riskflow_runtime"]
+> {
+  try {
+    const pipelineSnapshot = getPipelineStateSnapshot();
+    const populatorStatus = getEconPopulatorStatus();
+    const keywordResult = getLastEconKeywordResult();
+    const keywordRunning = isEconKeywordSchedulerActive();
+    const dropSnapshot = getDropCounterSnapshot();
+    const dropFlushRunning = isDropCounterFlushRunning();
+    const feedPollerRunning = isPollingActive();
+
+    const accounts = await getAccounts();
+    const byCategory: Record<string, number> = {};
+    for (const a of accounts) {
+      if (!a.active) continue;
+      byCategory[a.category] = (byCategory[a.category] || 0) + 1;
+    }
+
+    let headlines24h = 0;
+    try {
+      const { getSupabaseClient } = await import("../../config/supabase.js");
+      const sb = getSupabaseClient();
+      if (sb) {
+        const since = new Date(
+          Date.now() - 24 * 60 * 60 * 1000,
+        ).toISOString();
+        const { count, error } = await sb
+          .from("raw_riskflow_items")
+          .select("*", { count: "exact", head: true })
+          .gte("created_at", since);
+        if (!error && count !== null) headlines24h = count;
+      }
+    } catch {
+      // Non-fatal
+    }
+
+    return {
+      pipelines: pipelineSnapshot,
+      source_accounts_by_category: byCategory,
+      econ_populator: {
+        running: populatorStatus.running,
+        last_result: populatorStatus.lastResult,
+      },
+      econ_keyword_scheduler: {
+        running: keywordRunning,
+        last_result: keywordResult,
+      },
+      drop_counters: {
+        flush_running: dropFlushRunning,
+        snapshot: {
+          window_start: dropSnapshot.window_start,
+          window_end: dropSnapshot.window_end,
+          total_dropped: dropSnapshot.total_dropped,
+          counter_count: dropSnapshot.counters.length,
+        },
+      },
+      feed_poller_running: feedPollerRunning,
+      headlines_24h: headlines24h,
+    };
+  } catch (err) {
+    log.warn("loadRiskFlowRuntime failed", { error: String(err) });
+    return {
+      pipelines: {},
+      source_accounts_by_category: {},
+      econ_populator: { running: false, last_result: null },
+      econ_keyword_scheduler: { running: false, last_result: null },
+      drop_counters: {
+        flush_running: false,
+        snapshot: {
+          window_start: "",
+          window_end: "",
+          total_dropped: 0,
+          counter_count: 0,
+        },
+      },
+      feed_poller_running: false,
+      headlines_24h: 0,
+    };
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /*  Route                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -551,9 +682,10 @@ export function createDiagnosticsRoutes(): Hono {
         ? "degraded"
         : "ok";
 
-    const [routing, gepa] = await Promise.all([
+    const [routing, gepa, riskflowRuntime] = await Promise.all([
       loadRoutingSnapshot(),
       loadGepaSnapshot(),
+      loadRiskFlowRuntime(),
     ]);
 
     // [claude-code 2026-04-28] S47-T2: desk calendar diagnostics
@@ -633,6 +765,7 @@ export function createDiagnosticsRoutes(): Hono {
         last_capture_at: transcriptStats.lastCaptureAt,
         last_failure: transcriptStats.lastFailure,
       },
+      riskflow_runtime: riskflowRuntime,
       routing,
       gepa,
       fiscal_speakers: getFiscalSpeakerStats(),

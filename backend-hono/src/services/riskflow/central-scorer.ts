@@ -44,6 +44,8 @@ import {
 import { tagHeadlineSubjects } from "./headline-tagger.js";
 import { checkContentGuard, isBannedPublisher } from "./content-guard.js";
 import { bumpCounter } from "./drop-counters.js";
+import { checkSourcePolicy } from "./source-policy.js";
+import { recordIngestAttempt, recordLeakEvent } from "./ingest-ledger.js";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { normalizeHeadline } from "./text-utils.js";
 
@@ -226,6 +228,47 @@ export async function scoringCycle(): Promise<number> {
       log.info(
         `Wrote ${blockedScored.length} content-guard-blocked items as scored (macroLevel 0)`,
       );
+    }
+
+    // [claude-code 2026-04-29] S53-T4B: source-policy enforcement in scorer.
+    // Items from the external riskflow-worker bypass the writeRawItems boundary,
+    // so we re-check here. Only approved sources pass.
+    const { refreshAllowlist } = await import("./source-policy.js");
+    await refreshAllowlist();
+    const policyBlockedIds = new Set<string>();
+    const policyPassed = guardedFeedItems.filter((item) => {
+      const verdict = checkSourcePolicy(item.source, item.url);
+      if (verdict.decision === "allowed") return true;
+      policyBlockedIds.add(item.id);
+      recordIngestAttempt({
+        source: item.source,
+        pipeline: "central-scorer-policy",
+        decision: "blocked_by_policy",
+        reason: verdict.reason,
+        headlinePreview: item.headline?.slice(0, 80),
+      });
+      recordLeakEvent(
+        `scorer-policy: ${verdict.decision} — ${item.source} — ${item.headline?.slice(0, 60) ?? "(no headline)"}`,
+      );
+      return false;
+    });
+    if (policyBlockedIds.size > 0) {
+      log.info(
+        `SourcePolicy blocked ${policyBlockedIds.size} item(s) in scorer — ` +
+        `sources not in allowlist`,
+      );
+      const policyBlockedScored = feedItems
+        .filter((item) => policyBlockedIds.has(item.id))
+        .map((item) => {
+          item.macroLevel = 0 as any;
+          item.sentiment = "neutral";
+          item.ivScore = 0;
+          const rawId = rawIdMap.get(item.id) || null;
+          return feedItemToScored(item, rawId as any);
+        });
+      await writeScoredItems(policyBlockedScored).catch(() => {});
+      guardedFeedItems.length = 0;
+      guardedFeedItems.push(...policyPassed);
     }
 
     // ── Dismissed-pattern filter ──────────────────────────────────────────

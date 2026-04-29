@@ -1050,17 +1050,29 @@ export default function RiskFlowMini({
           <div className="flex-1 min-w-0 overflow-y-auto">
             {filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-24 text-zinc-700 text-xs gap-1">
-                <span>
-                  {alerts.length === 0
-                    ? initialLoaded
-                      ? "Waiting for signals..."
-                      : "Loading feed..."
-                    : "No matching alerts"}
-                </span>
-                {alerts.length > 0 && (
-                  <span className="text-[10px] text-zinc-800">
-                    Adjust filters to see more signals
-                  </span>
+                {/* [claude-code 2026-04-29] S53-T3: differentiate pipeline health
+                    vs natural quiet for empty-state diagnostics */}
+                {alerts.length === 0 ? (
+                  !sourceStatus.backendReachable ? (
+                    <span className="text-red-400/70">
+                      Pipeline offline — backend unreachable
+                    </span>
+                  ) : !sourceStatus.newsfeedHealthy && sourceStatus.newsfeedDegraded ? (
+                    <span className="text-amber-400/70">
+                      Feed pipeline degraded — check diagnostics
+                    </span>
+                  ) : initialLoaded ? (
+                    <span>Waiting for signals...</span>
+                  ) : (
+                    <span>Loading feed...</span>
+                  )
+                ) : (
+                  <>
+                    <span>No matching alerts</span>
+                    <span className="text-[10px] text-zinc-800">
+                      Adjust filters to see more signals
+                    </span>
+                  </>
                 )}
               </div>
             ) : (
@@ -1148,8 +1160,15 @@ export default function RiskFlowMini({
           {!expanded && (
             <div className="px-2 pb-2">
               {collapsedPreviewItems.length === 0 ? (
-                <div className="rounded border border-zinc-800/80 bg-[#080806] px-3 py-2 text-[11px] text-zinc-600">
-                  No recent items
+                <div className="rounded border border-zinc-800/80 bg-[#080806] px-3 py-2 text-[11px]">
+                  {/* [claude-code 2026-04-29] S53-T3: collapsed empty-state pipeline diagnostics */}
+                  {!sourceStatus.backendReachable ? (
+                    <span className="text-red-400/70">Pipeline offline</span>
+                  ) : !sourceStatus.newsfeedHealthy && sourceStatus.newsfeedDegraded ? (
+                    <span className="text-amber-400/70">Feed degraded</span>
+                  ) : (
+                    <span className="text-zinc-600">No recent items</span>
+                  )}
                 </div>
               ) : (
                 <div className="bg-[#080806] overflow-hidden">

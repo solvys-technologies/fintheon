@@ -1,6 +1,8 @@
 // [claude-code 2026-04-28] S48-T3: Pipeline health stats table replacing the former
 // Group Sensitivity NotchedFuse section. Renders per-pipeline rows with status dots,
 // headline count, error count, last seen, and uptime %. Columns are sortable.
+// [claude-code 2026-04-29] S53-T2: Added lastAppliedAt, isMutating, degradedReason
+// status indicators for module-level runtime display.
 import { useState, useMemo } from "react";
 import type { PipelineRow } from "../../hooks/usePipelineStats";
 
@@ -9,6 +11,9 @@ interface Props {
   loading: boolean;
   error: string | null;
   onRetry: () => void;
+  lastAppliedAt?: Date | null;
+  isMutating?: boolean;
+  degradedReason?: string | null;
 }
 
 type SortField = "headline" | "error" | "uptime";
@@ -63,7 +68,29 @@ const ROW_BORDER =
 const SECTION_BORDER =
   "1px dotted color-mix(in srgb, var(--fintheon-accent) 35%, transparent)";
 
-export function PipelineHealth({ stats, loading, error, onRetry }: Props) {
+const STATUS_BAR: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  fontSize: 10,
+  fontFamily: "var(--font-mono)",
+  marginBottom: 6,
+  padding: "3px 6px",
+  background:
+    "color-mix(in srgb, var(--fintheon-accent) 5%, transparent)",
+  borderLeft:
+    "2px solid color-mix(in srgb, var(--fintheon-accent) 30%, transparent)",
+};
+
+export function PipelineHealth({
+  stats,
+  loading,
+  error,
+  onRetry,
+  lastAppliedAt,
+  isMutating,
+  degradedReason,
+}: Props) {
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -99,6 +126,40 @@ export function PipelineHealth({ stats, loading, error, onRetry }: Props) {
       >
         Pipeline Health
       </div>
+
+      {degradedReason && (
+        <div style={STATUS_BAR}>
+          <span style={{ color: "var(--fintheon-bearish)" }}>degraded</span>
+          <span style={{ color: "var(--fintheon-muted)" }}>
+            {degradedReason}
+          </span>
+        </div>
+      )}
+      {isMutating && (
+        <div style={STATUS_BAR}>
+          <span
+            style={{
+              display: "inline-block",
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: "var(--fintheon-accent)",
+              animation: "fuse-shimmer 1.5s infinite",
+            }}
+          />
+          <span style={{ color: "var(--fintheon-accent)" }}>
+            applying changes...
+          </span>
+        </div>
+      )}
+      {lastAppliedAt && !isMutating && !degradedReason && (
+        <div style={STATUS_BAR}>
+          <span style={{ color: "var(--fintheon-accent)" }}>ok</span>
+          <span style={{ color: "var(--fintheon-muted)" }}>
+            last applied {lastAppliedAt.toLocaleTimeString()}
+          </span>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex flex-col gap-1.5">

@@ -9,7 +9,91 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
-    date: "2026-04-29T15:35:00",
+    date: "2026-04-29T23:00:00",
+    agent: "claude-code",
+    summary:
+      "S53-T4B: Hardening continuation — RiskFlow operator control, source enforcement, and continuity visibility. Created source-policy service with strict allowlist-first enforcement (only approved X handles + .gov domains enter feed). Created ingest-activity-ledger with leak sentinel (rejected non-allowlisted, blocked-before-feed, unexpected insertions) and continuity counters (econ/commentary expected vs received, stall detection). Wired policy enforcement at writeRawItems boundary AND central scorer safety net (catches items from external riskflow-worker). Extended /api/admin/pipeline-stats/runtime with leak_sentinel + continuity + allowlist data. Added GET /api/admin/pipeline-stats/ingest-activity (Everything timeline) and POST/GET/DELETE /api/admin/pipeline-stats/doctorate (incident queue). Built frontend hooks: useIngestActivity, useDoctoringQueue. Built operator panels: OperatorTimeline (poll decisions), SourcePolicyPanel (allowlist/leak/continuity health), DoctoringPanel (incident queue + Doctorate CTA). Wired source policy refresh + ledger flush into boot sequence.",
+    files: [
+      "backend-hono/src/services/riskflow/source-policy.ts",
+      "backend-hono/src/services/riskflow/ingest-ledger.ts",
+      "backend-hono/src/services/supabase-service.ts",
+      "backend-hono/src/services/riskflow/central-scorer.ts",
+      "backend-hono/src/boot/services.ts",
+      "backend-hono/src/routes/admin/pipeline-stats.ts",
+      "frontend/hooks/useIngestActivity.ts",
+      "frontend/hooks/useDoctoringQueue.ts",
+      "frontend/components/refinement/OperatorTimeline.tsx",
+      "frontend/components/refinement/SourcePolicyPanel.tsx",
+      "frontend/components/refinement/DoctoringPanel.tsx",
+      "frontend/components/refinement/RefinementEngine.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-29T16:13:00-04:00",
+    agent: "codex",
+    summary:
+      "Reviewed S53 T4 status and added a same-thread continuation brief (T4B) to finish hardening scope: strict source enforcement, complete ingest visibility, modular Refinement control domains, and econ/commentary continuity gates.",
+    files: ["sprint-md/S53-T4B-hardening-continuation-riskflow-operator-control.md"],
+  },
+  {
+    date: "2026-04-29T22:00:00",
+    agent: "claude-code",
+    summary:
+      "S53-T4: Unification and hardening pass — resolved API/UI contract mismatches between T1 (backend control plane), T2 (frontend Refinement), and T3 (realtime econ/commentator). Fixed three contract breaks: (1) EconFilterEditor was calling /api/econ/filters but route is /api/econ-filters, (2) /api/admin/pipeline-stats returned {stats} with snake_case fields but frontend usePipelineStats read {pipelines} with camelCase, (3) /api/admin/pipelines returned no label/description fields needed by frontend PipelineState interface. Backend pipeline routes now return enriched responses with pipeline label/description maps and camelCase field names matching frontend hooks. All builds clean: tsc, vite build, backend build.",
+    files: [
+      "backend-hono/src/routes/admin/pipelines.ts",
+      "backend-hono/src/routes/admin/pipeline-stats.ts",
+      "frontend/components/refinement/EconFilterEditor.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-29T21:00:00",
+    agent: "claude-code",
+    summary:
+      "S53-T2: Modularized Refinement Engine control surfaces. Created useRiskflowRuntime hook as canonical runtime payload (composes pipeline stats/states + source accounts + econ filters into one unified status). Evolved usePipelineState/usePipelineStats with lastAppliedAt/degradedReason fields. Added standardized status indicators (ok/degraded/mutating bar with last-applied timestamp) to PipelineHealth, PipelineToggles, SourceAccountsManager, and EconFilterEditor. RefinementEngine thinned to a module shell composing child panels with one runtime data source. Shared degraded header shows overall brokenness when any subsystem is down.",
+    files: [
+      "frontend/hooks/useRiskflowRuntime.ts",
+      "frontend/hooks/usePipelineState.ts",
+      "frontend/hooks/usePipelineStats.ts",
+      "frontend/components/refinement/RefinementEngine.tsx",
+      "frontend/components/refinement/PipelineHealth.tsx",
+      "frontend/components/refinement/PipelineToggles.tsx",
+      "frontend/components/refinement/SourceAccountsManager.tsx",
+      "frontend/components/refinement/EconFilterEditor.tsx",
+    ],
+  },
+  {
+    date: "2026-04-29T20:00:00",
+    agent: "claude-code",
+    summary:
+      "S53-T1: Unify RiskFlow runtime control-plane status for Refinement. Added riskflow_runtime section to GET /api/diagnostics (pipelines enabled/disabled, source accounts by category, econ populator/scheduler health, drop-counter snapshot, feed poller status, headlines_24h). Added GET /api/admin/pipeline-stats/runtime as compact polling endpoint for Refinement UI (no heavy joins — in-memory snapshots + lightweight count). Added service-level getters: getEconPopulatorStatus + lastResult tracking (econ-calendar-populator), isDropCounterFlushRunning (drop-counters), getPipelineStateSnapshot (pipeline-gate). routes/index.ts unchanged (pipeline-stats already registered, superadmin-gated).",
+    files: [
+      "backend-hono/src/routes/diagnostics/index.ts",
+      "backend-hono/src/routes/admin/pipeline-stats.ts",
+      "backend-hono/src/services/cron/econ-calendar-populator.ts",
+      "backend-hono/src/services/riskflow/drop-counters.ts",
+      "backend-hono/src/services/riskflow/pipeline-gate.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-29T21:00:00",
+    agent: "claude-code",
+    summary:
+      "S53-T3: Realtime econ/commentator sync — aligned frontend surfaces with live pipeline state. Created useEconWatchHealth hook (polls /api/econ/active-watch + /api/econ/trigger-status + /api/diagnostics/feed-health) for backend-health vs natural-empty differentiation. Updated EconCountdownModal to show degraded reason when pipeline unhealthy, with dev-only debug logging. Added compact econ/watch readiness status chip to TopHeader toolbar (green active/amber degraded/red offline). Updated RiskFlowMini and SignalFeed empty states to distinguish pipeline-health outages from natural quiet windows using useSourceStatus.",
+    files: [
+      "frontend/hooks/useEconWatchHealth.ts",
+      "frontend/components/feed/EconCountdownModal.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/RiskFlowMini.tsx",
+      "frontend/components/SignalFeed.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-29T20:30:00",
     agent: "claude-code",
     summary:
       "v5.37.1 release prep: desktop update toast now shows bottom-left with 'Install now' and 'Later'. 'Later' defers update handoff until app close (Electron main tracks deferred flag and opens latest release on before-quit). Updater bridge/types and toast UI now support secondary CTA actions; package and update script version bumped to 5.37.1.",

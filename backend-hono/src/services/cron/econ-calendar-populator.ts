@@ -5,6 +5,8 @@
 // that depend on event_key sha256 hashing for de-dupe. Idempotent dedupe is
 // now enforced by a UNIQUE INDEX on economic_events.event_key (migration
 // 20260427000000_econ_events_unique_event_key.sql).
+// [claude-code 2026-04-29] S53-T1: lastPopulatorResult tracker + getter
+// (getLastPopulatorResult, getEconPopulatorStatus) for riskflow_runtime.
 // [claude-code 2026-04-26] Added TradingView Economic Calendar
 // (https://economic-calendar.tradingview.com/events) as a parallel feed
 // alongside ForexFactory. TradingView ships actuals faster than FF on
@@ -316,7 +318,10 @@ export async function runEconCalendarPopulator(
       if (mapped) rows.push(mapped);
     }
   }
-  if (rows.length === 0) return result;
+  if (rows.length === 0) {
+    lastPopulatorResult = result;
+    return result;
+  }
   result.fetched = rows.length;
 
   // [S34-T9] T1 watch-filters: build an active-set once per run. If the service
@@ -407,6 +412,7 @@ export async function runEconCalendarPopulator(
   }
 
   log.info("Populator run complete", { ...result });
+  lastPopulatorResult = result;
   return result;
 }
 
@@ -414,6 +420,18 @@ export async function runEconCalendarPopulator(
 
 let tasks: cron.ScheduledTask[] = [];
 let running = false;
+let lastPopulatorResult: RunResult | null = null;
+
+export function getLastPopulatorResult(): RunResult | null {
+  return lastPopulatorResult;
+}
+
+export function getEconPopulatorStatus(): {
+  running: boolean;
+  lastResult: RunResult | null;
+} {
+  return { running, lastResult: lastPopulatorResult };
+}
 
 export function startEconCalendarPopulator(): void {
   if (running) return;

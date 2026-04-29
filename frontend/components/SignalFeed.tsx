@@ -1,6 +1,8 @@
 // [claude-code 2026-03-11] Track 3: Signal feed — scrollable signal list + pending proposals with countdown
+// [claude-code 2026-04-29] S53-T3: Added pipeline health vs natural-empty differentiation
 import { useState, useEffect } from "react";
-import { Radio, Clock, ArrowUp, ArrowDown } from "lucide-react";
+import { Radio, Clock, ArrowUp, ArrowDown, Activity } from "lucide-react";
+import { useSourceStatus } from "../hooks/useSourceStatus";
 import type { SignalEvent, StoredProposal } from "./AutopilotDashboard";
 
 interface SignalFeedProps {
@@ -103,6 +105,7 @@ export function SignalFeed({
   proposals,
   onProposalClick,
 }: SignalFeedProps) {
+  const sourceStatus = useSourceStatus();
   const pendingProposals = proposals.filter(
     (p) => p.status === "pending" || p.status === "pending_approval",
   );
@@ -213,13 +216,37 @@ export function SignalFeed({
         );
       })}
 
-      {/* Empty State */}
+      {/* Empty State — [claude-code 2026-04-29] S53-T3: pipeline health vs natural-empty */}
       {!hasContent && (
         <div className="flex flex-col items-center justify-center py-16">
-          <Radio className="w-8 h-8 text-[#f0ead620] mb-3" />
-          <div className="text-sm text-[#f0ead640] animate-pulse">
-            Waiting for signals...
-          </div>
+          {!sourceStatus.backendReachable ? (
+            <>
+              <Activity className="w-8 h-8 text-red-400/20 mb-3" />
+              <div className="text-sm text-red-400/60">
+                Pipeline offline — backend unreachable
+              </div>
+              <div className="text-[10px] text-red-400/30 mt-1">
+                Check network or diagnostics
+              </div>
+            </>
+          ) : !sourceStatus.newsfeedHealthy && sourceStatus.newsfeedDegraded ? (
+            <>
+              <Radio className="w-8 h-8 text-amber-400/20 mb-3" />
+              <div className="text-sm text-amber-400/60">
+                Feed pipeline degraded
+              </div>
+              <div className="text-[10px] text-amber-400/30 mt-1">
+                Check diagnostics for details
+              </div>
+            </>
+          ) : (
+            <>
+              <Radio className="w-8 h-8 text-[#f0ead620] mb-3" />
+              <div className="text-sm text-[#f0ead640] animate-pulse">
+                Waiting for signals...
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

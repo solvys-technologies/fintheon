@@ -1,6 +1,8 @@
 // [claude-code 2026-04-28] S48-T1: Pipeline gate — per-pipeline toggle with
 // in-memory cache, 30s TTL, Supabase-backed. Every ingest path calls
 // isPipelineEnabled() at entry to respect the killswitch.
+// [claude-code 2026-04-29] S53-T1: exposed getPipelineStateSnapshot() for
+// riskflow_runtime control-plane payload.
 
 import { createLogger } from "../../lib/logger.js";
 import { getSupabaseClient } from "../../config/supabase.js";
@@ -55,6 +57,10 @@ export async function refreshPipelineState(): Promise<void> {
       error: err instanceof Error ? err.message : String(err),
     });
   }
+}
+
+export function getPipelineStateSnapshot(): Record<string, boolean> {
+  return Object.fromEntries(stateCache);
 }
 
 export function clearPipelineCache(): void {
