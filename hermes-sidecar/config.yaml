@@ -23,19 +23,20 @@ plugins:
 routing:
   # T9 owns the live model map. Defaults here are the fallback when sidecar is queried
   # before Claude-10 populates the routing table.
-  default_model: claude-sonnet-4-6
+  # [claude-code 2026-04-29] DeepSeek configured as primary agent model
+  default_model: deepseek-chat
   per_agent:
-    harper: claude-opus-4-7
-    oracle: claude-opus-4-7
-    feucht: claude-haiku-4-5
-    consul: claude-sonnet-4-6
-    herald: claude-haiku-4-5
+    harper: deepseek-chat
+    oracle: deepseek-chat
+    feucht: deepseek-chat
+    consul: deepseek-chat
+    herald: deepseek-chat
 
 voice:
   # [claude-code 2026-04-19] S27-T5 W2c — real voicebox + Qwen wired through the sidecar.
   # Reasoning model for the voice CAO lives in ROUTING_TABLE (routing.ts) under
-  # agent=harper-voice. Swap via ROUTING_OVERRIDE_HARPER_VOICE env var.
-  agent_id: harper-voice
+  # agent=harper-2.1-voice. Swap via ROUTING_OVERRIDE_HARPER_VOICE env var.
+  agent_id: harper-2.1-voice
   reasoning_model: qwen/qwen3.6-plus-preview:free
   stt:
     primary:
@@ -49,7 +50,7 @@ voice:
   tts:
     provider: voicebox
     model: qwen3-tts
-    voice_id: harper-voice
+    voice_id: harper-2.1-voice
     # Streams opus audio chunks; client side decodes as they arrive.
     stream: true
     target_first_byte_ms: 400

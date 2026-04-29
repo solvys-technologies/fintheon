@@ -22,18 +22,23 @@ Never use TP-vetoed references as influence: `Xquik-dev/x-twitter-scraper`, `Eve
 
 ```markdown
 ## Diagnosis
+
 Status: FOUND | PARTIAL | BLOCKED
 Failure class: ...
 
 ## Evidence
+
 - `path:line` -- finding
 
 ## Root Cause
+
 ...
 
 ## Minimal Fix
+
 ...
 
 ## Regression Test
+
 ...
 ```

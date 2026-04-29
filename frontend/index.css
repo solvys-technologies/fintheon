@@ -212,6 +212,28 @@ html *::-webkit-scrollbar {
   }
 }
 
+/* [claude-code 2026-04-28] S48-T3: CountdownFuse state-machine keyframes.
+   countdown-blink: rapid opacity toggle during the blink phase (3x, 300ms each).
+   x-pulse: pulsating close icon after beat/miss/par settle. */
+@keyframes countdown-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes x-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.85);
+  }
+}
+
 /* Horizontal fuse shimmer for RiskFlow expanded card footer */
 @keyframes riskflow-fuse {
   0% {
@@ -793,6 +815,10 @@ html *::-webkit-scrollbar {
 
 .fintheon-accent-border {
   border-color: color-mix(in srgb, var(--fintheon-accent) 20%, transparent);
+}
+
+.fintheon-accent-border-top {
+  border-top-color: color-mix(in srgb, var(--fintheon-accent) 20%, transparent);
 }
 
 .fintheon-accent-border-hover:hover {

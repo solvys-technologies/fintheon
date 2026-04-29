@@ -34,6 +34,11 @@ import {
   getMacroHandles,
 } from "../../../services/source-accounts/source-accounts-service.js";
 import type { CollectedNewsItem } from "./types.js";
+// [claude-code 2026-04-29] S48-T5: Kalshi whale-alert pipe wired into
+// Standard tier. Pipeline-gated via ingest_pipeline_state so TP can kill
+// the source from the Refinement Engine without a deploy.
+import { pollKalshiWhaleAlerts } from "../../../services/riskflow/kalshi-feed-pipe.js";
+import { isPipelineEnabled } from "../../../services/riskflow/pipeline-gate.js";
 
 // FOMC Minutes title prefix — press_monetary.xml mixes minutes with every other
 // monetary press release (intermeeting statements, FAQ updates, etc.). TP only
@@ -142,6 +147,11 @@ export async function runStandardTier(): Promise<TierRunResult> {
       const handles = await getMacroHandles();
       if (handles.length === 0) return [];
       return collectFromAgentReach({ handles, tier: "standard" });
+    }),
+    // S48-T5: Kalshi whale alerts (Econ & Politics only). Pipeline-gated.
+    safeCollect("kalshi-whale", async () => {
+      if (!(await isPipelineEnabled("kalshi-whale"))) return [];
+      return pollKalshiWhaleAlerts();
     }),
   ]);
 

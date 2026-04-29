@@ -26,7 +26,20 @@ function prefersReducedMotion(): boolean {
 }
 
 // Braille dot frames: a single cell that pulses through density states.
-const BRAILLE_BEAT_FRAMES = ["⠀", "⠁", "⠃", "⠇", "⠏", "⠟", "⠿", "⠟", "⠏", "⠇", "⠃", "⠁"];
+const BRAILLE_BEAT_FRAMES = [
+  "⠀",
+  "⠁",
+  "⠃",
+  "⠇",
+  "⠏",
+  "⠟",
+  "⠿",
+  "⠟",
+  "⠏",
+  "⠇",
+  "⠃",
+  "⠁",
+];
 
 export function SolvysLoader({
   text,

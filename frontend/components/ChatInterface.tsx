@@ -91,8 +91,7 @@ function ChatInterfaceInner({
       }
     };
     window.addEventListener("fintheon:send-chat-text", handler);
-    return () =>
-      window.removeEventListener("fintheon:send-chat-text", handler);
+    return () => window.removeEventListener("fintheon:send-chat-text", handler);
   }, [handleSend]);
 
   const handleNewChat = useCallback(() => {
@@ -106,7 +105,7 @@ function ChatInterfaceInner({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            agentId: "harper-opus",
+            agentId: "harper-2.1",
             memoryType: "observation",
             content: content.slice(0, 500),
             metadata: {

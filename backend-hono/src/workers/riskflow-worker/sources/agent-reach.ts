@@ -118,6 +118,7 @@ export async function collectFromAgentReach(
         published_at: item.pubDate ?? new Date().toISOString(),
         fetched_at: new Date().toISOString(),
         fetch_latency_ms: base_latency,
+        ingest_pipeline: "agent-reach-nitter",
       });
     }
   }

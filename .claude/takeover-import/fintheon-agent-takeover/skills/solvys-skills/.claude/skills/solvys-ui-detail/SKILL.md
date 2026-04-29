@@ -20,11 +20,14 @@ Improve perceived quality without adding ornament. Load `/solvys-feels` and `ref
 
 ```markdown
 ## UI Detail Review
+
 Verdict: PASS | POLISH | REWORK
 
 ## Findings
+
 - `path:line` -- issue, impact, exact correction
 
 ## Quick Wins
+
 1. ...
 ```

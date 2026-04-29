@@ -57,7 +57,11 @@ export async function handleIngestIcs(c: Context): Promise<Response> {
     lastIngestError = error.message;
     log.warn("upsert_failed", { err: error.message });
     return c.json(
-      { error: "persist_failed", detail: error.message, statusMessage: "Failed to save events" },
+      {
+        error: "persist_failed",
+        detail: error.message,
+        statusMessage: "Failed to save events",
+      },
       500,
     );
   }
@@ -66,7 +70,11 @@ export async function handleIngestIcs(c: Context): Promise<Response> {
     (data?.length ?? 0) > 0
       ? `Saved ${data!.length} event${data!.length === 1 ? "" : "s"} to desk queue`
       : "No new events to save";
-  return c.json({ ingested: data?.length ?? 0, events: data ?? [], statusMessage });
+  return c.json({
+    ingested: data?.length ?? 0,
+    events: data ?? [],
+    statusMessage,
+  });
 }
 
 export async function handleGetQueue(c: Context): Promise<Response> {

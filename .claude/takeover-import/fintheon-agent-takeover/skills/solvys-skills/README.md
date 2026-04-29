@@ -5,6 +5,7 @@ A Claude Code skills suite for design, development, orchestration, and deploymen
 ## Install
 
 **Automatic:**
+
 ```bash
 npx skills add solvys-technologies/solvys-skills
 ```
@@ -14,22 +15,22 @@ Clone this repo and copy `.claude/skills/` into your project's `.claude/` direct
 
 ## Skills
 
-| Skill | Invoke | Purpose |
-|-------|--------|---------|
-| Orchestrate | `/solvys-orchestrate` | Multi-track sprint planning with parallel agent briefings |
-| Audit | `/solvys-audit` | Pre-flight checks, debugging, environment audit, security scan |
-| Inform | `/solvys-inform` | Brief an AI agent on project context and recent changes |
-| Deploy | `/solvys-deploy` | Pre-flight, deploy release, test, fix-and-redeploy cycle |
-| Beta | `/solvys-beta` | Local build, test, and DMG publish to desktop |
-| Feels | `/solvys-feels` | Visual architecture -- Solvys Gold palette, flat design, industrial warmth |
-| Transitions | `/solvys-transitions` | 9 paste-ready CSS transitions tuned for Solvys (modal, dropdown, panel, badge, icon swap, text swap, page slide, card resize, number pop-in) |
-| Diagnose | `/solvys-diagnose` | Evidence-backed debugging loop: reproduce, minimize, hypothesize, instrument, root cause, regression test |
-| Backend Quality | `/solvys-backend-quality` | Node/Bun/Hono backend boundary, runtime, data, auth, and diagnostics review |
-| Tech Debt | `/solvys-tech-debt` | File-cited technical debt audit with severity and sprint-slice recommendations |
-| Context | `/solvys-context` | Context hygiene and handoff compression for long agent sessions |
-| Browser Verify | `/solvys-browser-verify` | Browser-facing adversarial verification for desktop, mobile, and Electron surfaces |
-| UI Detail | `/solvys-ui-detail` | Fine-grained Solvys UI craft review: hierarchy, alignment, typography, surfaces, states |
-| UI Cleanup | `/solvys-ui-cleanup` | Systematic pass for overlooked state-of-the-art UI polish: states, alignment, typography, motion, responsive details |
+| Skill           | Invoke                    | Purpose                                                                                                                                      |
+| --------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Orchestrate     | `/solvys-orchestrate`     | Multi-track sprint planning with parallel agent briefings                                                                                    |
+| Audit           | `/solvys-audit`           | Pre-flight checks, debugging, environment audit, security scan                                                                               |
+| Inform          | `/solvys-inform`          | Brief an AI agent on project context and recent changes                                                                                      |
+| Deploy          | `/solvys-deploy`          | Pre-flight, deploy release, test, fix-and-redeploy cycle                                                                                     |
+| Beta            | `/solvys-beta`            | Local build, test, and DMG publish to desktop                                                                                                |
+| Feels           | `/solvys-feels`           | Visual architecture -- Solvys Gold palette, flat design, industrial warmth                                                                   |
+| Transitions     | `/solvys-transitions`     | 9 paste-ready CSS transitions tuned for Solvys (modal, dropdown, panel, badge, icon swap, text swap, page slide, card resize, number pop-in) |
+| Diagnose        | `/solvys-diagnose`        | Evidence-backed debugging loop: reproduce, minimize, hypothesize, instrument, root cause, regression test                                    |
+| Backend Quality | `/solvys-backend-quality` | Node/Bun/Hono backend boundary, runtime, data, auth, and diagnostics review                                                                  |
+| Tech Debt       | `/solvys-tech-debt`       | File-cited technical debt audit with severity and sprint-slice recommendations                                                               |
+| Context         | `/solvys-context`         | Context hygiene and handoff compression for long agent sessions                                                                              |
+| Browser Verify  | `/solvys-browser-verify`  | Browser-facing adversarial verification for desktop, mobile, and Electron surfaces                                                           |
+| UI Detail       | `/solvys-ui-detail`       | Fine-grained Solvys UI craft review: hierarchy, alignment, typography, surfaces, states                                                      |
+| UI Cleanup      | `/solvys-ui-cleanup`      | Systematic pass for overlooked state-of-the-art UI polish: states, alignment, typography, motion, responsive details                         |
 
 ## Solvys Feels -- Design System
 

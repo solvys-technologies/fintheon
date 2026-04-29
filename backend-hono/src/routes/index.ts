@@ -88,13 +88,16 @@ import { createOracleRoutes } from "./oracle.js";
 import { createMeRoutes } from "./me/index.js";
 import { createMaintenanceRoutes } from "./maintenance.js";
 // [claude-code 2026-04-23] Routines Console retired — replaced by in-process schedulers + hooks.
-// [claude-code 2026-04-20] S21: Harper Voice integration (formerly Omi) + PsychAssist fork admin
-import { createHarperVoiceRoutes } from "./harper-voice.js";
+// [claude-code 2026-04-20] S21: Harper 2.1 Voice integration (formerly Omi) + PsychAssist fork admin
+import { createHarper21VoiceRoutes } from "./harper-2.1-voice.js";
 import { createPsychAssistForkRoutes } from "./admin/psych-assist-fork.js";
 // [claude-code 2026-04-25] S35-cleanup: manual trigger for econ-backfill-orchestrator drain
 import { createEconBackfillRoutes } from "./admin/econ-backfill.js";
 // [claude-code 2026-04-27] S46.4: bulk delete + refill + MSM purge audit
 import { createRiskFlowBulkRoutes } from "./admin/riskflow-bulk.js";
+// [claude-code 2026-04-28] S48-T1: pipeline toggle and stats admin routes
+import { createPipelineRoutes } from "./admin/pipelines.js";
+import { createPipelineStatsRoutes } from "./admin/pipeline-stats.js";
 // [claude-code 2026-04-23] Harper Vision — screen + audio perception layer
 import { createHarperVisionRoutes } from "./harper-vision/index.js";
 // [claude-code 2026-04-23] S31-T9 predictive knowledge graph — usage telemetry + Harper feature proposals
@@ -410,9 +413,9 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/editor/*", authMiddleware, requireAuth);
   app.route("/api/editor", createEditorRoutes());
 
-  // [S21] Harper Voice integration — webhooks are public (uid-param auth),
+  // [S21] Harper 2.1 Voice integration — webhooks are public (uid-param auth),
   //   session + pair endpoints are authMiddleware+requireAuth (inside the router).
-  app.route("/api/harper-voice", createHarperVoiceRoutes());
+  app.route("/api/harper-2.1-voice", createHarper21VoiceRoutes());
 
   // [claude-code 2026-04-23] Harper Vision — screen + audio perception layer
   // Frame ingestion is public (Electron main process posts directly),
@@ -446,6 +449,28 @@ export function registerRoutes(app: Hono): void {
     requireSuperadmin,
   );
   app.route("/api/admin/riskflow", createRiskFlowBulkRoutes());
+
+  // [claude-code 2026-04-28] S48-T1: pipeline management — superadmin-gated
+  app.use(
+    "/api/admin/pipelines",
+    authMiddleware,
+    requireAuth,
+    requireSuperadmin,
+  );
+  app.use(
+    "/api/admin/pipelines/*",
+    authMiddleware,
+    requireAuth,
+    requireSuperadmin,
+  );
+  app.use(
+    "/api/admin/pipeline-stats",
+    authMiddleware,
+    requireAuth,
+    requireSuperadmin,
+  );
+  app.route("/api/admin/pipelines", createPipelineRoutes());
+  app.route("/api/admin/pipeline-stats", createPipelineStatsRoutes());
 
   // [S29-T4] Catalysts — date-filtered RiskFlow headlines for calendar panel
   app.route("/api/catalysts", createCatalystsByDateRoute());

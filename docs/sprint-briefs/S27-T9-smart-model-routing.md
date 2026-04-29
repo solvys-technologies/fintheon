@@ -21,7 +21,7 @@ export type AgentId =
   | "feucht"
   | "consul"
   | "herald"
-  | "harper-voice";
+  | "harper-2.1-voice";
 export type TaskType =
   | "chat"
   | "probability"
@@ -83,7 +83,7 @@ export const ROUTING_TABLE: RoutingRule[] = [
     cost_per_mtoken_out_usd: 5,
   },
   {
-    agent: "harper-voice",
+    agent: "harper-2.1-voice",
     model: "<QWEN_REASONING_LATEST>",
     provider: "hermes-sidecar",
     max_input_tokens: 32_000,
@@ -144,7 +144,7 @@ Every model call must write a `routing_decisions` row. Wrap calls through a sing
 Flip every call site to go through the routing layer:
 
 - [`backend-hono/src/services/hermes-handler.ts`](backend-hono/src/services/hermes-handler.ts) — route each agent's OpenRouter call through `selectModel(agent).provider`
-- [`backend-hono/src/services/harper-handler.ts`](backend-hono/src/services/harper-handler.ts) — Harper-Opus routing (keeps `claude-opus-4-7` by default, but routing layer is where it lives now)
+- [`backend-hono/src/services/harper-handler.ts`](backend-hono/src/services/harper-handler.ts) — Harper-2.1 routing (keeps `claude-opus-4-7` by default, but routing layer is where it lives now)
 - [`backend-hono/src/services/ai/sidecar-client.ts`](backend-hono/src/services/ai/sidecar-client.ts) — pass routing decision to sidecar's `/v1/routing/select` for voice calls
 - Handoff tools (T3) — target agent's model picked via `selectModel(target_agent)`
 

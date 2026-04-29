@@ -133,8 +133,15 @@ export async function getTranscriptStats24h(): Promise<{
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
   const [{ data: countData }, { data: latestData }] = await Promise.all([
-    sb.from("commentary_transcripts").select("id", { count: "exact", head: true }).gte("created_at", since),
-    sb.from("commentary_transcripts").select("created_at").order("created_at", { ascending: false }).limit(1),
+    sb
+      .from("commentary_transcripts")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", since),
+    sb
+      .from("commentary_transcripts")
+      .select("created_at")
+      .order("created_at", { ascending: false })
+      .limit(1),
   ]);
 
   return {
@@ -153,8 +160,10 @@ async function summarizeText(text: string): Promise<string> {
   // In production this should call a lightweight LLM (e.g. qwen3.5 via Hermes).
   const paragraphs = trimmed.split(/\n\s*\n/);
   if (paragraphs.length === 1) {
-    return trimmed.slice(0, MAX_SUMMARY_LENGTH) +
-      (trimmed.length > MAX_SUMMARY_LENGTH ? "…" : "");
+    return (
+      trimmed.slice(0, MAX_SUMMARY_LENGTH) +
+      (trimmed.length > MAX_SUMMARY_LENGTH ? "…" : "")
+    );
   }
 
   const first = paragraphs[0].trim();

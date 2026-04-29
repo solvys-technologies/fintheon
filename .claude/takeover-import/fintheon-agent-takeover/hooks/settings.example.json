@@ -1,0 +1,81 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/block-dangerous.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/require-tests-for-pr.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/protect-files.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx prettier --write \"$CLAUDE_FILE_PATH\" 2>/dev/null || true"
+          },
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && bun run build 2>&1 | tail -5 || true"
+          },
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && npx eslint \"$CLAUDE_FILE_PATH\" --fix 2>&1 | tail -10 || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/log-commands.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/auto-commit.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/harper-feed-health.sh"
+          },
+          {
+            "type": "command",
+            "command": "nohup bash \"$CLAUDE_PROJECT_DIR/scripts/fintheon-update.sh\" >/tmp/fintheon-stop-hook.log 2>&1 < /dev/null &",
+            "async": true,
+            "timeout": 90,
+            "statusMessage": "fintheon update (background)"
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "MAX_THINKING_TOKENS": "128000",
+    "CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING": "1"
+  }
+}

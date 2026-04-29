@@ -27,6 +27,7 @@ For UI audits, use `/solvys-feels` plus `reference/design-guidelines.md`: Solvys
 Verify the development/deployment environment is correctly configured.
 
 ### 1a. Runtime Versions
+
 ```bash
 node --version    # Expected: 20+
 bun --version     # Expected: 1.0+
@@ -89,6 +90,7 @@ Format: `WARN: {path} -- {line_count} lines (limit: 300)`
 ### 3b. Dead Code Detection
 
 Look for:
+
 - Exported functions/components with zero imports elsewhere
 - Files not imported by any other file
 - Unused dependencies in `package.json`
@@ -98,6 +100,7 @@ Report as WARN (not FAIL -- dead code is a smell, not a blocker).
 ### 3c. Changelog Compliance
 
 If `src/lib/changelog.ts` exists, verify:
+
 - Most recent entry is within the last 24 hours (for active development)
 - Entry format matches expected schema
 
@@ -155,15 +158,15 @@ WARN on moderate vulnerabilities, FAIL on high/critical.
 
 Search source files for:
 
-| Pattern | Risk | Severity |
-|---------|------|----------|
-| `eval(` | Code injection | FAIL |
-| `dangerouslySetInnerHTML` | XSS | WARN (check if sanitized) |
-| `innerHTML =` | XSS | WARN |
-| `new Function(` | Code injection | FAIL |
-| `child_process.exec(` with string concat | Command injection | FAIL |
-| `fs.writeFileSync` with user input in path | Path traversal | WARN |
-| `fetch(` with variable URL not validated | SSRF | WARN |
+| Pattern                                    | Risk              | Severity                  |
+| ------------------------------------------ | ----------------- | ------------------------- |
+| `eval(`                                    | Code injection    | FAIL                      |
+| `dangerouslySetInnerHTML`                  | XSS               | WARN (check if sanitized) |
+| `innerHTML =`                              | XSS               | WARN                      |
+| `new Function(`                            | Code injection    | FAIL                      |
+| `child_process.exec(` with string concat   | Command injection | FAIL                      |
+| `fs.writeFileSync` with user input in path | Path traversal    | WARN                      |
+| `fetch(` with variable URL not validated   | SSRF              | WARN                      |
 
 ### 5d. Auth Guard Verification
 
@@ -183,13 +186,13 @@ Activated when invoked with an error message.
 
 Determine the error category:
 
-| Category | Indicators |
-|----------|-----------|
-| Build | `tsc`, `vite`, `esbuild`, `Module not found`, `Cannot find` |
-| Runtime | `TypeError`, `ReferenceError`, stack trace with line numbers |
+| Category    | Indicators                                                     |
+| ----------- | -------------------------------------------------------------- |
+| Build       | `tsc`, `vite`, `esbuild`, `Module not found`, `Cannot find`    |
+| Runtime     | `TypeError`, `ReferenceError`, stack trace with line numbers   |
 | Environment | `ENOENT`, `ECONNREFUSED`, `env`, `undefined` for config values |
-| Dependency | `Could not resolve`, version conflicts, peer dep warnings |
-| State | `null is not an object`, `Cannot read properties of undefined` |
+| Dependency  | `Could not resolve`, version conflicts, peer dep warnings      |
+| State       | `null is not an object`, `Cannot read properties of undefined` |
 
 ### Step 2: Isolate
 
@@ -200,6 +203,7 @@ Determine the error category:
 ### Step 3: Root Cause Analysis
 
 Apply the 5-whys method:
+
 1. What failed?
 2. Why did it fail?
 3. Why was that the case?
@@ -209,6 +213,7 @@ Apply the 5-whys method:
 ### Step 4: Propose Fix
 
 Present:
+
 - **Root cause**: one sentence
 - **Fix**: exact file path, line number, and code change
 - **Risk**: what else could this fix affect?

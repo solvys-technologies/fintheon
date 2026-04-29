@@ -13,17 +13,17 @@ Curated motion primitives for Solvys apps. Each transition is a self-contained `
 
 ## The 9 transitions
 
-| Name | Class | When to use |
-| ---- | ----- | ----------- |
-| Notification badge | `.t-badge` | Slide-in + pop badge for unread counts on a bell / button |
-| Menu dropdown | `.t-dropdown` | Scale + fade dropdown menus, popovers, filter pickers |
-| Panel reveal | `.t-panel-slide` | Translate-Y + fade panels, peek footers, expanding sheets |
-| Card resize | `.t-resize` | Tween width / height when a card swaps states (compact ↔ expanded) |
-| Icon swap | `.t-icon-swap` | Cross-fade two icons (chevron flip, play/pause, mute/unmute) |
-| Text swap | `.t-text-swap` | Three-phase exit/enter for status labels ("Saving..." → "Saved") |
-| Modal | `.t-modal` | Scale + fade modal / dialog open + close |
-| Page slide | `.t-page-slide` | Left/right slide between two views (wizard pages, tab swap) |
-| Number pop-in | `.t-digit-group` | Staggered digit pop-in for numeric displays (scores, prices, IV) |
+| Name               | Class            | When to use                                                        |
+| ------------------ | ---------------- | ------------------------------------------------------------------ |
+| Notification badge | `.t-badge`       | Slide-in + pop badge for unread counts on a bell / button          |
+| Menu dropdown      | `.t-dropdown`    | Scale + fade dropdown menus, popovers, filter pickers              |
+| Panel reveal       | `.t-panel-slide` | Translate-Y + fade panels, peek footers, expanding sheets          |
+| Card resize        | `.t-resize`      | Tween width / height when a card swaps states (compact ↔ expanded) |
+| Icon swap          | `.t-icon-swap`   | Cross-fade two icons (chevron flip, play/pause, mute/unmute)       |
+| Text swap          | `.t-text-swap`   | Three-phase exit/enter for status labels ("Saving..." → "Saved")   |
+| Modal              | `.t-modal`       | Scale + fade modal / dialog open + close                           |
+| Page slide         | `.t-page-slide`  | Left/right slide between two views (wizard pages, tab swap)        |
+| Number pop-in      | `.t-digit-group` | Staggered digit pop-in for numeric displays (scores, prices, IV)   |
 
 ## How to apply
 
@@ -46,7 +46,10 @@ Each transition uses one class plus a state attribute or class. Examples:
 **Dropdown** — toggle `.is-open` on the wrapper:
 
 ```tsx
-<div className={cn("t-dropdown", { "is-open": open, "is-closing": closing })} data-origin="top-right">
+<div
+  className={cn("t-dropdown", { "is-open": open, "is-closing": closing })}
+  data-origin="top-right"
+>
   {/* menu items */}
 </div>
 ```
@@ -64,7 +67,10 @@ On close, swap `.is-open` for `.is-closing`, then remove `.is-closing` after `--
 **Modal** — toggle `.is-open`:
 
 ```tsx
-<div className={cn("t-modal", { "is-open": open, "is-closing": closing })} role="dialog">
+<div
+  className={cn("t-modal", { "is-open": open, "is-closing": closing })}
+  role="dialog"
+>
   {/* modal */}
 </div>
 ```
@@ -74,7 +80,15 @@ On close, swap `.is-open` for `.is-closing`, then remove `.is-closing` after `--
 ```tsx
 <span className={cn("t-digit-group", { "is-animating": animating })}>
   {chars.map((ch, i) => (
-    <span key={i} className="t-digit" data-stagger={i >= chars.length - 2 ? String(chars.length - i) : undefined}>{ch}</span>
+    <span
+      key={i}
+      className="t-digit"
+      data-stagger={
+        i >= chars.length - 2 ? String(chars.length - i) : undefined
+      }
+    >
+      {ch}
+    </span>
   ))}
 </span>
 ```

@@ -29,7 +29,12 @@ function envProvider(): SttProvider | null {
   const raw = process.env.VOICE_STT_PROVIDER;
   if (!raw) return null;
   const v = raw.trim().toLowerCase();
-  if (v === "vibevoice" || v === "sidecar" || v === "whisper" || v === "fallback") {
+  if (
+    v === "vibevoice" ||
+    v === "sidecar" ||
+    v === "whisper" ||
+    v === "fallback"
+  ) {
     return v;
   }
   return null;
@@ -90,7 +95,11 @@ export function resolveSttProvider(): SttProviderInfo {
 
   // Auto-detect (no forced provider)
   if (canUseVibeVoice()) {
-    return { provider: "vibevoice", model: "vibevoice-asr-7b", available: true };
+    return {
+      provider: "vibevoice",
+      model: "vibevoice-asr-7b",
+      available: true,
+    };
   }
   if (canUseSidecar()) {
     return { provider: "sidecar", model: "whisper-turbo", available: true };

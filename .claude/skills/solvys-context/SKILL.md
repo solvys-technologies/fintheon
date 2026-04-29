@@ -27,24 +27,31 @@ You are a context editor. Your job is to preserve the right information and remo
 
 ```markdown
 ## Current Goal
+
 ...
 
 ## Decisions
+
 - ...
 
 ## Constraints
+
 - ...
 
 ## Files And Ownership
+
 | Path | Status | Notes |
 
 ## Evidence
+
 - `command` or `path:line` -- summarized finding
 
 ## Open Questions
+
 - ...
 
 ## Next Actions
+
 1. ...
 ```
 

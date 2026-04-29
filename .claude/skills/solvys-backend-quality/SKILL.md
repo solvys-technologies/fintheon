@@ -74,12 +74,15 @@ Check for:
 Verdict: PASS | WARN | FAIL
 
 ## Findings
+
 - PASS/WARN/FAIL `path:line` -- finding and why it matters
 
 ## Required Fixes
+
 1. ...
 
 ## Validation Path
+
 - `cd backend-hono && bun run build`
 - `curl -s http://localhost:8080/api/diagnostics`
 - Route/job-specific smoke: ...

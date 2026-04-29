@@ -215,7 +215,12 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
                       </span>
                       <span className="text-[7px] text-[var(--fintheon-muted)]/30">
                         {(() => {
-                          const h = Math.max(0, (Date.now() - new Date(signal.generatedAt).getTime()) / 3_600_000);
+                          const h = Math.max(
+                            0,
+                            (Date.now() -
+                              new Date(signal.generatedAt).getTime()) /
+                              3_600_000,
+                          );
                           if (h < 1) return "just now";
                           if (h < 24) return `${Math.round(h)}h ago`;
                           return `${Math.floor(h / 24)}d ago`;

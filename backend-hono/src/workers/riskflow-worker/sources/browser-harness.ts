@@ -66,6 +66,7 @@ export async function collectFromBrowserHarness(
       published_at: result.rendered_at ?? new Date().toISOString(),
       fetched_at: new Date().toISOString(),
       fetch_latency_ms,
+      ingest_pipeline: "browser-harness",
     });
   }
   return out;

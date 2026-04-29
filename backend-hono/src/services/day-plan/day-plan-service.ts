@@ -67,7 +67,9 @@ export async function generateDayPlan(
     readEconEvents({ from: dateIso, to: dateIso }).catch(() => []),
     getFeed("system", { limit: 20 }).catch(() => ({ items: [] }) as never),
     getCurrentRegime().catch(() => null),
-    fetchVIX().then((r) => r.vix).catch(() => null),
+    fetchVIX()
+      .then((r) => r.vix)
+      .catch(() => null),
   ]);
 
   const planned = planDay(reference, econEvents);

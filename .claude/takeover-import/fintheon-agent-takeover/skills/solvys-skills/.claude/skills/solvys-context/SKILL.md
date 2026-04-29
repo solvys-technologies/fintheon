@@ -11,24 +11,31 @@ Preserve decisions, constraints, file ownership, validation paths, blockers, and
 
 ```markdown
 ## Current Goal
+
 ...
 
 ## Decisions
+
 - ...
 
 ## Constraints
+
 - ...
 
 ## Files And Ownership
+
 | Path | Status | Notes |
 
 ## Evidence
+
 - `command` or `path:line` -- summarized finding
 
 ## Open Questions
+
 - ...
 
 ## Next Actions
+
 1. ...
 
 READY_FOR_NEXT_AGENT: yes|no

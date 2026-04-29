@@ -1,21 +1,15 @@
-// [claude-code 2026-04-27] S46.4: Right rail now stacks Catalyst Stats panel
-// (counts per source × category, bulk delete + 14d refill + MSM purge audit)
-// over the Annotatable Feed Preview. The new panel reuses the S37 edit-lock
-// to gate destructive controls.
-// [claude-code 2026-04-24] S37: (1) text typography bumped, (2) S24-T3 placeholder retired — fuses always render with an inline degraded-mode banner on fetch fail, (3) Advanced pane gets a right-justified lock gate via the shared dev-settings password ("glass of a data center" — always readable, mutations gated), (4) regime approval queue clears+fades when the most-recent proposal is approved.
-// [claude-code 2026-04-24] S34-T2: Layout flip — main pane (75%) now carries regime/fuses/presets/advanced; feed shrinks to a 25% right panel (min 280, max 420). GroupSensitivityDial swapped for NotchedFuse (same -1..+1 contract). Nothing-design pass: flat surfaces, accent borders, dotted dividers, Doto numerals. No glass.
-// [claude-code 2026-04-19] S28: RoutinesConsole moved out of Scoring sidebar into the Monitor sub-tab. Scoring sidebar keeps Regime / Sensitivity / Presets / Advanced.
-// [claude-code 2026-04-20] S27 final-sanitation: thread auth token into V4 preset fetches + wrap loadV4State in try/catch so a rejected fetch never deadlocks the loader. Prior release stuck forever on "Loading Refinement Engine...".
-// [claude-code 2026-04-18] S24-T4: Rebuilt — 5 group dials + presets + advanced pane + toasts + rescore preview
-// [claude-code 2026-03-27] S2-T7: Refinement Engine — scoring calibration workbench
+// [claude-code 2026-04-28] S48-T3: Group Sensitivity NotchedFuse section removed
+// and replaced with PipelineHealth table + PipelineToggles. CountdownFuse added.
+// Error handling hardened: silent catch blocks replaced with inline error states.
+// [claude-code 2026-04-27] S46.4: Right rail now stacks Catalyst Stats panel.
+// [claude-code 2026-04-24] S37: text typography, fuses, Advanced pane lock gate, regime queue.
+// [claude-code 2026-04-24] S34-T2: Layout flip, NotchedFuse swap, Nothing-design pass.
+// [claude-code 2026-04-19] S28: RoutinesConsole moved to Monitor sub-tab.
+// [claude-code 2026-04-20] S27: auth token into V4 preset fetches.
+// [claude-code 2026-04-18] S24-T4: Rebuilt scoring calibration workbench.
+// [claude-code 2026-03-27] S2-T7: Refinement Engine
 import { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  ChevronDown,
-  ChevronRight,
-  RefreshCw,
-  Wrench,
-  BarChart3,
-} from "lucide-react";
+import { RefreshCw, Wrench, BarChart3 } from "lucide-react";
 import { isRefinementEditUnlocked } from "../../lib/dev-settings-auth";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import type { CalibrationEntry } from "../../../backend-hono/src/types/calibration";
@@ -28,16 +22,10 @@ import { QuickWeightEditor } from "./QuickWeightEditor";
 import { CommentatorManager } from "./CommentatorManager";
 import { SourceAccountsManager } from "./SourceAccountsManager";
 import { EconFiltersManager } from "./EconFiltersManager";
-// AnnotatableItem retained for the legacy right-rail feed preview, no longer
-// used after S46.4 right-rail replacement. CatalystStatsPanel superseded by
-// CatalystStatsDrawer.
+import { EconFilterEditor } from "./EconFilterEditor";
 import { CatalystStatsDrawer } from "./CatalystStatsDrawer";
-import { NotchedFuse } from "./NotchedFuse";
-import {
-  SENSITIVITY_DEFAULTS,
-  type SensitivityGroup,
-  type SensitivityValues,
-} from "./GroupSensitivityDial";
+import { PipelineHealth } from "./PipelineHealth";
+import { PipelineToggles } from "./PipelineToggles";
 import {
   PresetSelector,
   BUILTIN_PRESETS,
@@ -49,6 +37,8 @@ import { LexiconEditor } from "./LexiconEditor";
 import { ScoreImpactPreview } from "../ui/InlineDiff";
 import { useToast } from "../../contexts/ToastContext";
 import { useAuth } from "../../contexts/AuthContext";
+import { usePipelineStats } from "../../hooks/usePipelineStats";
+import { usePipelineState } from "../../hooks/usePipelineState";
 import {
   fetchPresets,
   fetchCurrentSensitivities,
@@ -63,12 +53,30 @@ const API_BASE = (
   import.meta.env.VITE_API_URL || "http://localhost:8080"
 ).replace(/\/$/, "");
 
-interface RegimeState {
-  regime: MarketRegime;
-  confidence: number;
-  detectedBy: string;
-  multipliers?: Record<string, number>;
+// Inlined from GroupSensitivityDial — PresetSelector still needs these types
+// for scoring preset matching even though the NotchedFuse dials are removed.
+type SensitivityGroup =
+  | "macro"
+  | "geopolitical"
+  | "corporate"
+  | "technical"
+  | "speaker";
+
+interface SensitivityValues {
+  macro: number;
+  geopolitical: number;
+  corporate: number;
+  technical: number;
+  speaker: number;
 }
+
+const SENSITIVITY_DEFAULTS: SensitivityValues = {
+  macro: 0,
+  geopolitical: 0,
+  corporate: 0,
+  technical: 0,
+  speaker: 0,
+};
 
 const GROUPS: SensitivityGroup[] = [
   "macro",
@@ -77,6 +85,13 @@ const GROUPS: SensitivityGroup[] = [
   "technical",
   "speaker",
 ];
+
+interface RegimeState {
+  regime: MarketRegime;
+  confidence: number;
+  detectedBy: string;
+  multipliers?: Record<string, number>;
+}
 
 function sameSensitivities(
   a: SensitivityValues,
@@ -103,19 +118,24 @@ export function RefinementEngine() {
   const [econFilters, setEconFilters] = useState<EconWatchFilter[]>([]);
   const [isRescoring, setIsRescoring] = useState(false);
   const [loading, setLoading] = useState(true);
-  // [claude-code 2026-04-25] S38: Group Sensitivity collapsible + view-only gating tied to S37 lock.
-  const [groupSensOpen, setGroupSensOpen] = useState(true);
-  // Drive t-panel-slide data-open via rAF on open transitions so the entry
-  // tween renders from the closed (translate-Y + blur + opacity:0) state.
-  const [groupSensRevealed, setGroupSensRevealed] = useState(true);
-  useEffect(() => {
-    if (!groupSensOpen) {
-      setGroupSensRevealed(false);
-      return;
-    }
-    const id = requestAnimationFrame(() => setGroupSensRevealed(true));
-    return () => cancelAnimationFrame(id);
-  }, [groupSensOpen]);
+  // [claude-code 2026-04-28] S48-T3: Group Sensitivity collapsible removed.
+  // Pipeline health and toggles replace the former NotchedFuse section.
+  const {
+    stats: pipelineStats,
+    loading: statsLoading,
+    error: statsError,
+    refetch: refetchStats,
+  } = usePipelineStats();
+  const {
+    pipelines: pipelineStates,
+    loading: statesLoading,
+    error: statesError,
+    togglePipeline: handleTogglePipeline,
+  } = usePipelineState();
+  const [sourceAccountsError, setSourceAccountsError] = useState<string | null>(
+    null,
+  );
+  const [econFiltersError, setEconFiltersError] = useState<string | null>(null);
   const [editUnlocked, setEditUnlocked] = useState(() =>
     isRefinementEditUnlocked(),
   );
@@ -202,8 +222,11 @@ export function RefinementEngine() {
         r.json(),
       );
       setSourceAccounts(res.accounts ?? []);
-    } catch {
-      /* silent */
+      setSourceAccountsError(null);
+    } catch (err) {
+      setSourceAccountsError(
+        err instanceof Error ? err.message : "Failed to load source accounts",
+      );
     }
   }, []);
 
@@ -214,8 +237,11 @@ export function RefinementEngine() {
         r.json(),
       );
       setEconFilters(res.filters ?? []);
-    } catch {
-      /* silent */
+      setEconFiltersError(null);
+    } catch (err) {
+      setEconFiltersError(
+        err instanceof Error ? err.message : "Failed to load econ filters",
+      );
     }
   }, []);
 
@@ -293,20 +319,6 @@ export function RefinementEngine() {
     }, 400);
     return () => clearTimeout(timer);
   }, [pendingSensitivities, isDirty, v4Available]);
-
-  const onDialChange = useCallback(
-    (group: SensitivityGroup, value: number) => {
-      setPendingSensitivities((prev) => {
-        const next = { ...prev, [group]: value };
-        const match = presets.find((p) =>
-          sameSensitivities(p.sensitivities, next),
-        );
-        setSelectedPresetId(match?.id ?? null);
-        return next;
-      });
-    },
-    [presets],
-  );
 
   const onPresetSelect = useCallback((preset: ScoringPreset) => {
     setPendingSensitivities(preset.sensitivities);
@@ -504,72 +516,23 @@ export function RefinementEngine() {
           <div className="flex-1 min-w-0 overflow-y-auto p-4">
             <RegimeControl regime={regime} onRegimeChanged={fetchRegime} />
 
+            {/* S48-T3: PipelineHealth + PipelineToggles replace the former NotchedFuse section */}
+            <PipelineHealth
+              stats={pipelineStats}
+              loading={statsLoading}
+              error={statsError}
+              onRetry={refetchStats}
+            />
+            <PipelineToggles
+              pipelines={pipelineStates}
+              onToggle={handleTogglePipeline}
+              disabled={!editUnlocked}
+              loading={statesLoading}
+              error={statesError}
+            />
+
             {v4Available ? (
               <>
-                {/* [claude-code 2026-04-25] S38: Group Sensitivity is now a collapsible
-                    header row (chevron toggles), keeps flat styling (no card chrome).
-                    Fuses render disabled unless the S37 Advanced-pane lock is open. */}
-                <div
-                  style={{
-                    marginTop: 16,
-                    paddingTop: 12,
-                    borderTop:
-                      "1px dotted color-mix(in srgb, var(--fintheon-accent) 35%, transparent)",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setGroupSensOpen((v) => !v)}
-                    aria-expanded={groupSensOpen}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      width: "100%",
-                      padding: "2px 0",
-                      marginBottom: 10,
-                      background: "transparent",
-                      border: "none",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontFamily: "var(--font-heading)",
-                        fontSize: 13,
-                        fontWeight: 700,
-                        letterSpacing: "0.14em",
-                        textTransform: "uppercase",
-                        color: "var(--fintheon-accent)",
-                      }}
-                    >
-                      Group Sensitivity
-                    </span>
-                    {groupSensOpen ? (
-                      <ChevronDown size={14} color="var(--fintheon-muted)" />
-                    ) : (
-                      <ChevronRight size={14} color="var(--fintheon-muted)" />
-                    )}
-                  </button>
-                  <div
-                    className="t-panel-slide"
-                    data-open={groupSensRevealed ? "true" : "false"}
-                  >
-                    {groupSensOpen &&
-                      GROUPS.map((g) => (
-                        <NotchedFuse
-                          key={g}
-                          group={g}
-                          value={pendingSensitivities[g]}
-                          onChange={onDialChange}
-                          disabled={!editUnlocked}
-                        />
-                      ))}
-                  </div>
-                </div>
-
-                {/* PresetSelector relocated into AdvancedPane below — sits inside the locked region per S38. */}
-
                 {isDirty && (
                   <div style={{ marginBottom: 12 }}>
                     {previewStale ? (
@@ -608,8 +571,8 @@ export function RefinementEngine() {
                 }}
               >
                 V4 preset service unreachable — loading built-in presets and
-                degrading to Advanced per-event controls. Fuses stay usable;
-                changes won&apos;t persist until the service is back.
+                degrading to Advanced per-event controls. Changes won&apos;t
+                persist until the service is back.
               </div>
             )}
 
@@ -677,6 +640,8 @@ export function RefinementEngine() {
                 filters={econFilters}
                 onFiltersChanged={fetchEconFilters}
               />
+              {/* [claude-code 2026-04-28] S48-T3: Econ filter editor table */}
+              <EconFilterEditor />
             </AdvancedPane>
           </div>
 

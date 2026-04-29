@@ -1,3 +1,6 @@
+// [claude-code 2026-04-28] S48-T1: Fix 1 — redirect econ prints from legacy news_feed_items
+// to raw_riskflow_items so they flow through the central scorer pipeline and appear in the feed.
+// Gate at entry via isPipelineEnabled("economic-calendar"). Set url="" for sourceless purge fix.
 // [claude-code 2026-04-24] S34-T9: unified T6+T8 SSE hook — single broadcastEconPrint call uses T8's flat payload (matches frontend EconPrintFrame).
 // [claude-code 2026-04-24] S34-T6: SSE broadcast on successful inject for countdown modal
 // [claude-code 2026-04-24] S34-T8: fire broadcastEconPrint SSE frame after successful insert
@@ -8,6 +11,7 @@
 
 import { calculateIVScore } from "../analysis/iv-scorer.js";
 import { broadcastEconPrint } from "./sse-broadcaster.js";
+import { isPipelineEnabled } from "./pipeline-gate.js";
 
 interface EconPrintEvent {
   eventName: string;
@@ -28,6 +32,13 @@ export async function injectEconPrintToFeed(
     const { sql, isDatabaseAvailable } =
       await import("../../config/database.js");
     if (!isDatabaseAvailable() || !sql) return;
+
+    // S48-T1 Fix 1: Gate — skip if economic-calendar pipeline is disabled
+    const enabled = await isPipelineEnabled("economic-calendar");
+    if (!enabled) {
+      console.log("[EconBridge] Skipped: economic-calendar pipeline disabled");
+      return;
+    }
 
     const isBeat = print.forecast != null && print.actual > print.forecast;
     const isMiss = print.forecast != null && print.actual < print.forecast;
@@ -60,11 +71,11 @@ export async function injectEconPrintToFeed(
       // Fallback: econ prints are at least level 2
     }
 
-    // Check for duplicate (same event name + date)
+    // Check for duplicate (same event name + date) in raw_riskflow_items
     const existing = await sql`
-      SELECT id FROM news_feed_items
+      SELECT id FROM raw_riskflow_items
       WHERE headline ILIKE ${"%" + print.eventName + "%Actual%"}
-        AND published_at::date = ${print.date}::date
+        AND created_at::date = ${print.date}::date
       LIMIT 1
     `;
     if (existing.length > 0) return;
@@ -78,16 +89,18 @@ export async function injectEconPrintToFeed(
         Math.abs(surprise) > 0.01 ? Math.round(surprise * 100) / 100 : null,
     };
 
+    // S48-T1 Fix 1: Write to raw_riskflow_items (not legacy news_feed_items)
+    // with source=EconomicCalendar + ingest_pipeline=economic-calendar + url=""
     await sql`
-      INSERT INTO news_feed_items (
-        headline, body, source, url, published_at, is_breaking,
+      INSERT INTO raw_riskflow_items (
+        headline, body, source, url, created_at, is_breaking,
         urgency, sentiment, iv_score, macro_level, symbols, tags,
-        econ_data, risk_type
+        econ_data, risk_type, ingest_pipeline
       ) VALUES (
         ${headline},
         ${headline},
         'EconomicCalendar',
-        ${`notion://econ/${print.eventName}`},
+        '',
         ${new Date(print.date).toISOString()},
         true,
         'high',
@@ -97,7 +110,8 @@ export async function injectEconPrintToFeed(
         ${JSON.stringify([])},
         ${JSON.stringify(["econ", "print", print.eventName.toLowerCase().replace(/\s+/g, "-")])},
         ${JSON.stringify(econData)},
-        'Macro'
+        'Macro',
+        'economic-calendar'
       )
     `;
 

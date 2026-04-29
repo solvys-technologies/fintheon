@@ -384,7 +384,11 @@ const ScrollToBottomButton: FC<{
       ([entry]) => {
         setShowButton(!entry.isIntersecting);
       },
-      { root: containerRef.current, threshold: 0.1, rootMargin: "80px 0px 0px 0px" },
+      {
+        root: containerRef.current,
+        threshold: 0.1,
+        rootMargin: "80px 0px 0px 0px",
+      },
     );
 
     observer.observe(sentinel);

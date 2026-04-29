@@ -56,11 +56,14 @@ Read the target files/components and, when possible, inspect the rendered surfac
 Verdict: PASS | POLISH | REWORK
 
 ## Findings
+
 - `path:line` -- issue, impact, exact correction
 
 ## Quick Wins
+
 1. ...
 
 ## Do Not Change
+
 - ...
 ```

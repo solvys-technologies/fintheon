@@ -190,6 +190,7 @@ function feedItemToRaw(item: FeedItem): RawRiskFlowItem {
     urgency: item.urgency,
     published_at: item.publishedAt,
     submitted_by: "feed-service",
+    ingest_pipeline: item.ingest_pipeline,
   };
 }
 
@@ -293,20 +294,36 @@ function countUrgencySignals(
 /**
  * Cold-start cache warm from scored_riskflow_items.
  * Called during boot so first feed request is never empty if DB already has data.
+ * S48-T1 Fix 5: also fetches fresh econ/commentary items so the economic-calendar
+ * pipeline feeds into the cache immediately rather than waiting for the next scoring cycle.
  */
 async function warmCacheFromDB(): Promise<void> {
   try {
     // [claude-code 2026-04-06] Was 200 — matched MAX_FEED_ITEMS (500) so cache isn't artificially starved
     const scored = await readScoredItems({ limit: MAX_FEED_ITEMS });
-    if (scored.length === 0) return;
 
-    const items = sortFeedItems(scored.map(scoredToFeedItem)).slice(
-      0,
-      MAX_FEED_ITEMS,
+    // S48-T1 Fix 5: Also fetch fresh econ items so the pipeline feeds the cache on boot
+    let freshItems: FeedItem[] = [];
+    try {
+      freshItems = await fetchFreshFeed();
+    } catch (freshErr) {
+      log.warn("[FeedService] fetchFreshFeed during warm failed (non-fatal)", {
+        error: String(freshErr),
+      });
+    }
+
+    const scoredItems = scored.map(scoredToFeedItem);
+    const merged = [...scoredItems, ...freshItems].filter(
+      (item, idx, arr) => idx === arr.findIndex((i) => i.id === item.id),
     );
+    if (merged.length === 0) return;
+
+    const items = sortFeedItems(merged).slice(0, MAX_FEED_ITEMS);
     feedCache = items;
     lastCacheRefreshMs = Date.now();
-    log.info(`[FeedService] Cache synced with ${items.length} items from DB`);
+    log.info(
+      `[FeedService] Cache synced with ${items.length} items from DB (${scoredItems.length} scored + ${freshItems.length} fresh)`,
+    );
   } catch (err) {
     log.warn("[FeedService] Cold-start seed failed (non-fatal)", {
       error: String(err),

@@ -48,7 +48,10 @@ test("surface works", async ({ page }) => {
   await expect(page.locator("{primary-selector}")).toBeVisible();
   await page.click("{action-selector}");
   await expect(page.locator("{result-selector}")).toContainText("{expected}");
-  await page.screenshot({ path: "/tmp/solvys-browser-verify.png", fullPage: true });
+  await page.screenshot({
+    path: "/tmp/solvys-browser-verify.png",
+    fullPage: true,
+  });
 });
 ```
 
@@ -63,13 +66,16 @@ Surface: ...
 Result: PASS | WARN | FAIL | BLOCKED
 
 ## Checks
+
 - PASS desktop happy path -- evidence
 - PASS mobile layout -- evidence
 - FAIL edge case -- evidence
 
 ## Screenshots
+
 - /tmp/...
 
 ## Fixes Needed
+
 1. ...
 ```

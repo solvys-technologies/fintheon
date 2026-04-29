@@ -39,7 +39,7 @@ export function SanctumBriefing({
         className={`rounded bg-[var(--fintheon-surface)]/30 px-5 py-4 ${noBorder ? "" : "border border-[var(--fintheon-accent)]/10"}`}
       >
         <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1.5">
-          Analysis
+          Briefing
         </span>
         <p className="text-[11px] text-[var(--fintheon-text)]/60 leading-relaxed">
           {SLOP_FALLBACK}
@@ -59,21 +59,12 @@ export function SanctumBriefing({
 
   return (
     <div className="rounded bg-[var(--fintheon-surface)]/30 overflow-hidden">
-      {/* Summary — lead paragraph */}
-      <div
-        className={`px-5 py-4 rounded ${noBorder ? "" : "border border-[var(--fintheon-accent)]/10"}`}
-      >
-        <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1.5">
-          Analysis
-        </span>
-        <p className="text-[11px] text-[var(--fintheon-text)]/80 leading-relaxed">
-          {briefing.summary}
-        </p>
-      </div>
-
       {/* Key Findings */}
       {(briefing.keyFindings?.length ?? 0) > 0 && (
-        <div className="px-5 py-3 border-t border-[var(--fintheon-border)]/10">
+        <div
+          className="px-5 py-3 border-t border-[var(--fintheon-border)]/10"
+          style={noBorder ? { borderTop: "none" } : undefined}
+        >
           <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-2">
             Key Findings
           </span>
@@ -135,16 +126,19 @@ export function SanctumBriefing({
         </div>
       )}
 
-      {/* Agent Consensus */}
-      {briefing.agentConsensus && (
-        <div className="px-5 py-3 border-t border-[var(--fintheon-border)]/10">
-          <div className="inline-block px-3 py-1.5 rounded bg-[var(--fintheon-accent)]/8">
+      {/* Consensus — summary text sits beneath consensus card */}
+      <div className="px-5 py-3 border-t border-[var(--fintheon-border)]/10">
+        {briefing.agentConsensus && (
+          <div className="inline-block px-3 py-1.5 rounded bg-[var(--fintheon-accent)]/8 mb-2">
             <span className="text-[9px] text-[var(--fintheon-accent)]/70">
               {briefing.agentConsensus}
             </span>
           </div>
-        </div>
-      )}
+        )}
+        <p className="text-[11px] text-[var(--fintheon-text)]/80 leading-relaxed">
+          {briefing.summary}
+        </p>
+      </div>
     </div>
   );
 }

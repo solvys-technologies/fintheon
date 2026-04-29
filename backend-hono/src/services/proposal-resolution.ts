@@ -70,7 +70,9 @@ export async function getAgentPerformance(agentName?: string): Promise<{
     agentName,
     limit: 500,
   });
-  const resolved = records.filter((r) => r.outcome !== "pending" && r.outcome !== "expired");
+  const resolved = records.filter(
+    (r) => r.outcome !== "pending" && r.outcome !== "expired",
+  );
   const wins = resolved.filter((r) => r.outcome === "win").length;
   const losses = resolved.filter((r) => r.outcome === "loss").length;
   const pushes = resolved.filter((r) => r.outcome === "push").length;

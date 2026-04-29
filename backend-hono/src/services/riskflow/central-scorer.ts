@@ -169,6 +169,9 @@ export async function scoringCycle(): Promise<number> {
     // checked the link target. This is the single source of the leak that
     // kept resurrecting purged headlines.
     const blockedIds = new Set<string>();
+    // [claude-code 2026-04-29] S48-T5: speculationDemote IDs — apply 0.7×
+    // factor to ivScore after AI enrichment, before write.
+    const speculationDemoteIds = new Set<string>();
     const guardedFeedItems = feedItems.filter((item) => {
       if (isBannedPublisher({ url: item.url, tags: item.tags ?? [] })) {
         blockedIds.add(item.id);
@@ -182,7 +185,15 @@ export async function scoringCycle(): Promise<number> {
         );
         return false;
       }
-      const result = checkContentGuard(`${item.headline} ${item.body || ""}`);
+      const rawId = rawIdMap.get(item.id);
+      const rawItem = rawId ? unscoredItems.find((r) => r.id === rawId) : null;
+      const ingestPipeline =
+        (rawItem as { ingest_pipeline?: string } | null | undefined)
+          ?.ingest_pipeline ?? undefined;
+      const result = checkContentGuard(`${item.headline} ${item.body || ""}`, {
+        sourceType: "wire",
+        ingestPipeline,
+      });
       if (result.blocked) {
         blockedIds.add(item.id);
         bumpCounter(
@@ -194,6 +205,9 @@ export async function scoringCycle(): Promise<number> {
           `Content guard blocked in scorer: [${result.reason}] ${item.headline.slice(0, 80)}`,
         );
         return false;
+      }
+      if (result.speculationDemote) {
+        speculationDemoteIds.add(item.id);
       }
       return true;
     });
@@ -431,6 +445,26 @@ export async function scoringCycle(): Promise<number> {
       log.info(
         ` Dropped ${droppedItems.length} Low/Medium web scrape items (kept ${enrichedItems.length})`,
       );
+    }
+
+    // [claude-code 2026-04-29] S48-T5: apply 0.7× speculation-demote factor
+    // to ivScore for items flagged by content-guard gate 5.5 before write.
+    if (speculationDemoteIds.size > 0) {
+      const { SPECULATION_DEMOTE_FACTOR } =
+        await import("./speculation-filter.js");
+      let demotedCount = 0;
+      for (const item of enrichedItems) {
+        if (!speculationDemoteIds.has(item.id)) continue;
+        if (typeof item.ivScore === "number" && item.ivScore > 0) {
+          item.ivScore = Math.round(item.ivScore * SPECULATION_DEMOTE_FACTOR);
+          demotedCount++;
+        }
+      }
+      if (demotedCount > 0) {
+        log.info(
+          `Applied speculation demote (×${SPECULATION_DEMOTE_FACTOR}) to ${demotedCount} items`,
+        );
+      }
     }
 
     // Write scored items to Supabase
@@ -682,12 +716,15 @@ export async function scoringCycle(): Promise<number> {
         // 4) Source-link purge: items with no way to trace back to an original.
         //    Items from these sources have their own resolvable context even
         //    without a URL, so we keep them.
+        // S48-T1 Fix 4: Added EconomicCalendar — econ prints have no URL but
+        // are structurally trustworthy (parsed from calendar + FJ X timeline).
         const TRUSTED_SOURCELESS = [
           "FinancialJuice",
           "DeItaOne",
           "TwitterCli",
           "OSINTSources",
           "Hermes",
+          "EconomicCalendar",
         ];
         try {
           const { data: candidates } = await sb

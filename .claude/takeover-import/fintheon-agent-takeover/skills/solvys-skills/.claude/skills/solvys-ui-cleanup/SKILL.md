@@ -28,17 +28,22 @@ Run a practical cleanup pass that catches simple, overlooked details that make s
 
 ```markdown
 ## UI Cleanup Plan
+
 Surface: ...
 
 ## Findings
+
 - `path:line` -- overlooked detail, why it matters, exact cleanup
 
 ## Changes Applied
+
 - ...
 
 ## Deferred
+
 - ...
 
 ## Validation
+
 - typecheck/build/browser checks
 ```

@@ -91,6 +91,7 @@ export async function fetchEconomicFeed(): Promise<FeedItem[]> {
         macroLevel: iv.macroLevel,
         publishedAt: event.date ?? new Date().toISOString(),
         analyzedAt: new Date().toISOString(),
+        ingest_pipeline: "economic-calendar",
       });
     }
 

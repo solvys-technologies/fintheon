@@ -154,7 +154,8 @@ function getTimeZoneOffsetMs(date: Date, timeZone: string): number {
     second: "2-digit",
     hour12: false,
   }).formatToParts(date);
-  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "00";
+  const get = (type: string) =>
+    parts.find((p) => p.type === type)?.value ?? "00";
   const asUtc = Date.UTC(
     Number(get("year")),
     Number(get("month")) - 1,
@@ -173,7 +174,8 @@ function getNewYorkNoonIso(now = new Date()): string {
     month: "2-digit",
     day: "2-digit",
   }).formatToParts(now);
-  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "1";
+  const get = (type: string) =>
+    parts.find((p) => p.type === type)?.value ?? "1";
   const localNoonAsUtc = Date.UTC(
     Number(get("year")),
     Number(get("month")) - 1,
@@ -230,7 +232,11 @@ export async function getChamberReadFreshness(): Promise<{
 }> {
   const sb = getSupabaseClient();
   if (!sb) {
-    return { latest_pmdb_at: null, latest_session_verdict_at: null, gap_minutes: null };
+    return {
+      latest_pmdb_at: null,
+      latest_session_verdict_at: null,
+      gap_minutes: null,
+    };
   }
   const [{ data: pmdb }, { data: verdict }] = await Promise.all([
     sb
@@ -253,7 +259,8 @@ export async function getChamberReadFreshness(): Promise<{
   let gap_minutes: number | null = null;
   if (latest_pmdb_at && latest_session_verdict_at) {
     gap_minutes = Math.round(
-      (new Date(latest_pmdb_at).getTime() - new Date(latest_session_verdict_at).getTime()) /
+      (new Date(latest_pmdb_at).getTime() -
+        new Date(latest_session_verdict_at).getTime()) /
         60_000,
     );
   }

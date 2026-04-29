@@ -21,10 +21,12 @@ You are a briefing officer. Your job is to produce a self-contained context docu
 Read and synthesize the following sources. Do not skip any that exist:
 
 ### Project Identity
+
 - Read `CLAUDE.md`, `.cursorrules`, or equivalent project instructions file
 - Extract: project name, stack, team/agent roster, core rules, key paths
 
 ### Recent History
+
 ```bash
 git log --oneline -20
 git diff --stat HEAD~5
@@ -33,22 +35,26 @@ git log --oneline main..HEAD  # If on a feature branch
 ```
 
 ### Active State
+
 - Current branch and its relationship to main
 - Uncommitted changes (`git status`)
 - Any open TODOs or known issues in recent commits
 
 ### Available Tools
+
 - List available slash commands (check `.claude/commands/` and `.claude/skills/`)
 - List configured hooks (check `.claude/settings.json` or `.claude/settings.local.json`)
 - List MCP servers if configured (read `.mcp.json`)
 - If `claude-peers` MCP is registered, call out the four tools it exposes (`list_peers`, `send_message`, `set_summary`, `check_messages`) and note that the receiving agent should `set_summary` on startup so other live windows can see what it's doing
 
 ### Architectural Guidance
+
 - Summarize current Solvys engineering doctrine: small vertical slices, diagnosis loop, service boundaries, Zod at boundaries, validation gates, changelog discipline.
 - Summarize current Solvys design doctrine: Solvys Gold, warm near-black, frosted-glass surfaces over Kanban cards, no gradients, no emojis, no AI sparkles, no generic shadows.
 - Call out TP-vetoed S47 references so incoming agents do not use them as influence sources.
 
 ### Environment
+
 - Build commands (from `package.json` scripts)
 - Deploy targets (Vercel, Workers, local DMG)
 - Required environment variables (from `.env.example`)
@@ -57,50 +63,60 @@ git log --oneline main..HEAD  # If on a feature branch
 
 Produce the briefing in this exact format:
 
-```markdown
+````markdown
 --- Briefing for {Agent Name / Role} ---
 Generated: {date}
 Project: {name}
 Branch: {current branch} (main: {commits ahead/behind})
 
 ## Identity
+
 {Project name, what it does, who it serves -- 2-3 sentences max}
 
 ## Stack
+
 - Frontend: {framework, language, styling}
 - Backend: {framework, language, database}
 - Infrastructure: {hosting, CI, deployment}
 
 ## Core Rules
+
 {Bullet list of non-obvious rules from CLAUDE.md or equivalent}
 
 ## Key Paths
-| Path | Purpose |
-|------|---------|
+
+| Path   | Purpose            |
+| ------ | ------------------ |
 | {path} | {what lives there} |
 
 ## Agent Roster
-| Agent | Role | Notes |
-|-------|------|-------|
+
+| Agent  | Role   | Notes                 |
+| ------ | ------ | --------------------- |
 | {name} | {role} | {what they own or do} |
 
 ## Recent Changes (Last 5 Commits)
-| Hash | Summary | Files |
-|------|---------|-------|
+
+| Hash   | Summary   | Files         |
+| ------ | --------- | ------------- |
 | {hash} | {message} | {count} files |
 
 ## What Changed and Why
+
 {For each significant recent commit, 1-2 sentences explaining the change and its motivation}
 
 ## Open Issues
+
 {Any known bugs, TODOs, or blockers visible in recent commits or code comments}
 
 ## Available Commands
-| Command | Purpose |
-|---------|---------|
+
+| Command    | Purpose        |
+| ---------- | -------------- |
 | {/command} | {what it does} |
 
 ## Build and Deploy
+
 ```bash
 # Build
 {build command}
@@ -111,14 +127,18 @@ Branch: {current branch} (main: {commits ahead/behind})
 # Deploy
 {deploy command}
 ```
+````
 
 ## Environment Variables
+
 {List required vars with safe descriptions -- never include actual values}
 
 ## How to Work Here
+
 {3-5 bullet points on conventions: commit format, changelog protocol, file size limits, naming patterns}
 
 --- End Briefing ---
+
 ```
 
 ## Phase 3 -- Delivery
@@ -141,3 +161,4 @@ If both the outgoing and incoming agents are live Claude Code windows AND `claud
 - If the project has a changelog, reference the last 3 entries
 - If you cannot determine something, say "UNKNOWN -- check {where to look}" rather than guessing
 - Keep the briefing under 200 lines. Agents have limited context windows too.
+```

@@ -18,15 +18,19 @@ Verify real user paths and try to break them. Prefer Solvys browser-harness sema
 
 ```markdown
 ## Browser Verification
+
 Surface: ...
 Result: PASS | WARN | FAIL | BLOCKED
 
 ## Checks
+
 - PASS ...
 
 ## Screenshots
+
 - /tmp/...
 
 ## Fixes Needed
+
 1. ...
 ```

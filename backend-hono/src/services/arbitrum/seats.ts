@@ -135,11 +135,15 @@ function formatCommentaryContext(
   const lines: string[] = [];
   lines.push(`Recent commentary watched (last ${commentary.windowHours}h):`);
   for (const e of commentary.entries.slice(0, 5)) {
-    const date = e.watchedAt ? new Date(e.watchedAt).toISOString().slice(0, 10) : "—";
+    const date = e.watchedAt
+      ? new Date(e.watchedAt).toISOString().slice(0, 10)
+      : "—";
     lines.push(`  ${date} | ${e.title}`);
     if (e.summary) {
       const summary = e.summary.replace(/\n/g, " ");
-      lines.push(`    Summary: ${summary.slice(0, 240)}${summary.length > 240 ? "…" : ""}`);
+      lines.push(
+        `    Summary: ${summary.slice(0, 240)}${summary.length > 240 ? "…" : ""}`,
+      );
     }
     lines.push(`    Source: ${e.sourceUrl}`);
   }

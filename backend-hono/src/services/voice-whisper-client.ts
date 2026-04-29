@@ -67,7 +67,8 @@ export async function transcribeWithOpenAI(
       text: "",
       model: "whisper-1",
       provider: "fallback",
-      fallbackReason: err instanceof Error ? err.message : "OpenAI network error",
+      fallbackReason:
+        err instanceof Error ? err.message : "OpenAI network error",
     };
   }
 }

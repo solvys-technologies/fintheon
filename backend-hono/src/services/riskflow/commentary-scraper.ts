@@ -115,6 +115,7 @@ function timelineToRawItem(
     urgency: /\b(breaking|urgent)\b/i.test(text) ? "immediate" : "normal",
     published_at: result.publishedDate ?? new Date().toISOString(),
     submitted_by: `commentary-scraper:${handle}`,
+    ingest_pipeline: "rettiwt-commentary",
   };
 }
 
