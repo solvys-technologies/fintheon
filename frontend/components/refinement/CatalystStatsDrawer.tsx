@@ -9,7 +9,7 @@
 //     match the wire-handle / web-host classification, right-aligned).
 //   - Per-source ruler-divided rows under each category, source label
 //     left + count right-aligned.
-//   - Bulk-handling controls below: bulk delete, 14d refill, MSM Audit
+//   - Bulk-handling controls below: bulk delete, 14d refill, Purge audit
 //     (today + all-time variants).
 //
 // Auth: backend admin routes are gated on Supabase JWT + superadmin
@@ -32,7 +32,7 @@ interface SourceStat {
   count: number;
 }
 
-interface MsmAuditResponse {
+interface PurgeAuditResponse {
   confirmed: false;
   scope: "today" | "all" | "range";
   from: string | null;
@@ -73,7 +73,7 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
   const [refillToDate, setRefillToDate] = useState<string>(() =>
     new Date().toISOString().slice(0, 10),
   );
-  const [auditResult, setAuditResult] = useState<MsmAuditResponse | null>(null);
+  const [auditResult, setAuditResult] = useState<PurgeAuditResponse | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   const buildHeaders = useCallback(async (): Promise<Record<
@@ -268,22 +268,22 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
     }
   };
 
-  const onMsmAudit = async (scope: "today" | "all") => {
+  const onPurgeAudit = async (scope: "today" | "all") => {
     setBusy("audit");
     try {
       const headers = await buildHeaders();
       if (!headers) return;
-      const res = await fetch(`${API_BASE}/api/admin/riskflow/msm-purge`, {
+      const res = await fetch(`${API_BASE}/api/admin/riskflow/purge`, {
         method: "POST",
         headers,
         body: JSON.stringify({ scope }),
       });
       const json = (await res.json()) as
-        | MsmAuditResponse
+        | PurgeAuditResponse
         | { error: string; detail?: string };
       if (!res.ok || (json as { error?: string }).error) {
         addToast(
-          "MSM audit failed",
+          "Purge audit failed",
           "error",
           (json as { detail?: string }).detail ??
             (json as { error?: string }).error ??
@@ -291,17 +291,17 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
         );
         return;
       }
-      setAuditResult(json as MsmAuditResponse);
+      setAuditResult(json as PurgeAuditResponse);
     } finally {
       setBusy(null);
     }
   };
 
-  const onMsmConfirm = async () => {
+  const onPurgeConfirm = async () => {
     if (!auditResult) return;
     if (
       !window.confirm(
-        `Hard-delete ${auditResult.candidate_count} catalyst(s) matching mainstream-media patterns (scope=${auditResult.scope})?`,
+        `Hard-delete ${auditResult.candidate_count} catalyst(s) matching blocked domains or keywords (scope=${auditResult.scope})?`,
       )
     )
       return;
@@ -309,7 +309,7 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
     try {
       const headers = await buildHeaders();
       if (!headers) return;
-      const res = await fetch(`${API_BASE}/api/admin/riskflow/msm-purge`, {
+      const res = await fetch(`${API_BASE}/api/admin/riskflow/purge`, {
         method: "POST",
         headers,
         body: JSON.stringify({ confirm: true, scope: auditResult.scope }),
@@ -322,7 +322,7 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
       };
       if (!res.ok || json.error) {
         addToast(
-          "MSM purge failed",
+          "Purge failed",
           "error",
           json.detail ?? json.error ?? `${res.status}`,
         );
@@ -562,20 +562,20 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
               {busy === "refill" ? "Refilling…" : "Refill 14d"}
             </button>
             <button
-              onClick={() => onMsmAudit("today")}
+              onClick={() => onPurgeAudit("today")}
               disabled={disabled || busy !== null}
               className="inline-flex items-center gap-1 px-2 py-1 border border-amber-500/40 text-[11px] text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
             >
               <ShieldAlert className="w-3 h-3" />
-              {busy === "audit" ? "Auditing…" : "MSM · today"}
+              {busy === "audit" ? "Auditing…" : "Purge · today"}
             </button>
             <button
-              onClick={() => onMsmAudit("all")}
+              onClick={() => onPurgeAudit("all")}
               disabled={disabled || busy !== null}
               className="inline-flex items-center gap-1 px-2 py-1 border border-amber-500/40 text-[11px] text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
             >
               <ShieldAlert className="w-3 h-3" />
-              MSM · all-time
+              Purge · all-time
             </button>
           </div>
         </div>
@@ -604,7 +604,7 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
             </ul>
             <div className="flex items-center gap-2">
               <button
-                onClick={onMsmConfirm}
+                onClick={onPurgeConfirm}
                 disabled={busy !== null}
                 className="px-2 py-1 border border-red-500/40 text-[11px] text-red-400 hover:bg-red-500/10 disabled:opacity-50"
               >

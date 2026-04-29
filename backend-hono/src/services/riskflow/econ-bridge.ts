@@ -13,6 +13,7 @@
 import { calculateIVScore } from "../analysis/iv-scorer.js";
 import { broadcastEconPrint } from "./sse-broadcaster.js";
 import { isPipelineEnabled } from "./pipeline-gate.js";
+import { recordEconIngest, recordIngestAttempt } from "./ingest-ledger.js";
 
 interface EconPrintEvent {
   eventName: string;
@@ -38,6 +39,14 @@ export async function injectEconPrintToFeed(
     const enabled = await isPipelineEnabled("economic-calendar");
     if (!enabled) {
       console.log("[EconBridge] Skipped: economic-calendar pipeline disabled");
+      recordEconIngest(false);
+      recordIngestAttempt({
+        source: "EconomicCalendar",
+        pipeline: "economic-calendar",
+        decision: "dropped_before_feed",
+        reason: "economic-calendar pipeline disabled",
+        headlinePreview: print.eventName,
+      });
       return;
     }
 
@@ -79,7 +88,17 @@ export async function injectEconPrintToFeed(
         AND created_at::date = ${print.date}::date
       LIMIT 1
     `;
-    if (existing.length > 0) return;
+    if (existing.length > 0) {
+      recordEconIngest(true, 0);
+      recordIngestAttempt({
+        source: "EconomicCalendar",
+        pipeline: "economic-calendar",
+        decision: "accepted",
+        reason: "duplicate print already in raw RiskFlow inbox",
+        headlinePreview: print.eventName,
+      });
+      return;
+    }
 
     const econData = {
       actual: print.actual,
@@ -137,6 +156,14 @@ export async function injectEconPrintToFeed(
     console.log(
       `[EconBridge] Injected: ${headline} (macroLevel=${macroLevel})`,
     );
+    recordEconIngest(true);
+    recordIngestAttempt({
+      source: "EconomicCalendar",
+      pipeline: "economic-calendar",
+      decision: "accepted",
+      reason: "econ print inserted into RiskFlow inbox",
+      headlinePreview: headline,
+    });
 
     try {
       broadcastEconPrint({
@@ -155,6 +182,14 @@ export async function injectEconPrintToFeed(
       );
     }
   } catch (err) {
+    recordEconIngest(false);
+    recordIngestAttempt({
+      source: "EconomicCalendar",
+      pipeline: "economic-calendar",
+      decision: "errored",
+      reason: err instanceof Error ? err.message : String(err),
+      headlinePreview: print.eventName,
+    });
     console.error("[EconBridge] Failed to inject econ print:", err);
   }
 }

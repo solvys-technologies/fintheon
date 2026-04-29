@@ -126,6 +126,28 @@ function feedItemToScored(
   };
 }
 
+async function deleteRawItemsByTweetId(tweetIds: string[]): Promise<number> {
+  if (tweetIds.length === 0) return 0;
+  const sb = getSupabaseClient();
+  if (!sb) return 0;
+
+  let deleted = 0;
+  const chunkSize = 200;
+  for (let i = 0; i < tweetIds.length; i += chunkSize) {
+    const chunk = tweetIds.slice(i, i + chunkSize);
+    const { count, error } = await sb
+      .from("raw_riskflow_items")
+      .delete({ count: "exact" })
+      .in("tweet_id", chunk);
+    if (error) {
+      log.warn("Policy raw purge failed", { error: error.message });
+      continue;
+    }
+    deleted += count ?? 0;
+  }
+  return deleted;
+}
+
 export async function scoringCycle(): Promise<number> {
   // [claude-code 2026-04-12] Staleness guard: if isScoring has been true for >90s, force-reset
   if (isScoring) {
@@ -158,8 +180,10 @@ export async function scoringCycle(): Promise<number> {
     log.info(`Processing ${unscoredItems.length} unscored items`);
 
     const rawIdMap = new Map<string, string>();
+    const rawByTweetId = new Map<string, RawRiskFlowItem & { id: string }>();
     const feedItems = unscoredItems.map((raw) => {
       rawIdMap.set(raw.tweet_id, raw.id);
+      rawByTweetId.set(raw.tweet_id, raw);
       return rawToFeedItem(raw);
     });
 
@@ -237,7 +261,13 @@ export async function scoringCycle(): Promise<number> {
     await refreshAllowlist();
     const policyBlockedIds = new Set<string>();
     const policyPassed = guardedFeedItems.filter((item) => {
-      const verdict = checkSourcePolicy(item.source, item.url);
+      const raw = rawByTweetId.get(item.id);
+      const verdict = checkSourcePolicy(raw?.source ?? item.source, item.url, {
+        pipeline: raw?.ingest_pipeline,
+        submittedBy: raw?.submitted_by,
+        sourceDomain: raw?.source_domain,
+        tags: raw?.tags,
+      });
       if (verdict.decision === "allowed") return true;
       policyBlockedIds.add(item.id);
       recordIngestAttempt({
@@ -257,16 +287,11 @@ export async function scoringCycle(): Promise<number> {
         `SourcePolicy blocked ${policyBlockedIds.size} item(s) in scorer — ` +
         `sources not in allowlist`,
       );
-      const policyBlockedScored = feedItems
-        .filter((item) => policyBlockedIds.has(item.id))
-        .map((item) => {
-          item.macroLevel = 0 as any;
-          item.sentiment = "neutral";
-          item.ivScore = 0;
-          const rawId = rawIdMap.get(item.id) || null;
-          return feedItemToScored(item, rawId as any);
-        });
-      await writeScoredItems(policyBlockedScored).catch(() => {});
+      await deleteRawItemsByTweetId(Array.from(policyBlockedIds)).catch((err) =>
+        log.warn("Policy raw purge threw", {
+          error: err instanceof Error ? err.message : String(err),
+        }),
+      );
       guardedFeedItems.length = 0;
       guardedFeedItems.push(...policyPassed);
     }

@@ -27,6 +27,7 @@ export interface RawRiskFlowItem {
   headline?: string;
   body?: string;
   url?: string;
+  source_domain?: string | null;
   image_url?: string | null;
   /** [claude-code 2026-04-27] S46.4/I: direct .mp4 attached to a tweet. */
   video_url?: string | null;
@@ -111,11 +112,16 @@ export async function writeRawItems(items: RawRiskFlowItem[]): Promise<number> {
   // Only approved X handles and official .gov domains pass.
   const policyPassed: RawRiskFlowItem[] = [];
   for (const item of items) {
-    const verdict = checkSourcePolicy(item.source, item.url);
+    const source = item.source ?? "unknown";
+    const verdict = checkSourcePolicy(source, item.url, {
+      pipeline: item.ingest_pipeline,
+      submittedBy: item.submitted_by,
+      tags: item.tags,
+    });
     if (verdict.decision === "allowed") {
       policyPassed.push(item);
       recordIngestAttempt({
-        source: item.source,
+        source,
         pipeline: item.ingest_pipeline ?? "unknown",
         decision: "accepted",
         reason: verdict.reason,
@@ -123,13 +129,13 @@ export async function writeRawItems(items: RawRiskFlowItem[]): Promise<number> {
       });
     } else {
       recordIngestAttempt({
-        source: item.source,
+        source,
         pipeline: item.ingest_pipeline ?? "unknown",
         decision: "blocked_by_policy",
         reason: verdict.reason,
         headlinePreview: item.headline?.slice(0, 80),
       });
-      recordLeakEvent(`${verdict.decision}: ${item.source} — ${item.headline?.slice(0, 60) ?? "(no headline)"}`);
+      recordLeakEvent(`${verdict.decision}: ${source} — ${item.headline?.slice(0, 60) ?? "(no headline)"}`);
     }
   }
   if (policyPassed.length < items.length) {

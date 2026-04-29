@@ -1,14 +1,14 @@
 // [claude-code 2026-04-27] v5.33.3: Catalyst Stats panel — counts every
 // catalyst-producing source (last 30 d), grouped by category × polling type.
 // Surfaces TP's bulk-handling controls: mass delete by source/category/date,
-// MSM purge (today-scoped + all-time variants) with audit + confirm, and
+// blocked-source purge (today-scoped + all-time variants) with audit + confirm, and
 // 14-day mass refill across selected sources with tail rate-limit.
 //
 // Auth: backend admin routes are gated on Supabase JWT + superadmin allow-list
 // (SUPER_ADMIN_USER_ID). The panel passes the user's access token via
 // Authorization: Bearer <token> automatically — no manual secret paste.
 //
-// All destructive actions are confirm-gated. The MSM audit pass shows a
+// All destructive actions are confirm-gated. The purge audit pass shows a
 // candidate list and a sample of up to 20 headlines before TP confirms.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -27,7 +27,7 @@ interface SourceStat {
   count: number;
 }
 
-interface MsmAuditResponse {
+interface PurgeAuditResponse {
   confirmed: false;
   scope: "today" | "all" | "range";
   from: string | null;
@@ -61,7 +61,7 @@ export function CatalystStatsPanel({ disabled }: Props) {
   const [refillToDate, setRefillToDate] = useState<string>(() =>
     new Date().toISOString().slice(0, 10),
   );
-  const [auditResult, setAuditResult] = useState<MsmAuditResponse | null>(null);
+  const [auditResult, setAuditResult] = useState<PurgeAuditResponse | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   // Build authed headers. Returns null if no token — caller short-circuits.
@@ -231,22 +231,22 @@ export function CatalystStatsPanel({ disabled }: Props) {
     }
   };
 
-  const onMsmAudit = async (scope: "today" | "all") => {
+  const onPurgeAudit = async (scope: "today" | "all") => {
     setBusy("audit");
     try {
       const headers = await buildHeaders();
       if (!headers) return;
-      const res = await fetch(`${API_BASE}/api/admin/riskflow/msm-purge`, {
+      const res = await fetch(`${API_BASE}/api/admin/riskflow/purge`, {
         method: "POST",
         headers,
         body: JSON.stringify({ scope }),
       });
       const json = (await res.json()) as
-        | MsmAuditResponse
+        | PurgeAuditResponse
         | { error: string; detail?: string };
       if (!res.ok || (json as { error?: string }).error) {
         addToast(
-          "MSM audit failed",
+          "Purge audit failed",
           "error",
           (json as { detail?: string }).detail ??
             (json as { error?: string }).error ??
@@ -254,17 +254,17 @@ export function CatalystStatsPanel({ disabled }: Props) {
         );
         return;
       }
-      setAuditResult(json as MsmAuditResponse);
+      setAuditResult(json as PurgeAuditResponse);
     } finally {
       setBusy(null);
     }
   };
 
-  const onMsmConfirm = async () => {
+  const onPurgeConfirm = async () => {
     if (!auditResult) return;
     if (
       !window.confirm(
-        `Hard-delete ${auditResult.candidate_count} catalyst(s) matching mainstream-media patterns from BOTH scored + raw tables (scope=${auditResult.scope})?`,
+        `Hard-delete ${auditResult.candidate_count} catalyst(s) matching blocked domains or keywords from BOTH scored + raw tables (scope=${auditResult.scope})?`,
       )
     )
       return;
@@ -272,7 +272,7 @@ export function CatalystStatsPanel({ disabled }: Props) {
     try {
       const headers = await buildHeaders();
       if (!headers) return;
-      const res = await fetch(`${API_BASE}/api/admin/riskflow/msm-purge`, {
+      const res = await fetch(`${API_BASE}/api/admin/riskflow/purge`, {
         method: "POST",
         headers,
         body: JSON.stringify({ confirm: true, scope: auditResult.scope }),
@@ -285,7 +285,7 @@ export function CatalystStatsPanel({ disabled }: Props) {
       };
       if (!res.ok || json.error) {
         addToast(
-          "MSM purge failed",
+          "Purge failed",
           "error",
           json.detail ?? json.error ?? `${res.status}`,
         );
@@ -417,20 +417,20 @@ export function CatalystStatsPanel({ disabled }: Props) {
             {busy === "refill" ? "Refilling…" : "Refill 14d"}
           </button>
           <button
-            onClick={() => onMsmAudit("today")}
+            onClick={() => onPurgeAudit("today")}
             disabled={disabled || busy !== null}
             className="inline-flex items-center gap-1 px-2 py-1 border border-amber-500/40 text-[11px] text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
           >
             <ShieldAlert className="w-3 h-3" />
-            {busy === "audit" ? "Auditing…" : "MSM Audit · today"}
+            {busy === "audit" ? "Auditing…" : "Purge · today"}
           </button>
           <button
-            onClick={() => onMsmAudit("all")}
+            onClick={() => onPurgeAudit("all")}
             disabled={disabled || busy !== null}
             className="inline-flex items-center gap-1 px-2 py-1 border border-amber-500/40 text-[11px] text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
           >
             <ShieldAlert className="w-3 h-3" />
-            MSM Audit · all-time
+            Purge · all-time
           </button>
         </div>
       </div>
@@ -438,7 +438,7 @@ export function CatalystStatsPanel({ disabled }: Props) {
       {auditResult && (
         <div className="border border-amber-500/40 bg-amber-500/5 p-2 flex flex-col gap-2">
           <div className="text-[11px] text-amber-300">
-            {auditResult.candidate_count} candidate(s) match MSM patterns (scope
+            {auditResult.candidate_count} candidate(s) match blocked domains or keywords (scope
             = {auditResult.scope}
             {auditResult.from
               ? ` · ${auditResult.from.slice(0, 10)} → ${(auditResult.to ?? "").slice(0, 10)}`
@@ -459,7 +459,7 @@ export function CatalystStatsPanel({ disabled }: Props) {
           </ul>
           <div className="flex items-center gap-2">
             <button
-              onClick={onMsmConfirm}
+                onClick={onPurgeConfirm}
               disabled={busy !== null}
               className="px-2 py-1 border border-red-500/40 text-[11px] text-red-400 hover:bg-red-500/10 disabled:opacity-50"
             >

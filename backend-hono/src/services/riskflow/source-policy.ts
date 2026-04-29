@@ -1,13 +1,14 @@
 // [claude-code 2026-04-29] S53-T4B: Strict source-policy enforcement — allowlist-first,
-// deny by default. Only approved X handles and official .gov domains may enter the feed.
-// Policy is read from riskflow_source_accounts (active + category filter). Unapproved
-// sources are blocked at the ingest boundary with logged rejection reason.
+// deny by default. Only approved X handles, official economic data domains, and
+// the internal EconomicCalendar bridge may enter the feed. Refinement config is
+// display/control metadata, not permission to broaden the feed.
 // Leak sentinel counters track every rejection for operator visibility.
 
 import { createLogger } from "../../lib/logger.js";
-import { getActiveAccounts } from "../source-accounts/source-accounts-service.js";
 
 const log = createLogger("SourcePolicy");
+
+const APPROVED_X_HANDLES = ["financialjuice", "deitaone"];
 
 const APPROVED_WEB_DOMAINS = [
   "bls.gov",
@@ -20,8 +21,26 @@ const APPROVED_WEB_DOMAINS = [
   "treasury.gov",
 ];
 
-let allowlistHandles = new Set<string>();
-let allowlistDomains = new Set<string>();
+const BLOCKED_WEB_DOMAINS = [
+  "seekingalpha.com",
+  "bloomberg.com",
+  "cnbc.com",
+  "reuters.com",
+  "marketwatch.com",
+  "wsj.com",
+  "ft.com",
+  "barrons.com",
+  "investing.com",
+];
+
+const SOCIAL_PERMALINK_DOMAINS = [
+  "x.com",
+  "twitter.com",
+  "nitter.net",
+];
+
+const allowlistHandles = new Set<string>(APPROVED_X_HANDLES);
+const allowlistDomains = new Set<string>(APPROVED_WEB_DOMAINS);
 let lastRefresh = 0;
 const REFRESH_TTL_MS = 30_000;
 
@@ -29,31 +48,59 @@ function isWebDomain(handle: string): boolean {
   return handle.includes(".") && !handle.startsWith("@");
 }
 
+function normalizeHandle(value: string): string {
+  return value.replace(/^@/, "").toLowerCase().trim();
+}
+
+function extractHandleFromSubmittedBy(submittedBy?: string | null): string | null {
+  if (!submittedBy) return null;
+  const match = submittedBy.match(/@?([a-z0-9_]{2,32})$/i);
+  return match ? normalizeHandle(match[1]) : null;
+}
+
+function extractHandleFromSource(source: string): string | null {
+  const normalized = source.trim();
+  if (normalized.toLowerCase().startsWith("twitter:")) {
+    return normalizeHandle(normalized.slice("twitter:".length));
+  }
+  if (normalized.startsWith("@")) return normalizeHandle(normalized);
+  return null;
+}
+
+function getHostname(value?: string | null): string | null {
+  if (!value) return null;
+  try {
+    return new URL(value).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function isDomainMatch(host: string, domain: string): boolean {
+  return host === domain || host.endsWith("." + domain);
+}
+
+function isBlockedHost(host: string): string | null {
+  return BLOCKED_WEB_DOMAINS.find((domain) => isDomainMatch(host, domain)) ?? null;
+}
+
+function isApprovedDataHost(host: string): string | null {
+  return Array.from(allowlistDomains).find((domain) => isDomainMatch(host, domain)) ?? null;
+}
+
+function isSocialPermalinkHost(host: string): boolean {
+  return SOCIAL_PERMALINK_DOMAINS.some((domain) => isDomainMatch(host, domain));
+}
+
 export async function refreshAllowlist(): Promise<void> {
-  if (Date.now() - lastRefresh < REFRESH_TTL_MS && allowlistHandles.size > 0)
+  if (Date.now() - lastRefresh < REFRESH_TTL_MS)
     return;
 
-  try {
-    const accounts = await getActiveAccounts();
-    const handles = new Set<string>();
-    const domains = new Set<string>(APPROVED_WEB_DOMAINS);
-
-    for (const a of accounts) {
-      if (isWebDomain(a.handle)) {
-        domains.add(a.handle);
-      } else {
-        handles.add(a.handle.toLowerCase());
-      }
-    }
-
-    allowlistHandles = handles;
-    allowlistDomains = domains;
-    lastRefresh = Date.now();
-  } catch (err) {
-    log.warn("Allowlist refresh failed, keeping stale", {
-      error: err instanceof Error ? err.message : String(err),
-    });
-  }
+  lastRefresh = Date.now();
+  log.info("Static RiskFlow source allowlist refreshed", {
+    handles: allowlistHandles.size,
+    domains: allowlistDomains.size,
+  });
 }
 
 export function getAllowlistSnapshot(): {
@@ -73,38 +120,87 @@ export interface PolicyVerdict {
   reason: string;
 }
 
-export function checkSourcePolicy(source: string, url?: string | null): PolicyVerdict {
+export interface SourcePolicyContext {
+  submittedBy?: string | null;
+  pipeline?: string | null;
+  sourceDomain?: string | null;
+  tags?: string[] | null;
+}
+
+export function checkSourcePolicy(
+  source: string,
+  url?: string | null,
+  context: SourcePolicyContext = {},
+): PolicyVerdict {
   if (!source || source === "unknown") {
     return { decision: "blocked_unknown_source", reason: "source field empty or 'unknown'" };
   }
 
+  const urlHost = getHostname(url);
+  const sourceDomain = context.sourceDomain?.replace(/^www\./, "").toLowerCase() ?? null;
+  const candidateHost = urlHost ?? sourceDomain;
+  if (candidateHost) {
+    const blocked = isBlockedHost(candidateHost);
+    if (blocked) {
+      return {
+        decision: "blocked_domain",
+        reason: `blocked publisher domain: ${blocked}`,
+      };
+    }
+  }
+
+  if (source === "EconomicCalendar" || context.pipeline === "economic-calendar") {
+    return { decision: "allowed", reason: "internal economic calendar bridge" };
+  }
+
+  const sourceHandle = extractHandleFromSource(source);
+  if (sourceHandle && allowlistHandles.has(sourceHandle)) {
+    return { decision: "allowed", reason: `approved X handle: @${sourceHandle}` };
+  }
+
+  const submittedHandle = extractHandleFromSubmittedBy(context.submittedBy);
+  if (
+    source === "CuratedTimeline" &&
+    context.pipeline === "rettiwt-commentary" &&
+    submittedHandle &&
+    allowlistHandles.has(submittedHandle)
+  ) {
+    return {
+      decision: "allowed",
+      reason: `approved commentary handle: @${submittedHandle}`,
+    };
+  }
+
   // Check X handles (case-insensitive)
-  const handle = source.replace(/^@/, "").toLowerCase();
+  const handle = normalizeHandle(source);
   if (allowlistHandles.has(handle)) {
     return { decision: "allowed", reason: "approved X handle" };
   }
 
   // Check web domains
   if (url) {
-    try {
-      const host = new URL(url).hostname.replace(/^www\./, "").toLowerCase();
-      for (const domain of allowlistDomains) {
-        if (host === domain || host.endsWith("." + domain)) {
-          return { decision: "allowed", reason: `approved domain: ${domain}` };
-        }
+    const host = urlHost;
+    if (host) {
+      const approved = isApprovedDataHost(host);
+      if (approved) {
+        return { decision: "allowed", reason: `approved domain: ${approved}` };
       }
-    } catch {
-      // Bad URL — fall through to handle check
+      if (!isSocialPermalinkHost(host) && !sourceHandle && !submittedHandle) {
+        return { decision: "blocked_domain", reason: `domain not in allowlist: ${host}` };
+      }
     }
   }
 
   // Check if source itself is a domain
   if (isWebDomain(source)) {
     const srcLower = source.toLowerCase();
-    for (const domain of allowlistDomains) {
-      if (srcLower === domain || srcLower.endsWith("." + domain)) {
-        return { decision: "allowed", reason: `approved domain: ${domain}` };
-      }
+    const blocked = isBlockedHost(srcLower);
+    if (blocked) {
+      return { decision: "blocked_domain", reason: `blocked publisher domain: ${blocked}` };
+    }
+    const approved = isApprovedDataHost(srcLower);
+    if (approved) {
+      return { decision: "allowed", reason: `approved domain: ${approved}` };
     }
     return { decision: "blocked_domain", reason: `domain not in allowlist: ${source}` };
   }

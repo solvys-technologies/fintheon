@@ -27,6 +27,8 @@
 import { getSupabaseClient } from "../../config/supabase.js";
 import { bumpCounter } from "../../services/riskflow/drop-counters.js";
 import { isBannedPublisher } from "../../services/riskflow/content-guard.js";
+import { recordIngestAttempt, recordLeakEvent } from "../../services/riskflow/ingest-ledger.js";
+import { checkSourcePolicy, refreshAllowlist } from "../../services/riskflow/source-policy.js";
 import type { CollectedNewsItem } from "./sources/types.js";
 
 const FLAG_WRITES_NEW = "FLAG_RISKFLOW_WORKER_WRITES_RISKFLOW";
@@ -136,13 +138,46 @@ export async function writeCollectedItems(
   }
   if (eligible.length === 0) return 0;
 
+  await refreshAllowlist();
+  const policyEligible: CollectedNewsItem[] = [];
+  for (const item of eligible) {
+    const verdict = checkSourcePolicy(item.source, item.url, {
+      pipeline: item.ingest_pipeline,
+      sourceDomain: item.source_domain,
+    });
+    if (verdict.decision === "allowed") {
+      policyEligible.push(item);
+      recordIngestAttempt({
+        source: item.source,
+        pipeline: item.ingest_pipeline ?? "riskflow-worker",
+        decision: "accepted",
+        reason: verdict.reason,
+        headlinePreview: item.headline,
+      });
+      continue;
+    }
+
+    recordIngestAttempt({
+      source: item.source,
+      pipeline: item.ingest_pipeline ?? "riskflow-worker",
+      decision: "blocked_by_policy",
+      reason: verdict.reason,
+      headlinePreview: item.headline,
+    });
+    recordLeakEvent(
+      `${verdict.decision}: ${item.source_domain || item.source} — ${item.headline.slice(0, 80)}`,
+    );
+    bumpCounter(item.source || "unknown", "persist", "blocked_source_policy");
+  }
+  if (policyEligible.length === 0) return 0;
+
   // [claude-code 2026-04-27] image_url + url are the two display fields the
   // frontend RiskFlow card depends on (RiskFlowDetailCard.tsx renders an <img>
   // wrapped in <a href={alert.url ?? alert.imageUrl}>). Persist both — the
   // central-scorer copies them straight through to scored_riskflow_items.
   // [claude-code 2026-04-27] S46.4/I: video_url threaded through for tweet
   // attachments (highest-bitrate mp4 from extended_entities.media[].video_info).
-  const rows = eligible.map((item) => ({
+  const rows = policyEligible.map((item) => ({
     tweet_id: item.item_id,
     source: item.source,
     source_domain: item.source_domain,

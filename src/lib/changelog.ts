@@ -9,6 +9,25 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-29T17:06:00-04:00",
+    agent: "codex",
+    summary:
+      "Manual hardening follow-up: tightened RiskFlow source enforcement and purge controls. Source policy is now static allowlist-only with explicit blocked publisher domains including seekingalpha.com, EconomicCalendar is accepted as the internal econ bridge, worker/scorer/write boundaries pass raw source context into policy checks, policy-blocked raw rows are purged instead of scored into the feed, econ bridge records continuity telemetry, Refinement purge UI now targets blocked domains/keywords via a neutral Purge action, and orphaned omi-reference was removed.",
+    files: [
+      "backend-hono/src/services/riskflow/source-policy.ts",
+      "backend-hono/src/services/supabase-service.ts",
+      "backend-hono/src/services/riskflow/central-scorer.ts",
+      "backend-hono/src/workers/riskflow-worker/persist.ts",
+      "backend-hono/src/services/riskflow/econ-bridge.ts",
+      "backend-hono/src/routes/admin/riskflow-bulk.ts",
+      "frontend/components/refinement/CatalystStatsPanel.tsx",
+      "frontend/components/refinement/CatalystStatsDrawer.tsx",
+      "package.json",
+      "scripts/fintheon-update.sh",
+      "omi-reference",
+    ],
+  },
+  {
     date: "2026-04-29T20:45:00",
     agent: "claude-code",
     summary:
