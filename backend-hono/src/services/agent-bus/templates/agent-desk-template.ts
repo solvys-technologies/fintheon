@@ -11,7 +11,7 @@ import type {
 import type {
   MarketAnalystAssessment,
   HermesDeliberation,
-  Harper21Scoring,
+  harper-2_1Scoring,
   DeliberationState,
   AgentDeskCategoryScore,
   AgentDeskRiskCategory,
@@ -670,10 +670,10 @@ export function postProcessDeliberation(
 
   // ── Wave 2: Extract Harper synthesis ─────────────────────────────────────
   const wave2Output = collectedOutputs.find((t) => t.wave === 2);
-  let harperScoring: Harper21Scoring | undefined;
+  let harperScoring: harper-2_1Scoring | undefined;
 
   if (wave2Output) {
-    const parsed = parseJsonSafe<Partial<Harper21Scoring>>(wave2Output.text);
+    const parsed = parseJsonSafe<Partial<harper-2_1Scoring>>(wave2Output.text);
     if (parsed) {
       harperScoring = {
         compositeIV: Math.max(0, Math.min(10, parsed.compositeIV ?? 5)),

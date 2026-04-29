@@ -4,11 +4,11 @@
 
 import { createLogger } from "../../lib/logger.js";
 import type {
-  Harper21VoiceNotificationPayload,
-  Harper21VoiceTranscriptSegment,
+  harper-2_1VoiceNotificationPayload,
+  harper-2_1VoiceTranscriptSegment,
 } from "./types.js";
 
-const log = createLogger("Harper21VoiceClient");
+const log = createLogger("harper-2_1VoiceClient");
 
 const OMI_API_BASE = process.env.OMI_API_BASE || "https://api.omi.me/v1/dev";
 
@@ -58,7 +58,7 @@ export async function listConversations(uid: string, limit = 20) {
 
 export async function createConversationFromSegments(
   uid: string,
-  segments: Harper21VoiceTranscriptSegment[],
+  segments: harper-2_1VoiceTranscriptSegment[],
 ) {
   return omiFetch("/user/conversations/from-segments", {
     method: "POST",
@@ -72,7 +72,7 @@ export async function createConversationFromSegments(
  * path in S21 (ElevenLabs is explicitly out of scope for v1).
  */
 export async function sendNotification(
-  payload: Harper21VoiceNotificationPayload,
+  payload: harper-2_1VoiceNotificationPayload,
 ): Promise<boolean> {
   const res = await omiFetch<{ ok: boolean }>("/user/notifications", {
     method: "POST",

@@ -502,7 +502,7 @@ export function createHarperRoutes() {
 
       return response;
     } catch (error) {
-      console.error(`[Harper21][${requestId}] Handler error:`, error);
+      console.error(`[harper-2_1][${requestId}] Handler error:`, error);
       cognition.done();
       return c.json(
         {

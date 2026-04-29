@@ -63,7 +63,7 @@ export interface HermesDeliberation {
   confidence: number;
 }
 
-export interface Harper21Scoring {
+export interface harper-2_1Scoring {
   compositeIV: number;
   regimeShiftProbability: number;
   categoryScores: AgentDeskCategoryScore[];
@@ -100,7 +100,7 @@ export interface DeliberationState {
   /** Whether the gov-official phase was skipped */
   govOfficialsSkipped?: boolean;
   hermesResults?: HermesDeliberation[];
-  harperScoring?: Harper21Scoring;
+  harperScoring?: harper-2_1Scoring;
   userInjection?: string;
   error?: string;
 }

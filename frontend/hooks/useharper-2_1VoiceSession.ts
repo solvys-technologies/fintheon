@@ -5,11 +5,11 @@
 // React context dependency.
 import { useCallback, useEffect, useState } from "react";
 import {
-  getActiveHarper21VoiceSession,
-  startHarper21VoiceSession,
-  stopHarper21VoiceSession,
-  type Harper21VoiceSession,
-  type Harper21VoiceTrigger,
+  getActiveharper-2_1VoiceSession,
+  startharper-2_1VoiceSession,
+  stopharper-2_1VoiceSession,
+  type harper-2_1VoiceSession,
+  type harper-2_1VoiceTrigger,
 } from "../lib/harper-2.1-voice";
 import { ensureVoicePermissions } from "../lib/system-permissions";
 
@@ -30,13 +30,13 @@ export function emitAgentResponse(detail: AgentResponseEventDetail) {
   );
 }
 
-export function useHarper21VoiceSession() {
-  const [session, setSession] = useState<Harper21VoiceSession | null>(null);
+export function useharper-2_1VoiceSession() {
+  const [session, setSession] = useState<harper-2_1VoiceSession | null>(null);
   const [starting, setStarting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    getActiveHarper21VoiceSession().then((s) => {
+    getActiveharper-2_1VoiceSession().then((s) => {
       if (!cancelled) setSession(s);
     });
     return () => {
@@ -44,14 +44,14 @@ export function useHarper21VoiceSession() {
     };
   }, []);
 
-  const start = useCallback(async (trigger: Harper21VoiceTrigger) => {
+  const start = useCallback(async (trigger: harper-2_1VoiceTrigger) => {
     setStarting(true);
     try {
       // Permission may already be granted by the onboarding flow; this is a
       // belt-and-braces check so the live triggers still work before
       // onboarding ships.
       await ensureVoicePermissions();
-      const s = await startHarper21VoiceSession(trigger);
+      const s = await startharper-2_1VoiceSession(trigger);
       setSession(s);
       if (s) {
         emitAgentResponse({
@@ -67,7 +67,7 @@ export function useHarper21VoiceSession() {
   }, []);
 
   const stop = useCallback(async () => {
-    await stopHarper21VoiceSession();
+    await stopharper-2_1VoiceSession();
     setSession(null);
     emitAgentResponse({ agent: "coach", isSpeaking: false, open: false });
   }, []);

@@ -9,7 +9,7 @@ import { createLogger } from "../../lib/logger.js";
 import { addMemory } from "./memory-store.js";
 import type { AgentId } from "./types.js";
 import type {
-  Harper21Scoring,
+  harper-2_1Scoring,
   MarketAnalystAssessment,
   HermesDeliberation,
 } from "../agent-desk/agent-desk-types.js";
@@ -53,7 +53,7 @@ export async function captureDeliberation(
   const deliberationId = delib.id;
   const analysts = (delib.analyst_results ?? []) as MarketAnalystAssessment[];
   const hermes = (delib.hermes_results ?? []) as HermesDeliberation[];
-  const harper = delib.harper_scoring as Harper21Scoring | null;
+  const harper = delib.harper_scoring as harper-2_1Scoring | null;
 
   const rows: Array<Record<string, unknown>> = [];
 

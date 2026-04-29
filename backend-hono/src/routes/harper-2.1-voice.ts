@@ -14,14 +14,14 @@ import {
   appendTranscript,
   endSession,
   getActiveSession,
-  resolveUserIdForHarper21VoiceUid,
+  resolveUserIdForharper-2_1VoiceUid,
   setPrimaryAgent,
   startSession,
 } from "../services/harper-2.1-voice/session-manager.js";
 import type {
-  Harper21VoiceMemoryWebhookBody,
-  Harper21VoiceTranscriptWebhookBody,
-  Harper21VoiceTrigger,
+  harper-2_1VoiceMemoryWebhookBody,
+  harper-2_1VoiceTranscriptWebhookBody,
+  harper-2_1VoiceTrigger,
 } from "../services/harper-2.1-voice/types.js";
 import { routeIntent } from "../services/harper-2.1-voice/router.js";
 import {
@@ -30,15 +30,15 @@ import {
 } from "../services/prosody/extractor.js";
 import { sendNotification } from "../services/harper-2.1-voice/client.js";
 
-const log = createLogger("Harper21VoiceRoutes");
+const log = createLogger("harper-2_1VoiceRoutes");
 
-const VALID_TRIGGERS: readonly Harper21VoiceTrigger[] = [
+const VALID_TRIGGERS: readonly harper-2_1VoiceTrigger[] = [
   "psych_assist",
   "voice_assistant",
   "performance_chat",
 ];
 
-export function createHarper21VoiceRoutes() {
+export function createharper-2_1VoiceRoutes() {
   const router = new Hono();
 
   // ── PUBLIC WEBHOOK ENDPOINTS ────────────────────────────────────────────
@@ -50,7 +50,7 @@ export function createHarper21VoiceRoutes() {
     const uid = c.req.query("uid");
     if (!uid) return c.json({ error: "missing uid" }, 400);
 
-    const userId = await resolveUserIdForHarper21VoiceUid(uid);
+    const userId = await resolveUserIdForharper-2_1VoiceUid(uid);
     if (!userId) {
       log.warn("transcript webhook from unpaired uid", { uid });
       return c.json({ error: "uid not paired" }, 404);
@@ -58,7 +58,7 @@ export function createHarper21VoiceRoutes() {
 
     const body = (await c.req
       .json()
-      .catch(() => null)) as Harper21VoiceTranscriptWebhookBody | null;
+      .catch(() => null)) as harper-2_1VoiceTranscriptWebhookBody | null;
     if (!body || !Array.isArray(body.segments)) {
       return c.json({ error: "bad body" }, 400);
     }
@@ -112,7 +112,7 @@ export function createHarper21VoiceRoutes() {
   router.post("/webhook/audio", async (c: Context) => {
     const uid = c.req.query("uid");
     if (!uid) return c.json({ error: "missing uid" }, 400);
-    const userId = await resolveUserIdForHarper21VoiceUid(uid);
+    const userId = await resolveUserIdForharper-2_1VoiceUid(uid);
     if (!userId) return c.json({ error: "uid not paired" }, 404);
 
     const session = getActiveSession(userId);
@@ -131,7 +131,7 @@ export function createHarper21VoiceRoutes() {
   router.post("/webhook/day-summary", async (c: Context) => {
     const uid = c.req.query("uid");
     if (!uid) return c.json({ error: "missing uid" }, 400);
-    const userId = await resolveUserIdForHarper21VoiceUid(uid);
+    const userId = await resolveUserIdForharper-2_1VoiceUid(uid);
     if (!userId) return c.json({ error: "uid not paired" }, 404);
 
     const body = (await c.req.json().catch(() => null)) as Record<
@@ -159,12 +159,12 @@ export function createHarper21VoiceRoutes() {
   router.post("/webhook/memory", async (c: Context) => {
     const uid = c.req.query("uid");
     if (!uid) return c.json({ error: "missing uid" }, 400);
-    const userId = await resolveUserIdForHarper21VoiceUid(uid);
+    const userId = await resolveUserIdForharper-2_1VoiceUid(uid);
     if (!userId) return c.json({ error: "uid not paired" }, 404);
 
     const body = (await c.req
       .json()
-      .catch(() => null)) as Harper21VoiceMemoryWebhookBody | null;
+      .catch(() => null)) as harper-2_1VoiceMemoryWebhookBody | null;
     if (!body) return c.json({ error: "bad body" }, 400);
 
     const sb = getSupabaseClient();
@@ -195,7 +195,7 @@ export function createHarper21VoiceRoutes() {
     const body = (await c.req.json().catch(() => ({}))) as {
       trigger?: string;
     };
-    const trigger = body.trigger as Harper21VoiceTrigger;
+    const trigger = body.trigger as harper-2_1VoiceTrigger;
     if (!VALID_TRIGGERS.includes(trigger)) {
       return c.json({ error: "invalid trigger", allowed: VALID_TRIGGERS }, 400);
     }
