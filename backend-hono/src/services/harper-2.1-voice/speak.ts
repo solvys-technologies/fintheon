@@ -5,7 +5,7 @@ import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
 import { sendNotification } from "./client.js";
 
-const log = createLogger("harper-2_1VoiceSpeak");
+const log = createLogger("Harper21VoiceSpeak");
 
 /**
  * Speak `text` into the user's Omi earbuds via the Notifications API.
