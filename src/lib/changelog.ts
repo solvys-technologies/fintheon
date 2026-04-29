@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-29T18:08:00-04:00",
+    agent: "claude-code",
+    summary:
+      "INSTALL-UPDATE: documented and backfilled the worker-owned browser session env knobs used by the RiskFlow X browser-session deploy so local installs and update runs keep the new collector defaults in sync.",
+    files: [
+      "backend-hono/.env.example",
+      "scripts/fintheon-update.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-29T18:00:00-04:00",
     agent: "claude-code",
     summary:

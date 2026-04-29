@@ -231,6 +231,9 @@ if [[ -f "$BACKEND_ENV" ]]; then
     echo "INTERNAL_HERMES_JWT=$LOCAL_JWT" >> "$BACKEND_ENV"
   fi
   grep -q "^BROWSER_UNIVERSAL_ENABLED=" "$BACKEND_ENV" 2>/dev/null || echo "BROWSER_UNIVERSAL_ENABLED=false" >> "$BACKEND_ENV"
+  grep -q "^BROWSER_WORKER_SESSION_DIR=" "$BACKEND_ENV" 2>/dev/null || echo "BROWSER_WORKER_SESSION_DIR=.runtime/browser-session" >> "$BACKEND_ENV"
+  grep -q "^BROWSER_WORKER_HEADLESS=" "$BACKEND_ENV" 2>/dev/null || echo "BROWSER_WORKER_HEADLESS=true" >> "$BACKEND_ENV"
+  grep -q "^BROWSER_WORKER_USER_AGENT=" "$BACKEND_ENV" 2>/dev/null || echo "BROWSER_WORKER_USER_AGENT=" >> "$BACKEND_ENV"
   grep -q "^ROUTING_DAILY_CAP=" "$BACKEND_ENV" 2>/dev/null || echo "ROUTING_DAILY_CAP=20" >> "$BACKEND_ENV"
   grep -q "^ROUTING_DISABLE_BUDGET=" "$BACKEND_ENV" 2>/dev/null || echo "ROUTING_DISABLE_BUDGET=false" >> "$BACKEND_ENV"
   grep -q "^FLAG_NEWS_WORKER_WRITES_RISKFLOW=" "$BACKEND_ENV" 2>/dev/null || echo "FLAG_NEWS_WORKER_WRITES_RISKFLOW=false" >> "$BACKEND_ENV"
