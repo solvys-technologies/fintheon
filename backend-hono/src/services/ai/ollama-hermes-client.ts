@@ -1,15 +1,25 @@
-// [claude-code 2026-04-23] S32-T3 Ollama fallback chain — OpenAI-compatible client for the Hermes sidecar
-// The "Hermes sidecar" on the fintheon host is Ollama (Mac app on :11434), which natively exposes
-// an OpenAI-compatible endpoint at /v1/chat/completions. Default model is Qwen's latest free cloud
-// build; override via OLLAMA_FALLBACK_MODEL.
+// [claude-code 2026-04-29] DeepSeek migration — this client is the OpenAI-compat
+// pipe for the Hermes "sidecar". Default target is now DeepSeek's API
+// (https://api.deepseek.com) with model `deepseek-reasoner`. Local Ollama still
+// works: set HERMES_SIDECAR_URL=http://localhost:11434 and
+// OLLAMA_FALLBACK_MODEL=<your local model> to retarget. When DEEPSEEK_API_KEY
+// (or HERMES_API_KEY) is present, requests are sent with Bearer auth.
 
 import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger("OllamaHermes");
 
-const DEFAULT_BASE_URL = "http://localhost:11434";
-const DEFAULT_MODEL = "qwen3.5:397b-cloud";
+const DEFAULT_BASE_URL = "https://api.deepseek.com";
+const DEFAULT_MODEL = "deepseek-reasoner";
 const HEALTH_CACHE_TTL_MS = 15_000;
+
+function getAuthHeaders(): Record<string, string> {
+  const key =
+    process.env.DEEPSEEK_API_KEY ??
+    process.env.HERMES_API_KEY ??
+    process.env.OLLAMA_API_KEY;
+  return key ? { Authorization: `Bearer ${key}` } : {};
+}
 
 export interface OllamaHealth {
   enabled: boolean;

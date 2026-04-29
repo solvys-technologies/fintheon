@@ -1,10 +1,10 @@
-// [claude-code 2026-04-26] S35-T11: All Arbitrum seats locked to qwen3.5:397b-cloud
-// via Ollama Cloud. DashScope path stripped (paid + we don't have a key). Seat
-// divergence now comes from persona/role + temperature, not separate model IDs.
+// [claude-code 2026-04-29] DeepSeek migration: all Arbitrum seats now run
+// `deepseek-reasoner` via DeepSeek's OpenAI-compat API. Seat divergence still
+// comes from persona/role + temperature, not separate model IDs.
 //
 // 2-layer Mixture-of-Agents (MoA) per seat:
-//   L1 — 2 parallel qwen3.5:397b-cloud drafts at higher temperature
-//   L2 — seat's qwen3.5:397b-cloud distills both drafts + task into a single
+//   L1 — 2 parallel deepseek-reasoner drafts at higher temperature
+//   L2 — seat's deepseek-reasoner distills both drafts + task into a single
 //        JSON-parseable {probability, confidence, rationale, risks[]} answer.
 
 import { createLogger } from "../../lib/logger.js";
@@ -19,7 +19,7 @@ import type {
 
 const log = createLogger("ArbitrumSeats");
 
-const SEAT_MODEL = "qwen3.5:397b-cloud";
+const SEAT_MODEL = "deepseek-reasoner";
 
 export const ARBITRUM_SEATS: readonly ArbitrumSeatConfig[] = [
   {
@@ -28,7 +28,7 @@ export const ARBITRUM_SEATS: readonly ArbitrumSeatConfig[] = [
     roleSubtitle: "CAO — executive synthesis",
     displayName: "Harper",
     model: SEAT_MODEL,
-    provider: "ollama",
+    provider: "deepseek",
     weight: 0.3,
     persona: "harper",
     temperature: 0.6,
@@ -39,7 +39,7 @@ export const ARBITRUM_SEATS: readonly ArbitrumSeatConfig[] = [
     roleSubtitle: "Prediction markets + probabilistic reasoning",
     displayName: "Oracle",
     model: SEAT_MODEL,
-    provider: "ollama",
+    provider: "deepseek",
     weight: 0.3,
     persona: "oracle",
     temperature: 0.6,
@@ -50,7 +50,7 @@ export const ARBITRUM_SEATS: readonly ArbitrumSeatConfig[] = [
     roleSubtitle: "Futures/risk, technical levels, execution",
     displayName: "Feucht",
     model: SEAT_MODEL,
-    provider: "ollama",
+    provider: "deepseek",
     weight: 0.2,
     persona: "feucht",
     temperature: 0.6,
@@ -61,7 +61,7 @@ export const ARBITRUM_SEATS: readonly ArbitrumSeatConfig[] = [
     roleSubtitle: "Mega-cap fundamentals, earnings, sector rotation",
     displayName: "Consul",
     model: SEAT_MODEL,
-    provider: "ollama",
+    provider: "deepseek",
     weight: 0.1,
     persona: "consul",
     temperature: 0.6,
@@ -72,14 +72,14 @@ export const ARBITRUM_SEATS: readonly ArbitrumSeatConfig[] = [
     roleSubtitle: "Breaking news, social sentiment, headline risk",
     displayName: "Herald",
     model: SEAT_MODEL,
-    provider: "ollama",
+    provider: "deepseek",
     weight: 0.1,
     persona: "herald",
     temperature: 0.6,
   },
 ] as const;
 
-// L1 drafters share the same Ollama Cloud model; divergence comes from
+// L1 drafters share the same DeepSeek model; divergence comes from
 // independent samples at higher temperature in invokeMoA().
 const MOA_LAYER1_MODELS = [SEAT_MODEL, SEAT_MODEL] as const;
 

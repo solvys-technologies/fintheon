@@ -1,8 +1,7 @@
-// [claude-code 2026-04-26] S35-T11: Provider adapters for Arbitrum seats.
-// All seats route through Ollama Cloud (qwen3.5:397b-cloud). Groq remains
-// available as an explicit alternate provider; DashScope was removed (paid,
-// no key). Harper-cao's OpenRouter path lives in hermes-handler.ts and is
-// NOT touched by this module.
+// [claude-code 2026-04-29] DeepSeek migration. All Arbitrum seats route through
+// DeepSeek's OpenAI-compatible API (`deepseek-reasoner`). Local Ollama and Groq
+// remain selectable via ARBITRUM_MODEL_PROVIDER_MAP. Harper-cao's OpenRouter
+// path lives in hermes-handler.ts and is NOT touched by this module.
 
 import { resolveProvider, type ArbitrumProvider } from "../hermes-service.js";
 
@@ -58,6 +57,13 @@ async function postJson<T>(
 async function ollamaChat(req: SeatChatRequest): Promise<string> {
   const base = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
   const url = `${base.replace(/\/$/, "")}/api/chat`;
+  // Allow an optional bearer key — Ollama Cloud accepts one when configured;
+  // the local Ollama daemon ignores it. Prefer OLLAMA_API_KEY, fall back to
+  // DEEPSEEK_API_KEY so a single key can serve both routes.
+  const apiKey = process.env.OLLAMA_API_KEY ?? process.env.DEEPSEEK_API_KEY;
+  const headers: Record<string, string> = apiKey
+    ? { Authorization: `Bearer ${apiKey}` }
+    : {};
   const data = await postJson<{
     message?: { content?: string };
     messages?: { content?: string }[];
@@ -75,10 +81,33 @@ async function ollamaChat(req: SeatChatRequest): Promise<string> {
         { role: "user", content: req.user },
       ],
     },
-    {},
+    headers,
     req.timeoutMs ?? DEFAULT_TIMEOUT_MS,
   );
   return data.message?.content ?? "";
+}
+
+async function deepseekChat(req: SeatChatRequest): Promise<string> {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) throw new ProviderUnavailable("DEEPSEEK_API_KEY not set");
+  const base = process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com";
+  const url = `${base.replace(/\/$/, "")}/v1/chat/completions`;
+  const data = await postJson<{
+    choices?: { message?: { content?: string } }[];
+  }>(
+    url,
+    {
+      model: req.modelId,
+      temperature: req.temperature,
+      messages: [
+        { role: "system", content: req.system },
+        { role: "user", content: req.user },
+      ],
+    },
+    { Authorization: `Bearer ${apiKey}` },
+    req.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+  );
+  return data.choices?.[0]?.message?.content ?? "";
 }
 
 async function groqChat(req: SeatChatRequest): Promise<string> {
@@ -115,6 +144,8 @@ export async function seatChat(req: SeatChatRequest): Promise<SeatChatResult> {
 
   const runPrimary = async (): Promise<string> => {
     switch (provider) {
+      case "deepseek":
+        return deepseekChat(req);
       case "ollama":
         return ollamaChat(req);
       case "groq":
