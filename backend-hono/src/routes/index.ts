@@ -88,8 +88,8 @@ import { createOracleRoutes } from "./oracle.js";
 import { createMeRoutes } from "./me/index.js";
 import { createMaintenanceRoutes } from "./maintenance.js";
 // [claude-code 2026-04-23] Routines Console retired — replaced by in-process schedulers + hooks.
-// [claude-code 2026-04-20] S21: Harper 2.1 Voice integration (formerly Omi) + PsychAssist fork admin
-import { createHarper21VoiceRoutes } from "./harper-2.1-voice.js";
+// [claude-code 2026-04-20] S21: Harper Voice integration (formerly Omi) + PsychAssist fork admin
+import { createHarperVoiceRoutes } from "./harper-voice.js";
 import { createPsychAssistForkRoutes } from "./admin/psych-assist-fork.js";
 // [claude-code 2026-04-25] S35-cleanup: manual trigger for econ-backfill-orchestrator drain
 import { createEconBackfillRoutes } from "./admin/econ-backfill.js";
@@ -413,9 +413,9 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/editor/*", authMiddleware, requireAuth);
   app.route("/api/editor", createEditorRoutes());
 
-  // [S21] Harper 2.1 Voice integration — webhooks are public (uid-param auth),
+  // [S21] Harper Voice integration — webhooks are public (uid-param auth),
   //   session + pair endpoints are authMiddleware+requireAuth (inside the router).
-  app.route("/api/harper-2.1-voice", createHarper21VoiceRoutes());
+  app.route("/api/harper-voice", createHarperVoiceRoutes());
 
   // [claude-code 2026-04-23] Harper Vision — screen + audio perception layer
   // Frame ingestion is public (Electron main process posts directly),

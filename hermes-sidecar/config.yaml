@@ -35,8 +35,8 @@ routing:
 voice:
   # [claude-code 2026-04-19] S27-T5 W2c — real voicebox + Qwen wired through the sidecar.
   # Reasoning model for the voice CAO lives in ROUTING_TABLE (routing.ts) under
-  # agent=harper-2.1-voice. Swap via ROUTING_OVERRIDE_HARPER_VOICE env var.
-  agent_id: harper-2.1-voice
+  # agent=harper-voice. Swap via ROUTING_OVERRIDE_HARPER_VOICE env var.
+  agent_id: harper-voice
   reasoning_model: qwen/qwen3.6-plus-preview:free
   stt:
     primary:
@@ -50,7 +50,7 @@ voice:
   tts:
     provider: voicebox
     model: qwen3-tts
-    voice_id: harper-2.1-voice
+    voice_id: harper-voice
     # Streams opus audio chunks; client side decodes as they arrive.
     stream: true
     target_first_byte_ms: 400

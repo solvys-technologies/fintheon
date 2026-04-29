@@ -14,7 +14,7 @@ import { useSettings } from "../../contexts/SettingsContext";
 /* ------------------------------------------------------------------ */
 
 const DOSSIERS: Record<string, string> = {
-  "harper-2.1":
+  harper:
     "Chief Agentic Officer — executive strategy, oversight, and final trade authorization",
   oracle:
     "The All-Seeing Speculator — prediction markets, probabilistic reasoning, cross-domain intelligence",
@@ -42,14 +42,14 @@ export function AgenticDesk() {
   const handleSaveCaoName = useCallback(() => {
     const trimmed = caoName.trim();
     if (!trimmed) return;
-    updateAgent("harper-2.1", { name: trimmed });
+    updateAgent("harper", { name: trimmed });
     persistCaoName(trimmed); // persist to backend + localStorage
     setSaved(true);
     addToast("CAO name updated", "success");
     setTimeout(() => setSaved(false), 2000);
   }, [caoName, updateAgent, persistCaoName, addToast]);
 
-  const cao = agents.find((a) => a.id === "harper-2.1");
+  const cao = agents.find((a) => a.id === "harper");
   const subanalysts = agents.filter((a) =>
     ["oracle", "feucht", "consul", "herald"].includes(a.id),
   );
@@ -87,7 +87,7 @@ export function AgenticDesk() {
             </div>
 
             <p className="text-[12px] text-gray-400 mb-4 leading-relaxed">
-              {DOSSIERS["harper-2.1"]}
+              {DOSSIERS["harper"]}
             </p>
 
             {/* Editable name field */}

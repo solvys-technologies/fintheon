@@ -1,7 +1,7 @@
-# S31 — Harper 2.1 — Orchestration
+# S31 — Harper — Orchestration
 
-**Sprint for Harper 2.1 (S32).**
-**Codename**: Harper 2.1 — perception, reasoning, and advisory refinement.
+**Sprint for Harper (S32).**
+**Codename**: Harper — perception, reasoning, and advisory refinement.
 **Branch**: `s32-harper-2-1` (cut off `main` AFTER S30 merges).
 **Target version**: v5.23.0 at Super Sprint end.
 
@@ -146,6 +146,6 @@ T2 depends on T1 for VProxy. T3 depends on T1 for VProxy. T5 has no runtime dep 
 
 ## Post-S31
 
-- `main` now has: Performance tab overhaul (S30) + Harper 2.1 refinement (S31)
+- `main` now has: Performance tab overhaul (S30) + Harper refinement (S31)
 - Ready for S32 (third Super Sprint area — pending TP brief)
 - Single `/solvys-deploy` with version bump v5.23.0 after S32 lands

@@ -9,6 +9,31 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-29T14:30:00",
+    agent: "claude-code",
+    summary:
+      "S48 shipped: News Feed pipeline control + econ fix + Kalshi whale tracker + speculation-filter + CountdownFuse + layout polish. Archived to sprint-changelog/. 5 tracks, ~50 files. v5.35.0 deployed to Fly.io + 2x Vercel.",
+    files: ["sprint-changelog/S48-ORCHESTRATION.md"],
+  },
+  {
+    date: "2026-04-29T14:25:00",
+    agent: "claude-code",
+    summary:
+      "[v5.35.0] /solvys-deploy: 3-target deploy complete. Fly.io fintheon + Vercel desktop (fintheon-alpha) + Vercel mobile (fintheon.pricedinresearch.io). GH release v5.35.0 published, v5.34.0 pruned. Bumped UPDATE_VERSION to 5.35.0. Repaired peer auto-rename Harper21Voice identifier mangling across 17 files. PersonaDropdown / ConsiliumMessage duplicate-key collisions cleaned. Local backend restarted.",
+    files: [
+      "package.json",
+      "scripts/fintheon-update.sh",
+      "frontend/components/chat/PersonaDropdown.tsx",
+      "frontend/components/consilium/ConsiliumMessage.tsx",
+      "frontend/components/voice/HeaderVoiceControl.tsx",
+      "frontend/hooks/useHarper21VoiceSession.ts",
+      "frontend/lib/harper-2.1-voice.ts",
+      "backend-hono/src/routes/harper-2.1-voice.ts",
+      "backend-hono/src/routes/index.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-29T14:15:00",
     agent: "claude-code",
     summary:
@@ -1064,7 +1089,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-24T23:10:00",
     agent: "claude-code",
     summary:
-      "Post-v5.25 polish — iFrames unified, voice surfaces redesigned, Consul Control quieted. (1) iFrames: header + footer dropdowns drop hardcoded PLATFORM_LABELS and iterate exclusively over SettingsContext.proposerIframeSources. IframesTab can add AND remove every entry (builtin guard gone). Storage authoritative — pruning a builtin sticks; loader only seeds the canonical 10-entry catalogue on first install. TradingBrowser.resolveUrl matches by id against the catalogue first; PLATFORM_URLS only a defensive shim. (2) Floating COACH widget retired — AgentResponsePopup + AgentResponsePopupHost + the WhiteWaveform inside PsychAssistDockable all deleted. New AgentVoiceWaveform mounts at root as a chrome-less waveform (no border, no background, pointer-events:none) doubling as user-mic indicator (listening) and agent-voice indicator (speaking/thinking). (3) VoiceTranscriptTicker (the floating 'Give a brief casual greeting…' banner) deleted. (4) PsychAssist toggle-off no longer freezes — stopMonitoring flips isMonitoring/analyser/active flags synchronously and pushes audioContext.close() + final saveSession POST onto a fire-and-forget tail. (5) VoiceRimFrame redesigned per /solvys-feels: dithered 6px conic-gradient border (alternating bright/trough alpha replaces the flat 3px gold line), pixel-radius mount micro-interaction (inset 12→0 + blur 2.5→0 over 320ms cubic-bezier so pixels read as 'reassembling at the radius'). Error state keeps a flat solid red. (6) Consul Control 404 spam (231+ /status 404s per session): backend stub at /api/consul-control/status returns {active:false, reason:'consul_control_not_wired'}, frontend useConsulControlStatus hook short-circuits on either 404 or that reason and stops polling for the session. (7) Heading-toolbar PerformanceChatButton deleted; PsychAssistDockable's standalone 'Talk to Coach' MessageSquare button removed. The orb is the single voice trigger; its deactivate handler stops ANY active Harper 2.1 Voice session regardless of trigger. (8) Voice TTS — ElevenLabs first: new backend voice-tts.ts (eleven_turbo_v2_5 + Rachel voice defaults, gated by ELEVENLABS_API_KEY); /api/voice/speak now returns audioBase64 + audioMimeType inline, frontend useVoiceAssistant prefers server-synth audio and demotes window.speechSynthesis to last-resort with a console warning. ELEVENLABS_VOICE_ID + ELEVENLABS_MODEL_ID overridable; ELEVENLABS_DISABLE=true forces fallback. All four builds clean.",
+      "Post-v5.25 polish — iFrames unified, voice surfaces redesigned, Consul Control quieted. (1) iFrames: header + footer dropdowns drop hardcoded PLATFORM_LABELS and iterate exclusively over SettingsContext.proposerIframeSources. IframesTab can add AND remove every entry (builtin guard gone). Storage authoritative — pruning a builtin sticks; loader only seeds the canonical 10-entry catalogue on first install. TradingBrowser.resolveUrl matches by id against the catalogue first; PLATFORM_URLS only a defensive shim. (2) Floating COACH widget retired — AgentResponsePopup + AgentResponsePopupHost + the WhiteWaveform inside PsychAssistDockable all deleted. New AgentVoiceWaveform mounts at root as a chrome-less waveform (no border, no background, pointer-events:none) doubling as user-mic indicator (listening) and agent-voice indicator (speaking/thinking). (3) VoiceTranscriptTicker (the floating 'Give a brief casual greeting…' banner) deleted. (4) PsychAssist toggle-off no longer freezes — stopMonitoring flips isMonitoring/analyser/active flags synchronously and pushes audioContext.close() + final saveSession POST onto a fire-and-forget tail. (5) VoiceRimFrame redesigned per /solvys-feels: dithered 6px conic-gradient border (alternating bright/trough alpha replaces the flat 3px gold line), pixel-radius mount micro-interaction (inset 12→0 + blur 2.5→0 over 320ms cubic-bezier so pixels read as 'reassembling at the radius'). Error state keeps a flat solid red. (6) Consul Control 404 spam (231+ /status 404s per session): backend stub at /api/consul-control/status returns {active:false, reason:'consul_control_not_wired'}, frontend useConsulControlStatus hook short-circuits on either 404 or that reason and stops polling for the session. (7) Heading-toolbar PerformanceChatButton deleted; PsychAssistDockable's standalone 'Talk to Coach' MessageSquare button removed. The orb is the single voice trigger; its deactivate handler stops ANY active Harper Voice session regardless of trigger. (8) Voice TTS — ElevenLabs first: new backend voice-tts.ts (eleven_turbo_v2_5 + Rachel voice defaults, gated by ELEVENLABS_API_KEY); /api/voice/speak now returns audioBase64 + audioMimeType inline, frontend useVoiceAssistant prefers server-synth audio and demotes window.speechSynthesis to last-resort with a console warning. ELEVENLABS_VOICE_ID + ELEVENLABS_MODEL_ID overridable; ELEVENLABS_DISABLE=true forces fallback. All four builds clean.",
     files: [
       "frontend/contexts/SettingsContext.tsx",
       "frontend/components/settings/IframesTab.tsx",
@@ -1164,7 +1189,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-24T21:00:00",
     agent: "claude-code",
     summary:
-      "S35-T4 [v5.25.0-S35-T4]: Ask Harper → CAO copy sweep (7 files). Mobile notification card button ASK HARPER → ASK CAO; drawer swipe comment; mobile App.tsx swipe-dispatch comment; frontend RegimeMiniChat placeholder; relay-dispatch-store store comment; usage-emit docstring updated to list ask_cao primary + ask_harper legacy with sunset date 2026-05-08; backend quickscope skill trigger text (Ask Harp → CAO). Persona 'Harper' stays as the CAO's name; only the feature label 'CAO chat' changes. Route /api/harper/chat and agent id harper-2.1 untouched (identifiers). Zero live-code Ask Harper/ASK HARPER hits remain. No actual ask_harper emit call sites exist in frontend/mobile, so the dual-emit step is documentation-only.",
+      "S35-T4 [v5.25.0-S35-T4]: Ask Harper → CAO copy sweep (7 files). Mobile notification card button ASK HARPER → ASK CAO; drawer swipe comment; mobile App.tsx swipe-dispatch comment; frontend RegimeMiniChat placeholder; relay-dispatch-store store comment; usage-emit docstring updated to list ask_cao primary + ask_harper legacy with sunset date 2026-05-08; backend quickscope skill trigger text (Ask Harp → CAO). Persona 'Harper' stays as the CAO's name; only the feature label 'CAO chat' changes. Route /api/harper/chat and agent id harper untouched (identifiers). Zero live-code Ask Harper/ASK HARPER hits remain. No actual ask_harper emit call sites exist in frontend/mobile, so the dual-emit step is documentation-only.",
     files: [
       "mobile/components/notifications/NotificationCard.tsx",
       "mobile/components/notifications/NotificationDrawer.tsx",
@@ -1513,21 +1538,21 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-23T23:30:00",
     agent: "claude-code",
     summary:
-      "v5.23.2: Omi → Harper 2.1 Voice rename (22 files) + voice-orb 3-click-to-off fix + VAD silence 1.8s→2.6s + yanked omi-reference submodule (1.2GB). Backend: services/omi/ → services/harper-2.1-voice/, /api/omi → /api/harper-2.1-voice, createOmiRoutes/resolveUserIdForOmiUid/OmiTrigger/OmiTranscriptWebhookBody/OmiMemoryWebhookBody/OmiNotificationPayload/OmiPrimaryAgent/OmiRouteIntent all renamed. Frontend: lib/omi.ts → lib/harper-2.1-voice.ts, useOmiSession → useHarper21VoiceSession, voice orb handler collapsed to single-intent paths (cancel-if-busy + toggleEnabled + stopSession in one tap, no more stale-closure branch). DB strings (omi_pairings, omi_sessions, omi_uid) intentionally kept; companion rename migration staged in supabase/migrations-pending/ for a coordinated future push. omi-reference submodule removed from git index + .gitignored; physical 1.2GB still on disk pending TP's explicit delete. VAD threshold 2.6s per TP: auto-stops recording + processes transcript via existing Whisper → sendText pipeline.",
+      "v5.23.2: Omi → Harper Voice rename (22 files) + voice-orb 3-click-to-off fix + VAD silence 1.8s→2.6s + yanked omi-reference submodule (1.2GB). Backend: services/omi/ → services/harper-voice/, /api/omi → /api/harper-voice, createOmiRoutes/resolveUserIdForOmiUid/OmiTrigger/OmiTranscriptWebhookBody/OmiMemoryWebhookBody/OmiNotificationPayload/OmiPrimaryAgent/OmiRouteIntent all renamed. Frontend: lib/omi.ts → lib/harper-voice.ts, useOmiSession → useHarperVoiceSession, voice orb handler collapsed to single-intent paths (cancel-if-busy + toggleEnabled + stopSession in one tap, no more stale-closure branch). DB strings (omi_pairings, omi_sessions, omi_uid) intentionally kept; companion rename migration staged in supabase/migrations-pending/ for a coordinated future push. omi-reference submodule removed from git index + .gitignored; physical 1.2GB still on disk pending TP's explicit delete. VAD threshold 2.6s per TP: auto-stops recording + processes transcript via existing Whisper → sendText pipeline.",
     files: [
-      "backend-hono/src/routes/harper-2.1-voice.ts",
+      "backend-hono/src/routes/harper-voice.ts",
       "backend-hono/src/routes/index.ts",
       "backend-hono/src/routes/voice/handlers.ts",
       "backend-hono/src/routes/voice/index.ts",
-      "backend-hono/src/services/harper-2.1-voice/client.ts",
-      "backend-hono/src/services/harper-2.1-voice/router.ts",
-      "backend-hono/src/services/harper-2.1-voice/session-manager.ts",
-      "backend-hono/src/services/harper-2.1-voice/speak.ts",
-      "backend-hono/src/services/harper-2.1-voice/types.ts",
+      "backend-hono/src/services/harper-voice/client.ts",
+      "backend-hono/src/services/harper-voice/router.ts",
+      "backend-hono/src/services/harper-voice/session-manager.ts",
+      "backend-hono/src/services/harper-voice/speak.ts",
+      "backend-hono/src/services/harper-voice/types.ts",
       "backend-hono/src/services/ai/agent-instructions/oracle-fast-voice.ts",
       "backend-hono/src/services/ai/agent-instructions/coach.ts",
-      "frontend/lib/harper-2.1-voice.ts",
-      "frontend/hooks/useHarper21VoiceSession.ts",
+      "frontend/lib/harper-voice.ts",
+      "frontend/hooks/useHarperVoiceSession.ts",
       "frontend/hooks/useVoiceAssistant.ts",
       "frontend/contexts/ERContext.tsx",
       "frontend/contexts/VoiceContext.tsx",
@@ -1539,7 +1564,7 @@ export const changelog: ChangelogEntry[] = [
       "frontend/components/voice/AgentResponsePopupHost.tsx",
       "frontend/components/performance/PerformanceChatButton.tsx",
       ".gitignore",
-      "supabase/migrations-pending/20260424000000_rename_omi_tables_to_Harper21_voice.sql",
+      "supabase/migrations-pending/20260424000000_rename_omi_tables_to_Harper_voice.sql",
       "package.json",
       "scripts/fintheon-update.sh",
       "src/lib/changelog.ts",
@@ -1581,7 +1606,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-23T22:45:00",
     agent: "claude-code",
     summary:
-      "S32 shipped v5.23.1: Harper 2.1 unified — Kimi rollback + Vision + Ollama-Hermes fallback + Consul Control corners + Streamdown/TV chart slots + PsychAssist gating + advisory/calendar/watchouts + browser-harness + predictive knowledge graph. Migrations pushed (trades base + origin + S32 T2/T6/T7/T8/T9). Backend fintheon.fly.dev, desktop fintheon-alpha.vercel.app, mobile fintheon.pricedinresearch.io. 9 tracks, 254 files. Archived to sprint-changelog/.",
+      "S32 shipped v5.23.1: Harper unified — Kimi rollback + Vision + Ollama-Hermes fallback + Consul Control corners + Streamdown/TV chart slots + PsychAssist gating + advisory/calendar/watchouts + browser-harness + predictive knowledge graph. Migrations pushed (trades base + origin + S32 T2/T6/T7/T8/T9). Backend fintheon.fly.dev, desktop fintheon-alpha.vercel.app, mobile fintheon.pricedinresearch.io. 9 tracks, 254 files. Archived to sprint-changelog/.",
     files: [
       "sprint-changelog/S32-ORCHESTRATION.md",
       "sprint-changelog/S32-UNIFY.md",
@@ -1591,7 +1616,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-23T22:00:00",
     agent: "claude-code",
     summary:
-      "S32 Harper 2.1 unified — Wave 3 merge pass. Cherry-picked Kimi rollback c4c599ef onto s32-harper-2-1 (5 conflicts resolved: ai-config.ts, ai-types.ts, App.tsx, AuthContext.tsx, changelog.ts). Restored 26 files + 1 client telemetry module from pre-deletion parent 7d8ed0bd that auto-checkpoint 6b09a68c had bulk-deleted at 19:57 while writing the UNIFY brief — covering T4 Consul Control corners, T5 streamdown + TV chart slots (10 slot components + StreamdownChat + parseSlotBody), T6 PsychAssist + blindspots (services/blindspots/{generator,templates}, services/psych/{er-monitor,is-psych-assist-on}, migrations/036_blindspots.sql + 039_usage_telemetry.sql, routes/blindspots-user + harper-ops/blindspots-nightly), and T9 predictive knowledge graph (services/knowledge-graph/{llm,proposer}, routes/usage-events + feature-proposals + harper-ops/feature-proposals-weekly + docs/routines/feature-proposals-weekly.md). Wire-ups: routes/index.ts T6 blindspots-user mount (auth-gated on /api/blindspots/psych|trading|latest) + T9 usage-events + feature-proposals mounts + harper-ops feature-proposals-weekly (routine-secret gated, mounted before harper-ops catch-all); App.tsx ConsulControlLayer mount above modals; TextPart.tsx swapped to StreamdownChat (drops mock-JSON widget=chart/calendar fallbacks); chat slot animation keyframes added to frontend/index.css + mobile/index.css; frontend/lib/user-preferences.ts + mobile mirror + backend preferences schema extended with psychAssistEnabled?: boolean defaulting to false (T6 silent mode). Deps: +streamdown@^2.5.0 +lightweight-charts@^5.1.0 on frontend, +streamdown@^2.5.0 +zod@^4.3.6 on mobile. FeatureProposal type inlined in routes/feature-proposals.ts (backend tsconfig rootDir prevents cross-package import from shared/). Extended HarperProvider discriminator in strands/agent-factory.ts with 'ollama-qwen'. Fixed pre-existing shared/index.ts AgentId re-export ambiguity. Residue gates: Kimi clean (0 matches outside changelog/sprint-md/docs), glass clean. Build gates: backend bun run build ✓, frontend tsc ✓, frontend vite build ✓ (3243 modules), mobile vite build ✓ (2416 modules).",
+      "S32 Harper unified — Wave 3 merge pass. Cherry-picked Kimi rollback c4c599ef onto s32-harper-2-1 (5 conflicts resolved: ai-config.ts, ai-types.ts, App.tsx, AuthContext.tsx, changelog.ts). Restored 26 files + 1 client telemetry module from pre-deletion parent 7d8ed0bd that auto-checkpoint 6b09a68c had bulk-deleted at 19:57 while writing the UNIFY brief — covering T4 Consul Control corners, T5 streamdown + TV chart slots (10 slot components + StreamdownChat + parseSlotBody), T6 PsychAssist + blindspots (services/blindspots/{generator,templates}, services/psych/{er-monitor,is-psych-assist-on}, migrations/036_blindspots.sql + 039_usage_telemetry.sql, routes/blindspots-user + harper-ops/blindspots-nightly), and T9 predictive knowledge graph (services/knowledge-graph/{llm,proposer}, routes/usage-events + feature-proposals + harper-ops/feature-proposals-weekly + docs/routines/feature-proposals-weekly.md). Wire-ups: routes/index.ts T6 blindspots-user mount (auth-gated on /api/blindspots/psych|trading|latest) + T9 usage-events + feature-proposals mounts + harper-ops feature-proposals-weekly (routine-secret gated, mounted before harper-ops catch-all); App.tsx ConsulControlLayer mount above modals; TextPart.tsx swapped to StreamdownChat (drops mock-JSON widget=chart/calendar fallbacks); chat slot animation keyframes added to frontend/index.css + mobile/index.css; frontend/lib/user-preferences.ts + mobile mirror + backend preferences schema extended with psychAssistEnabled?: boolean defaulting to false (T6 silent mode). Deps: +streamdown@^2.5.0 +lightweight-charts@^5.1.0 on frontend, +streamdown@^2.5.0 +zod@^4.3.6 on mobile. FeatureProposal type inlined in routes/feature-proposals.ts (backend tsconfig rootDir prevents cross-package import from shared/). Extended HarperProvider discriminator in strands/agent-factory.ts with 'ollama-qwen'. Fixed pre-existing shared/index.ts AgentId re-export ambiguity. Residue gates: Kimi clean (0 matches outside changelog/sprint-md/docs), glass clean. Build gates: backend bun run build ✓, frontend tsc ✓, frontend vite build ✓ (3243 modules), mobile vite build ✓ (2416 modules).",
     files: [
       "backend-hono/src/routes/index.ts",
       "backend-hono/src/routes/preferences/index.ts",
@@ -1733,7 +1758,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-23T19:20:00",
     agent: "claude-code",
     summary:
-      "S32-T4 (Harper 2.1): added ConsulControlCorners — animated gold pixel flicker at four corners while Harper is holding the wheel. Replaces the flat solid-color overlay plan. L-shape density gradient (layout only), CSS @keyframes opacity 0.08→0.4→0.08, per-cell stable randomized delays, will-change: opacity, pointer-events: none, 400ms fade-in / 600ms fade-out, paused via class toggle when inactive. Status wired via new useConsulControlStatus hook polling GET /api/consul-control/status every 2s (404-tolerant until backend lands). No existing overlay to delete.",
+      "S32-T4 (Harper): added ConsulControlCorners — animated gold pixel flicker at four corners while Harper is holding the wheel. Replaces the flat solid-color overlay plan. L-shape density gradient (layout only), CSS @keyframes opacity 0.08→0.4→0.08, per-cell stable randomized delays, will-change: opacity, pointer-events: none, 400ms fade-in / 600ms fade-out, paused via class toggle when inactive. Status wired via new useConsulControlStatus hook polling GET /api/consul-control/status every 2s (404-tolerant until backend lands). No existing overlay to delete.",
     files: [
       "frontend/App.tsx",
       "frontend/components/consul-control/ConsulControlCorners.tsx",
@@ -1882,7 +1907,7 @@ export const changelog: ChangelogEntry[] = [
 
   {
     date: "2026-04-20T22:30:00",
-    agent: "harper-2.1",
+    agent: "harper",
     summary:
       "Evening maintenance sweep: fixed mobile/tsconfig.json — added explicit 'react' and 'react-dom' path entries pointing to mobile/node_modules/@types so shared frontend lib files (regime-store.ts, useRegimeTracker.ts) resolve React types correctly during mobile tsc check. Without this, mobile/node_modules/@types/react was invisible to files traversed via the @frontend/* path alias. Frontend, backend builds, and both external MCP repos (financial-datasets, tradingview-mcp) confirmed clean.",
     files: ["mobile/tsconfig.json"],
@@ -2239,7 +2264,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-20T16:00:00",
     agent: "claude-code",
     summary:
-      "S27-T5 W2c (Claude-08): voice assistant end-to-end via Hermes sidecar + Qwen + rim UX. Locked harper-2.1-voice model to qwen/qwen3.6-plus-preview:free (free, 1M context, ~3x faster than Opus 4.6, exceeds Claude 4.5 Opus on Terminal-Bench 2.0 61.6 vs 59.3 and RealWorldQA 85.4 vs 77.0 — comfortably above the Sonnet-equivalent-or-better bar). Registered voicebox/Qwen3-TTS + Whisper-turbo (with Qwen-STT fallback) as sidecar voice plugins. Rewrote backend-hono voice-service.ts from the broken OpenAI-direct path to a sidecar-relay: transcribeVoice proxies /v1/voice/stt, synthesizeVoice proxies /v1/voice/tts, synthesizeGreeting pre-renders Harper's 1-sentence greeting via /v1/chat + SOUL grounding, streamVoiceReply generator overlaps reasoning + TTS sentence-by-sentence for the <2s first-audio target. Added sidecar-voice-client.ts as typed HTTP wrapper. New /api/voice/session/start (pre-renders greeting, caches in Supabase Storage voice-greetings bucket + returns signed URL), /turn (SSE transcript → text → audio events), /interrupt (aborts in-flight stream via AbortController registry keyed by conversationId), /end. Frontend: VoiceRimFrame.tsx (3px accent-gold rim around app chrome, pulse/solid/idle states, data-testid=voice-rim-frame, pointer-events: none so never eats trading clicks) + VoiceTranscriptTicker.tsx (single-line top-center ticker, last 120 chars, pointer-events: none) + useVoiceSession hook that fires POST /api/voice/session/start on enable transitions and plays greeting. Replaced the in-App.tsx VoiceBorderPulse with VoiceRimFrame. Extended VoiceContext.cancel() to also call /api/voice/session/interrupt. VoiceService frontend client gained sessionStart/Interrupt/End. Electron main.cjs installs voice-chrome ipc hook (window-chrome-voice.cjs) that recolors titleBarOverlay per voice state. Backend test (src/tests/voice-assistant.test.ts, 4 tests green) proves transcript→text→audio→done ordering, first-audio <2.5s, abortSignal interrupt, and sidecar-disabled graceful fallback. Playwright spec frontend/test/voice-rim.spec.ts asserts rim pointer-events: none, no coverage of data-testid=trading-view-*, dismiss preserves conversation. Validation: backend bun run build + tsc clean, frontend vite build clean (3.61s). Rollback: ROUTING_OVERRIDE_HARPER_VOICE env var swaps the Qwen model; VOICE_SIDECAR_DISABLED=true or HERMES_SIDECAR_ENABLED=false falls back cleanly.",
+      "S27-T5 W2c (Claude-08): voice assistant end-to-end via Hermes sidecar + Qwen + rim UX. Locked harper-voice model to qwen/qwen3.6-plus-preview:free (free, 1M context, ~3x faster than Opus 4.6, exceeds Claude 4.5 Opus on Terminal-Bench 2.0 61.6 vs 59.3 and RealWorldQA 85.4 vs 77.0 — comfortably above the Sonnet-equivalent-or-better bar). Registered voicebox/Qwen3-TTS + Whisper-turbo (with Qwen-STT fallback) as sidecar voice plugins. Rewrote backend-hono voice-service.ts from the broken OpenAI-direct path to a sidecar-relay: transcribeVoice proxies /v1/voice/stt, synthesizeVoice proxies /v1/voice/tts, synthesizeGreeting pre-renders Harper's 1-sentence greeting via /v1/chat + SOUL grounding, streamVoiceReply generator overlaps reasoning + TTS sentence-by-sentence for the <2s first-audio target. Added sidecar-voice-client.ts as typed HTTP wrapper. New /api/voice/session/start (pre-renders greeting, caches in Supabase Storage voice-greetings bucket + returns signed URL), /turn (SSE transcript → text → audio events), /interrupt (aborts in-flight stream via AbortController registry keyed by conversationId), /end. Frontend: VoiceRimFrame.tsx (3px accent-gold rim around app chrome, pulse/solid/idle states, data-testid=voice-rim-frame, pointer-events: none so never eats trading clicks) + VoiceTranscriptTicker.tsx (single-line top-center ticker, last 120 chars, pointer-events: none) + useVoiceSession hook that fires POST /api/voice/session/start on enable transitions and plays greeting. Replaced the in-App.tsx VoiceBorderPulse with VoiceRimFrame. Extended VoiceContext.cancel() to also call /api/voice/session/interrupt. VoiceService frontend client gained sessionStart/Interrupt/End. Electron main.cjs installs voice-chrome ipc hook (window-chrome-voice.cjs) that recolors titleBarOverlay per voice state. Backend test (src/tests/voice-assistant.test.ts, 4 tests green) proves transcript→text→audio→done ordering, first-audio <2.5s, abortSignal interrupt, and sidecar-disabled graceful fallback. Playwright spec frontend/test/voice-rim.spec.ts asserts rim pointer-events: none, no coverage of data-testid=trading-view-*, dismiss preserves conversation. Validation: backend bun run build + tsc clean, frontend vite build clean (3.61s). Rollback: ROUTING_OVERRIDE_HARPER_VOICE env var swaps the Qwen model; VOICE_SIDECAR_DISABLED=true or HERMES_SIDECAR_ENABLED=false falls back cleanly.",
     files: [
       "src/lib/changelog.ts",
       "backend-hono/src/services/ai/routing.ts",
@@ -2467,7 +2492,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-20T12:00:00",
     agent: "claude-code",
     summary:
-      "[v.27.4] S27 W1d (Claude-05) — T8 SOUL.md full conversion + T9 Smart Model Routing foundation. SOUL schema lives in shared/soul-schema.ts (Zod: identity/scope/constraints/grounding/tools/handoff_rules/voice_style/memory_policy/model_preferences). Five SOUL files under backend-hono/src/services/ai/soul/ (harper/oracle/feucht/consul/herald) each with YAML frontmatter. grounding.source_of_truth imports ../../../../../CLAUDE.md literally at load time — no copy-paste. Loader (soul/loader.ts) validates via Zod, resolves grounding + extras, 5-minute TTL cache, renderSystemPrompt() helper. Existing dossier bodies moved into agent-instructions/{agent}-extra.md + harper-extra.md; dossiers/*.ts converted to readFileSync shims. harper-handler.ts + agent-instructions/index.ts load SOUL first, fall back to legacy composition only if SOUL read fails (Zod errors at boot = fail-fast). Drift guard at scripts/soul-ground-check.ts flags paragraph duplication against CLAUDE.md — passes on clean tree. Backend build script extended to copy .md into dist via scripts/copy-assets.ts so launchd-managed dist runtime resolves SOUL + CLAUDE.md correctly. T9 foundation: ROUTING_TABLE populated (Harper→Opus, Oracle→Opus, Feucht→Haiku, Consul→Sonnet, Herald→Haiku, harper-2.1-voice→<QWEN_REASONING_LATEST> sentinel for Claude-08 to fill in T5 W2c), selectModel() with ROUTING_OVERRIDE_<AGENT> env support, llm-call.ts wrapper emits routing_decisions rows automatically. Migration 20260419_04_gepa_metrics.sql creates routing_decisions + gepa_metrics tables. Hermes sidecar README documents SOUL mount for W1b integration. No call-site flips yet — W2e owns the routing flip. Backend build clean, frontend tsc + vite build clean, soul-ground-check PASS, fail-fast verified via broken SOUL → Zod rejection.",
+      "[v.27.4] S27 W1d (Claude-05) — T8 SOUL.md full conversion + T9 Smart Model Routing foundation. SOUL schema lives in shared/soul-schema.ts (Zod: identity/scope/constraints/grounding/tools/handoff_rules/voice_style/memory_policy/model_preferences). Five SOUL files under backend-hono/src/services/ai/soul/ (harper/oracle/feucht/consul/herald) each with YAML frontmatter. grounding.source_of_truth imports ../../../../../CLAUDE.md literally at load time — no copy-paste. Loader (soul/loader.ts) validates via Zod, resolves grounding + extras, 5-minute TTL cache, renderSystemPrompt() helper. Existing dossier bodies moved into agent-instructions/{agent}-extra.md + harper-extra.md; dossiers/*.ts converted to readFileSync shims. harper-handler.ts + agent-instructions/index.ts load SOUL first, fall back to legacy composition only if SOUL read fails (Zod errors at boot = fail-fast). Drift guard at scripts/soul-ground-check.ts flags paragraph duplication against CLAUDE.md — passes on clean tree. Backend build script extended to copy .md into dist via scripts/copy-assets.ts so launchd-managed dist runtime resolves SOUL + CLAUDE.md correctly. T9 foundation: ROUTING_TABLE populated (Harper→Opus, Oracle→Opus, Feucht→Haiku, Consul→Sonnet, Herald→Haiku, harper-voice→<QWEN_REASONING_LATEST> sentinel for Claude-08 to fill in T5 W2c), selectModel() with ROUTING_OVERRIDE_<AGENT> env support, llm-call.ts wrapper emits routing_decisions rows automatically. Migration 20260419_04_gepa_metrics.sql creates routing_decisions + gepa_metrics tables. Hermes sidecar README documents SOUL mount for W1b integration. No call-site flips yet — W2e owns the routing flip. Backend build clean, frontend tsc + vite build clean, soul-ground-check PASS, fail-fast verified via broken SOUL → Zod rejection.",
     files: [
       "shared/soul-schema.ts",
       "backend-hono/src/services/ai/soul/loader.ts",
@@ -4181,7 +4206,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-12T00:30:00",
     agent: "claude-code",
     summary:
-      "S14-T11: Review + Unify. Fixed critical SSE bug — useAgentBusSSE now uses addEventListener for named events (agent-delta, dag-complete etc) instead of onmessage which silently dropped all DAG stream output. Fixed DAG cancel endpoint URL mismatch (/api/dag/ → /api/boardroom/dag/). Enhanced input bar focus glow (dual-layer shadow, faster transition). Removed duplicate ProviderDropdown from ChatPanel sidebar. Renamed 'Local' to 'VProxy' in provider dropdown. Fixed TimelinePanel 1h/4h filter to use createdAt (full ISO) instead of day-granular date. Purged remaining user-visible 'Harper-2.1' display text (MiroShark panel, ResearchBoard dropdown). Added missing T3 and T7 changelog entries. Deleted dead FintheonChatInput.tsx.",
+      "S14-T11: Review + Unify. Fixed critical SSE bug — useAgentBusSSE now uses addEventListener for named events (agent-delta, dag-complete etc) instead of onmessage which silently dropped all DAG stream output. Fixed DAG cancel endpoint URL mismatch (/api/dag/ → /api/boardroom/dag/). Enhanced input bar focus glow (dual-layer shadow, faster transition). Removed duplicate ProviderDropdown from ChatPanel sidebar. Renamed 'Local' to 'VProxy' in provider dropdown. Fixed TimelinePanel 1h/4h filter to use createdAt (full ISO) instead of day-granular date. Purged remaining user-visible 'Harper' display text (MiroShark panel, ResearchBoard dropdown). Added missing T3 and T7 changelog entries. Deleted dead FintheonChatInput.tsx.",
     files: [
       "frontend/hooks/useAgentBusSSE.ts",
       "frontend/hooks/useBoardroomDAG.ts",
@@ -4200,7 +4225,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-11T23:59:00",
     agent: "claude-code",
     summary:
-      "S14-T9: Consilium Chat + Sidebar + Imperium UI Polish. Boardroom→Imperium rename with 'Wield the Consul' subheader, stripped old Imperium sub-view. Harper-2.1→Harper everywhere (defaults, placeholders, greeting, persona). Input bar transparent when idle, 1.3s glow on focus, send button illumination. Removed 'Local' text from provider pill (icon-only), removed persona selector from sidebar (CAO-only route). Removed 'What needs orchestrating today?' subtitle and 'Claude Opus 4.6' model badge from ChatGreeting. Harper Activity re-expand toggle, RiskFlow collapse/expand on Dashboard. Team card killswitch pill toggle. Onboarding starts at device naming (removed Supabase step). Removed timeframe toggle from ConsiliumFilterBar. Smooth transitions on onboarding modal.",
+      "S14-T9: Consilium Chat + Sidebar + Imperium UI Polish. Boardroom→Imperium rename with 'Wield the Consul' subheader, stripped old Imperium sub-view. Harper→Harper everywhere (defaults, placeholders, greeting, persona). Input bar transparent when idle, 1.3s glow on focus, send button illumination. Removed 'Local' text from provider pill (icon-only), removed persona selector from sidebar (CAO-only route). Removed 'What needs orchestrating today?' subtitle and 'Claude Opus 4.6' model badge from ChatGreeting. Harper Activity re-expand toggle, RiskFlow collapse/expand on Dashboard. Team card killswitch pill toggle. Onboarding starts at device naming (removed Supabase step). Removed timeframe toggle from ConsiliumFilterBar. Smooth transitions on onboarding modal.",
     files: [
       "frontend/components/consilium/ConsiliumHub.tsx",
       "frontend/components/consilium/ConsiliumTabConfig.ts",
@@ -4690,7 +4715,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-04T23:30:00",
     agent: "claude-code",
     summary:
-      "Strands Agents SDK migration (Phases 1-5): Replace Vercel AI SDK with @strands-agents/sdk for Harper-2.1. VProxy provider at localhost:8317, 6 core tools + 9 solvys skills as Strands tools, UIMessageStream adapter, Graph-based PIC pipeline (Herald→Oracle→Consul→Feucht), 8 Claude Code hooks installed.",
+      "Strands Agents SDK migration (Phases 1-5): Replace Vercel AI SDK with @strands-agents/sdk for Harper. VProxy provider at localhost:8317, 6 core tools + 9 solvys skills as Strands tools, UIMessageStream adapter, Graph-based PIC pipeline (Herald→Oracle→Consul→Feucht), 8 Claude Code hooks installed.",
     files: [
       "backend-hono/src/services/strands/provider.ts",
       "backend-hono/src/services/strands/agent-factory.ts",
@@ -4848,7 +4873,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-04T04:30:00",
     agent: "claude-code",
     summary:
-      "Fix Harper-2.1 streaming: (1) Added UIMessageStream framing events (start/start-step/finish-step/finish) required by DefaultChatTransport, (2) Fixed model ID mismatch — env had claude-opus-4.6 (dots) but VProxy expects claude-opus-4-6 (hyphens), (3) Removed BYPASS_AUTH from .env (was causing crash loop with production NODE_ENV), (4) Pre-approved all Harper tools in ~/.fintheon/tool-permissions.json, (5) Updated .mcp.json with proper Notion auth and Close CRM server. Error path now sends proper UIMessageChunk error events instead of raw controller.error().",
+      "Fix Harper streaming: (1) Added UIMessageStream framing events (start/start-step/finish-step/finish) required by DefaultChatTransport, (2) Fixed model ID mismatch — env had claude-opus-4.6 (dots) but VProxy expects claude-opus-4-6 (hyphens), (3) Removed BYPASS_AUTH from .env (was causing crash loop with production NODE_ENV), (4) Pre-approved all Harper tools in ~/.fintheon/tool-permissions.json, (5) Updated .mcp.json with proper Notion auth and Close CRM server. Error path now sends proper UIMessageChunk error events instead of raw controller.error().",
     files: [
       "backend-hono/src/routes/harper/index.ts",
       "backend-hono/src/services/claude-sdk/bridge.ts",
@@ -5344,7 +5369,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-03-30T01:00:00",
     agent: "claude-code",
     summary:
-      "S9-T4: Route Harper-2.1 chat through /api/harper/chat for full Fintheon context injection, switch Oracle/Feucht/Consul/Herald to Grok 4.20 Fast via OpenRouter, slide-out panel mutual exclusion (one at a time), agent-plan gold theme for in-progress status, Apparatus collapsed bio bump to 11px, SVG connection lines between expanded agent and connected agents with rope-breathe animation",
+      "S9-T4: Route Harper chat through /api/harper/chat for full Fintheon context injection, switch Oracle/Feucht/Consul/Herald to Grok 4.20 Fast via OpenRouter, slide-out panel mutual exclusion (one at a time), agent-plan gold theme for in-progress status, Apparatus collapsed bio bump to 11px, SVG connection lines between expanded agent and connected agents with rope-breathe animation",
     files: [
       "frontend/components/chat/hooks/useHermesChat.ts",
       "backend-hono/src/services/hermes-service.ts",
@@ -5357,7 +5382,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-03-29T23:00:00",
     agent: "claude-code",
     summary:
-      "S9-T1: Rename 9 components + 5 tab IDs, purge 20 kanban borders, Harper-Hermes→Harper-2.1, Commentators→Persons of Interest, remove debug console.logs",
+      "S9-T1: Rename 9 components + 5 tab IDs, purge 20 kanban borders, Harper-Hermes→Harper, Commentators→Persons of Interest, remove debug console.logs",
     files: [
       "frontend/components/layout/MainLayout.tsx",
       "frontend/components/layout/NavSidebar.tsx",
@@ -5394,7 +5419,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-03-28T20:00:00",
     agent: "claude-code",
     summary:
-      "S8-T7: Wire Claude CLI (Harper-2.1) into Ask Harp, dual-pane main chat, 21st.dev components (animated-ai-input), pulsing icon, boardroom newspaper button, persona switching, artifact system, QuickScope skill",
+      "S8-T7: Wire Claude CLI (Harper) into Ask Harp, dual-pane main chat, 21st.dev components (animated-ai-input), pulsing icon, boardroom newspaper button, persona switching, artifact system, QuickScope skill",
     files: [
       "frontend/components/chat/FintheonThread.tsx",
       "frontend/components/chat/AskHarpChatPanel.tsx",
@@ -5414,7 +5439,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-03-28T18:00:00",
     agent: "claude-code",
     summary:
-      "S8-T5: MiroFish→MiroShark full replacement, gov official agents (8 personas: Fed Chair, Trump, Bessent, Rubio, Lutnick, Witkoff, Greer, Navarro), 3-phase deliberation pipeline (MiroShark→Hermes→Harper-2.1), debate slide-out panel, scoring improvements (confidence-weighted consensus, divergence detection, actionability score)",
+      "S8-T5: MiroFish→MiroShark full replacement, gov official agents (8 personas: Fed Chair, Trump, Bessent, Rubio, Lutnick, Witkoff, Greer, Navarro), 3-phase deliberation pipeline (MiroShark→Hermes→Harper), debate slide-out panel, scoring improvements (confidence-weighted consensus, divergence detection, actionability score)",
     files: [
       "backend-hono/src/services/miroshark/",
       "backend-hono/src/services/miroshark/miroshark-deliberation.ts",

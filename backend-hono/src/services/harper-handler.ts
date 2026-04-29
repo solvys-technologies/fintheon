@@ -44,7 +44,7 @@ import { getSupabaseClient } from "../config/supabase.js";
 // [claude-code 2026-04-23] Harper Vision — screen + audio context injection
 import { buildVisionContext } from "./harper-vision/engine.js";
 
-const log = createLogger("Harper21");
+const log = createLogger("Harper");
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -312,7 +312,7 @@ export async function harperChat(
   try {
     const memories = await getContextForAgent(
       userId ?? "00000000-0000-0000-0000-000000000000",
-      "harper-2.1",
+      "harper",
     );
     if (memories.length > 0) {
       const grouped: Record<string, string[]> = {};
@@ -416,7 +416,7 @@ export async function harperChat(
 
   log.info("Harper chat request", {
     conversationId,
-    persona: persona ?? "harper-2.1",
+    persona: persona ?? "harper",
     thinkHarder: !!thinkHarder,
     messageLen: message.length,
     historyLen: history.length,

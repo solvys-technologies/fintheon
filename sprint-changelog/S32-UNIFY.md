@@ -2,7 +2,7 @@
 
 ## Intent
 
-Merge S32 Wave-2 tracks (T2–T9) onto `s32-harper-2-1`, resolve additive conflicts, wire cross-track ports, run the full validation stack, and leave `s32-harper-2-1` green and ready for `/solvys-deploy`. This is the final step of the Harper 2.1 sprint.
+Merge S32 Wave-2 tracks (T2–T9) onto `s32-harper-2-1`, resolve additive conflicts, wire cross-track ports, run the full validation stack, and leave `s32-harper-2-1` green and ready for `/solvys-deploy`. This is the final step of the Harper sprint.
 
 ## Baseline Requirements (preflight)
 
@@ -125,7 +125,7 @@ Append one consolidated entry to `src/lib/changelog.ts`:
 {
   date: '2026-04-23T23:59:00',
   agent: 'claude-code',
-  summary: 'S32 Harper 2.1 unified — Kimi rollback + Vision refinement + Ollama fallback + Consul Control corners + Streamdown/TV charts + PsychAssist gating + advisory layer + calendar pill + browser-harness tool + predictive knowledge graph',
+  summary: 'S32 Harper unified — Kimi rollback + Vision refinement + Ollama fallback + Consul Control corners + Streamdown/TV charts + PsychAssist gating + advisory layer + calendar pill + browser-harness tool + predictive knowledge graph',
   files: [ /* the union of all modified/created files across T1–T9 */ ]
 }
 ```
@@ -135,7 +135,7 @@ Append one consolidated entry to `src/lib/changelog.ts`:
 Unification merge commits follow `merge: S32-T# <short>`. The final post-validation commit (changelog + any small fixups):
 
 ```
-[v5.23.0] chore: S32 Harper 2.1 unified — Wave 3 complete
+[v5.23.0] chore: S32 Harper unified — Wave 3 complete
 ```
 
 ## Acceptance Criteria

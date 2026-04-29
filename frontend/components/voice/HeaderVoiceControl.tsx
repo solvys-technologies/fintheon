@@ -1,6 +1,6 @@
 // [claude-code 2026-03-09] Added cancel on click during speaking/thinking, mic denied-state UI
 // [claude-code 2026-03-12] Switched from independent useVoiceAssistant() to shared VoiceContext
-// [claude-code 2026-04-20] S21: Toggling also starts/stops a `voice_assistant` Harper 2.1 Voice session so the popup + agent routing fire.
+// [claude-code 2026-04-20] S21: Toggling also starts/stops a `voice_assistant` Harper Voice session so the popup + agent routing fire.
 // [claude-code 2026-04-23] Collapse handleClick into single-intent paths: one click while enabled = full off
 //   (cancel-if-busy + toggle + stopSession). Previous branching relied on stale `enabled` inside the
 //   closure and could require 3 taps to turn the orb off when triggered mid-speech.
@@ -10,7 +10,7 @@ import { useVoice } from "../../contexts/VoiceContext";
 import { resolveVoiceOrbState } from "../../types/voice";
 import { VoiceAuroraOrb } from "./VoiceAuroraOrb";
 import { VoiceModePixelOverlay } from "./VoiceModePixelOverlay";
-import { useHarper21VoiceSession } from "../../hooks/useHarper21VoiceSession";
+import { useHarperVoiceSession } from "../../hooks/useHarperVoiceSession";
 
 const INFRACTION_HOLD_MS = 8_000;
 const INFRACTION_WINDOW_MS = 5 * 60_000;
@@ -169,18 +169,18 @@ export function HeaderVoiceControl({
   const isMicDenied = micPermission === "denied";
   const isDisabled = !isSupported || isMicDenied;
 
-  // [S21] Parallel Harper 2.1 Voice voice_assistant session — runs independent of VoiceContext's
-  //   LiveKit/browser-speech path so the harper-2.1-voice backend can route questions to Oracle/Harper.
+  // [S21] Parallel Harper Voice voice_assistant session — runs independent of VoiceContext's
+  //   LiveKit/browser-speech path so the harper-voice backend can route questions to Oracle/Harper.
   const {
     session: voiceSession,
     start: startVoiceSession,
     stop: stopVoiceSession,
-  } = useHarper21VoiceSession();
+  } = useHarperVoiceSession();
 
   const handleClick = useCallback(() => {
     if (enabled) {
       // [claude-code 2026-04-24] Orb is the single voice master — toggling it
-      // off must also drop ANY active Harper 2.1 Voice session, regardless of which
+      // off must also drop ANY active Harper Voice session, regardless of which
       // trigger started it. Previous code only stopped sessions started under
       // `voice_assistant` and left psych_assist / performance_chat sessions
       // running silently. Since those buttons are removed, in practice only

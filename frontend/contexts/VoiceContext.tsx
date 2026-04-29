@@ -2,7 +2,7 @@
 // [claude-code 2026-03-12] Single shared voice assistant context — fixes dual-instance bug
 //   where HeaderVoiceControl and FintheonComposer each ran independent SpeechRecognition
 // [claude-code 2026-04-20] S28-T1 — removed sidecar session bootstrap. All agent speech
-//   now routes through Harper 2.1 Voice's Notifications API (server-side). The client no longer
+//   now routes through Harper Voice's Notifications API (server-side). The client no longer
 //   pre-renders greeting audio or plays sidecar blobs.
 import React, {
   createContext,

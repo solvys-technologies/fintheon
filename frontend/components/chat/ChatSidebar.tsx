@@ -32,7 +32,7 @@ const HERMES_NAMES_DEFAULT: Record<string, string> = {
 
 /** Maps HermesAgentId → FintheonAgent.id for "currently chatting with" suppression */
 const HERMES_TO_AGENT_ID: Record<string, string> = {
-  harper: "harper-2.1",
+  harper: "harper",
   oracle: "oracle",
   feucht: "feucht",
   consul: "consul",
@@ -71,7 +71,7 @@ function ChatSidebarInner({
 
   // Build dynamic display names — CAO name comes from agent context
   const hermesNames: Record<string, string> = useMemo(() => {
-    const cao = agents.find((a) => a.id === "harper-2.1");
+    const cao = agents.find((a) => a.id === "harper");
     return { ...HERMES_NAMES_DEFAULT, harper: cao?.name ?? "Harper" };
   }, [agents]);
 

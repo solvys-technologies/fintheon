@@ -67,7 +67,7 @@ Condensed record of completed sprint briefs. Full content preserved in git histo
 - T4: Aquarium/Sanctum redesign + econ intelligence (+ AMEND)
 - T5: MiroShark engine (gov officials + deliberation pipeline) (+ AMEND)
 - T6: RiskFlow + timeline + apparatus polish (+ AMEND)
-- T7: Ask Harp + Claude CLI (Harper-2.1) integration (+ AMEND)
+- T7: Ask Harp + Claude CLI (Harper) integration (+ AMEND)
 - T8: Infrastructure (context bank, CLI updater, device handoff) (+ AMEND)
 - T9: Component rename (names match what they are)
 - UNIFY: Missing items + polish pass

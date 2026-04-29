@@ -3,7 +3,7 @@ import * as conversationStore from "../../services/ai/conversation-store.js";
 import { handleHermesChat } from "../../services/hermes-handler.js";
 import { transcribeVoice } from "../../services/voice-service.js";
 import { analyzeSentiment } from "../../services/voice-sentiment.js";
-import { speakToUser } from "../../services/harper-2.1-voice/speak.js";
+import { speakToUser } from "../../services/harper-voice/speak.js";
 import { synthesizeWithElevenLabs } from "../../services/voice-tts.js";
 import {
   recordWatchEvent,
@@ -142,10 +142,10 @@ export async function handleSpeak(c: Context) {
       },
     });
 
-    // [S28-T1] Omi pairing path stays as-is — fire-and-forget Harper 2.1 Voice
+    // [S28-T1] Omi pairing path stays as-is — fire-and-forget Harper Voice
     // notification so paired users hear it through the earbuds.
     void speakToUser(userId, response.content).catch((err) => {
-      console.warn("[Voice] Harper 2.1 Voice speak failed (non-fatal):", err);
+      console.warn("[Voice] Harper Voice speak failed (non-fatal):", err);
     });
 
     // [claude-code 2026-04-24] When the client asks for inline audio (default

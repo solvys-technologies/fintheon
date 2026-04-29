@@ -11,7 +11,7 @@ export function toHermesAgentOverride(
 
   // [claude-code 2026-03-16] Agent roster v7.9: 5-agent mapping
   switch (fintheonAgentId) {
-    case "harper-2.1":
+    case "harper":
       return "harper-cao";
     case "oracle":
       return "pma-merged";
