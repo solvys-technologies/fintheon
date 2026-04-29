@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-29T12:15:00",
+    agent: "claude-code",
+    summary:
+      "Hermes → DeepSeek migration. Every Hermes-routed sub-agent task (Oracle, Feucht, Consul, Herald, all 5 Arbitrum seats, MoA L1 drafters) now runs deepseek-reasoner via DeepSeek's OpenAI-compat API. Added 'deepseek' provider to ArbitrumProvider type, new deepseekChat() adapter at api.deepseek.com/v1/chat/completions, ARBITRUM_MODEL_PROVIDER_MAP routes deepseek-reasoner|deepseek-chat to it. ollama-hermes-client retargeted at api.deepseek.com by default with Bearer auth from DEEPSEEK_API_KEY (also accepts HERMES_API_KEY/OLLAMA_API_KEY). Local Ollama still selectable via HERMES_SIDECAR_URL/OLLAMA_BASE_URL. Harper-cao keeps Claude Opus 4.7 path. Verified end-to-end: arbitrum/deliberate returns coherent 5-seat verdict, parsed cleanly. Fly secrets DEEPSEEK_API_KEY + DEEPSEEK_BASE_URL staged (need deploy to take effect).",
+    files: [
+      "backend-hono/src/services/ai/routing.ts",
+      "backend-hono/src/services/hermes-service.ts",
+      "backend-hono/src/services/arbitrum/seats.ts",
+      "backend-hono/src/services/arbitrum/adapters.ts",
+      "backend-hono/src/services/ai/ollama-hermes-client.ts",
+      "backend-hono/.env",
+    ],
+  },
+  {
     date: "2026-04-29T16:10:00",
     agent: "claude-code",
     summary:
