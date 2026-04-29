@@ -9,6 +9,38 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-29T15:35:00",
+    agent: "claude-code",
+    summary:
+      "v5.37.1 release prep: desktop update toast now shows bottom-left with 'Install now' and 'Later'. 'Later' defers update handoff until app close (Electron main tracks deferred flag and opens latest release on before-quit). Updater bridge/types and toast UI now support secondary CTA actions; package and update script version bumped to 5.37.1.",
+    files: [
+      "frontend/components/VersionChecker.tsx",
+      "frontend/components/ui/Toast.tsx",
+      "frontend/contexts/ToastContext.tsx",
+      "electron/main.cjs",
+      "electron/preload.cjs",
+      "frontend/types/electron.d.ts",
+      "types/electron.d.ts",
+      "package.json",
+      "scripts/fintheon-update.sh",
+    ],
+  },
+  {
+    date: "2026-04-29T15:20:00",
+    agent: "claude-code",
+    summary:
+      "Desktop updater migration: removed electron-updater auto-download/install flow and replaced it with a SOTA manual updater path (version check via /api/version/check + explicit GitHub releases handoff). Updated Electron IPC bridge/types and frontend update UX so Electron now shows a Download CTA instead of auto-install behavior.",
+    files: [
+      "electron/main.cjs",
+      "electron/preload.cjs",
+      "frontend/components/VersionChecker.tsx",
+      "frontend/components/layout/FooterToolbar.tsx",
+      "frontend/types/electron.d.ts",
+      "types/electron.d.ts",
+      "package.json",
+    ],
+  },
+  {
     date: "2026-04-29T19:10:00",
     agent: "claude-code",
     summary:

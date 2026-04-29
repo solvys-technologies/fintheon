@@ -1,6 +1,6 @@
 {
   "name": "fintheon",
-  "version": "5.37.0",
+  "version": "5.37.1",
   "type": "module",
   "packageManager": "bun",
   "dependencies": {
@@ -19,7 +19,6 @@
     "d3-force": "^3.0.0",
     "d3-selection": "^3.0.0",
     "d3-zoom": "^3.0.0",
-    "electron-updater": "^6.8.3",
     "framer-motion": "^12.35.2",
     "livekit-client": "^2.18.1",
     "lucide-react": "^0.484.0",

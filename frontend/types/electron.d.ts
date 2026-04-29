@@ -7,16 +7,12 @@ export type CliOutputEvent =
   | { type: "stderr"; data: string }
   | { type: "exit"; code: number | null; signal: string | null };
 
-export interface UpdateInfo {
-  version: string;
-  releaseNotes: string;
-  releaseDate: string;
-}
-
-export interface UpdateProgress {
-  percent: number;
-  transferred: number;
-  total: number;
+export interface DesktopUpdateStatus {
+  ok: boolean;
+  current?: string | null;
+  latest?: string | null;
+  updateAvailable: boolean;
+  downloadUrl?: string;
 }
 
 export interface StartupConfig {
@@ -46,13 +42,11 @@ export interface ElectronAPI {
   stopBackend: () => Promise<{ ok: boolean }>;
   isBackendAlive: () => Promise<{ alive: boolean }>;
 
-  // Auto-update
-  checkForUpdate: () => Promise<{ ok: boolean }>;
-  onUpdateAvailable: (cb: ((info: UpdateInfo) => void) | null) => void;
-  onUpdateProgress: (cb: ((progress: UpdateProgress) => void) | null) => void;
-  onUpdateDownloaded: (cb: (() => void) | null) => void;
-  downloadUpdate: () => Promise<{ ok: boolean }>;
-  installUpdate: () => Promise<{ ok: boolean }>;
+  // SOTA desktop updater (manual check + manual download handoff)
+  checkForUpdate: () => Promise<DesktopUpdateStatus>;
+  downloadUpdate: () => Promise<{ ok: boolean; opened?: boolean; downloadUrl?: string }>;
+  installUpdate: () => Promise<{ ok: boolean; opened?: boolean; downloadUrl?: string }>;
+  deferUpdateUntilClose: () => Promise<{ ok: boolean; deferred?: boolean }>;
 
   // [claude-code 2026-03-24] Auth — deep link callback + system browser open
   onAuthCallback: (cb: ((url: string) => void) | null) => void;

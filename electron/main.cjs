@@ -9,7 +9,8 @@
 // [claude-code 2026-02-26] Ensure OAuth popups work for embedded webviews.
 // [claude-code 2026-03-11] Auto-start backend on app init.
 // [claude-code 2026-03-16] Backend build fallback dialog, Discord OAuth popup support
-// [claude-code 2026-03-16] Auto-updater via electron-updater + IPC for renderer update modal
+// [claude-code 2026-04-29] Replaced electron-updater auto flow with SOTA manual updater:
+// explicit version check + explicit release download handoff (no auto-download/install).
 // [claude-code 2026-03-20] Configurable backend autostart + launch-on-login toggles (stored in userData)
 // [claude-code 2026-03-23] Browser Use Phase 2 — CDP + browser-use CLI bridge
 // [claude-code 2026-03-24] Supabase Google OAuth deep link: fintheon:// protocol + open-url handler
@@ -20,7 +21,6 @@ const { installVoiceChromeHook } = require("./window-chrome-voice.cjs");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
-const { autoUpdater } = require("electron-updater");
 
 const IS_MAC = process.platform === "darwin";
 const IS_WIN = process.platform === "win32";
@@ -29,6 +29,8 @@ const IS_WIN = process.platform === "win32";
 // no launchd, frontend hits fintheon.fly.dev directly. macOS keeps the localhost
 // sidecar via launchd + app-owned spawn (lifecycle v2).
 const REMOTE_BACKEND_URL = "https://fintheon.fly.dev";
+const RELEASES_LATEST_URL = "https://github.com/solvys-technologies/fintheon/releases/latest";
+let currentApiBase = REMOTE_BACKEND_URL;
 
 // [claude-code 2026-04-23] Harper Vision — macOS-only (uses ScreenCaptureKit under the hood).
 // Windows build stubs these out and returns { ok: false } from the IPC handlers.
@@ -45,6 +47,7 @@ let mainWindow = null;
 let backendProcess = null;
 let pendingAuthUrl = null;
 let backendStopInFlight = null;
+let deferredUpdateOnClose = false;
 
 // [claude-code 2026-04-16] Track whether WE spawned the backend or found it already running
 let backendOwnedByApp = false;
@@ -108,6 +111,10 @@ app.on("gpu-process-crashed", (_event, killed) => {
 let closeReason = null; // Set by the listener that fires first; read by quit hooks
 
 app.on("before-quit", (_event) => {
+  if (deferredUpdateOnClose) {
+    deferredUpdateOnClose = false;
+    shell.openExternal(RELEASES_LATEST_URL).catch(() => {});
+  }
   logCrash("app-before-quit", { reason: closeReason ?? "unknown" });
 });
 
@@ -408,59 +415,27 @@ async function smartShutdownBackend() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Auto-Updater (electron-updater)                                    */
+/*  SOTA Updater (manual download/install handoff)                     */
 /* ------------------------------------------------------------------ */
 
-function setupAutoUpdater() {
-  // Auto-download in background — toast appears when ready to install
-  autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true;
-
-  autoUpdater.on("update-available", (info) => {
-    console.log("[Updater] Update available:", info.version);
-    if (mainWindow) {
-      mainWindow.webContents.send("update-available", {
-        version: info.version,
-        releaseNotes: info.releaseNotes || "",
-        releaseDate: info.releaseDate || "",
-      });
+async function checkForDesktopUpdate() {
+  try {
+    const base = (currentApiBase || REMOTE_BACKEND_URL).replace(/\/$/, "");
+    const res = await fetch(`${base}/api/version/check`);
+    if (!res.ok) {
+      return { ok: false, updateAvailable: false, downloadUrl: RELEASES_LATEST_URL };
     }
-  });
-
-  autoUpdater.on("update-not-available", () => {
-    console.log("[Updater] App is up to date");
-  });
-
-  autoUpdater.on("download-progress", (progress) => {
-    console.log(`[Updater] Download: ${Math.round(progress.percent)}%`);
-    if (mainWindow) {
-      mainWindow.webContents.send("update-download-progress", {
-        percent: Math.round(progress.percent),
-        transferred: progress.transferred,
-        total: progress.total,
-      });
-    }
-  });
-
-  autoUpdater.on("update-downloaded", () => {
-    console.log("[Updater] Update downloaded, ready to install");
-    if (mainWindow) {
-      mainWindow.webContents.send("update-downloaded");
-    }
-  });
-
-  autoUpdater.on("error", (err) => {
-    console.error("[Updater] Error:", err.message);
-  });
-
-  // Check immediately, then every 30 minutes
-  autoUpdater.checkForUpdates().catch(() => {});
-  setInterval(
-    () => {
-      autoUpdater.checkForUpdates().catch(() => {});
-    },
-    30 * 60 * 1000,
-  );
+    const data = await res.json();
+    return {
+      ok: true,
+      current: data.current ?? null,
+      latest: data.latest ?? null,
+      updateAvailable: data.updateAvailable === true,
+      downloadUrl: RELEASES_LATEST_URL,
+    };
+  } catch (error) {
+    return { ok: false, updateAvailable: false, downloadUrl: RELEASES_LATEST_URL };
+  }
 }
 
 const shouldAllowInAppPopup = (urlString) => {
@@ -533,6 +508,7 @@ function createWindow(apiBase) {
   // hanging on "Model inference · 121ms" whenever launchd was down.
   const resolvedApiBase =
     apiBase || (IS_WIN ? REMOTE_BACKEND_URL : "http://localhost:8080");
+  currentApiBase = resolvedApiBase;
 
   const win = new BrowserWindow({
     width: 1600,
@@ -788,8 +764,6 @@ app.whenReady().then(async () => {
     `[Electron] Renderer api-base resolved to ${apiBase} (local healthy: ${localBackendHealthy})`,
   );
   createWindow(apiBase);
-  setupAutoUpdater();
-
   // Forward any pending auth URL AFTER the renderer finishes loading
   // (sending before did-finish-load means the IPC message is lost)
   if (mainWindow) {
@@ -968,28 +942,25 @@ ipcMain.handle("open-external", (_event, url) => {
   return { ok: true };
 });
 
-// Auto-update IPC handlers
-ipcMain.handle("update-download", () => {
-  autoUpdater.downloadUpdate().catch((err) => {
-    console.error("[Updater] Download failed:", err.message);
-  });
-  return { ok: true };
+// SOTA updater IPC handlers (manual flow)
+ipcMain.handle("update-check", async () => {
+  return await checkForDesktopUpdate();
 });
 
-// [claude-code 2026-04-16] Fix: await stopBackend() before quitAndInstall to prevent hang
+ipcMain.handle("update-download", async () => {
+  await shell.openExternal(RELEASES_LATEST_URL);
+  return { ok: true, opened: true, downloadUrl: RELEASES_LATEST_URL };
+});
+
 ipcMain.handle("update-install", async () => {
-  console.log("[Updater] Installing update — stopping backend first...");
-  await stopBackend();
-  console.log("[Updater] Backend stopped — calling quitAndInstall");
-  setImmediate(() => {
-    autoUpdater.quitAndInstall(false, true);
-  });
-  return { ok: true };
+  deferredUpdateOnClose = false;
+  await shell.openExternal(RELEASES_LATEST_URL);
+  return { ok: true, opened: true, downloadUrl: RELEASES_LATEST_URL };
 });
 
-ipcMain.handle("update-check", () => {
-  autoUpdater.checkForUpdates().catch(() => {});
-  return { ok: true };
+ipcMain.handle("update-defer-until-close", async () => {
+  deferredUpdateOnClose = true;
+  return { ok: true, deferred: true };
 });
 
 ipcMain.handle("get-app-version", () => {

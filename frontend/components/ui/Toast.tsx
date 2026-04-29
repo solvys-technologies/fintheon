@@ -127,20 +127,39 @@ function ToastItem({
                 </span>
               )}
               {toast.cta && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toast.cta!.onClick();
-                    onDismiss(toast.id);
-                  }}
-                  className="mt-1 rounded px-2 py-0.5 text-[10px] font-bold tracking-wide transition-colors"
-                  style={{
-                    color: "var(--fintheon-bg)",
-                    backgroundColor: "var(--fintheon-accent)",
-                  }}
-                >
-                  {toast.cta.label}
-                </button>
+                <div className="mt-1 flex items-center gap-1.5">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toast.cta!.onClick();
+                      onDismiss(toast.id);
+                    }}
+                    className="rounded px-2 py-0.5 text-[10px] font-bold tracking-wide transition-colors"
+                    style={{
+                      color: "var(--fintheon-bg)",
+                      backgroundColor: "var(--fintheon-accent)",
+                    }}
+                  >
+                    {toast.cta.label}
+                  </button>
+                  {toast.secondaryCta && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toast.secondaryCta!.onClick();
+                        onDismiss(toast.id);
+                      }}
+                      className="rounded px-2 py-0.5 text-[10px] font-bold tracking-wide transition-colors border"
+                      style={{
+                        color: "var(--fintheon-accent)",
+                        borderColor: "var(--fintheon-accent)",
+                        backgroundColor: "transparent",
+                      }}
+                    >
+                      {toast.secondaryCta.label}
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           </div>

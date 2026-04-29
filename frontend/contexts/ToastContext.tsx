@@ -47,6 +47,8 @@ export interface Toast {
   position?: ToastPosition;
   /** Optional CTA button */
   cta?: { label: string; onClick: () => void };
+  /** Optional secondary CTA button */
+  secondaryCta?: { label: string; onClick: () => void };
 }
 
 interface ToastContextValue {
@@ -58,6 +60,7 @@ interface ToastContextValue {
     notificationType?: NotificationType,
     position?: ToastPosition,
     cta?: { label: string; onClick: () => void },
+    secondaryCta?: { label: string; onClick: () => void },
   ) => string;
   dismissToast: (id: string) => void;
   /** Permanently block a notification type (Don't Show Again) */
@@ -143,6 +146,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       notificationType?: NotificationType,
       position?: ToastPosition,
       cta?: { label: string; onClick: () => void },
+      secondaryCta?: { label: string; onClick: () => void },
     ): string => {
       // Skip if this notification type is blocked
       if (notificationType && blockedTypes.includes(notificationType)) {
@@ -158,6 +162,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         notificationType,
         position: position ?? "bottom-left",
         cta,
+        secondaryCta,
       };
       setToasts((prev) => [...prev, toast]);
 

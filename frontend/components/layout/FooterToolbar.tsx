@@ -420,24 +420,42 @@ export function FooterToolbar({
         setCliHistory(newHistory);
         return;
       }
-      // Intercept update commands — the bash script kills the app, so use Electron auto-updater instead
+      // Intercept update commands — use Electron SOTA updater bridge in desktop runtime
       if (lower === "update" || lower === "fintheon update") {
         newHistory.push({
           type: "output",
-          text: "Checking for updates via Electron auto-updater...",
+          text: "Checking for updates via desktop updater...",
         });
         setCliHistory(newHistory);
         if (window.electron?.checkForUpdate) {
           window.electron
             .checkForUpdate()
-            .then(({ ok }) => {
+            .then((result) => {
+              if (!result.ok) {
+                setCliHistory((prev) => [
+                  ...prev,
+                  {
+                    type: "output",
+                    text: "Update check failed — open latest release manually: https://github.com/solvys-technologies/fintheon/releases/latest",
+                  },
+                ]);
+                return;
+              }
+              if (result.updateAvailable) {
+                setCliHistory((prev) => [
+                  ...prev,
+                  {
+                    type: "output",
+                    text: `Update available: ${result.latest ?? "new version"}. Use the toast CTA or run \`fintheon update\` again and click Download.`,
+                  },
+                ]);
+                return;
+              }
               setCliHistory((prev) => [
                 ...prev,
                 {
                   type: "output",
-                  text: ok
-                    ? "Update check triggered — banner will appear if an update is available."
-                    : "Update check failed or already up to date.",
+                  text: "Already up to date.",
                 },
               ]);
             })
