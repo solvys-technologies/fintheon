@@ -20,7 +20,16 @@
 //   (var(--font-data) was getting mapped to a heavier mono on some themes), matching
 //   desktop's right-stacked IVStack. Chevron stays in the right column above the numeral.
 import { useCallback, useState } from "react";
-import { ChevronUp, ChevronDown, Minus, Activity, BarChart3, Globe, Globe2, BookText } from "lucide-react";
+import {
+  ChevronUp,
+  ChevronDown,
+  Minus,
+  Activity,
+  BarChart3,
+  Globe,
+  Globe2,
+  BookText,
+} from "lucide-react";
 import { useHaptic } from "../../hooks/useHaptic";
 import { motion, AnimatePresence } from "framer-motion";
 import type { MobileRiskFlowAlert } from "../../contexts/RiskFlowContext";
@@ -73,14 +82,26 @@ function formatSource(source: string): string {
   return map[source] || source.toUpperCase().slice(0, 6);
 }
 
-function BucketSourceIcon({ bucket, size }: { bucket: SourceBucket; size: number }) {
+function BucketSourceIcon({
+  bucket,
+  size,
+}: {
+  bucket: SourceBucket;
+  size: number;
+}) {
   switch (bucket) {
-    case "Wire": return <Activity size={size} />;
-    case "Econ": return <BarChart3 size={size} />;
-    case "Macro": return <Globe size={size} />;
-    case "Geopolitical": return <Globe2 size={size} />;
-    case "Earnings": return <BookText size={size} />;
-    default: return null;
+    case "Wire":
+      return <Activity size={size} />;
+    case "Econ":
+      return <BarChart3 size={size} />;
+    case "Macro":
+      return <Globe size={size} />;
+    case "Geopolitical":
+      return <Globe2 size={size} />;
+    case "Earnings":
+      return <BookText size={size} />;
+    default:
+      return null;
   }
 }
 
@@ -206,7 +227,10 @@ export function RiskFlowCard({
               >
                 <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   {(() => {
-                    const b = bucketOf({ source: alert.source, riskType: alert.riskType });
+                    const b = bucketOf({
+                      source: alert.source,
+                      riskType: alert.riskType,
+                    });
                     return <BucketSourceIcon bucket={b} size={12} />;
                   })()}
                   {bucketOf({

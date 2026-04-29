@@ -385,12 +385,18 @@ function TradeIdeaRow({
 function bucketSourceIcon(bucket: SourceBucket, className?: string) {
   const cls = className ?? "w-3 h-3";
   switch (bucket) {
-    case "Wire": return <Activity className={cls} />;
-    case "Econ": return <BarChart3 className={cls} />;
-    case "Macro": return <Globe className={cls} />;
-    case "Geopolitical": return <Globe2 className={cls} />;
-    case "Earnings": return <BookText className={cls} />;
-    default: return null;
+    case "Wire":
+      return <Activity className={cls} />;
+    case "Econ":
+      return <BarChart3 className={cls} />;
+    case "Macro":
+      return <Globe className={cls} />;
+    case "Geopolitical":
+      return <Globe2 className={cls} />;
+    case "Earnings":
+      return <BookText className={cls} />;
+    default:
+      return null;
   }
 }
 
@@ -484,8 +490,13 @@ function AlertRow({
             {/* Source / time row — bucket left, time-ago right */}
             <div className="flex items-center justify-between text-[9px] tracking-[0.08em] uppercase text-zinc-500">
               <div className="flex items-center gap-1">
-                {bucketSourceIcon(bucketOf({ source: alert.source, riskType: alert.riskType }), "w-3 h-3 text-zinc-500")}
-                <span>{bucketOf({ source: alert.source, riskType: alert.riskType })}</span>
+                {bucketSourceIcon(
+                  bucketOf({ source: alert.source, riskType: alert.riskType }),
+                  "w-3 h-3 text-zinc-500",
+                )}
+                <span>
+                  {bucketOf({ source: alert.source, riskType: alert.riskType })}
+                </span>
               </div>
               <span>{timeAgo(alert.publishedAt)}</span>
             </div>
@@ -659,7 +670,10 @@ function AlertRow({
                 {/* Sawdust fuse — NothingFuse horizontal, 10 segments */}
                 <div className="flex-1">
                   <NothingFuse
-                    value={Math.min(1, Math.max(0.1, (alert.ivScore ?? 0) / 10))}
+                    value={Math.min(
+                      1,
+                      Math.max(0.1, (alert.ivScore ?? 0) / 10),
+                    )}
                     color="var(--fintheon-accent)"
                     orientation="horizontal"
                     thickness={3}

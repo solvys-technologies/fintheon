@@ -314,20 +314,20 @@ S51 executed on `s51-cards-and-arbitrum` cut from `s48-unified`. All 13 dev-flow
 
 All 11 scope items implemented as specified. No divergences.
 
-| # | Change | Files |
-|---|--------|-------|
-| 1 | Header split: bucket-left + icon, time-ago-right via `justify-content: space-between` | `RiskFlowMini.tsx`, `RiskFlowCard.tsx` |
-| 2 | Source icons: `Activity`/`BarChart3`/`Globe`/`Globe2`/`BookText` for Wire/Econ/Macro/Geopolitical/Earnings | `RiskFlowMini.tsx` (bucketSourceIcon), `RiskFlowCard.tsx` (BucketSourceIcon) |
-| 3 | Deleted duplicate `alert.content` block in mobile expanded | `RiskFlowCardExpanded.tsx` |
-| 4 | t-text-reveal ~280ms on headline remainder (desktop: CSS transition via rAF state; mobile: framer-motion `initial`/`animate`) | `RiskFlowMini.tsx`, `RiskFlowCardExpanded.tsx`, `transitions.css` |
-| 5 | Stripped EVENT WEIGHT/TIMING/MOMENTUM/VIX CONTEXT; DEVIATION gated on `econ-print` tag + `surprisePercent` | `RiskFlowCardExpanded.tsx`, `RiskFlowMini.tsx` |
-| 6 | Gray rule moved from compact footer border-t to expanded footer above sawdust fuse | `RiskFlowMini.tsx` |
-| 7 | Sawdust fuse footer: `NothingFuse` horizontal, segments=10, thickness=3 (desktop) / built inline with vertical tick marks (mobile) | `RiskFlowMini.tsx`, `RiskFlowCardExpanded.tsx` |
-| 8 | Paperclip confirmed: `target="_blank"` + `rel="noopener noreferrer"`, image-wrapper has `e.stopPropagation()` | `RiskFlowCardExpanded.tsx` (verified, no edit needed) |
-| 9 | econ-bridge.ts extended tags: `econ-print` + directional (`beat`/`miss`/`inline`) + magnitude (`high-surprise`/`moderate-surprise`/`inline-surprise`) | `econ-bridge.ts` |
-| 10 | scorer-tagging.ts Earnings keywords expanded: Q1-4 preview/earnings, analyst estimate, revenue guidance, analyst cut/raises, beat/miss estimates, results, EBIT, margin | `scorer-tagging.ts` |
-| 11 | feed-service.ts Earnings riskType floored to macroLevel 1 (LOW) | `feed-service.ts` |
-| + | Earnings bucket + filter chip: `SourceBucket` union extended in 6 files (frontend + mobile + backend) | `source-buckets.ts` x2, `useRiskFlowFilters.ts` x2, `user-preferences.ts` x2, `preferences/index.ts` |
+| #   | Change                                                                                                                                                                  | Files                                                                                                |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| 1   | Header split: bucket-left + icon, time-ago-right via `justify-content: space-between`                                                                                   | `RiskFlowMini.tsx`, `RiskFlowCard.tsx`                                                               |
+| 2   | Source icons: `Activity`/`BarChart3`/`Globe`/`Globe2`/`BookText` for Wire/Econ/Macro/Geopolitical/Earnings                                                              | `RiskFlowMini.tsx` (bucketSourceIcon), `RiskFlowCard.tsx` (BucketSourceIcon)                         |
+| 3   | Deleted duplicate `alert.content` block in mobile expanded                                                                                                              | `RiskFlowCardExpanded.tsx`                                                                           |
+| 4   | t-text-reveal ~280ms on headline remainder (desktop: CSS transition via rAF state; mobile: framer-motion `initial`/`animate`)                                           | `RiskFlowMini.tsx`, `RiskFlowCardExpanded.tsx`, `transitions.css`                                    |
+| 5   | Stripped EVENT WEIGHT/TIMING/MOMENTUM/VIX CONTEXT; DEVIATION gated on `econ-print` tag + `surprisePercent`                                                              | `RiskFlowCardExpanded.tsx`, `RiskFlowMini.tsx`                                                       |
+| 6   | Gray rule moved from compact footer border-t to expanded footer above sawdust fuse                                                                                      | `RiskFlowMini.tsx`                                                                                   |
+| 7   | Sawdust fuse footer: `NothingFuse` horizontal, segments=10, thickness=3 (desktop) / built inline with vertical tick marks (mobile)                                      | `RiskFlowMini.tsx`, `RiskFlowCardExpanded.tsx`                                                       |
+| 8   | Paperclip confirmed: `target="_blank"` + `rel="noopener noreferrer"`, image-wrapper has `e.stopPropagation()`                                                           | `RiskFlowCardExpanded.tsx` (verified, no edit needed)                                                |
+| 9   | econ-bridge.ts extended tags: `econ-print` + directional (`beat`/`miss`/`inline`) + magnitude (`high-surprise`/`moderate-surprise`/`inline-surprise`)                   | `econ-bridge.ts`                                                                                     |
+| 10  | scorer-tagging.ts Earnings keywords expanded: Q1-4 preview/earnings, analyst estimate, revenue guidance, analyst cut/raises, beat/miss estimates, results, EBIT, margin | `scorer-tagging.ts`                                                                                  |
+| 11  | feed-service.ts Earnings riskType floored to macroLevel 1 (LOW)                                                                                                         | `feed-service.ts`                                                                                    |
+| +   | Earnings bucket + filter chip: `SourceBucket` union extended in 6 files (frontend + mobile + backend)                                                                   | `source-buckets.ts` x2, `useRiskFlowFilters.ts` x2, `user-preferences.ts` x2, `preferences/index.ts` |
 
 ### Part 2 — Arbitrum Sanctum UI (scope smaller than anticipated)
 
@@ -339,10 +339,10 @@ The walkthrough found:
 
 Actual fixes executed:
 
-| # | Change | Files |
-|---|--------|-------|
-| 1 | Removed unused `compositeIV`/`regimeShiftProbability`/`confidence` props from `ArbitrumChamber` interface and `Sanctum.tsx` call site (stale AgentDeskDebatePanel API) | `ArbitrumChamber.tsx`, `Sanctum.tsx` |
-| 2 | Frosted-glass polish on chamber empty/loading/error states: `bg-[var(--fintheon-bg)]/60 backdrop-blur-[2px]` replacing flat fill | `ArbitrumChamber.tsx` |
+| #   | Change                                                                                                                                                                 | Files                                |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| 1   | Removed unused `compositeIV`/`regimeShiftProbability`/`confidence` props from `ArbitrumChamber` interface and `Sanctum.tsx` call site (stale AgentDeskDebatePanel API) | `ArbitrumChamber.tsx`, `Sanctum.tsx` |
+| 2   | Frosted-glass polish on chamber empty/loading/error states: `bg-[var(--fintheon-bg)]/60 backdrop-blur-[2px]` replacing flat fill                                       | `ArbitrumChamber.tsx`                |
 
 ### Validation
 
