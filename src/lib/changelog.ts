@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-29T15:45:00",
+    agent: "claude-code",
+    summary:
+      "S49 mobile: added MobileDeskPlan below Daily Brief on home dash; moved MiniSessionCalendar to last snap page (bottom of dash); stripped Risk Signals page. MobileDeskPlan fetches /api/day-plan/today, shows actionable plan + compact price block with bearish/bullish CSS-var colors.",
+    files: [
+      "mobile/components/home/MobileDeskPlan.tsx",
+      "mobile/components/home/HomePage.tsx",
+    ],
+  },
+  {
     date: "2026-04-29T15:30:00",
     agent: "claude-code",
     summary:

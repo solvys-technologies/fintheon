@@ -398,7 +398,7 @@ export function HomePage() {
         </div>
       </SnapPage>
 
-      {/* Page 5: Risk Signals — same /api/riskflow/risk-signals source as desktop Aquarium */}
+      {/* Page 5: Timeline */}
       <SnapPage>
         <div
           style={{
@@ -410,25 +410,33 @@ export function HomePage() {
             zIndex: 1,
           }}
         >
-          <MobileRiskSignalCards />
+          <TimelineView />
         </div>
       </SnapPage>
 
-      {/* Page 5: Timeline
-          [claude-code 2026-04-18] CatalystCards page removed per TP — RiskFlow already
-          covers that surface. Was former page 5; Timeline shifts up. */}
-      <SnapPage>
+      {/* Page 6: Economic Calendar (moved to bottom per S49) */}
+      <SnapPage style={{ padding: 0, gap: 0 }}>
         <div
           style={{
             flex: 1,
-            paddingTop: 24,
-            paddingBottom: 64,
-            overflowY: "auto",
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
             position: "relative",
             zIndex: 1,
           }}
         >
-          <TimelineView />
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: "auto",
+              WebkitOverflowScrolling: "touch",
+              padding: "16px 16px 0",
+            }}
+          >
+            <MiniSessionCalendar maxEvents={20} />
+          </div>
         </div>
       </SnapPage>
     </div>

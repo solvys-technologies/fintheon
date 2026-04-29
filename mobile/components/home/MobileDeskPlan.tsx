@@ -2,10 +2,7 @@
 //   mobile PWA dash. Fetches /api/day-plan/today, shows actionable plan text
 //   + compact price block with bearish/bullish color semantics.
 import { useEffect, useState, useCallback } from "react";
-import type {
-  DayPlan,
-  DayPlanWindow,
-} from "../../types/day-plan";
+import type { DayPlan, DayPlanWindow } from "../../types/day-plan";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -39,8 +36,7 @@ function DotoNum({
   return (
     <span
       style={{
-        fontFamily:
-          "'Doto', 'Readable Digits', var(--font-data, monospace)",
+        fontFamily: "'Doto', 'Readable Digits', var(--font-data, monospace)",
         fontSize: 13,
         fontWeight: 600,
         fontVariantNumeric: "tabular-nums",
@@ -154,14 +150,8 @@ export function MobileDeskPlan() {
         >
           <div className="fade-divider" style={{ marginBottom: 2 }} />
 
-          <Row
-            label="Event"
-            value={eventName ?? "\u2014"}
-          />
-          <Row
-            label={fmtTradingWindow(dayWindow)}
-            value=""
-          />
+          <Row label="Event" value={eventName ?? "\u2014"} />
+          <Row label={fmtTradingWindow(dayWindow)} value="" />
 
           <Row
             label="Entry"
