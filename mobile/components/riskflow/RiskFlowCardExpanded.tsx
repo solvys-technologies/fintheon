@@ -14,9 +14,20 @@
 import { motion } from "framer-motion";
 import { Paperclip } from "lucide-react";
 import type { MobileRiskFlowAlert } from "../../contexts/RiskFlowContext";
+import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
 import { SourcePreview } from "./SourcePreview";
 
 export type RiskFlowExpandedSurface = "full" | "timeline" | "mini";
+
+interface RiskFlowCardExpandedProps {
+  alert: MobileRiskFlowAlert;
+  surface?: RiskFlowExpandedSurface;
+  /** When provided (from RiskFlowCard on tap-expand), the mini footer renders a
+   *  horizontal IV bar + paperclip + IV numeral. Omit to suppress the footer
+   *  (e.g. when consumed from a list view that renders its own score UI). */
+  ivScore?: number;
+  severityColor?: string;
+}
 
 const SEVERITY_COLORS: Record<AlertSeverity, string> = {
   critical: "var(--fintheon-severe)",
