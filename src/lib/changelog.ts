@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-29T15:30:00",
+    agent: "claude-code",
+    summary:
+      "S49: Desk Plan prices, color theming, and read-expansion. Fixed useDayPlan to unwrap {plan} wrapper so DayCard prices render correctly. Rewrote desk-theme-generator SYSTEM_PROMPT to produce <=160 char actionable plan. Added tone prop to DayCard Row for bearish/bullish color binding via CSS vars. Rewrote DeskThemeWidget with compact price block + read-expand to full DayCard layout; dropped brief body mirror.",
+    files: [
+      "frontend/hooks/useDayPlan.ts",
+      "frontend/components/narrative/DayCard.tsx",
+      "frontend/components/mission-control/DeskThemeWidget.tsx",
+      "backend-hono/src/services/day-plan/desk-theme-generator.ts",
+    ],
+  },
+  {
     date: "2026-04-29T14:30:00",
     agent: "claude-code",
     summary:

@@ -1,3 +1,6 @@
+// [claude-code 2026-04-29] S49: Unwrap { plan } wrapper from /api/day-plan/today.
+//   Backend returns { plan: DayPlan | null }; previously the hook cast the
+//   response body directly as DayPlan so data.windows was always undefined.
 // [claude-code 2026-04-26] S45-T2: useDayPlan — GET /api/day-plan/today on mount,
 //   60s poll. Mirrors useIVScoreData shape: {data, isLoading, error}.
 import { useState, useEffect, useRef } from "react";
@@ -25,9 +28,9 @@ export function useDayPlan() {
           }
           return;
         }
-        const json = (await res.json()) as DayPlan;
+        const json = (await res.json()) as { plan: DayPlan | null };
         if (!cancelled) {
-          setData(json);
+          setData(json.plan ?? null);
           setError(null);
           setIsLoading(false);
         }

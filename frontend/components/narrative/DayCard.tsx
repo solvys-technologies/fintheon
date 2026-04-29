@@ -1,3 +1,5 @@
+// [claude-code 2026-04-29] S49: Added tone prop to Row for bearish/bullish
+//   color binding via CSS vars (--fintheon-bearish, --fintheon-bullish).
 // [claude-code 2026-04-28] T3: Renamed Desk Theme -> Desk Plan in visible UI.
 // [claude-code 2026-04-26] S45-T2: DayCard — Sanctum surface under Volatility Read.
 //   Lays out Desk Plan + data table + streak/drift footer. NO border on the
@@ -133,18 +135,21 @@ export function DayCard({
           }
           loading={isLoading}
           doto
+          tone="neutral"
         />
         <Row
           label="Invalidation Point"
           value={hasWindow ? fmtPrice(window!.invalidation) : "—"}
           loading={isLoading}
           doto
+          tone="bearish"
         />
         <Row
           label="Profit Target"
           value={hasWindow ? fmtPrice(window!.profitTarget) : "—"}
           loading={isLoading}
           doto
+          tone="bullish"
         />
         <Row
           label="Expected Move"
@@ -196,17 +201,28 @@ export function DayCard({
   );
 }
 
+type RowTone = "neutral" | "bullish" | "bearish";
+
 function Row({
   label,
   value,
   loading,
   doto,
+  tone = "neutral",
 }: {
   label: string;
   value: string;
   loading: boolean;
   doto?: boolean;
+  tone?: RowTone;
 }) {
+  const valueColor =
+    loading || tone === "neutral"
+      ? undefined
+      : tone === "bullish"
+        ? "var(--fintheon-bullish)"
+        : "var(--fintheon-bearish)";
+
   return (
     <div className="flex items-baseline gap-3">
       <dt
@@ -232,9 +248,11 @@ function Row({
       <dd
         className="tabular-nums text-right shrink-0"
         style={{
-          color: loading
-            ? "var(--fintheon-muted, #908774)"
-            : "var(--fintheon-text)",
+          color:
+            valueColor ??
+            (loading
+              ? "var(--fintheon-muted, #908774)"
+              : "var(--fintheon-text)"),
           fontFamily: doto
             ? "'Doto', 'Readable Digits', var(--font-data, monospace)"
             : "var(--font-data, monospace)",

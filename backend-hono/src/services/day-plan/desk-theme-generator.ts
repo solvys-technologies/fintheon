@@ -1,3 +1,6 @@
+// [claude-code 2026-04-29] S49: Rewrote SYSTEM_PROMPT, sanitizeTheme, and
+//   fallbackTheme to produce a <=160 char actionable plan (not a brief recap).
+//   sanitizeTheme now hard-caps at 160 chars on a word boundary.
 // [claude-code 2026-04-26] S45-T1: Desk Theme generator. Composes a prompt from
 // today's top RiskFlow catalyst, IV score, planned window + prices, and asks
 // claude-sonnet-4-6 (via VProxy at localhost:8317) for a single-sentence theme
@@ -28,13 +31,15 @@ export interface DeskThemeInput {
   regime?: string | null;
 }
 
-const SYSTEM_PROMPT = `You write Desk Theme messages for Priced In Capital traders.
+const SYSTEM_PROMPT = `You write actionable Desk Plan messages for Priced In Capital traders. The output is a plan, not a recap — it tells the trader what to do at the levels.
 
 Output rules:
-- Exactly one sentence. No more.
+- Exactly one sentence, no more than 160 characters total (including spaces).
 - Plain text only. No emojis, no decorative glyphs, no headers, no quotes.
-- Tie the day's trading window to the named catalyst in concrete terms — what edge does the catalyst create at these levels?
-- Financial shorthand allowed (CPI, PCE, /NQ, VIX) but no fabricated numbers.
+- Reference behavior at the levels: fade, target, abandon below. The sentence must include specific price actions tied to the given levels.
+- The catalyst may be named in 1–3 words for context, but the sentence body must be about the trade plan, not about restating the catalyst.
+- Financial shorthand allowed (CPI, PCE, /NQ, VIX) but no fabricated numbers — only use the prices provided.
+- Do NOT include phrasing copied from any daily brief (MDB/ADB/PMDB).
 - Voice is sharp, convicted, declarative — never hedging.`;
 
 export async function generateDeskTheme(
@@ -87,16 +92,39 @@ function sanitizeTheme(raw: string): string {
   // Drop emoji + sparkle ranges.
   text = text.replace(/[☀-➿\u{1F300}-\u{1FAFF}\u{1F900}-\u{1F9FF}]/gu, "");
   text = text.replace(/\s+/g, " ").trim();
-  // Keep only the first sentence to enforce the "one sentence" rule.
+  // Keep only the first sentence.
   const match = text.match(/^[^.!?]*[.!?]/);
-  return match ? match[0].trim() : text;
+  text = match ? match[0].trim() : text;
+  // Hard-cap at 160 characters on a word boundary.
+  if (text.length > 160) {
+    const truncated = text.slice(0, 160);
+    const lastSpace = truncated.lastIndexOf(" ");
+    text = lastSpace > 80 ? truncated.slice(0, lastSpace) : truncated;
+    // Append a period if the cut left it without terminal punctuation.
+    if (!/[.!?]$/.test(text)) text += ".";
+  }
+  return text;
 }
 
 function fallbackTheme(input: DeskThemeInput): string {
-  const levelHint =
+  const entry =
     input.pricesOfInterest.length > 0
-      ? ` around ${input.pricesOfInterest.join(" / ")}`
-      : "";
-  const catalyst = input.eventName ?? input.catalystHeadline;
-  return `${input.windowLabel} ET ${input.instrument} window keys off ${catalyst}${levelHint}.`;
+      ? input.pricesOfInterest[0].toFixed(0)
+      : null;
+  const target =
+    input.pricesOfInterest.length > 1
+      ? input.pricesOfInterest[input.pricesOfInterest.length - 1].toFixed(0)
+      : null;
+  const invalidation =
+    input.pricesOfInterest.length > 1
+      ? input.pricesOfInterest[1].toFixed(0)
+      : entry;
+  const parts: string[] = [];
+  parts.push(`${input.windowLabel} ET ${input.instrument}`);
+  if (entry) parts.push(`fade ${entry}`);
+  if (target) parts.push(`target ${target}`);
+  if (invalidation) parts.push(`abandon below ${invalidation}`);
+  const sentence = parts.join(", ") + ".";
+  if (sentence.length <= 160) return sentence;
+  return `${input.windowLabel} ET ${input.instrument}${entry ? `: fade ${entry}` : ""}.`;
 }
