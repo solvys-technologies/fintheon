@@ -9008,4 +9008,11 @@ export const changelog: ChangelogEntry[] = [
       "backend-hono/src/routes/index.ts",
     ],
   },
+  {
+    date: "2026-04-29T13:56:00",
+    agent: "claude-code",
+    summary:
+      "v5.36.1 deploy: shipped s51-cards-and-arbitrum. 3-target deploy — Fly.io backend + Vercel desktop & mobile PWA. DMG (144MB) to Desktop. Install script refreshed.",
+    files: ["package.json", "scripts/fintheon-update.sh"],
+  },
 ];
