@@ -239,6 +239,8 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/maintenance/*", authMiddleware);
   app.route("/api/maintenance", createMaintenanceRoutes());
   // Harper — Claude CLI chat via SDK bridge (public, local-only)
+  app.use("/api/harper", authMiddleware);
+  app.use("/api/harper/*", authMiddleware);
   app.route("/api/harper", createHarperRoutes());
   // [claude-code 2026-04-23] S31-T9 predictive knowledge graph — Routine-secret-gated
   // weekly proposer trigger. Mounted BEFORE the harper-ops catch-all so the more
