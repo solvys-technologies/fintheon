@@ -14,7 +14,7 @@ import { useSettings } from "../../contexts/SettingsContext";
 /* ------------------------------------------------------------------ */
 
 const DOSSIERS: Record<string, string> = {
-  "harper":
+  harper:
     "Chief Agentic Officer — executive strategy, oversight, and final trade authorization",
   oracle:
     "The All-Seeing Speculator — prediction markets, probabilistic reasoning, cross-domain intelligence",

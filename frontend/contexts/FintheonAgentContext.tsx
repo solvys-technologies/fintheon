@@ -154,9 +154,7 @@ export function FintheonAgentProvider({ children }: { children: ReactNode }) {
     if (caoName && caoName !== "Harper") {
       setAgents((prev) =>
         prev.map((a) =>
-          a.id === "harper"
-            ? { ...a, name: caoName, updated_at: now() }
-            : a,
+          a.id === "harper" ? { ...a, name: caoName, updated_at: now() } : a,
         ),
       );
       setActiveAgent((prev) =>
