@@ -1,5 +1,3 @@
-// [claude-code 2026-04-29] S49: store assistant response in conversation history
-//   on stream finish so dispatched conversations sync between mobile + desktop.
 // [claude-code 2026-04-05] Harper agent — Strands-based CAO with tools + streaming + cognition telemetry
 import { createAgent, type HarperProvider } from "../agent-factory.js";
 import { createHarperTools } from "../harper-tools.js";
@@ -12,7 +10,6 @@ import { createConversationManager } from "../memory-store.js";
 import { checkVProxyHealth } from "../provider.js";
 import { getAgentSystemPrompt } from "../../ai/agent-instructions/index.js";
 import { createLogger } from "../../../lib/logger.js";
-import { addMessage } from "../../ai/conversation-store.js";
 
 const log = createLogger("HarperAgent");
 
@@ -231,29 +228,6 @@ export async function streamHarperChat(
     onFinish: async (text) => {
       cleanupCognition();
       log.info("Harper response complete", { requestId, textLen: text.length });
-      // Store assistant response in conversation history so dispatched
-      // conversations sync between mobile + desktop (S49).
-      if (options.conversationId && text.trim()) {
-        try {
-          await addMessage(options.conversationId, {
-            conversationId: options.conversationId,
-            role: "assistant",
-            content: text.trim(),
-            model: "harper",
-          });
-          log.info("Harper response stored", {
-            requestId,
-            conversationId: options.conversationId,
-            textLen: text.length,
-          });
-        } catch (err) {
-          log.warn("Failed to store Harper response", {
-            requestId,
-            conversationId: options.conversationId,
-            error: String(err),
-          });
-        }
-      }
     },
   });
 
