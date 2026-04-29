@@ -101,7 +101,8 @@ async function registerLocalPeerOnBoot(): Promise<void> {
 
   const hermesAvailable = isHermesAvailable();
   const capabilities = ["claude-cli"];
-  if (process.env.PEER_ENABLE_TWITTER !== "false") capabilities.push("rettiwt");
+  if (process.env.PEER_ENABLE_TWITTER !== "false")
+    capabilities.push("browser-harness-x");
   if (hermesAvailable) capabilities.push("hermes");
 
   const peer = await registerPeer(userId, {

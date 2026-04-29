@@ -2,11 +2,9 @@
 // pipeline state row, and per-pipeline aggregate stats.
 
 export const INGEST_PIPELINES = [
+  "x-browser-session",
   "x-syndication",
-  "xactions",
-  "agent-reach-nitter",
   "browser-harness",
-  "rettiwt-commentary",
   "economic-calendar",
   "kalshi-whale", // T2 will use this
 ] as const;

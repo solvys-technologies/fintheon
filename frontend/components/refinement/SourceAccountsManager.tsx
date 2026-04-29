@@ -47,11 +47,24 @@ const CATEGORY_BADGE: Record<SourceAccountCategory, { color: string }> = {
 };
 
 const METHOD_ICON: Record<SourceAccountMethod, string> = {
-  rettiwt: "X",
   rss: "RSS",
   browser: "BW",
   api: "API",
 };
+
+function isWebSource(account: SourceAccount): boolean {
+  return (
+    account.method === "rss" ||
+    account.method === "api" ||
+    account.category === "Official" ||
+    account.handle.includes(".") ||
+    account.handle.startsWith("http")
+  );
+}
+
+function sourceLabel(account: SourceAccount): string {
+  return isWebSource(account) ? account.handle : `@${account.handle}`;
+}
 
 const STATUS_BAR: React.CSSProperties = {
   display: "flex",
@@ -82,7 +95,7 @@ export function SourceAccountsManager({
   const [addDisplayName, setAddDisplayName] = useState("");
   const [addCategory, setAddCategory] =
     useState<SourceAccountCategory>("Custom");
-  const [addMethod, setAddMethod] = useState<SourceAccountMethod>("rettiwt");
+  const [addMethod, setAddMethod] = useState<SourceAccountMethod>("browser");
   const [addSubmitting, setAddSubmitting] = useState(false);
   const [addErrors, setAddErrors] = useState<Record<string, string>>({});
 
@@ -91,7 +104,7 @@ export function SourceAccountsManager({
   const [editDisplayName, setEditDisplayName] = useState("");
   const [editCategory, setEditCategory] =
     useState<SourceAccountCategory>("Custom");
-  const [editMethod, setEditMethod] = useState<SourceAccountMethod>("rettiwt");
+  const [editMethod, setEditMethod] = useState<SourceAccountMethod>("browser");
   const [editErrors, setEditErrors] = useState<Record<string, string>>({});
 
   const sorted = [...accounts].sort((a, b) => {
@@ -132,7 +145,7 @@ export function SourceAccountsManager({
       setAddHandle("");
       setAddDisplayName("");
       setAddCategory("Custom");
-      setAddMethod("rettiwt");
+      setAddMethod("browser");
       setShowAdd(false);
       onAccountsChanged();
     } catch (err) {
@@ -178,7 +191,7 @@ export function SourceAccountsManager({
     setEditHandle(account.handle);
     setEditDisplayName(account.display_name ?? "");
     setEditCategory(account.category);
-    setEditMethod(account.method ?? "rettiwt");
+    setEditMethod(account.method ?? "browser");
     setEditErrors({});
   };
 
@@ -215,6 +228,152 @@ export function SourceAccountsManager({
     editMethod,
     onAccountsChanged,
   ]);
+
+  const handleSources = sorted.filter((account) => !isWebSource(account));
+  const webSources = sorted.filter(isWebSource);
+
+  const renderAccount = (account: SourceAccount) => {
+    const badge =
+      CATEGORY_BADGE[account.category] ?? CATEGORY_BADGE.Custom;
+    const isEditing = editingId === account.id;
+
+    if (isEditing) {
+      return (
+        <div
+          key={account.id}
+          className="p-2 rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-accent)]/5 space-y-1.5"
+        >
+          <input
+            value={editHandle}
+            onChange={(e) => setEditHandle(e.target.value)}
+            className="w-full bg-transparent border border-zinc-700 rounded px-2 py-0.5 text-[12px] text-[var(--fintheon-text)] focus:border-[var(--fintheon-accent)]/50 outline-none"
+            placeholder="Handle or web source"
+          />
+          {editErrors.handle && (
+            <div className="text-[10px] text-red-400">
+              {editErrors.handle}
+            </div>
+          )}
+          <input
+            value={editDisplayName}
+            onChange={(e) => setEditDisplayName(e.target.value)}
+            className="w-full bg-transparent border border-zinc-700 rounded px-2 py-0.5 text-[12px] text-zinc-400 focus:border-[var(--fintheon-accent)]/50 outline-none"
+            placeholder="Display name"
+          />
+          <div className="flex gap-1.5">
+            <select
+              value={editCategory}
+              onChange={(e) =>
+                setEditCategory(e.target.value as SourceAccountCategory)
+              }
+              className="bg-transparent border border-zinc-700 rounded px-1.5 py-0.5 text-[12px] text-zinc-400 outline-none"
+            >
+              {SOURCE_ACCOUNT_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+            <select
+              value={editMethod}
+              onChange={(e) =>
+                setEditMethod(e.target.value as SourceAccountMethod)
+              }
+              className="bg-transparent border border-zinc-700 rounded px-1.5 py-0.5 text-[12px] text-zinc-400 outline-none"
+            >
+              {SOURCE_ACCOUNT_METHODS.map((m) => (
+                <option key={m} value={m}>
+                  {METHOD_ICON[m]} — {m}
+                </option>
+              ))}
+            </select>
+          </div>
+          {editErrors.category && (
+            <div className="text-[10px] text-red-400">
+              {editErrors.category}
+            </div>
+          )}
+          {editErrors.method && (
+            <div className="text-[10px] text-red-400">
+              {editErrors.method}
+            </div>
+          )}
+          {editErrors.general && (
+            <div className="text-[10px] text-red-400">
+              {editErrors.general}
+            </div>
+          )}
+          <div className="flex gap-1.5">
+            <button
+              onClick={handleSaveEdit}
+              className="px-2 py-0.5 rounded text-[11px] bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/30 transition-colors"
+            >
+              Save
+            </button>
+            <button
+              onClick={() => setEditingId(null)}
+              className="px-2 py-0.5 rounded text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        key={account.id}
+        className={`flex items-center gap-1.5 px-1.5 py-1 rounded group transition-colors hover:bg-zinc-800/30 ${
+          !account.active ? "opacity-40" : ""
+        }`}
+      >
+        <div className="flex-1 min-w-0">
+          <div className="text-[12px] font-semibold text-[var(--fintheon-text)] truncate">
+            {sourceLabel(account)}
+          </div>
+          {account.display_name && (
+            <div className="text-[8px] text-zinc-500 truncate">
+              {account.display_name}
+            </div>
+          )}
+        </div>
+        <span
+          className={`text-[8px] font-bold px-1 py-px rounded border shrink-0 ${badge.color}`}
+        >
+          {account.category}
+        </span>
+        <span className="text-[8px] text-zinc-600 shrink-0">
+          {METHOD_ICON[account.method] ?? account.method}
+        </span>
+        <div className="hidden group-hover:flex items-center gap-0.5 shrink-0">
+          <button
+            onClick={() => handleToggleActive(account.id, account.active)}
+            className={`p-0.5 transition-colors ${
+              account.active
+                ? "text-emerald-500 hover:text-zinc-400"
+                : "text-zinc-600 hover:text-emerald-400"
+            }`}
+            title={account.active ? "Deactivate" : "Activate"}
+          >
+            <Power className="w-2.5 h-2.5" />
+          </button>
+          <button
+            onClick={() => startEdit(account)}
+            className="p-0.5 text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors"
+          >
+            <Pencil className="w-2.5 h-2.5" />
+          </button>
+          <button
+            onClick={() => handleRemove(account.id)}
+            className="p-0.5 text-zinc-600 hover:text-red-400 transition-colors"
+          >
+            <Trash2 className="w-2.5 h-2.5" />
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-2">
@@ -263,149 +422,22 @@ export function SourceAccountsManager({
       )}
 
       {/* Account list */}
-      <div className="space-y-0.5 max-h-[280px] overflow-y-auto">
-        {sorted.map((account) => {
-          const badge =
-            CATEGORY_BADGE[account.category] ?? CATEGORY_BADGE.Custom;
-          const isEditing = editingId === account.id;
+      <div className="space-y-2 max-h-[280px] overflow-y-auto">
+        <div className="space-y-0.5">
+          <div className="flex items-center justify-between px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+            <span>@ Handles</span>
+            <span>{handleSources.filter((a) => a.active).length}/{handleSources.length}</span>
+          </div>
+          {handleSources.map(renderAccount)}
+        </div>
 
-          if (isEditing) {
-            return (
-              <div
-                key={account.id}
-                className="p-2 rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-accent)]/5 space-y-1.5"
-              >
-                <input
-                  value={editHandle}
-                  onChange={(e) => setEditHandle(e.target.value)}
-                  className="w-full bg-transparent border border-zinc-700 rounded px-2 py-0.5 text-[12px] text-[var(--fintheon-text)] focus:border-[var(--fintheon-accent)]/50 outline-none"
-                  placeholder="Handle (no @)"
-                />
-                {editErrors.handle && (
-                  <div className="text-[10px] text-red-400">
-                    {editErrors.handle}
-                  </div>
-                )}
-                <input
-                  value={editDisplayName}
-                  onChange={(e) => setEditDisplayName(e.target.value)}
-                  className="w-full bg-transparent border border-zinc-700 rounded px-2 py-0.5 text-[12px] text-zinc-400 focus:border-[var(--fintheon-accent)]/50 outline-none"
-                  placeholder="Display name"
-                />
-                <div className="flex gap-1.5">
-                  <select
-                    value={editCategory}
-                    onChange={(e) =>
-                      setEditCategory(e.target.value as SourceAccountCategory)
-                    }
-                    className="bg-transparent border border-zinc-700 rounded px-1.5 py-0.5 text-[12px] text-zinc-400 outline-none"
-                  >
-                    {SOURCE_ACCOUNT_CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={editMethod}
-                    onChange={(e) =>
-                      setEditMethod(e.target.value as SourceAccountMethod)
-                    }
-                    className="bg-transparent border border-zinc-700 rounded px-1.5 py-0.5 text-[12px] text-zinc-400 outline-none"
-                  >
-                    {SOURCE_ACCOUNT_METHODS.map((m) => (
-                      <option key={m} value={m}>
-                        {METHOD_ICON[m]} — {m}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {editErrors.category && (
-                  <div className="text-[10px] text-red-400">
-                    {editErrors.category}
-                  </div>
-                )}
-                {editErrors.method && (
-                  <div className="text-[10px] text-red-400">
-                    {editErrors.method}
-                  </div>
-                )}
-                {editErrors.general && (
-                  <div className="text-[10px] text-red-400">
-                    {editErrors.general}
-                  </div>
-                )}
-                <div className="flex gap-1.5">
-                  <button
-                    onClick={handleSaveEdit}
-                    className="px-2 py-0.5 rounded text-[11px] bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/30 transition-colors"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => setEditingId(null)}
-                    className="px-2 py-0.5 rounded text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            );
-          }
-
-          return (
-            <div
-              key={account.id}
-              className={`flex items-center gap-1.5 px-1.5 py-1 rounded group transition-colors hover:bg-zinc-800/30 ${
-                !account.active ? "opacity-40" : ""
-              }`}
-            >
-              <div className="flex-1 min-w-0">
-                <div className="text-[12px] font-semibold text-[var(--fintheon-text)] truncate">
-                  @{account.handle}
-                </div>
-                {account.display_name && (
-                  <div className="text-[8px] text-zinc-500 truncate">
-                    {account.display_name}
-                  </div>
-                )}
-              </div>
-              <span
-                className={`text-[8px] font-bold px-1 py-px rounded border shrink-0 ${badge.color}`}
-              >
-                {account.category}
-              </span>
-              <span className="text-[8px] text-zinc-600 shrink-0">
-                {METHOD_ICON[account.method] ?? account.method}
-              </span>
-              <div className="hidden group-hover:flex items-center gap-0.5 shrink-0">
-                <button
-                  onClick={() => handleToggleActive(account.id, account.active)}
-                  className={`p-0.5 transition-colors ${
-                    account.active
-                      ? "text-emerald-500 hover:text-zinc-400"
-                      : "text-zinc-600 hover:text-emerald-400"
-                  }`}
-                  title={account.active ? "Deactivate" : "Activate"}
-                >
-                  <Power className="w-2.5 h-2.5" />
-                </button>
-                <button
-                  onClick={() => startEdit(account)}
-                  className="p-0.5 text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors"
-                >
-                  <Pencil className="w-2.5 h-2.5" />
-                </button>
-                <button
-                  onClick={() => handleRemove(account.id)}
-                  className="p-0.5 text-zinc-600 hover:text-red-400 transition-colors"
-                >
-                  <Trash2 className="w-2.5 h-2.5" />
-                </button>
-              </div>
-            </div>
-          );
-        })}
+        <div className="space-y-0.5 pt-1">
+          <div className="flex items-center justify-between px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+            <span>Web Sources</span>
+            <span>{webSources.filter((a) => a.active).length}/{webSources.length}</span>
+          </div>
+          {webSources.map(renderAccount)}
+        </div>
 
         {sorted.length === 0 && (
           <div className="text-[12px] text-zinc-600 text-center py-4">

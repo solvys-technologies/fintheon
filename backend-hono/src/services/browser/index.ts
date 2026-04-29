@@ -38,3 +38,8 @@ export type {
   BrowseResult,
   BrowseWaitFor,
 } from "./harness.js";
+
+export {
+  getPersistentBrowserSessionStats,
+  withPersistentBrowserPage,
+} from "./persistent-session.js";

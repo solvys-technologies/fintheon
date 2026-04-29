@@ -1,3 +1,5 @@
+// [claude-code 2026-04-29] Rettiwt stripped from source-account methods; X
+// sources are browser/browser-harness controlled.
 // [claude-code 2026-04-28] S47-T1: Added method field; removed General category.
 // Source account type — curated X accounts for timeline polling + official RSS feeds.
 
@@ -13,7 +15,6 @@ export const SOURCE_ACCOUNT_CATEGORIES = [
 export type SourceAccountCategory = (typeof SOURCE_ACCOUNT_CATEGORIES)[number];
 
 export const SOURCE_ACCOUNT_METHODS = [
-  "rettiwt",
   "rss",
   "browser",
   "api",
@@ -40,77 +41,77 @@ export const DEFAULT_SOURCE_ACCOUNTS: Omit<
     handle: "financialjuice",
     display_name: "FinancialJuice",
     category: "Wire",
-    method: "rettiwt",
+    method: "browser",
     active: true,
   },
   {
     handle: "DeItaone",
     display_name: "Walter Bloomberg",
     category: "Wire",
-    method: "rettiwt",
+    method: "browser",
     active: true,
   },
   {
     handle: "NickTimiraos",
     display_name: "Nick Timiraos",
     category: "Macro",
-    method: "rettiwt",
+    method: "browser",
     active: true,
   },
   {
     handle: "OSINTDefender",
     display_name: "OSINT Defender",
     category: "OSINT",
-    method: "rettiwt",
+    method: "browser",
     active: true,
   },
   {
     handle: "SecBessent25",
     display_name: "Scott Bessent",
     category: "Geopolitical",
-    method: "rettiwt",
+    method: "browser",
     active: true,
   },
   {
     handle: "realDonaldTrump",
     display_name: "Donald Trump",
     category: "Geopolitical",
-    method: "rettiwt",
+    method: "browser",
     active: true,
   },
   {
     handle: "ABORNEOFFICIAL",
     display_name: "Adam Borne",
     category: "Geopolitical",
-    method: "rettiwt",
+    method: "browser",
     active: true,
   },
   {
     handle: "TheSpectatorIndex",
     display_name: "The Spectator Index",
     category: "Geopolitical",
-    method: "rettiwt",
+    method: "browser",
     active: true,
   },
   {
     handle: "SchizoIntel",
     display_name: "SchizoIntel",
     category: "OSINT",
-    method: "rettiwt",
+    method: "browser",
     active: true,
   },
   {
     handle: "MenchOSINT",
     display_name: "MenchOSINT",
     category: "OSINT",
-    method: "rettiwt",
+    method: "browser",
     active: true,
   },
   {
     handle: "ClashReport",
     display_name: "Clash Report",
     category: "OSINT",
-    method: "rettiwt",
+    method: "browser",
     active: true,
   },
   // Official RSS feeds — tracked economic publishers only (S47-T1)

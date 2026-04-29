@@ -1,24 +1,17 @@
-// [claude-code 2026-04-26] Primary X (Twitter) handle intake via the
-// `syndication.twitter.com` embed endpoint. Same data path X uses for
-// third-party timeline widgets — public, no auth, no JS execution required.
-// Replaces the dead public-Nitter mirror chain that was returning 0 items
-// per tick AND the Playwright x.com path that was timing out on
-// domcontentloaded due to X's progressive-load wall.
-//
-// Per TP: this is the PRIMARY intake. Agent-reach Nitter remains as a
-// secondary fallback inside sources/index.ts when this returns nothing for
-// a handle.
-//
-// Endpoint shape:
+// [claude-code 2026-04-29] X intake is browser-harness first. Rettiwt and
+// Agent Reach are retired from the active pipeline; this collector uses the
+// worker-owned persistent browser session against x.com, then falls back only
+// to the public syndication widget when the session is unavailable.
+// [claude-code 2026-04-26] Syndication fallback:
 //   https://syndication.twitter.com/srv/timeline-profile/screen-name/{handle}
-// Returns an HTML page whose <script id="__NEXT_DATA__"> embeds a JSON
-// object containing a `props.pageProps.timeline.entries[]` array. Each
-// entry has `content.tweet` with id_str, full_text, created_at, etc.
+// Returns an HTML page whose <script id="__NEXT_DATA__"> embeds tweet JSON.
 
 import type { CollectedNewsItem, NewsTier } from "./types.js";
 import { scoreHeadline } from "../score.js";
-import { getTweetsViaXActions } from "../../../services/xactions/client.js";
-import { browseRead } from "../../../services/browser/index.js";
+import {
+  browseRead,
+  withPersistentBrowserPage,
+} from "../../../services/browser/index.js";
 
 const SYNDICATION_BASE = "https://syndication.twitter.com";
 const FETCH_TIMEOUT_MS = 12_000;
@@ -41,12 +34,105 @@ interface ExtractedTweet {
    *  a video / animated_gif. RiskFlowDetailCard renders <video> inline
    *  (OSINT-prioritized). */
   video_url?: string | null;
-  /** S48-T1: which pipeline tag to use ("x-syndication" vs "xactions") */
+  /** Which browser-harness path produced the item. */
   pipeline_tag?: string;
 }
 
 function stripHandle(h: string): string {
   return h.replace(/^@/, "").trim();
+}
+
+function isoDate(value: string | undefined, fallbackMs: number): string {
+  if (value) return value.slice(0, 10);
+  return new Date(fallbackMs).toISOString().slice(0, 10);
+}
+
+function nextIsoDate(value: string | undefined): string {
+  const base = value ? Date.parse(value) : Date.now();
+  const ms = Number.isFinite(base) ? base : Date.now();
+  return new Date(ms + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+function normalizeTweetText(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function normalizePermalink(url: string, cleanHandle: string, tweetId: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.endsWith("x.com") || parsed.hostname.endsWith("twitter.com")) {
+      return `https://x.com/${cleanHandle}/status/${tweetId}`;
+    }
+  } catch {
+    // fall through
+  }
+  return `https://x.com/${cleanHandle}/status/${tweetId}`;
+}
+
+async function fetchBrowserUseTweets(
+  cleanHandle: string,
+  opts: { from?: string; to?: string },
+): Promise<ExtractedTweet[]> {
+  const fromDate = isoDate(opts.from, Date.now() - MAX_AGE_MS);
+  const toDate = opts.to ? nextIsoDate(opts.to) : nextIsoDate(undefined);
+  const query = `from:${cleanHandle} since:${fromDate} until:${toDate}`;
+  const url = `https://x.com/search?q=${encodeURIComponent(query)}&f=live`;
+
+  try {
+    return await withPersistentBrowserPage(async (page) => {
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45_000 });
+      await page.waitForTimeout(5_000);
+
+      const maxScrolls = opts.from ? 18 : 4;
+      for (let i = 0; i < maxScrolls; i++) {
+        await page.mouse.wheel(0, 1600);
+        await page.waitForTimeout(1_000);
+      }
+
+      const rows = await page.evaluate((handle) => {
+        return Array.from(document.querySelectorAll("article")).flatMap((article) => {
+          const links = Array.from(article.querySelectorAll("a[href*='/status/']"))
+            .map((a) => (a as HTMLAnchorElement).href)
+            .filter((href) => href.includes(`/${handle}/status/`));
+          const permalink = links[0];
+          const match = permalink?.match(/\/status\/(\d+)/);
+          const tweetId = match?.[1];
+          const tweetText = (article.querySelector("[data-testid='tweetText']") as HTMLElement | null)
+            ?.innerText;
+          const timestamp = article.querySelector("time")?.getAttribute("datetime") ?? "";
+          const imageUrl = (article.querySelector("img[src*='twimg.com/media']") as HTMLImageElement | null)
+            ?.src;
+          if (!tweetId || !tweetText || !timestamp) return [];
+          return [{ tweetId, text: tweetText, timestamp, permalink, imageUrl }];
+        });
+      }, cleanHandle);
+
+      const seen = new Set<string>();
+      return rows.flatMap((row) => {
+        if (seen.has(row.tweetId)) return [];
+        seen.add(row.tweetId);
+        return [{
+          tweet_id: row.tweetId,
+          text: normalizeTweetText(row.text),
+          timestamp: row.timestamp,
+          permalink: normalizePermalink(row.permalink, cleanHandle, row.tweetId),
+          image_url: row.imageUrl ?? null,
+          pipeline_tag: "x-browser-session",
+        }];
+      });
+    });
+  } catch (err) {
+    console.warn(
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        service: "riskflow-worker",
+        stage: "x_browser_session_error",
+        handle: cleanHandle,
+        error: err instanceof Error ? err.message : String(err),
+      }),
+    );
+    return [];
+  }
 }
 
 /**
@@ -185,14 +271,13 @@ async function fetchSyndicationTweets(
     cleanHandle,
   )}?language=en`;
 
-  // [claude-code 2026-04-27] PRIMARY: route through browser-harness Playwright
+  // Fallback: route through browser-harness Playwright
   // pool (services/browser/harness.ts → browseRead with textOnly:false so the
   // <script id="__NEXT_DATA__"> survives). The pool ships a real Chromium with
   // realistic headers + circuit breaker + Steel CDP fallback baked in, which
   // bypasses Twitter's 429 wall on Fly's IAD shared IP that plain fetch hits
   // immediately. If the pool itself errors (no browsers available, allowlist
-  // miss, circuit tripped), we fall through to plain fetch as a last-ditch
-  // before XActions.
+  // miss, circuit tripped), we fall through to plain fetch as a last-ditch.
   try {
     const result = await browseRead({
       url,
@@ -227,7 +312,7 @@ async function fetchSyndicationTweets(
 
   // Last-ditch plain fetch — kept for the local-dev path where the Playwright
   // pool might be unavailable (no browsers installed on the dev machine). On
-  // Fly this almost always 429s, but the no-cost retry is fine before XActions.
+  // Fly this almost always 429s, but the no-cost retry is fine after harness.
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
@@ -268,38 +353,14 @@ async function fetchSyndicationTweets(
     );
   }
 
-  // SECONDARY (per TP): XActions behind browser-harness. Self-hosted
-  // Puppeteer-based X scraper. Reaches X with its own egress IP + optional
-  // session cookie, so it bypasses the 429 wall Fly's IAD shared IP hits on
-  // syndication.twitter.com. Returns [] when XACTIONS_API_BASE is not set.
-  const xa = await getTweetsViaXActions({ handle: cleanHandle, limit: 20 });
-  if (xa.length > 0) {
-    console.log(
-      JSON.stringify({
-        ts: new Date().toISOString(),
-        service: "riskflow-worker",
-        stage: "syndication_via_xactions",
-        handle: cleanHandle,
-        tweets: xa.length,
-      }),
-    );
-    // [claude-code 2026-04-28] S48-T1: XActions items tagged "xactions" pipeline
-    return xa.map((t) => ({
-      tweet_id: t.tweet_id,
-      text: t.text,
-      timestamp: t.timestamp,
-      permalink: t.permalink,
-      image_url: (t as { image_url?: string | null }).image_url ?? null,
-      pipeline_tag: "xactions",
-    }));
-  }
-
   return [];
 }
 
 interface CollectOpts {
   handles: string[];
   tier: NewsTier;
+  from?: string;
+  to?: string;
 }
 
 export async function collectFromXHandlesBrowser(
@@ -323,7 +384,14 @@ export async function collectFromXHandlesBrowser(
       const cleanHandle = stripHandle(handle);
       if (!cleanHandle) return [];
       const started = Date.now();
-      const tweets = await fetchSyndicationTweets(cleanHandle);
+      const browserTweets = await fetchBrowserUseTweets(cleanHandle, {
+        from: opts.from,
+        to: opts.to,
+      });
+      const tweets =
+        browserTweets.length > 0
+          ? browserTweets
+          : await fetchSyndicationTweets(cleanHandle);
       const fetch_latency_ms = Date.now() - started;
       return tweets.map((tw) => ({ tw, cleanHandle, fetch_latency_ms }));
     }),

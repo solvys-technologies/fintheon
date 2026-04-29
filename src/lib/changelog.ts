@@ -9,6 +9,52 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-29T18:00:00-04:00",
+    agent: "claude-code",
+    summary:
+      "v5.38.2 release prep: bumped app/update versions for deployment of the browser-session RiskFlow X intake, Refinement source grouping, and global legibility pass.",
+    files: [
+      "package.json",
+      "scripts/fintheon-update.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-29T17:58:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Refined RiskFlow source control after browser-harness migration: the worker now searches every active browser-backed X handle from the Refinement Engine instead of only Wire/Macro subsets, the Refinement source list separates @ handles from web sources, and the app base font size is raised by roughly 10% for better legibility.",
+    files: [
+      "backend-hono/src/services/source-accounts/source-accounts-service.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/index.ts",
+      "frontend/components/refinement/SourceAccountsManager.tsx",
+      "frontend/index.css",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-29T17:52:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Corrected RiskFlow X intake to match the stripped pipeline: Rettiwt and Agent Reach are no longer active worker fallbacks. Added a worker-owned persistent browser session for X/browser-harness intake, made X handle collection try the persistent x.com browser session before public syndication, removed XActions from that path, replaced Agent Reach RSS usage with an official-government RSS collector, and updated source-account/pipeline metadata to default X sources to browser control.",
+    files: [
+      "backend-hono/src/services/browser/persistent-session.ts",
+      "backend-hono/src/services/browser/index.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/x-handles-browser.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/official-gov-rss.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/index.ts",
+      "backend-hono/src/types/source-account.ts",
+      "backend-hono/src/services/source-accounts/source-accounts-service.ts",
+      "backend-hono/src/routes/source-accounts/handlers.ts",
+      "backend-hono/src/types/pipeline.ts",
+      "backend-hono/src/routes/admin/pipelines.ts",
+      "backend-hono/src/routes/admin/pipeline-stats.ts",
+      "backend-hono/src/services/riskflow/source-policy.ts",
+      "backend-hono/src/boot/services.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-29T17:06:00-04:00",
     agent: "codex",
     summary:

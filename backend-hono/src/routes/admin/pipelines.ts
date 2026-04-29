@@ -13,25 +13,17 @@ import type { PipelineState } from "../../types/pipeline.js";
 const app = new Hono();
 
 const PIPELINE_LABELS: Record<string, { label: string; description: string }> = {
+  "x-browser-session": {
+    label: "X Browser Session",
+    description: "Persistent browser-harness session for approved X accounts",
+  },
   "x-syndication": {
     label: "X Syndication",
-    description: "Ingest from tracked X accounts via Rettiwt polling",
-  },
-  "xactions": {
-    label: "X Actions",
-    description: "Ingest agent-sourced X content via browser harness",
-  },
-  "agent-reach-nitter": {
-    label: "Agent Reach",
-    description: "Ingest from agent-curated domains via nitter mirrors",
+    description: "Public X syndication fallback for approved X accounts",
   },
   "browser-harness": {
     label: "Browser Harness",
     description: "Direct browser-based content extraction",
-  },
-  "rettiwt-commentary": {
-    label: "Rettiwt Commentary",
-    description: "Commentary feed ingestion via Rettiwt API",
   },
   "economic-calendar": {
     label: "Economic Calendar",

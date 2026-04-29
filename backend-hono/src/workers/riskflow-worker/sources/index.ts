@@ -18,20 +18,21 @@
 // when those handles re-quote a headline.
 // [claude-code 2026-04-24] S35-T10: renamed dir from workers/news-worker. Tier-coordinator
 //   semantics unchanged; service log strings now emit "riskflow-worker".
+// [claude-code 2026-04-29] Rettiwt + Agent Reach removed from active worker
+// composition. X uses browser-harness/browser-use first; official gov RSS has
+// its own collector so no retired Nitter/RSS path can leak back in.
 // [claude-code 2026-04-19] S27-T7 (W2d): tier coordinators — compose source
-// collectors and hand off to persist.ts. Per-source failures are isolated so
-// one bad source never kills the tier (AgentReach pattern).
+// collectors and hand off to persist.ts.
 // [claude-code 2026-04-24] S34-T5: add DB-driven handle collectors — Wire in
 // Breaking tier, Macro in Standard tier — sourced from riskflow_source_accounts
 // via source-accounts-service (30s cache). Closes the Refinement Engine loop.
 
 import { collectFromBrowserHarness } from "./browser-harness.js";
-import { collectFromAgentReach } from "./agent-reach.js";
+import { collectFromOfficialGovRss } from "./official-gov-rss.js";
 import { collectFromXHandlesBrowser } from "./x-handles-browser.js";
 import { writeCollectedItems } from "../persist.js";
 import {
-  getWireHandles,
-  getMacroHandles,
+  getBrowserHandles,
 } from "../../../services/source-accounts/source-accounts-service.js";
 import type { CollectedNewsItem } from "./types.js";
 // [claude-code 2026-04-29] S48-T5: Kalshi whale-alert pipe wired into
@@ -77,27 +78,15 @@ async function safeCollect(
 }
 
 export async function runBreakingTier(): Promise<TierRunResult> {
-  // PRIMARY: Browserbase / Playwright-driven X.com timeline scrape per
-  // curated handle. Public Nitter mirrors are mostly dead, so this is the
-  // first attempt every tick. Returns tweet-granularity items keyed on
-  // tweet_id for clean dedupe.
-  const wireHandles = await getWireHandles().catch(() => []);
+  // Browser-harness / browser-use driven X.com scrape per curated handle.
+  // Rettiwt and Agent Reach are not fallbacks.
+  const wireHandles = await getBrowserHandles().catch(() => []);
   const primary = await safeCollect("x-handles-browser:wire", () =>
     collectFromXHandlesBrowser({ handles: wireHandles, tier: "breaking" }),
   );
 
-  // SECONDARY: agent-reach Nitter RSS — only fires if the primary returned
-  // nothing for a handle (Playwright crash, X login wall, etc.). Idempotent
-  // tweet_id collapsing means duplicates collapse if both win.
-  const fallback =
-    primary.items.length === 0 && wireHandles.length > 0
-      ? await safeCollect("agent-reach:wire-handles", () =>
-          collectFromAgentReach({ handles: wireHandles, tier: "breaking" }),
-        )
-      : { items: [] as CollectedNewsItem[], errors: 0 };
-
-  const items = [...primary.items, ...fallback.items];
-  const errors = primary.errors + fallback.errors;
+  const items = primary.items;
+  const errors = primary.errors;
   const ingested = await writeCollectedItems(items);
   return { ingested, errors };
 }
@@ -119,9 +108,9 @@ export async function runStandardTier(): Promise<TierRunResult> {
     // and post-filtered to titles starting with the canonical minutes prefix.
     // The press_monetary feed mixes minutes with intermeeting statements,
     // FAQ updates, and admin notes; TP only wants the actual meeting minutes.
-    safeCollect("agent-reach:fomc-minutes", async () => {
-      const items = await collectFromAgentReach({
-        rssFeeds: ["https://www.federalreserve.gov/feeds/press_monetary.xml"],
+    safeCollect("official-gov-rss:fomc-minutes", async () => {
+      const items = await collectFromOfficialGovRss({
+        feeds: ["https://www.federalreserve.gov/feeds/press_monetary.xml"],
         tier: "standard",
       });
       return items.filter((it) =>
@@ -129,24 +118,17 @@ export async function runStandardTier(): Promise<TierRunResult> {
       );
     }),
     // [claude-code 2026-04-27] Fed speech transcripts — full feed.
-    safeCollect("agent-reach:fed-speeches", () =>
-      collectFromAgentReach({
-        rssFeeds: ["https://www.federalreserve.gov/feeds/speeches.xml"],
+    safeCollect("official-gov-rss:fed-speeches", () =>
+      collectFromOfficialGovRss({
+        feeds: ["https://www.federalreserve.gov/feeds/speeches.xml"],
         tier: "standard",
       }),
     ),
-    // PRIMARY for macro handles — Browserbase/Playwright. Falls through to
-    // Nitter (next entry) only if the browser path returned nothing for a
-    // handle.
+    // Macro handles — browser-harness/browser-use only.
     safeCollect("x-handles-browser:macro", async () => {
-      const handles = await getMacroHandles();
+      const handles = await getBrowserHandles();
       if (handles.length === 0) return [];
       return collectFromXHandlesBrowser({ handles, tier: "standard" });
-    }),
-    safeCollect("agent-reach:macro-handles", async () => {
-      const handles = await getMacroHandles();
-      if (handles.length === 0) return [];
-      return collectFromAgentReach({ handles, tier: "standard" });
     }),
     // S48-T5: Kalshi whale alerts (Econ & Politics only). Pipeline-gated.
     safeCollect("kalshi-whale", async () => {

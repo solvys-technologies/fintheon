@@ -36,7 +36,6 @@ const BLOCKED_WEB_DOMAINS = [
 const SOCIAL_PERMALINK_DOMAINS = [
   "x.com",
   "twitter.com",
-  "nitter.net",
 ];
 
 const allowlistHandles = new Set<string>(APPROVED_X_HANDLES);
@@ -159,17 +158,6 @@ export function checkSourcePolicy(
   }
 
   const submittedHandle = extractHandleFromSubmittedBy(context.submittedBy);
-  if (
-    source === "CuratedTimeline" &&
-    context.pipeline === "rettiwt-commentary" &&
-    submittedHandle &&
-    allowlistHandles.has(submittedHandle)
-  ) {
-    return {
-      decision: "allowed",
-      reason: `approved commentary handle: @${submittedHandle}`,
-    };
-  }
 
   // Check X handles (case-insensitive)
   const handle = normalizeHandle(source);

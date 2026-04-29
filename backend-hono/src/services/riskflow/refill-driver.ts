@@ -66,6 +66,8 @@ export async function runRefillForSources(
         const items = await collectFromXHandlesBrowser({
           handles: [handle],
           tier: "standard",
+          from: opts.from,
+          to: opts.to,
         });
         const ingested = await writeCollectedItems(items);
         perSource.push({

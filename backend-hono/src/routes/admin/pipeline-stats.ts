@@ -30,11 +30,9 @@ import { getAllowlistSnapshot } from "../../services/riskflow/source-policy.js";
 const app = new Hono();
 
 const PIPELINE_LABELS: Record<string, string> = {
+  "x-browser-session": "X Browser Session",
   "x-syndication": "X Syndication",
-  "xactions": "X Actions",
-  "agent-reach-nitter": "Agent Reach",
   "browser-harness": "Browser Harness",
-  "rettiwt-commentary": "Rettiwt Commentary",
   "economic-calendar": "Economic Calendar",
   "kalshi-whale": "Kalshi Whale",
 };

@@ -82,6 +82,17 @@ export async function getAccountHandles(): Promise<string[]> {
   return active.map((a) => a.handle);
 }
 
+function isWebSourceHandle(handle: string): boolean {
+  return handle.includes(".") || handle.startsWith("http");
+}
+
+export async function getBrowserHandles(): Promise<string[]> {
+  const active = await getActiveAccounts();
+  return active
+    .filter((a) => a.method === "browser" && !isWebSourceHandle(a.handle))
+    .map((a) => a.handle);
+}
+
 export async function getWireHandles(): Promise<string[]> {
   const active = await getActiveAccounts();
   return active.filter((a) => a.category === "Wire").map((a) => a.handle);
@@ -96,7 +107,7 @@ export async function addAccount(
   handle: string,
   displayName: string | null,
   category: SourceAccountCategory,
-  method: SourceAccountMethod = "rettiwt",
+  method: SourceAccountMethod = "browser",
 ): Promise<SourceAccount | null> {
   const sb = getSupabaseClient();
   if (!sb) return null;

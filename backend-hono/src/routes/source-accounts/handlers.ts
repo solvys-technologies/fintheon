@@ -44,7 +44,7 @@ function validateMethod(value: unknown): {
   method?: SourceAccountMethod;
   error?: string;
 } {
-  const m = (value ?? "rettiwt") as string;
+  const m = (value ?? "browser") as string;
   if (!SOURCE_ACCOUNT_METHODS.includes(m as SourceAccountMethod)) {
     return {
       valid: false,
