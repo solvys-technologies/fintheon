@@ -13,7 +13,7 @@ import type {
   GovOfficialAssessment,
   MarketAnalystAssessment,
   HermesDeliberation,
-  HarperOpusScoring,
+  Harper21Scoring,
   DeliberationState,
   DeliberationPhase,
 } from "./agent-desk-types.js";

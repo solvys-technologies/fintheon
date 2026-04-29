@@ -9,13 +9,13 @@
 
 ## Agent Roster
 
-| Agent           | Role                                             |
-| --------------- | ------------------------------------------------ |
-| **Harper-Opus** | CAO — executive synthesis, full platform access  |
-| **Oracle**      | Prediction markets, probabilistic reasoning      |
-| **Feucht**      | Futures/risk, technical levels, execution        |
-| **Consul**      | Mega-cap fundamentals, earnings, sector rotation |
-| **Herald**      | Breaking news, social sentiment, headline risk   |
+| Agent          | Role                                             |
+| -------------- | ------------------------------------------------ |
+| **Harper-2.1** | CAO — executive synthesis, full platform access  |
+| **Oracle**     | Prediction markets, probabilistic reasoning      |
+| **Feucht**     | Futures/risk, technical levels, execution        |
+| **Consul**     | Mega-cap fundamentals, earnings, sector rotation |
+| **Herald**     | Breaking news, social sentiment, headline risk   |
 
 Protocol: "Harper orchestrates, Oracle analyzes, Feucht guards, Consul validates, Herald communicates"
 
@@ -75,7 +75,7 @@ Protocol: "Harper orchestrates, Oracle analyzes, Feucht guards, Consul validates
 
 ## API Endpoints (Key)
 
-- `POST /api/harper/chat` — Harper-Opus chat
+- `POST /api/harper/chat` — Harper-2.1 chat
 - `GET /api/riskflow/feed` — Scored news feed
 - `GET /api/riskflow/iv-aggregate` — IV score with VIX
 - `POST /api/data/brief/generate` — Trigger brief (MDB/ADB/PMDB/TWT)

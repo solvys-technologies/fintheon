@@ -16,8 +16,8 @@ import { transcribeWithOpenAI } from "./voice-whisper-client.js";
 
 const log = createLogger("VoiceService");
 
-const HARPER_VOICE_AGENT_ID = "harper-voice";
-const HARPER_VOICE_ID = "harper-voice";
+const HARPER_VOICE_AGENT_ID = "harper-2.1-voice";
+const HARPER_VOICE_ID = "harper-2.1-voice";
 
 const GREETING_PROMPT =
   "The user just opened the voice assistant. Give a 1-sentence greeting (max 12 words) and wait for their question. Do not begin analysis.";
@@ -170,7 +170,7 @@ export async function synthesizeGreeting(
     conversation_id: conversationId,
     user_message: GREETING_PROMPT,
     stream: true,
-    system_overrides: { model: selectModel("harper-voice").model },
+    system_overrides: { model: selectModel("harper-2.1-voice").model },
   });
 
   for await (const evt of stream) {
@@ -224,7 +224,7 @@ export async function* streamVoiceReply(
     conversation_id: conversationId,
     user_message: transcript,
     stream: true,
-    system_overrides: { model: selectModel("harper-voice").model },
+    system_overrides: { model: selectModel("harper-2.1-voice").model },
   });
 
   // Sentence-gated TTS: synthesize every complete sentence as soon as the

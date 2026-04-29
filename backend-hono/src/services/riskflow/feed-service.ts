@@ -190,6 +190,7 @@ function feedItemToRaw(item: FeedItem): RawRiskFlowItem {
     urgency: item.urgency,
     published_at: item.publishedAt,
     submitted_by: "feed-service",
+    ingest_pipeline: item.ingest_pipeline,
   };
 }
 

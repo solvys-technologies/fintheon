@@ -1200,6 +1200,32 @@ export async function handleGetSources(c: Context) {
 
     // NEW — per-user polling attribution (keyed by userId or "backend" sentinel)
     userPollStats: getAllUserPollStats(),
+
+    // S48-T1: method_breakdown — count of items per ingest_pipeline from scored items
+    method_breakdown: await (async () => {
+      try {
+        const sb = getSupabaseClient();
+        if (!sb) return null;
+        const sinceIso = new Date(
+          Date.now() - 24 * 60 * 60 * 1000,
+        ).toISOString();
+        const { data } = await sb
+          .from("scored_riskflow_items")
+          .select("ingest_pipeline")
+          .gte("published_at", sinceIso)
+          .limit(5000);
+        const breakdown: Record<string, number> = {};
+        for (const row of (data ?? []) as Array<{
+          ingest_pipeline: string | null;
+        }>) {
+          const p = row.ingest_pipeline || "unknown";
+          breakdown[p] = (breakdown[p] || 0) + 1;
+        }
+        return breakdown;
+      } catch {
+        return null;
+      }
+    })(),
   });
 }
 
@@ -1342,8 +1368,13 @@ export async function handleDoctor(c: Context) {
 
   const { forceRefreshPool } =
     await import("../../services/rettiwt-service.js");
-  const { setUserPollingState, recordUserPollSuccess, getUserPollStats } =
-    await import("../../services/riskflow/user-polling-registry.js");
+  const {
+    setUserPollingState,
+    recordUserPollSuccess,
+    getUserPollStats,
+    recordCookieRefresh,
+    getCookieOwner,
+  } = await import("../../services/riskflow/user-polling-registry.js");
   const { agentReachTick } =
     await import("../../services/riskflow/agent-reach-poller.js");
 
@@ -1358,7 +1389,11 @@ export async function handleDoctor(c: Context) {
   // 2. Ensure user is not killed
   setUserPollingState(userId, false);
 
-  // 3. Catchup: score backlog, seed cache, one Agent Reach tick
+  // 3. S48-T1: Record X cookie refresh for round-robin rotation
+  recordCookieRefresh(userId);
+  const cookieOwner = getCookieOwner();
+
+  // 4. Catchup: score backlog, seed cache, one Agent Reach tick
   // [claude-code 2026-04-18] S25-T3: intentionally does NOT call forcePoll() — the scheduled
   // feed-poller handles Rettiwt on its own cadence. Letting every user's Doctor click trigger
   // an extra Rettiwt poll would compound rate-limit exposure. Agent Reach is safe to tick here
@@ -1385,6 +1420,7 @@ export async function handleDoctor(c: Context) {
     sourcesHealthy: true,
     newLastSuccessAt: stats?.lastSuccessAt ?? null,
     poolRefreshed,
+    cookieOwner,
   });
 }
 

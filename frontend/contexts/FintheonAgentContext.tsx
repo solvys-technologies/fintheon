@@ -38,7 +38,7 @@ const now = () => new Date().toISOString();
 
 export const FINTHEON_AGENTS: FintheonAgent[] = [
   {
-    id: "harper-opus",
+    id: "harper-2.1",
     name: "Harper",
     nickname: null,
     sector: "CAO",
@@ -154,13 +154,13 @@ export function FintheonAgentProvider({ children }: { children: ReactNode }) {
     if (caoName && caoName !== "Harper") {
       setAgents((prev) =>
         prev.map((a) =>
-          a.id === "harper-opus"
+          a.id === "harper-2.1"
             ? { ...a, name: caoName, updated_at: now() }
             : a,
         ),
       );
       setActiveAgent((prev) =>
-        prev?.id === "harper-opus"
+        prev?.id === "harper-2.1"
           ? { ...prev, name: caoName, updated_at: now() }
           : prev,
       );

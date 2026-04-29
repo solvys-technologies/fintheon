@@ -1,10 +1,10 @@
 // [claude-code 2026-04-19] S27-T9 W1d: Smart Model Routing foundation — per-agent default routing table + env-var overrides.
 //   W2e (Claude-10) flips live across call sites and adds the budget/diagnostics layer.
-// [claude-code 2026-04-19] S27-T5 W2c: harper-voice model locked to qwen/qwen3.6-plus-preview:free (see QWEN_REASONING_LATEST rationale).
+// [claude-code 2026-04-19] S27-T5 W2c: harper-2.1-voice model locked to qwen/qwen3.6-plus-preview:free (see QWEN_REASONING_LATEST rationale).
 
 export type AgentId =
   | "harper"
-  | "harper-voice"
+  | "harper-2.1-voice"
   | "harper-debug" // [S28] Sonnet sub-agent spawned by Harper for bug triage / debug sessions.
   | "oracle"
   | "feucht"
@@ -32,7 +32,7 @@ export interface RoutingRule {
   cost_per_mtoken_out_usd: number;
 }
 
-// [claude-code 2026-04-19] S27-T5 W2c: locked the harper-voice model.
+// [claude-code 2026-04-19] S27-T5 W2c: locked the harper-2.1-voice model.
 //
 // Chose `qwen/qwen3.6-plus-preview:free` (April 2026). Rationale:
 //   - Free tier on OpenRouter / can be piped through Hermes sidecar at $0/token.
@@ -75,7 +75,7 @@ export const ROUTING_TABLE: RoutingRule[] = [
     cost_per_mtoken_out_usd: 75,
   },
   {
-    agent: "harper-voice",
+    agent: "harper-2.1-voice",
     model: QWEN_REASONING_LATEST,
     provider: "hermes-sidecar",
     max_input_tokens: 1_000_000,

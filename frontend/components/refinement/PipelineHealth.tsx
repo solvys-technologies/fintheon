@@ -1,7 +1,6 @@
 // [claude-code 2026-04-28] S48-T3: Pipeline health stats table replacing the former
 // Group Sensitivity NotchedFuse section. Renders per-pipeline rows with status dots,
-// headline count, error count, last seen, and uptime %. Columns are sortable via
-// click-to-sort header toggles. Doto numerals for count/uptime data.
+// headline count, error count, last seen, and uptime %. Columns are sortable.
 import { useState, useMemo } from "react";
 import type { PipelineRow } from "../../hooks/usePipelineStats";
 
@@ -15,23 +14,20 @@ interface Props {
 type SortField = "headline" | "error" | "uptime";
 type SortDir = "asc" | "desc";
 
-function statusDot(stat: PipelineRow): { color: string; label: string } {
-  if (!stat.enabled) return { color: "#52525b", label: "disabled" };
-  if (stat.uptimePct > 95) return { color: "#22c55e", label: "healthy" };
-  if (stat.uptimePct >= 50) return { color: "#c79f4a", label: "degraded" };
+function statusDot(s: PipelineRow): { color: string; label: string } {
+  if (!s.enabled) return { color: "#52525b", label: "disabled" };
+  if (s.uptimePct > 95) return { color: "#22c55e", label: "healthy" };
+  if (s.uptimePct >= 50) return { color: "#c79f4a", label: "degraded" };
   return { color: "#ef4444", label: "broken" };
 }
 
 function fmtLastSeen(iso: string | null): string {
   if (!iso) return "never";
-  const d = new Date(iso);
-  const now = Date.now();
-  const diffMin = Math.floor((now - d.getTime()) / 60_000);
+  const diffMin = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
   if (diffMin < 1) return "now";
   if (diffMin < 60) return `${diffMin}m ago`;
-  const diffH = Math.floor(diffMin / 60);
-  if (diffH < 24) return `${diffH}h ago`;
-  return `${Math.floor(diffH / 24)}d ago`;
+  if (diffMin < 1440) return `${Math.floor(diffMin / 60)}h ago`;
+  return `${Math.floor(diffMin / 1440)}d ago`;
 }
 
 const SORT_LABELS: Record<SortField, string> = {
@@ -39,6 +35,33 @@ const SORT_LABELS: Record<SortField, string> = {
   error: "ERR",
   uptime: "UP%",
 };
+const SORT_KEYS = {
+  headline: "headlineCount" as const,
+  error: "errorCount" as const,
+  uptime: "uptimePct" as const,
+};
+
+const TH_STYLE: React.CSSProperties = {
+  padding: "4px 6px",
+  textAlign: "right",
+  fontWeight: 600,
+  fontSize: 10,
+  textTransform: "uppercase",
+  letterSpacing: "0.08em",
+};
+
+const TD_TEXT: React.CSSProperties = {
+  padding: "5px 6px",
+  textAlign: "right",
+  fontFamily: "var(--font-data)",
+  fontSize: 12,
+  letterSpacing: "0.02em",
+};
+
+const ROW_BORDER =
+  "1px solid color-mix(in srgb, var(--fintheon-accent) 6%, transparent)";
+const SECTION_BORDER =
+  "1px dotted color-mix(in srgb, var(--fintheon-accent) 35%, transparent)";
 
 export function PipelineHealth({ stats, loading, error, onRetry }: Props) {
   const [sortField, setSortField] = useState<SortField | null>(null);
@@ -48,34 +71,21 @@ export function PipelineHealth({ stats, loading, error, onRetry }: Props) {
     if (!sortField) return stats;
     const dir = sortDir === "asc" ? 1 : -1;
     return [...stats].sort((a, b) => {
-      const key =
-        sortField === "headline"
-          ? "headlineCount"
-          : sortField === "error"
-            ? "errorCount"
-            : "uptimePct";
-      return (a[key] - b[key]) * dir;
+      const va = a[SORT_KEYS[sortField]];
+      const vb = b[SORT_KEYS[sortField]];
+      return (va - vb) * dir;
     });
   }, [stats, sortField, sortDir]);
 
   const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortField(field);
-      setSortDir("desc");
-    }
+    setSortField((prev) => (prev === field ? prev : field));
+    setSortDir((d) =>
+      sortField === field ? (d === "asc" ? "desc" : "asc") : "desc",
+    );
   };
 
   return (
-    <div
-      style={{
-        marginTop: 16,
-        paddingTop: 12,
-        borderTop:
-          "1px dotted color-mix(in srgb, var(--fintheon-accent) 35%, transparent)",
-      }}
-    >
+    <div style={{ marginTop: 16, paddingTop: 12, borderTop: SECTION_BORDER }}>
       <div
         style={{
           fontFamily: "var(--font-heading)",
@@ -174,16 +184,11 @@ export function PipelineHealth({ stats, loading, error, onRetry }: Props) {
                   key={field}
                   onClick={() => handleSort(field)}
                   style={{
-                    padding: "4px 6px",
-                    textAlign: "right",
-                    fontWeight: 600,
+                    ...TH_STYLE,
                     color:
                       sortField === field
                         ? "var(--fintheon-accent)"
                         : "var(--fintheon-muted)",
-                    fontSize: 10,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
                     fontFamily: "var(--font-mono)",
                     cursor: "pointer",
                     userSelect: "none",
@@ -195,13 +200,9 @@ export function PipelineHealth({ stats, loading, error, onRetry }: Props) {
               ))}
               <th
                 style={{
-                  padding: "4px 6px",
-                  textAlign: "right",
-                  fontWeight: 600,
+                  ...TH_STYLE,
                   color: "var(--fintheon-muted)",
-                  fontSize: 10,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
+                  textAlign: "right",
                 }}
               >
                 Last
@@ -214,10 +215,7 @@ export function PipelineHealth({ stats, loading, error, onRetry }: Props) {
               return (
                 <tr
                   key={stat.pipeline_id}
-                  style={{
-                    borderBottom:
-                      "1px solid color-mix(in srgb, var(--fintheon-accent) 6%, transparent)",
-                  }}
+                  style={{ borderBottom: ROW_BORDER }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLElement).style.background =
                       "color-mix(in srgb, var(--fintheon-accent) 4%, transparent)";
@@ -248,25 +246,12 @@ export function PipelineHealth({ stats, loading, error, onRetry }: Props) {
                       }}
                     />
                   </td>
-                  <td
-                    style={{
-                      padding: "5px 6px",
-                      textAlign: "right",
-                      fontFamily: "var(--font-data)",
-                      fontSize: 12,
-                      letterSpacing: "0.02em",
-                      color: "var(--fintheon-text)",
-                    }}
-                  >
+                  <td style={{ ...TD_TEXT, color: "var(--fintheon-text)" }}>
                     {stat.headlineCount}
                   </td>
                   <td
                     style={{
-                      padding: "5px 6px",
-                      textAlign: "right",
-                      fontFamily: "var(--font-data)",
-                      fontSize: 12,
-                      letterSpacing: "0.02em",
+                      ...TD_TEXT,
                       color:
                         stat.errorCount > 0
                           ? "var(--fintheon-bearish)"
@@ -275,16 +260,7 @@ export function PipelineHealth({ stats, loading, error, onRetry }: Props) {
                   >
                     {stat.errorCount}
                   </td>
-                  <td
-                    style={{
-                      padding: "5px 6px",
-                      textAlign: "right",
-                      fontFamily: "var(--font-data)",
-                      fontSize: 12,
-                      letterSpacing: "0.02em",
-                      color: dot.color,
-                    }}
-                  >
+                  <td style={{ ...TD_TEXT, color: dot.color }}>
                     {stat.uptimePct.toFixed(1)}%
                   </td>
                   <td

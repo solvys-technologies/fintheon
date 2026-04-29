@@ -9,13 +9,7 @@
 // [claude-code 2026-04-18] S24-T4: Rebuilt scoring calibration workbench.
 // [claude-code 2026-03-27] S2-T7: Refinement Engine
 import { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  ChevronDown,
-  ChevronRight,
-  RefreshCw,
-  Wrench,
-  BarChart3,
-} from "lucide-react";
+import { RefreshCw, Wrench, BarChart3 } from "lucide-react";
 import { isRefinementEditUnlocked } from "../../lib/dev-settings-auth";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import type { CalibrationEntry } from "../../../backend-hono/src/types/calibration";
@@ -28,6 +22,7 @@ import { QuickWeightEditor } from "./QuickWeightEditor";
 import { CommentatorManager } from "./CommentatorManager";
 import { SourceAccountsManager } from "./SourceAccountsManager";
 import { EconFiltersManager } from "./EconFiltersManager";
+import { EconFilterEditor } from "./EconFilterEditor";
 import { CatalystStatsDrawer } from "./CatalystStatsDrawer";
 import { PipelineHealth } from "./PipelineHealth";
 import { PipelineToggles } from "./PipelineToggles";
@@ -645,6 +640,8 @@ export function RefinementEngine() {
                 filters={econFilters}
                 onFiltersChanged={fetchEconFilters}
               />
+              {/* [claude-code 2026-04-28] S48-T3: Econ filter editor table */}
+              <EconFilterEditor />
             </AdvancedPane>
           </div>
 

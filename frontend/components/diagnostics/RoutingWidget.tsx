@@ -28,7 +28,7 @@ const AGENT_LABEL: Record<string, string> = {
   feucht: "Feucht",
   consul: "Consul",
   herald: "Herald",
-  "harper-voice": "Harper-Voice",
+  "harper-2.1-voice": "Harper-2.1-Voice",
 };
 
 const AGENT_ORDER = ["harper", "oracle", "feucht", "consul", "herald"];

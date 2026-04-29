@@ -83,6 +83,7 @@ export function createRiskFlowBulkRoutes() {
     if (!sb) return c.json({ error: "supabase_unavailable" }, 503);
 
     const days = Math.max(1, Math.min(Number(c.req.query("days") ?? 30), 90));
+    const typeFilter = c.req.query("type"); // S48-T1: optional "web" or "social" filter
     const sinceIso = new Date(
       Date.now() - days * 24 * 60 * 60 * 1000,
     ).toISOString();
@@ -166,7 +167,13 @@ export function createRiskFlowBulkRoutes() {
     }
 
     const list = Array.from(counts.values()).sort((a, b) => b.count - a.count);
-    return c.json({ days, stats: list });
+
+    // S48-T1: optional type filter — only return sources of the specified polling_type
+    const filtered = typeFilter
+      ? list.filter((s) => s.polling_type === typeFilter)
+      : list;
+
+    return c.json({ days, stats: filtered });
   });
 
   // POST /bulk-delete — mass delete by sources / category / date range.

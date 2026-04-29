@@ -42,7 +42,7 @@ export function createContextBankRoutes(): Hono {
   app.post("/brief", handleSubmitBrief);
 
   // ─── Agent Memory Bank (S8-T8) ──────────────────────────────
-  // GET /memories?agent=harper-opus&type=observation — get context for agent
+  // GET /memories?agent=harper-2.1&type=observation — get context for agent
   app.get("/memories", handleGetAgentMemories);
 
   // POST /memories — save a single memory entry

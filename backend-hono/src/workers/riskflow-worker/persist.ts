@@ -161,6 +161,7 @@ export async function writeCollectedItems(
     submitted_by: "riskflow-worker",
     fetched_at: item.fetched_at,
     fetch_latency_ms: item.fetch_latency_ms,
+    ingest_pipeline: item.ingest_pipeline ?? null,
   }));
 
   try {

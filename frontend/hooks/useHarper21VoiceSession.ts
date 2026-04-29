@@ -5,12 +5,12 @@
 // React context dependency.
 import { useCallback, useEffect, useState } from "react";
 import {
-  getActiveHarperVoiceSession,
-  startHarperVoiceSession,
-  stopHarperVoiceSession,
-  type HarperVoiceSession,
-  type HarperVoiceTrigger,
-} from "../lib/harper-voice";
+  getActiveHarper21VoiceSession,
+  startHarper21VoiceSession,
+  stopHarper21VoiceSession,
+  type Harper21VoiceSession,
+  type Harper21VoiceTrigger,
+} from "../lib/harper-2.1-voice";
 import { ensureVoicePermissions } from "../lib/system-permissions";
 
 export interface AgentResponseEventDetail {
@@ -30,13 +30,13 @@ export function emitAgentResponse(detail: AgentResponseEventDetail) {
   );
 }
 
-export function useHarperVoiceSession() {
-  const [session, setSession] = useState<HarperVoiceSession | null>(null);
+export function useHarper21VoiceSession() {
+  const [session, setSession] = useState<Harper21VoiceSession | null>(null);
   const [starting, setStarting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    getActiveHarperVoiceSession().then((s) => {
+    getActiveHarper21VoiceSession().then((s) => {
       if (!cancelled) setSession(s);
     });
     return () => {
@@ -44,14 +44,14 @@ export function useHarperVoiceSession() {
     };
   }, []);
 
-  const start = useCallback(async (trigger: HarperVoiceTrigger) => {
+  const start = useCallback(async (trigger: Harper21VoiceTrigger) => {
     setStarting(true);
     try {
       // Permission may already be granted by the onboarding flow; this is a
       // belt-and-braces check so the live triggers still work before
       // onboarding ships.
       await ensureVoicePermissions();
-      const s = await startHarperVoiceSession(trigger);
+      const s = await startHarper21VoiceSession(trigger);
       setSession(s);
       if (s) {
         emitAgentResponse({
@@ -67,7 +67,7 @@ export function useHarperVoiceSession() {
   }, []);
 
   const stop = useCallback(async () => {
-    await stopHarperVoiceSession();
+    await stopHarper21VoiceSession();
     setSession(null);
     emitAgentResponse({ agent: "coach", isSpeaking: false, open: false });
   }, []);

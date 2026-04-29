@@ -387,3 +387,54 @@ cd backend-hono && DRY_RUN=true bun run scripts/backfill-econ-from-fj.ts
 ```
 [v5.35.0] feat: T1 econ pipeline fix + backfill + data layer — fixed 5 blocking points, 21-day FJ X backfill, ingest_pipeline migration, pipeline-gate service, Doctor X-cookie refresh
 ```
+
+---
+
+## Debrief (2026-04-29 13:56 UTC)
+
+### Completed
+
+| Step                         | File(s)                                                             | Notes                                                                                                                                                                                                                                                                                                                                                                     |
+| ---------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 — Migration                | `supabase/migrations/20260429_pipeline_tracking.sql`                | Applied to production Supabase via pg Pool. `ingest_pipeline` columns exist on both `raw_riskflow_items` and `scored_riskflow_items`. `ingest_pipeline_state` seeded with 6 rows, all enabled.                                                                                                                                                                            |
+| 2 — Types                    | `backend-hono/src/types/pipeline.ts`, `riskflow.ts`                 | `IngestPipeline` union type (7 values incl `kalshi-whale` for T2). `PipelineState` and `PipelineStats` interfaces. `ingest_pipeline?: string` added to `FeedItem`, `RawRiskFlowItem`, `ScoredRiskFlowItem`.                                                                                                                                                               |
+| 3 — Fix 1 (table redirect)   | `econ-bridge.ts`                                                    | `injectEconPrintToFeed()` now writes to `raw_riskflow_items` (not `news_feed_items`), sets `url=""` and `ingest_pipeline="economic-calendar"`. Gates at entry via `isPipelineEnabled("economic-calendar")`. Duplicate check moved to `raw_riskflow_items`.                                                                                                                |
+| 3 — Fix 2 (narrative gate)   | `scorer-tagging.ts`                                                 | 8 new narrative keyword patterns added: `gdp`, `industrial-output`, `consumer-sentiment`, `manufacturing-pmi`, `retail-activity`, `trade-flows`, `capital-goods`, `housing-activity`.                                                                                                                                                                                     |
+| 3 — Fix 3 (market relevance) | `content-guard.ts`                                                  | 14 TradingView descriptive event titles added to `MARKET_KEYWORDS` regex (Gross Domestic Product, Consumer Price Index, ISM Manufacturing, etc.).                                                                                                                                                                                                                         |
+| 3 — Fix 4 (sourceless purge) | `central-scorer.ts`                                                 | `"EconomicCalendar"` added to `TRUSTED_SOURCELESS` array so econ prints without URLs survive the source-link purge.                                                                                                                                                                                                                                                       |
+| 3 — Fix 5 (dead fetch path)  | `feed-service.ts`                                                   | `fetchFreshFeed()` now called inside `warmCacheFromDB()`. Econ items merge into cache alongside scored DB items on boot.                                                                                                                                                                                                                                                  |
+| 4 — Backfill script          | `backend-hono/scripts/backfill-econ-from-fj.ts`                     | Dry-run verified: 198 events found in `economic_events` across 21 days (Apr 8–29). Scans `raw_riskflow_items` for EconomicCalendar/FJ tweets, matches via `matchTweetToEvent`, extracts via `extractActualFromText`. Upserts via `writeEconPrint` with SHA-256 event_key idempotency.                                                                                     |
+| 5 — Pipeline gate            | `backend-hono/src/services/riskflow/pipeline-gate.ts`               | `isPipelineEnabled()` with 30s in-memory cache TTL. Degrades to all-true if Supabase unavailable. `refreshPipelineState()` reads `ingest_pipeline_state` table. `clearPipelineCache()` for PATCH invalidation.                                                                                                                                                            |
+| 5 — Pipeline stats           | `backend-hono/src/services/riskflow/pipeline-stats.ts`              | `computePipelineStats(hours)` queries `raw_riskflow_items` grouped by `ingest_pipeline`. Returns headline_count, last_success_at per pipeline.                                                                                                                                                                                                                            |
+| 6 — Ingest tags              | 8 files across worker + services                                    | All 6 ingest paths tagged: `x-syndication` (syndication.twitter.com), `xactions` (XActions fallback via `pipeline_tag` on `ExtractedTweet`), `agent-reach-nitter`, `browser-harness`, `rettiwt-commentary`, `economic-calendar` (econ-bridge + economic-feed). `persist.ts` passes `ingest_pipeline` through to DB insert. `writeRawItems` SQL updated to include column. |
+| 7 — Admin routes             | `routes/admin/pipelines.ts`, `pipeline-stats.ts`, `routes/index.ts` | `GET /api/admin/pipelines` returns all 6 rows. `PATCH /api/admin/pipelines/:id` toggles `enabled` + clears pipeline cache. `GET /api/admin/pipeline-stats?hours=24` returns per-pipeline aggregate. All superadmin-gated in index.ts.                                                                                                                                     |
+| 8 — Source endpoints         | `routes/riskflow/handlers.ts`, `routes/admin/riskflow-bulk.ts`      | `GET /api/riskflow/sources` now includes `method_breakdown` (count per `ingest_pipeline` from scored items, last 24h). `GET /api/admin/riskflow/source-stats` accepts `?type=web` query param to filter to web polling_type only.                                                                                                                                         |
+| 9 — Doctor X-cookie          | `user-polling-registry.ts`, `routes/riskflow/handlers.ts`           | `cookieRefreshedAt` field on `UserPollingEntry`. `recordCookieRefresh(userId)` records timestamp + increments contributions. `getCookieOwner()` returns round-robin cookie owner (hourly cycle across valid users). Doctor response includes `cookieOwner`.                                                                                                               |
+| 10 — Build + changelog       | `src/lib/changelog.ts`                                              | Backend `bun run build` passes. Frontend `tsc --noEmit` passes. Changelog entry added with all 25 modified/created files.                                                                                                                                                                                                                                                 |
+
+### Verification Results
+
+```
+Backend build:        PASS
+Frontend typecheck:   PASS
+GET  /api/admin/pipelines             → 6 rows, all enabled
+PATCH /api/admin/pipelines/:id        → toggles enabled, returns updated row
+GET  /api/admin/pipeline-stats?h=24   → 747 items (historic, tagged "unknown")
+GET  /api/riskflow/sources            → includes method_breakdown: {}
+GET  /api/econ/active-watch           → {events: []} (no events in window)
+Backfill dry-run                      → 198 events found, 0 tweets matched (no calendared items in raw_riskflow_items)
+```
+
+### Divergences from Plan
+
+- **XActions pipeline_tag**: The brief asked for separate `"x-syndication"` vs `"xactions"` tags in the same `x-handles-browser.ts` file. Implemented via `pipeline_tag` field on `ExtractedTweet` interface — syndication items default to `"x-syndication"`, XActions fallback items explicitly tagged `"xactions"`. The `collectFromXHandlesBrowser` function uses `tw.pipeline_tag || "x-syndication"` to set `ingest_pipeline` on `CollectedNewsItem`.
+- **Migration application**: Brief specified Supabase migration file. Applied via direct pg Pool connection because `supabase-js` client lacks DDL support. Migration file retained for version control and future `supabase db push`.
+- **Backfill scope**: Brief specified 14 event types, ~35 events in 21 days. Actual calendar contained 198 events (includes all event types, not just the 14 priority types). Backfill script scans both EconomicCalendar raw items AND FJ-tweet matched events for maximum coverage.
+- **No file exceeds 300 lines**: All new files verified: `pipeline-gate.ts` (59 lines), `pipeline-stats.ts` (67 lines), `pipelines.ts` route (72 lines), `pipeline-stats.ts` route (27 lines), `pipeline.ts` types (33 lines).
+
+### Known States
+
+- Historic items in `raw_riskflow_items` and `scored_riskflow_items` have `ingest_pipeline = NULL` (column didn't exist before migration). Pipeline stats show these as `"unknown"`. New items from all 6 paths will carry the correct tag.
+- `economic_events` table has 198 rows covering the 21-day window (populated by `econ-calendar-populator`). Only 1 event has an `actual` value — the pipeline fix (Step 3) enables new prints to flow through.
+- Rettiwt is inert (all functions hardwired no-op since S27-T4) — not re-enabled per brief's Known Issues.
+- X-cookie round-robin relies on Doctor button usage by team members. Initial state: no cookies refreshed, `getCookieOwner()` returns null.

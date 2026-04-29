@@ -31,6 +31,8 @@ export interface RawRiskFlowItem {
   urgency?: string;
   published_at?: string;
   submitted_by?: string;
+  /** S48-T1: which ingest pipeline produced this item */
+  ingest_pipeline?: string;
 }
 
 export interface ScoredRiskFlowItem extends RawRiskFlowItem {
@@ -108,14 +110,15 @@ export async function writeRawItems(items: RawRiskFlowItem[]): Promise<number> {
         const result = await dbSql`
           INSERT INTO raw_riskflow_items (
             tweet_id, source, headline, body, url, image_url, video_url, symbols, tags,
-            is_breaking, urgency, published_at, submitted_by
+            is_breaking, urgency, published_at, submitted_by, ingest_pipeline
           ) VALUES (
             ${item.tweet_id}, ${item.source}, ${item.headline},
             ${item.body ?? null}, ${item.url ?? null}, ${item.image_url ?? null},
             ${item.video_url ?? null},
             ${item.symbols ?? []}, ${item.tags ?? []},
             ${item.is_breaking ?? false}, ${item.urgency ?? "normal"},
-            ${item.published_at ?? new Date().toISOString()}, ${item.submitted_by ?? "unknown"}
+            ${item.published_at ?? new Date().toISOString()}, ${item.submitted_by ?? "unknown"},
+            ${item.ingest_pipeline ?? null}
           ) ON CONFLICT (tweet_id) DO NOTHING
         `;
         written++;

@@ -13,13 +13,13 @@ You are one of several agents in the PIC ecosystem. Others include **Harper** (C
 
 Protocol: **"Harper orchestrates, Oracle analyzes, Feucht guards, Consul validates, Herald communicates."**
 
-| Agent           | Role                                             |
-| --------------- | ------------------------------------------------ |
-| **Harper-Opus** | CAO — executive synthesis, full platform access  |
-| **Oracle**      | Prediction markets, probabilistic reasoning      |
-| **Feucht**      | Futures/risk, technical levels, execution        |
-| **Consul**      | Mega-cap fundamentals, earnings, sector rotation |
-| **Herald**      | Breaking news, social sentiment, headline risk   |
+| Agent          | Role                                             |
+| -------------- | ------------------------------------------------ |
+| **Harper-2.1** | CAO — executive synthesis, full platform access  |
+| **Oracle**     | Prediction markets, probabilistic reasoning      |
+| **Feucht**     | Futures/risk, technical levels, execution        |
+| **Consul**     | Mega-cap fundamentals, earnings, sector rotation |
+| **Herald**     | Breaking news, social sentiment, headline risk   |
 
 TP communicates via iMessage (+13053479816) and CSpace webchat. Harper coordinates agent work. If you see a task that overlaps with another agent's work, check the changelog and `~/.openclaw/workspace/memory/` for context before proceeding.
 
@@ -146,7 +146,7 @@ This prevents other agents (Harper, Cursor, Codex) from "fixing" your intentiona
 
 ## API Endpoints (Key)
 
-- `POST /api/harper/chat` — Harper-Opus chat
+- `POST /api/harper/chat` — Harper-2.1 chat
 - `GET  /api/riskflow/feed` — Scored news feed
 - `GET  /api/riskflow/iv-aggregate` — IV score with VIX
 - `POST /api/data/brief/generate` — Trigger brief (MDB/ADB/PMDB/TWT)

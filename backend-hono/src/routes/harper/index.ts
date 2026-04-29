@@ -50,7 +50,7 @@ export function createHarperRoutes() {
     const usingVProxy = isVProxyEnabled();
     return c.json({
       available,
-      agent: "harper-opus",
+      agent: "harper-2.1",
       model: usingVProxy
         ? (process.env.VPROXY_ANTHROPIC_MODEL ?? "claude-opus-4-6")
         : "claude-opus-local",
@@ -407,7 +407,7 @@ export function createHarperRoutes() {
       if (!conversation) {
         conversation = await conversationStore.createConversation(userId, {
           title: message.slice(0, 60),
-          model: "harper-opus",
+          model: "harper-2.1",
         });
       }
 
@@ -416,7 +416,7 @@ export function createHarperRoutes() {
         conversationId: conversation.id,
         role: "user",
         content: message,
-        model: "harper-opus",
+        model: "harper-2.1",
       });
 
       // VProxy pre-flight — if Local selected but VProxy is down, stream a friendly error
@@ -460,7 +460,7 @@ export function createHarperRoutes() {
       cognition.step(
         "agent-route",
         `Harper (${providerLabel})`,
-        `Persona: ${body.persona ?? "harper-opus"}`,
+        `Persona: ${body.persona ?? "harper-2.1"}`,
       );
       cognition.step(
         "gateway-call",
@@ -502,7 +502,7 @@ export function createHarperRoutes() {
 
       return response;
     } catch (error) {
-      console.error(`[HarperOpus][${requestId}] Handler error:`, error);
+      console.error(`[Harper21][${requestId}] Handler error:`, error);
       cognition.done();
       return c.json(
         {

@@ -86,7 +86,7 @@ export async function createHarperAgent(
   }
 
   return createAgent({
-    name: "harper-opus",
+    name: "harper-2.1",
     description:
       "Chief Agentic Officer — coordinates PIC agent network, runs tools, manages the Fintheon platform",
     systemPrompt,
@@ -234,7 +234,7 @@ export async function streamHarperChat(
   return uiStreamToSSEResponse(stream, {
     "X-Conversation-Id": options.conversationId,
     "X-Request-Id": requestId,
-    "X-Hermes-Agent": "harper-opus",
+    "X-Hermes-Agent": "harper-2.1",
     ...responseHeaders,
   });
 }

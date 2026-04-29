@@ -23,11 +23,15 @@ CREATE TABLE IF NOT EXISTS ingest_pipeline_state (
 );
 
 -- Seed default rows
+-- [claude-code 2026-04-29] S48-T5: added kalshi-whale to seed so the toggle
+-- shows up in the Refinement Engine pipeline list immediately. Default
+-- enabled=true matches every other pipeline.
 INSERT INTO ingest_pipeline_state (pipeline_id, enabled) VALUES
   ('x-syndication', true),
   ('xactions', true),
   ('agent-reach-nitter', true),
   ('browser-harness', true),
   ('rettiwt-commentary', true),
-  ('economic-calendar', true)
+  ('economic-calendar', true),
+  ('kalshi-whale', true)
 ON CONFLICT (pipeline_id) DO NOTHING;

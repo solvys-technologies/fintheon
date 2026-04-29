@@ -92,7 +92,7 @@ export function createDispatchRoute() {
       const title = (context.title ?? `${source} dispatch`).slice(0, 60);
       const conversation = await createConversation(userId, {
         title,
-        model: "harper-opus",
+        model: "harper-2.1",
         metadata: { dispatch: { source, sourceId } },
       });
 
@@ -100,7 +100,7 @@ export function createDispatchRoute() {
         conversationId: conversation.id,
         role: "user",
         content: seed,
-        model: "harper-opus",
+        model: "harper-2.1",
       });
 
       log.info("dispatch.created", {

@@ -1,3 +1,4 @@
+// [claude-code 2026-04-28] S48-T1: Added cookieRefreshedAt field for Doctor X-cookie round-robin tracking
 // [claude-code 2026-04-11] Per-user RiskFlow killswitch + round-robin polling owner registry
 // [claude-code 2026-04-18] S25-T2: lifted from cosmetic owner tracker to functional — added
 // lastSuccessAt/totalContributions so Team Card can show "Polled Nm ago" per user.
@@ -8,6 +9,8 @@ export interface UserPollingEntry {
   lastPollAt: number | null;
   lastSuccessAt: number | null;
   totalContributions: number;
+  /** S48-T1: last time this user's X cookie was refreshed via Doctor */
+  cookieRefreshedAt: number | null;
 }
 
 const registry = new Map<string, UserPollingEntry>();
@@ -72,6 +75,7 @@ export function setUserPollingState(userId: string, killed: boolean): void {
     lastPollAt: existing?.lastPollAt ?? null,
     lastSuccessAt: existing?.lastSuccessAt ?? null,
     totalContributions: existing?.totalContributions ?? 0,
+    cookieRefreshedAt: existing?.cookieRefreshedAt ?? null,
   });
 
   // If user killed their feed and they were the owner, advance to next
@@ -107,6 +111,7 @@ export function recordUserPollSuccess(userId: string | null): void {
       lastPollAt: now,
       lastSuccessAt: now,
       totalContributions: 1,
+      cookieRefreshedAt: null,
     });
   }
 }
@@ -126,6 +131,7 @@ export function recordUserPollAttempt(userId: string | null): void {
       lastPollAt: now,
       lastSuccessAt: null,
       totalContributions: 0,
+      cookieRefreshedAt: null,
     });
   }
 }
@@ -135,6 +141,8 @@ export interface UserPollStats {
   lastSuccessAt: string | null;
   totalContributions: number;
   currentlyOwner: boolean;
+  /** S48-T1: last time this user refreshed their X cookie via Doctor */
+  cookieRefreshedAt: string | null;
 }
 
 /** Snapshot every user's polling stats — for /api/riskflow/sources response. */
@@ -150,6 +158,9 @@ export function getAllUserPollStats(): Record<string, UserPollStats> {
         : null,
       totalContributions: entry.totalContributions,
       currentlyOwner: userId === currentOwnerId,
+      cookieRefreshedAt: entry.cookieRefreshedAt
+        ? new Date(entry.cookieRefreshedAt).toISOString()
+        : null,
     };
   }
   return out;
@@ -168,7 +179,53 @@ export function getUserPollStats(userId: string): UserPollStats | null {
       : null,
     totalContributions: entry.totalContributions,
     currentlyOwner: userId === currentOwnerId,
+    cookieRefreshedAt: entry.cookieRefreshedAt
+      ? new Date(entry.cookieRefreshedAt).toISOString()
+      : null,
   };
+}
+
+/** S48-T1: Record an X cookie refresh event for a user (Doctor button). */
+export function recordCookieRefresh(userId: string): void {
+  const now = Date.now();
+  const existing = registry.get(userId);
+  if (existing) {
+    existing.cookieRefreshedAt = now;
+    existing.lastSeen = now;
+    existing.totalContributions++;
+  } else {
+    registry.set(userId, {
+      killed: false,
+      lastSeen: now,
+      lastPollAt: null,
+      lastSuccessAt: null,
+      totalContributions: 1,
+      cookieRefreshedAt: now,
+    });
+  }
+}
+
+/**
+ * S48-T1: Round-robin cookie owner selection.
+ * Returns the user who should provide the active X cookie for this polling cycle.
+ * Cycles hourly across all users with a recent cookie refresh.
+ */
+export function getCookieOwner(): string | null {
+  const now = Date.now();
+  const HOUR_MS = 60 * 60_000;
+  const valid = Array.from(registry.entries())
+    .filter(([, e]) => {
+      if (e.killed || !e.cookieRefreshedAt) return false;
+      return now - e.cookieRefreshedAt < HOUR_MS;
+    })
+    .map(([id]) => id)
+    .sort();
+
+  if (valid.length === 0) return null;
+
+  // Round-robin: pick based on hour bucket
+  const hourBucket = Math.floor(now / HOUR_MS);
+  return valid[hourBucket % valid.length] ?? valid[0];
 }
 
 export function getUserPollingState(userId: string): boolean {

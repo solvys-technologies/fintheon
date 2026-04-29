@@ -1,9 +1,11 @@
+// [claude-code 2026-04-28] S48-T3: Added econ countdown test button
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — developer settings tab
-import React from "react";
+import React, { useState, useRef, useCallback } from "react";
 import Toggle from "../Toggle";
 import { Button } from "../ui/Button";
 import { RiskFlowSettings } from "./RiskFlowSettings";
 import { DevPasswordGate } from "./DevPasswordGate";
+import { CountdownFuse } from "../shared/CountdownFuse";
 
 interface DeveloperTabProps {
   devAuthenticated: boolean;
@@ -26,6 +28,35 @@ export function DeveloperTab({
   developerSettings,
   setDeveloperSettings,
 }: DeveloperTabProps) {
+  const [countdownTestActive, setCountdownTestActive] = useState(false);
+  const [countdownPhase, setCountdownPhase] = useState<
+    "idle" | "running" | "done"
+  >("idle");
+  const [testSeconds, setTestSeconds] = useState(60);
+  const testTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startCountdownTest = useCallback(() => {
+    setCountdownTestActive(true);
+    setCountdownPhase("running");
+    setTestSeconds(60);
+    testTimerRef.current = setInterval(() => {
+      setTestSeconds((s) => {
+        if (s <= 1) {
+          if (testTimerRef.current) clearInterval(testTimerRef.current);
+          setCountdownPhase("done");
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+  }, []);
+
+  const closeCountdownTest = useCallback(() => {
+    if (testTimerRef.current) clearInterval(testTimerRef.current);
+    setCountdownTestActive(false);
+    setCountdownPhase("idle");
+  }, []);
+
   if (!devAuthenticated) {
     return <DevPasswordGate onAuthenticated={onAuthenticated} />;
   }
@@ -34,6 +65,52 @@ export function DeveloperTab({
     <div className="space-y-6">
       {/* RiskFlow Settings — new T6 section */}
       <RiskFlowSettings />
+
+      {/* S48-T3: Econ Countdown Test */}
+      <section>
+        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
+          Econ Countdown Test
+        </h3>
+        <div className="flex items-center gap-3">
+          <Button
+            variant={countdownTestActive ? "secondary" : "primary"}
+            onClick={startCountdownTest}
+            disabled={countdownTestActive}
+            className="text-xs"
+          >
+            {countdownPhase === "running"
+              ? `Running (${testSeconds}s)...`
+              : "Test 60s Countdown"}
+          </Button>
+          {countdownTestActive && (
+            <Button
+              variant="secondary"
+              onClick={closeCountdownTest}
+              className="text-xs"
+            >
+              Cancel
+            </Button>
+          )}
+        </div>
+        <p className="text-xs text-gray-500 mt-1">
+          Simulates a full countdown lifecycle: 60s drain, blink, beat/miss/par
+          result
+        </p>
+        {countdownTestActive && (
+          <div style={{ marginTop: 12 }}>
+            <CountdownFuse
+              eventName="NFP (TEST)"
+              countdownSeconds={60}
+              forecast="165K"
+              actual={countdownPhase === "done" ? "175K" : null}
+              previous="142K"
+              beatMiss={countdownPhase === "done" ? "beat" : null}
+              floating
+              onClose={closeCountdownTest}
+            />
+          </div>
+        )}
+      </section>
 
       {/* Existing Developer Settings below */}
       <section>

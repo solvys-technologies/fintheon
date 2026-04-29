@@ -158,6 +158,12 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
 
   const totalCount = stats.reduce((sum, s) => sum + s.count, 0);
 
+  // [claude-code 2026-04-28] S48-T3: web-only sources filtered for dedicated section
+  const webSources = useMemo(
+    () => stats.filter((s) => s.polling_type === "web"),
+    [stats],
+  );
+
   const toggleSource = (source: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -434,6 +440,81 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
             </div>
           ))}
           {grouped.length > 0 && <div aria-hidden="true" style={RULER_STYLE} />}
+        </div>
+
+        {/* [claude-code 2026-04-28] S48-T3: Web URL source section — filtered to polling_type: "web" */}
+        <div
+          style={{
+            marginTop: 24,
+            paddingTop: 12,
+            borderTop: "1px solid var(--fintheon-glass-border)",
+          }}
+        >
+          <h3
+            style={{
+              fontFamily: "var(--font-heading)",
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "var(--fintheon-accent)",
+              marginBottom: 6,
+            }}
+          >
+            WEB SOURCES
+          </h3>
+          {webSources.length === 0 ? (
+            <p
+              style={{
+                fontSize: 10,
+                color: "var(--fintheon-muted)",
+                fontFamily: "var(--font-body)",
+              }}
+            >
+              No web sources ingested in this window
+            </p>
+          ) : (
+            <div className="flex flex-col">
+              {webSources.map((s) => (
+                <div
+                  key={s.source}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "2px 4px",
+                    borderBottom:
+                      "1px solid color-mix(in srgb, var(--fintheon-accent) 4%, transparent)",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 10,
+                      color: "var(--fintheon-text)",
+                      fontFamily: "var(--font-mono)",
+                      flex: 1,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {s.source}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontFamily: "var(--font-data)",
+                      color: "var(--fintheon-muted)",
+                      flexShrink: 0,
+                      marginLeft: 8,
+                    }}
+                  >
+                    {s.count}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Bulk handling */}

@@ -6,9 +6,9 @@
 // announce: "I had the desk search the web, here's what we found:"
 
 import type {
-  HarperVoicePrimaryAgent,
-  HarperVoiceRouteIntent,
-  HarperVoiceTrigger,
+  Harper21VoicePrimaryAgent,
+  Harper21VoiceRouteIntent,
+  Harper21VoiceTrigger,
 } from "./types.js";
 
 const MARKET_VERBS =
@@ -17,9 +17,9 @@ const TICKER_PATTERN = /\b([A-Z]{2,5})\b/;
 const GREETING = /^(hey|hi|hello|yo|okay|ok|so)\b/i;
 
 export function routeIntent(
-  trigger: HarperVoiceTrigger,
+  trigger: Harper21VoiceTrigger,
   utterance: string,
-): HarperVoiceRouteIntent {
+): Harper21VoiceRouteIntent {
   const text = utterance.trim();
 
   if (trigger === "psych_assist") {
@@ -61,7 +61,7 @@ function looksLikeMarketQuestion(text: string): boolean {
   return hasVerb || hasTicker;
 }
 
-export function agentLabel(agent: HarperVoicePrimaryAgent): string {
+export function agentLabel(agent: Harper21VoicePrimaryAgent): string {
   switch (agent) {
     case "coach":
       return "Coach";

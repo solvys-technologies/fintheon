@@ -4,7 +4,7 @@
 
 Three agent-memory substrates coexist and none are fully wired:
 
-1. **`agent_context_bank`** — the intended unified user-scoped bank. Production-ready service layer exists at [backend-hono/src/services/agent-context-bank-service.ts](../../backend-hono/src/services/agent-context-bank-service.ts). Harper calls `getContextForAgent("00000000-0000-0000-0000-000000000000", "harper-opus")` at [harper-handler.ts:243-246](../../backend-hono/src/services/harper-handler.ts#L243-L246) — a **hardcoded null UUID**, so memories never return.
+1. **`agent_context_bank`** — the intended unified user-scoped bank. Production-ready service layer exists at [backend-hono/src/services/agent-context-bank-service.ts](../../backend-hono/src/services/agent-context-bank-service.ts). Harper calls `getContextForAgent("00000000-0000-0000-0000-000000000000", "harper-2.1")` at [harper-handler.ts:243-246](../../backend-hono/src/services/harper-handler.ts#L243-L246) — a **hardcoded null UUID**, so memories never return.
 2. **`agent_memory`** — per-agent table used only by Hermes via [memory-injector.ts](../../backend-hono/src/services/agent-memory/memory-injector.ts). User-scoped but orphaned from the unified bank.
 3. **`peer_shared_memory`** — referenced in [cao-memory-flush.ts](../../backend-hono/src/services/cao-memory-flush.ts); no matching migration. Phantom table.
 
@@ -20,7 +20,7 @@ Three agent-memory substrates coexist and none are fully wired:
 - [ ] **B4.2 Fix Harper's memory read.** Replace the null UUID at [harper-handler.ts:243-246](../../backend-hono/src/services/harper-handler.ts#L243-L246) with real `userId`. In [hermes-handler.ts](../../backend-hono/src/services/hermes-handler.ts), swap the `agent_memory`-based `buildMemoryBlock` for `getContextForAgent(userId, agentId)` so all 5 CAOs read the same bank. Include `is_shared=true` entries so shared observations broadcast across agents.
 - [ ] **B4.3 Explicit `[MEMORY]` writes.** Post-response hook in both Harper and Hermes handlers: parse assistant output for `[MEMORY type=preference|observation|protocol|soul shared=true|false]…[/MEMORY]` blocks, call `saveMemory(...)`, strip the block from the client-facing text. Document the tag in each agent's capabilities block.
 - [ ] **B4.4 `/api/memory` route.** New [backend-hono/src/routes/memory/index.ts](../../backend-hono/src/routes/memory/index.ts): `POST /save` wraps `saveMemory`, `GET /list` wraps `getContextForAgent`. Mount in the main router.
-- [ ] **B4.5 Redirect CAO flush.** In [cao-memory-flush.ts](../../backend-hono/src/services/cao-memory-flush.ts), replace writes to `peer_shared_memory` with `saveMemory({ agentId: 'harper-opus', memory_type: 'observation', is_shared: true })`.
+- [ ] **B4.5 Redirect CAO flush.** In [cao-memory-flush.ts](../../backend-hono/src/services/cao-memory-flush.ts), replace writes to `peer_shared_memory` with `saveMemory({ agentId: 'harper-2.1', memory_type: 'observation', is_shared: true })`.
 - [ ] **B4.6 Hourly summarizer.** New `backend-hono/src/services/agent-memory/summarizer-job.ts`. Hourly cron colocated with MDB scheduler. Per user, pull last-hour conversations, Haiku 4.5 summarizer prompt, emit `saveMemory` calls, substring de-dupe. Behind `ENABLE_MEMORY_SUMMARIZER=true` env flag for safe rollback.
 - [ ] **B4.7 `/api/me` diagnostic.** New [backend-hono/src/routes/me/index.ts](../../backend-hono/src/routes/me/index.ts) returning `{ userId, email, traderName }` for cross-client debugging.
 

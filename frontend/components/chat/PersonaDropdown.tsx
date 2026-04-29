@@ -8,7 +8,7 @@ import {
 
 const PERSONA_META: Record<string, string> = {
   harper: "CAO",
-  "harper-opus": "CAO",
+  "harper-2.1": "CAO",
   oracle: "All-Seer",
   feucht: "Futures & Risk",
   consul: "Fundamentals",

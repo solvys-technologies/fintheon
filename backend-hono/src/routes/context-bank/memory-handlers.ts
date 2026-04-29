@@ -23,7 +23,7 @@ function getUserId(c: Context): string {
   return DEFAULT_USER_ID;
 }
 
-/** GET /memories?agent=harper-opus&type=observation */
+/** GET /memories?agent=harper-2.1&type=observation */
 export async function handleGetAgentMemories(c: Context) {
   const agentId = c.req.query("agent");
   if (!agentId) {

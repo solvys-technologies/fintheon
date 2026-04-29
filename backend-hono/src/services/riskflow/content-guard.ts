@@ -468,7 +468,10 @@ export function isBannedPublisher(probe: BannedPublisherProbe): boolean {
   return false;
 }
 
-export function checkContentGuard(text: string): ContentGuardResult {
+export function checkContentGuard(
+  text: string,
+  opts?: ContentGuardOpts,
+): ContentGuardResult {
   // [claude-code 2026-04-26] Banned-publisher check moved off the text scanner —
   // we no longer phrase-block mainstream-media mentions. Curated Twitter relays
   // can quote a Reuters/Bloomberg headline freely. Use isBannedPublisher() for
@@ -533,6 +536,23 @@ export function checkContentGuard(text: string): ContentGuardResult {
   // 5. Non-FJ emojis — professional wire headlines don't have 😂🔥💀
   if (hasNonFJEmojis(text)) {
     return { blocked: true, reason: "non-fj-emoji" };
+  }
+
+  // 5.5 Speculation / hedged-language gate (S48-T2/T5)
+  // Wire-source items with hedged language ("reportedly", "could trigger",
+  // "sources say") demote IV by 0.7×; non-wire items get blocked.
+  // Econ pipeline always passes — those are confirmed prints, not speculation.
+  const specAction = getSpeculationAction(
+    text,
+    "",
+    opts?.sourceType,
+    opts?.ingestPipeline,
+  );
+  if (specAction === "block") {
+    return { blocked: true, reason: "speculative" };
+  }
+  if (specAction === "demote") {
+    return { blocked: false, reason: null, speculationDemote: true };
   }
 
   // 6. "false" prefix — fact-check/debunk, not wire news

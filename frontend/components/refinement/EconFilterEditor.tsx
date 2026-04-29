@@ -1,9 +1,7 @@
 // [claude-code 2026-04-28] S48-T3: Econ filter editor — table of emoji/word classification
-// rules that tag events as Econ/ASAP info. Editable fields: emoji trigger, keyword pattern,
-// macro level, category. Built-in mock data when backend API is not available.
+// rules that tag events as Econ/ASAP info. Inline editing with mock data fallback.
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import { useToast } from "../../contexts/ToastContext";
 
 interface EconFilter {
   id: string;
@@ -16,6 +14,9 @@ interface EconFilter {
 const API_BASE = (
   import.meta.env.VITE_API_URL || "http://localhost:8080"
 ).replace(/\/$/, "");
+
+const CATEGORIES = ["Inflation", "Job Market", "Supply Chain", "Fiscal"];
+const LEVELS = [1, 2, 3, 4];
 
 const MOCK_FILTERS: EconFilter[] = [
   {
@@ -69,17 +70,25 @@ const MOCK_FILTERS: EconFilter[] = [
   },
 ];
 
+const CELL: React.CSSProperties = { padding: "3px 5px", fontSize: 10 };
+const INPUT_STYLE: React.CSSProperties = {
+  width: "100%",
+  background: "transparent",
+  border: "1px solid var(--fintheon-glass-border)",
+  color: "var(--fintheon-text)",
+  fontSize: 10,
+  fontFamily: "var(--font-mono)",
+  padding: "1px 3px",
+};
+
 export function EconFilterEditor() {
   const { getAccessToken } = useAuth();
-  const { addToast } = useToast();
   const [filters, setFilters] = useState<EconFilter[]>(MOCK_FILTERS);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<Partial<EconFilter>>({});
 
   const fetchFilters = useCallback(async () => {
-    setLoading(true);
     setError(null);
     try {
       const token = await getAccessToken();
@@ -91,9 +100,7 @@ export function EconFilterEditor() {
         if (json.filters?.length) setFilters(json.filters);
       }
     } catch {
-      // Backend may not be live — keep mock data
-    } finally {
-      setLoading(false);
+      // Backend not live — keep mock data
     }
   }, [getAccessToken]);
 
@@ -105,7 +112,6 @@ export function EconFilterEditor() {
     setEditingId(f.id);
     setEditDraft({ ...f });
   };
-
   const cancelEdit = () => {
     setEditingId(null);
     setEditDraft({});
@@ -128,7 +134,6 @@ export function EconFilterEditor() {
     );
     setEditingId(null);
     setEditDraft({});
-    addToast("Filter updated (local only)", "info");
   };
 
   return (
@@ -151,7 +156,6 @@ export function EconFilterEditor() {
       >
         Econ Filter Editor
       </div>
-
       {error ? (
         <div
           style={{
@@ -231,12 +235,13 @@ export function EconFilterEditor() {
               >
                 Category
               </th>
-              <th style={{ padding: "3px 5px", width: 30 }} />
+              <th style={{ padding: "3px 5px", width: 50 }} />
             </tr>
           </thead>
           <tbody>
             {filters.map((f) => {
-              const isEditing = editingId === f.id;
+              const editing = editingId === f.id;
+              const d = editing ? editDraft : {};
               return (
                 <tr
                   key={f.id}
@@ -247,56 +252,37 @@ export function EconFilterEditor() {
                 >
                   <td
                     style={{
-                      padding: "3px 5px",
+                      ...CELL,
                       color: "var(--fintheon-accent)",
-                      fontSize: 11,
                       fontFamily: "var(--font-mono)",
                     }}
                   >
-                    {isEditing ? (
+                    {editing ? (
                       <input
-                        value={editDraft.emoji ?? f.emoji}
+                        value={d.emoji ?? f.emoji}
                         onChange={(e) =>
                           setEditDraft((d) => ({ ...d, emoji: e.target.value }))
                         }
                         style={{
-                          width: "100%",
-                          background: "transparent",
-                          border: "1px solid var(--fintheon-glass-border)",
+                          ...INPUT_STYLE,
                           color: "var(--fintheon-accent)",
-                          fontSize: 11,
-                          fontFamily: "var(--font-mono)",
-                          padding: "1px 3px",
                         }}
                       />
                     ) : (
                       f.emoji
                     )}
                   </td>
-                  <td
-                    style={{
-                      padding: "3px 5px",
-                      color: "var(--fintheon-text)",
-                    }}
-                  >
-                    {isEditing ? (
+                  <td style={{ ...CELL, color: "var(--fintheon-text)" }}>
+                    {editing ? (
                       <input
-                        value={editDraft.pattern ?? f.pattern}
+                        value={d.pattern ?? f.pattern}
                         onChange={(e) =>
                           setEditDraft((d) => ({
                             ...d,
                             pattern: e.target.value,
                           }))
                         }
-                        style={{
-                          width: "100%",
-                          background: "transparent",
-                          border: "1px solid var(--fintheon-glass-border)",
-                          color: "var(--fintheon-text)",
-                          fontSize: 10,
-                          fontFamily: "var(--font-mono)",
-                          padding: "1px 3px",
-                        }}
+                        style={INPUT_STYLE}
                       />
                     ) : (
                       f.pattern
@@ -304,14 +290,14 @@ export function EconFilterEditor() {
                   </td>
                   <td
                     style={{
-                      padding: "3px 5px",
+                      ...CELL,
                       textAlign: "center",
                       color: "var(--fintheon-muted)",
                     }}
                   >
-                    {isEditing ? (
+                    {editing ? (
                       <select
-                        value={editDraft.macroLevel ?? f.macroLevel}
+                        value={d.macroLevel ?? f.macroLevel}
                         onChange={(e) =>
                           setEditDraft((d) => ({
                             ...d,
@@ -326,7 +312,7 @@ export function EconFilterEditor() {
                           padding: "1px",
                         }}
                       >
-                        {[1, 2, 3, 4].map((l) => (
+                        {LEVELS.map((l) => (
                           <option key={l} value={l}>
                             {l}
                           </option>
@@ -336,36 +322,19 @@ export function EconFilterEditor() {
                       f.macroLevel
                     )}
                   </td>
-                  <td
-                    style={{
-                      padding: "3px 5px",
-                      color: "var(--fintheon-text)",
-                    }}
-                  >
-                    {isEditing ? (
+                  <td style={{ ...CELL, color: "var(--fintheon-text)" }}>
+                    {editing ? (
                       <select
-                        value={editDraft.category ?? f.category}
+                        value={d.category ?? f.category}
                         onChange={(e) =>
                           setEditDraft((d) => ({
                             ...d,
                             category: e.target.value,
                           }))
                         }
-                        style={{
-                          width: "100%",
-                          background: "transparent",
-                          border: "1px solid var(--fintheon-glass-border)",
-                          color: "var(--fintheon-text)",
-                          fontSize: 10,
-                          padding: "1px",
-                        }}
+                        style={{ ...INPUT_STYLE, width: "100%" }}
                       >
-                        {[
-                          "Inflation",
-                          "Job Market",
-                          "Supply Chain",
-                          "Fiscal",
-                        ].map((c) => (
+                        {CATEGORIES.map((c) => (
                           <option key={c} value={c}>
                             {c}
                           </option>
@@ -376,8 +345,8 @@ export function EconFilterEditor() {
                     )}
                   </td>
                   <td style={{ padding: "3px 5px", textAlign: "center" }}>
-                    {isEditing ? (
-                      <div style={{ display: "flex", gap: 2 }}>
+                    {editing ? (
+                      <span style={{ display: "flex", gap: 4 }}>
                         <button
                           onClick={saveEdit}
                           style={{
@@ -404,7 +373,7 @@ export function EconFilterEditor() {
                         >
                           Cancel
                         </button>
-                      </div>
+                      </span>
                     ) : (
                       <button
                         onClick={() => startEdit(f)}
@@ -426,18 +395,6 @@ export function EconFilterEditor() {
             })}
           </tbody>
         </table>
-      )}
-
-      {loading && (
-        <div
-          style={{
-            fontSize: 10,
-            color: "var(--fintheon-muted)",
-            marginTop: 4,
-          }}
-        >
-          Loading...
-        </div>
       )}
     </div>
   );

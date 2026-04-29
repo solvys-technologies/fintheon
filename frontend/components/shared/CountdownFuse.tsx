@@ -1,10 +1,10 @@
 // [claude-code 2026-04-28] S48-T3: CountdownFuse — NothingFuse wrapper with a
 // beat/miss/par/X-close state machine and optional floating drag mode.
 // State: IDLE→COUNTDOWN→BLINK→BEAT|MISS|PAR→CLOSEABLE
-// Floating mode: drag on braille-pattern handle, glass pill, localStorage position.
 import { useState, useEffect, useRef, useCallback } from "react";
 import { X } from "lucide-react";
 import { NothingFuse } from "./NothingFuse";
+import { useFloatingDrag } from "../../hooks/useFloatingDrag";
 
 type FusePhase =
   | "countdown"
@@ -26,25 +26,14 @@ interface Props {
   onClose?: () => void;
 }
 
-const POS_KEY = "fintheon:countdown-position";
+const FUSE_COLORS = {
+  beat: "var(--fintheon-bullish)",
+  miss: "var(--fintheon-bearish)",
+  par: "var(--fintheon-accent)",
+  default: "var(--fintheon-accent)",
+} as const;
 
-function loadPosition(): { x: number; y: number } | null {
-  try {
-    const raw = localStorage.getItem(POS_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as { x: number; y: number };
-  } catch {
-    return null;
-  }
-}
-
-function savePosition(pos: { x: number; y: number }) {
-  try {
-    localStorage.setItem(POS_KEY, JSON.stringify(pos));
-  } catch {
-    // silent
-  }
-}
+const FUSE_LABELS = { beat: "BEAT", miss: "MISS", par: "PAR" } as const;
 
 export function CountdownFuse({
   eventName,
@@ -63,88 +52,76 @@ export function CountdownFuse({
   const [blinkOn, setBlinkOn] = useState(false);
   const [blinkCount, setBlinkCount] = useState(0);
   const [dimmed, setDimmed] = useState(false);
-
-  // Floating position
-  const [pos, setPos] = useState(() => loadPosition());
-  const [dragging, setDragging] = useState(false);
-  const dragRef = useRef<{
-    startX: number;
-    startY: number;
-    posX: number;
-    posY: number;
-  } | null>(null);
+  const {
+    pos,
+    dragging,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    redock,
+  } = useFloatingDrag(floating);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Countdown tick
   useEffect(() => {
     if (phase !== "countdown" || remaining <= 0) return;
-    const interval = setInterval(() => {
-      setRemaining((r) => {
-        if (r <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return r - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
+    const id = setInterval(
+      () => setRemaining((r) => (r <= 1 ? 0 : r - 1)),
+      1000,
+    );
+    return () => clearInterval(id);
   }, [phase, remaining]);
 
-  // Transition to blink when countdown reaches 0
+  // Phase transitions
   useEffect(() => {
-    if (phase === "countdown" && remaining === 0) {
-      setPhase("blink");
-    }
+    if (phase === "countdown" && remaining === 0) setPhase("blink");
   }, [phase, remaining]);
 
-  // Blink phase: 3 rapid toggles (300ms × 6 = 1.8s)
   useEffect(() => {
     if (phase !== "blink") return;
-    const interval = setInterval(() => {
+    const id = setInterval(() => {
       setBlinkCount((c) => {
         if (c >= 6) {
-          clearInterval(interval);
+          clearInterval(id);
           return c;
         }
-        setBlinkOn((prev) => !prev);
+        setBlinkOn((p) => !p);
         return c + 1;
       });
     }, 300);
-    return () => clearInterval(interval);
+    return () => clearInterval(id);
   }, [phase]);
 
-  // After blink, settle into beat/miss/par
   useEffect(() => {
-    if (phase === "blink" && blinkCount >= 6) {
-      const timer = setTimeout(() => {
-        if (beatMiss === "beat") setPhase("beat");
-        else if (beatMiss === "miss") setPhase("miss");
-        else if (beatMiss === "par") setPhase("par");
-        else setPhase("par");
-      }, 50);
-      return () => clearTimeout(timer);
-    }
+    if (phase !== "blink" || blinkCount < 6) return;
+    const t = setTimeout(
+      () =>
+        setPhase(
+          beatMiss === "miss" ? "miss" : beatMiss === "beat" ? "beat" : "par",
+        ),
+      50,
+    );
+    return () => clearTimeout(t);
   }, [phase, blinkCount, beatMiss]);
 
-  // After settle (beat/miss/par), become closeable after 500ms
   useEffect(() => {
     if (phase === "beat" || phase === "miss" || phase === "par") {
-      const timer = setTimeout(() => setPhase("closeable"), 500);
-      return () => clearTimeout(timer);
+      const t = setTimeout(() => setPhase("closeable"), 500);
+      return () => clearTimeout(t);
     }
   }, [phase]);
 
-  // Auto-close 30s after becoming closeable
+  // Auto-close after 30s
   useEffect(() => {
     if (phase !== "closeable") return;
-    const timer = setTimeout(() => {
+    const t = setTimeout(() => {
       setDimmed(true);
       setTimeout(() => {
         setPhase("gone");
         onClose?.();
       }, 400);
     }, 30_000);
-    return () => clearTimeout(timer);
+    return () => clearTimeout(t);
   }, [phase, onClose]);
 
   const handleClose = useCallback(() => {
@@ -155,67 +132,19 @@ export function CountdownFuse({
     }, 400);
   }, [onClose]);
 
-  // Drag handlers
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      if (!floating) return;
-      e.preventDefault();
-      const current = pos ?? { x: 0, y: 0 };
-      dragRef.current = {
-        startX: e.clientX,
-        startY: e.clientY,
-        posX: current.x,
-        posY: current.y,
-      };
-      setDragging(true);
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    },
-    [floating, pos],
-  );
-
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      if (!dragging || !dragRef.current) return;
-      const dx = e.clientX - dragRef.current.startX;
-      const dy = e.clientY - dragRef.current.startY;
-      const newPos = {
-        x: dragRef.current.posX + dx * 0.08,
-        y: dragRef.current.posY + dy * 0.08,
-      };
-      setPos(newPos);
-    },
-    [dragging],
-  );
-
-  const handlePointerUp = useCallback(() => {
-    if (!dragging) return;
-    setDragging(false);
-    dragRef.current = null;
-    if (pos) savePosition(pos);
-  }, [dragging, pos]);
-
-  // Double-tap to re-dock
+  // Double-tap detection for redock
   const [lastTap, setLastTap] = useState(0);
   const handleDoubleTap = useCallback(() => {
     const now = Date.now();
-    if (now - lastTap < 300) {
-      setPos(null);
-      try {
-        localStorage.removeItem(POS_KEY);
-      } catch {
-        /* silent */
-      }
-    }
+    if (now - lastTap < 300) redock();
     setLastTap(now);
-  }, [lastTap]);
+  }, [lastTap, redock]);
 
   if (phase === "gone") return null;
 
   const fuseValue =
-    phase === "countdown"
-      ? countdownSeconds > 0
-        ? remaining / countdownSeconds
-        : 1
+    phase === "countdown" && countdownSeconds > 0
+      ? remaining / countdownSeconds
       : phase === "blink"
         ? blinkOn
           ? 1
@@ -226,18 +155,23 @@ export function CountdownFuse({
 
   const fuseColor =
     phase === "beat"
-      ? "var(--fintheon-bullish)"
+      ? FUSE_COLORS.beat
       : phase === "miss"
-        ? "var(--fintheon-bearish)"
-        : "var(--fintheon-accent)";
+        ? FUSE_COLORS.miss
+        : FUSE_COLORS.default;
 
   const isFinal =
     phase === "closeable" ||
     phase === "beat" ||
     phase === "miss" ||
     phase === "par";
+  const fadeStyle: React.CSSProperties = {
+    opacity: dimmed ? 0 : 1,
+    transform: dimmed ? "scale(0.95)" : undefined,
+    transition: "opacity 400ms ease, transform 400ms ease",
+  };
 
-  const containerStyle: React.CSSProperties = floating
+  const floatingStyle: React.CSSProperties = floating
     ? {
         position: "fixed",
         zIndex: 50,
@@ -252,21 +186,14 @@ export function CountdownFuse({
         padding: "12px 14px 10px",
         minWidth: 220,
         maxWidth: 280,
-        opacity: dimmed ? 0 : 1,
-        transform: dimmed ? "scale(0.95)" : undefined,
-        transition: "opacity 400ms ease, transform 400ms ease",
         cursor: dragging ? "grabbing" : undefined,
         userSelect: "none",
+        ...fadeStyle,
       }
-    : {
-        opacity: dimmed ? 0 : 1,
-        transform: dimmed ? "scale(0.95)" : undefined,
-        transition: "opacity 400ms ease, transform 400ms ease",
-      };
+    : fadeStyle;
 
   return (
-    <div ref={containerRef} style={containerStyle}>
-      {/* Braille-pattern drag handle */}
+    <div ref={containerRef} style={floatingStyle}>
       {floating && (
         <div
           onPointerDown={handlePointerDown}
@@ -297,7 +224,6 @@ export function CountdownFuse({
         </div>
       )}
 
-      {/* Header row */}
       <div
         style={{
           display: "flex",
@@ -327,8 +253,8 @@ export function CountdownFuse({
               fontFamily: "var(--font-body)",
             }}
           >
-            F: {forecast} · P: {previous}
-            {actual && ` · A: ${actual}`}
+            F: {forecast} / P: {previous}
+            {actual ? ` / A: ${actual}` : ""}
           </div>
         </div>
         {isFinal && (
@@ -353,7 +279,6 @@ export function CountdownFuse({
         )}
       </div>
 
-      {/* Fuse bar */}
       <NothingFuse
         value={fuseValue}
         color={fuseColor}
@@ -363,7 +288,6 @@ export function CountdownFuse({
         animateIn={phase === "countdown"}
       />
 
-      {/* Beat/miss/par badge */}
       {isFinal && beatMiss && (
         <div
           style={{
@@ -379,7 +303,7 @@ export function CountdownFuse({
             padding: "1px 6px",
           }}
         >
-          {phase === "beat" ? "BEAT" : phase === "miss" ? "MISS" : "PAR"}
+          {FUSE_LABELS[beatMiss]}
         </div>
       )}
     </div>

@@ -380,3 +380,61 @@ wc -l frontend/components/refinement/RefinementEngine.tsx
 ```
 [v5.35.0] feat: T3 pipeline UI + CountdownFuse + econ filter editor — PipelineHealth table replacing NotchedFuse, PipelineToggles, CountdownFuse state machine (beat/miss/par/X-close), floating mode, dev test button, econ filter editor, web URL sources, error handling
 ```
+
+## Debrief — 2026-04-29
+
+### Completed
+
+All 9 implementation steps executed. tsconfig + vite build pass clean.
+
+### Files Created (7)
+
+| File                                                  | Lines |
+| ----------------------------------------------------- | ----- |
+| `frontend/hooks/usePipelineStats.ts`                  | 75    |
+| `frontend/hooks/usePipelineState.ts`                  | 129   |
+| `frontend/hooks/useFloatingDrag.ts`                   | 60    |
+| `frontend/components/refinement/PipelineHealth.tsx`   | 129   |
+| `frontend/components/refinement/PipelineToggles.tsx`  | 157   |
+| `frontend/components/shared/CountdownFuse.tsx`        | 153   |
+| `frontend/components/refinement/EconFilterEditor.tsx` | 131   |
+
+### Files Modified (4)
+
+| File                      | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RefinementEngine.tsx`    | Removed NotchedFuse + Group Sensitivity collapsible section (~82 lines removed). Inlined `SensitivityGroup`/`SensitivityValues`/`SENSITIVITY_DEFAULTS`/`GROUPS` locally (PresetSelector still depends on them for scoring preset matching). Removed `onDialChange` handler. Removed `groupSensOpen`/`groupSensRevealed` state + rAF useEffect. Removed `ChevronDown`/`ChevronRight` imports (no longer used). Added `PipelineHealth`, `PipelineToggles`, and `EconFilterEditor` components. Added `usePipelineStats`/`usePipelineState` hook calls. Hardened `fetchSourceAccounts` and `fetchEconFilters` — now set error state instead of silent catch. |
+| `CatalystStatsDrawer.tsx` | Added `webSources` memo filtering by `polling_type === "web"`. Added WEB SOURCES section after category aggregates, before bulk handling.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `DeveloperTab.tsx`        | Added Econ Countdown Test section with 60s lifecycle button. Renders a floating `CountdownFuse` with synthetic NFP data (F:165K, P:142K, A:175K, beat). Phase transitions: countdown→beat→closeable→auto-close after 30s.                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `index.css`               | Added `@keyframes countdown-blink` and `@keyframes x-pulse` for CountdownFuse animation phases.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+
+### Deviations from Spec
+
+- **RefinementEngine still >300 lines** (668 → 668 net). The sprint acknowledges this file is large; the Group Sensitivity section removal was offset by the inline sensitivity types needed by PresetSelector. Further splitting should be a dedicated refactor.
+- **CountdownFuse drag logic extracted** to `useFloatingDrag` hook (60 lines) to keep the component under 300 lines. This was not in the original spec but follows the "one concern per file" doctrine.
+- **Dev countdown test renders CountdownFuse standalone** in DeveloperTab rather than injecting SSE events into EconCountdownModal. The sprint's known-issues section explicitly says "Do NOT modify EconCountdownModal's rendering logic," and injecting synthetic SSE without modifying the modal is architecturally infeasible. The standalone test exercises the same CountdownFuse component lifecycle.
+- **CountdownFuse beat/miss/par colors** use CSS custom properties (`--fintheon-bullish`/`--fintheon-bearish`/`--fintheon-accent`) rather than `fuse-palette` `colorForSeverity`/`colorForScore`, matching the CSS token references in the spec's reuse inventory (#41).
+- **`:onRetry` prop** added to PipelineHealth for the retry button in the error state (not in original interface but required by the acceptance criteria's "error: 'Pipeline stats unavailable' with error detail + retry").
+- **`PipelineToggles.tsx` is 157 lines vs spec target of <150.** Seven lines over from error/loading/empty state rendering. Could be compacted further if needed.
+- **Branch not created** (`s48-t3-pipeline-ui-countdown`). All work done on the current branch. Branch creation is deferred to when committing.
+
+### Acceptance Criteria Status
+
+- [x] PipelineHealth table renders with pipeline rows + status dots + 24h stats
+- [x] PipelineToggles can turn pipelines on/off with optimistic updates (revert on failure + toast)
+- [x] Group Sensitivity NotchedFuse section removed from RefinementEngine
+- [x] CountdownFuse renders in all 5 states: countdown, blink, beat (green), miss (red), par (accent)
+- [x] CountdownFuse floating mode drags with dragElastic 0.08, localStorage position
+- [x] X icon pulses after settle (x-pulse keyframe), tap closes, auto-close at 30s
+- [x] Dev countdown test button fires synthetic 60s countdown with full lifecycle
+- [x] Econ filter editor shows table with inline edit (mock data fallback)
+- [x] Web URL source section appears in CatalystStatsDrawer
+- [x] Error states replace silent catch blocks for fetchSourceAccounts + fetchEconFilters
+- [x] All new files ≤ 157 lines (well under 300)
+- [x] `npx tsc --noEmit --project frontend/tsconfig.json` passes
+- [x] `rm -rf dist && npx vite build` passes
+- [x] No emojis, gradients, Kanban borders, or AI sparkles in any new UI
+
+```
+
+```
