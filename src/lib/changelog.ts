@@ -9,6 +9,31 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-29T18:00:00",
+    agent: "claude-code",
+    summary:
+      "S51: Expanded RiskFlow cards (mobile + desktop) + Arbitrum Sanctum performance UI. Part 1: desktop + mobile card header split into bucket-left/time-ago-right with source-type icons (Activity/BarChart3/Globe/Globe2/BookText for Wire/Econ/Macro/Geopolitical/Earnings), sawdust fuse footer (NothingFuse 10-segment horizontal bar replacing IVFuseBar), gray rule moved from preview boundary to expanded footer, deviation row gated on econ-print tag, t-text-reveal (280ms) for headline remainder on expand, Earnings bucket with LOW priority floor, extended econ-bridge tags (econ-print + directional + magnitude). Part 2: walkthrough confirmed no dual-source bug — both Sanctum surfaces already consume useArbitrumLatest. Removed unused compositeIV/regimeShiftProbability/confidence props from Sanctum→ArbitrumChamber (stale AgentDeskDebatePanel API). Frosted-glass polish on chamber empty/loading/error states.",
+    files: [
+      "backend-hono/src/services/riskflow/scorer-tagging.ts",
+      "backend-hono/src/services/riskflow/econ-bridge.ts",
+      "backend-hono/src/services/riskflow/feed-service.ts",
+      "backend-hono/src/routes/preferences/index.ts",
+      "frontend/components/RiskFlowMini.tsx",
+      "frontend/lib/source-buckets.ts",
+      "frontend/lib/user-preferences.ts",
+      "frontend/hooks/useRiskFlowFilters.ts",
+      "frontend/styles/transitions.css",
+      "frontend/components/narrative/Sanctum.tsx",
+      "frontend/components/arbitrum/ArbitrumChamber.tsx",
+      "mobile/components/riskflow/RiskFlowCard.tsx",
+      "mobile/components/riskflow/RiskFlowCardExpanded.tsx",
+      "mobile/lib/source-buckets.ts",
+      "mobile/lib/user-preferences.ts",
+      "mobile/hooks/useRiskFlowFilters.ts",
+      "sprint-md/S51-BRIEF-riskflow-cards-and-arbitrum-recovery.md",
+    ],
+  },
+  {
     date: "2026-04-29T12:15:00",
     agent: "claude-code",
     summary:

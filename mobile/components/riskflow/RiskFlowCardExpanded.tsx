@@ -1,3 +1,7 @@
+// [claude-code 2026-04-29] S51: deleted duplicate body block, added t-text-reveal for
+//   headline remainder via framer-motion, gated DEVIATION row on econ-print tag,
+//   stripped EVENT WEIGHT/TIMING/MOMENTUM/VIX CONTEXT rows, replaced IVFuseBar footer
+//   with sawdust fuse bar (10-segment horizontal bar with vertical ruler ticks).
 // [claude-code 2026-04-20] Footer row added: horizontal IV bar picks up the
 //   juice from the preview card's drained vertical fuse (fills 0→IV on mount),
 //   paperclip icon right-justified links to the original source, and the IV
@@ -10,20 +14,9 @@
 import { motion } from "framer-motion";
 import { Paperclip } from "lucide-react";
 import type { MobileRiskFlowAlert } from "../../contexts/RiskFlowContext";
-import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
 import { SourcePreview } from "./SourcePreview";
 
 export type RiskFlowExpandedSurface = "full" | "timeline" | "mini";
-
-interface RiskFlowCardExpandedProps {
-  alert: MobileRiskFlowAlert;
-  surface?: RiskFlowExpandedSurface;
-  /** When provided (from RiskFlowCard on tap-expand), the mini footer renders a
-   *  horizontal IV bar + paperclip + IV numeral. Omit to suppress the footer
-   *  (e.g. when consumed from a list view that renders its own score UI). */
-  ivScore?: number;
-  severityColor?: string;
-}
 
 const SEVERITY_COLORS: Record<AlertSeverity, string> = {
   critical: "var(--fintheon-severe)",
@@ -125,24 +118,24 @@ export function RiskFlowCardExpanded({
           </a>
         )}
 
-        {/* Source preview (full/timeline) or plain content text (mini) */}
-        {showSourcePreview ? (
-          <SourcePreview alert={alert} />
-        ) : (
-          alert.content && (
-            <p
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: "13px",
-                color: "var(--text-primary)",
-                lineHeight: 1.6,
-                marginBottom: "12px",
-              }}
-            >
-              {alert.content}
-            </p>
-          )
-        )}
+        {/* S51: t-text-reveal — remainder of headline streams in on expand */}
+        <motion.p
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "13px",
+            color: "var(--text-primary)",
+            lineHeight: 1.6,
+            marginBottom: "12px",
+          }}
+        >
+          {alert.title}
+        </motion.p>
+
+        {/* Source preview (full/timeline) — no duplicate content text for mini */}
+        {showSourcePreview && <SourcePreview alert={alert} />}
 
         {/* Agent notes */}
         {alert.agentNote && (
@@ -173,36 +166,40 @@ export function RiskFlowCardExpanded({
           </div>
         )}
 
-        {/* Sub-scores */}
-        {alert.subScores && (
-          <div className="mb-3">
-            <SubScoreRow
-              label="EVENT WEIGHT"
-              value={alert.subScores.eventWeight}
-              severity={alert.severity}
-            />
-            <SubScoreRow
-              label="TIMING"
-              value={alert.subScores.timing}
-              severity={alert.severity}
-            />
-            <SubScoreRow
-              label="DEVIATION"
-              value={alert.subScores.deviation}
-              severity={alert.severity}
-            />
-            <SubScoreRow
-              label="MOMENTUM"
-              value={alert.subScores.momentum}
-              severity={alert.severity}
-            />
-            <SubScoreRow
-              label="VIX CONTEXT"
-              value={alert.subScores.vixContext}
-              severity={alert.severity}
-            />
-          </div>
-        )}
+        {/* S51: DEVIATION row — only if econ-print tag + surprisePercent */}
+        {Array.isArray(alert.tags) &&
+          alert.tags.includes("econ-print") &&
+          alert.econData?.surprisePercent != null && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "12px",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "var(--font-data)",
+                  fontSize: "11px",
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                DEVIATION
+              </span>
+              <span
+                style={{
+                  fontFamily: "var(--font-data)",
+                  fontSize: "11px",
+                  color: "var(--text-primary)",
+                }}
+              >
+                {alert.econData.surprisePercent.toFixed(1)}
+              </span>
+            </div>
+          )}
 
         {/* Symbol chips */}
         {alert.symbols && alert.symbols.length > 0 && (
@@ -227,10 +224,8 @@ export function RiskFlowCardExpanded({
           </div>
         )}
 
-        {/* Footer — horizontal fuse picks up the drained juice from the
-            preview card, paperclip links to the original, IV numeral anchors
-            the bottom-right. Only rendered when RiskFlowCard wires ivScore +
-            severityColor (i.e. the tap-expand flow). */}
+        {/* S51: Sawdust fuse footer — 10-segment horizontal bar with vertical
+            ruler ticks, paperclip, and IV score. Replaces the old IVFuseBar. */}
         {showFooter && (
           <div
             style={{
@@ -240,7 +235,7 @@ export function RiskFlowCardExpanded({
               marginTop: 4,
             }}
           >
-            {/* Horizontal fuse bar — fills from 0 to ivFillPercent on mount */}
+            {/* Sawdust bar — horizontal with 9 vertical tick dividers */}
             <div
               style={{
                 flex: 1,
@@ -259,8 +254,27 @@ export function RiskFlowCardExpanded({
                   height: "100%",
                   background: severityColor,
                   borderRadius: 2,
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
                 }}
               />
+              {/* Vertical tick marks */}
+              {Array.from({ length: 9 }, (_, i) => (
+                <span
+                  key={i}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    bottom: 0,
+                    left: `${((i + 1) / 10) * 100}%`,
+                    width: 1,
+                    background: "var(--fintheon-bg, #050402)",
+                    pointerEvents: "none",
+                  }}
+                  aria-hidden
+                />
+              ))}
             </div>
 
             {/* Paperclip → original source */}

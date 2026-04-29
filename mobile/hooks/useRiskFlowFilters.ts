@@ -1,3 +1,4 @@
+// [claude-code 2026-04-29] S51: added Earnings to VALID_BUCKETS for filter validation
 // [claude-code 2026-04-15] T5: UI-only filter state — client-side filtering on loaded alerts
 // [claude-code 2026-04-19] Polish pass: severity filter is now multi-select (Set). Empty
 //   set = "All". Selection persists to localStorage so app restart / PWA reopen keeps the
@@ -36,6 +37,7 @@ const VALID_BUCKETS: ReadonlySet<SourceBucket> = new Set([
   "OSINT",
   "Commentary",
   "Econ",
+  "Earnings",
   "Geopolitical",
 ]);
 

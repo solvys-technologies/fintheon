@@ -1,3 +1,4 @@
+// [claude-code 2026-04-29] S51: added "Earnings" to RISKFLOW_BUCKETS for filter persistence
 // [claude-code 2026-04-19] v5.22 S1: Cross-platform user preferences route. Backs the
 //   shared UserPreferences contract (frontend/lib/user-preferences.ts + mobile mirror).
 //   GET returns the merged prefs (defaults filled in); PUT upserts and returns the fresh row.
@@ -29,6 +30,7 @@ const RISKFLOW_BUCKETS = [
   "Macro",
   "Commentary",
   "Econ",
+  "Earnings",
   "Geopolitical",
 ] as const;
 

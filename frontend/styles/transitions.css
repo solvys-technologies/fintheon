@@ -75,6 +75,11 @@
   --t-digit-ease: cubic-bezier(0.34, 1.45, 0.64, 1);
   --t-digit-dir-x: 0;
   --t-digit-dir-y: 1;
+
+  /* -- p10: Text reveal (S51) -------------------------------- */
+  --t-text-reveal-dur: 280ms;
+  --t-text-reveal-distance: 4px;
+  --t-text-reveal-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* ============================================================
@@ -414,8 +419,29 @@
   .t-text-swap,
   .t-modal,
   .t-page-slide .t-page,
-  .t-digit-group .t-digit {
+  .t-digit-group .t-digit,
+  .t-text-reveal {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* ============================================================
+   10. Text reveal (S51)
+   <p class="t-text-reveal" data-open="false">...</p>
+   Set data-open="true" via rAF after mount so the tween
+   fires from the closed resting state.
+   ============================================================ */
+
+.t-text-reveal {
+  transform: translateY(var(--t-text-reveal-distance));
+  opacity: 0;
+  transition:
+    transform var(--t-text-reveal-dur) var(--t-text-reveal-ease),
+    opacity var(--t-text-reveal-dur) var(--t-text-reveal-ease);
+  will-change: transform, opacity;
+}
+.t-text-reveal[data-open="true"] {
+  transform: translateY(0);
+  opacity: 1;
 }

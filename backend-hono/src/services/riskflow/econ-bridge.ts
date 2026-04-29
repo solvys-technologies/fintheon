@@ -1,3 +1,4 @@
+// [claude-code 2026-04-29] S51: extended econ-print tags — directional (beat/miss/inline) + magnitude (high-surprise/moderate-surprise/inline-surprise) for deviation gate
 // [claude-code 2026-04-28] S48-T1: Fix 1 — redirect econ prints from legacy news_feed_items
 // to raw_riskflow_items so they flow through the central scorer pipeline and appear in the feed.
 // Gate at entry via isPipelineEnabled("economic-calendar"). Set url="" for sourceless purge fix.
@@ -89,6 +90,24 @@ export async function injectEconPrintToFeed(
         Math.abs(surprise) > 0.01 ? Math.round(surprise * 100) / 100 : null,
     };
 
+    // S51: extended tags for deviation gate + directional/magnitude
+    const directional =
+      direction === "beat" ? "beat" : direction === "miss" ? "miss" : "inline";
+    const magnitude =
+      Math.abs(surprise) > 5
+        ? "high-surprise"
+        : Math.abs(surprise) > 1
+          ? "moderate-surprise"
+          : "inline-surprise";
+    const tags = [
+      "econ",
+      "print",
+      "econ-print",
+      print.eventName.toLowerCase().replace(/\s+/g, "-"),
+      directional,
+      magnitude,
+    ];
+
     // S48-T1 Fix 1: Write to raw_riskflow_items (not legacy news_feed_items)
     // with source=EconomicCalendar + ingest_pipeline=economic-calendar + url=""
     await sql`
@@ -108,7 +127,7 @@ export async function injectEconPrintToFeed(
         ${macroLevel >= 3 ? 7 : 5},
         ${macroLevel},
         ${JSON.stringify([])},
-        ${JSON.stringify(["econ", "print", print.eventName.toLowerCase().replace(/\s+/g, "-")])},
+        ${JSON.stringify(tags)},
         ${JSON.stringify(econData)},
         'Macro',
         'economic-calendar'

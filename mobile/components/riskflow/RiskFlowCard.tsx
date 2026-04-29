@@ -1,3 +1,5 @@
+// [claude-code 2026-04-29] S51: source-type icons replacing blanket labels, bucket-left
+//   time-ago-right header, Earnings bucket support in source-buckets.
 // [claude-code 2026-04-20] Tap-to-expand restored per TP — tap the card now
 //   expands RiskFlowCardExpanded inline (not the DetailSheet modal). The
 //   vertical fuse drains on tap, fades to zero opacity, then the expanded
@@ -18,7 +20,7 @@
 //   (var(--font-data) was getting mapped to a heavier mono on some themes), matching
 //   desktop's right-stacked IVStack. Chevron stays in the right column above the numeral.
 import { useCallback, useState } from "react";
-import { ChevronUp, ChevronDown, Minus } from "lucide-react";
+import { ChevronUp, ChevronDown, Minus, Activity, BarChart3, Globe, Globe2, BookText } from "lucide-react";
 import { useHaptic } from "../../hooks/useHaptic";
 import { motion, AnimatePresence } from "framer-motion";
 import type { MobileRiskFlowAlert } from "../../contexts/RiskFlowContext";
@@ -28,7 +30,7 @@ import { SwipeAction } from "../shared/SwipeAction";
 import { VerticalFuseBar } from "../shared/VerticalFuseBar";
 import { CARD_PRESS } from "../../lib/sheet-motion";
 import { colorForSeverity, type FuseSeverity } from "../../lib/fuse-palette";
-import { bucketOf } from "../../lib/source-buckets";
+import { bucketOf, type SourceBucket } from "../../lib/source-buckets";
 import { RiskFlowCardExpanded } from "./RiskFlowCardExpanded";
 
 /** How long the drain takes — covers the staggered top-down segment fade. Keep this
@@ -69,6 +71,17 @@ function formatSource(source: string): string {
     backend: "FEED",
   };
   return map[source] || source.toUpperCase().slice(0, 6);
+}
+
+function BucketSourceIcon({ bucket, size }: { bucket: SourceBucket; size: number }) {
+  switch (bucket) {
+    case "Wire": return <Activity size={size} />;
+    case "Econ": return <BarChart3 size={size} />;
+    case "Macro": return <Globe size={size} />;
+    case "Geopolitical": return <Globe2 size={size} />;
+    case "Earnings": return <BookText size={size} />;
+    default: return null;
+  }
 }
 
 function DirectionChevron({
@@ -178,7 +191,7 @@ export function RiskFlowCard({
                 gap: 3,
               }}
             >
-              {/* Source + time */}
+              {/* Source + time — bucket left, time-ago right */}
               <div
                 style={{
                   fontFamily: "var(--font-data)",
@@ -188,16 +201,19 @@ export function RiskFlowCard({
                   color: "var(--text-secondary)",
                   display: "flex",
                   alignItems: "center",
-                  gap: 4,
+                  justifyContent: "space-between",
                 }}
               >
-                <span>
+                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  {(() => {
+                    const b = bucketOf({ source: alert.source, riskType: alert.riskType });
+                    return <BucketSourceIcon bucket={b} size={12} />;
+                  })()}
                   {bucketOf({
                     source: alert.source,
                     riskType: alert.riskType,
                   })}
                 </span>
-                <span style={{ color: "var(--text-disabled)" }}>&middot;</span>
                 <span>{timeAgo(alert.publishedAt)}</span>
               </div>
 

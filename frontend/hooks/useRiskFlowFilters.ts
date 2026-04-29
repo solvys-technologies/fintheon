@@ -1,4 +1,4 @@
-// [claude-code 2026-04-10] S9-T2: Extracted filter state from RiskFlowMini
+// [claude-code 2026-04-29] S51: added Earnings to VALID_BUCKETS for filter validation
 // [claude-code 2026-04-15] S16-T5: Expanded source filters for all pipeline sources
 // [claude-code 2026-04-19] RiskFlow card polish: severity filter is now a multi-select Set
 //   so the user can stack priorities (e.g. CRIT + HIGH). Empty set = "All". The legacy
@@ -36,6 +36,7 @@ const VALID_BUCKETS: ReadonlySet<SourceBucket> = new Set([
   "OSINT",
   "Commentary",
   "Econ",
+  "Earnings",
   "Geopolitical",
 ]);
 

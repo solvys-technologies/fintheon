@@ -1,3 +1,6 @@
+// [claude-code 2026-04-29] S51: removed unused compositeIV/regimeShiftProbability/confidence
+//   props — stale API from retired AgentDeskDebatePanel. Both Sanctum surfaces consume
+//   useArbitrumLatest (single source of truth). Frosted-glass empty/loading/error states.
 // [claude-code 2026-04-25] Seat probability + confidence numerals now use DigitGroup
 //   (solvys-transitions number pop-in) so each seat's percentages cascade in.
 // [claude-code 2026-04-24] S35-T3: Arbitrum chamber — 5 seats + round indicator + digest footer.
@@ -16,9 +19,6 @@ interface ArbitrumChamberProps {
   simulationId?: string | null;
   /** Fires when a verdict with phase === "complete" first appears. */
   onSynthesisComplete?: () => void;
-  compositeIV?: number;
-  regimeShiftProbability?: number;
-  confidence?: number;
 }
 
 const DEFAULT_ROLES: ReadonlyArray<ArbitrumSeat["role"]> = [
@@ -282,7 +282,7 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
       {hasVerdict ? (
         <VerdictCard verdict={verdict as ArbitrumVerdict} compact />
       ) : (
-        <div className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 p-3 text-xs text-[var(--fintheon-text)]/55">
+        <div className="bg-[var(--fintheon-bg)]/60 backdrop-blur-[2px] border border-[var(--fintheon-accent)]/20 p-3 text-xs text-[var(--fintheon-text)]/55">
           {isLoading ? (
             <SolvysLoader text="Loading chamber read" size={12} />
           ) : error ? (

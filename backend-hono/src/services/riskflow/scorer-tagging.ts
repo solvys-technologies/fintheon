@@ -1,3 +1,4 @@
+// [claude-code 2026-04-29] S51: expanded Earnings keyword set (Q1-4 earnings, analyst estimate, revenue guidance, analyst cut/raises, beat/miss estimates, results, EBIT, margin)
 // [claude-code 2026-04-28] S48-T1: Fix 2 — added missing econ narrative keywords (gdp, industrial-output, consumer-sentiment, manufacturing-pmi, retail-activity, trade-flows, capital-goods, housing-activity)
 // [claude-code 2026-04-16] S20-T9: Split from central-scorer.ts — source normalization, risk classification, narrative gate, dismissed patterns
 // [claude-code 2026-03-23] Central scoring agent — polls unscored items from Supabase, runs AI analysis, writes scored results
@@ -236,6 +237,23 @@ const RISK_TYPE_KEYWORDS: Record<string, string[]> = {
   Earnings: [
     "earnings",
     "eps",
+    "q1 preview",
+    "q2 preview",
+    "q3 preview",
+    "q4 preview",
+    "q1 earnings",
+    "q2 earnings",
+    "q3 earnings",
+    "q4 earnings",
+    "analyst estimate",
+    "revenue guidance",
+    "analyst cut",
+    "analyst raises",
+    "beat estimates",
+    "miss estimates",
+    "results",
+    "ebit",
+    "margin",
     "revenue",
     "guidance",
     "beat",

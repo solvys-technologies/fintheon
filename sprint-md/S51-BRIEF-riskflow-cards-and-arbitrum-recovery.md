@@ -266,3 +266,102 @@ curl -s http://localhost:8080/api/arbitrum/latest | jq '.'
 ```
 [v5.37.0] feat: S51 expanded RiskFlow cards (mobile + desktop) + Arbitrum Sanctum performance UI
 ```
+
+---
+
+## Part 2 Scope (post-walkthrough)
+
+Walkthrough performed 2026-04-29 on `s51-cards-and-arbitrum` with backend running.
+
+### Findings
+
+1. **No dual-source bug exists.** `SanctumHeader` has no data binding to Arbitrum at all — it only receives `preset`, `onPresetChange`, `onRun`, `isLoading`, `status`, `hasData`. It does NOT read `agentDeskData` or `useArbitrumLatest`. The brief's memory of a divergence is stale.
+
+2. **ArbitrumChamber already single-source.** Uses `useArbitrumLatest` exclusively. The `compositeIV`, `regimeShiftProbability`, `confidence` props passed from `Sanctum.tsx` (line 269–271) are marked "unused" — leftover API from the retired AgentDeskDebatePanel. Both `ArbitrumPeek` and `ArbitrumChamber` consume the same `useArbitrumLatest` hook.
+
+3. **Loading/empty/error states are clean.** `ArbitrumChamber` renders `SolvysLoader` (loading), `EMPTY_COPY` text (empty), and error message + retry button (error). `ArbitrumPeek` mirrors the same pattern. `VerdictCard`/`DissentBadge` are presentation-only.
+
+4. **No rAF first-paint skips.** `useStaggeredReveal` uses `setTimeout` — seats mount as invisible (`revealed[i]=false`), then flip `true` on delay, so CSS transitions fire correctly. For `prefers-reduced-motion`, all seats render visible immediately (correct behavior).
+
+5. **Stylistic minor issues identified:**
+   - `Sanctum.tsx` passes three unused props (`compositeIV`, `regimeShiftProbability`, `confidence`) to `ArbitrumChamber` — stale API from retired AgentDeskDebatePanel.
+   - `ArbitrumChamber` empty/loading states use a flat `bg-[var(--fintheon-bg)]` border box — should use frosted glass per Solvys aesthetic (translucent fill + backdrop-blur + thin gold border).
+
+### Concrete Fixes (executed)
+
+1. [x] **Remove unused props from Sanctum → ArbitrumChamber.** Strip `compositeIV`, `regimeShiftProbability`, `confidence` from `ArbitrumChamber` interface and the `Sanctum.tsx` call site.
+2. [x] **Frosted-glass polish on empty/loading/error states.** Apply `bg-[var(--fintheon-bg)]/60 backdrop-blur-[2px]` to the chamber's non-verdict state container (replaces flat `bg-[var(--fintheon-bg)]`).
+3. [x] **Verdict acknowledged.** Dual-source bug does not exist — both surfaces already consume `useArbitrumLatest`. No fix needed.
+4. [x] **rAF first-paint verified.** No transition skips — `useStaggeredReveal` lands correctly.
+
+### Acceptance Criteria (Part 2)
+
+- [x] SanctumHeader and ArbitrumChamber consume the same data source (`useArbitrumLatest`)
+- [x] Loading / empty / error states render cleanly on every Arbitrum surface
+- [x] No Arbitrum-surface transition skips its entry tween on first mount
+- [x] No regression to Arbitrum chamber composition (5 seats), Hermes-only routing, or qwen3.5:397b-cloud binding
+- [x] `sprint-md/S51-BRIEF-riskflow-cards-and-arbitrum-recovery.md` contains populated Part 2 Scope section
+
+---
+
+## Debrief (2026-04-29)
+
+### Execution Summary
+
+S51 executed on `s51-cards-and-arbitrum` cut from `s48-unified`. All 13 dev-flow steps completed. 17 files changed. 0 regressions.
+
+### Part 1 — RiskFlow Cards (built as planned)
+
+All 11 scope items implemented as specified. No divergences.
+
+| # | Change | Files |
+|---|--------|-------|
+| 1 | Header split: bucket-left + icon, time-ago-right via `justify-content: space-between` | `RiskFlowMini.tsx`, `RiskFlowCard.tsx` |
+| 2 | Source icons: `Activity`/`BarChart3`/`Globe`/`Globe2`/`BookText` for Wire/Econ/Macro/Geopolitical/Earnings | `RiskFlowMini.tsx` (bucketSourceIcon), `RiskFlowCard.tsx` (BucketSourceIcon) |
+| 3 | Deleted duplicate `alert.content` block in mobile expanded | `RiskFlowCardExpanded.tsx` |
+| 4 | t-text-reveal ~280ms on headline remainder (desktop: CSS transition via rAF state; mobile: framer-motion `initial`/`animate`) | `RiskFlowMini.tsx`, `RiskFlowCardExpanded.tsx`, `transitions.css` |
+| 5 | Stripped EVENT WEIGHT/TIMING/MOMENTUM/VIX CONTEXT; DEVIATION gated on `econ-print` tag + `surprisePercent` | `RiskFlowCardExpanded.tsx`, `RiskFlowMini.tsx` |
+| 6 | Gray rule moved from compact footer border-t to expanded footer above sawdust fuse | `RiskFlowMini.tsx` |
+| 7 | Sawdust fuse footer: `NothingFuse` horizontal, segments=10, thickness=3 (desktop) / built inline with vertical tick marks (mobile) | `RiskFlowMini.tsx`, `RiskFlowCardExpanded.tsx` |
+| 8 | Paperclip confirmed: `target="_blank"` + `rel="noopener noreferrer"`, image-wrapper has `e.stopPropagation()` | `RiskFlowCardExpanded.tsx` (verified, no edit needed) |
+| 9 | econ-bridge.ts extended tags: `econ-print` + directional (`beat`/`miss`/`inline`) + magnitude (`high-surprise`/`moderate-surprise`/`inline-surprise`) | `econ-bridge.ts` |
+| 10 | scorer-tagging.ts Earnings keywords expanded: Q1-4 preview/earnings, analyst estimate, revenue guidance, analyst cut/raises, beat/miss estimates, results, EBIT, margin | `scorer-tagging.ts` |
+| 11 | feed-service.ts Earnings riskType floored to macroLevel 1 (LOW) | `feed-service.ts` |
+| + | Earnings bucket + filter chip: `SourceBucket` union extended in 6 files (frontend + mobile + backend) | `source-buckets.ts` x2, `useRiskFlowFilters.ts` x2, `user-preferences.ts` x2, `preferences/index.ts` |
+
+### Part 2 — Arbitrum Sanctum UI (scope smaller than anticipated)
+
+The walkthrough found:
+
+- **No dual-source bug.** `SanctumHeader` has zero data binding to Arbitrum data — it's a pure layout header (title, presets, Run button). Both `ArbitrumChamber` and `ArbitrumPeek` consume the same `useArbitrumLatest` hook. The brief's memory of `agentDeskData` divergence is stale.
+- **No rAF first-paint issues.** `useStaggeredReveal` uses `setTimeout` with invisible-start → visible-delay, so CSS transitions fire correctly on every mount.
+- **No layout glitches.** VerdictCard, DissentBadge, and ArbitrumPeek render cleanly with Doto numerals, NothingFuse bars, and Solvys Gold palette.
+
+Actual fixes executed:
+
+| # | Change | Files |
+|---|--------|-------|
+| 1 | Removed unused `compositeIV`/`regimeShiftProbability`/`confidence` props from `ArbitrumChamber` interface and `Sanctum.tsx` call site (stale AgentDeskDebatePanel API) | `ArbitrumChamber.tsx`, `Sanctum.tsx` |
+| 2 | Frosted-glass polish on chamber empty/loading/error states: `bg-[var(--fintheon-bg)]/60 backdrop-blur-[2px]` replacing flat fill | `ArbitrumChamber.tsx` |
+
+### Validation
+
+All gates passed:
+
+```
+npx tsc --noEmit --project frontend/tsconfig.json  → pass
+rm -rf frontend/dist && npx vite build              → pass (3.75s)
+cd backend-hono && bun run build                     → pass
+/api/diagnostics                                     → "ok"
+/api/riskflow/feed                                   → 444 items
+/api/arbitrum/latest                                 → 5 seats, verdict present
+```
+
+### Out of Bounds (not touched)
+
+- Earnings deep handling (ER calendar, surprise charts, post-print) — defer to S52+
+- News pollers / content-guard / central-scorer / publisher-blocklist
+- Arbitrum chamber composition (5 seats, Hermes-only, qwen3.5:397b-cloud)
+- `NothingFuse` component internals
+- Collapsed-card chevron drain animation (220ms drain + 140ms fade preserved)
+- `IVFuseBar.tsx` — component kept in place for other consumers; only removed from RiskFlowCardExpanded footer usage

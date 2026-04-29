@@ -1,3 +1,4 @@
+// [claude-code 2026-04-29] S51: added "Earnings" to RISKFLOW_BUCKET_VALUES for server-side filter persistence
 // [claude-code 2026-04-18] v5.22 shared contract — cross-platform user preferences shape.
 // Backing store: Supabase user_preferences (added in T4). Desktop writes all sections; mobile writes
 // only `notifications` and reads the rest. Mirror module at mobile/lib/user-preferences.ts.
@@ -55,6 +56,7 @@ export const RISKFLOW_BUCKET_VALUES = [
   "OSINT",
   "Commentary",
   "Econ",
+  "Earnings",
   "Geopolitical",
 ] as const;
 export type RiskFlowBucket = (typeof RISKFLOW_BUCKET_VALUES)[number];

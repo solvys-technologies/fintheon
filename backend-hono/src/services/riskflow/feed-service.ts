@@ -4,6 +4,7 @@
  * Day 17 - Phase 5 Integration
  */
 
+// [claude-code 2026-04-29] S51: Earnings items floored at macroLevel 1 (LOW priority) after enrichment
 // [claude-code 2026-04-11] Cache re-sync reduced 120s→30s to match central scorer frequency
 // [claude-code 2026-04-04] Periodic DB re-sync so cache stays fresh when poller idles
 // [claude-code 2026-04-03] Chronological sort (publishedAt DESC), cold start bumped to 200 items
@@ -441,7 +442,7 @@ async function enrichWithAnalysis(
       }
     }
 
-    const macroLevel = assignMacroLevel({
+    const rawMacroLevel = assignMacroLevel({
       ivScore: normalizedIvScore,
       fjEmojiTier,
       riskType,
@@ -449,6 +450,12 @@ async function enrichWithAnalysis(
       urgencySignals: urgencySignalCount,
       sdSurprise,
     });
+
+    // S51: Earnings items are low priority — floor at macroLevel 1 (LOW)
+    const macroLevel =
+      riskType === "Earnings"
+        ? (Math.min(rawMacroLevel ?? 1, 1) as MacroLevel)
+        : rawMacroLevel;
     if (macroLevel === undefined) {
       log.warn("MacroLevel unassigned after assignMacroLevel()", {
         itemId: item.id,

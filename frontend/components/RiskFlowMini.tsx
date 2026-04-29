@@ -8,6 +8,9 @@
 // [claude-code 2026-03-20] S3:T4d: Swapped chevron directions — expanded=ChevronDown, collapsed=ChevronUp
 // [claude-code 2026-03-26] T3: Card expand/collapse with agent notes, risk type tags, smooth transitions
 // [claude-code 2026-03-28] S8-T6: Infinite scroll + toggle, Loader2 for loading state
+// [claude-code 2026-04-29] S51: Expanded RiskFlow cards — bucket-left/time-ago-right header,
+//   source-type icons replacing blanket X-mark, sawdust fuse footer (NothingFuse), deviation gate
+//   on econ-print tag, gray rule moved to expanded footer, t-text-reveal on headline remainder.
 // [claude-code 2026-04-19] RiskFlow card polish: AlertRow + TradeIdeaRow now use the shared
 //   IVStack (Doto numerals, chevron stacked above) on the right edge, and a single segmented
 //   NothingFuse on the left. Killed the AlertRow double-border bug (2px borderLeft was
@@ -30,6 +33,12 @@ import {
   RefreshCw,
   Loader2,
   ThumbsDown,
+  Activity,
+  BarChart3,
+  Globe,
+  Globe2,
+  BookText,
+  Paperclip,
 } from "lucide-react";
 import type { RiskFlowAlert, TradeIdeaDetail } from "../lib/riskflow-feed";
 import { inferDirection } from "../lib/riskflow-feed";
@@ -56,6 +65,7 @@ import {
 } from "../lib/riskflow-card-utils";
 import { severityFromScore } from "../lib/fuse-palette";
 import type { AlertSeverity } from "../lib/riskflow-feed";
+import { bucketOf, type SourceBucket } from "../lib/source-buckets";
 
 // ── Cyclical Badge ───────────────────────────────────────────────────────────
 
@@ -372,6 +382,18 @@ function TradeIdeaRow({
 
 // ── Alert Row (news — square edge-to-edge card with bottom-hero footer) ──────
 
+function bucketSourceIcon(bucket: SourceBucket, className?: string) {
+  const cls = className ?? "w-3 h-3";
+  switch (bucket) {
+    case "Wire": return <Activity className={cls} />;
+    case "Econ": return <BarChart3 className={cls} />;
+    case "Macro": return <Globe className={cls} />;
+    case "Geopolitical": return <Globe2 className={cls} />;
+    case "Earnings": return <BookText className={cls} />;
+    default: return null;
+  }
+}
+
 function AlertRow({
   alert,
   onMarkSeen,
@@ -421,6 +443,19 @@ function AlertRow({
   const directionForStack: "Bullish" | "Bearish" | "Neutral" =
     dir === "Bullish" ? "Bullish" : dir === "Bearish" ? "Bearish" : "Neutral";
 
+  // S51: rAF first-paint for t-text-reveal — start closed, flip on next frame
+  const [headlineRevealed, setHeadlineRevealed] = useState(false);
+  useEffect(() => {
+    if (!expanded) {
+      setHeadlineRevealed(false);
+      return;
+    }
+    const raf = requestAnimationFrame(() => setHeadlineRevealed(true));
+    return () => cancelAnimationFrame(raf);
+  }, [expanded]);
+
+  const bucket = bucketOf({ source: alert.source, riskType: alert.riskType });
+
   return (
     <div
       draggable
@@ -446,10 +481,12 @@ function AlertRow({
             />
           </div>
           <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-            {/* Source / time row */}
-            <div className="flex items-center gap-1.5 text-[9px] tracking-[0.08em] uppercase text-zinc-500">
-              <span className="truncate max-w-[60%]">{alert.source}</span>
-              <span className="text-zinc-700">&middot;</span>
+            {/* Source / time row — bucket left, time-ago right */}
+            <div className="flex items-center justify-between text-[9px] tracking-[0.08em] uppercase text-zinc-500">
+              <div className="flex items-center gap-1">
+                {bucketSourceIcon(bucketOf({ source: alert.source, riskType: alert.riskType }), "w-3 h-3 text-zinc-500")}
+                <span>{bucketOf({ source: alert.source, riskType: alert.riskType })}</span>
+              </div>
               <span>{timeAgo(alert.publishedAt)}</span>
             </div>
             <p
@@ -509,8 +546,8 @@ function AlertRow({
           </div>
         </div>
 
-        {/* Compact footer strip — priority badge + dismiss only (no IV/dir duplication) */}
-        <div className="flex items-center gap-1.5 mt-2 pt-1.5 border-t border-zinc-800/30">
+        {/* Compact footer strip — priority badge only (no IV/dir duplication) */}
+        <div className="flex items-center gap-1.5 mt-2 pt-1.5">
           <span
             className={`inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border ${sev.glow || ""} h-[16px]`}
           >
@@ -534,7 +571,15 @@ function AlertRow({
         style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
       >
         <div className="overflow-hidden">
-          <div className="px-3 py-2.5 border-t border-zinc-800/40 bg-zinc-900/40">
+          <div className="px-3 py-2.5 bg-zinc-900/40">
+            {/* t-text-reveal: remainder of headline streams in on expand */}
+            <p
+              className="t-text-reveal text-xs leading-snug font-medium text-zinc-300 mb-2.5"
+              data-open={headlineRevealed ? "true" : "false"}
+            >
+              {alert.headline}
+            </p>
+
             {alert.imageUrl && (
               <CatalystImage
                 imageUrl={alert.imageUrl}
@@ -543,61 +588,96 @@ function AlertRow({
                 className="mb-2.5"
               />
             )}
-            <AgentNoteSection alert={alert} onGenerate={onGenerateNote} />
+
             {alert.url && (
-              <div className="mt-2">
+              <div className="mb-2">
                 <SourceHandoffLink url={alert.url} />
               </div>
             )}
 
-            {/* S9-T2: Deviation indicators — beat/miss, implied points */}
-            {alert.econData?.beatMiss && (
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <span
-                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                    alert.econData.beatMiss === "beat"
-                      ? "bg-emerald-500/15 text-emerald-400"
-                      : alert.econData.beatMiss === "miss"
-                        ? "bg-red-500/15 text-red-400"
-                        : "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
-                  }`}
-                >
-                  {alert.econData.beatMiss.toUpperCase()}
-                </span>
-              </div>
-            )}
-
-            {/* Footer — fuse shimmer with IV KPI + View in RiskFlow */}
-            <div className="flex items-center mt-2.5">
-              {alert.ivScore != null ? (
-                <div className="relative flex-1 flex items-center h-[18px]">
-                  {/* Fuse wire — solid low-opacity line */}
-                  <div
-                    className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[2px]"
-                    style={{
-                      backgroundColor: `${ivHeatColor(Number(alert.ivScore))}20`,
-                    }}
-                  />
-                  {/* IV score KPI — sits on the fuse wire */}
+            {/* S51: DEVIATION row — only if econ-print tag + surprisePercent */}
+            {Array.isArray(alert.tags) &&
+              alert.tags.includes("econ-print") &&
+              alert.econData?.surprisePercent != null && (
+                <div className="flex items-center justify-between mb-2">
                   <span
-                    className="relative z-10 text-[9px] font-mono font-bold tabular-nums px-1"
+                    className="text-[9px] tracking-[0.06em] uppercase"
                     style={{
-                      color: ivHeatColor(Number(alert.ivScore)),
-                      backgroundColor: "var(--fintheon-bg)",
+                      fontFamily: "var(--font-data)",
+                      color: "var(--text-secondary)",
                     }}
                   >
-                    IV {Number(alert.ivScore).toFixed(1)}
+                    DEVIATION
+                  </span>
+                  <span
+                    className="text-[9px] tabular-nums"
+                    style={{
+                      fontFamily: "var(--font-data)",
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    {alert.econData.surprisePercent.toFixed(1)}
                   </span>
                 </div>
-              ) : (
-                <div className="flex items-center gap-1.5 flex-1">
-                  {riskType && <RiskTypeBadge riskType={riskType} />}
-                  {alert.cyclical && alert.cyclical !== "Neutral" && (
-                    <CyclicalBadge classification={alert.cyclical} />
-                  )}
-                </div>
               )}
-              <div className="flex items-center gap-1 ml-2 shrink-0">
+
+            {/* Generate Note + View in RiskFlow row */}
+            <div className="flex items-center justify-between">
+              <AgentNoteSection alert={alert} onGenerate={onGenerateNote} />
+              {onNavigateToFeed && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNavigateToFeed();
+                  }}
+                  className="text-[10px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors flex items-center gap-1"
+                >
+                  View in RiskFlow
+                  <ChevronRight className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+
+            {/* S51: Gray rule moved here + sawdust fuse footer */}
+            <div className="border-t border-zinc-800/30 mt-2.5 pt-2">
+              <div className="flex items-center gap-2">
+                {/* Paperclip → source URL */}
+                {alert.url && (
+                  <a
+                    href={alert.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-1 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors shrink-0"
+                    title="Open source"
+                  >
+                    <Paperclip className="w-3.5 h-3.5" />
+                  </a>
+                )}
+
+                {/* Sawdust fuse — NothingFuse horizontal, 10 segments */}
+                <div className="flex-1">
+                  <NothingFuse
+                    value={Math.min(1, Math.max(0.1, (alert.ivScore ?? 0) / 10))}
+                    color="var(--fintheon-accent)"
+                    orientation="horizontal"
+                    thickness={3}
+                    segments={10}
+                  />
+                </div>
+
+                {/* IV score — right-justified, Doto numerals */}
+                {alert.ivScore != null && (
+                  <span
+                    className="text-[9px] font-mono font-bold tabular-nums shrink-0"
+                    style={{ color: ivHeatColor(Number(alert.ivScore)) }}
+                  >
+                    {Number(alert.ivScore).toFixed(1)}
+                  </span>
+                )}
+
+                {/* Not relevant button */}
                 {onNotRelevant && (
                   <button
                     type="button"
@@ -605,27 +685,10 @@ function AlertRow({
                       e.stopPropagation();
                       onNotRelevant(alert.id);
                     }}
-                    title="Not relevant — remove and flag"
-                    className="p-1 rounded text-zinc-600 hover:text-red-400 hover:bg-red-400/10 opacity-0 group-hover:opacity-100"
-                    style={{
-                      transition:
-                        "opacity 1.2s ease, color 0.2s ease, background-color 0.2s ease",
-                    }}
+                    title="Not relevant"
+                    className="p-1 rounded text-zinc-600 hover:text-red-400 hover:bg-red-400/10 shrink-0"
                   >
                     <ThumbsDown className="w-3 h-3" />
-                  </button>
-                )}
-                {onNavigateToFeed && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onNavigateToFeed();
-                    }}
-                    className="text-[10px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors flex items-center gap-1"
-                  >
-                    View in RiskFlow
-                    <ChevronRight className="w-3 h-3" />
                   </button>
                 )}
               </div>

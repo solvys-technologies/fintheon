@@ -1,3 +1,4 @@
+// [claude-code 2026-04-29] S51: added Earnings bucket — routes Earnings-tagged alerts to dedicated bucket
 // [claude-code 2026-04-28] S47-T1: General bucket stripped; Wire added as the
 // primary catch-all for wire/rapid-news sources. Source bucket taxonomy
 // collapses raw source values into user-facing buckets.
@@ -11,6 +12,7 @@ export type SourceBucket =
   | "Macro"
   | "Commentary"
   | "Econ"
+  | "Earnings"
   | "Geopolitical";
 
 export const SOURCE_BUCKETS: SourceBucket[] = [
@@ -19,6 +21,7 @@ export const SOURCE_BUCKETS: SourceBucket[] = [
   "OSINT",
   "Commentary",
   "Econ",
+  "Earnings",
   "Geopolitical",
 ];
 
@@ -34,6 +37,9 @@ export function bucketOf(alert: {
 
   // Geopolitical is additive but wins when present
   if (riskType === "Geopolitical") return "Geopolitical";
+
+  // Earnings — dedicated bucket before other classification
+  if (riskType === "Earnings") return "Earnings";
 
   // OSINT
   if (src === "OSINTSources" || src === "osint-sources") return "OSINT";

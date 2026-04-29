@@ -1,3 +1,4 @@
+// [claude-code 2026-04-29] S51: removed unused compositeIV/regimeShiftProbability/confidence props from ArbitrumChamber call (stale AgentDeskDebatePanel API)
 // [claude-code 2026-04-19] S25-T1: Removed KPI row (moved to Agent Desk fuses), stripped card borders to fading edges, viewport lock ≥1440px, fuses piped into DebatePanel
 // [claude-code 2026-04-25] S38: Chart-mode pin-through — TradingView/SanctumChart is hoisted out of Page 0 into a persistent right-half panel, visible across every Sanctum page. Left half scrolls/snaps independently.
 // [claude-code 2026-04-17] S23-T1: Aquarium restructure — top chart replaced with brief-pattern container (IV+Forecast | Deliberation), Chart toggle renders 50/50 with TradingView iframe, feels polish
@@ -266,9 +267,6 @@ export function Sanctum({
                         <ArbitrumChamber
                           simulationId={data?.simulationId ?? null}
                           onSynthesisComplete={onSynthesisComplete}
-                          compositeIV={data?.compositeIV}
-                          regimeShiftProbability={data?.regimeShiftProbability}
-                          confidence={data?.confidence}
                         />
                       </div>
                     </div>
