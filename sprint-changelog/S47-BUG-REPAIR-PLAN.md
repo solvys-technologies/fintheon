@@ -261,7 +261,7 @@ Primary files:
 Plan:
 
 - Fix greeting/suggestion chips reappearing after a send. Greeting should only show for empty thread/initial state.
-- Purge visible Omi references and connector entries. Rename allowed residual voice/backend references to Harper 2.1 Voice/Harper-2.1 only when safe; DB column migrations can remain pending if coordinated separately.
+- Purge visible Omi references and connector entries. Rename allowed residual voice/backend references to Harper Voice/Harper only when safe; DB column migrations can remain pending if coordinated separately.
 - Connectors list should only show VProxy/Hermes/MCP/API tools that actually work plus RiskFlow. Remove dead entries.
 - Fix jump-to-bottom false positive when attach modal is open. The button must account for modal bounds and disabled state.
 - Add document attachments for PDF and `.md` only. Reject all other files client-side and server-side.

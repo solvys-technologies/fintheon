@@ -10,7 +10,7 @@ import {
   stopHarper21VoiceSession,
   type Harper21VoiceSession,
   type Harper21VoiceTrigger,
-} from "../lib/harper-2.1-voice";
+} from "../lib/harper-voice";
 import { ensureVoicePermissions } from "../lib/system-permissions";
 
 export interface AgentResponseEventDetail {

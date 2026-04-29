@@ -40,7 +40,7 @@ const VALID_MEMORY_TYPES: MemoryType[] = [
   "artifact",
 ];
 const VALID_AGENTS = [
-  "harper-2.1",
+  "harper",
   "oracle",
   "feucht",
   "consul",

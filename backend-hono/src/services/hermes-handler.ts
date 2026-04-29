@@ -538,7 +538,7 @@ export function isHermesAvailable(): boolean {
 
 /** Map HermesAgentRole to context bank agent ID */
 const ROLE_TO_CONTEXT_BANK_ID: Record<string, string> = {
-  "harper-cao": "harper-2.1",
+  "harper-cao": "harper",
   "pma-merged": "oracle",
   "futures-desk": "feucht",
   "fundamentals-desk": "consul",
@@ -604,7 +604,7 @@ export async function handleHermesChat(
   const feedContext = await buildFeedContext();
   // Agent context bank — persistent memories from Supabase
   const contextBankAgentId =
-    ROLE_TO_CONTEXT_BANK_ID[agentInfo.agent] ?? "harper-2.1";
+    ROLE_TO_CONTEXT_BANK_ID[agentInfo.agent] ?? "harper";
   // [S23-T4] Use authenticated user id when available so agents read per-user memories
   // (falls back to SYSTEM_USER_ID for background/scheduled jobs).
   const memoryEntries = await getContextForAgent(

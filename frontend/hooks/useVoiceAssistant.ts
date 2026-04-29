@@ -129,7 +129,7 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
   }, []);
 
   const stopPlayback = useCallback(() => {
-    // [S28-T1] Browser TTS removed — all agent speech now routes through Harper 2.1 Voice.
+    // [S28-T1] Browser TTS removed — all agent speech now routes through Harper Voice.
     //   The remaining audioRef only plays sidecar-generated blobs; stopping it
     //   cancels an in-flight greeting if one is queued.
     if (audioRef.current) {
@@ -197,7 +197,7 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
     [],
   );
 
-  // [S28-T1] Browser TTS is banned. Agent audio arrives via Harper 2.1 Voice Notifications
+  // [S28-T1] Browser TTS is banned. Agent audio arrives via Harper Voice Notifications
   //   (handled server-side). If the user isn't paired, we stay silent rather
   //   than substituting a macOS voice — text still lands in the UI.
 

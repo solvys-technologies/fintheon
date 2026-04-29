@@ -162,7 +162,7 @@ git init && git add . && git commit -m "Archive of pricedinresearch.io as of 202
 - [ ] Tweet from PIC account (TP composes copy)
 - [ ] Update LinkedIn company page (TP)
 - [ ] Update email signature templates (TP)
-- [ ] Notify Harper-2.1 + Oracle in Fluxer Forum that the site is live
+- [ ] Notify Harper + Oracle in Fluxer Forum that the site is live
 - [ ] Update changelog at `~/Documents/Codebases/pricedinresearch-site/CHANGELOG.md` with v1.0.0 entry
 
 ## Done means

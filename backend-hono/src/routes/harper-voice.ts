@@ -1,8 +1,8 @@
-// [claude-code 2026-04-20] S21-T1/T2: Harper 2.1 Voice (formerly Omi) integration routes.
+// [claude-code 2026-04-20] S21-T1/T2: Harper Voice (formerly Omi) integration routes.
 // Public webhook endpoints (no Fintheon JWT — request authenticity is the
 // `uid` query param issued by Omi at OAuth time) + authed session endpoints.
 //
-// Mounted at /api/harper-2.1-voice in routes/index.ts. Webhook paths are NOT gated by
+// Mounted at /api/harper-voice in routes/index.ts. Webhook paths are NOT gated by
 // authMiddleware; session + pair paths are.
 
 import { Hono } from "hono";
@@ -17,18 +17,18 @@ import {
   resolveUserIdForHarper21VoiceUid,
   setPrimaryAgent,
   startSession,
-} from "../services/harper-2.1-voice/session-manager.js";
+} from "../services/harper-voice/session-manager.js";
 import type {
   Harper21VoiceMemoryWebhookBody,
   Harper21VoiceTranscriptWebhookBody,
   Harper21VoiceTrigger,
-} from "../services/harper-2.1-voice/types.js";
-import { routeIntent } from "../services/harper-2.1-voice/router.js";
+} from "../services/harper-voice/types.js";
+import { routeIntent } from "../services/harper-voice/router.js";
 import {
   computeFeatures,
   persistSample,
 } from "../services/prosody/extractor.js";
-import { sendNotification } from "../services/harper-2.1-voice/client.js";
+import { sendNotification } from "../services/harper-voice/client.js";
 
 const log = createLogger("Harper21VoiceRoutes");
 

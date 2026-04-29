@@ -396,7 +396,7 @@ export async function handleChat(c: Context) {
 
     const agentModel =
       agentInfo.agent === "harper-cao"
-        ? "harper-2.1"
+        ? "harper"
         : `strands-${agentInfo.agent}`;
 
     const stream = strandsToUIStream(agent, prompt, {

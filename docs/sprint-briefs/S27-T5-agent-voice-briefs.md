@@ -34,13 +34,13 @@ In `hermes-sidecar/config.yaml`, register:
 
 - `plugins.voice.tts.provider: voicebox` with Qwen3-TTS model config
 - `plugins.voice.stt.provider: whisper-turbo` (fallback to `qwen-stt` via env flag)
-- `plugins.voice.agent_id: harper-2.1-voice` — a dedicated voice agent whose SOUL inherits Harper's
+- `plugins.voice.agent_id: harper-voice` — a dedicated voice agent whose SOUL inherits Harper's
 
 Claude-08 verifies each plugin boots via:
 
 ```
 curl -X POST http://localhost:8318/v1/voice/stt -F audio=@sample.wav → {transcript}
-curl -X POST http://localhost:8318/v1/voice/tts -d '{"text":"hello","voice_id":"harper-2.1-voice","stream":true}' → audio stream
+curl -X POST http://localhost:8318/v1/voice/tts -d '{"text":"hello","voice_id":"harper-voice","stream":true}' → audio stream
 ```
 
 ## §2 — Backend streaming relay
@@ -63,7 +63,7 @@ export async function* streamVoiceReply(
 
   // 2. Start chat stream
   const chatStream = sidecarClient.chat.stream({
-    agent_id: 'harper-2.1-voice',
+    agent_id: 'harper-voice',
     conversation_id: conversationId,
     user_message: transcript,
     stream: true,
@@ -75,7 +75,7 @@ export async function* streamVoiceReply(
     if (evt.type === 'delta' && evt.payload.text) {
       ttsQueue.push(sidecarClient.voice.tts({
         text: evt.payload.text,
-        voice_id: 'harper-2.1-voice',
+        voice_id: 'harper-voice',
         stream: true,
       }))
     }

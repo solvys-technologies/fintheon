@@ -15,7 +15,7 @@ Protocol: **"Harper orchestrates, Oracle analyzes, Feucht guards, Consul validat
 
 | Agent          | Role                                             |
 | -------------- | ------------------------------------------------ |
-| **Harper-2.1** | CAO — executive synthesis, full platform access  |
+| **Harper** | CAO — executive synthesis, full platform access  |
 | **Oracle**     | Prediction markets, probabilistic reasoning      |
 | **Feucht**     | Futures/risk, technical levels, execution        |
 | **Consul**     | Mega-cap fundamentals, earnings, sector rotation |
@@ -146,7 +146,7 @@ This prevents other agents (Harper, Cursor, Codex) from "fixing" your intentiona
 
 ## API Endpoints (Key)
 
-- `POST /api/harper/chat` — Harper-2.1 chat
+- `POST /api/harper/chat` — Harper chat
 - `GET  /api/riskflow/feed` — Scored news feed
 - `GET  /api/riskflow/iv-aggregate` — IV score with VIX
 - `POST /api/data/brief/generate` — Trigger brief (MDB/ADB/PMDB/TWT)

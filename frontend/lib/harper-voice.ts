@@ -1,5 +1,5 @@
 // [claude-code 2026-04-20] S21: Frontend Omi API client.
-// Wraps the authed /api/harper-2.1-voice/* endpoints used by HeaderVoiceControl,
+// Wraps the authed /api/harper-voice/* endpoints used by HeaderVoiceControl,
 // PsychAssist widgets, and the Performance-tab chat button.
 import { getAccessToken } from "./supabase";
 
@@ -38,7 +38,7 @@ async function authedFetch(
 export async function startHarper21VoiceSession(
   trigger: Harper21VoiceTrigger,
 ): Promise<Harper21VoiceSession | null> {
-  const res = await authedFetch("/api/harper-2.1-voice/session/start", {
+  const res = await authedFetch("/api/harper-voice/session/start", {
     method: "POST",
     body: JSON.stringify({ trigger }),
   });
@@ -48,11 +48,11 @@ export async function startHarper21VoiceSession(
 }
 
 export async function stopHarper21VoiceSession(): Promise<void> {
-  await authedFetch("/api/harper-2.1-voice/session/stop", { method: "POST" });
+  await authedFetch("/api/harper-voice/session/stop", { method: "POST" });
 }
 
 export async function getActiveHarper21VoiceSession(): Promise<Harper21VoiceSession | null> {
-  const res = await authedFetch("/api/harper-2.1-voice/session/active");
+  const res = await authedFetch("/api/harper-voice/session/active");
   if (!res.ok) return null;
   const body = (await res.json()) as { session: Harper21VoiceSession | null };
   return body.session ?? null;
@@ -63,7 +63,7 @@ export async function notifyOmi(
   title?: string,
   speak = true,
 ): Promise<boolean> {
-  const res = await authedFetch("/api/harper-2.1-voice/notify", {
+  const res = await authedFetch("/api/harper-voice/notify", {
     method: "POST",
     body: JSON.stringify({ title, message, speak }),
   });

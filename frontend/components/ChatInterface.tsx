@@ -105,7 +105,7 @@ function ChatInterfaceInner({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            agentId: "harper-2.1",
+            agentId: "harper",
             memoryType: "observation",
             content: content.slice(0, 500),
             metadata: {

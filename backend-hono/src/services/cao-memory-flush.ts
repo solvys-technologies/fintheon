@@ -146,7 +146,7 @@ export async function autoFlushMemory(
       },
       {
         category: `personal-${userId}`,
-        agentName: "harper-2.1",
+        agentName: "harper",
         ttlHours: 168, // 7 days
       },
     );
@@ -193,7 +193,7 @@ export async function verbalFlushMemory(
     },
     {
       category: `personal-${userId}`,
-      agentName: "harper-2.1",
+      agentName: "harper",
       ttlHours: 720, // 30 days — verbal saves are more intentional
     },
   );
@@ -210,7 +210,7 @@ export async function verbalFlushMemory(
 export async function saveFirmMemory(
   key: string,
   value: Record<string, unknown>,
-  agentName = "harper-2.1",
+  agentName = "harper",
 ): Promise<void> {
   await setSharedMemory(key, value, {
     category: "firm",
@@ -226,7 +226,7 @@ export async function savePersonalMemory(
   key: string,
   value: Record<string, unknown>,
   userId: string,
-  agentName = "harper-2.1",
+  agentName = "harper",
 ): Promise<void> {
   await setSharedMemory(key, value, {
     category: `personal-${userId}`,
