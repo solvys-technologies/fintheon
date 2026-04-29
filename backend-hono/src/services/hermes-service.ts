@@ -130,39 +130,41 @@ const HERMES_AGENTS: Record<
   },
 };
 
-// [claude-code 2026-04-21] S28: All sub-agents locked to Qwen3.5:397b-cloud via Hermes.
-// Harper toggles via HARPER_DEFAULT_PROVIDER=qwen|anthropic (default: anthropic).
-// [claude-code 2026-04-26] S35-T11: All Arbitrum seats also locked to
-// qwen3.5:397b-cloud via Ollama Cloud. DashScope removed (paid, no key).
-// resolveProvider() now returns 'ollama' for every Hermes-routed Qwen task;
-// OpenRouter remains reserved for harper-cao's Claude-Opus path.
+// [claude-code 2026-04-29] DeepSeek migration — every Hermes-routed sub-agent
+// task now uses `deepseek-reasoner` (DeepSeek's thinking model) via DeepSeek's
+// OpenAI-compatible API. Harper-cao keeps its Claude-Opus path; Arbitrum seats
+// route through the new 'deepseek' provider. Local Ollama still works as a
+// fallback when DEEPSEEK_API_KEY is unset (the ollama-hermes-client honours
+// HERMES_SIDECAR_URL / OLLAMA_BASE_URL).
 export const HERMES_TASK_MODEL_MAP: Record<string, string> = {
   "harper-cao": "anthropic/claude-opus-4.7",
   "cao-approval": "anthropic/claude-opus-4.7",
   "cao-consolidation": "anthropic/claude-opus-4.7",
-  "pma-merged": "qwen3.5:397b-cloud",
-  "prediction-market": "qwen3.5:397b-cloud",
-  "futures-desk": "qwen3.5:397b-cloud",
-  "fa-rippers": "qwen3.5:397b-cloud",
-  "economic-analysis": "qwen3.5:397b-cloud",
-  "fundamentals-desk": "qwen3.5:397b-cloud",
-  "earnings-analysis": "qwen3.5:397b-cloud",
-  "tech-mega-cap": "qwen3.5:397b-cloud",
-  herald: "qwen3.5:397b-cloud",
-  "arbitrum-seat-lead": "qwen3.5:397b-cloud",
-  "arbitrum-seat-forecaster": "qwen3.5:397b-cloud",
-  "arbitrum-seat-risk": "qwen3.5:397b-cloud",
-  "arbitrum-seat-quant": "qwen3.5:397b-cloud",
-  "arbitrum-seat-bear": "qwen3.5:397b-cloud",
+  "pma-merged": "deepseek-reasoner",
+  "prediction-market": "deepseek-reasoner",
+  "futures-desk": "deepseek-reasoner",
+  "fa-rippers": "deepseek-reasoner",
+  "economic-analysis": "deepseek-reasoner",
+  "fundamentals-desk": "deepseek-reasoner",
+  "earnings-analysis": "deepseek-reasoner",
+  "tech-mega-cap": "deepseek-reasoner",
+  herald: "deepseek-reasoner",
+  "arbitrum-seat-lead": "deepseek-reasoner",
+  "arbitrum-seat-forecaster": "deepseek-reasoner",
+  "arbitrum-seat-risk": "deepseek-reasoner",
+  "arbitrum-seat-quant": "deepseek-reasoner",
+  "arbitrum-seat-bear": "deepseek-reasoner",
 };
 
-// [claude-code 2026-04-26] S35-T11: Provider-routing abstraction. DashScope
-// removed. Any model id not in ARBITRUM_MODEL_PROVIDER_MAP defaults to
-// 'openrouter' — this preserves harper-cao's existing Claude-Opus OpenRouter
-// path verbatim.
-export type ArbitrumProvider = "ollama" | "groq" | "openrouter";
+// [claude-code 2026-04-29] Provider-routing abstraction. 'deepseek' is the
+// primary path for all Hermes sub-agent tasks. 'ollama' stays available for
+// local Ollama models (e.g. dev mode without an internet key). Any unmapped
+// model defaults to 'openrouter' — preserving harper-cao's Opus path verbatim.
+export type ArbitrumProvider = "deepseek" | "ollama" | "groq" | "openrouter";
 
 const ARBITRUM_MODEL_PROVIDER_MAP: Record<string, ArbitrumProvider> = {
+  "deepseek-reasoner": "deepseek",
+  "deepseek-chat": "deepseek",
   "qwen3.5:397b-cloud": "ollama",
 };
 

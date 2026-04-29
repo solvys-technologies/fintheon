@@ -13,9 +13,7 @@ export const changelog: ChangelogEntry[] = [
     agent: "claude-code",
     summary:
       "S49 hotfix: Harper routes (/api/harper/chat, /api/harper/dispatch) were mounted without authMiddleware, causing c.get('userId') to be undefined — inline auth check always rejected. Added authMiddleware to /api/harper route mount. BYPASS_AUTH=true provides local-user context. Both endpoints verified working (SSE stream + dispatch conversation seed).",
-    files: [
-      "backend-hono/src/routes/index.ts",
-    ],
+    files: ["backend-hono/src/routes/index.ts"],
   },
   {
     date: "2026-04-29T16:00:00",

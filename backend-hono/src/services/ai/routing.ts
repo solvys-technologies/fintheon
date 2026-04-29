@@ -49,9 +49,12 @@ export interface RoutingRule {
 // `qwen/qwen3.5-plus-02-15` or a Hermes-4 variant — see brief §5 fallback.
 export const QWEN_REASONING_LATEST = "qwen/qwen3.6-plus-preview:free";
 
-// [claude-code 2026-04-21] S28: Qwen3.5 397B Cloud — static model for all Hermes sub-agents.
-// Harper can toggle between this and Claude Opus 4.7 via HARPER_DEFAULT_PROVIDER env.
-export const QWEN_CLOUD_LATEST = "qwen3.5:397b-cloud";
+// [claude-code 2026-04-29] DeepSeek migration — Hermes sub-agents now route to
+// `deepseek-reasoner` (DeepSeek's thinking model) via DeepSeek's OpenAI-compat
+// API. Harper still toggles between this and Claude Opus 4.7 via
+// HARPER_DEFAULT_PROVIDER. The constant name stays QWEN_CLOUD_LATEST in this
+// release to avoid touching every call site; rename in a follow-up sweep.
+export const QWEN_CLOUD_LATEST = "deepseek-reasoner";
 
 // [claude-code 2026-04-20] S28 directive — model split:
 //   - CAO (Harper) keeps Opus (heaviest reasoning, only position that needs it)
