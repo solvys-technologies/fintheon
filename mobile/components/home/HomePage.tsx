@@ -1,3 +1,5 @@
+// [claude-code 2026-04-29] S49: added MobileDeskPlan below BriefingCard on Page 1;
+//   moved MiniSessionCalendar to last page (bottom of dash); stripped Risk Signals page.
 // [claude-code 2026-04-18] v5.22 polish per TP: (a) page 2 swapped from TradingView
 //   EconCalendarEmbed (rendered as a black void on TP's screenshot) to native
 //   MiniSessionCalendar — same data, no third-party iframe, no widget rendering bug.
@@ -20,12 +22,12 @@ import { VixBadge } from "../shared/VixBadge";
 import { BriefingCard } from "./BriefingCard";
 import { AquariumSummary } from "./AquariumSummary";
 import { InstrumentOutlookCards } from "./InstrumentOutlookCards";
-import { MobileRiskSignalCards } from "./RiskSignalCards";
 // [claude-code 2026-04-25] S35: mobile Arbitrum surface — chamber consensus + dissent
 //   on the home dash. Was missing entirely; risk signals from the chamber were never
 //   reaching the mobile dash because the integration didn't exist.
 import { ArbitrumVerdictCard } from "./ArbitrumVerdictCard";
 import { MiniSessionCalendar } from "./MiniSessionCalendar";
+import { MobileDeskPlan } from "./MobileDeskPlan";
 import { TimelineView } from "./TimelineView";
 import { useIVScore } from "../../hooks/useIVScore";
 import { useObserveHeroVixVisibility } from "../../hooks/useHeroVixVisible";
@@ -339,39 +341,27 @@ export function HomePage() {
           <motion.div variants={item} style={{ flex: 1 }}>
             <BriefingCard />
           </motion.div>
+
+          {/* Desk Plan */}
+          <motion.div variants={item}>
+            <div className="fade-divider" style={{ marginBottom: 14 }} />
+            <MobileDeskPlan />
+          </motion.div>
         </motion.div>
       </SnapPage>
 
-      {/* Page 2: Session Calendar + Aquarium Analysis
-          [claude-code 2026-04-18] Replaced the TradingView Econ Calendar embed with the
-          native MiniSessionCalendar — the TV iframe was rendering as a black void on TP's
-          phone. Native version reads /api/econ/calendar directly, no third-party widget. */}
-      <SnapPage style={{ padding: 0, gap: 0 }}>
+      {/* Page 2: Aquarium Analysis */}
+      <SnapPage>
         <div
           style={{
             flex: 1,
-            minHeight: 0,
-            display: "flex",
-            flexDirection: "column",
+            paddingTop: 24,
+            paddingBottom: 24,
             position: "relative",
             zIndex: 1,
           }}
         >
-          <div
-            style={{
-              flex: 1,
-              minHeight: 0,
-              overflowY: "auto",
-              WebkitOverflowScrolling: "touch",
-              padding: "16px 16px 0",
-            }}
-          >
-            <MiniSessionCalendar maxEvents={20} />
-          </div>
-          <div className="fade-divider" style={{ margin: "0 16px" }} />
-          <div style={{ padding: "12px 16px 16px", flexShrink: 0 }}>
-            <AquariumSummary />
-          </div>
+          <AquariumSummary />
         </div>
       </SnapPage>
 
