@@ -84,17 +84,22 @@ Status: FOUND | PARTIAL | BLOCKED
 Failure class: ...
 
 ## Evidence
+
 - `path:line` -- finding
 
 ## Root Cause
+
 ...
 
 ## Minimal Fix
+
 ...
 
 ## Regression Test
+
 ...
 
 ## Risks
+
 ...
 ```

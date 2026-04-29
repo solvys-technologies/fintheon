@@ -21,15 +21,19 @@ Review backend work against Solvys/Fintheon rules.
 
 ```markdown
 ## Backend Quality Review
+
 Verdict: PASS | WARN | FAIL
 
 ## Findings
+
 - PASS/WARN/FAIL `path:line` -- finding
 
 ## Required Fixes
+
 1. ...
 
 ## Validation Path
+
 - `cd backend-hono && bun run build`
 - route/job-specific smoke test
 ```

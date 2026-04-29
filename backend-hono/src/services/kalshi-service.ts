@@ -16,6 +16,42 @@ const WHALE_THRESHOLD_CONTRACTS = 100;
 const WHALE_THRESHOLD_NOTIONAL = 5000; // USD
 const CLUSTER_WINDOW_MS = 60_000;
 
+// [claude-code 2026-04-28] S48-T2: Econ & Politics category filter for RiskFlow pipe.
+const ECON_POLITICS_CATS = new Set([
+  "economics",
+  "politics",
+  "monetary-policy",
+  "fiscal",
+  "federal-reserve",
+  "interest-rates",
+  "inflation",
+  "employment",
+  "trade-policy",
+  "tariffs",
+  "regulation",
+  "geopolitical",
+  "election",
+  "treasury",
+  "tax",
+  "budget",
+  "deficit",
+  "energy",
+  "oil",
+]);
+const EXCLUDED_CATS = new Set([
+  "weather",
+  "crypto",
+  "cryptocurrency",
+  "entertainment",
+  "sports",
+  "memes",
+  "celebrity",
+  "music",
+  "tv",
+  "movie",
+  "gaming",
+]);
+
 interface KalshiCredentials {
   email: string;
   password: string;
@@ -203,6 +239,24 @@ export function createKalshiService() {
         markets: marketsRes.markets,
         lastTradeFetchedAt: new Date().toISOString(),
       };
+    },
+
+    async getEconPoliticsWhaleAlerts(): Promise<KalshiWhaleResponse> {
+      const { alerts, markets, lastTradeFetchedAt } =
+        await this.getWhaleAlerts();
+
+      const filtered = alerts.filter((a) => {
+        const cat = a.category?.toLowerCase();
+        if (!cat) return false;
+        if (EXCLUDED_CATS.has(cat)) return false;
+        if (ECON_POLITICS_CATS.has(cat)) return true;
+        for (const kw of ECON_POLITICS_CATS) {
+          if (cat.includes(kw)) return true;
+        }
+        return false;
+      });
+
+      return { alerts: filtered, markets, lastTradeFetchedAt };
     },
 
     /** Place an order (agentic mode). Returns order ID or null on failure. */

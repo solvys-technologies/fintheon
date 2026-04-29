@@ -8,7 +8,10 @@
 import { sidecarClient, isSidecarEnabled } from "./ai/sidecar-client.js";
 import { selectModel } from "./ai/routing.js";
 import { createLogger } from "../lib/logger.js";
-import { getActiveSttProvider, getSttProviderDiagnostics } from "./voice-stt-provider.js";
+import {
+  getActiveSttProvider,
+  getSttProviderDiagnostics,
+} from "./voice-stt-provider.js";
 import { transcribeWithOpenAI } from "./voice-whisper-client.js";
 
 const log = createLogger("VoiceService");

@@ -236,7 +236,7 @@ export function Sanctum({
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col gap-4">
-                  {/* Brief-pattern top container — Volatility Read left (55%), Deliberation right (45%) — no outer border, fading ruler divides */}
+                  {/* Brief-pattern top container — Volatility Read + Arbitrum Chamber 50/50, ruler divides */}
                   <div className="min-h-[520px] flex">
                     <div className="flex-1 flex overflow-hidden mx-1 my-1">
                       {/* Left: Volatility Read — Blended IV + Next Session Forecast (50%) */}
@@ -248,9 +248,7 @@ export function Sanctum({
                           >
                             Volatility Read
                           </span>
-                          {isLoading && (
-                            <SolvysLoader size={12} />
-                          )}
+                          {isLoading && <SolvysLoader size={12} />}
                         </div>
                         {/* [claude-code 2026-04-27] S46.4/K: combined IV+forecast card */}
                         <BlendedIVForecastCard
@@ -263,8 +261,8 @@ export function Sanctum({
                       {/* Vertical ruler between Volatility Read and Deliberation */}
                       <div className="w-px shrink-0 bg-[var(--fintheon-accent)]/10" />
 
-                      {/* Right: AgentDesk Deliberation with SIGNAL/REGIME/HEAT fuses at bottom (50%) */}
-                      <div className="flex-1 min-w-0 min-h-0 flex flex-col">
+                      {/* Right: Arbitrum Chamber (50%) */}
+                      <div className="flex-1 min-w-0 min-h-0 flex flex-col p-4 overflow-y-auto">
                         <ArbitrumChamber
                           simulationId={data?.simulationId ?? null}
                           onSynthesisComplete={onSynthesisComplete}
@@ -393,7 +391,6 @@ export function Sanctum({
                   <div>
                     <ConsolidatedTradeLedger />
                   </div>
-
                 </div>
               ) : (
                 <div className="flex-1 flex items-center justify-center">

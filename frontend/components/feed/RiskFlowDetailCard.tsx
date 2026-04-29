@@ -341,23 +341,8 @@ export function RiskFlowDetailCard({
               </div>
             )}
 
-            {/* Tags + Author + Source link */}
+            {/* Author + Source link */}
             <div className="flex items-center gap-2 flex-wrap">
-              {alert.tags.filter((t) => !t.startsWith("url:")).length > 0 && (
-                <div className="flex gap-1">
-                  {alert.tags
-                    .filter((t) => !t.startsWith("url:"))
-                    .slice(0, 4)
-                    .map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-[9px] px-1.5 py-0.5 bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/20 rounded-[2px]"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                </div>
-              )}
               {alert.authorHandle && (
                 <span className="text-[9px] text-[var(--fintheon-accent)]/60">
                   @{alert.authorHandle}

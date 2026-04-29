@@ -74,5 +74,3 @@ export function SanctumHeader({
     </div>
   );
 }
-
-

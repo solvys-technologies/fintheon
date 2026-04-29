@@ -41,6 +41,8 @@ interface ExtractedTweet {
    *  a video / animated_gif. RiskFlowDetailCard renders <video> inline
    *  (OSINT-prioritized). */
   video_url?: string | null;
+  /** S48-T1: which pipeline tag to use ("x-syndication" vs "xactions") */
+  pipeline_tag?: string;
 }
 
 function stripHandle(h: string): string {
@@ -281,14 +283,14 @@ async function fetchSyndicationTweets(
         tweets: xa.length,
       }),
     );
+    // [claude-code 2026-04-28] S48-T1: XActions items tagged "xactions" pipeline
     return xa.map((t) => ({
       tweet_id: t.tweet_id,
       text: t.text,
       timestamp: t.timestamp,
       permalink: t.permalink,
-      // XActions client returns image_url when the tweet has media; the
-      // tolerant tweet-shape harvester walks media_url_https variants.
       image_url: (t as { image_url?: string | null }).image_url ?? null,
+      pipeline_tag: "xactions",
     }));
   }
 
@@ -346,6 +348,7 @@ export async function collectFromXHandlesBrowser(
         published_at: tw.timestamp || new Date().toISOString(),
         fetched_at: new Date().toISOString(),
         fetch_latency_ms,
+        ingest_pipeline: tw.pipeline_tag || "x-syndication",
       });
     }
   }

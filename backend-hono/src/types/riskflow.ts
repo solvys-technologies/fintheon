@@ -94,6 +94,8 @@ export interface FeedItem {
     impliedPoints: number | null;
     instrument: string | null;
   };
+  /** Pipeline label — which ingest path produced this item */
+  ingest_pipeline?: string;
   /** Narrative lifecycle — populated after catalyst promotion */
   promotedAt?: string | null;
   narrativeThreads?: string[];

@@ -9,6 +9,39 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-29T01:00:00",
+    agent: "claude-code",
+    summary:
+      "[v5.35.0] T4 layout fixes + S47 deferred: app frame full border + rounded-tr[6px] + sidebar shadow on expand, Strategium drawer conversion (translate-x slide, hidden by default), SanctumBriefing restructure (analysis→consensus), 50/50 hero comment fix, dead connector filter (Omi), category pill removal from RiskFlow expanded cards",
+    files: [
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/narrative/SanctumBriefing.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+      "frontend/components/feed/RiskFlowDetailCard.tsx",
+      "frontend/hooks/useMcpConnectors.ts",
+    ],
+  },
+  {
+    date: "2026-04-28T23:55:00",
+    agent: "claude-code",
+    summary:
+      "S48-T2: Kalshi whale tracker → RiskFlow pipe, wire speculation noise filter, Treasury auction RSS scraper, Unusual Whales agent prompt updates, and CAO Desk Plan midnight pulse. New files: kalshi-feed-pipe.ts (maps Econ/Politics whale alerts to CollectedNewsItem for standard tier scoring), speculation-filter.ts (14 hedged-language patterns — wire items demoted ×0.7, non-wire blocked, econ-calendar exempt), treasury-feed.ts (home.treasury.gov RSS post-filtered to auction headlines), desk-planner.ts (midnight ET cron queries economic_events, generates DeskPlan with countdown timestamps + in-memory cache). Existing: kalshi-service.ts gained getEconPoliticsWhaleAlerts() (filters getWhaleAlerts by econ/politics category set, excludes weather/crypto/meme/sports); sources/index.ts wired both kalshi:whale-alerts + agent-reach:treasury-auctions into standard tier; boot/services.ts wired startDeskPlanCron(); types.ts added 'kalshi' to NewsSource union. All 4 agent *-extra.md files updated with UW data-source instructions (GEX, options walls, options flow) per the sprint brief specs. All new files under 300 lines; backend build clean.",
+    files: [
+      "backend-hono/src/services/kalshi-service.ts",
+      "backend-hono/src/services/riskflow/kalshi-feed-pipe.ts",
+      "backend-hono/src/services/riskflow/speculation-filter.ts",
+      "backend-hono/src/services/riskflow/treasury-feed.ts",
+      "backend-hono/src/services/desk-planner.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/index.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/types.ts",
+      "backend-hono/src/boot/services.ts",
+      "backend-hono/src/services/ai/agent-instructions/harper-extra.md",
+      "backend-hono/src/services/ai/agent-instructions/oracle-extra.md",
+      "backend-hono/src/services/ai/agent-instructions/feucht-extra.md",
+      "backend-hono/src/services/ai/agent-instructions/consul-extra.md",
+    ],
+  },
+  {
     date: "2026-04-28T23:45:00",
     agent: "claude-code",
     summary:

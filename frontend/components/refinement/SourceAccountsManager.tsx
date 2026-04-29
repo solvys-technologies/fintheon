@@ -73,7 +73,14 @@ export function SourceAccountsManager({
   const [editErrors, setEditErrors] = useState<Record<string, string>>({});
 
   const sorted = [...accounts].sort((a, b) => {
-    const catOrder = ["Wire", "Macro", "OSINT", "Geopolitical", "Official", "Custom"];
+    const catOrder = [
+      "Wire",
+      "Macro",
+      "OSINT",
+      "Geopolitical",
+      "Official",
+      "Custom",
+    ];
     const ai = catOrder.indexOf(a.category);
     const bi = catOrder.indexOf(b.category);
     if (ai !== bi) return ai - bi;
@@ -178,7 +185,14 @@ export function SourceAccountsManager({
       console.error("[SourceAccountsManager] Edit failed:", err);
       setEditErrors({ general: "Network error" });
     }
-  }, [editingId, editHandle, editDisplayName, editCategory, editMethod, onAccountsChanged]);
+  }, [
+    editingId,
+    editHandle,
+    editDisplayName,
+    editCategory,
+    editMethod,
+    onAccountsChanged,
+  ]);
 
   return (
     <div className="space-y-2">
@@ -212,7 +226,9 @@ export function SourceAccountsManager({
                   placeholder="Handle (no @)"
                 />
                 {editErrors.handle && (
-                  <div className="text-[10px] text-red-400">{editErrors.handle}</div>
+                  <div className="text-[10px] text-red-400">
+                    {editErrors.handle}
+                  </div>
                 )}
                 <input
                   value={editDisplayName}
@@ -249,13 +265,19 @@ export function SourceAccountsManager({
                   </select>
                 </div>
                 {editErrors.category && (
-                  <div className="text-[10px] text-red-400">{editErrors.category}</div>
+                  <div className="text-[10px] text-red-400">
+                    {editErrors.category}
+                  </div>
                 )}
                 {editErrors.method && (
-                  <div className="text-[10px] text-red-400">{editErrors.method}</div>
+                  <div className="text-[10px] text-red-400">
+                    {editErrors.method}
+                  </div>
                 )}
                 {editErrors.general && (
-                  <div className="text-[10px] text-red-400">{editErrors.general}</div>
+                  <div className="text-[10px] text-red-400">
+                    {editErrors.general}
+                  </div>
                 )}
                 <div className="flex gap-1.5">
                   <button

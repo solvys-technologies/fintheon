@@ -534,7 +534,11 @@ export function createDiagnosticsRoutes(): Hono {
       getEconBackfillDiagnostics().catch(() => null),
       loadSourceAccountDiagnostics(),
       loadRiskFlowSourceStats(),
-      getTranscriptStats24h().catch(() => ({ count: 0, lastCaptureAt: null, lastFailure: null })),
+      getTranscriptStats24h().catch(() => ({
+        count: 0,
+        lastCaptureAt: null,
+        lastFailure: null,
+      })),
     ]);
 
     const missingEnvVars = auditEnvVars();

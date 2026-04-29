@@ -682,12 +682,15 @@ export async function scoringCycle(): Promise<number> {
         // 4) Source-link purge: items with no way to trace back to an original.
         //    Items from these sources have their own resolvable context even
         //    without a URL, so we keep them.
+        // S48-T1 Fix 4: Added EconomicCalendar — econ prints have no URL but
+        // are structurally trustworthy (parsed from calendar + FJ X timeline).
         const TRUSTED_SOURCELESS = [
           "FinancialJuice",
           "DeItaOne",
           "TwitterCli",
           "OSINTSources",
           "Hermes",
+          "EconomicCalendar",
         ];
         try {
           const { data: candidates } = await sb

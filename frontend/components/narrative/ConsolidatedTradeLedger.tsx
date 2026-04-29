@@ -48,7 +48,7 @@ function ageHours(row: PolymarketOutlook): number {
   return Math.max(0, ms / 3_600_000);
 }
 
-  function ageLabel(hours: number): string {
+function ageLabel(hours: number): string {
   if (hours < 1) return "just now";
   if (hours < 24) return `${Math.round(hours)}h`;
   const days = Math.floor(hours / 24);

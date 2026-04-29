@@ -88,15 +88,19 @@ Surface: ...
 Goal: polish existing UI, no redesign
 
 ## Findings
+
 - `path:line` -- overlooked detail, why it matters, exact cleanup
 
 ## Changes Applied
+
 - ...
 
 ## Deferred
+
 - ...
 
 ## Validation
+
 - `npx tsc --noEmit --project frontend/tsconfig.json`
 - `rm -rf dist && npx vite build`
 - Browser/mobile check: ...

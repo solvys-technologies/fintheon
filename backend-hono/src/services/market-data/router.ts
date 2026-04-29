@@ -42,10 +42,7 @@ export function getLastVixAttempts(): RouterAttempt[] {
   return [...state.lastVixAttempts];
 }
 
-function recordQuoteAttempt(
-  symbol: string,
-  attempt: RouterAttempt,
-): void {
+function recordQuoteAttempt(symbol: string, attempt: RouterAttempt): void {
   const key = symbol.toUpperCase();
   const existing = state.lastQuoteAttempts.get(key) ?? [];
   existing.push(attempt);
@@ -238,7 +235,9 @@ interface NarrativeContext {
   publishedAt?: string;
 }
 
-async function tier3Narrative(symbol: string): Promise<NarrativeContext | null> {
+async function tier3Narrative(
+  symbol: string,
+): Promise<NarrativeContext | null> {
   const start = Date.now();
   try {
     const { getFeed } = await import("../riskflow/feed-service.js");
@@ -454,9 +453,7 @@ export async function fetchVIX(): Promise<VixResult> {
  * Get the most recent fallback source used for a symbol.
  * Returns null if no attempts recorded.
  */
-export function getLastFallbackSource(
-  symbol: string,
-): string | null {
+export function getLastFallbackSource(symbol: string): string | null {
   const attempts = getLastQuoteAttempts(symbol);
   const last = attempts[attempts.length - 1];
   return last?.success ? last.source : null;

@@ -253,11 +253,11 @@ export function ProposalWidget() {
               </div>
             )}
 
-                  {/* Active Proposal Card */}
-              <div>
-                <div className="text-[10px] text-[var(--fintheon-text)]/40 uppercase tracking-[0.2em] font-semibold mb-2">
-                  Active Proposal
-                </div>
+            {/* Active Proposal Card */}
+            <div>
+              <div className="text-[10px] text-[var(--fintheon-text)]/40 uppercase tracking-[0.2em] font-semibold mb-2">
+                Active Proposal
+              </div>
 
               {loading ? (
                 <div className="flex items-center justify-center py-12">
@@ -344,7 +344,9 @@ export function ProposalWidget() {
                   {/* Strategy + rationale */}
                   <div className="px-4 py-3 space-y-2">
                     <div className="text-[10px] text-[var(--fintheon-text)]/40">
-                      <span className="text-[var(--fintheon-text)]/30">Strategy:</span>{" "}
+                      <span className="text-[var(--fintheon-text)]/30">
+                        Strategy:
+                      </span>{" "}
                       {STRATEGY_LABELS[proposal.strategyName] ||
                         proposal.strategyName}
                     </div>

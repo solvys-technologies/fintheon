@@ -1,3 +1,4 @@
+// [claude-code 2026-04-28] S48-T1: Added ingest_pipeline field for per-item pipeline tracking
 // [claude-code 2026-04-24] S35-T10: renamed dir from workers/news-worker. Type names
 //   (CollectedNewsItem, NewsTier, NewsSource) preserved to keep downstream consumers stable.
 // [claude-code 2026-04-19] S27-T7 (W2d): shared types for riskflow-worker sources.
@@ -8,6 +9,7 @@ export type NewsSource =
   | "browser-harness"
   | "exa"
   | "agent-reach"
+  | "kalshi"
   | `twitter:${string}`;
 
 export interface CollectedNewsItem {
@@ -34,4 +36,6 @@ export interface CollectedNewsItem {
   published_at: string;
   fetched_at: string;
   fetch_latency_ms: number;
+  /** S48-T1: Which ingest pipeline produced this item */
+  ingest_pipeline?: string;
 }

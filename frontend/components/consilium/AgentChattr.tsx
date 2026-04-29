@@ -3,13 +3,7 @@
 // [claude-code 2026-03-24] Boardroom UX overhaul — removed sidebar, inline copy, green WiFi pulse, status bar right-aligned
 // [claude-code 2026-03-22] Track 3: Boardroom with PromptBox replacing built-in textarea
 import { useState, useEffect, useRef, useCallback } from "react";
-import {
-  ChevronDown,
-  X,
-  History,
-  Clock,
-  Square,
-} from "lucide-react";
+import { ChevronDown, X, History, Clock, Square } from "lucide-react";
 import { ConsiliumMessage, type BoardroomMessage } from "./ConsiliumMessage";
 import { AGENT_MAP, type BoardroomAgent } from "./AgentBadge";
 import { PromptBox } from "../ui/chatgpt-prompt-input";

@@ -18,17 +18,22 @@ Audit for boundary, contract, validation, operational, design, context, and secu
 
 ```markdown
 ## Tech Debt Audit
+
 Summary: ...
 
 ## Top Risks
+
 | Priority | Finding | Evidence | Suggested Slice |
 
 ## Findings
+
 - P1 `path:line` -- finding, impact, why now
 
 ## Recommended Sprint Slices
+
 1. ...
 
 ## Not Debt
+
 - `path:line` -- intentional tradeoff
 ```

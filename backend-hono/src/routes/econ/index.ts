@@ -79,12 +79,13 @@ function fingerprintHistory(
   const parts: string[] = [];
   for (const t of tickers) {
     const prints = printsByTicker.get(t) ?? [];
-    const ids = prints
-      .map((p) => p.id ?? `${p.date}:${p.actual}`)
-      .join(",");
+    const ids = prints.map((p) => p.id ?? `${p.date}:${p.actual}`).join(",");
     parts.push(`${t}=[${ids}]`);
   }
-  return createHash("sha256").update(parts.join("|")).digest("hex").slice(0, 24);
+  return createHash("sha256")
+    .update(parts.join("|"))
+    .digest("hex")
+    .slice(0, 24);
 }
 
 function extractJson(text: string): {
@@ -247,11 +248,7 @@ export function createEconRoutes() {
         if (actual != null && forecast != null && forecast !== 0) {
           surprise = ((actual - forecast) / Math.abs(forecast)) * 100;
           direction =
-            Math.abs(surprise) < 2
-              ? "inline"
-              : surprise > 0
-                ? "beat"
-                : "miss";
+            Math.abs(surprise) < 2 ? "inline" : surprise > 0 ? "beat" : "miss";
         }
         return {
           id: p.id,
@@ -261,8 +258,7 @@ export function createEconRoutes() {
           actual,
           forecast,
           previous,
-          surprise:
-            surprise != null ? Math.round(surprise * 100) / 100 : null,
+          surprise: surprise != null ? Math.round(surprise * 100) / 100 : null,
           direction,
           ivScore: p.iv_score ?? null,
         };
@@ -364,7 +360,8 @@ Return the JSON schema specified in the system prompt.`;
       event_family: cacheKey.eventFamily,
       date_range: cacheKey.dateRange,
       version: cacheKey.version,
-      selected_event_ids: selectedEventIds.length > 0 ? selectedEventIds : tickers,
+      selected_event_ids:
+        selectedEventIds.length > 0 ? selectedEventIds : tickers,
       raw_normalized_rows: events.map((e) => ({
         ticker: e.ticker,
         confidence: e.confidence,

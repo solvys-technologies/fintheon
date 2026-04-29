@@ -1,4 +1,5 @@
 // [claude-code 2026-04-04] Rewritten: fetch live MCP config from backend + merge internal connectors
+// [claude-code 2026-04-28] T4: filter dead connectors — Omi, env-gated, 404-prone
 import { useState, useEffect, useCallback } from "react";
 import type { McpServerConfig, McpServerId } from "../types/mcp";
 import { API_BASE_URL } from "../components/chat/constants";
@@ -6,6 +7,9 @@ import { INTERNAL_CONNECTORS } from "../lib/internalConnectors";
 
 const STORAGE_KEY = "fintheon:mcp-active-connectors";
 const INTERNAL_DISABLED_KEY = "fintheon:internal-connectors-disabled";
+
+/** Connectors known to be dead or gated by missing env vars — filtered from all lists. */
+const DEAD_CONNECTOR_IDS = new Set<string>(["omi"]);
 
 function getInternalDisabled(): Set<string> {
   try {
@@ -38,7 +42,9 @@ export function useMcpConnectors() {
         ...c,
         enabled: c.locked ? true : !internalDisabled.has(c.id),
       }));
-      const allServers = [...internals, ...mcpServers];
+      const allServers = [...internals, ...mcpServers].filter(
+        (s) => !DEAD_CONNECTOR_IDS.has(s.id),
+      );
       setServers(allServers);
 
       // Sync activeIds with server enabled state (backend is source of truth for MCP)

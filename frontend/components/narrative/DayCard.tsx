@@ -1,6 +1,6 @@
-  // [claude-code 2026-04-28] T3: Renamed Desk Theme -> Desk Plan in visible UI.
-  // [claude-code 2026-04-26] S45-T2: DayCard — Sanctum surface under Volatility Read.
-  //   Lays out Desk Plan + data table + streak/drift footer. NO border on the
+// [claude-code 2026-04-28] T3: Renamed Desk Theme -> Desk Plan in visible UI.
+// [claude-code 2026-04-26] S45-T2: DayCard — Sanctum surface under Volatility Read.
+//   Lays out Desk Plan + data table + streak/drift footer. NO border on the
 //   container; FadingRuler primitives carry the visual character. Titles
 //   left-justified, values right-justified (Doto), monospace gutter via
 //   font-mono. Two prices max, one target. Field names mirror T1 backend types

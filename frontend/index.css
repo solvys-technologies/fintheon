@@ -795,6 +795,10 @@ html *::-webkit-scrollbar {
   border-color: color-mix(in srgb, var(--fintheon-accent) 20%, transparent);
 }
 
+.fintheon-accent-border-top {
+  border-top-color: color-mix(in srgb, var(--fintheon-accent) 20%, transparent);
+}
+
 .fintheon-accent-border-hover:hover {
   border-color: color-mix(in srgb, var(--fintheon-accent) 40%, transparent);
   background-color: color-mix(in srgb, var(--fintheon-accent) 5%, transparent);

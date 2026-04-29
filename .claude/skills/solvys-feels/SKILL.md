@@ -21,6 +21,7 @@ Load `reference/design-guidelines.md` before any substantial UI design, redesign
 ## Core Identity
 
 **Palette: Solvys Gold**
+
 - Background: `#050402` (near-black with warm undertone)
 - Accent: `#c79f4a` (muted gold -- not bright, not shiny)
 - Text: `#f0ead6` (warm off-white -- never pure white)
@@ -40,29 +41,30 @@ Precise but not cold. Technical but not clinical. Monochrome canvas with a singl
 
 These patterns are NEVER acceptable in Solvys applications:
 
-| Banned Pattern | Why |
-|---------------|-----|
-| Gradients (`bg-gradient-*`, `linear-gradient`, `radial-gradient`) | Violates flat design principle |
-| Generic shadows (`shadow-*`, `drop-shadow`, decorative `box-shadow`) | Generic SaaS depth, not Solvys material |
-| Blur as decoration (`blur-*`, heavy glow, unfocused blobs) | AI-slop visual noise |
-| Emojis in UI chrome | Unprofessional, inconsistent cross-platform |
-| AI sparkles / glitter / aurora effects | Immediate "AI slop" signal |
-| Colored icons / filled icons | Line icons only, stroke-width 1.5-2px |
-| Rounded-full on non-circular elements | Industrial, not bubbly |
-| Pure black (`#000000`) as background | Too harsh -- use warm near-black |
-| Pure white (`#ffffff`) as text | Too harsh -- use warm off-white |
-| M-dashes in text content | Use en-dashes or hyphens |
-| `border-left` or `border-right` > 1px on cards/alerts | Side-stripe borders are banned |
-| Gradient text (`background-clip: text`) | Never |
-| Full-page skeleton loading screens | Use compact local loading states or `[LOADING...]` text indicators |
-| Toast popups | Use inline status text: `[SAVED]`, `[ERROR: ...]` |
-| Parallax, scroll-jacking, bounce easing | Disruptive motion |
+| Banned Pattern                                                       | Why                                                                |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Gradients (`bg-gradient-*`, `linear-gradient`, `radial-gradient`)    | Violates flat design principle                                     |
+| Generic shadows (`shadow-*`, `drop-shadow`, decorative `box-shadow`) | Generic SaaS depth, not Solvys material                            |
+| Blur as decoration (`blur-*`, heavy glow, unfocused blobs)           | AI-slop visual noise                                               |
+| Emojis in UI chrome                                                  | Unprofessional, inconsistent cross-platform                        |
+| AI sparkles / glitter / aurora effects                               | Immediate "AI slop" signal                                         |
+| Colored icons / filled icons                                         | Line icons only, stroke-width 1.5-2px                              |
+| Rounded-full on non-circular elements                                | Industrial, not bubbly                                             |
+| Pure black (`#000000`) as background                                 | Too harsh -- use warm near-black                                   |
+| Pure white (`#ffffff`) as text                                       | Too harsh -- use warm off-white                                    |
+| M-dashes in text content                                             | Use en-dashes or hyphens                                           |
+| `border-left` or `border-right` > 1px on cards/alerts                | Side-stripe borders are banned                                     |
+| Gradient text (`background-clip: text`)                              | Never                                                              |
+| Full-page skeleton loading screens                                   | Use compact local loading states or `[LOADING...]` text indicators |
+| Toast popups                                                         | Use inline status text: `[SAVED]`, `[ERROR: ...]`                  |
+| Parallax, scroll-jacking, bounce easing                              | Disruptive motion                                                  |
 
 ## Color System
 
 Use OKLCH where possible. All custom properties should be defined in OKLCH with hex fallbacks.
 
 ### Surface Layers (darkest to lightest)
+
 ```
 Layer 0 (base):     #050402   oklch(0.06 0.01 70)
 Layer 1 (surface):  #0a0905   oklch(0.10 0.01 70)
@@ -84,6 +86,7 @@ border: 1px solid rgba(199, 159, 74, 0.14);
 Keep glass subtle and warm. No gradients, no glowing rims, no bright transparency, no nested glass-on-glass stacks.
 
 ### Text Opacity Tiers
+
 ```
 Primary:    #f0ead6  100%     -- headings, primary content
 Secondary:  #f0ead6  72%      -- body text, descriptions
@@ -92,6 +95,7 @@ Disabled:   #f0ead6  20%      -- disabled states
 ```
 
 ### Accent Usage
+
 ```
 Accent:         #c79f4a           -- links, active states, key indicators
 Accent hover:   rgba(199,159,74, 0.20)  -- hover backgrounds
@@ -100,6 +104,7 @@ Accent subtle:  rgba(199,159,74, 0.06)  -- subtle hover states
 ```
 
 ### Severity Colors (for data, alerts, status)
+
 ```
 Severe:          #da0000    -- critical errors, stop signals
 Neutral-Severe:  #ac5318    -- warnings, caution
@@ -109,6 +114,7 @@ Low:             #073c00    -- success, safe, confirmed
 ```
 
 ### Bullish / Bearish (for financial data)
+
 ```
 Bullish (muted):   #2d5a3d   -- Stone theme
 Bullish (vibrant): #34D399   -- Gold theme
@@ -121,6 +127,7 @@ Severity colors apply to VALUES only, never to labels or containers.
 ## Typography
 
 ### Font Stack (in priority order)
+
 1. **Readable Digits** -- Inter mapped to numeric unicode ranges. Prepended in every font stack so digits always render consistently regardless of theme.
 2. **Inter** (300-700) -- Default body font. Clean, neutral, readable at all sizes.
 3. **Playfair Display** (400, 600, 700) -- Elegant headings. Use sparingly for display text.
@@ -129,6 +136,7 @@ Severity colors apply to VALUES only, never to labels or containers.
 6. **Cormorant Garamond** (400-700) -- Imperial body text. Reserved for long-form ceremonial content.
 
 ### Hierarchy Rules
+
 - Maximum 2 font families per screen
 - Maximum 3 font sizes per screen
 - Maximum 2 font weights per screen
@@ -136,6 +144,7 @@ Severity colors apply to VALUES only, never to labels or containers.
 - Monospace for ALL data values, metrics, and KPIs
 
 ### Loading CSS
+
 All fonts self-hosted as WOFF2 with `font-display: swap`. See `reference/font-kit.md` for the complete `@font-face` definitions.
 
 ## Borders
@@ -151,19 +160,27 @@ Always 1px. Never thicker. Never solid accent color at full opacity for borders 
 ## Animation
 
 ### Easing
+
 ```css
---ease-standard: cubic-bezier(0.4, 0, 0.2, 1);    /* Primary easing -- calm, luxurious */
---ease-spring:   cubic-bezier(0.16, 1, 0.3, 1);    /* Entrance easing */
---ease-bounce:   cubic-bezier(0.34, 1.56, 0.64, 1); /* Card entrance only */
+--ease-standard: cubic-bezier(
+  0.4,
+  0,
+  0.2,
+  1
+); /* Primary easing -- calm, luxurious */
+--ease-spring: cubic-bezier(0.16, 1, 0.3, 1); /* Entrance easing */
+--ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1); /* Card entrance only */
 ```
 
 ### Duration
+
 - Micro-interactions (hover, focus): 150-200ms
 - Transitions (tab switch, collapse): 300-500ms
 - Entrance animations: 500-600ms
 - Luxurious fades: 1000-1300ms
 
 ### Rules
+
 - Opacity transitions over transform transitions
 - No bounce on anything except card entrances
 - No spring physics, no parallax, no scroll-jacking
@@ -172,6 +189,7 @@ Always 1px. Never thicker. Never solid accent color at full opacity for borders 
 ## Component Patterns
 
 ### Cards
+
 - Prefer a named surface role over generic "card". Use glass for panels/sheets and flat rows for dense lists.
 - Background: Layer 1 (`#0a0905`) or frosted glass for important surfaces
 - Border: 1px `rgba(199, 159, 74, 0.10)` to `rgba(199, 159, 74, 0.14)`
@@ -180,18 +198,21 @@ Always 1px. Never thicker. Never solid accent color at full opacity for borders 
 - No generic shadow. No hover glow. Hover = border opacity increase to 0.20.
 
 ### Buttons
+
 - Primary: `#c79f4a` background, `#050402` text
 - Secondary: `rgba(199, 159, 74, 0.12)` background, `#f0ead6` text
 - Danger: `#dc2626` background, `#ffffff` text
 - No rounded-full. Use 4px border-radius.
 
 ### Inputs
+
 - Background: transparent or Layer 1
 - Border: 1px base border color
 - Focus: border transitions to focus opacity
 - No shadow, no glow, no outline rings
 
 ### Status Indicators
+
 - Use inline text: `[SAVED]`, `[ERROR: reason]`, `[LOADING...]`
 - No toast notifications, no popups, no snackbars
 - Status text in monospace, uppercase, muted opacity
@@ -205,8 +226,8 @@ When building for Solvys applications, use these CSS custom property names:
   --fintheon-accent: #c79f4a;
   --fintheon-bg: #050402;
   --fintheon-text: #f0ead6;
-  --fintheon-bullish: #34D399;
-  --fintheon-bearish: #EF4444;
+  --fintheon-bullish: #34d399;
+  --fintheon-bearish: #ef4444;
   --fintheon-surface: #0a0905;
   --fintheon-border: #c79f4a;
   --fintheon-muted: #6b7280;
@@ -226,6 +247,7 @@ If yes, that is the problem. Go back and subtract. Real design has opinion and r
 ## Reference Files
 
 For detailed token tables, font definitions, and theme presets:
+
 - `reference/design-guidelines.md` -- S47-approved design synthesis and review checklist
 - `reference/solvys-themes.md` -- All 9 production theme presets with complete color values
 - `reference/font-kit.md` -- Complete @font-face definitions for self-hosted WOFF2 fonts

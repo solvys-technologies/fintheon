@@ -25,10 +25,8 @@ export function createProposalResolutionRoutes(): Hono {
 
     const proposalId =
       typeof body.proposalId === "string" ? body.proposalId : "";
-    const agentName =
-      typeof body.agentName === "string" ? body.agentName : "";
-    const outcome =
-      typeof body.outcome === "string" ? body.outcome : "";
+    const agentName = typeof body.agentName === "string" ? body.agentName : "";
+    const outcome = typeof body.outcome === "string" ? body.outcome : "";
 
     if (!proposalId || !agentName || !outcome) {
       return c.json(
@@ -85,7 +83,6 @@ export function createProposalResolutionRoutes(): Hono {
           ? (body.metadata as Record<string, unknown>)
           : undefined,
     };
-
 
     try {
       const record = await resolveProposal(input);

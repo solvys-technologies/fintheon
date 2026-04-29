@@ -124,7 +124,10 @@ export async function addAccount(
 export async function updateAccount(
   id: string,
   fields: Partial<
-    Pick<SourceAccount, "handle" | "display_name" | "category" | "method" | "active">
+    Pick<
+      SourceAccount,
+      "handle" | "display_name" | "category" | "method" | "active"
+    >
   >,
 ): Promise<void> {
   const sb = getSupabaseClient();
@@ -163,9 +166,8 @@ export async function removeAccount(id: string): Promise<void> {
 export function triggerMandatoryRescore(reason: string): void {
   Promise.resolve().then(async () => {
     try {
-      const { rescoreInMemoryFeed } = await import(
-        "../riskflow/feed-service.js"
-      );
+      const { rescoreInMemoryFeed } =
+        await import("../riskflow/feed-service.js");
       const count = await rescoreInMemoryFeed();
       log.info("Mandatory rescore completed", { reason, count });
     } catch (err) {

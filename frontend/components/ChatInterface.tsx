@@ -91,8 +91,7 @@ function ChatInterfaceInner({
       }
     };
     window.addEventListener("fintheon:send-chat-text", handler);
-    return () =>
-      window.removeEventListener("fintheon:send-chat-text", handler);
+    return () => window.removeEventListener("fintheon:send-chat-text", handler);
   }, [handleSend]);
 
   const handleNewChat = useCallback(() => {

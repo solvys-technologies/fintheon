@@ -169,12 +169,6 @@ export function AlertCardBase({
           {sev.label}
         </span>
 
-        {alert.riskType && (
-          <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 text-[9px] font-medium tracking-wider uppercase border border-zinc-700 text-zinc-400">
-            {alert.riskType}
-          </span>
-        )}
-
         <span className="flex-1" />
 
         {onNotRelevant && (

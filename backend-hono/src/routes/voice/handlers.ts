@@ -293,10 +293,7 @@ export async function handleGetTranscripts(c: Context) {
     168,
     Math.max(1, Number(c.req.query("hours") ?? "24")),
   );
-  const limit = Math.min(
-    50,
-    Math.max(1, Number(c.req.query("limit") ?? "20")),
-  );
+  const limit = Math.min(50, Math.max(1, Number(c.req.query("limit") ?? "20")));
 
   try {
     const transcripts = await getRecentTranscripts({ userId, hours, limit });

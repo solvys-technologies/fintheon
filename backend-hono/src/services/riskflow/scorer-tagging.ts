@@ -1,3 +1,4 @@
+// [claude-code 2026-04-28] S48-T1: Fix 2 — added missing econ narrative keywords (gdp, industrial-output, consumer-sentiment, manufacturing-pmi, retail-activity, trade-flows, capital-goods, housing-activity)
 // [claude-code 2026-04-16] S20-T9: Split from central-scorer.ts — source normalization, risk classification, narrative gate, dismissed patterns
 // [claude-code 2026-03-23] Central scoring agent — polls unscored items from Supabase, runs AI analysis, writes scored results
 
@@ -77,6 +78,15 @@ const NARRATIVE_KEYWORDS: Record<string, RegExp> = {
     /\b(oil|crude|wti|brent|opec|barrel|EIA|refinery|pipeline|LNG|natgas|energy)\b/i,
   earnings:
     /\b(earnings|revenue|eps|guidance|beat|miss|outlook|forward guidance)\b/i,
+  gdp: /\bgdp\b/i,
+  "industrial-output": /\bindustrial\s+production\b/i,
+  "consumer-sentiment": /\bconsumer\s+(?:confidence|sentiment)\b/i,
+  "manufacturing-pmi":
+    /\b(?:ism|pmi|manufacturing)\s*(?:pmi|manufacturing|services)\b/i,
+  "retail-activity": /\bretail\s+sales\b/i,
+  "trade-flows": /\btrade\s+balance\b/i,
+  "capital-goods": /\bdurable\s+goods\b/i,
+  "housing-activity": /\bbuilding\s+permits\b/i,
 };
 
 export function matchesAnyNarrative(text: string): boolean {
