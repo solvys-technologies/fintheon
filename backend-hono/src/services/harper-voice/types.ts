@@ -1,16 +1,16 @@
 // [claude-code 2026-04-20] S21-T1: Omi integration — shared types.
 // Mirrors the webhook payload shapes documented at docs.omi.me.
 
-export type Harper21VoiceTrigger =
+export type HarperVoiceTrigger =
   | "psych_assist"
   | "voice_assistant"
   | "performance_chat";
 
-export type Harper21VoiceSessionStatus = "active" | "ended" | "error";
+export type HarperVoiceSessionStatus = "active" | "ended" | "error";
 
-export type Harper21VoicePrimaryAgent = "coach" | "oracle" | "harper";
+export type HarperVoicePrimaryAgent = "coach" | "oracle" | "harper";
 
-export interface Harper21VoiceTranscriptSegment {
+export interface HarperVoiceTranscriptSegment {
   text: string;
   speaker?: string;
   speakerId?: string;
@@ -19,53 +19,53 @@ export interface Harper21VoiceTranscriptSegment {
   end?: number;
 }
 
-export interface Harper21VoiceTranscriptWebhookBody {
-  segments: Harper21VoiceTranscriptSegment[];
+export interface HarperVoiceTranscriptWebhookBody {
+  segments: HarperVoiceTranscriptSegment[];
 }
 
-export interface Harper21VoiceMemoryActionItem {
+export interface HarperVoiceMemoryActionItem {
   description: string;
   completed?: boolean;
 }
 
-export interface Harper21VoiceMemoryWebhookBody {
+export interface HarperVoiceMemoryWebhookBody {
   id?: string;
   created_at?: string;
   started_at?: string;
   finished_at?: string;
-  transcript_segments?: Harper21VoiceTranscriptSegment[];
+  transcript_segments?: HarperVoiceTranscriptSegment[];
   structured?: {
     title?: string;
     overview?: string;
     emoji?: string;
     category?: string;
-    action_items?: Harper21VoiceMemoryActionItem[];
+    action_items?: HarperVoiceMemoryActionItem[];
   };
 }
 
-export interface Harper21VoiceAudioBytesHeaders {
+export interface HarperVoiceAudioBytesHeaders {
   sample_rate: number;
   uid: string;
 }
 
-export interface Harper21VoiceSession {
+export interface HarperVoiceSession {
   id: string;
   userId: string;
-  trigger: Harper21VoiceTrigger;
-  primaryAgent: Harper21VoicePrimaryAgent;
-  status: Harper21VoiceSessionStatus;
+  trigger: HarperVoiceTrigger;
+  primaryAgent: HarperVoicePrimaryAgent;
+  status: HarperVoiceSessionStatus;
   startedAt: string;
   endedAt?: string;
   metadata?: Record<string, unknown>;
 }
 
-export interface Harper21VoiceRouteIntent {
-  agent: Harper21VoicePrimaryAgent;
+export interface HarperVoiceRouteIntent {
+  agent: HarperVoicePrimaryAgent;
   reason: string;
   preamble?: string;
 }
 
-export interface Harper21VoiceNotificationPayload {
+export interface HarperVoiceNotificationPayload {
   uid: string;
   title?: string;
   message: string;

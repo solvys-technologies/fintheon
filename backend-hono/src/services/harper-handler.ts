@@ -44,7 +44,7 @@ import { getSupabaseClient } from "../config/supabase.js";
 // [claude-code 2026-04-23] Harper Vision — screen + audio context injection
 import { buildVisionContext } from "./harper-vision/engine.js";
 
-const log = createLogger("Harper21");
+const log = createLogger("Harper");
 
 // ── Types ──────────────────────────────────────────────────────────────────
 

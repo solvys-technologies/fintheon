@@ -10,7 +10,7 @@ import { useVoice } from "../../contexts/VoiceContext";
 import { resolveVoiceOrbState } from "../../types/voice";
 import { VoiceAuroraOrb } from "./VoiceAuroraOrb";
 import { VoiceModePixelOverlay } from "./VoiceModePixelOverlay";
-import { useHarper21VoiceSession } from "../../hooks/useHarper21VoiceSession";
+import { useHarperVoiceSession } from "../../hooks/useHarperVoiceSession";
 
 const INFRACTION_HOLD_MS = 8_000;
 const INFRACTION_WINDOW_MS = 5 * 60_000;
@@ -175,7 +175,7 @@ export function HeaderVoiceControl({
     session: voiceSession,
     start: startVoiceSession,
     stop: stopVoiceSession,
-  } = useHarper21VoiceSession();
+  } = useHarperVoiceSession();
 
   const handleClick = useCallback(() => {
     if (enabled) {

@@ -1513,7 +1513,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-23T23:30:00",
     agent: "claude-code",
     summary:
-      "v5.23.2: Omi → Harper Voice rename (22 files) + voice-orb 3-click-to-off fix + VAD silence 1.8s→2.6s + yanked omi-reference submodule (1.2GB). Backend: services/omi/ → services/harper-voice/, /api/omi → /api/harper-voice, createOmiRoutes/resolveUserIdForOmiUid/OmiTrigger/OmiTranscriptWebhookBody/OmiMemoryWebhookBody/OmiNotificationPayload/OmiPrimaryAgent/OmiRouteIntent all renamed. Frontend: lib/omi.ts → lib/harper-voice.ts, useOmiSession → useHarper21VoiceSession, voice orb handler collapsed to single-intent paths (cancel-if-busy + toggleEnabled + stopSession in one tap, no more stale-closure branch). DB strings (omi_pairings, omi_sessions, omi_uid) intentionally kept; companion rename migration staged in supabase/migrations-pending/ for a coordinated future push. omi-reference submodule removed from git index + .gitignored; physical 1.2GB still on disk pending TP's explicit delete. VAD threshold 2.6s per TP: auto-stops recording + processes transcript via existing Whisper → sendText pipeline.",
+      "v5.23.2: Omi → Harper Voice rename (22 files) + voice-orb 3-click-to-off fix + VAD silence 1.8s→2.6s + yanked omi-reference submodule (1.2GB). Backend: services/omi/ → services/harper-voice/, /api/omi → /api/harper-voice, createOmiRoutes/resolveUserIdForOmiUid/OmiTrigger/OmiTranscriptWebhookBody/OmiMemoryWebhookBody/OmiNotificationPayload/OmiPrimaryAgent/OmiRouteIntent all renamed. Frontend: lib/omi.ts → lib/harper-voice.ts, useOmiSession → useHarperVoiceSession, voice orb handler collapsed to single-intent paths (cancel-if-busy + toggleEnabled + stopSession in one tap, no more stale-closure branch). DB strings (omi_pairings, omi_sessions, omi_uid) intentionally kept; companion rename migration staged in supabase/migrations-pending/ for a coordinated future push. omi-reference submodule removed from git index + .gitignored; physical 1.2GB still on disk pending TP's explicit delete. VAD threshold 2.6s per TP: auto-stops recording + processes transcript via existing Whisper → sendText pipeline.",
     files: [
       "backend-hono/src/routes/harper-voice.ts",
       "backend-hono/src/routes/index.ts",
@@ -1527,7 +1527,7 @@ export const changelog: ChangelogEntry[] = [
       "backend-hono/src/services/ai/agent-instructions/oracle-fast-voice.ts",
       "backend-hono/src/services/ai/agent-instructions/coach.ts",
       "frontend/lib/harper-voice.ts",
-      "frontend/hooks/useHarper21VoiceSession.ts",
+      "frontend/hooks/useHarperVoiceSession.ts",
       "frontend/hooks/useVoiceAssistant.ts",
       "frontend/contexts/ERContext.tsx",
       "frontend/contexts/VoiceContext.tsx",
@@ -1539,7 +1539,7 @@ export const changelog: ChangelogEntry[] = [
       "frontend/components/voice/AgentResponsePopupHost.tsx",
       "frontend/components/performance/PerformanceChatButton.tsx",
       ".gitignore",
-      "supabase/migrations-pending/20260424000000_rename_omi_tables_to_Harper21_voice.sql",
+      "supabase/migrations-pending/20260424000000_rename_omi_tables_to_Harper_voice.sql",
       "package.json",
       "scripts/fintheon-update.sh",
       "src/lib/changelog.ts",
