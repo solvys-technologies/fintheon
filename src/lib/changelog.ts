@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-29T16:00:00",
+    agent: "claude-code",
+    summary:
+      "S49: Strategium drawer behavior fix. Removed auto-open on boot (useLayoutState was force-opening when TopStepX disabled). Changed from mount/unmount conditional rendering to always-rendered slide-out transition (w-0/w-[380px] + opacity, like ChatPanel). Fixed stale-closure toggle handler with functional updater.",
+    files: [
+      "frontend/hooks/useLayoutState.ts",
+      "frontend/components/layout/MainLayout.tsx",
+    ],
+  },
+  {
     date: "2026-04-29T15:45:00",
     agent: "claude-code",
     summary:

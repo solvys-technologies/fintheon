@@ -292,11 +292,11 @@ function MainLayoutInner() {
   // Toggles the Strategium right-panel collapse + broadcasts state back so the
   // header icon's filled-right indicator stays in sync.
   useEffect(() => {
-    const onToggle = () => setMissionControlCollapsed(!missionControlCollapsed);
+    const onToggle = () => setMissionControlCollapsed((prev: boolean) => !prev);
     window.addEventListener("fintheon:toggle-strategium", onToggle);
     return () =>
       window.removeEventListener("fintheon:toggle-strategium", onToggle);
-  }, [missionControlCollapsed, setMissionControlCollapsed]);
+  }, [setMissionControlCollapsed]);
 
   useEffect(() => {
     window.dispatchEvent(
@@ -679,19 +679,20 @@ function MainLayoutInner() {
       activeTab === "performance" ||
       activeTab === "proposals" ||
       activeTab === "settings";
-    if (!hideRightPanel && !missionControlCollapsed) {
+    if (!hideRightPanel) {
       rightPanels.push(
-        // [claude-code 2026-04-26] Per TP: when Strategium is collapsed, render
-        // NOTHING — no rail, no divider, no chevron. The only ways to expand are
-        // (a) the layout button in the heading toolbar (PanelToggleGroup), or
-        // (b) the in-panel chevron on the expanded panel (which can only collapse).
+        // [claude-code 2026-04-29] S49: Strategium now uses a slide-out drawer
+        // transition (like ChatPanel). Always rendered in DOM when not hidden by
+        // active-tab guard; width + opacity transition handles open/close.
         <div
           key="right-stack"
-          className="flex-shrink-0 h-full min-w-0 flex flex-col w-[380px] overflow-hidden"
+          className={`h-full flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${
+            missionControlCollapsed
+              ? "w-0 opacity-0 pointer-events-none invisible"
+              : "w-[380px] opacity-100"
+          }`}
         >
-          {/* [claude-code 2026-04-26] Inner expanded content fades + slides in
-              from the right. Uses opacity-100 animate-in so mount triggers slide. */}
-          <div className="flex-1 min-h-0 flex flex-col w-[380px] animate-in fade-in slide-in-from-right-2 duration-300">
+          <div className="flex-1 min-h-0 flex flex-col" style={{ width: 380 }}>
             {/* Widgets pane — shown in balanced + widgetsOnly.
                   [claude-code 2026-04-24] min-h-0 is CRITICAL in widgetsOnly:
                   without it, flex-1 + inner content force the pane taller than

@@ -1,3 +1,6 @@
+// [claude-code 2026-04-29] S49: removed auto-open of Strategium on boot
+//   (setMissionControlCollapsed(false) was firing when topStepXEnabled=false).
+//   Strategium now stays closed until user toggles it via PanelToggleGroup.
 // [claude-code 2026-04-24] S37 fix: decouple missionControlCollapsed from riskFlowCollapsed. The forced sync made the 168px RiskFlow mini-card state unreachable — expanding Strategium from the chevron would reset riskFlowCollapsed=false and skip the mini.
 // [claude-code 2026-04-10] S9-T3: Extracted layout state from MainLayout
 import { useState, useCallback, useEffect, useRef } from "react";
@@ -70,8 +73,9 @@ export function useLayoutState({
     } else {
       setMissionControlPosition("right");
       setTapePosition("right");
-      setMissionControlCollapsed(false);
       setTapeCollapsed(false);
+      // [claude-code 2026-04-29] Do NOT force-open Strategium here.
+      // User toggles it manually via the header PanelToggleGroup button.
     }
   }, [topStepXEnabled]);
 
