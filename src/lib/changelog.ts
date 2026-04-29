@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-29T19:10:00",
+    agent: "claude-code",
+    summary:
+      "S52 shipped: RiskFlow card rollback+refactor + earnings tag expansion + Arbitrum surface pass. 4 tracks, 15 files. Archival: orchestration → sprint-changelog/, sub-track briefs deleted.",
+    files: ["sprint-changelog/S52-ORCHESTRATION.md"],
+  },
+  {
     date: "2026-04-29T18:50:00",
     agent: "claude-code",
     summary:
