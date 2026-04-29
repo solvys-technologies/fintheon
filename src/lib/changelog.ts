@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-29T20:45:00",
+    agent: "claude-code",
+    summary:
+      "S53 shipped: RiskFlow operator control + source enforcement + continuity hardening. 6 tracks (T1-T4B), v5.38.0. Backend: source-policy allowlist enforcement, ingest activity ledger, leak sentinel, continuity counters, doctoring queue. Frontend: Operator Timeline, Source Policy Panel, Doctoring Panel with Solvys frosted-glass materials. 32 files, 3 deploy targets verified. Archived to sprint-changelog/.",
+    files: ["sprint-changelog/S53-ORCHESTRATION.md"],
+  },
+  {
     date: "2026-04-29T23:00:00",
     agent: "claude-code",
     summary:
