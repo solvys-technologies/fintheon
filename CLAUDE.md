@@ -9,13 +9,13 @@
 
 ## Agent Roster
 
-| Agent          | Role                                             |
-| -------------- | ------------------------------------------------ |
+| Agent      | Role                                             |
+| ---------- | ------------------------------------------------ |
 | **Harper** | CAO — executive synthesis, full platform access  |
-| **Oracle**     | Prediction markets, probabilistic reasoning      |
-| **Feucht**     | Futures/risk, technical levels, execution        |
-| **Consul**     | Mega-cap fundamentals, earnings, sector rotation |
-| **Herald**     | Breaking news, social sentiment, headline risk   |
+| **Oracle** | Prediction markets, probabilistic reasoning      |
+| **Feucht** | Futures/risk, technical levels, execution        |
+| **Consul** | Mega-cap fundamentals, earnings, sector rotation |
+| **Herald** | Breaking news, social sentiment, headline risk   |
 
 Protocol: "Harper orchestrates, Oracle analyzes, Feucht guards, Consul validates, Herald communicates"
 
