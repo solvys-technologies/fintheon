@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-29T15:15:00",
+    agent: "claude-code",
+    summary:
+      "S49 shipped: deskplan prices, color theming, read-expansion, mobile Desk Plan, Strategium drawer fix. Archived to sprint-changelog/. 1 track, 8 files.",
+    files: ["sprint-changelog/S49-BRIEF-deskplan-prices-and-read-expansion.md"],
+  },
+  {
     date: "2026-04-29T16:00:00",
     agent: "claude-code",
     summary:
