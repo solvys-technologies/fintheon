@@ -927,7 +927,7 @@ export function scoredToFeedItem(scored: ScoredRiskFlowItem): FeedItem {
     analyzedAt: scored.analyzed_at,
     subScores: (pbs?.subScores ??
       scored.sub_scores) as unknown as FeedItem["subScores"],
-    riskType: (pbs?.riskType as FeedItem["riskType"]) ?? null,
+    riskType: (scored.risk_type as FeedItem["riskType"]) ?? (pbs?.riskType as FeedItem["riskType"]) ?? null,
     agentNote: pbs?.agentNote ?? null,
     agentNoteGeneratedAt: pbs?.agentNoteGeneratedAt ?? null,
     econData: (pbs?.econData as FeedItem["econData"]) ?? null,

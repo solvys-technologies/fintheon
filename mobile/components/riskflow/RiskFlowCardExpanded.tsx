@@ -1,7 +1,6 @@
-// [claude-code 2026-04-29] S51: deleted duplicate body block, added t-text-reveal for
-//   headline remainder via framer-motion, gated DEVIATION row on econ-print tag,
-//   stripped EVENT WEIGHT/TIMING/MOMENTUM/VIX CONTEXT rows, replaced IVFuseBar footer
-//   with sawdust fuse bar (10-segment horizontal bar with vertical ruler ticks).
+// [claude-code 2026-04-29] S52-T1: standardized sawdust footer with shared NothingFuse
+//   component (replaces custom inline bar), gated DEVIATION row on econ-print tag,
+//   stripped EVENT WEIGHT/TIMING/MOMENTUM/VIX CONTEXT rows.
 // [claude-code 2026-04-20] Footer row added: horizontal IV bar picks up the
 //   juice from the preview card's drained vertical fuse (fills 0→IV on mount),
 //   paperclip icon right-justified links to the original source, and the IV
@@ -16,6 +15,7 @@ import { Paperclip } from "lucide-react";
 import type { MobileRiskFlowAlert } from "../../contexts/RiskFlowContext";
 import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
 import { SourcePreview } from "./SourcePreview";
+import { NothingFuse } from "@frontend/components/shared/NothingFuse";
 
 export type RiskFlowExpandedSurface = "full" | "timeline" | "mini";
 
@@ -80,7 +80,6 @@ export function RiskFlowCardExpanded({
   const showSourcePreview = surface === "full" || surface === "timeline";
   const showFooter =
     !showSourcePreview && ivScore != null && severityColor != null;
-  const ivFillPercent = Math.max(0, Math.min(100, ((ivScore ?? 0) / 10) * 100));
   return (
     <motion.div
       initial={{ height: 0, opacity: 0 }}
@@ -235,8 +234,7 @@ export function RiskFlowCardExpanded({
           </div>
         )}
 
-        {/* S51: Sawdust fuse footer — 10-segment horizontal bar with vertical
-            ruler ticks, paperclip, and IV score. Replaces the old IVFuseBar. */}
+        {/* S52-T1: Sawdust fuse footer — shared NothingFuse, paperclip, IV score */}
         {showFooter && (
           <div
             style={{
@@ -246,46 +244,16 @@ export function RiskFlowCardExpanded({
               marginTop: 4,
             }}
           >
-            {/* Sawdust bar — horizontal with 9 vertical tick dividers */}
-            <div
-              style={{
-                flex: 1,
-                height: 4,
-                borderRadius: 2,
-                background: "var(--fintheon-surface, #0a0a00)",
-                overflow: "hidden",
-                position: "relative",
-              }}
-            >
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${ivFillPercent}%` }}
-                transition={{ duration: 0.72, ease: [0.16, 0.8, 0.24, 1] }}
-                style={{
-                  height: "100%",
-                  background: severityColor,
-                  borderRadius: 2,
-                  position: "absolute",
-                  left: 0,
-                  top: 0,
-                }}
+            {/* NothingFuse — shared segmented bar with mount-charge animateIn */}
+            <div style={{ flex: 1 }}>
+              <NothingFuse
+                value={Math.min(1, Math.max(0.1, (ivScore ?? 0) / 10))}
+                color={severityColor}
+                orientation="horizontal"
+                thickness={4}
+                segments={10}
+                animateIn
               />
-              {/* Vertical tick marks */}
-              {Array.from({ length: 9 }, (_, i) => (
-                <span
-                  key={i}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    bottom: 0,
-                    left: `${((i + 1) / 10) * 100}%`,
-                    width: 1,
-                    background: "var(--fintheon-bg, #050402)",
-                    pointerEvents: "none",
-                  }}
-                  aria-hidden
-                />
-              ))}
             </div>
 
             {/* Paperclip → original source */}

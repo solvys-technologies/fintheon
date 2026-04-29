@@ -9,6 +9,29 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-29T18:50:00",
+    agent: "claude-code",
+    summary:
+      "S52: RiskFlow reset + Arbitrum surface pass — unified and validated. T1 (mobile): RiskFlowCard headline always 3-line clamp, remainder streams in via t-text-reveal in expanded card; sawdust footer swapped from custom inline bar to shared NothingFuse (horizontal, 10-segment, animateIn). T2 (backend): earnings keyword set expanded (30+ terms: Q1-4 results, margins, net/operating income, forecast, outlook, dividend, buyback, earnings call, preannounce, profit warning, top/bottom line); earnings items floored at macroLevel 1 (LOW) in rescoreInMemoryFeed; central-scorer riskType fallback prioritizes scored.risk_type over pbs.riskType. T3 (Arbitrum): extracted SeatCard/EmptySeat to ChamberSeats.tsx (300-line compliance); added question/category display in chamber header; ArbitrumPeek error state with retry; useArbitrumLatest full API→frontend normalization layer (verdict_id→id, rounds[n].probability, long→short role names, round total derivation). T4 (this track): cross-track integration clean — ChamberSeats extraction compiles, mobile NothingFuse import resolves via @frontend alias, RiskFlowMini already carried S51 cards; full validation suite passed (frontend typecheck + build, backend build, diagnostics ok, RiskFlow feed shape correct, Arbitrum 5-seat verdict with question/category metadata).",
+    files: [
+      "mobile/components/riskflow/RiskFlowCard.tsx",
+      "mobile/components/riskflow/RiskFlowCardExpanded.tsx",
+      "backend-hono/src/services/riskflow/scorer-tagging.ts",
+      "backend-hono/src/services/riskflow/feed-service.ts",
+      "backend-hono/src/services/riskflow/central-scorer.ts",
+      "frontend/components/arbitrum/ArbitrumChamber.tsx",
+      "frontend/components/arbitrum/ChamberSeats.tsx",
+      "frontend/components/arbitrum/ArbitrumPeek.tsx",
+      "frontend/components/arbitrum/types.ts",
+      "frontend/hooks/useArbitrumLatest.ts",
+      "sprint-md/S52-ORCHESTRATION.md",
+      "sprint-md/S52-T1-riskflow-cards-web-mobile-refactor.md",
+      "sprint-md/S52-T2-riskflow-backend-tags-earnings.md",
+      "sprint-md/S52-T3-arbitrum-surface-pass.md",
+      "sprint-md/S52-T4-unification-and-validation.md",
+    ],
+  },
+  {
     date: "2026-04-29T18:00:00",
     agent: "claude-code",
     summary:

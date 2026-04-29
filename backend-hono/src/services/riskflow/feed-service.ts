@@ -4,7 +4,7 @@
  * Day 17 - Phase 5 Integration
  */
 
-// [claude-code 2026-04-29] S51: Earnings items floored at macroLevel 1 (LOW priority) after enrichment
+// [claude-code 2026-04-29] S52-T2: Earnings items floored at macroLevel 1 (LOW) after enrichment AND rescoreInMemoryFeed
 // [claude-code 2026-04-11] Cache re-sync reduced 120s→30s to match central scorer frequency
 // [claude-code 2026-04-04] Periodic DB re-sync so cache stays fresh when poller idles
 // [claude-code 2026-04-03] Chronological sort (publishedAt DESC), cold start bumped to 200 items
@@ -979,13 +979,19 @@ export async function rescoreInMemoryFeed(): Promise<number> {
       const riskType = item.riskType ?? "default";
       const keywordMatches = getMatchedKeywords(item.headline);
 
-      const macroLevel = assignMacroLevel({
+      const rawMacroLevel = assignMacroLevel({
         ivScore,
         fjEmojiTier,
         riskType,
         keywordMatches,
         urgencySignals: item.isBreaking ? 2 : 0,
       });
+
+      // S52-T2: Earnings items are low priority — floor at macroLevel 1 (LOW)
+      const macroLevel =
+        riskType === "Earnings"
+          ? (Math.min(rawMacroLevel ?? 1, 1) as MacroLevel)
+          : rawMacroLevel;
 
       return {
         ...item,

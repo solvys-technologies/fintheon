@@ -39,4 +39,6 @@ export interface ArbitrumVerdict {
   rounds_complete?: number;
   phase?: ArbitrumPhase;
   trigger?: "scheduled" | "iv_threshold" | "manual" | string;
+  question?: string;
+  category?: string;
 }

@@ -1,5 +1,7 @@
-// [claude-code 2026-04-29] S51: source-type icons replacing blanket labels, bucket-left
-//   time-ago-right header, Earnings bucket support in source-buckets.
+// [claude-code 2026-04-29] S52-T1: h3 always line-clamped (keyword-break removed
+//   on expand) — full headline remainder streams in via RiskFlowCardExpanded t-text-reveal,
+//   eliminating the duplicate expanded copy. S51: source-type icons, bucket-left/time-ago-right
+//   header, Earnings bucket support in source-buckets.
 // [claude-code 2026-04-20] Tap-to-expand restored per TP — tap the card now
 //   expands RiskFlowCardExpanded inline (not the DetailSheet modal). The
 //   vertical fuse drains on tap, fades to zero opacity, then the expanded
@@ -241,7 +243,8 @@ export function RiskFlowCard({
                 <span>{timeAgo(alert.publishedAt)}</span>
               </div>
 
-              {/* Headline — 3-line clamp when collapsed, full text when expanded. */}
+              {/* Headline — always 3-line clamp; remainder streams in via
+                  RiskFlowCardExpanded t-text-reveal on expand. */}
               <h3
                 style={{
                   fontFamily: "var(--font-body)",
@@ -249,14 +252,10 @@ export function RiskFlowCard({
                   color: "var(--text-primary)",
                   lineHeight: 1.45,
                   margin: 0,
-                  ...(expanded
-                    ? { wordBreak: "break-word" as const }
-                    : {
-                        display: "-webkit-box",
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: "vertical" as const,
-                        overflow: "hidden",
-                      }),
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical" as const,
+                  overflow: "hidden",
                 }}
               >
                 {alert.title}

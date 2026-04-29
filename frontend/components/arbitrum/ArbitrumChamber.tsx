@@ -1,3 +1,5 @@
+// [claude-code 2026-04-29] S52-T3: added question/category display in chamber header;
+//   extracted SeatCard/EmptySeat → ChamberSeats.tsx to stay under 300-line limit.
 // [claude-code 2026-04-29] S51: removed unused compositeIV/regimeShiftProbability/confidence
 //   props — stale API from retired AgentDeskDebatePanel. Both Sanctum surfaces consume
 //   useArbitrumLatest (single source of truth). Frosted-glass empty/loading/error states.
@@ -9,9 +11,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
 import { NothingFuse } from "../shared/NothingFuse";
-import { DigitGroup } from "../shared/DigitGroup";
 import { SolvysLoader } from "../shared/SolvysLoader";
 import { VerdictCard } from "./VerdictCard";
+import { SeatCard, EmptySeat } from "./ChamberSeats";
 import type { ArbitrumSeat, ArbitrumVerdict } from "./types";
 
 interface ArbitrumChamberProps {
@@ -29,128 +31,8 @@ const DEFAULT_ROLES: ReadonlyArray<ArbitrumSeat["role"]> = [
   "Skeptic",
 ];
 
-const ROLE_DISPLAY_NAMES: Record<ArbitrumSeat["role"], string> = {
-  Lead: "Harper",
-  Forecaster: "Oracle",
-  "Future PM": "Feucht",
-  Quant: "Consul",
-  Skeptic: "Herald",
-};
-
 const EMPTY_COPY =
   "No fresh read — chamber convenes at 17:00 ET or on IV ≥ 8.5.";
-
-function seatLetter(role: string): string {
-  const display = ROLE_DISPLAY_NAMES[role as ArbitrumSeat["role"]] ?? role;
-  return display.charAt(0).toUpperCase();
-}
-
-function SeatCard({
-  seat,
-  index,
-  visible,
-}: {
-  seat: ArbitrumSeat;
-  index: number;
-  visible: boolean;
-}) {
-  const pct = Math.round(seat.probability * 100);
-  const confScore = Math.max(0, Math.min(10, seat.confidence * 10));
-  const dissented = Boolean(seat.dissented);
-
-  return (
-    <div
-      className={`bg-[var(--fintheon-bg)] border p-3 flex flex-col min-w-0 ${dissented ? "border-[var(--fintheon-accent)]/50" : "border-[var(--fintheon-accent)]/25"}`}
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(4px)",
-        transition: `opacity 260ms ease-out ${index * 200}ms, transform 260ms ease-out ${index * 200}ms`,
-      }}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span
-            className="inline-flex items-center justify-center w-5 h-5 text-[10px] border border-[var(--fintheon-accent)]/50 text-[var(--fintheon-accent)]"
-            aria-hidden
-          >
-            {seatLetter(seat.role)}
-          </span>
-          <span className="text-[11px] uppercase tracking-wider text-[var(--fintheon-text)]/80">
-            {ROLE_DISPLAY_NAMES[seat.role] ?? seat.role}
-          </span>
-        </div>
-        <span className="text-[9px] uppercase tracking-wider text-[var(--fintheon-text)]/40">
-          {seat.model}
-        </span>
-      </div>
-
-      <div className="mt-2 flex items-baseline gap-2">
-        <DigitGroup
-          value={`${pct}`}
-          suffix="%"
-          className="text-[var(--fintheon-accent)] leading-none"
-          style={{
-            fontFamily: "Doto, ui-monospace, monospace",
-            fontSize: 26,
-          }}
-        />
-        <span className="text-[10px] text-[var(--fintheon-text)]/50 inline-flex items-baseline gap-1">
-          conf
-          <DigitGroup value={confScore.toFixed(1)} suffix="/10" />
-        </span>
-      </div>
-
-      <div className="mt-2">
-        <NothingFuse
-          value={seat.confidence}
-          color="var(--fintheon-accent)"
-          thickness={2}
-          segments={10}
-        />
-      </div>
-
-      <p className="mt-2 text-[11px] text-[var(--fintheon-text)]/75 line-clamp-2">
-        {seat.rationale}
-      </p>
-    </div>
-  );
-}
-
-function EmptySeat({
-  role,
-  index,
-  visible,
-}: {
-  role: ArbitrumSeat["role"];
-  index: number;
-  visible: boolean;
-}) {
-  return (
-    <div
-      className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/15 p-3 flex flex-col min-w-0"
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(4px)",
-        transition: `opacity 260ms ease-out ${index * 200}ms, transform 260ms ease-out ${index * 200}ms`,
-      }}
-    >
-      <div className="flex items-center gap-2">
-        <span
-          className="inline-flex items-center justify-center w-5 h-5 text-[10px] border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)]/60"
-          aria-hidden
-        >
-          {seatLetter(role)}
-        </span>
-        <span className="text-[11px] uppercase tracking-wider text-[var(--fintheon-text)]/45">
-          {ROLE_DISPLAY_NAMES[role] ?? role}
-        </span>
-      </div>
-      <p className="mt-3 text-[11px] text-[var(--fintheon-text)]/30">
-        Awaiting seat…
-      </p>
-    </div>
-  );
-}
 
 function prefersReducedMotion(): boolean {
   if (typeof window === "undefined") return false;
@@ -233,22 +115,36 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
 
   return (
     <div className="flex flex-col min-h-0 min-w-0 gap-3">
-      {/* Round indicator */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/60">
-            Arbitrum Chamber
-          </span>
-          <span className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/35">
-            ·
-          </span>
-          <span className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/60">
-            Round {roundsComplete} of {roundsTotal}
+      {/* Round indicator + question metadata */}
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/60">
+              Arbitrum Chamber
+            </span>
+            <span className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/35">
+              ·
+            </span>
+            <span className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/60">
+              Round {roundsComplete} of {roundsTotal}
+            </span>
+          </div>
+          <span className="text-[9px] uppercase tracking-wider text-[var(--fintheon-text)]/35">
+            {phase}
           </span>
         </div>
-        <span className="text-[9px] uppercase tracking-wider text-[var(--fintheon-text)]/35">
-          {phase}
-        </span>
+        {verdict?.question && (
+          <div className="flex items-center gap-2 text-[10px]">
+            <span className="text-[var(--fintheon-text)]/70 line-clamp-1">
+              {verdict.question}
+            </span>
+            {verdict.category && (
+              <span className="uppercase tracking-wider text-[var(--fintheon-accent)]/60 shrink-0">
+                {verdict.category}
+              </span>
+            )}
+          </div>
+        )}
       </div>
       <NothingFuse
         value={roundsValue}

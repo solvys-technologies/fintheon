@@ -1,3 +1,5 @@
+// [claude-code 2026-04-29] S52-T3: added error state handling (gap — was falling through
+//   to empty copy on fetch failures).
 // [claude-code 2026-04-25] Consensus % numeral now uses DigitGroup (solvys-transitions
 //   number pop-in) so the chamber read cascades in on each refresh.
 // [claude-code 2026-04-24] S35-T3: compact peek for IV hover portal — consensus + dissent + digest line
@@ -9,12 +11,28 @@ const EMPTY_COPY =
   "No fresh read — chamber convenes at 17:00 ET or on IV ≥ 8.5.";
 
 export function ArbitrumPeek() {
-  const { verdict, isLoading } = useArbitrumLatest();
+  const { verdict, isLoading, error, refresh } = useArbitrumLatest();
 
   if (isLoading) {
     return (
       <div className="border-t border-[var(--fintheon-accent)]/20 pt-2 mt-3 text-xs text-[var(--fintheon-text)]/50">
         Loading chamber read…
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="border-t border-[var(--fintheon-accent)]/20 pt-2 mt-3 text-xs">
+        <span className="text-[var(--fintheon-text)]/55">
+          Chamber offline ({error})
+        </span>
+        <button
+          onClick={() => void refresh()}
+          className="ml-2 text-[var(--fintheon-accent)]/80 hover:text-[var(--fintheon-accent)] transition-colors"
+        >
+          Retry
+        </button>
       </div>
     );
   }

@@ -1,4 +1,4 @@
-// [claude-code 2026-04-29] S51: expanded Earnings keyword set (Q1-4 earnings, analyst estimate, revenue guidance, analyst cut/raises, beat/miss estimates, results, EBIT, margin)
+// [claude-code 2026-04-29] S52-T2: expanded Earnings keywords for broader headline mix (forecast, net income, dividend, buyback, earnings call, preannounce, top/bottom line)
 // [claude-code 2026-04-28] S48-T1: Fix 2 — added missing econ narrative keywords (gdp, industrial-output, consumer-sentiment, manufacturing-pmi, retail-activity, trade-flows, capital-goods, housing-activity)
 // [claude-code 2026-04-16] S20-T9: Split from central-scorer.ts — source normalization, risk classification, narrative gate, dismissed patterns
 // [claude-code 2026-03-23] Central scoring agent — polls unscored items from Supabase, runs AI analysis, writes scored results
@@ -237,6 +237,7 @@ const RISK_TYPE_KEYWORDS: Record<string, string[]> = {
   Earnings: [
     "earnings",
     "eps",
+    "earnings per share",
     "q1 preview",
     "q2 preview",
     "q3 preview",
@@ -245,6 +246,10 @@ const RISK_TYPE_KEYWORDS: Record<string, string[]> = {
     "q2 earnings",
     "q3 earnings",
     "q4 earnings",
+    "q1 results",
+    "q2 results",
+    "q3 results",
+    "q4 results",
     "analyst estimate",
     "revenue guidance",
     "analyst cut",
@@ -254,12 +259,32 @@ const RISK_TYPE_KEYWORDS: Record<string, string[]> = {
     "results",
     "ebit",
     "margin",
+    "gross margin",
+    "operating margin",
+    "net income",
+    "operating income",
     "revenue",
     "guidance",
+    "forecast",
+    "outlook",
+    "forward guidance",
     "beat",
     "miss",
     "quarterly",
+    "quarterly report",
     "fiscal",
+    "fiscal year",
+    "dividend",
+    "buyback",
+    "share repurchase",
+    "earnings call",
+    "conference call",
+    "preannounce",
+    "profit warning",
+    "top line",
+    "bottom line",
+    "sales growth",
+    "comparable sales",
   ],
   Technical: [
     "resistance",
