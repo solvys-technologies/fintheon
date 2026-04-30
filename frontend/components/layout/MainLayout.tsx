@@ -33,6 +33,8 @@ import {
   PsychAssistDockable,
   type PsychAssistDockTarget,
 } from "./PsychAssistDockable";
+import { EconCountdownWidget } from "./EconCountdownWidget";
+import { useEconWatchHealth } from "../../hooks/useEconWatchHealth";
 // [claude-code 2026-04-20] S21: Voice layer — Performance chat button + app-wide agent popup
 // [claude-code 2026-04-24] PerformanceChatButton retired — heading-toolbar chat
 // button had no clear purpose; the orb is the single voice trigger now.
@@ -324,6 +326,27 @@ function MainLayoutInner() {
       // ignore
     }
   }, [psychAssistTarget]);
+
+  const { events: econWatchEvents } = useEconWatchHealth();
+  const [econCountdownDismissed, setEconCountdownDismissed] = useState(false);
+
+  // Show econ countdown when there's an upcoming event within 60min window
+  // and the user hasn't dismissed it. PsychAssist shows otherwise.
+  const showEconCountdown = (() => {
+    if (econCountdownDismissed) return false;
+    const now = Date.now();
+    for (const ev of econWatchEvents) {
+      if (ev.status !== "upcoming") continue;
+      const target = new Date(ev.scheduledAt).getTime();
+      if (target > now && target - now < 60 * 60 * 1000) return true;
+    }
+    return false;
+  })();
+
+  // Reset dismissal when the event window changes
+  useEffect(() => {
+    if (!showEconCountdown) setEconCountdownDismissed(false);
+  }, [showEconCountdown]);
 
   useEffect(() => {
     setMissionWidgetOrderState((prev) =>
@@ -814,11 +837,22 @@ function MainLayoutInner() {
             psychAssistHeadingWidget={
               topStepXEnabled &&
               layoutOption === "tickers-only" &&
-              psychAssistTarget === "header" ? (
+              psychAssistTarget === "header" &&
+              !showEconCountdown ? (
                 <PsychAssistDockable
                   target="header"
                   onDockToHeader={() => setPsychAssistTarget("header")}
                   onUndockToFloating={() => setPsychAssistTarget("floating")}
+                />
+              ) : undefined
+            }
+            econCountdownWidget={
+              topStepXEnabled &&
+              layoutOption === "tickers-only" &&
+              showEconCountdown ? (
+                <EconCountdownWidget
+                  visible={showEconCountdown}
+                  onDismiss={() => setEconCountdownDismissed(true)}
                 />
               ) : undefined
             }
@@ -858,7 +892,7 @@ function MainLayoutInner() {
             {leftPanels.length > 0 && <div className="flex">{leftPanels}</div>}
 
             {/* Center Content - TopStepX or Main Content with crossfade */}
-            <div className="flex-1 overflow-hidden relative min-w-0 flex flex-col">
+            <div className="flex-1 overflow-hidden relative min-w-0 flex flex-col rounded-tl-xl border-l border-t border-[var(--fintheon-accent)]/10">
               {/* Timeline overlay — slides over browser, does not affect iframe sizing */}
               <TimelineOverlay
                 open={timelineOverlayOpen}
@@ -901,6 +935,7 @@ function MainLayoutInner() {
                   prevTab={prevTab}
                   showRefinement={showRefinement}
                   navigateTab={navigateTab}
+                  onChatAlert={handleChatAlert}
                 />
               </div>
             </div>

@@ -84,9 +84,10 @@ const BLOCKED_HANDLES = new Set(
     "USATODAY",
     "BusinessInsider",
     "YahooFinance",
-    "SeekingAlpha",
-    "zerohedge",
-  ].map((h) => h.toLowerCase()),
+      "SeekingAlpha",
+      "zerohedge",
+      "overton_news",
+    ].map((h) => h.toLowerCase()),
 );
 
 function hostnameOf(url: string | undefined): string {
@@ -100,6 +101,20 @@ function hostnameOf(url: string | undefined): string {
 
 function hostMatches(host: string, blocked: string): boolean {
   return host === blocked || host.endsWith(`.${blocked}`);
+}
+
+function extractHandleFromXUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (!["x.com", "twitter.com"].includes(u.hostname.replace(/^www\./, "").toLowerCase())) return null;
+    const parts = u.pathname.split("/").filter(Boolean);
+    if (parts.length >= 2 && parts[1] && !/^\d+$/.test(parts[1])) {
+      // URL format: /{handle}/status/{id} or /{handle}
+      return parts[0].toLowerCase();
+    }
+    if (parts.length === 1 && !/^\d+$/.test(parts[0])) return parts[0].toLowerCase();
+    return null;
+  } catch { return null; }
 }
 
 export interface BlockReason {
@@ -137,7 +152,18 @@ export function shouldBlockItem(item: RawRiskFlowItem): BlockReason | null {
     }
   }
 
-  // 3. Source-channel exemption: approved Twitter wire handles legitimately
+  // 3. x.com/twitter.com URL handle check — catches retweets/quotes from
+  // blocked handles that leak through approved wire account timelines.
+  // e.g. FinancialJuice retweets @Overton_news → URL is x.com/Overton_news/...
+  // [claude-code 2026-04-30] S55: blocks retweet/quote relay from blocked handles.
+  if (item.url) {
+    const xHandle = extractHandleFromXUrl(item.url);
+    if (xHandle && BLOCKED_HANDLES.has(xHandle)) {
+      return { reason: "blocked_handle", detail: xHandle };
+    }
+  }
+
+  // 4. Source-channel exemption: approved Twitter wire handles legitimately
   // quote MSM names inline ("Fed announces XYZ: REUTERS") — TP wants those
   // KEPT. Skip the body-pattern check when the item came from a
   // twitter:<handle> source AND the handle isn't itself in BLOCKED_HANDLES.

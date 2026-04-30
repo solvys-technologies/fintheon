@@ -31,7 +31,16 @@ export interface EconWatchFilter {
   active: boolean;
 }
 
-const KEYWORD_RE = /\b(actual|forecast)\b/i;
+// [claude-code 2026-04-30] S55: Changed from OR to AND — only headlines containing
+// BOTH "Actual" AND "Forecast" trigger. This ensures only WIRE word-gated econ
+// prints (which use the "Actual X (Forecast Y, Previous Z)" format) flow through
+// the econ feed, rather than any post mentioning either word in isolation.
+const KEYWORD_RE_ACTUAL = /\bactual\b/i;
+const KEYWORD_RE_FORECAST = /\bforecast\b/i;
+
+function containsBothKeywords(text: string): boolean {
+  return KEYWORD_RE_ACTUAL.test(text) && KEYWORD_RE_FORECAST.test(text);
+}
 const RAW_SCAN_WINDOW_MS = 20 * 60_000; // 20 min lookback covers the full -5/+15 window + slack
 const RAW_SCAN_LIMIT = 200;
 
@@ -63,7 +72,7 @@ export function containsEconPrintKeyword(
   text: string | null | undefined,
 ): boolean {
   if (!text) return false;
-  return KEYWORD_RE.test(text);
+  return containsBothKeywords(text);
 }
 
 /** Event start timestamp, best-effort from date + optional time. */
@@ -168,8 +177,10 @@ async function fetchRecentRawCandidates(): Promise<RawRowWithId[]> {
                r.submitted_by, r.created_at
         FROM raw_riskflow_items r
         WHERE r.published_at >= ${cutoff}
-          AND (r.headline ~* '\\yactual\\y|\\yforecast\\y'
-               OR r.body ~* '\\yactual\\y|\\yforecast\\y')
+          AND (r.headline ~* '\\yactual\\y' AND r.headline ~* '\\yforecast\\y'
+               OR r.body ~* '\\yactual\\y' AND r.body ~* '\\yforecast\\y'
+               OR (r.headline ~* '\\yactual\\y' AND r.body ~* '\\yforecast\\y')
+               OR (r.headline ~* '\\yforecast\\y' AND r.body ~* '\\yactual\\y'))
           AND NOT EXISTS (
             SELECT 1 FROM scored_riskflow_items s
              WHERE s.tweet_id = r.tweet_id
@@ -207,7 +218,7 @@ interface PromotionContext {
   event: EconEvent;
   country: string;
   category: string;
-  keyword: "actual" | "forecast";
+  keyword: string;
 }
 
 export async function promoteToFeed(
@@ -357,7 +368,7 @@ export async function runEconKeywordSweep(): Promise<{
       const matchedCountry = (
         matchedEvent.country || window.country
       ).toUpperCase();
-      const keyword = /\bactual\b/i.test(text) ? "actual" : "forecast";
+      const keyword = "econ-print";
 
       const ok = await promoteToFeed(raw, {
         event: matchedEvent,

@@ -763,3 +763,4 @@
 [2026-04-29T17:44:02Z] status=poller_stopped cache=500 poller=False scorer=True unscored=0 newest=2026-04-29T17:22:38.000Z itemAge=0.4h cacheAge=15260ms rateLimited=False
 [2026-04-30T13:22:49Z] status=poller_stopped cache=500 poller=False scorer=True unscored=0 newest=2026-04-29T16:07:25.000Z itemAge=21.3h cacheAge=1648946ms rateLimited=False
 [2026-04-30T13:24:00Z] status=poller_stopped cache=500 poller=False scorer=True unscored=0 newest=2026-04-29T16:07:25.000Z itemAge=21.3h cacheAge=5798ms rateLimited=False
+[2026-04-30T13:25:10Z] status=poller_stopped cache=500 poller=False scorer=True unscored=0 newest=2026-04-29T16:07:25.000Z itemAge=21.3h cacheAge=5308ms rateLimited=False

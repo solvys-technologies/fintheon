@@ -1,19 +1,23 @@
 // [claude-code 2026-04-24] S35-T10: renamed dir from workers/news-worker. Heartbeats now
 //   key on riskflow_worker_heartbeats; diagnostics surfaces riskflow_worker_age_seconds
 //   (with news_worker_age_seconds dual-emitted through 2026-05-08).
-// [claude-code 2026-04-19] S27-T7 (W2d): scheduler — two tiers.
-// Breaking (60s): Reuters, Bloomberg, X/Twitter via browser-harness.
-// Standard (5m): SEC, FOMC, newsletters via Exa + RSS + AgentReach scrape.
-// Upserts heartbeats per tier so /api/diagnostics can show riskflow_worker_age_seconds.
+// [claude-code 2026-04-30] S55: Commentary tier added — 60s cadence, same as breaking.
+// Commentary handles produce opinion/analysis, not structured econ data.
+// [claude-code 2026-04-19] S27-T7 (W2d): scheduler — three tiers.
+// Breaking (60s): X/Twitter wire handles via browser-harness.
+// Commentary (60s): X/Twitter commentary handles via browser-harness.
+// Standard (5m): COT, FOMC Minutes, Fed Speeches, Macro X handles, Kalshi whale alerts.
 
-import { runBreakingTier, runStandardTier } from "./sources/index.js";
+import { runBreakingTier, runStandardTier, runCommentaryTier } from "./sources/index.js";
 import { upsertHeartbeat } from "./persist.js";
+import { NEWS_WORKER_CONTRACT } from "./contract.js";
 
-const BREAKING_INTERVAL_MS = 60_000;
-const STANDARD_INTERVAL_MS = 5 * 60_000;
+const BREAKING_INTERVAL_MS = NEWS_WORKER_CONTRACT.BREAKING_INTERVAL_MS;
+const COMMENTARY_INTERVAL_MS = NEWS_WORKER_CONTRACT.COMMENTARY_INTERVAL_MS;
+const STANDARD_INTERVAL_MS = NEWS_WORKER_CONTRACT.STANDARD_INTERVAL_MS;
 
 interface TierState {
-  tier: "breaking" | "standard";
+  tier: "breaking" | "standard" | "commentary";
   running: boolean;
   lastRunAt: string | null;
   lastItemsIngested: number;
@@ -23,7 +27,7 @@ interface TierState {
   timer: NodeJS.Timeout | null;
 }
 
-const state: Record<"breaking" | "standard", TierState> = {
+const state: Record<"breaking" | "standard" | "commentary", TierState> = {
   breaking: {
     tier: "breaking",
     running: false,
@@ -44,9 +48,19 @@ const state: Record<"breaking" | "standard", TierState> = {
     totalErrors: 0,
     timer: null,
   },
+  commentary: {
+    tier: "commentary",
+    running: false,
+    lastRunAt: null,
+    lastItemsIngested: 0,
+    lastErrors: 0,
+    totalRuns: 0,
+    totalErrors: 0,
+    timer: null,
+  },
 };
 
-async function runTier(tier: "breaking" | "standard"): Promise<void> {
+async function runTier(tier: "breaking" | "standard" | "commentary"): Promise<void> {
   const s = state[tier];
   if (s.running) return;
   s.running = true;
@@ -55,7 +69,9 @@ async function runTier(tier: "breaking" | "standard"): Promise<void> {
   let errors = 0;
   try {
     const result =
-      tier === "breaking" ? await runBreakingTier() : await runStandardTier();
+      tier === "breaking" ? await runBreakingTier()
+      : tier === "commentary" ? await runCommentaryTier()
+      : await runStandardTier();
     ingested = result.ingested;
     errors = result.errors;
   } catch (err) {
@@ -99,15 +115,20 @@ async function runTier(tier: "breaking" | "standard"): Promise<void> {
 }
 
 export function startScheduler(): void {
-  if (state.breaking.timer || state.standard.timer) return;
+  if (state.breaking.timer || state.standard.timer || state.commentary.timer) return;
 
-  // Stagger first runs so both tiers don't fire on the same tick.
+  // Stagger first runs so tiers don't fire on the same tick.
   setTimeout(() => void runTier("breaking"), 1_000);
+  setTimeout(() => void runTier("commentary"), 2_000);
   setTimeout(() => void runTier("standard"), 3_000);
 
   state.breaking.timer = setInterval(
     () => void runTier("breaking"),
     BREAKING_INTERVAL_MS,
+  );
+  state.commentary.timer = setInterval(
+    () => void runTier("commentary"),
+    COMMENTARY_INTERVAL_MS,
   );
   state.standard.timer = setInterval(
     () => void runTier("standard"),
@@ -118,12 +139,14 @@ export function startScheduler(): void {
 export async function stopScheduler(): Promise<void> {
   if (state.breaking.timer) clearInterval(state.breaking.timer);
   if (state.standard.timer) clearInterval(state.standard.timer);
+  if (state.commentary.timer) clearInterval(state.commentary.timer);
   state.breaking.timer = null;
   state.standard.timer = null;
+  state.commentary.timer = null;
 }
 
 export function getSchedulerSnapshot() {
-  const tiers = (["breaking", "standard"] as const).map((t) => {
+  const tiers = (["breaking", "standard", "commentary"] as const).map((t) => {
     const s = state[t];
     return {
       tier: s.tier,

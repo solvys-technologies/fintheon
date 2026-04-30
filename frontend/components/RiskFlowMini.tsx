@@ -11,6 +11,8 @@
 // [claude-code 2026-04-29] S51: Expanded RiskFlow cards — bucket-left/time-ago-right header,
 //   source-type icons replacing blanket X-mark, sawdust fuse footer (NothingFuse), deviation gate
 //   on econ-print tag, gray rule moved to expanded footer, t-text-reveal on headline remainder.
+// [claude-code 2026-04-30] News expansions now use the shared RiskFlowPostCard:
+//   post-style body, one bottom-right chat CTA, IV visible in preview + mini peek.
 // [claude-code 2026-04-19] RiskFlow card polish: AlertRow + TradeIdeaRow now use the shared
 //   IVStack (Doto numerals, chevron stacked above) on the right edge, and a single segmented
 //   NothingFuse on the left. Killed the AlertRow double-border bug (2px borderLeft was
@@ -27,18 +29,10 @@ import {
   ChevronRight,
   Diff,
   TrendingDown,
-  MessageSquare,
   Check,
   XCircle,
   RefreshCw,
   Loader2,
-  ThumbsDown,
-  Activity,
-  BarChart3,
-  Globe,
-  Globe2,
-  BookText,
-  Paperclip,
 } from "lucide-react";
 import type { RiskFlowAlert, TradeIdeaDetail } from "../lib/riskflow-feed";
 import { inferDirection } from "../lib/riskflow-feed";
@@ -51,10 +45,11 @@ import {
   type SeverityFilter,
 } from "../hooks/useRiskFlowFilters";
 import { SourceFilterMenu } from "./feed/SourceFilterMenu";
+import { RiskFlowPostCard } from "./feed/RiskFlowPostCard";
+import { RiskFlowCardAnatomy } from "./feed/RiskFlowCardAnatomy";
 import { useBackend } from "../lib/backend";
 
 import { SEVERITY_CONFIG } from "../lib/severity-config";
-import { ivHeatColor } from "../types/agent-desk";
 import { SourceIcon } from "../lib/shared-icons";
 import { NothingFuse } from "./shared/NothingFuse";
 import { IVStack } from "./shared/IVStack";
@@ -63,9 +58,9 @@ import {
   alertSeverityToPalette,
   fuseScoreFromAlert,
 } from "../lib/riskflow-card-utils";
-import { severityFromScore } from "../lib/fuse-palette";
+import { colorForSeverity, severityFromScore } from "../lib/fuse-palette";
 import type { AlertSeverity } from "../lib/riskflow-feed";
-import { bucketOf, type SourceBucket } from "../lib/source-buckets";
+import { bucketOf } from "../lib/source-buckets";
 
 // ── Cyclical Badge ───────────────────────────────────────────────────────────
 
@@ -108,7 +103,7 @@ function IVScoreBadge({ alert }: { alert: RiskFlowAlert }) {
   return (
     <span
       className="text-[9px] font-mono font-bold tabular-nums"
-      style={{ color: ivHeatColor(Number(score)) }}
+      style={{ color: colorForSeverity(alertSeverityToPalette(alert.severity)) }}
     >
       IV {Number(score).toFixed(1)}
     </span>
@@ -380,25 +375,7 @@ function TradeIdeaRow({
   );
 }
 
-// ── Alert Row (news — square edge-to-edge card with bottom-hero footer) ──────
-
-function bucketSourceIcon(bucket: SourceBucket, className?: string) {
-  const cls = className ?? "w-3 h-3";
-  switch (bucket) {
-    case "Wire":
-      return <Activity className={cls} />;
-    case "Econ":
-      return <BarChart3 className={cls} />;
-    case "Macro":
-      return <Globe className={cls} />;
-    case "Geopolitical":
-      return <Globe2 className={cls} />;
-    case "Earnings":
-      return <BookText className={cls} />;
-    default:
-      return null;
-  }
-}
+// ── Alert Row (news — canonical RiskFlow anatomy) ─────────────────────────────
 
 function AlertRow({
   alert,
@@ -408,9 +385,7 @@ function AlertRow({
   expanded,
   fresh,
   onToggleExpand,
-  onGenerateNote,
   onNavigateToFeed,
-  onNotRelevant,
 }: {
   alert: RiskFlowAlert;
   onMarkSeen: (id: string) => void;
@@ -419,16 +394,10 @@ function AlertRow({
   expanded: boolean;
   fresh?: boolean;
   onToggleExpand: () => void;
-  onGenerateNote: (alertId: string) => void;
   onNavigateToFeed?: () => void;
   onNotRelevant?: (id: string) => void;
 }) {
-  const sev = SEVERITY_CONFIG[alert.severity];
-  const isHigh = alert.severity === "high" || alert.severity === "critical";
   const dir = inferDirection(alert);
-  const isBull = dir === "Bullish";
-  // T1 will add these fields
-  const riskType = (alert as any).riskType as string | null | undefined;
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData(
@@ -449,131 +418,30 @@ function AlertRow({
   const directionForStack: "Bullish" | "Bearish" | "Neutral" =
     dir === "Bullish" ? "Bullish" : dir === "Bearish" ? "Bearish" : "Neutral";
 
-  // S51: rAF first-paint for t-text-reveal — start closed, flip on next frame
-  const [headlineRevealed, setHeadlineRevealed] = useState(false);
-  useEffect(() => {
-    if (!expanded) {
-      setHeadlineRevealed(false);
-      return;
-    }
-    const raf = requestAnimationFrame(() => setHeadlineRevealed(true));
-    return () => cancelAnimationFrame(raf);
-  }, [expanded]);
-
-  const bucket = bucketOf({ source: alert.source, riskType: alert.riskType });
-
   return (
     <div
       draggable
       onDragStart={handleDragStart}
-      className={`group relative border-b border-zinc-800/60 overflow-hidden hover:border-[var(--fintheon-accent)]/30 transition-colors ${isHigh ? "riskflow-fintheon-row" : ""} ${seen ? "opacity-70" : ""} ${fresh ? "riskflow-flicker" : ""}`}
+      className={`${seen ? "opacity-70" : ""}`}
     >
-      {/* Main content area */}
       <div
-        className="block px-3 pt-3 pb-2.5 cursor-pointer"
+        className="block cursor-pointer"
         onClick={() => {
           onMarkSeen(alert.id);
           onToggleExpand();
         }}
       >
-        <div className="flex items-stretch gap-3 min-h-[72px]">
-          {/* Left: segmented vertical severity fuse */}
-          <div className="flex-shrink-0 w-[6px] flex items-stretch py-0.5">
-            <NothingFuse
-              value={Math.min(1, Math.max(0.15, fuseScore / 10))}
-              severity={severityFromScore(fuseScore)}
-              orientation="vertical"
-              thickness={6}
-            />
-          </div>
-          <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-            {/* Source / time row — bucket left, time-ago right */}
-            <div className="flex items-center justify-between text-[9px] tracking-[0.08em] uppercase text-zinc-500">
-              <div className="flex items-center gap-1">
-                {bucketSourceIcon(
-                  bucketOf({ source: alert.source, riskType: alert.riskType }),
-                  "w-3 h-3 text-zinc-500",
-                )}
-                <span>
-                  {bucketOf({ source: alert.source, riskType: alert.riskType })}
-                </span>
-              </div>
-              <span>{timeAgo(alert.publishedAt)}</span>
-            </div>
-            <p
-              className={`text-xs leading-snug font-medium line-clamp-3 break-words ${alert.severity === "critical" ? "text-orange-300" : isHigh ? "text-red-300" : "text-zinc-300"} group-hover:text-white transition-colors`}
-            >
-              {alert.headline}
-            </p>
-            {alert.summary && alert.summary !== alert.headline && (
-              <p className="text-[10px] text-zinc-600 line-clamp-1 mt-0.5">
-                {alert.summary}
-              </p>
-            )}
-            {/* Cyclical badge + risk type + author row */}
-            {(alert.cyclical || riskType || alert.authorHandle) && (
-              <div className="flex items-center gap-1.5 mt-1">
-                {alert.cyclical && alert.cyclical !== "Neutral" && (
-                  <CyclicalBadge classification={alert.cyclical} />
-                )}
-                {riskType && <RiskTypeBadge riskType={riskType} />}
-                {alert.authorHandle && (
-                  <span className="text-[9px] text-zinc-500">
-                    @{alert.authorHandle}
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Right: chevron + IV in Doto, stacked */}
-          <IVStack
-            score={alert.ivScore != null ? Number(alert.ivScore) : null}
-            direction={directionForStack}
-            color={
-              alert.ivScore != null
-                ? ivHeatColor(Number(alert.ivScore))
-                : undefined
-            }
-            width={36}
-          />
-
-          {/* Chat CTA */}
-          <div className="flex-shrink-0 flex items-start">
-            {onChat && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onChat(alert);
-                }}
-                className="p-1 rounded text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors opacity-0 group-hover:opacity-100"
-                title="Chat about this"
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Compact footer strip — priority badge only (no IV/dir duplication) */}
-        <div className="flex items-center gap-1.5 mt-2 pt-1.5">
-          <span
-            className={`inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border ${sev.glow || ""} h-[16px]`}
-          >
-            {sev.label}
-          </span>
-          <span className="flex-1" />
-          <span className="text-[9px] text-zinc-600">
-            {expanded ? "Less" : "More"}
-          </span>
-          {expanded ? (
-            <ChevronDown className="w-3 h-3 text-zinc-600" />
-          ) : (
-            <ChevronUp className="w-3 h-3 text-zinc-600" />
-          )}
-        </div>
+        <RiskFlowCardAnatomy
+          title={alert.headline}
+          sourceLabel={bucketOf({ source: alert.source, riskType: alert.riskType })}
+          timestampLabel={timeAgo(alert.publishedAt)}
+          severity={severityFromScore(fuseScore)}
+          fuseScore={fuseScore}
+          ivScore={alert.ivScore != null ? Number(alert.ivScore) : null}
+          direction={directionForStack}
+          expanded={expanded}
+          fresh={fresh}
+        />
       </div>
 
       {/* Expanded content — smooth CSS grid transition */}
@@ -582,132 +450,26 @@ function AlertRow({
         style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
       >
         <div className="overflow-hidden">
-          <div className="px-3 py-2.5 bg-zinc-900/40">
-            {/* t-text-reveal: remainder of headline streams in on expand */}
-            <p
-              className="t-text-reveal text-xs leading-snug font-medium text-zinc-300 mb-2.5"
-              data-open={headlineRevealed ? "true" : "false"}
-            >
-              {alert.headline}
-            </p>
-
-            {alert.imageUrl && (
-              <CatalystImage
-                imageUrl={alert.imageUrl}
-                href={alert.url}
-                maxHeight={140}
-                className="mb-2.5"
-              />
-            )}
-
-            {alert.url && (
-              <div className="mb-2">
-                <SourceHandoffLink url={alert.url} />
-              </div>
-            )}
-
-            {/* S51: DEVIATION row — only if econ-print tag + surprisePercent */}
-            {Array.isArray(alert.tags) &&
-              alert.tags.includes("econ-print") &&
-              alert.econData?.surprisePercent != null && (
-                <div className="flex items-center justify-between mb-2">
-                  <span
-                    className="text-[9px] tracking-[0.06em] uppercase"
-                    style={{
-                      fontFamily: "var(--font-data)",
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    DEVIATION
-                  </span>
-                  <span
-                    className="text-[9px] tabular-nums"
-                    style={{
-                      fontFamily: "var(--font-data)",
-                      color: "var(--text-primary)",
-                    }}
-                  >
-                    {alert.econData.surprisePercent.toFixed(1)}
-                  </span>
-                </div>
-              )}
-
-            {/* Generate Note + View in RiskFlow row */}
-            <div className="flex items-center justify-between">
-              <AgentNoteSection alert={alert} onGenerate={onGenerateNote} />
-              {onNavigateToFeed && (
+          <RiskFlowPostCard alert={alert} surface="mini" onAskAI={onChat} />
+          {onNavigateToFeed && (
+            <div className="flex items-center justify-start border-t border-zinc-800/35 px-3 py-2">
+              {onNavigateToFeed ? (
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     onNavigateToFeed();
                   }}
-                  className="text-[10px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors flex items-center gap-1"
+                  className="flex items-center gap-1 text-[10px] text-zinc-500 transition-colors hover:text-[var(--fintheon-accent)]"
                 >
                   View in RiskFlow
-                  <ChevronRight className="w-3 h-3" />
+                  <ChevronRight className="h-3 w-3" />
                 </button>
+              ) : (
+                <span />
               )}
             </div>
-
-            {/* S51: Gray rule moved here + sawdust fuse footer */}
-            <div className="border-t border-zinc-800/30 mt-2.5 pt-2">
-              <div className="flex items-center gap-2">
-                {/* Paperclip → source URL */}
-                {alert.url && (
-                  <a
-                    href={alert.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-1 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors shrink-0"
-                    title="Open source"
-                  >
-                    <Paperclip className="w-3.5 h-3.5" />
-                  </a>
-                )}
-
-                {/* Sawdust fuse — NothingFuse horizontal, 10 segments */}
-                <div className="flex-1">
-                  <NothingFuse
-                    value={Math.min(
-                      1,
-                      Math.max(0.1, (alert.ivScore ?? 0) / 10),
-                    )}
-                    color="var(--fintheon-accent)"
-                    orientation="horizontal"
-                    thickness={3}
-                    segments={10}
-                  />
-                </div>
-
-                {/* IV score — right-justified, Doto numerals */}
-                {alert.ivScore != null && (
-                  <span
-                    className="text-[9px] font-mono font-bold tabular-nums shrink-0"
-                    style={{ color: ivHeatColor(Number(alert.ivScore)) }}
-                  >
-                    {Number(alert.ivScore).toFixed(1)}
-                  </span>
-                )}
-
-                {/* Not relevant button */}
-                {onNotRelevant && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onNotRelevant(alert.id);
-                    }}
-                    title="Not relevant"
-                    className="p-1 rounded text-zinc-600 hover:text-red-400 hover:bg-red-400/10 shrink-0"
-                  >
-                    <ThumbsDown className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -1106,7 +868,6 @@ export default function RiskFlowMini({
                     onToggleExpand={() =>
                       setExpandedId(expandedId === alert.id ? null : alert.id)
                     }
-                    onGenerateNote={handleGenerateNote}
                     onNavigateToFeed={onNavigateToFeed}
                     onNotRelevant={handleNotRelevant}
                   />
@@ -1199,6 +960,18 @@ export default function RiskFlowMini({
                           </span>
                           {item.cyclical && item.cyclical !== "Neutral" && (
                             <CyclicalBadge classification={item.cyclical} />
+                          )}
+                          {item.ivScore != null && (
+                            <span
+                              className="ml-auto text-[9px] font-mono font-semibold tabular-nums"
+                              style={{
+                                color: colorForSeverity(
+                                  alertSeverityToPalette(item.severity),
+                                ),
+                              }}
+                            >
+                              IV {Number(item.ivScore).toFixed(1)}
+                            </span>
                           )}
                         </div>
                         <p className="mt-0.5 text-[11px] text-zinc-300 line-clamp-1">

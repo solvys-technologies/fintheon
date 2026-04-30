@@ -1,3 +1,4 @@
+// [claude-code 2026-04-30] Timeline event cards now share canonical RiskFlow anatomy.
 // [claude-code 2026-03-30] Full-border severity, bigger fonts, smooth transitions, wider tag filter w/ search, auto-purge banned tags
 // [claude-code 2026-03-29] Add severity filter (default: Critical & High) + fix empty timeline
 // [claude-code 2026-03-28] S7: Paginated 2-column narrative timeline — structured view of NarrativeFlow
@@ -21,6 +22,14 @@ import {
   partitionCatalystTags,
   CatalystLinkChip,
 } from "../../lib/catalyst-tag-utils";
+import { RiskFlowCardAnatomy } from "../feed/RiskFlowCardAnatomy";
+import {
+  catalystDirection,
+  catalystFuseScore,
+  catalystIvScore,
+  catalystSeverityToFuse,
+  catalystSourceLabel,
+} from "../../lib/catalyst-riskflow-utils";
 
 // The 10 real narrative threads (must match migration 027)
 const NARRATIVE_THREADS = [
@@ -572,60 +581,27 @@ export function TimelinePanel() {
                     {/* Event cards — smooth appear/disappear */}
                     <div className="space-y-2 ml-1">
                       {events.map((event, idx) => {
-                        const isBullish = event.sentiment === "bullish";
-                        const isNeutral =
-                          (event.sentiment as string) === "neutral";
                         const isMultiNarrative =
                           (event.narrativeThreads ?? []).length > 1;
-                        const sevColor =
-                          SEVERITY_COLOR[event.severity] ?? "#6B7280";
+                        const fuseScore = catalystFuseScore(event);
                         return (
                           <div
                             key={event.id}
-                            className="rounded-lg px-4 py-3 transition-all duration-300 ease-out hover:brightness-110"
+                            className="transition-opacity duration-300 ease-out"
                             style={{
-                              border: `1.5px solid ${sevColor}50`,
-                              backgroundColor: `${sevColor}06`,
                               animation: `card-fade-in 0.3s ease-out ${idx * 40}ms both`,
                             }}
                           >
-                            {/* Title + sentiment */}
-                            <div className="flex items-start gap-2">
-                              <p
-                                className="flex-1 text-[14px] font-semibold leading-snug"
-                                style={{
-                                  color: "var(--fintheon-text)",
-                                  fontFamily: "var(--font-body)",
-                                }}
-                              >
-                                {event.title}
-                              </p>
-                              <span
-                                className="text-[13px] font-bold shrink-0"
-                                style={{
-                                  color: isBullish
-                                    ? "var(--fintheon-bullish)"
-                                    : isNeutral
-                                      ? "var(--fintheon-muted)"
-                                      : "var(--fintheon-bearish)",
-                                }}
-                              >
-                                {isBullish ? "▲" : isNeutral ? "—" : "▼"}
-                              </span>
-                            </div>
-
-                            {/* Description */}
-                            {event.description && (
-                              <p
-                                className="text-[12px] mt-1 line-clamp-2 opacity-55 leading-relaxed"
-                                style={{
-                                  color: "var(--fintheon-muted)",
-                                  fontFamily: "var(--font-body)",
-                                }}
-                              >
-                                {event.description}
-                              </p>
-                            )}
+                            <RiskFlowCardAnatomy
+                              title={event.title}
+                              sourceLabel={catalystSourceLabel(event)}
+                              timestampLabel={formatDate(event.date.slice(0, 10))}
+                              severity={catalystSeverityToFuse(event.severity)}
+                              fuseScore={fuseScore}
+                              ivScore={catalystIvScore(event)}
+                              direction={catalystDirection(event)}
+                              compact
+                            />
 
                             {/* Tags */}
                             {(() => {

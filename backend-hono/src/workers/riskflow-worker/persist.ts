@@ -271,7 +271,7 @@ export async function writeCollectedItems(
 }
 
 export async function upsertHeartbeat(row: {
-  tier: "breaking" | "standard";
+  tier: "breaking" | "standard" | "commentary";
   last_run_at: string;
   items_ingested: number;
   errors: number;

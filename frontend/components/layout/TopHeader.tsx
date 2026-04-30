@@ -38,7 +38,6 @@ import { WhatsNewButton } from "../onboarding/FirstTimeTour";
 import { StickyBulletin } from "../StickyBulletin";
 import { TraderNametag } from "../TraderNametag";
 import { FluxerCallWidget } from "../consilium/FluxerCallWidget";
-import { useEconWatchHealth } from "../../hooks/useEconWatchHealth";
 import type { IVScoreResponse } from "../../types/market-data";
 import type { TradingPlatform } from "../TradingBrowser";
 import { useDND } from "../../contexts/DNDContext";
@@ -90,6 +89,7 @@ interface TopHeaderProps {
   psychAssistHeadingWidget?: React.ReactNode;
   voiceRoomWidget?: React.ReactNode;
   performanceChatWidget?: React.ReactNode;
+  econCountdownWidget?: React.ReactNode;
   toolbarEditMode?: boolean;
 }
 
@@ -112,6 +112,7 @@ export function TopHeader({
   psychAssistHeadingWidget,
   voiceRoomWidget,
   performanceChatWidget,
+  econCountdownWidget,
   toolbarEditMode = false,
 }: TopHeaderProps) {
   const { tier } = useAuth();
@@ -146,8 +147,7 @@ export function TopHeader({
   const { dndActive, toggleManualDnd, queueCount } = useDND();
   // [claude-code 2026-04-25] S35-Unified: badge counts server-side notifications + local queue.
   const { unreadCount: serverUnread } = useServerNotifications();
-  // [claude-code 2026-04-29] S53-T3: Econ watch health for toolbar readiness chip
-  const { state: econWatchState, events: econWatchEvents } = useEconWatchHealth();
+  // [claude-code 2026-04-29] S53-T3: Econ watch health moved to FooterToolbar (S55)
   const totalBadgeCount = queueCount + serverUnread;
   const [quickClockPulse, setQuickClockPulse] = useState(false);
   const handleQuickClock = useCallback(async () => {
@@ -531,6 +531,7 @@ export function TopHeader({
         <div className="flex items-center gap-2 flex-shrink-0">
           <WhatsNewButton />
           {psychAssistHeadingWidget}
+          {econCountdownWidget}
           {activeTab === "performance" && performanceChatWidget}
           {/* [claude-code 2026-04-26] Per TP: layout buttons sit FIRST, then
               the iFrame/Browser dropdown, then the VIX ticker, then the rest
@@ -669,42 +670,6 @@ export function TopHeader({
                 )}
             </div>
           )}
-          {/* [claude-code 2026-04-29] S53-T3: Econ/watch readiness chip —
-              green dot + active count when healthy, amber/red when degraded */}
-          <div
-            className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-2.5 h-7 flex items-center flex-shrink-0"
-            title={
-              econWatchState === "healthy"
-                ? `${econWatchEvents.length} econ event(s) on watch`
-                : econWatchState === "pipeline-degraded"
-                  ? "Econ pipeline degraded — check diagnostics"
-                  : econWatchState === "backend-down"
-                    ? "Econ watch offline — backend unreachable"
-                    : econWatchState === "idle"
-                      ? "Econ watch idle — no events in window"
-                      : "Econ watch initializing..."
-            }
-          >
-            <div className="flex items-center gap-1.5">
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  econWatchState === "healthy"
-                    ? "bg-emerald-400"
-                    : econWatchState === "pipeline-degraded"
-                      ? "bg-amber-400"
-                      : econWatchState === "backend-down"
-                        ? "bg-red-400"
-                        : "bg-zinc-600"
-                } ${econWatchState === "healthy" ? "animate-pulse" : ""}`}
-              />
-              <span className="text-[9px] text-gray-500">Econ</span>
-              {econWatchState === "healthy" && econWatchEvents.length > 0 && (
-                <span className="text-[9px] font-mono text-emerald-400/70 tabular-nums">
-                  {econWatchEvents.length}
-                </span>
-              )}
-            </div>
-          </div>
           <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-2.5 h-7 flex items-center flex-shrink-0">
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] text-gray-500">VIX</span>

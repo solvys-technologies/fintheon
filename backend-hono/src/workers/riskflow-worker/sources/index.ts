@@ -33,6 +33,8 @@ import { collectFromXHandlesBrowser } from "./x-handles-browser.js";
 import { writeCollectedItems } from "../persist.js";
 import {
   getBrowserHandles,
+  getCommentaryHandles,
+  getWireHandles,
 } from "../../../services/source-accounts/source-accounts-service.js";
 import type { CollectedNewsItem } from "./types.js";
 // [claude-code 2026-04-29] S48-T5: Kalshi whale-alert pipe wired into
@@ -80,7 +82,7 @@ async function safeCollect(
 export async function runBreakingTier(): Promise<TierRunResult> {
   // Browser-harness / browser-use driven X.com scrape per curated handle.
   // Rettiwt and Agent Reach are not fallbacks.
-  const wireHandles = await getBrowserHandles().catch(() => []);
+  const wireHandles = await getWireHandles().catch(() => []);
   const primary = await safeCollect("x-handles-browser:wire", () =>
     collectFromXHandlesBrowser({ handles: wireHandles, tier: "breaking" }),
   );
@@ -141,4 +143,28 @@ export async function runStandardTier(): Promise<TierRunResult> {
   const errors = results.reduce((sum, r) => sum + r.errors, 0);
   const ingested = await writeCollectedItems(items);
   return { ingested, errors };
+}
+
+// [claude-code 2026-04-30] S55: Commentary tier. Polls commentary-category X handles
+// at the same 60s cadence as breaking. Commentary accounts produce opinion/analysis
+// rather than structured econ data — they get a dedicated source bucket so they
+// don't leak into FinancialJuice.
+export async function runCommentaryTier(): Promise<TierRunResult> {
+  const handles = await getCommentaryHandles().catch(() => [] as string[]);
+  // Fallback: when no Commentary-category handles exist in the DB (fresh install),
+  // poll financialjuice as the default commentary source. Operator can add more
+  // via the Refinement Engine and this fallback becomes a no-op.
+  const effectiveHandles = handles.length > 0 ? handles : ["financialjuice"];
+  const primary = await safeCollect("x-handles-browser:commentary", () =>
+    collectFromXHandlesBrowser({
+      handles: effectiveHandles,
+      tier: "commentary",
+    }),
+  );
+  const items = primary.items.map((it) => ({
+    ...it,
+    source: "Commentary" as CollectedNewsItem["source"],
+  }));
+  const ingested = await writeCollectedItems(items);
+  return { ingested, errors: primary.errors };
 }

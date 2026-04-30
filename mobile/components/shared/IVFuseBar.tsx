@@ -1,3 +1,5 @@
+// [claude-code 2026-04-30] "solvys fuses" baseline — horizontal fuse uses
+//   linear increments (10-step ruler) to match vertical fuse segmentation.
 // [claude-code 2026-04-18] v5.22 S2: Nothing-Design flatten + shared palette adoption +
 //   4.2s shimmer. Track is opaque var(--fintheon-surface), no accent border, no inner
 //   glow on the fill. Color resolves through colorForSeverity from mobile/lib/fuse-palette
@@ -42,6 +44,7 @@ export function IVFuseBar({
       : Math.max(0, Math.min(100, safeIv));
 
   const color = colorForSeverity(severity);
+  const segments = 10;
   const displayValue =
     display ??
     (scale === "10" ? safeIv.toFixed(1) : Math.round(safeIv).toString());
@@ -94,6 +97,7 @@ export function IVFuseBar({
           overflow: "hidden",
           position: "relative",
         }}
+        data-solvys-fuse="true"
       >
         <motion.div
           initial={{ width: 0 }}
@@ -105,6 +109,24 @@ export function IVFuseBar({
             borderRadius: 2,
           }}
         />
+        {Array.from({ length: Math.max(0, segments - 1) }, (_, i) => {
+          const left = ((i + 1) / segments) * 100;
+          return (
+            <span
+              key={i}
+              aria-hidden
+              style={{
+                position: "absolute",
+                top: 0,
+                bottom: 0,
+                left: `${left}%`,
+                width: 1,
+                background: "var(--fintheon-bg, #050402)",
+                pointerEvents: "none",
+              }}
+            />
+          );
+        })}
       </div>
     </div>
   );

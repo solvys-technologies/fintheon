@@ -26,6 +26,7 @@ import {
 import { BlindspotsInterview } from "../onboarding/BlindspotsInterview";
 import { RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { useSettings } from "../../contexts/SettingsContext";
+import { useRiskFlowFilters } from "../../hooks/useRiskFlowFilters";
 
 const DASHBOARD_PAGES = ["Briefing", "RiskFlow"];
 
@@ -201,6 +202,7 @@ export function MainDashboard({
   const { alerts, markAllSeen, isSeen, refresh, refreshing, removeAlert } =
     useRiskFlow();
   const { addToast } = useToast();
+  const { filterAlerts } = useRiskFlowFilters();
 
   const handleNotRelevant = useCallback(
     async (id: string) => {
@@ -253,7 +255,10 @@ export function MainDashboard({
     null,
   );
   const [showRegimeTracker, setShowRegimeTracker] = useState(false);
-  const tapeAlerts = useMemo(() => alerts.slice(0, 50), [alerts]);
+  const tapeAlerts = useMemo(
+    () => filterAlerts(alerts).slice(0, 50),
+    [alerts, filterAlerts],
+  );
 
   useEffect(() => {
     markAllSeen(tapeAlerts.map((a) => a.id));

@@ -115,9 +115,9 @@ function DirectionChevron({
   color: string;
 }) {
   if (direction === "Bullish")
-    return <ChevronUp size={14} color="var(--fintheon-bullish)" />;
+    return <ChevronUp size={14} color={color} />;
   if (direction === "Bearish")
-    return <ChevronDown size={14} color="var(--fintheon-bearish)" />;
+    return <ChevronDown size={14} color={color} />;
   return <Minus size={12} color={color} />;
 }
 
@@ -130,7 +130,15 @@ export function RiskFlowCard({
   const [draining, setDraining] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const severityColor = colorForSeverity(paletteSeverity(alert.severity));
-  const ivScore = alert.ivScore ?? 0;
+  const ivScore =
+    alert.ivScore ??
+    (alert.severity === "critical"
+      ? 9
+      : alert.severity === "high"
+        ? 7
+        : alert.severity === "medium"
+          ? 5
+          : 3);
 
   const handleTap = useCallback(() => {
     if (expanded) {

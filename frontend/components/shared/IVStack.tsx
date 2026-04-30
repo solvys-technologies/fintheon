@@ -38,9 +38,9 @@ function Chevron({
   size: number;
 }) {
   if (direction === "Bullish")
-    return <ChevronUp size={size} color="var(--fintheon-bullish)" />;
+    return <ChevronUp size={size} color={color} />;
   if (direction === "Bearish")
-    return <ChevronDown size={size} color="var(--fintheon-bearish)" />;
+    return <ChevronDown size={size} color={color} />;
   return <Minus size={Math.max(10, size - 2)} color={color} />;
 }
 

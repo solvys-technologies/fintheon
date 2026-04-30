@@ -13,7 +13,7 @@ set -eo pipefail
 
 # [claude-code 2026-04-18] Resolve install path: FINTHEON_ROOT env > ~/.fintheon/install-path > default
 FINTHEON_ROOT="${FINTHEON_ROOT:-$(cat "$HOME/.fintheon/install-path" 2>/dev/null || echo "$HOME/Documents/Codebases/fintheon")}"
-UPDATE_VERSION="5.38.2"
+UPDATE_VERSION="5.38.3"
 
 # ── Self-update bootstrap (v5.25.2) ──────────────────────────────────────────
 # Root cause fix: bash loads the entire script into memory at invocation, so
@@ -242,6 +242,7 @@ if [[ -f "$BACKEND_ENV" ]]; then
   grep -q "^GEPA_DEEP=" "$BACKEND_ENV" 2>/dev/null || echo "GEPA_DEEP=false" >> "$BACKEND_ENV"
   grep -q "^VOICE_SIDECAR_DISABLED=" "$BACKEND_ENV" 2>/dev/null || echo "VOICE_SIDECAR_DISABLED=false" >> "$BACKEND_ENV"
   grep -q "^RETTIWT_REENABLE=" "$BACKEND_ENV" 2>/dev/null || echo "RETTIWT_REENABLE=false" >> "$BACKEND_ENV"
+  grep -q "^RISKFLOW_COMMENTARY_SCRAPER=" "$BACKEND_ENV" 2>/dev/null || echo "RISKFLOW_COMMENTARY_SCRAPER=disabled" >> "$BACKEND_ENV"
 
   ok "Environment verified (vault fills secrets on boot)"
 else

@@ -527,6 +527,31 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  // Ensure fuse palette preferences drive the CSS variables consumed by desktop
+  // RiskFlow cards/fuses (which resolve color via var(--fintheon-*)).
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    const preferred = preferences.fusePalette;
+    const severity = preferred?.severity;
+
+    const setOrClear = (name: string, value?: string) => {
+      if (value && value.trim().length > 0) {
+        root.style.setProperty(name, value);
+      } else {
+        root.style.removeProperty(name);
+      }
+    };
+
+    setOrClear("--fintheon-severe", severity?.critical);
+    setOrClear("--fintheon-high", severity?.high);
+    setOrClear("--fintheon-accent", severity?.medium);
+    setOrClear("--fintheon-low", severity?.low);
+    setOrClear("--fintheon-muted", severity?.neutral);
+    setOrClear("--fintheon-bullish", preferred?.bullishColor);
+    setOrClear("--fintheon-bearish", preferred?.bearishColor);
+  }, [preferences.fusePalette]);
+
   // Initial fetch + 30s polling for cross-device updates.
   useEffect(() => {
     let cancelled = false;

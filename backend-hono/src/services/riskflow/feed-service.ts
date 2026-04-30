@@ -58,6 +58,8 @@ import { filterWithContentGuard } from "./content-guard.js";
 import { scoredToFeedItem } from "./central-scorer.js";
 import { assignMacroLevel } from "../../utils/assign-macro-level.js";
 import { extractFJEmojiFromText, fjTierFromEmoji } from "./fj-emoji-filter.js";
+import { filterBlockedAtReadTime } from "./feed-integrity.js";
+import { createLogger as createIntegrityLogger } from "../../lib/logger.js";
 
 const log = createLogger("RiskFlow");
 // [claude-code 2026-04-01] Bumped from 100 → 500. All scored items should be accessible.
@@ -375,6 +377,8 @@ function mapToAnalysisSource(source: NewsSource): AnalysisNewsSource {
     DeItaOne: "Custom",
     Custom: "Custom",
     Hermes: "Custom",
+    Untrusted: "Custom",
+    Commentary: "Commentary",
   };
   return sourceMap[source] ?? "Custom";
 }
@@ -1084,6 +1088,17 @@ export async function getFeed(
       log.info(
         `Headline dedup: ${preDedup} → ${items.length} (removed ${preDedup - items.length})`,
       );
+    }
+
+    // [claude-code 2026-04-30] S55: Read-time blocked-host filter. Strips
+    // items whose URL points to a blocked publisher even if earlier pipeline
+    // stages (normalizeSource, persist, scorer) missed them.
+    const integrityResult = filterBlockedAtReadTime(items);
+    if (integrityResult.dropped > 0) {
+      log.warn(
+        `[FeedIntegrity] Dropped ${integrityResult.dropped} items with blocked publisher hosts: ${integrityResult.blockedHosts.join(", ")}`,
+      );
+      items = integrityResult.clean;
     }
 
     // Apply pagination (offset + limit)

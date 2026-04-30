@@ -70,11 +70,13 @@ export function VerdictCard({
         />
       </div>
 
-      <p
-        className={`mt-3 text-[var(--fintheon-text)]/85 ${compact ? "text-xs" : "text-sm"} leading-relaxed`}
-      >
-        {digest_text}
-      </p>
+      {!compact && (
+        <p
+          className={`mt-3 text-[var(--fintheon-text)]/85 text-sm leading-relaxed`}
+        >
+          {digest_text}
+        </p>
+      )}
 
       <div className="mt-3 flex items-center justify-between text-[10px] text-[var(--fintheon-text)]/40">
         <span className="tabular-nums">

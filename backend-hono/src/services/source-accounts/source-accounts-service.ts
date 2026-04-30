@@ -103,6 +103,11 @@ export async function getMacroHandles(): Promise<string[]> {
   return active.filter((a) => a.category === "Macro").map((a) => a.handle);
 }
 
+export async function getCommentaryHandles(): Promise<string[]> {
+  const active = await getActiveAccounts();
+  return active.filter((a) => a.category === "Commentary").map((a) => a.handle);
+}
+
 export async function addAccount(
   handle: string,
   displayName: string | null,

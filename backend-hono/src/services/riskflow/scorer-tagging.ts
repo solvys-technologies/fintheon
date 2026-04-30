@@ -103,15 +103,15 @@ export function matchesAnyNarrative(text: string): boolean {
 const FJ_ACCOUNTS = new Set([
   "financialjuice",
   "firstsquawk",
-  "wallstjesus",
-  "unusual_whales",
-  "newsfilterio",
-  "marketcurrents",
-  "livesquawk",
-  "waboratory",
 ]);
 
 const DEITAONE_ACCOUNTS = new Set(["deltaone", "deItaone", "deitaone"]);
+
+// [claude-code 2026-04-30] S55: Commentary accounts are managed via the
+// Refinement Engine (riskflow_source_accounts table, category="Commentary").
+// No hardcoded accounts here — the Commentary worker tier polls whatever the
+// operator has added. FinancialJuice is seeded as the default Commentary entry.
+const COMMENTARY_ACCOUNTS = new Set<string>([]);
 
 const OSINT_ACCOUNTS = new Set([
   "osintdefender",
@@ -181,18 +181,43 @@ export function normalizeSource(
   rawSource: string | undefined,
   headline: string,
   tags: string[] = [],
-): "FinancialJuice" | "OSINTSources" | "EconomicCalendar" | "Polymarket" {
+  url?: string | null,
+): "FinancialJuice" | "OSINTSources" | "EconomicCalendar" | "Polymarket" | "Commentary" | "Untrusted" {
   const src = (rawSource || "").toLowerCase().replace(/[^a-z0-9_]/g, "");
 
   if (rawSource === "FinancialJuice") return "FinancialJuice";
   if (rawSource === "OSINTSources") return "OSINTSources";
   if (rawSource === "DeItaOne") return "FinancialJuice";
+  if (rawSource === "Commentary") return "Commentary";
   if (rawSource === "EconomicCalendar") return "EconomicCalendar";
   if (rawSource === "Polymarket" || rawSource === "Kalshi") return "Polymarket";
 
   if (FJ_ACCOUNTS.has(src)) return "FinancialJuice";
   if (DEITAONE_ACCOUNTS.has(src)) return "FinancialJuice";
+  if (COMMENTARY_ACCOUNTS.has(src)) return "Commentary";
   if (OSINT_ACCOUNTS.has(src)) return "OSINTSources";
+
+  // [claude-code 2026-04-30] S55: Unknown source with a blocked publisher URL
+  // must NEVER default to FinancialJuice. This was the root cause of the
+  // trust-label failure — items from Agent Reach RSS with seekingalpha.com URLs
+  // were getting normalized to FinancialJuice because the source field was
+  // an unrecognized RSS tag.
+  if (url) {
+    try {
+      const host = new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+      const BLOCKED_HOSTS = [
+        "seekingalpha.com", "bloomberg.com", "cnbc.com", "marketwatch.com",
+        "reuters.com", "wsj.com", "ft.com", "barrons.com", "zerohedge.com",
+        "foxnews.com", "foxbusiness.com", "msnbc.com", "cnn.com", "yahoo.com",
+        "finance.yahoo.com", "businessinsider.com",
+      ];
+      for (const blocked of BLOCKED_HOSTS) {
+        if (host === blocked || host.endsWith("." + blocked)) {
+          return "Untrusted";
+        }
+      }
+    } catch {}
+  }
 
   const text = (headline + " " + tags.join(" ")).toLowerCase();
 
@@ -200,7 +225,9 @@ export function normalizeSource(
   if (ECON_KEYWORDS.some((kw) => text.includes(kw))) return "EconomicCalendar";
   if (GEO_KEYWORDS.some((kw) => text.includes(kw))) return "OSINTSources";
 
-  return "FinancialJuice";
+  // [claude-code 2026-04-30] S55: Unknown sources that don't match any
+  // keyword bucket are now "Untrusted" instead of defaulting to FinancialJuice.
+  return "Untrusted";
 }
 
 // ── Risk Type Classification ─────────────────────────────────────────────────

@@ -5,6 +5,7 @@
 // retained for chat/mobile surfaces but is no longer in the navtab.
 // [claude-code 2026-04-18] S24-T4: Admin surface now wraps Refinement/Approvals/Monitor via AdminShell
 // [claude-code 2026-04-03] Extracted from MainLayout.tsx — tab content rendering
+// [claude-code 2026-04-30] RiskFlow tab accepts the shared Ask AI catalyst callback.
 import React from "react";
 import { MinimalFeedSection } from "../feed/MinimalFeedSection";
 import { RiskFlowMain } from "../feed/RiskFlowMain";
@@ -38,6 +39,13 @@ interface TabRendererProps {
   prevTab: NavTab | null;
   showRefinement: boolean;
   navigateTab: (tab: NavTab) => void;
+  onChatAlert?: (alert: {
+    headline: string;
+    summary?: string | null;
+    source?: string;
+    ivScore?: number | null;
+    publishedAt?: string;
+  }) => void;
 }
 
 export function TabRenderer({
@@ -46,6 +54,7 @@ export function TabRenderer({
   prevTab,
   showRefinement,
   navigateTab,
+  onChatAlert,
 }: TabRendererProps) {
   const animClass =
     tabTransitioning && prevTab
@@ -83,7 +92,7 @@ export function TabRenderer({
           data-tour-target="riskflow"
           className={`h-full w-full section-fade-corners ${animClass}`}
         >
-          <RiskFlowMain />
+          <RiskFlowMain onChatAlert={onChatAlert} />
         </div>
       )}
       {!showRefinement && activeTab === "econ" && (

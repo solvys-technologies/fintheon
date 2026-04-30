@@ -70,7 +70,7 @@ function mapRawItems(items: any[]): MobileRiskFlowAlert[] {
         ? item.publishedAt
         : new Date(item.publishedAt).toISOString(),
     url: item.url,
-    imageUrl: item.imageUrl ?? null,
+    imageUrl: item.imageUrl ?? item.image_url ?? null,
     symbols: item.symbols ?? [],
     ivScore: item.ivScore ?? null,
     direction: item.direction ?? null,

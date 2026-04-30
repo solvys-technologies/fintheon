@@ -3,7 +3,7 @@
 //   (CollectedNewsItem, NewsTier, NewsSource) preserved to keep downstream consumers stable.
 // [claude-code 2026-04-19] S27-T7 (W2d): shared types for riskflow-worker sources.
 
-export type NewsTier = "breaking" | "standard";
+export type NewsTier = "breaking" | "standard" | "commentary";
 
 export type NewsSource =
   | "browser-harness"

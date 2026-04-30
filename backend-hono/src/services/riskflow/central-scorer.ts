@@ -48,6 +48,7 @@ import { checkSourcePolicy } from "./source-policy.js";
 import { recordIngestAttempt, recordLeakEvent } from "./ingest-ledger.js";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { normalizeHeadline } from "./text-utils.js";
+import { classifyWirePrint } from "./wire-print-classifier.js";
 
 // Re-export from extracted modules for backward compatibility
 export { normalizeSource, classifyRiskType } from "./scorer-tagging.js";
@@ -76,7 +77,7 @@ let scoringStartedAt = 0;
 function rawToFeedItem(raw: RawRiskFlowItem & { id: string }): FeedItem {
   return {
     id: raw.tweet_id,
-    source: normalizeSource(raw.source, raw.headline || "", raw.tags || []),
+    source: normalizeSource(raw.source, raw.headline || "", raw.tags || [], raw.url),
     headline: raw.headline || "",
     body: raw.body,
     url: raw.url,
@@ -389,7 +390,71 @@ export async function scoringCycle(): Promise<number> {
       enrichedItems = feedItems;
     }
 
-    // Classify risk type
+    // [claude-code 2026-04-30] S55: WIRE word-gate classification.
+    // Approved WIRE sources (FinancialJuice, DeItaOne) get classified
+    // by word gates instead of emoji-dependent heuristics.
+    //   Econ gate: "Actual" AND "Forecast" → Macro risk type
+    //   Earnings gate: "EPS" AND ("REV" or "Revenue") → Earnings risk type
+    const APPROVED_WIRE_SOURCES = new Set(["FinancialJuice", "DeItaOne", "TwitterCli"]);
+    let wireEconCount = 0;
+    let wireEarningsCount = 0;
+    for (const item of enrichedItems) {
+      if (!APPROVED_WIRE_SOURCES.has(item.source)) continue;
+      const text = `${item.headline} ${item.body || ""}`;
+      const wireClass = classifyWirePrint(text);
+      if (wireClass.class === "econ") {
+        item.riskType = "Macro";
+        if (!item.tags) item.tags = [];
+        if (!item.tags.includes("econ-print")) item.tags.push("econ-print");
+        if (!item.tags.includes("wire-word-gate")) item.tags.push("wire-word-gate");
+        wireEconCount++;
+      } else if (wireClass.class === "earnings") {
+        item.riskType = "Earnings";
+        if (!item.tags) item.tags = [];
+        if (!item.tags.includes("earnings-print")) item.tags.push("earnings-print");
+        if (!item.tags.includes("wire-word-gate")) item.tags.push("wire-word-gate");
+        wireEarningsCount++;
+      }
+    }
+    if (wireEconCount > 0 || wireEarningsCount > 0) {
+      log.info(
+        `WIRE word-gate classified: ${wireEconCount} econ prints, ${wireEarningsCount} earnings prints`,
+      );
+    }
+
+    // [claude-code 2026-04-30] S55: Auto-trip FinancialJuice → Commentary.
+    // Items from FinancialJuice that lack econ data signals (numbers, dollar
+    // amounts, percentage signs, Actual/Forecast keywords) are opinion/color
+    // commentary, not wire data. Reclassify them to Commentary so they don't
+    // pollute the Wire/Macro feed with low-signal noise.
+    let autoTrippedCommentary = 0;
+    for (const item of enrichedItems) {
+      if (item.source !== "FinancialJuice") continue;
+      if (item.riskType && item.riskType !== "Commentary") continue; // already classified
+      const text = `${item.headline} ${item.body || ""}`;
+      const hasNumbers = /\d/.test(text);
+      const hasDollar = /\$|USD\b/i.test(text);
+      const hasPercent = /%\b|percent\b/i.test(text);
+      const hasEconKeywords = /\b(actual|forecast|previous|beat|miss|inline)\b/i.test(text);
+      const hasTicker = /\$[A-Z]{1,5}\b|\b[A-Z]{1,5}\b/.test(text);
+      const dataSignals = [hasNumbers, hasDollar, hasPercent, hasEconKeywords, hasTicker]
+        .filter(Boolean).length;
+      // If the item has < 2 data signals, it's opinion/commentary, not wire data
+      if (dataSignals < 2) {
+        item.source = "Commentary" as any;
+        item.riskType = "Commentary";
+        if (!item.tags) item.tags = [];
+        if (!item.tags.includes("auto-tripped")) item.tags.push("auto-tripped");
+        autoTrippedCommentary++;
+      }
+    }
+    if (autoTrippedCommentary > 0) {
+      log.info(
+        `Auto-tripped ${autoTrippedCommentary} FinancialJuice items → Commentary (low data density)`,
+      );
+    }
+
+    // Classify risk type (for items not already classified by WIRE word gates)
     for (const item of enrichedItems) {
       if (!item.riskType) {
         item.riskType = classifyRiskType(item.headline, item.tags || []);
@@ -978,6 +1043,7 @@ export function scoredToFeedItem(scored: ScoredRiskFlowItem): FeedItem {
       scored.source,
       scored.headline || "",
       scored.tags || [],
+      scored.url,
     ),
     headline: scored.headline || "",
     body: scored.body,

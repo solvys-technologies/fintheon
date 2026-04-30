@@ -440,7 +440,7 @@ export function PromptBox({
                 className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-[var(--fintheon-accent)]/20 cursor-pointer"
                 onClick={() => setFullSizeImage(src)}
               >
-                <img src={src} alt="" className="w-full h-full object-cover" />
+                <img src={src} alt="" className="w-full h-full object-contain" />
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

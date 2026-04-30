@@ -13,7 +13,8 @@ export type SourceBucket =
   | "Commentary"
   | "Econ"
   | "Earnings"
-  | "Geopolitical";
+  | "Geopolitical"
+  | "Commentary";
 
 export const SOURCE_BUCKETS: SourceBucket[] = [
   "Wire",
@@ -62,6 +63,9 @@ export function bucketOf(alert: {
 
   // Macro — explicit macro risk type or macro-labelled sources
   if (riskType === "Macro") return "Macro";
+
+  // Commentary — dedicated bucket for opinion/analysis
+  if (src === "Commentary") return "Commentary";
 
   // Wire — everything else (FinancialJuice, DeItaOne, TwitterCli, etc.)
   return "Wire";

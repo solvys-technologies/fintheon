@@ -53,4 +53,6 @@ export type NewsSource =
   | "Reuters"
   | "WSJ"
   | "CNBC"
-  | "FT";
+  | "FT"
+  | "Untrusted"
+  | "Commentary";

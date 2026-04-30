@@ -1,3 +1,5 @@
+// [claude-code 2026-04-30] "solvys fuses" baseline — every horizontal/vertical
+//   fuse renders linear ruler increments on the shared primitive.
 // [claude-code 2026-04-20] `animateIn` — when true, the fuse mounts at 0 and
 //   transitions to `value` on the next frame, so new items arriving in the
 //   feed visibly "charge up". Vertical orientation fills bottom-up (matches
@@ -75,6 +77,7 @@ export function NothingFuse({
   const clamped = Math.max(0, Math.min(1, charged ? value : 0));
   const pct = `${clamped * 100}%`;
   const isHorizontal = orientation === "horizontal";
+  const incrementStroke = "var(--solvys-fuse-increment, var(--fintheon-bg, #050402))";
 
   const trackStyle: CSSProperties = isHorizontal
     ? { height: thickness, width: "100%" }
@@ -88,9 +91,7 @@ export function NothingFuse({
         position: "absolute",
         left: 0,
         top: 0,
-        transition: animateIn
-          ? "width 520ms cubic-bezier(0.16, 0.8, 0.24, 1)"
-          : undefined,
+        transition: "width 520ms cubic-bezier(0.16, 0.8, 0.24, 1)",
       }
     : {
         width: "100%",
@@ -99,9 +100,7 @@ export function NothingFuse({
         position: "absolute",
         left: 0,
         bottom: 0,
-        transition: animateIn
-          ? "height 520ms cubic-bezier(0.16, 0.8, 0.24, 1)"
-          : undefined,
+        transition: "height 520ms cubic-bezier(0.16, 0.8, 0.24, 1)",
       };
 
   // Ruler ticks — N-1 thin perpendicular dividers at equal intervals across the track.
@@ -116,7 +115,7 @@ export function NothingFuse({
           bottom: 0,
           left: `${offsetPct}%`,
           width: 1,
-          background: "var(--fintheon-bg, #050402)",
+          background: incrementStroke,
           pointerEvents: "none",
         }
       : {
@@ -125,7 +124,7 @@ export function NothingFuse({
           right: 0,
           bottom: `${offsetPct}%`,
           height: 1,
-          background: "var(--fintheon-bg, #050402)",
+          background: incrementStroke,
           pointerEvents: "none",
         };
     return <span key={i} style={tickStyle} aria-hidden />;
@@ -135,6 +134,7 @@ export function NothingFuse({
     <div
       className={`relative rounded-[2px] bg-[var(--fintheon-surface)] overflow-hidden${className ? ` ${className}` : ""}`}
       style={trackStyle}
+      data-solvys-fuse="true"
     >
       <div className="rounded-[2px]" style={fillStyle}>
         <span className="nothing-fuse-shimmer" aria-hidden />

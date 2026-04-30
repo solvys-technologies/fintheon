@@ -17,6 +17,22 @@ import type {
   SourceAccountCategory,
   SourceAccountMethod,
 } from "../../types/source-account.js";
+import { isBannedPublisher } from "../../services/riskflow/content-guard.js";
+
+// X handle regex: 1-15 chars, alphanumeric + underscore, optional leading @
+const X_HANDLE_RE = /^@?[a-zA-Z0-9_]{1,15}$/;
+
+// Blocked handles that must never be added as source accounts
+const BLOCKED_ADD_HANDLES = new Set([
+  "overton_news",
+  "reuters", "reutersbiz", "reutersworld",
+  "bloomberg", "business", "markets", "bloombergtv", "bloombergradio", "bloombergpolitics",
+  "cnbc", "cnbcnow", "squawkcnbc",
+  "foxnews", "foxbusiness", "msnbc", "cnn", "cnnbusiness",
+  "marketwatch", "wsj", "ft", "financialtimes", "barronsonline",
+  "nbcnews", "abc", "abcnews", "cbsnews", "usatoday", "businessinsider",
+  "yahoofinance", "seekingalpha", "zerohedge",
+]);
 
 // GET /api/source-accounts
 export async function handleGetAccounts(c: Context) {
@@ -68,6 +84,20 @@ export async function handleAddAccount(c: Context) {
 
   if (!body.handle?.trim()) {
     errors.handle = "handle is required";
+  } else {
+    const cleanHandle = body.handle.trim().replace(/^@/, "").toLowerCase();
+    // Blocked handle check — never allow known spam/publisher handles
+    if (BLOCKED_ADD_HANDLES.has(cleanHandle)) {
+      errors.handle = "This source is blocked and cannot be added";
+    }
+    // X handle format check for browser-method accounts
+    const method = (body.method ?? "browser") as string;
+    if (method === "browser") {
+      const rawHandle = body.handle.trim();
+      if (!X_HANDLE_RE.test(rawHandle)) {
+        errors.handle = "X handles must be 1-15 characters (letters, numbers, underscores)";
+      }
+    }
   }
 
   const catResult = validateCategory(body.category);
@@ -115,7 +145,13 @@ export async function handleUpdateAccount(c: Context) {
 
   if (body.handle !== undefined) {
     if (typeof body.handle === "string" && body.handle.trim()) {
-      fields.handle = body.handle.trim().replace(/^@/, "");
+      const rawHandle = body.handle.trim();
+      const cleanHandle = rawHandle.replace(/^@/, "").toLowerCase();
+      if (BLOCKED_ADD_HANDLES.has(cleanHandle)) {
+        errors.handle = "This source is blocked and cannot be added";
+      } else {
+        fields.handle = rawHandle.replace(/^@/, "");
+      }
     } else {
       errors.handle = "handle must be a non-empty string";
     }
@@ -145,6 +181,21 @@ export async function handleUpdateAccount(c: Context) {
       fields.method = methodResult.method;
     } else {
       errors.method = methodResult.error!;
+    }
+  }
+
+  // Browser-method accounts must always be valid X handles.
+  // The Refinement UI sends method on edit, so this applies consistently.
+  const effectiveMethod =
+    (fields.method as SourceAccountMethod | undefined) ??
+    (body.method as SourceAccountMethod | undefined);
+  const effectiveHandle =
+    (fields.handle as string | undefined) ??
+    (typeof body.handle === "string" ? body.handle.trim() : undefined);
+  if (effectiveMethod === "browser" && effectiveHandle) {
+    if (!X_HANDLE_RE.test(effectiveHandle)) {
+      errors.handle =
+        "X handles must be 1-15 characters (letters, numbers, underscores)";
     }
   }
 

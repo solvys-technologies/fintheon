@@ -205,10 +205,10 @@ export function CommentatorManager({
         <button
           onClick={handleSeed}
           disabled={seeding}
-          className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] border border-zinc-700 text-zinc-500 hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/30 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-zinc-700 text-zinc-500 hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/30 transition-colors disabled:opacity-50"
           title="Seed default persons of interest (idempotent)"
         >
-          <Sprout className="w-2.5 h-2.5" />
+          <Sprout className="w-3 h-3" />
           {seeding ? "Seeding..." : "Seed Defaults"}
         </button>
       </div>
@@ -304,7 +304,7 @@ export function CommentatorManager({
                 </div>
               </div>
               <span
-                className={`text-[8px] font-bold px-1 py-px rounded border shrink-0 ${tier.color}`}
+                className={`min-w-[58px] text-right text-[9px] font-bold px-1.5 py-px rounded border shrink-0 tabular-nums ${tier.color}`}
               >
                 {tier.label} {entry.weightMultiplier}x
               </span>

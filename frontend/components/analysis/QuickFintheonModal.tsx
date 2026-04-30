@@ -113,7 +113,7 @@ export default function QuickFintheonModal({
                 <img
                   src={image}
                   alt="Chart Preview"
-                  className="w-full h-auto max-h-[300px] object-cover"
+                  className="w-full h-auto max-h-[300px] object-contain"
                 />
                 <button
                   onClick={() => setImage(null)}

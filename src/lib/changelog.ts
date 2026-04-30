@@ -9,6 +9,195 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-30T16:40:49-04:00",
+    agent: "codex",
+    summary:
+      "Applied /solvys-ui-details pass and solvys-fuse baseline: unified linear fuse increments across shared desktop/mobile fuse primitives, removed duplicate compact Arbitrum digest text, rounded the main content shell top-left border, anchored sidebar icons during expand, relocated the small borderless Edit control into the Dashboard row, and trimmed the footer top divider so it no longer bleeds into the sidebar rail.",
+    files: [
+      "frontend/components/shared/NothingFuse.tsx",
+      "mobile/components/shared/IVFuseBar.tsx",
+      "mobile/components/shared/VerticalFuseBar.tsx",
+      "frontend/components/arbitrum/VerdictCard.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/layout/NavSidebar.tsx",
+      "frontend/components/layout/FooterToolbar.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-30T16:14:00-04:00",
+    agent: "codex",
+    summary:
+      "Unified post-S55 source-account and worker behavior: breaking tier now polls Wire handles only, commentary tier writes as commentary cadence-tier, source-account edit route now enforces blocked-handle + browser-method X handle validation, and SourceAccountsManager completed Solvys-feels cleanup (tokenized colors, frosted forms, solid accent add action).",
+    files: [
+      "backend-hono/src/workers/riskflow-worker/sources/index.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/types.ts",
+      "backend-hono/src/routes/source-accounts/handlers.ts",
+      "frontend/components/refinement/SourceAccountsManager.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-30T16:11:00-04:00",
+    agent: "codex",
+    summary:
+      "Fixed desktop RiskFlow severity-color preference drift by wiring user fusePalette preferences to runtime CSS variables in SettingsContext, so RiskFlow cards/fuses now reflect user-selected severity and trade-direction colors immediately.",
+    files: [
+      "frontend/contexts/SettingsContext.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-30T14:19:00-04:00",
+    agent: "codex",
+    summary:
+      "Post-S55 RiskFlow pipeline unification: aligned worker contract cadence to the live scheduler (breaking 60s, commentary 60s, standard 5m) and wired scheduler intervals to shared contract constants so tier cadence has a single source of truth before deploy.",
+    files: [
+      "backend-hono/src/workers/riskflow-worker/contract.ts",
+      "backend-hono/src/workers/riskflow-worker/scheduler.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-30T13:35:00-04:00",
+    agent: "codex",
+    summary:
+      "Refinement Advanced tab detail pass: normalized right-justified badge/count sizing against left labels by widening numeric rails, aligning tabular counts, and resizing badge typography in Event Weights, Persons of Interest, Source Accounts, and preset metadata rows for cleaner balance.",
+    files: [
+      "frontend/components/refinement/QuickWeightEditor.tsx",
+      "frontend/components/refinement/PresetSelector.tsx",
+      "frontend/components/refinement/CommentatorManager.tsx",
+      "frontend/components/refinement/SourceAccountsManager.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-30T13:23:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Refinement Engine polish pass: reshaped Market Environment into a single full-width top row and rebuilt Advanced tab Event Weight sliders with shared segmented fuse styling, per-1.0 ruler marks, free decimal drag control (0.1 precision), and corrected movable knob behavior so values no longer snap-lock to whole numbers.",
+    files: [
+      "frontend/components/refinement/RegimeControl.tsx",
+      "frontend/components/refinement/QuickWeightEditor.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-30T17:25:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S55: Restored RiskFlow feed integrity. Fixed normalizeSource to stop defaulting unknown sources to FinancialJuice (root cause of trust-label failure). Added read-time blocked-host filter (feed-integrity.ts) so poisoned historical rows cannot render. Implemented WIRE word-gate classifier replacing emoji-dependent econ/earnings classification. Quarantined commentary-scraper Rettiwt path behind RISKFLOW_COMMENTARY_SCRAPER=enabled gate. Added econ live-race scaffolding (source registry + observation model). Moved Econ Status indicator from TopHeader to FooterToolbar. Built shared heading-toolbar Econ Countdown widget with fade transitions. Purged 3,028 blocked-publisher rows (seekingalpha.com, bloomberg.com, cnbc.com, etc.) from scored_riskflow_items and raw_riskflow_items. Added Untrusted NewsSource type. Supabase dry-run audit confirmed zero blocked hosts in feed.",
+    files: [
+      "backend-hono/src/services/riskflow/feed-integrity.ts",
+      "backend-hono/src/services/riskflow/wire-print-classifier.ts",
+      "backend-hono/src/services/econ/econ-source-registry.ts",
+      "backend-hono/src/services/econ/econ-live-race.ts",
+      "backend-hono/src/services/riskflow/scorer-tagging.ts",
+      "backend-hono/src/services/riskflow/feed-service.ts",
+      "backend-hono/src/services/riskflow/central-scorer.ts",
+      "backend-hono/src/services/riskflow/commentary-scraper.ts",
+      "backend-hono/src/types/riskflow.ts",
+      "backend-hono/src/types/news-analysis.ts",
+      "frontend/types/feed.ts",
+      "frontend/components/layout/EconCountdownWidget.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/layout/FooterToolbar.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "backend-hono/scripts/purge-blocked-publishers.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-30T12:48:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Patched desktop dashboard RiskFlow tape parity: expanded dashboard cards now use the same distilled media/source/chat action body as Strategium and full RiskFlow, source links open as small source popups, visible dismiss thumbs were removed, RiskFlow media hydration accepts image_url fallbacks, IV stacks/chevrons render from severity colors instead of a monocolor heat fallback, expanded cards drain the vertical fuse into a delayed left-to-right horizontal fuse, and RiskFlow filters now broadcast as shared preferences across desktop news surfaces including the dashboard tape.",
+    files: [
+      "frontend/components/executive/ExpandableTapeItem.tsx",
+      "frontend/components/feed/RiskFlowPostCard.tsx",
+      "frontend/components/feed/AlertCardBase.tsx",
+      "frontend/components/feed/RiskFlowCardAnatomy.tsx",
+      "frontend/components/shared/IVStack.tsx",
+      "frontend/components/shared/NothingFuse.tsx",
+      "frontend/components/RiskFlowMini.tsx",
+      "frontend/components/feed/RiskFlowMain.tsx",
+      "frontend/components/executive/MainDashboard.tsx",
+      "frontend/contexts/RiskFlowContext.tsx",
+      "frontend/hooks/useRiskFlowFilters.ts",
+      "frontend/lib/source-popup.ts",
+      "mobile/components/riskflow/RiskFlowCard.tsx",
+      "mobile/components/riskflow/RiskFlowCardExpanded.tsx",
+      "mobile/contexts/RiskFlowContext.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-30T12:29:00-04:00",
+    agent: "claude-code",
+    summary:
+      "RiskFlow card patch: unified the feed, Strategium, NarrativeFlow, and timeline catalyst card anatomy around the preview headline with left IV fuse and right IV/direction stack, while distilling expanded cards so media/source actions render without duplicated headline, source, or IV metadata.",
+    files: [
+      "frontend/components/feed/RiskFlowCardAnatomy.tsx",
+      "frontend/components/feed/AlertCardBase.tsx",
+      "frontend/components/feed/RiskFlowPostCard.tsx",
+      "frontend/components/RiskFlowMini.tsx",
+      "frontend/components/narrative/CatalystCard.tsx",
+      "frontend/components/narrative/NarrativeMiniCard.tsx",
+      "frontend/components/narrative/NarrativeResearchCard.tsx",
+      "frontend/components/narrative/TimelinePanel.tsx",
+      "frontend/lib/catalyst-riskflow-utils.ts",
+      "mobile/components/riskflow/RiskFlowCardExpanded.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-30T12:06:00-04:00",
+    agent: "claude-code",
+    summary:
+      "INSTALL-UPDATE: documented the quarantined RiskFlow commentary scraper flag and backfilled it as disabled during updates so deprecated Rettiwt paths stay off after S55.",
+    files: [
+      "backend-hono/.env.example",
+      "scripts/fintheon-update.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-30T12:00:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S55 unified and preflighted for deploy: RiskFlow now applies a reusable blocked-publisher read guard, WIRE econ/earnings posts classify through word gates, TradingView is documented as schedule-only for econ live-race scaffolding, Econ status moved to the footer toolbar, and the heading toolbar alternates PsychAssist with a compact countdown widget.",
+    files: [
+      "backend-hono/src/services/riskflow/feed-integrity.ts",
+      "backend-hono/src/services/riskflow/wire-print-classifier.ts",
+      "backend-hono/src/services/riskflow/feed-service.ts",
+      "backend-hono/src/services/riskflow/central-scorer.ts",
+      "backend-hono/src/services/riskflow/scorer-tagging.ts",
+      "backend-hono/src/services/econ/econ-source-registry.ts",
+      "backend-hono/src/services/econ/econ-live-race.ts",
+      "frontend/components/layout/EconCountdownWidget.tsx",
+      "frontend/components/layout/FooterToolbar.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-30T09:58:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Redesigned RiskFlow news expansions as Solvys-native post cards: full-feed and Strategium mini cards now share source metadata, full headline reveal, optional media/source preview, and one bottom-right Ask AI CTA. The collapsed preview shell is the reliable expand/collapse target, and IV scoring is visible across full, mini/Strategium, and mobile RiskFlow cards.",
+    files: [
+      "frontend/components/feed/RiskFlowPostCard.tsx",
+      "frontend/components/feed/RiskFlowDetailCard.tsx",
+      "frontend/components/feed/AlertCardBase.tsx",
+      "frontend/components/feed/RiskFlowMain.tsx",
+      "frontend/components/layout/TabRenderer.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/RiskFlowMini.tsx",
+      "mobile/components/riskflow/RiskFlowCardExpanded.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-29T18:08:00-04:00",
     agent: "claude-code",
     summary:

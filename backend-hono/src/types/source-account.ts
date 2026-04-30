@@ -8,6 +8,7 @@ export const SOURCE_ACCOUNT_CATEGORIES = [
   "OSINT",
   "Geopolitical",
   "Macro",
+  "Commentary",
   "Custom",
   "Official",
 ] as const;

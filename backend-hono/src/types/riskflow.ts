@@ -16,7 +16,9 @@ export type NewsSource =
   | "TwitterCli"
   | "DeItaOne"
   | "Custom"
-  | "Hermes";
+  | "Hermes"
+  | "Untrusted"
+  | "Commentary";
 export type UrgencyLevel = "immediate" | "high" | "normal";
 export type SentimentDirection = "bullish" | "bearish" | "neutral";
 export type RiskType =

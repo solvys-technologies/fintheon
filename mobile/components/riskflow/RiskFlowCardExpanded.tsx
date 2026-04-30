@@ -10,11 +10,11 @@
 // [claude-code 2026-04-19] Surface-gated SourcePreview — when rendering in the full or
 //   timeline surface, the expanded card shows the scraped body in a SourcePreview block
 //   with YouTube + open-original CTAs; mini surfaces keep the legacy [OPEN SOURCE] link.
+// [claude-code 2026-04-30] Expanded body is distilled to media/source footer only:
+// the preview row owns headline, IV, source, and direction metadata.
 import { motion } from "framer-motion";
 import { Paperclip } from "lucide-react";
 import type { MobileRiskFlowAlert } from "../../contexts/RiskFlowContext";
-import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
-import { SourcePreview } from "./SourcePreview";
 import { NothingFuse } from "@frontend/components/shared/NothingFuse";
 
 export type RiskFlowExpandedSurface = "full" | "timeline" | "mini";
@@ -29,46 +29,33 @@ interface RiskFlowCardExpandedProps {
   severityColor?: string;
 }
 
-const SEVERITY_COLORS: Record<AlertSeverity, string> = {
-  critical: "var(--fintheon-severe)",
-  high: "var(--fintheon-severe)",
-  medium: "var(--fintheon-neutral-severe)",
-  low: "var(--fintheon-neutral)",
-};
+function getXStatusId(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (!/(^|\.)x\.com$|(^|\.)twitter\.com$/i.test(parsed.hostname)) {
+      return null;
+    }
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    const statusIdx = parts.findIndex((part) => part === "status");
+    return statusIdx >= 0 ? (parts[statusIdx + 1] ?? null) : null;
+  } catch {
+    return null;
+  }
+}
 
-function SubScoreRow({
-  label,
-  value,
-  severity,
-}: {
-  label: string;
-  value: number;
-  severity: AlertSeverity;
-}) {
-  return (
-    <div className="flex items-center justify-between py-1">
-      <span
-        style={{
-          fontFamily: "var(--font-data)",
-          fontSize: "11px",
-          letterSpacing: "0.06em",
-          textTransform: "uppercase",
-          color: "var(--text-secondary)",
-        }}
-      >
-        {label}
-      </span>
-      <span
-        style={{
-          fontFamily: "var(--font-data)",
-          fontSize: "11px",
-          color: SEVERITY_COLORS[severity],
-        }}
-      >
-        {value.toFixed(1)}
-      </span>
-    </div>
-  );
+function openMobileSource(url: string): void {
+  const statusId = getXStatusId(url);
+  if (!statusId) {
+    window.open(url, "_blank", "noopener,noreferrer");
+    return;
+  }
+
+  window.location.href = `twitter://status?id=${statusId}`;
+  window.setTimeout(() => {
+    if (document.visibilityState === "visible") {
+      window.location.href = url;
+    }
+  }, 700);
 }
 
 export function RiskFlowCardExpanded({
@@ -127,25 +114,6 @@ export function RiskFlowCardExpanded({
             />
           </a>
         )}
-
-        {/* S51: t-text-reveal — remainder of headline streams in on expand */}
-        <motion.p
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: "13px",
-            color: "var(--text-primary)",
-            lineHeight: 1.6,
-            marginBottom: "12px",
-          }}
-        >
-          {alert.title}
-        </motion.p>
-
-        {/* Source preview (full/timeline) — no duplicate content text for mini */}
-        {showSourcePreview && <SourcePreview alert={alert} />}
 
         {/* Agent notes */}
         {alert.agentNote && (
@@ -224,7 +192,7 @@ export function RiskFlowCardExpanded({
                   textTransform: "uppercase",
                   color: "var(--accent)",
                   border: "1px solid var(--accent)",
-                  borderRadius: "999px",
+                  borderRadius: 6,
                   padding: "2px 8px",
                 }}
               >
@@ -258,11 +226,12 @@ export function RiskFlowCardExpanded({
 
             {/* Paperclip → original source */}
             {alert.url && (
-              <a
-                href={alert.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openMobileSource(alert.url!);
+                }}
                 aria-label="Open original source"
                 style={{
                   display: "inline-flex",
@@ -273,10 +242,13 @@ export function RiskFlowCardExpanded({
                   color: "var(--text-secondary)",
                   borderRadius: 6,
                   WebkitTapHighlightColor: "transparent",
+                  background: "transparent",
+                  border: 0,
+                  padding: 0,
                 }}
               >
                 <Paperclip size={16} />
-              </a>
+              </button>
             )}
 
             {/* IV numeral — far right, Doto */}
