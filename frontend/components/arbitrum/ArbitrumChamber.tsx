@@ -34,6 +34,13 @@ const DEFAULT_ROLES: ReadonlyArray<ArbitrumSeat["role"]> = [
 const EMPTY_COPY =
   "No fresh read — chamber convenes at 17:00 ET or on IV ≥ 8.5.";
 
+function cleanDigestText(text: string): string {
+  return text
+    .replace(/\s*,?\s*conf\s+\d+(?:\.\d+)?%?(?:\s*(?:\/|out of)\s*\d+(?:\.\d+)?%?)?/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function prefersReducedMotion(): boolean {
   if (typeof window === "undefined") return false;
   return (
@@ -112,6 +119,9 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
 
   const hasVerdict = Boolean(verdict);
   const hasRealSeats = (verdict?.seats?.length ?? 0) > 0;
+  const chamberSummary = verdict?.digest_text
+    ? cleanDigestText(verdict.digest_text)
+    : "";
 
   return (
     <div className="flex flex-col min-h-0 min-w-0 gap-3">
@@ -144,6 +154,11 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
               </span>
             )}
           </div>
+        )}
+        {chamberSummary && (
+          <p className="text-[11px] text-[var(--fintheon-text)]/62 leading-snug line-clamp-2">
+            {chamberSummary}
+          </p>
         )}
       </div>
       <NothingFuse

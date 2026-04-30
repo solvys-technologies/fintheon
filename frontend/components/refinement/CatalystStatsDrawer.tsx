@@ -49,9 +49,10 @@ interface PurgeAuditResponse {
 }
 
 interface Props {
-  open: boolean;
-  onClose: () => void;
+  open?: boolean;
+  onClose?: () => void;
   disabled: boolean;
+  inline?: boolean;
 }
 
 const RULER_STYLE: React.CSSProperties = {
@@ -60,7 +61,12 @@ const RULER_STYLE: React.CSSProperties = {
     "linear-gradient(to right, transparent 0%, color-mix(in srgb, var(--fintheon-accent) 32%, transparent) 50%, transparent 100%)",
 };
 
-export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
+export function CatalystStatsDrawer({
+  open = false,
+  onClose,
+  disabled,
+  inline = false,
+}: Props) {
   const { addToast } = useToast();
   const { getAccessToken } = useAuth();
   const [stats, setStats] = useState<SourceStat[]>([]);
@@ -124,8 +130,8 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
 
   // Pull on first open + whenever the drawer is reopened.
   useEffect(() => {
-    if (open) void fetchStats();
-  }, [open, fetchStats]);
+    if (inline || open) void fetchStats();
+  }, [inline, open, fetchStats]);
 
   // Group sources by category for the aggregate display.
   const grouped = useMemo(() => {
@@ -341,7 +347,11 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
 
   return (
     <div
-      className={`absolute right-0 top-0 bottom-0 w-[420px] z-40 flex flex-col bg-[var(--fintheon-bg)] border-l border-[var(--fintheon-accent)]/20 shadow-2xl transition-all duration-300 ease-in-out ${open ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none invisible"}`}
+      className={
+        inline
+          ? "flex min-h-[360px] flex-col border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)]"
+          : `absolute right-0 top-0 bottom-0 z-40 flex w-[420px] flex-col border-l border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-2xl transition-all duration-300 ease-in-out ${open ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none invisible"}`
+      }
     >
       {/* Header — title + refresh + close, mirrors ChatPanel chrome density */}
       <div className="flex items-center justify-between px-3 py-2 flex-shrink-0 border-b border-[var(--fintheon-accent)]/15">
@@ -371,13 +381,15 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
               className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
             />
           </button>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8 transition-colors"
-            title="Close"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
+          {!inline && (
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8 transition-colors"
+              title="Close"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 

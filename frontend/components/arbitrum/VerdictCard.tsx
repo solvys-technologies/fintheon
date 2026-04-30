@@ -12,6 +12,13 @@ interface VerdictCardProps {
   className?: string;
 }
 
+function cleanDigestText(text: string): string {
+  return text
+    .replace(/\s*,?\s*conf\s+\d+(?:\.\d+)?%?(?:\s*(?:\/|out of)\s*\d+(?:\.\d+)?%?)?/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 export function VerdictCard({
   verdict,
   compact = false,
@@ -25,8 +32,9 @@ export function VerdictCard({
     created_at,
     trigger,
   } = verdict;
-  const pct = Math.round(consensus_probability * 100);
-  const conf = Math.max(0, Math.min(10, confidence * 10));
+  const consensusScore = Math.max(0, Math.min(10, consensus_probability * 10));
+  const confidenceScore = Math.max(0, Math.min(10, confidence * 10));
+  const cleanedDigest = cleanDigestText(digest_text);
 
   return (
     <div
@@ -35,8 +43,7 @@ export function VerdictCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-baseline gap-2">
           <DigitGroup
-            value={`${pct}`}
-            suffix="%"
+            value={consensusScore.toFixed(1)}
             className="text-[var(--fintheon-accent)] leading-none"
             style={{
               fontFamily: "Doto, ui-monospace, monospace",
@@ -44,7 +51,7 @@ export function VerdictCard({
             }}
           />
           <span className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/60">
-            consensus
+            consensus score
           </span>
         </div>
         {dissent && <DissentBadge dissent={dissent} />}
@@ -56,8 +63,7 @@ export function VerdictCard({
             chamber confidence
           </span>
           <DigitGroup
-            value={conf.toFixed(1)}
-            suffix="/10"
+            value={confidenceScore.toFixed(1)}
             className="text-[var(--fintheon-text)]/80 text-xs"
             style={{ fontFamily: "Doto, ui-monospace, monospace" }}
           />
@@ -74,7 +80,7 @@ export function VerdictCard({
         <p
           className={`mt-3 text-[var(--fintheon-text)]/85 text-sm leading-relaxed`}
         >
-          {digest_text}
+          {cleanedDigest}
         </p>
       )}
 

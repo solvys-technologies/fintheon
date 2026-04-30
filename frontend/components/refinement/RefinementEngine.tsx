@@ -15,7 +15,7 @@
 // [claude-code 2026-04-18] S24-T4: Rebuilt scoring calibration workbench.
 // [claude-code 2026-03-27] S2-T7: Refinement Engine
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { RefreshCw, Wrench, BarChart3, AlertTriangle } from "lucide-react";
+import { RefreshCw, Wrench, AlertTriangle } from "lucide-react";
 import { isRefinementEditUnlocked } from "../../lib/dev-settings-auth";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import type { CalibrationEntry } from "../../../backend-hono/src/types/calibration";
@@ -129,7 +129,6 @@ export function RefinementEngine() {
 
   // --- Feed cache (retained for rescore invalidation) ---
   const [items, setItems] = useState<RiskFlowAlert[]>([]);
-  const [showStatsDrawer, setShowStatsDrawer] = useState(false);
 
   // --- Scoring state ---
   const [regime, setRegime] = useState<RegimeState | null>(null);
@@ -481,18 +480,6 @@ export function RefinementEngine() {
             />
             {isRescoring ? "Re-Scoring…" : "Re-Score All"}
           </button>
-          <button
-            onClick={() => setShowStatsDrawer((v) => !v)}
-            className={`flex items-center gap-1.5 px-3.5 py-2 border text-[12px] font-semibold transition-colors ${
-              showStatsDrawer
-                ? "border-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]"
-                : "border-[var(--fintheon-accent)]/40 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
-            }`}
-            title="Catalyst Stats"
-          >
-            <BarChart3 className="w-4 h-4" />
-            Stats
-          </button>
         </div>
       </div>
 
@@ -544,16 +531,19 @@ export function RefinementEngine() {
               isMutating={isMutating}
               degradedReason={degradedReason}
             />
-            <PipelineToggles
-              pipelines={pipelineStates}
-              onToggle={togglePipeline}
-              disabled={!editUnlocked}
-              loading={statesLoading}
-              error={statesError}
-              lastAppliedAt={lastAppliedAt}
-              isMutating={isMutating}
-              degradedReason={degradedReason}
-            />
+            <div className="mt-3 grid grid-cols-1 2xl:grid-cols-2 gap-3 items-start">
+              <PipelineToggles
+                pipelines={pipelineStates}
+                onToggle={togglePipeline}
+                disabled={!editUnlocked}
+                loading={statesLoading}
+                error={statesError}
+                lastAppliedAt={lastAppliedAt}
+                isMutating={isMutating}
+                degradedReason={degradedReason}
+              />
+              <CatalystStatsDrawer inline disabled={!editUnlocked} />
+            </div>
 
             {/* [claude-code 2026-04-29] S53-T4B: Operator hardening panels —
                 source policy enforcement visibility, ingest activity timeline,
@@ -686,11 +676,6 @@ export function RefinementEngine() {
         </div>
       )}
 
-      <CatalystStatsDrawer
-        open={showStatsDrawer}
-        onClose={() => setShowStatsDrawer(false)}
-        disabled={!editUnlocked}
-      />
     </div>
   );
 }

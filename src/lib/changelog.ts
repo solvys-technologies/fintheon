@@ -9,6 +9,26 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-30T17:29:04-04:00",
+    agent: "codex",
+    summary:
+      "v6.0.1 deploy prep: unified main-layout and arbitrum/refinement UI updates by moving Refinement toggles + catalyst stats into a shared side-by-side container under Market Environment, converting chamber confidence cards to 0.0 score formatting without model labels/conf text, and relocating the chamber summary under chamber readings while preserving previous iOS-style shell and solvys-fuse cleanup updates.",
+    files: [
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/refinement/RefinementEngine.tsx",
+      "frontend/components/refinement/CatalystStatsDrawer.tsx",
+      "frontend/components/arbitrum/ArbitrumChamber.tsx",
+      "frontend/components/arbitrum/ChamberSeats.tsx",
+      "frontend/components/arbitrum/VerdictCard.tsx",
+      "package.json",
+      "scripts/fintheon-update.sh",
+      "scripts/fintheon-setup.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-30T16:40:49-04:00",
     agent: "codex",
     summary:
