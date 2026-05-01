@@ -79,6 +79,9 @@ const JUNK_LANGUAGE_PATTERNS = [
   /\bunverified\b/i,
   /\bdeepfake\b/i,
   /\bTucker\s+Carlson\b/i,
+  /\bDan\s+Bongino\b/i,
+  /\bCandace\s+Owens\b/i,
+  /\bNick\s+Fuentes\b/i,
 ];
 
 // ── Political spam / partisan noise ─────────────────────────────────────────

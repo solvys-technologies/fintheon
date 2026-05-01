@@ -155,11 +155,6 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
             )}
           </div>
         )}
-        {chamberSummary && (
-          <p className="text-[11px] text-[var(--fintheon-text)]/62 leading-snug line-clamp-2">
-            {chamberSummary}
-          </p>
-        )}
       </div>
       <NothingFuse
         value={roundsValue}
@@ -188,6 +183,13 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
           ),
         )}
       </div>
+
+      {/* Chamber digest — below the five agents and VerdictCard */}
+      {chamberSummary && (
+        <p className="text-[11px] text-[var(--fintheon-text)]/62 leading-snug px-1">
+          {chamberSummary}
+        </p>
+      )}
 
       {/* Digest footer / empty state */}
       {hasVerdict ? (

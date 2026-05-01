@@ -1,7 +1,7 @@
 // [claude-code 2026-04-30] Expanded RiskFlow body is distilled to media/source
 // preview plus actions. Headline, IV, source, and direction live in the preview row.
 import { useEffect, useState } from "react";
-import { ExternalLink, MessageSquare, Video } from "lucide-react";
+import { ExternalLink, MessageSquare, ThumbsDown, Video } from "lucide-react";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import { BeatMissBadge } from "./BeatMissBadge";
 import { openSourcePopup } from "../../lib/source-popup";
@@ -18,6 +18,7 @@ interface RiskFlowPostCardProps {
   alert: RiskFlowAlert;
   surface?: RiskFlowPostSurface;
   onAskAI?: (alert: RiskFlowAlert) => void;
+  onNotRelevant?: (id: string, reason?: string) => void;
 }
 
 function mediaHeight(surface: RiskFlowPostSurface): string {
@@ -28,6 +29,7 @@ export function RiskFlowPostCard({
   alert,
   surface = "mini",
   onAskAI,
+  onNotRelevant,
 }: RiskFlowPostCardProps) {
   const fuseScore = fuseScoreFromAlert(alert);
   const severity = alertSeverityToPalette(alert.severity);
@@ -150,6 +152,19 @@ export function RiskFlowPostCard({
                 {fuseScore.toFixed(1)}
               </span>
             </div>
+            {onNotRelevant && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNotRelevant(alert.id);
+                }}
+                className="inline-flex items-center gap-1 text-[10px] text-[var(--fintheon-text)]/35 transition-colors hover:text-[var(--fintheon-severe)]"
+                title="Not relevant — remove from feed"
+              >
+                <ThumbsDown className="h-3 w-3" />
+              </button>
+            )}
             {alert.videoUrl && (
               <a
                 href={alert.videoUrl}

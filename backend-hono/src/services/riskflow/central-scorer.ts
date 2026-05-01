@@ -45,6 +45,7 @@ import { tagHeadlineSubjects } from "./headline-tagger.js";
 import { checkContentGuard, isBannedPublisher } from "./content-guard.js";
 import { bumpCounter } from "./drop-counters.js";
 import { checkSourcePolicy } from "./source-policy.js";
+import { validateAgainstGuidelines } from "./immutable-guidelines.js";
 import { recordIngestAttempt, recordLeakEvent } from "./ingest-ledger.js";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { normalizeHeadline } from "./text-utils.js";
@@ -235,6 +236,20 @@ export async function scoringCycle(): Promise<number> {
       }
       if (result.speculationDemote) {
         speculationDemoteIds.add(item.id);
+      }
+      // Immutable guidelines gate — NEVER regress on these rules
+      const guidelineCheck = validateAgainstGuidelines(item.headline, item.body ?? undefined);
+      if (!guidelineCheck.passed) {
+        blockedIds.add(item.id);
+        bumpCounter(
+          item.source || "unknown",
+          "central-scorer",
+          `immutable-guideline:${guidelineCheck.violation?.rule.slice(0, 40)}`,
+        );
+        log.info(
+          `Immutable guideline blocked: [${guidelineCheck.violation?.rule.slice(0, 60)}] ${item.headline.slice(0, 80)}`,
+        );
+        return false;
       }
       return true;
     });

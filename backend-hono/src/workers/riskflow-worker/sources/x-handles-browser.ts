@@ -369,6 +369,17 @@ export async function collectFromXHandlesBrowser(
   if (opts.handles.length === 0) return [];
   const out: CollectedNewsItem[] = [];
   const ageCutoff = Date.now() - MAX_AGE_MS;
+  const fromMs = opts.from
+    ? Date.parse(`${opts.from}T00:00:00.000Z`)
+    : Number.NaN;
+  const toMs = opts.to
+    ? Date.parse(`${opts.to}T23:59:59.999Z`)
+    : Number.NaN;
+  const historicalWindow =
+    Number.isFinite(fromMs) &&
+    Number.isFinite(toMs) &&
+    opts.from != null &&
+    opts.to != null;
 
   // Run handles in parallel — syndication is a plain HTTPS GET, no need to
   // serialize. 7 handles × ~600ms = a few seconds total, well inside the
@@ -400,7 +411,12 @@ export async function collectFromXHandlesBrowser(
   for (const batch of results) {
     for (const { tw, cleanHandle, fetch_latency_ms } of batch) {
       const ts = Date.parse(tw.timestamp);
-      if (Number.isFinite(ts) && ts < ageCutoff) continue;
+      if (!Number.isFinite(ts)) continue;
+      if (historicalWindow) {
+        if (ts < fromMs || ts > toMs) continue;
+      } else if (ts < ageCutoff) {
+        continue;
+      }
       const headline = tw.text.length > 220 ? tw.text.slice(0, 220) : tw.text;
       if (!scoreHeadline(headline)) continue;
       out.push({

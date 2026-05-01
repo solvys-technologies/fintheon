@@ -937,11 +937,13 @@ export async function readEconEvents(dateRange?: {
   const sb = getSupabaseClient();
   if (!sb) return [];
 
+  const ranged =
+    Boolean(dateRange?.from) && Boolean(dateRange?.to);
   let query = sb
     .from("economic_events")
     .select("*")
     .order("date", { ascending: true })
-    .limit(100);
+    .limit(ranged ? 5000 : 100);
 
   if (dateRange?.from) query = query.gte("date", dateRange.from);
   if (dateRange?.to) query = query.lte("date", dateRange.to);

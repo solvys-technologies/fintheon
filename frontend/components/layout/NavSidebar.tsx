@@ -235,7 +235,7 @@ export function NavSidebar({
   const sidebarContent = (
     <div
       style={{ backgroundColor: "var(--fintheon-surface)" }}
-      className={`h-full border-r fintheon-accent-border flex flex-col py-3 transition-all duration-200 ease-out ${
+      className={`h-full border-r-0 flex flex-col py-3 transition-all duration-200 ease-out rounded-r-xl ${
         expanded ? "w-48" : "w-11"
       }`}
       onMouseEnter={handleMouseEnter}

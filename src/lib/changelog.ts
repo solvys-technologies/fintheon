@@ -9,6 +9,53 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-30T19:00:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Layout rounding + glass effect: main content area now rounded-2xl with frosted-glass bg + subtle shadow, sidebar rounded-r-xl. Arbitrum summary moved below Chamber Confidence card. App title indentation fixed (removed lg:px-6). Dashboard briefing converted from textarea to ReactMarkdown rich text. News cleanup: added Dan Bongino, Candace Owens, Nick Fuentes to content-guard junk language; added 'dragged', 'lets you trade', 'trade like' to speculation-filter. Reimplemented thumbs-down feedback button in RiskFlowPostCard (left of URL CTA). Created immutable-guidelines.ts with 9 never-revert rules. Wired immutable guidelines validation into central-scorer pipeline gate. Updated not-relevant handler to route feed-quality tasks through Hermes (DeepSeek).",
+    files: [
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/layout/NavSidebar.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/arbitrum/ArbitrumChamber.tsx",
+      "frontend/components/executive/MainDashboard.tsx",
+      "frontend/components/feed/RiskFlowPostCard.tsx",
+      "frontend/components/feed/RiskFlowDetailCard.tsx",
+      "backend-hono/src/services/riskflow/content-guard.ts",
+      "backend-hono/src/services/riskflow/speculation-filter.ts",
+      "backend-hono/src/services/riskflow/immutable-guidelines.ts",
+      "backend-hono/src/services/riskflow/central-scorer.ts",
+      "backend-hono/src/routes/riskflow/handlers.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-30T18:22:00-04:00",
+    agent: "claude-code",
+    summary:
+      "RiskFlow feed backfill: X collector respects explicit from/to historical windows (refill no longer capped at 24h); refill-driver accepts twitterTier; economic_events range reads up to 5k rows; added bun script riskflow-feed-backfill (Wire/Macro/Commentary + calendar econ inject).",
+    files: [
+      "backend-hono/src/workers/riskflow-worker/sources/x-handles-browser.ts",
+      "backend-hono/src/services/riskflow/refill-driver.ts",
+      "backend-hono/src/services/supabase-service.ts",
+      "backend-hono/scripts/riskflow-feed-backfill.ts",
+      "backend-hono/package.json",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-30T18:05:00-04:00",
+    agent: "claude-code",
+    summary:
+      "RiskFlow econ deviation visuals (BeatMissBadge + DetailFooter) now read bullish/bearish/muted from the same CSS variables as the fuse palette (--fintheon-bullish, --fintheon-bearish, --fintheon-muted) so user personalization in Settings drives beat/miss chips and signed deviation % colors.",
+    files: [
+      "frontend/lib/econ-deviation-presentation.ts",
+      "frontend/components/feed/BeatMissBadge.tsx",
+      "frontend/components/feed/DetailFooter.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-30T17:29:04-04:00",
     agent: "codex",
     summary:

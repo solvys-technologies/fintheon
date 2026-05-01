@@ -27,6 +27,8 @@ import { BlindspotsInterview } from "../onboarding/BlindspotsInterview";
 import { RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useRiskFlowFilters } from "../../hooks/useRiskFlowFilters";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const DASHBOARD_PAGES = ["Briefing", "RiskFlow"];
 
@@ -357,17 +359,19 @@ export function MainDashboard({
                       </div>
                     }
                   />
-                  <textarea
-                    value={ntnText}
-                    readOnly
-                    className="mt-2 flex-1 min-h-0 w-full bg-transparent px-4 py-3 text-sm text-gray-200 border-0 focus:outline-none"
-                    style={{ resize: "vertical", minHeight: "80px" }}
-                    placeholder={
-                      ntnLoaded
-                        ? "Awaiting AI-generated brief..."
-                        : "Loading brief..."
-                    }
-                  />
+                  <div className="mt-2 flex-1 min-h-0 w-full bg-transparent px-4 py-3 overflow-y-auto prose prose-sm prose-invert max-w-none text-sm text-[var(--fintheon-text)]/85 leading-relaxed prose-headings:text-[var(--fintheon-accent)] prose-headings:text-xs prose-headings:uppercase prose-headings:tracking-wider prose-strong:text-[var(--fintheon-text)] prose-a:text-[var(--fintheon-accent)] prose-li:text-[var(--fintheon-text)]/75 prose-code:font-mono prose-code:text-[11px] prose-code:bg-[var(--fintheon-accent)]/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded-[2px] prose-hr:border-[var(--fintheon-accent)]/10">
+                    {ntnText ? (
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {ntnText}
+                      </ReactMarkdown>
+                    ) : (
+                      <span className="text-[var(--fintheon-text)]/30 italic">
+                        {ntnLoaded
+                          ? "Awaiting AI-generated brief..."
+                          : "Loading brief..."}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Right: Day Plan (50%) — bare DayCard, day-of-week header */}

@@ -13,8 +13,7 @@ export type SourceBucket =
   | "Commentary"
   | "Econ"
   | "Earnings"
-  | "Geopolitical"
-  | "Commentary";
+  | "Geopolitical";
 
 export const SOURCE_BUCKETS: SourceBucket[] = [
   "Wire",

@@ -53,7 +53,7 @@ export function RiskFlowDetailCard({
           : undefined
       }
       expandedContent={
-        <RiskFlowPostCard alert={alert} surface={surface} onAskAI={onAskAI} />
+        <RiskFlowPostCard alert={alert} surface={surface} onAskAI={onAskAI} onNotRelevant={onNotRelevant} />
       }
     />
   );

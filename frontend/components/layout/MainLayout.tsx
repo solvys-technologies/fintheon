@@ -892,7 +892,7 @@ function MainLayoutInner() {
             {leftPanels.length > 0 && <div className="flex">{leftPanels}</div>}
 
             {/* Center Content - TopStepX or Main Content with crossfade */}
-            <div className="flex-1 overflow-hidden relative min-w-0 flex flex-col rounded-l-2xl border-l border-t border-[var(--fintheon-accent)]/10">
+            <div className="flex-1 overflow-hidden relative min-w-0 flex flex-col rounded-2xl border border-[var(--fintheon-accent)]/15 bg-[rgba(10,9,5,0.38)] backdrop-blur-[14px] shadow-[0_0_40px_-12px_rgba(0,0,0,0.6)]">
               {/* Timeline overlay — slides over browser, does not affect iframe sizing */}
               <TimelineOverlay
                 open={timelineOverlayOpen}
