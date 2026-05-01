@@ -1,3 +1,4 @@
+// [claude-code 2026-05-01] v6.0.5: main content wrapper strokes top/left/bottom only, rounded-tl-2xl rounded-bl-2xl, border opacity /20, right edge open to Strategium
 // [claude-code 2026-03-11] Track 4: MC overhaul — no Panels header, collapse in MC header, 50/50 flex, gear menu
 // [claude-code 2026-03-11] T3d: removed auto-enable from platform dropdown — power controlled via dedicated button only
 // [claude-code 2026-03-20] S3:T4c: Linked Strategium ↔ RiskFlow collapse — both expand/collapse together

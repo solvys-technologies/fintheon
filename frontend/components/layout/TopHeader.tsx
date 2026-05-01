@@ -1,3 +1,4 @@
+// [claude-code 2026-05-01] v6.0.5: removed toolbar's own border-t so it doesn't double-stroke the new MainContent top border
 // [claude-code 2026-03-03] Toolbar items reorderable via getToolbarOrder/setToolbarOrder.
 // [claude-code 2026-03-11] T2: IV score wired to backend /api/market-data/iv-score — replaces local quickIVScore
 // [claude-code 2026-03-20] S3:T4b: Merge platform/layout into one toolbar slot; DND moves to header when iFrame active
