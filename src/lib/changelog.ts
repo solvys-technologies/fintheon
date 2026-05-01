@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-30T22:00:00-04:00",
+    agent: "claude-code",
+    summary:
+      "v6.0.2 deployed: RiskFlow unification + layout glass card rounding + immutable guidelines. Backend Fly.io, desktop Vercel, mobile PWA all live. S50/S51/S54/S55 archived to sprint-changelog/.",
+    files: [
+      "sprint-changelog/S50-ORCHESTRATION.md",
+      "sprint-changelog/S51-BRIEF-riskflow-cards-and-arbitrum-recovery.md",
+      "sprint-changelog/S54-BRIEF-refinement-riskflow-operator-control.md",
+      "sprint-changelog/S55-BRIEF-riskflow-feed-health-and-econ-live-race.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-30T19:00:00-04:00",
     agent: "claude-code",
     summary:
