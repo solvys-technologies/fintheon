@@ -9,13 +9,14 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
-    date: "2026-05-01T02:00:00-04:00",
+    date: "2026-05-01T02:05:00-04:00",
     agent: "claude-code",
     summary:
-      "Shell border refinement: gold hairline now wraps top/left/bottom of main content (right side meets Strategium without a stroke). TopHeader's own border-t removed to avoid double-stroking the seam. Top-left + bottom-left corners rounded (rounded-tl-2xl + rounded-bl-2xl).",
+      "v6.0.5: shell border refinement — gold hairline wraps top/left/bottom of main content (right side meets Strategium without a stroke). TopHeader's own border-t removed to avoid double-stroking the seam. Top-left + bottom-left corners rounded (rounded-tl-2xl + rounded-bl-2xl).",
     files: [
       "frontend/components/layout/MainLayout.tsx",
       "frontend/components/layout/TopHeader.tsx",
+      "package.json",
     ],
   },
   {
