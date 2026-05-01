@@ -24,7 +24,7 @@ jobs:
 
       - name: Install backend dependencies
         working-directory: backend-hono
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Build backend
         working-directory: backend-hono
