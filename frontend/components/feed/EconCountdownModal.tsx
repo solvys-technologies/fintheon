@@ -80,7 +80,11 @@ function useTick(intervalMs: number): number {
 }
 
 export function EconCountdownModal() {
-  const { events: active, state: watchState, emptyReason } = useEconWatchHealth();
+  const {
+    events: active,
+    state: watchState,
+    emptyReason,
+  } = useEconWatchHealth();
   const now = useTick(1_000);
   const [cards, setCards] = useState<Record<string, CardState>>({});
 

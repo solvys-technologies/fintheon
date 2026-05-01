@@ -103,7 +103,9 @@ function IVScoreBadge({ alert }: { alert: RiskFlowAlert }) {
   return (
     <span
       className="text-[9px] font-mono font-bold tabular-nums"
-      style={{ color: colorForSeverity(alertSeverityToPalette(alert.severity)) }}
+      style={{
+        color: colorForSeverity(alertSeverityToPalette(alert.severity)),
+      }}
     >
       IV {Number(score).toFixed(1)}
     </span>
@@ -433,7 +435,10 @@ function AlertRow({
       >
         <RiskFlowCardAnatomy
           title={alert.headline}
-          sourceLabel={bucketOf({ source: alert.source, riskType: alert.riskType })}
+          sourceLabel={bucketOf({
+            source: alert.source,
+            riskType: alert.riskType,
+          })}
           timestampLabel={timeAgo(alert.publishedAt)}
           severity={severityFromScore(fuseScore)}
           fuseScore={fuseScore}
@@ -819,7 +824,8 @@ export default function RiskFlowMini({
                     <span className="text-red-400/70">
                       Pipeline offline — backend unreachable
                     </span>
-                  ) : !sourceStatus.newsfeedHealthy && sourceStatus.newsfeedDegraded ? (
+                  ) : !sourceStatus.newsfeedHealthy &&
+                    sourceStatus.newsfeedDegraded ? (
                     <span className="text-amber-400/70">
                       Feed pipeline degraded — check diagnostics
                     </span>
@@ -925,7 +931,8 @@ export default function RiskFlowMini({
                   {/* [claude-code 2026-04-29] S53-T3: collapsed empty-state pipeline diagnostics */}
                   {!sourceStatus.backendReachable ? (
                     <span className="text-red-400/70">Pipeline offline</span>
-                  ) : !sourceStatus.newsfeedHealthy && sourceStatus.newsfeedDegraded ? (
+                  ) : !sourceStatus.newsfeedHealthy &&
+                    sourceStatus.newsfeedDegraded ? (
                     <span className="text-amber-400/70">Feed degraded</span>
                   ) : (
                     <span className="text-zinc-600">No recent items</span>

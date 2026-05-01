@@ -653,9 +653,7 @@ export function RefinementEngine() {
                 onAccountsChanged={fetchSourceAccounts}
                 lastAppliedAt={lastAppliedAt}
                 isMutating={isMutating}
-                degradedReason={
-                  sourceSummary.error ?? degradedReason
-                }
+                degradedReason={sourceSummary.error ?? degradedReason}
               />
               <div
                 style={{ borderTop: "1px solid var(--fintheon-glass-border)" }}
@@ -667,15 +665,12 @@ export function RefinementEngine() {
               <EconFilterEditor
                 lastAppliedAt={lastAppliedAt}
                 isMutating={isMutating}
-                degradedReason={
-                  econSummary.error ?? degradedReason
-                }
+                degradedReason={econSummary.error ?? degradedReason}
               />
             </AdvancedPane>
           </div>
         </div>
       )}
-
     </div>
   );
 }

@@ -862,10 +862,12 @@ function MainLayoutInner() {
 
           {/* S14-T6: Peers panel removed — team status is now in footer Team tab */}
 
-          <div className="flex-1 flex overflow-hidden relative">
+          <div className="flex-1 flex overflow-hidden relative bg-[var(--fintheon-surface)]">
             <div
               className={
-                topStepXEnabled ? "hidden" : "relative z-0 shrink-0 w-11"
+                topStepXEnabled
+                  ? "hidden"
+                  : "relative shrink-0 transition-[width] duration-300 ease-in-out"
               }
             >
               <NavSidebar
@@ -895,8 +897,11 @@ function MainLayoutInner() {
             {/* Left Panels */}
             {leftPanels.length > 0 && <div className="flex">{leftPanels}</div>}
 
-            {/* Center Content - TopStepX or Main Content with crossfade */}
-            <div className="z-10 flex-1 overflow-hidden relative min-w-0 flex flex-col rounded-l-2xl rounded-r-none border-y border-l border-r-0 border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] shadow-[0_0_40px_-12px_rgba(0,0,0,0.6)]">
+            {/* Center Content - TopStepX or Main Content with crossfade
+                [claude-code 2026-04-30] S56-shell: stripped rounded-l + border-l so
+                the sidebar surface flows continuously into main content with no
+                corner triangles. border-y kept to delineate from header/footer. */}
+            <div className="z-10 flex-1 overflow-hidden relative min-w-0 flex flex-col border-y border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]">
               {/* Timeline overlay — slides over browser, does not affect iframe sizing */}
               <TimelineOverlay
                 open={timelineOverlayOpen}

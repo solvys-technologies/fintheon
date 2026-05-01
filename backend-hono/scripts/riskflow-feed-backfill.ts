@@ -51,19 +51,12 @@ async function main() {
     }),
   );
 
-  const { runRefillForSources } = await import(
-    "../src/services/riskflow/refill-driver.js",
-  );
-  const {
-    getWireHandles,
-    getBrowserHandles,
-    getCommentaryHandles,
-  } = await import(
-    "../src/services/source-accounts/source-accounts-service.js",
-  );
-  const { fetchEconCalendar } = await import(
-    "../src/services/econ-calendar-service.js",
-  );
+  const { runRefillForSources } =
+    await import("../src/services/riskflow/refill-driver.js");
+  const { getWireHandles, getBrowserHandles, getCommentaryHandles } =
+    await import("../src/services/source-accounts/source-accounts-service.js");
+  const { fetchEconCalendar } =
+    await import("../src/services/econ-calendar-service.js");
 
   const [wire, macro, commentary] = await Promise.all([
     getWireHandles().catch(() => [] as string[]),
@@ -129,9 +122,8 @@ async function main() {
 
   const events = await fetchEconCalendar({ from: fromStr, to: toStr });
   let econInjected = 0;
-  const { injectEconPrintToFeed } = await import(
-    "../src/services/riskflow/econ-bridge.js",
-  );
+  const { injectEconPrintToFeed } =
+    await import("../src/services/riskflow/econ-bridge.js");
 
   for (const ev of events) {
     if (!ev.actual || ev.actual.trim() === "") continue;

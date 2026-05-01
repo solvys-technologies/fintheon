@@ -657,9 +657,7 @@ async function loadRiskFlowRuntime(): Promise<
       const { getSupabaseClient } = await import("../../config/supabase.js");
       const sb = getSupabaseClient();
       if (sb) {
-        const since = new Date(
-          Date.now() - 24 * 60 * 60 * 1000,
-        ).toISOString();
+        const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const { count, error } = await sb
           .from("raw_riskflow_items")
           .select("*", { count: "exact", head: true })

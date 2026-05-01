@@ -325,8 +325,10 @@ export async function bootBackground(): Promise<void> {
 
   // [claude-code 2026-04-29] S53-T4B: source-policy allowlist refresh + ingest ledger flush
   // (60s interval — activity log, leak sentinel, continuity counters)
-  const { refreshAllowlist } = await import("../services/riskflow/source-policy.js");
-  const { startLedgerFlush } = await import("../services/riskflow/ingest-ledger.js");
+  const { refreshAllowlist } =
+    await import("../services/riskflow/source-policy.js");
+  const { startLedgerFlush } =
+    await import("../services/riskflow/ingest-ledger.js");
   await refreshAllowlist();
   startLedgerFlush();
   log.info("SourcePolicy + IngestLedger started");

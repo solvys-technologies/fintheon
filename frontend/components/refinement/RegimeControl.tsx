@@ -101,9 +101,12 @@ export function RegimeControl({ regime, onRegimeChanged }: RegimeControlProps) {
               {REGIME_LABELS[currentRegime]}
             </span>
             <span className="tabular-nums">
-              Confidence {regime ? `${Math.round(regime.confidence * 100)}%` : "\u2014"}
+              Confidence{" "}
+              {regime ? `${Math.round(regime.confidence * 100)}%` : "\u2014"}
             </span>
-            <span className="truncate">Source {regime?.detectedBy ?? "unknown"}</span>
+            <span className="truncate">
+              Source {regime?.detectedBy ?? "unknown"}
+            </span>
           </div>
         </div>
 

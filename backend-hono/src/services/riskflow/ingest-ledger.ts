@@ -121,7 +121,10 @@ export function recordEconIngest(received: boolean, expectedCount = 1): void {
   }
 }
 
-export function recordCommentaryIngest(received: boolean, expectedCount = 1): void {
+export function recordCommentaryIngest(
+  received: boolean,
+  expectedCount = 1,
+): void {
   continuityCounters.commentary_expected += expectedCount;
   if (received) {
     continuityCounters.commentary_received++;
@@ -142,15 +145,15 @@ export function getContinuityCounters(): ContinuityCounters {
   const now = Date.now();
   const STALL_MINUTES = 30;
 
-  const econStalled =
-    continuityCounters.last_econ_ingest_at
-      ? now - new Date(continuityCounters.last_econ_ingest_at).getTime() > STALL_MINUTES * 60_000
-      : continuityCounters.econ_expected > 0;
+  const econStalled = continuityCounters.last_econ_ingest_at
+    ? now - new Date(continuityCounters.last_econ_ingest_at).getTime() >
+      STALL_MINUTES * 60_000
+    : continuityCounters.econ_expected > 0;
 
-  const commentaryStalled =
-    continuityCounters.last_commentary_ingest_at
-      ? now - new Date(continuityCounters.last_commentary_ingest_at).getTime() > STALL_MINUTES * 60_000
-      : continuityCounters.commentary_expected > 0;
+  const commentaryStalled = continuityCounters.last_commentary_ingest_at
+    ? now - new Date(continuityCounters.last_commentary_ingest_at).getTime() >
+      STALL_MINUTES * 60_000
+    : continuityCounters.commentary_expected > 0;
 
   return {
     ...continuityCounters,
@@ -200,7 +203,10 @@ export async function flushLedgerToDb(): Promise<number> {
   try {
     const { error } = await sb.from("riskflow_ingest_ledger").insert(batch);
     if (error) {
-      log.warn("Ledger flush error", { error: error.message, rows: batch.length });
+      log.warn("Ledger flush error", {
+        error: error.message,
+        rows: batch.length,
+      });
       return 0;
     }
     return batch.length;

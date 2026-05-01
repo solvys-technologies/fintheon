@@ -595,7 +595,9 @@ export function TimelinePanel() {
                             <RiskFlowCardAnatomy
                               title={event.title}
                               sourceLabel={catalystSourceLabel(event)}
-                              timestampLabel={formatDate(event.date.slice(0, 10))}
+                              timestampLabel={formatDate(
+                                event.date.slice(0, 10),
+                              )}
                               severity={catalystSeverityToFuse(event.severity)}
                               fuseScore={fuseScore}
                               ivScore={catalystIvScore(event)}

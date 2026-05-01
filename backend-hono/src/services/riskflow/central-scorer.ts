@@ -78,7 +78,12 @@ let scoringStartedAt = 0;
 function rawToFeedItem(raw: RawRiskFlowItem & { id: string }): FeedItem {
   return {
     id: raw.tweet_id,
-    source: normalizeSource(raw.source, raw.headline || "", raw.tags || [], raw.url),
+    source: normalizeSource(
+      raw.source,
+      raw.headline || "",
+      raw.tags || [],
+      raw.url,
+    ),
     headline: raw.headline || "",
     body: raw.body,
     url: raw.url,
@@ -238,7 +243,10 @@ export async function scoringCycle(): Promise<number> {
         speculationDemoteIds.add(item.id);
       }
       // Immutable guidelines gate — NEVER regress on these rules
-      const guidelineCheck = validateAgainstGuidelines(item.headline, item.body ?? undefined);
+      const guidelineCheck = validateAgainstGuidelines(
+        item.headline,
+        item.body ?? undefined,
+      );
       if (!guidelineCheck.passed) {
         blockedIds.add(item.id);
         bumpCounter(
@@ -301,7 +309,7 @@ export async function scoringCycle(): Promise<number> {
     if (policyBlockedIds.size > 0) {
       log.info(
         `SourcePolicy blocked ${policyBlockedIds.size} item(s) in scorer — ` +
-        `sources not in allowlist`,
+          `sources not in allowlist`,
       );
       await deleteRawItemsByTweetId(Array.from(policyBlockedIds)).catch((err) =>
         log.warn("Policy raw purge threw", {
@@ -410,7 +418,11 @@ export async function scoringCycle(): Promise<number> {
     // by word gates instead of emoji-dependent heuristics.
     //   Econ gate: "Actual" AND "Forecast" → Macro risk type
     //   Earnings gate: "EPS" AND ("REV" or "Revenue") → Earnings risk type
-    const APPROVED_WIRE_SOURCES = new Set(["FinancialJuice", "DeItaOne", "TwitterCli"]);
+    const APPROVED_WIRE_SOURCES = new Set([
+      "FinancialJuice",
+      "DeItaOne",
+      "TwitterCli",
+    ]);
     let wireEconCount = 0;
     let wireEarningsCount = 0;
     for (const item of enrichedItems) {
@@ -421,13 +433,16 @@ export async function scoringCycle(): Promise<number> {
         item.riskType = "Macro";
         if (!item.tags) item.tags = [];
         if (!item.tags.includes("econ-print")) item.tags.push("econ-print");
-        if (!item.tags.includes("wire-word-gate")) item.tags.push("wire-word-gate");
+        if (!item.tags.includes("wire-word-gate"))
+          item.tags.push("wire-word-gate");
         wireEconCount++;
       } else if (wireClass.class === "earnings") {
         item.riskType = "Earnings";
         if (!item.tags) item.tags = [];
-        if (!item.tags.includes("earnings-print")) item.tags.push("earnings-print");
-        if (!item.tags.includes("wire-word-gate")) item.tags.push("wire-word-gate");
+        if (!item.tags.includes("earnings-print"))
+          item.tags.push("earnings-print");
+        if (!item.tags.includes("wire-word-gate"))
+          item.tags.push("wire-word-gate");
         wireEarningsCount++;
       }
     }
@@ -450,10 +465,16 @@ export async function scoringCycle(): Promise<number> {
       const hasNumbers = /\d/.test(text);
       const hasDollar = /\$|USD\b/i.test(text);
       const hasPercent = /%\b|percent\b/i.test(text);
-      const hasEconKeywords = /\b(actual|forecast|previous|beat|miss|inline)\b/i.test(text);
+      const hasEconKeywords =
+        /\b(actual|forecast|previous|beat|miss|inline)\b/i.test(text);
       const hasTicker = /\$[A-Z]{1,5}\b|\b[A-Z]{1,5}\b/.test(text);
-      const dataSignals = [hasNumbers, hasDollar, hasPercent, hasEconKeywords, hasTicker]
-        .filter(Boolean).length;
+      const dataSignals = [
+        hasNumbers,
+        hasDollar,
+        hasPercent,
+        hasEconKeywords,
+        hasTicker,
+      ].filter(Boolean).length;
       // If the item has < 2 data signals, it's opinion/commentary, not wire data
       if (dataSignals < 2) {
         item.source = "Commentary" as any;
@@ -1076,7 +1097,10 @@ export function scoredToFeedItem(scored: ScoredRiskFlowItem): FeedItem {
     analyzedAt: scored.analyzed_at,
     subScores: (pbs?.subScores ??
       scored.sub_scores) as unknown as FeedItem["subScores"],
-    riskType: (scored.risk_type as FeedItem["riskType"]) ?? (pbs?.riskType as FeedItem["riskType"]) ?? null,
+    riskType:
+      (scored.risk_type as FeedItem["riskType"]) ??
+      (pbs?.riskType as FeedItem["riskType"]) ??
+      null,
     agentNote: pbs?.agentNote ?? null,
     agentNoteGeneratedAt: pbs?.agentNoteGeneratedAt ?? null,
     econData: (pbs?.econData as FeedItem["econData"]) ?? null,

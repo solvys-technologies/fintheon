@@ -129,8 +129,7 @@ export function usePipelineState(): UsePipelineStateResult {
             p.pipeline_id === id ? { ...p, enabled: previousValue } : p,
           ),
         );
-        const msg =
-          err instanceof Error ? err.message : String(err);
+        const msg = err instanceof Error ? err.message : String(err);
         setDegradedReason(`Backend unreachable: ${msg}`);
         addToast("Backend unreachable", "error", msg);
       }

@@ -181,7 +181,10 @@ export function NavSidebar({
       `${sidebarWidthPx}px`,
     );
     return () => {
-      document.documentElement.style.setProperty("--fintheon-sidebar-width", "0px");
+      document.documentElement.style.setProperty(
+        "--fintheon-sidebar-width",
+        "0px",
+      );
     };
   }, [sidebarWidthPx]);
 
@@ -231,10 +234,14 @@ export function NavSidebar({
       description: NAV_ITEMS_MAP[tabId].description,
     }));
 
+  // [claude-code 2026-04-30] S56-shell: relative positioning so the wrapper grows
+  // with width, pushing main content right (flex displaces siblings instead of
+  // overlapping). Previously absolute + z-0 hid the expanded panel under main
+  // content (z-10).
   const sidebarContent = (
     <div
       style={{ backgroundColor: "var(--fintheon-surface)" }}
-      className={`absolute inset-y-0 left-0 z-0 h-full border-r-0 flex flex-col py-3 transition-all duration-200 ease-out ${
+      className={`relative h-full border-r-0 flex flex-col py-3 transition-[width] duration-300 ease-in-out ${
         expanded ? "w-48" : "w-11"
       }`}
       onMouseEnter={handleMouseEnter}

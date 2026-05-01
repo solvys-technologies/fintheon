@@ -61,7 +61,9 @@ export function CatalystStatsPanel({ disabled }: Props) {
   const [refillToDate, setRefillToDate] = useState<string>(() =>
     new Date().toISOString().slice(0, 10),
   );
-  const [auditResult, setAuditResult] = useState<PurgeAuditResponse | null>(null);
+  const [auditResult, setAuditResult] = useState<PurgeAuditResponse | null>(
+    null,
+  );
   const [busy, setBusy] = useState<string | null>(null);
 
   // Build authed headers. Returns null if no token — caller short-circuits.
@@ -438,8 +440,8 @@ export function CatalystStatsPanel({ disabled }: Props) {
       {auditResult && (
         <div className="border border-amber-500/40 bg-amber-500/5 p-2 flex flex-col gap-2">
           <div className="text-[11px] text-amber-300">
-            {auditResult.candidate_count} candidate(s) match blocked domains or keywords (scope
-            = {auditResult.scope}
+            {auditResult.candidate_count} candidate(s) match blocked domains or
+            keywords (scope = {auditResult.scope}
             {auditResult.from
               ? ` · ${auditResult.from.slice(0, 10)} → ${(auditResult.to ?? "").slice(0, 10)}`
               : ""}
@@ -459,7 +461,7 @@ export function CatalystStatsPanel({ disabled }: Props) {
           </ul>
           <div className="flex items-center gap-2">
             <button
-                onClick={onPurgeConfirm}
+              onClick={onPurgeConfirm}
               disabled={busy !== null}
               className="px-2 py-1 border border-red-500/40 text-[11px] text-red-400 hover:bg-red-500/10 disabled:opacity-50"
             >

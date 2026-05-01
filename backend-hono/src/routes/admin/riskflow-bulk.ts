@@ -379,9 +379,9 @@ export function createRiskFlowBulkRoutes() {
     const scoredOrClause = scoredOrParts.join(",");
     const rawOrClause = rawOrParts.join(",");
 
-    function applyTimeFilters<
-      T extends { gte: Function; lt: Function },
-    >(q: T): T {
+    function applyTimeFilters<T extends { gte: Function; lt: Function }>(
+      q: T,
+    ): T {
       let out: T = q;
       if (fromIso) out = out.gte("published_at", fromIso) as T;
       if (toIso) out = out.lt("published_at", toIso) as T;
@@ -440,7 +440,10 @@ export function createRiskFlowBulkRoutes() {
     }
 
     const scoredDelQ = applyTimeFilters(
-      sb.from("scored_riskflow_items").delete({ count: "exact" }).or(scoredOrClause),
+      sb
+        .from("scored_riskflow_items")
+        .delete({ count: "exact" })
+        .or(scoredOrClause),
     );
     const { count: scoredDeleted, error: scoredErr } = await scoredDelQ;
     if (scoredErr) {

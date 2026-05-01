@@ -94,7 +94,10 @@ function savePersisted(state: PersistedFilterState): void {
   } catch {}
 }
 
-function broadcastPersisted(state: PersistedFilterState, sourceId: string): void {
+function broadcastPersisted(
+  state: PersistedFilterState,
+  sourceId: string,
+): void {
   if (typeof window === "undefined") return;
   window.dispatchEvent(
     new CustomEvent<FilterEventDetail>(FILTER_EVENT, {

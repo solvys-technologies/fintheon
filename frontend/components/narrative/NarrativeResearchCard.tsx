@@ -4,9 +4,7 @@
 //   so promoted RiskFlow catalysts carry their original article preview into Sanctum.
 // [claude-code 2026-03-27] ChatMind-style research card — bullets, metadata, drill-deeper, highlight support
 import { useState, useCallback, useRef } from "react";
-import type {
-  CatalystCard,
-} from "../../lib/narrative-types";
+import type { CatalystCard } from "../../lib/narrative-types";
 import { CatalystImage, SourceHandoffLink } from "../shared/CatalystImage";
 import { RiskFlowCardAnatomy } from "../feed/RiskFlowCardAnatomy";
 import { timeAgo } from "../../lib/time-utils";
@@ -100,8 +98,7 @@ export default function NarrativeResearchCard({
         width: `${width}px`,
         backdropFilter: "blur(24px)",
         WebkitBackdropFilter: "blur(24px)",
-        backgroundColor:
-          "rgba(10,9,5,0.68)",
+        backgroundColor: "rgba(10,9,5,0.68)",
         border: `1px solid ${borderColor}`,
         opacity: isGhost ? 0.7 : 1,
         borderStyle: isGhost ? "dashed" : undefined,
@@ -148,7 +145,6 @@ export default function NarrativeResearchCard({
           <SourceHandoffLink url={catalyst.sourceUrl} />
         </div>
       )}
-
     </div>
   );
 }

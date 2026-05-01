@@ -6,31 +6,87 @@
 import { getSupabaseClient } from "../src/config/supabase.js";
 
 const BLOCKED_HOSTS = [
-  "reuters.com", "bloomberg.com", "bloomberglaw.com", "bloombergquint.com",
-  "cnbc.com", "foxnews.com", "foxbusiness.com", "msnbc.com", "cnn.com",
-  "marketwatch.com", "ft.com", "wsj.com", "barrons.com",
-  "nbcnews.com", "abcnews.go.com", "cbsnews.com", "usatoday.com",
-  "businessinsider.com", "insider.com", "yahoo.com", "finance.yahoo.com",
-  "seekingalpha.com", "zerohedge.com", "benzinga.com", "fool.com",
-  "investopedia.com", "nytimes.com", "washingtonpost.com", "bbc.com", "bbc.co.uk",
-  "theguardian.com", "economist.com", "aljazeera.com", "axios.com", "politico.com",
-  "semafor.com", "theinformation.com", "punchbowl.news", "puck.news",
-  "dailywire.com", "newsmax.com", "oann.com", "motherjones.com", "slate.com",
-  "salon.com", "thehill.com", "npr.org", "pbs.org", "thedailybeast.com",
-  "newsweek.com", "dailymail.co.uk", "huffpost.com", "huffingtonpost.com",
-  "buzzfeed.com", "buzzfeednews.com", "vox.com",
+  "reuters.com",
+  "bloomberg.com",
+  "bloomberglaw.com",
+  "bloombergquint.com",
+  "cnbc.com",
+  "foxnews.com",
+  "foxbusiness.com",
+  "msnbc.com",
+  "cnn.com",
+  "marketwatch.com",
+  "ft.com",
+  "wsj.com",
+  "barrons.com",
+  "nbcnews.com",
+  "abcnews.go.com",
+  "cbsnews.com",
+  "usatoday.com",
+  "businessinsider.com",
+  "insider.com",
+  "yahoo.com",
+  "finance.yahoo.com",
+  "seekingalpha.com",
+  "zerohedge.com",
+  "benzinga.com",
+  "fool.com",
+  "investopedia.com",
+  "nytimes.com",
+  "washingtonpost.com",
+  "bbc.com",
+  "bbc.co.uk",
+  "theguardian.com",
+  "economist.com",
+  "aljazeera.com",
+  "axios.com",
+  "politico.com",
+  "semafor.com",
+  "theinformation.com",
+  "punchbowl.news",
+  "puck.news",
+  "dailywire.com",
+  "newsmax.com",
+  "oann.com",
+  "motherjones.com",
+  "slate.com",
+  "salon.com",
+  "thehill.com",
+  "npr.org",
+  "pbs.org",
+  "thedailybeast.com",
+  "newsweek.com",
+  "dailymail.co.uk",
+  "huffpost.com",
+  "huffingtonpost.com",
+  "buzzfeed.com",
+  "buzzfeednews.com",
+  "vox.com",
 ];
 
 // Approved gov/data domains — these REMAIN untouched
 const GOV_WHITELIST = [
-  "bls.gov", "federalreserve.gov", "newyorkfed.org", "atlantafed.org",
-  "fred.stlouisfed.org", "bea.gov", "census.gov", "treasury.gov",
-  "sec.gov", "cftc.gov", "dol.gov", "commerce.gov",
+  "bls.gov",
+  "federalreserve.gov",
+  "newyorkfed.org",
+  "atlantafed.org",
+  "fred.stlouisfed.org",
+  "bea.gov",
+  "census.gov",
+  "treasury.gov",
+  "sec.gov",
+  "cftc.gov",
+  "dol.gov",
+  "commerce.gov",
 ];
 
 function hostnameOf(url: string | null | undefined): string | null {
   if (!url) return null;
-  try { return new URL(url).hostname.replace(/^www\./, "").toLowerCase(); } catch { return null; }
+  try {
+    return new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return null;
+  }
 }
 
 function isGovWhitelist(host: string): boolean {
@@ -48,7 +104,10 @@ function isBlocked(url: string | null | undefined): string | null {
   return BLOCKED_HOSTS.find((d) => hostMatches(host, d)) ?? null;
 }
 
-async function getAllRows(table: string, sb: ReturnType<typeof getSupabaseClient>): Promise<any[]> {
+async function getAllRows(
+  table: string,
+  sb: ReturnType<typeof getSupabaseClient>,
+): Promise<any[]> {
   const all: any[] = [];
   const PAGE = 1000;
   let offset = 0;
@@ -59,8 +118,14 @@ async function getAllRows(table: string, sb: ReturnType<typeof getSupabaseClient
       .select("id, headline, source, url, published_at")
       .order("published_at", { ascending: false })
       .range(offset, offset + PAGE - 1);
-    if (error) { console.error(`${table} query error:`, error.message); break; }
-    if (!data || data.length === 0) { hasMore = false; break; }
+    if (error) {
+      console.error(`${table} query error:`, error.message);
+      break;
+    }
+    if (!data || data.length === 0) {
+      hasMore = false;
+      break;
+    }
     all.push(...data);
     offset += data.length;
     if (data.length < PAGE) hasMore = false;
@@ -72,13 +137,22 @@ async function getAllRows(table: string, sb: ReturnType<typeof getSupabaseClient
 async function main() {
   const confirm = process.argv.includes("--confirm");
   const sb = getSupabaseClient();
-  if (!sb) { console.error("Supabase not configured"); process.exit(1); }
+  if (!sb) {
+    console.error("Supabase not configured");
+    process.exit(1);
+  }
 
   // ── AUDIT: scored_riskflow_items ──
   console.log("\n=== DRY-RUN AUDIT: scored_riskflow_items ===\n");
   const scoredAll = await getAllRows("scored_riskflow_items", sb);
 
-  const scoredBlocked: Array<{ id: string; headline: string; source: string; host: string; blocked: string }> = [];
+  const scoredBlocked: Array<{
+    id: string;
+    headline: string;
+    source: string;
+    host: string;
+    blocked: string;
+  }> = [];
   for (const row of scoredAll ?? []) {
     const blocked = isBlocked(row.url);
     if (blocked) {
@@ -92,17 +166,28 @@ async function main() {
     }
   }
 
-  console.log(`scored_riskflow_items: ${scoredAll?.length ?? 0} total, ${scoredBlocked.length} BLOCKED`);
+  console.log(
+    `scored_riskflow_items: ${scoredAll?.length ?? 0} total, ${scoredBlocked.length} BLOCKED`,
+  );
   for (const item of scoredBlocked.slice(0, 25)) {
-    console.log(`  [${item.source}] ${item.host} → ${item.blocked} | ${item.headline}`);
+    console.log(
+      `  [${item.source}] ${item.host} → ${item.blocked} | ${item.headline}`,
+    );
   }
-  if (scoredBlocked.length > 25) console.log(`  ... +${scoredBlocked.length - 25} more`);
+  if (scoredBlocked.length > 25)
+    console.log(`  ... +${scoredBlocked.length - 25} more`);
 
   // ── AUDIT: raw_riskflow_items ──
   console.log("\n=== DRY-RUN AUDIT: raw_riskflow_items ===\n");
   const rawAll = await getAllRows("raw_riskflow_items", sb);
 
-  const rawBlocked: Array<{ id: string; headline: string; source: string; host: string; blocked: string }> = [];
+  const rawBlocked: Array<{
+    id: string;
+    headline: string;
+    source: string;
+    host: string;
+    blocked: string;
+  }> = [];
   for (const row of rawAll ?? []) {
     const blocked = isBlocked(row.url);
     if (blocked) {
@@ -116,11 +201,16 @@ async function main() {
     }
   }
 
-  console.log(`raw_riskflow_items: ${rawAll?.length ?? 0} total, ${rawBlocked.length} BLOCKED`);
+  console.log(
+    `raw_riskflow_items: ${rawAll?.length ?? 0} total, ${rawBlocked.length} BLOCKED`,
+  );
   for (const item of rawBlocked.slice(0, 15)) {
-    console.log(`  [${item.source}] ${item.host} → ${item.blocked} | ${item.headline}`);
+    console.log(
+      `  [${item.source}] ${item.host} → ${item.blocked} | ${item.headline}`,
+    );
   }
-  if (rawBlocked.length > 15) console.log(`  ... +${rawBlocked.length - 15} more`);
+  if (rawBlocked.length > 15)
+    console.log(`  ... +${rawBlocked.length - 15} more`);
 
   const totalBlocked = scoredBlocked.length + rawBlocked.length;
 
@@ -135,12 +225,16 @@ async function main() {
   for (const item of [...scoredBlocked, ...rawBlocked]) {
     bySource.set(item.source, (bySource.get(item.source) ?? 0) + 1);
   }
-  for (const [src, count] of Array.from(bySource.entries()).sort((a, b) => b[1] - a[1])) {
+  for (const [src, count] of Array.from(bySource.entries()).sort(
+    (a, b) => b[1] - a[1],
+  )) {
     console.log(`  ${src}: ${count}`);
   }
 
   if (!confirm) {
-    console.log(`\nPURGE REQUIRED: ${totalBlocked} total blocked rows across scored + raw tables.`);
+    console.log(
+      `\nPURGE REQUIRED: ${totalBlocked} total blocked rows across scored + raw tables.`,
+    );
     console.log("Run with --confirm to execute the purge:");
     console.log("  bun run scripts/purge-blocked-publishers.ts --confirm");
     process.exit(1);
@@ -188,7 +282,9 @@ async function main() {
     console.log(`raw_riskflow_items: deleted ${rawDeleted} rows`);
   }
 
-  console.log(`\n✓ Purge complete. Deleted ${scoredBlocked.length + rawBlocked.length} rows.`);
+  console.log(
+    `\n✓ Purge complete. Deleted ${scoredBlocked.length + rawBlocked.length} rows.`,
+  );
 
   // Verify
   console.log("\n=== POST-PURGE VERIFICATION ===\n");
@@ -198,14 +294,21 @@ async function main() {
   for (const row of verifyScored ?? []) {
     if (isBlocked(row.url)) {
       remaining++;
-      if (remaining <= 5) console.log(`  REMAINING: [${row.source}] ${row.headline?.slice(0, 80)}`);
+      if (remaining <= 5)
+        console.log(
+          `  REMAINING: [${row.source}] ${row.headline?.slice(0, 80)}`,
+        );
     }
   }
   if (remaining > 0) {
-    console.log(`\n⚠ WARNING: ${remaining} blocked rows still remain (may need broader sweep)`);
+    console.log(
+      `\n⚠ WARNING: ${remaining} blocked rows still remain (may need broader sweep)`,
+    );
     process.exit(2);
   }
-  console.log("✓ Verified: zero blocked publisher rows in scored_riskflow_items.");
+  console.log(
+    "✓ Verified: zero blocked publisher rows in scored_riskflow_items.",
+  );
 }
 
 main().catch((err) => {

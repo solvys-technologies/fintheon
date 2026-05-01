@@ -67,10 +67,7 @@ export function AlertCardBase({
   };
 
   return (
-    <div
-      className={`relative ${className || ""}`}
-      style={style}
-    >
+    <div className={`relative ${className || ""}`} style={style}>
       <div
         className="block cursor-pointer focus:outline-none focus-visible:bg-[var(--fintheon-accent)]/5"
         role="button"
@@ -99,10 +96,7 @@ export function AlertCardBase({
         className="grid transition-[grid-template-rows] duration-300 ease-in-out"
         style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
       >
-        <div className="overflow-hidden">
-          {expandedContent}
-
-        </div>
+        <div className="overflow-hidden">{expandedContent}</div>
       </div>
     </div>
   );

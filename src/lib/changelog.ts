@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-01T00:30:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S56-shell pre-pass: sidebar slide-out + footer blend. NavSidebar inner switched from absolute/z-0 to relative so expanding pushes main content right (was hidden under z-10 main). MainLayout middle flex container now bg-surface; main content stripped of rounded-l-2xl + border-l + heavy shadow so the left edge flows continuously with the sidebar (no corner triangles). FooterToolbar bg switched to --fintheon-surface to match TopHeader + sidebar. Epoch label bumped from accent/50 to text/75 for legibility.",
+    files: [
+      "frontend/components/layout/NavSidebar.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/layout/FooterToolbar.tsx",
+    ],
+  },
+  {
     date: "2026-04-30T22:00:00-04:00",
     agent: "claude-code",
     summary:
@@ -122,10 +133,7 @@ export const changelog: ChangelogEntry[] = [
     agent: "codex",
     summary:
       "Fixed desktop RiskFlow severity-color preference drift by wiring user fusePalette preferences to runtime CSS variables in SettingsContext, so RiskFlow cards/fuses now reflect user-selected severity and trade-direction colors immediately.",
-    files: [
-      "frontend/contexts/SettingsContext.tsx",
-      "src/lib/changelog.ts",
-    ],
+    files: ["frontend/contexts/SettingsContext.tsx", "src/lib/changelog.ts"],
   },
   {
     date: "2026-04-30T14:19:00-04:00",
@@ -386,7 +394,9 @@ export const changelog: ChangelogEntry[] = [
     agent: "codex",
     summary:
       "Reviewed S53 T4 status and added a same-thread continuation brief (T4B) to finish hardening scope: strict source enforcement, complete ingest visibility, modular Refinement control domains, and econ/commentary continuity gates.",
-    files: ["sprint-md/S53-T4B-hardening-continuation-riskflow-operator-control.md"],
+    files: [
+      "sprint-md/S53-T4B-hardening-continuation-riskflow-operator-control.md",
+    ],
   },
   {
     date: "2026-04-29T22:00:00",

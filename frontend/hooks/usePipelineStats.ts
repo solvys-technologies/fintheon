@@ -55,9 +55,7 @@ export function usePipelineStats(): UsePipelineStatsResult {
       setStats(rows);
       setError(null);
       // Degraded if any pipeline has uptime below threshold
-      const degraded = rows.filter(
-        (r) => r.enabled && r.uptimePct < 95,
-      );
+      const degraded = rows.filter((r) => r.enabled && r.uptimePct < 95);
       setDegradedReason(
         degraded.length > 0
           ? `${degraded.length} pipeline(s) below 95% uptime`

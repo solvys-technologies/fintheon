@@ -77,7 +77,8 @@ export function NothingFuse({
   const clamped = Math.max(0, Math.min(1, charged ? value : 0));
   const pct = `${clamped * 100}%`;
   const isHorizontal = orientation === "horizontal";
-  const incrementStroke = "var(--solvys-fuse-increment, var(--fintheon-bg, #050402))";
+  const incrementStroke =
+    "var(--solvys-fuse-increment, var(--fintheon-bg, #050402))";
 
   const trackStyle: CSSProperties = isHorizontal
     ? { height: thickness, width: "100%" }

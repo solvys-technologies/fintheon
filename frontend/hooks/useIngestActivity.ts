@@ -72,7 +72,10 @@ export function useIngestActivity(): IngestActivityPayload {
     econ_stalled: false,
     commentary_stalled: false,
   });
-  const [allowlist, setAllowlist] = useState<AllowlistSnapshot>({ handles: [], domains: [] });
+  const [allowlist, setAllowlist] = useState<AllowlistSnapshot>({
+    handles: [],
+    domains: [],
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,7 +86,10 @@ export function useIngestActivity(): IngestActivityPayload {
       if (token) headers.Authorization = `Bearer ${token}`;
 
       const [activityRes, runtimeRes] = await Promise.all([
-        fetch(`${API_BASE}/api/admin/pipeline-stats/ingest-activity?limit=100`, { headers }),
+        fetch(
+          `${API_BASE}/api/admin/pipeline-stats/ingest-activity?limit=100`,
+          { headers },
+        ),
         fetch(`${API_BASE}/api/admin/pipeline-stats/runtime`, { headers }),
       ]);
 
@@ -111,7 +117,9 @@ export function useIngestActivity(): IngestActivityPayload {
 
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load ingest activity");
+      setError(
+        err instanceof Error ? err.message : "Failed to load ingest activity",
+      );
     } finally {
       setLoading(false);
     }
@@ -132,5 +140,13 @@ export function useIngestActivity(): IngestActivityPayload {
     };
   }, [fetchActivity]);
 
-  return { entries, leak_sentinel: leakSentinel, continuity, allowlist, loading, error, refetch: fetchActivity };
+  return {
+    entries,
+    leak_sentinel: leakSentinel,
+    continuity,
+    allowlist,
+    loading,
+    error,
+    refetch: fetchActivity,
+  };
 }

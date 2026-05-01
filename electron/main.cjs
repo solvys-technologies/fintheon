@@ -29,7 +29,8 @@ const IS_WIN = process.platform === "win32";
 // no launchd, frontend hits fintheon.fly.dev directly. macOS keeps the localhost
 // sidecar via launchd + app-owned spawn (lifecycle v2).
 const REMOTE_BACKEND_URL = "https://fintheon.fly.dev";
-const RELEASES_LATEST_URL = "https://github.com/solvys-technologies/fintheon/releases/latest";
+const RELEASES_LATEST_URL =
+  "https://github.com/solvys-technologies/fintheon/releases/latest";
 let currentApiBase = REMOTE_BACKEND_URL;
 
 // [claude-code 2026-04-23] Harper Vision — macOS-only (uses ScreenCaptureKit under the hood).
@@ -423,7 +424,11 @@ async function checkForDesktopUpdate() {
     const base = (currentApiBase || REMOTE_BACKEND_URL).replace(/\/$/, "");
     const res = await fetch(`${base}/api/version/check`);
     if (!res.ok) {
-      return { ok: false, updateAvailable: false, downloadUrl: RELEASES_LATEST_URL };
+      return {
+        ok: false,
+        updateAvailable: false,
+        downloadUrl: RELEASES_LATEST_URL,
+      };
     }
     const data = await res.json();
     return {
@@ -434,7 +439,11 @@ async function checkForDesktopUpdate() {
       downloadUrl: RELEASES_LATEST_URL,
     };
   } catch (error) {
-    return { ok: false, updateAvailable: false, downloadUrl: RELEASES_LATEST_URL };
+    return {
+      ok: false,
+      updateAvailable: false,
+      downloadUrl: RELEASES_LATEST_URL,
+    };
   }
 }
 

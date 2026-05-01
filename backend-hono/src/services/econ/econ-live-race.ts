@@ -12,7 +12,12 @@ import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger("EconLiveRace");
 
-export type PrintStatus = "scheduled" | "provisional" | "confirmed" | "corrected" | "missed";
+export type PrintStatus =
+  | "scheduled"
+  | "provisional"
+  | "confirmed"
+  | "corrected"
+  | "missed";
 
 export interface LiveRaceWindow {
   eventId: string;
@@ -32,7 +37,11 @@ export interface LivePrintResult {
   previous?: number;
   sourceId: string;
   sourceLabel: string;
-  provenance: "wire-word-gate" | "official-page" | "tradingview-actual" | "rss-feed";
+  provenance:
+    | "wire-word-gate"
+    | "official-page"
+    | "tradingview-actual"
+    | "rss-feed";
   arrivedAt: string;
 }
 
@@ -97,14 +106,19 @@ export function reconcilePrint(
   window.status = "confirmed";
 
   // Check if correction needed
-  if (window.provisionalPrint && window.provisionalPrint.actual !== print.actual) {
+  if (
+    window.provisionalPrint &&
+    window.provisionalPrint.actual !== print.actual
+  ) {
     window.status = "corrected";
     log.info(
       `Corrected: ${window.eventName} ${window.provisionalPrint.actual} → ${print.actual} (from ${print.sourceLabel})`,
     );
   }
 
-  log.info(`Reconciled: ${window.eventName} final = ${print.actual} (source: ${print.sourceLabel})`);
+  log.info(
+    `Reconciled: ${window.eventName} final = ${print.actual} (source: ${print.sourceLabel})`,
+  );
   return window;
 }
 
@@ -120,7 +134,9 @@ export function closeRaceWindow(eventId: string): LiveRaceWindow | null {
   }
 
   completedWindows.push(window);
-  log.info(`Live race window closed: ${window.eventName} (status: ${window.status})`);
+  log.info(
+    `Live race window closed: ${window.eventName} (status: ${window.status})`,
+  );
   return window;
 }
 

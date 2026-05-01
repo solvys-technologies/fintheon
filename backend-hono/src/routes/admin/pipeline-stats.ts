@@ -137,12 +137,19 @@ let doctoringNextId = 1;
 
 // POST /api/admin/pipeline-stats/doctorate
 app.post("/doctorate", async (c) => {
-  const body = await c.req.json<{
-    source?: string;
-    pipeline?: string;
-    headline?: string;
-    reason?: string;
-  }>().catch(() => ({ source: undefined, pipeline: undefined, headline: undefined, reason: undefined }));
+  const body = await c.req
+    .json<{
+      source?: string;
+      pipeline?: string;
+      headline?: string;
+      reason?: string;
+    }>()
+    .catch(() => ({
+      source: undefined,
+      pipeline: undefined,
+      headline: undefined,
+      reason: undefined,
+    }));
 
   if (!body.source && !body.headline) {
     return c.json({ error: "source or headline required" }, 400);

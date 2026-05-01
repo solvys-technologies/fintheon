@@ -191,7 +191,9 @@ export function startCommentaryScraper(): void {
   // raw_riskflow_items via Rettiwt (deprecated). It must be explicitly
   // enabled via env flag + have valid Rettiwt keys. Otherwise: no-op.
   if (process.env.RISKFLOW_COMMENTARY_SCRAPER !== "enabled") {
-    log.info("Commentary scraper disabled (quarantine gate: RISKFLOW_COMMENTARY_SCRAPER != enabled)");
+    log.info(
+      "Commentary scraper disabled (quarantine gate: RISKFLOW_COMMENTARY_SCRAPER != enabled)",
+    );
     return;
   }
 

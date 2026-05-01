@@ -24,7 +24,8 @@ export const TRADINGVIEW_SCHEDULE: EconSourceEntry = {
   role: "schedule",
   url: "https://www.tradingview.com/economic-calendar/",
   agencies: ["all"],
-  latencyNotes: "Schedule updates within ~60s of release window. Actuals may lag 5-300s behind true release time.",
+  latencyNotes:
+    "Schedule updates within ~60s of release window. Actuals may lag 5-300s behind true release time.",
 };
 
 /**
@@ -38,7 +39,8 @@ export const OFFICIAL_SOURCES: EconSourceEntry[] = [
     role: "research",
     url: "https://www.bls.gov/news.release/cpi.toc.htm",
     agencies: ["BLS"],
-    latencyNotes: "BLS.gov updates at exactly 8:30 AM ET on release day. Embargoed until 8:30.",
+    latencyNotes:
+      "BLS.gov updates at exactly 8:30 AM ET on release day. Embargoed until 8:30.",
   },
   {
     sourceId: "bls-nfp",
@@ -46,7 +48,8 @@ export const OFFICIAL_SOURCES: EconSourceEntry[] = [
     role: "research",
     url: "https://www.bls.gov/news.release/empsit.toc.htm",
     agencies: ["BLS"],
-    latencyNotes: "BLS.gov updates at exactly 8:30 AM ET first Friday. High embargo enforcement.",
+    latencyNotes:
+      "BLS.gov updates at exactly 8:30 AM ET first Friday. High embargo enforcement.",
   },
   {
     sourceId: "bls-ppi",
@@ -78,7 +81,8 @@ export const OFFICIAL_SOURCES: EconSourceEntry[] = [
     role: "research",
     url: "https://www.bea.gov/news/schedule",
     agencies: ["BEA"],
-    latencyNotes: "BEA.gov updates at 8:30 AM ET. Advance/2nd/3rd estimates follow quarterly schedule.",
+    latencyNotes:
+      "BEA.gov updates at 8:30 AM ET. Advance/2nd/3rd estimates follow quarterly schedule.",
   },
   {
     sourceId: "bea-pce",
@@ -134,7 +138,8 @@ export const OFFICIAL_SOURCES: EconSourceEntry[] = [
     role: "research",
     url: "https://www.federalreserve.gov/newsevents/pressreleases.htm",
     agencies: ["FRB"],
-    latencyNotes: "Released at 2:00 PM ET on FOMC day 2. Statement goes live instantly on federalreserve.gov.",
+    latencyNotes:
+      "Released at 2:00 PM ET on FOMC day 2. Statement goes live instantly on federalreserve.gov.",
   },
   {
     sourceId: "frb-minutes",
@@ -165,7 +170,8 @@ export const WIRE_SOURCES: EconSourceEntry[] = [
     role: "provisional-live",
     url: "https://x.com/financialjuice",
     agencies: ["all"],
-    latencyNotes: "Typically 2-15s after official release. Word-gate classified (Actual+Forecast).",
+    latencyNotes:
+      "Typically 2-15s after official release. Word-gate classified (Actual+Forecast).",
   },
   {
     sourceId: "deitaone",
@@ -173,7 +179,8 @@ export const WIRE_SOURCES: EconSourceEntry[] = [
     role: "provisional-live",
     url: "https://x.com/deitaone",
     agencies: ["all"],
-    latencyNotes: "Typically 3-20s after official release. Covers macro commentary + data releases.",
+    latencyNotes:
+      "Typically 3-20s after official release. Covers macro commentary + data releases.",
   },
 ];
 
@@ -184,7 +191,11 @@ export const WIRE_SOURCES: EconSourceEntry[] = [
  *   authoritative: confirms/corrects the final value
  *   research: documented but not yet race-promoted
  */
-export type LiveRaceRole = "schedule" | "provisional-live" | "authoritative" | "research";
+export type LiveRaceRole =
+  | "schedule"
+  | "provisional-live"
+  | "authoritative"
+  | "research";
 
 export interface LiveRaceParticipant {
   sourceId: string;
@@ -192,22 +203,37 @@ export interface LiveRaceParticipant {
   role: LiveRaceRole;
 }
 
-export function getParticipantsForEvent(agencies: string[]): LiveRaceParticipant[] {
+export function getParticipantsForEvent(
+  agencies: string[],
+): LiveRaceParticipant[] {
   const participants: LiveRaceParticipant[] = [
-    { sourceId: TRADINGVIEW_SCHEDULE.sourceId, label: TRADINGVIEW_SCHEDULE.label, role: "schedule" },
+    {
+      sourceId: TRADINGVIEW_SCHEDULE.sourceId,
+      label: TRADINGVIEW_SCHEDULE.label,
+      role: "schedule",
+    },
   ];
 
   for (const wire of WIRE_SOURCES) {
-    participants.push({ sourceId: wire.sourceId, label: wire.label, role: wire.role });
+    participants.push({
+      sourceId: wire.sourceId,
+      label: wire.label,
+      role: wire.role,
+    });
   }
 
   // Official sources matching the event agencies are research participants
   for (const official of OFFICIAL_SOURCES) {
-    const match = agencies.length === 0 ||
+    const match =
+      agencies.length === 0 ||
       official.agencies.some((a) => agencies.includes(a)) ||
       official.agencies.includes("all");
     if (match) {
-      participants.push({ sourceId: official.sourceId, label: official.label, role: "research" });
+      participants.push({
+        sourceId: official.sourceId,
+        label: official.label,
+        role: "research",
+      });
     }
   }
 

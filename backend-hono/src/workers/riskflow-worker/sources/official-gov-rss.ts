@@ -81,7 +81,8 @@ function parseRss(xml: string): RssItem[] {
     items.push({
       title,
       link,
-      description: extractTag(block, "description") ?? extractTag(block, "summary"),
+      description:
+        extractTag(block, "description") ?? extractTag(block, "summary"),
       pubDate:
         extractTag(block, "pubDate") ??
         extractTag(block, "published") ??

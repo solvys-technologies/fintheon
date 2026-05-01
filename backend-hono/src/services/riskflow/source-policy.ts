@@ -33,10 +33,7 @@ const BLOCKED_WEB_DOMAINS = [
   "investing.com",
 ];
 
-const SOCIAL_PERMALINK_DOMAINS = [
-  "x.com",
-  "twitter.com",
-];
+const SOCIAL_PERMALINK_DOMAINS = ["x.com", "twitter.com"];
 
 const allowlistHandles = new Set<string>(APPROVED_X_HANDLES);
 const allowlistDomains = new Set<string>(APPROVED_WEB_DOMAINS);
@@ -51,7 +48,9 @@ function normalizeHandle(value: string): string {
   return value.replace(/^@/, "").toLowerCase().trim();
 }
 
-function extractHandleFromSubmittedBy(submittedBy?: string | null): string | null {
+function extractHandleFromSubmittedBy(
+  submittedBy?: string | null,
+): string | null {
   if (!submittedBy) return null;
   const match = submittedBy.match(/@?([a-z0-9_]{2,32})$/i);
   return match ? normalizeHandle(match[1]) : null;
@@ -80,11 +79,17 @@ function isDomainMatch(host: string, domain: string): boolean {
 }
 
 function isBlockedHost(host: string): string | null {
-  return BLOCKED_WEB_DOMAINS.find((domain) => isDomainMatch(host, domain)) ?? null;
+  return (
+    BLOCKED_WEB_DOMAINS.find((domain) => isDomainMatch(host, domain)) ?? null
+  );
 }
 
 function isApprovedDataHost(host: string): string | null {
-  return Array.from(allowlistDomains).find((domain) => isDomainMatch(host, domain)) ?? null;
+  return (
+    Array.from(allowlistDomains).find((domain) =>
+      isDomainMatch(host, domain),
+    ) ?? null
+  );
 }
 
 function isSocialPermalinkHost(host: string): boolean {
@@ -92,8 +97,7 @@ function isSocialPermalinkHost(host: string): boolean {
 }
 
 export async function refreshAllowlist(): Promise<void> {
-  if (Date.now() - lastRefresh < REFRESH_TTL_MS)
-    return;
+  if (Date.now() - lastRefresh < REFRESH_TTL_MS) return;
 
   lastRefresh = Date.now();
   log.info("Static RiskFlow source allowlist refreshed", {
@@ -112,7 +116,11 @@ export function getAllowlistSnapshot(): {
   };
 }
 
-export type PolicyDecision = "allowed" | "blocked_handle" | "blocked_domain" | "blocked_unknown_source";
+export type PolicyDecision =
+  | "allowed"
+  | "blocked_handle"
+  | "blocked_domain"
+  | "blocked_unknown_source";
 
 export interface PolicyVerdict {
   decision: PolicyDecision;
@@ -132,11 +140,15 @@ export function checkSourcePolicy(
   context: SourcePolicyContext = {},
 ): PolicyVerdict {
   if (!source || source === "unknown") {
-    return { decision: "blocked_unknown_source", reason: "source field empty or 'unknown'" };
+    return {
+      decision: "blocked_unknown_source",
+      reason: "source field empty or 'unknown'",
+    };
   }
 
   const urlHost = getHostname(url);
-  const sourceDomain = context.sourceDomain?.replace(/^www\./, "").toLowerCase() ?? null;
+  const sourceDomain =
+    context.sourceDomain?.replace(/^www\./, "").toLowerCase() ?? null;
   const candidateHost = urlHost ?? sourceDomain;
   if (candidateHost) {
     const blocked = isBlockedHost(candidateHost);
@@ -148,13 +160,19 @@ export function checkSourcePolicy(
     }
   }
 
-  if (source === "EconomicCalendar" || context.pipeline === "economic-calendar") {
+  if (
+    source === "EconomicCalendar" ||
+    context.pipeline === "economic-calendar"
+  ) {
     return { decision: "allowed", reason: "internal economic calendar bridge" };
   }
 
   const sourceHandle = extractHandleFromSource(source);
   if (sourceHandle && allowlistHandles.has(sourceHandle)) {
-    return { decision: "allowed", reason: `approved X handle: @${sourceHandle}` };
+    return {
+      decision: "allowed",
+      reason: `approved X handle: @${sourceHandle}`,
+    };
   }
 
   const submittedHandle = extractHandleFromSubmittedBy(context.submittedBy);
@@ -174,7 +192,10 @@ export function checkSourcePolicy(
         return { decision: "allowed", reason: `approved domain: ${approved}` };
       }
       if (!isSocialPermalinkHost(host) && !sourceHandle && !submittedHandle) {
-        return { decision: "blocked_domain", reason: `domain not in allowlist: ${host}` };
+        return {
+          decision: "blocked_domain",
+          reason: `domain not in allowlist: ${host}`,
+        };
       }
     }
   }
@@ -184,14 +205,23 @@ export function checkSourcePolicy(
     const srcLower = source.toLowerCase();
     const blocked = isBlockedHost(srcLower);
     if (blocked) {
-      return { decision: "blocked_domain", reason: `blocked publisher domain: ${blocked}` };
+      return {
+        decision: "blocked_domain",
+        reason: `blocked publisher domain: ${blocked}`,
+      };
     }
     const approved = isApprovedDataHost(srcLower);
     if (approved) {
       return { decision: "allowed", reason: `approved domain: ${approved}` };
     }
-    return { decision: "blocked_domain", reason: `domain not in allowlist: ${source}` };
+    return {
+      decision: "blocked_domain",
+      reason: `domain not in allowlist: ${source}`,
+    };
   }
 
-  return { decision: "blocked_handle", reason: `handle not in allowlist: ${source}` };
+  return {
+    decision: "blocked_handle",
+    reason: `handle not in allowlist: ${source}`,
+  };
 }

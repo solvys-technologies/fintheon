@@ -100,10 +100,7 @@ export function matchesAnyNarrative(text: string): boolean {
 // ── Source Normalization ─────────────────────────────────────────────────────
 // S10-T1a: Normalize raw source labels to the 4 watchlist categories
 
-const FJ_ACCOUNTS = new Set([
-  "financialjuice",
-  "firstsquawk",
-]);
+const FJ_ACCOUNTS = new Set(["financialjuice", "firstsquawk"]);
 
 const DEITAONE_ACCOUNTS = new Set(["deltaone", "deItaone", "deitaone"]);
 
@@ -182,7 +179,13 @@ export function normalizeSource(
   headline: string,
   tags: string[] = [],
   url?: string | null,
-): "FinancialJuice" | "OSINTSources" | "EconomicCalendar" | "Polymarket" | "Commentary" | "Untrusted" {
+):
+  | "FinancialJuice"
+  | "OSINTSources"
+  | "EconomicCalendar"
+  | "Polymarket"
+  | "Commentary"
+  | "Untrusted" {
   const src = (rawSource || "").toLowerCase().replace(/[^a-z0-9_]/g, "");
 
   if (rawSource === "FinancialJuice") return "FinancialJuice";
@@ -206,10 +209,22 @@ export function normalizeSource(
     try {
       const host = new URL(url).hostname.replace(/^www\./, "").toLowerCase();
       const BLOCKED_HOSTS = [
-        "seekingalpha.com", "bloomberg.com", "cnbc.com", "marketwatch.com",
-        "reuters.com", "wsj.com", "ft.com", "barrons.com", "zerohedge.com",
-        "foxnews.com", "foxbusiness.com", "msnbc.com", "cnn.com", "yahoo.com",
-        "finance.yahoo.com", "businessinsider.com",
+        "seekingalpha.com",
+        "bloomberg.com",
+        "cnbc.com",
+        "marketwatch.com",
+        "reuters.com",
+        "wsj.com",
+        "ft.com",
+        "barrons.com",
+        "zerohedge.com",
+        "foxnews.com",
+        "foxbusiness.com",
+        "msnbc.com",
+        "cnn.com",
+        "yahoo.com",
+        "finance.yahoo.com",
+        "businessinsider.com",
       ];
       for (const blocked of BLOCKED_HOSTS) {
         if (host === blocked || host.endsWith("." + blocked)) {

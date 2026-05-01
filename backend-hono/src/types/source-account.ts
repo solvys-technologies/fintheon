@@ -15,11 +15,7 @@ export const SOURCE_ACCOUNT_CATEGORIES = [
 
 export type SourceAccountCategory = (typeof SOURCE_ACCOUNT_CATEGORIES)[number];
 
-export const SOURCE_ACCOUNT_METHODS = [
-  "rss",
-  "browser",
-  "api",
-] as const;
+export const SOURCE_ACCOUNT_METHODS = ["rss", "browser", "api"] as const;
 
 export type SourceAccountMethod = (typeof SOURCE_ACCOUNT_METHODS)[number];
 

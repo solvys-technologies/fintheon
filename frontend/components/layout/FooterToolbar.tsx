@@ -537,7 +537,10 @@ export function FooterToolbar({
   };
 
   return (
-    <div className="relative flex-shrink-0 bg-[var(--fintheon-bg)]">
+    // [claude-code 2026-04-30] S56-shell: footer now shares --fintheon-surface
+    // with TopHeader + sidebar so the left column blends continuously and no
+    // corner triangles peek through main content's edges.
+    <div className="relative flex-shrink-0 bg-[var(--fintheon-surface)]">
       {/* Slide-up panel */}
       <div
         className="overflow-hidden transition-all duration-300 ease-in-out"
@@ -715,10 +718,13 @@ export function FooterToolbar({
 
       {/* Toolbar strip */}
       <div className="h-7 flex items-center gap-3 px-3">
-        {/* Panel toggle */}
+        {/* Panel toggle
+            [claude-code 2026-04-30] S56-shell: bumped contrast — gold/50 was
+            illegible against the new --fintheon-surface footer; using
+            --fintheon-text/75 with accent on hover. */}
         <button
           onClick={togglePanel}
-          className="flex items-center gap-1 text-[10px] text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] transition-colors"
+          className="flex items-center gap-1 text-[10px] text-[var(--fintheon-text)]/75 hover:text-[var(--fintheon-accent)] transition-colors"
           title={panelOpen ? "Close panel" : "Open panel"}
         >
           {panelOpen ? (

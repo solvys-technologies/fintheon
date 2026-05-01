@@ -76,7 +76,9 @@ export function RiskFlowCardAnatomy({
             className={`t-text-reveal font-medium leading-snug text-[var(--fintheon-text)] ${
               compact ? "text-[11px]" : "text-xs"
             } ${expanded ? "line-clamp-none" : "line-clamp-3"}`}
-            data-open={expanded ? (headlineRevealed ? "true" : "false") : "true"}
+            data-open={
+              expanded ? (headlineRevealed ? "true" : "false") : "true"
+            }
             style={{ textWrap: expanded ? "pretty" : "balance" }}
           >
             {title}

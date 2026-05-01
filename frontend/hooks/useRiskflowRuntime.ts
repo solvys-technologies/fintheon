@@ -73,8 +73,7 @@ export function useRiskflowRuntime(): RiskflowRuntimePayload {
     if (statesError) reasons.push(`Pipeline state: ${statesError}`);
     if (sourceAccounts.error)
       reasons.push(`Source accounts: ${sourceAccounts.error}`);
-    if (econFilters.error)
-      reasons.push(`Econ filters: ${econFilters.error}`);
+    if (econFilters.error) reasons.push(`Econ filters: ${econFilters.error}`);
     return reasons.length > 0 ? reasons.join("; ") : null;
   }, [statsError, statesError, sourceAccounts.error, econFilters.error]);
 

@@ -58,8 +58,7 @@ function deriveEmptyReason(
     case "pipeline-degraded":
       if (!triggerEnabled && feedStatus && feedStatus !== "healthy")
         return `Feed pipeline degraded (${feedStatus}) + econ trigger disabled`;
-      if (!triggerEnabled)
-        return "Econ keyword trigger is disabled";
+      if (!triggerEnabled) return "Econ keyword trigger is disabled";
       if (feedStatus && feedStatus !== "healthy")
         return `Feed pipeline degraded (${feedStatus})`;
       return "Pipeline health check required";
@@ -81,7 +80,9 @@ export function useEconWatchHealth(): EconWatchHealth {
   const mountedRef = useRef(true);
 
   useEffect(() => {
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
   const poll = useCallback(async () => {
@@ -133,11 +134,17 @@ export function useEconWatchHealth(): EconWatchHealth {
 
   const feedIsHealthy = feedStatus === "healthy";
   const state = initialised
-    ? deriveState(backendReachable, triggerEnabled, feedIsHealthy, events.length)
+    ? deriveState(
+        backendReachable,
+        triggerEnabled,
+        feedIsHealthy,
+        events.length,
+      )
     : "loading";
-  const emptyReason = events.length === 0
-    ? deriveEmptyReason(state, triggerEnabled, feedStatus, backendReachable)
-    : null;
+  const emptyReason =
+    events.length === 0
+      ? deriveEmptyReason(state, triggerEnabled, feedStatus, backendReachable)
+      : null;
 
   return {
     state,

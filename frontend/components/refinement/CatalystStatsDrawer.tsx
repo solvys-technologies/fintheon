@@ -79,7 +79,9 @@ export function CatalystStatsDrawer({
   const [refillToDate, setRefillToDate] = useState<string>(() =>
     new Date().toISOString().slice(0, 10),
   );
-  const [auditResult, setAuditResult] = useState<PurgeAuditResponse | null>(null);
+  const [auditResult, setAuditResult] = useState<PurgeAuditResponse | null>(
+    null,
+  );
   const [busy, setBusy] = useState<string | null>(null);
 
   const buildHeaders = useCallback(async (): Promise<Record<

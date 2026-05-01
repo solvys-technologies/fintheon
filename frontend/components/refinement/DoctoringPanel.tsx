@@ -80,12 +80,29 @@ export function DoctoringPanel() {
 
   return (
     <div style={CONTAINER}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 4,
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <Stethoscope className="w-3.5 h-3.5" style={{ color: "var(--fintheon-accent)" }} />
+          <Stethoscope
+            className="w-3.5 h-3.5"
+            style={{ color: "var(--fintheon-accent)" }}
+          />
           <div style={HEADER}>Doctoring</div>
           {tickets.length > 0 && (
-            <span style={{ fontSize: 9, fontFamily: "var(--font-data)", color: "var(--fintheon-accent)", opacity: 0.5 }}>
+            <span
+              style={{
+                fontSize: 9,
+                fontFamily: "var(--font-data)",
+                color: "var(--fintheon-accent)",
+                opacity: 0.5,
+              }}
+            >
               {tickets.length}
             </span>
           )}
@@ -114,12 +131,27 @@ export function DoctoringPanel() {
       </div>
 
       {loading ? (
-        <div style={{ padding: "6px 0", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fintheon-muted)" }}>
+        <div
+          style={{
+            padding: "6px 0",
+            fontSize: 10,
+            fontFamily: "var(--font-mono)",
+            color: "var(--fintheon-muted)",
+          }}
+        >
           [LOADING...]
         </div>
       ) : tickets.length === 0 ? (
-        <div style={{ padding: "6px 0", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fintheon-muted)" }}>
-          Queue empty. Use Doctorate on source cards to flag incidents for debug review.
+        <div
+          style={{
+            padding: "6px 0",
+            fontSize: 10,
+            fontFamily: "var(--font-mono)",
+            color: "var(--fintheon-muted)",
+          }}
+        >
+          Queue empty. Use Doctorate on source cards to flag incidents for debug
+          review.
         </div>
       ) : (
         <div style={{ maxHeight: 180, overflowY: "auto" }}>
@@ -127,7 +159,9 @@ export function DoctoringPanel() {
             <div key={ticket.id} style={TICKET_ROW}>
               <div style={TICKET_META}>
                 <span style={TICKET_TIME}>
-                  {new Date(ticket.submitted_at).toLocaleTimeString("en-US", { hour12: false })}
+                  {new Date(ticket.submitted_at).toLocaleTimeString("en-US", {
+                    hour12: false,
+                  })}
                 </span>
                 <span style={TICKET_SOURCE}>{ticket.source}</span>
                 <span style={TICKET_PIPE}>{ticket.pipeline}</span>
@@ -151,7 +185,12 @@ interface DoctorateButtonProps {
   reason?: string;
 }
 
-export function DoctorateButton({ source, pipeline, headline, reason }: DoctorateButtonProps) {
+export function DoctorateButton({
+  source,
+  pipeline,
+  headline,
+  reason,
+}: DoctorateButtonProps) {
   const { submitDoctorate } = useDoctoringQueue();
 
   return (
@@ -159,7 +198,12 @@ export function DoctorateButton({ source, pipeline, headline, reason }: Doctorat
       type="button"
       onClick={(e) => {
         e.stopPropagation();
-        void submitDoctorate({ source, pipeline, headline, reason: reason ?? "operator-flagged" });
+        void submitDoctorate({
+          source,
+          pipeline,
+          headline,
+          reason: reason ?? "operator-flagged",
+        });
       }}
       style={{
         background: "transparent",

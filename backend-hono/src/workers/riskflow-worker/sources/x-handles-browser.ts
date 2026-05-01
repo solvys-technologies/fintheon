@@ -57,10 +57,17 @@ function normalizeTweetText(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
 
-function normalizePermalink(url: string, cleanHandle: string, tweetId: string): string {
+function normalizePermalink(
+  url: string,
+  cleanHandle: string,
+  tweetId: string,
+): string {
   try {
     const parsed = new URL(url);
-    if (parsed.hostname.endsWith("x.com") || parsed.hostname.endsWith("twitter.com")) {
+    if (
+      parsed.hostname.endsWith("x.com") ||
+      parsed.hostname.endsWith("twitter.com")
+    ) {
       return `https://x.com/${cleanHandle}/status/${tweetId}`;
     }
   } catch {
@@ -90,35 +97,54 @@ async function fetchBrowserUseTweets(
       }
 
       const rows = await page.evaluate((handle) => {
-        return Array.from(document.querySelectorAll("article")).flatMap((article) => {
-          const links = Array.from(article.querySelectorAll("a[href*='/status/']"))
-            .map((a) => (a as HTMLAnchorElement).href)
-            .filter((href) => href.includes(`/${handle}/status/`));
-          const permalink = links[0];
-          const match = permalink?.match(/\/status\/(\d+)/);
-          const tweetId = match?.[1];
-          const tweetText = (article.querySelector("[data-testid='tweetText']") as HTMLElement | null)
-            ?.innerText;
-          const timestamp = article.querySelector("time")?.getAttribute("datetime") ?? "";
-          const imageUrl = (article.querySelector("img[src*='twimg.com/media']") as HTMLImageElement | null)
-            ?.src;
-          if (!tweetId || !tweetText || !timestamp) return [];
-          return [{ tweetId, text: tweetText, timestamp, permalink, imageUrl }];
-        });
+        return Array.from(document.querySelectorAll("article")).flatMap(
+          (article) => {
+            const links = Array.from(
+              article.querySelectorAll("a[href*='/status/']"),
+            )
+              .map((a) => (a as HTMLAnchorElement).href)
+              .filter((href) => href.includes(`/${handle}/status/`));
+            const permalink = links[0];
+            const match = permalink?.match(/\/status\/(\d+)/);
+            const tweetId = match?.[1];
+            const tweetText = (
+              article.querySelector(
+                "[data-testid='tweetText']",
+              ) as HTMLElement | null
+            )?.innerText;
+            const timestamp =
+              article.querySelector("time")?.getAttribute("datetime") ?? "";
+            const imageUrl = (
+              article.querySelector(
+                "img[src*='twimg.com/media']",
+              ) as HTMLImageElement | null
+            )?.src;
+            if (!tweetId || !tweetText || !timestamp) return [];
+            return [
+              { tweetId, text: tweetText, timestamp, permalink, imageUrl },
+            ];
+          },
+        );
       }, cleanHandle);
 
       const seen = new Set<string>();
       return rows.flatMap((row) => {
         if (seen.has(row.tweetId)) return [];
         seen.add(row.tweetId);
-        return [{
-          tweet_id: row.tweetId,
-          text: normalizeTweetText(row.text),
-          timestamp: row.timestamp,
-          permalink: normalizePermalink(row.permalink, cleanHandle, row.tweetId),
-          image_url: row.imageUrl ?? null,
-          pipeline_tag: "x-browser-session",
-        }];
+        return [
+          {
+            tweet_id: row.tweetId,
+            text: normalizeTweetText(row.text),
+            timestamp: row.timestamp,
+            permalink: normalizePermalink(
+              row.permalink,
+              cleanHandle,
+              row.tweetId,
+            ),
+            image_url: row.imageUrl ?? null,
+            pipeline_tag: "x-browser-session",
+          },
+        ];
       });
     });
   } catch (err) {
@@ -372,9 +398,7 @@ export async function collectFromXHandlesBrowser(
   const fromMs = opts.from
     ? Date.parse(`${opts.from}T00:00:00.000Z`)
     : Number.NaN;
-  const toMs = opts.to
-    ? Date.parse(`${opts.to}T23:59:59.999Z`)
-    : Number.NaN;
+  const toMs = opts.to ? Date.parse(`${opts.to}T23:59:59.999Z`) : Number.NaN;
   const historicalWindow =
     Number.isFinite(fromMs) &&
     Number.isFinite(toMs) &&

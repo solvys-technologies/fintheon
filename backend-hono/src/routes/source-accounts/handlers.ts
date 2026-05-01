@@ -25,13 +25,37 @@ const X_HANDLE_RE = /^@?[a-zA-Z0-9_]{1,15}$/;
 // Blocked handles that must never be added as source accounts
 const BLOCKED_ADD_HANDLES = new Set([
   "overton_news",
-  "reuters", "reutersbiz", "reutersworld",
-  "bloomberg", "business", "markets", "bloombergtv", "bloombergradio", "bloombergpolitics",
-  "cnbc", "cnbcnow", "squawkcnbc",
-  "foxnews", "foxbusiness", "msnbc", "cnn", "cnnbusiness",
-  "marketwatch", "wsj", "ft", "financialtimes", "barronsonline",
-  "nbcnews", "abc", "abcnews", "cbsnews", "usatoday", "businessinsider",
-  "yahoofinance", "seekingalpha", "zerohedge",
+  "reuters",
+  "reutersbiz",
+  "reutersworld",
+  "bloomberg",
+  "business",
+  "markets",
+  "bloombergtv",
+  "bloombergradio",
+  "bloombergpolitics",
+  "cnbc",
+  "cnbcnow",
+  "squawkcnbc",
+  "foxnews",
+  "foxbusiness",
+  "msnbc",
+  "cnn",
+  "cnnbusiness",
+  "marketwatch",
+  "wsj",
+  "ft",
+  "financialtimes",
+  "barronsonline",
+  "nbcnews",
+  "abc",
+  "abcnews",
+  "cbsnews",
+  "usatoday",
+  "businessinsider",
+  "yahoofinance",
+  "seekingalpha",
+  "zerohedge",
 ]);
 
 // GET /api/source-accounts
@@ -95,7 +119,8 @@ export async function handleAddAccount(c: Context) {
     if (method === "browser") {
       const rawHandle = body.handle.trim();
       if (!X_HANDLE_RE.test(rawHandle)) {
-        errors.handle = "X handles must be 1-15 characters (letters, numbers, underscores)";
+        errors.handle =
+          "X handles must be 1-15 characters (letters, numbers, underscores)";
       }
     }
   }

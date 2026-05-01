@@ -3,7 +3,10 @@
 // Solvys materials: frosted-glass container, thin gold separators, monospace data,
 // tabular numbers for timestamps, muted labels quieter than values.
 
-import { useIngestActivity, type IngestLedgerEntry } from "../../hooks/useIngestActivity";
+import {
+  useIngestActivity,
+  type IngestLedgerEntry,
+} from "../../hooks/useIngestActivity";
 
 const DECISION_COLOR: Record<string, string> = {
   accepted: "#22c55e",
@@ -90,7 +93,9 @@ const COL_REASON: React.CSSProperties = {
 function LedgerRow({ entry }: { entry: IngestLedgerEntry }) {
   const color = DECISION_COLOR[entry.decision] ?? "#71717a";
   const label = DECISION_LABEL[entry.decision] ?? entry.decision;
-  const time = new Date(entry.timestamp).toLocaleTimeString("en-US", { hour12: false });
+  const time = new Date(entry.timestamp).toLocaleTimeString("en-US", {
+    hour12: false,
+  });
 
   return (
     <div style={ROW}>
@@ -107,7 +112,14 @@ export function OperatorTimeline() {
 
   return (
     <div style={CONTAINER}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 4,
+        }}
+      >
         <div style={HEADER}>Everything Timeline</div>
         <button
           onClick={refetch}
@@ -127,15 +139,36 @@ export function OperatorTimeline() {
       </div>
 
       {loading ? (
-        <div style={{ padding: "6px 0", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fintheon-muted)" }}>
+        <div
+          style={{
+            padding: "6px 0",
+            fontSize: 10,
+            fontFamily: "var(--font-mono)",
+            color: "var(--fintheon-muted)",
+          }}
+        >
           [LOADING...]
         </div>
       ) : error ? (
-        <div style={{ padding: "6px 0", fontSize: 10, fontFamily: "var(--font-mono)", color: "#ef4444" }}>
+        <div
+          style={{
+            padding: "6px 0",
+            fontSize: 10,
+            fontFamily: "var(--font-mono)",
+            color: "#ef4444",
+          }}
+        >
           [ERROR: {error}]
         </div>
       ) : entries.length === 0 ? (
-        <div style={{ padding: "6px 0", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fintheon-muted)" }}>
+        <div
+          style={{
+            padding: "6px 0",
+            fontSize: 10,
+            fontFamily: "var(--font-mono)",
+            color: "var(--fintheon-muted)",
+          }}
+        >
           No ingest activity recorded
         </div>
       ) : (

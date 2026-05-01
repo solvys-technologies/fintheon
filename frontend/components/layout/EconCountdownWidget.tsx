@@ -10,7 +10,10 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { X, Clock } from "lucide-react";
-import { useEconWatchHealth, type ActiveWatchEvent } from "../../hooks/useEconWatchHealth";
+import {
+  useEconWatchHealth,
+  type ActiveWatchEvent,
+} from "../../hooks/useEconWatchHealth";
 
 interface EconCountdownWidgetProps {
   visible: boolean;
@@ -20,8 +23,22 @@ interface EconCountdownWidgetProps {
 function formatCountryCode(country: string | null): string {
   if (!country) return "";
   const normalized = country.toUpperCase();
-  const known = ["US", "EU", "UK", "JP", "CN", "DE", "FR", "CA", "AU", "CH", "NZ"];
-  return known.find((code) => normalized.includes(code)) ?? normalized.slice(0, 3);
+  const known = [
+    "US",
+    "EU",
+    "UK",
+    "JP",
+    "CN",
+    "DE",
+    "FR",
+    "CA",
+    "AU",
+    "CH",
+    "NZ",
+  ];
+  return (
+    known.find((code) => normalized.includes(code)) ?? normalized.slice(0, 3)
+  );
 }
 
 function formatCountdown(ms: number): string {
@@ -32,11 +49,16 @@ function formatCountdown(ms: number): string {
   return `${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 }
 
-export function EconCountdownWidget({ visible, onDismiss }: EconCountdownWidgetProps) {
+export function EconCountdownWidget({
+  visible,
+  onDismiss,
+}: EconCountdownWidgetProps) {
   const { events } = useEconWatchHealth();
   const [fadeState, setFadeState] = useState<"out" | "in" | "visible">("out");
   const [dismissed, setDismissed] = useState(false);
-  const [currentEvent, setCurrentEvent] = useState<ActiveWatchEvent | null>(null);
+  const [currentEvent, setCurrentEvent] = useState<ActiveWatchEvent | null>(
+    null,
+  );
   const [countdownMs, setCountdownMs] = useState<number | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -118,7 +140,8 @@ export function EconCountdownWidget({ visible, onDismiss }: EconCountdownWidgetP
   // Early return before fade animation starts
   if (fadeState === "out") return null;
 
-  const isPrinted = currentEvent?.status === "printed" && currentEvent?.actual != null;
+  const isPrinted =
+    currentEvent?.status === "printed" && currentEvent?.actual != null;
   const isTransitioning = fadeState === "in";
 
   return (
@@ -132,7 +155,9 @@ export function EconCountdownWidget({ visible, onDismiss }: EconCountdownWidgetP
       {!currentEvent ? (
         <>
           <Clock className="w-3 h-3 text-zinc-600" />
-          <span className="text-[9px] text-zinc-500 tabular-nums">No active event</span>
+          <span className="text-[9px] text-zinc-500 tabular-nums">
+            No active event
+          </span>
         </>
       ) : (
         <div className="flex items-center gap-2 min-w-0">

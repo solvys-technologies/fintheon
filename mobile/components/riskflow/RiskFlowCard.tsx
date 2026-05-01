@@ -114,10 +114,8 @@ function DirectionChevron({
   direction: string | null | undefined;
   color: string;
 }) {
-  if (direction === "Bullish")
-    return <ChevronUp size={14} color={color} />;
-  if (direction === "Bearish")
-    return <ChevronDown size={14} color={color} />;
+  if (direction === "Bullish") return <ChevronUp size={14} color={color} />;
+  if (direction === "Bearish") return <ChevronDown size={14} color={color} />;
   return <Minus size={12} color={color} />;
 }
 

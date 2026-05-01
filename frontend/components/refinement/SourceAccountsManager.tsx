@@ -43,7 +43,9 @@ const CATEGORY_BADGE: Record<SourceAccountCategory, { color: string }> = {
   Geopolitical: { color: "text-red-400 border-red-400/30" },
   Macro: { color: "text-emerald-400 border-emerald-400/30" },
   Commentary: { color: "text-violet-300 border-violet-300/30" },
-  Custom: { color: "text-[var(--fintheon-muted)] border-[var(--fintheon-muted)]/30" },
+  Custom: {
+    color: "text-[var(--fintheon-muted)] border-[var(--fintheon-muted)]/30",
+  },
   Official: { color: "text-amber-400 border-amber-400/30" },
 };
 
@@ -235,8 +237,7 @@ export function SourceAccountsManager({
   const webSources = sorted.filter(isWebSource);
 
   const renderAccount = (account: SourceAccount) => {
-    const badge =
-      CATEGORY_BADGE[account.category] ?? CATEGORY_BADGE.Custom;
+    const badge = CATEGORY_BADGE[account.category] ?? CATEGORY_BADGE.Custom;
     const isEditing = editingId === account.id;
 
     if (isEditing) {
@@ -244,7 +245,10 @@ export function SourceAccountsManager({
         <div
           key={account.id}
           className="p-2 rounded border border-[var(--fintheon-accent)]/14"
-          style={{ background: "rgba(10, 9, 5, 0.72)", backdropFilter: "blur(18px) saturate(1.08)" }}
+          style={{
+            background: "rgba(10, 9, 5, 0.72)",
+            backdropFilter: "blur(18px) saturate(1.08)",
+          }}
         >
           <div className="space-y-1.5">
             <input
@@ -254,7 +258,9 @@ export function SourceAccountsManager({
               placeholder="Handle or web source"
             />
             {editErrors.handle && (
-              <div className="text-[10px] text-red-400">{editErrors.handle}</div>
+              <div className="text-[10px] text-red-400">
+                {editErrors.handle}
+              </div>
             )}
             <input
               value={editDisplayName}
@@ -265,26 +271,46 @@ export function SourceAccountsManager({
             <div className="flex gap-1.5">
               <select
                 value={editCategory}
-                onChange={(e) => setEditCategory(e.target.value as SourceAccountCategory)}
+                onChange={(e) =>
+                  setEditCategory(e.target.value as SourceAccountCategory)
+                }
                 className="bg-transparent border border-[var(--fintheon-accent)]/10 rounded px-1.5 py-0.5 text-[12px] text-[var(--fintheon-text)]/70 outline-none focus:border-[var(--fintheon-accent)]/40 transition-colors"
               >
                 {SOURCE_ACCOUNT_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
                 ))}
               </select>
               <select
                 value={editMethod}
-                onChange={(e) => setEditMethod(e.target.value as SourceAccountMethod)}
+                onChange={(e) =>
+                  setEditMethod(e.target.value as SourceAccountMethod)
+                }
                 className="bg-transparent border border-[var(--fintheon-accent)]/10 rounded px-1.5 py-0.5 text-[12px] text-[var(--fintheon-text)]/70 outline-none focus:border-[var(--fintheon-accent)]/40 transition-colors"
               >
                 {SOURCE_ACCOUNT_METHODS.map((m) => (
-                  <option key={m} value={m}>{METHOD_ICON[m]} — {m}</option>
+                  <option key={m} value={m}>
+                    {METHOD_ICON[m]} — {m}
+                  </option>
                 ))}
               </select>
             </div>
-            {editErrors.category && <div className="text-[10px] text-red-400">{editErrors.category}</div>}
-            {editErrors.method && <div className="text-[10px] text-red-400">{editErrors.method}</div>}
-            {editErrors.general && <div className="text-[10px] text-red-400">{editErrors.general}</div>}
+            {editErrors.category && (
+              <div className="text-[10px] text-red-400">
+                {editErrors.category}
+              </div>
+            )}
+            {editErrors.method && (
+              <div className="text-[10px] text-red-400">
+                {editErrors.method}
+              </div>
+            )}
+            {editErrors.general && (
+              <div className="text-[10px] text-red-400">
+                {editErrors.general}
+              </div>
+            )}
             <div className="flex gap-1.5">
               <button
                 onClick={handleSaveEdit}
@@ -391,9 +417,7 @@ export function SourceAccountsManager({
               animation: "fuse-shimmer 1.5s infinite",
             }}
           />
-          <span style={{ color: "var(--fintheon-accent)" }}>
-            mutating...
-          </span>
+          <span style={{ color: "var(--fintheon-accent)" }}>mutating...</span>
         </div>
       )}
       {lastAppliedAt && !isMutating && !degradedReason && (
@@ -411,7 +435,8 @@ export function SourceAccountsManager({
           <div className="flex items-center justify-between px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--fintheon-muted)]">
             <span>@ Handles</span>
             <span className="min-w-[44px] text-right tabular-nums">
-              {handleSources.filter((a) => a.active).length}/{handleSources.length}
+              {handleSources.filter((a) => a.active).length}/
+              {handleSources.length}
             </span>
           </div>
           {handleSources.map(renderAccount)}
@@ -451,7 +476,10 @@ export function SourceAccountsManager({
       {showAdd && (
         <div
           className="space-y-1.5 p-2 rounded border border-[var(--fintheon-accent)]/14"
-          style={{ background: "rgba(10, 9, 5, 0.72)", backdropFilter: "blur(18px) saturate(1.08)" }}
+          style={{
+            background: "rgba(10, 9, 5, 0.72)",
+            backdropFilter: "blur(18px) saturate(1.08)",
+          }}
         >
           <input
             value={addHandle}
@@ -471,26 +499,40 @@ export function SourceAccountsManager({
           <div className="flex gap-1.5">
             <select
               value={addCategory}
-              onChange={(e) => setAddCategory(e.target.value as SourceAccountCategory)}
+              onChange={(e) =>
+                setAddCategory(e.target.value as SourceAccountCategory)
+              }
               className="bg-transparent border border-[var(--fintheon-accent)]/10 rounded px-1.5 py-1 text-[12px] text-[var(--fintheon-text)]/70 outline-none focus:border-[var(--fintheon-accent)]/40 transition-colors"
             >
               {SOURCE_ACCOUNT_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
               ))}
             </select>
             <select
               value={addMethod}
-              onChange={(e) => setAddMethod(e.target.value as SourceAccountMethod)}
+              onChange={(e) =>
+                setAddMethod(e.target.value as SourceAccountMethod)
+              }
               className="bg-transparent border border-[var(--fintheon-accent)]/10 rounded px-1.5 py-1 text-[12px] text-[var(--fintheon-text)]/70 outline-none focus:border-[var(--fintheon-accent)]/40 transition-colors"
             >
               {SOURCE_ACCOUNT_METHODS.map((m) => (
-                <option key={m} value={m}>{METHOD_ICON[m]} — {m}</option>
+                <option key={m} value={m}>
+                  {METHOD_ICON[m]} — {m}
+                </option>
               ))}
             </select>
           </div>
-          {addErrors.category && <div className="text-[10px] text-red-400">{addErrors.category}</div>}
-          {addErrors.method && <div className="text-[10px] text-red-400">{addErrors.method}</div>}
-          {addErrors.general && <div className="text-[10px] text-red-400">{addErrors.general}</div>}
+          {addErrors.category && (
+            <div className="text-[10px] text-red-400">{addErrors.category}</div>
+          )}
+          {addErrors.method && (
+            <div className="text-[10px] text-red-400">{addErrors.method}</div>
+          )}
+          {addErrors.general && (
+            <div className="text-[10px] text-red-400">{addErrors.general}</div>
+          )}
           <button
             onClick={handleAdd}
             disabled={!addHandle.trim() || addSubmitting}

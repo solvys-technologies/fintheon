@@ -4,7 +4,11 @@
 //   names ("Lead Analyst") vs short ("Lead"); verdict_id vs id. Rounds total/completed
 //   derived from max round number across seats.
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ArbitrumSeat, ArbitrumSeatRole, ArbitrumVerdict } from "../components/arbitrum/types";
+import type {
+  ArbitrumSeat,
+  ArbitrumSeatRole,
+  ArbitrumVerdict,
+} from "../components/arbitrum/types";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const POLL_MS = 60_000;

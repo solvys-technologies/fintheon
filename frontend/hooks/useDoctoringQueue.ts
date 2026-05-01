@@ -43,7 +43,10 @@ export function useDoctoringQueue(): UseDoctoringQueueResult {
       const token = await getAccessToken();
       const headers: Record<string, string> = {};
       if (token) headers.Authorization = `Bearer ${token}`;
-      const res = await fetch(`${API_BASE}/api/admin/pipeline-stats/doctorate`, { headers });
+      const res = await fetch(
+        `${API_BASE}/api/admin/pipeline-stats/doctorate`,
+        { headers },
+      );
       if (res.ok) {
         const data = (await res.json()) as { tickets?: DoctoringTicket[] };
         setTickets(data.tickets ?? []);
@@ -56,21 +59,31 @@ export function useDoctoringQueue(): UseDoctoringQueueResult {
   }, [getAccessToken]);
 
   const submitDoctorate = useCallback(
-    async (params: { source: string; pipeline?: string; headline: string; reason?: string }) => {
+    async (params: {
+      source: string;
+      pipeline?: string;
+      headline: string;
+      reason?: string;
+    }) => {
       try {
         const token = await getAccessToken();
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
         if (token) headers.Authorization = `Bearer ${token}`;
-        const res = await fetch(`${API_BASE}/api/admin/pipeline-stats/doctorate`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            source: params.source,
-            pipeline: params.pipeline ?? "manual",
-            headline: params.headline,
-            reason: params.reason ?? "operator-flagged",
-          }),
-        });
+        const res = await fetch(
+          `${API_BASE}/api/admin/pipeline-stats/doctorate`,
+          {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              source: params.source,
+              pipeline: params.pipeline ?? "manual",
+              headline: params.headline,
+              reason: params.reason ?? "operator-flagged",
+            }),
+          },
+        );
         if (res.ok) {
           addToast("Incident queued for debug cycle", "success");
           await fetchTickets();

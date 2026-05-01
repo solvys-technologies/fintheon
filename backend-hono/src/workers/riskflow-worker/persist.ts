@@ -27,8 +27,14 @@
 import { getSupabaseClient } from "../../config/supabase.js";
 import { bumpCounter } from "../../services/riskflow/drop-counters.js";
 import { isBannedPublisher } from "../../services/riskflow/content-guard.js";
-import { recordIngestAttempt, recordLeakEvent } from "../../services/riskflow/ingest-ledger.js";
-import { checkSourcePolicy, refreshAllowlist } from "../../services/riskflow/source-policy.js";
+import {
+  recordIngestAttempt,
+  recordLeakEvent,
+} from "../../services/riskflow/ingest-ledger.js";
+import {
+  checkSourcePolicy,
+  refreshAllowlist,
+} from "../../services/riskflow/source-policy.js";
 import type { CollectedNewsItem } from "./sources/types.js";
 
 const FLAG_WRITES_NEW = "FLAG_RISKFLOW_WORKER_WRITES_RISKFLOW";

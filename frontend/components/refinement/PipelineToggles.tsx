@@ -24,8 +24,7 @@ const STATUS_BAR: React.CSSProperties = {
   fontFamily: "var(--font-mono)",
   marginBottom: 6,
   padding: "3px 6px",
-  background:
-    "color-mix(in srgb, var(--fintheon-accent) 5%, transparent)",
+  background: "color-mix(in srgb, var(--fintheon-accent) 5%, transparent)",
   borderLeft:
     "2px solid color-mix(in srgb, var(--fintheon-accent) 30%, transparent)",
 };
@@ -83,9 +82,7 @@ export function PipelineToggles({
               animation: "fuse-shimmer 1.5s infinite",
             }}
           />
-          <span style={{ color: "var(--fintheon-accent)" }}>
-            toggling...
-          </span>
+          <span style={{ color: "var(--fintheon-accent)" }}>toggling...</span>
         </div>
       )}
       {lastAppliedAt && !isMutating && !degradedReason && !error && (

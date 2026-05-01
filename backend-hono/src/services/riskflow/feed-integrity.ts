@@ -35,7 +35,9 @@ function hostMatches(host: string, blocked: string): boolean {
   return host === blocked || host.endsWith("." + blocked);
 }
 
-export function checkReadTimeIntegrity(item: IntegrityHostCheck): IntegrityBlockResult {
+export function checkReadTimeIntegrity(
+  item: IntegrityHostCheck,
+): IntegrityBlockResult {
   const host = extractHost(item.url);
   if (!host) return { blocked: false, reason: null, blockedHost: null };
 

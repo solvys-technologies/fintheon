@@ -14,7 +14,10 @@ interface VerdictCardProps {
 
 function cleanDigestText(text: string): string {
   return text
-    .replace(/\s*,?\s*conf\s+\d+(?:\.\d+)?%?(?:\s*(?:\/|out of)\s*\d+(?:\.\d+)?%?)?/gi, "")
+    .replace(
+      /\s*,?\s*conf\s+\d+(?:\.\d+)?%?(?:\s*(?:\/|out of)\s*\d+(?:\.\d+)?%?)?/gi,
+      "",
+    )
     .replace(/\s{2,}/g, " ")
     .trim();
 }

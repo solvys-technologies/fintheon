@@ -8,7 +8,11 @@
 // Commentary (60s): X/Twitter commentary handles via browser-harness.
 // Standard (5m): COT, FOMC Minutes, Fed Speeches, Macro X handles, Kalshi whale alerts.
 
-import { runBreakingTier, runStandardTier, runCommentaryTier } from "./sources/index.js";
+import {
+  runBreakingTier,
+  runStandardTier,
+  runCommentaryTier,
+} from "./sources/index.js";
 import { upsertHeartbeat } from "./persist.js";
 import { NEWS_WORKER_CONTRACT } from "./contract.js";
 
@@ -60,7 +64,9 @@ const state: Record<"breaking" | "standard" | "commentary", TierState> = {
   },
 };
 
-async function runTier(tier: "breaking" | "standard" | "commentary"): Promise<void> {
+async function runTier(
+  tier: "breaking" | "standard" | "commentary",
+): Promise<void> {
   const s = state[tier];
   if (s.running) return;
   s.running = true;
@@ -69,9 +75,11 @@ async function runTier(tier: "breaking" | "standard" | "commentary"): Promise<vo
   let errors = 0;
   try {
     const result =
-      tier === "breaking" ? await runBreakingTier()
-      : tier === "commentary" ? await runCommentaryTier()
-      : await runStandardTier();
+      tier === "breaking"
+        ? await runBreakingTier()
+        : tier === "commentary"
+          ? await runCommentaryTier()
+          : await runStandardTier();
     ingested = result.ingested;
     errors = result.errors;
   } catch (err) {
@@ -115,7 +123,8 @@ async function runTier(tier: "breaking" | "standard" | "commentary"): Promise<vo
 }
 
 export function startScheduler(): void {
-  if (state.breaking.timer || state.standard.timer || state.commentary.timer) return;
+  if (state.breaking.timer || state.standard.timer || state.commentary.timer)
+    return;
 
   // Stagger first runs so tiers don't fire on the same tick.
   setTimeout(() => void runTier("breaking"), 1_000);

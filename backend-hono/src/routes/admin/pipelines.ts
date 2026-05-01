@@ -12,28 +12,29 @@ import type { PipelineState } from "../../types/pipeline.js";
 
 const app = new Hono();
 
-const PIPELINE_LABELS: Record<string, { label: string; description: string }> = {
-  "x-browser-session": {
-    label: "X Browser Session",
-    description: "Persistent browser-harness session for approved X accounts",
-  },
-  "x-syndication": {
-    label: "X Syndication",
-    description: "Public X syndication fallback for approved X accounts",
-  },
-  "browser-harness": {
-    label: "Browser Harness",
-    description: "Direct browser-based content extraction",
-  },
-  "economic-calendar": {
-    label: "Economic Calendar",
-    description: "Economic event data from TradingView calendar",
-  },
-  "kalshi-whale": {
-    label: "Kalshi Whale",
-    description: "Large-position tracking from Kalshi markets",
-  },
-};
+const PIPELINE_LABELS: Record<string, { label: string; description: string }> =
+  {
+    "x-browser-session": {
+      label: "X Browser Session",
+      description: "Persistent browser-harness session for approved X accounts",
+    },
+    "x-syndication": {
+      label: "X Syndication",
+      description: "Public X syndication fallback for approved X accounts",
+    },
+    "browser-harness": {
+      label: "Browser Harness",
+      description: "Direct browser-based content extraction",
+    },
+    "economic-calendar": {
+      label: "Economic Calendar",
+      description: "Economic event data from TradingView calendar",
+    },
+    "kalshi-whale": {
+      label: "Kalshi Whale",
+      description: "Large-position tracking from Kalshi markets",
+    },
+  };
 
 // GET /api/admin/pipelines
 app.get("/", async (c) => {

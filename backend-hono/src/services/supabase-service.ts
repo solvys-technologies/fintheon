@@ -10,7 +10,10 @@ import { getSupabaseClient, isSupabaseConfigured } from "../config/supabase.js";
 import { sql as dbSql, isDatabaseAvailable } from "../config/database.js";
 import { filterBlockedPublishers } from "./riskflow/publisher-blocklist.js";
 import { checkSourcePolicy } from "./riskflow/source-policy.js";
-import { recordIngestAttempt, recordLeakEvent } from "./riskflow/ingest-ledger.js";
+import {
+  recordIngestAttempt,
+  recordLeakEvent,
+} from "./riskflow/ingest-ledger.js";
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -135,13 +138,15 @@ export async function writeRawItems(items: RawRiskFlowItem[]): Promise<number> {
         reason: verdict.reason,
         headlinePreview: item.headline?.slice(0, 80),
       });
-      recordLeakEvent(`${verdict.decision}: ${source} — ${item.headline?.slice(0, 60) ?? "(no headline)"}`);
+      recordLeakEvent(
+        `${verdict.decision}: ${source} — ${item.headline?.slice(0, 60) ?? "(no headline)"}`,
+      );
     }
   }
   if (policyPassed.length < items.length) {
     console.log(
       `[SourcePolicy] blocked ${items.length - policyPassed.length}/${items.length} item(s) — ` +
-      `sources not in allowlist`,
+        `sources not in allowlist`,
     );
   }
   items = policyPassed;
@@ -937,8 +942,7 @@ export async function readEconEvents(dateRange?: {
   const sb = getSupabaseClient();
   if (!sb) return [];
 
-  const ranged =
-    Boolean(dateRange?.from) && Boolean(dateRange?.to);
+  const ranged = Boolean(dateRange?.from) && Boolean(dateRange?.to);
   let query = sb
     .from("economic_events")
     .select("*")

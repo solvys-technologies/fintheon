@@ -76,92 +76,92 @@ export function ExpandableTapeItem({
       expandedContent={
         <>
           {isTradeIdea ? (
-          <div className="px-4 pb-3 border-t border-zinc-800/40">
-            {/* Trade Idea detail */}
-            {alert.tradeIdea && (
-              <div className="mt-2 space-y-2">
-                <div className="grid grid-cols-3 gap-2 text-[10px]">
-                  {alert.tradeIdea.entry != null && (
-                    <div>
-                      <span className="text-gray-600 uppercase tracking-wider">
-                        Entry
-                      </span>
-                      <div className="mt-0.5 text-gray-300">
-                        ${alert.tradeIdea.entry}
+            <div className="px-4 pb-3 border-t border-zinc-800/40">
+              {/* Trade Idea detail */}
+              {alert.tradeIdea && (
+                <div className="mt-2 space-y-2">
+                  <div className="grid grid-cols-3 gap-2 text-[10px]">
+                    {alert.tradeIdea.entry != null && (
+                      <div>
+                        <span className="text-gray-600 uppercase tracking-wider">
+                          Entry
+                        </span>
+                        <div className="mt-0.5 text-gray-300">
+                          ${alert.tradeIdea.entry}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {alert.tradeIdea.stopLoss != null && (
-                    <div>
-                      <span className="text-gray-600 uppercase tracking-wider">
-                        Stop
-                      </span>
-                      <div
-                        className="mt-0.5"
-                        style={{
-                          color:
-                            "color-mix(in srgb, var(--fintheon-bearish) 80%, transparent)",
-                        }}
-                      >
-                        ${alert.tradeIdea.stopLoss}
+                    )}
+                    {alert.tradeIdea.stopLoss != null && (
+                      <div>
+                        <span className="text-gray-600 uppercase tracking-wider">
+                          Stop
+                        </span>
+                        <div
+                          className="mt-0.5"
+                          style={{
+                            color:
+                              "color-mix(in srgb, var(--fintheon-bearish) 80%, transparent)",
+                          }}
+                        >
+                          ${alert.tradeIdea.stopLoss}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {alert.tradeIdea.takeProfit != null && (
-                    <div>
-                      <span className="text-gray-600 uppercase tracking-wider">
-                        Target
-                      </span>
-                      <div
-                        className="mt-0.5"
-                        style={{
-                          color:
-                            "color-mix(in srgb, var(--fintheon-bullish) 80%, transparent)",
-                        }}
-                      >
-                        ${alert.tradeIdea.takeProfit}
+                    )}
+                    {alert.tradeIdea.takeProfit != null && (
+                      <div>
+                        <span className="text-gray-600 uppercase tracking-wider">
+                          Target
+                        </span>
+                        <div
+                          className="mt-0.5"
+                          style={{
+                            color:
+                              "color-mix(in srgb, var(--fintheon-bullish) 80%, transparent)",
+                          }}
+                        >
+                          ${alert.tradeIdea.takeProfit}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-                {alert.tradeIdea.riskRewardRatio != null && (
-                  <div className="text-[10px] text-zinc-500">
-                    R/R {alert.tradeIdea.riskRewardRatio.toFixed(1)}:1
-                    {alert.tradeIdea.confidence &&
-                      ` · ${alert.tradeIdea.confidence}% confidence`}
+                    )}
                   </div>
-                )}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenIdea(alert.tradeIdea!);
-                  }}
-                  className="mt-1 text-[10px] text-[var(--fintheon-accent)] hover:text-[#dbb85c] transition-colors uppercase tracking-wider"
-                >
-                  View Full Proposal →
-                </button>
-              </div>
-            )}
-          </div>
+                  {alert.tradeIdea.riskRewardRatio != null && (
+                    <div className="text-[10px] text-zinc-500">
+                      R/R {alert.tradeIdea.riskRewardRatio.toFixed(1)}:1
+                      {alert.tradeIdea.confidence &&
+                        ` · ${alert.tradeIdea.confidence}% confidence`}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenIdea(alert.tradeIdea!);
+                    }}
+                    className="mt-1 text-[10px] text-[var(--fintheon-accent)] hover:text-[#dbb85c] transition-colors uppercase tracking-wider"
+                  >
+                    View Full Proposal →
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <RiskFlowPostCard alert={alert} surface="mini" />
           )}
-            <div className="flex items-center justify-end border-t border-zinc-800/35 px-3 py-2">
-              {onNavigateToFeed && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onNavigateToFeed();
-                  }}
-                  className="text-[10px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors flex items-center gap-1"
-                >
-                  View in RiskFlow
-                  <ChevronRight className="w-3 h-3" />
-                </button>
-              )}
-            </div>
+          <div className="flex items-center justify-end border-t border-zinc-800/35 px-3 py-2">
+            {onNavigateToFeed && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigateToFeed();
+                }}
+                className="text-[10px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors flex items-center gap-1"
+              >
+                View in RiskFlow
+                <ChevronRight className="w-3 h-3" />
+              </button>
+            )}
+          </div>
         </>
       }
     />

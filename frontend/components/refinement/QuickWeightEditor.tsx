@@ -164,7 +164,10 @@ function NothingWeightSlider({
       if (!track) return;
       const rect = track.getBoundingClientRect();
       if (rect.width <= 0) return;
-      const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const ratio = Math.max(
+        0,
+        Math.min(1, (clientX - rect.left) / rect.width),
+      );
       const next = Math.round(ratio * 10 * 10) / 10;
       onChange(next);
     },

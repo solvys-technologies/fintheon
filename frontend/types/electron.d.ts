@@ -44,8 +44,16 @@ export interface ElectronAPI {
 
   // SOTA desktop updater (manual check + manual download handoff)
   checkForUpdate: () => Promise<DesktopUpdateStatus>;
-  downloadUpdate: () => Promise<{ ok: boolean; opened?: boolean; downloadUrl?: string }>;
-  installUpdate: () => Promise<{ ok: boolean; opened?: boolean; downloadUrl?: string }>;
+  downloadUpdate: () => Promise<{
+    ok: boolean;
+    opened?: boolean;
+    downloadUrl?: string;
+  }>;
+  installUpdate: () => Promise<{
+    ok: boolean;
+    opened?: boolean;
+    downloadUrl?: string;
+  }>;
   deferUpdateUntilClose: () => Promise<{ ok: boolean; deferred?: boolean }>;
 
   // [claude-code 2026-03-24] Auth — deep link callback + system browser open

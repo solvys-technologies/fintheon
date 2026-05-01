@@ -93,7 +93,9 @@ function StatBlock({
     <div
       style={{
         ...STAT_BLOCK_BASE,
-        borderColor: warning ? "rgba(239, 68, 68, 0.30)" : "rgba(199, 159, 74, 0.14)",
+        borderColor: warning
+          ? "rgba(239, 68, 68, 0.30)"
+          : "rgba(199, 159, 74, 0.14)",
       }}
     >
       <span style={STAT_LABEL}>{label}</span>
@@ -111,7 +113,8 @@ function StatBlock({
 }
 
 export function SourcePolicyPanel() {
-  const { leak_sentinel, continuity, allowlist, loading, refetch } = useIngestActivity();
+  const { leak_sentinel, continuity, allowlist, loading, refetch } =
+    useIngestActivity();
 
   useEffect(() => {
     void refetch();
@@ -119,9 +122,22 @@ export function SourcePolicyPanel() {
 
   return (
     <div style={CONTAINER}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 4,
+        }}
+      >
         <div style={HEADER}>Source Policy</div>
-        <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--fintheon-muted)" }}>
+        <span
+          style={{
+            fontSize: 9,
+            fontFamily: "var(--font-mono)",
+            color: "var(--fintheon-muted)",
+          }}
+        >
           {loading ? "[LOADING]" : "[LIVE]"}
         </span>
       </div>
@@ -179,7 +195,8 @@ export function SourcePolicyPanel() {
         )}
         {continuity.commentary_stalled && (
           <div style={{ ...STATUS_LINE, color: "#ef4444" }}>
-            Commentary stalled — last: {continuity.last_commentary_ingest_at ?? "never"}
+            Commentary stalled — last:{" "}
+            {continuity.last_commentary_ingest_at ?? "never"}
           </div>
         )}
       </div>
@@ -187,7 +204,8 @@ export function SourcePolicyPanel() {
       {/* Allowlist */}
       <div>
         <div style={SECTION_LABEL}>
-          Allowlist ({allowlist?.handles.length ?? 0}h + {allowlist?.domains.length ?? 0}d)
+          Allowlist ({allowlist?.handles.length ?? 0}h +{" "}
+          {allowlist?.domains.length ?? 0}d)
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
           {(allowlist?.handles ?? []).map((h) => (

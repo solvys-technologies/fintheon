@@ -42,7 +42,10 @@ function deriveBeatMiss(
   const diff = Math.abs(ed.actual - ed.forecast);
   const threshold = Math.abs(ed.forecast) * 0.005; // 0.5% tolerance
   if (diff <= threshold) {
-    return { label: "IN LINE", color: econBeatMissPresentation("inline").color };
+    return {
+      label: "IN LINE",
+      color: econBeatMissPresentation("inline").color,
+    };
   }
   const status = ed.actual > ed.forecast ? "beat" : "miss";
   const { color } = econBeatMissPresentation(status);
@@ -120,7 +123,10 @@ export function DetailFooter({ alert }: DetailFooterProps) {
           {deviation && (
             <span className="text-zinc-500">
               Deviation:{" "}
-              <span className="font-semibold" style={{ color: deviation.color }}>
+              <span
+                className="font-semibold"
+                style={{ color: deviation.color }}
+              >
                 {deviation.text}
               </span>
             </span>
