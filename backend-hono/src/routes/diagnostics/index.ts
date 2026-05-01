@@ -64,7 +64,7 @@ import { getTranscriptStats24h } from "../../services/commentary-transcript.js";
 
 const log = createLogger("Diagnostics");
 
-type ServiceStatus = "ok" | "error" | "degraded" | "unavailable";
+type ServiceStatus = "ok" | "error" | "degraded" | "unavailable" | "unknown";
 
 interface ServiceDiagnostic {
   name: string;
@@ -126,6 +126,7 @@ interface DiagnosticsResponse {
     vix_last_success: boolean;
     vix_last_latency_ms: number | null;
     recent_symbols: string[];
+    recent_quote_attempts: Array<{ symbol: string; attempts: RouterAttempt[] }>;
   };
   riskflow_sources?: {
     window: string;
@@ -357,11 +358,90 @@ function checkSupabaseAuth(): ServiceDiagnostic {
   };
 }
 
-function checkTradingView(): ServiceDiagnostic {
+function formatAge(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return "just now";
+  const hours = Math.floor(ms / 3_600_000);
+  if (hours >= 1) return `${hours}h ago`;
+  return `${Math.max(1, Math.floor(ms / 60_000))}m ago`;
+}
+
+function checkTradingViewEconCalendar(
+  diag: DiagnosticsResponse["desk_calendar"],
+): ServiceDiagnostic {
+  if (!diag || diag.queue_count == null) {
+    return {
+      name: "TradingView Econ Calendar",
+      status: "unknown",
+      detail: "Calendar diagnostics unavailable",
+    };
+  }
+  if (diag.latest_error) {
+    return {
+      name: "TradingView Econ Calendar",
+      status: "degraded",
+      detail: diag.latest_error,
+    };
+  }
+  if (diag.queue_count <= 0) {
+    return {
+      name: "TradingView Econ Calendar",
+      status: "degraded",
+      detail: "No TradingView calendar events queued",
+    };
+  }
+  if (!diag.last_ingest_at) {
+    return {
+      name: "TradingView Econ Calendar",
+      status: "ok",
+      detail: `${diag.queue_count} upcoming events queued`,
+    };
+  }
+  const ageMs = Date.now() - new Date(diag.last_ingest_at).getTime();
+  if (ageMs > 36 * 3_600_000) {
+    return {
+      name: "TradingView Econ Calendar",
+      status: "degraded",
+      detail: `${diag.queue_count} queued; last ingest ${formatAge(diag.last_ingest_at)}`,
+    };
+  }
   return {
-    name: "TradingView",
+    name: "TradingView Econ Calendar",
     status: "ok",
-    detail: "Frontend widget — check browser console for load errors",
+    detail: `${diag.queue_count} queued; last ingest ${formatAge(diag.last_ingest_at)}`,
+  };
+}
+
+function checkTradingViewQuotes(routerHealth: {
+  vix_attempts: RouterAttempt[];
+  recent_quote_attempts: Array<{ symbol: string; attempts: RouterAttempt[] }>;
+}): ServiceDiagnostic {
+  const attempts = [
+    ...routerHealth.recent_quote_attempts.flatMap((row) => row.attempts),
+    ...routerHealth.vix_attempts,
+  ].filter((attempt) => attempt.source === "tradingview");
+  const latest = attempts[attempts.length - 1];
+
+  if (!latest) {
+    return {
+      name: "TradingView Quotes",
+      status: "unknown",
+      detail: "No TradingView quote checks recorded yet",
+    };
+  }
+  if (!latest.success) {
+    return {
+      name: "TradingView Quotes",
+      status: "degraded",
+      detail: latest.error
+        ? `TradingView scanner failed: ${latest.error}`
+        : "TradingView scanner returned no quote data",
+    };
+  }
+  return {
+    name: "TradingView Quotes",
+    status: "ok",
+    detail: `TradingView scanner quote healthy (${latest.latencyMs}ms)`,
   };
 }
 
@@ -646,7 +726,7 @@ export function createDiagnosticsRoutes(): Hono {
     const start = Date.now();
 
     const [
-      services,
+      coreServices,
       browserStats,
       newsWorker,
       econBackfill,
@@ -673,14 +753,6 @@ export function createDiagnosticsRoutes(): Hono {
     ]);
 
     const missingEnvVars = auditEnvVars();
-
-    const hasError = services.some((s) => s.status === "error");
-    const hasDegraded = services.some((s) => s.status === "degraded");
-    const overall: ServiceStatus = hasError
-      ? "error"
-      : hasDegraded
-        ? "degraded"
-        : "ok";
 
     const [routing, gepa, riskflowRuntime] = await Promise.all([
       loadRoutingSnapshot(),
@@ -724,6 +796,18 @@ export function createDiagnosticsRoutes(): Hono {
     const vixAttempts = getLastVixAttempts();
     const vixAttempt = vixAttempts[vixAttempts.length - 1];
     const routerHealth = getRouterHealthSnapshot();
+    const services = [
+      ...coreServices,
+      checkTradingViewEconCalendar(deskCalendarDiag),
+      checkTradingViewQuotes(routerHealth),
+    ];
+    const hasError = services.some((s) => s.status === "error");
+    const hasDegraded = services.some((s) => s.status === "degraded");
+    const overall: ServiceStatus = hasError
+      ? "error"
+      : hasDegraded
+        ? "degraded"
+        : "ok";
 
     const response: DiagnosticsResponse & {
       routing?: unknown;
@@ -745,6 +829,7 @@ export function createDiagnosticsRoutes(): Hono {
         vix_last_success: vixAttempt?.success ?? false,
         vix_last_latency_ms: vixAttempt?.latencyMs ?? null,
         recent_symbols: routerHealth.recent_symbols,
+        recent_quote_attempts: routerHealth.recent_quote_attempts,
       },
       riskflow_sources: riskflowSources,
       voice_stt: (() => {

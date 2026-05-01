@@ -465,9 +465,15 @@ export function getLastFallbackSource(symbol: string): string | null {
 export function getRouterHealthSnapshot(): {
   vix_attempts: RouterAttempt[];
   recent_symbols: string[];
+  recent_quote_attempts: Array<{ symbol: string; attempts: RouterAttempt[] }>;
 } {
+  const recentSymbols = Array.from(state.lastQuoteAttempts.keys()).slice(-10);
   return {
     vix_attempts: getLastVixAttempts(),
-    recent_symbols: Array.from(state.lastQuoteAttempts.keys()).slice(-10),
+    recent_symbols: recentSymbols,
+    recent_quote_attempts: recentSymbols.map((symbol) => ({
+      symbol,
+      attempts: getLastQuoteAttempts(symbol),
+    })),
   };
 }

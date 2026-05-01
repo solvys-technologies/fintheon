@@ -53,6 +53,8 @@ const KEY_MAP: Record<string, string> = {
   Supabase: "database",
   "X Feed": "x-feed",
   "Supabase Auth": "auth",
+  "TradingView Econ Calendar": "econ",
+  "TradingView Quotes": "quotes",
 };
 
 const SHORT_NAMES: Record<string, string> = {
@@ -60,6 +62,8 @@ const SHORT_NAMES: Record<string, string> = {
   Supabase: "Database",
   "X Feed": "X",
   "Supabase Auth": "Auth",
+  "TradingView Econ Calendar": "econ",
+  "TradingView Quotes": "quotes",
 };
 
 function normalizeStatus(s: string): StatusLevel {

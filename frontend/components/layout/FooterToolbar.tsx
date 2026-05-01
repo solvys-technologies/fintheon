@@ -26,7 +26,6 @@ import { ErrorLogPanel } from "../ui/ErrorLogPanel";
 import { StatusIndicator } from "../ui/StatusIndicator";
 import { TeamPanel } from "../team/TeamPanel";
 import { HarperOpsPanel } from "../harper-ops/HarperOpsPanel";
-import { useEconWatchHealth } from "../../hooks/useEconWatchHealth";
 import { Users, Bot } from "lucide-react";
 
 type PanelTab = "terminal" | "changelog" | "errors" | "team" | "harper-ops";
@@ -152,7 +151,6 @@ export function FooterToolbar({
   } | null>(null);
 
   const { fetchStatus, refreshing } = useRiskFlow();
-  const { state: econWatchState, events: econWatchEvents } = useEconWatchHealth();
 
   // Listen for update-installing event from VersionChecker
   const [updateInstalling, setUpdateInstalling] = useState(false);
@@ -798,44 +796,6 @@ export function FooterToolbar({
         >
           <Bot className="w-3 h-3" />
         </button>
-
-        <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
-
-        {/* [claude-code 2026-04-30] S55: Econ Status indicator moved from TopHeader */}
-        <div
-          className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded px-2 h-5 flex items-center flex-shrink-0"
-          title={
-            econWatchState === "healthy"
-              ? `${econWatchEvents.length} econ event(s) on watch`
-              : econWatchState === "pipeline-degraded"
-                ? "Econ pipeline degraded — check diagnostics"
-                : econWatchState === "backend-down"
-                  ? "Econ watch offline — backend unreachable"
-                  : econWatchState === "idle"
-                    ? "Econ watch idle — no events in window"
-                    : "Econ watch initializing..."
-          }
-        >
-          <div className="flex items-center gap-1">
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${
-                econWatchState === "healthy"
-                  ? "bg-emerald-400 animate-pulse"
-                  : econWatchState === "pipeline-degraded"
-                    ? "bg-amber-400"
-                    : econWatchState === "backend-down"
-                      ? "bg-red-400"
-                      : "bg-zinc-600"
-              }`}
-            />
-            <span className="text-[8px] text-zinc-500 tracking-[0.1em] uppercase">Econ</span>
-            {econWatchState === "healthy" && econWatchEvents.length > 0 && (
-              <span className="text-[8px] font-mono text-emerald-400/70 tabular-nums">
-                {econWatchEvents.length}
-              </span>
-            )}
-          </div>
-        </div>
 
         <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
 
