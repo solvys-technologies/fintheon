@@ -863,7 +863,11 @@ function MainLayoutInner() {
           {/* S14-T6: Peers panel removed — team status is now in footer Team tab */}
 
           <div className="flex-1 flex overflow-hidden relative">
-            <div className="relative">
+            <div
+              className={
+                topStepXEnabled ? "hidden" : "relative z-0 shrink-0 w-11"
+              }
+            >
               <NavSidebar
                 activeTab={activeTab}
                 onTabChange={(tab) => {
@@ -892,7 +896,7 @@ function MainLayoutInner() {
             {leftPanels.length > 0 && <div className="flex">{leftPanels}</div>}
 
             {/* Center Content - TopStepX or Main Content with crossfade */}
-            <div className="flex-1 overflow-hidden relative min-w-0 flex flex-col rounded-2xl border border-[var(--fintheon-accent)]/15 bg-[rgba(10,9,5,0.38)] backdrop-blur-[14px] shadow-[0_0_40px_-12px_rgba(0,0,0,0.6)]">
+            <div className="z-10 flex-1 overflow-hidden relative min-w-0 flex flex-col rounded-l-2xl rounded-r-none border-y border-l border-r-0 border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] shadow-[0_0_40px_-12px_rgba(0,0,0,0.6)]">
               {/* Timeline overlay — slides over browser, does not affect iframe sizing */}
               <TimelineOverlay
                 open={timelineOverlayOpen}

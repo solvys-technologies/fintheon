@@ -37,6 +37,7 @@ import { RiskSignalCards } from "./RiskSignalCards";
 import { useIVScoreData } from "./useIVScoreData";
 // [claude-code 2026-04-24] S35-T3: swap AgentDeskDebatePanel -> ArbitrumChamber
 import { ArbitrumChamber } from "../arbitrum/ArbitrumChamber";
+import { ArbitrumRiskSignals } from "../arbitrum/ArbitrumRiskSignals";
 
 interface CatalystInput {
   id: string;
@@ -238,7 +239,7 @@ export function Sanctum({
               ) : (
                 <div className="flex-1 flex flex-col gap-4">
                   {/* Brief-pattern top container — Volatility Read + Arbitrum Chamber 50/50, ruler divides */}
-                  <div className="min-h-[520px] flex">
+                  <div className="h-[520px] min-h-[520px] flex">
                     <div className="flex-1 flex overflow-hidden mx-1 my-1">
                       {/* Left: Volatility Read — Blended IV + Next Session Forecast (50%) */}
                       <div className="flex-1 min-w-0 overflow-y-auto p-4 flex flex-col gap-3">
@@ -262,24 +263,28 @@ export function Sanctum({
                       {/* Vertical ruler between Volatility Read and Deliberation */}
                       <div className="w-px shrink-0 bg-[var(--fintheon-accent)]/10" />
 
-                      {/* Right: Arbitrum Chamber (50%) */}
-                      <div className="flex-1 min-w-0 min-h-0 flex flex-col p-4 overflow-y-auto">
-                        <ArbitrumChamber
-                          simulationId={data?.simulationId ?? null}
-                          onSynthesisComplete={onSynthesisComplete}
-                        />
+                      {/* Right: Arbitrum Chamber + Risk Signals (50%) */}
+                      <div className="flex-1 min-w-0 min-h-0 p-4 grid grid-rows-2 gap-3 overflow-hidden">
+                        <div className="min-h-0 overflow-y-auto">
+                          <ArbitrumChamber
+                            simulationId={data?.simulationId ?? null}
+                            onSynthesisComplete={onSynthesisComplete}
+                          />
+                        </div>
+                        <div className="min-h-0 overflow-y-auto">
+                          <div className="px-1 pb-2">
+                            <span
+                              className="text-[10px] tracking-[0.22em] uppercase text-[var(--fintheon-accent)]/85"
+                              style={{ fontFamily: "var(--font-heading)" }}
+                            >
+                              Arbitrum Risk Signals
+                            </span>
+                          </div>
+                          <ArbitrumRiskSignals />
+                        </div>
                       </div>
                     </div>
                   </div>
-
-                  {/* Briefing */}
-                  {data && data.compositeIV > 0 && (
-                    <SanctumBriefing
-                      briefing={data.briefing ?? null}
-                      isLoading={false}
-                      noBorder
-                    />
-                  )}
 
                   {/* Instrument Fuses — single fused row, /NQ /ES /YM /CL /GC with fading rulers */}
                   <div className="flex justify-center">

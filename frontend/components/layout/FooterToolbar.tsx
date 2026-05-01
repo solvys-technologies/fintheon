@@ -540,12 +540,6 @@ export function FooterToolbar({
 
   return (
     <div className="relative flex-shrink-0 bg-[var(--fintheon-bg)]">
-      {/* /solvys-ui-details: trim the top divider so it starts at the main surface,
-          not underneath the sidebar rail. NavSidebar keeps this var in sync. */}
-      <div
-        className="pointer-events-none absolute top-0 right-0 h-px bg-[var(--fintheon-accent)]/12"
-        style={{ left: "var(--fintheon-sidebar-width, 0px)" }}
-      />
       {/* Slide-up panel */}
       <div
         className="overflow-hidden transition-all duration-300 ease-in-out"

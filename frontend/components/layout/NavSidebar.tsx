@@ -127,7 +127,7 @@ export function NavSidebar({
   const [order, setOrder] = useState<NavTabId[]>(() => getSidebarOrder());
 
   const expanded = hovered || manualExpand;
-  const sidebarWidthPx = topStepXEnabled ? 0 : expanded ? 192 : 44;
+  const sidebarWidthPx = topStepXEnabled ? 0 : 44;
 
   const handleMouseEnter = useCallback(() => {
     hoverTimerRef.current = setTimeout(() => setHovered(true), 3000);
@@ -174,8 +174,7 @@ export function NavSidebar({
     onOverlayVisibilityChange?.(topStepXEnabled && expanded);
   }, [onOverlayVisibilityChange, topStepXEnabled, expanded]);
 
-  // /solvys-ui-details: keep the runtime sidebar width in a CSS var so sibling
-  // surfaces (footer border trim) can align with the rail in both collapsed and expanded states.
+  // Keep sibling surfaces aligned to the physical rail footprint; expansion now layers under main content.
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--fintheon-sidebar-width",
@@ -235,7 +234,7 @@ export function NavSidebar({
   const sidebarContent = (
     <div
       style={{ backgroundColor: "var(--fintheon-surface)" }}
-      className={`h-full border-r-0 flex flex-col py-3 transition-all duration-200 ease-out rounded-r-xl ${
+      className={`absolute inset-y-0 left-0 z-0 h-full border-r-0 flex flex-col py-3 transition-all duration-200 ease-out ${
         expanded ? "w-48" : "w-11"
       }`}
       onMouseEnter={handleMouseEnter}

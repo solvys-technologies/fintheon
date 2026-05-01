@@ -7,6 +7,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Diff, TrendingDown, Minus } from "lucide-react";
 import { FishSwimmer } from "../icon-bank/UnicodeSpinners";
+import { NothingFuse } from "../shared/NothingFuse";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -37,17 +38,15 @@ const CONVICTION_COLOR: Record<string, string> = {
   elevated: "var(--fintheon-bearish)",
 };
 
-// [claude-code 2026-04-25] S38: Heat bar bumped 3px → 5px so the gauge reads at a glance
 function IVHeatBar({ score }: { score: number }) {
-  const pct = Math.min(100, (score / 10) * 100);
   const hue = score >= 7 ? 0 : score >= 5 ? 30 : score >= 3 ? 45 : 120;
   return (
-    <div className="w-full h-[5px] rounded-full bg-[var(--fintheon-border)]/10 overflow-hidden">
-      <div
-        className="h-full rounded-full transition-all"
-        style={{ width: `${pct}%`, backgroundColor: `hsl(${hue}, 70%, 50%)` }}
-      />
-    </div>
+    <NothingFuse
+      value={Math.max(0, Math.min(1, score / 10))}
+      color={`hsl(${hue}, 70%, 50%)`}
+      thickness={5}
+      segments={10}
+    />
   );
 }
 

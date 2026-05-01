@@ -1,6 +1,6 @@
 // [claude-code 2026-04-19] S25-T7: Ops chips in the Sanctum header — Aquarium last-run timer + next-brief countdown. Polls GET /api/ops/schedule-status every 60s. Countdown is replaced with an ERROR badge when the brief's status is "stale" or "failed" (missed its cadence window), matching the spec's 'error handling replacing the countdown if the brief fails to generate'.
 import { useEffect, useState } from "react";
-import { AlertTriangle, Clock, Activity } from "lucide-react";
+import { AlertTriangle, Clock } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const POLL_MS = 60_000;
@@ -26,16 +26,6 @@ interface ScheduleStatus {
   schedulerActive: boolean;
   agentDesk: AgentDeskStatus;
   briefs: BriefStatus[];
-}
-
-function formatAgo(minutes: number | null): string {
-  if (minutes == null) return "—";
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  return `${days}d`;
 }
 
 function formatCountdown(minutes: number | null): string {
@@ -97,50 +87,11 @@ export function SanctumOpsChips() {
 
   if (!status) return null;
 
-  const agentDeskColor =
-    status.agentDesk.status === "stale"
-      ? "var(--fintheon-neutral-severe)"
-      : status.agentDesk.status === "ok"
-        ? "var(--fintheon-low)"
-        : "var(--fintheon-muted)";
-
   const failing = failingBrief(status.briefs);
   const upcoming = nextBrief(status.briefs);
 
   return (
     <div className="flex items-center gap-2">
-      {/* Aquarium last-run chip */}
-      <div
-        className="flex items-center gap-1 px-2 py-0.5 rounded border border-[var(--fintheon-border)]/15 text-[9px]"
-        title={
-          status.agentDesk.lastRunAt
-            ? `Aquarium last ran ${new Date(status.agentDesk.lastRunAt).toLocaleString()}`
-            : "Aquarium has not run yet"
-        }
-      >
-        <Activity
-          size={10}
-          style={{ color: agentDeskColor }}
-          className={status.agentDesk.status === "ok" ? "animate-pulse" : ""}
-        />
-        <span
-          className="tracking-[0.18em] uppercase text-[var(--fintheon-muted)]/60"
-          style={{ fontFamily: "var(--font-heading)" }}
-        >
-          Aquarium
-        </span>
-        <span
-          className="font-bold"
-          style={{
-            color: agentDeskColor,
-            fontFamily: "Doto, ui-monospace, monospace",
-            letterSpacing: "0.02em",
-          }}
-        >
-          {formatAgo(status.agentDesk.ageMinutes)}
-        </span>
-      </div>
-
       {/* Brief chip — countdown OR error */}
       {failing ? (
         <div
@@ -155,7 +106,7 @@ export function SanctumOpsChips() {
               fontFamily: "var(--font-heading)",
             }}
           >
-            {failing.type}
+            Next Run
           </span>
           <span
             className="font-bold"
@@ -182,7 +133,7 @@ export function SanctumOpsChips() {
             className="tracking-[0.18em] uppercase text-[var(--fintheon-muted)]/60"
             style={{ fontFamily: "var(--font-heading)" }}
           >
-            Next {upcoming.type}
+            Next Run
           </span>
           <span
             className="font-bold"
