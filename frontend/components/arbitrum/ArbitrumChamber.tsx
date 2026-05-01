@@ -132,7 +132,7 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
     : "";
 
   return (
-    <div className="flex flex-col min-h-0 min-w-0 gap-3">
+    <div className="relative flex flex-col min-h-0 min-w-0 gap-3">
       {/* Round indicator + question metadata */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-3">
@@ -147,9 +147,19 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
               Round {roundsComplete} of {roundsTotal}
             </span>
           </div>
-          <span className="text-[9px] uppercase tracking-wider text-[var(--fintheon-text)]/35">
-            {phase}
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSettingsOpen((v) => !v)}
+              className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 transition-colors"
+              aria-label="Chamber settings"
+              title="Chamber Settings"
+            >
+              <Settings className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] transition-colors" />
+            </button>
+            <span className="text-[9px] uppercase tracking-wider text-[var(--fintheon-text)]/35">
+              {phase}
+            </span>
+          </div>
         </div>
         {verdict?.question && (
           <div className="flex items-center gap-2 text-[10px]">
@@ -221,6 +231,11 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
             EMPTY_COPY
           )}
         </div>
+      )}
+
+      {/* Settings panel overlay — scoped to chamber container */}
+      {settingsOpen && (
+        <ArbitrumSettingsPanel onClose={() => setSettingsOpen(false)} />
       )}
     </div>
   );

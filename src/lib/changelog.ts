@@ -9,6 +9,34 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-01T01:30:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S56: Arbitrum settings + Sanctum restructure + Dashboard signals + mobile main-menu drawer. Added arbitrum_seat_overrides migration + health/GET + overrides/GET+PUT endpoints. Seat prompts now append loaded overrides at deliberation time. Frontend settings panel (gear icon → DevPasswordGate → health chevrons → per-seat textareas/checkboxes/dropdown + save/reset). Sanctum bottom-right slot swapped from RiskSignals to SanctumBriefing; BlendedIVForecastCard restructured (forecast on top, scenarios in one row, IV below, regime bips dropped); AquariumPredictionCards ripped (Heat label removed, conviction→MARKET HEAT, Drivers+footer dropped). Dashboard right rail now mounts collapsible Chamber Risk Signals beneath DayCard. Mobile bottom-up HamburgerMenu deleted; new MainMenuDrawer (Twitter-style left drawer, ~80vw, content slides right, hamburger↔back-arrow cross-fade). Fixed RiskFlow card click-to-expand (onClick moved outside SwipeAction drag handler).",
+    files: [
+      "supabase/migrations/20260501000000_arbitrum_seat_overrides.sql",
+      "backend-hono/src/services/arbitrum/types.ts",
+      "backend-hono/src/services/arbitrum/seats.ts",
+      "backend-hono/src/services/arbitrum/index.ts",
+      "backend-hono/src/routes/arbitrum/index.ts",
+      "backend-hono/src/routes/index.ts",
+      "frontend/components/arbitrum/types.ts",
+      "frontend/components/arbitrum/ArbitrumSettingsPanel.tsx",
+      "frontend/components/arbitrum/ArbitrumChamber.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+      "frontend/components/narrative/BlendedIVForecastCard.tsx",
+      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "frontend/components/executive/MainDashboard.tsx",
+      "frontend/hooks/useArbitrumHealth.ts",
+      "frontend/hooks/useArbitrumSeatOverrides.ts",
+      "mobile/components/layout/MainMenuDrawer.tsx",
+      "mobile/components/layout/MobileShell.tsx",
+      "mobile/components/layout/MobileToolbar.tsx",
+      "mobile/components/riskflow/RiskFlowCard.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-01T01:15:00-04:00",
     agent: "claude-code",
     summary:

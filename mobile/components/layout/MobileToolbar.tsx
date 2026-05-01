@@ -3,7 +3,8 @@
 // [claude-code 2026-04-18] A4: mounted NotificationBell next to hamburger
 // [claude-code 2026-04-16] S20: Toolbar — global save checkmark under hamburger
 // [claude-code 2026-04-17] Toolbar VIX fades in only when Dash hero VIX is off-screen
-import { Menu } from "lucide-react";
+// [claude-code 2026-05-01] S56 Track D: hamburger ↔ back-arrow cross-fade on menuOpen
+import { Menu, ArrowLeft } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { VixBadge } from "../shared/VixBadge";
 import { SaveButton } from "../settings/SaveButton";
@@ -17,7 +18,7 @@ interface MobileToolbarProps {
   menuOpen: boolean;
 }
 
-export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
+export function MobileToolbar({ onHamburgerTap, menuOpen }: MobileToolbarProps) {
   const { settings, isDirty, isSaving, saveAll } = useSettings();
   const traderName = settings.traderName || "";
   const isOnline = useOnlineStatus();
@@ -113,12 +114,12 @@ export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
           )}
         </AnimatePresence>
 
-        {/* Right cluster: notification bell + hamburger */}
+        {/* Right cluster: notification bell + hamburger/back-arrow */}
         <div style={{ display: "flex", alignItems: "center" }}>
           <NotificationBell />
           <button
             onClick={onHamburgerTap}
-            aria-label="Open menu"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
             style={{
               background: "transparent",
               border: "none",
@@ -130,9 +131,34 @@ export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
               justifyContent: "center",
               cursor: "pointer",
               WebkitTapHighlightColor: "transparent",
+              position: "relative",
             }}
           >
-            <Menu size={20} strokeWidth={1.5} color="var(--text-secondary)" />
+            <AnimatePresence mode="wait">
+              {menuOpen ? (
+                <motion.div
+                  key="back"
+                  initial={{ opacity: 0, rotate: -90 }}
+                  animate={{ opacity: 1, rotate: 0 }}
+                  exit={{ opacity: 0, rotate: 90 }}
+                  transition={{ duration: 0.15 }}
+                  style={{ position: "absolute" }}
+                >
+                  <ArrowLeft size={20} strokeWidth={1.5} color="var(--accent, #c79f4a)" />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="menu"
+                  initial={{ opacity: 0, rotate: 90 }}
+                  animate={{ opacity: 1, rotate: 0 }}
+                  exit={{ opacity: 0, rotate: -90 }}
+                  transition={{ duration: 0.15 }}
+                  style={{ position: "absolute" }}
+                >
+                  <Menu size={20} strokeWidth={1.5} color="var(--text-secondary)" />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </button>
         </div>
       </div>

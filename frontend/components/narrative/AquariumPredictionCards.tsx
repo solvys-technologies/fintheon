@@ -4,6 +4,8 @@
 // [claude-code 2026-03-31] Added 120s polling interval (was static one-time fetch)
 // [claude-code 2026-03-28] S7: 5 forward-looking prediction cards under TradingView in Aquarium
 // [claude-code 2026-04-19] Loader swapped to Unicode FishSwimmer — aquarium-themed microinteraction
+// [claude-code 2026-05-01] S56 Track B: removed Heat label, replaced conviction tag
+//   with MARKET HEAT, dropped Drivers section + data-point footer
 import { useState, useEffect, useRef } from "react";
 import { Diff, TrendingDown, Minus } from "lucide-react";
 import { FishSwimmer } from "../icon-bank/UnicodeSpinners";
@@ -156,10 +158,7 @@ export function AquariumPredictionCards() {
 
               {/* IV Heat bar */}
               <div>
-                <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-[7px] text-[var(--fintheon-muted)]/50 uppercase">
-                    Heat
-                  </span>
+                <div className="flex items-center justify-end mb-0.5">
                   <span className="text-[8px] font-mono text-[var(--fintheon-text)]">
                     {inst.ivScore.toFixed(1)}
                   </span>
@@ -179,39 +178,17 @@ export function AquariumPredictionCards() {
                 </span>
               </div>
 
-              {/* Conviction */}
+              {/* Market Heat label */}
               <div className="flex items-center justify-between">
-                <span className="text-[7px] text-[var(--fintheon-muted)]/50 uppercase">
-                  Conviction
-                </span>
                 <span
-                  className="text-[8px] font-semibold uppercase px-1.5 py-0.5 rounded"
+                  className="text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5"
                   style={{
                     color: CONVICTION_COLOR[inst.conviction],
-                    backgroundColor: `color-mix(in srgb, ${CONVICTION_COLOR[inst.conviction]} 10%, transparent)`,
+                    border: `1px solid ${CONVICTION_COLOR[inst.conviction]}`,
                   }}
                 >
-                  {inst.conviction}
+                  MARKET HEAT
                 </span>
-              </div>
-
-              {/* Drivers */}
-              {inst.drivers.length > 0 && (
-                <div className="pt-1">
-                  {inst.drivers.slice(0, 2).map((d, i) => (
-                    <p
-                      key={i}
-                      className="text-[9px] text-[var(--fintheon-muted)]/50 line-clamp-2"
-                    >
-                      {d}
-                    </p>
-                  ))}
-                </div>
-              )}
-
-              {/* Data points */}
-              <div className="text-[6px] text-[var(--fintheon-muted)]/25 text-right">
-                {inst.scoredItemCount} data points
               </div>
             </div>
 

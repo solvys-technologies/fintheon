@@ -1,3 +1,5 @@
+// [claude-code 2026-05-01] S56 Track D: moved onClick outside SwipeAction so tapping
+//   anywhere on the card triggers expand/collapse (was only the fuse before).
 // [claude-code 2026-04-29] S52-T1: h3 always line-clamped (keyword-break removed
 //   on expand) — full headline remainder streams in via RiskFlowCardExpanded t-text-reveal,
 //   eliminating the duplicate expanded copy. S51: source-type icons, bucket-left/time-ago-right
@@ -160,29 +162,28 @@ export function RiskFlowCard({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, delay: index * 0.04, ease: "easeOut" }}
+      onClick={handleTap}
+      role="button"
+      tabIndex={0}
+      aria-label={
+        expanded
+          ? `Collapse headline: ${alert.title}`
+          : `Expand headline: ${alert.title}`
+      }
+      aria-expanded={expanded}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleTap();
+        }
+      }}
+      style={{ cursor: "pointer", WebkitTapHighlightColor: "transparent" }}
     >
       <SwipeAction onSwipeLeft={() => onDismiss(alert.id)}>
         <motion.div
-          onClick={handleTap}
           whileTap={CARD_PRESS}
-          role="button"
-          tabIndex={0}
-          aria-label={
-            expanded
-              ? `Collapse headline: ${alert.title}`
-              : `Expand headline: ${alert.title}`
-          }
-          aria-expanded={expanded}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              handleTap();
-            }
-          }}
           style={{
             background: "var(--surface)",
-            cursor: "pointer",
-            WebkitTapHighlightColor: "transparent",
           }}
         >
           <div

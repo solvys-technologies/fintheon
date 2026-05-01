@@ -17,6 +17,8 @@ import { KanbanTitle } from "../ui/KanbanTitle";
 import { ExpandableTapeItem } from "./ExpandableTapeItem";
 import TradeIdeaModal from "../TradeIdeaModal";
 import { DayCard } from "../narrative/DayCard";
+// [claude-code 2026-05-01] S56 Track C: Chamber Risk Signals in Dashboard right rail
+import { ArbitrumRiskSignals } from "../arbitrum/ArbitrumRiskSignals";
 import { RegimeCard } from "../dashboard/RegimeCard";
 import { RegimeTrackerModal } from "../regimes/RegimeTrackerModal";
 import {
@@ -72,6 +74,8 @@ export function MainDashboard({
   // [claude-code 2026-04-26] Regime Tracker is now a chevron-collapsible row
   // matching Core KPIs / RiskFlow header style. Default collapsed for parity.
   const [regimeCollapsed, setRegimeCollapsed] = useState(true);
+  // [claude-code 2026-05-01] S56 Track C: Chamber Risk Signals collapsible
+  const [signalsCollapsed, setSignalsCollapsed] = useState(false);
 
   const handleInterviewComplete = useCallback(
     (data: {
@@ -374,7 +378,7 @@ export function MainDashboard({
                   </div>
                 </div>
 
-                {/* Right: Day Plan (50%) — bare DayCard, day-of-week header */}
+                {/* Right: Day Plan (50%) — bare DayCard, day-of-week header, Chamber Risk Signals */}
                 <div className="flex-1 min-w-0 overflow-y-auto p-4 flex flex-col">
                   <KanbanTitle
                     title={new Date().toLocaleDateString("en-US", {
@@ -382,8 +386,44 @@ export function MainDashboard({
                     })}
                     tone="gold"
                   />
-                  <div className="mt-2 flex-1 min-h-0 overflow-y-auto pr-1 relative">
+                  <div className="mt-2 min-h-0 overflow-y-auto pr-1 relative">
                     <DayCard bare />
+                  </div>
+
+                  {/* Chamber Risk Signals — chevron-collapsible */}
+                  <div className="shrink-0 mt-4">
+                    <KanbanTitle
+                      title="Chamber Risk Signals"
+                      tone="gold"
+                      headerRight={
+                        <button
+                          type="button"
+                          onClick={() => setSignalsCollapsed((v) => !v)}
+                          className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
+                          title={
+                            signalsCollapsed
+                              ? "Expand Chamber Risk Signals"
+                              : "Collapse Chamber Risk Signals"
+                          }
+                        >
+                          {signalsCollapsed ? (
+                            <ChevronDown className="w-3 h-3" />
+                          ) : (
+                            <ChevronUp className="w-3 h-3" />
+                          )}
+                        </button>
+                      }
+                    />
+                    <div
+                      className="transition-all duration-300 ease-in-out"
+                      style={{
+                        maxHeight: signalsCollapsed ? "0px" : "9999px",
+                        opacity: signalsCollapsed ? 0 : 1,
+                        overflow: signalsCollapsed ? "hidden" : undefined,
+                      }}
+                    >
+                      <ArbitrumRiskSignals />
+                    </div>
                   </div>
                 </div>
               </div>
