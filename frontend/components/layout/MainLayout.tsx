@@ -900,8 +900,10 @@ function MainLayoutInner() {
             {/* Center Content - TopStepX or Main Content with crossfade
                 [claude-code 2026-04-30] S56-shell: stripped rounded-l + border-l so
                 the sidebar surface flows continuously into main content with no
-                corner triangles. border-y kept to delineate from header/footer. */}
-            <div className="z-10 flex-1 overflow-hidden relative min-w-0 flex flex-col border-y border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]">
+                corner triangles. border-y kept to delineate from header/footer.
+                [claude-code 2026-05-01] rounded-l-2xl restored — top-left and
+                bottom-left corners need a soft radius against the sidebar. */}
+            <div className="z-10 flex-1 overflow-hidden relative min-w-0 flex flex-col border-y border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] rounded-l-2xl">
               {/* Timeline overlay — slides over browser, does not affect iframe sizing */}
               <TimelineOverlay
                 open={timelineOverlayOpen}
