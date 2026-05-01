@@ -62,13 +62,6 @@
           {
             "type": "command",
             "command": ".claude/hooks/harper-feed-health.sh"
-          },
-          {
-            "type": "command",
-            "command": "nohup bash \"$CLAUDE_PROJECT_DIR/scripts/fintheon-update.sh\" >/tmp/fintheon-stop-hook.log 2>&1 < /dev/null &",
-            "async": true,
-            "timeout": 90,
-            "statusMessage": "fintheon update (background)"
           }
         ]
       }

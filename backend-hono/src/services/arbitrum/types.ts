@@ -1,3 +1,5 @@
+// [claude-code 2026-05-01] S56 Track A: added SeatOverride, ArbitrumHealth, and
+//   ArbitrumHealthResponse types for the settings/health panel endpoints.
 // [claude-code 2026-04-24] S35-T1: Arbitrum type surface.
 // Mirrors the columns of arbitrum_verdicts (T2 migration) and the seat
 // config consumed by seats.ts / facilitator.ts / gates.ts / verdict-store.ts.
@@ -126,4 +128,51 @@ export interface ArbitrumVerdict {
   trigger_source?: ArbitrumTriggerSource | null;
   latency_ms?: number;
   model_cost_usd?: number;
+}
+
+// ── S56 Track A: seat override + health types ──
+
+export interface SeatOverride {
+  seat_id: ArbitrumSeatId;
+  override_prompt: string;
+  context_sources: string[];
+  category_filter: string;
+  updated_at: string;
+}
+
+export interface SeatOverrideRow {
+  seat_id: string;
+  override_prompt: string;
+  context_sources: string[];
+  category_filter: string;
+  updated_at: string;
+}
+
+export interface ArbitrumHealthResponse {
+  timestamp: string;
+  api_status: {
+    deepseek_reachable: boolean;
+    deepseek_api_key_set: boolean;
+    last_latency_ms: number | null;
+    last_error: string | null;
+  };
+  context_injection: {
+    econ_context_loaded: boolean;
+    econ_prints_count: number;
+    commentary_loaded: boolean;
+    commentary_entries_count: number;
+    iv_simulation_present: boolean;
+    riskflow_feed_injected: boolean;
+  };
+  last_confidence: {
+    verdict_id: string | null;
+    created_at: string | null;
+    seats: Array<{
+      seat_id: string;
+      probability: number;
+      confidence: number;
+    }>;
+    chamber_confidence: number;
+  } | null;
+  chamber_state: "idle" | "running" | "complete";
 }

@@ -1,8 +1,8 @@
+// [claude-code 2026-05-01] Epoch updater: bottom-left toast prompt → one-click
+// in-app DMG swap → reopen → "Epoch X has risen" success toast on next launch.
 // [claude-code 2026-04-29] SOTA updater: unified version-check toast for web + Electron.
-// Electron no longer auto-downloads/auto-installs; CTA opens the latest release page.
-// [claude-code 2026-04-19] S24 unify: clicking Install Now permanently dismisses this version
-//   so even if the install flow fails / user bounces, we never nag for that exact version again.
-// [claude-code 2026-04-13] Version check — update-available toast with Install Now CTA
+// [claude-code 2026-04-19] S24 unify: per-version dismissal + 24h cooldown.
+// [claude-code 2026-04-13] Version check — update-available toast with Install CTA
 import { useEffect } from "react";
 import { useToast } from "../contexts/ToastContext";
 import {
@@ -17,17 +17,17 @@ export function VersionChecker() {
 
   useEffect(() => {
     const isE = isElectron();
-    // Unified polling path; Electron now uses SOTA manual download handoff.
+
     startVersionCheck({
       onUpdateAvailable: (serverVersion) => {
         addToast(
-          "Fintheon update available",
+          `A new epoch was released. (${serverVersion})`,
           "info",
-          `Version ${serverVersion} is ready`,
+          undefined,
           "system-update",
           "bottom-left",
           {
-            label: isE ? "Install now" : "Reload",
+            label: "Update",
             onClick: () => {
               dismissVersion(serverVersion);
               window.dispatchEvent(
@@ -52,6 +52,20 @@ export function VersionChecker() {
         );
       },
     });
+
+    // First-launch-after-install success toast.
+    if (isE && window.electron?.onUpdateJustInstalled) {
+      window.electron.onUpdateJustInstalled(({ version }) => {
+        addToast(
+          `Epoch ${version} has risen.`,
+          "success",
+          undefined,
+          "system-update",
+          "bottom-left",
+        );
+      });
+    }
+
     return () => stopVersionCheck();
   }, [addToast]);
 

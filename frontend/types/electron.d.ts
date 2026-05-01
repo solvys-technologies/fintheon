@@ -53,8 +53,14 @@ export interface ElectronAPI {
     ok: boolean;
     opened?: boolean;
     downloadUrl?: string;
+    installing?: boolean;
+    target?: string;
+    reason?: string;
   }>;
   deferUpdateUntilClose: () => Promise<{ ok: boolean; deferred?: boolean }>;
+  onUpdateJustInstalled: (
+    cb: ((payload: { version: string }) => void) | null,
+  ) => void;
 
   // [claude-code 2026-03-24] Auth — deep link callback + system browser open
   onAuthCallback: (cb: ((url: string) => void) | null) => void;

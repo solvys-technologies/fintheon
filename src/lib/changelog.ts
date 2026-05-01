@@ -9,6 +9,22 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-01T01:15:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Epoch updater + auto-close fix. Removed Claude Stop hook that ran fintheon-update.sh after every turn (pkilled Fintheon mid-session, then reinstalled and reopened). Replaced manual-handoff updater with one-click in-app DMG swap: bottom-left toast prompt 'A new epoch was released. (X.Y.Z)' / Update button → main process spawns detached fintheon-install-update.sh → app.quit() → DMG download via gh → /Applications swap → reopen → marker file triggers 'Epoch X.Y.Z has risen.' success toast on next launch.",
+    files: [
+      ".claude/settings.json",
+      "scripts/fintheon-install-update.sh",
+      "electron/main.cjs",
+      "electron/preload.cjs",
+      "frontend/components/VersionChecker.tsx",
+      "frontend/types/electron.d.ts",
+      ".github/workflows/ci.yml",
+      ".github/workflows/windows-build.yml",
+    ],
+  },
+  {
     date: "2026-05-01T00:30:00-04:00",
     agent: "claude-code",
     summary:

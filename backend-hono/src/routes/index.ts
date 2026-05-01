@@ -168,6 +168,10 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/agent-desk", createAgentDeskRoutes());
   // [claude-code 2026-04-24] S35-T1: Arbitrum deliberation chamber —
   //   /latest, /:id, /deliberate. Public reads (digest_text is UI content).
+  // [claude-code 2026-05-01] S56 Track A: /seats/overrides PUT is superadmin-gated
+  //   inside the sub-router (requireAuth + requireSuperadmin). authMiddleware provides
+  //   ambient user context for both public GET and gated PUT.
+  app.use("/api/arbitrum/seats/overrides", authMiddleware);
   app.route("/api/arbitrum", createArbitrumRoutes());
   // [claude-code 2026-04-24] Consul Control stub — kills /status 404 spam from
   //   useConsulControlStatus until the real "Harper has the wheel" signal lands.

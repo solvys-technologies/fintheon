@@ -782,6 +782,20 @@ app.whenReady().then(async () => {
         mainWindow.webContents.send("auth-callback", pendingAuthUrl);
         pendingAuthUrl = null;
       }
+      // [claude-code 2026-05-01] Post-update success toast: install script
+      // drops just-updated.json before reopening; consume + delete it here.
+      try {
+        const marker = path.join(app.getPath("userData"), "just-updated.json");
+        if (fs.existsSync(marker)) {
+          const payload = JSON.parse(fs.readFileSync(marker, "utf8"));
+          mainWindow.webContents.send("update-just-installed", {
+            version: payload.version ?? app.getVersion(),
+          });
+          fs.unlinkSync(marker);
+        }
+      } catch (err) {
+        console.warn("[Updater] marker consume failed:", err?.message);
+      }
     });
   }
   // Browser Use Phase 2 — CDP enabled via commandLine switch, no in-process handlers needed
@@ -961,10 +975,35 @@ ipcMain.handle("update-download", async () => {
   return { ok: true, opened: true, downloadUrl: RELEASES_LATEST_URL };
 });
 
+// [claude-code 2026-05-01] In-app one-click updater. Spawns the install script
+// detached so it survives app.quit(), then quits. Script handles DMG download,
+// /Applications swap, and reopens the new build. New launch sees the marker
+// (just-updated.json) and emits the success toast.
 ipcMain.handle("update-install", async () => {
   deferredUpdateOnClose = false;
-  await shell.openExternal(RELEASES_LATEST_URL);
-  return { ok: true, opened: true, downloadUrl: RELEASES_LATEST_URL };
+  const info = await checkForDesktopUpdate();
+  if (!info.ok || !info.updateAvailable || !info.latest) {
+    return { ok: false, reason: "no update available" };
+  }
+  const repoRoot = app.isPackaged
+    ? path.join(require("os").homedir(), "Documents", "Fintheon")
+    : path.join(__dirname, "..");
+  const scriptPath = path.join(
+    repoRoot,
+    "scripts",
+    "fintheon-install-update.sh",
+  );
+  if (!fs.existsSync(scriptPath)) {
+    return { ok: false, reason: `install script missing at ${scriptPath}` };
+  }
+  const child = spawn("/bin/bash", [scriptPath, info.latest], {
+    detached: true,
+    stdio: "ignore",
+    env: { ...process.env, HOME: require("os").homedir() },
+  });
+  child.unref();
+  setTimeout(() => app.quit(), 200);
+  return { ok: true, installing: true, target: info.latest };
 });
 
 ipcMain.handle("update-defer-until-close", async () => {

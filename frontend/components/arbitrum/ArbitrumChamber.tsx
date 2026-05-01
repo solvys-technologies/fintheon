@@ -8,12 +8,16 @@
 // [claude-code 2026-04-24] S35-T3: Arbitrum chamber — 5 seats + round indicator + digest footer.
 // Replaces AgentDeskDebatePanel inside Sanctum. /solvys-feels: flat surfaces,
 // single Solvys Gold accent, no gradients/glass/emojis/shimmer-for-show.
+// [claude-code 2026-05-01] S56 Track A: gear icon opens ArbitrumSettingsPanel overlay.
+
 import { useEffect, useMemo, useState } from "react";
+import { Settings } from "lucide-react";
 import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
 import { NothingFuse } from "../shared/NothingFuse";
 import { SolvysLoader } from "../shared/SolvysLoader";
 import { VerdictCard } from "./VerdictCard";
 import { SeatCard, EmptySeat } from "./ChamberSeats";
+import { ArbitrumSettingsPanel } from "./ArbitrumSettingsPanel";
 import type { ArbitrumSeat, ArbitrumVerdict } from "./types";
 
 interface ArbitrumChamberProps {
@@ -86,6 +90,7 @@ function useStaggeredReveal(count: number, stepMs = 200): boolean[] {
 export function ArbitrumChamber(props: ArbitrumChamberProps) {
   const { onSynthesisComplete } = props;
   const { verdict, isLoading, error, refresh } = useArbitrumLatest();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const seats = useMemo<ArbitrumSeat[]>(() => {
     const supplied = verdict?.seats ?? [];

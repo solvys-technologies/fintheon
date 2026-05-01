@@ -28,6 +28,14 @@ ipcRenderer.on("auth-callback", (_event, url) => {
   if (typeof authCallbackHandler === "function") authCallbackHandler(url);
 });
 
+// [claude-code 2026-05-01] Post-update success toast bridge — main fires
+// "update-just-installed" once on the first launch after install script ran.
+let updateJustInstalledHandler = null;
+ipcRenderer.on("update-just-installed", (_event, payload) => {
+  if (typeof updateJustInstalledHandler === "function")
+    updateJustInstalledHandler(payload);
+});
+
 // [claude-code 2026-04-27] S46.4 Desk Calendar IPC bridge — TV iframe .ics
 // downloads are intercepted in main.cjs and emitted as saving/saved/failed
 // events. The renderer listens via electron.deskCalendar.on*Status to drive
@@ -81,6 +89,9 @@ contextBridge.exposeInMainWorld("electron", {
   downloadUpdate: () => ipcRenderer.invoke("update-download"),
   installUpdate: () => ipcRenderer.invoke("update-install"),
   deferUpdateUntilClose: () => ipcRenderer.invoke("update-defer-until-close"),
+  onUpdateJustInstalled: (cb) => {
+    updateJustInstalledHandler = typeof cb === "function" ? cb : null;
+  },
 
   // Auth — deep link callback + open URL in system browser
   onAuthCallback: (cb) => {
