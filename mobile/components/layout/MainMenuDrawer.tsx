@@ -82,7 +82,7 @@ export function MainMenuDrawer({
     <AnimatePresence>
       {open && (
         <div style={{ position: "fixed", inset: 0, zIndex: 60 }}>
-          {/* Scrim — tap to close */}
+          {/* Scrim — only over the 20vw peek strip right of drawer, tap to close */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -91,7 +91,10 @@ export function MainMenuDrawer({
             onClick={onClose}
             style={{
               position: "absolute",
-              inset: 0,
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: DRAWER_WIDTH,
               background: "rgba(0,0,0,0.45)",
               backdropFilter: "blur(2px)",
               WebkitBackdropFilter: "blur(2px)",
@@ -106,15 +109,15 @@ export function MainMenuDrawer({
             transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
             style={{
               position: "absolute",
-              top: 0,
-              left: 0,
-              bottom: 0,
-              width: DRAWER_WIDTH,
-              background: "var(--black, #050402)",
-              display: "flex",
-              flexDirection: "column",
-              paddingTop: "env(safe-area-inset-top)",
-              overflowY: "auto",
+               top: 0,
+               left: 0,
+               bottom: 0,
+               width: DRAWER_WIDTH,
+               background: "var(--black, #050402)",
+               display: "flex",
+               flexDirection: "column",
+               paddingTop: "env(safe-area-inset-top)",
+               overflowY: "auto",
             }}
           >
             {/* Header — profile area */}
