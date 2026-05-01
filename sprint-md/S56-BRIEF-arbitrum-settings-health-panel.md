@@ -1,239 +1,230 @@
-# Sprint Brief: S56 — Arbitrum Chamber Settings & Health Panel (single-agent)
+# Sprint Brief: S56 — Arbitrum Settings + Sanctum Restructure + Dashboard Signals + Mobile Menu (single-agent)
 
 ## Intent
 
-The Arbitrum chamber's 5 seats all run the same model (`deepseek-reasoner`) at the same temperature (0.6) with near-identical inline system prompts. Divergence comes only from the persona name string — not enough to prevent groupthink. TP needs a developer-facing settings and health panel inside the chamber view that (a) surfaces chamber health diagnostics at a glance, (b) lets TP edit each seat's system prompt with copy-paste, (c) assigns per-seat context sources via checkbox, and (d) selects a per-seat RiskFlow category filter. All gated behind the existing developer password. No runtime changes to the deliberation engine beyond appending the stored override prompt to each seat's system instructions.
+TP gets a fully-aligned Arbitrum surface across desktop and mobile. The Chamber finally publishes its briefing where the briefing belongs; risk signals live where they have audience (Dashboard right rail); the Volatility Read reads as one block instead of two cards; instrument cards stop duplicating Chamber-owned conviction copy; the developer can open a gear-gated panel inside the Chamber to inspect health and edit per-seat prompts without redeploying; and on mobile, the main menu behaves like Twitter — content slides right to reveal a left drawer with TP's profile and primary navigation, instead of the current bottom-up sheet.
 
 ## Branch Target
 
-`S56-arbitrum-settings-health-panel`
+`S56-arbitrum-settings-health-panel` (cut from current `v.5.29.1-s53-refinement-riskflow-sync`)
 
 ## Scope — Included
 
-- [ ] **Health endpoint**: `GET /api/arbitrum/health` — returns API reachability, context injection status, last confidence per seat, last verdict metadata
-- [ ] **Seat overrides endpoints**: `GET /api/arbitrum/seats/overrides` (public read) + `PUT /api/arbitrum/seats/overrides` (JWT-gated write) — backed by Supabase `arbitrum_seat_overrides` table
-- [ ] **Engine integration**: `buildSeatSystemPrompt()` in `seats.ts` appends `seat_override_prompt` from overrides when present
-- [ ] **Gear icon** in top-right corner of `ArbitrumChamber` — click opens `ArbitrumSettingsPanel` as an overlay inside the chamber viewport
-- [ ] **Admin password modal** — reuses `DevPasswordGate` component, centered in-chamber, triggers on first settings open per session
-- [ ] **Health expandable chevron rows** — three rows: Context Injection, API Status, Last Confidence Reading — each expands with sub-status indicators
-- [ ] **Edit Agent Instructions CTA** — button at bottom of health panel, transitions to the seat editor view
-- [ ] **Per-seat prompt editor** — textarea per seat (Harper/Oracle/Feucht/Consul/Herald), prefilled with current system prompt, copy-paste ready
-- [ ] **Source citation checklist** — scrollable list of context source toggles (Econ Prints, Commentary Transcripts, RiskFlow Feed, IV Simulation, Cross-Seat Drafts) per seat, checkboxes
-- [ ] **RiskFlow category dropdown** — per-seat dropdown filtering which RiskFlow categories the seat sees during deliberation (geopolitical, monetary-policy, earnings-corporate, market-structure, political, black-swan, all)
-- [ ] **Save / Reset buttons** — save writes to Supabase via PUT endpoint (JWT-gated), reset clears overrides back to factory defaults
+### Track A: Arbitrum Settings + Health Panel
+
+- [ ] Supabase migration: `arbitrum_seat_overrides` table + RLS (read: authenticated; write: admin)
+- [ ] `GET /api/arbitrum/health` — public, returns API/context/last-confidence/chamber-state
+- [ ] `GET /api/arbitrum/seats/overrides` — public read, returns 5-seat override array
+- [ ] `PUT /api/arbitrum/seats/overrides` — JWT + `requireSuperadmin`, partial-seat updates
+- [ ] `buildSeatSystemPrompt()` appends override prompt + context-source list + category filter
+- [ ] Gear icon top-right of `ArbitrumChamber`, opens `ArbitrumSettingsPanel` overlay scoped to the chamber container (NOT the full Sanctum viewport)
+- [ ] DevPasswordGate centered in-chamber on first open per session
+- [ ] Health view: 3 expandable chevron rows (Context Injection, API Status, Last Confidence Reading)
+- [ ] "Edit Agent Instructions" CTA transitions to seat editor mode
+- [ ] Per-seat prompt textarea (Harper/Oracle/Feucht/Consul/Herald), source checkboxes, RiskFlow category dropdown
+- [ ] Save (PUT) + Reset-to-factory (with confirmation) buttons
+- [ ] Escape closes panel; transitions respect `prefers-reduced-motion`
+
+### Track B: Sanctum Arbitrum view restructure
+
+- [ ] In `Sanctum.tsx:240-294` brief-pattern container, swap right-bottom slot from `<ArbitrumRiskSignals />` to `<SanctumBriefing briefing={data?.briefing} isLoading={isLoading} noBorder />`
+- [ ] Restructure `BlendedIVForecastCard.tsx`:
+  - Forecast main fuse + confidence on TOP
+  - Three scenarios (Continuation / Risk-on rally / Headline escalation) reflowed into ONE row with prob+score inline
+  - Blended IV components (VIX / Headlines / Agent Desk) rendered BELOW
+  - Drop the regime-shift bips line
+- [ ] `AquariumPredictionCards.tsx`:
+  - Remove "Heat" label at top-left of heat fuse (lines 160–162)
+  - Replace conviction tag (lines 187–195) with a "MARKET HEAT" label in the same slot
+  - Drop the Drivers section + data-point footer (lines 199–210)
+
+### Track C: Dashboard Arbitrum risk signals (desktop only)
+
+- [ ] In `MainDashboard.tsx:377-389`, beneath the bare `<DayCard />` in the right column, mount a Chamber Risk Signals block (reuse `ArbitrumRiskSignals` directly with a thin wrapper for the header)
+- [ ] Header label: `KanbanTitle title="Chamber Risk Signals" tone="gold"` (matching Core KPIs / Regime Tracker / RiskFlow style)
+- [ ] Chevron-collapsible (parity with Core KPIs / Regime Tracker)
+- [ ] Reuse `useArbitrumLatest()` — no new poller
+
+### Track D: Mobile Twitter-style main menu
+
+- [ ] New `mobile/components/layout/MainMenuDrawer.tsx` — left drawer ~80vw wide, flat `--fintheon-bg` (no gradient/Kanban borders)
+- [ ] Drawer header: Solvys-gold target glyph + display name (`settings.traderName` || "T.P.") + `@handle` + "X Following X Followers" counts; Add-Person icon top-right
+- [ ] Primary nav rows (icon + label, large tap targets): Dashboard, Sanctum, RiskFlow, Calendar, Performance, Apparatus
+- [ ] Divider (1px `--fintheon-accent/15`)
+- [ ] Footer utilities: Open Harper Chat, Settings & Privacy, Help Center
+- [ ] Wrap `MobileShell.tsx` `<main>` (lines 100–117) in a transformable container; on `menuOpen` apply `translateX(80vw)` with framer-motion 250ms ease-in-out
+- [ ] Soft scrim (`bg-black/45 backdrop-blur-sm`) over the slid content; tap to close
+- [ ] Hamburger icon in `MobileToolbar` cross-fades 150ms to a back-arrow when `menuOpen`
+- [ ] Edge-swipe-from-left (≤24px from left edge, x-velocity > 0.3 OR x-distance > 60) opens the drawer
+- [ ] Drag-to-close: drag the drawer leftward; release at >40% drawer width or velocity < -0.3 closes
+- [ ] Retire `mobile/components/layout/HamburgerMenu.tsx` (delete file)
+
+### Track E: Desktop shell pre-pass (already landed)
+
+- Already in working tree — see `src/lib/changelog.ts` top entry. NavSidebar relative positioning, MainLayout middle-flex `bg-surface`, main content stripped of `rounded-l-2xl + border-l + heavy shadow`, FooterToolbar bg → surface, Epoch label legibility fix. No further action; carried in this branch.
 
 ## Scope — Excluded (OUT OF BOUNDS)
 
-- Changing the model, provider, temperature, or weight of any seat (those stay in the hardcoded `ARBITRUM_SEATS` array)
-- Modifying the MoA (Mixture-of-Agents) 2-layer architecture
-- Adding new AI providers or routing paths
-- Changing the Chamber round logic or facilitator synthesis
-- Any changes to the mobile PWA or Electron desktop surfaces
-- Live RiskFlow feed injection into the seat editor (the dropdown selector is a filter, not a live feed viewer)
-- Changing the developer password or auth mechanism
+- Changing the model, provider, temperature, or weight of any seat (`ARBITRUM_SEATS` stays `as const`)
+- MoA architecture changes
+- New AI providers / routing paths
+- Chamber round logic / facilitator synthesis
+- Live RiskFlow feed injection into the seat editor (the dropdown is a filter, not a feed viewer)
+- Mobile dashboard Arbitrum surface — already has `ArbitrumVerdictCard` (`mobile/components/home/HomePage.tsx:28`)
+- Anything in `RiskSignalCards.tsx` (mobile dashboard primitive — separate)
+- `NextSessionForecastCard.tsx` deletion — still imported by `useIVScoreData.ts` and `BlendedIVForecastCard.tsx` as a legacy fallback
+- Sidebar text-color sweep beyond the Epoch label already bumped in the pre-pass
 
 ## Known Issues to Preserve
 
-- `ARBITRUM_SEATS` array in `seats.ts:24-80` is `as const` — keep it immutable; overrides are additive
-- `deepseek-reasoner` is the only active model path; OpenRouter is explicitly blocked for Arbitrum seats (`adapters.ts:153-157`)
-- The compartment is rendered inside `Sanctum.tsx:267-273` as a grid cell — the overlay must respect the chamber container boundary, not the full Sanctum viewport
-- `useArbitrumLatest()` polls every 60s; the settings panel should not trigger extra polls
-- Recent changelog entries at `src/lib/changelog.ts` lines ~720-750 (S54/S55 RiskFlow operator control, econ live race) — do not revert
+- `ARBITRUM_SEATS` array in `seats.ts:24-80` is `as const` — overrides are additive only
+- `deepseek-reasoner` is the only active model path; OpenRouter blocked for Arbitrum seats (`adapters.ts:153-157`)
+- `useArbitrumLatest()` polls every 60s — settings panel must not trigger extra polls
+- `ROLE_DISPLAY_NAMES` in `frontend/components/arbitrum/ChamberSeats.tsx` is the seat-label source of truth
+- Recent changelog entries `src/lib/changelog.ts` lines ~10–55 (S56 shell pre-pass + S54/S55 RiskFlow operator control + econ live race) — do not revert
+- Mobile menu currently uses framer-motion (already a dep) — keep it, just swap transform target from `y` to `x`
 
 ## Design Pass
 
-### Layout / Interaction
-
-**Chamber top-right gear icon:**
+### Sanctum Volatility Read combined layout
 
 ```
-[ Arbitrum Chamber   ·   Round 1 of 3          ]  [⚙]
+┌─ VOLATILITY READ ─────────────────────────────────┐
+│ NEXT SESSION FORECAST                  Heuristic  │
+│ 3.8       Confidence ▰▰▰▰▰▰▰▰▱▱  85%              │
+│                                                   │
+│ Continuation 59% 3.8 │ Rally 24% 2.3 │ HE 18% 5.8 │
+│ ───────                                           │
+│ BLENDED IV SCORE 3.8         Light Winds          │
+│ VIX        ▰▰▰▰▱▱▱▱▱▱  3.6  70% (16.9)            │
+│ Headlines  ▰▰▰▰▰▱▱▱▱▱  4.0  20% (29 events)       │
+│ Agent Desk ▰▰▰▰▰▱▱▱▱▱  5.0  10%                   │
+└───────────────────────────────────────────────────┘
 ```
 
-- Gear icon: 14px line icon, `--fintheon-accent` at 50% opacity, hover → 85%
-- Click → opens settings panel overlay
-
-**Overlay behavior:**
-
-- Panel slides in from the right edge of the chamber container (not the Sanctum)
-- Width: 100% of chamber on narrow, 420px on wider viewports
-- Frosted-glass surface: `rgba(10, 9, 5, 0.85)` background, `backdrop-filter: blur(18px) saturate(1.08)`, `border: 1px solid rgba(199, 159, 74, 0.14)`
-- Z-index above chamber content, below nothing else in the Sanctum page
-- Close button (X) in top-right corner
-- Press Escape to close (keyboard listener mounted when panel open)
-
-**States:**
-
-| State                       | What renders                                                                       |
-| --------------------------- | ---------------------------------------------------------------------------------- |
-| Closed                      | Gear icon only in top-right of chamber header                                      |
-| Opening — not authenticated | DevPasswordGate modal centered in-chamber                                          |
-| Opening — authenticated     | Settings panel slides in                                                           |
-| Loading health data         | Compact [LOADING...] text in panel header                                          |
-| Health loaded               | Expandable chevron rows + CTA button                                               |
-| Editing instructions        | Per-seat editor view (replaces health view in panel)                               |
-| Saving                      | Inline [SAVING...] status, then [SAVED]                                            |
-| Error on save               | Inline [ERROR: reason] status                                                      |
-| Resetting                   | Confirmation text "Reset all seat overrides to factory defaults?" + Confirm/Cancel |
-
-**Expandable chevron rows:**
+### Sanctum right column (chart-mode off)
 
 ```
-┌─────────────────────────────────────────────────────┐
-│ ▼ Context Injection ........................... [✓] │
-│   ┌─────────────────────────────────────────────┐   │
-│   │ Econ Prints       ● active  (7 prints, 5d)  │   │
-│   │ Commentary        ● active  (3 transcripts) │   │
-│   │ IV Simulation     ○ absent                  │   │
-│   └─────────────────────────────────────────────┘   │
-│ ▶ API Status ..................................     │
-│ ▶ Last Confidence Reading .....................     │
-└─────────────────────────────────────────────────────┘
+┌─ CHAMBER ─────────────────────────────────────┐
+│ Harper 6.5 │ Oracle 5.0 │ Feucht 4.0 │ ...     │
+│ Chamber reads 51% on: Read the next session... │
+└───────────────────────────────────────────────┘
+┌─ CHAMBER BRIEFING (scrollable) ───────────────┐
+│ Persistent API crude oil stock misses indicate│
+│ supply tightness, reinforcing Fed officials' …│
+│ Key Findings:                                 │
+│   1. ...                                      │
+│ Risk Alerts:                                  │
+│ Harper Analysis: ...                          │
+│ Consensus: 51% session-read                   │
+└───────────────────────────────────────────────┘
 ```
 
-- Chevron: `▶` (collapsed) / `▼` (expanded), monospace 10px
-- Row click anywhere (not just chevron) toggles expand
-- Sub-indicators: `●` active (accent color), `○` absent (muted 40%), `◐` degraded (warning color)
-- Each sub-indicator row shows: status icon + label + detail text
+(Risk signals removed from this slot. They now live on Dashboard right rail.)
 
-**Agent Instruction Editor (panel interior):**
+### Instrument card (after rip)
 
 ```
-┌─────────────────────────────────────────────────────┐
-│ Agent Instructions                        [✕ close] │
-│                                                     │
-│ Seat: Harper (Lead Analyst)                         │
-│ ┌───────────────────────────────────────────────┐   │
-│ │ System Prompt                                   │
-│ │ ┌─────────────────────────────────────────┐    │
-│ │ │ You are the "Lead Analyst" seat of the   │    │
-│ │ │ Arbitrum deliberation chamber...         │    │
-│ │ │                                         │    │
-│ │ │ [editable, monospace 11px, min-h 160px] │    │
-│ │ └─────────────────────────────────────────┘    │
-│ └───────────────────────────────────────────────┘   │
-│                                                     │
-│ Context Sources                                     │
-│ ☑ Econ Prints       ☑ Commentary Transcripts       │
-│ ☑ RiskFlow Feed     ☐ IV Simulation               │
-│ ☑ Cross-Seat Drafts                                │
-│                                                     │
-│ RiskFlow Category Filter                            │
-│ ┌─────────────────────────────────────────────┐     │
-│ │ All Categories                    ▾         │     │
-│ │ ─────────────────────────────────────       │     │
-│ │ ● All Categories                            │     │
-│ │   Geopolitical                              │     │
-│ │   Monetary Policy                           │     │
-│ │   Earnings / Corporate                      │     │
-│ │   Market Structure                          │     │
-│ │   Political                                 │     │
-│ │   Black Swan                                │     │
-│ └─────────────────────────────────────────────┘     │
-│                                                     │
-│ Seat Tabs: [Harper] [Oracle] [Feucht] [Consul] ...  │
-│                                                     │
-│ [ Reset to Factory ]         [ Save All Changes ]    │
-└─────────────────────────────────────────────────────┘
+/NQ                       — NEUTRAL
+▰▰▰▰▰▱▱▱▱▱  4.7
+RANGE              -69 to +71 pts
+MARKET HEAT
 ```
 
-- Seat tabs: horizontal row, selected seat has accent bottom border 1px
-- Prompt textarea: monospace JetBrains Mono 11px, dark transparent bg, accent border on focus
-- Source checkboxes: 10px monospace labels, accent color check
-- Category dropdown: custom select matching Solvys input style
-- Save/Reset: secondary button style
+### Dashboard right column (under DayCard)
 
-### API / Service Shape
+```
+[ DayCard bare ]
+─────────────────────
+CHAMBER RISK SIGNALS                ▼
+─────────────────────
+HERALD                          7.0
+▰▰▰▰▰▰▰▱▱▱
+Repeated API draws…
+─────────────────────
+HARPER                          6.5
+▰▰▰▰▰▰▱▱▱▱
+Persistent API crude oil…
+…
+```
 
-**`GET /api/arbitrum/health`** (public, no auth)
+### Mobile drawer (Twitter pattern, mapped to Solvys)
+
+```
+┌──────────────────────────┐ ┌── (slid main content) ──┐
+│ [target glyph]   [add+]  │ │ ◀ icon (was hamburger)  │
+│                          │ │                         │
+│ T.P.                     │ │   FOR YOU               │
+│ @handle                  │ │   (scrim 45% over)      │
+│                          │ │                         │
+│ 144 Following  40 Followe│ │                         │
+│                          │ │                         │
+│ [icon] Dashboard         │ │                         │
+│ [icon] Sanctum           │ │                         │
+│ [icon] RiskFlow          │ │                         │
+│ [icon] Calendar          │ │                         │
+│ [icon] Performance       │ │                         │
+│ [icon] Apparatus         │ │                         │
+│ ─────────────            │ │                         │
+│ [icon] Open Harper Chat  │ │                         │
+│ [icon] Settings & Privacy│ │                         │
+│ [icon] Help Center       │ │                         │
+└──────────────────────────┘ └─────────────────────────┘
+  ~80vw                       ~20vw peek strip
+```
+
+(All icons are lucide-react line icons.)
+
+### Aesthetic Rules
+
+- Frosted-glass `--fintheon-glass-bg` for the desktop settings panel overlay only; flat `--fintheon-bg` for mobile drawer interior
+- No gradients, no emojis, no Kanban borders, no AI sparkles, no generic shadows
+- Monospace (`Doto, ui-monospace`) for all numerals + seat names + prompt text
+- `--fintheon-accent` (#c79f4a) used ONLY for: gear icon hover, active status dots, selected seat tab underline, save button, focus borders, drawer profile target glyph, active nav-row tint
+- Chevron expand icons monospace `▶`/`▼` 10px
+- Status dots `●` accent / `○` muted / `◐` warning
+- Transitions: opacity 200ms on overlay open/close; transformX 250ms ease-in-out on mobile drawer; respect `prefers-reduced-motion`
+
+## API / Service Shape
+
+### Endpoints (Track A)
+
+`GET /api/arbitrum/health` — public, no auth
 
 ```json
 {
-  "timestamp": "2026-04-30T...",
-  "api_status": {
-    "deepseek_reachable": true,
-    "deepseek_api_key_set": true,
-    "last_latency_ms": 3421,
-    "last_error": null
-  },
-  "context_injection": {
-    "econ_context_loaded": true,
-    "econ_prints_count": 7,
-    "commentary_loaded": true,
-    "commentary_entries_count": 3,
-    "iv_simulation_present": false,
-    "riskflow_feed_injected": false
-  },
-  "last_confidence": {
-    "verdict_id": "abc-123",
-    "created_at": "2026-04-30T...",
-    "seats": [
-      { "id": "lead", "displayName": "Harper", "confidence": 0.72 },
-      { "id": "forecaster", "displayName": "Oracle", "confidence": 0.68 },
-      { "id": "risk", "displayName": "Feucht", "confidence": 0.55 },
-      { "id": "quant", "displayName": "Consul", "confidence": 0.61 },
-      { "id": "bear", "displayName": "Herald", "confidence": 0.59 }
-    ],
-    "chamber_confidence": 0.63
-  },
-  "chamber_state": "idle" // "idle" | "running" | "degraded"
+  "timestamp": "...",
+  "api_status": { "deepseek_reachable": true, "deepseek_api_key_set": true, "last_latency_ms": 3421, "last_error": null },
+  "context_injection": { "econ_context_loaded": true, "econ_prints_count": 7, "commentary_loaded": true, "commentary_entries_count": 3, "iv_simulation_present": false, "riskflow_feed_injected": false },
+  "last_confidence": { "verdict_id": "...", "created_at": "...", "seats": [...], "chamber_confidence": 0.63 },
+  "chamber_state": "idle"
 }
 ```
 
-**`GET /api/arbitrum/seats/overrides`** (public read)
+`GET /api/arbitrum/seats/overrides` — public read, 5-seat array. Each seat: `{ seat_id, seat_prompt, override_prompt, context_sources[], category_filter, has_override, updated_at }`.
 
-```json
-{
-  "overrides": [
-    {
-      "seat_id": "lead",
-      "seat_prompt": "You are the Lead Analyst... (full current prompt + any override)",
-      "override_prompt": "Additionally, you must... (the override portion only)",
-      "context_sources": [
-        "econ_prints",
-        "commentary",
-        "riskflow_feed",
-        "cross_seat_drafts"
-      ],
-      "category_filter": "all",
-      "has_override": false,
-      "updated_at": null
-    }
-    // ... 5 seats
-  ]
+`PUT /api/arbitrum/seats/overrides` — JWT + `requireSuperadmin`; body `{ overrides: [{ seat_id, override_prompt, context_sources[], category_filter }] }` (partial). Returns `{ ok: true, updated: N }`.
+
+### Engine integration
+
+In `buildSeatSystemPrompt()`, after the base prompt:
+
+```typescript
+const override = await loadSeatOverride(seat.id);
+if (override?.override_prompt?.trim()) {
+  prompt += `\n\n## Seat-Specific Instructions (Override)\n${override.override_prompt}`;
+}
+if (override?.context_sources?.length) {
+  prompt += `\n\n## Available Context Sources\n${override.context_sources.join(", ")}`;
+}
+if (override?.category_filter && override.category_filter !== "all") {
+  prompt += `\n\n## Category Focus\nPrioritize analysis through the lens of: ${override.category_filter}`;
 }
 ```
 
-**`PUT /api/arbitrum/seats/overrides`** (JWT-gated — `authMiddleware` + `requireAuth` + `requireSuperadmin`)
+Fallback: any read failure → no overrides appended; chamber runs as-is.
 
-Request:
-
-```json
-{
-  "overrides": [
-    {
-      "seat_id": "lead",
-      "override_prompt": "Additionally, you must prioritize earnings data over macro trends. When in doubt, take the contrarian view.",
-      "context_sources": [
-        "econ_prints",
-        "commentary",
-        "riskflow_feed",
-        "cross_seat_drafts"
-      ],
-      "category_filter": "earnings-corporate"
-    }
-    // partial — only seats with changes
-  ]
-}
-```
-
-Response:
-
-```json
-{ "ok": true, "updated": 3 }
-```
-
-**Seat override storage** — Supabase table `arbitrum_seat_overrides`:
+## Data / Agent Shape
 
 ```sql
 CREATE TABLE IF NOT EXISTS public.arbitrum_seat_overrides (
@@ -243,97 +234,73 @@ CREATE TABLE IF NOT EXISTS public.arbitrum_seat_overrides (
   category_filter TEXT DEFAULT 'all',
   updated_at TIMESTAMPTZ DEFAULT now()
 );
--- RLS: authenticated users can read; only admin role can insert/update/delete
+-- RLS: read = authenticated; write = admin role only
 ```
 
-### Engine Integration (seats.ts)
-
-In `buildSeatSystemPrompt()`, after the base prompt, append the override if present:
-
-```typescript
-async function buildSeatSystemPrompt(
-  seat: ArbitrumSeatConfig,
-): Promise<string> {
-  let prompt = `You are the "${seat.role}" seat...`;
-
-  // Append seat override if it exists
-  const override = await loadSeatOverride(seat.id);
-  if (override && override.override_prompt.trim().length > 0) {
-    prompt += `\n\n## Seat-Specific Instructions (Override)\n${override.override_prompt}`;
-  }
-
-  // Append context source availability (so seat knows what it has)
-  if (override?.context_sources?.length) {
-    prompt += `\n\n## Available Context Sources\n${override.context_sources.join(", ")}`;
-  }
-
-  // Append category filter instruction
-  if (override?.category_filter && override.category_filter !== "all") {
-    prompt += `\n\n## Category Focus\nPrioritize analysis through the lens of: ${override.category_filter}`;
-  }
-
-  return prompt;
-}
-```
-
-### Data / Agent Shape
-
-- **Supabase table**: `arbitrum_seat_overrides` (new)
-- **RLS**: Read — authenticated users; Write — admin role only
-- **Agent**: No specific agent — this is a tool surface for TP, not a deliberation output
-- **Prompt shape**: The override prompt is appended verbatim after the base seat system prompt. No LLM interpretation or rewriting.
-- **Fallback**: When `arbitrum_seat_overrides` table read fails or returns empty, `buildSeatSystemPrompt()` behaves exactly as it does today — no overrides appended. The chamber runs normally.
-
-### Aesthetic Rules
-
-- Frosted-glass overlay panel: `rgba(10, 9, 5, 0.85)` bg, `blur(18px)`, thin gold border
-- No gradients, no emojis, no Kanban borders, no generic shadows
-- Monospace for all data values, seat names, and prompt text
-- Chevron expand icons: monospace `▶`/`▼` at 10px
-- Status dots: `●` accent for active, `○` muted for absent, `◐` warning for degraded
-- Accent used ONLY for: gear icon hover, active status dots, selected seat tab underline, save button, focus borders on inputs
-- Text input area: dark transparent bg, thin accent border, JetBrains Mono 11px
-- Seat tab selector: 10px tracking-wider uppercase labels, accent bottom border on active
-- Transition: opacity 200ms on panel open/close, respects `prefers-reduced-motion`
+No agent owns the override prompt — it's appended verbatim, no LLM rewriting.
 
 ## Development Flow
 
-1. **Supabase migration** — create `arbitrum_seat_overrides` table + RLS policies
-2. **Backend types** — extend `arbitrum/types.ts` with override types; add route types
-3. **Backend service** — `arbitrum/seats.ts`: extract `loadSeatOverride()`, modify `buildSeatSystemPrompt()`; `arbitrum/index.ts`: export health+override loaders
-4. **Backend routes** — `GET /api/arbitrum/health`, `GET /api/arbitrum/seats/overrides`, `PUT /api/arbitrum/seats/overrides` in `routes/arbitrum/index.ts`
-5. **Route mounting** — add `PUT /api/arbitrum/seats/overrides` with `authMiddleware` + `requireAuth` + `requireSuperadmin` in `routes/index.ts`
-6. **Frontend types** — extend `components/arbitrum/types.ts` with health/override types
-7. **Frontend hooks** — `useArbitrumHealth.ts` + `useArbitrumSeatOverrides.ts`
-8. **Frontend components** — `ArbitrumSettingsPanel.tsx` (main panel with health + editor modes), modify `ArbitrumChamber.tsx` (gear icon + overlay mount)
-9. **Validation** — tsc, build, curl smoke tests, Playwright visual check
-10. **Changelog + headers** — entry in `src/lib/changelog.ts`, file headers on new/modified files
+1. **Data layer** — migration `supabase/migrations/{ts}_arbitrum_seat_overrides.sql` + RLS; push from main worktree (`supabase db push`).
+2. **Backend types** — extend `backend-hono/src/services/arbitrum/types.ts` with override + health types.
+3. **Backend service** — `arbitrum/seats.ts`: `loadSeatOverride()` + `buildSeatSystemPrompt()` extension; `arbitrum/index.ts`: export health + override loaders.
+4. **Backend routes** — `routes/arbitrum/index.ts` with three endpoints; `routes/index.ts` adds `authMiddleware + requireAuth + requireSuperadmin` for the PUT.
+5. **Backend build + smoke** — `cd backend-hono && bun run build`; `launchctl unload && load io.solvys.fintheon-backend.plist`; curl all three endpoints.
+6. **Frontend types + hooks** — extend `frontend/components/arbitrum/types.ts`; new `useArbitrumHealth.ts` + `useArbitrumSeatOverrides.ts` under `frontend/hooks/`.
+7. **Frontend Track A UI** — `ArbitrumSettingsPanel.tsx` (health + editor modes); modify `ArbitrumChamber.tsx` (gear icon + overlay mount).
+8. **Frontend Track B (Sanctum)** — restructure `BlendedIVForecastCard`; swap right-bottom slot in `Sanctum.tsx`; rip `AquariumPredictionCards`.
+9. **Frontend Track C (Dashboard)** — mount Chamber Risk Signals beneath DayCard in `MainDashboard.tsx`.
+10. **Mobile Track D** — write `MainMenuDrawer.tsx`; wrap `MobileShell.tsx <main>` in transform container; update `MobileToolbar` icon cross-fade; delete `HamburgerMenu.tsx`.
+11. **Validation** — `tsc --noEmit`, `rm -rf dist && npx vite build`, mobile clean build, `bun run build` (backend), curl smoke, manual mobile drag/swipe verify.
+12. **Changelog + headers** — single S56 entry summarizing all five tracks; `// [claude-code 2026-05-01]` headers on substantially modified files.
+13. **Ship** — `/solvys-deploy` cuts `v6.0.4`; archive `S56-BRIEF-...` to `sprint-changelog/`.
 
 ## Acceptance Criteria
 
-- [ ] Gear icon visible in top-right of ArbitrumChamber, click opens DevPasswordGate modal
-- [ ] Correct password (PricedInResearch122356, hash `4d4bbd3...`) unlocks the settings panel
-- [ ] Panel overlays chamber content, frosted-glass surface, closeable via X button or Escape key
-- [ ] Health chevron rows expand/collapse on click, showing sub-status indicators with correct status colors
-- [ ] Context Injection row shows econ/commentary/IV counts from latest verdict
-- [ ] API Status row shows DeepSeek reachability and last latency
-- [ ] Last Confidence Reading row shows per-seat confidence + chamber aggregate
-- [ ] "Edit Agent Instructions" CTA transitions panel to seat editor mode
-- [ ] Seat tabs switch between Harper/Oracle/Feucht/Consul/Herald
-- [ ] Each seat's prompt textarea is editable, prefilled with current system prompt
-- [ ] Source checkboxes per seat toggle context sources, persist on save
-- [ ] RiskFlow category dropdown per seat selects filter, persists on save
-- [ ] Save writes to Supabase via PUT endpoint; changes reflected in next deliberation
-- [ ] Reset clears overrides back to empty; confirmation dialog appears before reset
+### Track A
+
+- [ ] Gear icon visible top-right of ArbitrumChamber; click opens DevPasswordGate first-time-per-session
+- [ ] Correct password unlocks settings panel; panel overlays chamber (NOT full Sanctum); closeable via X or Escape
+- [ ] All 3 health rows expand/collapse; sub-status indicators correct (●/○/◐)
+- [ ] "Edit Agent Instructions" CTA transitions to seat editor; 5 seat tabs work
+- [ ] Each seat textarea editable, prefilled from current system prompt
+- [ ] Source checkboxes + category dropdown persist on Save (PUT)
+- [ ] Reset clears overrides with confirmation dialog
+- [ ] Chamber deliberation still runs successfully with override appended
+
+### Track B
+
+- [ ] Sanctum right-bottom slot renders `SanctumBriefing` (not `ArbitrumRiskSignals`)
+- [ ] Volatility Read shows Forecast on top, scenarios in one row, IV components below, no regime-shift bips line
+- [ ] Instrument cards: no "Heat" label, no Drivers/headline copy block, conviction tag replaced with "MARKET HEAT"
+
+### Track C
+
+- [ ] Dashboard right column under DayCard renders Chamber Risk Signals with KanbanTitle header
+- [ ] Reuses `useArbitrumLatest()` — no new poller
+- [ ] Chevron-collapsible (parity with Core KPIs)
+
+### Track D
+
+- [ ] Mobile main menu opens as left drawer (~80vw), content slides right with scrim
+- [ ] Hamburger icon cross-fades to back-arrow when open
+- [ ] Edge-swipe from left opens; drag-leftward closes; tap-scrim closes
+- [ ] Drawer header shows TP profile (target glyph + display name + handle + follow counts)
+- [ ] Primary nav routes correctly (Dashboard / Sanctum / RiskFlow / Calendar / Performance / Apparatus)
+- [ ] Footer utilities (Open Harper Chat / Settings / Help) wired
+- [ ] Old `HamburgerMenu.tsx` deleted; no dead imports remain
+
+### Cross-cutting
+
 - [ ] `npx tsc --noEmit --project frontend/tsconfig.json` passes
 - [ ] `rm -rf dist && npx vite build` passes
 - [ ] `cd backend-hono && bun run build` passes
-- [ ] `curl -s http://localhost:8080/api/arbitrum/health` returns valid JSON
-- [ ] `curl -s http://localhost:8080/api/arbitrum/seats/overrides` returns overrides array
-- [ ] `curl -s -X PUT http://localhost:8080/api/arbitrum/seats/overrides -H "Content-Type: application/json" -H "Authorization: Bearer SUPABASE_JWT" -d '{...}'` writes and returns ok (with valid admin JWT)
-- [ ] Chamber deliberation still runs successfully with overrides appended to prompts
-- [ ] Changelog entry added to `src/lib/changelog.ts`
-- [ ] File header `// [claude-code 2026-04-30]` added to substantially modified files
+- [ ] `cd mobile && rm -rf dist && bunx vite build` passes
+- [ ] Backend launchd reload — `curl -s http://localhost:8080/api/arbitrum/health` returns valid JSON
+- [ ] `curl -s http://localhost:8080/api/arbitrum/seats/overrides` returns 5-seat array
+- [ ] `curl -s -X PUT .../seats/overrides -H "Authorization: Bearer $JWT" -d {...}` returns `{ok:true}`
+- [ ] Single S56 changelog entry covering all tracks added to `src/lib/changelog.ts`
+- [ ] `// [claude-code 2026-05-01]` headers on all substantially modified files
 - [ ] All new files under 300 lines
 
 ## Validation Commands
@@ -348,17 +315,16 @@ rm -rf dist && npx vite build
 # Backend build
 cd backend-hono && bun run build
 
-# Restart local backend
+# Mobile build (clean rebuild — feedback_clean_rebuild_mobile)
+cd mobile && rm -rf dist && bunx vite build
+
+# Restart local backend (launchd)
 launchctl unload ~/Library/LaunchAgents/io.solvys.fintheon-backend.plist 2>/dev/null
 launchctl load ~/Library/LaunchAgents/io.solvys.fintheon-backend.plist
 
-# Health endpoint smoke test
+# Endpoint smoke tests
 curl -s http://localhost:8080/api/arbitrum/health | head -c 400
-
-# Seat overrides read smoke test
 curl -s http://localhost:8080/api/arbitrum/seats/overrides | head -c 400
-
-# Deliberation still works (no overrides)
 curl -s -X POST http://localhost:8080/api/arbitrum/deliberate \
   -H "Content-Type: application/json" \
   -d '{"question":"Test: SPX direction this week?","category":"test"}' | head -c 300
@@ -367,5 +333,5 @@ curl -s -X POST http://localhost:8080/api/arbitrum/deliberate \
 ## Commit Format
 
 ```
-[S56] feat: Arbitrum chamber settings & health panel — per-seat prompt overrides, context source checkboxes, RiskFlow category filters, health diagnostics
+[v6.0.4] feat: S56 Arbitrum settings + Sanctum restructure + Dashboard signals + mobile main-menu drawer
 ```
