@@ -122,7 +122,9 @@ export function BlendedIVForecastCard({
                   key={i}
                   className="flex-1 min-w-0 bg-[var(--fintheon-bg)]/40 border border-[var(--fintheon-accent)]/10 px-2 py-1.5"
                 >
-                  <div className="text-[9px] text-gray-400 truncate mb-0.5">{sc.label}</div>
+                  <div className="text-[9px] text-gray-400 truncate mb-0.5">
+                    {sc.label}
+                  </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[9px] text-gray-500">
                       {(sc.probability * 100).toFixed(0)}%
@@ -143,7 +145,9 @@ export function BlendedIVForecastCard({
         </>
       ) : (
         <>
-          <p className="text-[10px] text-gray-600 mb-2">No forecast available</p>
+          <p className="text-[10px] text-gray-600 mb-2">
+            No forecast available
+          </p>
           <div style={RULER_STYLE} aria-hidden="true" />
         </>
       )}

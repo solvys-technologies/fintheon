@@ -902,8 +902,10 @@ function MainLayoutInner() {
                 the sidebar surface flows continuously into main content with no
                 corner triangles. border-y kept to delineate from header/footer.
                 [claude-code 2026-05-01] rounded-l-2xl restored — top-left and
-                bottom-left corners need a soft radius against the sidebar. */}
-            <div className="z-10 flex-1 overflow-hidden relative min-w-0 flex flex-col border-y border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] rounded-l-2xl">
+                bottom-left corners need a soft radius against the sidebar.
+                [claude-code 2026-05-01] Gold hairline now wraps top/left/bottom
+                of main content (no right edge — that side meets Strategium). */}
+            <div className="z-10 flex-1 overflow-hidden relative min-w-0 flex flex-col border-t border-b border-l border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] rounded-tl-2xl rounded-bl-2xl">
               {/* Timeline overlay — slides over browser, does not affect iframe sizing */}
               <TimelineOverlay
                 open={timelineOverlayOpen}

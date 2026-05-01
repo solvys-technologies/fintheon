@@ -109,15 +109,15 @@ export function MainMenuDrawer({
             transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
             style={{
               position: "absolute",
-               top: 0,
-               left: 0,
-               bottom: 0,
-               width: DRAWER_WIDTH,
-               background: "var(--black, #050402)",
-               display: "flex",
-               flexDirection: "column",
-               paddingTop: "env(safe-area-inset-top)",
-               overflowY: "auto",
+              top: 0,
+              left: 0,
+              bottom: 0,
+              width: DRAWER_WIDTH,
+              background: "var(--black, #050402)",
+              display: "flex",
+              flexDirection: "column",
+              paddingTop: "env(safe-area-inset-top)",
+              overflowY: "auto",
             }}
           >
             {/* Header — profile area */}
@@ -250,7 +250,11 @@ export function MainMenuDrawer({
                       letterSpacing: "0.03em",
                     }}
                   >
-                    <Icon size={18} strokeWidth={1.5} color="var(--text-secondary)" />
+                    <Icon
+                      size={18}
+                      strokeWidth={1.5}
+                      color="var(--text-secondary)"
+                    />
                     {item.label}
                   </button>
                 );
@@ -294,7 +298,11 @@ export function MainMenuDrawer({
                       color: "var(--text-secondary)",
                     }}
                   >
-                    <Icon size={18} strokeWidth={1.5} color="var(--text-secondary)" />
+                    <Icon
+                      size={18}
+                      strokeWidth={1.5}
+                      color="var(--text-secondary)"
+                    />
                     {item.label}
                   </button>
                 );

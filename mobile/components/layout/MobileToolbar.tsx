@@ -18,7 +18,10 @@ interface MobileToolbarProps {
   menuOpen: boolean;
 }
 
-export function MobileToolbar({ onHamburgerTap, menuOpen }: MobileToolbarProps) {
+export function MobileToolbar({
+  onHamburgerTap,
+  menuOpen,
+}: MobileToolbarProps) {
   const { settings, isDirty, isSaving, saveAll } = useSettings();
   const traderName = settings.traderName || "";
   const isOnline = useOnlineStatus();
@@ -144,7 +147,11 @@ export function MobileToolbar({ onHamburgerTap, menuOpen }: MobileToolbarProps) 
                   transition={{ duration: 0.15 }}
                   style={{ position: "absolute" }}
                 >
-                  <ArrowLeft size={20} strokeWidth={1.5} color="var(--accent, #c79f4a)" />
+                  <ArrowLeft
+                    size={20}
+                    strokeWidth={1.5}
+                    color="var(--accent, #c79f4a)"
+                  />
                 </motion.div>
               ) : (
                 <motion.div
@@ -155,7 +162,11 @@ export function MobileToolbar({ onHamburgerTap, menuOpen }: MobileToolbarProps) 
                   transition={{ duration: 0.15 }}
                   style={{ position: "absolute" }}
                 >
-                  <Menu size={20} strokeWidth={1.5} color="var(--text-secondary)" />
+                  <Menu
+                    size={20}
+                    strokeWidth={1.5}
+                    color="var(--text-secondary)"
+                  />
                 </motion.div>
               )}
             </AnimatePresence>

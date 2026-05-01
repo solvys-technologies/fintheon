@@ -130,7 +130,12 @@ export function MobileShell({
       <motion.div
         animate={{ x: menuOpen ? "80vw" : 0 }}
         transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-        style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+        }}
       >
         <main
           ref={contentRef}
@@ -140,7 +145,9 @@ export function MobileShell({
             overflow: "hidden",
             paddingTop: `calc(env(safe-area-inset-top) + ${TOOLBAR_HEIGHT}px)`,
             paddingBottom:
-              activeTab === 2 ? "0" : `calc(env(safe-area-inset-bottom) + 24px)`,
+              activeTab === 2
+                ? "0"
+                : `calc(env(safe-area-inset-bottom) + 24px)`,
             display: "flex",
             flexDirection: "column",
           }}
