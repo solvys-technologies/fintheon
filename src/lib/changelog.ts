@@ -9,10 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-01T01:34:00-04:00",
+    agent: "claude-code",
+    summary:
+      "v6.0.4 deployed: S56 shipped (Arbitrum settings + Sanctum restructure + Dashboard signals + mobile drawer). Backend Fly.io, desktop Vercel, mobile PWA all live. Archived S56 to sprint-changelog/.",
+    files: [
+      "sprint-changelog/S56-BRIEF-arbitrum-settings-health-panel.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-01T01:30:00-04:00",
     agent: "claude-code",
     summary:
-      "S56: Arbitrum settings + Sanctum restructure + Dashboard signals + mobile main-menu drawer. Added arbitrum_seat_overrides migration + health/GET + overrides/GET+PUT endpoints. Seat prompts now append loaded overrides at deliberation time. Frontend settings panel (gear icon → DevPasswordGate → health chevrons → per-seat textareas/checkboxes/dropdown + save/reset). Sanctum bottom-right slot swapped from RiskSignals to SanctumBriefing; BlendedIVForecastCard restructured (forecast on top, scenarios in one row, IV below, regime bips dropped); AquariumPredictionCards ripped (Heat label removed, conviction→MARKET HEAT, Drivers+footer dropped). Dashboard right rail now mounts collapsible Chamber Risk Signals beneath DayCard. Mobile bottom-up HamburgerMenu deleted; new MainMenuDrawer (Twitter-style left drawer, ~80vw, content slides right, hamburger↔back-arrow cross-fade). Fixed RiskFlow card click-to-expand (onClick moved outside SwipeAction drag handler).",
+      "S56: Arbitrum settings + Sanctum restructure + Dashboard signals + mobile main-menu drawer.",
     files: [
       "supabase/migrations/20260501000000_arbitrum_seat_overrides.sql",
       "backend-hono/src/services/arbitrum/types.ts",
