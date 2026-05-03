@@ -55,7 +55,7 @@ async function launchContext(): Promise<BrowserContext> {
         "--disable-dev-shm-usage",
       ],
     })
-    .then((context) => {
+    .then(async (context) => {
       state.context = context;
       state.launches++;
       context.on("close", () => {
@@ -63,6 +63,42 @@ async function launchContext(): Promise<BrowserContext> {
         state.page = null;
         state.reconnects++;
       });
+      // Inject X auth cookie BEFORE any page load — must be awaited
+      const authToken = process.env.X_AUTH_TOKEN?.trim();
+      if (authToken) {
+        try {
+          await context.addCookies([
+            {
+              name: "auth_token",
+              value: authToken,
+              domain: ".x.com",
+              path: "/",
+              httpOnly: true,
+              secure: true,
+              sameSite: "None" as const,
+            },
+          ]);
+          // Also inject ct0 if available (CSRF companion token)
+          const ct0 = process.env.X_CT0_TOKEN?.trim();
+          if (ct0) {
+            await context.addCookies([
+              {
+                name: "ct0",
+                value: ct0,
+                domain: ".x.com",
+                path: "/",
+                secure: true,
+                sameSite: "Lax" as const,
+              },
+            ]);
+          }
+          log.info("X auth cookies injected", { domain: ".x.com" });
+        } catch (err) {
+          log.warn("X auth cookie injection failed", { error: String(err) });
+        }
+      } else {
+        log.info("No X_AUTH_TOKEN set — X will be unauthenticated");
+      }
       log.info("Persistent browser context launched", { dir });
       return context;
     })

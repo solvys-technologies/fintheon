@@ -3,6 +3,7 @@
 //   so the blindspots interview payloads silently evaporated after onboarding.
 // [claude-code 2026-03-28] S9-T3: Side-by-side Brief+Calendar with needle divider, kill padding
 // [claude-code 2026-03-11] T8: Tale of the Tape label for Sun+Mon<7AM, show only first brief item
+// [claude-code 2026-05-03] S57: dashboard risk rail uses IV scenario strip instead of chamber seats.
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useBackend } from "../../lib/backend";
 
@@ -17,8 +18,8 @@ import { KanbanTitle } from "../ui/KanbanTitle";
 import { ExpandableTapeItem } from "./ExpandableTapeItem";
 import TradeIdeaModal from "../TradeIdeaModal";
 import { DayCard } from "../narrative/DayCard";
-// [claude-code 2026-05-01] S56 Track C: Chamber Risk Signals in Dashboard right rail
-import { ArbitrumRiskSignals } from "../arbitrum/ArbitrumRiskSignals";
+import { NextSessionScenariosStrip } from "../narrative/NextSessionScenariosStrip";
+import { useIVScoreData } from "../narrative/useIVScoreData";
 import { RegimeCard } from "../dashboard/RegimeCard";
 import { RegimeTrackerModal } from "../regimes/RegimeTrackerModal";
 import {
@@ -74,8 +75,13 @@ export function MainDashboard({
   // [claude-code 2026-04-26] Regime Tracker is now a chevron-collapsible row
   // matching Core KPIs / RiskFlow header style. Default collapsed for parity.
   const [regimeCollapsed, setRegimeCollapsed] = useState(true);
-  // [claude-code 2026-05-01] S56 Track C: Chamber Risk Signals collapsible
+  // [claude-code 2026-05-03] S57: Next-session volatility strip collapsible.
   const [signalsCollapsed, setSignalsCollapsed] = useState(false);
+  const {
+    data: ivScoreData,
+    isLoading: ivScoreLoading,
+    error: ivScoreError,
+  } = useIVScoreData();
 
   const handleInterviewComplete = useCallback(
     (data: {
@@ -378,7 +384,7 @@ export function MainDashboard({
                   </div>
                 </div>
 
-                {/* Right: Day Plan (50%) — bare DayCard, day-of-week header, Chamber Risk Signals */}
+                {/* Right: Day Plan (50%) — bare DayCard, day-of-week header, next-session IV */}
                 <div className="flex-1 min-w-0 overflow-y-auto p-4 flex flex-col">
                   <KanbanTitle
                     title={new Date().toLocaleDateString("en-US", {
@@ -387,13 +393,13 @@ export function MainDashboard({
                     tone="gold"
                   />
                   <div className="mt-2 min-h-0 overflow-y-auto pr-1 relative">
-                    <DayCard bare />
+                    <DayCard bare showStreakInHeader />
                   </div>
 
-                  {/* Chamber Risk Signals — chevron-collapsible */}
+                  {/* Next-session volatility — chevron-collapsible */}
                   <div className="shrink-0 mt-4">
                     <KanbanTitle
-                      title="Chamber Risk Signals"
+                      title="Next-session volatility"
                       tone="gold"
                       headerRight={
                         <button
@@ -402,8 +408,8 @@ export function MainDashboard({
                           className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
                           title={
                             signalsCollapsed
-                              ? "Expand Chamber Risk Signals"
-                              : "Collapse Chamber Risk Signals"
+                              ? "Expand next-session volatility"
+                              : "Collapse next-session volatility"
                           }
                         >
                           {signalsCollapsed ? (
@@ -422,7 +428,17 @@ export function MainDashboard({
                         overflow: signalsCollapsed ? "hidden" : undefined,
                       }}
                     >
-                      <ArbitrumRiskSignals />
+                      {ivScoreError ? (
+                        <div className="py-3 text-[10px] text-[var(--fintheon-muted)]/40">
+                          Volatility scenarios unavailable ({ivScoreError}).
+                        </div>
+                      ) : (
+                        <NextSessionScenariosStrip
+                          scenarios={ivScoreData?.prediction?.scenarios}
+                          isLoading={ivScoreLoading}
+                          className="mt-2"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>

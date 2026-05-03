@@ -4,8 +4,11 @@
 // [claude-code 2026-05-01] S56 Track B: restructured layout — forecast on top
 //   with confidence fuse, scenarios in single row, IV components below,
 //   regime-shift bips line dropped.
+// [claude-code 2026-05-03] S57: scenario row now uses shared canonical strip with 0% rows.
 import type { IVScoreResponse } from "../../types/market-data";
+import { FadingRuler } from "../shared/FadingRuler";
 import { NothingFuse } from "../shared/NothingFuse";
+import { NextSessionScenariosStrip } from "./NextSessionScenariosStrip";
 
 interface BlendedIVForecastCardProps {
   data: IVScoreResponse | null;
@@ -26,13 +29,6 @@ function getEnvironmentLabel(score: number): string {
   if (score >= 2) return "Light Winds";
   return "Calm Seas";
 }
-
-const RULER_STYLE: React.CSSProperties = {
-  height: 1,
-  background:
-    "linear-gradient(to right, transparent 0%, color-mix(in srgb, var(--fintheon-accent) 35%, transparent) 50%, transparent 100%)",
-  margin: "10px 0",
-};
 
 export function BlendedIVForecastCard({
   data,
@@ -114,41 +110,16 @@ export function BlendedIVForecastCard({
             </div>
           </div>
 
-          {/* Scenarios — single row */}
-          {prediction.scenarios.length > 0 && (
-            <div className="flex gap-3 mb-1">
-              {prediction.scenarios.map((sc, i) => (
-                <div
-                  key={i}
-                  className="flex-1 min-w-0 bg-[var(--fintheon-bg)]/40 border border-[var(--fintheon-accent)]/10 px-2 py-1.5"
-                >
-                  <div className="text-[9px] text-gray-400 truncate mb-0.5">
-                    {sc.label}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[9px] text-gray-500">
-                      {(sc.probability * 100).toFixed(0)}%
-                    </span>
-                    <span
-                      className={`text-[10px] font-bold ${getScoreColor(sc.projectedScore)}`}
-                      style={{ fontFamily: "Doto, ui-monospace, monospace" }}
-                    >
-                      {sc.projectedScore.toFixed(1)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <NextSessionScenariosStrip scenarios={prediction.scenarios} />
 
-          <div style={RULER_STYLE} aria-hidden="true" />
+          <FadingRuler className="my-2.5" />
         </>
       ) : (
         <>
           <p className="text-[10px] text-gray-600 mb-2">
             No forecast available
           </p>
-          <div style={RULER_STYLE} aria-hidden="true" />
+          <FadingRuler className="my-2.5" />
         </>
       )}
 

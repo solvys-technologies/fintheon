@@ -1,5 +1,6 @@
 // [claude-code 2026-03-14] Market-data route handlers — Yahoo Finance + Unusual Whales + blended IV score
 // [claude-code 2026-03-11] IV score now served from persistent ticker cache (decay never restarts)
+// [claude-code 2026-05-03] S57: serialize IV predictions with canonical scenario slots.
 import type { Context } from "hono";
 import { streamSSE } from "hono/streaming";
 import {
@@ -20,6 +21,7 @@ import {
   subscribeToIVScoreUpdates,
   type IVScoreSnapshot,
 } from "../../services/market-data/iv-score-ticker.js";
+import { normalizeCanonicalIvScenarios } from "../../services/market-data/canonical-iv-scenarios.js";
 import type { StackedEvent } from "../../services/iv-scoring/index.js";
 
 interface AggregateEventSignal {
@@ -75,8 +77,19 @@ function toIVScoreResponse(
     );
   }
 
+  const prediction = snapshot.score.prediction
+    ? {
+        ...snapshot.score.prediction,
+        scenarios: normalizeCanonicalIvScenarios(
+          snapshot.score.prediction.scenarios,
+          snapshot.score.prediction.nextSessionScore,
+        ),
+      }
+    : undefined;
+
   return {
     ...snapshot.score,
+    prediction,
     points,
     instrument,
   };

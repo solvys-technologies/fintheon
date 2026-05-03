@@ -46,6 +46,8 @@ const CATEGORY_BADGE: Record<SourceAccountCategory, { color: string }> = {
   Custom: {
     color: "text-[var(--fintheon-muted)] border-[var(--fintheon-muted)]/30",
   },
+  StockNews: { color: "text-blue-400 border-blue-400/30" },
+  Options: { color: "text-yellow-400 border-yellow-400/30" },
   Official: { color: "text-amber-400 border-amber-400/30" },
 };
 

@@ -1114,118 +1114,116 @@ export async function handleNotRelevant(c: Context) {
 }
 
 /** GET /api/riskflow/sources — connection status for data source indicators
- * [claude-code 2026-04-18] S25-T2: expanded with multi-source health + per-user polling stats.
+ * [claude-code 2026-05-01] Retired Rettiwt + Agent Reach. Now reads riskflow_worker_heartbeats
+ * from Supabase to surface real-time tier status. X intake is home timeline via persistent browser.
  */
 export async function handleGetSources(c: Context) {
-  const { isRettiwtRateLimited, getRettiwtCooldownMs } =
-    await import("../../services/riskflow/econ-rettiwt-poller.js");
-  const { getCurrentPollingOwner, getActivePollingUsers, getAllUserPollStats } =
-    await import("../../services/riskflow/user-polling-registry.js");
-  const { getPoolStatus } = await import("../../services/rettiwt-service.js");
-  const { getStatus: getHealthStatus } =
-    await import("../../services/health-registry.js");
-  const { getDomainStatus } =
-    await import("../../services/agent-reach-service.js");
-  const { AGENT_REACH_POLLER_NAME } =
-    await import("../../services/riskflow/agent-reach-poller.js");
-
   const supabaseUp = isSupabaseConfigured();
-  const pool = getPoolStatus();
-  const rettiwtUp = pool.availableKeys > 0;
-  const rateLimited = isRettiwtRateLimited();
-  const cooldownSec = rateLimited
-    ? Math.round(getRettiwtCooldownMs() / 1000)
-    : 0;
 
-  // Per-source health from the registry
-  const health = getHealthStatus();
+  // Read riskflow worker tier status from Supabase heartbeats
+  let breakingActive = false;
+  let standardActive = false;
+  let commentaryActive = false;
+  let breakingLastRun: string | null = null;
+  let standardLastRun: string | null = null;
+  let commentaryLastRun: string | null = null;
+  let breakingIngested = 0;
+  let standardIngested = 0;
+  let commentaryIngested = 0;
+
   const now = Date.now();
-  const STALE_MS = 5 * 60_000; // 5 min
+  const STALE_MS = 5 * 60_000;
 
-  const lookup = (name: string) => {
-    const entry = health.services.find((s) => s.name === name);
-    const lastRunAt = entry?.lastRunAt ?? null;
-    const active = lastRunAt
-      ? now - new Date(lastRunAt).getTime() < STALE_MS
-      : false;
-    return { entry, lastRunAt, active };
-  };
+  try {
+    const sb = getSupabaseClient();
+    if (sb) {
+      const { data } = await sb
+        .from("riskflow_worker_heartbeats")
+        .select("tier, last_run_at, items_ingested");
+      if (data) {
+        for (const row of data as Array<{
+          tier: string;
+          last_run_at: string | null;
+          items_ingested: number;
+        }>) {
+          const lastRunAt = row.last_run_at;
+          const active = lastRunAt
+            ? now - new Date(lastRunAt).getTime() < STALE_MS
+            : false;
+          if (row.tier === "breaking") {
+            breakingActive = active;
+            breakingLastRun = lastRunAt;
+            breakingIngested = row.items_ingested ?? 0;
+          } else if (row.tier === "standard") {
+            standardActive = active;
+            standardLastRun = lastRunAt;
+            standardIngested = row.items_ingested ?? 0;
+          } else if (row.tier === "commentary") {
+            commentaryActive = active;
+            commentaryLastRun = lastRunAt;
+            commentaryIngested = row.items_ingested ?? 0;
+          }
+        }
+      }
+    }
+  } catch { /* heartbeat read is best-effort */ }
 
-  const ar = lookup(AGENT_REACH_POLLER_NAME);
-  // feed-poller handles the econ + Rettiwt branch; its lastRunAt represents both.
-  const fp = lookup("feed-poller");
+  const xHomeTimeline = breakingActive || standardActive || commentaryActive;
+  const hasIngested = breakingIngested + standardIngested + commentaryIngested > 0;
+
+  // Newsfeed health
+  const newsfeedHealthy = xHomeTimeline;
+  const newsfeedDegraded = !hasIngested && xHomeTimeline;
 
   const sources = {
-    agentReach: {
-      active: ar.active,
-      lastRunAt: ar.lastRunAt,
-      domains: getDomainStatus(),
-    },
-    rettiwt: {
-      active: fp.active && rettiwtUp,
-      lastRunAt: fp.lastRunAt,
-      rateLimited,
-      poolKeys: pool.totalKeys,
-    },
-    feedPoller: {
-      active: fp.active,
-      lastRunAt: fp.lastRunAt,
+    xHomeTimeline: {
+      active: xHomeTimeline,
+      tiers: {
+        breaking: { active: breakingActive, lastRunAt: breakingLastRun, ingested: breakingIngested },
+        standard: { active: standardActive, lastRunAt: standardLastRun, ingested: standardIngested },
+        commentary: { active: commentaryActive, lastRunAt: commentaryLastRun, ingested: commentaryIngested },
+      },
     },
   };
 
-  const anyActive = sources.agentReach.active || sources.feedPoller.active;
-
-  const anyTripped = Object.values(sources.agentReach.domains).some(
-    (s) => s === "tripped",
-  );
-
-  const newsfeedHealthy = anyActive;
-  const newsfeedDegraded = anyActive && (anyTripped || rateLimited);
+  // method_breakdown — count of items per ingest_pipeline from scored items (last 24h)
+  const methodBreakdown = await (async () => {
+    try {
+      const sb = getSupabaseClient();
+      if (!sb) return null;
+      const sinceIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data } = await sb
+        .from("scored_riskflow_items")
+        .select("ingest_pipeline")
+        .gte("published_at", sinceIso);
+      if (!data) return null;
+      const counts: Record<string, number> = {};
+      for (const row of data as Array<{ ingest_pipeline: string | null }>) {
+        const pipe = row.ingest_pipeline || "unknown";
+        counts[pipe] = (counts[pipe] || 0) + 1;
+      }
+      return counts;
+    } catch {
+      return null;
+    }
+  })();
 
   return c.json({
-    // Legacy fields (kept for backward compat)
     supabase: supabaseUp,
-    rettiwt: rettiwtUp,
-    rettiwtRateLimited: rateLimited,
-    rettiwtCooldownSec: cooldownSec,
-    rettiwtPool: pool,
-    pollingOwner: getCurrentPollingOwner(),
-    activePollers: getActivePollingUsers(),
-    xApi: false,
-
-    // NEW — multi-source health
-    sources,
+    xHomeTimeline,
     newsfeedHealthy,
     newsfeedDegraded,
-
-    // NEW — per-user polling attribution (keyed by userId or "backend" sentinel)
-    userPollStats: getAllUserPollStats(),
-
-    // S48-T1: method_breakdown — count of items per ingest_pipeline from scored items
-    method_breakdown: await (async () => {
-      try {
-        const sb = getSupabaseClient();
-        if (!sb) return null;
-        const sinceIso = new Date(
-          Date.now() - 24 * 60 * 60 * 1000,
-        ).toISOString();
-        const { data } = await sb
-          .from("scored_riskflow_items")
-          .select("ingest_pipeline")
-          .gte("published_at", sinceIso)
-          .limit(5000);
-        const breakdown: Record<string, number> = {};
-        for (const row of (data ?? []) as Array<{
-          ingest_pipeline: string | null;
-        }>) {
-          const p = row.ingest_pipeline || "unknown";
-          breakdown[p] = (breakdown[p] || 0) + 1;
-        }
-        return breakdown;
-      } catch {
-        return null;
-      }
-    })(),
+    sources,
+    method_breakdown: methodBreakdown,
+    // Legacy compat — remove after frontend migration
+    rettiwt: false,
+    rettiwtRateLimited: false,
+    rettiwtCooldownSec: 0,
+    rettiwtPool: { totalKeys: 0, availableKeys: 0, cooldownKeys: 0, disabledKeys: 0 },
+    pollingOwner: null,
+    activePollers: [],
+    xApi: false,
+    userPollStats: {},
   });
 }
 

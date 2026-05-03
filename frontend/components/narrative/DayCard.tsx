@@ -8,6 +8,7 @@
 //   font-mono. Two prices max, one target. Field names mirror T1 backend types
 //   (DayPlan: deskTheme/eventName + windows[]; DayPlanWindow: startTime/endTime,
 //   pricesOfInterest, invalidation, profitTarget, expectedMovePct).
+// [claude-code 2026-05-03] S57: optional header streak + hidden footer streak.
 import { useDayPlan } from "../../hooks/useDayPlan";
 import { useStreak } from "../../hooks/useStreak";
 import { useDriftStatus } from "../../hooks/useDriftStatus";
@@ -37,6 +38,8 @@ interface DayCardProps {
    * surface (e.g. MainDashboard's brief/plan split), drop the inner bg + p-3
    * so the content stretches to fill flush. */
   bare?: boolean;
+  hideStreak?: boolean;
+  showStreakInHeader?: boolean;
 }
 
 function fmtPrice(v: number | null): string {
@@ -64,6 +67,8 @@ export function DayCard({
   id = "day-card-anchor",
   className,
   bare,
+  hideStreak,
+  showStreakInHeader,
 }: DayCardProps) {
   const { data, isLoading } = useDayPlan();
   const { data: streak } = useStreak();
@@ -84,23 +89,28 @@ export function DayCard({
       aria-label="Day card"
       data-tour-target="day-card"
     >
-      <header className="flex items-baseline gap-2 mb-1">
-        <span
-          className="text-[10px] font-semibold uppercase tracking-[0.2em]"
-          style={{
-            color: "var(--fintheon-accent)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
-          Desk Plan
-        </span>
-        {plan?.sourceBriefId && (
+      <header className="flex items-center justify-between gap-3 mb-1">
+        <div className="flex items-baseline gap-2">
           <span
-            className="text-[8px] uppercase tracking-widest"
-            style={{ color: "var(--fintheon-muted, #908774)" }}
+            className="text-[10px] font-semibold uppercase tracking-[0.2em]"
+            style={{
+              color: "var(--fintheon-accent)",
+              fontFamily: "var(--font-heading)",
+            }}
           >
-            brief
+            Desk Plan
           </span>
+          {plan?.sourceBriefId && (
+            <span
+              className="text-[8px] uppercase tracking-widest"
+              style={{ color: "var(--fintheon-muted, #908774)" }}
+            >
+              brief
+            </span>
+          )}
+        </div>
+        {showStreakInHeader && !hideStreak && (
+          <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={14} />
         )}
       </header>
 
@@ -161,42 +171,48 @@ export function DayCard({
 
       <FadingRuler />
 
-      <footer className="flex items-center justify-between pt-3">
-        <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={16} />
-        {drift && (
-          <span
-            className="inline-flex items-center gap-1.5"
-            title={drift.message ?? undefined}
-            aria-label={`Drift ${DRIFT_LABELS[driftVisual]}${drift.message ? ` — ${drift.message}` : ""}`}
-          >
+      {((!hideStreak && !showStreakInHeader) || drift) && (
+        <footer className="flex items-center justify-between pt-3">
+          {!hideStreak && !showStreakInHeader ? (
+            <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={16} />
+          ) : (
+            <span aria-hidden />
+          )}
+          {drift && (
             <span
-              className="text-[9px] uppercase tracking-[0.16em]"
-              style={{
-                color: "var(--fintheon-muted, #908774)",
-                fontFamily: "var(--font-data, monospace)",
-              }}
+              className="inline-flex items-center gap-1.5"
+              title={drift.message ?? undefined}
+              aria-label={`Drift ${DRIFT_LABELS[driftVisual]}${drift.message ? ` — ${drift.message}` : ""}`}
             >
-              Drift
+              <span
+                className="text-[9px] uppercase tracking-[0.16em]"
+                style={{
+                  color: "var(--fintheon-muted, #908774)",
+                  fontFamily: "var(--font-data, monospace)",
+                }}
+              >
+                Drift
+              </span>
+              <span
+                aria-hidden
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: DRIFT_COLORS[driftVisual],
+                  display: "inline-block",
+                }}
+              />
+              <span
+                className="text-[10px]"
+                style={{ color: "var(--fintheon-text)" }}
+              >
+                {DRIFT_LABELS[driftVisual]}
+              </span>
             </span>
-            <span
-              aria-hidden
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                background: DRIFT_COLORS[driftVisual],
-                display: "inline-block",
-              }}
-            />
-            <span
-              className="text-[10px]"
-              style={{ color: "var(--fintheon-text)" }}
-            >
-              {DRIFT_LABELS[driftVisual]}
-            </span>
-          </span>
-        )}
-      </footer>
+          )}
+        </footer>
+      )}
     </section>
   );
 }

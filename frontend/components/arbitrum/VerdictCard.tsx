@@ -1,14 +1,17 @@
 // [claude-code 2026-04-25] Consensus + chamber-confidence numerals now use DigitGroup
 //   (solvys-transitions number pop-in) so the percentages cascade in on every verdict refresh.
 // [claude-code 2026-04-24] S35-T3: standalone Arbitrum verdict card — consensus, confidence, digest, dissent
+// [claude-code 2026-05-03] S57: embedded mode drops inner card border for chamber layout.
 import { NothingFuse } from "../shared/NothingFuse";
 import { DigitGroup } from "../shared/DigitGroup";
+import { FadingRuler } from "../shared/FadingRuler";
 import { DissentBadge } from "./DissentBadge";
 import type { ArbitrumVerdict } from "./types";
 
 interface VerdictCardProps {
   verdict: ArbitrumVerdict;
   compact?: boolean;
+  embedded?: boolean;
   className?: string;
 }
 
@@ -25,6 +28,7 @@ function cleanDigestText(text: string): string {
 export function VerdictCard({
   verdict,
   compact = false,
+  embedded = false,
   className,
 }: VerdictCardProps) {
   const {
@@ -38,11 +42,15 @@ export function VerdictCard({
   const consensusScore = Math.max(0, Math.min(10, consensus_probability * 10));
   const confidenceScore = Math.max(0, Math.min(10, confidence * 10));
   const cleanedDigest = cleanDigestText(digest_text);
+  const surfaceClass = embedded
+    ? "bg-transparent py-2"
+    : `bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/30 ${
+        compact ? "p-3" : "p-4"
+      }`;
 
   return (
-    <div
-      className={`bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/30 ${compact ? "p-3" : "p-4"} ${className ?? ""}`}
-    >
+    <div className={`${surfaceClass} ${className ?? ""}`}>
+      {embedded && <FadingRuler className="mb-2" />}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-baseline gap-2">
           <DigitGroup
@@ -101,6 +109,7 @@ export function VerdictCard({
         </span>
         {trigger && <span className="uppercase tracking-wider">{trigger}</span>}
       </div>
+      {embedded && <FadingRuler className="mt-2" />}
     </div>
   );
 }

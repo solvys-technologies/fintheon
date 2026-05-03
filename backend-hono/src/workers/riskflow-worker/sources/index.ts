@@ -61,9 +61,18 @@ export interface TierRunResult {
 async function safeCollect(
   label: string,
   fn: () => Promise<CollectedNewsItem[]>,
+  timeoutMs = 90_000,
 ): Promise<{ items: CollectedNewsItem[]; errors: number }> {
   try {
-    const items = await fn();
+    const items = await Promise.race([
+      fn(),
+      new Promise<CollectedNewsItem[]>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`collector timeout after ${timeoutMs}ms`)),
+          timeoutMs,
+        ),
+      ),
+    ]);
     return { items, errors: 0 };
   } catch (err) {
     console.warn(

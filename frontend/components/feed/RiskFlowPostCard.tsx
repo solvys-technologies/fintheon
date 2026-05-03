@@ -1,7 +1,8 @@
-// [claude-code 2026-04-30] Expanded RiskFlow body is distilled to media/source
-// preview plus actions. Headline, IV, source, and direction live in the preview row.
-import { useEffect, useState } from "react";
-import { ExternalLink, MessageSquare, ThumbsDown, Video } from "lucide-react";
+// [claude-code 2026-05-03] Video cards now auto-play muted on expand, loop,
+// stop on collapse (component unmount destroys the <video> element). X-inspired
+// mute toggle button at bottom-left overlays the video poster area.
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ExternalLink, MessageSquare, ThumbsDown, Video, Volume2, VolumeX } from "lucide-react";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import { BeatMissBadge } from "./BeatMissBadge";
 import { openSourcePopup } from "../../lib/source-popup";
@@ -35,6 +36,8 @@ export function RiskFlowPostCard({
   const severity = alertSeverityToPalette(alert.severity);
   const severityColor = colorForSeverity(severity);
   const [footerFuseCharged, setFooterFuseCharged] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     setFooterFuseCharged(false);
@@ -42,25 +45,44 @@ export function RiskFlowPostCard({
     return () => window.clearTimeout(timer);
   }, [alert.id, fuseScore]);
 
+  const toggleMute = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsMuted((prev) => !prev);
+  }, []);
+
   return (
     <article className="border-t border-[var(--fintheon-accent)]/8 bg-[rgba(5,4,2,0.42)] px-3 py-3 sm:px-4">
       <div className="min-w-0">
         {alert.videoUrl ? (
-          <a
-            href={alert.url ?? alert.videoUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="block overflow-hidden rounded-[6px] border border-[var(--fintheon-accent)]/10 bg-[var(--fintheon-bg)]"
-          >
+          <div className="relative block overflow-hidden rounded-[6px] border border-[var(--fintheon-accent)]/10 bg-[var(--fintheon-bg)]">
             <video
+              ref={videoRef}
               src={alert.videoUrl}
               poster={alert.imageUrl ?? undefined}
-              controls
+              muted={isMuted}
+              loop
+              autoPlay
+              playsInline
               preload="metadata"
               className={`block w-full ${mediaHeight(surface)}`}
+              onError={(e) => {
+                const wrapper = e.currentTarget.parentElement;
+                if (wrapper) wrapper.style.display = "none";
+              }}
             />
-          </a>
+            <button
+              type="button"
+              onClick={toggleMute}
+              className="absolute bottom-2 left-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/80 hover:text-white"
+              aria-label={isMuted ? "Unmute" : "Mute"}
+            >
+              {isMuted ? (
+                <VolumeX className="h-3.5 w-3.5" />
+              ) : (
+                <Volume2 className="h-3.5 w-3.5" />
+              )}
+            </button>
+          </div>
         ) : alert.imageUrl ? (
           <a
             href={alert.url ?? alert.imageUrl}

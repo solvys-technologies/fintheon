@@ -45,27 +45,6 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
   const { status: gatewayStatus, hermesStatus } = useGateway();
   const { agents } = useFintheonAgents();
   const sourceStatus = useSourceStatus();
-  const { addToast } = useToast();
-  const prevRateLimited = useRef(false);
-
-  // Toast when Rettiwt 429 kicks in or recovers
-  useEffect(() => {
-    if (sourceStatus.rettiwtRateLimited && !prevRateLimited.current) {
-      addToast(
-        `X rate limited — cooling down ${sourceStatus.rettiwtCooldownSec}s`,
-        "info",
-        undefined,
-        "connection-status",
-      );
-    } else if (!sourceStatus.rettiwtRateLimited && prevRateLimited.current) {
-      addToast("X polling resumed", "success", undefined, "connection-status");
-    }
-    prevRateLimited.current = sourceStatus.rettiwtRateLimited;
-  }, [
-    sourceStatus.rettiwtRateLimited,
-    sourceStatus.rettiwtCooldownSec,
-    addToast,
-  ]);
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -98,23 +77,18 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
     });
   }, [userId]);
 
-  // [claude-code 2026-04-18] S25-T4: Broadcast unified newsfeedHealthy + per-user lastSuccessAt
-  // so peers see truthful aggregated feed health and a per-card "Polled Nm ago" line.
-  const myStats = sourceStatus.userPollStats?.[userId];
   const buildPayload = useCallback(
     (): PresencePayload => ({
       userId,
       displayName,
       caoName,
       caoOnline,
-      riskflowPolling: riskflowKilled ? false : sourceStatus.rettiwt,
+      riskflowPolling: riskflowKilled ? false : sourceStatus.xHomeTimeline,
       riskflowKilled,
       inCall: false,
       userStatus,
       services: {
-        rettiwt: riskflowKilled ? false : sourceStatus.rettiwt,
-        rettiwtRateLimited: sourceStatus.rettiwtRateLimited,
-        rettiwtNoKeys: sourceStatus.rettiwtPool?.totalKeys === 0,
+        xHomeTimeline: riskflowKilled ? false : sourceStatus.xHomeTimeline,
         riskflowKilled,
         aiRuntime: caoOnline,
         newsfeedPolling: {
@@ -124,9 +98,8 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
         backendConnection: sourceStatus.backendReachable,
         newsfeedHealthy: sourceStatus.newsfeedHealthy,
         newsfeedDegraded: sourceStatus.newsfeedDegraded,
-        agentReachActive: sourceStatus.agentReach.active,
-        lastSuccessAt: myStats?.lastSuccessAt ?? null,
-        totalContributions: myStats?.totalContributions ?? 0,
+        lastSuccessAt: null,
+        totalContributions: 0,
       },
     }),
     [
@@ -134,16 +107,11 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
       displayName,
       caoName,
       caoOnline,
-      sourceStatus.rettiwt,
-      sourceStatus.rettiwtRateLimited,
-      sourceStatus.rettiwtPool?.totalKeys,
+      sourceStatus.xHomeTimeline,
       sourceStatus.backendReachable,
       sourceStatus.lastPollSuccess,
       sourceStatus.newsfeedHealthy,
       sourceStatus.newsfeedDegraded,
-      sourceStatus.agentReach.active,
-      myStats?.lastSuccessAt,
-      myStats?.totalContributions,
       userStatus,
       riskflowKilled,
     ],
@@ -167,9 +135,7 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
           if (!latest) continue;
 
           const defaultServices = {
-            rettiwt: false,
-            rettiwtRateLimited: false,
-            rettiwtNoKeys: true,
+            xHomeTimeline: false,
             riskflowKilled: false,
             aiRuntime: false,
             newsfeedPolling: {
@@ -179,7 +145,6 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
             backendConnection: false,
             newsfeedHealthy: false,
             newsfeedDegraded: false,
-            agentReachActive: false,
             lastSuccessAt: null,
             totalContributions: 0,
           };

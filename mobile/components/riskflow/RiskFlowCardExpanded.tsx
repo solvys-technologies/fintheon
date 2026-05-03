@@ -12,8 +12,11 @@
 //   with YouTube + open-original CTAs; mini surfaces keep the legacy [OPEN SOURCE] link.
 // [claude-code 2026-04-30] Expanded body is distilled to media/source footer only:
 // the preview row owns headline, IV, source, and direction metadata.
+// [claude-code 2026-05-03] Added video support: auto-play muted loop with X-inspired
+// mute toggle button, matching desktop RiskFlowPostCard behavior.
 import { motion } from "framer-motion";
-import { Paperclip } from "lucide-react";
+import { Paperclip, Volume2, VolumeX } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
 import type { MobileRiskFlowAlert } from "../../contexts/RiskFlowContext";
 import { NothingFuse } from "@frontend/components/shared/NothingFuse";
 
@@ -67,6 +70,14 @@ export function RiskFlowCardExpanded({
   const showSourcePreview = surface === "full" || surface === "timeline";
   const showFooter =
     !showSourcePreview && ivScore != null && severityColor != null;
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const toggleMute = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsMuted((prev) => !prev);
+  }, []);
+
   return (
     <motion.div
       initial={{ height: 0, opacity: 0 }}
@@ -79,9 +90,70 @@ export function RiskFlowCardExpanded({
         className="pb-4 pt-2 fade-divider-top"
         style={{ borderTop: "none", padding: "8px 12px 16px 26px" }}
       >
-        {/* [claude-code 2026-04-25] S35: hero image — RSS enclosure / og:image, hidden
-            on load failure so a broken image never breaks the expanded card. */}
-        {alert.imageUrl && (
+        {/* Video: auto-play muted loop, stops on collapse (unmount). */}
+        {alert.videoUrl ? (
+          <div
+            style={{
+              position: "relative",
+              display: "block",
+              marginBottom: "12px",
+              borderRadius: "8px",
+              overflow: "hidden",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <video
+              ref={videoRef}
+              src={alert.videoUrl}
+              poster={alert.imageUrl ?? undefined}
+              muted={isMuted}
+              loop
+              autoPlay
+              playsInline
+              preload="metadata"
+              style={{
+                width: "100%",
+                maxHeight: "280px",
+                objectFit: "contain",
+                display: "block",
+                background: "var(--fintheon-bg, #050402)",
+              }}
+              onError={(e) => {
+                const wrapper = e.currentTarget.parentElement;
+                if (wrapper) wrapper.style.display = "none";
+              }}
+            />
+            <button
+              type="button"
+              onClick={toggleMute}
+              style={{
+                position: "absolute",
+                bottom: 8,
+                left: 8,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                background: "rgba(0,0,0,0.6)",
+                color: "rgba(255,255,255,0.9)",
+                backdropFilter: "blur(6px)",
+                WebkitBackdropFilter: "blur(6px)",
+                border: 0,
+                padding: 0,
+                cursor: "pointer",
+              }}
+              aria-label={isMuted ? "Unmute" : "Mute"}
+            >
+              {isMuted ? (
+                <VolumeX size={14} />
+              ) : (
+                <Volume2 size={14} />
+              )}
+            </button>
+          </div>
+        ) : alert.imageUrl && (
           <a
             href={alert.url ?? alert.imageUrl}
             target="_blank"

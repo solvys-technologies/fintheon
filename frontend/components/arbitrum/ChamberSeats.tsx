@@ -1,5 +1,7 @@
 // [claude-code 2026-04-29] S52-T3: extracted from ArbitrumChamber to keep file under 300-line
 //   limit. SeatCard + EmptySeat + shared helpers (seatLetter, ROLE_DISPLAY_NAMES).
+// [claude-code 2026-05-03] S57: compact seat tiles; rationale copy removed from chamber row.
+// [claude-code 2026-05-03] Agent tiles can open floating full-summary popups.
 import { NothingFuse } from "../shared/NothingFuse";
 import { DigitGroup } from "../shared/DigitGroup";
 import type { ArbitrumSeat } from "./types";
@@ -21,31 +23,46 @@ export function SeatCard({
   seat,
   index,
   visible,
+  isSummaryOpen,
+  onOpenSummary,
 }: {
   seat: ArbitrumSeat;
   index: number;
   visible: boolean;
+  isSummaryOpen?: boolean;
+  onOpenSummary?: () => void;
 }) {
   const score = Math.max(0, Math.min(10, seat.probability * 10));
   const dissented = Boolean(seat.dissented);
+  const canOpenSummary = Boolean(seat.rationale.trim() && onOpenSummary);
 
   return (
-    <div
-      className={`bg-[var(--fintheon-bg)] border p-3 flex flex-col min-w-0 ${dissented ? "border-[var(--fintheon-accent)]/50" : "border-[var(--fintheon-accent)]/25"}`}
+    <button
+      type="button"
+      disabled={!canOpenSummary}
+      onClick={onOpenSummary}
+      className={`bg-transparent px-2 py-2 flex flex-col min-w-0 text-left transition-colors ${
+        canOpenSummary
+          ? "cursor-pointer hover:bg-[var(--fintheon-accent)]/6"
+          : "cursor-default"
+      } ${isSummaryOpen ? "bg-[var(--fintheon-accent)]/8" : ""}`}
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(4px)",
         transition: `opacity 260ms ease-out ${index * 200}ms, transform 260ms ease-out ${index * 200}ms`,
       }}
+      title={canOpenSummary ? "Read full seat summary" : undefined}
     >
       <div className="flex items-center gap-2">
         <span
-          className="inline-flex items-center justify-center w-5 h-5 text-[10px] border border-[var(--fintheon-accent)]/50 text-[var(--fintheon-accent)]"
+          className="inline-flex items-center justify-center w-4 h-4 text-[9px] text-[var(--fintheon-accent)]"
           aria-hidden
         >
           {seatLetter(seat.role)}
         </span>
-        <span className="text-[11px] uppercase tracking-wider text-[var(--fintheon-text)]/80">
+        <span
+          className={`text-[11px] uppercase tracking-wider ${dissented ? "text-[var(--fintheon-accent)]" : "text-[var(--fintheon-text)]/80"}`}
+        >
           {ROLE_DISPLAY_NAMES[seat.role] ?? seat.role}
         </span>
       </div>
@@ -56,7 +73,7 @@ export function SeatCard({
           className="text-[var(--fintheon-accent)] leading-none"
           style={{
             fontFamily: "Doto, ui-monospace, monospace",
-            fontSize: 26,
+            fontSize: 22,
           }}
         />
         <span className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/50">
@@ -72,11 +89,7 @@ export function SeatCard({
           segments={10}
         />
       </div>
-
-      <p className="mt-2 text-[11px] text-[var(--fintheon-text)]/75 line-clamp-2">
-        {seat.rationale}
-      </p>
-    </div>
+    </button>
   );
 }
 
@@ -91,7 +104,7 @@ export function EmptySeat({
 }) {
   return (
     <div
-      className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/15 p-3 flex flex-col min-w-0"
+      className="bg-transparent px-2 py-2 flex flex-col min-w-0"
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(4px)",
@@ -100,7 +113,7 @@ export function EmptySeat({
     >
       <div className="flex items-center gap-2">
         <span
-          className="inline-flex items-center justify-center w-5 h-5 text-[10px] border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)]/60"
+          className="inline-flex items-center justify-center w-4 h-4 text-[9px] text-[var(--fintheon-accent)]/60"
           aria-hidden
         >
           {seatLetter(role)}
@@ -109,7 +122,7 @@ export function EmptySeat({
           {ROLE_DISPLAY_NAMES[role] ?? role}
         </span>
       </div>
-      <p className="mt-3 text-[11px] text-[var(--fintheon-text)]/30">
+      <p className="mt-2 text-[10px] text-[var(--fintheon-text)]/30">
         Awaiting seat…
       </p>
     </div>

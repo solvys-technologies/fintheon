@@ -56,7 +56,7 @@ async function readHeartbeats(): Promise<TierHeartbeat[]> {
   const sb = getSupabaseClient();
   if (!sb) return [];
   const { data, error } = await sb
-    .from("news_worker_heartbeats")
+    .from("riskflow_worker_heartbeats")
     .select("tier, last_run_at, items_ingested, errors");
   if (error || !data) return [];
   const now = Date.now();

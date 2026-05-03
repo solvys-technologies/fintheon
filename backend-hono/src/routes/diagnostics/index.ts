@@ -194,7 +194,7 @@ async function getNewsWorkerSnapshot(): Promise<
   if (!sb) return { age_seconds: null, tiers: [] };
   try {
     const { data, error } = await sb
-      .from("news_worker_heartbeats")
+      .from("riskflow_worker_heartbeats")
       .select("tier, last_run_at, items_ingested, errors");
     if (error || !data) return { age_seconds: null, tiers: [] };
     const now = Date.now();

@@ -1,10 +1,10 @@
-// [claude-code 2026-04-29] X intake is browser-harness first. Rettiwt and
-// Agent Reach are retired from the active pipeline; this collector uses the
-// worker-owned persistent browser session against x.com, then falls back only
-// to the public syndication widget when the session is unavailable.
-// [claude-code 2026-04-26] Syndication fallback:
-//   https://syndication.twitter.com/srv/timeline-profile/screen-name/{handle}
-// Returns an HTML page whose <script id="__NEXT_DATA__"> embeds tweet JSON.
+// [claude-code 2026-05-03] Hardened X auto-reauth flow: (1) clear stale x.com
+// cookies before login attempt so X shows a clean login form instead of a broken
+// session-expired page, (2) pre-flight auth check in fetchHomeTimeline detects
+// login wall on first attempt and triggers re-auth immediately instead of waiting
+// 3 cycles, (3) multi-strategy selectors for Next/Login buttons, (4) extract ct0
+// alongside auth_token so persistent context re-launch has both, (5) challenge
+// page handling (username verification step), (6) CAPTCHA/2FA detection in logs.
 
 import type { CollectedNewsItem, NewsTier } from "./types.js";
 import { scoreHeadline } from "../score.js";
@@ -12,11 +12,17 @@ import {
   browseRead,
   withPersistentBrowserPage,
 } from "../../../services/browser/index.js";
+import { getTweetsViaXActions } from "../../../services/xactions/client.js";
+import {
+  getRoutingForHandle,
+  passesContentFilter,
+} from "./handle-routing.js";
 
 const SYNDICATION_BASE = "https://syndication.twitter.com";
 const FETCH_TIMEOUT_MS = 12_000;
-const MAX_TWEETS_PER_HANDLE = 12;
+const MAX_TWEETS_TOTAL = 60;
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const HOME_SCROLL_COUNT = 8;
 const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36";
 
@@ -25,16 +31,9 @@ interface ExtractedTweet {
   text: string;
   timestamp: string;
   permalink: string;
-  /** First media URL attached to the tweet (photo or video thumbnail).
-   *  Pulled from extended_entities.media[0].media_url_https with
-   *  entities.media[0].media_url_https as fallback. */
+  author_handle: string;
   image_url?: string | null;
-  /** [claude-code 2026-04-27] S46.4/I: highest-bitrate mp4 from
-   *  extended_entities.media[0].video_info.variants[] when the tweet attaches
-   *  a video / animated_gif. RiskFlowDetailCard renders <video> inline
-   *  (OSINT-prioritized). */
   video_url?: string | null;
-  /** Which browser-harness path produced the item. */
   pipeline_tag?: string;
 }
 
@@ -42,71 +41,344 @@ function stripHandle(h: string): string {
   return h.replace(/^@/, "").trim();
 }
 
-function isoDate(value: string | undefined, fallbackMs: number): string {
-  if (value) return value.slice(0, 10);
-  return new Date(fallbackMs).toISOString().slice(0, 10);
-}
-
-function nextIsoDate(value: string | undefined): string {
-  const base = value ? Date.parse(value) : Date.now();
-  const ms = Number.isFinite(base) ? base : Date.now();
-  return new Date(ms + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-}
-
 function normalizeTweetText(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
 
-function normalizePermalink(
-  url: string,
-  cleanHandle: string,
-  tweetId: string,
-): string {
-  try {
-    const parsed = new URL(url);
-    if (
-      parsed.hostname.endsWith("x.com") ||
-      parsed.hostname.endsWith("twitter.com")
-    ) {
-      return `https://x.com/${cleanHandle}/status/${tweetId}`;
-    }
-  } catch {
-    // fall through
-  }
-  return `https://x.com/${cleanHandle}/status/${tweetId}`;
+function extractHandleFromPermalink(href: string): string | null {
+  // e.g. /FinancialJuice/status/123 or https://x.com/FinancialJuice/status/123
+  const match = href.match(/\/([^/]+)\/status\/\d+/);
+  return match ? stripHandle(match[1]) : null;
 }
 
-async function fetchBrowserUseTweets(
-  cleanHandle: string,
-  opts: { from?: string; to?: string },
-): Promise<ExtractedTweet[]> {
-  const fromDate = isoDate(opts.from, Date.now() - MAX_AGE_MS);
-  const toDate = opts.to ? nextIsoDate(opts.to) : nextIsoDate(undefined);
-  const query = `from:${cleanHandle} since:${fromDate} until:${toDate}`;
-  const url = `https://x.com/search?q=${encodeURIComponent(query)}&f=live`;
+// Home timeline cache — shared across tiers within the same cycle window
+
+let homeTimelineCache: { tweets: ExtractedTweet[]; at: number } | null = null;
+const HOME_CACHE_TTL_MS = 90_000;
+
+// Auth expiry detection — consecutive empty cycles means the token likely expired
+let consecutiveEmptyCycles = 0;
+const AUTH_EXPIRY_THRESHOLD = 3;
+let loginInProgress = false;
+
+async function attemptXLogin(): Promise<boolean> {
+  if (loginInProgress) return false;
+  const email = process.env.X_EMAIL?.trim();
+  const password = process.env.X_PASSWORD?.trim();
+  if (!email || !password) {
+    console.warn(
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        service: "riskflow-worker",
+        stage: "x_login_skipped",
+        reason: "X_EMAIL or X_PASSWORD not set — cannot auto-refresh token",
+      }),
+    );
+    return false;
+  }
+
+  loginInProgress = true;
+  console.log(
+    JSON.stringify({
+      ts: new Date().toISOString(),
+      service: "riskflow-worker",
+      stage: "x_login_attempt",
+      email: email.slice(0, 3) + "***",
+    }),
+  );
 
   try {
     return await withPersistentBrowserPage(async (page) => {
-      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45_000 });
-      await page.waitForTimeout(5_000);
-
-      const maxScrolls = opts.from ? 18 : 4;
-      for (let i = 0; i < maxScrolls; i++) {
-        await page.mouse.wheel(0, 1600);
-        await page.waitForTimeout(1_000);
+      // Clear x.com cookies first — stale auth_token from context launch
+      // can cause X to show a broken session-expired page instead of login
+      const ctx = page.context();
+      const preCookies = await ctx.cookies(".x.com");
+      if (preCookies.length > 0) {
+        await ctx.clearCookies({ domain: ".x.com" });
+        console.log(
+          JSON.stringify({
+            ts: new Date().toISOString(),
+            service: "riskflow-worker",
+            stage: "x_login_cleared_cookies",
+            count: preCookies.length,
+          }),
+        );
       }
 
-      const rows = await page.evaluate((handle) => {
+      // Navigate to login
+      await page.goto("https://x.com/login", {
+        waitUntil: "domcontentloaded",
+        timeout: 30_000,
+      });
+      await page.waitForTimeout(3_000);
+
+      // Detect if we actually landed on a login page (not a broken/error page)
+      const pageText = await page.evaluate(() =>
+        document.body.innerText.slice(0, 800),
+      );
+      const hasLoginForm =
+        /sign in|log in|sign up/i.test(pageText) &&
+        !/\bsomething went wrong\b/i.test(pageText);
+      if (!hasLoginForm) {
+        console.error(
+          JSON.stringify({
+            ts: new Date().toISOString(),
+            service: "riskflow-worker",
+            stage: "x_login_no_form",
+            currentUrl: page.url(),
+            pagePreview: pageText.slice(0, 250),
+          }),
+        );
+        return false;
+      }
+
+      // Fill username/email
+      const usernameInput = page.locator(
+        'input[autocomplete="username"], input[name="text"], input[type="text"]',
+      ).first();
+      await usernameInput.fill(email);
+      await page.waitForTimeout(800);
+
+      // Click next — try multiple selector strategies
+      let nextClicked = false;
+      const nextSelectors = [
+        '[role="button"]:has-text("Next")',
+        '[role="button"]:has-text("next")',
+        'button:has-text("Next")',
+        'span:has-text("Next")',
+      ];
+      for (const sel of nextSelectors) {
+        const btn = page.locator(sel).first();
+        if (await btn.isVisible({ timeout: 1_000 }).catch(() => false)) {
+          await btn.click();
+          nextClicked = true;
+          break;
+        }
+      }
+      if (nextClicked) {
+        await page.waitForTimeout(2_500);
+      }
+
+      // Handle unusual activity / phone verification challenge if shown
+      const challengeText = await page.evaluate(() =>
+        document.body.innerText.slice(0, 300),
+      );
+      if (/\b(verify|unusual|challenge|phone|username)\b/i.test(challengeText)) {
+        // X may ask to verify the username before showing password
+        const verifyInput = page.locator(
+          'input[autocomplete="on"], input[name="text"], input[type="text"]',
+        ).first();
+        if (await verifyInput.isVisible({ timeout: 1_000 }).catch(() => false)) {
+          const verifyValue = await verifyInput.inputValue();
+          if (!verifyValue) {
+            await verifyInput.fill(email);
+            await page.waitForTimeout(500);
+            const verifyBtns = page.locator(
+              '[role="button"]:has-text("Next"), [role="button"]:has-text("next"), button:has-text("Next")',
+            ).first();
+            if (await verifyBtns.isVisible({ timeout: 1_000 }).catch(() => false)) {
+              await verifyBtns.click();
+              await page.waitForTimeout(2_500);
+            }
+          }
+        }
+      }
+
+      // Fill password
+      const passwordInput = page.locator(
+        'input[type="password"], input[name="password"]',
+      ).first();
+      if (await passwordInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await passwordInput.fill(password);
+        await page.waitForTimeout(800);
+
+        // Click login — try multiple selector strategies
+        const loginSelectors = [
+          '[role="button"]:has-text("Log in")',
+          '[role="button"]:has-text("Sign in")',
+          'button:has-text("Log in")',
+          'span:has-text("Log in")',
+        ];
+        for (const sel of loginSelectors) {
+          const btn = page.locator(sel).first();
+          if (await btn.isVisible({ timeout: 1_000 }).catch(() => false)) {
+            await btn.click();
+            break;
+          }
+        }
+        // Wait for redirect to home
+        await page.waitForTimeout(6_000);
+      }
+
+      // Check if login succeeded — any X home/feed URL means we're in
+      const currentUrl = page.url();
+      const loggedIn =
+        currentUrl.includes("x.com/home") ||
+        currentUrl === "https://x.com/" ||
+        currentUrl === "https://x.com" ||
+        currentUrl === "https://twitter.com/" ||
+        currentUrl === "https://twitter.com";
+
+      if (loggedIn) {
+        // Extract auth_token and ct0 cookies
+        const cookies = await ctx.cookies();
+        const authToken = cookies.find(
+          (c) => c.name === "auth_token" && c.domain.includes("x.com"),
+        );
+        const ct0 = cookies.find(
+          (c) => c.name === "ct0" && c.domain.includes("x.com"),
+        );
+        if (authToken?.value) {
+          process.env.X_AUTH_TOKEN = authToken.value;
+          if (ct0?.value) {
+            process.env.X_CT0_TOKEN = ct0.value;
+          }
+          console.log(
+            JSON.stringify({
+              ts: new Date().toISOString(),
+              service: "riskflow-worker",
+              stage: "x_login_success",
+              tokenPrefix: authToken.value.slice(0, 8) + "...",
+              hasCt0: Boolean(ct0?.value),
+            }),
+          );
+          consecutiveEmptyCycles = 0;
+          loginInProgress = false;
+          return true;
+        }
+      }
+
+      // 2FA, CAPTCHA, or other roadblock
+      const finalText = await page.evaluate(() =>
+        document.body.innerText.slice(0, 500),
+      );
+      console.error(
+        JSON.stringify({
+          ts: new Date().toISOString(),
+          service: "riskflow-worker",
+          stage: "x_login_failed",
+          currentUrl,
+          pagePreview: finalText.slice(0, 250),
+          has2fa: /\b(authenticator|verification code|two.factor|2FA|confirm your identity)\b/i.test(finalText),
+          hasCaptcha: /\b(captcha|prove you|not a robot|verify you are human)\b/i.test(finalText),
+        }),
+      );
+      return false;
+    });
+  } catch (err) {
+    console.error(
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        service: "riskflow-worker",
+        stage: "x_login_error",
+        error: err instanceof Error ? err.message : String(err),
+      }),
+    );
+    return false;
+  } finally {
+    loginInProgress = false;
+  }
+}
+
+async function checkXAuth(page: import("playwright").Page): Promise<boolean> {
+  const url = page.url();
+  if (url.includes("x.com/home") || url === "https://x.com/" || url === "https://x.com") {
+    return true;
+  }
+  const bodyText = await page.evaluate(() => document.body.innerText.slice(0, 300));
+  const isLoginPage =
+    /\b(sign in to x|log in to x|sign up for x|join x today)\b/i.test(bodyText) ||
+    /\bDon.t have an account\?.*Sign up\b/i.test(bodyText);
+  if (isLoginPage) return false;
+  const hasTweets = await page.evaluate(
+    () => document.querySelectorAll("article").length > 0,
+  );
+  return hasTweets;
+}
+
+async function fetchHomeTimeline(): Promise<ExtractedTweet[]> {
+  if (homeTimelineCache && Date.now() - homeTimelineCache.at < HOME_CACHE_TTL_MS) {
+    return homeTimelineCache.tweets;
+  }
+
+  try {
+    return await withPersistentBrowserPage(async (page) => {
+      await page.goto("https://x.com/home", {
+        waitUntil: "domcontentloaded",
+        timeout: 45_000,
+      });
+      await page.waitForTimeout(3_000);
+
+      const isAuthenticated = await checkXAuth(page);
+      if (!isAuthenticated) {
+        // Auth is dead — trigger immediate login, don't wait 3 cycles
+        console.log(
+          JSON.stringify({
+            ts: new Date().toISOString(),
+            service: "riskflow-worker",
+            stage: "home_timeline_not_authenticated",
+            message: "Login wall detected — triggering re-auth",
+          }),
+        );
+        throw new Error("X_AUTH_FAILED");
+      }
+
+      for (let i = 0; i < HOME_SCROLL_COUNT; i++) {
+        await page.mouse.wheel(0, 1600);
+        await page.waitForTimeout(800);
+      }
+
+      const rawRows = await page.evaluate(() => {
+        function extractBestImg(article: Element): string | null {
+          // Multiple selector strategies for X tweet media images.
+          // X lazy-loads images; after scroll the src should be populated.
+          const selectors = [
+            "img[src*='pbs.twimg.com/media']",
+            "img[src*='pbs.twimg.com/card_img']",
+            "img[src*='twimg.com/media']",
+            "img[src*='twimg.com/amplify_video_thumb']",
+            "img[src*='pbs.twimg.com/amplify_video_thumb']",
+            "[data-testid='tweetPhoto'] img",
+          ];
+          for (const sel of selectors) {
+            const el = article.querySelector(sel) as HTMLImageElement | null;
+            if (el?.src) return el.src;
+          }
+          return null;
+        }
+
+        function extractBestVideo(article: Element): string | null {
+          // X renders videos as <video> elements with src from video.twimg.com
+          const videoEls = article.querySelectorAll("video");
+          for (const v of Array.from(videoEls)) {
+            const ve = v as HTMLVideoElement;
+            if (ve.src && /twimg\.com/.test(ve.src)) return ve.src;
+            const srcEl = ve.querySelector(
+              "source[src*='twimg.com']",
+            ) as HTMLSourceElement | null;
+            if (srcEl?.src && /twimg\.com/.test(srcEl.src)) return srcEl.src;
+          }
+          return null;
+        }
+
         return Array.from(document.querySelectorAll("article")).flatMap(
           (article) => {
-            const links = Array.from(
+            const articleText = (article as HTMLElement).innerText || "";
+            if (
+              /\bPromoted\b/i.test(articleText) &&
+              articleText.length < 300
+            ) {
+              return [];
+            }
+            const statusLinks = Array.from(
               article.querySelectorAll("a[href*='/status/']"),
             )
               .map((a) => (a as HTMLAnchorElement).href)
-              .filter((href) => href.includes(`/${handle}/status/`));
-            const permalink = links[0];
-            const match = permalink?.match(/\/status\/(\d+)/);
-            const tweetId = match?.[1];
+              .filter((href) => /\/\w+\/status\/\d+/.test(href));
+            const permalink = statusLinks[0];
+            if (!permalink) return [];
+            const tweetIdMatch = permalink.match(/\/status\/(\d+)/);
+            const tweetId = tweetIdMatch?.[1];
             const tweetText = (
               article.querySelector(
                 "[data-testid='tweetText']",
@@ -114,58 +386,110 @@ async function fetchBrowserUseTweets(
             )?.innerText;
             const timestamp =
               article.querySelector("time")?.getAttribute("datetime") ?? "";
-            const imageUrl = (
-              article.querySelector(
-                "img[src*='twimg.com/media']",
-              ) as HTMLImageElement | null
-            )?.src;
+            const imageUrl = extractBestImg(article);
+            const videoUrl = extractBestVideo(article);
             if (!tweetId || !tweetText || !timestamp) return [];
+            if (
+              tweetText.length < 15 ||
+              /\b(?:sponsored|advert|promoted|paid partnership)\b/i.test(
+                tweetText,
+              )
+            ) {
+              return [];
+            }
             return [
-              { tweetId, text: tweetText, timestamp, permalink, imageUrl },
+              {
+                tweetId,
+                text: tweetText,
+                timestamp,
+                permalink,
+                imageUrl: imageUrl || null,
+                videoUrl: videoUrl || null,
+              },
             ];
           },
         );
-      }, cleanHandle);
+      });
 
       const seen = new Set<string>();
-      return rows.flatMap((row) => {
-        if (seen.has(row.tweetId)) return [];
+      const out: ExtractedTweet[] = [];
+      for (const row of rawRows) {
+        if (seen.has(row.tweetId)) continue;
         seen.add(row.tweetId);
-        return [
-          {
-            tweet_id: row.tweetId,
-            text: normalizeTweetText(row.text),
-            timestamp: row.timestamp,
-            permalink: normalizePermalink(
-              row.permalink,
-              cleanHandle,
-              row.tweetId,
-            ),
-            image_url: row.imageUrl ?? null,
-            pipeline_tag: "x-browser-session",
-          },
-        ];
-      });
+        const handle = extractHandleFromPermalink(row.permalink) ?? "unknown";
+        out.push({
+          tweet_id: row.tweetId,
+          text: normalizeTweetText(row.text),
+          timestamp: row.timestamp,
+          permalink: row.permalink,
+          author_handle: handle,
+          image_url: row.imageUrl ?? null,
+          video_url: row.videoUrl ?? null,
+          pipeline_tag: "x-home-timeline",
+        });
+        if (out.length >= MAX_TWEETS_TOTAL) break;
+      }
+      homeTimelineCache = { tweets: out, at: Date.now() };
+      consecutiveEmptyCycles = 0;
+      return out;
     });
   } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
     console.warn(
       JSON.stringify({
         ts: new Date().toISOString(),
         service: "riskflow-worker",
-        stage: "x_browser_session_error",
-        handle: cleanHandle,
-        error: err instanceof Error ? err.message : String(err),
+        stage: "home_timeline_error",
+        error: errMsg,
       }),
     );
+
+    // Immediate re-auth on known auth failure (login wall detected by checkXAuth)
+    if (errMsg === "X_AUTH_FAILED") {
+      consecutiveEmptyCycles = AUTH_EXPIRY_THRESHOLD;
+    }
+  }
+
+  // Track consecutive failures
+  consecutiveEmptyCycles++;
+  if (consecutiveEmptyCycles >= AUTH_EXPIRY_THRESHOLD) {
+    if (await attemptXLogin()) {
+      homeTimelineCache = null;
+      consecutiveEmptyCycles = 0;
+    } else {
+      console.error(
+        JSON.stringify({
+          ts: new Date().toISOString(),
+          service: "riskflow-worker",
+          stage: "home_timeline_expired_auth",
+          consecutiveEmptyCycles,
+          message:
+            "X home timeline returned empty for multiple cycles and auto-login failed. Check X_EMAIL/X_PASSWORD credentials.",
+        }),
+      );
+    }
+  }
+  return [];
+}
+
+// ── Syndication widget fallback (per-handle, rate-limited) ──
+
+function parseSyndicationHtml(
+  html: string,
+  cleanHandle: string,
+): ExtractedTweet[] {
+  const match = html.match(
+    /<script[^>]*id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/i,
+  );
+  if (!match) return [];
+  try {
+    const json = JSON.parse(match[1]);
+    return extractTweetsFromNextData(json, cleanHandle);
+  } catch {
     return [];
   }
 }
 
-/**
- * Walk the syndication __NEXT_DATA__ tree looking for tweet shapes. The
- * structure is verbose and version-volatile, so a tolerant tree walk is
- * more reliable than a fixed path lookup.
- */
 function extractTweetsFromNextData(
   data: unknown,
   cleanHandle: string,
@@ -174,15 +498,13 @@ function extractTweetsFromNextData(
   const seen = new Set<string>();
 
   function walk(node: unknown): void {
-    if (!node || out.length >= MAX_TWEETS_PER_HANDLE) return;
+    if (!node || out.length >= 12) return;
     if (Array.isArray(node)) {
       for (const item of node) walk(item);
       return;
     }
     if (typeof node !== "object") return;
     const obj = node as Record<string, unknown>;
-
-    // A tweet object always has id_str + full_text|text + created_at.
     const idStr = obj.id_str ?? obj.id;
     const text = (obj.full_text ?? obj.text) as unknown;
     const created = obj.created_at as unknown;
@@ -195,12 +517,6 @@ function extractTweetsFromNextData(
     ) {
       seen.add(idStr);
       const ts = Date.parse(created);
-      // [claude-code 2026-04-27] Capture first photo from tweet media —
-      // extended_entities is the canonical container (multi-media tweets);
-      // entities is the legacy fallback. Both shapes nest media[] under the
-      // tweet object, so this lookup runs at the same level as id_str/text.
-      // S46.4/I: also capture the highest-bitrate .mp4 variant when the
-      // attached media is type="video" or type="animated_gif".
       let imageUrl: string | null = null;
       let videoUrl: string | null = null;
       const extEntities = obj.extended_entities as
@@ -234,13 +550,11 @@ function extractTweetsFromNextData(
             }>;
           };
         };
-        const firstUrl = firstMedia?.media_url_https;
-        if (typeof firstUrl === "string" && firstUrl.length > 0) {
-          imageUrl = firstUrl;
+        if (typeof firstMedia?.media_url_https === "string") {
+          imageUrl = firstMedia.media_url_https;
         }
-        const mediaType = firstMedia?.type;
         if (
-          (mediaType === "video" || mediaType === "animated_gif") &&
+          (firstMedia?.type === "video" || firstMedia?.type === "animated_gif") &&
           Array.isArray(firstMedia.video_info?.variants)
         ) {
           const mp4s = firstMedia.video_info!.variants!.filter(
@@ -257,37 +571,18 @@ function extractTweetsFromNextData(
           ? new Date(ts).toISOString()
           : new Date().toISOString(),
         permalink: `https://x.com/${cleanHandle}/status/${idStr}`,
+        author_handle: cleanHandle,
         image_url: imageUrl,
         video_url: videoUrl,
       });
-      // Don't return — tweets can nest (quote tweets, retweets), we want
-      // the full timeline, not just the outermost level.
     }
-
     for (const key of Object.keys(obj)) {
-      if (out.length >= MAX_TWEETS_PER_HANDLE) return;
+      if (out.length >= 12) return;
       walk(obj[key]);
     }
   }
-
   walk(data);
   return out;
-}
-
-function parseSyndicationHtml(
-  html: string,
-  cleanHandle: string,
-): ExtractedTweet[] {
-  const match = html.match(
-    /<script[^>]*id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/i,
-  );
-  if (!match) return [];
-  try {
-    const json = JSON.parse(match[1]);
-    return extractTweetsFromNextData(json, cleanHandle);
-  } catch {
-    return [];
-  }
 }
 
 async function fetchSyndicationTweets(
@@ -297,13 +592,6 @@ async function fetchSyndicationTweets(
     cleanHandle,
   )}?language=en`;
 
-  // Fallback: route through browser-harness Playwright
-  // pool (services/browser/harness.ts → browseRead with textOnly:false so the
-  // <script id="__NEXT_DATA__"> survives). The pool ships a real Chromium with
-  // realistic headers + circuit breaker + Steel CDP fallback baked in, which
-  // bypasses Twitter's 429 wall on Fly's IAD shared IP that plain fetch hits
-  // immediately. If the pool itself errors (no browsers available, allowlist
-  // miss, circuit tripped), we fall through to plain fetch as a last-ditch.
   try {
     const result = await browseRead({
       url,
@@ -315,15 +603,6 @@ async function fetchSyndicationTweets(
       const tweets = parseSyndicationHtml(result.body, cleanHandle);
       if (tweets.length > 0) return tweets;
     }
-    console.warn(
-      JSON.stringify({
-        ts: new Date().toISOString(),
-        service: "riskflow-worker",
-        stage: "syndication_harness_empty",
-        handle: cleanHandle,
-        status: result?.status ?? null,
-      }),
-    );
   } catch (err) {
     console.warn(
       JSON.stringify({
@@ -336,9 +615,6 @@ async function fetchSyndicationTweets(
     );
   }
 
-  // Last-ditch plain fetch — kept for the local-dev path where the Playwright
-  // pool might be unavailable (no browsers installed on the dev machine). On
-  // Fly this almost always 429s, but the no-cost retry is fine after harness.
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
@@ -353,34 +629,32 @@ async function fetchSyndicationTweets(
     clearTimeout(timer);
     if (res.ok) {
       const html = await res.text();
-      const tweets = parseSyndicationHtml(html, cleanHandle);
-      if (tweets.length > 0) return tweets;
-    } else {
-      console.warn(
-        JSON.stringify({
-          ts: new Date().toISOString(),
-          service: "riskflow-worker",
-          stage: "syndication_non_ok",
-          handle: cleanHandle,
-          status: res.status,
-        }),
-      );
+      return parseSyndicationHtml(html, cleanHandle);
     }
-  } catch (err) {
+  } catch {
     clearTimeout(timer);
-    console.warn(
-      JSON.stringify({
-        ts: new Date().toISOString(),
-        service: "riskflow-worker",
-        stage: "syndication_error",
-        handle: cleanHandle,
-        error: err instanceof Error ? err.message : String(err),
-      }),
-    );
   }
 
   return [];
 }
+
+async function fetchXActionsTweets(
+  cleanHandle: string,
+): Promise<ExtractedTweet[]> {
+  const xa = await getTweetsViaXActions({ handle: cleanHandle, limit: 20 });
+  if (xa.length === 0) return [];
+  return xa.map((t) => ({
+    tweet_id: t.tweet_id,
+    text: t.text,
+    timestamp: t.timestamp,
+    permalink: t.permalink,
+    author_handle: cleanHandle,
+    image_url: (t as { image_url?: string | null }).image_url ?? null,
+    pipeline_tag: "xactions",
+  }));
+}
+
+// ── Unified collector ──
 
 interface CollectOpts {
   handles: string[];
@@ -400,40 +674,30 @@ export async function collectFromXHandlesBrowser(
     : Number.NaN;
   const toMs = opts.to ? Date.parse(`${opts.to}T23:59:59.999Z`) : Number.NaN;
   const historicalWindow =
-    Number.isFinite(fromMs) &&
-    Number.isFinite(toMs) &&
-    opts.from != null &&
-    opts.to != null;
+    Number.isFinite(fromMs) && Number.isFinite(toMs) && opts.from != null && opts.to != null;
+  const allowedHandles = new Set(opts.handles.map(stripHandle).filter(Boolean));
 
-  // Run handles in parallel — syndication is a plain HTTPS GET, no need to
-  // serialize. 7 handles × ~600ms = a few seconds total, well inside the
-  // breaking-tier interval.
-  type AnnotatedTweet = {
-    tw: ExtractedTweet;
-    cleanHandle: string;
-    fetch_latency_ms: number;
-  };
+  // Primary: home timeline via persistent browser session (requires X_AUTH_TOKEN)
+  const started = Date.now();
+  const homeTweets = await fetchHomeTimeline();
+  const fetchLatency = Date.now() - started;
 
-  const results: AnnotatedTweet[][] = await Promise.all(
-    opts.handles.map(async (handle): Promise<AnnotatedTweet[]> => {
-      const cleanHandle = stripHandle(handle);
-      if (!cleanHandle) return [];
-      const started = Date.now();
-      const browserTweets = await fetchBrowserUseTweets(cleanHandle, {
-        from: opts.from,
-        to: opts.to,
-      });
-      const tweets =
-        browserTweets.length > 0
-          ? browserTweets
-          : await fetchSyndicationTweets(cleanHandle);
-      const fetch_latency_ms = Date.now() - started;
-      return tweets.map((tw) => ({ tw, cleanHandle, fetch_latency_ms }));
-    }),
-  );
+  if (homeTweets.length > 0) {
+    console.log(
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        service: "riskflow-worker",
+        stage: "home_timeline_tweets",
+        total: homeTweets.length,
+        latency_ms: fetchLatency,
+      }),
+    );
+    for (const tw of homeTweets) {
+      // Check handle routing config first; fall back to source-accounts allowlist
+      const routings = getRoutingForHandle(tw.author_handle);
+      const isAllowed = routings.length > 0 || allowedHandles.has(tw.author_handle);
+      if (!isAllowed) continue;
 
-  for (const batch of results) {
-    for (const { tw, cleanHandle, fetch_latency_ms } of batch) {
       const ts = Date.parse(tw.timestamp);
       if (!Number.isFinite(ts)) continue;
       if (historicalWindow) {
@@ -441,24 +705,109 @@ export async function collectFromXHandlesBrowser(
       } else if (ts < ageCutoff) {
         continue;
       }
-      const headline = tw.text.length > 220 ? tw.text.slice(0, 220) : tw.text;
+      const headline =
+        tw.text.length > 220 ? tw.text.slice(0, 220) : tw.text;
       if (!scoreHeadline(headline)) continue;
-      out.push({
-        item_id: tw.tweet_id,
-        source: `twitter:${cleanHandle}`,
-        source_domain: "x.com",
-        headline,
-        body: tw.text,
-        url: tw.permalink,
-        image_url: tw.image_url ?? null,
-        video_url: tw.video_url ?? null,
-        tier: opts.tier,
-        published_at: tw.timestamp || new Date().toISOString(),
-        fetched_at: new Date().toISOString(),
-        fetch_latency_ms,
-        ingest_pipeline: tw.pipeline_tag || "x-syndication",
-      });
+
+      // Emit one item per routing entry that passes its content filter,
+      // or a single unfiltered entry if handle is only in source-accounts allowlist
+      if (routings.length > 0) {
+        for (const routing of routings) {
+          if (!passesContentFilter(tw.text, routing.contentFilter)) continue;
+          if (opts.tier !== routing.tier) continue;
+          out.push({
+            item_id: tw.tweet_id,
+            source: `twitter:${tw.author_handle}`,
+            source_domain: "x.com",
+            headline,
+            body: tw.text,
+            url: tw.permalink,
+            image_url: tw.image_url ?? null,
+            video_url: tw.video_url ?? null,
+            tier: opts.tier,
+            published_at: tw.timestamp || new Date().toISOString(),
+            fetched_at: new Date().toISOString(),
+            fetch_latency_ms: fetchLatency,
+            ingest_pipeline: tw.pipeline_tag || "x-home-timeline",
+          });
+        }
+      } else {
+        out.push({
+          item_id: tw.tweet_id,
+          source: `twitter:${tw.author_handle}`,
+          source_domain: "x.com",
+          headline,
+          body: tw.text,
+          url: tw.permalink,
+          image_url: tw.image_url ?? null,
+          video_url: tw.video_url ?? null,
+          tier: opts.tier,
+          published_at: tw.timestamp || new Date().toISOString(),
+          fetched_at: new Date().toISOString(),
+          fetch_latency_ms: fetchLatency,
+          ingest_pipeline: tw.pipeline_tag || "x-home-timeline",
+        });
+      }
+    }
+  } else {
+    // Fallback: per-handle syndication + XActions
+    console.log(
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        service: "riskflow-worker",
+        stage: "home_timeline_empty_fallback",
+        handles: opts.handles.length,
+      }),
+    );
+
+    const results = await Promise.all(
+      opts.handles.map(async (handle) => {
+        const cleanHandle = stripHandle(handle);
+        if (!cleanHandle) return [] as ExtractedTweet[];
+        const sStarted = Date.now();
+        let tweets = await fetchSyndicationTweets(cleanHandle);
+        if (tweets.length === 0) {
+          tweets = await fetchXActionsTweets(cleanHandle);
+        }
+        const sLatency = Date.now() - sStarted;
+        return tweets.map((tw) => ({
+          ...tw,
+          fetch_latency_ms: sLatency,
+        }));
+      }),
+    );
+
+    for (const batch of results) {
+      for (const tw of batch) {
+        const ts = Date.parse(tw.timestamp);
+        if (!Number.isFinite(ts)) continue;
+        if (historicalWindow) {
+          if (ts < fromMs || ts > toMs) continue;
+        } else if (ts < ageCutoff) {
+          continue;
+        }
+        const headline =
+          tw.text.length > 220 ? tw.text.slice(0, 220) : tw.text;
+        if (!scoreHeadline(headline)) continue;
+        out.push({
+          item_id: tw.tweet_id,
+          source: `twitter:${tw.author_handle}`,
+          source_domain: "x.com",
+          headline,
+          body: tw.text,
+          url: tw.permalink,
+          image_url: tw.image_url ?? null,
+          video_url: tw.video_url ?? null,
+          tier: opts.tier,
+          published_at: tw.timestamp || new Date().toISOString(),
+          fetched_at: new Date().toISOString(),
+          fetch_latency_ms:
+            (tw as { fetch_latency_ms?: number }).fetch_latency_ms ?? 0,
+          ingest_pipeline: tw.pipeline_tag || "x-syndication",
+        });
+      }
     }
   }
+
   return out;
 }

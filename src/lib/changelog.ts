@@ -9,6 +9,76 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-03T13:25:00-04:00",
+    agent: "claude-code",
+    summary:
+      "RiskFlow media pipeline: fixed econ-bridge schema (removed non-existent columns sentiment/iv_score/macro_level/risk_type/econ_data from raw_riskflow_items INSERT — now writes tweet_id/headline/body/source/source_domain/url/is_breaking/urgency/symbols/tags/published_at/submitted_by/ingest_pipeline). Broadened X home timeline image extraction to 6 selector strategies (pbs.twimg.com/media, card_img, twimg.com/media, amplify_video_thumb, tweetPhoto). Added video extraction from <video> elements with twimg.com src. Desktop+mobile RiskFlow expanded cards now auto-play muted loop video (stops on collapse/unmount) with X-inspired bottom-left mute toggle button.",
+    files: [
+      "backend-hono/src/services/riskflow/econ-bridge.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/x-handles-browser.ts",
+      "frontend/components/feed/RiskFlowPostCard.tsx",
+      "mobile/components/riskflow/RiskFlowCardExpanded.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-03T12:55:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Hardened RiskFlow X auto-reauth: (1) clear stale x.com cookies before login so X shows clean login form instead of broken session-expired page, (2) pre-flight auth check detects login wall immediately and triggers re-auth on first failure instead of waiting 3 cycles, (3) multi-strategy selectors for Next/Login buttons, (4) extract ct0 alongside auth_token for persistent context re-launch, (5) username verification challenge page handling, (6) CAPTCHA/2FA detection in failure logs.",
+    files: [
+      "backend-hono/src/workers/riskflow-worker/sources/x-handles-browser.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-03T09:30:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S57: Arbitrum + dashboard UI refinement. Canonicalized next-session IV scenarios into deterministic Continuation / Risk-on rally / Escalation slots with explicit 0% rows; shared the scenario strip between Sanctum Volatility Read and Dashboard Next-session volatility. Compact Arbitrum chamber seats now show name, score, and confidence only, with fading rulers and embedded consensus directly below seats; clicking a seat opens an Arbitrum-only draggable full-summary popup, capped at two independent floating cards with internal scrolling. Sanctum Page 0 dropped the fixed chamber height and inner chamber scroll, uses bare/no-streak DayCard, and swaps solid split strokes for fading rulers. Dashboard DayCard moves streak into its Desk Plan header and replaces chamber seat signals with IV scenarios. Econ Pulse now lays out three fuses across on desktop.",
+    files: [
+      "backend-hono/src/services/market-data/canonical-iv-scenarios.ts",
+      "backend-hono/src/services/market-data/iv-prediction.ts",
+      "backend-hono/src/routes/market-data/handlers.ts",
+      "frontend/types/market-data.ts",
+      "frontend/components/narrative/NextSessionScenariosStrip.tsx",
+      "frontend/components/narrative/BlendedIVForecastCard.tsx",
+      "frontend/components/narrative/useIVScoreData.ts",
+      "frontend/components/arbitrum/ArbitrumChamber.tsx",
+      "frontend/components/arbitrum/ChamberSeats.tsx",
+      "frontend/components/arbitrum/ChamberAgentSummaryPopup.tsx",
+      "frontend/components/arbitrum/VerdictCard.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+      "frontend/components/narrative/DayCard.tsx",
+      "frontend/components/executive/MainDashboard.tsx",
+      "frontend/components/narrative/econ/EconKpiFuses.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-01T10:50:00-04:00",
+    agent: "claude-code",
+    summary:
+      "X intake plumbing: restored syndication+XActions fallback chain, added X_AUTH_TOKEN cookie injection to persistent browser session so x.com/search works with auth. Browser-use is again primary (was broken due to loginwall). Fixed heartbeat table name from news_worker_heartbeats→riskflow_worker_heartbeats in diagnostics and audit handler.",
+    files: [
+      "backend-hono/src/services/browser/persistent-session.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/x-handles-browser.ts",
+      "backend-hono/src/routes/diagnostics/index.ts",
+      "backend-hono/src/services/cron/news-worker-audit-handler.ts",
+    ],
+  },
+  {
+    date: "2026-05-01T10:15:00-04:00",
+    agent: "claude-code",
+    summary:
+      "RiskFlow worker was dead for ~5 days. Fixed launchd plist pointing to deleted news-worker/ dir (renamed to riskflow-worker/). Enabled writes (FLAG_NEWS_WORKER_WRITES_RISKFLOW=true). Added cftc.gov to browser allowlist for COT data. Added 90s collector timeout in safeCollect to prevent browser hangs from stalling scheduler. Deployed to fintheon-riskflow-worker on Fly. X/Twitter syndication still rate-limited (429) — browser-based x.com search is the last working path.",
+    files: [
+      "launchd/io.solvys.fintheon-news-worker.plist",
+      "backend-hono/src/services/browser/allowlist.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/index.ts",
+    ],
+  },
+  {
     date: "2026-05-01T02:05:00-04:00",
     agent: "claude-code",
     summary:

@@ -1,5 +1,6 @@
 // [claude-code 2026-03-16] IV prediction service — heuristic fallback + AgentDesk integration
 // [claude-code 2026-03-16] Removed simulationId param — auto-checks latest cached prediction
+// [claude-code 2026-05-03] S57: normalize AgentDesk + heuristic scenarios into fixed slots.
 
 import type {
   IVPrediction,
@@ -8,6 +9,7 @@ import type {
 import type { BlendedIVScore } from "./iv-scorer.js";
 import { isSkillEnabled } from "../../config/feature-flags.js";
 import { getLatestCachedPrediction } from "../agent-desk/agent-desk-service.js";
+import { normalizeCanonicalIvScenarios } from "./canonical-iv-scenarios.js";
 
 /**
  * Generate an IV prediction for the next session.
@@ -25,7 +27,10 @@ export async function generateIVPrediction(
         nextSessionScore: mfPrediction.nextSessionScore,
         confidence: mfPrediction.confidence,
         regimeShiftProbability: mfPrediction.regimeShiftProbability,
-        scenarios: mfPrediction.scenarios,
+        scenarios: normalizeCanonicalIvScenarios(
+          mfPrediction.scenarios,
+          mfPrediction.nextSessionScore,
+        ),
         source: "agentDesk",
         generatedAt: mfPrediction.generatedAt,
       };
@@ -74,7 +79,10 @@ function heuristicPrediction(score: BlendedIVScore): IVPrediction {
   const regimeShift =
     vix > 30 ? 0.4 : vix > 22 ? 0.2 : Math.abs(vixChange) > 15 ? 0.25 : 0.05;
 
-  const scenarios = buildHeuristicScenarios(now, projected, vix, vixChange);
+  const scenarios = normalizeCanonicalIvScenarios(
+    buildHeuristicScenarios(now, projected, vix, vixChange),
+    projected,
+  );
 
   return {
     nextSessionScore: Number(projected.toFixed(1)),

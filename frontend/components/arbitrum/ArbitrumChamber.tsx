@@ -9,15 +9,19 @@
 // Replaces AgentDeskDebatePanel inside Sanctum. /solvys-feels: flat surfaces,
 // single Solvys Gold accent, no gradients/glass/emojis/shimmer-for-show.
 // [claude-code 2026-05-01] S56 Track A: gear icon opens ArbitrumSettingsPanel overlay.
+// [claude-code 2026-05-03] S57: compact chamber stack with consensus below seats.
+// [claude-code 2026-05-03] Arbitrum-only floating full agent summaries, capped at two.
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Settings } from "lucide-react";
 import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
+import { FadingRuler } from "../shared/FadingRuler";
 import { NothingFuse } from "../shared/NothingFuse";
 import { SolvysLoader } from "../shared/SolvysLoader";
 import { VerdictCard } from "./VerdictCard";
 import { SeatCard, EmptySeat } from "./ChamberSeats";
 import { ArbitrumSettingsPanel } from "./ArbitrumSettingsPanel";
+import { ChamberAgentSummaryPopup } from "./ChamberAgentSummaryPopup";
 import type { ArbitrumSeat, ArbitrumVerdict } from "./types";
 
 interface ArbitrumChamberProps {
@@ -91,6 +95,9 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
   const { onSynthesisComplete } = props;
   const { verdict, isLoading, error, refresh } = useArbitrumLatest();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [openSummaryRoles, setOpenSummaryRoles] = useState<
+    ArbitrumSeat["role"][]
+  >([]);
 
   const seats = useMemo<ArbitrumSeat[]>(() => {
     const supplied = verdict?.seats ?? [];
@@ -110,6 +117,25 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
 
   const revealed = useStaggeredReveal(seats.length);
 
+  const openSummaries = useMemo(
+    () =>
+      openSummaryRoles
+        .map((role) => seats.find((seat) => seat.role === role))
+        .filter((seat): seat is ArbitrumSeat => Boolean(seat?.rationale)),
+    [openSummaryRoles, seats],
+  );
+
+  const openAgentSummary = useCallback((role: ArbitrumSeat["role"]) => {
+    setOpenSummaryRoles((prev) => {
+      const next = [...prev.filter((item) => item !== role), role];
+      return next.slice(-2);
+    });
+  }, []);
+
+  const closeAgentSummary = useCallback((role: ArbitrumSeat["role"]) => {
+    setOpenSummaryRoles((prev) => prev.filter((item) => item !== role));
+  }, []);
+
   const roundsTotal = verdict?.rounds_total ?? 3;
   const roundsComplete =
     verdict?.rounds_complete ?? (verdict ? roundsTotal : 0);
@@ -125,6 +151,10 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
     onSynthesisComplete?.();
   }, [verdict, phase, firedFor, onSynthesisComplete]);
 
+  useEffect(() => {
+    setOpenSummaryRoles([]);
+  }, [verdict?.id]);
+
   const hasVerdict = Boolean(verdict);
   const hasRealSeats = (verdict?.seats?.length ?? 0) > 0;
   const chamberSummary = verdict?.digest_text
@@ -132,7 +162,7 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
     : "";
 
   return (
-    <div className="relative flex flex-col min-h-0 min-w-0 gap-3">
+    <div className="relative flex flex-col min-h-0 min-w-0 gap-2.5">
       {/* Round indicator + question metadata */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-3">
@@ -181,39 +211,54 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
         segments={roundsTotal > 0 ? roundsTotal : 3}
       />
 
-      {/* Seat row — 5 on desktop, 2+2+1 on narrow */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2">
-        {seats.map((seat, i) =>
-          hasRealSeats ? (
-            <SeatCard
-              key={`${seat.role}-${i}`}
-              seat={seat}
-              index={i}
-              visible={revealed[i] ?? false}
-            />
-          ) : (
-            <EmptySeat
-              key={`${seat.role}-${i}`}
-              role={seat.role}
-              index={i}
-              visible={revealed[i] ?? false}
-            />
-          ),
-        )}
+      {/* Seat row — fading rulers separate seats without boxed cells. */}
+      <div className="flex flex-col md:flex-row md:items-stretch">
+        {seats.map((seat, i) => (
+          <div key={`${seat.role}-${i}`} className="contents">
+            {i > 0 && (
+              <>
+                <FadingRuler className="my-1 md:hidden" />
+                <FadingRuler
+                  orientation="vertical"
+                  className="mx-1 hidden md:block"
+                />
+              </>
+            )}
+            <div className="flex-1 min-w-0">
+              {hasRealSeats ? (
+                <SeatCard
+                  seat={seat}
+                  index={i}
+                  visible={revealed[i] ?? false}
+                  isSummaryOpen={openSummaryRoles.includes(seat.role)}
+                  onOpenSummary={() => openAgentSummary(seat.role)}
+                />
+              ) : (
+                <EmptySeat
+                  role={seat.role}
+                  index={i}
+                  visible={revealed[i] ?? false}
+                />
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Chamber digest — below the five agents and VerdictCard */}
+      {/* Consensus sits directly under the seat row; digest follows it. */}
+      {hasVerdict && (
+        <VerdictCard verdict={verdict as ArbitrumVerdict} compact embedded />
+      )}
+
       {chamberSummary && (
         <p className="text-[11px] text-[var(--fintheon-text)]/62 leading-snug px-1">
           {chamberSummary}
         </p>
       )}
 
-      {/* Digest footer / empty state */}
-      {hasVerdict ? (
-        <VerdictCard verdict={verdict as ArbitrumVerdict} compact />
-      ) : (
-        <div className="bg-[var(--fintheon-bg)]/60 backdrop-blur-[2px] border border-[var(--fintheon-accent)]/20 p-3 text-xs text-[var(--fintheon-text)]/55">
+      {!hasVerdict && (
+        <div className="bg-transparent p-3 text-xs text-[var(--fintheon-text)]/55">
+          <FadingRuler className="mb-3" />
           {isLoading ? (
             <SolvysLoader text="Loading chamber read" size={12} />
           ) : error ? (
@@ -233,10 +278,20 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
         </div>
       )}
 
-      {/* Settings panel overlay — scoped to chamber container */}
       {settingsOpen && (
         <ArbitrumSettingsPanel onClose={() => setSettingsOpen(false)} />
       )}
+
+      {openSummaries.map((seat, index) => (
+        <ChamberAgentSummaryPopup
+          key={seat.role}
+          seat={seat}
+          index={index}
+          zIndex={70 + index}
+          onActivate={() => openAgentSummary(seat.role)}
+          onClose={() => closeAgentSummary(seat.role)}
+        />
+      ))}
     </div>
   );
 }

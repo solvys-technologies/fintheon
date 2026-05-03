@@ -702,7 +702,7 @@ export default function RiskFlowMini({
                 </span>
               )}
               <div className="flex items-center gap-2 ml-1">
-                <StatusDot active={sourceStatus.rettiwt} label="X" />
+                <StatusDot active={sourceStatus.xHomeTimeline} label="X" />
               </div>
             </div>
             <div className="flex items-center gap-1">

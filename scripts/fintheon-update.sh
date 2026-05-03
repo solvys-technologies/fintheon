@@ -13,7 +13,7 @@ set -eo pipefail
 
 # [claude-code 2026-04-18] Resolve install path: FINTHEON_ROOT env > ~/.fintheon/install-path > default
 FINTHEON_ROOT="${FINTHEON_ROOT:-$(cat "$HOME/.fintheon/install-path" 2>/dev/null || echo "$HOME/Documents/Codebases/fintheon")}"
-UPDATE_VERSION="6.0.5"
+UPDATE_VERSION="6.0.6"
 
 # ── Self-update bootstrap (v5.25.2) ──────────────────────────────────────────
 # Root cause fix: bash loads the entire script into memory at invocation, so
@@ -236,12 +236,14 @@ if [[ -f "$BACKEND_ENV" ]]; then
   grep -q "^BROWSER_WORKER_USER_AGENT=" "$BACKEND_ENV" 2>/dev/null || echo "BROWSER_WORKER_USER_AGENT=" >> "$BACKEND_ENV"
   grep -q "^ROUTING_DAILY_CAP=" "$BACKEND_ENV" 2>/dev/null || echo "ROUTING_DAILY_CAP=20" >> "$BACKEND_ENV"
   grep -q "^ROUTING_DISABLE_BUDGET=" "$BACKEND_ENV" 2>/dev/null || echo "ROUTING_DISABLE_BUDGET=false" >> "$BACKEND_ENV"
-  grep -q "^FLAG_NEWS_WORKER_WRITES_RISKFLOW=" "$BACKEND_ENV" 2>/dev/null || echo "FLAG_NEWS_WORKER_WRITES_RISKFLOW=false" >> "$BACKEND_ENV"
+  grep -q "^FLAG_RISKFLOW_WORKER_WRITES_RISKFLOW=" "$BACKEND_ENV" 2>/dev/null || echo "FLAG_RISKFLOW_WORKER_WRITES_RISKFLOW=true" >> "$BACKEND_ENV"
   grep -q "^NEWS_WORKER_PORT=" "$BACKEND_ENV" 2>/dev/null || echo "NEWS_WORKER_PORT=8082" >> "$BACKEND_ENV"
+  grep -q "^X_AUTH_TOKEN=" "$BACKEND_ENV" 2>/dev/null || echo "X_AUTH_TOKEN=" >> "$BACKEND_ENV"
+  grep -q "^X_EMAIL=" "$BACKEND_ENV" 2>/dev/null || echo "X_EMAIL=" >> "$BACKEND_ENV"
+  grep -q "^X_PASSWORD=" "$BACKEND_ENV" 2>/dev/null || echo "X_PASSWORD=" >> "$BACKEND_ENV"
   grep -q "^GEPA_DRY_RUN=" "$BACKEND_ENV" 2>/dev/null || echo "GEPA_DRY_RUN=false" >> "$BACKEND_ENV"
   grep -q "^GEPA_DEEP=" "$BACKEND_ENV" 2>/dev/null || echo "GEPA_DEEP=false" >> "$BACKEND_ENV"
   grep -q "^VOICE_SIDECAR_DISABLED=" "$BACKEND_ENV" 2>/dev/null || echo "VOICE_SIDECAR_DISABLED=false" >> "$BACKEND_ENV"
-  grep -q "^RETTIWT_REENABLE=" "$BACKEND_ENV" 2>/dev/null || echo "RETTIWT_REENABLE=false" >> "$BACKEND_ENV"
   grep -q "^RISKFLOW_COMMENTARY_SCRAPER=" "$BACKEND_ENV" 2>/dev/null || echo "RISKFLOW_COMMENTARY_SCRAPER=disabled" >> "$BACKEND_ENV"
 
   ok "Environment verified (vault fills secrets on boot)"

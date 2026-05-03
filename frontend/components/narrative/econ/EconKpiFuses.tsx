@@ -1,5 +1,6 @@
 // [claude-code 2026-04-28] T6: Inline Fuse replaced with NothingFuse for visual consistency.
 // [claude-code 2026-04-19] S25-T4a: Econ Intelligence KPI fuses (left column of Econ page header). Vertically stacked, clear headers, Doto numbers. Aggregates the same /api/data/econ-calendar payload Sanctum already pulls.
+// [claude-code 2026-05-03] S57: expanded Econ Pulse renders three fuses side-by-side.
 import { useMemo } from "react";
 import type { EconEventCardData } from "./EconEventCard";
 import { NothingFuse } from "../../shared/NothingFuse";
@@ -46,21 +47,23 @@ export function EconKpiFuses({
           IV-weighted, 30d
         </span>
       </div>
-      <Fuse
-        label="Inflation Pulse"
-        value={inflationPulse}
-        coverage={coverage["price-stability"]}
-      />
-      <Fuse
-        label="Labor Pulse"
-        value={laborPulse}
-        coverage={coverage["employment"]}
-      />
-      <Fuse
-        label="Supply / Output"
-        value={supplyPulse}
-        coverage={coverage["supply-chain"]}
-      />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <Fuse
+          label="Inflation Pulse"
+          value={inflationPulse}
+          coverage={coverage["price-stability"]}
+        />
+        <Fuse
+          label="Labor Pulse"
+          value={laborPulse}
+          coverage={coverage["employment"]}
+        />
+        <Fuse
+          label="Supply / Output"
+          value={supplyPulse}
+          coverage={coverage["supply-chain"]}
+        />
+      </div>
     </div>
   );
 }

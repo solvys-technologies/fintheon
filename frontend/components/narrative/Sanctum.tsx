@@ -3,6 +3,7 @@
 // [claude-code 2026-04-25] S38: Chart-mode pin-through — TradingView/SanctumChart is hoisted out of Page 0 into a persistent right-half panel, visible across every Sanctum page. Left half scrolls/snaps independently.
 // [claude-code 2026-04-17] S23-T1: Aquarium restructure — top chart replaced with brief-pattern container (IV+Forecast | Deliberation), Chart toggle renders 50/50 with TradingView iframe, feels polish
 // [claude-code 2026-04-16] Sanctum — full-border severity on Risk Signals containers, solvys-feels polish
+// [claude-code 2026-05-03] S57: Page 0 uses flex height and fading rulers, no chamber inner scroll.
 // [claude-code 2026-03-28] S8-T4: Chart cleanup, Page 2 restructure (50/50 narratives+risk), sim history removed
 // [claude-code 2026-03-28] S4-T3: KPI labels rewritten to trading lingo with interpretive sub-text
 // [claude-code 2026-03-24] Persistence refactor: show persisted data immediately, background updates, no idle state
@@ -16,6 +17,7 @@ import {
   useEffect,
 } from "react";
 import { SolvysLoader } from "../shared/SolvysLoader";
+import { FadingRuler } from "../shared/FadingRuler";
 import type {
   SanctumData,
   SanctumPreset,
@@ -238,12 +240,12 @@ export function Sanctum({
                   <AquariumPredictionCards />
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col gap-4">
+                <div className="flex-1 min-h-0 flex flex-col gap-4">
                   {/* Brief-pattern top container — Volatility Read + Arbitrum Chamber 50/50, ruler divides */}
-                  <div className="h-[520px] min-h-[520px] flex">
-                    <div className="flex-1 flex overflow-hidden mx-1 my-1">
+                  <div className="flex-1 min-h-0 flex">
+                    <div className="flex-1 min-h-0 flex mx-1 my-1">
                       {/* Left: Volatility Read — Blended IV + Next Session Forecast (50%) */}
-                      <div className="flex-1 min-w-0 overflow-y-auto p-4 flex flex-col gap-3">
+                      <div className="flex-1 min-w-0 min-h-0 p-4 flex flex-col gap-3">
                         <div className="flex items-center gap-2">
                           <span
                             className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
@@ -258,35 +260,21 @@ export function Sanctum({
                           data={ivData}
                           isLoading={ivLoading}
                         />
-                        <DayCard id="day-card-anchor" />
+                        <DayCard id="day-card-anchor" bare hideStreak />
                       </div>
 
                       {/* Vertical ruler between Volatility Read and Deliberation */}
-                      <div className="w-px shrink-0 bg-[var(--fintheon-accent)]/10" />
+                      <FadingRuler
+                        orientation="vertical"
+                        className="shrink-0"
+                      />
 
-                      {/* Right: Arbitrum Chamber + Chamber Briefing (50%) */}
-                      <div className="flex-1 min-w-0 min-h-0 p-4 grid grid-rows-2 gap-3 overflow-hidden">
-                        <div className="min-h-0 overflow-y-auto">
-                          <ArbitrumChamber
-                            simulationId={data?.simulationId ?? null}
-                            onSynthesisComplete={onSynthesisComplete}
-                          />
-                        </div>
-                        <div className="min-h-0 overflow-y-auto">
-                          <div className="px-1 pb-2">
-                            <span
-                              className="text-[10px] tracking-[0.22em] uppercase text-[var(--fintheon-accent)]/85"
-                              style={{ fontFamily: "var(--font-heading)" }}
-                            >
-                              Chamber Briefing
-                            </span>
-                          </div>
-                          <SanctumBriefing
-                            briefing={data?.briefing ?? null}
-                            isLoading={isLoading}
-                            noBorder
-                          />
-                        </div>
+                      {/* Right: Arbitrum Chamber (50%) */}
+                      <div className="flex-1 min-w-0 min-h-0 p-4 flex flex-col">
+                        <ArbitrumChamber
+                          simulationId={data?.simulationId ?? null}
+                          onSynthesisComplete={onSynthesisComplete}
+                        />
                       </div>
                     </div>
                   </div>
@@ -379,7 +367,10 @@ export function Sanctum({
                     </div>
 
                     {/* Vertical ruler */}
-                    <div className="w-px shrink-0 bg-[var(--fintheon-accent)]/10 mx-2" />
+                    <FadingRuler
+                      orientation="vertical"
+                      className="shrink-0 mx-2"
+                    />
 
                     {/* Right: Active Narratives */}
                     <div className="flex-1 min-w-0 flex flex-col">

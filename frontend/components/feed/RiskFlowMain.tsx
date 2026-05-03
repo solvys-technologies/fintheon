@@ -166,11 +166,11 @@ export function RiskFlowMain({ onChatAlert }: RiskFlowMainProps) {
           </span>
           <span className="flex items-center gap-1.5">
             <span
-              className={`w-1.5 h-1.5 rounded-full ${sourceStatus.rettiwt ? "bg-emerald-400" : "bg-zinc-600"}`}
+              className={`w-1.5 h-1.5 rounded-full ${sourceStatus.xHomeTimeline ? "bg-emerald-400" : "bg-zinc-600"}`}
             />
             <span
               className={
-                sourceStatus.rettiwt ? "text-emerald-400/90" : "text-zinc-500"
+                sourceStatus.xHomeTimeline ? "text-emerald-400/90" : "text-zinc-500"
               }
             >
               X
