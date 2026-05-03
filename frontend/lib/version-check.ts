@@ -4,7 +4,12 @@
 // [claude-code 2026-04-13] Version check — polls /api/version/check (GitHub releases), not commits
 import pkgJson from "../../package.json";
 
-const API_BASE = import.meta.env.VITE_API_URL || "";
+// Always check against the production Fly.io backend for version delta.
+// The desktop app's VITE_API_URL points to localhost:8080, which is always
+// rebuilt to latest — so it would never detect an update. Fly.io is the
+// canonical deployed version; comparing against it means any new GitHub
+// release triggers the toast regardless of what's running locally.
+const API_BASE = "https://fintheon.fly.dev";
 const CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 const BUILD_VERSION = pkgJson.version ?? "0.0.0";
 

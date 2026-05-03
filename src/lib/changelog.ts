@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-03T15:40:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Fix: version check now targets Fly.io production backend instead of localhost. Desktop app's VITE_API_URL pointed to localhost:8080 which was always rebuilt to latest, so no version delta ever appeared. Now always hits fintheon.fly.dev/api/version/check for update detection.",
+    files: ["frontend/lib/version-check.ts"],
+  },
+  {
     date: "2026-05-03T15:26:00-04:00",
     agent: "claude-code",
     summary: "S57 shipped: Arbitrum dashboard UI — RiskSignalCards feed from Aquarium, chevron rows with FadingRuler separators, height-locked Page 0 with internal scroll, Chamber tiles with vertical score fuses. Unified X tier + cross-device round-robin coordinator deployed to all 3 targets. Archived to sprint-changelog/.",

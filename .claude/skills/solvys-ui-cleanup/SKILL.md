@@ -71,6 +71,17 @@ Verify every interactive or data-driven region has the quiet basics:
 - Loaders should be local and proportional to the wait.
 - Avoid putting a chart in every card. Prefer tabbed or expandable analytical regions.
 
+### 8. Solvys Fuses
+
+When TP says "Solvys fuses", use the Fintheon `NothingFuse` pattern:
+
+- Nothing-design influenced, minimal, technical, and flat.
+- Numeric readings around the fuse should use the display/data font treatment.
+- Incremental ruler lines must cut through the fuse. Horizontal fuses get vertical increment lines; vertical fuses get horizontal increment lines.
+- For 0-10 scores, default to 10 segments so each increment represents 1.0.
+- Horizontal fills run left-to-right; vertical fills run bottom-up.
+- Prefer the existing `NothingFuse` component where available.
+
 ## Implementation Rules
 
 - Make the smallest set of changes that visibly improves the surface.

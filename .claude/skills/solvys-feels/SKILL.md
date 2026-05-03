@@ -217,6 +217,17 @@ Always 1px. Never thicker. Never solid accent color at full opacity for borders 
 - No toast notifications, no popups, no snackbars
 - Status text in monospace, uppercase, muted opacity
 
+### Solvys Fuses
+
+When TP says "Solvys fuses", render the Fintheon `NothingFuse` pattern:
+
+- Nothing-design influenced, minimal and technical, with no glow, no decorative shadow, and no generic progress-bar styling.
+- Use the display/data font treatment for nearby numeric readings. Scores should read as deliberate instrument data, not body copy.
+- Show ruler increments through the fill. Horizontal fuses use vertical increment lines; vertical fuses use horizontal increment lines.
+- Use 10 segments for 0-10 scores unless TP specifies another scale, so each increment reads as 1.0.
+- Horizontal fuses fill left-to-right. Vertical fuses fill bottom-up.
+- Prefer the existing `NothingFuse` component where available instead of creating a new primitive.
+
 ## CSS Custom Properties
 
 When building for Solvys applications, use these CSS custom property names:
