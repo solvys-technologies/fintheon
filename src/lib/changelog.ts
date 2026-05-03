@@ -9,6 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-03T15:10:00-04:00",
+    agent: "claude-code",
+    summary:
+      "RiskFlow X polling: cross-device round-robin with Supabase coordination (90-min rotation per team Mac mini, fallback chain to main device). Unified breaking/commentary/standard X tiers into single home-timeline pass — all handles polled in one Playwright session, post-filtered by handle-routing rules. Added riskflow_polling_coordinator singleton table for distributed lock. Worker coordination module with claim/release/rotate/fallback. Launchd plist for local Mac mini worker. Non-X standard tier (COT/FOMC/Fed/Kalshi) preserved independently.",
+    files: [
+      "backend-hono/src/workers/riskflow-worker/coordination.ts",
+      "backend-hono/src/workers/riskflow-worker/scheduler.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/index.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/x-handles-browser.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/types.ts",
+      "backend-hono/src/workers/riskflow-worker/persist.ts",
+      "supabase/migrations/20260503120000_riskflow_polling_coordinator.sql",
+      "launchd/io.solvys.fintheon-riskflow-worker.plist",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-03T13:25:00-04:00",
     agent: "claude-code",
     summary:
@@ -35,7 +52,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-05-03T09:30:00-04:00",
     agent: "claude-code",
     summary:
-      "S57: Arbitrum + dashboard UI refinement. Canonicalized next-session IV scenarios into deterministic Continuation / Risk-on rally / Escalation slots with explicit 0% rows; shared the scenario strip between Sanctum Volatility Read and Dashboard Next-session volatility. Compact Arbitrum chamber seats now show name, score, and confidence only, with fading rulers and embedded consensus directly below seats; clicking a seat opens an Arbitrum-only draggable full-summary popup, capped at two independent floating cards with internal scrolling. Sanctum Page 0 dropped the fixed chamber height and inner chamber scroll, uses bare/no-streak DayCard, and swaps solid split strokes for fading rulers. Dashboard DayCard moves streak into its Desk Plan header and replaces chamber seat signals with IV scenarios. Econ Pulse now lays out three fuses across on desktop.",
+      "S57: Arbitrum + dashboard UI refinement. Canonicalized next-session IV scenarios into deterministic Continuation / Risk-on rally / Escalation slots with explicit 0% rows; shared the scenario strip in Sanctum Volatility Read. Compact Arbitrum chamber seats now show name, score, confidence, and side-mounted vertical score fuses with 1.0 ruler increments; clicking a seat opens an Arbitrum-only draggable full-summary popup, capped at two independent floating cards with internal scrolling. Sanctum Page 0 dropped the fixed chamber height and inner chamber scroll, uses bare/no-streak DayCard, and swaps solid split strokes for fading rulers. Dashboard DayCard moves streak into its Desk Plan header; Dashboard now uses the actual Arbitrum Risk Signals list as chevron-expandable ruler-separated rows instead of the IV scenario strip, and Page 0 is height-locked so overflow scrolls inside sections. Econ Pulse now lays out three fuses across on desktop.",
     files: [
       "backend-hono/src/services/market-data/canonical-iv-scenarios.ts",
       "backend-hono/src/services/market-data/iv-prediction.ts",
@@ -49,6 +66,7 @@ export const changelog: ChangelogEntry[] = [
       "frontend/components/arbitrum/ChamberAgentSummaryPopup.tsx",
       "frontend/components/arbitrum/VerdictCard.tsx",
       "frontend/components/narrative/Sanctum.tsx",
+      "frontend/components/narrative/RiskSignalCards.tsx",
       "frontend/components/narrative/DayCard.tsx",
       "frontend/components/executive/MainDashboard.tsx",
       "frontend/components/narrative/econ/EconKpiFuses.tsx",

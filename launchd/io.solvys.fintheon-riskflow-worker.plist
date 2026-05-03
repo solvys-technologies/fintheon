@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>io.solvys.fintheon-riskflow-worker</string>
+
+    <key>Comment</key>
+    <string>Fintheon RiskFlow Worker — X timeline polling via Playwright, round-robin coordinated across team Mac Minis</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>ProgramArguments</key>
+    <array>
+      <string>/Users/tifos/.bun/bin/bun</string>
+      <string>dist/workers/riskflow-worker/index.js</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/tifos/Documents/Codebases/fintheon/backend-hono</string>
+
+    <key>StandardOutPath</key>
+    <string>/Users/tifos/.hermes/logs/riskflow-worker.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/tifos/.hermes/logs/riskflow-worker.err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>HOME</key>
+      <string>/Users/tifos</string>
+      <key>NODE_ENV</key>
+      <string>development</string>
+      <key>RISKFLOW_WORKER_PORT</key>
+      <string>8082</string>
+      <key>FLAG_RISKFLOW_WORKER_WRITES_RISKFLOW</key>
+      <string>true</string>
+      <key>POLLING_DEVICE_ID</key>
+      <string>main</string>
+      <key>POLLING_ROTATION_MINUTES</key>
+      <string>90</string>
+      <key>BROWSER_WORKER_HEADLESS</key>
+      <string>false</string>
+      <key>PATH</key>
+      <string>/Users/tifos/.bun/bin:/Users/tifos/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+  </dict>
+</plist>

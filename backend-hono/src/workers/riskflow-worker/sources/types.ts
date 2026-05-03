@@ -3,7 +3,10 @@
 //   (CollectedNewsItem, NewsTier, NewsSource) preserved to keep downstream consumers stable.
 // [claude-code 2026-04-19] S27-T7 (W2d): shared types for riskflow-worker sources.
 
-export type NewsTier = "breaking" | "standard" | "commentary";
+// [claude-code 2026-05-03] Added "unified" to support merged-tier home-timeline polling.
+// Items still emit with their routing tier (breaking/standard/commentary); "unified"
+// only gates the collector—it tells x-handles-browser to skip per-tier filtering.
+export type NewsTier = "breaking" | "standard" | "commentary" | "unified";
 
 export type NewsSource =
   | "browser-harness"

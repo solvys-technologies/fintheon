@@ -61,7 +61,7 @@ let consecutiveEmptyCycles = 0;
 const AUTH_EXPIRY_THRESHOLD = 3;
 let loginInProgress = false;
 
-async function attemptXLogin(): Promise<boolean> {
+export async function attemptXLogin(): Promise<boolean> {
   if (loginInProgress) return false;
   const email = process.env.X_EMAIL?.trim();
   const password = process.env.X_PASSWORD?.trim();
@@ -714,7 +714,7 @@ export async function collectFromXHandlesBrowser(
       if (routings.length > 0) {
         for (const routing of routings) {
           if (!passesContentFilter(tw.text, routing.contentFilter)) continue;
-          if (opts.tier !== routing.tier) continue;
+          if (opts.tier !== "unified" && opts.tier !== routing.tier) continue;
           out.push({
             item_id: tw.tweet_id,
             source: `twitter:${tw.author_handle}`,
@@ -724,7 +724,7 @@ export async function collectFromXHandlesBrowser(
             url: tw.permalink,
             image_url: tw.image_url ?? null,
             video_url: tw.video_url ?? null,
-            tier: opts.tier,
+            tier: opts.tier === "unified" ? routing.tier : opts.tier,
             published_at: tw.timestamp || new Date().toISOString(),
             fetched_at: new Date().toISOString(),
             fetch_latency_ms: fetchLatency,
@@ -741,7 +741,7 @@ export async function collectFromXHandlesBrowser(
           url: tw.permalink,
           image_url: tw.image_url ?? null,
           video_url: tw.video_url ?? null,
-          tier: opts.tier,
+          tier: opts.tier === "unified" ? "standard" : opts.tier,
           published_at: tw.timestamp || new Date().toISOString(),
           fetched_at: new Date().toISOString(),
           fetch_latency_ms: fetchLatency,
@@ -798,7 +798,9 @@ export async function collectFromXHandlesBrowser(
           url: tw.permalink,
           image_url: tw.image_url ?? null,
           video_url: tw.video_url ?? null,
-          tier: opts.tier,
+          tier: opts.tier === "unified"
+            ? (getRoutingForHandle(tw.author_handle)[0]?.tier ?? "standard")
+            : opts.tier,
           published_at: tw.timestamp || new Date().toISOString(),
           fetched_at: new Date().toISOString(),
           fetch_latency_ms:

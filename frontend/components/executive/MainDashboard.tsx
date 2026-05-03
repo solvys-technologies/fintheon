@@ -3,7 +3,7 @@
 //   so the blindspots interview payloads silently evaporated after onboarding.
 // [claude-code 2026-03-28] S9-T3: Side-by-side Brief+Calendar with needle divider, kill padding
 // [claude-code 2026-03-11] T8: Tale of the Tape label for Sun+Mon<7AM, show only first brief item
-// [claude-code 2026-05-03] S57: dashboard risk rail uses IV scenario strip instead of chamber seats.
+// [claude-code 2026-05-03] Dashboard first page height-lock + Risk Signals rail.
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useBackend } from "../../lib/backend";
 
@@ -18,8 +18,7 @@ import { KanbanTitle } from "../ui/KanbanTitle";
 import { ExpandableTapeItem } from "./ExpandableTapeItem";
 import TradeIdeaModal from "../TradeIdeaModal";
 import { DayCard } from "../narrative/DayCard";
-import { NextSessionScenariosStrip } from "../narrative/NextSessionScenariosStrip";
-import { useIVScoreData } from "../narrative/useIVScoreData";
+import { RiskSignalCards } from "../narrative/RiskSignalCards";
 import { RegimeCard } from "../dashboard/RegimeCard";
 import { RegimeTrackerModal } from "../regimes/RegimeTrackerModal";
 import {
@@ -75,13 +74,8 @@ export function MainDashboard({
   // [claude-code 2026-04-26] Regime Tracker is now a chevron-collapsible row
   // matching Core KPIs / RiskFlow header style. Default collapsed for parity.
   const [regimeCollapsed, setRegimeCollapsed] = useState(true);
-  // [claude-code 2026-05-03] S57: Next-session volatility strip collapsible.
+  // [claude-code 2026-05-03] Risk Signals collapsible.
   const [signalsCollapsed, setSignalsCollapsed] = useState(false);
-  const {
-    data: ivScoreData,
-    isLoading: ivScoreLoading,
-    error: ivScoreError,
-  } = useIVScoreData();
 
   const handleInterviewComplete = useCallback(
     (data: {
@@ -329,12 +323,12 @@ export function MainDashboard({
         <div
           ref={containerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto scroll-smooth snap-y snap-mandatory"
+          className="flex-1 min-h-0 overflow-hidden scroll-smooth snap-y snap-mandatory"
         >
           {/* Page 1: Briefing (default) — NTK Brief + Session Calendar + Core KPIs + Action Tape */}
           <div
             data-dash-page="0"
-            className="min-h-full snap-start pt-0.5 pb-1 px-2 flex flex-col"
+            className="h-full min-h-0 snap-start pt-0.5 pb-1 px-2 flex flex-col overflow-hidden"
           >
             {/* Setup Guide — first-time onboarding */}
             {showSetupGuide && (
@@ -346,8 +340,8 @@ export function MainDashboard({
               </div>
             )}
             {/* Main content — Brief left, Calendar right */}
-            <div className="flex-1 min-h-[520px] flex mt-2">
-              <div className="flex-1 flex border border-[var(--fintheon-accent)]/12 rounded-xl overflow-hidden mx-1 my-1">
+            <div className="flex-1 min-h-0 flex mt-2">
+              <div className="flex-1 min-w-0 min-h-0 flex border border-[var(--fintheon-accent)]/12 rounded-xl overflow-hidden mx-1 my-1">
                 {/* Left: Morning Daily Brief (50%) */}
                 <div className="flex-1 min-w-0 overflow-y-auto p-4 flex flex-col">
                   <KanbanTitle
@@ -384,22 +378,21 @@ export function MainDashboard({
                   </div>
                 </div>
 
-                {/* Right: Day Plan (50%) — bare DayCard, day-of-week header, next-session IV */}
-                <div className="flex-1 min-w-0 overflow-y-auto p-4 flex flex-col">
+                {/* Right: Day Plan (50%) — bare DayCard, day-of-week header, Risk Signals */}
+                <div className="flex-1 min-w-0 min-h-0 p-4 flex flex-col overflow-hidden">
                   <KanbanTitle
                     title={new Date().toLocaleDateString("en-US", {
                       weekday: "long",
                     })}
                     tone="gold"
                   />
-                  <div className="mt-2 min-h-0 overflow-y-auto pr-1 relative">
+                  <div className="mt-2 shrink-0 pr-1 relative">
                     <DayCard bare showStreakInHeader />
                   </div>
 
-                  {/* Next-session volatility — chevron-collapsible */}
-                  <div className="shrink-0 mt-4">
+                  <div className="mt-4 flex-1 min-h-0 flex flex-col">
                     <KanbanTitle
-                      title="Next-session volatility"
+                      title="Risk Signals"
                       tone="gold"
                       headerRight={
                         <button
@@ -408,8 +401,8 @@ export function MainDashboard({
                           className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
                           title={
                             signalsCollapsed
-                              ? "Expand next-session volatility"
-                              : "Collapse next-session volatility"
+                              ? "Expand Risk Signals"
+                              : "Collapse Risk Signals"
                           }
                         >
                           {signalsCollapsed ? (
@@ -421,24 +414,14 @@ export function MainDashboard({
                       }
                     />
                     <div
-                      className="transition-all duration-300 ease-in-out"
+                      className="mt-2 flex-1 min-h-0 overflow-y-auto pr-1 transition-all duration-300 ease-in-out"
                       style={{
                         maxHeight: signalsCollapsed ? "0px" : "9999px",
                         opacity: signalsCollapsed ? 0 : 1,
                         overflow: signalsCollapsed ? "hidden" : undefined,
                       }}
                     >
-                      {ivScoreError ? (
-                        <div className="py-3 text-[10px] text-[var(--fintheon-muted)]/40">
-                          Volatility scenarios unavailable ({ivScoreError}).
-                        </div>
-                      ) : (
-                        <NextSessionScenariosStrip
-                          scenarios={ivScoreData?.prediction?.scenarios}
-                          isLoading={ivScoreLoading}
-                          className="mt-2"
-                        />
-                      )}
+                      <RiskSignalCards compact />
                     </div>
                   </div>
                 </div>
@@ -446,7 +429,7 @@ export function MainDashboard({
             </div>
 
             {/* Row 2: Core KPIs — chevron-collapsible (default collapsed) */}
-            <div className="shrink-0 mb-5 mt-4">
+            <div className="hidden shrink-0 mb-5 mt-4">
               <KanbanTitle
                 title="Core KPIs"
                 tone="emerald"
@@ -508,7 +491,7 @@ export function MainDashboard({
 
             {/* Row 2.5: Regime Tracker — KanbanTitle header + chevron, aligned
                 with Core KPIs / RiskFlow row starts (no extra px-4 indent). */}
-            <div className="shrink-0 mb-5">
+            <div className="hidden shrink-0 mb-5">
               <KanbanTitle
                 title="Regime Tracker"
                 tone="gold"
@@ -557,7 +540,7 @@ export function MainDashboard({
 
             {/* Row 3: RiskFlow — fills remaining space, expandable items, recency fade */}
             <div
-              className="flex-1 min-h-0 flex flex-col"
+              className="hidden flex-1 min-h-0 flex-col"
               style={{ transition: "all 300ms ease" }}
             >
               <KanbanTitle
@@ -654,7 +637,7 @@ export function MainDashboard({
           {/* Page 2: Full RiskFlow */}
           <div
             data-dash-page="1"
-            className="min-h-full snap-start pt-0.5 pb-1 px-2 flex flex-col"
+            className="h-full min-h-0 snap-start pt-0.5 pb-1 px-2 flex flex-col"
           >
             <KanbanTitle
               title="RiskFlow"

@@ -56,10 +56,11 @@ export function ChamberAgentSummaryPopup({
 
   return (
     <section
-      className="fixed w-[min(380px,calc(100vw-24px))] bg-[var(--fintheon-bg)]/95 border border-[var(--fintheon-accent)]/28 p-3 text-[var(--fintheon-text)] shadow-none"
+      className="fixed max-w-[calc(100vw-24px)] rounded-md border border-[var(--fintheon-accent)]/24 bg-[var(--fintheon-bg)]/95 p-3 text-[var(--fintheon-text)] shadow-none"
       style={{
         left: position.x,
         top: position.y,
+        width: "min(380px, calc(100vw - 24px))",
         zIndex,
       }}
       aria-label={`${displayName} chamber summary`}

@@ -1,39 +1,48 @@
-// [claude-code 2026-04-24] S35-T10: renamed dir from workers/news-worker. Heartbeats now
-//   key on riskflow_worker_heartbeats; diagnostics surfaces riskflow_worker_age_seconds
-//   (with news_worker_age_seconds dual-emitted through 2026-05-08).
-// [claude-code 2026-04-30] S55: Commentary tier added — 60s cadence, same as breaking.
-// Commentary handles produce opinion/analysis, not structured econ data.
-// [claude-code 2026-04-19] S27-T7 (W2d): scheduler — three tiers.
-// Breaking (60s): X/Twitter wire handles via browser-harness.
-// Commentary (60s): X/Twitter commentary handles via browser-harness.
-// Standard (5m): COT, FOMC Minutes, Fed Speeches, Macro X handles, Kalshi whale alerts.
+// [claude-code 2026-05-03] Round-robin multi-device scheduler for X polling.
+// Replaced the 3-tier timer architecture with a single coordination-aware loop:
+//   1. Check cross-device coordinator (Supabase) — should THIS Mac mini poll now?
+//   2. If yes, run unified X tier (one home-timeline pass for all handles) +
+//      standard tier (non-X: COT, FOMC, Fed Speeches, Kalshi).
+//   3. If no, sleep CHECK_INTERVAL_MS then re-check.
+//   4. 90-minute rotation between team devices. Fallback chain to main device.
+//
+// Legacy tiers (breaking/commentary/standard X) replaced by runUnifiedXTier.
+// Non-X standard tier preserved as runStandardTier.
+//
+// [claude-code 2026-04-24] S35-T10: renamed dir from workers/news-worker.
+// [claude-code 2026-04-19] S27-T7 (W2d): original scheduler.
 
 import {
-  runBreakingTier,
+  runUnifiedXTier,
   runStandardTier,
-  runCommentaryTier,
 } from "./sources/index.js";
 import { upsertHeartbeat } from "./persist.js";
-import { NEWS_WORKER_CONTRACT } from "./contract.js";
+import {
+  shouldPollThisCycle,
+  recordCycleSuccess,
+  releaseSlot,
+  getCheckIntervalMs,
+  getDeviceId,
+  getRotationIntervalMs,
+} from "./coordination.js";
 
-const BREAKING_INTERVAL_MS = NEWS_WORKER_CONTRACT.BREAKING_INTERVAL_MS;
-const COMMENTARY_INTERVAL_MS = NEWS_WORKER_CONTRACT.COMMENTARY_INTERVAL_MS;
-const STANDARD_INTERVAL_MS = NEWS_WORKER_CONTRACT.STANDARD_INTERVAL_MS;
+const UNIFIED_INTERVAL_MS = 60_000; // 60s between X cycles when active
+const STANDARD_INTERVAL_MS = 300_000; // 5m between non-X sweeps when active
 
 interface TierState {
-  tier: "breaking" | "standard" | "commentary";
   running: boolean;
   lastRunAt: string | null;
   lastItemsIngested: number;
   lastErrors: number;
   totalRuns: number;
   totalErrors: number;
-  timer: NodeJS.Timeout | null;
 }
 
-const state: Record<"breaking" | "standard" | "commentary", TierState> = {
-  breaking: {
-    tier: "breaking",
+const state: Record<
+  "unified" | "standard",
+  TierState & { timer: ReturnType<typeof setTimeout> | null; intervalMs: number }
+> = {
+  unified: {
     running: false,
     lastRunAt: null,
     lastItemsIngested: 0,
@@ -41,9 +50,9 @@ const state: Record<"breaking" | "standard" | "commentary", TierState> = {
     totalRuns: 0,
     totalErrors: 0,
     timer: null,
+    intervalMs: UNIFIED_INTERVAL_MS,
   },
   standard: {
-    tier: "standard",
     running: false,
     lastRunAt: null,
     lastItemsIngested: 0,
@@ -51,22 +60,11 @@ const state: Record<"breaking" | "standard" | "commentary", TierState> = {
     totalRuns: 0,
     totalErrors: 0,
     timer: null,
-  },
-  commentary: {
-    tier: "commentary",
-    running: false,
-    lastRunAt: null,
-    lastItemsIngested: 0,
-    lastErrors: 0,
-    totalRuns: 0,
-    totalErrors: 0,
-    timer: null,
+    intervalMs: STANDARD_INTERVAL_MS,
   },
 };
 
-async function runTier(
-  tier: "breaking" | "standard" | "commentary",
-): Promise<void> {
+async function runCycle(tier: "unified" | "standard"): Promise<void> {
   const s = state[tier];
   if (s.running) return;
   s.running = true;
@@ -75,13 +73,12 @@ async function runTier(
   let errors = 0;
   try {
     const result =
-      tier === "breaking"
-        ? await runBreakingTier()
-        : tier === "commentary"
-          ? await runCommentaryTier()
-          : await runStandardTier();
+      tier === "unified" ? await runUnifiedXTier() : await runStandardTier();
     ingested = result.ingested;
     errors = result.errors;
+    if (tier === "unified" && ingested > 0) {
+      recordCycleSuccess().catch(() => {});
+    }
   } catch (err) {
     errors += 1;
     console.error(
@@ -117,48 +114,70 @@ async function runTier(
         ingested,
         errors,
         duration_ms: Date.now() - started,
+        device: getDeviceId(),
       }),
     );
   }
 }
 
+async function unifiedPollLoop(): Promise<void> {
+  const shouldPoll = await shouldPollThisCycle();
+  if (shouldPoll) {
+    await runCycle("unified");
+    state.unified.timer = setTimeout(unifiedPollLoop, UNIFIED_INTERVAL_MS);
+  } else {
+    const checkMs = getCheckIntervalMs();
+    state.unified.timer = setTimeout(unifiedPollLoop, checkMs);
+  }
+}
+
 export function startScheduler(): void {
-  if (state.breaking.timer || state.standard.timer || state.commentary.timer)
-    return;
+  if (state.unified.timer || state.standard.timer) return;
 
-  // Stagger first runs so tiers don't fire on the same tick.
-  setTimeout(() => void runTier("breaking"), 1_000);
-  setTimeout(() => void runTier("commentary"), 2_000);
-  setTimeout(() => void runTier("standard"), 3_000);
+  const deviceId = getDeviceId();
+  const rotationMin =
+    Math.round(getRotationIntervalMs() / 60_000);
 
-  state.breaking.timer = setInterval(
-    () => void runTier("breaking"),
-    BREAKING_INTERVAL_MS,
+  console.log(
+    JSON.stringify({
+      ts: new Date().toISOString(),
+      service: "riskflow-worker",
+      stage: "scheduler_started",
+      device: deviceId,
+      rotation_interval_minutes: rotationMin,
+      unified_interval_ms: UNIFIED_INTERVAL_MS,
+      standard_interval_ms: STANDARD_INTERVAL_MS,
+    }),
   );
-  state.commentary.timer = setInterval(
-    () => void runTier("commentary"),
-    COMMENTARY_INTERVAL_MS,
-  );
+
+  // Unified X tier — coordination-aware loop
+  setTimeout(() => void unifiedPollLoop(), 2_000);
+
+  // Standard tier — independent, runs regardless of device rotation
+  // (gov RSS + Kalshi don't need X credentials)
+  setTimeout(() => void runCycle("standard"), 5_000);
   state.standard.timer = setInterval(
-    () => void runTier("standard"),
+    () => void runCycle("standard"),
     STANDARD_INTERVAL_MS,
   );
 }
 
 export async function stopScheduler(): Promise<void> {
-  if (state.breaking.timer) clearInterval(state.breaking.timer);
+  if (state.unified.timer) clearTimeout(state.unified.timer);
   if (state.standard.timer) clearInterval(state.standard.timer);
-  if (state.commentary.timer) clearInterval(state.commentary.timer);
-  state.breaking.timer = null;
+  state.unified.timer = null;
   state.standard.timer = null;
-  state.commentary.timer = null;
+  await releaseSlot();
 }
 
 export function getSchedulerSnapshot() {
-  const tiers = (["breaking", "standard", "commentary"] as const).map((t) => {
+  const tiers = ([
+    "unified",
+    "standard",
+  ] as const).map((t) => {
     const s = state[t];
     return {
-      tier: s.tier,
+      tier: t,
       running: s.running,
       last_run_at: s.lastRunAt,
       last_items_ingested: s.lastItemsIngested,
@@ -167,5 +186,5 @@ export function getSchedulerSnapshot() {
       total_errors: s.totalErrors,
     };
   });
-  return { tiers };
+  return { tiers, device: getDeviceId() };
 }
