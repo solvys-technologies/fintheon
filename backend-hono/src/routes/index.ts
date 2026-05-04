@@ -95,6 +95,7 @@ import { createPsychAssistForkRoutes } from "./admin/psych-assist-fork.js";
 import { createEconBackfillRoutes } from "./admin/econ-backfill.js";
 // [claude-code 2026-04-27] S46.4: bulk delete + refill + MSM purge audit
 import { createRiskFlowBulkRoutes } from "./admin/riskflow-bulk.js";
+import { createRiskFlowBackfillDripRoutes } from "./admin/riskflow-backfill-drip.js";
 // [claude-code 2026-04-28] S48-T1: pipeline toggle and stats admin routes
 import { createPipelineRoutes } from "./admin/pipelines.js";
 import { createPipelineStatsRoutes } from "./admin/pipeline-stats.js";
@@ -455,6 +456,7 @@ export function registerRoutes(app: Hono): void {
     requireSuperadmin,
   );
   app.route("/api/admin/riskflow", createRiskFlowBulkRoutes());
+  app.route("/api/admin/riskflow", createRiskFlowBackfillDripRoutes());
 
   // [claude-code 2026-04-28] S48-T1: pipeline management — superadmin-gated
   app.use(

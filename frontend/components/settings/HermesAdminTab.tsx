@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58-T2: add default personal chat provider selector and server-routing warning.
 // [claude-code 2026-04-19] S27-T11: mount GepaWidget on diagnostics surface.
 // [claude-code 2026-04-19] S27-T9 W2e: mount RoutingWidget on diagnostics surface.
 // [claude-code 2026-04-19] S27-T4: mount HeadlineVolumeWidget on diagnostics surface.
@@ -12,6 +13,7 @@ import { HermesSettings } from "./HermesSettings";
 import { HeadlineVolumeWidget } from "../diagnostics/HeadlineVolumeWidget";
 import { RoutingWidget } from "../diagnostics/RoutingWidget";
 import { GepaWidget } from "../diagnostics/GepaWidget";
+import type { HarperProvider } from "../chat/ProviderDropdown";
 
 interface DiagnosticService {
   name: string;
@@ -46,6 +48,18 @@ export function HermesAdminTab() {
   const [persistentThreadId, setPersistentThreadId] = useState(
     () => localStorage.getItem("fintheon:gateway-persistent-thread-id") ?? "",
   );
+  const [defaultProvider, setDefaultProvider] = useState<HarperProvider>(() => {
+    const saved = localStorage.getItem("fintheon:default-chat-provider");
+    if (
+      saved === "deepseek-direct" ||
+      saved === "deepseek-oc-api" ||
+      saved === "orouter" ||
+      saved === "local"
+    ) {
+      return saved;
+    }
+    return "deepseek-direct";
+  });
 
   // Diagnostics state
   const [diagnostics, setDiagnostics] = useState<DiagnosticsData | null>(null);
@@ -107,6 +121,12 @@ export function HermesAdminTab() {
     localStorage.setItem("fintheon:gateway-persistent-thread-id", id);
   };
 
+  const handleDefaultProviderChange = (provider: HarperProvider) => {
+    setDefaultProvider(provider);
+    localStorage.setItem("fintheon:default-chat-provider", provider);
+    localStorage.setItem("fintheon:harper-provider", provider);
+  };
+
   const handleCopyHandoff = useCallback(() => {
     if (!diagnostics) return;
 
@@ -151,6 +171,42 @@ export function HermesAdminTab() {
 
   return (
     <div className="space-y-6">
+      <section>
+        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-4">
+          Default Chat Provider
+        </h3>
+        <div className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg p-4 space-y-3">
+          <select
+            value={defaultProvider}
+            onChange={(event) =>
+              handleDefaultProviderChange(event.target.value as HarperProvider)
+            }
+            className="w-full bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/30 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/60"
+          >
+            <option value="deepseek-direct">DeepSeek (Direct)</option>
+            <option value="deepseek-oc-api">DeepSeek (OC API)</option>
+            <option value="orouter">OpenRouter Opus</option>
+            <option value="local">VProxy (Local)</option>
+          </select>
+          <div className="bg-amber-900/20 border border-amber-700/30 rounded-lg p-3 text-xs text-amber-100/80 leading-relaxed">
+            Backend processes (briefs, Arbitrum, RiskFlow) always run on Hermes
+            via OpenCode Go or the server DeepSeek API regardless of your
+            personal chat provider setting.
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(
+                new CustomEvent("fintheon:settings-tab", { detail: "api" }),
+              );
+            }}
+            className="text-xs text-[var(--fintheon-accent)] hover:text-[var(--fintheon-accent)]/80 transition-colors"
+          >
+            Manage your API key
+          </button>
+        </div>
+      </section>
+
       {/* 1. Gateway Status */}
       <section>
         <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-4">

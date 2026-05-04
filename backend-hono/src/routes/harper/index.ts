@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58-T1: Harper provider routing accepts DeepSeek primary.
 // [claude-code 2026-04-19] S25: mounted /approvals/:id + /dispatch subroutes for the mobile
 //   catalyst DetailSheet flow — GET one approval with expiresAt, POST seeded conversation.
 // [claude-code 2026-04-05] Strands Phase 8: Harper routes — streamHarperChat() replaces old CLI bridge + createUIMessageStreamResponse
@@ -10,11 +11,13 @@
 import { Hono } from "hono";
 import {
   streamHarperChat,
-  isStrandsAvailable,
   isVProxyEnabled,
   FINTHEON_PATHS,
 } from "../../services/strands/index.js";
-import { checkVProxyHealth } from "../../services/strands/provider.js";
+import {
+  checkDeepSeekDirectHealth,
+  checkVProxyHealth,
+} from "../../services/strands/provider.js";
 import { uiStreamToSSEResponse } from "../../services/strands/stream-adapter.js";
 import { createRequestCognition } from "../../services/cognition-emitter.js";
 import * as conversationStore from "../../services/ai/conversation-store.js";
@@ -46,15 +49,14 @@ export function createHarperRoutes() {
 
   // ── Status check ─────────────────────────────────────────────────────────
   app.get("/status", async (c) => {
-    const available = await isStrandsAvailable();
-    const usingVProxy = isVProxyEnabled();
+    const deepseek = await checkDeepSeekDirectHealth();
     return c.json({
-      available,
+      available: deepseek.available,
       agent: "harper",
-      model: usingVProxy
-        ? (process.env.VPROXY_ANTHROPIC_MODEL ?? "claude-opus-4-6")
-        : "claude-opus-local",
-      provider: usingVProxy ? "strands-vproxy" : "strands-local",
+      model: "deepseek-reasoner",
+      provider: "deepseek-direct",
+      fallback: isVProxyEnabled() ? "strands-vproxy" : "disabled",
+      error: deepseek.error,
     });
   });
 
@@ -92,7 +94,7 @@ export function createHarperRoutes() {
         persona?: string;
         riskFlowContext?: string;
         activeConnectors?: string[];
-        provider?: "local" | "ollama-qwen" | "nous";
+        provider?: "deepseek-direct" | "deepseek-oc-api" | "local" | "ollama-qwen" | "nous";
         /** Explicit boardroom surface flag — triggers multi-agent DAG dispatch */
         surface?: string;
         boardroom?: boolean;

@@ -1,7 +1,9 @@
+// [claude-code 2026-05-03] S58-T2: add user DeepSeek API-key management for client-side chat.
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — API credentials tab
 // [claude-code 2026-04-12] Added X Auth (Rettiwt) key management section
 import React, { useState, useEffect, useCallback } from "react";
 import type { APIKeys } from "../../contexts/SettingsContext";
+import { DeepSeekApiKeySection } from "./DeepSeekApiKeySection";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -97,6 +99,10 @@ export function ApiTab({ apiKeys, setAPIKeys }: ApiTabProps) {
 
   return (
     <>
+      <DeepSeekApiKeySection />
+
+      <div className="border-t border-zinc-800 my-6" />
+
       {/* ── X (Twitter) Feed Authentication ──────────────────────────── */}
       <section>
         <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-1">

@@ -9,6 +9,83 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-04T00:55:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Added a Refinement Engine slow-drip backfill control for @financialjuice that starts/stops a backend 30-minute job, inserts randomized 10-15 post batches from the last two days in chronological order, and scores each tick so missed headlines surface without rate-limit bursts.",
+    files: [
+      "backend-hono/src/services/riskflow/financialjuice-backfill-drip.ts",
+      "backend-hono/src/routes/admin/riskflow-backfill-drip.ts",
+      "backend-hono/src/routes/index.ts",
+      "frontend/components/refinement/FinancialJuiceBackfillPanel.tsx",
+      "frontend/components/refinement/RefinementEngine.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-03T18:57:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S58-T3 brief recovery: routed MDB/ADB/PMDB/TWT generation through the DeepSeek primary provider chain, taught the weekly prompt to honor legacy TOTT naming, and added TWT/WT/TOTT storage compatibility so older brief-table constraints still persist and hydrate the weekly report.",
+    files: [
+      "backend-hono/src/services/brief-generator.ts",
+      "backend-hono/src/services/supabase-service.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-03T16:20:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S58-T1 backend: moved AI routing to DeepSeek v4 Pro/deepseek-reasoner primary with OpenRouter fallback and VProxy last resort; added encrypted user DeepSeek key storage endpoints and Supabase RLS migration; updated Harper, Arbitrum, diagnostics, and budget metadata for the new provider chain.",
+    files: [
+      "backend-hono/src/services/ai/routing.ts",
+      "backend-hono/src/services/hermes-service.ts",
+      "backend-hono/src/services/ai/provider-chain.ts",
+      "backend-hono/src/services/ai/openrouter-fallback.ts",
+      "backend-hono/src/services/ai/provider-chain-health.ts",
+      "backend-hono/src/services/ai/ollama-hermes-client.ts",
+      "backend-hono/src/services/strands/provider.ts",
+      "backend-hono/src/services/strands/deepseek-health.ts",
+      "backend-hono/src/services/strands/agent-factory.ts",
+      "backend-hono/src/services/strands/agents/harper.ts",
+      "backend-hono/src/services/ai/budget.ts",
+      "backend-hono/src/services/ai/api-key-crypto.ts",
+      "backend-hono/src/routes/settings/ai-keys.ts",
+      "backend-hono/src/routes/settings/index.ts",
+      "backend-hono/src/routes/diagnostics/index.ts",
+      "backend-hono/src/routes/arbitrum/index.ts",
+      "backend-hono/src/services/arbitrum/adapters.ts",
+      "backend-hono/src/services/arbitrum/seats.ts",
+      "backend-hono/src/services/hermes-handler.ts",
+      "backend-hono/src/boot/index.ts",
+      "supabase/migrations/20260503_s58_user_api_keys.sql",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-03T16:05:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S58-T2 client SDK: added shared DeepSeek direct/OC API streaming SDK, desktop provider/key settings, Hermes default provider warning, and mobile direct-chat fallback that uses user DeepSeek keys when available while preserving backend relay paths.",
+    files: [
+      "frontend/lib/deepseek-sdk.ts",
+      "frontend/lib/apiClient.ts",
+      "frontend/lib/services/ai.ts",
+      "frontend/components/chat/hooks/useHermesChat.ts",
+      "frontend/components/chat/ProviderDropdown.tsx",
+      "frontend/components/settings/ApiTab.tsx",
+      "frontend/components/settings/DeepSeekApiKeySection.tsx",
+      "frontend/components/settings/HermesAdminTab.tsx",
+      "mobile/lib/backend.ts",
+      "mobile/components/chat/ChatPage.tsx",
+      "mobile/hooks/useAskCAO.ts",
+      "mobile/components/settings/SettingsPage.tsx",
+      "mobile/components/settings/AiProviderSection.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-03T15:40:00-04:00",
     agent: "claude-code",
     summary:

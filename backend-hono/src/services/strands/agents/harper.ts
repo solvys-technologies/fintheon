@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58-T1: DeepSeek v4 Pro primary provider migration
 // [claude-code 2026-04-05] Harper agent — Strands-based CAO with tools + streaming + cognition telemetry
 import { createAgent, type HarperProvider } from "../agent-factory.js";
 import { createHarperTools } from "../harper-tools.js";
@@ -7,7 +8,7 @@ import { TextBlock, ImageBlock } from "@strands-agents/sdk";
 import type { ContentBlock } from "@strands-agents/sdk";
 import { withCognition } from "../telemetry.js";
 import { createConversationManager } from "../memory-store.js";
-import { checkVProxyHealth } from "../provider.js";
+import { checkDeepSeekDirectHealth, checkVProxyHealth } from "../provider.js";
 import { getAgentSystemPrompt } from "../../ai/agent-instructions/index.js";
 import { createLogger } from "../../../lib/logger.js";
 
@@ -36,7 +37,7 @@ export interface HarperChatOptions {
   /** [S23-T3] Active Consilium surface — auto-enables surface-specific context injection (e.g. "aquarium"). */
   surface?: string;
   userContext?: UserContext;
-  /** AI provider override: local (VProxy), ollama-qwen (Mac Ollama via tunnel), nous (Hermes-4 via Nous Research direct) */
+  /** AI provider override: DeepSeek direct/OC API, local VProxy, or legacy fallbacks. */
   provider?: HarperProvider;
   /** When true, tool approvals block indefinitely (no 30s auto-approve) — mobile user decides */
   relayOriginated?: boolean;
@@ -68,20 +69,20 @@ export async function createHarperAgent(
       ? createConversationManager(opts.conversationId, opts.userId)
       : undefined;
 
-  // Auto-fallback: when no explicit provider, prefer VProxy (local Opus subscription);
-  // if it's unreachable, fall back to Nous Research direct (free Hermes-4 405B).
-  // OpenRouter rung removed 2026-04-26.
+  // Auto-fallback: DeepSeek direct first, legacy VProxy only after direct path fails.
   let effectiveProvider = opts?.provider;
   if (!effectiveProvider) {
-    const health = await checkVProxyHealth();
-    effectiveProvider = health.available ? "local" : "nous";
-    if (!health.available) {
-      log.warn(
-        "VProxy unreachable — falling back to Nous Research (Hermes-4)",
-        {
-          error: health.error,
-        },
-      );
+    const deepseekHealth = await checkDeepSeekDirectHealth();
+    if (deepseekHealth.available) {
+      effectiveProvider = "deepseek-direct";
+    } else {
+      const vproxyHealth = await checkVProxyHealth();
+      effectiveProvider = vproxyHealth.available ? "local" : "nous";
+      log.warn("DeepSeek direct unavailable for Harper", {
+        deepseekError: deepseekHealth.error,
+        fallbackProvider: effectiveProvider,
+        vproxyError: vproxyHealth.error,
+      });
     }
   }
 
@@ -92,7 +93,7 @@ export async function createHarperAgent(
     systemPrompt,
     tools: [...coreTools, ...solvysTools],
     model: {
-      model: "claude-opus-4-6",
+      model: effectiveProvider === "local" ? "claude-opus-4-6" : "deepseek-reasoner",
       temperature: 0.3,
       maxTokens: 16384,
     },

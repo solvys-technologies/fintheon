@@ -35,6 +35,7 @@ import { PipelineToggles } from "./PipelineToggles";
 import { OperatorTimeline } from "./OperatorTimeline";
 import { SourcePolicyPanel } from "./SourcePolicyPanel";
 import { DoctoringPanel } from "./DoctoringPanel";
+import { FinancialJuiceBackfillPanel } from "./FinancialJuiceBackfillPanel";
 import {
   PresetSelector,
   BUILTIN_PRESETS,
@@ -552,6 +553,7 @@ export function RefinementEngine() {
             <SourcePolicyPanel />
             <OperatorTimeline />
             <DoctoringPanel />
+            <FinancialJuiceBackfillPanel />
 
             {v4Available ? (
               <>

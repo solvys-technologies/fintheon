@@ -1,10 +1,11 @@
+// [claude-code 2026-05-03] S58-T3: Route MDB/ADB/PMDB/TWT generation through the DeepSeek primary provider chain.
 // [claude-code 2026-04-26] S45-T1: Inline Desk Theme block — pulls today's day_plan + windows and renders a monospace gutter (titles left / values right) before invokeAgent so MDB / ADB / PMDB / TWT all carry the prescriptive Day Card context.
 // [claude-code 2026-04-24] S35-T11: Inject Arbitrum "Chamber Read" (17:00 session digest) into PMDB prompt. Dynamic import of getLatestChamberRead so build stays green before T1/T12 lands the arbitrum barrel.
 // [claude-code 2026-04-19] S24-T1: MDB no longer writes regime directly — it proposes. Live behind SCORING_V4 env flag so V3 is a one-toggle rollback. Root cause: 2026-04-17 TP manually set BULL_TREND; MDB silently overwrote it 10h later via setRegime(). Kills the silent-override footgun.
 // [claude-code 2026-04-05] Strands Phase 8: Replace generateText + OpenRouter fallback with invokeAgent
 // [claude-code 2026-03-26] S2-T2: Add regime classification to MDB prompt + auto-parse after generation
-import { invokeAgent } from "./strands/index.js";
 import { readDayPlan } from "./day-plan/day-plan-service.js";
+import { generateViaChain } from "./ai/provider-chain.js";
 import type { DayPlan } from "../types/day-plan.js";
 import {
   writeBrief,
@@ -31,7 +32,7 @@ export const BRIEF_LABELS: Record<string, string> = {
   MDB: "Morning Daily Brief (MDB)",
   ADB: "Afternoon Daily Brief (ADB)",
   PMDB: "Post-Market Daily Brief (PMDB)",
-  TWT: "The Weekly Tribune",
+  TWT: "The Weekly Tribune (legacy TOTT)",
 };
 
 /**
@@ -275,18 +276,23 @@ ${
       : "Write 3-5 bullet points covering ONLY new developments since the afternoon brief — post-market moves, after-hours earnings, overnight catalysts. Be direct and actionable. Max 200 words."
 }`;
 
-  let text: string;
-  const usedProvider = "strands-vproxy";
-
-  log.info("Generating brief via Strands agent...");
-  const result = await invokeAgent({
-    systemPrompt:
-      "You are Fintheon, a macro trading assistant for Priced In Capital.",
-    userPrompt: prompt,
-    model: { temperature: 0.4, maxTokens: isFull ? 4096 : 1024 },
+  log.info("Generating brief via DeepSeek primary provider chain...", {
+    briefType,
   });
-  text = result.text;
-  log.info(`Strands agent generated ${text.length} chars`);
+  const result = await generateViaChain({
+    systemPrompt:
+      "You are Fintheon, a macro trading assistant for Priced In Capital. You generate the recurring MDB, ADB, PMDB, and TWT reports exactly when requested.",
+    prompt,
+    model: "deepseek-reasoner",
+    temperature: 0.4,
+    maxOutputTokens: isFull ? 4096 : 1024,
+    timeoutMs: 180_000,
+  });
+  const text = result.response;
+  const usedProvider = result.provider;
+  log.info(`Brief provider chain generated ${text.length} chars`, {
+    provider: usedProvider,
+  });
 
   // Auto-detect regime from MDB output (MDB only — parse after generation)
   // [S24-T1] V4: MDB PROPOSES; TP approves. Never writes market_regimes directly.

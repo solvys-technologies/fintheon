@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58-T1: DeepSeek primary env exports.
 // backend/src/boot/index.ts
 // ---------------------------------------------------------------------------
 // Boot-time environment variable validation.
@@ -49,6 +50,7 @@ const CRITICAL_VARS: VarSpec[] = [
 ];
 
 const REQUIRED_VARS: VarSpec[] = [
+  { name: "DEEPSEEK_API_KEY" },
   { name: "FRED_API_KEY" },
   { name: "CRON_SECRET_TOKEN" },
 ];
@@ -202,6 +204,9 @@ export const env = {
   SUPABASE_URL: process.env.SUPABASE_URL!,
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY!,
   OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY ?? "",
+  DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY ?? "",
+  OPENCODE_GO_API_URL: process.env.OPENCODE_GO_API_URL,
+  OPENCODE_GO_API_KEY: process.env.OPENCODE_GO_API_KEY,
   OPENROUTER_APP_URL:
     process.env.OPENROUTER_APP_URL ?? "https://fintheon-solvys.vercel.app",
   OPENROUTER_APP_NAME: process.env.OPENROUTER_APP_NAME ?? "Fintheon-AI-Gateway",

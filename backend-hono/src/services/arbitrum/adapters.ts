@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58-T1: Arbitrum seats use DeepSeek direct provider key.
 // [claude-code 2026-04-29] DeepSeek migration. All Arbitrum seats route through
 // DeepSeek's OpenAI-compatible API (`deepseek-reasoner`). Local Ollama and Groq
 // remain selectable via ARBITRUM_MODEL_PROVIDER_MAP. Harper-cao's OpenRouter
@@ -144,7 +145,8 @@ export async function seatChat(req: SeatChatRequest): Promise<SeatChatResult> {
 
   const runPrimary = async (): Promise<string> => {
     switch (provider) {
-      case "deepseek":
+      case "deepseek-direct":
+      case "deepseek-oc-api":
         return deepseekChat(req);
       case "ollama":
         return ollamaChat(req);

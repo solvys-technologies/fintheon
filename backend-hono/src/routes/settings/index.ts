@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58-T1: register encrypted AI API key endpoints.
 // [claude-code 2026-03-10] User preferences persistence endpoints
 // [claude-code 2026-04-12] Added Rettiwt API key management endpoints
 import { Hono } from "hono";
@@ -11,9 +12,12 @@ import {
   isSupabaseConfigured,
 } from "../../config/supabase.js";
 import { getPoolStatus } from "../../services/rettiwt-service.js";
+import { createAiKeysRoutes } from "./ai-keys.js";
 
 export function createSettingsRoutes(): Hono {
   const router = new Hono();
+
+  router.route("/ai-keys", createAiKeysRoutes());
 
   /**
    * GET /api/settings — returns user preferences

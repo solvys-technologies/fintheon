@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58-T1: DeepSeek v4 Pro primary provider migration
 // [claude-code 2026-03-28] S9-T4: Switch boardroom agents to Grok 4.20 Fast, Harper stays Claude Opus
 // [claude-code 2026-03-14] Hermes inference via OpenRouter (Nous) + Claude Opus 4.6
 /**
@@ -137,9 +138,9 @@ const HERMES_AGENTS: Record<
 // fallback when DEEPSEEK_API_KEY is unset (the ollama-hermes-client honours
 // HERMES_SIDECAR_URL / OLLAMA_BASE_URL).
 export const HERMES_TASK_MODEL_MAP: Record<string, string> = {
-  "harper-cao": "anthropic/claude-opus-4.7",
-  "cao-approval": "anthropic/claude-opus-4.7",
-  "cao-consolidation": "anthropic/claude-opus-4.7",
+  "harper-cao": "deepseek-reasoner",
+  "cao-approval": "deepseek-reasoner",
+  "cao-consolidation": "deepseek-reasoner",
   "pma-merged": "deepseek-reasoner",
   "prediction-market": "deepseek-reasoner",
   "futures-desk": "deepseek-reasoner",
@@ -160,11 +161,16 @@ export const HERMES_TASK_MODEL_MAP: Record<string, string> = {
 // primary path for all Hermes sub-agent tasks. 'ollama' stays available for
 // local Ollama models (e.g. dev mode without an internet key). Any unmapped
 // model defaults to 'openrouter' — preserving harper-cao's Opus path verbatim.
-export type ArbitrumProvider = "deepseek" | "ollama" | "groq" | "openrouter";
+export type ArbitrumProvider =
+  | "deepseek-direct"
+  | "deepseek-oc-api"
+  | "ollama"
+  | "groq"
+  | "openrouter";
 
 const ARBITRUM_MODEL_PROVIDER_MAP: Record<string, ArbitrumProvider> = {
-  "deepseek-reasoner": "deepseek",
-  "deepseek-chat": "deepseek",
+  "deepseek-reasoner": "deepseek-direct",
+  "deepseek-chat": "deepseek-direct",
   "qwen3.5:397b-cloud": "ollama",
 };
 
@@ -253,10 +259,11 @@ export const calculateHermesCost = (
 
   const pricing: Record<string, { input: number; output: number }> = {
     "anthropic/claude-opus-4.6": { input: 0.005, output: 0.025 },
+    "deepseek-reasoner": { input: 0.0005, output: 0.00219 },
     "xai/grok-4-fast": { input: 0.002, output: 0.01 },
   };
 
-  const modelPricing = pricing[model] ?? { input: 0.002, output: 0.01 };
+  const modelPricing = pricing[model] ?? pricing["deepseek-reasoner"];
 
   const inputCostUsd = (inputTokens / 1000) * modelPricing.input;
   const outputCostUsd = (outputTokens / 1000) * modelPricing.output;
@@ -364,10 +371,10 @@ export const validateTradeProposal = (
  * CAO uses Claude Opus 4.6 (CLI bridge), sub-agents use Grok 4.20 Fast
  */
 export const HERMES_MODELS = {
-  CAO_REASONING: "anthropic/claude-opus-4.6",
-  FAST_ANALYSIS: "xai/grok-4-fast",
-  NEWS_REALTIME: "xai/grok-4-fast",
-  RESEARCH: "xai/grok-4-fast",
+  CAO_REASONING: "deepseek-reasoner",
+  FAST_ANALYSIS: "deepseek-reasoner",
+  NEWS_REALTIME: "deepseek-reasoner",
+  RESEARCH: "deepseek-reasoner",
 } as const;
 
 export type HermesModelId = (typeof HERMES_MODELS)[keyof typeof HERMES_MODELS];

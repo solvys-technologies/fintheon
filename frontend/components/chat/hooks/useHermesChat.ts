@@ -3,6 +3,7 @@
  * Simple chat hook for Hermes AI processing
  */
 
+// [claude-code 2026-05-03] S58-T2: route personal CAO DeepSeek providers through client SDK when configured.
 // [claude-code 2026-04-18] Clear cached conversationId on 404 during hydration — otherwise Electron
 //   boots with a stale localStorage UUID, useHermesChat logs "starting fresh", but the consumer
 //   (FintheonComposer) still sees the old ID and fires /api/relay/dispatch → 404 → user reports
@@ -15,6 +16,11 @@ import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
 import { API_BASE_URL } from "../constants.js";
 import { getAccessToken } from "../../../lib/supabase";
+import {
+  createDeepSeekStreamResponse,
+  type DeepSeekChatMessage,
+  type DeepSeekProvider,
+} from "../../../lib/deepseek-sdk";
 
 /** Convert backend ChatMessage -> UIMessage for useChat hydration */
 function backendToUIMessage(msg: {
@@ -28,6 +34,38 @@ function backendToUIMessage(msg: {
     role: msg.role as "user" | "assistant" | "system",
     parts: [{ type: "text" as const, text: msg.content }],
   };
+}
+
+function isDeepSeekProvider(provider: string): provider is DeepSeekProvider {
+  return provider === "deepseek-direct" || provider === "deepseek-oc-api";
+}
+
+function readHarperProvider(): string {
+  try {
+    return localStorage.getItem("fintheon:harper-provider") || "local";
+  } catch {
+    return "local";
+  }
+}
+
+function bodyToDeepSeekMessages(body: BodyInit | null | undefined): DeepSeekChatMessage[] {
+  if (!body || typeof body !== "string") return [];
+  const parsed = JSON.parse(body) as {
+    message?: string;
+    history?: Array<{ role?: string; content?: string }>;
+  };
+  const history = (parsed.history ?? [])
+    .filter(
+      (message): message is { role: "user" | "assistant"; content: string } =>
+        (message.role === "user" || message.role === "assistant") &&
+        typeof message.content === "string" &&
+        message.content.trim().length > 0,
+    )
+    .map((message) => ({ role: message.role, content: message.content }));
+  if (typeof parsed.message === "string" && parsed.message.trim()) {
+    history.push({ role: "user", content: parsed.message });
+  }
+  return history;
 }
 
 export function useHermesChat(
@@ -101,6 +139,26 @@ export function useHermesChat(
         timeoutMs > 0 ? setTimeout(() => controller.abort(), timeoutMs) : null;
 
       try {
+        const selectedProvider = readHarperProvider();
+        if (isHarper && isDeepSeekProvider(selectedProvider)) {
+          const messages = bodyToDeepSeekMessages(body);
+          if (messages.length === 0) {
+            throw new Error("No chat message supplied for DeepSeek.");
+          }
+          const result = await createDeepSeekStreamResponse(messages, {
+            provider: selectedProvider,
+            apiBaseUrl: API_BASE_URL,
+            conversationId: conversationIdRef.current,
+            getAccessToken,
+            signal: controller.signal,
+            title: messages[messages.length - 1]?.content.slice(0, 80),
+          });
+          if (timeoutId) clearTimeout(timeoutId);
+          if (result.conversationId) setConversationId(result.conversationId);
+          setLastError(null);
+          return result.response;
+        }
+
         const response = await fetch(fullUrl, {
           ...init,
           headers,

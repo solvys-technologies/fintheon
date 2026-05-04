@@ -1,8 +1,10 @@
+// [claude-code 2026-05-03] S58-T2: expose direct-chat thread persistence helper.
 /**
  * AI, Psych, and Analyst Services
  */
 
 import ApiClient from "../apiClient";
+import { persistConversationMessage as persistDeepSeekConversationMessage } from "../deepseek-sdk";
 
 export interface ChatResponse {
   message: string;
@@ -124,6 +126,16 @@ export class AIService {
       },
     };
   }
+}
+
+export async function persistConversationMessage(data: {
+  conversationId: string | null;
+  role: "user" | "assistant";
+  content: string;
+  apiBaseUrl?: string;
+  getAccessToken?: () => Promise<string | null>;
+}): Promise<void> {
+  await persistDeepSeekConversationMessage(data);
 }
 
 // Psych Assist Service

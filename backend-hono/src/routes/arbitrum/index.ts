@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58-T1: Arbitrum DeepSeek primary health diagnostics.
 // [claude-code 2026-04-24] S35-T1/T12 Phase B: Arbitrum HTTP surface.
 //   GET  /api/arbitrum/latest[?trigger=event|session|manual]
 //   GET  /api/arbitrum/:id
@@ -24,6 +25,7 @@ import {
   runChamber,
   type ArbitrumTriggerType,
 } from "../../services/arbitrum/index.js";
+import { checkDeepSeekDirectHealth } from "../../services/strands/provider.js";
 
 const log = createLogger("ArbitrumRoutes");
 
@@ -45,14 +47,9 @@ export function createArbitrumRoutes(): Hono {
 
     if (deepseekKeySet) {
       try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 5000);
-        const res = await fetch("https://api.deepseek.com/v1/models", {
-          headers: { Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}` },
-          signal: controller.signal,
-        });
-        clearTimeout(timer);
-        deepseekReachable = res.ok;
+        const health = await checkDeepSeekDirectHealth();
+        deepseekReachable = health.available;
+        lastError = health.error;
       } catch (err) {
         lastError = err instanceof Error ? err.message : String(err);
       }

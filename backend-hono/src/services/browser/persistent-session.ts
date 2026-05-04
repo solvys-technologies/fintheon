@@ -43,9 +43,11 @@ async function launchContext(): Promise<BrowserContext> {
 
   const dir = sessionDir();
   await mkdir(dir, { recursive: true });
+  const headed = process.env.BROWSER_WORKER_HEADLESS === "false";
   state.launchInFlight = chromium
     .launchPersistentContext(dir, {
-      headless: process.env.BROWSER_WORKER_HEADLESS !== "false",
+      headless: !headed,
+      channel: headed ? "chrome" : undefined,
       viewport: DEFAULT_VIEWPORT,
       userAgent: process.env.BROWSER_WORKER_USER_AGENT ?? DEFAULT_USER_AGENT,
       ignoreHTTPSErrors: true,
@@ -63,41 +65,53 @@ async function launchContext(): Promise<BrowserContext> {
         state.page = null;
         state.reconnects++;
       });
-      // Inject X auth cookie BEFORE any page load — must be awaited
-      const authToken = process.env.X_AUTH_TOKEN?.trim();
-      if (authToken) {
-        try {
-          await context.addCookies([
-            {
-              name: "auth_token",
-              value: authToken,
-              domain: ".x.com",
-              path: "/",
-              httpOnly: true,
-              secure: true,
-              sameSite: "None" as const,
-            },
-          ]);
-          // Also inject ct0 if available (CSRF companion token)
-          const ct0 = process.env.X_CT0_TOKEN?.trim();
-          if (ct0) {
+      // Inject X auth cookie from env ONLY if the persistent context
+      // doesn't already have one (from a previous disk-persisted login).
+      // When the worker's attemptXLogin() succeeds, cookies save to the
+      // user-data-dir on disk — the next context launch picks them up.
+      // Injecting the stale env token overrides the fresh disk cookie.
+      const existingCookies = await context.cookies("https://x.com");
+      const hasAuthCookie = existingCookies.some(
+        (c) => c.name === "auth_token" && c.value.length > 10,
+      );
+
+      if (hasAuthCookie) {
+        log.info("Using existing X auth cookie from persistent profile — skipping env token injection");
+      } else {
+        const authToken = process.env.X_AUTH_TOKEN?.trim();
+        if (authToken) {
+          try {
             await context.addCookies([
               {
-                name: "ct0",
-                value: ct0,
+                name: "auth_token",
+                value: authToken,
                 domain: ".x.com",
                 path: "/",
+                httpOnly: true,
                 secure: true,
-                sameSite: "Lax" as const,
+                sameSite: "None" as const,
               },
             ]);
+            const ct0 = process.env.X_CT0_TOKEN?.trim();
+            if (ct0) {
+              await context.addCookies([
+                {
+                  name: "ct0",
+                  value: ct0,
+                  domain: ".x.com",
+                  path: "/",
+                  secure: true,
+                  sameSite: "Lax" as const,
+                },
+              ]);
+            }
+            log.info("X auth cookies injected from env", { domain: ".x.com" });
+          } catch (err) {
+            log.warn("X auth cookie injection failed", { error: String(err) });
           }
-          log.info("X auth cookies injected", { domain: ".x.com" });
-        } catch (err) {
-          log.warn("X auth cookie injection failed", { error: String(err) });
+        } else {
+          log.info("No X_AUTH_TOKEN set — X will be unauthenticated");
         }
-      } else {
-        log.info("No X_AUTH_TOKEN set — X will be unauthenticated");
       }
       log.info("Persistent browser context launched", { dir });
       return context;

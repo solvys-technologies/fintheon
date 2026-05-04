@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58-T1: DeepSeek v4 Pro primary provider migration
 // [claude-code 2026-04-19] S27-T9 W1d: Smart Model Routing foundation — per-agent default routing table + env-var overrides.
 //   W2e (Claude-10) flips live across call sites and adds the budget/diagnostics layer.
 // [claude-code 2026-04-19] S27-T5 W2c: harper-voice model locked to qwen/qwen3.6-plus-preview:free (see QWEN_REASONING_LATEST rationale).
@@ -20,7 +21,12 @@ export type TaskType =
   | "voice"
   | "structured-extraction";
 
-export type RoutingProvider = "anthropic" | "openrouter" | "hermes-sidecar";
+export type RoutingProvider =
+  | "deepseek-direct"
+  | "deepseek-oc-api"
+  | "anthropic"
+  | "openrouter"
+  | "hermes-sidecar";
 
 export interface RoutingRule {
   agent: AgentId;
@@ -71,59 +77,59 @@ export const QWEN_CLOUD_LATEST = "deepseek-reasoner";
 export const ROUTING_TABLE: RoutingRule[] = [
   {
     agent: "harper",
-    model: "claude-opus-4-7",
-    provider: "anthropic",
-    max_input_tokens: 200_000,
-    cost_per_mtoken_in_usd: 15,
-    cost_per_mtoken_out_usd: 75,
+    model: QWEN_CLOUD_LATEST,
+    provider: "deepseek-direct",
+    max_input_tokens: 128_000,
+    cost_per_mtoken_in_usd: 0.5,
+    cost_per_mtoken_out_usd: 2.19,
   },
   {
     agent: "harper-voice",
     model: QWEN_REASONING_LATEST,
-    provider: "hermes-sidecar",
-    max_input_tokens: 1_000_000,
-    cost_per_mtoken_in_usd: 0,
-    cost_per_mtoken_out_usd: 0,
+    provider: "deepseek-direct",
+    max_input_tokens: 128_000,
+    cost_per_mtoken_in_usd: 0.5,
+    cost_per_mtoken_out_usd: 2.19,
   },
   {
     agent: "harper-debug",
-    model: "claude-sonnet-4-6",
-    provider: "anthropic",
-    max_input_tokens: 200_000,
-    cost_per_mtoken_in_usd: 3,
-    cost_per_mtoken_out_usd: 15,
+    model: QWEN_CLOUD_LATEST,
+    provider: "deepseek-direct",
+    max_input_tokens: 128_000,
+    cost_per_mtoken_in_usd: 0.5,
+    cost_per_mtoken_out_usd: 2.19,
   },
   {
     agent: "oracle",
     model: QWEN_CLOUD_LATEST,
-    provider: "hermes-sidecar",
-    max_input_tokens: 1_000_000,
-    cost_per_mtoken_in_usd: 0,
-    cost_per_mtoken_out_usd: 0,
+    provider: "deepseek-direct",
+    max_input_tokens: 128_000,
+    cost_per_mtoken_in_usd: 0.5,
+    cost_per_mtoken_out_usd: 2.19,
   },
   {
     agent: "feucht",
     model: QWEN_CLOUD_LATEST,
-    provider: "hermes-sidecar",
-    max_input_tokens: 1_000_000,
-    cost_per_mtoken_in_usd: 0,
-    cost_per_mtoken_out_usd: 0,
+    provider: "deepseek-direct",
+    max_input_tokens: 128_000,
+    cost_per_mtoken_in_usd: 0.5,
+    cost_per_mtoken_out_usd: 2.19,
   },
   {
     agent: "consul",
     model: QWEN_CLOUD_LATEST,
-    provider: "hermes-sidecar",
-    max_input_tokens: 1_000_000,
-    cost_per_mtoken_in_usd: 0,
-    cost_per_mtoken_out_usd: 0,
+    provider: "deepseek-direct",
+    max_input_tokens: 128_000,
+    cost_per_mtoken_in_usd: 0.5,
+    cost_per_mtoken_out_usd: 2.19,
   },
   {
     agent: "herald",
     model: QWEN_CLOUD_LATEST,
-    provider: "hermes-sidecar",
-    max_input_tokens: 1_000_000,
-    cost_per_mtoken_in_usd: 0,
-    cost_per_mtoken_out_usd: 0,
+    provider: "deepseek-direct",
+    max_input_tokens: 128_000,
+    cost_per_mtoken_in_usd: 0.5,
+    cost_per_mtoken_out_usd: 2.19,
   },
 ];
 
@@ -154,16 +160,14 @@ export function selectModel(agent: AgentId, task?: TaskType): RoutingRule {
     );
   }
 
-  // [claude-code 2026-04-21] Harper provider toggle
+  // [claude-code 2026-05-03] S58-T1: DeepSeek is primary; OC API is explicit.
   if (agent === "harper" && task !== "voice") {
-    const harperProvider = process.env.HARPER_DEFAULT_PROVIDER ?? "anthropic";
-    if (harperProvider === "qwen") {
+    const harperProvider = process.env.HARPER_DEFAULT_PROVIDER ?? "deepseek";
+    if (harperProvider === "deepseek-oc-api") {
       return {
         ...match,
         model: QWEN_CLOUD_LATEST,
-        provider: "hermes-sidecar",
-        cost_per_mtoken_in_usd: 0,
-        cost_per_mtoken_out_usd: 0,
+        provider: "deepseek-oc-api",
       };
     }
   }

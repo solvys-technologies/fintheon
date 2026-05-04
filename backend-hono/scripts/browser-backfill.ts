@@ -1,6 +1,6 @@
 // [claude-code 2026-05-03] One-shot browser backfill: scrapes X profile pages via
 // persistent browser session for all source-account handles, extracts tweets from
-// Apr 26 - May 3 2026, writes to raw_riskflow_items, and injects missed econ prints.
+// a FROM/TO window, writes to raw_riskflow_items, and injects missed econ prints.
 //
 // Usage (from backend-hono):
 //   bun scripts/browser-backfill.ts
@@ -9,11 +9,11 @@
 import "dotenv/config";
 
 const DRY_RUN = process.env.DRY_RUN === "true";
-const FROM = "2026-04-26";
-const TO = "2026-05-03";
-const SCROLL_COUNT = 6;
-const SCROLL_DELAY_MS = 1200;
-const HANDLE_PAUSE_MS = 3000;
+const FROM = process.env.FROM ?? "2026-04-26";
+const TO = process.env.TO ?? new Date().toISOString().slice(0, 10);
+const SCROLL_COUNT = Math.max(1, Number(process.env.SCROLL_COUNT ?? 6));
+const SCROLL_DELAY_MS = Math.max(300, Number(process.env.SCROLL_DELAY_MS ?? 1200));
+const HANDLE_PAUSE_MS = Math.max(500, Number(process.env.HANDLE_PAUSE_MS ?? 3000));
 const MIN_TWEET_LENGTH = 15;
 
 if (!DRY_RUN) {
@@ -272,16 +272,6 @@ async function main() {
   const { fetchEconCalendar } =
     await import("../src/services/econ-calendar-service.js");
 
-  const { attemptXLogin } =
-    await import("../src/workers/riskflow-worker/sources/x-handles-browser.js");
-
-  // Ensure we're authenticated before scraping — X_AUTH_TOKEN may be stale
-  console.log("[browser-backfill] ensuring X auth...");
-  const authed = await attemptXLogin();
-  if (!authed) {
-    console.log("[browser-backfill] X auth failed — profiles will likely be empty");
-  }
-
   const [wire, macro, commentary] = await Promise.all([
     getWireHandles().catch(() => [] as string[]),
     getBrowserHandles().catch(() => [] as string[]),
@@ -456,7 +446,9 @@ async function main() {
   );
 }
 
-main().catch((err) => {
-  console.error("[browser-backfill] fatal", err);
-  process.exit(1);
-});
+main()
+  .then(() => process.exit(0))
+  .catch((err) => {
+    console.error("[browser-backfill] fatal", err);
+    process.exit(1);
+  });

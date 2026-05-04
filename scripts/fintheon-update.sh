@@ -13,7 +13,7 @@ set -eo pipefail
 
 # [claude-code 2026-04-18] Resolve install path: FINTHEON_ROOT env > ~/.fintheon/install-path > default
 FINTHEON_ROOT="${FINTHEON_ROOT:-$(cat "$HOME/.fintheon/install-path" 2>/dev/null || echo "$HOME/Documents/Codebases/fintheon")}"
-UPDATE_VERSION="6.0.7"
+UPDATE_VERSION="6.0.8"
 
 # ── Self-update bootstrap (v5.25.2) ──────────────────────────────────────────
 # Root cause fix: bash loads the entire script into memory at invocation, so
@@ -43,7 +43,7 @@ if [[ -z "${FINTHEON_SELFUPDATED:-}" ]] && [[ -d "$FINTHEON_ROOT/.git" ]]; then
   exec bash "$FINTHEON_ROOT/scripts/fintheon-update.sh" "$@"
 fi
 
-SUPABASE_DATABASE_URL="postgresql://postgres:PIR0670963957%24@db.nrcfnzclbjboctptxaxx.supabase.co:5432/postgres"
+SUPABASE_DATABASE_URL="${SUPABASE_DATABASE_URL:-}"
 
 # ── Solvys Gold ANSI palette ──────────────────────────────────────────────────
 _R='\033[0m'
@@ -88,7 +88,7 @@ torch_banner "FINTHEON UPDATE v${UPDATE_VERSION}" "Priced In Capital"
 if [[ ! -d "$FINTHEON_ROOT/.git" ]]; then
   echo -e "  ${_RED}✗${_R} ${_CREAM}Fintheon not found at $FINTHEON_ROOT${_R}"
   echo '    Run the setup script first:'
-  echo '    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.0.7/scripts/fintheon-setup.sh)"'
+  echo '    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.0.8/scripts/fintheon-setup.sh)"'
   exit 1
 fi
 
@@ -214,7 +214,9 @@ step "5/12" "Checking environment..."
 BACKEND_ENV="$FINTHEON_ROOT/backend-hono/.env"
 if [[ -f "$BACKEND_ENV" ]]; then
   # Ensure bootstrap vars exist — secrets vault fills the rest from Supabase on boot
-  grep -q "^DATABASE_URL=" "$BACKEND_ENV" 2>/dev/null || echo "DATABASE_URL=$SUPABASE_DATABASE_URL" >> "$BACKEND_ENV"
+  if [[ -n "$SUPABASE_DATABASE_URL" ]] && ! grep -q "^DATABASE_URL=" "$BACKEND_ENV" 2>/dev/null; then
+    echo "DATABASE_URL=$SUPABASE_DATABASE_URL" >> "$BACKEND_ENV"
+  fi
   grep -q "^SUPABASE_URL=" "$BACKEND_ENV" 2>/dev/null || echo "SUPABASE_URL=https://nrcfnzclbjboctptxaxx.supabase.co" >> "$BACKEND_ENV"
   grep -q "^SUPABASE_ANON_KEY=" "$BACKEND_ENV" 2>/dev/null || echo "SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yY2ZuemNsYmpib2N0cHR4YXh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NDgxODksImV4cCI6MjA4OTUyNDE4OX0.JXzVk5CDL6rxU5t_rl-Ku2YnPi0PeBF-VOpcSEZTbIM" >> "$BACKEND_ENV"
   grep -q "^PORT=" "$BACKEND_ENV" 2>/dev/null || echo "PORT=8080" >> "$BACKEND_ENV"

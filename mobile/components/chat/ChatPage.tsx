@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58-T2: mobile chat uses direct DeepSeek SDK when a user key exists, relay otherwise.
 // [claude-code 2026-04-18] v5.22 S2: TP saw a hollow "thinking bubble" appear before any
 // text streamed. Root cause: ChatPage pre-created the assistant message with content:""
 // at send-time, and ChatMessage renders the bubble chrome unconditionally. Fix: defer the
@@ -41,6 +42,11 @@ import { ThinkingIndicator } from "./ThinkingIndicator";
 import { ToolCallCard } from "./ToolCallCard";
 import { ToolApprovalCard } from "./ToolApprovalCard";
 import { useToolApprovals } from "../../hooks/useToolApprovals";
+import {
+  createDeepSeekStreamResponse,
+  fetchDeepSeekKey,
+  type DeepSeekChatMessage,
+} from "@frontend/lib/deepseek-sdk";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
@@ -54,6 +60,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
   const [messages, setMessages] = useState<ChatMessageData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [relayState, setRelayState] = useState<RelayState>("reconnecting");
+  const [hasDirectDeepSeekKey, setHasDirectDeepSeekKey] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [mirrorDevice, setMirrorDevice] = useState<string | null>(null);
   const [activeToolCall, setActiveToolCall] = useState<{
@@ -68,6 +75,20 @@ export default function ChatPage({ visible }: ChatPageProps) {
   // Ref to track conversationId without stale closure (memory: feedback_useChat_stale_closure)
   const conversationIdRef = useRef(conversationId);
   conversationIdRef.current = conversationId;
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const key = await fetchDeepSeekKey({
+        apiBaseUrl: API_BASE,
+        getAccessToken,
+      }).catch(() => null);
+      if (!cancelled) setHasDirectDeepSeekKey(Boolean(key));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [getAccessToken]);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -266,27 +287,51 @@ export default function ChatPage({ visible }: ChatPageProps) {
       abortRef.current = controller;
 
       try {
-        const token = await getAccessToken();
-        const headers: Record<string, string> = {
-          "Content-Type": "application/json",
-          Accept: "text/event-stream",
-        };
-        if (token) headers["Authorization"] = `Bearer ${token}`;
-
-        const res = await fetch(`${API_BASE}/api/relay/chat`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            message: text,
-            conversationId: conversationIdRef.current,
-            ...(opts?.images?.length ? { images: opts.images } : {}),
-            ...(opts?.riskFlowContext
-              ? { riskFlowContext: opts.riskFlowContext }
-              : {}),
-            ...(settings.traderName ? { traderName: settings.traderName } : {}),
-          }),
-          signal: controller.signal,
+        const directMessages: DeepSeekChatMessage[] = messages
+          .filter((message) => message.role === "user" || message.role === "assistant")
+          .map((message) => ({ role: message.role, content: message.content }));
+        directMessages.push({
+          role: "user",
+          content: opts?.riskFlowContext
+            ? `${text}\n\nRiskFlow context:\n${opts.riskFlowContext}`
+            : text,
         });
+
+        const res = hasDirectDeepSeekKey && !opts?.images?.length
+          ? (
+              await createDeepSeekStreamResponse(directMessages, {
+                provider: "deepseek-direct",
+                apiBaseUrl: API_BASE,
+                conversationId: conversationIdRef.current,
+                getAccessToken,
+                signal: controller.signal,
+                title: text.slice(0, 80),
+              })
+            ).response
+          : await (async () => {
+              const token = await getAccessToken();
+              const headers: Record<string, string> = {
+                "Content-Type": "application/json",
+                Accept: "text/event-stream",
+              };
+              if (token) headers["Authorization"] = `Bearer ${token}`;
+              return fetch(`${API_BASE}/api/relay/chat`, {
+                method: "POST",
+                headers,
+                body: JSON.stringify({
+                  message: text,
+                  conversationId: conversationIdRef.current,
+                  ...(opts?.images?.length ? { images: opts.images } : {}),
+                  ...(opts?.riskFlowContext
+                    ? { riskFlowContext: opts.riskFlowContext }
+                    : {}),
+                  ...(settings.traderName
+                    ? { traderName: settings.traderName }
+                    : {}),
+                }),
+                signal: controller.signal,
+              });
+            })();
 
         if (!res.ok) {
           const err = await res
@@ -304,7 +349,12 @@ export default function ChatPage({ visible }: ChatPageProps) {
         // closing the stream, so late events still paint into a fresh bubble.
         watchdog = setTimeout(() => {
           if (eventCount === 0) {
-            setUserStatus("sent", "HARPER SILENT — CHECK DESKTOP RELAY");
+            setUserStatus(
+              "sent",
+              hasDirectDeepSeekKey
+                ? "DEEPSEEK SILENT — CHECK API KEY"
+                : "HARPER SILENT — CHECK DESKTOP RELAY",
+            );
           }
         }, 12_000);
 
@@ -472,12 +522,14 @@ export default function ChatPage({ visible }: ChatPageProps) {
       isLoading,
       getAccessToken,
       settings.traderName,
+      hasDirectDeepSeekKey,
+      messages,
       addApproval,
       resolveFromEvent,
     ],
   );
 
-  const isOffline = relayState === "offline";
+  const isOffline = relayState === "offline" && !hasDirectDeepSeekKey;
   // Informational flag — true when there's nothing loaded yet. We no longer
   // disable input on it (relay-connected mobile chats are first-class); it
   // only drives the empty-state copy.
@@ -539,7 +591,20 @@ export default function ChatPage({ visible }: ChatPageProps) {
           )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <ConnectionStatus onStateChange={setRelayState} />
+          {hasDirectDeepSeekKey ? (
+            <span
+              style={{
+                fontFamily: "var(--font-data)",
+                fontSize: 9,
+                color: "var(--accent, #c79f4a)",
+                letterSpacing: "0.1em",
+              }}
+            >
+              DEEPSEEK DIRECT
+            </span>
+          ) : (
+            <ConnectionStatus onStateChange={setRelayState} />
+          )}
         </div>
       </div>
 

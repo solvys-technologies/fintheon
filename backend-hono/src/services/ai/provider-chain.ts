@@ -1,8 +1,5 @@
-// [claude-code 2026-04-23] S32-T3 Ollama fallback chain
-// Primary: VProxy (Claude Opus via local CLI proxy on :8317).
-// Fallback: Ollama-via-Hermes on :11434 (OpenAI-compat, Qwen cloud model).
-// Retry policy: one shot at VProxy, on timeout/5xx retry once against Ollama.
-// Both failing → throw with both errors surfaced.
+// [claude-code 2026-05-03] S58-T1: DeepSeek v4 Pro primary provider migration
+// Primary: DeepSeek direct. Fallback: OpenRouter. Last resort: VProxy.
 
 import { createLogger } from "../../lib/logger.js";
 import {
@@ -13,17 +10,17 @@ import {
 } from "../vproxy/anthropic-client.js";
 import {
   generateTextViaOllama,
-  getOllamaHealth,
   getOllamaModel,
   isOllamaFallbackEnabled,
   streamTextViaOllama,
-  type OllamaStreamOptions,
-  type OllamaTextOptions,
 } from "./ollama-hermes-client.js";
+import { generateTextViaOpenRouter } from "./openrouter-fallback.js";
+
+export { getChainHealth, type ChainHealth } from "./provider-chain-health.js";
 
 const log = createLogger("AIChain");
 
-export type ChainProvider = "vproxy" | "ollama-qwen";
+type OrderedChainProvider = "deepseek-direct" | "openrouter" | "vproxy";
 
 export interface ChainRequest {
   prompt: string;
@@ -37,7 +34,7 @@ export interface ChainRequest {
 
 export interface ChainResult {
   response: string;
-  provider: ChainProvider;
+  provider: OrderedChainProvider;
   latencyMs: number;
 }
 
@@ -98,17 +95,69 @@ function isRetryable(err: unknown): boolean {
 // ── Core: generateViaChain ────────────────────────────────────────────────
 
 /**
- * Send a prompt through the VProxy → Ollama fallback chain.
+ * Send a prompt through the DeepSeek → OpenRouter → VProxy fallback chain.
  * Returns the response text plus which provider actually answered.
  */
 export async function generateViaChain(
   request: ChainRequest,
 ): Promise<ChainResult> {
+  const errors: string[] = [];
+  if (isOllamaFallbackEnabled()) {
+    const start = Date.now();
+    try {
+      const response = await generateTextViaOllama({
+        prompt: request.prompt,
+        systemPrompt: request.systemPrompt,
+        model: request.model || getOllamaModel(),
+        maxOutputTokens: request.maxOutputTokens,
+        temperature: request.temperature,
+        timeoutMs: request.timeoutMs,
+      });
+      const latencyMs = Date.now() - start;
+      recordPrimary();
+      log.info("[ai-chain] deepseek-direct ok", {
+        latencyMs,
+        model: request.model || getOllamaModel(),
+        requestId: request.requestId,
+      });
+      return { response, provider: "deepseek-direct", latencyMs };
+    } catch (err) {
+      const e = err instanceof Error ? err : new Error(String(err));
+      errors.push(`DeepSeek: ${e.message}`);
+      if (!isRetryable(e)) throw e;
+      recordFallback();
+      log.warn("[ai-chain] deepseek-direct failed; trying OpenRouter", {
+        error: e.message,
+        requestId: request.requestId,
+      });
+    }
+  }
+
+  if (process.env.OPENROUTER_API_KEY) {
+    const start = Date.now();
+    try {
+      const response = await generateTextViaOpenRouter(request);
+      const latencyMs = Date.now() - start;
+      log.info("[ai-chain] openrouter ok", {
+        latencyMs,
+        requestId: request.requestId,
+      });
+      return { response, provider: "openrouter", latencyMs };
+    } catch (err) {
+      const e = err instanceof Error ? err : new Error(String(err));
+      errors.push(`OpenRouter: ${e.message}`);
+      if (!isRetryable(e)) throw e;
+      recordFallback();
+      log.warn("[ai-chain] openrouter failed; trying VProxy last", {
+        error: e.message,
+        requestId: request.requestId,
+      });
+    }
+  } else {
+    errors.push("OpenRouter: OPENROUTER_API_KEY not set");
+  }
+
   const vproxyEnabled = isVProxyAnthropicEnabled();
-  const ollamaEnabled = isOllamaFallbackEnabled();
-
-  let vproxyErr: Error | null = null;
-
   if (vproxyEnabled) {
     const start = Date.now();
     try {
@@ -121,61 +170,22 @@ export async function generateViaChain(
       };
       const response = await generateTextViaVProxy(vproxyOptions);
       const latencyMs = Date.now() - start;
-      recordPrimary();
+      recordFallback();
       log.info("[ai-chain] vproxy ok", {
         latencyMs,
         requestId: request.requestId,
       });
       return { response, provider: "vproxy", latencyMs };
     } catch (err) {
-      vproxyErr = err instanceof Error ? err : new Error(String(err));
-      const retry = ollamaEnabled && isRetryable(vproxyErr);
-      log.warn(
-        `[ai-chain] vproxy failed (${vproxyErr.message}), ${
-          retry ? "falling back to ollama-qwen" : "no fallback"
-        } for request ${request.requestId ?? "-"}`,
-      );
-      if (!retry) {
-        throw vproxyErr;
-      }
+      const e = err instanceof Error ? err : new Error(String(err));
+      errors.push(`VProxy: ${e.message}`);
     }
+  } else {
+    errors.push("VProxy: disabled");
   }
-
-  if (!ollamaEnabled) {
-    throw new Error(
-      "AI chain exhausted: VProxy disabled and Ollama fallback disabled",
-    );
-  }
-
-  const start = Date.now();
-  try {
-    const ollamaOptions: OllamaTextOptions = {
-      prompt: request.prompt,
-      systemPrompt: request.systemPrompt,
-      model: undefined, // force configured fallback model
-      maxOutputTokens: request.maxOutputTokens,
-      temperature: request.temperature,
-      timeoutMs: request.timeoutMs,
-    };
-    const response = await generateTextViaOllama(ollamaOptions);
-    const latencyMs = Date.now() - start;
-    if (vproxyErr) recordFallback();
-    else recordPrimary();
-    log.info("[ai-chain] ollama-qwen ok", {
-      latencyMs,
-      model: getOllamaModel(),
-      isFallback: !!vproxyErr,
-      requestId: request.requestId,
-    });
-    return { response, provider: "ollama-qwen", latencyMs };
-  } catch (err) {
-    const ollamaErr = err instanceof Error ? err : new Error(String(err));
-    const combined = vproxyErr
-      ? `VProxy: ${vproxyErr.message} | Ollama: ${ollamaErr.message}`
-      : `Ollama: ${ollamaErr.message}`;
-    log.error("[ai-chain] both providers failed", { combined });
-    throw new Error(`AI chain exhausted — ${combined}`);
-  }
+  const combined = errors.join(" | ");
+  log.error("[ai-chain] all providers failed", { combined });
+  throw new Error(`AI chain exhausted — ${combined}`);
 }
 
 // ── Streaming: streamViaChain ────────────────────────────────────────────
@@ -187,7 +197,7 @@ export async function generateViaChain(
 export interface ChainStreamEvent {
   type: "text-delta" | "provider" | "end";
   delta?: string;
-  provider?: ChainProvider;
+  provider?: OrderedChainProvider;
 }
 
 /**
@@ -197,11 +207,25 @@ export interface ChainStreamEvent {
 export async function* streamViaChain(
   request: ChainRequest & { abortSignal?: AbortSignal },
 ): AsyncGenerator<ChainStreamEvent> {
-  // For streaming, we do not pre-flight VProxy: the ai-sdk stream surfaces
-  // errors on the first chunk read, which is when we decide to fall back.
-  // If VProxy is disabled entirely, jump straight to Ollama.
+  // Streaming uses DeepSeek direct. Fallback after partial tokens is unsafe, so
+  // callers receive the upstream stream error if DeepSeek fails mid-response.
+  if (isOllamaFallbackEnabled()) {
+    yield { type: "provider", provider: "deepseek-direct" };
+    for await (const chunk of streamTextViaOllama({
+      prompt: request.prompt,
+      systemPrompt: request.systemPrompt,
+      model: request.model || getOllamaModel(),
+      maxOutputTokens: request.maxOutputTokens,
+      temperature: request.temperature,
+      abortSignal: request.abortSignal,
+    })) {
+      yield { type: "text-delta", delta: chunk };
+    }
+    yield { type: "end", provider: "deepseek-direct" };
+    return;
+  }
+
   const vproxyEnabled = isVProxyAnthropicEnabled();
-  const ollamaEnabled = isOllamaFallbackEnabled();
 
   if (vproxyEnabled) {
     const vproxyHealth = await getVProxyHealth();
@@ -232,92 +256,14 @@ export async function* streamViaChain(
         void delivered;
       } catch (err) {
         const e = err instanceof Error ? err : new Error(String(err));
-        if (!ollamaEnabled || !isRetryable(e)) throw e;
-        log.warn(
-          `[ai-chain] vproxy stream failed (${e.message}), falling back to ollama-qwen for request ${request.requestId ?? "-"}`,
-        );
-        recordFallback();
+        throw e;
       }
     } else {
       log.warn(
-        `[ai-chain] vproxy unhealthy (${vproxyHealth.error ?? "unknown"}), falling back to ollama-qwen for request ${request.requestId ?? "-"}`,
+        `[ai-chain] vproxy unhealthy (${vproxyHealth.error ?? "unknown"}) for request ${request.requestId ?? "-"}`,
       );
-      recordFallback();
     }
   }
 
-  if (!ollamaEnabled) {
-    throw new Error(
-      "AI chain exhausted: VProxy unavailable and Ollama fallback disabled",
-    );
-  }
-
-  yield { type: "provider", provider: "ollama-qwen" };
-  const ollamaStream: OllamaStreamOptions = {
-    prompt: request.prompt,
-    systemPrompt: request.systemPrompt,
-    maxOutputTokens: request.maxOutputTokens,
-    temperature: request.temperature,
-    abortSignal: request.abortSignal,
-  };
-  for await (const chunk of streamTextViaOllama(ollamaStream)) {
-    yield { type: "text-delta", delta: chunk };
-  }
-  yield { type: "end", provider: "ollama-qwen" };
-}
-
-// ── Combined health snapshot ──────────────────────────────────────────────
-
-export interface ChainHealth {
-  primary: {
-    provider: "vproxy";
-    available: boolean;
-    latencyMs: number | null;
-    model: string;
-    error: string | null;
-  };
-  fallback: {
-    provider: "ollama-hermes";
-    model: string;
-    available: boolean;
-    latencyMs: number | null;
-    error: string | null;
-  };
-}
-
-export async function getChainHealth(): Promise<ChainHealth> {
-  const [vproxy, ollama] = await Promise.all([
-    getVProxyHealth().catch((err: unknown) => ({
-      available: false,
-      baseUrl: "",
-      model: "",
-      checkedAt: Date.now(),
-      error: err instanceof Error ? err.message : String(err),
-      enabled: true,
-    })),
-    getOllamaHealth().catch((err: unknown) => ({
-      available: false,
-      baseUrl: "",
-      model: getOllamaModel(),
-      checkedAt: Date.now(),
-      error: err instanceof Error ? err.message : String(err),
-      enabled: true,
-    })),
-  ]);
-  return {
-    primary: {
-      provider: "vproxy",
-      available: vproxy.available,
-      latencyMs: null,
-      model: vproxy.model,
-      error: vproxy.error,
-    },
-    fallback: {
-      provider: "ollama-hermes",
-      model: ollama.model,
-      available: ollama.available,
-      latencyMs: null,
-      error: ollama.error,
-    },
-  };
+  throw new Error("AI chain exhausted: DeepSeek streaming disabled and VProxy unavailable");
 }

@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58-T3: Preserve TWT/TOTT weekly brief persistence across older WT-constrained databases.
 // [claude-code 2026-03-20] Supabase cloud service — full data layer replacing Notion + scoring, ER, settings, consilium
 // [claude-code 2026-03-19] Supabase cloud service — centralized scoring, ER persistence, user settings, consilium
 // [claude-code 2026-04-24] S34-T3: extended EconEventRecord with country/category/event_key; added upsertEconEvent + readUpcomingEconEvents for the calendar populator + /api/econ/upcoming.
@@ -786,25 +787,31 @@ export async function writeBrief(
 ): Promise<BriefRecord | null> {
   const sb = getSupabaseClient();
   if (!sb) return null;
+  const storageTypes =
+    brief.brief_type === "TWT" ? ["TWT", "WT", "TOTT"] : [brief.brief_type];
 
   // Archive previous active briefs of same type
   await sb
     .from("briefs")
     .update({ status: "Archived" })
-    .eq("brief_type", brief.brief_type)
+    .in("brief_type", storageTypes)
     .eq("status", "Active");
 
-  const { data, error } = await sb
-    .from("briefs")
-    .insert({ ...brief, status: brief.status ?? "Active" })
-    .select()
-    .single();
+  let lastError: string | null = null;
+  for (const storageType of storageTypes) {
+    const { data, error } = await sb
+      .from("briefs")
+      .insert({ ...brief, brief_type: storageType, status: brief.status ?? "Active" })
+      .select()
+      .single();
 
-  if (error) {
-    console.error("[Supabase] writeBrief error:", error.message);
-    return null;
+    if (!error) {
+      return storageType === "WT" ? { ...data, brief_type: "TWT" } : data;
+    }
+    lastError = error.message;
   }
-  return data;
+  console.error("[Supabase] writeBrief error:", lastError);
+  return null;
 }
 
 export async function readBriefs(
@@ -821,14 +828,19 @@ export async function readBriefs(
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (type) query = query.eq("brief_type", type);
+  if (type === "TWT") query = query.in("brief_type", ["TWT", "WT", "TOTT"]);
+  else if (type) query = query.eq("brief_type", type);
 
   const { data, error } = await query;
   if (error) {
     console.error("[Supabase] readBriefs error:", error.message);
     return [];
   }
-  return data ?? [];
+  return (data ?? []).map((brief) =>
+    brief.brief_type === "WT" || brief.brief_type === "TOTT"
+      ? { ...brief, brief_type: "TWT" }
+      : brief,
+  );
 }
 
 export async function readLatestBrief(

@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58-T1: DeepSeek v4 Pro primary provider migration
 // [claude-code 2026-04-23] S32-T3 Ollama fallback chain — createOllamaFallbackModel + chain-aware helpers
 // [claude-code 2026-04-10] Round-robin across multiple VProxy endpoints via VPROXY_URLS env var
 // [claude-code 2026-04-04] Strands SDK VProxy model provider — OpenAI-compatible endpoint at localhost:8317
@@ -9,11 +10,19 @@ import {
   isOllamaFallbackEnabled,
 } from "../ai/ollama-hermes-client.js";
 
+export {
+  checkDeepSeekDirectHealth,
+  checkDeepSeekOcApiHealth,
+} from "./deepseek-health.js";
+
 const log = createLogger("StrandsVProxy");
 
 const DEFAULT_BASE_URL = "http://localhost:8317";
 const DEFAULT_MODEL = "claude-opus-4-6";
 const DEFAULT_API_KEY = "CLI_PROXY_API_KEY";
+const DEEPSEEK_MODEL = "deepseek-reasoner";
+const DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1";
+const OC_API_BASE_URL = "http://localhost:8317/v1";
 const HEALTH_CACHE_TTL_MS = 15_000;
 
 export interface VProxyModelOptions {
@@ -78,6 +87,16 @@ function getApiKey(): string {
   return process.env.VPROXY_API_KEY || DEFAULT_API_KEY;
 }
 
+function getDeepSeekDirectBaseUrl(): string {
+  const raw = process.env.DEEPSEEK_API_BASE_URL || DEEPSEEK_BASE_URL;
+  return normalizeUrl(raw);
+}
+
+function getOpenCodeGoBaseUrl(): string {
+  const raw = process.env.OPENCODE_GO_API_URL || process.env.HERMES_API_URL || OC_API_BASE_URL;
+  return normalizeUrl(raw);
+}
+
 /** Create a Strands OpenAIModel pointing at VProxy */
 export function createVProxyModel(options?: VProxyModelOptions): OpenAIModel {
   const modelId = resolveModel(options?.model);
@@ -94,6 +113,34 @@ export function createVProxyModel(options?: VProxyModelOptions): OpenAIModel {
     },
     modelId,
     temperature: options?.temperature ?? 0.4,
+    maxTokens: options?.maxTokens ?? 8192,
+  });
+}
+
+export function createDeepSeekDirectModel(
+  options?: VProxyModelOptions,
+): OpenAIModel {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) throw new Error("DEEPSEEK_API_KEY not set");
+  return new OpenAIModel({
+    api: "chat",
+    apiKey,
+    clientConfig: { baseURL: getDeepSeekDirectBaseUrl() },
+    modelId: options?.model || DEEPSEEK_MODEL,
+    temperature: options?.temperature ?? 0.3,
+    maxTokens: options?.maxTokens ?? 8192,
+  });
+}
+
+export function createDeepSeekOcApiModel(
+  options?: VProxyModelOptions,
+): OpenAIModel {
+  return new OpenAIModel({
+    api: "chat",
+    apiKey: process.env.OPENCODE_GO_API_KEY || process.env.HERMES_API_KEY || "opencode-go",
+    clientConfig: { baseURL: getOpenCodeGoBaseUrl() },
+    modelId: options?.model || DEEPSEEK_MODEL,
+    temperature: options?.temperature ?? 0.3,
     maxTokens: options?.maxTokens ?? 8192,
   });
 }

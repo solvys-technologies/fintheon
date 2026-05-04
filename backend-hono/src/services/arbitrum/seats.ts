@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58-T1: Arbitrum seat metadata uses DeepSeek direct.
 // [claude-code 2026-04-29] DeepSeek migration: all Arbitrum seats now run
 // `deepseek-reasoner` via DeepSeek's OpenAI-compat API. Seat divergence still
 // comes from persona/role + temperature, not separate model IDs.
@@ -34,7 +35,7 @@ export const ARBITRUM_SEATS: readonly ArbitrumSeatConfig[] = [
     roleSubtitle: "CAO — executive synthesis",
     displayName: "Harper",
     model: SEAT_MODEL,
-    provider: "deepseek",
+    provider: "deepseek-direct",
     weight: 0.3,
     persona: "harper",
     temperature: 0.6,
@@ -45,7 +46,7 @@ export const ARBITRUM_SEATS: readonly ArbitrumSeatConfig[] = [
     roleSubtitle: "Prediction markets + probabilistic reasoning",
     displayName: "Oracle",
     model: SEAT_MODEL,
-    provider: "deepseek",
+    provider: "deepseek-direct",
     weight: 0.3,
     persona: "oracle",
     temperature: 0.6,
@@ -56,7 +57,7 @@ export const ARBITRUM_SEATS: readonly ArbitrumSeatConfig[] = [
     roleSubtitle: "Futures/risk, technical levels, execution",
     displayName: "Feucht",
     model: SEAT_MODEL,
-    provider: "deepseek",
+    provider: "deepseek-direct",
     weight: 0.2,
     persona: "feucht",
     temperature: 0.6,
@@ -67,7 +68,7 @@ export const ARBITRUM_SEATS: readonly ArbitrumSeatConfig[] = [
     roleSubtitle: "Mega-cap fundamentals, earnings, sector rotation",
     displayName: "Consul",
     model: SEAT_MODEL,
-    provider: "deepseek",
+    provider: "deepseek-direct",
     weight: 0.1,
     persona: "consul",
     temperature: 0.6,
@@ -78,7 +79,7 @@ export const ARBITRUM_SEATS: readonly ArbitrumSeatConfig[] = [
     roleSubtitle: "Breaking news, social sentiment, headline risk",
     displayName: "Herald",
     model: SEAT_MODEL,
-    provider: "deepseek",
+    provider: "deepseek-direct",
     weight: 0.1,
     persona: "herald",
     temperature: 0.6,

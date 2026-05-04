@@ -60,9 +60,24 @@ const HOME_CACHE_TTL_MS = 90_000;
 let consecutiveEmptyCycles = 0;
 const AUTH_EXPIRY_THRESHOLD = 3;
 let loginInProgress = false;
+let loginStartedAt = 0;
+const LOGIN_TIMEOUT_MS = 90_000; // hard timeout so a hung login doesn't block forever
 
 export async function attemptXLogin(): Promise<boolean> {
-  if (loginInProgress) return false;
+  // If a previous login attempt is still running, check if it's timed out
+  if (loginInProgress) {
+    if (Date.now() - loginStartedAt > LOGIN_TIMEOUT_MS + 10_000) {
+      loginInProgress = false; // force-reset stale flag
+      console.log(JSON.stringify({
+        ts: new Date().toISOString(),
+        service: "riskflow-worker",
+        stage: "x_login_stale_reset",
+        elapsedMs: Date.now() - loginStartedAt,
+      }));
+    } else {
+      return false;
+    }
+  }
   const email = process.env.X_EMAIL?.trim();
   const password = process.env.X_PASSWORD?.trim();
   if (!email || !password) {
@@ -78,6 +93,7 @@ export async function attemptXLogin(): Promise<boolean> {
   }
 
   loginInProgress = true;
+  loginStartedAt = Date.now();
   console.log(
     JSON.stringify({
       ts: new Date().toISOString(),
@@ -88,11 +104,12 @@ export async function attemptXLogin(): Promise<boolean> {
   );
 
   try {
-    return await withPersistentBrowserPage(async (page) => {
+    return await Promise.race<boolean>([
+      withPersistentBrowserPage(async (page) => {
       // Clear x.com cookies first — stale auth_token from context launch
       // can cause X to show a broken session-expired page instead of login
       const ctx = page.context();
-      const preCookies = await ctx.cookies(".x.com");
+      const preCookies = await ctx.cookies("https://x.com");
       if (preCookies.length > 0) {
         await ctx.clearCookies({ domain: ".x.com" });
         console.log(
@@ -132,32 +149,55 @@ export async function attemptXLogin(): Promise<boolean> {
         return false;
       }
 
-      // Fill username/email
-      const usernameInput = page.locator(
-        'input[autocomplete="username"], input[name="text"], input[type="text"]',
-      ).first();
-      await usernameInput.fill(email);
-      await page.waitForTimeout(800);
-
-      // Click next — try multiple selector strategies
-      let nextClicked = false;
-      const nextSelectors = [
-        '[role="button"]:has-text("Next")',
-        '[role="button"]:has-text("next")',
-        'button:has-text("Next")',
-        'span:has-text("Next")',
-      ];
-      for (const sel of nextSelectors) {
-        const btn = page.locator(sel).first();
-        if (await btn.isVisible({ timeout: 1_000 }).catch(() => false)) {
-          await btn.click();
-          nextClicked = true;
-          break;
+      // Fill username/email via raw DOM to bypass Playwright detection
+      await page.evaluate((user) => {
+        const input = document.querySelector(
+          'input[autocomplete="username"], input[name="text"], input[type="text"]',
+        ) as HTMLInputElement;
+        if (input) {
+          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+            window.HTMLInputElement.prototype, "value"
+          )?.set;
+          nativeInputValueSetter?.call(input, user);
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+          input.dispatchEvent(new Event("change", { bubbles: true }));
+          input.focus();
         }
-      }
+      }, email);
+      await page.waitForTimeout(1_000);
+
+      // Click Next via native DOM click to bypass event interception
+      const nextClicked = await page.evaluate(() => {
+        const btns = Array.from(
+          document.querySelectorAll('[role="button"], button, span'),
+        );
+        const nextBtn = btns.find(
+          (b) => b.textContent?.trim() === "Next",
+        ) as HTMLElement | undefined;
+        if (nextBtn && nextBtn.offsetParent !== null) {
+          nextBtn.click();
+          return true;
+        }
+        return false;
+      });
       if (nextClicked) {
-        await page.waitForTimeout(2_500);
+        await page.waitForTimeout(4_000);
       }
+      const afterNextText = await page.evaluate(() =>
+        document.body.innerText.slice(0, 300),
+      );
+      const stillOnUsernameStep = /\b(phone, email, or username)\b/i.test(afterNextText);
+      console.log(
+        JSON.stringify({
+          ts: new Date().toISOString(),
+          service: "riskflow-worker",
+          stage: "x_login_after_next",
+          currentUrl: page.url(),
+          stillOnUsernameStep,
+          pagePreview: afterNextText.slice(0, 250),
+          hasPasswordField: /\bpassword\b/i.test(afterNextText) && !/\bforgot password\b/i.test(afterNextText),
+        }),
+      );
 
       // Handle unusual activity / phone verification challenge if shown
       const challengeText = await page.evaluate(() =>
@@ -184,30 +224,44 @@ export async function attemptXLogin(): Promise<boolean> {
         }
       }
 
-      // Fill password
+      // Fill password via raw DOM
       const passwordInput = page.locator(
         'input[type="password"], input[name="password"]',
       ).first();
       if (await passwordInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
-        await passwordInput.fill(password);
+        await page.evaluate((pwd) => {
+          const input = document.querySelector(
+            'input[type="password"], input[name="password"]',
+          ) as HTMLInputElement;
+          if (input) {
+            const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+              window.HTMLInputElement.prototype, "value"
+            )?.set;
+            nativeInputValueSetter?.call(input, pwd);
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            input.dispatchEvent(new Event("change", { bubbles: true }));
+            input.focus();
+          }
+        }, password);
         await page.waitForTimeout(800);
 
-        // Click login — try multiple selector strategies
-        const loginSelectors = [
-          '[role="button"]:has-text("Log in")',
-          '[role="button"]:has-text("Sign in")',
-          'button:has-text("Log in")',
-          'span:has-text("Log in")',
-        ];
-        for (const sel of loginSelectors) {
-          const btn = page.locator(sel).first();
-          if (await btn.isVisible({ timeout: 1_000 }).catch(() => false)) {
-            await btn.click();
-            break;
+        // Click Log in via native DOM
+        const loginClicked = await page.evaluate(() => {
+          const btns = Array.from(
+            document.querySelectorAll('[role="button"], button, span'),
+          );
+          const loginBtn = btns.find(
+            (b) => /log in|sign in/i.test(b.textContent?.trim() || ""),
+          ) as HTMLElement | undefined;
+          if (loginBtn && loginBtn.offsetParent !== null) {
+            loginBtn.click();
+            return true;
           }
+          return false;
+        });
+        if (loginClicked) {
+          await page.waitForTimeout(6_000);
         }
-        // Wait for redirect to home
-        await page.waitForTimeout(6_000);
       }
 
       // Check if login succeeded — any X home/feed URL means we're in
@@ -264,7 +318,14 @@ export async function attemptXLogin(): Promise<boolean> {
         }),
       );
       return false;
-    });
+    }),
+    new Promise<boolean>((_, reject) =>
+      setTimeout(
+        () => reject(new Error("LOGIN_TIMEOUT")),
+        LOGIN_TIMEOUT_MS,
+      ),
+    ),
+  ]);
   } catch (err) {
     console.error(
       JSON.stringify({
@@ -282,14 +343,22 @@ export async function attemptXLogin(): Promise<boolean> {
 
 async function checkXAuth(page: import("playwright").Page): Promise<boolean> {
   const url = page.url();
-  if (url.includes("x.com/home") || url === "https://x.com/" || url === "https://x.com") {
-    return true;
-  }
-  const bodyText = await page.evaluate(() => document.body.innerText.slice(0, 300));
+  const bodyText = await page.evaluate(() => document.body.innerText.slice(0, 800));
   const isLoginPage =
     /\b(sign in to x|log in to x|sign up for x|join x today)\b/i.test(bodyText) ||
     /\bDon.t have an account\?.*Sign up\b/i.test(bodyText);
   if (isLoginPage) return false;
+  const isLoggedOutShell =
+    /\b(Welcome to X|See what.s happening|Don.t miss what.s happening|Sign in to see|Happening now)\b/i.test(bodyText);
+  if (isLoggedOutShell) return false;
+  const isErrorPage =
+    /\bsomething went wrong\b/i.test(bodyText) ||
+    /\bthis page isn.t available\b/i.test(bodyText) ||
+    /\bTry reloading\b/i.test(bodyText);
+  if (url.includes("x.com/home") || url === "https://x.com/" || url === "https://x.com") {
+    if (isErrorPage) return false;
+    return true;
+  }
   const hasTweets = await page.evaluate(
     () => document.querySelectorAll("article").length > 0,
   );
@@ -301,8 +370,10 @@ async function fetchHomeTimeline(): Promise<ExtractedTweet[]> {
     return homeTimelineCache.tweets;
   }
 
+  let result: ExtractedTweet[] | null = null;
+
   try {
-    return await withPersistentBrowserPage(async (page) => {
+    result = await withPersistentBrowserPage(async (page) => {
       await page.goto("https://x.com/home", {
         waitUntil: "domcontentloaded",
         timeout: 45_000,
@@ -311,7 +382,6 @@ async function fetchHomeTimeline(): Promise<ExtractedTweet[]> {
 
       const isAuthenticated = await checkXAuth(page);
       if (!isAuthenticated) {
-        // Auth is dead — trigger immediate login, don't wait 3 cycles
         console.log(
           JSON.stringify({
             ts: new Date().toISOString(),
@@ -429,10 +499,14 @@ async function fetchHomeTimeline(): Promise<ExtractedTweet[]> {
         });
         if (out.length >= MAX_TWEETS_TOTAL) break;
       }
-      homeTimelineCache = { tweets: out, at: Date.now() };
-      consecutiveEmptyCycles = 0;
+      // Only cache non-empty results — empty results could mean stale auth
+      if (out.length > 0) {
+        homeTimelineCache = { tweets: out, at: Date.now() };
+        consecutiveEmptyCycles = 0;
+      }
       return out;
     });
+    if (result && result.length > 0) return result;
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     console.warn(

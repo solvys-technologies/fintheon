@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58-T1: DeepSeek v4 Pro primary provider migration
 // [claude-code 2026-04-23] S32-T3 Ollama fallback chain — local provider now goes through createChainModel
 // [claude-code 2026-04-10] S8-T2: added createAgentForTask() for DAG dispatch (always local/VProxy)
 // [claude-code 2026-04-08] Nous provider tries arcee trinity-large first, then qwen3.6-plus
@@ -9,6 +10,8 @@ import {
   checkVProxyHealth,
   createChainModel,
   createOllamaFallbackModel,
+  createDeepSeekDirectModel,
+  createDeepSeekOcApiModel,
   type VProxyModelOptions,
 } from "./provider.js";
 import { isOllamaFallbackEnabled } from "../ai/ollama-hermes-client.js";
@@ -24,7 +27,13 @@ const log = createLogger("StrandsFactory");
 // "grok" kept as a labeled provider but it routes through Nous Research's
 // inference API now too, since OpenRouter is no longer a sanctioned backend.
 // [claude-code 2026-04-23] S32-T3 added "ollama-qwen" fallback chain provider
-export type HarperProvider = "local" | "ollama-qwen" | "nous" | "grok";
+export type HarperProvider =
+  | "deepseek-direct"
+  | "deepseek-oc-api"
+  | "local"
+  | "ollama-qwen"
+  | "nous"
+  | "grok";
 
 /** Nous fallback model chain — tried in order. Hits inference-api.nousresearch.com
  *  directly with NOUS_API_KEY. These are the actually-free Hermes models, not
@@ -74,10 +83,22 @@ function createNousModelWithId(
 
 /** Create a Strands Agent configured with the selected provider */
 export function createAgent(options: CreateAgentOptions): Agent {
-  const provider = options.provider ?? "local";
+  const provider = options.provider ?? "deepseek-direct";
   let model: OpenAIModel;
 
   switch (provider) {
+    case "deepseek-direct":
+      log.info("Creating Strands agent (DeepSeek direct)", {
+        name: options.name,
+      });
+      model = createDeepSeekDirectModel(options.model);
+      break;
+    case "deepseek-oc-api":
+      log.info("Creating Strands agent (DeepSeek OC API)", {
+        name: options.name,
+      });
+      model = createDeepSeekOcApiModel(options.model);
+      break;
     case "nous":
       // eslint-disable-next-line no-case-declarations
       const nousId = options.nousModelId ?? NOUS_MODELS[0];
@@ -140,7 +161,7 @@ export async function createAgentForTask(
           "Prediction markets, S&P, Crypto, macro analysis — sees across all domains",
         systemPrompt: await getAgentSystemPrompt("pma-merged"),
         model: { temperature: 0.3, maxTokens: 4096 },
-        provider: "local",
+        provider: "deepseek-direct",
       });
 
     case "feucht":
@@ -150,7 +171,7 @@ export async function createAgentForTask(
           "Futures & risk — /NQ, /MNQ, /ES via TopStepX, drawdown limits, proposal validation",
         systemPrompt: await getAgentSystemPrompt("futures-desk"),
         model: { temperature: 0.25, maxTokens: 4096 },
-        provider: "local",
+        provider: "deepseek-direct",
       });
 
     case "consul":
@@ -160,7 +181,7 @@ export async function createAgentForTask(
           "Fundamentals desk — top 10 S&P/NDX mega-caps, earnings, guidance, fair value",
         systemPrompt: await getAgentSystemPrompt("fundamentals-desk"),
         model: { temperature: 0.3, maxTokens: 4096 },
-        provider: "local",
+        provider: "deepseek-direct",
       });
 
     case "herald":
@@ -170,7 +191,7 @@ export async function createAgentForTask(
           "News & sentiment — headlines, social signals, AAII survey, breaking news",
         systemPrompt: await getAgentSystemPrompt("herald"),
         model: { temperature: 0.3, maxTokens: 4096 },
-        provider: "local",
+        provider: "deepseek-direct",
       });
 
     case "harper":
@@ -180,8 +201,8 @@ export async function createAgentForTask(
         description:
           "DAG synthesis — consolidates multi-agent findings into a unified outlook",
         systemPrompt: await getAgentSystemPrompt("harper-cao", {}),
-        model: { model: "claude-opus-4-6", temperature: 0.3, maxTokens: 8192 },
-        provider: "local",
+        model: { model: "deepseek-reasoner", temperature: 0.3, maxTokens: 8192 },
+        provider: "deepseek-direct",
       });
 
     default: {

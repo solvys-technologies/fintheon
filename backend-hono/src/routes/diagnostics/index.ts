@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58-T1: DeepSeek primary AI diagnostics.
 // [claude-code 2026-04-29] S53-T1: riskflow_runtime section on GET / —
 //   pipelines enabled/disabled, source accounts by category, econ populator/
 //   scheduler health, drop-counter snapshot, feed poller, headlines_24h.
@@ -61,6 +62,7 @@ import { getPipelineStateSnapshot } from "../../services/riskflow/pipeline-gate.
 import { getDeskCalendarDiagnostics } from "../desk-calendar/handlers.js";
 import { getSttProviderDiagnostics } from "../../services/voice-stt-provider.js";
 import { getTranscriptStats24h } from "../../services/commentary-transcript.js";
+import { checkDeepSeekDirectHealth } from "../../services/strands/provider.js";
 
 const log = createLogger("Diagnostics");
 
@@ -229,43 +231,40 @@ async function getNewsWorkerSnapshot(): Promise<
 /* ------------------------------------------------------------------ */
 
 async function checkHermesAI(): Promise<ServiceDiagnostic> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) {
     return {
-      name: "Hermes AI (OpenRouter)",
+      name: "Hermes AI (DeepSeek primary)",
       status: "error",
-      detail: "OPENROUTER_API_KEY not set",
-      fix: "Add OPENROUTER_API_KEY to backend-hono/.env",
+      detail: "DEEPSEEK_API_KEY not set",
+      fix: "Add DEEPSEEK_API_KEY to backend-hono/.env or store a user key in Settings",
     };
   }
 
   try {
     const start = Date.now();
-    const res = await fetch("https://openrouter.ai/api/v1/models", {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      signal: AbortSignal.timeout(8000),
-    });
+    const health = await checkDeepSeekDirectHealth();
     const latency = Date.now() - start;
 
-    if (res.ok) {
+    if (health.available) {
       return {
-        name: "Hermes AI (OpenRouter)",
+        name: "Hermes AI (DeepSeek primary)",
         status: "ok",
-        detail: `${latency}ms response`,
+        detail: `deepseek-reasoner primary — ${latency}ms response`,
       };
     }
     return {
-      name: "Hermes AI (OpenRouter)",
+      name: "Hermes AI (DeepSeek primary)",
       status: "degraded",
-      detail: `HTTP ${res.status} — ${latency}ms`,
-      fix: "Check OpenRouter API key validity at openrouter.ai/settings/keys",
+      detail: `${health.error ?? "unreachable"} — ${latency}ms`,
+      fix: "Check DeepSeek API key validity and api.deepseek.com reachability",
     };
   } catch (err) {
     return {
-      name: "Hermes AI (OpenRouter)",
+      name: "Hermes AI (DeepSeek primary)",
       status: "error",
       detail: err instanceof Error ? err.message : String(err),
-      fix: "Check network connectivity to openrouter.ai",
+      fix: "Check network connectivity to api.deepseek.com",
     };
   }
 }
