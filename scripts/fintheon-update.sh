@@ -239,7 +239,9 @@ if [[ -f "$BACKEND_ENV" ]]; then
   grep -q "^ROUTING_DAILY_CAP=" "$BACKEND_ENV" 2>/dev/null || echo "ROUTING_DAILY_CAP=20" >> "$BACKEND_ENV"
   grep -q "^ROUTING_DISABLE_BUDGET=" "$BACKEND_ENV" 2>/dev/null || echo "ROUTING_DISABLE_BUDGET=false" >> "$BACKEND_ENV"
   grep -q "^FLAG_RISKFLOW_WORKER_WRITES_RISKFLOW=" "$BACKEND_ENV" 2>/dev/null || echo "FLAG_RISKFLOW_WORKER_WRITES_RISKFLOW=true" >> "$BACKEND_ENV"
+  grep -q "^FLAG_NEWS_WORKER_WRITES_RISKFLOW=" "$BACKEND_ENV" 2>/dev/null || echo "FLAG_NEWS_WORKER_WRITES_RISKFLOW=true" >> "$BACKEND_ENV"
   grep -q "^NEWS_WORKER_PORT=" "$BACKEND_ENV" 2>/dev/null || echo "NEWS_WORKER_PORT=8082" >> "$BACKEND_ENV"
+  grep -q "^RISKFLOW_WORKER_PORT=" "$BACKEND_ENV" 2>/dev/null || echo "RISKFLOW_WORKER_PORT=8082" >> "$BACKEND_ENV"
   grep -q "^X_AUTH_TOKEN=" "$BACKEND_ENV" 2>/dev/null || echo "X_AUTH_TOKEN=" >> "$BACKEND_ENV"
   grep -q "^X_EMAIL=" "$BACKEND_ENV" 2>/dev/null || echo "X_EMAIL=" >> "$BACKEND_ENV"
   grep -q "^X_PASSWORD=" "$BACKEND_ENV" 2>/dev/null || echo "X_PASSWORD=" >> "$BACKEND_ENV"
@@ -247,6 +249,13 @@ if [[ -f "$BACKEND_ENV" ]]; then
   grep -q "^GEPA_DEEP=" "$BACKEND_ENV" 2>/dev/null || echo "GEPA_DEEP=false" >> "$BACKEND_ENV"
   grep -q "^VOICE_SIDECAR_DISABLED=" "$BACKEND_ENV" 2>/dev/null || echo "VOICE_SIDECAR_DISABLED=false" >> "$BACKEND_ENV"
   grep -q "^RISKFLOW_COMMENTARY_SCRAPER=" "$BACKEND_ENV" 2>/dev/null || echo "RISKFLOW_COMMENTARY_SCRAPER=disabled" >> "$BACKEND_ENV"
+  grep -q "^FINTHEON_DESKTOP=" "$BACKEND_ENV" 2>/dev/null || echo "FINTHEON_DESKTOP=false" >> "$BACKEND_ENV"
+  grep -q "^ARBITRUM_SESSION_SCHEDULER_ENABLED=" "$BACKEND_ENV" 2>/dev/null || echo "ARBITRUM_SESSION_SCHEDULER_ENABLED=true" >> "$BACKEND_ENV"
+  grep -q "^ARBITRUM_EVENT_TRIGGER_ENABLED=" "$BACKEND_ENV" 2>/dev/null || echo "ARBITRUM_EVENT_TRIGGER_ENABLED=true" >> "$BACKEND_ENV"
+  grep -q "^ARBITRUM_EVENT_IV_THRESHOLD=" "$BACKEND_ENV" 2>/dev/null || echo "ARBITRUM_EVENT_IV_THRESHOLD=8.5" >> "$BACKEND_ENV"
+  grep -q "^ARBITRUM_EVENT_TOP_N=" "$BACKEND_ENV" 2>/dev/null || echo "ARBITRUM_EVENT_TOP_N=10" >> "$BACKEND_ENV"
+  grep -q "^ECON_CALENDAR_ENABLED=" "$BACKEND_ENV" 2>/dev/null || echo "ECON_CALENDAR_ENABLED=true" >> "$BACKEND_ENV"
+  grep -q "^COMMENTARY_WATCH_ENABLED=" "$BACKEND_ENV" 2>/dev/null || echo "COMMENTARY_WATCH_ENABLED=true" >> "$BACKEND_ENV"
 
   ok "Environment verified (vault fills secrets on boot)"
 else

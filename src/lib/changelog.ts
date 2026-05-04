@@ -9,6 +9,24 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-03T22:42:30-04:00",
+    agent: "claude-code",
+    summary:
+      "S58 shipped: DeepSeek primary provider, BYOK chat paths, brief recovery, and frontend/mobile provider fixes. Archived to sprint-changelog/. 3 tracks, 56 files.",
+    files: ["sprint-changelog/S58-ORCHESTRATION.md"],
+  },
+  {
+    date: "2026-05-03T22:41:52-04:00",
+    agent: "claude-code",
+    summary:
+      "Install maintenance audit: documented all backend source-referenced environment variables and backfilled safe local defaults for Arbitrum/RiskFlow worker drift without embedding secrets.",
+    files: [
+      "backend-hono/.env.example",
+      "scripts/fintheon-update.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-03T22:40:00-04:00",
     agent: "claude-code",
     summary:
