@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58 deploy fix: mobile chat labels relay fallback as DeepSeek-backed, not VProxy/desktop-primary.
 // [claude-code 2026-05-03] S58-T2: mobile chat uses direct DeepSeek SDK when a user key exists, relay otherwise.
 // [claude-code 2026-04-18] v5.22 S2: TP saw a hollow "thinking bubble" appear before any
 // text streamed. Root cause: ChatPage pre-created the assistant message with content:""
@@ -353,7 +354,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
               "sent",
               hasDirectDeepSeekKey
                 ? "DEEPSEEK SILENT — CHECK API KEY"
-                : "HARPER SILENT — CHECK DESKTOP RELAY",
+                : "DEEPSEEK RELAY SILENT — CHECK BACKEND",
             );
           }
         }, 12_000);

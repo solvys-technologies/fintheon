@@ -9,6 +9,24 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-03T22:40:00-04:00",
+    agent: "claude-code",
+    summary:
+      "v6.0.9 deploy fix: made DeepSeek visible/selectable in both chat surfaces and migrated stale VProxy/OpenRouter defaults to DeepSeek primary.",
+    files: [
+      "frontend/components/chat/ProviderDropdown.tsx",
+      "frontend/components/chat/hooks/useHermesChat.ts",
+      "frontend/components/settings/HermesAdminTab.tsx",
+      "mobile/components/chat/ChatPage.tsx",
+      "package.json",
+      "scripts/fintheon-update.sh",
+      "scripts/fintheon-setup.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-04T00:55:00-04:00",
     agent: "claude-code",
     summary:

@@ -53,10 +53,13 @@ export function HermesAdminTab() {
     if (
       saved === "deepseek-direct" ||
       saved === "deepseek-oc-api" ||
-      saved === "orouter" ||
-      saved === "local"
+      saved === "nous"
     ) {
       return saved;
+    }
+    if (saved === "orouter" || saved === "local") {
+      localStorage.setItem("fintheon:default-chat-provider", "deepseek-direct");
+      localStorage.setItem("fintheon:harper-provider", "deepseek-direct");
     }
     return "deepseek-direct";
   });

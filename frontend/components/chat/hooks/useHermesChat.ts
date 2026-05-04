@@ -3,6 +3,7 @@
  * Simple chat hook for Hermes AI processing
  */
 
+// [claude-code 2026-05-03] S58 deploy fix: default Harper chat provider to DeepSeek, not VProxy/local.
 // [claude-code 2026-05-03] S58-T2: route personal CAO DeepSeek providers through client SDK when configured.
 // [claude-code 2026-04-18] Clear cached conversationId on 404 during hydration — otherwise Electron
 //   boots with a stale localStorage UUID, useHermesChat logs "starting fresh", but the consumer
@@ -42,9 +43,10 @@ function isDeepSeekProvider(provider: string): provider is DeepSeekProvider {
 
 function readHarperProvider(): string {
   try {
-    return localStorage.getItem("fintheon:harper-provider") || "local";
+    const saved = localStorage.getItem("fintheon:harper-provider");
+    return saved && saved !== "local" && saved !== "orouter" ? saved : "deepseek-direct";
   } catch {
-    return "local";
+    return "deepseek-direct";
   }
 }
 
@@ -263,10 +265,10 @@ export function useHermesChat(
           const harperProvider = (() => {
             try {
               return (
-                localStorage.getItem("fintheon:harper-provider") || "local"
+                readHarperProvider()
               );
             } catch {
-              return "local";
+              return "deepseek-direct";
             }
           })();
           return {
