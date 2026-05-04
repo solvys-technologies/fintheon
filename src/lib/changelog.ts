@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-04T01:40:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Fixed admin backfill route namespace mismatch by mounting FinancialJuice drip controls at /api/admin/riskflow/backfill-drip/* to align backend endpoints with Refinement UI calls.",
+    files: [
+      "backend-hono/src/routes/admin/riskflow-backfill-drip.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-03T22:42:30-04:00",
     agent: "claude-code",
     summary:
