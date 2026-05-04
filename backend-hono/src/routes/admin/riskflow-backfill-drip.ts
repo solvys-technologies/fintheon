@@ -4,6 +4,7 @@
 import { Hono } from "hono";
 import {
   getFinancialJuiceBackfillDripStatus,
+  runFinancialJuiceBackfillDripNow,
   startFinancialJuiceBackfillDrip,
   stopFinancialJuiceBackfillDrip,
 } from "../../services/riskflow/financialjuice-backfill-drip.js";
@@ -21,6 +22,11 @@ export function createRiskFlowBackfillDripRoutes() {
 
   router.post("/stop", (c) => {
     return c.json({ ok: true, status: stopFinancialJuiceBackfillDrip() });
+  });
+
+  router.post("/run-now", async (c) => {
+    const status = await runFinancialJuiceBackfillDripNow();
+    return c.json({ ok: true, status });
   });
 
   return router;

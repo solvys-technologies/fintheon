@@ -3,7 +3,7 @@
 // 30 minutes in chronological order.
 
 import { useCallback, useEffect, useState } from "react";
-import { Hourglass, PauseCircle, PlayCircle } from "lucide-react";
+import { Hourglass, PauseCircle, PlayCircle, Zap } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 
 const API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:8080").replace(
@@ -86,6 +86,14 @@ export function FinancialJuiceBackfillPanel() {
           >
             <PlayCircle className="w-3 h-3" />
             Start
+          </button>
+          <button
+            type="button"
+            onClick={() => void call("backfill-drip/run-now", "POST")}
+            style={{ border: "1px solid rgba(199,159,74,0.22)", background: "transparent", color: "var(--fintheon-text)", padding: "2px 8px", fontSize: 10, display: "flex", alignItems: "center", gap: 4 }}
+          >
+            <Zap className="w-3 h-3" />
+            Run Now
           </button>
           <button
             type="button"

@@ -59,6 +59,18 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
+    date: "2026-05-04T01:05:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Extended the FinancialJuice slow-drip backfill control with a Run Now action so operators can trigger an immediate chronological 10-15 post tick between scheduled 30-minute cycles.",
+    files: [
+      "backend-hono/src/services/riskflow/financialjuice-backfill-drip.ts",
+      "backend-hono/src/routes/admin/riskflow-backfill-drip.ts",
+      "frontend/components/refinement/FinancialJuiceBackfillPanel.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-03T18:57:00-04:00",
     agent: "claude-code",
     summary:

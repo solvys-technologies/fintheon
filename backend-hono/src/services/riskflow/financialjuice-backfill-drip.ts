@@ -208,6 +208,11 @@ async function runOneTick(): Promise<void> {
   }
 }
 
+export async function runFinancialJuiceBackfillDripNow(): Promise<DripState> {
+  await runOneTick();
+  return getFinancialJuiceBackfillDripStatus();
+}
+
 export function startFinancialJuiceBackfillDrip(): DripState {
   if (state.running) return getFinancialJuiceBackfillDripStatus();
   state.running = true;
