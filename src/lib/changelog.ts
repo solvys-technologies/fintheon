@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-05T14:15:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Fix: RiskFlow X collector timeout — proactive auth refresh moved after timeline fetch (was blocking collection cycle). Login timeout reduced 90s→60s, safeCollect 150s. Cleaned corrupted browser session. Killed stale backfill scripts consuming browser resources.",
+    files: [
+      "backend-hono/src/workers/riskflow-worker/sources/x-handles-browser.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/index.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-05T14:00:00-04:00",
     agent: "claude-code",
     summary:

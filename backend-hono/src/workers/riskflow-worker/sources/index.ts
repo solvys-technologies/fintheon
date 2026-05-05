@@ -2,7 +2,7 @@
 // polled in one home-timeline pass, filtered post-extraction by handle-routing rules.
 // Replaces the three separate tier collectors (breaking/commentary/standard X).
 // Non-X standard-tier sources (COT, FOMC, Fed Speeches, Kalshi) kept separate.
-//
+// [claude-code 2026-05-05] Increased unified X tier safeCollect timeout 90s→150s.
 // [claude-code 2026-04-27] S46.4 source narrowing per TP:
 //   - SEC EDGAR + Treasury press REMOVED from standard tier.
 //   - Exa STRIPPED entirely (worker no longer imports the Exa collector).
@@ -85,8 +85,11 @@ export async function runUnifiedXTier(): Promise<TierRunResult> {
     return { ingested: 0, errors: 0 };
   }
 
-  const primary = await safeCollect("x-handles-browser:unified", () =>
-    collectFromXHandlesBrowser({ handles, tier: "unified" }),
+  // 150s timeout — auth refresh can take 60s + timeline fetch 60s = 120s max
+  const primary = await safeCollect(
+    "x-handles-browser:unified",
+    () => collectFromXHandlesBrowser({ handles, tier: "unified" }),
+    150_000,
   );
 
   const ingested = await writeCollectedItems(primary.items);

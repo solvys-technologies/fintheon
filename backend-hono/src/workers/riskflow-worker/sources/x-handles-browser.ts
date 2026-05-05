@@ -5,8 +5,10 @@
 // 3 cycles, (3) multi-strategy selectors for Next/Login buttons, (4) extract ct0
 // alongside auth_token so persistent context re-launch has both, (5) challenge
 // page handling (username verification step), (6) CAPTCHA/2FA detection in logs.
-// [claude-code 2026-05-05] Autonomous token refresh + multi-account rotation:
-// supports X_AUTH_ACCOUNTS_JSON array and proactive refresh interval.
+// [claude-code 2026-05-05] Fixed X collector timeout: proactive auth refresh moved
+// AFTER timeline fetch (was blocking collection cycle, eating the 90s safeCollect
+// window). Login timeout reduced 90s→60s. Timeline fetch runs first with existing
+// auth; refresh fires in background for next cycle. Reactive re-auth only on failure.
 
 import type { CollectedNewsItem, NewsTier } from "./types.js";
 import { scoreHeadline } from "../score.js";
@@ -242,7 +244,7 @@ let consecutiveEmptyCycles = 0;
 const AUTH_EXPIRY_THRESHOLD = 3;
 let loginInProgress = false;
 let loginStartedAt = 0;
-const LOGIN_TIMEOUT_MS = 90_000; // hard timeout so a hung login doesn't block forever
+const LOGIN_TIMEOUT_MS = 60_000; // keep below safeCollect window so timeline fetch has headroom
 
 let loginAccountCursor = 0;
 const credentialHealth = new Map<string, CredentialHealth>();
@@ -687,7 +689,42 @@ async function fetchHomeTimeline(): Promise<ExtractedTweet[]> {
     return homeTimelineCache.tweets;
   }
 
-  if (shouldRefreshAuthProactively() && !loginInProgress) {
+  // Try timeline fetch FIRST with existing auth.
+  // Proactive refresh is deferred to after the fetch so it doesn't
+  // consume the safeCollect window and cause spurious timeouts.
+  let result = await scrapeHomeTimeline();
+
+  // If timeline fetch failed and auth is stale, do a blocking reactive refresh.
+  if ((!result || result.length === 0) && !loginInProgress) {
+    const needsReauth =
+      result === null || // immediate re-auth on X_AUTH_FAILED from scrapeHomeTimeline
+      consecutiveEmptyCycles >= AUTH_EXPIRY_THRESHOLD ||
+      shouldRefreshAuthProactively();
+    if (needsReauth) {
+      console.log(
+        JSON.stringify({
+          ts: new Date().toISOString(),
+          service: "riskflow-worker",
+          stage: "x_auth_reactive_refresh",
+          lastLoginAccount: lastLoginAccountLabel || null,
+          consecutiveEmptyCycles,
+          authStale: shouldRefreshAuthProactively(),
+        }),
+      );
+      const refreshed = await attemptXLogin();
+      if (refreshed) {
+        homeTimelineCache = null;
+        try {
+          result = await scrapeHomeTimeline();
+        } catch {
+          /* swallow — outer safeCollect handles the timeout */
+        }
+      }
+    }
+  }
+
+  // Proactive refresh in background (after successful fetch, don't block return).
+  if (result && result.length > 0 && shouldRefreshAuthProactively() && !loginInProgress) {
     console.log(
       JSON.stringify({
         ts: new Date().toISOString(),
@@ -699,16 +736,23 @@ async function fetchHomeTimeline(): Promise<ExtractedTweet[]> {
         refreshEveryMs: AUTH_PROACTIVE_REFRESH_MS,
       }),
     );
-    const refreshed = await attemptXLogin();
-    if (refreshed) {
-      homeTimelineCache = null;
-    }
+    // Fire-and-forget — refreshed tokens used next cycle.
+    attemptXLogin().catch(() => {});
   }
 
-  let result: ExtractedTweet[] | null = null;
+  if (result && result.length > 0) {
+    homeTimelineCache = { tweets: result, at: Date.now() };
+    consecutiveEmptyCycles = 0;
+    return result;
+  }
+  consecutiveEmptyCycles++;
+  return [];
+}
 
+/** Pure home-timeline scrape — no auth refresh logic. */
+async function scrapeHomeTimeline(): Promise<ExtractedTweet[] | null> {
   try {
-    result = await withPersistentBrowserPage(async (page) => {
+    return await withPersistentBrowserPage(async (page) => {
       await page.goto("https://x.com/home", {
         waitUntil: "domcontentloaded",
         timeout: 45_000,
@@ -896,14 +940,8 @@ async function fetchHomeTimeline(): Promise<ExtractedTweet[]> {
         });
         if (out.length >= MAX_TWEETS_TOTAL) break;
       }
-      // Only cache non-empty results — empty results could mean stale auth
-      if (out.length > 0) {
-        homeTimelineCache = { tweets: out, at: Date.now() };
-        consecutiveEmptyCycles = 0;
-      }
       return out;
     });
-    if (result && result.length > 0) return result;
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     console.warn(
@@ -914,32 +952,8 @@ async function fetchHomeTimeline(): Promise<ExtractedTweet[]> {
         error: errMsg,
       }),
     );
-
-    // Immediate re-auth on known auth failure (login wall detected by checkXAuth)
-    if (errMsg === "X_AUTH_FAILED") {
-      consecutiveEmptyCycles = AUTH_EXPIRY_THRESHOLD;
-    }
-  }
-
-  // Track consecutive failures
-  consecutiveEmptyCycles++;
-  if (consecutiveEmptyCycles >= AUTH_EXPIRY_THRESHOLD) {
-    if (await attemptXLogin()) {
-      homeTimelineCache = null;
-      consecutiveEmptyCycles = 0;
-    } else {
-      console.error(
-        JSON.stringify({
-          ts: new Date().toISOString(),
-          service: "riskflow-worker",
-          stage: "home_timeline_expired_auth",
-          consecutiveEmptyCycles,
-          lastLoginAccount: lastLoginAccountLabel || null,
-          message:
-            "X home timeline returned empty for multiple cycles and auto-login failed. Check X_AUTH_ACCOUNTS_JSON or X_EMAIL/X_PASSWORD credentials.",
-        }),
-      );
-    }
+    // Signal auth failure to caller so fetchHomeTimeline can trigger a refresh.
+    if (errMsg === "X_AUTH_FAILED") return null;
   }
   return [];
 }

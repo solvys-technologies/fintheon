@@ -735,7 +735,7 @@ function MainLayoutInner() {
               : "w-[min(380px,42vw)] opacity-100"
           }`}
         >
-          <div className="flex-1 min-h-0 flex flex-col bg-[var(--fintheon-surface)] border-y border-r border-[var(--fintheon-accent)]/20 rounded-tr-2xl rounded-br-2xl">
+          <div className="flex-1 min-h-0 flex flex-col bg-[var(--fintheon-surface)] border-r border-[var(--fintheon-accent)]/20 rounded-tr-2xl rounded-br-2xl">
             {/* Widgets pane — shown in balanced + widgetsOnly.
                   [claude-code 2026-04-24] min-h-0 is CRITICAL in widgetsOnly:
                   without it, flex-1 + inner content force the pane taller than

@@ -28,7 +28,9 @@ function resolveOpenCodeBaseUrl(): string {
 
 function authedUserId(c: { get: (key: string) => unknown }): string | null {
   const userId = c.get("userId");
-  return typeof userId === "string" && userId !== "anonymous" ? userId : null;
+  if (typeof userId !== "string") return null;
+  if (userId === "anonymous" || userId === "local-user") return null;
+  return userId;
 }
 
 export function createAiKeysRoutes(): Hono {
