@@ -690,56 +690,9 @@ async function fetchHomeTimeline(): Promise<ExtractedTweet[]> {
     return homeTimelineCache.tweets;
   }
 
-  // Try timeline fetch FIRST with existing auth.
-  // Proactive refresh is deferred to after the fetch so it doesn't
-  // consume the safeCollect window and cause spurious timeouts.
-  let result = await scrapeHomeTimeline();
-
-  // If timeline fetch failed and auth is stale, do a blocking reactive refresh.
-  if ((!result || result.length === 0) && !loginInProgress) {
-    const needsReauth =
-      result === null || // immediate re-auth on X_AUTH_FAILED from scrapeHomeTimeline
-      consecutiveEmptyCycles >= AUTH_EXPIRY_THRESHOLD ||
-      shouldRefreshAuthProactively();
-    if (needsReauth) {
-      console.log(
-        JSON.stringify({
-          ts: new Date().toISOString(),
-          service: "riskflow-worker",
-          stage: "x_auth_reactive_refresh",
-          lastLoginAccount: lastLoginAccountLabel || null,
-          consecutiveEmptyCycles,
-          authStale: shouldRefreshAuthProactively(),
-        }),
-      );
-      const refreshed = await attemptXLogin();
-      if (refreshed) {
-        homeTimelineCache = null;
-        try {
-          result = await scrapeHomeTimeline();
-        } catch {
-          /* swallow — outer safeCollect handles the timeout */
-        }
-      }
-    }
-  }
-
-  // Proactive refresh in background (after successful fetch, don't block return).
-  if (result && result.length > 0 && shouldRefreshAuthProactively() && !loginInProgress) {
-    console.log(
-      JSON.stringify({
-        ts: new Date().toISOString(),
-        service: "riskflow-worker",
-        stage: "x_auth_proactive_refresh_due",
-        lastLoginAccount: lastLoginAccountLabel || null,
-        lastSuccessfulLoginAt:
-          lastSuccessfulLoginAt > 0 ? new Date(lastSuccessfulLoginAt).toISOString() : null,
-        refreshEveryMs: AUTH_PROACTIVE_REFRESH_MS,
-      }),
-    );
-    // Fire-and-forget — refreshed tokens used next cycle.
-    attemptXLogin().catch(() => {});
-  }
+  // Scrape with existing auth cookies only — no login, no re-auth.
+  // Login automation is dead; cookies must be valid.
+  const result = await scrapeHomeTimeline();
 
   if (result && result.length > 0) {
     homeTimelineCache = { tweets: result, at: Date.now() };
@@ -754,8 +707,7 @@ async function fetchHomeTimeline(): Promise<ExtractedTweet[]> {
 async function scrapeHomeTimeline(): Promise<ExtractedTweet[] | null> {
   try {
     return await withPersistentBrowserPage(async (page) => {
-      // Load Following tab directly — chronological, no algorithmic ranking.
-      await page.goto("https://x.com/following", {
+      await page.goto("https://x.com/home", {
         waitUntil: "domcontentloaded",
         timeout: 45_000,
       });
@@ -768,10 +720,29 @@ async function scrapeHomeTimeline(): Promise<ExtractedTweet[] | null> {
             ts: new Date().toISOString(),
             service: "riskflow-worker",
             stage: "home_timeline_not_authenticated",
-            message: "Login wall detected — triggering re-auth",
+            message: "Login wall — skipping, no re-auth attempt",
           }),
         );
-        throw new Error("X_AUTH_FAILED");
+        return [];
+      }
+
+      // Always read from Following tab
+      const followingSelected = await page.evaluate(() => {
+        const tabs = Array.from(
+          document.querySelectorAll(
+            '[role="tab"], a[href*="following"], [data-testid="ScrollSnap-List"] [role="link"]',
+          ),
+        ) as HTMLElement[];
+        const following = tabs.find((el) =>
+          /\bfollowing\b/i.test((el.textContent || "").trim()),
+        );
+        if (!following) return false;
+        const alreadySelected = following.getAttribute("aria-selected") === "true";
+        if (!alreadySelected) following.click();
+        return true;
+      });
+      if (followingSelected) {
+        await page.waitForTimeout(2_000);
       }
 
       for (let i = 0; i < HOME_SCROLL_COUNT; i++) {
@@ -1059,7 +1030,23 @@ async function fetchSyndicationTweets(
     cleanHandle,
   )}?language=en`;
 
-  // Try direct HTTP fetch first (faster, no browser needed)
+  // Browser-pool based fetch (same method as standard tier)
+  try {
+    const result = await browseRead({
+      url,
+      mode: "allowlist",
+      textOnly: false,
+      waitFor: "load",
+    });
+    if (result?.body && result.body.length > 0) {
+      const tweets = parseSyndicationHtml(result.body, cleanHandle);
+      if (tweets.length > 0) return tweets;
+    }
+  } catch (err) {
+    // continue to direct fetch fallback
+  }
+
+  // Fall back to direct HTTP fetch
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
@@ -1074,35 +1061,10 @@ async function fetchSyndicationTweets(
     clearTimeout(timer);
     if (res.ok) {
       const html = await res.text();
-      const tweets = parseSyndicationHtml(html, cleanHandle);
-      if (tweets.length > 0) return tweets;
+      return parseSyndicationHtml(html, cleanHandle);
     }
   } catch {
     clearTimeout(timer);
-  }
-
-  // Fall back to browser-based fetch
-  try {
-    const result = await browseRead({
-      url,
-      mode: "allowlist",
-      textOnly: false,
-      waitFor: "load",
-    });
-    if (result?.body && result.body.length > 0) {
-      const tweets = parseSyndicationHtml(result.body, cleanHandle);
-      if (tweets.length > 0) return tweets;
-    }
-  } catch (err) {
-    console.warn(
-      JSON.stringify({
-        ts: new Date().toISOString(),
-        service: "riskflow-worker",
-        stage: "syndication_harness_error",
-        handle: cleanHandle,
-        error: err instanceof Error ? err.message : String(err),
-      }),
-    );
   }
 
   return [];
@@ -1153,60 +1115,112 @@ export async function collectFromXHandlesBrowser(
   if (opts.handles.length === 0) return [];
   const out: CollectedNewsItem[] = [];
 
-  // API-first: per-handle syndication + XActions (no browser login, no auth conflicts).
-  // Browser timeline scraper killed — it was destroying auth cookies with failed logins
-  // and duplicating pushes on the same tweet_id.
+  // Primary: browser-based home timeline → click Following → scrape.
+  // Uses injected auth cookies only — no login automation.
   const started = Date.now();
-
-  const apiTweets: ExtractedTweet[] = [];
-  for (const handle of opts.handles) {
-    try {
-      const tweets = await collectTweetsViaApi(handle);
-      apiTweets.push(...tweets);
-    } catch {
-      // continue to next handle
-    }
-  }
-
+  const homeTweets = await fetchHomeTimeline();
   const fetchLatency = Date.now() - started;
 
-  console.log(
-    JSON.stringify({
-      ts: new Date().toISOString(),
-      service: "riskflow-worker",
-      stage: "x_api_collected",
-      handles: opts.handles.length,
-      tweets: apiTweets.length,
-      latency_ms: fetchLatency,
-    }),
-  );
+  if (homeTweets.length > 0) {
+    console.log(
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        service: "riskflow-worker",
+        stage: "home_timeline_tweets",
+        total: homeTweets.length,
+        latency_ms: fetchLatency,
+      }),
+    );
+    const allowedHandles = new Set(opts.handles.map(stripHandle).filter(Boolean));
+    for (const tw of homeTweets) {
+      if (!allowedHandles.has(stripHandle(tw.author_handle))) continue;
+      const routings = getRoutingForHandle(tw.author_handle);
+      if (routings.length === 0) continue;
+      const rawText = normalizeTweetText(tw.text);
+      if (isDisallowedRepostOrRetweet(rawText, allowedHandles)) continue;
+      const cleanText = sanitizeTweetBody(rawText);
+      if (!cleanText || cleanText.length < 15) continue;
+      const headline = cleanText.length > 220 ? cleanText.slice(0, 220) : cleanText;
+      if (!scoreHeadline(headline)) continue;
+      if (isGuardrailRejected(cleanText)) continue;
+      if (isStrictPromoRejected(cleanText)) continue;
+      for (const routing of routings) {
+        if (!passesContentFilter(cleanText, routing.contentFilter)) continue;
+        out.push({
+          item_id: tw.tweet_id,
+          source: `twitter:${tw.author_handle}`,
+          source_domain: "x.com",
+          headline,
+          body: cleanText,
+          url: tw.permalink,
+          image_url: tw.image_url ?? null,
+          image_urls: tw.image_urls ?? null,
+          video_url: tw.video_url ?? null,
+          tier: routing.tier,
+          published_at: tw.timestamp || new Date().toISOString(),
+          fetched_at: new Date().toISOString(),
+          fetch_latency_ms: fetchLatency,
+          ingest_pipeline: tw.pipeline_tag || "x-home-timeline",
+        });
+      }
+    }
+  } else {
+    // Browser timeline empty — fall back to per-handle syndication API.
+    console.log(
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        service: "riskflow-worker",
+        stage: "x_api_collected",
+        handles: opts.handles.length,
+      }),
+    );
 
-  for (const tw of apiTweets) {
-    const cleanText = sanitizeTweetBody(tw.text);
-    if (!cleanText || cleanText.length < 15) continue;
-    if (!scoreHeadline(cleanText)) continue;
-    if (isGuardrailRejected(cleanText)) continue;
-    if (isStrictPromoRejected(cleanText)) continue;
+    const apiTweets: ExtractedTweet[] = [];
+    for (const handle of opts.handles) {
+      try {
+        const tweets = await collectTweetsViaApi(handle);
+        apiTweets.push(...tweets);
+      } catch {
+        // continue
+      }
+    }
 
-    const routings = getRoutingForHandle(tw.author_handle);
-    for (const routing of routings) {
-      if (!passesContentFilter(cleanText, routing.contentFilter)) continue;
-      out.push({
-        item_id: tw.tweet_id,
-        source: `twitter:${tw.author_handle}`,
-        source_domain: "x.com",
-        headline: cleanText.length > 220 ? cleanText.slice(0, 220) : cleanText,
-        body: cleanText,
-        url: tw.permalink,
-        image_url: tw.image_url ?? null,
-        image_urls: tw.image_urls ?? null,
-        video_url: tw.video_url ?? null,
-        tier: routing.tier,
-        published_at: tw.timestamp || new Date().toISOString(),
-        fetched_at: new Date().toISOString(),
-        ingest_pipeline: tw.pipeline_tag || "x-api",
-        fetch_latency_ms: fetchLatency,
-      });
+    console.log(
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        service: "riskflow-worker",
+        stage: "x_api_collected_done",
+        tweets: apiTweets.length,
+        latency_ms: Date.now() - started,
+      }),
+    );
+
+    for (const tw of apiTweets) {
+      const cleanText = sanitizeTweetBody(tw.text);
+      if (!cleanText || cleanText.length < 15) continue;
+      if (!scoreHeadline(cleanText)) continue;
+      if (isGuardrailRejected(cleanText)) continue;
+      if (isStrictPromoRejected(cleanText)) continue;
+      const routings = getRoutingForHandle(tw.author_handle);
+      for (const routing of routings) {
+        if (!passesContentFilter(cleanText, routing.contentFilter)) continue;
+        out.push({
+          item_id: tw.tweet_id,
+          source: `twitter:${tw.author_handle}`,
+          source_domain: "x.com",
+          headline: cleanText.length > 220 ? cleanText.slice(0, 220) : cleanText,
+          body: cleanText,
+          url: tw.permalink,
+          image_url: tw.image_url ?? null,
+          image_urls: tw.image_urls ?? null,
+          video_url: tw.video_url ?? null,
+          tier: routing.tier,
+          published_at: tw.timestamp || new Date().toISOString(),
+          fetched_at: new Date().toISOString(),
+          ingest_pipeline: tw.pipeline_tag || "x-api-fallback",
+          fetch_latency_ms: fetchLatency,
+        });
+      }
     }
   }
 

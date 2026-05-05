@@ -200,7 +200,7 @@ function feedItemToRaw(item: FeedItem): RawRiskFlowItem {
 // In-memory cache — seeded from scored DB on boot, then re-synced periodically from DB.
 let feedCache: FeedItem[] | null = null;
 let lastCacheRefreshMs = 0;
-const CACHE_REFRESH_INTERVAL_MS = 30_000; // Re-sync from DB every 30s (matches central scorer frequency)
+const CACHE_REFRESH_INTERVAL_MS = 5_000; // 5s — new items must show immediately
 
 function sortFeedItems(items: FeedItem[]): FeedItem[] {
   return [...items].sort(
