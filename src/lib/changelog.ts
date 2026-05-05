@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-05T13:30:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Fix: DMG upload added to deploy skill (was missing — no DMG on release meant every user got 'Release DMG download failed'). In-app updater now has build fallback when gh download fails. DMG uploaded to v6.0.12.",
+    files: [
+      ".claude/skills/solvys-deploy/SKILL.md",
+      "scripts/fintheon-install-update.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-05T13:00:00-04:00",
     agent: "claude-code",
     summary:
@@ -38,15 +49,15 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-05-05T08:25:00-04:00",
     agent: "claude-code",
     summary:
-      "Applied a responsive shell polish pass for narrow widths: icon-first header dropdown triggers, reduced PsychAssist header footprint, layout-aware panel-toggle visibility (Zen hides all, Castra keeps right only), compact footer status rail, and overflow-safe main shell/Strategium framing to prevent shrink-mode scrollbar breakage.",
+      "Responsive shell compaction pass: tiered viewport-aware progressive hiding (compactLevel 0/1/2 at 1280/1060px breakpoints) across TopHeader, FooterToolbar, and MainLayout. Header sheds decorative chrome first (greeting/breadcrumb-text/tier-button/FluxerCallWidget at moderate, instance-name/breadcrumb/voice/clock at severe), footer tab shortcuts collapse at severe, status rail filters to core services at moderate, IV score and PsychAssist use compact copy mode. Strategium panels receive rounded/bordered shell parity with sidebar. Root container locked to overflow-hidden with min-w-0 flex children.",
     files: [
-      "frontend/components/layout/TopHeader.tsx",
-      "frontend/components/IVScoreCard.tsx",
-      "frontend/components/layout/PsychAssistDockable.tsx",
-      "frontend/components/mission-control/CompactERMonitor.tsx",
-      "frontend/components/layout/PanelToggleGroup.tsx",
-      "frontend/components/layout/FooterToolbar.tsx",
       "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/layout/FooterToolbar.tsx",
+      "frontend/components/layout/PanelToggleGroup.tsx",
+      "frontend/components/layout/PsychAssistDockable.tsx",
+      "frontend/components/IVScoreCard.tsx",
+      "frontend/components/mission-control/CompactERMonitor.tsx",
       "src/lib/changelog.ts",
     ],
   },

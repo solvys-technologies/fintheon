@@ -101,7 +101,6 @@ function renderOutputLine(text: string, onClickCommand: (cmd: string) => void) {
 }
 
 interface FooterToolbarProps {
-  compactLevel?: 0 | 1 | 2;
   topStepXEnabled?: boolean;
   primaryPlatform?: TradingPlatform;
   onPrimaryPlatformChange?: (p: TradingPlatform) => void;
@@ -111,6 +110,7 @@ interface FooterToolbarProps {
   onSplitViewToggle?: () => void;
   allowSplitView?: boolean;
   onPowerOff?: () => void;
+  compactLevel?: 0 | 1 | 2;
 }
 
 export function FooterToolbar({
@@ -152,18 +152,6 @@ export function FooterToolbar({
   } | null>(null);
 
   const { fetchStatus, refreshing } = useRiskFlow();
-  const [viewportWidth, setViewportWidth] = useState(() =>
-    typeof window === "undefined" ? 1600 : window.innerWidth,
-  );
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const onResize = () => setViewportWidth(window.innerWidth);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  const isMarginalWidth = viewportWidth < 1380;
 
   // Listen for update-installing event from VersionChecker
   const [updateInstalling, setUpdateInstalling] = useState(false);
@@ -507,7 +495,7 @@ export function FooterToolbar({
   const { overall: systemOverall, services } = useSystemStatus();
   const { status: gatewayStatus } = useGateway();
   const narrowedServiceNames = new Set(["Hermes", "AI", "X"]);
-  const visibleServices = isMarginalWidth
+  const visibleServices = compactLevel >= 1
     ? services.filter((svc) => narrowedServiceNames.has(svc.name))
     : services;
   const togglePanel = () => setPanelOpen((v) => !v);
@@ -755,57 +743,65 @@ export function FooterToolbar({
         >
           <Terminal className="w-3 h-3" />
         </button>
-        <button
-          onClick={() => openTab("changelog")}
-          className={`flex items-center gap-1 text-[10px] transition-colors ${
-            panelOpen && activeTab === "changelog"
-              ? "text-[var(--fintheon-accent)]"
-              : "text-zinc-600 hover:text-[var(--fintheon-accent)]"
-          }`}
-          title="Changelog"
-        >
-          <FileText className="w-3 h-3" />
-        </button>
-        <button
-          onClick={() => openTab("errors")}
-          className={`relative flex items-center gap-1 text-[10px] transition-colors ${
-            panelOpen && activeTab === "errors"
-              ? "text-red-400"
-              : errorCount > 0
-                ? "text-red-400/60 hover:text-red-400"
+        {compactLevel < 2 && (
+          <button
+            onClick={() => openTab("changelog")}
+            className={`flex items-center gap-1 text-[10px] transition-colors ${
+              panelOpen && activeTab === "changelog"
+                ? "text-[var(--fintheon-accent)]"
+                : "text-zinc-600 hover:text-[var(--fintheon-accent)]"
+            }`}
+            title="Changelog"
+          >
+            <FileText className="w-3 h-3" />
+          </button>
+        )}
+        {compactLevel < 2 && (
+          <button
+            onClick={() => openTab("errors")}
+            className={`relative flex items-center gap-1 text-[10px] transition-colors ${
+              panelOpen && activeTab === "errors"
+                ? "text-red-400"
+                : errorCount > 0
+                  ? "text-red-400/60 hover:text-red-400"
+                  : "text-zinc-600 hover:text-zinc-400"
+            }`}
+            title="Error Log"
+          >
+            <AlertTriangle className="w-3 h-3" />
+            {errorCount > 0 && (
+              <span className="absolute -top-1 -right-1.5 w-2.5 h-2.5 rounded-full bg-red-500 text-[7px] text-white flex items-center justify-center leading-none">
+                {errorCount > 9 ? "!" : errorCount}
+              </span>
+            )}
+          </button>
+        )}
+        {compactLevel < 2 && (
+          <button
+            onClick={() => openTab("team")}
+            className={`flex items-center text-[10px] transition-colors ${
+              panelOpen && activeTab === "team"
+                ? "text-[var(--fintheon-accent)]"
                 : "text-zinc-600 hover:text-zinc-400"
-          }`}
-          title="Error Log"
-        >
-          <AlertTriangle className="w-3 h-3" />
-          {errorCount > 0 && (
-            <span className="absolute -top-1 -right-1.5 w-2.5 h-2.5 rounded-full bg-red-500 text-[7px] text-white flex items-center justify-center leading-none">
-              {errorCount > 9 ? "!" : errorCount}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => openTab("team")}
-          className={`flex items-center text-[10px] transition-colors ${
-            panelOpen && activeTab === "team"
-              ? "text-[var(--fintheon-accent)]"
-              : "text-zinc-600 hover:text-zinc-400"
-          }`}
-          title="Team"
-        >
-          <Users className="w-3 h-3" />
-        </button>
-        <button
-          onClick={() => openTab("harper-ops")}
-          className={`relative flex items-center text-[10px] transition-colors ${
-            panelOpen && activeTab === "harper-ops"
-              ? "text-[var(--fintheon-accent)]"
-              : "text-zinc-600 hover:text-zinc-400"
-          }`}
-          title="Harper Ops"
-        >
-          <Bot className="w-3 h-3" />
-        </button>
+            }`}
+            title="Team"
+          >
+            <Users className="w-3 h-3" />
+          </button>
+        )}
+        {compactLevel < 2 && (
+          <button
+            onClick={() => openTab("harper-ops")}
+            className={`relative flex items-center text-[10px] transition-colors ${
+              panelOpen && activeTab === "harper-ops"
+                ? "text-[var(--fintheon-accent)]"
+                : "text-zinc-600 hover:text-zinc-400"
+            }`}
+            title="Harper Ops"
+          >
+            <Bot className="w-3 h-3" />
+          </button>
+        )}
 
         {/* Iframe controls (when TopStepX active) */}
         {topStepXEnabled && (
@@ -890,7 +886,7 @@ export function FooterToolbar({
         {/* S14-T6: Peers toggle removed — team status is in footer Team tab */}
 
         {/* Update installing status */}
-        {!isMarginalWidth && updateInstalling && (
+        {compactLevel < 1 && updateInstalling && (
           <div className="flex items-center gap-1.5 shrink-0">
             <div className="h-1.5 w-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
             <span className="text-[9px] tracking-[0.15em] uppercase text-[var(--fintheon-accent)]/70 font-medium">
@@ -898,12 +894,12 @@ export function FooterToolbar({
             </span>
           </div>
         )}
-        {!isMarginalWidth && updateInstalling && (
+        {compactLevel < 1 && updateInstalling && (
           <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
         )}
 
         {/* Fetch status — shows during refresh or polling */}
-        {!isMarginalWidth && fetchStatus && (
+        {compactLevel < 1 && fetchStatus && (
           <div className="flex items-center gap-1.5 shrink-0">
             {refreshing && (
               <div className="h-1.5 w-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
@@ -913,13 +909,13 @@ export function FooterToolbar({
             </span>
           </div>
         )}
-        {!isMarginalWidth && fetchStatus && (
+        {compactLevel < 1 && fetchStatus && (
           <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
         )}
 
         {/* System status indicators — real-time from /api/diagnostics */}
         <div className="flex items-center gap-2.5 shrink-0">
-          {!isMarginalWidth && (
+          {compactLevel < 1 && (
             <StatusIndicator
               label="Gateway"
               status={

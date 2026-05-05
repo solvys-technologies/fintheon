@@ -151,6 +151,26 @@ git push origin "v$VERSION"
 gh release create "v$VERSION" --generate-notes --title "v$VERSION"
 ```
 
+### 2e2. Build and Upload DMG to Release (MANDATORY)
+
+The DMG is what the in-app updater and `fintheon update` CLI download. Without it, every user sees "Release DMG download failed" and falls back to a full source rebuild. This step runs after the GitHub release is created.
+
+```bash
+# Build the DMG
+bun run desktop:build
+
+# Upload to the release
+gh release upload "v$VERSION" desktop-dist/Fintheon-*-arm64.dmg --repo solvys-technologies/fintheon --clobber
+
+# Copy to Desktop (TP installs from there)
+find ~/Desktop -maxdepth 1 -name "Fintheon-*.dmg" -type f -delete
+cp desktop-dist/Fintheon-*-arm64.dmg ~/Desktop/
+```
+
+- FAIL if `desktop:build` fails (report, do not continue)
+- FAIL if the DMG upload fails (the release is incomplete without it)
+- WARN if Desktop copy fails (non-blocking; DMG is still on the release)
+
 ### 2f. Prune older releases in the current major-version namespace
 
 Keep exactly one GH release per major version. Extract the major from `$VERSION` and `gh release delete` every other release whose tag starts with that prefix:

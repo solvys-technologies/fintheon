@@ -508,6 +508,12 @@ export function TopHeader({
               </span>
             </button>
           )}
+          {traderName && compactLevel < 1 && (
+            <TraderNametag
+              name={traderName}
+              disablePulse={!(alertConfig.nametagEmoPulse ?? true)}
+            />
+          )}
           {compactLevel < 1 && (
             <FluxerCallWidget />
           )}
@@ -529,20 +535,22 @@ export function TopHeader({
               )}
             </button>
           )}
-          <button
-            onClick={handleQuickClock}
-            className={`toolbar-icon-btn ${quickClockPulse ? "toolbar-active" : ""}`}
-            title="Quick clock antilag"
-          >
-            <Zap className="w-3 h-3" />
-          </button>
-          {voiceRoomWidget}
+          {compactLevel < 2 && (
+            <button
+              onClick={handleQuickClock}
+              className={`toolbar-icon-btn ${quickClockPulse ? "toolbar-active" : ""}`}
+              title="Quick clock antilag"
+            >
+              <Zap className="w-3 h-3" />
+            </button>
+          )}
+          {compactLevel < 2 && voiceRoomWidget}
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 lg:gap-3 min-w-0 flex-shrink">
+      <div className="flex items-center gap-1.5 lg:gap-3 min-w-0 shrink-0">
         <div className="flex items-center gap-2 flex-shrink-0">
-          <WhatsNewButton />
+          {compactLevel < 1 && <WhatsNewButton />}
           {psychAssistHeadingWidget}
           {econCountdownWidget}
           {activeTab === "performance" && performanceChatWidget}
@@ -691,7 +699,9 @@ export function TopHeader({
           )}
           <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-2.5 h-7 flex items-center flex-shrink-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-[9px] text-gray-500">VIX</span>
+              {compactLevel < 2 && (
+                <span className="text-[9px] text-gray-500">VIX</span>
+              )}
               <span className="text-xs font-mono text-gray-300">
                 {ivData ? ivData.vix.level.toFixed(2) : "--"}
               </span>

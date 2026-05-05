@@ -31,20 +31,40 @@ mkdir -p "$USER_DATA"
   sleep 1
 
   # Download via authenticated gh CLI (private repo)
+  DOWNLOAD_OK=false
   if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
     echo "downloading $DMG_NAME"
-    gh release download "$TAG" \
+    if gh release download "$TAG" \
       --repo solvys-technologies/fintheon \
       --pattern "$DMG_NAME" \
       --output "$DMG_LOCAL" \
-      --clobber
+      --clobber 2>/dev/null; then
+      DOWNLOAD_OK=true
+      echo "downloaded $DMG_NAME"
+    else
+      echo "gh release download failed — will rebuild locally"
+    fi
   else
-    echo "gh CLI not authed — aborting (no public download URL for private repo)"
-    exit 1
+    echo "gh CLI not authed — will rebuild locally"
+  fi
+
+  # Fallback: rebuild DMG from source if download failed or no DMG
+  if [[ "$DOWNLOAD_OK" != "true" ]] || [[ ! -f "$DMG_LOCAL" ]]; then
+    /bin/rm -f "$DMG_LOCAL" 2>/dev/null || true
+    FINTHEON_ROOT="$(dirname "$(dirname "$(realpath "$0")")")"
+    echo "rebuilding DMG from source at $FINTHEON_ROOT"
+    cd "$FINTHEON_ROOT"
+    if npm run desktop:build >/tmp/fintheon-install-update-dmg.log 2>&1; then
+      echo "DMG rebuilt"
+      DMG_LOCAL=$(ls -t "$FINTHEON_ROOT/desktop-dist"/Fintheon-*-${DMG_SUFFIX}.dmg 2>/dev/null | head -1)
+    else
+      echo "DMG rebuild failed — see /tmp/fintheon-install-update-dmg.log"
+      tail -20 /tmp/fintheon-install-update-dmg.log
+    fi
   fi
 
   if [[ ! -f "$DMG_LOCAL" ]]; then
-    echo "DMG download missing at $DMG_LOCAL"
+    echo "DMG not available at $DMG_LOCAL after download + rebuild attempts"
     exit 1
   fi
 
