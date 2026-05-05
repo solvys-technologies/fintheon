@@ -149,7 +149,7 @@ function parseAuthAccountsFromJson(raw: string): XLoginCredential[] {
               : typeof obj.x_alt_email === "string"
                 ? obj.x_alt_email.trim()
                 : "";
-        const loginIdentity = email || username;
+        const loginIdentity = username || email;
         if (!loginIdentity || !password) return null;
         const labelRaw =
           typeof obj.label === "string"
