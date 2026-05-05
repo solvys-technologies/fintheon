@@ -1059,6 +1059,29 @@ async function fetchSyndicationTweets(
     cleanHandle,
   )}?language=en`;
 
+  // Try direct HTTP fetch first (faster, no browser needed)
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent": USER_AGENT,
+        Accept: "text/html,application/xhtml+xml",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+    });
+    clearTimeout(timer);
+    if (res.ok) {
+      const html = await res.text();
+      const tweets = parseSyndicationHtml(html, cleanHandle);
+      if (tweets.length > 0) return tweets;
+    }
+  } catch {
+    clearTimeout(timer);
+  }
+
+  // Fall back to browser-based fetch
   try {
     const result = await browseRead({
       url,
@@ -1082,26 +1105,6 @@ async function fetchSyndicationTweets(
     );
   }
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": USER_AGENT,
-        Accept: "text/html,application/xhtml+xml",
-        "Accept-Language": "en-US,en;q=0.9",
-      },
-    });
-    clearTimeout(timer);
-    if (res.ok) {
-      const html = await res.text();
-      return parseSyndicationHtml(html, cleanHandle);
-    }
-  } catch {
-    clearTimeout(timer);
-  }
-
   return [];
 }
 
@@ -1123,16 +1126,16 @@ async function fetchXActionsTweets(
   }));
 }
 
-/** Collect tweets for a single handle via XActions API (primary) + syndication fallback. */
+/** Collect tweets for a single handle via syndication (primary, no auth) + XActions fallback. */
 async function collectTweetsViaApi(
   cleanHandle: string,
 ): Promise<ExtractedTweet[]> {
-  // Try XActions first (worked for 66 items — auth tokens from env)
-  const xa = await fetchXActionsTweets(cleanHandle);
-  if (xa.length > 0) return xa;
+  // Try syndication first (fast, no auth needed for public tweets)
+  const synd = await fetchSyndicationTweets(cleanHandle);
+  if (synd.length > 0) return synd;
 
-  // Fall back to syndication (browser-based, less reliable)
-  return fetchSyndicationTweets(cleanHandle);
+  // Fall back to XActions API (requires XACTIONS_API_BASE in env)
+  return fetchXActionsTweets(cleanHandle);
 }
 
 // ── Unified collector ──
