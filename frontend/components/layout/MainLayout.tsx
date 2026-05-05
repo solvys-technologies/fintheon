@@ -1,5 +1,5 @@
+// [claude-code 2026-05-05] Strategium mirror: main content now has full 4-sided border + rounding (border-r + rounded-r-2xl) and Strategium uses bg-surface (lighter) so right-side rounded corners show the same floating-below effect as the left sidebar.
 // [claude-code 2026-05-05] Shell resiliency + polish: overflow-safe root container and rounded Strategium housing aligned with sidebar visual language.
-// [claude-code 2026-05-01] v6.0.5: main content wrapper strokes top/left/bottom only, rounded-tl-2xl rounded-bl-2xl, border opacity /20, right edge open to Strategium
 // [claude-code 2026-03-11] Track 4: MC overhaul — no Panels header, collapse in MC header, 50/50 flex, gear menu
 // [claude-code 2026-03-11] T3d: removed auto-enable from platform dropdown — power controlled via dedicated button only
 // [claude-code 2026-03-20] S3:T4c: Linked Strategium ↔ RiskFlow collapse — both expand/collapse together
@@ -735,7 +735,7 @@ function MainLayoutInner() {
               : "w-[min(380px,42vw)] opacity-100"
           }`}
         >
-          <div className="flex-1 min-h-0 flex flex-col bg-[var(--fintheon-bg)] border-y border-r border-[var(--fintheon-accent)]/20 rounded-tr-2xl rounded-br-2xl">
+          <div className="flex-1 min-h-0 flex flex-col bg-[var(--fintheon-surface)] border-y border-r border-[var(--fintheon-accent)]/20 rounded-tr-2xl rounded-br-2xl">
             {/* Widgets pane — shown in balanced + widgetsOnly.
                   [claude-code 2026-04-24] min-h-0 is CRITICAL in widgetsOnly:
                   without it, flex-1 + inner content force the pane taller than
@@ -919,14 +919,10 @@ function MainLayoutInner() {
             {leftPanels.length > 0 && <div className="flex">{leftPanels}</div>}
 
             {/* Center Content - TopStepX or Main Content with crossfade
-                [claude-code 2026-04-30] S56-shell: stripped rounded-l + border-l so
-                the sidebar surface flows continuously into main content with no
-                corner triangles. border-y kept to delineate from header/footer.
-                [claude-code 2026-05-01] rounded-l-2xl restored — top-left and
-                bottom-left corners need a soft radius against the sidebar.
-                [claude-code 2026-05-01] Gold hairline now wraps top/left/bottom
-                of main content (no right edge — that side meets Strategium). */}
-            <div className="z-10 flex-1 overflow-hidden relative min-w-0 flex flex-col border-t border-b border-l border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] rounded-tl-2xl rounded-bl-2xl">
+                Full 4-sided gold hairline border + rounded corners so the main
+                content floats above both the left sidebar and the right Strategium
+                (which use bg-surface, lighter than the main content's bg-bg). */}
+            <div className="z-10 flex-1 overflow-hidden relative min-w-0 flex flex-col border-t border-b border-l border-r border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] rounded-tl-2xl rounded-bl-2xl rounded-tr-2xl rounded-br-2xl">
               {/* Timeline overlay — slides over browser, does not affect iframe sizing */}
               <TimelineOverlay
                 open={timelineOverlayOpen}
