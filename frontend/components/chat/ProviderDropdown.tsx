@@ -1,32 +1,55 @@
-// [claude-code 2026-05-03] S58 deploy fix: make DeepSeek selectable/visible and migrate stale VProxy defaults to DeepSeek.
-// [claude-code 2026-05-03] S58-T2: add DeepSeek Direct and OC API provider modes with key-status hints.
-// [claude-code 2026-04-07] Harper provider selector — Local / Nous / ORouter
+// [claude-code 2026-05-03] S38-T5: Provider Dropdown v2 — 3 providers, RECOMMENDED badge, flat palette, API key hints.
 import { useState, useRef, useEffect } from "react";
 import { Cpu, Cloud, Server } from "lucide-react";
 
-export type HarperProvider =
-  | "deepseek-direct"
-  | "deepseek-oc-api"
-  | "local"
-  | "nous"
-  | "orouter";
+/* ─────────────────────────────────────────────────────── HarperProvider ── */
 
-const PROVIDERS: {
+export type HarperProvider = "deepseek-direct" | "nous" | "opencode-go";
+
+/* ─────────────────────────────────────────────────────── Provider Definitions ── */
+
+interface ProviderDef {
   id: HarperProvider;
   label: string;
+  model: string;
   sub: string;
   icon: typeof Cpu;
-}[] = [
-  { id: "deepseek-direct", label: "DeepSeek", sub: "Direct", icon: Cloud },
-  { id: "deepseek-oc-api", label: "DeepSeek", sub: "OC API", icon: Server },
-  { id: "local", label: "VProxy", sub: "Local", icon: Cpu },
-  { id: "nous", label: "Nous", sub: "Qwen3", icon: Server },
-  { id: "orouter", label: "ORouter", sub: "Opus", icon: Cloud },
+  managed: boolean; // managed = no personal API key needed
+}
+
+const PROVIDERS: ProviderDef[] = [
+  {
+    id: "deepseek-direct",
+    label: "DeepSeek v4 Pro",
+    model: "DeepSeek v4 Pro",
+    sub: "Direct",
+    icon: Cloud,
+    managed: false,
+  },
+  {
+    id: "nous",
+    label: "Qwen 3.6",
+    model: "Qwen 3.6",
+    sub: "via Nous",
+    icon: Server,
+    managed: true,
+  },
+  {
+    id: "opencode-go",
+    label: "User Selected Model",
+    model: "Custom",
+    sub: "via Opencode Go",
+    icon: Cpu,
+    managed: false,
+  },
 ];
+
+/* ─────────────────────────────────────────────────────── Storage Keys ── */
 
 const STORAGE_KEY = "fintheon:harper-provider";
 const DEEPSEEK_KEY_STATUS = "fintheon:deepseek-key-status";
 const OC_API_KEY_STATUS = "fintheon:opencode-go-key-status";
+
 function hasCachedKey(storageKey: string) {
   try {
     return localStorage.getItem(storageKey) === "set";
@@ -35,27 +58,39 @@ function hasCachedKey(storageKey: string) {
   }
 }
 
+/* ─────────────────────────────────────────────────────── Dot Color ── */
+
+function getDotColor(provider: HarperProvider): string {
+  if (provider === "nous") return "#22c55e"; // always ready (managed)
+  if (provider === "deepseek-direct")
+    return hasCachedKey(DEEPSEEK_KEY_STATUS) ? "#22c55e" : "#ca8a04";
+  if (provider === "opencode-go")
+    return hasCachedKey(OC_API_KEY_STATUS) ? "#22c55e" : "#ca8a04";
+  return "#9ca3af"; // grey fallback
+}
+
+/* ─────────────────────────────────────────────────────── Normalization ── */
+
 function normalizeProvider(raw: string | null): HarperProvider {
-  if (raw === "deepseek-direct" || raw === "deepseek-oc-api") return raw;
-  if (raw === "nous" || raw === "orouter" || raw === "local") return raw;
-  return "deepseek-direct";
+  if (raw === "deepseek-direct" || raw === "nous" || raw === "opencode-go")
+    return raw;
+  // migrate stale/unknown values → recommended default
+  return "nous";
 }
 
 function initialProvider(): HarperProvider {
   try {
-    const saved = normalizeProvider(localStorage.getItem(STORAGE_KEY));
-    if (saved === "local" || saved === "orouter") {
-      localStorage.setItem(STORAGE_KEY, "deepseek-direct");
-      return "deepseek-direct";
-    }
-    return saved;
+    return normalizeProvider(localStorage.getItem(STORAGE_KEY));
   } catch {
-    return "deepseek-direct";
+    return "nous";
   }
 }
 
+/* ─────────────────────────────────────────────────────── Hook ── */
+
 export function useHarperProvider() {
-  const [provider, setProviderState] = useState<HarperProvider>(initialProvider);
+  const [provider, setProviderState] =
+    useState<HarperProvider>(initialProvider);
 
   const setProvider = (p: HarperProvider) => {
     setProviderState(p);
@@ -68,6 +103,8 @@ export function useHarperProvider() {
 
   return { provider, setProvider };
 }
+
+/* ─────────────────────────────────────────────────────── Component ── */
 
 interface ProviderDropdownProps {
   provider: HarperProvider;
@@ -83,6 +120,7 @@ export function ProviderDropdown({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
+  // close on outside click
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -93,53 +131,103 @@ export function ProviderDropdown({
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  const current = PROVIDERS.find((p) => p.id === provider) ?? PROVIDERS[0];
+  const current = PROVIDERS.find((p) => p.id === provider) ?? PROVIDERS[1];
   const Icon = current.icon;
-  const missingHint =
+  const dotColor = getDotColor(provider);
+
+  const keyMissingHint =
     provider === "deepseek-direct" && !hasCachedKey(DEEPSEEK_KEY_STATUS)
       ? "Set API key in Settings"
-      : provider === "deepseek-oc-api" && !hasCachedKey(OC_API_KEY_STATUS)
-        ? "Configure OpenCode Go API in Settings"
+      : provider === "opencode-go" && !hasCachedKey(OC_API_KEY_STATUS)
+        ? "Set API key in Settings"
         : null;
+
+  const openSettings = () => {
+    window.dispatchEvent(new CustomEvent("fintheon:open-settings-api"));
+  };
 
   return (
     <div ref={ref} className="relative">
+      {/* ── Trigger row ── */}
       <div className="flex items-center gap-1.5">
         <button
           onClick={() => setOpen((v) => !v)}
-          className={`flex items-center gap-1.5 rounded-lg border border-[var(--fintheon-accent)]/20 hover:border-[var(--fintheon-accent)]/40 transition-colors ${
+          className={`flex items-center gap-1.5 rounded-lg border transition-colors ${
             compact ? "px-1.5 py-1" : "px-2 py-1"
           }`}
-          title={`Provider: ${current.label} (${current.sub})`}
+          style={{
+            borderColor: "rgba(199, 159, 74, 0.2)",
+            color: "#f0ead6",
+          }}
+          title={`Provider: ${current.label} (${current.model})`}
         >
-          <Icon className="w-3 h-3 text-[var(--fintheon-accent)]/70" />
-          <span className={compact ? "sr-only" : "text-[11px] text-[var(--fintheon-text)]/80"}>
-            {current.label}
-          </span>
+          {/* colored status dot */}
+          <span
+            className="inline-block w-2 h-2 rounded-full shrink-0"
+            style={{ backgroundColor: dotColor }}
+          />
+
           {!compact && (
-            <span className="text-[10px] text-[var(--fintheon-text)]/45">
-              {current.sub}
-            </span>
+            <>
+              <span
+                style={{
+                  fontSize: "11px",
+                  color: "rgba(240, 234, 214, 0.8)",
+                }}
+              >
+                {current.label}
+              </span>
+              <span
+                style={{
+                  fontSize: "10px",
+                  color: "rgba(240, 234, 214, 0.45)",
+                }}
+              >
+                {current.model}
+              </span>
+            </>
           )}
         </button>
-        {!compact && missingHint && (
-          <span className="max-w-[140px] truncate text-[10px] text-[var(--fintheon-accent)]/70">
-            {missingHint}
+
+        {/* inline key-missing hint next to trigger */}
+        {!compact && keyMissingHint && (
+          <span
+            role="button"
+            tabIndex={0}
+            className="max-w-[140px] truncate cursor-pointer"
+            style={{ fontSize: "10px", color: "rgba(199, 159, 74, 0.7)" }}
+            onClick={openSettings}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") openSettings();
+            }}
+          >
+            {keyMissingHint}
           </span>
         )}
       </div>
 
+      {/* ── Expanded dropdown ── */}
       {open && (
         <div
-          className="absolute bottom-full mb-1 left-0 min-w-[140px] rounded-xl border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)] shadow-2xl overflow-hidden z-50"
+          className="absolute bottom-full mb-1 left-0 min-w-[220px] rounded-xl border overflow-hidden z-50"
           style={{
-            backdropFilter: "blur(40px) saturate(180%)",
-            WebkitBackdropFilter: "blur(40px) saturate(180%)",
+            backgroundColor: "#050402",
+            borderColor: "rgba(199, 159, 74, 0.3)",
+            boxShadow: "0 4px 24px rgba(0, 0, 0, 0.6)",
           }}
         >
-          {PROVIDERS.map((p) => {
+          {PROVIDERS.map((p, i) => {
             const PIcon = p.icon;
             const active = p.id === provider;
+            const pDotColor = getDotColor(p.id);
+            const pKeyMissing =
+              !p.managed &&
+              !hasCachedKey(
+                p.id === "deepseek-direct"
+                  ? DEEPSEEK_KEY_STATUS
+                  : OC_API_KEY_STATUS,
+              );
+
             return (
               <button
                 key={p.id}
@@ -147,29 +235,73 @@ export function ProviderDropdown({
                   onChange(p.id);
                   setOpen(false);
                 }}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors ${
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors ${
+                  i < PROVIDERS.length - 1
+                    ? "border-b border-[rgba(199,159,74,0.08)]"
+                    : ""
+                } ${
                   active
-                    ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
-                    : "text-[var(--fintheon-text)]/60 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/80"
+                    ? "bg-[rgba(199,159,74,0.1)] text-[#c79f4a]"
+                    : "text-[rgba(240,234,214,0.6)] hover:bg-[rgba(199,159,74,0.05)] hover:text-[rgba(240,234,214,0.8)]"
                 }`}
               >
-                <PIcon className="w-3.5 h-3.5 flex-shrink-0" />
-                <div className="flex flex-col">
-                  <span className="text-xs font-medium">{p.label}</span>
-                  <span className="text-[9px] opacity-60">{p.sub}</span>
-                  {p.id === "deepseek-direct" &&
-                    !hasCachedKey(DEEPSEEK_KEY_STATUS) && (
-                      <span className="text-[9px] text-[var(--fintheon-accent)]/70">
-                        Set API key in Settings
+                <PIcon className="w-3.5 h-3.5 shrink-0" />
+
+                <div className="flex flex-col flex-1 min-w-0">
+                  {/* label row */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-medium">{p.label}</span>
+
+                    {p.id === "nous" && (
+                      <span
+                        className="inline-flex items-center px-1.5 py-0.5 rounded-full font-semibold leading-none"
+                        style={{
+                          fontSize: "10px",
+                          backgroundColor: "rgba(199, 159, 74, 0.15)",
+                          color: "#c79f4a",
+                        }}
+                      >
+                        RECOMMENDED
                       </span>
                     )}
-                  {p.id === "deepseek-oc-api" &&
-                    !hasCachedKey(OC_API_KEY_STATUS) && (
-                      <span className="text-[9px] text-[var(--fintheon-accent)]/70">
-                        Configure OpenCode Go API in Settings
-                      </span>
-                    )}
+                  </div>
+
+                  {/* model name */}
+                  <span style={{ fontSize: "9px", opacity: 0.6 }}>
+                    {p.model}
+                  </span>
+
+                  {/* key-missing hint inside item */}
+                  {pKeyMissing && (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      className="cursor-pointer mt-0.5"
+                      style={{
+                        fontSize: "9px",
+                        color: "rgba(199, 159, 74, 0.7)",
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openSettings();
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.stopPropagation();
+                          openSettings();
+                        }
+                      }}
+                    >
+                      Set API key in Settings
+                    </span>
+                  )}
                 </div>
+
+                {/* status dot (right-aligned) */}
+                <span
+                  className="inline-block w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: pDotColor }}
+                />
               </button>
             );
           })}

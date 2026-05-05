@@ -144,6 +144,13 @@ export interface PromptBoxProps {
   headlineChips?: HeadlineChip[];
   onHeadlineToggle?: (chip: HeadlineChip) => void;
   onHeadlineClear?: () => void;
+  // S38-T1: Plan mode slot (clipboard icon) and history navigation
+  planSlot?: React.ReactNode;
+  recallText?: string | null;
+  onRecallConsumed?: () => void;
+  onHistoryUp?: () => void;
+  onHistoryDown?: () => void;
+  onHistoryEscape?: () => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -182,6 +189,12 @@ export function PromptBox({
   onHeadlineToggle,
   onHeadlineClear,
   hideThinkHarder,
+  planSlot,
+  recallText,
+  onRecallConsumed,
+  onHistoryUp,
+  onHistoryDown,
+  onHistoryEscape,
 }: PromptBoxProps) {
   const [text, setText] = useState("");
   const [images, setImages] = useState<string[]>([]);
@@ -218,6 +231,14 @@ export function PromptBox({
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, compact ? 100 : 160)}px`;
   }, [text, compact]);
+
+  /* S38-T1: Sync recalled history text into textarea */
+  useEffect(() => {
+    if (recallText !== null && recallText !== undefined) {
+      setText(recallText);
+      onRecallConsumed?.();
+    }
+  }, [recallText]);
 
   /* Full-size image dialog */
   useEffect(() => {
@@ -268,6 +289,19 @@ export function PromptBox({
         onStop();
       }
       lastSpaceRef.current = now;
+    }
+    // S38-T1: Arrow history navigation
+    if (e.key === "ArrowUp" && !text.trim() && onHistoryUp) {
+      e.preventDefault();
+      onHistoryUp();
+    }
+    if (e.key === "ArrowDown" && onHistoryDown) {
+      e.preventDefault();
+      onHistoryDown();
+    }
+    if (e.key === "Escape" && onHistoryEscape) {
+      e.preventDefault();
+      onHistoryEscape();
     }
   };
 
@@ -589,6 +623,9 @@ export function PromptBox({
             <div className="flex items-center gap-1">
               {/* Relay dispatch (leftmost) — S21-T1 */}
               {relaySlot}
+
+              {/* Plan mode toggle — S38-T1 */}
+              {planSlot}
 
               {/* Attach */}
               <button

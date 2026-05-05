@@ -1,7 +1,6 @@
 // [claude-code 2026-03-29] S9-T5: Replace checkpoint sidebar with real conversation history, Take Note button
 // [claude-code 2026-03-28] S8-T7: Dual-pane layout (left=conversation, right=artifacts) for Chat
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X, Layers } from "lucide-react";
 import {
   AssistantRuntimeProvider,
   useThread,
@@ -12,6 +11,10 @@ import { useHermesRuntime } from "./chat/useHermesRuntime";
 import { ChatHeader } from "./chat/ChatHeader";
 import { FintheonThread, AiLoader } from "./chat/FintheonThread";
 import { FintheonComposer } from "./chat/FintheonComposer";
+import { ArtifactPane } from "./chat/ArtifactPane";
+import type { ArtifactPaneProps } from "./chat/ArtifactPane";
+import type { Citation } from "./chat/CitationChip";
+import type { ActivityEntry } from "./chat/AgentActivityRail";
 import { SKILL_PREFIXES } from "../lib/skillPrefixes";
 import QuickFintheonModal from "./analysis/QuickFintheonModal";
 import { useFeatureFlags } from "../hooks/useFeatureFlags";
@@ -46,6 +49,25 @@ function ChatInterfaceInner({
   const { disabledSkills } = useFeatureFlags();
   const [showQuickFintheonModal] = useState(false);
   const [showArtifacts, setShowArtifacts] = useState(false);
+
+  /* S38-T2: Artifact pane config — routes to correct sub-pane type */
+  const [artifactConfig, setArtifactConfig] = useState<{
+    artifactType: ArtifactPaneProps["artifactType"];
+    tradingViewConfig?: { symbol: string; timeframe?: string };
+    browserSessionId?: string;
+    browserStatus?: "starting" | "active" | "closed";
+    reportHtml?: string;
+    citationSource?: { title: string; url?: string; content?: string };
+    narrativeCanvasId?: string;
+  } | null>(null);
+
+  /* S38-T2: Dummy activity entries + citation state to pass through */
+  const [activityEntries] = useState<ActivityEntry[]>([]);
+  const [citations] = useState<Citation[]>([]);
+  const [pinnedCitationIndex, setPinnedCitationIndex] = useState<
+    number | undefined
+  >(undefined);
+
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const handleSend = useCallback(
@@ -93,6 +115,27 @@ function ChatInterfaceInner({
     window.addEventListener("fintheon:send-chat-text", handler);
     return () => window.removeEventListener("fintheon:send-chat-text", handler);
   }, [handleSend]);
+
+  /* S38-T2: Pin a citation → opens artifact pane with type="citation" */
+  const handlePinCitation = useCallback((citation: Citation) => {
+    setPinnedCitationIndex(citation.index);
+    setArtifactConfig({
+      artifactType: "citation",
+      citationSource: {
+        title: citation.title,
+        url: citation.sourceId,
+        content: citation.excerpt,
+      },
+    });
+    setShowArtifacts(true);
+  }, []);
+
+  /* S38-T2: Close artifact pane */
+  const handleCloseArtifact = useCallback(() => {
+    setShowArtifacts(false);
+    setArtifactConfig(null);
+    setPinnedCitationIndex(undefined);
+  }, []);
 
   const handleNewChat = useCallback(() => {
     clearConversationId();
@@ -144,6 +187,10 @@ function ChatInterfaceInner({
             messageRefs={messageRefs}
             lastError={lastError}
             lastRequestId={lastRequestId}
+            activityEntries={activityEntries}
+            citations={citations}
+            onPinCitation={handlePinCitation}
+            pinnedCitationIndex={pinnedCitationIndex}
           />
           {/* Subtle fade above composer — matches Boardroom style */}
           <div
@@ -170,29 +217,19 @@ function ChatInterfaceInner({
           </div>
         </div>
 
-        {/* Preview pane — right side, only in dual-pane mode (Chat main) */}
-        {dualPane && showArtifacts && (
-          <div className="flex-shrink-0 w-96 border-l border-[var(--fintheon-accent)]/15 transition-[width] duration-[240ms] ease-in-out overflow-hidden">
-            <div className="w-96 h-full flex flex-col bg-[var(--fintheon-surface)]">
-              <div className="h-14 border-b border-[var(--fintheon-accent)]/15 flex items-center justify-between px-4">
-                <div className="flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-[var(--fintheon-accent)]" />
-                  <h2 className="text-sm font-semibold text-[var(--fintheon-accent)] tracking-wide">
-                    Preview
-                  </h2>
-                </div>
-                <button
-                  onClick={() => setShowArtifacts(false)}
-                  className="p-1.5 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
-                >
-                  <X className="w-4 h-4 text-[var(--fintheon-accent)]/70" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto px-4 py-4">
-                {/* Preview content renders here when Harper creates artifacts */}
-              </div>
-            </div>
-          </div>
+        {/* S38-T2: Artifact pane — right side, only in dual-pane mode (Chat main) */}
+        {dualPane && showArtifacts && artifactConfig && (
+          <ArtifactPane
+            artifactType={artifactConfig.artifactType}
+            tradingViewConfig={artifactConfig.tradingViewConfig}
+            browserSessionId={artifactConfig.browserSessionId}
+            browserStatus={artifactConfig.browserStatus}
+            reportHtml={artifactConfig.reportHtml}
+            citationSource={artifactConfig.citationSource}
+            narrativeCanvasId={artifactConfig.narrativeCanvasId}
+            onClose={handleCloseArtifact}
+            variant="pane"
+          />
         )}
       </div>
 

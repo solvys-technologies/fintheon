@@ -1,3 +1,4 @@
+// [claude-code 2026-05-05] Shell resiliency + polish: overflow-safe root container and rounded Strategium housing aligned with sidebar visual language.
 // [claude-code 2026-05-01] v6.0.5: main content wrapper strokes top/left/bottom only, rounded-tl-2xl rounded-bl-2xl, border opacity /20, right edge open to Strategium
 // [claude-code 2026-03-11] Track 4: MC overhaul — no Panels header, collapse in MC header, 50/50 flex, gear menu
 // [claude-code 2026-03-11] T3d: removed auto-enable from platform dropdown — power controlled via dedicated button only
@@ -64,7 +65,6 @@ import { YouTubeMiniplayer } from "./YouTubeMiniplayer";
 // [claude-code 2026-04-03] S14-T6: Removed PeerCarousel + PeerOnboarding — team status now in footer panel
 // TeamOnboarding re-wired into TeamPanel behind auth gate (2026-04-11)
 // [claude-code 2026-04-12] VoiceWidget removed — voice now lives inside Fluxer embed in Consilium
-import { EPOCH_VERSION } from "../../lib/epoch-version";
 import {
   DEFAULT_MISSION_WIDGET_ORDER,
   getMissionWidgetOrder,
@@ -153,6 +153,10 @@ export function MainLayout() {
   );
 }
 
+// Responsive tier breakpoints for progressive shell compaction
+const COMPACT_MODERATE_BP = 1280;
+const COMPACT_SEVERE_BP = 1060;
+
 // Main layout component - no authentication needed
 function MainLayoutInner() {
   const { iframeUrls, defaultLayout, defaultPlatform, developerSettings } =
@@ -161,6 +165,21 @@ function MainLayoutInner() {
   const isStone = theme.name === "solvys-stone";
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
   const [activeTab, setActiveTab] = useState<NavTab>(() => readLastRoute());
+
+  // [claude-code 2026-05-05] Tiered responsive compaction — MainLayout owns
+  // the viewport-width state and passes compactLevel (0/1/2) to children so
+  // each surface can progressively shed non-essential chrome.
+  const [viewportWidth, setViewportWidth] = useState(() =>
+    typeof window === "undefined" ? 1600 : window.innerWidth,
+  );
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  const compactLevel: 0 | 1 | 2 =
+    viewportWidth < COMPACT_SEVERE_BP ? 2 : viewportWidth < COMPACT_MODERATE_BP ? 1 : 0;
 
   const {
     topStepXEnabled,
@@ -633,7 +652,7 @@ function MainLayoutInner() {
       rightPanels.push(
         <div
           key="combined"
-          className={`bg-[var(--fintheon-surface)] border-l border-[var(--fintheon-accent)]/10 transition-all duration-200 ${combinedPanelCollapsed ? "w-16" : "w-[380px]"}`}
+          className={`bg-[var(--fintheon-bg)] border-y border-r border-[var(--fintheon-accent)]/20 rounded-tr-2xl rounded-br-2xl transition-all duration-200 ${combinedPanelCollapsed ? "w-16" : "w-[min(380px,42vw)]"}`}
         >
           <div className="h-full flex flex-col">
             {combinedPanelCollapsed && (
@@ -713,10 +732,10 @@ function MainLayoutInner() {
           className={`h-full flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${
             missionControlCollapsed
               ? "w-0 opacity-0 pointer-events-none invisible"
-              : "w-[380px] opacity-100"
+              : "w-[min(380px,42vw)] opacity-100"
           }`}
         >
-          <div className="flex-1 min-h-0 flex flex-col" style={{ width: 380 }}>
+          <div className="flex-1 min-h-0 flex flex-col bg-[var(--fintheon-bg)] border-y border-r border-[var(--fintheon-accent)]/20 rounded-tr-2xl rounded-br-2xl">
             {/* Widgets pane — shown in balanced + widgetsOnly.
                   [claude-code 2026-04-24] min-h-0 is CRITICAL in widgetsOnly:
                   without it, flex-1 + inner content force the pane taller than
@@ -804,7 +823,7 @@ function MainLayoutInner() {
     <ScheduleProvider>
       <YouTubeMiniplayerProvider>
         <div
-          className={`h-screen flex flex-col bg-[var(--fintheon-bg)] text-white ${topStepXEnabled ? "topstepx-active" : ""}`}
+          className={`h-screen w-full overflow-hidden flex flex-col bg-[var(--fintheon-bg)] text-white ${topStepXEnabled ? "topstepx-active" : ""}`}
         >
           {/* [claude-code 2026-04-24] Standalone waveform overlay — no border, no
             background. Doubles as user-mic indicator (when listening) and agent
@@ -857,6 +876,7 @@ function MainLayoutInner() {
                 />
               ) : undefined
             }
+            compactLevel={compactLevel}
             /* [claude-code 2026-04-24] performanceChatWidget removed — orb is
              the only voice trigger now. */
           />
@@ -1030,6 +1050,7 @@ function MainLayoutInner() {
           <SessionCountdownWidget />
 
           <FooterToolbar
+            compactLevel={compactLevel}
             topStepXEnabled={topStepXEnabled}
             primaryPlatform={selectedPlatform}
             onPrimaryPlatformChange={setSelectedPlatform}

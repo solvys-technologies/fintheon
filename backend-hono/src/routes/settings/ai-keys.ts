@@ -1,15 +1,30 @@
 // [claude-code 2026-05-03] S58-T1: DeepSeek BYOK settings endpoints.
+// [claude-code 2026-05-05] Expand to provider-scoped key reads/writes
+// for deepseek + opencode-go so personal provider selection can hydrate keys.
 import { Hono } from "hono";
 import { z } from "zod";
 import { getSupabaseClient, isSupabaseConfigured } from "../../config/supabase.js";
 import { decryptApiKey, encryptApiKey, maskApiKey } from "../../services/ai/api-key-crypto.js";
 
-const ProviderSchema = z.literal("deepseek");
+const ProviderSchema = z.enum(["deepseek", "opencode-go"]);
 const UpsertKeySchema = z.object({
   provider: ProviderSchema.default("deepseek"),
   apiKey: z.string().trim().min(10).max(4096),
   keyLabel: z.string().trim().max(80).optional(),
 });
+
+function defaultKeyLabel(provider: z.infer<typeof ProviderSchema>): string {
+  if (provider === "opencode-go") return "OpenCode Go API key";
+  return "DeepSeek API key";
+}
+
+function resolveOpenCodeBaseUrl(): string {
+  const raw =
+    process.env.OPENCODE_GO_API_URL ||
+    process.env.HERMES_API_URL ||
+    "http://localhost:8317/v1";
+  return raw.replace(/\/$/, "");
+}
 
 function authedUserId(c: { get: (key: string) => unknown }): string | null {
   const userId = c.get("userId");
@@ -23,6 +38,61 @@ export function createAiKeysRoutes(): Hono {
     const userId = authedUserId(c);
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
     if (!isSupabaseConfigured()) return c.json({ error: "DB not configured" }, 500);
+
+    const providerQuery = c.req.query("provider");
+    if (providerQuery) {
+      const parsedProvider = ProviderSchema.safeParse(providerQuery);
+      if (!parsedProvider.success) {
+        return c.json({ error: "Unsupported provider" }, 400);
+      }
+      const provider = parsedProvider.data;
+      const sb = getSupabaseClient()!;
+      const { data, error } = await sb
+        .from("user_api_keys")
+        .select("provider, encrypted_key, key_label, created_at, updated_at")
+        .eq("user_id", userId)
+        .eq("provider", provider)
+        .maybeSingle();
+      if (error) return c.json({ error: error.message }, 500);
+      if (!data?.encrypted_key) {
+        return c.json({
+          provider,
+          hasKey: false,
+          maskedKey: null,
+          keyLabel: null,
+          apiKey: null,
+          ...(provider === "opencode-go"
+            ? { baseUrl: resolveOpenCodeBaseUrl() }
+            : {}),
+        });
+      }
+      try {
+        const apiKey = decryptApiKey(String(data.encrypted_key));
+        return c.json({
+          provider,
+          hasKey: true,
+          maskedKey: maskApiKey(apiKey),
+          keyLabel: data.key_label ?? defaultKeyLabel(provider),
+          apiKey,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+          ...(provider === "opencode-go"
+            ? { baseUrl: resolveOpenCodeBaseUrl() }
+            : {}),
+        });
+      } catch {
+        return c.json({
+          provider,
+          hasKey: false,
+          maskedKey: "unreadable",
+          keyLabel: data.key_label ?? defaultKeyLabel(provider),
+          apiKey: null,
+          ...(provider === "opencode-go"
+            ? { baseUrl: resolveOpenCodeBaseUrl() }
+            : {}),
+        });
+      }
+    }
 
     const sb = getSupabaseClient()!;
     const { data, error } = await sb
@@ -60,12 +130,27 @@ export function createAiKeysRoutes(): Hono {
 
     const now = new Date().toISOString();
     const sb = getSupabaseClient()!;
+    let encryptedKey: string;
+    try {
+      encryptedKey = encryptApiKey(parsed.data.apiKey);
+    } catch (error) {
+      return c.json(
+        {
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to encrypt API key",
+        },
+        500,
+      );
+    }
     const { error } = await sb.from("user_api_keys").upsert(
       {
         user_id: userId,
         provider: parsed.data.provider,
-        encrypted_key: encryptApiKey(parsed.data.apiKey),
-        key_label: parsed.data.keyLabel ?? "DeepSeek API key",
+        encrypted_key: encryptedKey,
+        key_label:
+          parsed.data.keyLabel ?? defaultKeyLabel(parsed.data.provider),
         updated_at: now,
       },
       { onConflict: "user_id,provider" },
@@ -79,8 +164,12 @@ export function createAiKeysRoutes(): Hono {
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
     if (!isSupabaseConfigured()) return c.json({ error: "DB not configured" }, 500);
 
-    const provider = c.req.query("provider") || "deepseek";
-    if (provider !== "deepseek") return c.json({ error: "Unsupported provider" }, 400);
+    const providerQuery = c.req.query("provider") || "deepseek";
+    const parsedProvider = ProviderSchema.safeParse(providerQuery);
+    if (!parsedProvider.success) {
+      return c.json({ error: "Unsupported provider" }, 400);
+    }
+    const provider = parsedProvider.data;
     const { error } = await getSupabaseClient()!
       .from("user_api_keys")
       .delete()

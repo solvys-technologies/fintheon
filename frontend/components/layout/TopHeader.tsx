@@ -1,3 +1,4 @@
+// [claude-code 2026-05-05] Responsive shell compaction: icon-only header dropdown triggers, context-aware panel-toggle visibility by layout mode, and nametag suppression at marginal widths.
 // [claude-code 2026-05-01] v6.0.5: removed toolbar's own border-t so it doesn't double-stroke the new MainContent top border
 // [claude-code 2026-03-03] Toolbar items reorderable via getToolbarOrder/setToolbarOrder.
 // [claude-code 2026-03-11] T2: IV score wired to backend /api/market-data/iv-score — replaces local quickIVScore
@@ -13,7 +14,6 @@ import { IVScoreCard } from "../IVScoreCard";
 import { useBackend } from "../../lib/backend";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useToast } from "../../contexts/ToastContext";
-import { isElectron } from "../../lib/platform";
 import {
   getToolbarOrder,
   setToolbarOrder,
@@ -28,6 +28,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Monitor,
+  Tv,
   MessageCircle,
   Power,
   Bell,
@@ -92,6 +93,7 @@ interface TopHeaderProps {
   performanceChatWidget?: React.ReactNode;
   econCountdownWidget?: React.ReactNode;
   toolbarEditMode?: boolean;
+  compactLevel?: 0 | 1 | 2;
 }
 
 export function TopHeader({
@@ -115,6 +117,7 @@ export function TopHeader({
   performanceChatWidget,
   econCountdownWidget,
   toolbarEditMode = false,
+  compactLevel = 0,
 }: TopHeaderProps) {
   const { tier } = useAuth();
   const backend = useBackend();
@@ -151,6 +154,11 @@ export function TopHeader({
   // [claude-code 2026-04-29] S53-T3: Econ watch health moved to FooterToolbar (S55)
   const totalBadgeCount = queueCount + serverUnread;
   const [quickClockPulse, setQuickClockPulse] = useState(false);
+  const panelToggleMode = topStepXEnabled
+    ? layoutOption === "tickers-only"
+      ? "hidden"
+      : "right-only"
+    : "full";
   const handleQuickClock = useCallback(async () => {
     const now = new Date();
     const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
@@ -446,21 +454,25 @@ export function TopHeader({
               header — now lives in the FooterToolbar desk-name slot. Leaves the instance
               name + time-of-day greeting. */}
           <div className="flex flex-col leading-tight">
-            <span className="text-[12px] font-semibold tracking-[0.22em] text-[var(--fintheon-accent)] uppercase">
-              {instanceName}
-            </span>
-            <span className="text-[9px] text-gray-600 italic hidden xl:block">
-              {(() => {
-                const h = new Date().getHours();
-                if (h < 12) return "Ave. The markets stir.";
-                if (h < 17) return "The Forum is active.";
-                return "The day's battles are done.";
-              })()}
-            </span>
+            {compactLevel < 2 && (
+              <span className="text-[12px] font-semibold tracking-[0.22em] text-[var(--fintheon-accent)] uppercase">
+                {instanceName}
+              </span>
+            )}
+            {compactLevel < 1 && (
+              <span className="text-[9px] text-gray-600 italic hidden xl:block">
+                {(() => {
+                  const h = new Date().getHours();
+                  if (h < 12) return "Ave. The markets stir.";
+                  if (h < 17) return "The Forum is active.";
+                  return "The day's battles are done.";
+                })()}
+              </span>
+            )}
           </div>
 
           {/* Breadcrumb navigation — back/forward + section name */}
-          {!topStepXEnabled && (
+          {!topStepXEnabled && compactLevel < 2 && (
             <div className="flex items-center gap-1 ml-2">
               <button
                 onClick={onBack}
@@ -478,27 +490,27 @@ export function TopHeader({
               >
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
-              <span className="text-[10px] tracking-[0.18em] uppercase text-gray-300 ml-2">
-                {TAB_LABELS[activeTab] || activeTab}
-              </span>
+              {compactLevel < 1 && (
+                <span className="text-[10px] tracking-[0.18em] uppercase text-gray-300 ml-2">
+                  {TAB_LABELS[activeTab] || activeTab}
+                </span>
+              )}
             </div>
           )}
 
-          <button
-            onClick={() => setShowUpgrade(true)}
-            className="relative bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg px-2.5 h-7 hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors cursor-pointer flex items-center hidden xl:flex"
-          >
-            <span className="text-[13px] text-gray-300">
-              {getTierDisplayName()}
-            </span>
-          </button>
-          {traderName && (
-            <TraderNametag
-              name={traderName}
-              disablePulse={!(alertConfig.nametagEmoPulse ?? true)}
-            />
+          {compactLevel < 1 && (
+            <button
+              onClick={() => setShowUpgrade(true)}
+              className="relative bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg px-2.5 h-7 hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors cursor-pointer flex items-center hidden xl:flex"
+            >
+              <span className="text-[13px] text-gray-300">
+                {getTierDisplayName()}
+              </span>
+            </button>
           )}
-          <FluxerCallWidget />
+          {compactLevel < 1 && (
+            <FluxerCallWidget />
+          )}
           {topStepXEnabled && (
             <button
               onClick={toggleManualDnd}
@@ -539,7 +551,7 @@ export function TopHeader({
               of the toolbar. PanelToggleGroup is transparent (no bg/border).
               The platform/iFrame slot is rendered inline here so the order is
               fixed; toolbarOrder.map skips id==="platform" further down. */}
-          <PanelToggleGroup />
+          <PanelToggleGroup mode={panelToggleMode} />
           {topStepXEnabled && onLayoutOptionChange ? (
             // iFrame active → Castra/Zen layout dropdown
             <div className="relative" ref={dropdownRef}>
@@ -552,12 +564,14 @@ export function TopHeader({
                 title="Layout Options"
               >
                 {layoutOptions.find((opt) => opt.value === layoutOption)?.icon}
-                <span>
-                  {
-                    layoutOptions.find((opt) => opt.value === layoutOption)
-                      ?.label
-                  }
-                </span>
+                {compactLevel < 1 && (
+                  <span>
+                    {
+                      layoutOptions.find((opt) => opt.value === layoutOption)
+                        ?.label
+                    }
+                  </span>
+                )}
                 <ChevronDown
                   className={`w-3 h-3 transition-transform ${showLayoutDropdown ? "rotate-180" : ""}`}
                 />
@@ -614,8 +628,12 @@ export function TopHeader({
                 className="px-2.5 h-7 rounded-lg text-xs font-medium text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
                 title="Select trading platform"
               >
-                {!isElectron() && <Monitor className="w-3 h-3" />}
-                <span>{selectedPlatformLabel}</span>
+                {selectedPlatformLabel.toLowerCase().includes("tradingview") ? (
+                  <Tv className="w-3 h-3" />
+                ) : (
+                  <Monitor className="w-3 h-3" />
+                )}
+                {compactLevel < 1 && <span>{selectedPlatformLabel}</span>}
                 <ChevronDown
                   className={`w-3 h-3 transition-transform ${showPlatformDropdown ? "rotate-180" : ""}`}
                 />
@@ -778,6 +796,7 @@ export function TopHeader({
                   data={ivData}
                   loading={ivLoading}
                   layoutOption={layoutOption}
+                  compactCopy={!topStepXEnabled && compactLevel >= 1}
                 />,
               );
             }

@@ -1,5 +1,6 @@
 // [claude-code 2026-05-03] S58-T2: shared client-side DeepSeek transport for desktop, web, mobile, and Electron.
 
+// S38-T5: deepseek-direct is primary; opencode-go path retained for callers.
 export type DeepSeekProvider = "deepseek-direct" | "deepseek-oc-api";
 
 export interface DeepSeekKeyStatus {
@@ -28,7 +29,8 @@ export interface DeepSeekStreamResult {
   conversationId: string | null;
 }
 
-const DEFAULT_BACKEND_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const DEFAULT_BACKEND_BASE =
+  import.meta.env.VITE_API_URL || "http://localhost:8080";
 const DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions";
 const DEFAULT_MODEL = "deepseek-reasoner";
 const encoder = new TextEncoder();
@@ -38,7 +40,9 @@ function normalizeBackendBase(apiBaseUrl?: string) {
 }
 
 async function authHeaders(getAccessToken?: () => Promise<string | null>) {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
   const token = getAccessToken ? await getAccessToken() : null;
   if (token) headers.Authorization = `Bearer ${token}`;
   return headers;
@@ -49,7 +53,8 @@ function readKeyFromPayload(payload: unknown): string | null {
   const data = payload as Record<string, unknown>;
   const candidates = [data.apiKey, data.key, data.decryptedKey, data.value];
   for (const candidate of candidates) {
-    if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+    if (typeof candidate === "string" && candidate.trim())
+      return candidate.trim();
   }
   if (Array.isArray(data.keys)) {
     const first = data.keys.find(
@@ -62,7 +67,10 @@ function readKeyFromPayload(payload: unknown): string | null {
 
 export async function fetchUserApiKey(
   provider: string,
-  options?: { apiBaseUrl?: string; getAccessToken?: () => Promise<string | null> },
+  options?: {
+    apiBaseUrl?: string;
+    getAccessToken?: () => Promise<string | null>;
+  },
 ): Promise<string | null> {
   const base = normalizeBackendBase(options?.apiBaseUrl);
   const headers = await authHeaders(options?.getAccessToken);
@@ -91,7 +99,10 @@ export async function fetchOpenCodeGoSettings(options?: {
     headers,
   }).catch(() => null);
   if (!res?.ok) return null;
-  const payload = (await res.json().catch(() => null)) as Record<string, unknown> | null;
+  const payload = (await res.json().catch(() => null)) as Record<
+    string,
+    unknown
+  > | null;
   const apiKey = readKeyFromPayload(payload);
   const baseUrl =
     typeof payload?.baseUrl === "string"
@@ -134,16 +145,19 @@ export async function persistConversationMessage(options: {
   if (!options.conversationId || !options.content.trim()) return;
   const base = normalizeBackendBase(options.apiBaseUrl);
   const headers = await authHeaders(options.getAccessToken);
-  await fetch(`${base}/api/ai/conversations/${options.conversationId}/messages`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      role: options.role,
-      content: options.content,
-      model: DEFAULT_MODEL,
-      metadata: { source: "client-deepseek-sdk" },
-    }),
-  }).catch(() => undefined);
+  await fetch(
+    `${base}/api/ai/conversations/${options.conversationId}/messages`,
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        role: options.role,
+        content: options.content,
+        model: DEFAULT_MODEL,
+        metadata: { source: "client-deepseek-sdk" },
+      }),
+    },
+  ).catch(() => undefined);
 }
 
 export async function* streamDeepSeekResponse(
@@ -167,9 +181,14 @@ export async function* streamDeepSeekResponse(
       const payload = line.replace(/^data:\s*/, "").trim();
       if (!payload || payload === "[DONE]") continue;
       const json = JSON.parse(payload) as {
-        choices?: Array<{ delta?: { content?: string }; message?: { content?: string } }>;
+        choices?: Array<{
+          delta?: { content?: string };
+          message?: { content?: string };
+        }>;
       };
-      const delta = json.choices?.[0]?.delta?.content ?? json.choices?.[0]?.message?.content;
+      const delta =
+        json.choices?.[0]?.delta?.content ??
+        json.choices?.[0]?.message?.content;
       if (delta) yield delta;
     }
   }
@@ -188,20 +207,29 @@ async function postChatCompletion(
         "Content-Type": "application/json",
         Authorization: `Bearer ${settings.apiKey}`,
       },
-      body: JSON.stringify({ model: options.model ?? DEFAULT_MODEL, messages, stream: true }),
+      body: JSON.stringify({
+        model: options.model ?? DEFAULT_MODEL,
+        messages,
+        stream: true,
+      }),
       signal: options.signal,
     });
   }
 
   const apiKey = await fetchDeepSeekKey(options);
-  if (!apiKey) throw new Error("No DeepSeek API key set. Add one in Settings -> API.");
+  if (!apiKey)
+    throw new Error("No DeepSeek API key set. Add one in Settings -> API.");
   return fetch(DEEPSEEK_API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model: options.model ?? DEFAULT_MODEL, messages, stream: true }),
+    body: JSON.stringify({
+      model: options.model ?? DEFAULT_MODEL,
+      messages,
+      stream: true,
+    }),
     signal: options.signal,
   });
 }
@@ -215,7 +243,9 @@ export async function createDeepSeekStreamResponse(
   options: DeepSeekChatOptions,
 ): Promise<DeepSeekStreamResult> {
   const conversationId = await createConversationIfNeeded(options);
-  const lastUser = [...messages].reverse().find((message) => message.role === "user");
+  const lastUser = [...messages]
+    .reverse()
+    .find((message) => message.role === "user");
   await persistConversationMessage({
     ...options,
     conversationId,
@@ -247,7 +277,8 @@ export async function createDeepSeekStreamResponse(
         controller.enqueue(sse({ type: "finish", finishReason: "stop" }));
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
       } catch (error) {
-        const errorText = error instanceof Error ? error.message : "DeepSeek stream failed";
+        const errorText =
+          error instanceof Error ? error.message : "DeepSeek stream failed";
         controller.enqueue(sse({ type: "error", errorText }));
         controller.enqueue(sse({ type: "finish", finishReason: "error" }));
       } finally {
@@ -271,14 +302,20 @@ export async function deepseekChatCompletion(
   messages: DeepSeekChatMessage[],
   options: Omit<DeepSeekChatOptions, "provider"> = {},
 ): Promise<DeepSeekStreamResult> {
-  return createDeepSeekStreamResponse(messages, { ...options, provider: "deepseek-direct" });
+  return createDeepSeekStreamResponse(messages, {
+    ...options,
+    provider: "deepseek-direct",
+  });
 }
 
 export async function opencodeGoChatCompletion(
   messages: DeepSeekChatMessage[],
   options: Omit<DeepSeekChatOptions, "provider"> = {},
 ): Promise<DeepSeekStreamResult> {
-  return createDeepSeekStreamResponse(messages, { ...options, provider: "deepseek-oc-api" });
+  return createDeepSeekStreamResponse(messages, {
+    ...options,
+    provider: "deepseek-oc-api",
+  });
 }
 
 export function createDeepSeekTransport(provider: DeepSeekProvider) {

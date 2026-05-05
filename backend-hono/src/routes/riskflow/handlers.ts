@@ -923,6 +923,305 @@ export async function handleRefresh(c: Context) {
   }
 }
 
+/**
+ * POST /api/riskflow/rettiwt-kickstart
+ * Owner-gated manual Rettiwt pull using the unified X handle-routing filters.
+ * Designed for Refinement Engine "Kickstart" so operators can test/recover
+ * Rettiwt ingestion without relying on the legacy poller path.
+ */
+export async function handleRettiwtKickstart(c: Context) {
+  const userId = c.get("userId") as string | undefined;
+  if (!userId) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const ownerEmail =
+    process.env.POLL_OWNER_EMAIL || "pricedinresearch@gmail.com";
+  const ownerId = process.env.POLL_OWNER_ID || "local-user";
+  const email = c.get("email") as string | undefined;
+  const isOwner =
+    email === ownerEmail || userId === ownerId || userId === "local-user";
+  if (!isOwner) {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+
+  try {
+    const body = await c.req
+      .json<{ handles?: string[] }>()
+      .catch(() => ({} as { handles?: string[] }));
+    const [
+      { forceRefreshPool, getPoolStatus },
+      { getBrowserHandles },
+      { pollHandlesViaRettiwt },
+      { getTweetsViaXActions, isXActionsConfigured },
+      { writeCollectedItems },
+      { getRoutingForHandle, passesContentFilter, isDisallowedRepostOrRetweet },
+      { scoreHeadline },
+    ] = await Promise.all([
+      import("../../services/rettiwt-service.js"),
+      import("../../services/source-accounts/source-accounts-service.js"),
+      import("../../services/twitter/rettiwt-fallback.js"),
+      import("../../services/xactions/client.js"),
+      import("../../workers/riskflow-worker/persist.js"),
+      import("../../workers/riskflow-worker/sources/handle-routing.js"),
+      import("../../workers/riskflow-worker/score.js"),
+    ]);
+
+    const poolRefreshed = await forceRefreshPool().catch(() => ({
+      totalKeys: 0,
+      resetCount: 0,
+    }));
+    const allHandles = await getBrowserHandles();
+    const requestedHandles = Array.isArray(body.handles)
+      ? body.handles
+          .map((h) => h.replace(/^@/, "").trim())
+          .filter((h) => h.length > 0)
+      : [];
+    const handleAllow = new Set(allHandles.map((h) => h.toLowerCase()));
+    const selectedHandles =
+      requestedHandles.length > 0
+        ? requestedHandles.filter((h) => handleAllow.has(h.toLowerCase()))
+        : allHandles;
+    const selectedHandleSet = new Set(selectedHandles.map((h) => h.toLowerCase()));
+    const selectedHandleLabel = new Map(
+      selectedHandles.map((h) => [h.toLowerCase(), h]),
+    );
+
+    if (selectedHandles.length === 0) {
+      return c.json({
+        success: true,
+        message:
+          allHandles.length === 0
+            ? "No browser handles configured"
+            : "No selected handles are eligible for browser Rettiwt kickstart",
+        poolRefreshed,
+        pool: getPoolStatus(),
+        handles: allHandles.length,
+        selectedHandles: [],
+        fetched: 0,
+        candidateItems: 0,
+        written: 0,
+        rescored: 0,
+        perSource: [],
+        kickedAt: new Date().toISOString(),
+      });
+    }
+
+    interface KickstartTweet {
+      id: string;
+      text: string;
+      username: string;
+      publishedAt: string;
+      url: string;
+      pipeline: "rettiwt" | "xactions";
+    }
+
+    const rettiwtTweetsRaw = await pollHandlesViaRettiwt(selectedHandles);
+    const rettiwtTweets: KickstartTweet[] = rettiwtTweetsRaw.map((tw) => ({
+      id: String(tw.id),
+      text: tw.text ?? "",
+      username: (tw.username || "").replace(/^@/, "").trim(),
+      publishedAt: tw.publishedAt,
+      url: tw.url || "",
+      pipeline: "rettiwt",
+    }));
+
+    const fetchedByHandle = new Map<string, number>();
+    for (const tw of rettiwtTweets) {
+      const key = tw.username.toLowerCase();
+      if (!key) continue;
+      fetchedByHandle.set(key, (fetchedByHandle.get(key) ?? 0) + 1);
+    }
+
+    const xactionsEnabled = isXActionsConfigured();
+    const missingHandles = selectedHandles.filter(
+      (h) => (fetchedByHandle.get(h.toLowerCase()) ?? 0) === 0,
+    );
+    const xactionsTweets: KickstartTweet[] = [];
+    if (xactionsEnabled && missingHandles.length > 0) {
+      const xaByHandle = await Promise.all(
+        missingHandles.map(async (handle) => {
+          const tweets = await getTweetsViaXActions({ handle, limit: 20 });
+          return tweets.map((tw) => ({
+            id: String(tw.tweet_id),
+            text: tw.text ?? "",
+            username: (tw.author_handle || handle).replace(/^@/, "").trim(),
+            publishedAt: tw.timestamp,
+            url: tw.permalink || `https://x.com/${handle}/status/${tw.tweet_id}`,
+            pipeline: "xactions" as const,
+          }));
+        }),
+      );
+      for (const list of xaByHandle) xactionsTweets.push(...list);
+    }
+
+    const seenTweetKey = new Set<string>();
+    const tweets: KickstartTweet[] = [];
+    for (const tw of [...rettiwtTweets, ...xactionsTweets]) {
+      const handleKey = tw.username.toLowerCase();
+      if (!handleKey || !tw.id) continue;
+      const key = `${handleKey}:${tw.id}`;
+      if (seenTweetKey.has(key)) continue;
+      seenTweetKey.add(key);
+      tweets.push(tw);
+    }
+    const now = Date.now();
+    const fetchedAt = new Date(now).toISOString();
+    const perSource = new Map<
+      string,
+      { fetched: number; candidates: number; accepted: number }
+    >();
+    for (const h of selectedHandles) {
+      perSource.set(h.toLowerCase(), {
+        fetched: 0,
+        candidates: 0,
+        accepted: 0,
+      });
+    }
+
+    const items: Array<{
+      item_id: string;
+      source: `twitter:${string}`;
+      source_domain: string;
+      headline: string;
+      body: string;
+      url: string;
+      tier: "breaking" | "standard" | "commentary";
+      published_at: string;
+      fetched_at: string;
+      fetch_latency_ms: number;
+      ingest_pipeline: string;
+      image_url: null;
+      video_url: null;
+    }> = [];
+
+    const isGuardrailRejected = (text: string): boolean => {
+      const t = text.toLowerCase();
+      return /\b(lol|lmao|haha|meme|joke|shitpost|nostalgia|you had to be there)\b/.test(
+        t,
+      );
+    };
+    const isStrictPromoRejected = (text: string): boolean => {
+      const t = text.toLowerCase();
+      return (
+        /\b(promoted|sponsored|paid partnership|ad:|advertisement)\b/i.test(t) ||
+        /\b(sign up|subscribe|free trial|join now|use code|coupon|promo code)\b/i.test(t) ||
+        /\b(discord\.gg|t\.me\/|patreon|affiliate|referral)\b/i.test(t)
+      );
+    };
+    const sanitizeTweetBody = (text: string): string =>
+      text
+        .replace(/(^|\s)@[A-Za-z0-9_]{1,20}\b/g, " ")
+        .replace(
+          /\b\d+(\.\d+)?\s*(k|m)?\s*(views?|likes?|repl(?:y|ies)|reposts?|bookmarks?)\b/gi,
+          " ",
+        )
+        .replace(/\s+/g, " ")
+        .trim();
+
+    for (const tw of tweets) {
+      const handle = (tw.username || "").replace(/^@/, "").trim();
+      if (!handle) continue;
+      const handleKey = handle.toLowerCase();
+      if (!selectedHandleSet.has(handleKey)) continue;
+      const ps = perSource.get(handleKey) ?? {
+        fetched: 0,
+        candidates: 0,
+        accepted: 0,
+      };
+      ps.fetched += 1;
+      perSource.set(handleKey, ps);
+      const routings = getRoutingForHandle(handle);
+      if (routings.length === 0) continue;
+
+      const rawText = (tw.text || "").replace(/\s+/g, " ").trim();
+      if (isDisallowedRepostOrRetweet(rawText, selectedHandleSet)) continue;
+      const text = sanitizeTweetBody(rawText);
+      if (!text) continue;
+
+      const headline = text.length > 220 ? text.slice(0, 220) : text;
+      if (!scoreHeadline(headline)) continue;
+      if (isGuardrailRejected(text)) continue;
+      if (isStrictPromoRejected(text)) continue;
+
+      const publishedMs = Date.parse(tw.publishedAt);
+      const publishedAt = Number.isFinite(publishedMs)
+        ? new Date(publishedMs).toISOString()
+        : fetchedAt;
+      const latency = Number.isFinite(publishedMs)
+        ? Math.max(0, now - publishedMs)
+        : 0;
+
+      for (const routing of routings) {
+        if (!passesContentFilter(text, routing.contentFilter)) continue;
+        ps.candidates += 1;
+        items.push({
+          item_id: String(tw.id),
+          source: `twitter:${handle}`,
+          source_domain: "x.com",
+          headline,
+          body: text,
+          url: tw.url || `https://x.com/${handle}/status/${tw.id}`,
+          tier: routing.tier,
+          published_at: publishedAt,
+          fetched_at: fetchedAt,
+          fetch_latency_ms: latency,
+          ingest_pipeline:
+            tw.pipeline === "xactions"
+              ? "xactions-kickstart-fallback"
+              : "x-rettiwt-kickstart",
+          image_url: null,
+          video_url: null,
+        });
+      }
+    }
+
+    const written = await writeCollectedItems(items);
+    for (const item of items) {
+      const h = item.source.replace(/^twitter:/, "").toLowerCase();
+      const ps = perSource.get(h) ?? { fetched: 0, candidates: 0, accepted: 0 };
+      ps.accepted += 1;
+      perSource.set(h, ps);
+    }
+
+    await scoringCycle().catch((err: unknown) => {
+      console.warn("[RiskFlow] Rettiwt kickstart scoring failed:", err);
+    });
+    await seedCacheFromDb().catch((err: unknown) => {
+      console.warn("[RiskFlow] Rettiwt kickstart cache seed failed:", err);
+    });
+    const rescored = await feedService.rescoreInMemoryFeed().catch(
+      (_err: unknown) => 0,
+    );
+
+    return c.json({
+      success: true,
+      poolRefreshed,
+      pool: getPoolStatus(),
+      handles: allHandles.length,
+      selectedHandles,
+      fetched: tweets.length,
+      fetchedRettiwt: rettiwtTweets.length,
+      fetchedXActions: xactionsTweets.length,
+      xactionsEnabled,
+      xactionsFallbackHandles: missingHandles,
+      candidateItems: items.length,
+      written,
+      rescored,
+      perSource: Array.from(perSource.entries())
+        .map(([handleKey, stats]) => ({
+          handle: selectedHandleLabel.get(handleKey) ?? handleKey,
+          ...stats,
+        }))
+        .sort((a, b) => a.handle.localeCompare(b.handle)),
+      kickedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("[RiskFlow] Rettiwt kickstart error:", error);
+    return c.json({ error: "Rettiwt kickstart failed" }, 500);
+  }
+}
+
 /** POST /api/riskflow/:id/generate-note — manual agent note generation trigger
  *  [claude-code 2026-04-25] S38: When body carries `instrument`, returns the structured
  *  detailed note (source_url + summary + direction). Without an instrument, falls back to

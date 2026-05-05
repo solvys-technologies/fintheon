@@ -51,16 +51,8 @@ export function createRelayRoutes() {
     if (!userId || userId === "anonymous") {
       return c.json({ connected: false, error: "auth_required" }, 401);
     }
-    const dispatch = relayBridge.getDispatch(userId);
     return c.json({
       connected: relayBridge.isConnected(userId),
-      dispatch: dispatch
-        ? {
-            conversationId: dispatch.conversationId,
-            startedAt: new Date(dispatch.startedAt).toISOString(),
-            deviceLabel: dispatch.deviceLabel,
-          }
-        : null,
     });
   });
 
@@ -166,22 +158,25 @@ export function createRelayRoutes() {
     }
   });
 
+  // S38-T1: Dispatch routes removed — /dispatch, /disconnect, /mirror-stream deleted
+
   /**
-   * POST /api/relay/dispatch — Desktop initiates a dispatch to the user's paired mobile.
    * Verifies conversation ownership, registers dispatch state in relayBridge, fires a
    * web-push to all of the user's subscriptions with a deep link to the conversation.
    * Returns 409 if already dispatched.
    */
-  app.post("/dispatch", async (c) => {
+  app.post("/dispatch", (c) => c.json({ error: "dispatch_deprecated" }, 410));
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async function _dispatch_unused(c: any) {
     const userId = c.get("userId") as string | undefined;
     if (!userId || userId === "anonymous") {
       return c.json({ error: "auth_required" }, 401);
     }
 
-    const body = await c.req.json<{
+    const body = (await c.req.json()) as {
       conversationId: string;
       deviceLabel?: string;
-    }>();
+    };
     if (!body.conversationId) {
       return c.json(
         { error: "invalid_request", message: "conversationId required" },
@@ -259,7 +254,7 @@ export function createRelayRoutes() {
       deviceLabel,
       pushedTo: recipients,
     });
-  });
+  }
 
   /**
    * POST /api/relay/disconnect — Desktop tears down the active dispatch.
@@ -447,18 +442,6 @@ export function createRelayRoutes() {
       // Continue — relay still works, just without persistence
     }
 
-    // If the user has an active dispatch for this convo, mirror the user message
-    // to any desktop subscribers so the desktop thread stays in sync in real time.
-    const isMirror = convId && relayBridge.isDispatched(userId, convId);
-    if (isMirror && convId) {
-      relayBridge.publishMirrorMessage(userId, {
-        conversationId: convId,
-        role: "user",
-        content: body.message,
-        createdAt: new Date().toISOString(),
-      });
-    }
-
     // Stream the relayed response as SSE
     const headers = new Headers({
       "Content-Type": "text/event-stream",
@@ -481,26 +464,8 @@ export function createRelayRoutes() {
         try {
           for await (const chunk of relayBridge.forward(userId, relayPayload)) {
             send(chunk);
-            if (isMirror && convId) {
-              relayBridge.publishMirrorMessage(userId, {
-                conversationId: convId,
-                role: "assistant",
-                content: chunk,
-                createdAt: new Date().toISOString(),
-                isChunk: true,
-              });
-            }
           }
           send("[DONE]");
-          if (isMirror && convId) {
-            relayBridge.publishMirrorMessage(userId, {
-              conversationId: convId,
-              role: "assistant",
-              content: "[DONE]",
-              createdAt: new Date().toISOString(),
-              isChunk: true,
-            });
-          }
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : "Relay error";
           const userFacing =

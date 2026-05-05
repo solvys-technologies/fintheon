@@ -407,6 +407,140 @@ async function processOutput(output: string, task: HarperTask): Promise<void> {
   }
 }
 
+// ── Afterhours Lounge Scheduler ───────────────────────────────────────────
+
+let afterhoursTimer: ReturnType<typeof setTimeout> | null = null;
+let afterhoursActive = false;
+
+/**
+ * Calculates milliseconds until next 16:30 ET.
+ * Returns 0 if it's currently within the afterhours window (16:30-17:30 ET).
+ */
+function msUntilAfterhours(): number {
+  const now = new Date();
+  // Get current ET time
+  const etNow = new Date(
+    now.toLocaleString("en-US", { timeZone: "America/New_York" }),
+  );
+  const etHours = etNow.getHours();
+  const etMinutes = etNow.getMinutes();
+
+  // Next 16:30 ET
+  const next = new Date(etNow);
+  next.setHours(16, 30, 0, 0);
+
+  // If we're past 16:30 today (or it's weekend), schedule for next weekday 16:30
+  if (etHours > 17 || (etHours === 17 && etMinutes >= 30) || etHours < 6) {
+    // Past the window — schedule for tomorrow
+    next.setDate(next.getDate() + 1);
+  } else if (etHours >= 16 && etMinutes >= 30) {
+    // We're in the window now — trigger immediately
+    return 0;
+  } else if (etNow >= next) {
+    // Past 16:30 — schedule for tomorrow
+    next.setDate(next.getDate() + 1);
+  }
+
+  // Skip weekends: if next is Saturday, jump to Monday
+  const day = next.getDay();
+  if (day === 6) next.setDate(next.getDate() + 2); // Saturday → Monday
+  if (day === 0) next.setDate(next.getDate() + 1); // Sunday → Monday
+
+  return Math.max(0, next.getTime() - etNow.getTime());
+}
+
+/**
+ * Triggers the afterhours dream cycle for all 5 agents.
+ * Called at 16:30 ET daily.
+ */
+async function triggerAfterhoursLounge(): Promise<void> {
+  if (afterhoursActive) {
+    log.info("Afterhours lounge already active, skipping duplicate trigger");
+    return;
+  }
+
+  afterhoursActive = true;
+  log.info("Afterhours lounge triggered — 16:30 ET dream cycle starting");
+
+  try {
+    // Trigger the dream cycle via the agent-bus dreams endpoint
+    // This is an internal call to our own API
+    const API_BASE = process.env.API_BASE_URL || "http://localhost:8080";
+    const res = await fetch(`${API_BASE}/api/agent-bus/dreams/trigger`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "afterhours", initiator: "harper" }),
+    });
+
+    if (res.ok) {
+      log.info("Afterhours dream cycle induced successfully");
+      await writeOpsEntry({
+        actionType: "execution",
+        title: "Afterhours Lounge: Dream cycle triggered",
+        detail: "All 5 agents contributed dream entries at 16:30 ET",
+        severity: "info",
+      }).catch(() => {});
+    } else {
+      log.warn("Afterhours dream cycle trigger returned non-OK", {
+        status: res.status,
+      });
+    }
+  } catch (err) {
+    log.error("Afterhours lounge trigger failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  } finally {
+    // Reset after 5 minutes (window is 16:30-17:30 ET)
+    setTimeout(
+      () => {
+        afterhoursActive = false;
+      },
+      5 * 60 * 1000,
+    );
+  }
+}
+
+/**
+ * Schedules the afterhours lounge for the next 16:30 ET.
+ * Called once at startup; re-schedules itself after each trigger.
+ */
+function scheduleAfterhoursLounge(): void {
+  if (afterhoursTimer) {
+    clearTimeout(afterhoursTimer);
+  }
+
+  const ms = msUntilAfterhours();
+  log.info(`Afterhours lounge scheduled in ${Math.round(ms / 60000)} minutes`);
+
+  afterhoursTimer = setTimeout(async () => {
+    await triggerAfterhoursLounge();
+    // Re-schedule for the next day
+    scheduleAfterhoursLounge();
+  }, ms);
+}
+
+function stopAfterhoursScheduler(): void {
+  if (afterhoursTimer) {
+    clearTimeout(afterhoursTimer);
+    afterhoursTimer = null;
+  }
+  afterhoursActive = false;
+  log.info("Afterhours lounge scheduler stopped");
+}
+
+export function getAfterhoursStatus(): {
+  scheduled: boolean;
+  active: boolean;
+  nextTriggerMs: number | null;
+} {
+  const ms = msUntilAfterhours();
+  return {
+    scheduled: afterhoursTimer !== null,
+    active: afterhoursActive,
+    nextTriggerMs: afterhoursTimer ? ms : null,
+  };
+}
+
 // ── Lifecycle ──────────────────────────────────────────────────────────────
 
 export async function startLoop(): Promise<void> {
@@ -428,6 +562,9 @@ export async function startLoop(): Promise<void> {
 
   log.info("Harper autonomous loop started");
 
+  // Start the afterhours lounge scheduler
+  scheduleAfterhoursLounge();
+
   await writeOpsEntry({
     actionType: "execution",
     title: "Harper autonomous loop started",
@@ -439,7 +576,8 @@ export function stopLoop(): void {
   stopRequested = true;
   state.alive = false;
   state.state = "stopped";
-  log.info("Harper autonomous loop stopped");
+  stopAfterhoursScheduler();
+  log.info("Harper autonomous loop stopped (afterhours scheduler stopped)");
 }
 
 export function isAlive(): boolean {

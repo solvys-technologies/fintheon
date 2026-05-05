@@ -5,16 +5,18 @@
 //   per project no-glass rule. Empty evidence panels suppressed entirely (kills the "blank fuse").
 // [claude-code 2026-04-24] S37: when the most-recent regime proposal is approved, the entire regime queue fades out and clears — historic regime suggestions are stale once the newest has been adjudicated, so they're silently dropped rather than lingering.
 // [claude-code 2026-04-18] S24-T4: Admin approvals inbox — regime / lexicon / walk-back proposals
+// S38-T4: Added Patches tab — agent-proposed code patches with diff viewer + approve/reject
 import { useState, useEffect, useCallback } from "react";
 import { CheckCircle2, XCircle, Inbox, ExternalLink } from "lucide-react";
 import { useToast } from "../../contexts/ToastContext";
 import { useAuth } from "../../contexts/AuthContext";
+import { PatchDiffViewer } from "./PatchDiffViewer";
 
 const API_BASE = (
   import.meta.env.VITE_API_URL || "http://localhost:8080"
 ).replace(/\/$/, "");
 
-type ProposalTab = "regime" | "lexicon" | "walkBack";
+type ProposalTab = "regime" | "lexicon" | "walkBack" | "patches";
 
 interface BaseProposal {
   id: string;
@@ -47,6 +49,21 @@ interface WalkBackProposal extends BaseProposal {
   proposed_regime_revert: string;
 }
 
+interface PatchProposal {
+  id: string;
+  agent_id: string;
+  status: string;
+  summary: string;
+  reasoning: string | null;
+  files: string[];
+  diff: string;
+  base_sha: string | null;
+  created_at: string;
+  approved_at: string | null;
+  committed_at: string | null;
+  rejection_reason: string | null;
+}
+
 const ENDPOINTS: Record<
   ProposalTab,
   { list: string; decision: (id: string, action: string) => string }
@@ -64,22 +81,30 @@ const ENDPOINTS: Record<
     decision: (id, action) =>
       `/api/riskflow/walk-back-proposals/${id}/${action}`,
   },
+  patches: {
+    list: "/api/agent/patches?status=pending",
+    decision: (id, action) => `/api/agent/patches/${id}/${action}`,
+  },
 };
 
 export function ApprovalsPage() {
   const { addToast } = useToast();
   const { getAccessToken } = useAuth();
   const [tab, setTab] = useState<ProposalTab>("regime");
-  const [items, setItems] = useState<Record<ProposalTab, BaseProposal[]>>({
+  const [items, setItems] = useState<
+    Record<ProposalTab, (BaseProposal | PatchProposal)[]>
+  >({
     regime: [],
     lexicon: [],
     walkBack: [],
+    patches: [],
   });
   const [loading, setLoading] = useState(true);
   const [notReady, setNotReady] = useState<Record<ProposalTab, boolean>>({
     regime: false,
     lexicon: false,
     walkBack: false,
+    patches: false,
   });
   const [pendingDecision, setPendingDecision] = useState<string | null>(null);
   // [S37] When the newest regime proposal is approved, every remaining regime proposal
@@ -95,7 +120,10 @@ export function ApprovalsPage() {
         return;
       }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as { proposals?: BaseProposal[] };
+      const data = (await res.json()) as {
+        proposals?: BaseProposal[];
+        patches?: PatchProposal[];
+      };
       // [S38] Drop same-state regime transitions (current === proposed); they're a no-op
       // and clutter the queue with non-actionable cards.
       const filtered =
@@ -108,7 +136,11 @@ export function ApprovalsPage() {
                 r.proposed_regime !== r.current_regime
               );
             })
-          : (data.proposals ?? []);
+          : which === "patches"
+            ? (data.patches ??
+              (data.proposals as unknown as PatchProposal[]) ??
+              [])
+            : (data.proposals ?? []);
       setItems((prev) => ({ ...prev, [which]: filtered }));
       setNotReady((prev) => ({ ...prev, [which]: false }));
     } catch {
@@ -122,6 +154,7 @@ export function ApprovalsPage() {
       loadTab("regime"),
       loadTab("lexicon"),
       loadTab("walkBack"),
+      loadTab("patches"),
     ]);
     setLoading(false);
   }, [loadTab]);
@@ -143,7 +176,7 @@ export function ApprovalsPage() {
         b.created_at.localeCompare(a.created_at),
       )[0];
       const shouldFlushRegimeQueue =
-        tab === "regime" &&
+        (tab === "regime" || tab === "patches") &&
         action === "approve" &&
         newest?.id === proposalId &&
         queueSnapshot.length > 1;
@@ -220,37 +253,45 @@ export function ApprovalsPage() {
         className="flex border-b border-[var(--fintheon-accent)]/15"
         role="tablist"
       >
-        {(["regime", "lexicon", "walkBack"] as ProposalTab[]).map((t) => (
-          <button
-            key={t}
-            role="tab"
-            aria-selected={tab === t}
-            onClick={() => setTab(t)}
-            style={{
-              flex: 1,
-              padding: "10px 12px",
-              fontFamily: "var(--font-data)",
-              fontSize: 11,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color:
-                tab === t ? "var(--fintheon-accent)" : "var(--fintheon-muted)",
-              background: "transparent",
-              border: "none",
-              borderBottom:
-                tab === t
-                  ? "2px solid var(--fintheon-accent)"
-                  : "2px solid transparent",
-              cursor: "pointer",
-            }}
-          >
-            {t === "regime"
-              ? `Regime (${items.regime.length})`
-              : t === "lexicon"
-                ? `Lexicon (${items.lexicon.length})`
-                : `Walk-back (${items.walkBack.length})`}
-          </button>
-        ))}
+        {(["regime", "lexicon", "walkBack", "patches"] as ProposalTab[]).map(
+          (t) => (
+            <button
+              key={t}
+              role="tab"
+              aria-selected={tab === t}
+              onClick={() => setTab(t)}
+              style={{
+                flex: 1,
+                padding: "10px 12px",
+                fontFamily: "var(--font-data)",
+                fontSize: 11,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color:
+                  tab === t
+                    ? "var(--fintheon-accent)"
+                    : "var(--fintheon-muted)",
+                background: "transparent",
+                border: "none",
+                borderBottom:
+                  tab === t
+                    ? "2px solid var(--fintheon-accent)"
+                    : "2px solid transparent",
+                cursor: "pointer",
+              }}
+            >
+              {t === "regime"
+                ? `Regime (${items.regime.length})`
+                : t === "lexicon"
+                  ? `Lexicon (${items.lexicon.length})`
+                  : t === "walkBack"
+                    ? `Walk-back (${items.walkBack.length})`
+                    : t === "patches"
+                      ? `Patches (${items.patches.length})`
+                      : undefined}
+            </button>
+          ),
+        )}
       </div>
 
       {/* Body */}
@@ -278,9 +319,162 @@ export function ApprovalsPage() {
           <div className="text-center py-12 text-[11px] text-zinc-600">
             No pending {tab === "walkBack" ? "walk-back" : tab} proposals.
           </div>
+        ) : tab === "patches" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {(currentItems as PatchProposal[]).map((p) => (
+              <div
+                key={p.id}
+                style={{
+                  border:
+                    "1px solid color-mix(in srgb, var(--fintheon-accent) 22%, transparent)",
+                  borderRadius: 4,
+                  padding: "14px 16px",
+                  background: "var(--fintheon-surface)",
+                  opacity: fadingIds.has(p.id) ? 0 : 1,
+                  transform: fadingIds.has(p.id)
+                    ? "translateX(24px)"
+                    : "translateX(0)",
+                  transition:
+                    "opacity 320ms ease-out, transform 320ms ease-out",
+                  pointerEvents: fadingIds.has(p.id) ? "none" : "auto",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    gap: 10,
+                    marginBottom: 8,
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "var(--fintheon-accent)",
+                        marginBottom: 4,
+                      }}
+                    >
+                      {p.agent_id}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-data)",
+                        fontSize: 10,
+                        letterSpacing: "0.06em",
+                        color: "var(--fintheon-muted)",
+                      }}
+                    >
+                      {p.files.length} file{p.files.length !== 1 ? "s" : ""} ·{" "}
+                      {new Date(p.created_at).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--fintheon-text)",
+                    lineHeight: 1.5,
+                    marginBottom: 10,
+                  }}
+                >
+                  {p.summary}
+                </div>
+
+                {p.reasoning && (
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "var(--fintheon-muted)",
+                      fontStyle: "italic",
+                      marginBottom: 10,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {p.reasoning}
+                  </div>
+                )}
+
+                <details style={{ marginBottom: 10 }}>
+                  <summary
+                    style={{
+                      cursor: "pointer",
+                      fontSize: 11,
+                      fontFamily: "var(--font-data)",
+                      letterSpacing: "0.06em",
+                      color: "var(--fintheon-accent)",
+                      marginBottom: 8,
+                    }}
+                  >
+                    View Diff ({p.files.length} file
+                    {p.files.length !== 1 ? "s" : ""})
+                  </summary>
+                  <PatchDiffViewer diff={p.diff} files={p.files} />
+                </details>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    justifyContent: "flex-end",
+                  }}
+                >
+                  <button
+                    onClick={() => void decide(p.id, "deny")}
+                    disabled={pendingDecision === p.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      padding: "6px 10px",
+                      fontSize: 12,
+                      fontFamily: "var(--font-data)",
+                      letterSpacing: "0.06em",
+                      color: "var(--fintheon-accent)",
+                      background: "transparent",
+                      border: "none",
+                      cursor:
+                        pendingDecision === p.id ? "not-allowed" : "pointer",
+                      opacity: pendingDecision === p.id ? 0.5 : 1,
+                    }}
+                  >
+                    <XCircle size={12} />
+                    Deny
+                  </button>
+                  <button
+                    onClick={() => void decide(p.id, "approve")}
+                    disabled={pendingDecision === p.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      padding: "6px 10px",
+                      fontSize: 12,
+                      fontFamily: "var(--font-data)",
+                      letterSpacing: "0.06em",
+                      fontWeight: 600,
+                      color: "var(--fintheon-accent)",
+                      background: "transparent",
+                      border: "none",
+                      cursor:
+                        pendingDecision === p.id ? "not-allowed" : "pointer",
+                      opacity: pendingDecision === p.id ? 0.5 : 1,
+                    }}
+                  >
+                    <CheckCircle2 size={12} />
+                    Approve
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {currentItems.map((p) => (
+            {(currentItems as BaseProposal[]).map((p) => (
               <ProposalCard
                 key={p.id}
                 tab={tab}

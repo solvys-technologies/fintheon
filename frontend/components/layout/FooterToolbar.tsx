@@ -1,3 +1,4 @@
+// [claude-code 2026-05-05] Footer compaction pass: removed quick terminal rail + desk tag, version-only epoch chip, and responsive status reduction for narrow shells.
 // [claude-code 2026-04-03] Removed stale heartbeat/pulse/NTN/X indicators — system status now from /api/diagnostics only
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
@@ -11,7 +12,6 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import {
-  PLATFORM_LABELS,
   PLATFORM_URLS,
   type TradingPlatform,
 } from "../TradingBrowser";
@@ -101,6 +101,7 @@ function renderOutputLine(text: string, onClickCommand: (cmd: string) => void) {
 }
 
 interface FooterToolbarProps {
+  compactLevel?: 0 | 1 | 2;
   topStepXEnabled?: boolean;
   primaryPlatform?: TradingPlatform;
   onPrimaryPlatformChange?: (p: TradingPlatform) => void;
@@ -113,6 +114,7 @@ interface FooterToolbarProps {
 }
 
 export function FooterToolbar({
+  compactLevel = 0,
   topStepXEnabled = false,
   primaryPlatform = "topstepx",
   onPrimaryPlatformChange,
@@ -143,7 +145,6 @@ export function FooterToolbar({
   const [slashSuggestionsIndex, setSlashSuggestionsIndex] = useState(0);
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const cliContainerRef = useRef<HTMLDivElement>(null);
   const prevPanelOpenRef = useRef(false);
   const activeProcessRef = useRef<{
     processId: string;
@@ -151,6 +152,18 @@ export function FooterToolbar({
   } | null>(null);
 
   const { fetchStatus, refreshing } = useRiskFlow();
+  const [viewportWidth, setViewportWidth] = useState(() =>
+    typeof window === "undefined" ? 1600 : window.innerWidth,
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const isMarginalWidth = viewportWidth < 1380;
 
   // Listen for update-installing event from VersionChecker
   const [updateInstalling, setUpdateInstalling] = useState(false);
@@ -160,8 +173,6 @@ export function FooterToolbar({
     return () =>
       window.removeEventListener("fintheon:update-installing", handler);
   }, []);
-  const isElectron =
-    typeof window !== "undefined" && window.electron?.runShellCommand != null;
   const slashFilter = cliInput.startsWith("/")
     ? cliInput.slice(1).toLowerCase().trim()
     : "";
@@ -226,17 +237,6 @@ export function FooterToolbar({
     }
     prevPanelOpenRef.current = panelOpen;
   }, [panelOpen, activeTab]);
-
-  // Click outside to close slash suggestions
-  useEffect(() => {
-    if (!showSlashSuggestions) return;
-    const onMouseDown = (e: MouseEvent) => {
-      if (cliContainerRef.current?.contains(e.target as Node)) return;
-      setSlashSuggestionsOpen(false);
-    };
-    document.addEventListener("mousedown", onMouseDown);
-    return () => document.removeEventListener("mousedown", onMouseDown);
-  }, [showSlashSuggestions]);
 
   const runViaBackend = useCallback((cmd: string) => {
     fetch(`${API_BASE}/api/terminal/run`, {
@@ -506,6 +506,10 @@ export function FooterToolbar({
   const { errorCount } = useErrorLog();
   const { overall: systemOverall, services } = useSystemStatus();
   const { status: gatewayStatus } = useGateway();
+  const narrowedServiceNames = new Set(["Hermes", "AI", "X"]);
+  const visibleServices = isMarginalWidth
+    ? services.filter((svc) => narrowedServiceNames.has(svc.name))
+    : services;
   const togglePanel = () => setPanelOpen((v) => !v);
 
   // [claude-code 2026-04-26] Listen for the header PanelToggleGroup footer
@@ -733,7 +737,7 @@ export function FooterToolbar({
             <ChevronUp className="w-3 h-3" />
           )}
           <span className="font-mono tracking-[0.12em]">
-            Epoch {EPOCH_VERSION}
+            {EPOCH_VERSION}
           </span>
         </button>
 
@@ -802,63 +806,6 @@ export function FooterToolbar({
         >
           <Bot className="w-3 h-3" />
         </button>
-
-        <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
-
-        {/* Quick CLI — always available in toolbar */}
-        <div
-          ref={cliContainerRef}
-          className="relative flex items-center gap-1.5 flex-1 min-w-0"
-        >
-          <Terminal className="w-3 h-3 text-[var(--fintheon-accent)]/30 shrink-0" />
-          <input
-            value={cliInput}
-            onChange={(e) => onCliInputChange(e.target.value)}
-            onFocus={() =>
-              cliInput.startsWith("/") && setSlashSuggestionsOpen(true)
-            }
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && cliInput.trim()) {
-                setPanelOpen(true);
-                setActiveTab("terminal");
-                handleCli(e);
-              }
-            }}
-            className="flex-1 bg-transparent text-[11px] text-gray-500 placeholder-gray-700 focus:outline-none font-mono"
-            placeholder="> or / for scripts"
-            spellCheck={false}
-          />
-          {showSlashSuggestions && !panelOpen && (
-            <div className="absolute left-0 right-0 top-full mt-0.5 z-50 max-h-48 overflow-y-auto rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-lg">
-              {slashSuggestions.map((item, i) => (
-                <button
-                  key={item.slug}
-                  type="button"
-                  onClick={() => {
-                    setCliInput(item.command);
-                    setSlashSuggestionsOpen(false);
-                    setPanelOpen(true);
-                    setActiveTab("terminal");
-                    inputRef.current?.focus();
-                  }}
-                  className={`w-full text-left px-3 py-1.5 text-[11px] font-mono transition-colors ${
-                    i === slashSuggestionsIndex
-                      ? "bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)]"
-                      : "text-zinc-400 hover:bg-[var(--fintheon-accent)]/10 hover:text-zinc-300"
-                  }`}
-                >
-                  <span className="text-[var(--fintheon-accent)]/70">
-                    /{item.slug}
-                  </span>
-                  <span className="ml-2 text-zinc-500">{item.label}</span>
-                  <span className="ml-auto pl-3 text-zinc-600 text-[10px] truncate max-w-[45%] inline-block align-bottom">
-                    {item.command}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
 
         {/* Iframe controls (when TopStepX active) */}
         {topStepXEnabled && (
@@ -943,7 +890,7 @@ export function FooterToolbar({
         {/* S14-T6: Peers toggle removed — team status is in footer Team tab */}
 
         {/* Update installing status */}
-        {updateInstalling && (
+        {!isMarginalWidth && updateInstalling && (
           <div className="flex items-center gap-1.5 shrink-0">
             <div className="h-1.5 w-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
             <span className="text-[9px] tracking-[0.15em] uppercase text-[var(--fintheon-accent)]/70 font-medium">
@@ -951,12 +898,12 @@ export function FooterToolbar({
             </span>
           </div>
         )}
-        {updateInstalling && (
+        {!isMarginalWidth && updateInstalling && (
           <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
         )}
 
         {/* Fetch status — shows during refresh or polling */}
-        {fetchStatus && (
+        {!isMarginalWidth && fetchStatus && (
           <div className="flex items-center gap-1.5 shrink-0">
             {refreshing && (
               <div className="h-1.5 w-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
@@ -966,41 +913,32 @@ export function FooterToolbar({
             </span>
           </div>
         )}
-        {fetchStatus && (
+        {!isMarginalWidth && fetchStatus && (
           <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
         )}
 
-        {/* [claude-code 2026-04-25] S38: Desk-name slot — relocated from TopHeader. Sits to the
-            LEFT of the system status indicators; existing fetch/update status messages render
-            above this in the row, so they appear to the LEFT of the desk name. Placeholder
-            string for now; future sprint wires this to a per-user desk preference. */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="text-[9px] tracking-[0.18em] uppercase text-zinc-500 font-medium">
-            Priced In Capital
-          </span>
-        </div>
-        <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
-
         {/* System status indicators — real-time from /api/diagnostics */}
         <div className="flex items-center gap-2.5 shrink-0">
-          <StatusIndicator
-            label="Gateway"
-            status={
-              gatewayStatus === "connected"
-                ? "ok"
-                : gatewayStatus === "connecting"
-                  ? "degraded"
-                  : "error"
-            }
-            detail={
-              gatewayStatus === "connected"
-                ? "Backend reachable"
-                : gatewayStatus === "connecting"
-                  ? "Connecting..."
-                  : "Disconnected"
-            }
-          />
-          {services.map((svc) => (
+          {!isMarginalWidth && (
+            <StatusIndicator
+              label="Gateway"
+              status={
+                gatewayStatus === "connected"
+                  ? "ok"
+                  : gatewayStatus === "connecting"
+                    ? "degraded"
+                    : "error"
+              }
+              detail={
+                gatewayStatus === "connected"
+                  ? "Backend reachable"
+                  : gatewayStatus === "connecting"
+                    ? "Connecting..."
+                    : "Disconnected"
+              }
+            />
+          )}
+          {visibleServices.map((svc) => (
             <StatusIndicator
               key={svc.key}
               label={svc.name}

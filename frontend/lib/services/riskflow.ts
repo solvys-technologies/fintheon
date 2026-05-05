@@ -12,6 +12,17 @@ export interface RiskFlowListResponse {
   hasMore?: boolean;
 }
 
+function sanitizeXBodyForDisplay(input: string): string {
+  return input
+    .replace(/(^|\s)@[A-Za-z0-9_]{1,20}\b/g, " ")
+    .replace(
+      /\b\d+(\.\d+)?\s*(k|m)?\s*(views?|likes?|repl(?:y|ies)|reposts?|bookmarks?)\b/gi,
+      " ",
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 // RiskFlow Service
 export class RiskFlowService {
   constructor(private client: ApiClient) {}
@@ -81,14 +92,23 @@ export class RiskFlowService {
                 ? priceBrainScore.sentiment
                 : null;
 
+          const isTwitterSource =
+            typeof item.source === "string" &&
+            item.source.toLowerCase().startsWith("twitter:");
+          const rawBody = decodeHtmlEntities(item.body || item.content || "");
+          const body = isTwitterSource
+            ? sanitizeXBodyForDisplay(rawBody)
+            : rawBody;
+
           return {
             id: item.id?.toString() || "",
             title: decodeHtmlEntities(item.headline || item.title || ""), // Map headline to title
-            content: decodeHtmlEntities(item.body || item.content || ""), // Map body to content
-            summary: decodeHtmlEntities(item.body || item.content || ""), // Also set summary for compatibility
-            source: item.source || "",
+            content: body, // Map body to content
+            summary: body, // Also set summary for compatibility
+            source: isTwitterSource ? "X" : item.source || "",
             url: item.url,
             imageUrl: item.imageUrl ?? null,
+            video_url: item.videoUrl ?? item.video_url ?? null,
             publishedAt:
               item.publishedAt || item.published_at || new Date().toISOString(),
             impact: ivScore > 7 ? "high" : ivScore > 4 ? "medium" : "low",
@@ -100,11 +120,11 @@ export class RiskFlowService {
             direction,
             macroLevel: macroLevel,
             isBreaking: item.isBreaking || false,
-            category: item.source || "",
+            category: isTwitterSource ? "X" : item.source || "",
             tags: item.tags || [],
             urgency: item.urgency || "normal",
             priceBrainScore,
-            authorHandle: item.authorHandle ?? undefined,
+            authorHandle: isTwitterSource ? undefined : item.authorHandle ?? undefined,
           };
         }),
         total: response.total ?? items.length,

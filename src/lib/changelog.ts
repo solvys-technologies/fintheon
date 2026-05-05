@@ -9,6 +9,48 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-05T13:00:00-04:00",
+    agent: "claude-code",
+    summary:
+      "v6.0.12 deploy — Brotzky S42 chat SOTA restore (ComposerPrimitive/cmdk CommandPalette, ArtifactPane, AgentActivityRail, CitationChip, streamdown message primitives) onto v6.x line + RiskFlow X repost gate + keyword loosen + FinancialJuice backfill drip controls.",
+    files: [
+      "frontend/components/chat/AgentActivityRail.tsx",
+      "frontend/components/chat/ArtifactPane.tsx",
+      "frontend/components/chat/ArtifactSlot.tsx",
+      "frontend/components/chat/AssistantMessagePrimitive.tsx",
+      "frontend/components/chat/CitationChip.tsx",
+      "frontend/components/chat/CommandPalette.tsx",
+      "frontend/components/chat/FintheonComposer.tsx",
+      "frontend/components/chat/FirstTimeApiKeyPopup.tsx",
+      "frontend/components/chat/UserMessagePrimitive.tsx",
+      "frontend/components/chat/MessageQueue.tsx",
+      "frontend/components/chat/artifactTypes.ts",
+      "frontend/components/chat/primitive/*",
+      "frontend/components/ChatInterface.tsx",
+      "frontend/components/admin/PatchDiffViewer.tsx",
+      "backend-hono/src/workers/riskflow-worker/sources/handle-routing.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/x-handles-browser.ts",
+      "backend-hono/src/routes/riskflow/handlers.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-05T08:25:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Applied a responsive shell polish pass for narrow widths: icon-first header dropdown triggers, reduced PsychAssist header footprint, layout-aware panel-toggle visibility (Zen hides all, Castra keeps right only), compact footer status rail, and overflow-safe main shell/Strategium framing to prevent shrink-mode scrollbar breakage.",
+    files: [
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/IVScoreCard.tsx",
+      "frontend/components/layout/PsychAssistDockable.tsx",
+      "frontend/components/mission-control/CompactERMonitor.tsx",
+      "frontend/components/layout/PanelToggleGroup.tsx",
+      "frontend/components/layout/FooterToolbar.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-04T01:40:00-04:00",
     agent: "claude-code",
     summary:

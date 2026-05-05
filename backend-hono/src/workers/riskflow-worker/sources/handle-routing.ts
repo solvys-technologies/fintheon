@@ -33,7 +33,158 @@ export interface HandleRoutingConfig {
   posting: XPostingRule[];
 }
 
+const CATEGORY_KEYWORDS: Record<
+  HandleRoutingConfig["category"],
+  string[]
+> = {
+  wire: [
+    "breaking",
+    "fed",
+    "fomc",
+    "cpi",
+    "ppi",
+    "nfp",
+    "rates",
+    "yield",
+    "treasury",
+    "inflation",
+    "gdp",
+    "policy",
+    "tariff",
+    "sanction",
+    "opec",
+    "earnings",
+  ],
+  macro: [
+    "fed",
+    "ecb",
+    "boj",
+    "rates",
+    "inflation",
+    "growth",
+    "recession",
+    "yield curve",
+    "liquidity",
+    "fiscal",
+    "treasury",
+    "dollar",
+    "fx",
+  ],
+  osint: [
+    "strike",
+    "missile",
+    "drone",
+    "airstrike",
+    "ceasefire",
+    "escalation",
+    "mobilization",
+    "sanctions",
+    "iran",
+    "israel",
+    "gaza",
+    "ukraine",
+    "russia",
+    "taiwan",
+    "red sea",
+    "hormuz",
+    "nato",
+  ],
+  "stock-news": [
+    "earnings",
+    "guidance",
+    "revenue",
+    "eps",
+    "outlook",
+    "upgrade",
+    "downgrade",
+    "buyback",
+    "ipo",
+    "merger",
+    "acquisition",
+    "sec",
+    // [claude-code 2026-05-05] User-provided stock-news ticker set
+    "NVDA",
+    "GOOGL",
+    "GOOG",
+    "AAPL",
+    "MSFT",
+    "AVGO",
+    "META",
+    "TSLA",
+    "LLY",
+    "MU",
+    "AMD",
+    "JNJ",
+    "ASML",
+    "ORCL",
+    "ABBV",
+    "PLTR",
+    "UNH",
+    "PG",
+    "GE",
+    "MRK",
+    "PM",
+    "TXN",
+    "RTX",
+    "KLAC",
+    "ANET",
+    "ARM",
+    "IBM",
+    "PEP",
+    "TSM",
+    "TMUS",
+  ],
+  options: [
+    "options",
+    "gamma",
+    "vanna",
+    "delta",
+    "dealer",
+    "put",
+    "call",
+    "open interest",
+    "volatility",
+    "skew",
+    "iv",
+    "flow",
+  ],
+  commentary: [
+    "fed",
+    "fomc",
+    "rates",
+    "inflation",
+    "policy",
+    "treasury",
+    "tariff",
+    "geopolitical",
+    "macro",
+    "risk",
+    "equity",
+    "market",
+  ],
+};
+
+function includesKeyword(text: string, keyword: string): boolean {
+  const t = text.toLowerCase();
+  const k = keyword.toLowerCase().trim();
+  if (!k) return false;
+  return t.includes(k);
+}
+
 export const HANDLE_ROUTING: HandleRoutingConfig[] = [
+  // ── Walter Bloomberg / DeItaone (wire) ──
+  {
+    handle: "DeItaone",
+    displayName: "Walter Bloomberg",
+    category: "wire",
+    tier: "breaking",
+    contentFilter: {
+      // Keep almost all wire flow; only obvious promo/noise is filtered.
+      minLength: 12,
+      exclude: ["Promoted", "Sponsored", "Sign up", "Subscribe"],
+    },
+    posting: ["breaking-only"],
+  },
   // ── Wire / Econ ──
   {
     handle: "financialjuice",
@@ -41,24 +192,9 @@ export const HANDLE_ROUTING: HandleRoutingConfig[] = [
     category: "wire",
     tier: "breaking",
     contentFilter: {
-      requireAny: [
-        "Actual",
-        "Forecast",
-        "Prelim",
-        "Final",
-        "Prior",
-        "Revised",
-        "Change",
-        "Index",
-        "Rate",
-        "GDP",
-        "CPI",
-        "PPI",
-        "PMI",
-        "NFP",
-        "Unemployment",
-        "Claims",
-      ],
+      // Keep most of Following-feed posts; downstream scorer will classify.
+      minLength: 12,
+      exclude: ["Promoted", "Sponsored", "Sign up", "Subscribe"],
     },
     posting: ["econ-data"],
   },
@@ -147,6 +283,47 @@ export const HANDLE_ROUTING: HandleRoutingConfig[] = [
     },
     posting: ["repost-only"],
   },
+  // ── Macro Edge ──
+  {
+    handle: "MacroEdge",
+    displayName: "Macro Edge",
+    category: "macro",
+    tier: "standard",
+    contentFilter: {
+      minLength: 20,
+      exclude: ["Promoted", "Sponsored", "Sign up", "Subscribe"],
+    },
+    posting: ["credit-required"],
+  },
+  // ── realDonaldTrump (geopolitical/policy) ──
+  {
+    handle: "realDonaldTrump",
+    displayName: "Donald Trump",
+    category: "osint",
+    tier: "standard",
+    contentFilter: {
+      requireAny: [
+        "tariff",
+        "trade",
+        "china",
+        "iran",
+        "israel",
+        "gaza",
+        "ukraine",
+        "russia",
+        "nato",
+        "sanction",
+        "policy",
+        "fed",
+        "rate",
+        "treasury",
+        "middle east",
+      ],
+      minLength: 30,
+      exclude: ["Promoted", "Sponsored", "Sign up", "Subscribe"],
+    },
+    posting: ["credit-required"],
+  },
   // ── OSINTtechnical ──
   {
     handle: "OSINTtechnical",
@@ -224,34 +401,63 @@ export function passesContentFilter(
   text: string,
   filter: HandleRoutingConfig["contentFilter"],
 ): boolean {
-  const t = text.toLowerCase();
-
   if (filter.minLength && text.length < filter.minLength) return false;
 
   if (filter.requireAll) {
-    if (!filter.requireAll.every((kw) => t.includes(kw.toLowerCase())))
+    if (!filter.requireAll.every((kw) => includesKeyword(text, kw)))
       return false;
   }
 
   if (filter.requireAny) {
-    if (!filter.requireAny.some((kw) => t.includes(kw.toLowerCase())))
+    if (!filter.requireAny.some((kw) => includesKeyword(text, kw)))
       return false;
   }
 
   if (filter.exclude) {
-    if (filter.exclude.some((kw) => t.includes(kw.toLowerCase()))) return false;
+    if (filter.exclude.some((kw) => includesKeyword(text, kw))) return false;
   }
 
   if (filter.personsOfInterest) {
-    if (
-      !filter.personsOfInterest.some((name) =>
-        t.includes(name.toLowerCase()),
-      )
-    )
+    if (!filter.personsOfInterest.some((name) => includesKeyword(text, name)))
       return false;
   }
 
   return true;
+}
+
+export function passesCategoryKeywordFilter(
+  category: HandleRoutingConfig["category"],
+  text: string,
+): boolean {
+  const keywords = CATEGORY_KEYWORDS[category];
+  if (!keywords || keywords.length === 0) return true;
+  return keywords.some((kw) => includesKeyword(text, kw));
+}
+
+function extractReferencedHandle(text: string): string | null {
+  const patterns = [
+    /\brt\s+@([A-Za-z0-9_]{1,20})\b/i,
+    /\bvia\s+@([A-Za-z0-9_]{1,20})\b/i,
+    /\bfrom\s+@([A-Za-z0-9_]{1,20})\b/i,
+  ];
+  for (const re of patterns) {
+    const m = text.match(re);
+    const handle = m?.[1]?.replace(/^@/, "").trim();
+    if (handle) return handle.toLowerCase();
+  }
+  return null;
+}
+
+export function isDisallowedRepostOrRetweet(
+  text: string,
+  approvedHandles: Set<string>,
+): boolean {
+  if (!/\b(rt\s+@|retweet(?:ed|ing)?|repost(?:ed|ing)?)\b/i.test(text)) {
+    return false;
+  }
+  const referenced = extractReferencedHandle(text);
+  if (!referenced) return true;
+  return !approvedHandles.has(referenced);
 }
 
 export function getPostingRules(handle: string): XPostingRule[] {

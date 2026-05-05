@@ -15,7 +15,7 @@
 // [claude-code 2026-04-18] S24-T4: Rebuilt scoring calibration workbench.
 // [claude-code 2026-03-27] S2-T7: Refinement Engine
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { RefreshCw, Wrench, AlertTriangle } from "lucide-react";
+import { RefreshCw, Wrench, AlertTriangle, X } from "lucide-react";
 import { isRefinementEditUnlocked } from "../../lib/dev-settings-auth";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import type { CalibrationEntry } from "../../../backend-hono/src/types/calibration";
@@ -100,11 +100,38 @@ interface RegimeState {
   multipliers?: Record<string, number>;
 }
 
+interface KickstartSourceStat {
+  handle: string;
+  fetched: number;
+  candidates: number;
+  accepted: number;
+}
+
+interface KickstartResult {
+  success: boolean;
+  handles: number;
+  selectedHandles: string[];
+  fetched: number;
+  fetchedRettiwt?: number;
+  fetchedXActions?: number;
+  xactionsEnabled?: boolean;
+  xactionsFallbackHandles?: string[];
+  candidateItems: number;
+  written: number;
+  rescored: number;
+  perSource: KickstartSourceStat[];
+  kickedAt: string;
+}
+
 function sameSensitivities(
   a: SensitivityValues,
   b: SensitivityValues,
 ): boolean {
   return GROUPS.every((g) => Math.abs(a[g] - b[g]) < 0.001);
+}
+
+function isWebSourceHandle(handle: string): boolean {
+  return handle.includes(".") || handle.startsWith("http");
 }
 
 export function RefinementEngine() {
@@ -138,6 +165,14 @@ export function RefinementEngine() {
   const [sourceAccounts, setSourceAccounts] = useState<SourceAccount[]>([]);
   const [econFilters, setEconFilters] = useState<EconWatchFilter[]>([]);
   const [isRescoring, setIsRescoring] = useState(false);
+  const [isRefreshingAuth, setIsRefreshingAuth] = useState(false);
+  const [isKickstartDrawerOpen, setIsKickstartDrawerOpen] = useState(false);
+  const [kickstartHandles, setKickstartHandles] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [lastKickstart, setLastKickstart] = useState<KickstartResult | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
 
   // --- Edit lock ---
@@ -246,6 +281,29 @@ export function RefinementEngine() {
       /* silent */
     }
   }, []);
+
+  const kickstartSources = useMemo(
+    () =>
+      sourceAccounts.filter(
+        (a) => a.active && a.method === "browser" && !isWebSourceHandle(a.handle),
+      ),
+    [sourceAccounts],
+  );
+
+  useEffect(() => {
+    if (kickstartSources.length === 0) {
+      setKickstartHandles(new Set());
+      return;
+    }
+    setKickstartHandles((prev) => {
+      const allowed = new Set(kickstartSources.map((s) => s.handle.toLowerCase()));
+      const retained = kickstartSources
+        .map((s) => s.handle)
+        .filter((h) => prev.has(h) || prev.has(h.toLowerCase()));
+      if (retained.length > 0) return new Set(retained);
+      return new Set(kickstartSources.map((s) => s.handle));
+    });
+  }, [kickstartSources]);
 
   const loadV4State = useCallback(async () => {
     try {
@@ -428,6 +486,61 @@ export function RefinementEngine() {
     }
   };
 
+  const handleRefreshAuth = useCallback(async () => {
+    if (kickstartHandles.size === 0) {
+      addToast("Pick at least one source", "info");
+      return;
+    }
+    setIsRefreshingAuth(true);
+    try {
+      const token = (await getAccessToken()) ?? undefined;
+      const headers = {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+
+      const kickstartRes = await fetch(
+        `${API_BASE}/api/riskflow/rettiwt-kickstart`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            handles: Array.from(kickstartHandles),
+          }),
+        },
+      );
+      if (!kickstartRes.ok) {
+        const text = await kickstartRes.text().catch(() => "");
+        throw new Error(text || `HTTP ${kickstartRes.status}`);
+      }
+      const kickstartJson = (await kickstartRes.json().catch(
+        () => null,
+      )) as KickstartResult | null;
+      setLastKickstart(kickstartJson);
+
+      addToast(
+        "Rettiwt kickstart complete",
+        "success",
+        `Fetched ${kickstartJson?.fetched ?? 0}, wrote ${kickstartJson?.written ?? 0}`,
+      );
+      await refetchStats();
+      await fetchFeed();
+    } catch {
+      addToast("Rettiwt kickstart failed", "error");
+    } finally {
+      setIsRefreshingAuth(false);
+    }
+  }, [getAccessToken, addToast, refetchStats, fetchFeed, kickstartHandles]);
+
+  const toggleKickstartHandle = useCallback((handle: string) => {
+    setKickstartHandles((prev) => {
+      const next = new Set(prev);
+      if (next.has(handle)) next.delete(handle);
+      else next.add(handle);
+      return next;
+    });
+  }, []);
+
   return (
     <div className="h-full flex flex-col bg-[var(--fintheon-bg)] relative">
       {/* Header toolbar */}
@@ -481,8 +594,150 @@ export function RefinementEngine() {
             />
             {isRescoring ? "Re-Scoring…" : "Re-Score All"}
           </button>
+          <button
+            onClick={() => setIsKickstartDrawerOpen(true)}
+            disabled={isRefreshingAuth || kickstartSources.length === 0}
+            className="flex items-center gap-1.5 px-3.5 py-2 border border-[var(--fintheon-accent)]/40 text-[12px] font-semibold text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw
+              className={`w-4 h-4 ${isRefreshingAuth ? "animate-spin" : ""}`}
+            />
+            {isRefreshingAuth ? "Refreshing…" : "Rettiwt Kickstart"}
+          </button>
         </div>
       </div>
+
+      {isKickstartDrawerOpen && (
+        <div className="absolute inset-0 z-40">
+          <button
+            className="absolute inset-0 bg-black/35"
+            onClick={() => setIsKickstartDrawerOpen(false)}
+            aria-label="Close kickstart drawer"
+          />
+          <aside className="absolute right-0 top-0 h-full w-[420px] border-l border-[var(--fintheon-accent)]/25 bg-[var(--fintheon-bg)] shadow-2xl">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--fintheon-accent)]/20">
+              <div>
+                <div className="text-[12px] font-bold tracking-[0.12em] text-[var(--fintheon-text)]">
+                  RETTIWT KICKSTART
+                </div>
+                <div className="text-[10px] text-[var(--fintheon-muted)] mt-1">
+                  Toggle sources, then run filtered pull.
+                </div>
+              </div>
+              <button
+                onClick={() => setIsKickstartDrawerOpen(false)}
+                className="p-1 text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 h-[calc(100%-58px)] overflow-y-auto">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-[11px] font-semibold text-[var(--fintheon-muted)]">
+                  Sources ({kickstartSources.length})
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() =>
+                      setKickstartHandles(
+                        new Set(kickstartSources.map((s) => s.handle)),
+                      )
+                    }
+                    className="text-[10px] text-[var(--fintheon-accent)]"
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => setKickstartHandles(new Set())}
+                    className="text-[10px] text-[var(--fintheon-muted)]"
+                  >
+                    None
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2 mb-4">
+                {kickstartSources.map((src) => {
+                  const enabled = kickstartHandles.has(src.handle);
+                  return (
+                    <div
+                      key={src.id}
+                      className="flex items-center justify-between px-3 py-2 border border-[var(--fintheon-glass-border)]"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-semibold text-[var(--fintheon-text)] truncate">
+                          @{src.handle}
+                        </div>
+                        <div className="text-[10px] text-[var(--fintheon-muted)] truncate">
+                          {src.display_name ?? src.category}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => toggleKickstartHandle(src.handle)}
+                        className={`w-10 h-5 rounded-full border transition-colors ${
+                          enabled
+                            ? "bg-[var(--fintheon-accent)] border-[var(--fintheon-accent)]"
+                            : "bg-transparent border-[var(--fintheon-glass-border)]"
+                        }`}
+                        aria-label={`Toggle ${src.handle}`}
+                      >
+                        <span
+                          className={`block w-3.5 h-3.5 rounded-full bg-white transition-transform ${
+                            enabled ? "translate-x-5" : "translate-x-0.5"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={handleRefreshAuth}
+                disabled={isRefreshingAuth || kickstartHandles.size === 0}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[var(--fintheon-accent)] text-[var(--fintheon-bg)] text-[12px] font-bold disabled:opacity-50"
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${isRefreshingAuth ? "animate-spin" : ""}`}
+                />
+                {isRefreshingAuth ? "Running…" : "Run Kickstart"}
+              </button>
+
+              {lastKickstart && (
+                <div className="mt-4 border border-[var(--fintheon-glass-border)]">
+                  <div className="px-3 py-2 border-b border-[var(--fintheon-glass-border)] text-[10px] text-[var(--fintheon-muted)]">
+                    Last run: {new Date(lastKickstart.kickedAt).toLocaleString()}
+                  </div>
+                  <div className="px-3 py-2 text-[11px] text-[var(--fintheon-text)]">
+                    fetched {lastKickstart.fetched} · candidates{" "}
+                    {lastKickstart.candidateItems} · written{" "}
+                    {lastKickstart.written}
+                  </div>
+                  <div className="px-3 pb-1 text-[10px] text-[var(--fintheon-muted)]">
+                    rettiwt {lastKickstart.fetchedRettiwt ?? 0} · xactions{" "}
+                    {lastKickstart.fetchedXActions ?? 0}
+                  </div>
+                  <div className="px-3 pb-3 space-y-1">
+                    {lastKickstart.perSource?.map((s) => (
+                      <div
+                        key={s.handle}
+                        className="flex items-center justify-between text-[10px] text-[var(--fintheon-muted)]"
+                      >
+                        <span>@{s.handle}</span>
+                        <span>
+                          {s.fetched}/{s.candidates}/{s.accepted}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex-1 flex items-center justify-center">

@@ -56,7 +56,7 @@ export function isSimilarToDismissed(
 // ── Narrative Keywords ──────────────────────────────────────────────────────
 const NARRATIVE_KEYWORDS: Record<string, RegExp> = {
   "middle-east-conflict":
-    /\b(iran|israel|irgc|houthi|hezbollah|hamas|gaza|lebanon|netanyahu|araghchi|khamenei|hormuz|strait|missile|ceasefire|idf)\b/i,
+    /\b(iran|israel|irgc|houthi|hezbollah|hamas|gaza|lebanon|netanyahu|araghchi|khamenei|hormuz|strait|missile|ceasefire|idf|ukmto|cargo vessel|maritime incident|engine room|shipping lane|gulf of oman|dubai|uae)\b/i,
   "liquidity-credit":
     /\b(liquidity|credit|repo|reverse repo|TGA|treasury general|QT|quantitative tight|bank run|bank stress|deposit flight|private credit|redemption)\b/i,
   "ai-singularity":
@@ -164,6 +164,15 @@ const GEO_KEYWORDS = [
   "congress",
   "legislation",
   "treasury secretary",
+  "ukmto",
+  "hormuz",
+  "red sea",
+  "cargo vessel",
+  "engine room fire",
+  "maritime incident",
+  "shipping lane",
+  "uae",
+  "dubai",
 ];
 
 const PREDICTION_KEYWORDS = [
@@ -275,6 +284,15 @@ const RISK_TYPE_KEYWORDS: Record<string, string[]> = {
     "invasion",
     "missile",
     "nuclear",
+    "ukmto",
+    "hormuz",
+    "red sea",
+    "cargo vessel",
+    "maritime incident",
+    "engine room fire",
+    "shipping lane",
+    "uae",
+    "dubai",
   ],
   Earnings: [
     "earnings",

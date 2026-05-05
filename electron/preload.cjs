@@ -147,3 +147,12 @@ contextBridge.exposeInMainWorld("systemPermissions", {
 // existing __FINTHEON_API_BASE__ convention. Build-time VITE_API_URL is authoritative;
 // this is a belt-and-suspenders fallback for any code that reads at runtime.
 contextBridge.exposeInMainWorld("__FINTHEON_API_BASE__", API_BASE);
+
+// S38-T1: Cmd+K menu shortcut bridge — renderer can unregister/re-register the
+// Cmd+K accelerator so the command palette captures it instead of the Electron menu.
+contextBridge.exposeInMainWorld("electronMenu", {
+  unregisterShortcut: (shortcut) =>
+    ipcRenderer.invoke("menu:unregister-shortcut", shortcut),
+  registerShortcut: (shortcut) =>
+    ipcRenderer.invoke("menu:register-shortcut", shortcut),
+});

@@ -234,7 +234,7 @@ async function checkHermesAI(): Promise<ServiceDiagnostic> {
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) {
     return {
-      name: "Hermes AI (DeepSeek primary)",
+      name: "Hermes",
       status: "error",
       detail: "DEEPSEEK_API_KEY not set",
       fix: "Add DEEPSEEK_API_KEY to backend-hono/.env or store a user key in Settings",
@@ -248,20 +248,20 @@ async function checkHermesAI(): Promise<ServiceDiagnostic> {
 
     if (health.available) {
       return {
-        name: "Hermes AI (DeepSeek primary)",
+        name: "Hermes",
         status: "ok",
         detail: `deepseek-reasoner primary — ${latency}ms response`,
       };
     }
     return {
-      name: "Hermes AI (DeepSeek primary)",
+      name: "Hermes",
       status: "degraded",
       detail: `${health.error ?? "unreachable"} — ${latency}ms`,
       fix: "Check DeepSeek API key validity and api.deepseek.com reachability",
     };
   } catch (err) {
     return {
-      name: "Hermes AI (DeepSeek primary)",
+      name: "Hermes",
       status: "error",
       detail: err instanceof Error ? err.message : String(err),
       fix: "Check network connectivity to api.deepseek.com",

@@ -49,6 +49,8 @@ const POLL_INTERVAL_MS = 30_000;
 
 /** Map backend service names → short display keys for the footer */
 const KEY_MAP: Record<string, string> = {
+  Hermes: "ai",
+  "Hermes AI (DeepSeek primary)": "ai",
   "Hermes AI (OpenRouter)": "ai",
   Supabase: "database",
   "X Feed": "x-feed",
@@ -58,6 +60,8 @@ const KEY_MAP: Record<string, string> = {
 };
 
 const SHORT_NAMES: Record<string, string> = {
+  Hermes: "Hermes",
+  "Hermes AI (DeepSeek primary)": "Hermes",
   "Hermes AI (OpenRouter)": "AI",
   Supabase: "Database",
   "X Feed": "X",

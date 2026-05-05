@@ -1,3 +1,4 @@
+// [claude-code 2026-05-05] Added compact mode for tight header shells: keeps pulse + waveform + ER score and drops resonance wording.
 // [claude-code 2026-03-14] Refactored to use useERSafe() from ERContext (shared state), local fallback retained
 import { useState, useEffect, useRef } from "react";
 import { Mic, MicOff, AlertTriangle } from "lucide-react";
@@ -7,6 +8,7 @@ import { useERSafe } from "../../contexts/ERContext";
 
 interface CompactERMonitorProps {
   onERScoreChange?: (score: number) => void;
+  compact?: boolean;
 }
 
 /**
@@ -14,7 +16,10 @@ interface CompactERMonitorProps {
  * Designed for the tickers-only floating widget
  * Uses shared ERContext when available, falls back to local monitoring
  */
-export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
+export function CompactERMonitor({
+  onERScoreChange,
+  compact = false,
+}: CompactERMonitorProps) {
   const backend = useBackend();
   const erContext = useERSafe();
 
@@ -250,10 +255,12 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
         <span className={`text-xs font-bold ${stateColor[resonanceState]}`}>
           {erScore.toFixed(1)}
         </span>
-        <span className={`text-[9px] ${stateColor[resonanceState]}`}>
-          {resonanceState}
-        </span>
-        {resonanceState === "Tilted" && (
+        {!compact && (
+          <span className={`text-[9px] ${stateColor[resonanceState]}`}>
+            {resonanceState}
+          </span>
+        )}
+        {!compact && resonanceState === "Tilted" && (
           <AlertTriangle className="w-3 h-3 text-red-500 animate-pulse" />
         )}
       </div>

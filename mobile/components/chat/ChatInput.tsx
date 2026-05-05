@@ -1,6 +1,13 @@
-// [claude-code 2026-04-16] Chat input — matches desktop theme: gradient box, accent border, inline toolbar
-import { useState, useRef, useCallback, type KeyboardEvent } from "react";
-import { ArrowUp, Plus, Newspaper } from "lucide-react";
+// S38-T1: Chat input — tap-hold palette, swipe-up history, slash commands
+import {
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  type KeyboardEvent,
+  type TouchEvent,
+} from "react";
+import { ArrowUp, Plus, Newspaper, X } from "lucide-react";
 import { ImagePreviewRow } from "./ImagePreviewRow";
 import { HeadlineChips, formatHeadlineContext } from "./HeadlineChips";
 import type { HeadlineChip } from "./HeadlineChips";
@@ -13,12 +20,15 @@ interface ChatInputProps {
   ) => void;
   isLoading: boolean;
   disabled?: boolean;
+  /** S38-T1: Callback when user swipes up on empty textarea */
+  onRecallLast?: () => void;
 }
 
 export default function ChatInput({
   onSend,
   isLoading,
   disabled,
+  onRecallLast,
 }: ChatInputProps) {
   const [text, setText] = useState("");
   const [focused, setFocused] = useState(false);
@@ -27,6 +37,47 @@ export default function ChatInput({
   const [headlinePickerOpen, setHeadlinePickerOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── S38-T1: Tap-hold palette ──────────────────────────────────────────
+  const [showQuickPalette, setShowQuickPalette] = useState(false);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartYRef = useRef(0);
+
+  const handleTouchStart = useCallback((e: TouchEvent<HTMLTextAreaElement>) => {
+    touchStartYRef.current = e.touches[0]?.clientY ?? 0;
+    longPressTimerRef.current = setTimeout(() => {
+      setShowQuickPalette(true);
+    }, 500);
+  }, []);
+
+  const handleTouchEnd = useCallback(
+    (e: TouchEvent<HTMLTextAreaElement>) => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+      // Swipe-up detection (when textarea is empty)
+      const endY = e.changedTouches[0]?.clientY ?? 0;
+      const deltaY = touchStartYRef.current - endY;
+      if (deltaY > 50 && !text.trim()) {
+        // Swipe up on empty textarea — recall last
+        if (onRecallLast) onRecallLast();
+      }
+    },
+    [text, onRecallLast],
+  );
+
+  // ── S38-T1: Slash command detection ───────────────────────────────────
+  const showSlashCommands = text.startsWith("/") && text.length < 20;
+  const SLASH_COMMANDS = [
+    { cmd: "/oracle", label: "Oracle — All-Seer" },
+    { cmd: "/feucht", label: "Feucht — Risk" },
+    { cmd: "/consul", label: "Consul — Fundamentals" },
+    { cmd: "/herald", label: "Herald — News" },
+    { cmd: "/harper", label: "Harper — CAO" },
+    { cmd: "/plan", label: "Plan Mode" },
+    { cmd: "/stop", label: "Stop Stream" },
+  ];
 
   const handleSend = useCallback(() => {
     const trimmed = text.trim();
@@ -139,6 +190,8 @@ export default function ChatInput({
             handleInput();
           }}
           onKeyDown={handleKeyDown}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           placeholder="Message Harper..."
@@ -160,6 +213,40 @@ export default function ChatInput({
             padding: "14px 16px 8px",
           }}
         />
+
+        {/* S38-T1: Slash command pills */}
+        {showSlashCommands && (
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 6,
+              padding: "4px 16px 8px",
+            }}
+          >
+            {SLASH_COMMANDS.filter((c) =>
+              c.cmd.startsWith(text.split(" ")[0]),
+            ).map((c) => (
+              <button
+                key={c.cmd}
+                onClick={() => setText(c.cmd + " ")}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: 12,
+                  border: "1px solid rgba(199,159,74,0.25)",
+                  background: "rgba(199,159,74,0.08)",
+                  color: "var(--accent, #c79f4a)",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {c.cmd}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Bottom toolbar */}
         <div
@@ -258,6 +345,107 @@ export default function ChatInput({
         onToggle={handleToggleChip}
         onClear={() => setHeadlineChips([])}
       />
+
+      {/* S38-T1: Quick palette overlay (tap-hold) */}
+      {showQuickPalette && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 200,
+            background: "rgba(5,4,2,0.85)",
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+            paddingBottom: "calc(120px + env(safe-area-inset-bottom, 0px))",
+          }}
+          onClick={() => setShowQuickPalette(false)}
+        >
+          <div
+            style={{
+              width: "90%",
+              maxWidth: 360,
+              maxHeight: "50vh",
+              borderRadius: 16,
+              border: "1px solid rgba(199,159,74,0.25)",
+              background: "#080705",
+              overflow: "hidden",
+              boxShadow: "0 -8px 32px rgba(0,0,0,0.5)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "12px 16px",
+                borderBottom: "1px solid rgba(199,159,74,0.1)",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "var(--accent, #c79f4a)",
+                }}
+              >
+                Quick Actions
+              </span>
+              <button
+                onClick={() => setShowQuickPalette(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#6B7280",
+                  cursor: "pointer",
+                  padding: 4,
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div style={{ padding: "8px 0" }}>
+              {SLASH_COMMANDS.map((s) => (
+                <button
+                  key={s.cmd}
+                  onClick={() => {
+                    setText(s.cmd + " ");
+                    setShowQuickPalette(false);
+                  }}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "10px 16px",
+                    background: "none",
+                    border: "none",
+                    color: "#f0ead6",
+                    fontSize: 14,
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: "var(--accent, #c79f4a)",
+                      minWidth: 70,
+                    }}
+                  >
+                    {s.cmd}
+                  </span>
+                  <span style={{ fontSize: 12, color: "#6B7280" }}>
+                    {s.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+// [claude-code 2026-05-05] Responsive compaction: optional score-only header mode that hides forecast/urgency words at marginal widths.
 // [claude-code 2026-03-11] Redesigned to consume backend IVScoreResponse — point range, rationale tooltip, environment label
 // [claude-code 2026-03-11] VIX pulsating border: red >22, sunburst orange 16-22, yellow 14-16
 // [claude-code 2026-03-16] Restore toolbar regressions: IV inline points badge (envLabel + pts inline)
@@ -15,6 +16,7 @@ interface IVScoreCardProps {
   /** Loading state while first fetch is in-flight */
   loading?: boolean;
   layoutOption?: "tickers-only" | "combined";
+  compactCopy?: boolean;
 }
 
 function getScoreColor(score: number) {
@@ -134,7 +136,12 @@ function getDirectionPulseStyle(direction: "up" | "down"): React.CSSProperties {
   };
 }
 
-export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
+export function IVScoreCard({
+  data,
+  loading,
+  layoutOption,
+  compactCopy = false,
+}: IVScoreCardProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [popupPos, setPopupPos] = useState<{
     top: number;
@@ -251,7 +258,9 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
         <span className={`text-sm font-bold ${color}`}>
           {data.score.toFixed(1)}
         </span>
-        <span className={`text-[10px] font-medium ${color}`}>{envLabel}</span>
+        {!compactCopy && (
+          <span className={`text-[10px] font-medium ${color}`}>{envLabel}</span>
+        )}
         {pts && (
           <>
             <span className="text-gray-600 text-[10px]">|</span>
@@ -259,11 +268,13 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
             <span className="text-[10px] text-[var(--fintheon-accent)] font-medium">
               ±{pts.scaledPoints} pts
             </span>
-            <span
-              className={`text-[9px] font-medium ${getUrgencyColor(pts.urgency)}`}
-            >
-              {pts.urgency}
-            </span>
+            {!compactCopy && (
+              <span
+                className={`text-[9px] font-medium ${getUrgencyColor(pts.urgency)}`}
+              >
+                {pts.urgency}
+              </span>
+            )}
           </>
         )}
 

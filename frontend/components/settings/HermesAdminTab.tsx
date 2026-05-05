@@ -52,16 +52,17 @@ export function HermesAdminTab() {
     const saved = localStorage.getItem("fintheon:default-chat-provider");
     if (
       saved === "deepseek-direct" ||
-      saved === "deepseek-oc-api" ||
-      saved === "nous"
+      saved === "nous" ||
+      saved === "opencode-go"
     ) {
       return saved;
     }
-    if (saved === "orouter" || saved === "local") {
-      localStorage.setItem("fintheon:default-chat-provider", "deepseek-direct");
-      localStorage.setItem("fintheon:harper-provider", "deepseek-direct");
+    // Migrate stale provider values
+    if (saved === "deepseek-oc-api" || saved === "orouter" || saved === "local") {
+      localStorage.setItem("fintheon:default-chat-provider", "nous");
+      localStorage.setItem("fintheon:harper-provider", "nous");
     }
-    return "deepseek-direct";
+    return "nous";
   });
 
   // Diagnostics state
@@ -186,10 +187,9 @@ export function HermesAdminTab() {
             }
             className="w-full bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/30 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/60"
           >
-            <option value="deepseek-direct">DeepSeek (Direct)</option>
-            <option value="deepseek-oc-api">DeepSeek (OC API)</option>
-            <option value="orouter">OpenRouter Opus</option>
-            <option value="local">VProxy (Local)</option>
+            <option value="deepseek-direct">DeepSeek v4 Pro (Direct)</option>
+            <option value="nous">Qwen 3.6 via Nous (Recommended)</option>
+            <option value="opencode-go">User Selected Model (Opencode Go)</option>
           </select>
           <div className="bg-amber-900/20 border border-amber-700/30 rounded-lg p-3 text-xs text-amber-100/80 leading-relaxed">
             Backend processes (briefs, Arbitrum, RiskFlow) always run on Hermes

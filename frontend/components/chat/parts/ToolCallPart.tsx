@@ -5,10 +5,10 @@ import {
   ChevronRight,
   Check,
   AlertCircle,
-  Loader2,
   Copy,
   Clock,
 } from "lucide-react";
+import { BrailleSpinner } from "../primitive/BrailleSpinner";
 import type { ToolInvocationPart, ToolResultPart } from "../types";
 
 interface ToolCallPartProps {
@@ -39,12 +39,7 @@ function StatusIcon({ state }: { state: ToolInvocationPart["state"] }) {
   switch (state) {
     case "pending":
     case "running":
-      return (
-        <Loader2
-          size={13}
-          className="animate-spin text-zinc-400 flex-shrink-0"
-        />
-      );
+      return <BrailleSpinner size={13} className="flex-shrink-0" />;
     case "done":
       return <Check size={13} className="text-green-500 flex-shrink-0" />;
     case "error":

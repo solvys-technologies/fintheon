@@ -56,6 +56,22 @@ export interface BridgeStreamEvent {
     | "text-delta"
     | "text-end"
     | "tool-use"
+    | "thinking"
+    | "tool_call"
+    | "citation"
+    | "chart_render"
+    | "browser_session"
+    | "narrative_create"
+    | "approval_needed"
+    | "settings_saved"
+    | "desk_plan_updated"
+    | "regime_added"
+    | "instruction_updated"
+    | "plan_mode"
+    | "skill_proposed"
+    | "patch_proposed"
+    | "github_issue_filed"
+    | "complete"
     | "error";
   id: string;
   delta?: string;
@@ -681,9 +697,40 @@ function processStreamEvent(
       });
       break;
 
-    default:
-      // message_start, message_delta, message_stop, content_block_stop — ignore
+    default: {
+      // S38-T1: V2 event types — passthrough from Claude CLI if emitted directly,
+      // or synthesized by other parts of the pipeline. These types are not in the
+      // ClaudeStreamEvent union, so they fall through to default. We check the
+      // type string and generate appropriate BridgeStreamEvents.
+      const raw = event as unknown as { type: string; [key: string]: unknown };
+      const v2Types = new Set([
+        "thinking",
+        "tool_call",
+        "citation",
+        "chart_render",
+        "browser_session",
+        "narrative_create",
+        "approval_needed",
+        "settings_saved",
+        "desk_plan_updated",
+        "regime_added",
+        "instruction_updated",
+        "plan_mode",
+        "skill_proposed",
+        "patch_proposed",
+        "github_issue_filed",
+        "complete",
+      ]);
+      if (v2Types.has(raw.type)) {
+        events.push({
+          type: raw.type as BridgeStreamEvent["type"],
+          id: (raw.id as string) || messageId,
+          metadata: raw,
+        });
+      }
+      // else: message_start, message_delta, message_stop, content_block_stop — ignore
       break;
+    }
   }
 
   if (events.length === 0) return null;

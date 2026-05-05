@@ -1305,3 +1305,64 @@ ipcMain.handle("harper-vision:set-privacy-mode", async (_event, enabled) => {
 ipcMain.handle("harper-vision:get-privacy-mode", async () => {
   return { privacyMode: readHarperVisionPrivacy() };
 });
+
+// S38-T1: Cmd+K menu shortcut bridge — allow renderer to unregister/re-register
+// the Cmd+K accelerator so the command palette captures it.
+let savedShortcuts = {};
+ipcMain.handle("menu:unregister-shortcut", (_event, shortcut) => {
+  try {
+    const menu = require("electron").Menu.getApplicationMenu();
+    if (!menu) return { ok: false, reason: "no application menu" };
+    const items = menu.items;
+    for (const item of items) {
+      if (item.accelerator === shortcut) {
+        savedShortcuts[shortcut] = item.accelerator;
+        item.accelerator = null;
+        require("electron").Menu.setApplicationMenu(menu);
+        return { ok: true };
+      }
+      // Search submenus
+      if (item.submenu) {
+        for (const sub of item.submenu.items) {
+          if (sub.accelerator === shortcut) {
+            savedShortcuts[shortcut] = {
+              parent: item,
+              sub: sub,
+              accel: sub.accelerator,
+            };
+            sub.accelerator = null;
+            require("electron").Menu.setApplicationMenu(menu);
+            return { ok: true };
+          }
+        }
+      }
+    }
+    return { ok: false, reason: "shortcut not found in menu" };
+  } catch (err) {
+    return { ok: false, reason: err.message };
+  }
+});
+
+ipcMain.handle("menu:register-shortcut", (_event, shortcut) => {
+  try {
+    const saved = savedShortcuts[shortcut];
+    if (!saved) return { ok: false, reason: "no saved shortcut state" };
+    const menu = require("electron").Menu.getApplicationMenu();
+    if (!menu) return { ok: false, reason: "no application menu" };
+    if (saved.sub) {
+      saved.sub.accelerator = saved.accel;
+    } else {
+      for (const item of menu.items) {
+        if (item.accelerator === null && saved === shortcut) {
+          item.accelerator = shortcut;
+          break;
+        }
+      }
+    }
+    require("electron").Menu.setApplicationMenu(menu);
+    delete savedShortcuts[shortcut];
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, reason: err.message };
+  }
+});

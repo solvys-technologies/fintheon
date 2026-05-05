@@ -1,18 +1,14 @@
-// [claude-code 2026-04-18] S21-T1 polish: guard isDispatchedHere against undefined-on-both-sides
-// false positives (after 404-clear of stale convo, both conversationId and dispatchedConversationId
-// can briefly be undefined → banner would linger). Also added a "dispatching" title for the relay
-// button so the spinner state doesn't keep the stale "send this conversation" tooltip.
-// [claude-code 2026-04-18] S21-T1: Relay dispatch button + disconnect + mirror banner plumbed
-// into the composer's left action cluster (was in ChatHeader's clipboard-copy flow).
 // [claude-code 2026-03-11] T2a: clear active skill badge after send
 // [claude-code 2026-03-11] T3b: MCP auto-activation when skill selected
 // [claude-code 2026-03-11] T5: steer strip removed, queue chips added, always full PromptBox
 // [claude-code 2026-03-12] Switched from independent useVoiceAssistant() to shared VoiceContext
 // [claude-code 2026-04-11] S14-T5: Headline attachment via HeadlinePickerPopover + context injection
 // [claude-code 2026-03-22] Track 4: persona pills → PersonaDropdown, Plug2+Wrench → ToolsDropdown
-import { useEffect, useState, useCallback } from "react";
+// [claude-code 2026-04-21] Post-S35: removed relay dispatch; added Cmd+K palette, ↑↓ history,
+//   persona slash commands, plan mode toggle
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useThread, useThreadRuntime } from "@assistant-ui/react";
-import { Radio, Unplug, Loader2 } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 import { PromptBox } from "../ui/chatgpt-prompt-input";
 import { SKILL_PREFIXES } from "../../lib/skillPrefixes";
 import { SKILLS } from "../../lib/skills";
@@ -20,10 +16,10 @@ import { useVoice } from "../../contexts/VoiceContext";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import { useMcpConnectors } from "../../hooks/useMcpConnectors";
-import { useRelayDispatch } from "../../hooks/useRelayDispatch";
 import { PersonaDropdown } from "./PersonaDropdown";
 import { ToolsDropdown } from "./ToolsDropdown";
 import { ProviderDropdown, useHarperProvider } from "./ProviderDropdown";
+import { CommandPalette } from "./CommandPalette";
 import { API_BASE_URL } from "./constants";
 import {
   formatHeadlineContext,
@@ -31,7 +27,19 @@ import {
 } from "./HeadlinePickerPopover";
 
 /* ------------------------------------------------------------------ */
-/*  FintheonComposer                                                      */
+/*  Persona slash-command map                                         */
+/* ------------------------------------------------------------------ */
+
+const PERSONA_COMMANDS: Record<string, string> = {
+  oracle: "oracle",
+  feucht: "feucht",
+  consul: "consul",
+  herald: "herald",
+  harper: "harper",
+};
+
+/* ------------------------------------------------------------------ */
+/*  FintheonComposer                                                   */
 /* ------------------------------------------------------------------ */
 
 interface FintheonComposerProps {
@@ -44,14 +52,9 @@ interface FintheonComposerProps {
   lastError: string | null;
   disabledSkills?: Record<string, { reason: string }>;
   compact?: boolean;
-  /** Current conversation id — required for relay dispatch. */
+  /** @deprecated S38-T1: Dispatch removed — kept for backwards compat */
   conversationId?: string;
-  /**
-   * Optional: eject the cached conversation id when relay dispatch returns
-   * not_found. Self-heal for the hydration/dispatch ownership mismatch —
-   * legacy anon convos that hydrate via the anon fallback will 404 on dispatch,
-   * and without this prop the user stays stuck with a broken relay button.
-   */
+  /** @deprecated S38-T1: Dispatch removed — kept for backwards compat */
   onConversationGone?: () => void;
 }
 
@@ -65,69 +68,124 @@ export function FintheonComposer({
   lastError,
   disabledSkills: propDisabledSkills,
   compact,
-  conversationId,
-  onConversationGone,
+  conversationId: _conversationId,
+  onConversationGone: _onConversationGone,
 }: FintheonComposerProps) {
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
+  const messages = useThread((t) => t.messages);
   const [apiDisabledSkills, setApiDisabledSkills] = useState<
     Record<string, { reason: string }>
   >({});
   const voice = useVoice();
-  const { activeAgent } = useFintheonAgents();
+  const { activeAgent, agents, setActiveAgent } = useFintheonAgents();
   const { alerts } = useRiskFlow();
   const { servers, activeIds, toggle: toggleConnector } = useMcpConnectors();
   const { provider, setProvider } = useHarperProvider();
   const [headlineChips, setHeadlineChips] = useState<HeadlineChip[]>([]);
 
-  // Relay dispatch — disables the composer and shows a banner while active.
-  // [claude-code 2026-04-18] Fix: don't gate on isMobileReachable. /api/relay/health.connected
-  // on the LOCAL backend means "something is WS-connected to this local backend", not "mobile
-  // is online" — that flag is always false on desktop and was making the button permanently
-  // un-clickable. Dispatch is fire-and-forget via web-push; the push succeeds (pushedTo:0 if
-  // no subscriptions) and the user can open mobile to pick up.
-  const relay = useRelayDispatch();
-  // Guard against undefined-on-both-sides: if conversationId got cleared (e.g. 404-on-hydrate
-  // nuked the stale cache) relay.dispatchedConversationId can also be null/undefined briefly,
-  // and strict equality would resolve true → banner hangs around for one render. Require both
-  // sides to be truthy before claiming "dispatched here".
-  const isDispatchedHere = Boolean(
-    relay.isDispatched &&
-    conversationId &&
-    relay.dispatchedConversationId &&
-    relay.dispatchedConversationId === conversationId,
-  );
-  const relayDisabled =
-    relay.isDispatching ||
-    !conversationId ||
-    (relay.isDispatched && !isDispatchedHere); // already dispatched elsewhere
+  // ── Command palette (Cmd+K) ────────────────────────────────────────────
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
 
-  const handleRelayClick = useCallback(async () => {
-    if (!conversationId) return;
-    if (isDispatchedHere) {
-      await relay.disconnect();
-    } else {
-      try {
-        await relay.dispatch(conversationId);
-      } catch (err) {
-        console.error("[FintheonComposer] relay dispatch failed:", err);
-        // Self-heal: a "not_found" dispatch means the backend doesn't recognize
-        // this convo under the current user's sub — most commonly a legacy anon
-        // convo missed by the 2026-04-18 migration. Evicting the cached id lets
-        // the user start a fresh convo and unblocks the button. The backend also
-        // auto-reassigns on next hydration, so sending a message will usually
-        // just work; this is defense-in-depth for older builds.
-        if (
-          err instanceof Error &&
-          /not_found|Conversation not found/i.test(err.message) &&
-          onConversationGone
-        ) {
-          onConversationGone();
-        }
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setShowCommandPalette((v) => !v);
       }
-    }
-  }, [conversationId, isDispatchedHere, relay, onConversationGone]);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
+  // ── Plan mode ──────────────────────────────────────────────────────────
+  const [planMode, setPlanMode] = useState(false);
+  const [planTodos, setPlanTodos] = useState<
+    { id: string; text: string; done: boolean }[]
+  >([]);
+
+  const togglePlanMode = useCallback(() => {
+    setPlanMode((v) => {
+      if (v) {
+        // Exiting plan mode — clear todos
+        setPlanTodos([]);
+      }
+      return !v;
+    });
+  }, []);
+
+  const handlePlanTodoToggle = useCallback((id: string) => {
+    setPlanTodos((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
+    );
+  }, []);
+
+  const handlePlanComplete = useCallback(() => {
+    setPlanMode(false);
+    setPlanTodos([]);
+  }, []);
+
+  // ── Message history navigation (↑↓) ──────────────────────────────────
+  const historyIndexRef = useRef(-1);
+  const [recallText, setRecallText] = useState<string | null>(null);
+
+  const getUserMessages = useCallback(() => {
+    return messages.filter((m: any) => m.role === "user");
+  }, [messages]);
+
+  const handleHistoryUp = useCallback(() => {
+    const userMsgs = getUserMessages();
+    if (userMsgs.length === 0) return;
+    const nextIdx =
+      historyIndexRef.current < userMsgs.length - 1
+        ? historyIndexRef.current + 1
+        : historyIndexRef.current;
+    historyIndexRef.current = nextIdx;
+    const msg = userMsgs[userMsgs.length - 1 - nextIdx];
+    const text =
+      typeof msg.content === "string"
+        ? msg.content
+        : Array.isArray(msg.content)
+          ? msg.content
+              .filter((p: any) => p.type === "text")
+              .map((p: any) => p.text)
+              .join("")
+          : "";
+    setRecallText(text);
+  }, [getUserMessages]);
+
+  const handleHistoryDown = useCallback(() => {
+    const userMsgs = getUserMessages();
+    if (historyIndexRef.current <= 0) {
+      historyIndexRef.current = -1;
+      setRecallText("");
+      return;
+    }
+    historyIndexRef.current -= 1;
+    const msg = userMsgs[userMsgs.length - 1 - historyIndexRef.current];
+    const text =
+      typeof msg.content === "string"
+        ? msg.content
+        : Array.isArray(msg.content)
+          ? msg.content
+              .filter((p: any) => p.type === "text")
+              .map((p: any) => p.text)
+              .join("")
+          : "";
+    setRecallText(text);
+  }, [getUserMessages]);
+
+  const handleHistoryEscape = useCallback(() => {
+    historyIndexRef.current = -1;
+    setRecallText("");
+  }, []);
+
+  // Reset history index when new messages arrive
+  useEffect(() => {
+    historyIndexRef.current = -1;
+  }, [messages.length]);
+
+  // ── Headline attachment ───────────────────────────────────────────────
   const handleHeadlineToggle = useCallback((chip: HeadlineChip) => {
     setHeadlineChips((prev) => {
       const exists = prev.find((c) => c.id === chip.id);
@@ -140,7 +198,7 @@ export function FintheonComposer({
     setHeadlineChips([]);
   }, []);
 
-  // Fetch skills from backend — merge with prop-level disabled skills
+  // ── Fetch skills from backend ──────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -166,11 +224,44 @@ export function FintheonComposer({
 
   const mergedDisabledSkills = { ...apiDisabledSkills, ...propDisabledSkills };
 
+  // ── Send handler (with persona slash-command detection) ────────────────
   const handleSend = useCallback(
     (msg: string, images?: string[]) => {
       let finalText = msg;
+
+      // Detect persona slash commands (set persona for next turn only)
+      const personaMatch = msg.match(/^\/(\w+)/);
+      if (personaMatch && PERSONA_COMMANDS[personaMatch[1]]) {
+        const personaId = PERSONA_COMMANDS[personaMatch[1]];
+        const agent = agents.find((a) => a.id === personaId);
+        if (agent) {
+          setActiveAgent(agent);
+        }
+        // Strip the slash command from the message
+        finalText = msg.replace(/^\/\w+\s*/, "");
+        if (!finalText.trim() && images?.length === 0) {
+          // Pure persona switch — don't send an empty message
+          onSelectSkill(null);
+          return;
+        }
+      }
+
+      // Detect /plan toggle
+      if (msg.trim() === "/plan") {
+        togglePlanMode();
+        onSelectSkill(null);
+        return;
+      }
+
+      // Detect /stop
+      if (msg.trim() === "/stop") {
+        runtime.cancelRun();
+        onSelectSkill(null);
+        return;
+      }
+
       if (activeSkill && SKILL_PREFIXES[activeSkill]) {
-        finalText = SKILL_PREFIXES[activeSkill] + "\n\n" + msg;
+        finalText = SKILL_PREFIXES[activeSkill] + "\n\n" + finalText;
       }
       // Inject attached headline context
       if (headlineChips.length > 0) {
@@ -209,13 +300,22 @@ export function FintheonComposer({
         console.error("[FintheonComposer] Failed to append message:", err);
       }
     },
-    [runtime, activeSkill, onSelectSkill, headlineChips],
+    [
+      runtime,
+      activeSkill,
+      onSelectSkill,
+      headlineChips,
+      agents,
+      setActiveAgent,
+      togglePlanMode,
+    ],
   );
 
   const handleStop = useCallback(() => {
     runtime.cancelRun();
   }, [runtime]);
 
+  // ── Toolbar slots ─────────────────────────────────────────────────────
   const providerEl = (
     <ProviderDropdown
       provider={provider}
@@ -238,87 +338,128 @@ export function FintheonComposer({
     />
   );
 
-  // ── Relay button (leftmost in composer action cluster) ───────────────────────
-  const relayTitle = (() => {
-    if (relay.isDispatching) return "Relay — dispatching to mobile…";
-    if (isDispatchedHere) return `Disconnect — resume on desktop`;
-    if (!conversationId) return "Relay — send a message first";
-    if (relay.isDispatched && !isDispatchedHere)
-      return "Relay — another conversation is already dispatched";
-    return "Relay — send this conversation to your mobile";
-  })();
-
-  const relayEl = (
+  // ── Plan mode button ──────────────────────────────────────────────────
+  const planEl = (
     <button
-      onClick={handleRelayClick}
-      disabled={relayDisabled}
+      onClick={togglePlanMode}
       className={`flex items-center justify-center rounded-lg transition-colors ${
-        isDispatchedHere
+        planMode
           ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10 hover:bg-[var(--fintheon-accent)]/20"
-          : relayDisabled
-            ? "text-zinc-700 cursor-not-allowed"
-            : "text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
+          : "text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
       }`}
       style={{ width: "32px", height: "32px" }}
-      title={relayTitle}
+      title={planMode ? "Exit Plan Mode" : "Plan Mode"}
     >
-      {relay.isDispatching ? (
-        <Loader2 size={16} className="animate-spin" />
-      ) : isDispatchedHere ? (
-        <Unplug size={16} />
-      ) : (
-        <Radio size={16} />
-      )}
+      <ClipboardList size={16} />
     </button>
   );
 
-  // ── Dispatch banner — shown above input when this convo is dispatched ───────
-  const dispatchBannerEl = isDispatchedHere ? (
-    <div className="mb-2 rounded-lg border border-[var(--fintheon-accent)]/25 bg-[var(--fintheon-accent)]/5 px-3 py-2 text-[12px] text-[var(--fintheon-accent)] flex items-center justify-between">
-      <span>
-        Chatting on {relay.deviceLabel ?? "your mobile"} — desktop is mirroring
-      </span>
-      <button
-        onClick={() => relay.disconnect()}
-        className="text-zinc-400 hover:text-[var(--fintheon-accent)] underline underline-offset-2"
-      >
-        Disconnect
-      </button>
+  // ── Plan mode input (shown above PromptBox when plan mode active) ─────
+  const planModeInputEl = planMode ? (
+    <div className="mb-3 rounded-lg border border-[var(--fintheon-accent)]/25 bg-[#0d0c09] px-4 py-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--fintheon-accent)]">
+          Plan Mode
+        </span>
+        <button
+          onClick={handlePlanComplete}
+          className="text-[11px] font-medium text-[var(--fintheon-accent)] hover:text-[#f0ead6] underline underline-offset-2 transition-colors"
+        >
+          Complete Plan
+        </button>
+      </div>
+      {/* Inline to-dos */}
+      {planTodos.length > 0 ? (
+        <ul className="space-y-1 mb-2">
+          {planTodos.map((todo) => (
+            <li key={todo.id} className="flex items-center gap-2 text-[12px]">
+              <button
+                onClick={() => handlePlanTodoToggle(todo.id)}
+                className={`flex-shrink-0 w-4 h-4 rounded border ${
+                  todo.done
+                    ? "bg-[var(--fintheon-accent)]/20 border-[var(--fintheon-accent)]/50"
+                    : "border-zinc-600"
+                } flex items-center justify-center transition-colors`}
+              >
+                {todo.done && (
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path
+                      d="M2 5l2 2 4-4"
+                      stroke="var(--fintheon-accent)"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                )}
+              </button>
+              <span
+                className={
+                  todo.done
+                    ? "text-[#f0ead6]/40 line-through"
+                    : "text-[#f0ead6]/80"
+                }
+              >
+                {todo.text}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-[11px] text-zinc-500 italic mb-2">
+          No plan steps yet — start typing to build your plan
+        </p>
+      )}
     </div>
   ) : null;
 
   return (
-    <PromptBox
-      onSend={handleSend}
-      onStop={handleStop}
-      isProcessing={isRunning}
-      thinkHarder={thinkHarder}
-      setThinkHarder={setThinkHarder}
-      lastError={lastError}
-      activeSkill={activeSkill}
-      onSelectSkill={onSelectSkill}
-      showSkills={showSkills}
-      onToggleSkills={onToggleSkills}
-      disabledSkills={mergedDisabledSkills}
-      compact={compact}
-      voiceEnabled={voice.enabled}
-      voiceState={voice.runtimeState}
-      onToggleVoice={voice.toggleEnabled}
-      providerSlot={providerEl}
-      personaSlot={personaEl}
-      toolsSlot={toolsEl}
-      relaySlot={relayEl}
-      dispatchBanner={dispatchBannerEl}
-      disabled={isDispatchedHere}
-      placeholder={
-        isDispatchedHere
-          ? `Chatting on ${relay.deviceLabel ?? "mobile"} — click Disconnect to resume here`
-          : undefined
-      }
-      headlineAlerts={alerts}
-      headlineChips={headlineChips}
-      onHeadlineToggle={handleHeadlineToggle}
-      onHeadlineClear={handleHeadlineClear}
-    />
+    <>
+      {/* Command palette (Cmd+K) */}
+      {showCommandPalette && (
+        <CommandPalette
+          onClose={() => setShowCommandPalette(false)}
+          onSelectSkill={onSelectSkill}
+          onTogglePlan={togglePlanMode}
+          onStop={handleStop}
+          agents={agents}
+          onSwitchAgent={(agent) => setActiveAgent(agent)}
+        />
+      )}
+
+      {/* Plan mode input */}
+      {planModeInputEl}
+
+      <PromptBox
+        onSend={handleSend}
+        onStop={handleStop}
+        isProcessing={isRunning}
+        thinkHarder={thinkHarder}
+        setThinkHarder={setThinkHarder}
+        lastError={lastError}
+        activeSkill={activeSkill}
+        onSelectSkill={onSelectSkill}
+        showSkills={showSkills}
+        onToggleSkills={onToggleSkills}
+        disabledSkills={mergedDisabledSkills}
+        compact={compact}
+        voiceEnabled={voice.enabled}
+        voiceState={voice.runtimeState}
+        onToggleVoice={voice.toggleEnabled}
+        providerSlot={providerEl}
+        personaSlot={personaEl}
+        toolsSlot={toolsEl}
+        planSlot={planEl}
+        recallText={recallText}
+        onRecallConsumed={() => setRecallText(null)}
+        onHistoryUp={handleHistoryUp}
+        onHistoryDown={handleHistoryDown}
+        onHistoryEscape={handleHistoryEscape}
+        headlineAlerts={alerts}
+        headlineChips={headlineChips}
+        onHeadlineToggle={handleHeadlineToggle}
+        onHeadlineClear={handleHeadlineClear}
+      />
+    </>
   );
 }

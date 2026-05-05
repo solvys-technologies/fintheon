@@ -433,7 +433,56 @@ export async function handleChat(c: Context) {
       },
     });
 
-    return uiStreamToSSEResponse(stream, {
+    // S38-T1: wrap stream to emit complete event before DONE
+    const completeEnc = new TextEncoder();
+    const doneEnc = completeEnc.encode("data: [DONE]\n\n");
+    let textBuf = "";
+    let doneSent = false;
+    const wrappedStrm = new ReadableStream<Uint8Array>({
+      start(ctrl) {
+        const reader = stream.getReader();
+        function pump() {
+          reader
+            .read()
+            .then(({ done, value }) => {
+              if (done) {
+                if (!doneSent) {
+                  doneSent = true;
+                  const lat = Date.now() - startTime;
+                  ctrl.enqueue(
+                    completeEnc.encode(
+                      "data: " +
+                        JSON.stringify({
+                          type: "complete",
+                          latency_ms: lat,
+                          source_count: 1,
+                          model:
+                            agentInfo.agent === "harper-cao"
+                              ? "opus"
+                              : agentModel,
+                          provider: "anthropic",
+                          prompt_tokens: Math.ceil(prompt.length / 4),
+                          completion_tokens: Math.ceil(textBuf.length / 4),
+                        }) +
+                        "\n\n",
+                    ),
+                  );
+                }
+                ctrl.enqueue(doneEnc);
+                ctrl.close();
+                return;
+              }
+              textBuf += new TextDecoder().decode(value);
+              ctrl.enqueue(value);
+              pump();
+            })
+            .catch((e) => ctrl.error(e));
+        }
+        pump();
+      },
+    });
+
+    return uiStreamToSSEResponse(wrappedStrm, {
       "X-Conversation-Id": conversation.id,
       "X-Request-Id": requestId,
       "X-Hermes-Agent": agentModel,

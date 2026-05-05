@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { KNOWN_AGENTS } from "../../contexts/FintheonAgentContext";
+import { FINTHEON_AGENTS } from "../../contexts/FintheonAgentContext";
 
 /* ------------------------------------------------------------------ */
 /*  Ticker data                                                        */
@@ -56,9 +56,17 @@ export function TickerMentionPopup({
   const items = useMemo((): MentionItem[] => {
     const q = query.toLowerCase();
     if (triggerChar === "@") {
-      return KNOWN_AGENTS.filter((name) => name.toLowerCase().includes(q)).map(
-        (name) => ({ type: "agent" as const, value: name, label: name }),
-      );
+      return FINTHEON_AGENTS.filter(
+        (agent) =>
+          agent.name.toLowerCase().includes(q) ||
+          agent.id.toLowerCase().includes(q) ||
+          agent.sector.toLowerCase().includes(q),
+      ).map((agent) => ({
+        type: "agent" as const,
+        value: agent.id,
+        label: `@${agent.name}`,
+        sublabel: agent.sector,
+      }));
     }
     return TICKER_SYMBOLS.filter(
       (t) =>

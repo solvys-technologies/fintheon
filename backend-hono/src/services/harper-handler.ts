@@ -71,6 +71,14 @@ export interface HarperChatResult {
   stream: AsyncGenerator<BridgeStreamEvent>;
   abort: () => void;
   getFullText: () => string;
+  /** Enriched completion metadata available after stream ends */
+  completionMeta?: {
+    latency_ms: number;
+    model: string;
+    provider: string;
+    prompt_tokens: number;
+    completion_tokens: number;
+  };
 }
 
 // ── Persona System Prompts ──────────────────────────────────────────────────
@@ -443,6 +451,50 @@ export async function harperChat(
     maxTurns: thinkHarder ? 5 : 3,
   });
 
+  // ── S38-T1: Wrap stream to track completion metadata ──────────────────────
+  const completionMeta = {
+    latency_ms: 0,
+    model: "opus",
+    provider: "anthropic",
+    prompt_tokens: 0,
+    completion_tokens: 0,
+  };
+
+  async function* wrappedStream(): AsyncGenerator<BridgeStreamEvent> {
+    let sourceCount = 0;
+    try {
+      for await (const event of result.stream) {
+        if (event.type === "citation") sourceCount++;
+        yield event;
+      }
+    } finally {
+      const fullText = result.getFullText();
+      const latency = Date.now() - startedAt;
+      // Rough token estimation: ~4 chars per token
+      const promptEstimate = Math.ceil(
+        (systemPrompt.length + message.length + history.join("").length) / 4,
+      );
+      const completionEstimate = Math.ceil(fullText.length / 4);
+
+      completionMeta.latency_ms = latency;
+      completionMeta.prompt_tokens = promptEstimate;
+      completionMeta.completion_tokens = completionEstimate;
+
+      yield {
+        type: "complete",
+        id: `complete-${conversationId}`,
+        metadata: {
+          latency_ms: latency,
+          source_count: sourceCount,
+          model: "opus",
+          provider: "anthropic",
+          prompt_tokens: promptEstimate,
+          completion_tokens: completionEstimate,
+        },
+      };
+    }
+  }
+
   void recordHarperRoutingDecision({
     conversationId,
     rule_model: rule.model,
@@ -451,7 +503,12 @@ export async function harperChat(
     startedAt,
   });
 
-  return result;
+  return {
+    stream: wrappedStream(),
+    abort: result.abort,
+    getFullText: result.getFullText,
+    completionMeta,
+  };
 }
 
 async function recordHarperRoutingDecision(args: {

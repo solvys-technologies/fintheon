@@ -26,13 +26,6 @@ interface PendingRequest {
   onDone: () => void;
 }
 
-/** Active desktop→mobile dispatch for a user */
-interface DispatchState {
-  conversationId: string;
-  startedAt: number;
-  deviceLabel: string;
-}
-
 /** A message mirrored from mobile back to desktop while dispatched */
 export interface MirrorMessage {
   conversationId: string;
@@ -43,13 +36,9 @@ export interface MirrorMessage {
   isChunk?: boolean;
 }
 
-type MirrorListener = (msg: MirrorMessage) => void;
-
 class RelayBridge {
   private connections = new Map<string, RelayConnection>();
   private pending = new Map<string, PendingRequest>();
-  private dispatches = new Map<string, DispatchState>();
-  private mirrorListeners = new Map<string, Set<MirrorListener>>();
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
@@ -230,85 +219,43 @@ class RelayBridge {
     }
   }
 
-  // ── Dispatch + mirror (S21-T1) ─────────────────────────────────────────────
-
-  /** Begin a desktop→mobile dispatch for a user. Idempotent per user. */
+  // ── S38-T1: Dispatch paths removed — agent-to-agent relay only ─────────────
+  // No-op stubs for backward compat with relay.ts routes (dispatch deprecated).
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getDispatch(_userId: string) {
+    return null;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  isDispatched(_userId: string, _conversationId?: string) {
+    return false;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   beginDispatch(
-    userId: string,
-    conversationId: string,
-    deviceLabel: string,
-  ): DispatchState {
-    const state: DispatchState = {
-      conversationId,
+    _userId: string,
+    _conversationId: string,
+    _deviceLabel: string,
+  ) {
+    return {
+      conversationId: _conversationId,
       startedAt: Date.now(),
-      deviceLabel,
+      deviceLabel: _deviceLabel,
     };
-    this.dispatches.set(userId, state);
-    log.info("Dispatch begun", { userId, conversationId, deviceLabel });
-    return state;
   }
-
-  /** End an active dispatch. Returns the prior state if one existed. */
-  endDispatch(userId: string): DispatchState | null {
-    const prior = this.dispatches.get(userId) ?? null;
-    this.dispatches.delete(userId);
-    // Notify any open mirror listeners for this user to close their streams.
-    const key = mirrorKey(userId, prior?.conversationId ?? "");
-    this.mirrorListeners.delete(key);
-    if (prior)
-      log.info("Dispatch ended", {
-        userId,
-        conversationId: prior.conversationId,
-      });
-    return prior;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  endDispatch(_userId: string) {
+    return null;
   }
-
-  /** Is the given user currently dispatched (optionally for a specific convo)? */
-  isDispatched(userId: string, conversationId?: string): boolean {
-    const state = this.dispatches.get(userId);
-    if (!state) return false;
-    return conversationId ? state.conversationId === conversationId : true;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  publishMirrorMessage(_userId: string, _msg: MirrorMessage) {
+    return 0;
   }
-
-  /** Get the current dispatch state for a user, if any. */
-  getDispatch(userId: string): DispatchState | null {
-    return this.dispatches.get(userId) ?? null;
-  }
-
-  /** Publish a mirror message (usually from mobile WS) to any desktop subscribers. */
-  publishMirrorMessage(userId: string, msg: MirrorMessage): number {
-    const key = mirrorKey(userId, msg.conversationId);
-    const listeners = this.mirrorListeners.get(key);
-    if (!listeners || listeners.size === 0) return 0;
-    for (const listener of listeners) {
-      try {
-        listener(msg);
-      } catch (err) {
-        log.warn("Mirror listener threw", { error: String(err) });
-      }
-    }
-    return listeners.size;
-  }
-
-  /** Subscribe to mirror messages for a user+conversation. Returns unsubscribe. */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   subscribeMirror(
-    userId: string,
-    conversationId: string,
-    listener: MirrorListener,
-  ): () => void {
-    const key = mirrorKey(userId, conversationId);
-    let set = this.mirrorListeners.get(key);
-    if (!set) {
-      set = new Set();
-      this.mirrorListeners.set(key, set);
-    }
-    set.add(listener);
-    return () => {
-      const current = this.mirrorListeners.get(key);
-      if (!current) return;
-      current.delete(listener);
-      if (current.size === 0) this.mirrorListeners.delete(key);
-    };
+    _userId: string,
+    _conversationId: string,
+    _listener: (msg: MirrorMessage) => void,
+  ) {
+    return () => {};
   }
 
   destroy(): void {
@@ -321,13 +268,7 @@ class RelayBridge {
       }
     }
     this.connections.clear();
-    this.dispatches.clear();
-    this.mirrorListeners.clear();
   }
-}
-
-function mirrorKey(userId: string, conversationId: string): string {
-  return `${userId}::${conversationId}`;
 }
 
 // Singleton

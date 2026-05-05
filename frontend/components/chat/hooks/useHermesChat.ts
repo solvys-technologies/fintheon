@@ -5,6 +5,7 @@
 
 // [claude-code 2026-05-03] S58 deploy fix: default Harper chat provider to DeepSeek, not VProxy/local.
 // [claude-code 2026-05-03] S58-T2: route personal CAO DeepSeek providers through client SDK when configured.
+// [claude-code 2026-05-04] S38-T5: removed deepseek-oc-api provider, updated provider routing for v2 dropdown.
 // [claude-code 2026-04-18] Clear cached conversationId on 404 during hydration — otherwise Electron
 //   boots with a stale localStorage UUID, useHermesChat logs "starting fresh", but the consumer
 //   (FintheonComposer) still sees the old ID and fires /api/relay/dispatch → 404 → user reports
@@ -37,20 +38,25 @@ function backendToUIMessage(msg: {
   };
 }
 
+// S38-T5: Only deepseek-direct uses the client SDK; nous + opencode-go route through backend
 function isDeepSeekProvider(provider: string): provider is DeepSeekProvider {
-  return provider === "deepseek-direct" || provider === "deepseek-oc-api";
+  return provider === "deepseek-direct";
 }
 
 function readHarperProvider(): string {
   try {
     const saved = localStorage.getItem("fintheon:harper-provider");
-    return saved && saved !== "local" && saved !== "orouter" ? saved : "deepseek-direct";
+    return saved && saved !== "local" && saved !== "orouter"
+      ? saved
+      : "deepseek-direct";
   } catch {
     return "deepseek-direct";
   }
 }
 
-function bodyToDeepSeekMessages(body: BodyInit | null | undefined): DeepSeekChatMessage[] {
+function bodyToDeepSeekMessages(
+  body: BodyInit | null | undefined,
+): DeepSeekChatMessage[] {
   if (!body || typeof body !== "string") return [];
   const parsed = JSON.parse(body) as {
     message?: string;
@@ -264,9 +270,7 @@ export function useHermesChat(
           // Read provider from localStorage (set by ProviderDropdown)
           const harperProvider = (() => {
             try {
-              return (
-                readHarperProvider()
-              );
+              return readHarperProvider();
             } catch {
               return "deepseek-direct";
             }

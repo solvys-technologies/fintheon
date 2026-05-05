@@ -181,6 +181,7 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/dag", createDagRoutes());
   // Agent Dream Room — autonomous agent reflection channel
   app.route("/api/agent-bus/dreams", createDreamRoutes());
+
   // Proposal charting is public/local; resolution writes are auth-gated.
   app.use("/api/proposals/resolve", authMiddleware, requireAuth);
   app.use("/api/proposals/performance", authMiddleware, requireAuth);
@@ -363,6 +364,7 @@ export function registerRoutes(app: Hono): void {
 
   // Phase 6: Agent routes
   app.route("/api/agents", createAgentRoutes());
+
 
   // ER telemetry routes
   app.route("/api/er", createERRoutes());

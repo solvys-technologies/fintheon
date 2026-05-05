@@ -6,7 +6,8 @@
 //   dropdown has committed to the DOM before focus() fires (Electron portal ordering issue).
 // [claude-code 2026-04-04] Sessions dropdown — compact history panel anchored under trigger button
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Search, MessageSquare, Loader2, Trash2 } from "lucide-react";
+import { Search, MessageSquare, Trash2 } from "lucide-react";
+import { BrailleSpinner } from "./primitive/BrailleSpinner";
 import { API_BASE_URL } from "./constants";
 import { getAccessToken } from "../../lib/supabase";
 
@@ -228,11 +229,7 @@ export function SessionsDropdown({
       >
         {loading && (
           <div className="flex items-center justify-center py-8">
-            <Loader2
-              size={14}
-              className="animate-spin"
-              style={{ color: "var(--fintheon-accent)" }}
-            />
+            <BrailleSpinner size={14} />
           </div>
         )}
 

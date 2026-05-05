@@ -14,1233 +14,1275 @@
 html *,
 html *::before,
 html *::after {
-  scrollbar-width: none !important; /* Firefox */
-  -ms-overflow-style: none !important; /* IE/Edge */
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE/Edge */
 }
 html *::-webkit-scrollbar {
-  display: none !important; /* Chrome/Safari/Electron */
-  width: 0 !important;
-  height: 0 !important;
-  background: transparent !important;
+    display: none !important; /* Chrome/Safari/Electron */
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
 }
 
 @custom-variant dark (&:is(.dark *));
 
 @utility container {
-  margin-inline: auto;
-  padding-inline: 1rem;
+    margin-inline: auto;
+    padding-inline: 1rem;
 
-  @media (width >= theme(--breakpoint-sm)) {
-    padding-inline: 2rem;
-  }
+    @media (width >= theme(--breakpoint-sm)) {
+        padding-inline: 2rem;
+    }
 }
 
 :root {
-  /* Pulse theme variables — set by ThemeProvider, defaults to Solvys Gold */
-  --fintheon-accent: #d4af37;
-  --fintheon-bg: #050402;
-  --fintheon-text: #f0ead6;
-  --fintheon-bullish: #34d399;
-  --fintheon-bearish: #ef4444;
-  --fintheon-surface: #0a0a00;
-  --fintheon-border: #d4af37;
-  --fintheon-muted: #6b7280;
-  /* [S38] Theme-swappable accent alias — voice orb ring + pixel sweep route through this */
-  --accent-primary: var(--fintheon-accent);
-  /* Liquid glass surface — translucent with accent tint */
-  --fintheon-glass-bg: color-mix(
-    in srgb,
-    var(--fintheon-surface) 55%,
-    transparent
-  );
-  --fintheon-glass-border: color-mix(
-    in srgb,
-    var(--fintheon-accent) 16%,
-    transparent
-  );
-  --fintheon-glass-highlight: color-mix(
-    in srgb,
-    var(--fintheon-accent) 6%,
-    transparent
-  );
-  --fintheon-glass-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 color-mix(in srgb, white 6%, transparent),
-    inset 0 -1px 0 color-mix(in srgb, white 2%, transparent);
-  /* Severity colors — overridden by ThemeProvider */
-  --fintheon-severe: #ef4444;
-  --fintheon-neutral-severe: #f59e0b;
-  --fintheon-neutral: #6b7280;
-  --fintheon-low-neutral: #3b82f6;
-  --fintheon-low: #34d399;
+    /* Pulse theme variables — set by ThemeProvider, defaults to Solvys Gold */
+    --fintheon-accent: #d4af37;
+    --fintheon-bg: #050402;
+    --fintheon-text: #f0ead6;
+    --fintheon-bullish: #34d399;
+    --fintheon-bearish: #ef4444;
+    --fintheon-surface: #0a0a00;
+    --fintheon-border: #d4af37;
+    --fintheon-muted: #6b7280;
+    /* [S38] Theme-swappable accent alias — voice orb ring + pixel sweep route through this */
+    --accent-primary: var(--fintheon-accent);
+    /* Liquid glass surface — translucent with accent tint */
+    --fintheon-glass-bg: color-mix(
+        in srgb,
+        var(--fintheon-surface) 55%,
+        transparent
+    );
+    --fintheon-glass-border: color-mix(
+        in srgb,
+        var(--fintheon-accent) 16%,
+        transparent
+    );
+    --fintheon-glass-highlight: color-mix(
+        in srgb,
+        var(--fintheon-accent) 6%,
+        transparent
+    );
+    --fintheon-glass-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 color-mix(in srgb, white 6%, transparent),
+        inset 0 -1px 0 color-mix(in srgb, white 2%, transparent);
+    /* Severity colors — overridden by ThemeProvider */
+    --fintheon-severe: #ef4444;
+    --fintheon-neutral-severe: #f59e0b;
+    --fintheon-neutral: #6b7280;
+    --fintheon-low-neutral: #3b82f6;
+    --fintheon-low: #34d399;
 
-  /* Narrative category color tokens — canonical source of truth.
+    /* Narrative category color tokens — canonical source of truth.
      JS consumers read these via getCategoryColor() rather than importing hex literals.
      Themes override them by redefining these variables in the theme's :root block. */
-  --narrative-geopolitical: #f59e0b;
-  --narrative-monetary: #8b5cf6;
-  --narrative-macroeconomic: #3b82f6;
-  --narrative-market-structure: #ec4899;
-  --narrative-earnings: #34d399;
-  --narrative-supply-chain: #14b8a6;
-  --narrative-black-swan: #ef4444;
+    --narrative-geopolitical: #f59e0b;
+    --narrative-monetary: #8b5cf6;
+    --narrative-macroeconomic: #3b82f6;
+    --narrative-market-structure: #ec4899;
+    --narrative-earnings: #34d399;
+    --narrative-supply-chain: #14b8a6;
+    --narrative-black-swan: #ef4444;
 
-  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  --font-body:
-    "Readable Digits", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-  --font-heading:
-    "Readable Digits", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+    --font-body:
+        "Readable Digits", "Inter", -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+    --font-heading:
+        "Readable Digits", "Inter", -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
 
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+    --radius: 0.625rem;
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+    --chart-1: oklch(0.646 0.222 41.116);
+    --chart-2: oklch(0.6 0.118 184.704);
+    --chart-3: oklch(0.398 0.07 227.392);
+    --chart-4: oklch(0.828 0.189 84.429);
+    --chart-5: oklch(0.769 0.188 70.08);
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: oklch(0.708 0 0);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.269 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.371 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.439 0 0);
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.269 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.371 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.488 0.243 264.376);
+    --chart-2: oklch(0.696 0.17 162.48);
+    --chart-3: oklch(0.769 0.188 70.08);
+    --chart-4: oklch(0.627 0.265 303.9);
+    --chart-5: oklch(0.645 0.246 16.439);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.439 0 0);
 }
 
 /* ── Fintheon custom keyframes ── */
 
 /* Vertical shimmer for fuse bars in Sanctum + Narrative aggregate cards */
 @keyframes fuse-shimmer {
-  0%,
-  100% {
-    background-position: 100% 100%;
-  }
-  50% {
-    background-position: 100% 0%;
-  }
+    0%,
+    100% {
+        background-position: 100% 100%;
+    }
+    50% {
+        background-position: 100% 0%;
+    }
 }
 
 /* [claude-code 2026-04-19] v5.22 S1: Nothing-design fuse shimmer — slow 4.2s sweep with
  *   ~1s dwell between sweeps (no AI sparkle). Apply as absolutely-positioned overlay
  *   inside every desktop fuse fill. Disabled under prefers-reduced-motion. */
 @keyframes nothing-fuse-shimmer {
-  0%,
-  76%,
-  100% {
-    background-position: -200% 0;
-    opacity: 0;
-  }
-  38% {
-    background-position: 200% 0;
-    opacity: 0.45;
-  }
+    0%,
+    76%,
+    100% {
+        background-position: -200% 0;
+        opacity: 0;
+    }
+    38% {
+        background-position: 200% 0;
+        opacity: 0.45;
+    }
 }
 .nothing-fuse-shimmer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--fintheon-text, #f0ead6) 50%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  mix-blend-mode: overlay;
-  animation: nothing-fuse-shimmer 4.2s linear infinite;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--fintheon-text, #f0ead6) 50%,
+        transparent 100%
+    );
+    background-size: 200% 100%;
+    mix-blend-mode: overlay;
+    animation: nothing-fuse-shimmer 4.2s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .nothing-fuse-shimmer {
-    animation: none;
-    opacity: 0;
-  }
+    .nothing-fuse-shimmer {
+        animation: none;
+        opacity: 0;
+    }
 }
 
 /* [claude-code 2026-04-28] S48-T3: CountdownFuse state-machine keyframes.
    countdown-blink: rapid opacity toggle during the blink phase (3x, 300ms each).
    x-pulse: pulsating close icon after beat/miss/par settle. */
 @keyframes countdown-blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
 }
 @keyframes x-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(0.85);
-  }
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(0.85);
+    }
 }
 
 /* Horizontal fuse shimmer for RiskFlow expanded card footer */
 @keyframes riskflow-fuse {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
 }
 .riskflow-fuse-shimmer {
-  animation: riskflow-fuse 3s ease-in-out infinite;
+    animation: riskflow-fuse 3s ease-in-out infinite;
 }
 
 /* Severe item shimmer — subtle glow pulse on CRIT cards */
 @keyframes severe-shimmer {
-  0%,
-  100% {
-    box-shadow: inset 0 0 0 0 transparent;
-  }
-  50% {
-    box-shadow: inset 0 0 20px -8px var(--fintheon-bearish);
-  }
+    0%,
+    100% {
+        box-shadow: inset 0 0 0 0 transparent;
+    }
+    50% {
+        box-shadow: inset 0 0 20px -8px var(--fintheon-bearish);
+    }
 }
 .riskflow-severe-shimmer {
-  animation: severe-shimmer 3s ease-in-out infinite;
+    animation: severe-shimmer 3s ease-in-out infinite;
 }
 
 /* [claude-code 2026-04-24] Cognition "thought for…" stream shimmer — slow,
  *   semi-unsteady breath on thinking phrases. Uneven keyframe stops give it an
  *   organic cadence (not the regular 50% oscillation used on fuses). */
 @keyframes cognition-thought-shimmer {
-  0% {
-    opacity: 0.55;
-  }
-  17% {
-    opacity: 0.82;
-  }
-  34% {
-    opacity: 0.6;
-  }
-  52% {
-    opacity: 0.95;
-  }
-  71% {
-    opacity: 0.7;
-  }
-  88% {
-    opacity: 0.88;
-  }
-  100% {
-    opacity: 0.55;
-  }
+    0% {
+        opacity: 0.55;
+    }
+    17% {
+        opacity: 0.82;
+    }
+    34% {
+        opacity: 0.6;
+    }
+    52% {
+        opacity: 0.95;
+    }
+    71% {
+        opacity: 0.7;
+    }
+    88% {
+        opacity: 0.88;
+    }
+    100% {
+        opacity: 0.55;
+    }
 }
 .cognition-thought-shimmer {
-  animation: cognition-thought-shimmer 6.8s ease-in-out infinite;
+    animation: cognition-thought-shimmer 6.8s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .cognition-thought-shimmer {
-    animation: none;
-    opacity: 0.78;
-  }
+    .cognition-thought-shimmer {
+        animation: none;
+        opacity: 0.78;
+    }
 }
 
 /* Subtle pulse glow for new-message indicator */
 @keyframes msg-pulse {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 1;
-  }
+    0%,
+    100% {
+        opacity: 0.5;
+    }
+    50% {
+        opacity: 1;
+    }
 }
 
 /* ── PART 2+3: Strategium edit-mode microinteractions ── */
 .mission-widget-edit {
-  transition:
-    opacity 150ms cubic-bezier(0.4, 0, 0.2, 1),
-    transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  outline: 1px solid rgba(199, 159, 74, 0.18);
-  outline-offset: -4px;
-  border-radius: 6px;
+    transition:
+        opacity 150ms cubic-bezier(0.4, 0, 0.2, 1),
+        transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    outline: 1px solid rgba(199, 159, 74, 0.18);
+    outline-offset: -4px;
+    border-radius: 6px;
 }
 .mission-widget-edit:hover {
-  outline-color: rgba(199, 159, 74, 0.4);
+    outline-color: rgba(199, 159, 74, 0.4);
 }
 .mission-widget-edit[draggable="true"]:active {
-  opacity: 0.85;
-  transform: scale(0.98);
+    opacity: 0.85;
+    transform: scale(0.98);
 }
 .mission-widget-drop-target {
-  outline-color: rgba(199, 159, 74, 0.55);
+    outline-color: rgba(199, 159, 74, 0.55);
 }
 
 /* ── PART 6: RiskFlow new-item flicker ── */
 @keyframes riskflow-flicker {
-  0% {
-    background-color: transparent;
-  }
-  8% {
-    background-color: color-mix(
-      in srgb,
-      var(--fintheon-accent) 45%,
-      transparent
-    );
-  }
-  14% {
-    background-color: color-mix(
-      in srgb,
-      var(--fintheon-accent) 10%,
-      transparent
-    );
-  }
-  22% {
-    background-color: color-mix(
-      in srgb,
-      var(--fintheon-accent) 50%,
-      transparent
-    );
-  }
-  55% {
-    background-color: color-mix(
-      in srgb,
-      var(--fintheon-accent) 18%,
-      transparent
-    );
-  }
-  100% {
-    background-color: transparent;
-  }
+    0% {
+        background-color: transparent;
+    }
+    8% {
+        background-color: color-mix(
+            in srgb,
+            var(--fintheon-accent) 45%,
+            transparent
+        );
+    }
+    14% {
+        background-color: color-mix(
+            in srgb,
+            var(--fintheon-accent) 10%,
+            transparent
+        );
+    }
+    22% {
+        background-color: color-mix(
+            in srgb,
+            var(--fintheon-accent) 50%,
+            transparent
+        );
+    }
+    55% {
+        background-color: color-mix(
+            in srgb,
+            var(--fintheon-accent) 18%,
+            transparent
+        );
+    }
+    100% {
+        background-color: transparent;
+    }
 }
 .riskflow-flicker {
-  animation: riskflow-flicker 1200ms cubic-bezier(0.4, 0, 0.2, 1) 1;
+    animation: riskflow-flicker 1200ms cubic-bezier(0.4, 0, 0.2, 1) 1;
 }
 
 /* ── PART 5: Strategium peek-footer / peek-header shimmer ── */
 @keyframes fintheon-peek-shimmer {
-  0%,
-  80%,
-  100% {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  50% {
-    transform: translateX(100%);
-    opacity: 0.6;
-  }
+    0%,
+    80%,
+    100% {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    50% {
+        transform: translateX(100%);
+        opacity: 0.6;
+    }
 }
 .fintheon-peek-shimmer {
-  position: relative;
-  overflow: hidden;
+    position: relative;
+    overflow: hidden;
 }
 .fintheon-peek-shimmer::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 64px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(199, 159, 74, 0.2) 50%,
-    transparent 100%
-  );
-  pointer-events: none;
-  animation: fintheon-peek-shimmer 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 64px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(199, 159, 74, 0.2) 50%,
+        transparent 100%
+    );
+    pointer-events: none;
+    animation: fintheon-peek-shimmer 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 /* ── PART 4: Blindspots monochrome fuse shimmer ── */
 @keyframes blindspot-fuse-sweep {
-  0% {
-    transform: translateX(-60%);
-    opacity: 0;
-  }
-  20% {
-    opacity: 1;
-  }
-  80% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(160%);
-    opacity: 0;
-  }
+    0% {
+        transform: translateX(-60%);
+        opacity: 0;
+    }
+    20% {
+        opacity: 1;
+    }
+    80% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(160%);
+        opacity: 0;
+    }
 }
 .blindspot-fuse-container {
-  position: relative;
-  overflow: hidden;
+    position: relative;
+    overflow: hidden;
 }
 .blindspot-fuse-container::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 14px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(199, 159, 74, 0.32) 50%,
-    transparent 100%
-  );
-  pointer-events: none;
-  animation: blindspot-fuse-sweep 2800ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 14px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(199, 159, 74, 0.32) 50%,
+        transparent 100%
+    );
+    pointer-events: none;
+    animation: blindspot-fuse-sweep 2800ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .riskflow-flicker,
-  .fintheon-peek-shimmer::before,
-  .blindspot-fuse-container::before,
-  .mission-widget-edit {
-    animation: none !important;
-    transition: none !important;
-  }
+    .riskflow-flicker,
+    .fintheon-peek-shimmer::before,
+    .blindspot-fuse-container::before,
+    .mission-widget-edit {
+        animation: none !important;
+        transition: none !important;
+    }
 }
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  html {
-    /* [claude-code 2026-04-29] Global legibility pass: lift rem-based UI type by ~10%. */
-    font-size: 110%;
-  }
-  body {
-    @apply bg-background text-foreground;
-    font-family: var(--font-body);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  /* Ensure ALL interactive/UI elements inherit the theme font */
-  button,
-  input,
-  select,
-  textarea,
-  label,
-  a,
-  span,
-  p,
-  div,
-  li,
-  td,
-  th,
-  nav {
-    font-family: inherit;
-  }
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6,
-  .font-heading {
-    font-family: var(--font-heading);
-  }
-  code,
-  pre,
-  .font-mono {
-    font-family: "JetBrains Mono", "SF Mono", "Fira Code", monospace;
-  }
+    * {
+        @apply border-border outline-ring/50;
+    }
+    html {
+        /* [claude-code 2026-04-29] Global legibility pass: lift rem-based UI type by ~10%. */
+        font-size: 110%;
+    }
+    body {
+        @apply bg-background text-foreground;
+        font-family: var(--font-body);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+    /* Ensure ALL interactive/UI elements inherit the theme font */
+    button,
+    input,
+    select,
+    textarea,
+    label,
+    a,
+    span,
+    p,
+    div,
+    li,
+    td,
+    th,
+    nav {
+        font-family: inherit;
+    }
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    .font-heading {
+        font-family: var(--font-heading);
+    }
+    code,
+    pre,
+    .font-mono {
+        font-family: "JetBrains Mono", "SF Mono", "Fira Code", monospace;
+    }
 }
 
 /* [claude-code 2026-04-23] S32-T5 — chat slot skeleton→content reveal */
 @keyframes slotReveal {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 /* Luxurious fade animations for zen, calm feel */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.98) translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
+    from {
+        opacity: 0;
+        transform: scale(0.98) translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 @keyframes fadeOut {
-  from {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.98) translateY(-8px);
-  }
+    from {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.98) translateY(-8px);
+    }
 }
 
 @keyframes fadeInBackdrop {
-  from {
-    opacity: 0;
-    backdrop-filter: blur(0px);
-  }
-  to {
-    opacity: 1;
-    backdrop-filter: blur(8px);
-  }
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+    }
+    to {
+        opacity: 1;
+        backdrop-filter: blur(8px);
+    }
 }
 
 @keyframes fadeOutBackdrop {
-  from {
-    opacity: 1;
-    backdrop-filter: blur(8px);
-  }
-  to {
-    opacity: 0;
-    backdrop-filter: blur(0px);
-  }
+    from {
+        opacity: 1;
+        backdrop-filter: blur(8px);
+    }
+    to {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+    }
 }
 
 @keyframes fadeInTab {
-  from {
-    opacity: 0;
-    transform: translateX(-12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+    from {
+        opacity: 0;
+        transform: translateX(-12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 @keyframes fadeOutTab {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(12px);
-  }
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(12px);
+    }
 }
 
 @keyframes slideInPanel {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 @keyframes slideOutPanel {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
 }
 
 @keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* DeliberationKPIOverlay entrance/exit */
 @keyframes kpi-overlay-enter {
-  from {
-    opacity: 0;
-    transform: translateY(-12px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+    from {
+        opacity: 0;
+        transform: translateY(-12px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 @keyframes kpi-overlay-exit {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-8px) scale(0.98);
-  }
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.98);
+    }
 }
 
 /* Luxurious easing curves for smooth, zen feel */
 .animate-fade-in {
-  animation: fadeIn 1.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: fadeIn 1.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .animate-fade-out {
-  animation: fadeOut 1.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: fadeOut 1.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .animate-fade-in-backdrop {
-  animation: fadeInBackdrop 1.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: fadeInBackdrop 1.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .animate-fade-out-backdrop {
-  animation: fadeOutBackdrop 1.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: fadeOutBackdrop 1.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .animate-fade-in-tab {
-  animation: fadeInTab 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  position: relative;
-  pointer-events: auto;
+    animation: fadeInTab 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    position: relative;
+    pointer-events: auto;
 }
 
 .animate-fade-out-tab {
-  animation: fadeOutTab 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  position: relative;
-  pointer-events: auto;
+    animation: fadeOutTab 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    position: relative;
+    pointer-events: auto;
 }
 
 .animate-slide-in-panel {
-  animation: slideInPanel 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: slideInPanel 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .animate-slide-out-panel {
-  animation: slideOutPanel 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: slideOutPanel 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .animate-slide-down {
-  animation: slideDown 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: slideDown 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .animate-slide-up {
-  animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 /* Scrolling ticker for Econ Calendar footer */
 @keyframes ticker {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
 }
 
 .animate-ticker {
-  animation: ticker 30s linear infinite;
+    animation: ticker 30s linear infinite;
 }
 
 /* Smooth transition utilities */
 .transition-lush {
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .transition-lush-fast {
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Toolbar icon button — unified sizing + Solvys Feels styling */
 .toolbar-icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid rgba(199, 159, 74, 0.1);
-  border-radius: 4px;
-  background: transparent;
-  color: rgba(240, 234, 214, 0.4);
-  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
-  flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(199, 159, 74, 0.1);
+    border-radius: 4px;
+    background: transparent;
+    color: rgba(240, 234, 214, 0.4);
+    transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    flex-shrink: 0;
 }
 
 .toolbar-icon-btn:hover {
-  border-color: rgba(199, 159, 74, 0.2);
-  color: rgba(240, 234, 214, 0.72);
-  transform: scale(1.02);
+    border-color: rgba(199, 159, 74, 0.2);
+    color: rgba(240, 234, 214, 0.72);
+    transform: scale(1.02);
 }
 
 .toolbar-icon-btn:active {
-  transform: scale(0.97);
+    transform: scale(0.97);
 }
 
 .toolbar-icon-btn.toolbar-active {
-  background: rgba(199, 159, 74, 0.12);
-  border-color: rgba(199, 159, 74, 0.2);
-  color: var(--fintheon-accent);
+    background: rgba(199, 159, 74, 0.12);
+    border-color: rgba(199, 159, 74, 0.2);
+    color: var(--fintheon-accent);
 }
 
 /* Dropdown entrance — lighter version of slideDown */
 @keyframes dropdown-enter {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .animate-dropdown-enter {
-  animation: dropdown-enter 200ms cubic-bezier(0.4, 0, 0.2, 1) both;
+    animation: dropdown-enter 200ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 /* Tooltip/popup fade-in */
 @keyframes tooltip-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 .animate-tooltip-fade {
-  animation: tooltip-fade 150ms ease both;
+    animation: tooltip-fade 150ms ease both;
 }
 
 /* Pulse theme utility classes */
 .fintheon-accent-hover:hover {
-  color: var(--fintheon-accent);
-  background-color: color-mix(in srgb, var(--fintheon-accent) 10%, transparent);
+    color: var(--fintheon-accent);
+    background-color: color-mix(
+        in srgb,
+        var(--fintheon-accent) 10%,
+        transparent
+    );
 }
 
 .fintheon-accent-border {
-  border-color: color-mix(in srgb, var(--fintheon-accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--fintheon-accent) 20%, transparent);
 }
 
 .fintheon-accent-border-top {
-  border-top-color: color-mix(in srgb, var(--fintheon-accent) 20%, transparent);
+    border-top-color: color-mix(
+        in srgb,
+        var(--fintheon-accent) 20%,
+        transparent
+    );
 }
 
 .fintheon-accent-border-hover:hover {
-  border-color: color-mix(in srgb, var(--fintheon-accent) 40%, transparent);
-  background-color: color-mix(in srgb, var(--fintheon-accent) 5%, transparent);
+    border-color: color-mix(in srgb, var(--fintheon-accent) 40%, transparent);
+    background-color: color-mix(
+        in srgb,
+        var(--fintheon-accent) 5%,
+        transparent
+    );
 }
 
 .group:hover .fintheon-group-accent {
-  color: var(--fintheon-accent);
+    color: var(--fintheon-accent);
 }
 
 .fintheon-thinking-container {
-  background-color: transparent;
+    background-color: transparent;
 }
 
 .fintheon-thinking-container-borderless {
-  background-color: transparent;
+    background-color: transparent;
 }
 
 .fintheon-thinking-ring {
-  border: 1px solid color-mix(in srgb, var(--fintheon-accent) 60%, transparent);
+    border: 1px solid
+        color-mix(in srgb, var(--fintheon-accent) 60%, transparent);
 }
 
 .fintheon-thinking-ring-inner {
-  border: 1px solid color-mix(in srgb, var(--fintheon-accent) 40%, transparent);
+    border: 1px solid
+        color-mix(in srgb, var(--fintheon-accent) 40%, transparent);
 }
 
 .fintheon-thinking-dot {
-  background-color: color-mix(in srgb, var(--fintheon-accent) 70%, transparent);
+    background-color: color-mix(
+        in srgb,
+        var(--fintheon-accent) 70%,
+        transparent
+    );
 }
 
 .fintheon-settings-icon {
-  background-color: color-mix(in srgb, var(--fintheon-accent) 10%, transparent);
-  color: var(--fintheon-accent);
+    background-color: color-mix(
+        in srgb,
+        var(--fintheon-accent) 10%,
+        transparent
+    );
+    color: var(--fintheon-accent);
 }
 
 .group:hover .fintheon-settings-icon {
-  background-color: color-mix(in srgb, var(--fintheon-accent) 20%, transparent);
+    background-color: color-mix(
+        in srgb,
+        var(--fintheon-accent) 20%,
+        transparent
+    );
 }
 
 .fintheon-nav-active {
-  background-color: var(--fintheon-accent);
-  color: black;
+    background-color: var(--fintheon-accent);
+    color: black;
 }
 
 .fintheon-nav-inactive {
-  color: color-mix(in srgb, var(--fintheon-accent) 60%, transparent);
+    color: color-mix(in srgb, var(--fintheon-accent) 60%, transparent);
 }
 
 .fintheon-nav-inactive:hover {
-  color: var(--fintheon-accent);
-  background-color: color-mix(in srgb, var(--fintheon-accent) 10%, transparent);
+    color: var(--fintheon-accent);
+    background-color: color-mix(
+        in srgb,
+        var(--fintheon-accent) 10%,
+        transparent
+    );
 }
 
 .fintheon-nav-active-light {
-  border-color: color-mix(in srgb, var(--fintheon-accent) 50%, transparent);
-  color: var(--fintheon-accent);
-  background-color: color-mix(in srgb, var(--fintheon-accent) 10%, transparent);
+    border-color: color-mix(in srgb, var(--fintheon-accent) 50%, transparent);
+    color: var(--fintheon-accent);
+    background-color: color-mix(
+        in srgb,
+        var(--fintheon-accent) 10%,
+        transparent
+    );
 }
 
 .fintheon-user-bubble {
-  background-color: color-mix(in srgb, var(--fintheon-accent) 12%, transparent);
-  border-color: color-mix(in srgb, var(--fintheon-accent) 35%, transparent);
+    background-color: color-mix(
+        in srgb,
+        var(--fintheon-accent) 12%,
+        transparent
+    );
+    border-color: color-mix(in srgb, var(--fintheon-accent) 35%, transparent);
 }
 
 /* NarrativeFlow — rope swing pendulum on creation */
 @keyframes rope-swing {
-  0% {
-    transform: rotate(3deg);
-  }
-  25% {
-    transform: rotate(-2deg);
-  }
-  50% {
-    transform: rotate(1.2deg);
-  }
-  75% {
-    transform: rotate(-0.6deg);
-  }
-  100% {
-    transform: rotate(0deg);
-  }
+    0% {
+        transform: rotate(3deg);
+    }
+    25% {
+        transform: rotate(-2deg);
+    }
+    50% {
+        transform: rotate(1.2deg);
+    }
+    75% {
+        transform: rotate(-0.6deg);
+    }
+    100% {
+        transform: rotate(0deg);
+    }
 }
 
 .rope-swing {
-  animation: rope-swing 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: rope-swing 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 /* NarrativeFlow — rope breathing opacity pulse (S8-T3) */
 @keyframes rope-breathe {
-  0%,
-  100% {
-    opacity: 0.25;
-  }
-  50% {
-    opacity: 0.45;
-  }
+    0%,
+    100% {
+        opacity: 0.25;
+    }
+    50% {
+        opacity: 0.45;
+    }
 }
 
 .react-flow__edge-path.rope-breathe,
 .react-flow__edge.rope-breathe path {
-  animation: rope-breathe 4s ease-in-out infinite;
+    animation: rope-breathe 4s ease-in-out infinite;
 }
 
 /* Desynchronize breathing per-rope via delay classes */
 .rope-delay-0 path {
-  animation-delay: 0s;
+    animation-delay: 0s;
 }
 .rope-delay-1 path {
-  animation-delay: 0.6s;
+    animation-delay: 0.6s;
 }
 .rope-delay-2 path {
-  animation-delay: 1.2s;
+    animation-delay: 1.2s;
 }
 .rope-delay-3 path {
-  animation-delay: 1.8s;
+    animation-delay: 1.8s;
 }
 .rope-delay-4 path {
-  animation-delay: 2.4s;
+    animation-delay: 2.4s;
 }
 .rope-delay-5 path {
-  animation-delay: 3s;
+    animation-delay: 3s;
 }
 .rope-delay-6 path {
-  animation-delay: 3.6s;
+    animation-delay: 3.6s;
 }
 
 /* NarrativeFlow — impact ripple expanding rings */
 @keyframes ripple-expand {
-  0% {
-    transform: scale(0.3);
-    opacity: 0.4;
-  }
-  100% {
-    transform: scale(2.2);
-    opacity: 0;
-  }
+    0% {
+        transform: scale(0.3);
+        opacity: 0.4;
+    }
+    100% {
+        transform: scale(2.2);
+        opacity: 0;
+    }
 }
 
 /* Subtle gold background glow on bottom corners — applied as box-shadow to avoid extra height */
 .section-fade-corners {
-  box-shadow:
-    inset 80px -60px 80px -60px
-      color-mix(in srgb, var(--fintheon-accent) 3%, transparent),
-    inset -80px -60px 80px -60px
-      color-mix(in srgb, var(--fintheon-accent) 3%, transparent);
+    box-shadow:
+        inset 80px -60px 80px -60px
+            color-mix(in srgb, var(--fintheon-accent) 3%, transparent),
+        inset -80px -60px 80px -60px
+            color-mix(in srgb, var(--fintheon-accent) 3%, transparent);
 }
 
 /* NarrativeFlow — catalyst card border pulse on selection */
 @keyframes catalyst-pulse {
-  0% {
-    border-color: inherit;
-  }
-  50% {
-    border-color: color-mix(in srgb, currentColor 80%, transparent);
-  }
-  100% {
-    border-color: inherit;
-  }
+    0% {
+        border-color: inherit;
+    }
+    50% {
+        border-color: color-mix(in srgb, currentColor 80%, transparent);
+    }
+    100% {
+        border-color: inherit;
+    }
 }
 
 .catalyst-card-pulse {
-  animation: catalyst-pulse 1.2s cubic-bezier(0.4, 0, 0.2, 1) 1;
+    animation: catalyst-pulse 1.2s cubic-bezier(0.4, 0, 0.2, 1) 1;
 }
 
 /* NarrativeFlow — ghost card solidify transition */
 @keyframes ghost-solidify {
-  0% {
-    opacity: 0.5;
-    filter: saturate(0.7);
-    border-style: dashed;
-  }
-  50% {
-    opacity: 0.8;
-    filter: saturate(0.9);
-  }
-  100% {
-    opacity: 1;
-    filter: saturate(1);
-    border-style: solid;
-  }
+    0% {
+        opacity: 0.5;
+        filter: saturate(0.7);
+        border-style: dashed;
+    }
+    50% {
+        opacity: 0.8;
+        filter: saturate(0.9);
+    }
+    100% {
+        opacity: 1;
+        filter: saturate(1);
+        border-style: solid;
+    }
 }
 
 .ghost-solidify {
-  animation: ghost-solidify 800ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: ghost-solidify 800ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 /* [claude-code 2026-03-27] NarrativeResearchCard — highlight selection + agent border pulse */
 .research-bullet::selection {
-  background: color-mix(in srgb, var(--fintheon-accent) 40%, transparent);
+    background: color-mix(in srgb, var(--fintheon-accent) 40%, transparent);
 }
 
 @keyframes agent-border-pulse {
-  0%,
-  100% {
-    border-color: color-mix(in srgb, var(--fintheon-accent) 30%, transparent);
-  }
-  50% {
-    border-color: var(--fintheon-accent);
-  }
+    0%,
+    100% {
+        border-color: color-mix(
+            in srgb,
+            var(--fintheon-accent) 30%,
+            transparent
+        );
+    }
+    50% {
+        border-color: var(--fintheon-accent);
+    }
 }
 
 .research-card-agent {
-  animation: agent-border-pulse 2s ease-in-out infinite;
+    animation: agent-border-pulse 2s ease-in-out infinite;
 }
 
 .research-card-selected {
-  --fintheon-glow-color: var(--fintheon-accent);
-  animation: pulse-border 2s ease-in-out infinite;
+    --fintheon-glow-color: var(--fintheon-accent);
+    animation: pulse-border 2s ease-in-out infinite;
 }
 
 /* NarrativeFlow — pulsing border glow for selected items */
 @keyframes pulse-border {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 var(--fintheon-glow-color);
-  }
-  50% {
-    box-shadow: 0 0 12px 4px var(--fintheon-glow-color);
-  }
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 var(--fintheon-glow-color);
+    }
+    50% {
+        box-shadow: 0 0 12px 4px var(--fintheon-glow-color);
+    }
 }
 
 /* NarrativeFlow — SVG rope draw-in animation */
 @keyframes rope-draw {
-  from {
-    stroke-dashoffset: var(--rope-length);
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
+    from {
+        stroke-dashoffset: var(--rope-length);
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
 }
 
 /* NarrativeFlow — decay fade for stale lanes */
 @keyframes decay-fade {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0.35;
-  }
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0.35;
+    }
 }
 
 /* Timeline — shimmer number effect for event/narrative counts */
 @keyframes text-shimmer {
-  0% {
-    background-position: -200% center;
-  }
-  100% {
-    background-position: 200% center;
-  }
+    0% {
+        background-position: -200% center;
+    }
+    100% {
+        background-position: 200% center;
+    }
 }
 .shimmer-number {
-  background: linear-gradient(
-    90deg,
-    var(--fintheon-accent) 0%,
-    var(--fintheon-text) 50%,
-    var(--fintheon-accent) 100%
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: text-shimmer 3s linear infinite;
+    background: linear-gradient(
+        90deg,
+        var(--fintheon-accent) 0%,
+        var(--fintheon-text) 50%,
+        var(--fintheon-accent) 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: text-shimmer 3s linear infinite;
 }
 
 /* Liquid glass + ambient motion */
 @keyframes moveBackground {
-  from {
-    background-position: 0% 0%;
-  }
-  to {
-    background-position: 0% -1000%;
-  }
+    from {
+        background-position: 0% 0%;
+    }
+    to {
+        background-position: 0% -1000%;
+    }
 }
 
 @keyframes fadeSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Chat rebuild — vanish animation for PromptBox on send */
 @keyframes promptVanish {
-  0% {
-    opacity: 1;
-    filter: blur(0px);
-    transform: scale(1);
-  }
-  100% {
-    opacity: 0;
-    filter: blur(6px);
-    transform: scale(0.98);
-  }
+    0% {
+        opacity: 1;
+        filter: blur(0px);
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        filter: blur(6px);
+        transform: scale(0.98);
+    }
 }
 
 .animate-prompt-vanish {
-  animation: promptVanish 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: promptVanish 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .animate-fade-slide-in {
-  animation: fadeSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: fadeSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-fade-slide-in {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
+    .animate-fade-slide-in {
+        animation: none;
+        opacity: 1;
+        transform: none;
+    }
 }
 
 /* Think Harder toggle — accent opacity pulse */
 @keyframes thinkPulse {
-  0%,
-  100% {
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 1;
-  }
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
 }
 
 .think-harder-active {
-  animation: thinkPulse 2s ease-in-out infinite;
+    animation: thinkPulse 2s ease-in-out infinite;
 }
 
 /* Scroll-to-bottom button fade */
 .scroll-to-bottom-btn {
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
 }
 
 .scroll-to-bottom-btn:hover {
-  transform: translateY(-1px);
+    transform: translateY(-1px);
 }
 
 /* [claude-code 2026-03-16] Greeting shimmer + scroll-in animations */
 @keyframes greeting-scroll-in {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes greeting-settle {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0.72;
-  }
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0.72;
+    }
 }
 
 .greeting-animate {
-  animation: greeting-scroll-in 400ms ease-out forwards;
-  color: #f0ead6;
+    animation: greeting-scroll-in 400ms ease-out forwards;
+    color: #f0ead6;
 }
 
 .greeting-settle {
-  animation: greeting-settle 300ms ease-out 1.9s forwards;
+    animation: greeting-settle 300ms ease-out 1.9s forwards;
 }
 
 /* Solvys pulse dot — used by thinking indicator + streaming cursor */
 @keyframes p {
-  0%,
-  100% {
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 1;
-  }
+    0%,
+    100% {
+        opacity: 0.3;
+    }
+    50% {
+        opacity: 1;
+    }
 }
 
 /* NarrativeFlow — electric pulse shooting down the timeline */
 @keyframes timeline-pulse {
-  0% {
-    top: 0;
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  90% {
-    opacity: 1;
-  }
-  100% {
-    top: 100%;
-    opacity: 0;
-  }
+    0% {
+        top: 0;
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        top: 100%;
+        opacity: 0;
+    }
 }
 
 .timeline-line {
-  position: relative;
+    position: relative;
 }
 
 .timeline-line::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 4px;
-  height: 20px;
-  background: var(--fintheon-accent);
-  border-radius: 2px;
-  box-shadow:
-    0 0 8px var(--fintheon-accent),
-    0 0 16px var(--fintheon-accent);
-  animation: timeline-pulse 3s ease-in-out infinite;
+    content: "";
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 20px;
+    background: var(--fintheon-accent);
+    border-radius: 2px;
+    box-shadow:
+        0 0 8px var(--fintheon-accent),
+        0 0 16px var(--fintheon-accent);
+    animation: timeline-pulse 3s ease-in-out infinite;
 }
 
 /* [claude-code 2026-04-24] S36 ClusterBeam — hub absorb flash + echo pulse helper.
@@ -1248,170 +1290,258 @@ html *::-webkit-scrollbar {
    (WAAPI is the only reliable way to animate SVG cx/cy across Safari + Chrome + Firefox).
    No box-shadow glow anywhere — feedback_no_glass_effects. */
 @keyframes hub-absorb-flash-kf {
-  0%,
-  100% {
-    filter: brightness(1);
-    outline-color: transparent;
-  }
-  50% {
-    filter: brightness(1.25);
-    outline-color: var(--fintheon-accent);
-  }
+    0%,
+    100% {
+        filter: brightness(1);
+        outline-color: transparent;
+    }
+    50% {
+        filter: brightness(1.25);
+        outline-color: var(--fintheon-accent);
+    }
 }
 
 .hub-absorb-flash {
-  animation: hub-absorb-flash-kf 500ms cubic-bezier(0.4, 0, 0.2, 1);
-  outline: 1px solid transparent;
-  outline-offset: 2px;
+    animation: hub-absorb-flash-kf 500ms cubic-bezier(0.4, 0, 0.2, 1);
+    outline: 1px solid transparent;
+    outline-offset: 2px;
 }
 
 .cluster-echo-pulse {
-  animation: catalyst-pulse 900ms cubic-bezier(0.4, 0, 0.2, 1) 1;
+    animation: catalyst-pulse 900ms cubic-bezier(0.4, 0, 0.2, 1) 1;
 }
 
 /* ─── Agent Mention Effects ─────────────────────────────────────── */
 
 @keyframes agent-shimmer {
-  0% {
-    background-position: -200% center;
-  }
-  100% {
-    background-position: 200% center;
-  }
+    0% {
+        background-position: -200% center;
+    }
+    100% {
+        background-position: 200% center;
+    }
 }
 
 /* ─── NarrativeFlow T5: Living Motion Keyframes ──────────────── */
 
 @keyframes card-enter {
-  from {
-    transform: translateY(8px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+    from {
+        transform: translateY(8px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 .animate-card-enter {
-  animation: card-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation: card-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 @keyframes severity-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
-  }
-  50% {
-    box-shadow: 0 0 12px 2px rgba(239, 68, 68, 0.3);
-  }
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+    50% {
+        box-shadow: 0 0 12px 2px rgba(239, 68, 68, 0.3);
+    }
 }
 .animate-severity-pulse {
-  animation: severity-pulse 3s ease-in-out infinite;
+    animation: severity-pulse 3s ease-in-out infinite;
 }
 
 /* ─── Agent Mention Effects ─────────────────────────────────────── */
 
 .agent-mention-shimmer {
-  background-image: linear-gradient(
-    90deg,
-    transparent 0%,
-    #d4af37 25%,
-    #c79f4a 50%,
-    #d4af37 75%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  animation: agent-shimmer 1.5s ease-in-out;
+    background-image: linear-gradient(
+        90deg,
+        transparent 0%,
+        #d4af37 25%,
+        #c79f4a 50%,
+        #d4af37 75%,
+        transparent 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: agent-shimmer 1.5s ease-in-out;
 }
 
 /* Regime badge shimmer — Dashboard + Strategium */
 @keyframes regime-badge-shimmer {
-  0%,
-  100% {
-    box-shadow: 0 0 4px rgba(199, 159, 74, 0.15);
-  }
-  50% {
-    box-shadow: 0 0 10px rgba(199, 159, 74, 0.35);
-  }
+    0%,
+    100% {
+        box-shadow: 0 0 4px rgba(199, 159, 74, 0.15);
+    }
+    50% {
+        box-shadow: 0 0 10px rgba(199, 159, 74, 0.35);
+    }
 }
 .regime-badge-shimmer {
-  animation: regime-badge-shimmer 2.5s ease-in-out infinite;
+    animation: regime-badge-shimmer 2.5s ease-in-out infinite;
 }
 
 /* IV card shimmer — Aquarium CategoryScoreCards */
 @keyframes iv-card-shimmer {
-  0%,
-  100% {
-    box-shadow: 0 0 6px rgba(212, 175, 55, 0.08);
-  }
-  50% {
-    box-shadow: 0 0 14px rgba(212, 175, 55, 0.22);
-  }
+    0%,
+    100% {
+        box-shadow: 0 0 6px rgba(212, 175, 55, 0.08);
+    }
+    50% {
+        box-shadow: 0 0 14px rgba(212, 175, 55, 0.22);
+    }
 }
 .iv-card-shimmer {
-  animation: iv-card-shimmer 3s ease-in-out infinite;
+    animation: iv-card-shimmer 3s ease-in-out infinite;
 }
 
 /* TopStepX Castra mode — darken surfaces to blend with TopStepX charcoal UI */
 .topstepx-active {
-  --fintheon-bg: #08080a;
-  --fintheon-surface: #0e0e12;
+    --fintheon-bg: #08080a;
+    --fintheon-surface: #0e0e12;
 }
 
 /* Nothing Design — flat surfaces, no glass, sharp geometry */
 .nothing-active {
-  --fintheon-glass-bg: var(--fintheon-surface);
-  --fintheon-glass-border: color-mix(
-    in srgb,
-    var(--fintheon-border) 30%,
-    transparent
-  );
-  --fintheon-glass-highlight: transparent;
-  --fintheon-glass-shadow: none;
-  --radius: 0.25rem;
-  --ease-spring: cubic-bezier(0.25, 0.1, 0.25, 1);
-  --ease-bounce: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --fintheon-glass-bg: var(--fintheon-surface);
+    --fintheon-glass-border: color-mix(
+        in srgb,
+        var(--fintheon-border) 30%,
+        transparent
+    );
+    --fintheon-glass-highlight: transparent;
+    --fintheon-glass-shadow: none;
+    --radius: 0.25rem;
+    --ease-spring: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --ease-bounce: cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 .nothing-active code,
 .nothing-active pre,
 .nothing-active .font-mono {
-  font-family: "Space Mono", "JetBrains Mono", monospace;
+    font-family: "Space Mono", "JetBrains Mono", monospace;
 }
 
 /* [claude-code 2026-04-19] View Transitions API — default cross-fade at 200ms
  * using the existing spring ease. Browsers without support (Firefox, older
  * Safari) ignore these rules; the fallback is an instant update. */
 @supports (view-transition-name: root) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation-duration: 220ms;
-    animation-timing-function: var(
-      --ease-spring,
-      cubic-bezier(0.16, 1, 0.3, 1)
-    );
-  }
-  ::view-transition-old(root) {
-    animation-name: fintheon-vt-fade-out;
-  }
-  ::view-transition-new(root) {
-    animation-name: fintheon-vt-fade-in;
-  }
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation-duration: 220ms;
+        animation-timing-function: var(
+            --ease-spring,
+            cubic-bezier(0.16, 1, 0.3, 1)
+        );
+    }
+    ::view-transition-old(root) {
+        animation-name: fintheon-vt-fade-out;
+    }
+    ::view-transition-new(root) {
+        animation-name: fintheon-vt-fade-in;
+    }
 }
 @keyframes fintheon-vt-fade-out {
-  to {
-    opacity: 0;
-  }
+    to {
+        opacity: 0;
+    }
 }
 @keyframes fintheon-vt-fade-in {
-  from {
-    opacity: 0;
-  }
+    from {
+        opacity: 0;
+    }
 }
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation: none !important;
-  }
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none !important;
+    }
+}
+
+/* S38-T2: BrailleSpinner — 100ms frame cycle */
+@keyframes braille-cycle {
+    0% {
+        content: "⠋";
+    }
+    10% {
+        content: "⠙";
+    }
+    20% {
+        content: "⠹";
+    }
+    30% {
+        content: "⠸";
+    }
+    40% {
+        content: "⠼";
+    }
+    50% {
+        content: "⠴";
+    }
+    60% {
+        content: "⠦";
+    }
+    70% {
+        content: "⠧";
+    }
+    80% {
+        content: "⠇";
+    }
+    90% {
+        content: "⠏";
+    }
+    100% {
+        content: "⠋";
+    }
+}
+
+.braille-spinner {
+    animation: braille-step 1s steps(10, end) infinite;
+}
+
+/* S38-T2: Step-based braille as content swap through pseudo-element
+   CSS content animation isn't widely supported, so we use a JS-driven
+   approach via the BrailleSpinner component. The .braille-spinner class
+   serves as a target for prefers-reduced-motion queries. */
+@keyframes braille-step {
+    0% {
+        opacity: 0.8;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.8;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .braille-spinner {
+        animation: none;
+        opacity: 0.8;
+    }
+}
+
+/* S38-T2: t-text-swap — streaming text reveal animation
+   Applied to streaming tokens for character-by-character reveal.
+   Reused across FintheonStreamingBubble and all chat widgets. */
+@keyframes t-text-swap-in {
+    from {
+        opacity: 0;
+        transform: translateY(2px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.t-text-swap {
+    animation: t-text-swap-in 120ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .t-text-swap {
+        animation: none;
+    }
 }
