@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-05T14:00:00-04:00",
+    agent: "claude-code",
+    summary:
+      "v6.0.13 deploy — removed RETTIWT from API settings, Strategium mirror fix (bg-surface + border-r + rounded-r-2xl), user_api_keys migration applied, DMG build fallback in in-app updater, DMG uploaded to v6.0.12 release.",
+    files: [
+      "frontend/components/settings/ApiTab.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "scripts/fintheon-install-update.sh",
+      ".claude/skills/solvys-deploy/SKILL.md",
+      "supabase/migrations/20260503_s58_user_api_keys.sql",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-05T13:30:00-04:00",
     agent: "claude-code",
     summary:
