@@ -1224,5 +1224,15 @@ export async function collectFromXHandlesBrowser(
     }
   }
 
+  console.log(
+    JSON.stringify({
+      ts: new Date().toISOString(),
+      service: "riskflow-worker",
+      stage: "x_collect_done",
+      total_out: out.length,
+      sources: [...new Set(out.map(i => i.source_domain ?? i.source))].slice(0, 10),
+    }),
+  );
+
   return out;
 }
