@@ -15,6 +15,8 @@ const watchlistStore = new Map<string, Watchlist>();
 // Default watchlist for new users
 const defaultWatchlist: Omit<Watchlist, "userId" | "updatedAt"> = {
   keywords: [],
+  symbols: [],
+  tags: [],
   sources: ["FinancialJuice", "OSINTSources", "EconomicCalendar", "Polymarket",
     "twitter:financialjuice", "twitter:DeItaone", "twitter:unusual_whales",
     "twitter:macroedgeRes", "twitter:OSINTTechnical", "twitter:nicktimiraos",

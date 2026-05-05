@@ -200,7 +200,7 @@ function feedItemToRaw(item: FeedItem): RawRiskFlowItem {
 // In-memory cache — seeded from scored DB on boot, then re-synced periodically from DB.
 let feedCache: FeedItem[] | null = null;
 let lastCacheRefreshMs = 0;
-const CACHE_REFRESH_INTERVAL_MS = 5_000; // 5s — new items must show immediately
+const CACHE_REFRESH_INTERVAL_MS = 15_000; // 15s — stable but responsive
 
 function sortFeedItems(items: FeedItem[]): FeedItem[] {
   return [...items].sort(
@@ -319,10 +319,24 @@ async function warmCacheFromDB(): Promise<void> {
     const merged = [...scoredItems, ...freshItems].filter(
       (item, idx, arr) => idx === arr.findIndex((i) => i.id === item.id),
     );
-    if (merged.length === 0) return;
+    if (merged.length === 0) {
+      // Keep existing cache — don't blink to empty just because DB returned 0
+      return;
+    }
 
     const items = sortFeedItems(merged).slice(0, MAX_FEED_ITEMS);
-    feedCache = items;
+    // Merge with existing cache so we don't lose items that were added via SSE
+    if (feedCache) {
+      const existingIds = new Set(feedCache.map((i) => i.id));
+      for (const item of items) {
+        if (!existingIds.has(item.id)) {
+          feedCache.push(item);
+        }
+      }
+    } else {
+      feedCache = items;
+    }
+    feedCache = sortFeedItems(feedCache).slice(0, MAX_FEED_ITEMS);
     lastCacheRefreshMs = Date.now();
     log.info(
       `[FeedService] Cache synced with ${items.length} items from DB (${scoredItems.length} scored + ${freshItems.length} fresh)`,

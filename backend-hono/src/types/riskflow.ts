@@ -134,16 +134,27 @@ export interface FeedFilters {
 
 export interface Watchlist {
   userId: string;
+  keywords: string[];
   symbols: string[];
   tags: string[];
-  sources: NewsSource[];
+  sources: string[];
+  severity: "all" | "high" | "medium" | "low";
+  categories: string[];
+  prioritySources: string[];
   updatedAt: string;
 }
 
 export interface WatchlistUpdateRequest {
+  keywords?: string[];
   symbols?: string[];
   tags?: string[];
-  sources?: NewsSource[];
+  sources?: string[];
+  severity?: "all" | "high" | "medium" | "low";
+  categories?: string[];
+  prioritySources?: string[];
+}
+export interface WatchlistResponse {
+  watchlist: Watchlist;
 }
 
 export interface WatchlistResponse {
