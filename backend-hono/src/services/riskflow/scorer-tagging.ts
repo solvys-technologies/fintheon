@@ -197,6 +197,15 @@ export function normalizeSource(
   | "Untrusted" {
   const src = (rawSource || "").toLowerCase().replace(/[^a-z0-9_]/g, "");
 
+  // Handle twitter:handle sources — extract handle and check account sets
+  if ((rawSource || "").startsWith("twitter:")) {
+    const handle = (rawSource || "").replace(/^twitter:/i, "").toLowerCase();
+    if (FJ_ACCOUNTS.has(handle)) return "FinancialJuice";
+    if (DEITAONE_ACCOUNTS.has(handle)) return "FinancialJuice";
+    if (COMMENTARY_ACCOUNTS.has(handle)) return "Commentary";
+    if (OSINT_ACCOUNTS.has(handle)) return "OSINTSources";
+  }
+
   if (rawSource === "FinancialJuice") return "FinancialJuice";
   if (rawSource === "OSINTSources") return "OSINTSources";
   if (rawSource === "DeItaOne") return "FinancialJuice";
