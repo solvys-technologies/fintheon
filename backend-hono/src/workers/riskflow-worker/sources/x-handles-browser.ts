@@ -43,6 +43,7 @@ interface ExtractedTweet {
   permalink: string;
   author_handle: string;
   image_url?: string | null;
+  image_urls?: string[] | null;
   video_url?: string | null;
   pipeline_tag?: string;
 }
@@ -985,7 +986,6 @@ function extractTweetsFromNextData(
     ) {
       seen.add(idStr);
       const ts = Date.parse(created);
-      let imageUrl: string | null = null;
       let videoUrl: string | null = null;
       const extEntities = obj.extended_entities as
         | {
@@ -1006,43 +1006,42 @@ function extractTweetsFromNextData(
         | { media?: Array<{ media_url_https?: string }> }
         | undefined;
       const mediaArr = extEntities?.media ?? entities?.media;
+      const imageUrls: string[] = [];
       if (Array.isArray(mediaArr) && mediaArr.length > 0) {
-        const firstMedia = mediaArr[0] as {
-          media_url_https?: string;
-          type?: string;
-          video_info?: {
-            variants?: Array<{
-              bitrate?: number;
-              content_type?: string;
-              url?: string;
-            }>;
+        for (const m of mediaArr) {
+          const media = m as {
+            media_url_https?: string;
+            type?: string;
+            video_info?: { variants?: Array<{ bitrate?: number; content_type?: string; url?: string }> };
           };
-        };
-        if (typeof firstMedia?.media_url_https === "string") {
-          imageUrl = firstMedia.media_url_https;
-        }
-        if (
-          (firstMedia?.type === "video" || firstMedia?.type === "animated_gif") &&
-          Array.isArray(firstMedia.video_info?.variants)
-        ) {
-          const mp4s = firstMedia.video_info!.variants!.filter(
-            (v) => v.content_type === "video/mp4" && typeof v.url === "string",
-          );
-          mp4s.sort((a, b) => (b.bitrate ?? 0) - (a.bitrate ?? 0));
-          if (mp4s.length > 0 && mp4s[0].url) videoUrl = mp4s[0].url;
+          if (typeof media?.media_url_https === "string") {
+            imageUrls.push(media.media_url_https);
+          }
+          if (!videoUrl &&
+            (media?.type === "video" || media?.type === "animated_gif") &&
+            Array.isArray(media.video_info?.variants)
+          ) {
+            const mp4s = (media.video_info!.variants!).filter(
+              (v) => v.content_type === "video/mp4" && typeof v.url === "string",
+            );
+            mp4s.sort((a, b) => (b.bitrate ?? 0) - (a.bitrate ?? 0));
+            if (mp4s.length > 0 && mp4s[0].url) videoUrl = mp4s[0].url;
+          }
         }
       }
+      const imageUrl = imageUrls[0] ?? null;
       out.push({
         tweet_id: idStr,
-        text: text.trim(),
-        timestamp: Number.isFinite(ts)
-          ? new Date(ts).toISOString()
-          : new Date().toISOString(),
-        permalink: `https://x.com/${cleanHandle}/status/${idStr}`,
+        text: String(text),
+        timestamp: Number.isFinite(ts) ? new Date(ts).toISOString() : String(created),
+        permalink: `https://twitter.com/${cleanHandle}/status/${idStr}`,
         author_handle: cleanHandle,
         image_url: imageUrl,
+        image_urls: imageUrls.length > 0 ? imageUrls : null,
         video_url: videoUrl,
+        pipeline_tag: "syndication",
       });
+      if (out.length >= 12) return;
     }
     for (const key of Object.keys(obj)) {
       if (out.length >= 12) return;
@@ -1148,124 +1147,61 @@ export async function collectFromXHandlesBrowser(
 ): Promise<CollectedNewsItem[]> {
   if (opts.handles.length === 0) return [];
   const out: CollectedNewsItem[] = [];
-  const ageCutoff = Date.now() - MAX_AGE_MS;
-  const fromMs = opts.from
-    ? Date.parse(`${opts.from}T00:00:00.000Z`)
-    : Number.NaN;
-  const toMs = opts.to ? Date.parse(`${opts.to}T23:59:59.999Z`) : Number.NaN;
-  const historicalWindow =
-    Number.isFinite(fromMs) && Number.isFinite(toMs) && opts.from != null && opts.to != null;
-  const allowedHandles = new Set(opts.handles.map(stripHandle).filter(Boolean));
 
-  // Primary: home timeline via persistent browser session (requires X_AUTH_TOKEN)
+  // API-first: per-handle syndication + XActions (no browser login, no auth conflicts).
+  // Browser timeline scraper killed — it was destroying auth cookies with failed logins
+  // and duplicating pushes on the same tweet_id.
   const started = Date.now();
-  const homeTweets = await fetchHomeTimeline();
+
+  const apiTweets: ExtractedTweet[] = [];
+  for (const handle of opts.handles) {
+    try {
+      const tweets = await collectTweetsViaApi(handle);
+      apiTweets.push(...tweets);
+    } catch {
+      // continue to next handle
+    }
+  }
+
   const fetchLatency = Date.now() - started;
 
-  if (homeTweets.length > 0) {
-    console.log(
-      JSON.stringify({
-        ts: new Date().toISOString(),
-        service: "riskflow-worker",
-        stage: "home_timeline_tweets",
-        total: homeTweets.length,
-        latency_ms: fetchLatency,
-      }),
-    );
-    for (const tw of homeTweets) {
-      if (!allowedHandles.has(stripHandle(tw.author_handle))) continue;
+  console.log(
+    JSON.stringify({
+      ts: new Date().toISOString(),
+      service: "riskflow-worker",
+      stage: "x_api_collected",
+      handles: opts.handles.length,
+      tweets: apiTweets.length,
+      latency_ms: fetchLatency,
+    }),
+  );
 
-      // Check handle routing config first; fall back to source-accounts allowlist
-      const routings = getRoutingForHandle(tw.author_handle);
-      if (routings.length === 0) continue;
+  for (const tw of apiTweets) {
+    const cleanText = sanitizeTweetBody(tw.text);
+    if (!cleanText || cleanText.length < 15) continue;
+    if (!scoreHeadline(cleanText)) continue;
+    if (isGuardrailRejected(cleanText)) continue;
+    if (isStrictPromoRejected(cleanText)) continue;
 
-      const ts = Date.parse(tw.timestamp);
-      if (!Number.isFinite(ts)) continue;
-      if (historicalWindow) {
-        if (ts < fromMs || ts > toMs) continue;
-      } else if (ts < ageCutoff) {
-        continue;
-      }
-      const rawText = normalizeTweetText(tw.text);
-      if (isDisallowedRepostOrRetweet(rawText, allowedHandles)) continue;
-      const cleanText = sanitizeTweetBody(rawText);
-      if (!cleanText || cleanText.length < 15) continue;
-
-      const headline =
-        cleanText.length > 220 ? cleanText.slice(0, 220) : cleanText;
-      if (!scoreHeadline(headline)) continue;
-      if (isGuardrailRejected(cleanText)) continue;
-      if (isStrictPromoRejected(cleanText)) continue;
-
-      // Strict mode: emit only routing entries that pass content filters.
-      for (const routing of routings) {
-        if (!passesContentFilter(cleanText, routing.contentFilter)) continue;
-        if (opts.tier !== "unified" && opts.tier !== routing.tier) continue;
-        out.push({
-          item_id: tw.tweet_id,
-          source: `twitter:${tw.author_handle}`,
-          source_domain: "x.com",
-          headline,
-          body: cleanText,
-          url: tw.permalink,
-          image_url: tw.image_url ?? null,
-          video_url: tw.video_url ?? null,
-          tier: opts.tier === "unified" ? routing.tier : opts.tier,
-          published_at: tw.timestamp || new Date().toISOString(),
-          fetched_at: new Date().toISOString(),
-          fetch_latency_ms: fetchLatency,
-          ingest_pipeline: tw.pipeline_tag || "x-home-timeline",
-        });
-      }
-    }
-  } else {
-    // Browser timeline empty — fall back to per-handle syndication + XActions API.
-    // These don't require browser login, just auth tokens.
-    console.log(
-      JSON.stringify({
-        ts: new Date().toISOString(),
-        service: "riskflow-worker",
-        stage: "home_timeline_empty_fallback_to_api",
-        handles: opts.handles.length,
-      }),
-    );
-
-    const apiTweets: ExtractedTweet[] = [];
-    for (const handle of opts.handles) {
-      try {
-        const tweets = await collectTweetsViaApi(handle);
-        apiTweets.push(...tweets);
-      } catch {
-        // continue to next handle
-      }
-    }
-
-    for (const tw of apiTweets) {
-      const cleanText = sanitizeTweetBody(tw.text);
-      if (!cleanText || cleanText.length < 15) continue;
-      if (!scoreHeadline(cleanText)) continue;
-      if (isGuardrailRejected(cleanText)) continue;
-      if (isStrictPromoRejected(cleanText)) continue;
-
-      const routings = getRoutingForHandle(tw.author_handle);
-      for (const routing of routings) {
-        if (!passesContentFilter(cleanText, routing.contentFilter)) continue;
-        out.push({
-          item_id: tw.tweet_id,
-          source: `twitter:${tw.author_handle}`,
-          source_domain: "x.com",
-          headline: cleanText.length > 220 ? cleanText.slice(0, 220) : cleanText,
-          body: cleanText,
-          url: tw.permalink,
-          image_url: tw.image_url ?? null,
-          video_url: tw.video_url ?? null,
-          tier: routing.tier,
-          published_at: tw.timestamp || new Date().toISOString(),
-          fetched_at: new Date().toISOString(),
-          ingest_pipeline: tw.pipeline_tag || "x-api-fallback",
-          fetch_latency_ms: fetchLatency,
-        });
-      }
+    const routings = getRoutingForHandle(tw.author_handle);
+    for (const routing of routings) {
+      if (!passesContentFilter(cleanText, routing.contentFilter)) continue;
+      out.push({
+        item_id: tw.tweet_id,
+        source: `twitter:${tw.author_handle}`,
+        source_domain: "x.com",
+        headline: cleanText.length > 220 ? cleanText.slice(0, 220) : cleanText,
+        body: cleanText,
+        url: tw.permalink,
+        image_url: tw.image_url ?? null,
+        image_urls: tw.image_urls ?? null,
+        video_url: tw.video_url ?? null,
+        tier: routing.tier,
+        published_at: tw.timestamp || new Date().toISOString(),
+        fetched_at: new Date().toISOString(),
+        ingest_pipeline: tw.pipeline_tag || "x-api",
+        fetch_latency_ms: fetchLatency,
+      });
     }
   }
 

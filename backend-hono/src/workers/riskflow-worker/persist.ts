@@ -192,10 +192,14 @@ export async function writeCollectedItems(
     url: item.url ?? null,
     image_url: item.image_url ?? null,
     video_url: item.video_url ?? null,
-    symbols: [] as string[],
-    tags: item.url
-      ? [`url:${item.url}`, `tier:${item.tier}`]
-      : [`tier:${item.tier}`],
+    // Multiple images stored as JSON string in tags so the frontend can render side by side
+    tags: [
+      ...(item.url ? [`url:${item.url}`] : []),
+      `tier:${item.tier}`,
+      ...(item.image_urls && item.image_urls.length > 1
+        ? [`image_urls:${JSON.stringify(item.image_urls)}`]
+        : []),
+    ],
     is_breaking: item.tier === "breaking",
     urgency: item.tier === "breaking" ? 8 : 4,
     published_at: item.published_at,

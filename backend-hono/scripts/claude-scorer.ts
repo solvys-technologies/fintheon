@@ -16,7 +16,7 @@ const ONCE = process.argv.includes("--once");
 const BATCH_SIZE = 15;
 const LOOP_INTERVAL_MS = 120_000; // 2 minutes
 const CLAUDE_PATH = "/Users/tifos/.local/bin/claude";
-const LOG_DIR = join(import.meta.dir, "..", "logs");
+const LOG_DIR = join(process.cwd(), "logs");
 const LOG_FILE = join(LOG_DIR, "claude-scorer.log");
 
 mkdirSync(LOG_DIR, { recursive: true });
