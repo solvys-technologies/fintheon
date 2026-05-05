@@ -1116,21 +1116,23 @@ async function fetchXActionsTweets(
     timestamp: t.timestamp,
     permalink: t.permalink,
     author_handle: cleanHandle,
-    image_url: (t as { image_url?: string | null }).image_url ?? null,
+    image_url: t.image_url ?? null,
+    image_urls: t.image_urls ?? null,
+    video_url: t.video_url ?? null,
     pipeline_tag: "xactions",
   }));
 }
 
-/** Collect tweets for a single handle via syndication + XActions API (no browser login needed). */
+/** Collect tweets for a single handle via XActions API (primary) + syndication fallback. */
 async function collectTweetsViaApi(
   cleanHandle: string,
 ): Promise<ExtractedTweet[]> {
-  // Try syndication first (fast, no auth needed for public tweets)
-  const synd = await fetchSyndicationTweets(cleanHandle);
-  if (synd.length > 0) return synd;
+  // Try XActions first (worked for 66 items — auth tokens from env)
+  const xa = await fetchXActionsTweets(cleanHandle);
+  if (xa.length > 0) return xa;
 
-  // Fall back to XActions API (requires auth tokens from env)
-  return fetchXActionsTweets(cleanHandle);
+  // Fall back to syndication (browser-based, less reliable)
+  return fetchSyndicationTweets(cleanHandle);
 }
 
 // ── Unified collector ──
