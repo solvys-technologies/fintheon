@@ -1122,6 +1122,18 @@ async function fetchXActionsTweets(
   }));
 }
 
+/** Collect tweets for a single handle via syndication + XActions API (no browser login needed). */
+async function collectTweetsViaApi(
+  cleanHandle: string,
+): Promise<ExtractedTweet[]> {
+  // Try syndication first (fast, no auth needed for public tweets)
+  const synd = await fetchSyndicationTweets(cleanHandle);
+  if (synd.length > 0) return synd;
+
+  // Fall back to XActions API (requires auth tokens from env)
+  return fetchXActionsTweets(cleanHandle);
+}
+
 // ── Unified collector ──
 
 interface CollectOpts {
@@ -1207,15 +1219,54 @@ export async function collectFromXHandlesBrowser(
       }
     }
   } else {
-    // Strict mode: no syndication/XActions fallback; avoid For-You drift/noise.
+    // Browser timeline empty — fall back to per-handle syndication + XActions API.
+    // These don't require browser login, just auth tokens.
     console.log(
       JSON.stringify({
         ts: new Date().toISOString(),
         service: "riskflow-worker",
-        stage: "home_timeline_empty_strict_no_fallback",
+        stage: "home_timeline_empty_fallback_to_api",
         handles: opts.handles.length,
       }),
     );
+
+    const apiTweets: ExtractedTweet[] = [];
+    for (const handle of opts.handles) {
+      try {
+        const tweets = await collectTweetsViaApi(handle);
+        apiTweets.push(...tweets);
+      } catch {
+        // continue to next handle
+      }
+    }
+
+    for (const tw of apiTweets) {
+      const cleanText = sanitizeTweetBody(tw.text);
+      if (!cleanText || cleanText.length < 15) continue;
+      if (!scoreHeadline(cleanText)) continue;
+      if (isGuardrailRejected(cleanText)) continue;
+      if (isStrictPromoRejected(cleanText)) continue;
+
+      const routings = getRoutingForHandle(tw.author_handle);
+      for (const routing of routings) {
+        if (!passesContentFilter(cleanText, routing.contentFilter)) continue;
+        out.push({
+          item_id: tw.tweet_id,
+          source: `twitter:${tw.author_handle}`,
+          source_domain: "x.com",
+          headline: cleanText.length > 220 ? cleanText.slice(0, 220) : cleanText,
+          body: cleanText,
+          url: tw.permalink,
+          image_url: tw.image_url ?? null,
+          video_url: tw.video_url ?? null,
+          tier: routing.tier,
+          published_at: tw.timestamp || new Date().toISOString(),
+          fetched_at: new Date().toISOString(),
+          ingest_pipeline: tw.pipeline_tag || "x-api-fallback",
+          fetch_latency_ms: fetchLatency,
+        });
+      }
+    }
   }
 
   return out;
