@@ -237,7 +237,7 @@ function maskEmail(email: string): string {
 // Home timeline cache — shared across tiers within the same cycle window
 
 let homeTimelineCache: { tweets: ExtractedTweet[]; at: number } | null = null;
-const HOME_CACHE_TTL_MS = 90_000;
+const HOME_CACHE_TTL_MS = 15_000; // 15s — bust fast so each cycle re-scrapes for new tweets
 
 // Auth expiry detection — consecutive empty cycles means the token likely expired
 let consecutiveEmptyCycles = 0;
@@ -753,7 +753,8 @@ async function fetchHomeTimeline(): Promise<ExtractedTweet[]> {
 async function scrapeHomeTimeline(): Promise<ExtractedTweet[] | null> {
   try {
     return await withPersistentBrowserPage(async (page) => {
-      await page.goto("https://x.com/home", {
+      // Load Following tab directly — chronological, no algorithmic ranking.
+      await page.goto("https://x.com/following", {
         waitUntil: "domcontentloaded",
         timeout: 45_000,
       });
@@ -770,25 +771,6 @@ async function scrapeHomeTimeline(): Promise<ExtractedTweet[] | null> {
           }),
         );
         throw new Error("X_AUTH_FAILED");
-      }
-
-      // Strict mode: always read from "Following", never "For you".
-      const followingSelected = await page.evaluate(() => {
-        const tabs = Array.from(
-          document.querySelectorAll(
-            '[role="tab"], a[href*="following"], [data-testid="ScrollSnap-List"] [role="link"]',
-          ),
-        ) as HTMLElement[];
-        const following = tabs.find((el) =>
-          /\bfollowing\b/i.test((el.textContent || "").trim()),
-        );
-        if (!following) return false;
-        const alreadySelected = following.getAttribute("aria-selected") === "true";
-        if (!alreadySelected) following.click();
-        return true;
-      });
-      if (followingSelected) {
-        await page.waitForTimeout(2_000);
       }
 
       for (let i = 0; i < HOME_SCROLL_COUNT; i++) {

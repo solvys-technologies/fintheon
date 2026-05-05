@@ -1,14 +1,25 @@
-// [claude-code 2026-04-29] S53-T4B: Strict source-policy enforcement — allowlist-first,
-// deny by default. Only approved X handles, official economic data domains, and
-// the internal EconomicCalendar bridge may enter the feed. Refinement config is
-// display/control metadata, not permission to broaden the feed.
-// Leak sentinel counters track every rejection for operator visibility.
+// [claude-code 2026-05-05] Allowlist loaded from Supabase riskflow_source_accounts
+// table (active browser-method handles managed by Refinement UI). Falls back to
+// APPROVED_X_HANDLES when DB unavailable. The X Following tab IS the primary filter.
+// [claude-code 2026-04-29] S53-T4B: Strict source-policy — allowlist-first, deny by
+// default. Leak sentinel counters track every rejection for operator visibility.
 
 import { createLogger } from "../../lib/logger.js";
+import { getSupabaseClient, isSupabaseConfigured } from "../../config/supabase.js";
 
 const log = createLogger("SourcePolicy");
 
-const APPROVED_X_HANDLES = ["financialjuice", "deitaone"];
+const APPROVED_X_HANDLES = [
+  "unusual_whales",
+  "financialjuice",
+  "deitaone",
+  "macroedgeRes",
+  "OSINTTechnical",
+  "nicktimiraos",
+  "michaeljburry",
+  "spotgamma",
+  "trendspider",
+];
 
 const APPROVED_WEB_DOMAINS = [
   "bls.gov",
@@ -35,17 +46,17 @@ const BLOCKED_WEB_DOMAINS = [
 
 const SOCIAL_PERMALINK_DOMAINS = ["x.com", "twitter.com"];
 
-const allowlistHandles = new Set<string>(APPROVED_X_HANDLES);
+const allowlistHandles = new Set<string>();
 const allowlistDomains = new Set<string>(APPROVED_WEB_DOMAINS);
 let lastRefresh = 0;
 const REFRESH_TTL_MS = 30_000;
 
-function isWebDomain(handle: string): boolean {
-  return handle.includes(".") && !handle.startsWith("@");
-}
-
 function normalizeHandle(value: string): string {
   return value.replace(/^@/, "").toLowerCase().trim();
+}
+
+function isWebDomain(handle: string): boolean {
+  return handle.includes(".") && !handle.startsWith("@");
 }
 
 function extractHandleFromSubmittedBy(
@@ -100,7 +111,33 @@ export async function refreshAllowlist(): Promise<void> {
   if (Date.now() - lastRefresh < REFRESH_TTL_MS) return;
 
   lastRefresh = Date.now();
-  log.info("Static RiskFlow source allowlist refreshed", {
+
+  if (isSupabaseConfigured()) {
+    try {
+      const sb = getSupabaseClient()!;
+      const { data } = await sb
+        .from("riskflow_source_accounts")
+        .select("handle")
+        .eq("active", true)
+        .eq("method", "browser");
+      if (data) {
+        allowlistHandles.clear();
+        for (const row of data) {
+          allowlistHandles.add(normalizeHandle(row.handle));
+        }
+      }
+    } catch {
+      for (const h of APPROVED_X_HANDLES) {
+        allowlistHandles.add(normalizeHandle(h));
+      }
+    }
+  } else {
+    for (const h of APPROVED_X_HANDLES) {
+      allowlistHandles.add(normalizeHandle(h));
+    }
+  }
+
+  log.info("RiskFlow source allowlist refreshed", {
     handles: allowlistHandles.size,
     domains: allowlistDomains.size,
   });
@@ -177,13 +214,11 @@ export function checkSourcePolicy(
 
   const submittedHandle = extractHandleFromSubmittedBy(context.submittedBy);
 
-  // Check X handles (case-insensitive)
   const handle = normalizeHandle(source);
   if (allowlistHandles.has(handle)) {
     return { decision: "allowed", reason: "approved X handle" };
   }
 
-  // Check web domains
   if (url) {
     const host = urlHost;
     if (host) {
@@ -200,7 +235,6 @@ export function checkSourcePolicy(
     }
   }
 
-  // Check if source itself is a domain
   if (isWebDomain(source)) {
     const srcLower = source.toLowerCase();
     const blocked = isBlockedHost(srcLower);
