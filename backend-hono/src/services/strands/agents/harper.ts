@@ -10,6 +10,7 @@ import { withCognition } from "../telemetry.js";
 import { createConversationManager } from "../memory-store.js";
 import { checkDeepSeekDirectHealth, checkVProxyHealth } from "../provider.js";
 import { getAgentSystemPrompt } from "../../ai/agent-instructions/index.js";
+import { getUserApiKey } from "../../ai/api-key-crypto.js";
 import { createLogger } from "../../../lib/logger.js";
 
 const log = createLogger("HarperAgent");
@@ -99,6 +100,13 @@ export async function createHarperAgent(
     },
     conversationManager,
     provider: effectiveProvider,
+    userApiKey:
+      opts?.userId
+        ? await getUserApiKey(
+            opts.userId,
+            effectiveProvider === "deepseek-oc-api" ? "opencode-go" : "deepseek",
+          )
+        : undefined,
   });
 }
 

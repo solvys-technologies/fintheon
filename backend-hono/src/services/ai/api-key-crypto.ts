@@ -1,5 +1,7 @@
+// [claude-code 2026-05-05] Added getUserApiKey() to resolve per-user BYOK for chat inference.
 // [claude-code 2026-05-03] S58-T1: encrypted user AI API key storage.
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
+import { getSupabaseClient, isSupabaseConfigured } from "../../config/supabase.js";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_BYTES = 12;
@@ -40,4 +42,26 @@ export function decryptApiKey(payload: string): string {
 export function maskApiKey(apiKey: string): string {
   if (apiKey.length <= 12) return "****";
   return `${apiKey.slice(0, 6)}...${apiKey.slice(-4)}`;
+}
+
+/** Resolve a per-user API key from the encrypted store. Returns null if not found or DB unavailable. */
+export async function getUserApiKey(
+  userId: string,
+  provider: string,
+): Promise<string | null> {
+  if (!userId || userId === "anonymous" || userId === "local-user") return null;
+  if (!isSupabaseConfigured()) return null;
+  try {
+    const sb = getSupabaseClient()!;
+    const { data, error } = await sb
+      .from("user_api_keys")
+      .select("encrypted_key")
+      .eq("user_id", userId)
+      .eq("provider", provider)
+      .maybeSingle();
+    if (error || !data?.encrypted_key) return null;
+    return decryptApiKey(String(data.encrypted_key));
+  } catch {
+    return null;
+  }
 }

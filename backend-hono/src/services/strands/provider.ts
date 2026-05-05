@@ -119,8 +119,9 @@ export function createVProxyModel(options?: VProxyModelOptions): OpenAIModel {
 
 export function createDeepSeekDirectModel(
   options?: VProxyModelOptions,
+  overrideApiKey?: string | null,
 ): OpenAIModel {
-  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const apiKey = overrideApiKey || process.env.DEEPSEEK_API_KEY;
   if (!apiKey) throw new Error("DEEPSEEK_API_KEY not set");
   return new OpenAIModel({
     api: "chat",
@@ -134,10 +135,12 @@ export function createDeepSeekDirectModel(
 
 export function createDeepSeekOcApiModel(
   options?: VProxyModelOptions,
+  overrideApiKey?: string | null,
 ): OpenAIModel {
+  const apiKey = overrideApiKey || process.env.OPENCODE_GO_API_KEY || process.env.HERMES_API_KEY || "opencode-go";
   return new OpenAIModel({
     api: "chat",
-    apiKey: process.env.OPENCODE_GO_API_KEY || process.env.HERMES_API_KEY || "opencode-go",
+    apiKey,
     clientConfig: { baseURL: getOpenCodeGoBaseUrl() },
     modelId: options?.model || DEEPSEEK_MODEL,
     temperature: options?.temperature ?? 0.3,

@@ -56,6 +56,8 @@ export interface CreateAgentOptions {
   provider?: HarperProvider;
   /** Override model ID when provider is 'nous' */
   nousModelId?: string;
+  /** Per-user BYOK API key — overrides the server-wide env var when set. */
+  userApiKey?: string | null;
 }
 
 // [claude-code 2026-04-26] OpenRouter rung removed entirely. createNousModelWithId
@@ -90,14 +92,16 @@ export function createAgent(options: CreateAgentOptions): Agent {
     case "deepseek-direct":
       log.info("Creating Strands agent (DeepSeek direct)", {
         name: options.name,
+        hasUserKey: Boolean(options.userApiKey),
       });
-      model = createDeepSeekDirectModel(options.model);
+      model = createDeepSeekDirectModel(options.model, options.userApiKey);
       break;
     case "deepseek-oc-api":
       log.info("Creating Strands agent (DeepSeek OC API)", {
         name: options.name,
+        hasUserKey: Boolean(options.userApiKey),
       });
-      model = createDeepSeekOcApiModel(options.model);
+      model = createDeepSeekOcApiModel(options.model, options.userApiKey);
       break;
     case "nous":
       // eslint-disable-next-line no-case-declarations
