@@ -14,9 +14,14 @@ const watchlistStore = new Map<string, Watchlist>();
 
 // Default watchlist for new users
 const defaultWatchlist: Omit<Watchlist, "userId" | "updatedAt"> = {
-  symbols: ["ES", "NQ", "SPY", "QQQ"],
-  tags: ["CPI", "PPI", "NFP", "FOMC", "FED"],
-  sources: ["FinancialJuice", "OSINTSources", "EconomicCalendar", "Polymarket"],
+  keywords: [],
+  sources: ["FinancialJuice", "OSINTSources", "EconomicCalendar", "Polymarket",
+    "twitter:financialjuice", "twitter:DeItaone", "twitter:unusual_whales",
+    "twitter:macroedgeRes", "twitter:OSINTTechnical", "twitter:nicktimiraos",
+    "twitter:michaeljburry", "twitter:spotgamma", "twitter:trendspider"],
+  severity: "all",
+  categories: [],
+  prioritySources: [],
 };
 
 /**
