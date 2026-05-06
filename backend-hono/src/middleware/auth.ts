@@ -23,34 +23,35 @@ function setAuthContext(c: Context, user: { userId: string; email: string }) {
  * - No token: sets anonymous context and continues (public access)
  */
 export const authMiddleware = async (c: Context, next: Next) => {
+  // Always try to resolve a real user from Bearer token first,
+  // even in BYPASS_AUTH mode — so DB writes use real UUIDs.
+  const authHeader = c.req.header("Authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.slice(7);
+
+    if (SERVICE_ROLE_KEY && token === SERVICE_ROLE_KEY) {
+      setAuthContext(c, LOCAL_USER);
+      return await next();
+    }
+
+    try {
+      const payload = await verifySupabaseToken(token);
+      setAuthContext(c, { userId: payload.sub, email: payload.email });
+      return await next();
+    } catch (error) {
+      console.error("[auth] Token verification failed:", error);
+      return c.json({ error: "Invalid or expired token" }, 401);
+    }
+  }
+
   if (BYPASS_AUTH) {
     setAuthContext(c, LOCAL_USER);
     return await next();
   }
 
-  const authHeader = c.req.header("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    // No token — allow anonymous access
-    setAuthContext(c, ANON_USER);
-    return await next();
-  }
-
-  const token = authHeader.slice(7);
-
-  // Service role key = trusted internal caller (peer-bootstrap, cron jobs, etc.)
-  if (SERVICE_ROLE_KEY && token === SERVICE_ROLE_KEY) {
-    setAuthContext(c, LOCAL_USER);
-    return await next();
-  }
-
-  try {
-    const payload = await verifySupabaseToken(token);
-    setAuthContext(c, { userId: payload.sub, email: payload.email });
-    return await next();
-  } catch (error) {
-    console.error("[auth] Token verification failed:", error);
-    return c.json({ error: "Invalid or expired token" }, 401);
-  }
+  // No token — allow anonymous access
+  setAuthContext(c, ANON_USER);
+  return await next();
 };
 
 /**
