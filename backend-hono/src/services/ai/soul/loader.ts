@@ -24,6 +24,19 @@ export const SoulSchema = z.object({
     role: z.string().min(1),
     self_description: z.string().optional(),
   }),
+  native_home: z
+    .object({
+      platform: z.string().min(1),
+      platform_description: z.string().min(1),
+      company: z.string().min(1),
+      company_description: z.string().min(1),
+      design_system: z.string().min(1),
+      design_description: z.string().min(1),
+      model_provider: z.string().min(1),
+      model: z.string().min(1),
+      model_company: z.string().min(1),
+    })
+    .optional(),
   scope: z.array(z.string().min(1)).min(1),
   constraints: z.array(z.string().min(1)).min(1),
   grounding: z.object({
@@ -209,6 +222,18 @@ export function renderSystemPrompt(soul: LoadedSoul): string {
   if (soul.identity.self_description) {
     parts.push(soul.identity.self_description);
   }
+
+  // WHERE YOU ARE — platform/company/design identity injected from native_home
+  if (soul.native_home) {
+    parts.push(
+      `## WHERE YOU ARE\n` +
+        `You operate inside **${soul.native_home.platform}** — ${soul.native_home.platform_description}.\n` +
+        `You work for **${soul.native_home.company}** — ${soul.native_home.company_description}.\n` +
+        `The design system is **${soul.native_home.design_system}** — ${soul.native_home.design_description}.\n` +
+        `You run on **${soul.native_home.model}** (${soul.native_home.model_company}), provisioned via ${soul.native_home.model_provider}.`,
+    );
+  }
+
   parts.push(`## Scope\n${soul.scope.map((s) => `- ${s}`).join("\n")}`);
   parts.push(
     `## Constraints\n${soul.constraints.map((s) => `- ${s}`).join("\n")}`,
