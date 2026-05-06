@@ -24,6 +24,13 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
+    date: "2026-05-05T23:04:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S59 shipped: Hermes sidecar removal, persona unification, agent health dashboard, hermes-native context-engine + soul-pipeline + runtime. 4 tracks, ~20 files. Archived to sprint-changelog/.",
+    files: ["sprint-changelog/S59-ORCHESTRATION.md"],
+  },
+  {
     date: "2026-05-05T18:30:00-04:00",
     agent: "claude-code",
     summary:
