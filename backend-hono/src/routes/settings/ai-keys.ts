@@ -30,11 +30,14 @@ function authedUserId(c: { get: (key: string) => unknown }): string | null {
   const userId = c.get("userId");
   if (typeof userId !== "string") return null;
   if (userId === "anonymous") return null;
-  return userId; // "local-user" is allowed — handles skip DB for non-UUID
+  return userId;
 }
 
-function isRealUser(userId: string): boolean {
-  return userId !== "anonymous" && userId !== "local-user";
+function dbUserId(userId: string): string {
+  // In local dev (BYPASS_AUTH), map "local-user" to a stable dev UUID
+  // so API keys can be tested. RLS bypassed via service_role.
+  if (userId === "local-user") return "00000000-0000-0000-0000-000000000001";
+  return userId;
 }
 
 export function createAiKeysRoutes(): Hono {
@@ -43,7 +46,8 @@ export function createAiKeysRoutes(): Hono {
   router.get("/", async (c) => {
     const userId = authedUserId(c);
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
-    if (!isSupabaseConfigured() || !isRealUser(userId)) return c.json({ keys: [], keyCount: 0 });
+    if (!isSupabaseConfigured()) return c.json({ keys: [], keyCount: 0 });
+    const uid = dbUserId(userId);
 
     const providerQuery = c.req.query("provider");
     if (providerQuery) {
@@ -56,7 +60,7 @@ export function createAiKeysRoutes(): Hono {
       const { data, error } = await sb
         .from("user_api_keys")
         .select("provider, encrypted_key, key_label, created_at, updated_at")
-        .eq("user_id", userId)
+        .eq("user_id", uid)
         .eq("provider", provider)
         .maybeSingle();
       if (error) return c.json({ error: error.message }, 500);
@@ -104,7 +108,7 @@ export function createAiKeysRoutes(): Hono {
     const { data, error } = await sb
       .from("user_api_keys")
       .select("provider, encrypted_key, key_label, created_at, updated_at")
-      .eq("user_id", userId)
+      .eq("user_id", uid)
       .order("created_at", { ascending: true });
     if (error) return c.json({ error: error.message }, 500);
 
@@ -129,7 +133,8 @@ export function createAiKeysRoutes(): Hono {
   router.post("/", async (c) => {
     const userId = authedUserId(c);
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
-    if (!isSupabaseConfigured() || !isRealUser(userId)) return c.json({ error: "API keys require a real account (not bypass-auth mode)" }, 400);
+    if (!isSupabaseConfigured()) return c.json({ error: "DB not configured" }, 500);
+    const uid = dbUserId(userId);
 
     const parsed = UpsertKeySchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: "Invalid API key payload" }, 400);
@@ -152,7 +157,7 @@ export function createAiKeysRoutes(): Hono {
     }
     const { error } = await sb.from("user_api_keys").upsert(
       {
-        user_id: userId,
+        user_id: uid,
         provider: parsed.data.provider,
         encrypted_key: encryptedKey,
         key_label:
@@ -168,7 +173,8 @@ export function createAiKeysRoutes(): Hono {
   router.delete("/", async (c) => {
     const userId = authedUserId(c);
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
-    if (!isSupabaseConfigured() || !isRealUser(userId)) return c.json({ error: "API keys require a real account (not bypass-auth mode)" }, 400);
+    if (!isSupabaseConfigured()) return c.json({ error: "DB not configured" }, 500);
+    const uid = dbUserId(userId);
 
     const providerQuery = c.req.query("provider") || "deepseek";
     const parsedProvider = ProviderSchema.safeParse(providerQuery);
@@ -179,7 +185,7 @@ export function createAiKeysRoutes(): Hono {
     const { error } = await getSupabaseClient()!
       .from("user_api_keys")
       .delete()
-      .eq("user_id", userId)
+      .eq("user_id", uid)
       .eq("provider", provider);
     if (error) return c.json({ error: error.message }, 500);
     return c.json({ success: true, provider });
