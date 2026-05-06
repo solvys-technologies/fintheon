@@ -9,6 +9,29 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-06T04:15:00-04:00",
+    agent: "claude-code",
+    summary:
+      "v6.0.16 deploy: S59-T3 (Agent Health Dashboard) + S59-T4 (unification: RiskFlow card transparency, Chamber seat dual-role descriptors, border-radius 0.5rem rounding, chat iOS rounded-2xl, Persona/Provider 28px alignment, sidebar compact refactor). 3 targets: Fly.io backend, Vercel desktop + mobile PWA. DMG on Desktop + uploaded to release.",
+    files: [
+      "src/lib/changelog.ts",
+      "package.json",
+      "scripts/fintheon-update.sh",
+      "scripts/fintheon-setup.sh",
+      "scripts/install-cli.sh",
+    ],
+  },
+  {
+    date: "2026-05-06T03:57:00-04:00",
+    agent: "claude-code",
+    summary:
+      "RiskFlow recovery: deployed riskflow-worker to Fly.io (fintheon-riskflow-worker), expanded FinancialJuice backfill drip (80→30 scrolls, April 21-May 6 window, 120s interval), refilled gov RSS sources (federalreserve/bls/atlantafed/newyorkfed). Recovered 23 items into scored_riskflow_items via drip+gov. Worker now polling all 14 X handles (60s) + standard tier (5min).",
+    files: [
+      "backend-hono/src/services/riskflow/financialjuice-backfill-drip.ts",
+      "backend-hono/src/routes/diagnostics/index.ts",
+    ],
+  },
+  {
     date: "2026-05-06T01:15:00-04:00",
     agent: "claude-code",
     summary:
