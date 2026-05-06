@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-05T18:30:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Footer layout: restored full-width right-aligned status section with desk name (Priced In Capital) between fetch/update messages and system status indicators. Right section wrapped in ml-auto container. Removed dead viewportWidth/isMarginalWidth state.",
+    files: ["frontend/components/layout/FooterToolbar.tsx"],
+  },
+  {
     date: "2026-05-05T17:00:00-04:00",
     agent: "claude-code",
     summary:

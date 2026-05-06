@@ -1,4 +1,4 @@
-// [claude-code 2026-05-05] Footer compaction pass: removed quick terminal rail + desk tag, version-only epoch chip, and responsive status reduction for narrow shells.
+// [claude-code 2026-05-05] Restored full-width right-aligned status section: desk name "Priced In Capital" between fetch/update messages and system status indicators, wrapped in ml-auto container. Quick terminal rail remains in drawer.
 // [claude-code 2026-04-03] Removed stale heartbeat/pulse/NTN/X indicators — system status now from /api/diagnostics only
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
@@ -883,81 +883,92 @@ export function FooterToolbar({
           </>
         )}
 
-        {/* S14-T6: Peers toggle removed — team status is in footer Team tab */}
-
-        {/* Update installing status */}
-        {compactLevel < 1 && updateInstalling && (
-          <div className="flex items-center gap-1.5 shrink-0">
-            <div className="h-1.5 w-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
-            <span className="text-[9px] tracking-[0.15em] uppercase text-[var(--fintheon-accent)]/70 font-medium">
-              Installing update...
-            </span>
-          </div>
-        )}
-        {compactLevel < 1 && updateInstalling && (
-          <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
-        )}
-
-        {/* Fetch status — shows during refresh or polling */}
-        {compactLevel < 1 && fetchStatus && (
-          <div className="flex items-center gap-1.5 shrink-0">
-            {refreshing && (
-              <div className="h-1.5 w-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
-            )}
-            <span className="text-[9px] tracking-[0.15em] uppercase text-[var(--fintheon-accent)]/70 font-medium">
-              {fetchStatus}
-            </span>
-          </div>
-        )}
-        {compactLevel < 1 && fetchStatus && (
-          <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
-        )}
-
-        {/* System status indicators — real-time from /api/diagnostics */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          {compactLevel < 1 && (
-            <StatusIndicator
-              label="Gateway"
-              status={
-                gatewayStatus === "connected"
-                  ? "ok"
-                  : gatewayStatus === "connecting"
-                    ? "degraded"
-                    : "error"
-              }
-              detail={
-                gatewayStatus === "connected"
-                  ? "Backend reachable"
-                  : gatewayStatus === "connecting"
-                    ? "Connecting..."
-                    : "Disconnected"
-              }
-            />
+        {/* Right section — pushed to end */}
+        <div className="ml-auto flex items-center gap-3">
+          {/* Update installing status */}
+          {compactLevel < 1 && updateInstalling && (
+            <>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <div className="h-1.5 w-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
+                <span className="text-[9px] tracking-[0.15em] uppercase text-[var(--fintheon-accent)]/70 font-medium">
+                  Installing update...
+                </span>
+              </div>
+              <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
+            </>
           )}
-          {visibleServices.map((svc) => (
-            <StatusIndicator
-              key={svc.key}
-              label={svc.name}
-              status={svc.status}
-              detail={svc.detail}
-            />
-          ))}
+
+          {/* Fetch status — shows during refresh or polling */}
+          {compactLevel < 1 && fetchStatus && (
+            <>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {refreshing && (
+                  <div className="h-1.5 w-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
+                )}
+                <span className="text-[9px] tracking-[0.15em] uppercase text-[var(--fintheon-accent)]/70 font-medium">
+                  {fetchStatus}
+                </span>
+              </div>
+              <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
+            </>
+          )}
+
+          {/* Desk name */}
+          {compactLevel < 1 && (
+            <>
+              <span className="text-[9px] tracking-[0.15em] uppercase text-[var(--fintheon-accent)]/50 font-mono shrink-0">
+                Priced In Capital
+              </span>
+              <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
+            </>
+          )}
+
+          {/* System status indicators — real-time from /api/diagnostics */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            {compactLevel < 1 && (
+              <StatusIndicator
+                label="Gateway"
+                status={
+                  gatewayStatus === "connected"
+                    ? "ok"
+                    : gatewayStatus === "connecting"
+                      ? "degraded"
+                      : "error"
+                }
+                detail={
+                  gatewayStatus === "connected"
+                    ? "Backend reachable"
+                    : gatewayStatus === "connecting"
+                      ? "Connecting..."
+                      : "Disconnected"
+                }
+              />
+            )}
+            {visibleServices.map((svc) => (
+              <StatusIndicator
+                key={svc.key}
+                label={svc.name}
+                status={svc.status}
+                detail={svc.detail}
+              />
+            ))}
+          </div>
+          <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
+          {/* Overall system status */}
+          <StatusIndicator
+            label="fintheon"
+            status={gatewayStatus !== "connected" ? "error" : systemOverall}
+            detail={
+              gatewayStatus !== "connected"
+                ? "Backend offline"
+                : systemOverall === "ok"
+                  ? "All systems nominal"
+                  : systemOverall === "degraded"
+                    ? "Some services degraded"
+                    : "Services unavailable"
+            }
+          />
         </div>
-        <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
-        {/* Overall system status */}
-        <StatusIndicator
-          label="fintheon"
-          status={gatewayStatus !== "connected" ? "error" : systemOverall}
-          detail={
-            gatewayStatus !== "connected"
-              ? "Backend offline"
-              : systemOverall === "ok"
-                ? "All systems nominal"
-                : systemOverall === "degraded"
-                  ? "Some services degraded"
-                  : "Services unavailable"
-          }
-        />
       </div>
     </div>
   );
