@@ -9,6 +9,21 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-05T17:00:00-04:00",
+    agent: "claude-code",
+    summary:
+      "v6.0.14 deploy — RiskFlow fully restored (browser Following tab + auto-scorer every 30s + normalizeSource for twitter: sources + watchlist includes X handles). DMG build fallback in updater. Pass-through scorer replaces dead Claude CLI scorer.",
+    files: [
+      "backend-hono/src/services/riskflow/source-policy.ts",
+      "backend-hono/src/services/riskflow/scorer-tagging.ts",
+      "backend-hono/src/services/riskflow/feed-service.ts",
+      "backend-hono/src/services/riskflow/watchlist-service.ts",
+      "backend-hono/src/workers/riskflow-worker/sources/x-handles-browser.ts",
+      "backend-hono/scripts/riskflow-scorer.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-05T14:15:00-04:00",
     agent: "claude-code",
     summary:
