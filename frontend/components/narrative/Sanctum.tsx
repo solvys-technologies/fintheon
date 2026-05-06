@@ -64,6 +64,10 @@ interface SanctumProps {
   chartMode?: boolean;
   /** Fires once per simulationId when AgentDesk deliberation completes — parent should reload latest report. */
   onSynthesisComplete?: () => void;
+  /** Revision check status message shown under the briefing after refresh. */
+  revisionStatus?: string | null;
+  /** Whether a revision check is in progress. */
+  revisionChecking?: boolean;
 }
 
 export function Sanctum({
@@ -76,6 +80,8 @@ export function Sanctum({
   selectedSymbol = "/MNQ",
   chartMode = false,
   onSynthesisComplete,
+  revisionStatus,
+  revisionChecking,
 }: SanctumProps) {
   const { data: ivData, isLoading: ivLoading } = useIVScoreData();
 
@@ -275,6 +281,23 @@ export function Sanctum({
                           simulationId={data?.simulationId ?? null}
                           onSynthesisComplete={onSynthesisComplete}
                         />
+                        {(revisionChecking || revisionStatus) && (
+                          <div className={`mt-2 rounded-lg border px-3 py-2 ${
+                            revisionChecking
+                              ? "border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-accent)]/5"
+                              : "border-[var(--fintheon-accent)]/10 bg-transparent"
+                          }`}>
+                            {revisionChecking ? (
+                              <span className="text-[10px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">
+                                [CHECKING FOR UPDATES...]
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-[var(--fintheon-text)]/45 leading-relaxed">
+                                {revisionStatus}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

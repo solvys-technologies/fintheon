@@ -364,9 +364,24 @@ async function attemptLoginWithCredential(cred: XLoginCredential): Promise<boole
         const pageText = await page.evaluate(() =>
           document.body.innerText.slice(0, 800),
         );
+
+        // X now serves a two-step flow: sign-up shell first, "Sign in" link to
+        // reach the actual login form. Click "Sign in" if it's present.
+        const signInLink = page.locator(
+          'a[href*="login"]:has-text("Sign in"), [role="button"]:has-text("Sign in"), span:has-text("Sign in")',
+        ).first();
+        const signInVisible = await signInLink.isVisible({ timeout: 2_000 }).catch(() => false);
+        if (signInVisible) {
+          await signInLink.click().catch(() => undefined);
+          await page.waitForTimeout(3_000);
+        }
+
+        const loginPageText = await page.evaluate(() =>
+          document.body.innerText.slice(0, 800),
+        );
         const hasLoginForm =
-          /\b(sign in to x|log in to x|phone, email, or username)\b/i.test(pageText) &&
-          !/\bsomething went wrong\b/i.test(pageText);
+          /\b(sign in to x|log in to x|phone, email, or username|enter your (phone|password|email))\b/i.test(loginPageText) &&
+          !/\bsomething went wrong\b/i.test(loginPageText);
         if (!hasLoginForm) {
           console.error(
             JSON.stringify({
@@ -375,7 +390,7 @@ async function attemptLoginWithCredential(cred: XLoginCredential): Promise<boole
               stage: "x_login_no_form",
               account: cred.label,
               currentUrl: page.url(),
-              pagePreview: pageText.slice(0, 250),
+              pagePreview: loginPageText.slice(0, 250),
             }),
           );
           return false;
@@ -690,15 +705,29 @@ async function fetchHomeTimeline(): Promise<ExtractedTweet[]> {
     return homeTimelineCache.tweets;
   }
 
-  // Scrape with existing auth cookies only — no login, no re-auth.
-  // Login automation is dead; cookies must be valid.
-  const result = await scrapeHomeTimeline();
+  // Scrape with existing auth cookies first.
+  let result = await scrapeHomeTimeline();
 
   if (result && result.length > 0) {
     homeTimelineCache = { tweets: result, at: Date.now() };
     consecutiveEmptyCycles = 0;
     return result;
   }
+
+  // Reactive re-auth on empty timeline — attempt login with X_EMAIL/X_PASSWORD
+  // and retry the scrape once.
+  if (consecutiveEmptyCycles >= 3) {
+    const reAuthed = await attemptXLogin();
+    if (reAuthed) {
+      result = await scrapeHomeTimeline();
+      if (result && result.length > 0) {
+        homeTimelineCache = { tweets: result, at: Date.now() };
+        consecutiveEmptyCycles = 0;
+        return result;
+      }
+    }
+  }
+
   consecutiveEmptyCycles++;
   return [];
 }

@@ -568,9 +568,9 @@ export function RefinementEngine() {
           <button
             onClick={() => setIsKickstartDrawerOpen(true)}
             disabled={isRefreshingAuth || kickstartSources.length === 0}
-            className="flex items-center gap-1 text-[11px] font-medium text-[var(--fintheon-accent)]/70 hover:text-[var(--fintheon-accent)] disabled:opacity-30 transition-colors"
+            className="flex items-center gap-1.5 text-xs font-medium text-[var(--fintheon-accent)]/70 hover:text-[var(--fintheon-accent)] disabled:opacity-30 transition-colors"
           >
-            <RefreshCw className={`w-3 h-3 ${isRefreshingAuth ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingAuth ? "animate-spin" : ""}`} />
             Kickstart
           </button>
         </div>

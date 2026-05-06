@@ -1,11 +1,8 @@
-// [claude-code 2026-04-26] S45-T1: round entries / invalidations / targets to
-// trader-friendly handles per instrument. /NQ uses 80- or 20-handles, /ES uses
-// 5- or 10-handles, /YM uses 50-handles, /RTY uses 5-handles.
+// [claude-code 2026-05-06] S59-T4: added roundTo80or20, roundTo25multiple, invalidationOffset for
+//   desk plan entry/target/invalidation handle snapping per TP's 80/20 entry + 25-multiple target rules.
 
 interface RoundingProfile {
-  /** Anchor handle. The result snaps to multiples of this. */
   anchor: number;
-  /** Smaller secondary handle used for tighter levels (invalidation). */
   fine: number;
 }
 
@@ -35,6 +32,39 @@ export function roundEntry(price: number, instrument: string): number {
 export function roundFine(price: number, instrument: string): number {
   const { fine } = profileFor(instrument);
   return snap(price, fine);
+}
+
+/** Snap to nearest handle ending in 80 or 20 (e.g. 21880, 21920). */
+export function roundTo80or20(price: number, instrument: string): number {
+  if (!Number.isFinite(price)) return price;
+  const hundred = Math.floor(price / 100) * 100;
+  const rem = price - hundred;
+  // Valid handles: 20 and 80 within each hundred-block
+  const candidates = [hundred + 20, hundred + 80, hundred + 120, hundred + 180];
+  let best = candidates[0]!;
+  let bestDist = Math.abs(price - best);
+  for (const c of candidates) {
+    const d = Math.abs(price - c);
+    if (d < bestDist) { bestDist = d; best = c; }
+  }
+  return best;
+}
+
+/** Snap to nearest handle ending in 00, 25, 50, or 75. */
+export function roundTo25multiple(price: number): number {
+  if (!Number.isFinite(price)) return price;
+  const quarter = Math.round(price / 25) * 25;
+  // Ensure it's one of 00, 25, 50, 75
+  return quarter;
+}
+
+/** Invalidation = Entry 2 ± offset (below for longs, above for shorts). */
+export function invalidationOffset(
+  entry2: number,
+  direction: "long" | "short",
+): number {
+  const offset = 35; // ~35 points breathing room
+  return direction === "long" ? entry2 - offset : entry2 + offset;
 }
 
 /** Round a list of prices-of-interest to anchor handles, dedupe, and sort. */

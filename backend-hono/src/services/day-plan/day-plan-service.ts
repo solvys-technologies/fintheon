@@ -1,8 +1,6 @@
-// [claude-code 2026-04-26] S45-T1: Day-plan orchestrator. Pulls TV/Yahoo bars,
-// runs VWAP/POC/VAH/VAL math, picks the dominant window, computes prices of
-// interest + invalidation + profit target + expected move, generates the
-// Desk Theme via Sonnet, and persists day_plans + day_plan_windows. Idempotent
-// on (team_id, date).
+// [claude-code 2026-05-06] S59-T4: desk plan entries now snap to 80-or-20 handles, profit targets
+//   to 25-multiple handles, invalidation 35pts past Entry2. Entries derived from POC/VWAP/VA
+//   positioning (where retail liquidity pools). VIX adjusts spread via implied points.
 
 import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
@@ -10,18 +8,18 @@ import { readEconEvents } from "../supabase-service.js";
 import { getFeed } from "../riskflow/feed-service.js";
 import { getCurrentRegime } from "../regime/regime-service.js";
 import { fetchVIX } from "../market-data/router.js";
-import { continuousVIXMultiplier } from "../iv-scoring/computation.js";
+import { calculateImpliedPoints } from "../iv-scoring/instrument.js";
 import { fetchInstrumentBars } from "./tv-bars-fetcher.js";
 import {
-  expectedMove,
   pointOfControl,
   timeAnchoredVWAP,
   valueArea,
   type OHLCVBar,
 } from "./vwap-poc-math.js";
 import {
-  roundEntry,
-  roundFine,
+  roundTo80or20,
+  roundTo25multiple,
+  invalidationOffset,
   roundPricesOfInterest,
 } from "./price-rounding.js";
 import { generateDeskTheme } from "./desk-theme-generator.js";
@@ -97,18 +95,43 @@ export async function generateDayPlan(
   const spot = latestClose(barsForInstrument) ?? vwap ?? poc ?? null;
 
   const ivScore = dominantWindow.ivScore;
-  const ivPct = ivScoreToImpliedVol(ivScore);
-  const vixMultiplier = vix?.value ? continuousVIXMultiplier(vix.value) : 1;
-  const expectedMovePct = spot
-    ? (expectedMove(spot, ivPct, 1, vixMultiplier) / spot) * 100
-    : null;
+  const vixLevel = vix?.value ?? 18;
+  const implied = calculateImpliedPoints(vixLevel, spot ?? undefined, instrument);
+  // ~12% of daily implied move = 35-40 pts on /NQ, scales with VIX
+  const ivSpread = Math.round(implied.adjustedPoints * 0.12);
+
+  // Direction: spot above POC = bullish bias (buy off liquidity below)
+  const bias: "long" | "short" =
+    spot && poc && spot > poc ? "long" : "short";
+
+  // Entry zone: nearest liquidity (VAL for longs, VAH for shorts)
+  const liquidityZone = bias === "long"
+    ? (va?.val ?? spot ?? 0)
+    : (va?.vah ?? spot ?? 0);
+
+  // Two entries at 80-or-20 handles near the liquidity zone
+  const rawEntry1 = bias === "long"
+    ? liquidityZone + ivSpread * 0.15  // slight premium from zone
+    : liquidityZone - ivSpread * 0.15;
+  const entry1 = roundTo80or20(rawEntry1, instrument);
+  const entry2 = bias === "long"
+    ? roundTo80or20(entry1 - ivSpread * 0.3, instrument) // lower entry = better fill
+    : roundTo80or20(entry1 + ivSpread * 0.3, instrument);
+  const entries = [entry1, entry2].sort((a, b) =>
+    bias === "long" ? b - a : a - b, // longs: higher first; shorts: lower first
+  );
 
   const candidatePrices = [vwap, poc, va?.vah, va?.val].filter(
     (n): n is number => typeof n === "number" && Number.isFinite(n),
   );
   const pricesOfInterest = roundPricesOfInterest(candidatePrices, instrument);
-  const invalidation = computeInvalidation(va, instrument);
-  const profitTarget = computeProfitTarget(spot, expectedMovePct, instrument);
+  const invalidation = invalidationOffset(entries[1]!, bias);
+
+  // Profit target: 25-multiple handle in the profit direction, ~IV spread away
+  const targetRaw = bias === "long"
+    ? entries[0]! + ivSpread
+    : entries[0]! - ivSpread;
+  const profitTarget = roundTo25multiple(targetRaw);
 
   const topHeadline = (feedResponse.items ?? [])[0]?.headline ?? "";
   const eventName = planned.dominantEvent;
@@ -135,9 +158,10 @@ export async function generateDayPlan(
         startTime: dominantWindow.startTime,
         endTime: dominantWindow.endTime,
         pricesOfInterest,
+        entries,
         invalidation,
         profitTarget,
-        expectedMovePct,
+        expectedMovePct: ivSpread,
       },
     ],
   });
@@ -146,11 +170,14 @@ export async function generateDayPlan(
     date: dateIso,
     teamId,
     instrument,
+    bias,
+    vixLevel,
+    impliedSpread: ivSpread,
     barsCount: barsForInstrument.length,
+    entries,
     pricesOfInterest,
     invalidation,
     profitTarget,
-    expectedMovePct,
     override: !!input.override,
     overrideReason: input.overrideReason,
   });
@@ -248,6 +275,7 @@ interface PersistInput {
     startTime: string;
     endTime: string;
     pricesOfInterest: number[];
+    entries: number[];
     invalidation: number | null;
     profitTarget: number | null;
     expectedMovePct: number | null;
@@ -291,6 +319,7 @@ async function persistDayPlan(input: PersistInput): Promise<DayPlan> {
     start_time: w.startTime,
     end_time: w.endTime,
     prices_of_interest: w.pricesOfInterest,
+    entries: w.entries,
     invalidation: w.invalidation,
     profit_target: w.profitTarget,
     expected_move_pct: w.expectedMovePct,
@@ -318,6 +347,7 @@ function synthesizeInMemoryPlan(input: PersistInput): DayPlan {
     generatedBy: input.generatedBy,
     generatedAt: new Date().toISOString(),
     sourceBriefId: null,
+    institutionalPositioning: null,
     windows: input.windows.map((w, i) => ({
       id: `mem-w-${i}`,
       dayPlanId: planId,
@@ -325,6 +355,7 @@ function synthesizeInMemoryPlan(input: PersistInput): DayPlan {
       startTime: w.startTime,
       endTime: w.endTime,
       pricesOfInterest: w.pricesOfInterest,
+      entries: w.entries,
       invalidation: w.invalidation,
       profitTarget: w.profitTarget,
       expectedMovePct: w.expectedMovePct,
@@ -342,6 +373,7 @@ function rowsToDayPlan(planRow: any, windowRows: any[]): DayPlan {
     generatedBy: planRow.generated_by,
     generatedAt: planRow.generated_at,
     sourceBriefId: planRow.source_brief_id,
+    institutionalPositioning: planRow.institutional_positioning ?? null,
     windows: windowRows.map(rowToWindow),
   };
 }
@@ -361,6 +393,9 @@ function rowToWindow(row: any): DayPlanWindow {
         : row.end_time,
     pricesOfInterest: Array.isArray(row.prices_of_interest)
       ? row.prices_of_interest.map((n: any) => Number(n))
+      : [],
+    entries: Array.isArray(row.entries)
+      ? row.entries.map((n: any) => Number(n))
       : [],
     invalidation: row.invalidation == null ? null : Number(row.invalidation),
     profitTarget: row.profit_target == null ? null : Number(row.profit_target),
@@ -382,30 +417,4 @@ function latestClose(bars: OHLCVBar[]): number | null {
     if (typeof close === "number" && Number.isFinite(close)) return close;
   }
   return null;
-}
-
-function ivScoreToImpliedVol(ivScore: number | null): number {
-  if (ivScore == null) return 0.16;
-  // Map 0-10 catalyst score to a rough IV decimal: 0→0.10, 5→0.20, 10→0.35
-  const clamped = Math.max(0, Math.min(10, ivScore));
-  return 0.1 + (clamped / 10) * 0.25;
-}
-
-function computeInvalidation(
-  va: { vah: number; val: number; poc: number } | null,
-  instrument: string,
-): number | null {
-  if (!va) return null;
-  // Below VAL by one fine handle = invalidation for a long bias day
-  return roundFine(va.val, instrument);
-}
-
-function computeProfitTarget(
-  spot: number | null,
-  expectedMovePct: number | null,
-  instrument: string,
-): number | null {
-  if (spot == null || expectedMovePct == null) return null;
-  const target = spot * (1 + expectedMovePct / 100);
-  return roundEntry(target, instrument);
 }

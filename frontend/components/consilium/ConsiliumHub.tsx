@@ -177,6 +177,8 @@ export function ConsiliumHub() {
   const [showHarperFeed, setShowHarperFeed] = useState(true);
   const [showSessionsDropdown, setShowSessionsDropdown] = useState(false);
   const [boardroomDagRunning, setBoardroomDagRunning] = useState(false);
+  const [revisionStatus, setRevisionStatus] = useState<string | null>(null);
+  const [revisionChecking, setRevisionChecking] = useState(false);
   const transitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Listen for DAG running events dispatched from AgentChattr
@@ -464,6 +466,31 @@ export function ConsiliumHub() {
       preset?: SanctumPreset,
       narrativeState?: { lanes: any[]; catalysts: any[]; ropes: any[] },
     ) => {
+      // Quick revision check first — scan recent RiskFlow items
+      setRevisionChecking(true);
+      setRevisionStatus(null);
+      try {
+        const revRes = await fetch(`${API_BASE}/api/arbitrum/revision-check`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+        if (revRes.ok) {
+          const rev = await revRes.json() as { hasChanges: boolean; statusMessage: string; planUpdated?: boolean };
+          if (!rev.hasChanges) {
+            setRevisionStatus(rev.statusMessage);
+            setRevisionChecking(false);
+            return;
+          }
+          // Notable items found — status message will show after deliberation
+          setRevisionStatus(rev.statusMessage);
+        }
+      } catch {
+        // Non-blocking — proceed with deliberation even if check fails
+      } finally {
+        setRevisionChecking(false);
+      }
+
       setAgentDeskData((prev) =>
         prev
           ? { ...prev, status: "running" }
@@ -900,6 +927,8 @@ export function ConsiliumHub() {
                   selectedSymbol={selectedSymbol.symbol}
                   chartMode={showChart}
                   onSynthesisComplete={reloadLatestReport}
+                  revisionStatus={revisionStatus}
+                  revisionChecking={revisionChecking}
                 />
               )}
               {displayedSubView === "timeline" && <TimelinePanel />}

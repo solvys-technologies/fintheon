@@ -1,16 +1,6 @@
-// [claude-code 2026-05-03] S58-T1: Arbitrum DeepSeek primary health diagnostics.
-// [claude-code 2026-04-24] S35-T1/T12 Phase B: Arbitrum HTTP surface.
-//   GET  /api/arbitrum/latest[?trigger=event|session|manual]
-//   GET  /api/arbitrum/:id
-//   POST /api/arbitrum/deliberate   — manual-trigger chamber (smoke test)
-//
-// [claude-code 2026-05-01] S56 Track A:
-//   GET  /api/arbitrum/health              — chamber/api/context health
-//   GET  /api/arbitrum/seats/overrides     — 5-seat override array (public read)
-//   PUT  /api/arbitrum/seats/overrides     — JWT + Superadmin partial update
-// Public read endpoints; auth middleware isn't applied — verdicts are UI
-// content (digest_text), not user-owned data. Matches the
-// "authenticated_read_arbitrum_verdicts" RLS policy shipped in T2.
+// [claude-code 2026-05-06] S59-T4: revision-check endpoint for Sanctum refresh button.
+//   Checks recent IV≥7 RiskFlow items since last briefing, triggers quick deliberation
+//   if anything notable, regenerates the desk plan, and updates the frontend briefing.
 
 import { Hono } from "hono";
 import { createLogger } from "../../lib/logger.js";
@@ -195,6 +185,92 @@ export function createArbitrumRoutes(): Hono {
         error: err instanceof Error ? err.message : String(err),
       });
       return c.json({ error: "chamber invocation failed" }, 500);
+    }
+  });
+
+  // ── revision-check: light check if new material warrants refresh ──
+  app.post("/revision-check", async (c) => {
+    try {
+      const { getSupabaseClient } = await import("../../config/supabase.js");
+      const sb = getSupabaseClient();
+      if (!sb) return c.json({ error: "DB unavailable" }, 503);
+
+      // Get latest brief timestamp
+      const { data: latestBrief } = await sb
+        .from("briefs")
+        .select("generated_at")
+        .order("generated_at", { ascending: false })
+        .limit(1);
+      const sinceIso = latestBrief?.[0]?.generated_at ?? new Date(Date.now() - 6 * 3_600_000).toISOString();
+
+      // Check for high-scored RiskFlow items since last brief
+      const { data: recentItems, error: itemsErr } = await sb
+        .from("scored_riskflow_items")
+        .select("id, headline, iv_score, published_at")
+        .gte("published_at", sinceIso)
+        .gte("iv_score", 7)
+        .order("iv_score", { ascending: false })
+        .limit(10);
+
+      if (itemsErr) {
+        log.warn("revision-check item fetch failed", { error: itemsErr.message });
+        return c.json({ hasChanges: false, statusMessage: "Unable to scan recent items." });
+      }
+
+      const notable = (recentItems ?? []).filter((item: any) => {
+        const score = Number(item.iv_score);
+        const minsAgo = (Date.now() - new Date(item.published_at).getTime()) / 60_000;
+        return score >= 8 || (score >= 7 && minsAgo < 60);
+      });
+
+      if (notable.length === 0) {
+        return c.json({
+          hasChanges: false,
+          statusMessage: "There is nothing new to report at this time.",
+          scanned: (recentItems ?? []).length,
+          since: sinceIso,
+        });
+      }
+
+      // Notable items found — trigger a quick 1-round deliberation
+      const headlines = notable.map((n: any) => n.headline).filter(Boolean).slice(0, 5).join(" | ");
+      const result = await runChamber(
+        {
+          question: "Review these recent developments — does anything warrant revising the active desk plan or briefing?",
+          category: "revision-check",
+          context: `Recent high-impact items: ${headlines}`,
+        },
+        "manual",
+        { rounds: 1 },
+      );
+
+      // Regenerate the desk plan if chamber suggests revision
+      let planUpdated = false;
+      const digest = result.verdict.digest_text?.toLowerCase() ?? "";
+      if (digest.includes("revise") || digest.includes("revision") || digest.includes("update") || digest.includes("change")) {
+        try {
+          const { regenerateDayPlan } = await import("../../services/day-plan/day-plan-service.js");
+          await regenerateDayPlan({ overrideReason: "chamber-revision" });
+          planUpdated = true;
+        } catch (planErr) {
+          log.warn("Desk plan regeneration failed during revision check", { error: String(planErr) });
+        }
+      }
+
+      const latest = await getLatest();
+
+      return c.json({
+        hasChanges: true,
+        statusMessage: `${notable.length} notable item(s) found. Chamber has deliberated.${planUpdated ? " Desk plan updated." : ""}`,
+        scanned: (recentItems ?? []).length,
+        notable: notable.length,
+        since: sinceIso,
+        verdict: latest ?? null,
+        planUpdated,
+      });
+    } catch (err) {
+      log.error("revision-check failed", { error: String(err) });
+      return c.json({ error: "revision check failed" }, 500);
     }
   });
 

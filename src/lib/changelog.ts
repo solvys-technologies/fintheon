@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-06T07:20:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Desk plan formula rewrite: entries snap to 80-or-20 handles (not 20/40/60/80), profit targets to 25-multiple handles (00/25/50/75), invalidation 35pts past Entry2. Profit target scaled to 12% of IV-implied daily move (~35-40pts /NQ). VIX adjusts spread automatically via calculateImpliedPoints. Added entries[], institutionalPositioning field, roundTo80or20, roundTo25multiple, invalidationOffset to price-rounding. POST /api/arbitrum/revision-check scans IV≥7 items since last brief, triggers quick 1-round chamber if notable, regenerates desk plan. Frontend refresh button now checks revisions first; shows status message under Arbitrum Chamber.",
+    files: [
+      "backend-hono/src/services/day-plan/day-plan-service.ts",
+      "backend-hono/src/services/day-plan/price-rounding.ts",
+      "backend-hono/src/types/day-plan.ts",
+      "backend-hono/src/routes/arbitrum/index.ts",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+    ],
+  },
+  {
     date: "2026-05-06T04:15:00-04:00",
     agent: "claude-code",
     summary:

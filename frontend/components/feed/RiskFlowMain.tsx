@@ -53,6 +53,41 @@ export function RiskFlowMain({ onChatAlert }: RiskFlowMainProps) {
   const backend = useBackend();
   const { addToast } = useToast();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [kickstarting, setKickstarting] = useState(false);
+
+  const KICKSTART_HANDLES = [
+    "financialjuice",
+    "DeItaone",
+    "trendspider",
+    "spotgamma",
+    "nicktimiraos",
+    "OSINTTechnical",
+    "MacroEdge",
+    "unusual_whales",
+    "macroedgeRes",
+  ];
+
+  const handleKickstart = useCallback(async () => {
+    setKickstarting(true);
+    try {
+      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:8080";
+      const res = await fetch(`${apiBase}/api/riskflow/kickstart`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ handles: KICKSTART_HANDLES }),
+      });
+      if (res.ok) {
+        addToast("Kickstart dispatched", "success");
+        void refresh();
+      } else {
+        throw new Error(`HTTP ${res.status}`);
+      }
+    } catch {
+      addToast("Kickstart failed", "error");
+    } finally {
+      setKickstarting(false);
+    }
+  }, [refresh, addToast]);
   const {
     severitySet,
     toggleSeverity,
@@ -191,13 +226,13 @@ export function RiskFlowMain({ onChatAlert }: RiskFlowMainProps) {
           <button
             type="button"
             onClick={() => {
-              void refresh();
+              void handleKickstart();
             }}
-            disabled={refreshing}
+            disabled={kickstarting}
             className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40 flex items-center justify-center w-6 h-6"
-            title="Refresh feeds"
+            title="Kickstart ingestion"
           >
-            <CircleQuarters active={refreshing} size={14} />
+            <CircleQuarters active={kickstarting} size={14} />
           </button>
           <button
             onClick={requestNotifications}

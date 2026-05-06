@@ -1,5 +1,4 @@
-// [claude-code 2026-04-26] S45-T1: Day Card type contract — server-side brain
-// owns this file; T2 mirrors the shapes it needs verbatim on the frontend.
+// [claude-code 2026-05-06] S59-T4: added entries[] (80/20 handles) + institutionalPositioning field.
 
 export type DriftKind = "drift_alert" | "tilt_stop" | "dead_volume";
 
@@ -7,15 +6,16 @@ export type DailyColor = "green" | "red" | "flat";
 
 export type FeedbackAction = "followed" | "faded" | "sat_out";
 
+export type PositioningBias = "bullish" | "tactically_bullish" | "bearish" | "tactically_bearish";
+
 export interface DayPlanWindow {
   id: string;
   dayPlanId: string;
   windowIndex: number;
-  /** "HH:MM" America/New_York */
   startTime: string;
-  /** "HH:MM" America/New_York */
   endTime: string;
   pricesOfInterest: number[];
+  entries: number[];
   invalidation: number | null;
   profitTarget: number | null;
   expectedMovePct: number | null;
@@ -24,15 +24,14 @@ export interface DayPlanWindow {
 export interface DayPlan {
   id: string;
   teamId: string;
-  /** ISO date "YYYY-MM-DD" */
   date: string;
   eventName: string | null;
   deskTheme: string | null;
   generatedBy: string;
-  /** ISO timestamp */
   generatedAt: string;
   sourceBriefId: string | null;
   windows: DayPlanWindow[];
+  institutionalPositioning: PositioningBias | null;
 }
 
 export interface DayPlanFeedback {

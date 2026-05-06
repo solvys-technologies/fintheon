@@ -577,6 +577,46 @@ export default function RiskFlowMini({
     null,
   );
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [kickstarting, setKickstarting] = useState(false);
+
+  const KICKSTART_HANDLES = [
+    "financialjuice",
+    "DeItaone",
+    "trendspider",
+    "spotgamma",
+    "nicktimiraos",
+    "OSINTTechnical",
+    "MacroEdge",
+    "unusual_whales",
+    "macroedgeRes",
+  ];
+
+  const handleKickstart = useCallback(async () => {
+    setKickstarting(true);
+    try {
+      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:8080";
+      const res = await fetch(`${apiBase}/api/riskflow/kickstart`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ handles: KICKSTART_HANDLES }),
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        addToast(
+          "Kickstart dispatched",
+          "success",
+          `Ingesting from ${KICKSTART_HANDLES.length} sources`,
+        );
+        void refresh();
+      } else {
+        throw new Error(`HTTP ${res.status}`);
+      }
+    } catch (err) {
+      addToast("Kickstart failed", "error");
+    } finally {
+      setKickstarting(false);
+    }
+  }, [refresh, addToast]);
   const [infiniteScroll, setInfiniteScroll] = useState(() => {
     try {
       return localStorage.getItem("fintheon:infinite-scroll") !== "off";
@@ -709,14 +749,14 @@ export default function RiskFlowMini({
               <button
                 type="button"
                 onClick={() => {
-                  void refresh();
+                  void handleKickstart();
                 }}
-                disabled={refreshing}
+                disabled={kickstarting}
                 className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40"
-                title="Refresh feeds"
+                title="Kickstart ingestion"
               >
                 <RefreshCw
-                  className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`}
+                  className={`w-3.5 h-3.5 ${kickstarting ? "animate-spin" : ""}`}
                 />
               </button>
               {/* [claude-code 2026-04-19] Trash / clear-all removed — users asked for this
