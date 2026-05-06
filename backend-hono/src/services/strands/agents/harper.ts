@@ -8,7 +8,7 @@ import { TextBlock, ImageBlock } from "@strands-agents/sdk";
 import type { ContentBlock } from "@strands-agents/sdk";
 import { withCognition } from "../telemetry.js";
 import { createConversationManager } from "../memory-store.js";
-import { checkDeepSeekDirectHealth, checkVProxyHealth } from "../provider.js";
+import { checkDeepSeekDirectHealth } from "../provider.js";
 import { getAgentSystemPrompt } from "../../ai/agent-instructions/index.js";
 import { getUserApiKey } from "../../ai/api-key-crypto.js";
 import { createLogger } from "../../../lib/logger.js";
@@ -70,19 +70,16 @@ export async function createHarperAgent(
       ? createConversationManager(opts.conversationId, opts.userId)
       : undefined;
 
-  // Auto-fallback: DeepSeek direct first, legacy VProxy only after direct path fails.
+  // DeepSeek direct primary. If unavailable, try opencode-go. No VProxy.
   let effectiveProvider = opts?.provider;
   if (!effectiveProvider) {
     const deepseekHealth = await checkDeepSeekDirectHealth();
     if (deepseekHealth.available) {
       effectiveProvider = "deepseek-direct";
     } else {
-      const vproxyHealth = await checkVProxyHealth();
-      effectiveProvider = vproxyHealth.available ? "local" : "nous";
-      log.warn("DeepSeek direct unavailable for Harper", {
+      effectiveProvider = "deepseek-oc-api";
+      log.warn("DeepSeek direct unavailable, trying opencode-go", {
         deepseekError: deepseekHealth.error,
-        fallbackProvider: effectiveProvider,
-        vproxyError: vproxyHealth.error,
       });
     }
   }
@@ -94,7 +91,7 @@ export async function createHarperAgent(
     systemPrompt,
     tools: [...coreTools, ...solvysTools],
     model: {
-      model: effectiveProvider === "local" ? "claude-opus-4-6" : "deepseek-reasoner",
+      model: "deepseek-reasoner",
       temperature: 0.3,
       maxTokens: 16384,
     },

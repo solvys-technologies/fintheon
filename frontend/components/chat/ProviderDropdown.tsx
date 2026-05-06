@@ -1,48 +1,51 @@
 // [claude-code 2026-05-03] S38-T5: Provider Dropdown v2 — 3 providers, RECOMMENDED badge, flat palette, API key hints.
 import { useState, useRef, useEffect } from "react";
-import { Cpu, Cloud, Server } from "lucide-react";
+import { Cpu, Cloud } from "lucide-react";
 
 /* ─────────────────────────────────────────────────────── HarperProvider ── */
 
-export type HarperProvider = "deepseek-direct" | "nous" | "opencode-go";
-
-/* ─────────────────────────────────────────────────────── Provider Definitions ── */
+export type HarperProvider = "deepseek-direct" | "opencode-go";
 
 interface ProviderDef {
   id: HarperProvider;
   label: string;
   model: string;
   sub: string;
-  icon: typeof Cpu;
-  managed: boolean; // managed = no personal API key needed
+  icon: typeof Cloud;
+  managed: boolean;
 }
 
 const PROVIDERS: ProviderDef[] = [
   {
     id: "deepseek-direct",
     label: "DeepSeek v4 Pro",
-    model: "DeepSeek v4 Pro",
-    sub: "Direct",
+    model: "Direct API",
+    sub: "Bring your own key",
     icon: Cloud,
     managed: false,
   },
   {
-    id: "nous",
-    label: "Qwen 3.6",
-    model: "Qwen 3.6",
-    sub: "via Nous",
-    icon: Server,
-    managed: true,
-  },
-  {
     id: "opencode-go",
-    label: "User Selected Model",
-    model: "Custom",
-    sub: "via Opencode Go",
+    label: "OpenCode Go",
+    model: "Self-hosted proxy",
+    sub: "Bring your own key + endpoint",
     icon: Cpu,
     managed: false,
   },
 ];
+
+function normalizeProvider(raw: string | null): HarperProvider {
+  if (raw === "deepseek-direct" || raw === "opencode-go") return raw;
+  return "deepseek-direct"; // default to BYOK Direct
+}
+
+function initialProvider(): HarperProvider {
+  try {
+    return normalizeProvider(localStorage.getItem(STORAGE_KEY));
+  } catch {
+    return "deepseek-direct";
+  }
+}
 
 /* ─────────────────────────────────────────────────────── Storage Keys ── */
 
@@ -61,29 +64,11 @@ function hasCachedKey(storageKey: string) {
 /* ─────────────────────────────────────────────────────── Dot Color ── */
 
 function getDotColor(provider: HarperProvider): string {
-  if (provider === "nous") return "#22c55e"; // always ready (managed)
   if (provider === "deepseek-direct")
     return hasCachedKey(DEEPSEEK_KEY_STATUS) ? "#22c55e" : "#ca8a04";
   if (provider === "opencode-go")
     return hasCachedKey(OC_API_KEY_STATUS) ? "#22c55e" : "#ca8a04";
-  return "#9ca3af"; // grey fallback
-}
-
-/* ─────────────────────────────────────────────────────── Normalization ── */
-
-function normalizeProvider(raw: string | null): HarperProvider {
-  if (raw === "deepseek-direct" || raw === "nous" || raw === "opencode-go")
-    return raw;
-  // migrate stale/unknown values → recommended default
-  return "nous";
-}
-
-function initialProvider(): HarperProvider {
-  try {
-    return normalizeProvider(localStorage.getItem(STORAGE_KEY));
-  } catch {
-    return "nous";
-  }
+  return "#ca8a04";
 }
 
 /* ─────────────────────────────────────────────────────── Hook ── */
@@ -251,19 +236,6 @@ export function ProviderDropdown({
                   {/* label row */}
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-medium">{p.label}</span>
-
-                    {p.id === "nous" && (
-                      <span
-                        className="inline-flex items-center px-1.5 py-0.5 rounded-full font-semibold leading-none"
-                        style={{
-                          fontSize: "10px",
-                          backgroundColor: "rgba(199, 159, 74, 0.15)",
-                          color: "#c79f4a",
-                        }}
-                      >
-                        RECOMMENDED
-                      </span>
-                    )}
                   </div>
 
                   {/* model name */}

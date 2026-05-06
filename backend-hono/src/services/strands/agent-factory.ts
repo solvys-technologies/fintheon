@@ -7,7 +7,6 @@ import { Agent, tool, type ConversationManager } from "@strands-agents/sdk";
 import { OpenAIModel } from "@strands-agents/sdk/models/openai";
 import {
   createVProxyModel,
-  checkVProxyHealth,
   checkDeepSeekDirectHealth,
   createChainModel,
   createOllamaFallbackModel,
@@ -145,13 +144,8 @@ export function createAgent(options: CreateAgentOptions): Agent {
 
 /** Check if the Strands + VProxy stack is operational */
 export async function isStrandsAvailable(): Promise<boolean> {
-  // DeepSeek direct is the primary provider — check it first.
   const deepseek = await checkDeepSeekDirectHealth();
-  if (deepseek.available) return true;
-
-  // Fall back to VProxy (local Hermes).
-  const vproxy = await checkVProxyHealth();
-  return vproxy.available;
+  return deepseek.available;
 }
 
 /**
