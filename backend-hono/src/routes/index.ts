@@ -117,11 +117,15 @@ import { createWatchoutsRoutes } from "./watchouts/index.js";
 import { createDayPlanRoutes } from "./day-plan/index.js";
 // [claude-code 2026-04-26] S46: Desk Calendar — ingest TV .ics + queue for Desk Theme
 import { createDeskCalendarRoutes } from "./desk-calendar/index.js";
+// [claude-code 2026-05-05] S59-T3: Agent Health Dashboard — per-agent SOUL/memory/GEPA/REFLECT status
+import { createApparatusRoutes } from "./apparatus/agent-health.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
   // Diagnostics — service status, missing env vars, suggested fixes
   app.route("/api/diagnostics", createDiagnosticsRoutes());
+  // [S59-T3] Agent Health Dashboard — per-agent SOUL/memory/GEPA/REFLECT status
+  app.route("/api/apparatus", createApparatusRoutes());
   // Terminal — local-dev shell execution (localhost guard inside handler)
   app.route("/api/terminal", createTerminalRoutes());
   // Setup — CLI onboarding welcome endpoint (localhost guard inside handler)

@@ -186,6 +186,21 @@ interface DiagnosticsResponse {
     feed_poller_running: boolean;
     headlines_24h: number;
   };
+  agent_health?: {
+    agents: Array<{
+      agentId: string;
+      role: string;
+      soulLoaded: boolean;
+      soulVersion: number | null;
+      nativeHomeIntact: boolean;
+      reflectScore: number | null;
+      reflectLastRun: string | null;
+      memoryCount: number;
+      gepaLastRun: string | null;
+      gepaOpenPrs: number;
+      personaHealth: "green" | "amber" | "red";
+    }>;
+  };
 }
 
 async function getNewsWorkerSnapshot(): Promise<
@@ -709,6 +724,132 @@ async function loadRiskFlowRuntime(): Promise<
       feed_poller_running: false,
       headlines_24h: 0,
     };
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Agent Health — per-agent SOUL/memory/GEPA/REFLECT status             */
+/* ------------------------------------------------------------------ */
+
+const AGENT_IDS_DIAG = ["harper", "oracle", "feucht", "consul", "herald"] as const;
+const AGENT_ROLES_DIAG: Record<string, string> = {
+  harper: "CAO",
+  oracle: "Forecaster",
+  feucht: "Risk Manager",
+  consul: "Quantitative",
+  herald: "Contrarian",
+};
+
+async function loadAgentHealth(): Promise<
+  DiagnosticsResponse["agent_health"]
+> {
+  try {
+    // SOUL checks (all 5 agents)
+    const soulResults = await Promise.all(
+      AGENT_IDS_DIAG.map(async (agentId) => {
+        try {
+          const { loadSoul } = await import(
+            "../../services/ai/soul/loader.js"
+          );
+          const soul = await loadSoul(agentId);
+          const identity = soul.identity;
+          const nativeHomeIntact =
+            typeof identity.name === "string" &&
+            identity.name.length > 0 &&
+            typeof identity.role === "string" &&
+            identity.role.length > 0 &&
+            typeof identity.self_description === "string" &&
+            identity.self_description.length > 0;
+          return {
+            agentId,
+            soulLoaded: true as const,
+            soulVersion: soul.schema_version,
+            nativeHomeIntact,
+          };
+        } catch (err) {
+          log.warn(`SOUL load failed for ${agentId}`, { error: String(err) });
+          return {
+            agentId,
+            soulLoaded: false as const,
+            soulVersion: null,
+            nativeHomeIntact: false as const,
+          };
+        }
+      }),
+    );
+
+    // REFLECT
+    let reflectScore: number | null = null;
+    let reflectLastRun: string | null = null;
+    try {
+      const report = await getLatestReflectReport();
+      if (report) {
+        reflectScore = report.metrics?.scoreCalibration ?? null;
+        reflectLastRun = report.generatedAt;
+      }
+    } catch (err) {
+      log.warn("REFLECT check failed in diagnostics", { error: String(err) });
+    }
+
+    // GEPA
+    let gepaLastRun: string | null = null;
+    let gepaOpenPrs = 0;
+    try {
+      const gepa = await loadGepaSnapshot();
+      if (gepa) {
+        gepaLastRun = gepa.last_run_at;
+        gepaOpenPrs = gepa.evolutions_proposed_7d;
+      }
+    } catch (err) {
+      log.warn("GEPA check failed in diagnostics", { error: String(err) });
+    }
+
+    // Memory counts (parallel)
+    const memoryCounts = await Promise.all(
+      AGENT_IDS_DIAG.map(async (agentId) => {
+        try {
+          const { getSupabaseClient } = await import(
+            "../../config/supabase.js"
+          );
+          const sb = getSupabaseClient();
+          if (!sb) return { agentId, count: 0 };
+          const { count, error } = await sb
+            .from("agent_memory")
+            .select("*", { count: "exact", head: true })
+            .eq("agent_id", agentId);
+          return { agentId, count: error ? 0 : (count ?? 0) };
+        } catch {
+          return { agentId, count: 0 };
+        }
+      }),
+    );
+
+    const agents = AGENT_IDS_DIAG.map((agentId) => {
+      const soul = soulResults.find((s) => s.agentId === agentId)!;
+      const memc = memoryCounts.find((m) => m.agentId === agentId)!;
+      let personaHealth: "green" | "amber" | "red" = "red";
+      if (soul.soulLoaded && soul.nativeHomeIntact) personaHealth = "green";
+      else if (soul.soulLoaded) personaHealth = "amber";
+
+      return {
+        agentId,
+        role: AGENT_ROLES_DIAG[agentId]!,
+        soulLoaded: soul.soulLoaded,
+        soulVersion: soul.soulVersion,
+        nativeHomeIntact: soul.nativeHomeIntact,
+        reflectScore,
+        reflectLastRun,
+        memoryCount: memc.count,
+        gepaLastRun,
+        gepaOpenPrs,
+        personaHealth,
+      };
+    });
+
+    return { agents };
+  } catch (err) {
+    log.warn("loadAgentHealth failed", { error: String(err) });
+    return { agents: [] };
   }
 }
 

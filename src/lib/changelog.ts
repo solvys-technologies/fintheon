@@ -9,6 +9,21 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-05T23:04:00-04:00",
+    agent: "claude-code",
+    summary:
+      "v6.0.15 deploy — footer layout: restored full-width right-aligned status section with desk name (Priced In Capital). Fixed 2 frontend build errors from rebase (CatalystStatsDrawer orphaned tags, mobile ChatPage nous provider ref). Install/update scripts refreshed to v6.0.15. Backend: Fly.io, Desktop: Vercel, Mobile: Vercel. All 3 targets healthy.",
+    files: [
+      "frontend/components/layout/FooterToolbar.tsx",
+      "frontend/components/refinement/CatalystStatsDrawer.tsx",
+      "mobile/components/chat/ChatPage.tsx",
+      "package.json",
+      "scripts/fintheon-update.sh",
+      "scripts/fintheon-setup.sh",
+      "scripts/install-cli.sh",
+    ],
+  },
+  {
     date: "2026-05-05T18:30:00-04:00",
     agent: "claude-code",
     summary:

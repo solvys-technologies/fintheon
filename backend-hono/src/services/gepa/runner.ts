@@ -13,6 +13,7 @@ import { join, resolve } from "node:path";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { sampleAgent, meanScore, type Sample } from "./sample-sourcing.js";
 import { createEvolutionPr, type PrProposal } from "./pr-creator.js";
+import { optimizeSoul } from "./optimizer.js";
 
 const REPO_ROOT = resolve(new URL("../../../../", import.meta.url).pathname);
 const SOUL_DIR = join(REPO_ROOT, "backend-hono/src/services/ai/soul");

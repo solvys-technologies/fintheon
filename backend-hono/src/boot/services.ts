@@ -445,7 +445,7 @@ export async function bootBackground(): Promise<void> {
 
 async function registerLocalSkillsWithSidecar(): Promise<void> {
   const { isSidecarEnabled, sidecarClient } =
-    await import("../services/ai/sidecar-client.js");
+    await import("../services/hermes/client.js");
   if (!isSidecarEnabled()) return;
   const { listAllSkills } = await import("../services/skills/registry.js");
   const skills = await listAllSkills();

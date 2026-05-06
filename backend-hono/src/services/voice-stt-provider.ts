@@ -12,7 +12,7 @@
 //   4. Fallback → text passthrough / empty
 
 import { createLogger } from "../lib/logger.js";
-import { isSidecarEnabled } from "./ai/sidecar-client.js";
+import { isSidecarEnabled } from "./hermes/client.js";
 
 const log = createLogger("VoiceSttProvider");
 

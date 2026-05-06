@@ -5,7 +5,7 @@
 // still type-checks. Added: streamVoiceReply generator + synthesizeGreeting
 // for the new /api/voice/session routes.
 
-import { sidecarClient, isSidecarEnabled } from "./ai/sidecar-client.js";
+import { sidecarClient, isSidecarEnabled } from "./hermes/client.js";
 import { selectModel } from "./ai/routing.js";
 import { createLogger } from "../lib/logger.js";
 import {
