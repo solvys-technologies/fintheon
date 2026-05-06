@@ -134,6 +134,7 @@ export function createAiKeysRoutes(): Hono {
     const userId = authedUserId(c);
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
     if (!isSupabaseConfigured()) return c.json({ error: "DB not configured" }, 500);
+    if (userId === "local-user") return c.json({ error: "Sign in to save API keys" }, 400);
     const uid = dbUserId(userId);
 
     const parsed = UpsertKeySchema.safeParse(await c.req.json().catch(() => null));
@@ -174,6 +175,7 @@ export function createAiKeysRoutes(): Hono {
     const userId = authedUserId(c);
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
     if (!isSupabaseConfigured()) return c.json({ error: "DB not configured" }, 500);
+    if (userId === "local-user") return c.json({ error: "Sign in to manage API keys" }, 400);
     const uid = dbUserId(userId);
 
     const providerQuery = c.req.query("provider") || "deepseek";
