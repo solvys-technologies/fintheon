@@ -29,8 +29,12 @@ function resolveOpenCodeBaseUrl(): string {
 function authedUserId(c: { get: (key: string) => unknown }): string | null {
   const userId = c.get("userId");
   if (typeof userId !== "string") return null;
-  if (userId === "anonymous" || userId === "local-user") return null;
-  return userId;
+  if (userId === "anonymous") return null;
+  return userId; // "local-user" is allowed — handles skip DB for non-UUID
+}
+
+function isRealUser(userId: string): boolean {
+  return userId !== "anonymous" && userId !== "local-user";
 }
 
 export function createAiKeysRoutes(): Hono {
@@ -39,7 +43,7 @@ export function createAiKeysRoutes(): Hono {
   router.get("/", async (c) => {
     const userId = authedUserId(c);
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
-    if (!isSupabaseConfigured()) return c.json({ error: "DB not configured" }, 500);
+    if (!isSupabaseConfigured() || !isRealUser(userId)) return c.json({ keys: [], keyCount: 0 });
 
     const providerQuery = c.req.query("provider");
     if (providerQuery) {
@@ -125,7 +129,7 @@ export function createAiKeysRoutes(): Hono {
   router.post("/", async (c) => {
     const userId = authedUserId(c);
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
-    if (!isSupabaseConfigured()) return c.json({ error: "DB not configured" }, 500);
+    if (!isSupabaseConfigured() || !isRealUser(userId)) return c.json({ error: "API keys require a real account (not bypass-auth mode)" }, 400);
 
     const parsed = UpsertKeySchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: "Invalid API key payload" }, 400);
@@ -164,7 +168,7 @@ export function createAiKeysRoutes(): Hono {
   router.delete("/", async (c) => {
     const userId = authedUserId(c);
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
-    if (!isSupabaseConfigured()) return c.json({ error: "DB not configured" }, 500);
+    if (!isSupabaseConfigured() || !isRealUser(userId)) return c.json({ error: "API keys require a real account (not bypass-auth mode)" }, 400);
 
     const providerQuery = c.req.query("provider") || "deepseek";
     const parsedProvider = ProviderSchema.safeParse(providerQuery);
