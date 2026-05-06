@@ -9,6 +9,42 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-05T23:45:00-04:00",
+    agent: "claude-code",
+    summary:
+      "[v6.0.15] S59-T3: Agent Health Dashboard — per-agent SOUL load status, REFLECT score, memory count, GEPA optimization runs, and persona identity verification. New GET /api/apparatus/agent-health endpoint. Glassmorphic dashboard in Apparatus with expandable agent rows and PersonaBadge. Mobile PWA Agent Health section in Settings.",
+    files: [
+      "backend-hono/src/routes/apparatus/agent-health.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/routes/diagnostics/index.ts",
+      "frontend/hooks/useAgentHealth.ts",
+      "frontend/components/apparatus/AgentHealthDashboard.tsx",
+      "frontend/components/apparatus/AgentHealthRow.tsx",
+      "frontend/components/apparatus/PersonaBadge.tsx",
+      "frontend/components/apparatus/ApparatusMap.tsx",
+      "mobile/components/apparatus/AgentHealthDashboard.tsx",
+      "mobile/components/settings/SettingsPage.tsx",
+    ],
+  },
+  {
+    date: "2026-05-05T23:30:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S59-T2: Persona unification — added native_home identity block to all 5 SOUL.md files with Fintheon/PIC/Solvys/DeepSeek identity. Updated SoulSchema + renderSoulPrompt to render WHERE YOU ARE section. Created native GEPA optimizer (optimizer.ts) to replace sidecar HTTP calls. Wired GEPA runner into boot/services.ts (daily 02:00 ET). Activated REFLECT + GEPA via env vars. Removed deprecated GEPA launchd plist.",
+    files: [
+      "backend-hono/src/services/ai/soul/harper.md",
+      "backend-hono/src/services/ai/soul/oracle.md",
+      "backend-hono/src/services/ai/soul/feucht.md",
+      "backend-hono/src/services/ai/soul/consul.md",
+      "backend-hono/src/services/ai/soul/herald.md",
+      "backend-hono/src/services/ai/soul/loader.ts",
+      "backend-hono/src/services/gepa/optimizer.ts",
+      "backend-hono/src/services/gepa/runner.ts",
+      "backend-hono/src/boot/services.ts",
+      "backend-hono/.env",
+    ],
+  },
+  {
     date: "2026-05-05T23:04:00-04:00",
     agent: "claude-code",
     summary:
@@ -9945,5 +9981,32 @@ export const changelog: ChangelogEntry[] = [
     summary:
       "v5.36.1 deploy: shipped s51-cards-and-arbitrum. 3-target deploy — Fly.io backend + Vercel desktop & mobile PWA. DMG (144MB) to Desktop. Install script refreshed.",
     files: ["package.json", "scripts/fintheon-update.sh"],
+  },
+  {
+    date: "2026-05-05T23:14:00",
+    agent: "claude-code",
+    summary:
+      "S59-T1: Removed Python Hermes sidecar directory (hermes-sidecar/) entirely. Created native TypeScript Hermes Agent core in backend-hono/src/services/hermes/ with soul-pipeline.ts, context-engine.ts, runtime.ts, types.ts, and client.ts. Rewired all imports from ai/sidecar-client to hermes/client. Removed HERMES_SIDECAR_ENABLED, HERMES_SIDECAR_URL, INTERNAL_HERMES_JWT env vars. Deleted launchd plist for fintheon-hermes. Updated .env.example, scripts/fintheon-update.sh, diagnostics, and fly.gepa-cron.toml.",
+    files: [
+      "backend-hono/src/services/hermes/types.ts",
+      "backend-hono/src/services/hermes/soul-pipeline.ts",
+      "backend-hono/src/services/hermes/context-engine.ts",
+      "backend-hono/src/services/hermes/runtime.ts",
+      "backend-hono/src/services/hermes/client.ts",
+      "backend-hono/src/services/ai/sidecar-client.ts",
+      "backend-hono/src/boot/services.ts",
+      "backend-hono/src/services/voice-service.ts",
+      "backend-hono/src/services/voice-stt-provider.ts",
+      "backend-hono/src/services/ai/sidecar-voice-client.ts",
+      "backend-hono/src/services/ai/ollama-hermes-client.ts",
+      "backend-hono/src/services/hermes-service.ts",
+      "backend-hono/src/services/strands/invoke-helper.ts",
+      "backend-hono/src/services/cron/econ-backfill-puller.ts",
+      "backend-hono/src/routes/diagnostics/index.ts",
+      "backend-hono/src/tests/voice-assistant.test.ts",
+      "backend-hono/.env.example",
+      "backend-hono/fly.gepa-cron.toml",
+      "scripts/fintheon-update.sh",
+    ],
   },
 ];

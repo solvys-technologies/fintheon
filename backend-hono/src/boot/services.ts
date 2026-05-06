@@ -79,6 +79,8 @@ import { startOutcomeResolver } from "../services/cron/outcome-resolver.js";
 import { startOutcomeTagger } from "../services/scoring/outcome-tagger.js";
 // [claude-code 2026-04-23] Routines service retired — in-process schedulers handle the work directly.
 import { startTradesSync } from "../services/projectx-sync.js";
+// [claude-code 2026-05-05] S59-T2: GEPA evolutionary self-improvement runner — native optimizer, daily 02:00 ET
+import { startGepaRunner } from "../services/gepa/runner.js";
 
 const log = createLogger("Boot");
 let localPeerHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -429,6 +431,11 @@ export async function bootBackground(): Promise<void> {
   // Polymarket screener (6h interval — Oracle autonomously picks qualifying
   // contracts and POSTs to polymarket_predictions. Gated by POLYMARKET_SCREENER_ENABLED.)
   startPolymarketScreener();
+
+  // [claude-code 2026-05-05] S59-T2: GEPA evolutionary self-improvement runner
+  // native optimizer, daily 02:00 ET. Gated by GEPA_ENABLED=true.
+  startGepaRunner();
+  log.info("GepaRunner started");
 
   // [claude-code 2026-04-19] Relay connector moved to bootCritical — duplicate call removed here.
 

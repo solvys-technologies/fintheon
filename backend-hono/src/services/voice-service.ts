@@ -202,7 +202,7 @@ export async function* streamVoiceReply(
   if (!isVoiceEnabled()) {
     yield {
       type: "error",
-      message: "voice sidecar not enabled (HERMES_SIDECAR_ENABLED=false)",
+      message: "voice sidecar not enabled (hermes sidecar removed S59-T1)",
     };
     yield { type: "done", reason: "error" };
     return;

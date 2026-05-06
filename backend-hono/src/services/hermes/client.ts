@@ -123,41 +123,70 @@ export const sidecarClient = {
   },
 
   context: {
-    async ingest() {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async ingest(_conversation_id: string, _turn?: unknown) {
       log.warn("sidecarClient.context.ingest — no-op (sidecar removed)");
     },
-    async view(): Promise<{ turns: Array<unknown>; summaries: Array<unknown> }> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async view(
+      _conversation_id?: string,
+      _budget_tokens?: number,
+    ): Promise<{ turns: unknown[]; summaries: unknown[] }> {
       log.warn("sidecarClient.context.view — no-op (sidecar removed)");
       return { turns: [], summaries: [] };
     },
-    async tool() {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async tool<T = unknown>(
+      _tool_name?: string,
+      _conversation_id?: string,
+      _args?: Record<string, unknown>,
+    ): Promise<T> {
       log.warn("sidecarClient.context.tool — no-op (sidecar removed)");
-      return null;
+      return null as T;
     },
   },
 
   voice: {
-    async stt(): Promise<{ transcript: string; words: Array<unknown> }> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async stt(_args?: {
+      audio_bytes?: string;
+      lang?: string;
+    }): Promise<{ transcript: string; words: { word: string; start: number; end: number }[] }> {
       throw new SidecarDisabledError("sidecarClient.voice.stt unavailable — sidecar removed");
     },
-    async tts(): Promise<ArrayBuffer> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async tts(_args?: {
+      text?: string;
+      voice_id?: string;
+      stream?: boolean;
+    }): Promise<ArrayBuffer> {
       throw new SidecarDisabledError("sidecarClient.voice.tts unavailable — sidecar removed");
     },
   },
 
   skills: {
-    async list(): Promise<Array<unknown>> {
+    async list(): Promise<unknown[]> {
       log.warn("sidecarClient.skills.list — no-op (sidecar removed)");
       return [];
     },
-    async invoke() {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async invoke<T = unknown>(
+      _skill_id?: string,
+      _args?: Record<string, unknown>,
+      _context?: Record<string, unknown>,
+    ): Promise<T> {
       log.warn("sidecarClient.skills.invoke — no-op (sidecar removed)");
-      return null;
+      return null as T;
     },
   },
 
   routing: {
-    async select(): Promise<{ model: string; provider: string }> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async select(_req?: {
+      agent_id?: string;
+      task_type?: string;
+      input_tokens?: number;
+    }): Promise<{ model: string; provider: string }> {
       log.warn("sidecarClient.routing.select — no-op (sidecar removed)");
       return { model: "deepseek-reasoner", provider: "deepseek" };
     },

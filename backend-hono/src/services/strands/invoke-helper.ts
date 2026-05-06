@@ -1,7 +1,7 @@
+// [claude-code 2026-05-05] S59-T1: Removed HERMES_SIDECAR_URL reference — sidecar deleted.
 // [claude-code 2026-04-26] Dropped "orouter" rung from FALLBACK_CHAIN per TP —
 // every paid path is gone. Chain is now local (VProxy on Mac) → ollama-qwen
-// (Mac via HERMES_SIDECAR_URL tunnel) → nous (Nous Research direct, free
-// Hermes-4 405B). If all three fail the agent throws.
+// → nous (Nous Research direct, free Hermes-4 405B). If all three fail the agent throws.
 // [claude-code 2026-04-08] Nous provider tries NOUS_MODELS chain (arcee trinity → qwen3.6-plus)
 // [claude-code 2026-04-07] Strands invoke helper with provider fallback chain: local → nous → orouter
 // Creates a lightweight Strands agent, invokes once, and returns { text }.

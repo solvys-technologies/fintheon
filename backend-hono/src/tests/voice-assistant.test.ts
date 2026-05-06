@@ -9,10 +9,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-process.env.HERMES_SIDECAR_ENABLED = "true";
+// S59-T1: sidecar removed — isSidecarEnabled() always returns false.
+// Voice operations are degraded until T2 re-wires them. The sidecar-disabled
+// test is the only one expected to pass in the current state.
+// Set VOICE_SIDECAR_DISABLED=false so the gate is purely isSidecarEnabled().
 
 const { streamVoiceReply } = await import("../services/voice-service.js");
-const { sidecarClient } = await import("../services/ai/sidecar-client.js");
+const { sidecarClient } = await import("../services/hermes/client.js");
 
 type Originals = {
   chatStream: typeof sidecarClient.chat.stream;
@@ -160,8 +163,6 @@ test("abortSignal interrupts the stream cleanly", async () => {
 });
 
 test("sidecar-disabled mode emits error + done without throwing", async () => {
-  delete process.env.HERMES_SIDECAR_ENABLED;
-
   const events: string[] = [];
   for await (const evt of streamVoiceReply({
     conversationId: "00000000-0000-4000-8000-000000000003",
@@ -171,5 +172,4 @@ test("sidecar-disabled mode emits error + done without throwing", async () => {
   }
 
   assert.deepEqual(events, ["error", "done"]);
-  process.env.HERMES_SIDECAR_ENABLED = "true";
 });

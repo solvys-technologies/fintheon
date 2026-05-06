@@ -192,18 +192,7 @@ if [[ -d "$FINTHEON_ROOT/mobile" && -f "$FINTHEON_ROOT/mobile/package.json" ]]; 
   ok "Mobile dependencies"
 fi
 
-# [claude-code 2026-04-20] S27 — Hermes Python sidecar deps via uv.
-# Only syncs if hermes-sidecar/ exists AND uv is installed (step 6.6 handles uv install).
-# Sidecar itself is HERMES_SIDECAR_ENABLED=false by default, so deps can be dormant.
-if [[ -d "$FINTHEON_ROOT/hermes-sidecar" && -f "$FINTHEON_ROOT/hermes-sidecar/pyproject.toml" ]]; then
-  if command -v uv &>/dev/null; then
-    cd "$FINTHEON_ROOT/hermes-sidecar"
-    uv sync --quiet 2>/dev/null || warn "Hermes sidecar uv sync had issues (non-fatal)"
-    ok "Hermes sidecar Python deps (uv)"
-  else
-    info "uv not yet installed — hermes sidecar deps deferred to step 6.6"
-  fi
-fi
+# S59-T1: Hermes Python sidecar deleted — no Python deps to sync.
 
 cd "$FINTHEON_ROOT"
 
@@ -221,18 +210,6 @@ if [[ -f "$BACKEND_ENV" ]]; then
   grep -q "^SUPABASE_ANON_KEY=" "$BACKEND_ENV" 2>/dev/null || echo "SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yY2ZuemNsYmpib2N0cHR4YXh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NDgxODksImV4cCI6MjA4OTUyNDE4OX0.JXzVk5CDL6rxU5t_rl-Ku2YnPi0PeBF-VOpcSEZTbIM" >> "$BACKEND_ENV"
   grep -q "^PORT=" "$BACKEND_ENV" 2>/dev/null || echo "PORT=8080" >> "$BACKEND_ENV"
   grep -q "^ENABLE_CENTRAL_SCORING=" "$BACKEND_ENV" 2>/dev/null || echo "ENABLE_CENTRAL_SCORING=true" >> "$BACKEND_ENV"
-
-  # [claude-code 2026-04-20] S27 backfills — safe defaults so boot doesn't
-  # error on missing vars. Real values / secrets flow from Supabase vault.
-  grep -q "^HERMES_SIDECAR_ENABLED=" "$BACKEND_ENV" 2>/dev/null || echo "HERMES_SIDECAR_ENABLED=false" >> "$BACKEND_ENV"
-  grep -q "^HERMES_SIDECAR_URL=" "$BACKEND_ENV" 2>/dev/null || echo "HERMES_SIDECAR_URL=http://localhost:8318" >> "$BACKEND_ENV"
-  # INTERNAL_HERMES_JWT is secret — only generate a local stub if truly missing
-  # so the sidecar can boot on localhost. Prod value lives in Fly secrets.
-  if ! grep -q "^INTERNAL_HERMES_JWT=" "$BACKEND_ENV" 2>/dev/null; then
-    LOCAL_JWT=$(openssl rand -hex 32 2>/dev/null || echo "local-dev-$(date +%s)")
-    echo "INTERNAL_HERMES_JWT=$LOCAL_JWT" >> "$BACKEND_ENV"
-  fi
-  grep -q "^BROWSER_UNIVERSAL_ENABLED=" "$BACKEND_ENV" 2>/dev/null || echo "BROWSER_UNIVERSAL_ENABLED=false" >> "$BACKEND_ENV"
   grep -q "^BROWSER_WORKER_SESSION_DIR=" "$BACKEND_ENV" 2>/dev/null || echo "BROWSER_WORKER_SESSION_DIR=.runtime/browser-session" >> "$BACKEND_ENV"
   grep -q "^BROWSER_WORKER_HEADLESS=" "$BACKEND_ENV" 2>/dev/null || echo "BROWSER_WORKER_HEADLESS=true" >> "$BACKEND_ENV"
   grep -q "^BROWSER_WORKER_USER_AGENT=" "$BACKEND_ENV" 2>/dev/null || echo "BROWSER_WORKER_USER_AGENT=" >> "$BACKEND_ENV"
@@ -263,19 +240,16 @@ else
   bash "$FINTHEON_ROOT/scripts/fintheon-setup.sh" 2>/dev/null || true
 fi
 
-# ── Step 5.5: Install S27 launchd units (hermes sidecar, news-worker, gepa) ──
-# [claude-code 2026-04-20] S27 introduces 3 new background services. Symlink
-# plists from the repo into ~/Library/LaunchAgents so launchctl can load them.
-# Loading is opt-in per service — we don't auto-`launchctl load` here because
-# hermes needs a Python env + INTERNAL_HERMES_JWT agreement with prod, and
-# news-worker/gepa need their Fly counterparts live first.
+# ── Step 5.5: Install launchd units (news-worker, gepa) ──
+# [claude-code 2026-05-05] S59-T1: Hermes sidecar removed, plist dropped.
+# Symlink plists from the repo into ~/Library/LaunchAgents so launchctl can load them.
+# Loading is opt-in per service — news-worker/gepa need their Fly counterparts live first.
 
 LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
 mkdir -p "$LAUNCH_AGENTS_DIR" 2>/dev/null || true
 
 UNLOADED_LABELS=()
 for PLIST_PAIR in \
-  "$FINTHEON_ROOT/hermes-sidecar/launchd/io.solvys.fintheon-hermes.plist:io.solvys.fintheon-hermes.plist" \
   "$FINTHEON_ROOT/launchd/io.solvys.fintheon-news-worker.plist:io.solvys.fintheon-news-worker.plist" \
   "$FINTHEON_ROOT/launchd/io.solvys.fintheon-gepa.plist:io.solvys.fintheon-gepa.plist"; do
   SRC="${PLIST_PAIR%%:*}"
@@ -294,7 +268,7 @@ done
 if (( ${#UNLOADED_LABELS[@]} > 0 )); then
   info "S27 launchd plists linked but NOT loaded: ${UNLOADED_LABELS[*]} — run 'launchctl load -w ~/Library/LaunchAgents/<label>.plist' when ready"
 else
-  ok "S27 launchd plists loaded (hermes, news-worker, gepa)"
+  ok "launchd plists loaded (news-worker, gepa)"
 fi
 
 # ── Step 6: Verify VProxy Anthropic OAuth ──────────────────────────────────

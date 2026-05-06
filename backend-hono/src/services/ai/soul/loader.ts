@@ -1,4 +1,5 @@
 // [claude-code 2026-04-19] S27-T8 W1d: SOUL.md loader — literal CLAUDE.md grounding + Zod validation + 5-min cache.
+// [claude-code 2026-05-05] S59-T2: Added native_home optional field to SoulSchema + WHERE YOU ARE rendering in renderSystemPrompt.
 import { readFile } from "node:fs/promises";
 import { dirname, resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";

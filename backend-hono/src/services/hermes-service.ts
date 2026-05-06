@@ -136,7 +136,7 @@ const HERMES_AGENTS: Record<
 // OpenAI-compatible API. Harper-cao keeps its Claude-Opus path; Arbitrum seats
 // route through the new 'deepseek' provider. Local Ollama still works as a
 // fallback when DEEPSEEK_API_KEY is unset (the ollama-hermes-client honours
-// HERMES_SIDECAR_URL / OLLAMA_BASE_URL).
+// OLLAMA_BASE_URL).
 export const HERMES_TASK_MODEL_MAP: Record<string, string> = {
   "harper-cao": "deepseek-reasoner",
   "cao-approval": "deepseek-reasoner",

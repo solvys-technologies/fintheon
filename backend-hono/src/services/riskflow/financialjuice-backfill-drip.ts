@@ -2,18 +2,21 @@
 // recovery. Pulls profile tweets via persistent browser session, inserts missing
 // rows in chronological batches, then scores immediately.
 
+import type { CollectedNewsItem } from "../../workers/riskflow-worker/sources/types.js";
 import { withPersistentBrowserPage } from "../browser/index.js";
 import { writeCollectedItems } from "../../workers/riskflow-worker/persist.js";
 import { scoringCycle } from "./central-scorer.js";
-import type { CollectedNewsItem } from "../../workers/riskflow-worker/sources/types.js";
 import { getSupabaseClient } from "../../config/supabase.js";
+import { createLogger } from "../../lib/logger.js";
+
+const log = createLogger("FJDrip");
 
 const HANDLE = "financialjuice";
-const FROM = "2026-04-28";
+const FROM = "2026-04-21";
 const TO = "2026-05-06";
-const MIN_BATCH = 15;
-const MAX_BATCH = 25;
-const INTERVAL_MS = 60 * 1000;
+const MIN_BATCH = 25;
+const MAX_BATCH = 50;
+const INTERVAL_MS = 120 * 1000;
 
 interface ExtractedTweet {
   tweet_id: string;
@@ -99,11 +102,16 @@ async function scrapeFinancialJuice(): Promise<ExtractedTweet[]> {
       waitUntil: "domcontentloaded",
       timeout: 45_000,
     });
+    const pageTitle = await page.title();
+    log.info("FJ drip page loaded", { title: pageTitle, url: page.url() });
     await page.waitForTimeout(4_000);
-    for (let i = 0; i < 8; i++) {
-      await page.mouse.wheel(0, 3000);
-      await page.waitForTimeout(1_100);
+    for (let i = 0; i < 30; i++) {
+      await page.mouse.wheel(0, 3500);
+      await page.waitForTimeout(800);
     }
+
+    const articleCount = await page.evaluate(() => document.querySelectorAll("article").length);
+    log.info("FJ drip articles found", { count: articleCount });
 
     const rows = await page.evaluate(() => {
       function img(article: Element): string | null {
@@ -160,6 +168,7 @@ async function scrapeFinancialJuice(): Promise<ExtractedTweet[]> {
         text: normalize(row.text),
       });
     }
+    log.info("FJ drip after filter", { rows: rows.length, unique: unique.size, from: FROM, to: TO });
     return Array.from(unique.values()).sort((a, b) => {
       return Date.parse(a.timestamp) - Date.parse(b.timestamp);
     });
@@ -173,9 +182,11 @@ async function runOneTick(): Promise<void> {
   state.lastRunAt = new Date().toISOString();
   try {
     const tweets = await scrapeFinancialJuice();
+    log.info("FJ drip scraped", { count: tweets.length });
     const sb = getSupabaseClient();
+    if (!sb) { log.warn("FJ drip no sb"); return; }
     const idSet = new Set<string>();
-    if (sb && tweets.length > 0) {
+    if (tweets.length > 0) {
       const ids = tweets.map((t) => t.tweet_id);
       const { data } = await sb
         .from("raw_riskflow_items")
@@ -187,9 +198,11 @@ async function runOneTick(): Promise<void> {
       }
     }
     const missing = tweets.filter((t) => !idSet.has(t.tweet_id));
+    log.info("FJ drip tick", { scraped: tweets.length, existing: idSet.size, missing: missing.length });
     const batchSize = randomBatchSize();
     const items = missing.slice(0, batchSize).map(tweetToItem);
     const written = await writeCollectedItems(items);
+    log.info("FJ drip written", { batchSize, items: items.length, written });
     const scored = written > 0 ? await scoringCycle() : 0;
     state.lastWritten = written;
     state.lastScored = scored;

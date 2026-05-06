@@ -79,7 +79,6 @@ export function optimizeSoul(req: OptimizeRequest): OptimizeResponse {
 
   return {
     run_id: `run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    agent_id,
     candidate_body: body,
     projected_delta: {
       accuracy: 0.02,

@@ -7,7 +7,7 @@
 //
 // Provider chain (first match wins):
 //   1. VIBEVOICE_ASR_URL env → vibevoice HTTP client
-//   2. HERMES_SIDECAR_ENABLED + whisper-turbo → sidecar
+//   2. Sidecar voice STT → sidecar (removed S59-T1, always unavailable)
 //   3. OPENAI_API_KEY → whisper (OpenAI API)
 //   4. Fallback → text passthrough / empty
 
@@ -75,7 +75,7 @@ export function resolveSttProvider(): SttProviderInfo {
       available,
       reason: available
         ? undefined
-        : "HERMES_SIDECAR_ENABLED=false or VOICE_SIDECAR_DISABLED=true",
+        : "hermes sidecar removed S59-T1",
     };
   }
 

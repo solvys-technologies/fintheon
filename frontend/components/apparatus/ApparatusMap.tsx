@@ -12,9 +12,11 @@ import {
   Scroll,
   Trophy,
   Minus,
+  HeartPulse,
 } from "lucide-react";
 import { MemoryCard } from "./MemoryCard";
 import { CommandmentsSidebar } from "./CommandmentsSidebar";
+import { AgentHealthDashboard } from "./AgentHealthDashboard";
 import type {
   AgentNode,
   AgentConnection,
@@ -474,6 +476,7 @@ const conflicts = CONNECTIONS.filter((c) => c.type === "conflict");
 
 export function ApparatusMap() {
   const [showSchedule, setShowSchedule] = useState(false);
+  const [viewMode, setViewMode] = useState<"briefing" | "health">("briefing");
   const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const gridRef = useRef<HTMLDivElement>(null);
@@ -551,6 +554,19 @@ export function ApparatusMap() {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() =>
+              setViewMode(viewMode === "briefing" ? "health" : "briefing")
+            }
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded border transition-colors text-[10px] font-mono ${
+              viewMode === "health"
+                ? "border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+                : "border-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/30"
+            }`}
+          >
+            <HeartPulse size={10} />
+            Agent Health
+          </button>
           {conflicts.map((c) => (
             <div
               key={`${c.from}-${c.to}`}
@@ -576,7 +592,12 @@ export function ApparatusMap() {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 flex overflow-hidden">
+      {viewMode === "health" ? (
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <AgentHealthDashboard />
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 flex overflow-hidden">
         {/* Left sidebar: Commandments (full 14 with Source of Truth metadata) */}
         <CommandmentsSidebar />
 
@@ -1023,8 +1044,9 @@ export function ApparatusMap() {
               </div>
             </div>
           </div>
-        )}
+          )}
       </div>
+      )}
     </div>
   );
 }

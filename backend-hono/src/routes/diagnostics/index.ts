@@ -892,10 +892,11 @@ export function createDiagnosticsRoutes(): Hono {
 
     const missingEnvVars = auditEnvVars();
 
-    const [routing, gepa, riskflowRuntime] = await Promise.all([
+    const [routing, gepa, riskflowRuntime, agentHealth] = await Promise.all([
       loadRoutingSnapshot(),
       loadGepaSnapshot(),
       loadRiskFlowRuntime(),
+      loadAgentHealth(),
     ]);
 
     // [claude-code 2026-04-28] S47-T2: desk calendar diagnostics
@@ -977,7 +978,8 @@ export function createDiagnosticsRoutes(): Hono {
           model: d.model,
           available: d.available,
           reason: d.reason,
-          sidecar_enabled: process.env.HERMES_SIDECAR_ENABLED === "true",
+          sidecar_enabled: false,
+          sidecar_available: false, // sidecar removed S59-T1
           voice_sidecar_disabled: process.env.VOICE_SIDECAR_DISABLED === "true",
           vibevoice_configured: Boolean(process.env.VIBEVOICE_ASR_URL),
           openai_configured: Boolean(process.env.OPENAI_API_KEY),
@@ -989,6 +991,7 @@ export function createDiagnosticsRoutes(): Hono {
         last_failure: transcriptStats.lastFailure,
       },
       riskflow_runtime: riskflowRuntime,
+      agent_health: agentHealth,
       routing,
       gepa,
       fiscal_speakers: getFiscalSpeakerStats(),

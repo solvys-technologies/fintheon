@@ -1,10 +1,4 @@
-// [claude-code 2026-05-03] S58-T1: DeepSeek v4 Pro primary provider migration
-// [claude-code 2026-04-29] DeepSeek migration — this client is the OpenAI-compat
-// pipe for the Hermes "sidecar". Default target is now DeepSeek's API
-// (https://api.deepseek.com) with model `deepseek-reasoner`. Local Ollama still
-// works: set HERMES_SIDECAR_URL=http://localhost:11434 and
-// OLLAMA_FALLBACK_MODEL=<your local model> to retarget. When DEEPSEEK_API_KEY
-// (or HERMES_API_KEY) is present, requests are sent with Bearer auth.
+// [claude-code 2026-05-05] S59-T1: Removed HERMES_SIDECAR_URL fallback — sidecar deleted.
 
 import { createLogger } from "../../lib/logger.js";
 
@@ -52,7 +46,6 @@ export function isOllamaFallbackEnabled(): boolean {
 
 export function getOllamaBaseUrl(): string {
   const raw =
-    process.env.HERMES_SIDECAR_URL ||
     process.env.OLLAMA_BASE_URL ||
     DEFAULT_BASE_URL;
   return raw.replace(/\/+$/, "");

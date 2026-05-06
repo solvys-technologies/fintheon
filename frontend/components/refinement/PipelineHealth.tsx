@@ -63,11 +63,6 @@ const TD_TEXT: React.CSSProperties = {
   letterSpacing: "0.02em",
 };
 
-const ROW_BORDER =
-  "1px solid color-mix(in srgb, var(--fintheon-accent) 6%, transparent)";
-const SECTION_BORDER =
-  "1px dotted color-mix(in srgb, var(--fintheon-accent) 35%, transparent)";
-
 const STATUS_BAR: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
@@ -75,10 +70,7 @@ const STATUS_BAR: React.CSSProperties = {
   fontSize: 10,
   fontFamily: "var(--font-mono)",
   marginBottom: 6,
-  padding: "3px 6px",
-  background: "color-mix(in srgb, var(--fintheon-accent) 5%, transparent)",
-  borderLeft:
-    "2px solid color-mix(in srgb, var(--fintheon-accent) 30%, transparent)",
+  padding: "3px 0",
 };
 
 export function PipelineHealth({
@@ -111,7 +103,8 @@ export function PipelineHealth({
   };
 
   return (
-    <div style={{ marginTop: 16, paddingTop: 12, borderTop: SECTION_BORDER }}>
+    <div style={{ marginTop: 16 }}>
+      <div style={{ height: 1, background: "linear-gradient(to right, rgba(199,159,74,0.18), transparent 80%)", marginBottom: 12 }} />
       <div
         style={{
           fontFamily: "var(--font-heading)",
@@ -223,7 +216,7 @@ export function PipelineHealth({
         >
           <thead>
             <tr
-              style={{ borderBottom: "1px solid var(--fintheon-glass-border)" }}
+              style={{ borderBottom: "1px solid rgba(199,159,74,0.08)" }}
             >
               <th
                 style={{
@@ -275,7 +268,7 @@ export function PipelineHealth({
               return (
                 <tr
                   key={stat.pipeline_id}
-                  style={{ borderBottom: ROW_BORDER }}
+                  style={{ borderBottom: "1px solid rgba(199,159,74,0.06)" }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLElement).style.background =
                       "color-mix(in srgb, var(--fintheon-accent) 4%, transparent)";
