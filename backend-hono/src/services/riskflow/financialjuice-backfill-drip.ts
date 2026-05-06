@@ -9,11 +9,11 @@ import type { CollectedNewsItem } from "../../workers/riskflow-worker/sources/ty
 import { getSupabaseClient } from "../../config/supabase.js";
 
 const HANDLE = "financialjuice";
-const FROM = "2026-05-01";
-const TO = "2026-05-03";
-const MIN_BATCH = 10;
-const MAX_BATCH = 15;
-const INTERVAL_MS = 30 * 60 * 1000;
+const FROM = "2026-04-28";
+const TO = "2026-05-06";
+const MIN_BATCH = 15;
+const MAX_BATCH = 25;
+const INTERVAL_MS = 60 * 1000;
 
 interface ExtractedTweet {
   tweet_id: string;

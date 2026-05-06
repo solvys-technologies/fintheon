@@ -74,8 +74,9 @@ export function createRiskFlowRoutes(): Hono {
   // POST /api/riskflow/refresh - Manual refresh trigger
   router.post("/refresh", handleRefresh);
 
-  // POST /api/riskflow/rettiwt-kickstart - Manual filtered Rettiwt ingest + rescore
-  router.post("/rettiwt-kickstart", handleRettiwtKickstart);
+  // POST /api/riskflow/kickstart - Manual X feed ingest + rescore (formerly rettiwt-kickstart)
+  router.post("/kickstart", handleRettiwtKickstart);
+  router.post("/rettiwt-kickstart", handleRettiwtKickstart); // legacy alias
 
   // POST /api/riskflow/rescore - Re-score with current regime/calibration weights
   router.post("/rescore", handleRescore);

@@ -692,9 +692,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
           >
             {provider === "deepseek-direct"
               ? "DEEPSEEK DIRECT"
-              : provider === "nous"
-                ? "QWEN 3.6 · NOUS"
-                : "OPENCODE GO"}
+              : "OPENCODE GO"}
           </span>
           <ConnectionStatus onStateChange={setRelayState} />
         </div>

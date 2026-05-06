@@ -456,80 +456,80 @@ export function CatalystStatsDrawer({
           {grouped.length > 0 && <div aria-hidden="true" style={RULER_STYLE} />}
         </div>
 
-        {/* [claude-code 2026-04-28] S48-T3: Web URL source section — filtered to polling_type: "web" */}
-        <div
-          style={{
-            marginTop: 24,
-            paddingTop: 12,
-            borderTop: "1px solid var(--fintheon-glass-border)",
-          }}
-        >
-          <h3
-            style={{
-              fontFamily: "var(--font-heading)",
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              color: "var(--fintheon-accent)",
-              marginBottom: 6,
-            }}
-          >
-            WEB SOURCES
-          </h3>
-          {webSources.length === 0 ? (
-            <p
-              style={{
-                fontSize: 10,
-                color: "var(--fintheon-muted)",
-                fontFamily: "var(--font-body)",
-              }}
-            >
-              No web sources ingested in this window
-            </p>
-          ) : (
-            <div className="flex flex-col">
-              {webSources.map((s) => (
-                <div
-                  key={s.source}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "2px 4px",
-                    borderBottom:
-                      "1px solid color-mix(in srgb, var(--fintheon-accent) 4%, transparent)",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 10,
-                      color: "var(--fintheon-text)",
-                      fontFamily: "var(--font-mono)",
-                      flex: 1,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {s.source}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontFamily: "var(--font-data)",
-                      color: "var(--fintheon-muted)",
-                      flexShrink: 0,
-                      marginLeft: 8,
-                    }}
-                  >
-                    {s.count}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* [claude-code 2026-05-06] Split into X/Twitter vs RSS/Web — social sources never
+            appear in the web section and vice versa. Left fading ruler replaces border. */}
+        {(() => {
+          const social = grouped.filter(([_, e]) => e.pollingType === "social");
+          const web = grouped.filter(([_, e]) => e.pollingType === "web");
+          return (
+            <>
+              {/* X/Twitter section */}
+              <div style={{ marginTop: 12 }}>
+                <h3 style={{
+                  fontFamily: "var(--font-heading)", fontSize: 11, fontWeight: 700,
+                  letterSpacing: "0.14em", textTransform: "uppercase",
+                  color: "var(--fintheon-accent)", marginBottom: 8,
+                }}>
+                  X / TWITTER
+                </h3>
+                {social.length === 0 ? (
+                  <p style={{ fontSize: 10, color: "var(--fintheon-muted)" }}>No X sources in window.</p>
+                ) : (
+                  <div style={{ borderLeft: "1px solid rgba(199,159,74,0.12)", paddingLeft: 10 }}>
+                    {social.map(([cat, entry]) => (
+                      <div key={cat}>
+                        <div className="flex items-baseline justify-between py-1.5">
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--fintheon-text)]">{cat}</span>
+                          <span className="text-[var(--fintheon-accent)] tabular-nums" style={{ fontFamily: "var(--font-data)", fontSize: 14 }}>{entry.aggregate}</span>
+                        </div>
+                        {entry.sources.map((stat) => (
+                          <label key={stat.source} className="flex items-center gap-2 px-0 py-1 text-[10px] cursor-pointer hover:bg-[var(--fintheon-accent)]/5">
+                            <input type="checkbox" disabled={disabled} checked={selected.has(stat.source)} onChange={() => toggleSource(stat.source)} className="accent-[var(--fintheon-accent)]" />
+                            <span className="flex-1 truncate text-zinc-300 font-mono">{stat.source.replace(/^twitter:/, "@")}</span>
+                            <span className="tabular-nums text-zinc-300">{stat.count}</span>
+                          </label>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ height: 1, margin: "16px 0", background: "linear-gradient(to right, rgba(199,159,74,0.18), transparent 80%)" }} />
+
+              {/* RSS/Web section */}
+              <div>
+                <h3 style={{
+                  fontFamily: "var(--font-heading)", fontSize: 11, fontWeight: 700,
+                  letterSpacing: "0.14em", textTransform: "uppercase",
+                  color: "var(--fintheon-accent)", marginBottom: 8,
+                }}>
+                  RSS / WEB
+                </h3>
+                {web.length === 0 ? (
+                  <p style={{ fontSize: 10, color: "var(--fintheon-muted)" }}>No web sources in window.</p>
+                ) : (
+                  <div style={{ borderLeft: "1px solid rgba(199,159,74,0.12)", paddingLeft: 10 }}>
+                    {web.map(([cat, entry]) => (
+                      <div key={cat}>
+                        <div className="flex items-baseline justify-between py-1.5">
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--fintheon-text)]">{cat}</span>
+                          <span className="text-[var(--fintheon-accent)] tabular-nums" style={{ fontFamily: "var(--font-data)", fontSize: 14 }}>{entry.aggregate}</span>
+                        </div>
+                        {entry.sources.map((stat) => (
+                          <div key={stat.source} className="flex justify-between items-center py-1 text-[10px]">
+                            <span className="text-zinc-300 font-mono truncate flex-1 mr-2">{stat.source}</span>
+                            <span className="tabular-nums text-zinc-300">{stat.count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          );
+        })()}
 
         {/* Bulk handling */}
         <div className="flex flex-col gap-2">

@@ -500,7 +500,7 @@ export function RefinementEngine() {
       };
 
       const kickstartRes = await fetch(
-        `${API_BASE}/api/riskflow/rettiwt-kickstart`,
+        `${API_BASE}/api/riskflow/kickstart`,
         {
           method: "POST",
           headers,
@@ -519,14 +519,14 @@ export function RefinementEngine() {
       setLastKickstart(kickstartJson);
 
       addToast(
-        "Rettiwt kickstart complete",
+        "Kickstart complete",
         "success",
         `Fetched ${kickstartJson?.fetched ?? 0}, wrote ${kickstartJson?.written ?? 0}`,
       );
       await refetchStats();
       await fetchFeed();
     } catch {
-      addToast("Rettiwt kickstart failed", "error");
+      addToast("Kickstart failed", "error");
     } finally {
       setIsRefreshingAuth(false);
     }
@@ -543,69 +543,39 @@ export function RefinementEngine() {
 
   return (
     <div className="h-full flex flex-col bg-[var(--fintheon-bg)] relative">
-      {/* Header toolbar */}
-      <div className="flex items-center justify-between px-5 py-4 min-h-[60px] border-b border-[var(--fintheon-accent)]/15">
+      {/* Header toolbar — compact, no borders */}
+      <div className="flex items-center justify-between px-5 py-3">
+        <h1
+          className="text-sm font-bold text-[var(--fintheon-text)]"
+          style={{ fontFamily: "var(--font-heading)", letterSpacing: "0.12em" }}
+        >
+          REFINEMENT ENGINE
+        </h1>
         <div className="flex items-center gap-3">
-          <Wrench className="w-5 h-5 text-[var(--fintheon-accent)]" />
-          <h1
-            className="text-base font-bold text-[var(--fintheon-text)]"
-            style={{
-              fontFamily: "var(--font-heading)",
-              letterSpacing: "0.12em",
-            }}
-          >
-            REFINEMENT ENGINE
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
           {isDirty && (
-            <>
-              <button
-                onClick={onDiscardChanges}
-                className="px-3 py-2 border border-[var(--fintheon-glass-border)] text-[12px] font-semibold text-[var(--fintheon-muted)] hover:border-[var(--fintheon-accent)]/40"
-              >
-                Discard
-              </button>
-              <button
-                onClick={onApplyChanges}
-                className="px-4 py-2 bg-[var(--fintheon-accent)] text-[var(--fintheon-bg)] text-[12px] font-bold tracking-wide"
-              >
-                Apply Changes
-              </button>
-            </>
+            <button onClick={onDiscardChanges} className="text-[11px] font-medium text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] transition-colors">
+              Discard
+            </button>
           )}
           <button
             onClick={onApplyAndRescore}
             disabled={isRescoring}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-[var(--fintheon-accent)] text-[var(--fintheon-bg)] text-[12px] font-bold tracking-wide hover:bg-[var(--fintheon-accent)]/90 transition-colors disabled:opacity-50"
+            className="text-[11px] font-semibold text-[var(--fintheon-accent)] hover:opacity-80 disabled:opacity-40 transition-opacity"
           >
-            <RefreshCw
-              className={`w-4 h-4 ${isRescoring ? "animate-spin" : ""}`}
-            />
-            {isRescoring ? "Applying…" : "Save & Re-Score"}
+            {isRescoring ? "Saving…" : "Save"}
           </button>
-          <button
-            onClick={handleRescore}
-            disabled={isRescoring}
-            className="flex items-center gap-1.5 px-3.5 py-2 border border-[var(--fintheon-accent)]/40 text-[12px] font-semibold text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw
-              className={`w-4 h-4 ${isRescoring ? "animate-spin" : ""}`}
-            />
-            {isRescoring ? "Re-Scoring…" : "Re-Score All"}
-          </button>
+          <span style={{ width: 1, height: 14, background: "rgba(199,159,74,0.15)" }} />
           <button
             onClick={() => setIsKickstartDrawerOpen(true)}
             disabled={isRefreshingAuth || kickstartSources.length === 0}
-            className="flex items-center gap-1.5 px-3.5 py-2 border border-[var(--fintheon-accent)]/40 text-[12px] font-semibold text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1 text-[11px] font-medium text-[var(--fintheon-accent)]/70 hover:text-[var(--fintheon-accent)] disabled:opacity-30 transition-colors"
           >
-            <RefreshCw
-              className={`w-4 h-4 ${isRefreshingAuth ? "animate-spin" : ""}`}
-            />
-            {isRefreshingAuth ? "Refreshing…" : "Rettiwt Kickstart"}
+            <RefreshCw className={`w-3 h-3 ${isRefreshingAuth ? "animate-spin" : ""}`} />
+            Kickstart
           </button>
         </div>
       </div>
+      <div style={{ height: 1, margin: "0 20px", background: "linear-gradient(to right, rgba(199,159,74,0.18), transparent 80%)" }} />
 
       {isKickstartDrawerOpen && (
         <div className="absolute inset-0 z-40">
@@ -618,7 +588,7 @@ export function RefinementEngine() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--fintheon-accent)]/20">
               <div>
                 <div className="text-[12px] font-bold tracking-[0.12em] text-[var(--fintheon-text)]">
-                  RETTIWT KICKSTART
+                  KICKSTART
                 </div>
                 <div className="text-[10px] text-[var(--fintheon-muted)] mt-1">
                   Toggle sources, then run filtered pull.

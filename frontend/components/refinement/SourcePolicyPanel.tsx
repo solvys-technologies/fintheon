@@ -59,33 +59,6 @@ const METRIC_VALUE: React.CSSProperties = {
   fontVariantNumeric: "tabular-nums",
 };
 
-function BystanderMetrics() {
-  const { bystander } = useIngestActivity();
-
-  const items = [
-    { label: "QUEUED", value: bystander?.queued ?? "—", warn: false },
-    { label: "BLOCKED", value: bystander?.blocked ?? "—", warn: (bystander?.blocked ?? 0) > 0 },
-    { label: "ALLOWED", value: bystander?.allowed ?? "—", warn: false },
-  ];
-
-  return (
-    <div>
-      <div style={SECTION_LABEL}>Doctoring</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-        {items.map((item, i) => (
-          <span key={item.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={METRIC_LABEL}>{item.label}</span>
-            <span style={{ ...METRIC_VALUE, color: item.warn ? "#ef4444" : "var(--fintheon-text)" }}>
-              {item.value}
-            </span>
-            {i < items.length - 1 && <span style={VERTICAL_FADING_RULER} />}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function SourcePolicyPanel() {
   const { leak_sentinel, continuity, loading, refetch } = useIngestActivity();
 
@@ -155,9 +128,6 @@ export function SourcePolicyPanel() {
       </div>
 
       <div style={FADING_RULER} />
-
-      {/* Doctoring */}
-      <BystanderMetrics />
     </div>
   );
 }
