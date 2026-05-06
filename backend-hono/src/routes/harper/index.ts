@@ -421,44 +421,12 @@ export function createHarperRoutes() {
         model: "harper",
       });
 
-      // VProxy pre-flight — if Local selected but VProxy is down, stream a friendly error
-      const isLocalProvider = !body.provider || body.provider === "local";
-      if (isLocalProvider) {
-        const health = await checkVProxyHealth(true); // force fresh check
-        if (!health.available) {
-          const enc = new TextEncoder();
-          const msgId = `harper-${Date.now()}`;
-          const sseError = (ev: object) =>
-            enc.encode(`data: ${JSON.stringify(ev)}\n\n`);
-          const stream = new ReadableStream<Uint8Array>({
-            start(ctrl) {
-              ctrl.enqueue(sseError({ type: "start", messageId: msgId }));
-              ctrl.enqueue(sseError({ type: "start-step" }));
-              ctrl.enqueue(sseError({ type: "text-start", id: "txt-1" }));
-              const msg = `⚠️ VProxy (Local) is not available right now. Switch the provider dropdown to **Nous** or **ORouter** to continue. (${health.error ?? "connection refused"})`;
-              ctrl.enqueue(
-                sseError({ type: "text-delta", id: "txt-1", delta: msg }),
-              );
-              ctrl.enqueue(sseError({ type: "text-end", id: "txt-1" }));
-              ctrl.enqueue(sseError({ type: "finish-step" }));
-              ctrl.enqueue(sseError({ type: "finish", finishReason: "stop" }));
-              ctrl.enqueue(enc.encode("data: [DONE]\n\n"));
-              ctrl.close();
-            },
-          });
-          return uiStreamToSSEResponse(stream, {
-            "Access-Control-Allow-Origin": c.req.header("Origin") || "*",
-            "X-Request-Id": requestId,
-          });
-        }
-      }
-
+      // Route through the AI provider chain (DeepSeek → OpenCode Go)
+      // No more VProxy pre-flight; the chain handles availability internally.
       const providerLabel =
         body.provider === "nous"
           ? "Nous Research (Hermes-4)"
-          : body.provider === "ollama-qwen"
-            ? "Ollama Qwen (Mac)"
-            : "VProxy Local";
+          : "DeepSeek v4 Pro";
       cognition.step(
         "agent-route",
         `Harper (${providerLabel})`,
