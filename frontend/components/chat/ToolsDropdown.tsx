@@ -107,7 +107,7 @@ export function ToolsDropdown({
       {/* Popup */}
       {open && (
         <div
-          className="absolute bottom-full mb-1 left-0 w-[260px] rounded-xl border border-[var(--fintheon-accent)]/20 overflow-hidden shadow-xl z-50"
+          className="absolute bottom-full mb-1 left-0 w-[260px] rounded-2xl border border-[var(--fintheon-accent)]/20 overflow-hidden shadow-xl z-50"
           style={{ backgroundColor: "#0a0805" }}
         >
           {/* Skills section */}

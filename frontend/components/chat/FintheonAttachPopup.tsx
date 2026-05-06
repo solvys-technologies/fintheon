@@ -239,7 +239,7 @@ export function FintheonAttachPopup({
 
   return (
     <div
-      className="w-full overflow-hidden rounded-xl border transition-all duration-300"
+      className="w-full overflow-hidden rounded-2xl border transition-all duration-300"
       style={{
         maxHeight: open ? "280px" : "0px",
         opacity: open ? 1 : 0,

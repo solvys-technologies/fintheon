@@ -9,6 +9,32 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-06T01:15:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S59-T4 unification: removed all RiskFlow card backgrounds globally. Chamber Agent cards: removed horizontal confidence fuses (vertical only), removed first-letter initials, added dual-role fine-print descriptors, set max-width non-mutating on seat row. Arbitrum Chamber: removed Round indicator + one-line question summary, added rich text formatting (bold/highlight) to synthesis. Border-radius rounded to 0.5rem for Something Solvys, Something Monochrome, Nothing font kit, and .nothing-active CSS. All chat inputs rounded-2xl (iOS style). PersonaDropdown + ProviderDropdown aligned at 28px height. ChatSidebar compact mode hides tools slot + tighter padding to prevent overflow.",
+    files: [
+      "frontend/components/feed/RiskFlowCardAnatomy.tsx",
+      "frontend/components/feed/FeedItem.tsx",
+      "frontend/components/arbitrum/ChamberSeats.tsx",
+      "frontend/components/arbitrum/ArbitrumChamber.tsx",
+      "frontend/components/narrative/NextSessionScenariosStrip.tsx",
+      "frontend/lib/theme.ts",
+      "frontend/lib/font-theme.ts",
+      "frontend/index.css",
+      "frontend/components/ui/chatgpt-prompt-input.tsx",
+      "frontend/components/chat/FintheonComposer.tsx",
+      "frontend/components/chat/PersonaDropdown.tsx",
+      "frontend/components/chat/ProviderDropdown.tsx",
+      "frontend/components/chat/ToolsDropdown.tsx",
+      "frontend/components/chat/FintheonFloatingChat.tsx",
+      "frontend/components/chat/FintheonSkillsPopup.tsx",
+      "frontend/components/chat/FintheonAttachPopup.tsx",
+      "frontend/components/chat/CognitionPanel.tsx",
+      "frontend/components/chat/FintheonThinkingIndicator.tsx",
+    ],
+  },
+  {
     date: "2026-05-05T23:45:00-04:00",
     agent: "claude-code",
     summary:

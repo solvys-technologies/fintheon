@@ -326,7 +326,7 @@ export function FintheonComposer({
   // Sidebar (compact) routes through CAO only — no persona selector
   const personaEl = compact ? undefined : <PersonaDropdown />;
 
-  const toolsEl = (
+  const toolsEl = compact ? undefined : (
     <ToolsDropdown
       skills={SKILLS}
       activeSkill={activeSkill}

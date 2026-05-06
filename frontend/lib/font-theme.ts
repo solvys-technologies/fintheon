@@ -61,7 +61,7 @@ export const FONT_THEMES: Record<FontThemeId, FontTheme> = {
     fontHeading: `'Doto', 'Space Grotesk', monospace`,
     fontMono: `'Space Mono', ui-monospace, monospace`,
     nothingKit: true,
-    borderRadius: "0.25rem",
+    borderRadius: "0.5rem",
     easeDefault: "cubic-bezier(0.25, 0.1, 0.25, 1)",
   },
 };

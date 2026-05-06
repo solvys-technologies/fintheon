@@ -1412,7 +1412,7 @@ html *::-webkit-scrollbar {
     );
     --fintheon-glass-highlight: transparent;
     --fintheon-glass-shadow: none;
-    --radius: 0.25rem;
+    --radius: 0.5rem;
     --ease-spring: cubic-bezier(0.25, 0.1, 0.25, 1);
     --ease-bounce: cubic-bezier(0.25, 0.1, 0.25, 1);
 }

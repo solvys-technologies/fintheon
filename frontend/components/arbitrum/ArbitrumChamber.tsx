@@ -52,6 +52,35 @@ function cleanDigestText(text: string): string {
     .trim();
 }
 
+function renderRichDigest(text: string) {
+  const cleaned = cleanDigestText(text);
+  const parts = cleaned
+    .split(/(\*\*[^*]+\*\*)/g)
+    .filter(Boolean);
+
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      const inner = part.slice(2, -2);
+      return (
+        <strong key={i} className="font-semibold text-[var(--fintheon-accent)]">
+          {inner}
+        </strong>
+      );
+    }
+    const lines = part.split(/\n+/).filter(Boolean);
+    return (
+      <span key={i}>
+        {lines.map((line, j) => (
+          <span key={j}>
+            {j > 0 && <br />}
+            {line}
+          </span>
+        ))}
+      </span>
+    );
+  });
+}
+
 function prefersReducedMotion(): boolean {
   if (typeof window === "undefined") return false;
   return (
@@ -163,55 +192,25 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
 
   return (
     <div className="relative flex flex-col min-h-0 min-w-0 gap-2.5">
-      {/* Round indicator + question metadata */}
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/60">
-              Arbitrum Chamber
-            </span>
-            <span className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/35">
-              ·
-            </span>
-            <span className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/60">
-              Round {roundsComplete} of {roundsTotal}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setSettingsOpen((v) => !v)}
-              className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-              aria-label="Chamber settings"
-              title="Chamber Settings"
-            >
-              <Settings className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] transition-colors" />
-            </button>
-            <span className="text-[9px] uppercase tracking-wider text-[var(--fintheon-text)]/35">
-              {phase}
-            </span>
-          </div>
+      {/* Header: title + phase badge only */}
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/60">
+          Arbitrum Chamber
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSettingsOpen((v) => !v)}
+            className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 transition-colors"
+            aria-label="Chamber settings"
+            title="Chamber Settings"
+          >
+            <Settings className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] transition-colors" />
+          </button>
+          <span className="text-[9px] uppercase tracking-wider text-[var(--fintheon-text)]/35">
+            {phase}
+          </span>
         </div>
-        {verdict?.question && (
-          <div className="flex items-center gap-2 text-[10px]">
-            <span className="text-[var(--fintheon-text)]/70 line-clamp-1">
-              {verdict.question}
-            </span>
-            {verdict.category && (
-              <span className="uppercase tracking-wider text-[var(--fintheon-accent)]/60 shrink-0">
-                {verdict.category}
-              </span>
-            )}
-          </div>
-        )}
       </div>
-      <NothingFuse
-        value={roundsValue}
-        color="var(--fintheon-accent)"
-        thickness={3}
-        segments={roundsTotal > 0 ? roundsTotal : 3}
-      />
-
-      {/* Seat row — fading rulers separate seats without boxed cells. */}
       <div className="flex flex-col md:flex-row md:items-stretch">
         {seats.map((seat, i) => (
           <div key={`${seat.role}-${i}`} className="contents">
@@ -251,9 +250,9 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
       )}
 
       {chamberSummary && (
-        <p className="text-[11px] text-[var(--fintheon-text)]/62 leading-snug px-1">
-          {chamberSummary}
-        </p>
+        <div className="text-[11px] text-[var(--fintheon-text)]/62 leading-relaxed px-1">
+          {renderRichDigest(verdict!.digest_text)}
+        </div>
       )}
 
       {!hasVerdict && (

@@ -46,7 +46,7 @@ export function FintheonThinkingIndicator({
 
   return (
     <div
-      className="w-full rounded-xl fintheon-thinking-container-borderless overflow-hidden transition-all duration-300 ease-in-out"
+      className="w-full rounded-2xl fintheon-thinking-container-borderless overflow-hidden transition-all duration-300 ease-in-out"
       style={{
         maxHeight: isThinking ? "200px" : "0px",
         opacity: isThinking ? 1 : 0,

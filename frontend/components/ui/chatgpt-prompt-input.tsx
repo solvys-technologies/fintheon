@@ -546,7 +546,7 @@ export function PromptBox({
         {/* Main input container */}
         <div
           className={[
-            "relative flex flex-col rounded-lg border",
+            "relative flex flex-col rounded-2xl border",
             "backdrop-blur-xl",
             focused
               ? "border-[var(--fintheon-accent)]/55"
@@ -617,7 +617,7 @@ export function PromptBox({
               doesn't crowd the Harper/provider pill in the sidebar chat. */}
           <div
             className="flex items-center justify-between"
-            style={{ padding: compact ? "8px 10px 10px" : "8px 10px 10px" }}
+            style={{ padding: compact ? "6px 8px 6px" : "8px 10px 10px" }}
           >
             {/* Left toolbar */}
             <div className="flex items-center gap-1">

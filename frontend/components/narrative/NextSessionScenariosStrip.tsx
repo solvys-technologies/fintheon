@@ -46,7 +46,7 @@ export function NextSessionScenariosStrip({
 
   return (
     <div
-      className={`flex flex-col sm:flex-row sm:items-stretch ${className ?? ""}`}
+      className={`flex flex-col sm:flex-row sm:items-stretch min-w-0 overflow-hidden ${className ?? ""}`}
       aria-label="Next-session volatility scenarios"
     >
       {scenarios.map((scenario, index) => (

@@ -62,7 +62,7 @@ export function FintheonSkillsPopup({
 
   return (
     <div
-      className="w-full overflow-hidden rounded-xl border transition-all duration-300 ease-in-out"
+      className="w-full overflow-hidden rounded-2xl border transition-all duration-300 ease-in-out"
       style={{
         maxHeight: open ? "440px" : "0px",
         opacity: open ? 1 : 0,

@@ -47,7 +47,7 @@ export function PersonaDropdown() {
   if (!current) return null;
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative flex items-center">
       {/* Compact trigger button */}
       <button
         onClick={() => setOpen((v) => !v)}
@@ -74,7 +74,7 @@ export function PersonaDropdown() {
       {/* Dropdown list */}
       {open && (
         <div
-          className="absolute bottom-full mb-1 left-0 w-[200px] rounded-xl border border-[var(--fintheon-accent)]/20 overflow-hidden shadow-xl z-50"
+          className="absolute bottom-full mb-1 left-0 w-[200px] rounded-2xl border border-[var(--fintheon-accent)]/20 overflow-hidden shadow-xl z-50"
           style={{ backgroundColor: "#0a0805" }}
         >
           {agents.map((agent) => {

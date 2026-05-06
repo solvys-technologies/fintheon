@@ -161,7 +161,7 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
   if (!requestId || steps.length === 0) return null;
 
   return (
-    <div className="rounded-xl bg-[var(--fintheon-bg)]/90 overflow-hidden transition-all">
+    <div className="rounded-2xl bg-[var(--fintheon-bg)]/90 overflow-hidden transition-all">
       {/* Header — "thought for {elapsed}" with caret. No status dot. */}
       <button
         onClick={() => setCollapsed((c) => !c)}

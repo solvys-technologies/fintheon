@@ -50,7 +50,7 @@ function FloatingInner({
 
   return (
     <div
-      className="fixed z-[90] flex flex-col rounded-xl border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)] shadow-2xl overflow-hidden"
+      className="fixed z-[90] flex flex-col rounded-2xl border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)] shadow-2xl overflow-hidden"
       style={{ bottom: "24px", right: "24px", width: "380px", height: "560px" }}
     >
       {/* Header */}

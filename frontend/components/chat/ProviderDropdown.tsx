@@ -132,17 +132,18 @@ export function ProviderDropdown({
   };
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative flex items-center">
       {/* ── Trigger row ── */}
       <div className="flex items-center gap-1.5">
         <button
           onClick={() => setOpen((v) => !v)}
           className={`flex items-center gap-1.5 rounded-lg border transition-colors ${
-            compact ? "px-1.5 py-1" : "px-2 py-1"
+            compact ? "px-1.5" : "px-2"
           }`}
           style={{
             borderColor: "rgba(199, 159, 74, 0.2)",
             color: "#f0ead6",
+            height: "28px",
           }}
           title={`Provider: ${current.label} (${current.model})`}
         >
@@ -194,7 +195,7 @@ export function ProviderDropdown({
       {/* ── Expanded dropdown ── */}
       {open && (
         <div
-          className="absolute bottom-full mb-1 left-0 min-w-[220px] rounded-xl border overflow-hidden z-50"
+          className="absolute bottom-full mb-1 left-0 min-w-[220px] rounded-2xl border overflow-hidden z-50"
           style={{
             backgroundColor: "#050402",
             borderColor: "rgba(199, 159, 74, 0.3)",

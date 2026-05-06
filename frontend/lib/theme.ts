@@ -170,7 +170,7 @@ export const SPECIAL_PRESETS: Record<string, ThemeConfig> = {
     fontHeading: "'Doto', monospace",
     fontMono: "'Space Mono', monospace",
     glassEnabled: false,
-    borderRadius: "0.25rem",
+    borderRadius: "0.5rem",
     easeDefault: "cubic-bezier(0.25, 0.1, 0.25, 1)",
   },
   "something-monochrome": {
@@ -191,7 +191,7 @@ export const SPECIAL_PRESETS: Record<string, ThemeConfig> = {
     fontHeading: "'Doto', monospace",
     fontMono: "'Space Mono', monospace",
     glassEnabled: false,
-    borderRadius: "0.25rem",
+    borderRadius: "0.5rem",
     easeDefault: "cubic-bezier(0.25, 0.1, 0.25, 1)",
   },
 };
