@@ -6,9 +6,10 @@
 // [claude-code 2026-03-22] Track 4: persona pills → PersonaDropdown, Plug2+Wrench → ToolsDropdown
 // [claude-code 2026-04-21] Post-S35: removed relay dispatch; added Cmd+K palette, ↑↓ history,
 //   persona slash commands, plan mode toggle
+// [claude-code 2026-05-06] S60-T3: provider/MCP/plugin modals wired to composer toolbar
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useThread, useThreadRuntime } from "@assistant-ui/react";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Cpu, Plug, Puzzle } from "lucide-react";
 import { PromptBox } from "../ui/chatgpt-prompt-input";
 import { SKILL_PREFIXES } from "../../lib/skillPrefixes";
 import { SKILLS } from "../../lib/skills";
@@ -19,6 +20,9 @@ import { useMcpConnectors } from "../../hooks/useMcpConnectors";
 import { PersonaDropdown } from "./PersonaDropdown";
 import { ToolsDropdown } from "./ToolsDropdown";
 import { ProviderDropdown, useHarperProvider } from "./ProviderDropdown";
+import { FintheonProviderModal } from "./FintheonProviderModal";
+import { FintheonMcpModal } from "./FintheonMcpModal";
+import { FintheonPluginModal } from "./FintheonPluginModal";
 import { CommandPalette } from "./CommandPalette";
 import { API_BASE_URL } from "./constants";
 import {
@@ -36,6 +40,11 @@ const PERSONA_COMMANDS: Record<string, string> = {
   consul: "consul",
   herald: "herald",
   harper: "harper",
+};
+
+const PROVIDER_LABELS: Record<string, string> = {
+  "deepseek-direct": "DeepSeek",
+  "opencode-go": "OpenCode",
 };
 
 /* ------------------------------------------------------------------ */
@@ -83,6 +92,11 @@ export function FintheonComposer({
   const { servers, activeIds, toggle: toggleConnector } = useMcpConnectors();
   const { provider, setProvider } = useHarperProvider();
   const [headlineChips, setHeadlineChips] = useState<HeadlineChip[]>([]);
+
+  // ── Modal state (S60-T3) ──────────────────────────────────────────────
+  const [showProviderModal, setShowProviderModal] = useState(false);
+  const [showMcpModal, setShowMcpModal] = useState(false);
+  const [showPluginModal, setShowPluginModal] = useState(false);
 
   // ── Command palette (Cmd+K) ────────────────────────────────────────────
   const [showCommandPalette, setShowCommandPalette] = useState(false);
@@ -315,17 +329,69 @@ export function FintheonComposer({
     runtime.cancelRun();
   }, [runtime]);
 
-  // ── Toolbar slots ─────────────────────────────────────────────────────
+  // ── Toolbar slots (S60-T3: modal triggers) ──────────────────────────────
+  const currentProvider = PROVIDER_LABELS[provider] ?? "Provider";
   const providerEl = (
-    <ProviderDropdown
-      provider={provider}
-      onChange={setProvider}
-      compact={compact}
-    />
+    <button
+      onClick={() => setShowProviderModal(true)}
+      className={`flex items-center gap-1.5 rounded-lg border transition-colors ${
+        compact ? "px-1.5" : "px-2"
+      }`}
+      style={{
+        borderColor: "rgba(199, 159, 74, 0.2)",
+        color: "#f0ead6",
+        height: "28px",
+      }}
+      title={`Provider: ${currentProvider}`}
+    >
+      <Cpu size={11} className="text-[var(--fintheon-accent)]/60" />
+      {!compact && (
+        <span
+          style={{
+            fontSize: "11px",
+            color: "rgba(240, 234, 214, 0.8)",
+          }}
+        >
+          {currentProvider}
+        </span>
+      )}
+    </button>
   );
   // Sidebar (compact) routes through CAO only — no persona selector
   const personaEl = compact ? undefined : <PersonaDropdown />;
 
+  // Plugin trigger button
+  const pluginEl = compact ? undefined : (
+    <button
+      onClick={() => setShowPluginModal(true)}
+      className="relative flex items-center justify-center rounded-lg transition-colors text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
+      style={{ width: "32px", height: "32px" }}
+      title="Plugins"
+    >
+      <Puzzle size={14} />
+      {activeSkill && (
+        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--fintheon-accent)]" />
+      )}
+    </button>
+  );
+
+  // MCP trigger button
+  const activeMcpCount = activeIds.length;
+  const mcpEl = compact ? undefined : (
+    <button
+      onClick={() => setShowMcpModal(true)}
+      className="relative flex items-center justify-center rounded-lg transition-colors text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
+      style={{ width: "32px", height: "32px" }}
+      title="MCP Connectors"
+    >
+      <Plug size={14} />
+      {activeMcpCount > 0 && (
+        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--fintheon-accent)]" />
+      )}
+    </button>
+  );
+
+  // Legacy tools dropdown (kept for backward compat in non-modal surfaces)
   const toolsEl = compact ? undefined : (
     <ToolsDropdown
       skills={SKILLS}
@@ -448,6 +514,8 @@ export function FintheonComposer({
         onToggleVoice={voice.toggleEnabled}
         providerSlot={providerEl}
         personaSlot={personaEl}
+        pluginSlot={pluginEl}
+        mcpSlot={mcpEl}
         toolsSlot={toolsEl}
         planSlot={planEl}
         recallText={recallText}
@@ -459,6 +527,29 @@ export function FintheonComposer({
         headlineChips={headlineChips}
         onHeadlineToggle={handleHeadlineToggle}
         onHeadlineClear={handleHeadlineClear}
+      />
+
+      {/* S60-T3: Modal ecosystem */}
+      <FintheonProviderModal
+        open={showProviderModal}
+        onClose={() => setShowProviderModal(false)}
+        provider={provider}
+        onChange={setProvider}
+      />
+      <FintheonMcpModal
+        open={showMcpModal}
+        onClose={() => setShowMcpModal(false)}
+        servers={servers}
+        activeIds={activeIds}
+        onToggle={toggleConnector}
+      />
+      <FintheonPluginModal
+        open={showPluginModal}
+        onClose={() => setShowPluginModal(false)}
+        skills={SKILLS}
+        activeSkill={activeSkill}
+        onSelectSkill={onSelectSkill}
+        disabledSkills={mergedDisabledSkills}
       />
     </>
   );

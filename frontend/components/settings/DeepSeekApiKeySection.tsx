@@ -185,7 +185,7 @@ export function DeepSeekApiKeySection() {
             setError(null);
             setSuccess(null);
           }}
-          placeholder="ak-..."
+          placeholder="sk-..."
           className="flex-1 bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-[var(--fintheon-accent)]/30"
         />
         <button
@@ -206,7 +206,7 @@ export function DeepSeekApiKeySection() {
         >
           platform.deepseek.com/api_keys
         </a>
-        . DeepSeek keys typically start with <code>ak-</code>.
+        . Keys typically start with <code>sk-</code>.
       </p>
 
       <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-3 mt-5 mb-4">

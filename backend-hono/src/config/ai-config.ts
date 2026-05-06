@@ -14,24 +14,18 @@ const getEnv = (key: string): string | undefined => {
   return env?.[key];
 };
 
-// Model keys - OpenRouter provides alternative routes to same models
+// Model keys
 export type AiModelKey =
   | "sonnet"
   | "grok"
-  // OpenRouter alternative routes
-  | "openrouter-sonnet" // Claude Sonnet 4.5 via OpenRouter
-  | "openrouter-opus" // Claude Opus 4.5 via OpenRouter
-  | "openrouter-grok" // Grok 4.1 via OpenRouter
-  | "openrouter-grok-420" // Grok 4.20 via OpenRouter (scoring fallback)
-  // Hermes P.I.C. agent keys (routed to OpenRouter Opus 4.6 via Nous subscription)
-  | "hermes-cao" // CAO/Harper reasoning
-  | "hermes-research" // Deep research
-  | "hermes-fast" // Fast analysis
-  | "hermes-realtime" // Real-time
-  // Claude Code SDK Bridge (free via Max subscription)
-  | "claude-local" // Claude Opus via local CLI bridge
-  // Nous Research direct inference (fallback when OpenRouter DNS fails)
-  | "nous-direct"; // Hermes 4 405B via inference-api.nousresearch.com
+  | "deepseek-direct"
+  | "opencode-go"
+  | "hermes-cao"
+  | "hermes-research"
+  | "hermes-fast"
+  | "hermes-realtime"
+  | "claude-local"
+  | "nous-direct";
 
 export type AiProvider = "openai-compatible";
 
@@ -62,17 +56,14 @@ export interface AiRoutingConfig {
 export interface AiProviderSettings {
   primary: AiProviderType;
   enableFallback: boolean;
-  openRouter: {
-    baseUrl: string;
-    appUrl: string;
-    appName: string;
-  };
   vercelGateway: {
     baseUrl: string;
   };
-  hermes: {
+  deepseek: {
     baseUrl: string;
-    appName: string;
+  };
+  opencodeGo: {
+    baseUrl: string;
   };
 }
 
@@ -100,9 +91,8 @@ const vercelGatewayBaseUrl =
   getEnv("VERCEL_AI_GATEWAY_BASE_URL") ??
   "https://ai-gateway.vercel.sh/v1/chat/completions";
 
-const openRouterBaseUrl = "https://openrouter.ai/api/v1";
+const DEEPSEEK_BASE_URL = "https://deepseek-direct.ai/api/v1";
 
-// OpenRouter (Nous subscription) — primary inference; Hermes base URL optional for legacy
 const normalizeHermesBaseUrl = (value: string): string => {
   const trimmed = value.trim().replace(/\/+$/, "");
   return trimmed.endsWith("/v1") ? trimmed.slice(0, -3) : trimmed;
@@ -111,10 +101,10 @@ const normalizeHermesBaseUrl = (value: string): string => {
 const getHermesOpenAIBaseUrl = (): string => {
   const base = normalizeHermesBaseUrl(
     getEnv("HERMES_BASE_URL") ??
-      getEnv("OPENROUTER_BASE_URL") ??
-      "https://openrouter.ai/api",
+      getEnv("HERMES_API_URL") ??
+      "https://api.deepseek.com",
   );
-  return base.includes("openrouter") ? `${base}/v1` : `${base}/v1`;
+  return `${base}/v1`;
 };
 
 // Model aliases for backward compatibility
@@ -127,31 +117,27 @@ const modelAliases: Record<string, AiModelKey> = {
   grok: "grok",
   "grok-4.1": "grok",
   general: "grok",
-  groq: "openrouter-opus",
-  "llama-3.3-70b": "openrouter-sonnet",
-  haiku: "openrouter-opus",
-  tech: "openrouter-opus",
-  // OpenRouter alternative routes
-  "openrouter-sonnet": "openrouter-sonnet",
-  "openrouter-claude": "openrouter-sonnet",
-  "openrouter-opus": "openrouter-opus",
-  "llama-70b": "openrouter-sonnet",
-  "openrouter-grok": "openrouter-grok",
-  "grok-openrouter": "openrouter-grok",
-  "openrouter-grok-420": "openrouter-grok-420",
-  "grok-4.20": "openrouter-grok-420",
-  "grok-420": "openrouter-grok-420",
+  groq: "deepseek-direct",
+  "llama-3.3-70b": "deepseek-direct",
+  haiku: "deepseek-direct",
+  tech: "deepseek-direct",
+  "deepseek-direct": "deepseek-direct",
+      "opencode-go": "opencode-go",
+  "oc-go": "opencode-go",
+  "llama-70b": "deepseek-direct",
+  "grok-4.20": "deepseek-direct",
+  "grok-420": "deepseek-direct",
   // Hermes P.I.C. agent routes
-  "hermes-cao": "openrouter-opus",
-  harper: "openrouter-opus",
-  cao: "openrouter-opus",
-  "hermes-research": "openrouter-opus",
-  "pic-research": "openrouter-opus",
-  "hermes-fast": "openrouter-opus",
-  "pic-fast": "openrouter-opus",
-  "hermes-realtime": "openrouter-opus",
-  "pic-realtime": "openrouter-opus",
-  pma: "openrouter-opus",
+  "hermes-cao": "deepseek-direct",
+  harper: "deepseek-direct",
+  cao: "deepseek-direct",
+  "hermes-research": "deepseek-direct",
+  "pic-research": "deepseek-direct",
+  "hermes-fast": "deepseek-direct",
+  "pic-fast": "deepseek-direct",
+  "hermes-realtime": "deepseek-direct",
+  "pic-realtime": "deepseek-direct",
+  pma: "deepseek-direct",
   // Claude Code SDK Bridge (Max subscription)
   "claude-local": "claude-local",
   "claude-sdk": "claude-local",
@@ -173,21 +159,18 @@ export const resolveModelKey = (value?: string): AiModelKey | undefined => {
 const getPrimaryProvider = (): AiProviderType => {
   const envValue = getEnv("AI_PRIMARY_PROVIDER");
   if (envValue === "vercel-gateway") return "vercel-gateway";
-  if (envValue === "openrouter") return "openrouter";
+  if (envValue === "deepseek-direct") return "deepseek-direct";
   if (envValue === "hermes") return "hermes";
-  // Default to openrouter if API key is present
-  return getEnv("OPENROUTER_API_KEY") ? "openrouter" : "vercel-gateway";
+  return "deepseek-direct";
 };
 
 const enableProviderFallback =
   getEnv("AI_ENABLE_PROVIDER_FALLBACK") !== "false";
 
-// Default: Sonnet 4.6 via OpenRouter (Nous subscription)
+// Default: deepseek-direct primary
 const defaultModel =
   resolveModelKey(getEnv("AI_DEFAULT_MODEL")) ??
-  (getEnv("OPENROUTER_API_KEY")
-    ? ("openrouter-sonnet" as AiModelKey)
-    : "openrouter-opus");
+  ("deepseek-direct" as AiModelKey);
 
 export const defaultAiConfig: AiConfig = {
   models: {
@@ -224,138 +207,105 @@ export const defaultAiConfig: AiConfig = {
       supportsStreaming: true,
       supportsVision: false,
     },
-    // OpenRouter alternative routes (same models, different provider)
-    "openrouter-sonnet": {
-      id: "anthropic/claude-sonnet-4",
-      displayName: "Claude Sonnet 4.5 (OpenRouter)",
+    // DeepSeek v4 Pro — primary inference
+    "deepseek-direct": {
+      id: "deepseek-reasoner",
+      displayName: "DeepSeek v4 Pro",
       provider: "openai-compatible",
-      providerType: "openrouter",
-      apiKeyEnv: "OPENROUTER_API_KEY",
-      baseUrl: openRouterBaseUrl,
-      temperature: 0.4,
-      maxTokens: 4096,
-      timeoutMs: 60_000,
-      costPer1kInputUsd: 0.003,
-      costPer1kOutputUsd: 0.015,
-      contextWindow: 200_000,
-      supportsStreaming: true,
-      supportsVision: true,
-    },
-    "openrouter-grok": {
-      id: "x-ai/grok-4",
-      displayName: "Grok 4.1 (OpenRouter)",
-      provider: "openai-compatible",
-      providerType: "openrouter",
-      apiKeyEnv: "OPENROUTER_API_KEY",
-      baseUrl: openRouterBaseUrl,
+      providerType: "deepseek-direct",
+      apiKeyEnv: "DEEPSEEK_API_KEY",
+      baseUrl: DEEPSEEK_BASE_URL,
       temperature: 0.3,
-      maxTokens: 4096,
-      timeoutMs: 45_000,
-      costPer1kInputUsd: 0.003,
-      costPer1kOutputUsd: 0.015,
-      contextWindow: 128_000,
-      supportsStreaming: true,
-      supportsVision: false,
-    },
-    "openrouter-grok-420": {
-      id: "x-ai/grok-4.20",
-      displayName: "Grok 4.20 (OpenRouter / Scoring Fallback)",
-      provider: "openai-compatible",
-      providerType: "openrouter",
-      apiKeyEnv: "OPENROUTER_API_KEY",
-      baseUrl: openRouterBaseUrl,
-      temperature: 0.25,
-      maxTokens: 4096,
-      timeoutMs: 45_000,
-      costPer1kInputUsd: 0.003,
-      costPer1kOutputUsd: 0.015,
-      contextWindow: 128_000,
-      supportsStreaming: true,
-      supportsVision: false,
-    },
-    "openrouter-opus": {
-      id: "anthropic/claude-opus-4.6",
-      displayName: "Claude Opus 4.6 (OpenRouter / Nous)",
-      provider: "openai-compatible",
-      providerType: "openrouter",
-      apiKeyEnv: "OPENROUTER_API_KEY",
-      baseUrl: openRouterBaseUrl,
-      temperature: 0.4,
       maxTokens: 8192,
       timeoutMs: 90_000,
-      costPer1kInputUsd: 0.005,
-      costPer1kOutputUsd: 0.025,
-      contextWindow: 1_000_000,
+      costPer1kInputUsd: 0.001,
+      costPer1kOutputUsd: 0.003,
+      contextWindow: 128_000,
       supportsStreaming: true,
-      supportsVision: true,
+      supportsVision: false,
     },
-
-    // Hermes P.I.C. agent keys — resolve to OpenRouter Opus 4.6 (same config as openrouter-opus)
+    // OpenCode Go — self-hosted fallback
+    "opencode-go": {
+      id: "deepseek-reasoner",
+      displayName: "OpenCode Go",
+      provider: "openai-compatible",
+      providerType: "opencode-go",
+      apiKeyEnv: "OPENCODE_GO_API_KEY",
+      baseUrl: getHermesOpenAIBaseUrl(),
+      temperature: 0.3,
+      maxTokens: 8192,
+      timeoutMs: 90_000,
+      costPer1kInputUsd: 0.001,
+      costPer1kOutputUsd: 0.003,
+      contextWindow: 128_000,
+      supportsStreaming: true,
+      supportsVision: false,
+    },
+    // Hermes agent keys
     "hermes-cao": {
-      id: "anthropic/claude-opus-4.6",
-      displayName: "Claude Opus 4.6 (Hermes CAO)",
+      id: "deepseek-reasoner",
+      displayName: "DeepSeek v4 Pro (CAO)",
       provider: "openai-compatible",
-      providerType: "openrouter",
-      apiKeyEnv: "OPENROUTER_API_KEY",
-      baseUrl: openRouterBaseUrl,
+      providerType: "deepseek-direct",
+      apiKeyEnv: "DEEPSEEK_API_KEY",
+      baseUrl: DEEPSEEK_BASE_URL,
       temperature: 0.3,
       maxTokens: 8192,
       timeoutMs: 90_000,
-      costPer1kInputUsd: 0.005,
-      costPer1kOutputUsd: 0.025,
-      contextWindow: 1_000_000,
+      costPer1kInputUsd: 0.001,
+      costPer1kOutputUsd: 0.003,
+      contextWindow: 128_000,
       supportsStreaming: true,
-      supportsVision: true,
+      supportsVision: false,
     },
     "hermes-research": {
-      id: "anthropic/claude-opus-4.6",
-      displayName: "Claude Opus 4.6 (Hermes Research)",
+      id: "deepseek-reasoner",
+      displayName: "DeepSeek v4 Pro (Research)",
       provider: "openai-compatible",
-      providerType: "openrouter",
-      apiKeyEnv: "OPENROUTER_API_KEY",
-      baseUrl: openRouterBaseUrl,
-      temperature: 0.4,
-      maxTokens: 8192,
-      timeoutMs: 90_000,
-      costPer1kInputUsd: 0.005,
-      costPer1kOutputUsd: 0.025,
-      contextWindow: 1_000_000,
-      supportsStreaming: true,
-      supportsVision: true,
-    },
-    "hermes-fast": {
-      id: "anthropic/claude-opus-4.6",
-      displayName: "Claude Opus 4.6 (Hermes Fast)",
-      provider: "openai-compatible",
-      providerType: "openrouter",
-      apiKeyEnv: "OPENROUTER_API_KEY",
-      baseUrl: openRouterBaseUrl,
-      temperature: 0.25,
-      maxTokens: 8192,
-      timeoutMs: 90_000,
-      costPer1kInputUsd: 0.005,
-      costPer1kOutputUsd: 0.025,
-      contextWindow: 1_000_000,
-      supportsStreaming: true,
-      supportsVision: true,
-    },
-    "hermes-realtime": {
-      id: "anthropic/claude-opus-4.6",
-      displayName: "Claude Opus 4.6 (Hermes Realtime)",
-      provider: "openai-compatible",
-      providerType: "openrouter",
-      apiKeyEnv: "OPENROUTER_API_KEY",
-      baseUrl: openRouterBaseUrl,
+      providerType: "deepseek-direct",
+      apiKeyEnv: "DEEPSEEK_API_KEY",
+      baseUrl: DEEPSEEK_BASE_URL,
       temperature: 0.3,
       maxTokens: 8192,
       timeoutMs: 90_000,
-      costPer1kInputUsd: 0.005,
-      costPer1kOutputUsd: 0.025,
-      contextWindow: 1_000_000,
+      costPer1kInputUsd: 0.001,
+      costPer1kOutputUsd: 0.003,
+      contextWindow: 128_000,
       supportsStreaming: true,
-      supportsVision: true,
+      supportsVision: false,
     },
-
+    "hermes-fast": {
+      id: "deepseek-reasoner",
+      displayName: "DeepSeek v4 Pro (Fast)",
+      provider: "openai-compatible",
+      providerType: "deepseek-direct",
+      apiKeyEnv: "DEEPSEEK_API_KEY",
+      baseUrl: DEEPSEEK_BASE_URL,
+      temperature: 0.3,
+      maxTokens: 4096,
+      timeoutMs: 30_000,
+      costPer1kInputUsd: 0.001,
+      costPer1kOutputUsd: 0.003,
+      contextWindow: 128_000,
+      supportsStreaming: true,
+      supportsVision: false,
+    },
+    "hermes-realtime": {
+      id: "deepseek-reasoner",
+      displayName: "DeepSeek v4 Pro (Realtime)",
+      provider: "openai-compatible",
+      providerType: "deepseek-direct",
+      apiKeyEnv: "DEEPSEEK_API_KEY",
+      baseUrl: DEEPSEEK_BASE_URL,
+      temperature: 0.3,
+      maxTokens: 4086,
+      timeoutMs: 30_000,
+      costPer1kInputUsd: 0.001,
+      costPer1kOutputUsd: 0.003,
+      contextWindow: 128_000,
+      supportsStreaming: true,
+      supportsVision: false,
+    },
     // Nous Research direct inference — fallback when OpenRouter DNS is unreachable
     "nous-direct": {
       id: "nousresearch/hermes-4-405b",
@@ -397,66 +347,58 @@ export const defaultAiConfig: AiConfig = {
     defaultModel,
     taskModelMap: {
       // All tasks through OpenRouter (Nous subscription) — Claude Opus 4.6
-      analysis: "openrouter-opus",
-      research: "openrouter-opus",
-      reasoning: "openrouter-opus",
-      technical: "openrouter-opus",
-      "quick-fintheon": "openrouter-opus",
-      quickfintheon: "openrouter-opus",
-      news: "openrouter-opus",
-      sentiment: "openrouter-opus",
-      chat: "openrouter-opus",
-      general: "openrouter-opus",
-      "harper-cao": "openrouter-opus",
-      "cao-approval": "openrouter-opus",
-      "cao-consolidation": "openrouter-opus",
-      "pma-merged": "openrouter-opus",
-      herald: "openrouter-opus",
-      "prediction-market": "openrouter-opus",
-      "futures-desk": "openrouter-opus",
-      "fa-rippers": "openrouter-opus",
-      "economic-analysis": "openrouter-opus",
-      "fundamentals-desk": "openrouter-opus",
-      "earnings-analysis": "openrouter-opus",
-      "tech-mega-cap": "openrouter-opus",
+      analysis: "deepseek-direct",
+      research: "deepseek-direct",
+      reasoning: "deepseek-direct",
+      technical: "deepseek-direct",
+      "quick-fintheon": "deepseek-direct",
+      quickfintheon: "deepseek-direct",
+      news: "deepseek-direct",
+      sentiment: "deepseek-direct",
+      chat: "deepseek-direct",
+      general: "deepseek-direct",
+      "harper-cao": "deepseek-direct",
+      "cao-approval": "deepseek-direct",
+      "cao-consolidation": "deepseek-direct",
+      "pma-merged": "deepseek-direct",
+      herald: "deepseek-direct",
+      "prediction-market": "deepseek-direct",
+      "futures-desk": "deepseek-direct",
+      "fa-rippers": "deepseek-direct",
+      "economic-analysis": "deepseek-direct",
+      "fundamentals-desk": "deepseek-direct",
+      "earnings-analysis": "deepseek-direct",
+      "tech-mega-cap": "deepseek-direct",
     },
-    // OpenRouter + Hermes fallback chain (Claude only, no llama)
     fallbackMap: {
-      sonnet: "openrouter-sonnet",
-      grok: "openrouter-grok",
-      "openrouter-sonnet": "nous-direct",
-      "openrouter-opus": "openrouter-sonnet",
-      "openrouter-grok": "openrouter-grok-420",
-      "openrouter-grok-420": "openrouter-sonnet",
+      sonnet: "deepseek-direct",
+      grok: "deepseek-direct",
+      "deepseek-direct": "nous-direct",
+      "opencode-go": "opencode-go",
       // Hermes fallbacks (fall back to OpenRouter equivalents)
-      "hermes-cao": "openrouter-opus",
-      "hermes-research": "openrouter-sonnet",
-      "hermes-fast": "openrouter-sonnet",
-      "hermes-realtime": "openrouter-grok",
+      "hermes-cao": "deepseek-direct",
+      "hermes-research": "deepseek-direct",
+      "hermes-fast": "deepseek-direct",
+      "hermes-realtime": "deepseek-direct",
       // Claude Local SDK fallback to OpenRouter Opus
-      "claude-local": "openrouter-opus",
+      "claude-local": "deepseek-direct",
       // Nous Direct is terminal — no further fallback
-      "nous-direct": "openrouter-sonnet",
+      "nous-direct": "deepseek-direct",
     },
-    // Cross-provider fallbacks (all within OpenRouter now)
     crossProviderFallbacks: [],
   },
 
   providers: {
     primary: getPrimaryProvider(),
     enableFallback: enableProviderFallback,
-    openRouter: {
-      baseUrl: openRouterBaseUrl,
-      appUrl:
-        getEnv("OPENROUTER_APP_URL") ?? "https://fintheon-solvys.vercel.app",
-      appName: getEnv("OPENROUTER_APP_NAME") ?? "Fintheon-AI-Gateway",
-    },
     vercelGateway: {
       baseUrl: vercelGatewayBaseUrl,
     },
-    hermes: {
+    deepseek: {
+      baseUrl: DEEPSEEK_BASE_URL,
+    },
+    opencodeGo: {
       baseUrl: getHermesOpenAIBaseUrl(),
-      appName: getEnv("HERMES_APP_NAME") ?? "Fintheon-PIC-Hermes",
     },
   },
 
@@ -483,11 +425,6 @@ export const defaultAiConfig: AiConfig = {
   },
 
   systemPrompt: priceSystemPrompt,
-};
-
-// Helper to check if a model uses OpenRouter
-export const isOpenRouterModel = (modelKey: AiModelKey): boolean => {
-  return modelKey.startsWith("openrouter-");
 };
 
 // Hermes agent keys (routed to OpenRouter Opus 4.6)

@@ -8,12 +8,12 @@
 
 // Provider type discriminator
 export type AiProviderType =
-  | "openrouter"
+  | "deepseek-direct"
+  | "opencode-go"
   | "vercel-gateway"
   | "hermes"
   | "claude-local"
   | "nous-direct"
-  // [claude-code 2026-04-23] S32-T3 Ollama fallback chain provider identifier
   | "ollama-hermes";
 
 // Circuit breaker states

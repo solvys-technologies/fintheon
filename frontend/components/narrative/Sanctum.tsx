@@ -239,6 +239,8 @@ export function Sanctum({
                       briefing={data.briefing ?? null}
                       isLoading={false}
                       noBorder
+                      revisionStatus={revisionStatus}
+                      revisionChecking={revisionChecking}
                     />
                   )}
                   {/* [claude-code 2026-04-27] S46.4/K: combined IV+forecast card */}
@@ -281,23 +283,6 @@ export function Sanctum({
                           simulationId={data?.simulationId ?? null}
                           onSynthesisComplete={onSynthesisComplete}
                         />
-                        {(revisionChecking || revisionStatus) && (
-                          <div className={`mt-2 rounded-lg border px-3 py-2 ${
-                            revisionChecking
-                              ? "border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-accent)]/5"
-                              : "border-[var(--fintheon-accent)]/10 bg-transparent"
-                          }`}>
-                            {revisionChecking ? (
-                              <span className="text-[10px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">
-                                [CHECKING FOR UPDATES...]
-                              </span>
-                            ) : (
-                              <span className="text-[10px] text-[var(--fintheon-text)]/45 leading-relaxed">
-                                {revisionStatus}
-                              </span>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>

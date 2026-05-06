@@ -9,6 +9,95 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-06T11:00:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S60-T6 unify + validate: all T1-T5 tracks unified. Plane integration mounted at /api/integrations/plane (inbound signed webhook + outbound relay with policy gate + verification guard). OpenRouter+VProxy fully stripped, provider chain is DeepSeek→OpenCode Go only. Desk plan formula rewritten (80/20 entries, 25-multiple targets, 12% IV spread). Agent Health Dashboard, Chamber seat cleanup, chat iOS borders, sidebar compact refactor, revision-check endpoint all verified. Full smoke: backend+frontend+mobile builds clean, 8 API endpoints healthy.",
+    files: [
+      "backend-hono/src/services/ai/provider-chain.ts",
+      "backend-hono/src/services/ai/provider-chain-health.ts",
+      "backend-hono/src/services/ai/conversation-store.ts",
+      "backend-hono/src/config/ai-config.ts",
+      "backend-hono/src/types/ai-types.ts",
+      "backend-hono/src/boot/index.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/routes/diagnostics/index.ts",
+      "backend-hono/src/routes/integrations/plane/",
+      "backend-hono/src/services/integrations/plane/",
+      "backend-hono/src/services/day-plan/day-plan-service.ts",
+      "backend-hono/src/services/day-plan/price-rounding.ts",
+      "frontend/components/settings/DeepSeekApiKeySection.tsx",
+      "frontend/components/arbitrum/ChamberSeats.tsx",
+      "frontend/components/narrative/SanctumBriefing.tsx",
+    ],
+  },
+  {
+    date: "2026-05-06T16:30:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S60-T3: Chat input parity + modal ecosystem. Created FintheonProviderModal, FintheonMcpModal, FintheonPluginModal with frosted-glass Solvys styling. Wired modal triggers into composer toolbar (provider chip, Puzzle icon for plugins, Plug icon for MCP). Added pluginSlot/mcpSlot props to PromptBox for toolbar rendering. Preserved plan mode, todos, slash commands, history recall, and attach flows through runtime migration.",
+    files: [
+      "frontend/components/chat/FintheonProviderModal.tsx",
+      "frontend/components/chat/FintheonMcpModal.tsx",
+      "frontend/components/chat/FintheonPluginModal.tsx",
+      "frontend/components/chat/FintheonComposer.tsx",
+      "frontend/components/ui/chatgpt-prompt-input.tsx",
+    ],
+  },
+  {
+    date: "2026-05-06T14:20:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S60-T2: Migrate global chat runtime to open-agents SDK adapter. Added ai package dependency, created useOpenAgentsRuntime adapter hook wrapping useAISDKRuntime with open-agents SDK types (LanguageModel), updated useHermesRuntime to delegate through adapter. All three chat surfaces (analysis, sidebar, floating) now route through open-agents bridge layer while preserving conversation hydration, request IDs, and stop/cancel.",
+    files: [
+      "frontend/package.json",
+      "frontend/components/chat/hooks/useOpenAgentsRuntime.ts",
+      "frontend/components/chat/useHermesRuntime.ts",
+    ],
+  },
+  {
+    date: "2026-05-06T11:45:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S60-T4: Plane inbound signed webhook with HMAC-SHA256 verification, X-Plane-Signature/X-Hub-Signature-256 fallback, X-Plane-Key-Id key rotation, 300s skew window, replay cache (10min TTL), correlation_id idempotency (24h TTL), Zod schema validation at boundary. 202 accepted/200 duplicate no-op/401 auth fail/408 stale/422 schema fail.",
+    files: [
+      "backend-hono/src/routes/integrations/plane/schema.ts",
+      "backend-hono/src/routes/integrations/plane/inbound.ts",
+      "backend-hono/src/routes/integrations/plane/index.ts",
+      "backend-hono/src/services/integrations/plane/signature.ts",
+      "backend-hono/src/services/integrations/plane/replay-cache.ts",
+      "backend-hono/src/services/integrations/plane/idempotency-store.ts",
+      "backend-hono/src/services/integrations/plane/inbound-processor.ts",
+    ],
+  },
+  {
+    date: "2026-05-06T17:30:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S60-T5: Plane outbound relay + autonomous policy loop. Created outbound-client with HMAC-SHA256 signing (mirrors inbound canonical form: timestamp.rawBody), X-Plane-Signature/X-Plane-Timestamp/X-Plane-Key-Id headers, exponential backoff + jitter retry (max 5 attempts, 500ms-30s), DLQ persistence (memory ring buffer, 1000 cap). Added policy gate (notify/update always allowed; fix_proposal gated on severity/confidence; deploy blocked unless verification passes). Added verification gate (frontend pass + health checks cache, 1min TTL). Added task mapper (severity/component rules -> research task board). Wired non-blocking fire-and-forget outbound trigger into autopilot signal-ingest. Mounted in routes/index.ts.",
+    files: [
+      "backend-hono/src/services/integrations/plane/outbound-client.ts",
+      "backend-hono/src/services/integrations/plane/policy-gate.ts",
+      "backend-hono/src/services/integrations/plane/verification-gate.ts",
+      "backend-hono/src/services/integrations/plane/task-mapper.ts",
+      "backend-hono/src/routes/integrations/plane/outbound.ts",
+      "backend-hono/src/routes/integrations/plane/index.ts",
+      "backend-hono/src/routes/autopilot/signal-ingest.ts",
+      "backend-hono/src/routes/index.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-06T10:30:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S60-T1: Add Refinement Plane surface toggle. viewMode state (scoring|plane) with TV icon button in header toolbar, Plane mode swaps main content to EmbeddedBrowserFrame, Electron popup allowlist extended for app.plane.so and *.plane.so.",
+    files: [
+      "frontend/components/refinement/RefinementEngine.tsx",
+      "electron/main.cjs",
+    ],
+  },
+  {
     date: "2026-05-06T07:20:00-04:00",
     agent: "claude-code",
     summary:

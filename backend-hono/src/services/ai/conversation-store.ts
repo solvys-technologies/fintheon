@@ -35,7 +35,7 @@ export function estimateTokens(
 }
 
 /**
- * Summarize older messages via OpenRouter (Opus 4.6) when context exceeds threshold
+ * Summarize older messages via OpenCode Go when context exceeds threshold
  */
 async function summarizeOlderMessages(
   messages: { role: "user" | "assistant"; content: string }[],
@@ -43,43 +43,36 @@ async function summarizeOlderMessages(
   const olderMessages = messages.slice(0, messages.length - VERBATIM_TAIL);
   if (olderMessages.length === 0) return null;
 
-  const apiKey = process.env.OPENROUTER_API_KEY ?? "";
-  if (!apiKey) return null;
+  const apiKey = process.env.OPENCODE_GO_API_KEY || process.env.HERMES_API_KEY || "opencode-go";
+  const baseUrl = (process.env.HERMES_API_URL || "http://localhost:8317/v1").replace(/\/+$/, "");
 
   const summaryPrompt = `Summarize this conversation history concisely, preserving key facts, decisions, and context:\n\n${olderMessages.map((m) => `${m.role}: ${m.content}`).join("\n\n")}`;
 
   try {
-    const response = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer":
-            process.env.OPENROUTER_APP_URL ??
-            "https://fintheon-solvys.vercel.app",
-          "X-Title": process.env.OPENROUTER_APP_NAME ?? "Fintheon-AI-Gateway",
-        },
-        body: JSON.stringify({
-          model: "anthropic/claude-opus-4.6",
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are a concise conversation summarizer. Preserve key facts, trade ideas, decisions, and numbers. Be brief.",
-            },
-            { role: "user", content: summaryPrompt },
-          ],
-          max_tokens: 1024,
-        }),
-        signal: AbortSignal.timeout(15_000),
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        model: "deepseek-reasoner",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a concise conversation summarizer. Preserve key facts, trade ideas, decisions, and numbers. Be brief.",
+          },
+          { role: "user", content: summaryPrompt },
+        ],
+        max_tokens: 1024,
+      }),
+      signal: AbortSignal.timeout(15_000),
+    });
 
     if (!response.ok) {
       console.warn(
-        "[ConversationStore] Summarization (OpenRouter) error:",
+        "[ConversationStore] Summarization error:",
         response.status,
       );
       return null;

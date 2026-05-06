@@ -10,6 +10,8 @@ interface SanctumBriefingProps {
   isLoading?: boolean;
   noBorder?: boolean;
   onTriggerAquarium?: () => void;
+  revisionStatus?: string | null;
+  revisionChecking?: boolean;
 }
 
 export function SanctumBriefing({
@@ -17,6 +19,8 @@ export function SanctumBriefing({
   isLoading,
   noBorder,
   onTriggerAquarium,
+  revisionStatus,
+  revisionChecking,
 }: SanctumBriefingProps) {
   if (isLoading) {
     return (
@@ -59,6 +63,22 @@ export function SanctumBriefing({
 
   return (
     <div className="rounded bg-[var(--fintheon-surface)]/30 overflow-hidden">
+      {/* Revision status bar — shown after refresh check */}
+      {(revisionChecking || revisionStatus) && (
+        <div
+          className={`px-5 py-2.5 border-b ${revisionChecking ? "border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-accent)]/5" : "border-[var(--fintheon-accent)]/10"}`}
+        >
+          {revisionChecking ? (
+            <span className="text-[10px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">
+              [CHECKING FOR UPDATES...]
+            </span>
+          ) : (
+            <span className="text-[10px] text-[var(--fintheon-text)]/45 leading-relaxed">
+              {revisionStatus}
+            </span>
+          )}
+        </div>
+      )}
       {/* Key Findings */}
       {(briefing.keyFindings?.length ?? 0) > 0 && (
         <div

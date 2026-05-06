@@ -463,6 +463,10 @@ const shouldAllowInAppPopup = (urlString) => {
     if (host === "app.tradesea.ai") return true;
     if (host === "tradesea.ai") return true;
 
+    // Plane (project management)
+    if (host === "app.plane.so") return true;
+    if (host.endsWith(".plane.so")) return true;
+
     // Discord (Boardroom)
     if (host === "discord.com") return true;
     if (host.endsWith(".discord.com")) return true;

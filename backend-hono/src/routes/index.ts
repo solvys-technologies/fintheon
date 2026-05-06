@@ -119,6 +119,8 @@ import { createDayPlanRoutes } from "./day-plan/index.js";
 import { createDeskCalendarRoutes } from "./desk-calendar/index.js";
 // [claude-code 2026-05-05] S59-T3: Agent Health Dashboard — per-agent SOUL/memory/GEPA/REFLECT status
 import { createApparatusRoutes } from "./apparatus/agent-health.js";
+// [claude-code 2026-05-06] S60-T5: Plane integration — inbound + outbound relay with policy gate
+import { createPlaneIntegrationRoutes } from "./integrations/plane/index.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -415,6 +417,9 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/research", authMiddleware, requireAuth);
   app.use("/api/research/*", authMiddleware, requireAuth);
   app.route("/api/research", createResearchRoutes());
+
+  // S60-T5: Plane integration — inbound webhook (public, signature-gated) + outbound relay (auth-gated)
+  app.route("/api/integrations/plane", createPlaneIntegrationRoutes());
 
   // Shared memory — team-level KV store + analysis history FTS (S13-T3)
   app.use("/api/memory", authMiddleware, requireAuth);

@@ -1,26 +1,17 @@
-// [claude-code 2026-05-03] S58-T1: DeepSeek v4 Pro primary provider migration
-// Primary: DeepSeek direct. Fallback: OpenRouter. Last resort: VProxy.
+// [claude-code 2026-05-06] S59-T4: stripped OpenRouter and VProxy. Chain is now
+//   DeepSeek direct → OpenCode Go fallback only.
 
 import { createLogger } from "../../lib/logger.js";
-import {
-  generateTextViaVProxy,
-  getVProxyHealth,
-  isVProxyAnthropicEnabled,
-  type VProxyTextOptions,
-} from "../vproxy/anthropic-client.js";
 import {
   generateTextViaOllama,
   getOllamaModel,
   isOllamaFallbackEnabled,
   streamTextViaOllama,
 } from "./ollama-hermes-client.js";
-import { generateTextViaOpenRouter } from "./openrouter-fallback.js";
-
-export { getChainHealth, type ChainHealth } from "./provider-chain-health.js";
 
 const log = createLogger("AIChain");
 
-type OrderedChainProvider = "deepseek-direct" | "openrouter" | "vproxy";
+type ChainProvider = "deepseek-direct" | "opencode-go";
 
 export interface ChainRequest {
   prompt: string;
@@ -34,7 +25,7 @@ export interface ChainRequest {
 
 export interface ChainResult {
   response: string;
-  provider: OrderedChainProvider;
+  provider: ChainProvider;
   latencyMs: number;
 }
 
@@ -83,25 +74,61 @@ export function getChainStats(): {
 function isRetryable(err: unknown): boolean {
   if (!(err instanceof Error)) return true;
   const msg = err.message.toLowerCase();
-  // Network unreachable, timeouts, or 5xx errors trigger the retry.
   if (msg.includes("timed out") || msg.includes("timeout")) return true;
   if (msg.includes("fetch failed")) return true;
   if (msg.includes("econnrefused") || msg.includes("enotfound")) return true;
   if (msg.includes("unavailable")) return true;
   if (/\b5\d{2}\b/.test(msg)) return true;
+  if (msg.includes("401") || msg.includes("403") || msg.includes("authentication") || msg.includes("invalid")) return true;
   return false;
+}
+
+// ── OpenCode Go fallback generation ───────────────────────────────────────
+
+async function generateTextViaOpenCodeGo(request: ChainRequest): Promise<string> {
+  const apiKey = process.env.OPENCODE_GO_API_KEY || process.env.HERMES_API_KEY || "opencode-go";
+  const baseUrl = process.env.HERMES_API_URL || "http://localhost:8317/v1";
+
+  const messages = [] as Array<{ role: "system" | "user"; content: string }>;
+  if (request.systemPrompt) {
+    messages.push({ role: "system", content: request.systemPrompt });
+  }
+  messages.push({ role: "user", content: request.prompt });
+
+  const res = await fetch(`${baseUrl.replace(/\/+$/, "")}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: request.model || "deepseek-reasoner",
+      messages,
+      max_tokens: request.maxOutputTokens ?? 8192,
+      temperature: request.temperature ?? 0.4,
+    }),
+    signal: AbortSignal.timeout(request.timeoutMs ?? 120_000),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`OpenCode Go ${res.status}: ${text.slice(0, 200)}`);
+  }
+
+  const payload = (await res.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+  return payload.choices?.[0]?.message?.content ?? "";
 }
 
 // ── Core: generateViaChain ────────────────────────────────────────────────
 
-/**
- * Send a prompt through the DeepSeek → OpenRouter → VProxy fallback chain.
- * Returns the response text plus which provider actually answered.
- */
 export async function generateViaChain(
   request: ChainRequest,
 ): Promise<ChainResult> {
   const errors: string[] = [];
+
+  // Tier 1: DeepSeek direct (via Ollama/Hermes)
   if (isOllamaFallbackEnabled()) {
     const start = Date.now();
     try {
@@ -113,157 +140,79 @@ export async function generateViaChain(
         temperature: request.temperature,
         timeoutMs: request.timeoutMs,
       });
-      const latencyMs = Date.now() - start;
       recordPrimary();
       log.info("[ai-chain] deepseek-direct ok", {
-        latencyMs,
-        model: request.model || getOllamaModel(),
+        latencyMs: Date.now() - start,
         requestId: request.requestId,
       });
-      return { response, provider: "deepseek-direct", latencyMs };
+      return { response, provider: "deepseek-direct", latencyMs: Date.now() - start };
     } catch (err) {
       const e = err instanceof Error ? err : new Error(String(err));
       errors.push(`DeepSeek: ${e.message}`);
       if (!isRetryable(e)) throw e;
       recordFallback();
-      log.warn("[ai-chain] deepseek-direct failed; trying OpenRouter", {
+      log.warn("[ai-chain] deepseek-direct failed; trying OpenCode Go", {
         error: e.message,
         requestId: request.requestId,
       });
     }
   }
 
-  if (process.env.OPENROUTER_API_KEY) {
-    const start = Date.now();
-    try {
-      const response = await generateTextViaOpenRouter(request);
-      const latencyMs = Date.now() - start;
-      log.info("[ai-chain] openrouter ok", {
-        latencyMs,
-        requestId: request.requestId,
-      });
-      return { response, provider: "openrouter", latencyMs };
-    } catch (err) {
-      const e = err instanceof Error ? err : new Error(String(err));
-      errors.push(`OpenRouter: ${e.message}`);
-      if (!isRetryable(e)) throw e;
-      recordFallback();
-      log.warn("[ai-chain] openrouter failed; trying VProxy last", {
-        error: e.message,
-        requestId: request.requestId,
-      });
-    }
-  } else {
-    errors.push("OpenRouter: OPENROUTER_API_KEY not set");
+  // Tier 2: OpenCode Go fallback
+  const start = Date.now();
+  try {
+    const response = await generateTextViaOpenCodeGo(request);
+    log.info("[ai-chain] opencode-go ok", {
+      latencyMs: Date.now() - start,
+      requestId: request.requestId,
+    });
+    return { response, provider: "opencode-go", latencyMs: Date.now() - start };
+  } catch (err) {
+    const e = err instanceof Error ? err : new Error(String(err));
+    errors.push(`OpenCode Go: ${e.message}`);
   }
 
-  const vproxyEnabled = isVProxyAnthropicEnabled();
-  if (vproxyEnabled) {
-    const start = Date.now();
+  throw new Error(`AI chain exhausted: ${errors.join("; ")}`);
+}
+
+// ── Streaming ─────────────────────────────────────────────────────────────
+
+export async function* streamViaChain(
+  request: ChainRequest,
+): AsyncGenerator<
+  { type: "text" | "end" | "error"; text?: string; provider?: ChainProvider; error?: string },
+  void,
+  unknown
+> {
+  if (isOllamaFallbackEnabled()) {
     try {
-      const vproxyOptions: VProxyTextOptions = {
+      yield { type: "text", text: "", provider: "deepseek-direct" };
+      for await (const chunk of streamTextViaOllama({
         prompt: request.prompt,
         systemPrompt: request.systemPrompt,
-        model: request.model,
+        model: request.model || getOllamaModel(),
         maxOutputTokens: request.maxOutputTokens,
-        timeoutMs: request.timeoutMs,
-      };
-      const response = await generateTextViaVProxy(vproxyOptions);
-      const latencyMs = Date.now() - start;
-      recordFallback();
-      log.info("[ai-chain] vproxy ok", {
-        latencyMs,
+        temperature: request.temperature,
+      })) {
+        yield { type: "text", text: chunk };
+      }
+      yield { type: "end", provider: "deepseek-direct" };
+      return;
+    } catch (err) {
+      log.warn("[ai-chain] deepseek-direct stream failed; trying OpenCode Go", {
+        error: String(err),
         requestId: request.requestId,
       });
-      return { response, provider: "vproxy", latencyMs };
-    } catch (err) {
-      const e = err instanceof Error ? err : new Error(String(err));
-      errors.push(`VProxy: ${e.message}`);
-    }
-  } else {
-    errors.push("VProxy: disabled");
-  }
-  const combined = errors.join(" | ");
-  log.error("[ai-chain] all providers failed", { combined });
-  throw new Error(`AI chain exhausted — ${combined}`);
-}
-
-// ── Streaming: streamViaChain ────────────────────────────────────────────
-//
-// Streaming fallback is best-effort: if VProxy fails BEFORE the first token
-// ships to the client we retry against Ollama. If it fails mid-stream the
-// caller sees the partial response + error (same contract as VProxy today).
-
-export interface ChainStreamEvent {
-  type: "text-delta" | "provider" | "end";
-  delta?: string;
-  provider?: OrderedChainProvider;
-}
-
-/**
- * Stream text through the chain. Yields a leading `provider` event once the
- * active provider is known, then `text-delta` events, then `end`.
- */
-export async function* streamViaChain(
-  request: ChainRequest & { abortSignal?: AbortSignal },
-): AsyncGenerator<ChainStreamEvent> {
-  // Streaming uses DeepSeek direct. Fallback after partial tokens is unsafe, so
-  // callers receive the upstream stream error if DeepSeek fails mid-response.
-  if (isOllamaFallbackEnabled()) {
-    yield { type: "provider", provider: "deepseek-direct" };
-    for await (const chunk of streamTextViaOllama({
-      prompt: request.prompt,
-      systemPrompt: request.systemPrompt,
-      model: request.model || getOllamaModel(),
-      maxOutputTokens: request.maxOutputTokens,
-      temperature: request.temperature,
-      abortSignal: request.abortSignal,
-    })) {
-      yield { type: "text-delta", delta: chunk };
-    }
-    yield { type: "end", provider: "deepseek-direct" };
-    return;
-  }
-
-  const vproxyEnabled = isVProxyAnthropicEnabled();
-
-  if (vproxyEnabled) {
-    const vproxyHealth = await getVProxyHealth();
-    if (vproxyHealth.available) {
-      try {
-        // Import lazily to avoid circular deps at module-load time.
-        const { streamTextViaVProxy } =
-          await import("../vproxy/anthropic-client.js");
-        const stream = streamTextViaVProxy({
-          prompt: request.prompt,
-          systemPrompt: request.systemPrompt,
-          model: request.model,
-          maxOutputTokens: request.maxOutputTokens,
-          abortSignal: request.abortSignal,
-        });
-        yield { type: "provider", provider: "vproxy" };
-        let delivered = false;
-        for await (const part of stream.fullStream) {
-          if (part.type === "text-delta" && part.text) {
-            delivered = true;
-            yield { type: "text-delta", delta: part.text };
-          }
-        }
-        recordPrimary();
-        yield { type: "end", provider: "vproxy" };
-        return;
-        // eslint-disable-next-line no-unused-vars
-        void delivered;
-      } catch (err) {
-        const e = err instanceof Error ? err : new Error(String(err));
-        throw e;
-      }
-    } else {
-      log.warn(
-        `[ai-chain] vproxy unhealthy (${vproxyHealth.error ?? "unknown"}) for request ${request.requestId ?? "-"}`,
-      );
     }
   }
 
-  throw new Error("AI chain exhausted: DeepSeek streaming disabled and VProxy unavailable");
+  // OpenCode Go streaming fallback
+  yield { type: "text", text: "", provider: "opencode-go" };
+  try {
+    const response = await generateTextViaOpenCodeGo(request);
+    yield { type: "text", text: response };
+    yield { type: "end", provider: "opencode-go" };
+  } catch (err) {
+    yield { type: "error", error: `AI chain exhausted: ${String(err)}` };
+  }
 }

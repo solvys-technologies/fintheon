@@ -166,7 +166,7 @@ export type ArbitrumProvider =
   | "deepseek-oc-api"
   | "ollama"
   | "groq"
-  | "openrouter";
+  | "deepseek-direct";
 
 const ARBITRUM_MODEL_PROVIDER_MAP: Record<string, ArbitrumProvider> = {
   "deepseek-reasoner": "deepseek-direct",
@@ -175,7 +175,7 @@ const ARBITRUM_MODEL_PROVIDER_MAP: Record<string, ArbitrumProvider> = {
 };
 
 export function resolveProvider(modelId: string): ArbitrumProvider {
-  return ARBITRUM_MODEL_PROVIDER_MAP[modelId] ?? "openrouter";
+  return ARBITRUM_MODEL_PROVIDER_MAP[modelId] ?? "deepseek-direct";
 }
 
 /**

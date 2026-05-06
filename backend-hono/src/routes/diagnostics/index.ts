@@ -463,7 +463,7 @@ function checkTradingViewQuotes(routerHealth: {
 /*  Env var audit                                                       */
 /* ------------------------------------------------------------------ */
 
-const REQUIRED_ENV_VARS = ["OPENROUTER_API_KEY"];
+const REQUIRED_ENV_VARS = ["DEEPSEEK_API_KEY"];
 
 const RECOMMENDED_ENV_VARS = [
   "DATABASE_URL",

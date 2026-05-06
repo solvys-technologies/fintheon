@@ -131,6 +131,9 @@ export interface PromptBoxProps {
   personaSlot?: React.ReactNode;
   toolsSlot?: React.ReactNode;
   providerSlot?: React.ReactNode;
+  // S60-T3: Modal-aware slots for plugin + MCP triggers (composer toolbar)
+  pluginSlot?: React.ReactNode;
+  mcpSlot?: React.ReactNode;
   // Relay dispatch button (leftmost in action cluster). Renders either relay or disconnect.
   relaySlot?: React.ReactNode;
   // Optional banner shown above the input while dispatched (e.g. "Chatting on iPhone").
@@ -181,6 +184,8 @@ export function PromptBox({
   personaSlot,
   toolsSlot,
   providerSlot,
+  pluginSlot,
+  mcpSlot,
   relaySlot,
   dispatchBanner,
   onRiskFlowPick,
@@ -637,7 +642,13 @@ export function PromptBox({
                 <Plus size={16} />
               </button>
 
-              {/* Tools (combined Skills + Connectors) */}
+              {/* Plugins (S60-T3: modal trigger) */}
+              {pluginSlot}
+
+              {/* MCP Connectors (S60-T3: modal trigger) */}
+              {mcpSlot}
+
+              {/* Tools (combined Skills + Connectors — legacy, used when pluginSlot/mcpSlot not provided) */}
               {toolsSlot}
 
               {/* Think Harder toggle */}

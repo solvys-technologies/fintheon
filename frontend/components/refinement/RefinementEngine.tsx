@@ -15,7 +15,7 @@
 // [claude-code 2026-04-18] S24-T4: Rebuilt scoring calibration workbench.
 // [claude-code 2026-03-27] S2-T7: Refinement Engine
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { RefreshCw, Wrench, AlertTriangle, X } from "lucide-react";
+import { RefreshCw, Wrench, AlertTriangle, X, Tv } from "lucide-react";
 import { isRefinementEditUnlocked } from "../../lib/dev-settings-auth";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import type { CalibrationEntry } from "../../../backend-hono/src/types/calibration";
@@ -36,6 +36,7 @@ import { OperatorTimeline } from "./OperatorTimeline";
 import { SourcePolicyPanel } from "./SourcePolicyPanel";
 import { DoctoringPanel } from "./DoctoringPanel";
 import { FinancialJuiceBackfillPanel } from "./FinancialJuiceBackfillPanel";
+import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
 import {
   PresetSelector,
   BUILTIN_PRESETS,
@@ -174,6 +175,12 @@ export function RefinementEngine() {
     null,
   );
   const [loading, setLoading] = useState(true);
+
+  // --- Plane view mode ---
+  const [viewMode, setViewMode] = useState<"scoring" | "plane">("scoring");
+
+  const planeUrl =
+    import.meta.env.VITE_PLANE_URL || "https://app.plane.so";
 
   // --- Edit lock ---
   const [editUnlocked, setEditUnlocked] = useState(() =>
@@ -552,32 +559,57 @@ export function RefinementEngine() {
           REFINEMENT ENGINE
         </h1>
         <div className="flex items-center gap-3">
-          {isDirty && (
-            <button onClick={onDiscardChanges} className="text-[11px] font-medium text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] transition-colors">
-              Discard
-            </button>
+          {viewMode === "scoring" && (
+            <>
+              <button
+                onClick={() => setViewMode("plane")}
+                className="flex items-center gap-1.5 text-xs font-medium text-[var(--fintheon-accent)]/70 hover:text-[var(--fintheon-accent)] transition-colors"
+                title="Open Plane"
+              >
+                <Tv className="w-3.5 h-3.5" />
+                Plane
+              </button>
+              <span style={{ width: 1, height: 14, background: "rgba(199,159,74,0.15)" }} />
+            </>
           )}
-          <button
-            onClick={onApplyAndRescore}
-            disabled={isRescoring}
-            className="text-[11px] font-semibold text-[var(--fintheon-accent)] hover:opacity-80 disabled:opacity-40 transition-opacity"
-          >
-            {isRescoring ? "Saving…" : "Save"}
-          </button>
-          <span style={{ width: 1, height: 14, background: "rgba(199,159,74,0.15)" }} />
-          <button
-            onClick={() => setIsKickstartDrawerOpen(true)}
-            disabled={isRefreshingAuth || kickstartSources.length === 0}
-            className="flex items-center gap-1.5 text-xs font-medium text-[var(--fintheon-accent)]/70 hover:text-[var(--fintheon-accent)] disabled:opacity-30 transition-colors"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingAuth ? "animate-spin" : ""}`} />
-            Kickstart
-          </button>
+          {viewMode === "plane" ? (
+            <button
+              onClick={() => setViewMode("scoring")}
+              className="flex items-center gap-1.5 text-xs font-medium text-[var(--fintheon-accent)]/70 hover:text-[var(--fintheon-accent)] transition-colors"
+            >
+              <Wrench className="w-3.5 h-3.5" />
+              Scoring
+            </button>
+          ) : (
+            <>
+              {isDirty && (
+                <button onClick={onDiscardChanges} className="text-[11px] font-medium text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] transition-colors">
+                  Discard
+                </button>
+              )}
+              <button
+                onClick={onApplyAndRescore}
+                disabled={isRescoring}
+                className="text-[11px] font-semibold text-[var(--fintheon-accent)] hover:opacity-80 disabled:opacity-40 transition-opacity"
+              >
+                {isRescoring ? "Saving…" : "Save"}
+              </button>
+              <span style={{ width: 1, height: 14, background: "rgba(199,159,74,0.15)" }} />
+              <button
+                onClick={() => setIsKickstartDrawerOpen(true)}
+                disabled={isRefreshingAuth || kickstartSources.length === 0}
+                className="flex items-center gap-1.5 text-xs font-medium text-[var(--fintheon-accent)]/70 hover:text-[var(--fintheon-accent)] disabled:opacity-30 transition-colors"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingAuth ? "animate-spin" : ""}`} />
+                Kickstart
+              </button>
+            </>
+          )}
         </div>
       </div>
       <div style={{ height: 1, margin: "0 20px", background: "linear-gradient(to right, rgba(199,159,74,0.18), transparent 80%)" }} />
 
-      {isKickstartDrawerOpen && (
+      {viewMode === "scoring" && isKickstartDrawerOpen && (
         <div className="absolute inset-0 z-40">
           <button
             className="absolute inset-0 bg-black/35"
@@ -714,6 +746,14 @@ export function RefinementEngine() {
           <div className="text-[11px] text-zinc-500 animate-pulse">
             Loading Refinement Engine...
           </div>
+        </div>
+      ) : viewMode === "plane" ? (
+        <div className="flex-1 min-h-0">
+          <EmbeddedBrowserFrame
+            title="Plane"
+            src={planeUrl}
+            className="w-full h-full"
+          />
         </div>
       ) : (
         <div className="flex-1 min-h-0 flex">

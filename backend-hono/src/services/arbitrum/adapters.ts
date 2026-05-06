@@ -1,7 +1,7 @@
 // [claude-code 2026-05-03] S58-T1: Arbitrum seats use DeepSeek direct provider key.
 // [claude-code 2026-04-29] DeepSeek migration. All Arbitrum seats route through
 // DeepSeek's OpenAI-compatible API (`deepseek-reasoner`). Local Ollama and Groq
-// remain selectable via ARBITRUM_MODEL_PROVIDER_MAP. Harper-cao's OpenRouter
+// remain selectable via ARBITRUM_MODEL_PROVIDER_MAP. Harper-cao's DeepSeek
 // path lives in hermes-handler.ts and is NOT touched by this module.
 
 import { resolveProvider, type ArbitrumProvider } from "../hermes-service.js";
@@ -137,7 +137,7 @@ async function groqChat(req: SeatChatRequest): Promise<string> {
  * Route a chat request to the seat's resolved provider. Ollama Cloud is the
  * primary path for every Arbitrum seat (qwen3.5:397b-cloud). Groq is kept as
  * an explicit alternate when a model id is mapped to it. Never touches
- * OpenRouter — that path is reserved for harper-cao.
+ * DeepSeek — that path is reserved for harper-cao.
  */
 export async function seatChat(req: SeatChatRequest): Promise<SeatChatResult> {
   const provider = resolveProvider(req.modelId);
@@ -152,7 +152,7 @@ export async function seatChat(req: SeatChatRequest): Promise<SeatChatResult> {
         return ollamaChat(req);
       case "groq":
         return groqChat(req);
-      case "openrouter":
+      case "deepseek-direct":
       default:
         throw new ProviderUnavailable(
           `Arbitrum seats cannot use provider=${provider}; harper-cao path is protected`,
