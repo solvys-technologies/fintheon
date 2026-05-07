@@ -13,6 +13,7 @@ export type NewsSource =
   | "exa"
   | "agent-reach"
   | "kalshi"
+  | "financialjuice-rss"
   | `twitter:${string}`;
 
 export interface CollectedNewsItem {

@@ -1,6 +1,6 @@
 // [claude-code 2026-05-05] Allowlist loaded from Supabase riskflow_source_accounts
-// table (active browser-method handles managed by Refinement UI). Falls back to
-// APPROVED_X_HANDLES when DB unavailable. The X Following tab IS the primary filter.
+// table. Browser handles and RSS wire handles are both trusted here; FinancialJuice
+// RSS still emits as twitter:financialjuice so existing scorer normalization holds.
 // [claude-code 2026-04-29] S53-T4B: Strict source-policy — allowlist-first, deny by
 // default. Leak sentinel counters track every rejection for operator visibility.
 
@@ -117,13 +117,18 @@ export async function refreshAllowlist(): Promise<void> {
       const sb = getSupabaseClient()!;
       const { data } = await sb
         .from("riskflow_source_accounts")
-        .select("handle")
-        .eq("active", true)
-        .eq("method", "browser");
+        .select("handle, method")
+        .eq("active", true);
       if (data) {
         allowlistHandles.clear();
         for (const row of data) {
-          allowlistHandles.add(normalizeHandle(row.handle));
+          const handle = normalizeHandle(row.handle);
+          if (!handle) continue;
+          if (isWebDomain(handle)) {
+            allowlistDomains.add(handle);
+          } else {
+            allowlistHandles.add(handle);
+          }
         }
       }
     } catch {

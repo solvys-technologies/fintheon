@@ -18,6 +18,7 @@
 // [claude-code 2026-04-29] Rettiwt + Agent Reach removed from active worker composition.
 
 import { collectFromBrowserHarness } from "./browser-harness.js";
+import { collectFromFinancialJuiceRss } from "./financialjuice-rss.js";
 import { collectFromOfficialGovRss } from "./official-gov-rss.js";
 import { collectFromXHandlesBrowser } from "./x-handles-browser.js";
 import { writeCollectedItems } from "../persist.js";
@@ -29,6 +30,7 @@ import { pollKalshiWhaleAlerts } from "../../../services/riskflow/kalshi-feed-pi
 const FOMC_MINUTES_TITLE_PREFIX =
   "Minutes of the Federal Open Market Committee";
 const COT_REPORT_URL = "https://www.cftc.gov/dea/futures/deacmesf.htm";
+const FINANCIALJUICE_HANDLE = "financialjuice";
 
 export interface TierRunResult {
   ingested: number;
@@ -72,7 +74,10 @@ async function safeCollect(
  * lets all routing tiers through.
  */
 export async function runUnifiedXTier(): Promise<TierRunResult> {
-  const handles = await getBrowserHandles().catch(() => [] as string[]);
+  const handles = (await getBrowserHandles().catch(() => [] as string[]))
+    // FinancialJuice is now RSS-primary. Keep the X collector focused on
+    // sources that still require browser control.
+    .filter((handle) => handle.toLowerCase() !== FINANCIALJUICE_HANDLE);
   if (handles.length === 0) {
     console.log(
       JSON.stringify({
@@ -94,6 +99,16 @@ export async function runUnifiedXTier(): Promise<TierRunResult> {
 
   const ingested = await writeCollectedItems(primary.items);
   return { ingested, errors: primary.errors };
+}
+
+export async function runFinancialJuiceRssTier(): Promise<TierRunResult> {
+  const result = await safeCollect(
+    "financialjuice-rss",
+    () => collectFromFinancialJuiceRss({ tier: "breaking" }),
+    15_000,
+  );
+  const ingested = await writeCollectedItems(result.items);
+  return { ingested, errors: result.errors };
 }
 
 /**

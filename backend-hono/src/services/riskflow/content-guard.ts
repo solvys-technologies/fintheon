@@ -475,6 +475,10 @@ export function checkContentGuard(
   text: string,
   opts?: ContentGuardOpts,
 ): ContentGuardResult {
+  if (opts?.ingestPipeline === "financialjuice-rss") {
+    return { blocked: false, reason: null };
+  }
+
   // [claude-code 2026-04-26] Banned-publisher check moved off the text scanner —
   // we no longer phrase-block mainstream-media mentions. Curated Twitter relays
   // can quote a Reuters/Bloomberg headline freely. Use isBannedPublisher() for

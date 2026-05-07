@@ -1423,12 +1423,18 @@ export async function handleGetSources(c: Context) {
   let breakingActive = false;
   let standardActive = false;
   let commentaryActive = false;
+  let financialJuiceActive = false;
+  let unifiedActive = false;
   let breakingLastRun: string | null = null;
   let standardLastRun: string | null = null;
   let commentaryLastRun: string | null = null;
+  let financialJuiceLastRun: string | null = null;
+  let unifiedLastRun: string | null = null;
   let breakingIngested = 0;
   let standardIngested = 0;
   let commentaryIngested = 0;
+  let financialJuiceIngested = 0;
+  let unifiedIngested = 0;
 
   const now = Date.now();
   const STALE_MS = 5 * 60_000;
@@ -1461,18 +1467,33 @@ export async function handleGetSources(c: Context) {
             commentaryActive = active;
             commentaryLastRun = lastRunAt;
             commentaryIngested = row.items_ingested ?? 0;
+          } else if (row.tier === "financialjuice") {
+            financialJuiceActive = active;
+            financialJuiceLastRun = lastRunAt;
+            financialJuiceIngested = row.items_ingested ?? 0;
+          } else if (row.tier === "unified") {
+            unifiedActive = active;
+            unifiedLastRun = lastRunAt;
+            unifiedIngested = row.items_ingested ?? 0;
           }
         }
       }
     }
   } catch { /* heartbeat read is best-effort */ }
 
-  const xHomeTimeline = breakingActive || standardActive || commentaryActive;
-  const hasIngested = breakingIngested + standardIngested + commentaryIngested > 0;
+  const xHomeTimeline = unifiedActive || standardActive || commentaryActive;
+  const financialJuiceRss = financialJuiceActive;
+  const hasIngested =
+    breakingIngested +
+      standardIngested +
+      commentaryIngested +
+      financialJuiceIngested +
+      unifiedIngested >
+    0;
 
   // Newsfeed health
-  const newsfeedHealthy = xHomeTimeline;
-  const newsfeedDegraded = !hasIngested && xHomeTimeline;
+  const newsfeedHealthy = financialJuiceRss || xHomeTimeline;
+  const newsfeedDegraded = !hasIngested && newsfeedHealthy;
 
   const sources = {
     xHomeTimeline: {
@@ -1481,7 +1502,13 @@ export async function handleGetSources(c: Context) {
         breaking: { active: breakingActive, lastRunAt: breakingLastRun, ingested: breakingIngested },
         standard: { active: standardActive, lastRunAt: standardLastRun, ingested: standardIngested },
         commentary: { active: commentaryActive, lastRunAt: commentaryLastRun, ingested: commentaryIngested },
+        unified: { active: unifiedActive, lastRunAt: unifiedLastRun, ingested: unifiedIngested },
       },
+    },
+    financialJuiceRss: {
+      active: financialJuiceRss,
+      lastRunAt: financialJuiceLastRun,
+      ingested: financialJuiceIngested,
     },
   };
 

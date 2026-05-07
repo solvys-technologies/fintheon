@@ -40,7 +40,7 @@ export const DEFAULT_SOURCE_ACCOUNTS: Omit<
     handle: "financialjuice",
     display_name: "FinancialJuice",
     category: "Wire",
-    method: "browser",
+    method: "rss",
     active: true,
   },
   {

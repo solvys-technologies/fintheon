@@ -13,6 +13,7 @@
 // [claude-code 2026-04-19] S27-T7 (W2d): original scheduler.
 
 import {
+  runFinancialJuiceRssTier,
   runUnifiedXTier,
   runStandardTier,
 } from "./sources/index.js";
@@ -27,6 +28,7 @@ import {
 } from "./coordination.js";
 
 const UNIFIED_INTERVAL_MS = 60_000; // 60s between X cycles when active
+const FINANCIALJUICE_INTERVAL_MS = 15_000; // Real-time RSS wire poll
 const STANDARD_INTERVAL_MS = 300_000; // 5m between non-X sweeps when active
 
 interface TierState {
@@ -39,9 +41,19 @@ interface TierState {
 }
 
 const state: Record<
-  "unified" | "standard",
+  "financialjuice" | "unified" | "standard",
   TierState & { timer: ReturnType<typeof setTimeout> | null; intervalMs: number }
 > = {
+  financialjuice: {
+    running: false,
+    lastRunAt: null,
+    lastItemsIngested: 0,
+    lastErrors: 0,
+    totalRuns: 0,
+    totalErrors: 0,
+    timer: null,
+    intervalMs: FINANCIALJUICE_INTERVAL_MS,
+  },
   unified: {
     running: false,
     lastRunAt: null,
@@ -64,7 +76,9 @@ const state: Record<
   },
 };
 
-async function runCycle(tier: "unified" | "standard"): Promise<void> {
+async function runCycle(
+  tier: "financialjuice" | "unified" | "standard",
+): Promise<void> {
   const s = state[tier];
   if (s.running) return;
   s.running = true;
@@ -73,7 +87,11 @@ async function runCycle(tier: "unified" | "standard"): Promise<void> {
   let errors = 0;
   try {
     const result =
-      tier === "unified" ? await runUnifiedXTier() : await runStandardTier();
+      tier === "financialjuice"
+        ? await runFinancialJuiceRssTier()
+        : tier === "unified"
+          ? await runUnifiedXTier()
+          : await runStandardTier();
     ingested = result.ingested;
     errors = result.errors;
     if (tier === "unified" && ingested > 0) {
@@ -147,7 +165,15 @@ export function startScheduler(): void {
       rotation_interval_minutes: rotationMin,
       unified_interval_ms: UNIFIED_INTERVAL_MS,
       standard_interval_ms: STANDARD_INTERVAL_MS,
+      financialjuice_interval_ms: FINANCIALJUICE_INTERVAL_MS,
     }),
+  );
+
+  // FinancialJuice RSS — primary real-time wire pipe, independent of X auth.
+  setTimeout(() => void runCycle("financialjuice"), 1_000);
+  state.financialjuice.timer = setInterval(
+    () => void runCycle("financialjuice"),
+    FINANCIALJUICE_INTERVAL_MS,
   );
 
   // Unified X tier — coordination-aware loop
@@ -164,7 +190,9 @@ export function startScheduler(): void {
 
 export async function stopScheduler(): Promise<void> {
   if (state.unified.timer) clearTimeout(state.unified.timer);
+  if (state.financialjuice.timer) clearInterval(state.financialjuice.timer);
   if (state.standard.timer) clearInterval(state.standard.timer);
+  state.financialjuice.timer = null;
   state.unified.timer = null;
   state.standard.timer = null;
   await releaseSlot();
@@ -172,6 +200,7 @@ export async function stopScheduler(): Promise<void> {
 
 export function getSchedulerSnapshot() {
   const tiers = ([
+    "financialjuice",
     "unified",
     "standard",
   ] as const).map((t) => {

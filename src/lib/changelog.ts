@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-07T09:55:00-04:00",
+    agent: "codex",
+    summary:
+      "v6.0.22 hotfix: FinancialJuice RSS is RiskFlow primary wire intake with GUID dedup, ads-only filtering, and scorer editorial bypass.",
+    files: [
+      "backend-hono/src/workers/riskflow-worker/sources/financialjuice-rss.ts",
+      "backend-hono/src/workers/riskflow-worker/scheduler.ts",
+      "backend-hono/src/services/riskflow/content-guard.ts",
+      "backend-hono/src/tests/financialjuice-rss.test.ts",
+      "supabase/migrations/20260507120000_financialjuice_rss_primary.sql",
+    ],
+  },
+  {
     date: "2026-05-07T02:00:00-04:00",
     agent: "claude-code",
     summary:
