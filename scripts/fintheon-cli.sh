@@ -11,7 +11,7 @@ if [[ ! -d "$FINTHEON_ROOT/.git" ]] && [[ "$1" != "setup" ]]; then
   echo "  Fintheon not found at $FINTHEON_ROOT"
   echo "  Run setup first:"
   echo ""
-  echo '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.0.20/scripts/fintheon-setup.sh)"'
+  echo '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.0.21/scripts/fintheon-setup.sh)"'
   echo ""
   exit 1
 fi
@@ -25,7 +25,7 @@ case "$1" in
       bash "$FINTHEON_ROOT/scripts/fintheon-setup.sh"
     else
       echo "Downloading setup script..."
-      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.0.20/scripts/fintheon-setup.sh)"
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.0.21/scripts/fintheon-setup.sh)"
     fi
     ;;
   start)
@@ -81,13 +81,8 @@ case "$1" in
     fi
     ;;
   oauth)
-    if [[ -f "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh" ]]; then
-      bash "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh"
-    else
-      echo "  Missing script: $FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh"
-      exit 1
-    fi
-    ;;
+    echo "  VProxy OAuth removed — Hermes Agent is the AI gateway."
+    ;; 
   login)
     PLATFORM="${2:-tradingview}"
     echo ""

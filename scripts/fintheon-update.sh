@@ -13,7 +13,7 @@ set -eo pipefail
 
 # [claude-code 2026-04-18] Resolve install path: FINTHEON_ROOT env > ~/.fintheon/install-path > default
 FINTHEON_ROOT="${FINTHEON_ROOT:-$(cat "$HOME/.fintheon/install-path" 2>/dev/null || echo "$HOME/Documents/Codebases/fintheon")}"
-UPDATE_VERSION="6.0.20"
+UPDATE_VERSION="6.0.21"
 
 # ── Self-update bootstrap (v5.25.2) ──────────────────────────────────────────
 # Root cause fix: bash loads the entire script into memory at invocation, so
@@ -99,7 +99,7 @@ torch_banner "FINTHEON UPDATE v${UPDATE_VERSION}" "Priced In Capital"
 if [[ ! -d "$FINTHEON_ROOT/.git" ]]; then
   echo -e "  ${_RED}✗${_R} ${_CREAM}Fintheon not found at $FINTHEON_ROOT${_R}"
   echo '    Run the setup script first:'
-  echo '    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.0.20/scripts/fintheon-setup.sh)"'
+  echo '    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.0.21/scripts/fintheon-setup.sh)"'
   exit 1
 fi
 
@@ -298,17 +298,14 @@ else
   ok "launchd plists loaded (news-worker, gepa)"
 fi
 
-# ── Step 6: Verify VProxy Anthropic OAuth ──────────────────────────────────
+# ── Step 6: Verify Hermes Agent DeepSeek API ────────────────────────────────
 
-step "6/12" "Verifying Anthropic OAuth via VProxy..."
-if [[ -f "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh" ]]; then
-  if bash "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh"; then
-    ok "VProxy Anthropic OAuth ready"
-  else
-    warn "VProxy OAuth check failed (non-fatal) — run: fintheon oauth"
-  fi
+step "6/12" "Verifying Hermes Agent DeepSeek API..."
+HERMES_ENV="/Users/tifos/.hermes/.env"
+if [[ -f "$HERMES_ENV" ]] && grep -q "DEEPSEEK_API_KEY" "$HERMES_ENV"; then
+  ok "Hermes Agent DeepSeek API key found"
 else
-  warn "vproxy-anthropic-oauth.sh not found — skipping OAuth check"
+  warn "DeepSeek API key not found in Hermes Agent config — AI features may be degraded"
 fi
 
 # ── Step 6.5: Ensure Claude Code hooks are executable ───────────────────────

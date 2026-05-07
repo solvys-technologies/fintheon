@@ -1,17 +1,17 @@
-// [claude-code 2026-05-06] S59-T4: stripped OpenRouter and VProxy. Chain is now
-//   DeepSeek direct → OpenCode Go fallback only.
+// [claude-code 2026-05-07] Refactored: Hermes Agent API server (localhost:8081) is now
+//   the primary AI gateway. DeepSeek direct is retained as a fallback. Stripped all
+//   VProxy references (port 8317). The chain is: Hermes Agent API → DeepSeek direct.
 
 import { createLogger } from "../../lib/logger.js";
 import {
   generateTextViaOllama,
   getOllamaModel,
-  isOllamaFallbackEnabled,
   streamTextViaOllama,
 } from "./ollama-hermes-client.js";
 
 const log = createLogger("AIChain");
 
-type ChainProvider = "deepseek-direct" | "opencode-go";
+type ChainProvider = "hermes-agent" | "deepseek-direct";
 
 export interface ChainRequest {
   prompt: string;
@@ -79,15 +79,14 @@ function isRetryable(err: unknown): boolean {
   if (msg.includes("econnrefused") || msg.includes("enotfound")) return true;
   if (msg.includes("unavailable")) return true;
   if (/\b5\d{2}\b/.test(msg)) return true;
-  if (msg.includes("401") || msg.includes("403") || msg.includes("authentication") || msg.includes("invalid")) return true;
   return false;
 }
 
-// ── OpenCode Go fallback generation ───────────────────────────────────────
+// ── Hermes Agent API server generation (primary) ─────────────────────────
 
-async function generateTextViaOpenCodeGo(request: ChainRequest): Promise<string> {
-  const apiKey = process.env.OPENCODE_GO_API_KEY || process.env.HERMES_API_KEY || "opencode-go";
-  const baseUrl = process.env.HERMES_API_URL || "http://localhost:8317/v1";
+async function generateTextViaHermesAgent(request: ChainRequest): Promise<string> {
+  const apiKey = process.env.DEEPSEEK_API_KEY || process.env.HERMES_API_KEY || "";
+  const baseUrl = process.env.HERMES_API_URL || "http://localhost:8081/v1";
 
   const messages = [] as Array<{ role: "system" | "user"; content: string }>;
   if (request.systemPrompt) {
@@ -98,7 +97,7 @@ async function generateTextViaOpenCodeGo(request: ChainRequest): Promise<string>
   const res = await fetch(`${baseUrl.replace(/\/+$/, "")}/chat/completions`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: apiKey ? `Bearer ${apiKey}` : "",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -107,12 +106,12 @@ async function generateTextViaOpenCodeGo(request: ChainRequest): Promise<string>
       max_tokens: request.maxOutputTokens ?? 8192,
       temperature: request.temperature ?? 0.4,
     }),
-    signal: AbortSignal.timeout(request.timeoutMs ?? 120_000),
+    signal: AbortSignal.timeout(request.timeoutMs ?? 180_000),
   });
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(`OpenCode Go ${res.status}: ${text.slice(0, 200)}`);
+    throw new Error(`Hermes Agent API ${res.status}: ${text.slice(0, 200)}`);
   }
 
   const payload = (await res.json()) as {
@@ -128,8 +127,41 @@ export async function generateViaChain(
 ): Promise<ChainResult> {
   const errors: string[] = [];
 
-  // Tier 1: DeepSeek direct (via Ollama/Hermes)
-  if (isOllamaFallbackEnabled()) {
+  // Tier 1: Hermes Agent API server (primary AI gateway)
+  const hermesEnabled = process.env.HERMES_AGENT_ENABLED !== "false";
+  if (hermesEnabled) {
+    const start = Date.now();
+    try {
+      const response = await generateTextViaHermesAgent(request);
+      recordPrimary();
+      log.info("[ai-chain] hermes-agent ok", {
+        latencyMs: Date.now() - start,
+        requestId: request.requestId,
+      });
+      return { response, provider: "hermes-agent", latencyMs: Date.now() - start };
+    } catch (err) {
+      const e = err instanceof Error ? err : new Error(String(err));
+      errors.push(`Hermes Agent: ${e.message}`);
+      if (!isRetryable(e)) {
+        // Non-retryable (e.g. auth), fall through to fallback
+        recordFallback();
+        log.warn("[ai-chain] hermes-agent non-retryable; trying DeepSeek direct", {
+          error: e.message,
+          requestId: request.requestId,
+        });
+      } else {
+        recordFallback();
+        log.warn("[ai-chain] hermes-agent failed; trying DeepSeek direct", {
+          error: e.message,
+          requestId: request.requestId,
+        });
+      }
+    }
+  }
+
+  // Tier 2: DeepSeek direct (fallback)
+  const deepseekEnabled = process.env.DEEPSEEK_DIRECT_ENABLED !== "false";
+  if (deepseekEnabled) {
     const start = Date.now();
     try {
       const response = await generateTextViaOllama({
@@ -140,8 +172,7 @@ export async function generateViaChain(
         temperature: request.temperature,
         timeoutMs: request.timeoutMs,
       });
-      recordPrimary();
-      log.info("[ai-chain] deepseek-direct ok", {
+      log.info("[ai-chain] deepseek-direct ok (fallback)", {
         latencyMs: Date.now() - start,
         requestId: request.requestId,
       });
@@ -149,27 +180,7 @@ export async function generateViaChain(
     } catch (err) {
       const e = err instanceof Error ? err : new Error(String(err));
       errors.push(`DeepSeek: ${e.message}`);
-      if (!isRetryable(e)) throw e;
-      recordFallback();
-      log.warn("[ai-chain] deepseek-direct failed; trying OpenCode Go", {
-        error: e.message,
-        requestId: request.requestId,
-      });
     }
-  }
-
-  // Tier 2: OpenCode Go fallback
-  const start = Date.now();
-  try {
-    const response = await generateTextViaOpenCodeGo(request);
-    log.info("[ai-chain] opencode-go ok", {
-      latencyMs: Date.now() - start,
-      requestId: request.requestId,
-    });
-    return { response, provider: "opencode-go", latencyMs: Date.now() - start };
-  } catch (err) {
-    const e = err instanceof Error ? err : new Error(String(err));
-    errors.push(`OpenCode Go: ${e.message}`);
   }
 
   throw new Error(`AI chain exhausted: ${errors.join("; ")}`);
@@ -184,7 +195,25 @@ export async function* streamViaChain(
   void,
   unknown
 > {
-  if (isOllamaFallbackEnabled()) {
+  const hermesEnabled = process.env.HERMES_AGENT_ENABLED !== "false";
+  if (hermesEnabled) {
+    try {
+      yield { type: "text", text: "", provider: "hermes-agent" };
+      const response = await generateTextViaHermesAgent(request);
+      yield { type: "text", text: response };
+      yield { type: "end", provider: "hermes-agent" };
+      return;
+    } catch (err) {
+      log.warn("[ai-chain] hermes-agent stream failed; trying DeepSeek direct", {
+        error: String(err),
+        requestId: request.requestId,
+      });
+    }
+  }
+
+  // DeepSeek direct streaming fallback
+  const deepseekEnabled = process.env.DEEPSEEK_DIRECT_ENABLED !== "false";
+  if (deepseekEnabled) {
     try {
       yield { type: "text", text: "", provider: "deepseek-direct" };
       for await (const chunk of streamTextViaOllama({
@@ -199,20 +228,10 @@ export async function* streamViaChain(
       yield { type: "end", provider: "deepseek-direct" };
       return;
     } catch (err) {
-      log.warn("[ai-chain] deepseek-direct stream failed; trying OpenCode Go", {
-        error: String(err),
-        requestId: request.requestId,
-      });
+      yield { type: "error", error: `AI chain exhausted: ${String(err)}` };
+      return;
     }
   }
 
-  // OpenCode Go streaming fallback
-  yield { type: "text", text: "", provider: "opencode-go" };
-  try {
-    const response = await generateTextViaOpenCodeGo(request);
-    yield { type: "text", text: response };
-    yield { type: "end", provider: "opencode-go" };
-  } catch (err) {
-    yield { type: "error", error: `AI chain exhausted: ${String(err)}` };
-  }
+  yield { type: "error", error: "AI chain exhausted: no providers enabled" };
 }

@@ -9,6 +9,42 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-07T01:45:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Diagnosed and fixed briefing/Arbitrum failures: stale DEEPSEEK_API_KEY (replaced with working key from Hermes Agent .env). Rewrote provider-chain.ts: Hermes Agent API server (localhost:8081) primary, DeepSeek direct fallback. Rewrote arbitrum/adapters.ts: seat chats route direct to DeepSeek (skip Hermes Gateway hop to avoid AbortError timeouts under parallel reasoner load), 240s timeout, AbortSignal.timeout(). Stripped all VProxy references from provider-chain, adapters, hermes-service, harper routes, install/update scripts. Added no-emoji rule to all brief generator prompts. Fixed 5th agent card overflow in ArbitrumChamber.tsx with md:overflow-x-auto. Enabled Hermes Gateway API server (port 8081).",
+    files: [
+      "backend-hono/src/services/ai/provider-chain.ts",
+      "backend-hono/src/services/arbitrum/adapters.ts",
+      "backend-hono/src/services/hermes-service.ts",
+      "backend-hono/src/routes/harper/index.ts",
+      "backend-hono/src/services/brief-generator.ts",
+      "backend-hono/.env",
+      "frontend/components/arbitrum/ArbitrumChamber.tsx",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "scripts/fintheon-update.sh",
+      ".cursor/install.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-07T01:41:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S61 orchestration: 4-track sprint plan for unified agent governance + tooling orchestration (mutation contract + audit logger, capability registry runtime, agent context preflight, frontend approval UI). Installed Plane MCP (@makeplane/plane-mcp-server), registered in .mcp.json + backend KNOWN_SERVERS + Codex CLI mcp. Fixed PROJECT_MCP_PATH to scan repo root (backend runs from backend-hono/). Created solvys-brief and solvys-plane skills in solvys-skills repo with Plane integration on solvys-orchestrate. Deleted all 50 GitHub CI runs for migration to Plane.",
+    files: [
+      "sprint-md/S61-ORCHESTRATION.md",
+      "sprint-md/S61-T1-mutation-contract-audit.md",
+      "sprint-md/S61-T2-capability-registry-agent-wiring.md",
+      "sprint-md/S61-T3-agent-context-preflight.md",
+      "sprint-md/S61-T4-frontend-approval-ui.md",
+      ".mcp.json",
+      "backend-hono/src/routes/mcp/index.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-06T11:00:00-04:00",
     agent: "claude-code",
     summary:

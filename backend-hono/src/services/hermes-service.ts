@@ -165,8 +165,7 @@ export type ArbitrumProvider =
   | "deepseek-direct"
   | "deepseek-oc-api"
   | "ollama"
-  | "groq"
-  | "deepseek-direct";
+  | "groq";
 
 const ARBITRUM_MODEL_PROVIDER_MAP: Record<string, ArbitrumProvider> = {
   "deepseek-reasoner": "deepseek-direct",

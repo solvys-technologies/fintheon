@@ -224,9 +224,9 @@ ${
 One-line justification for regime classification.
 **Best Intraday Approach:** Specific strategy recommendation (Ripper, AWV, Snipe, etc.)
 
-CRITICAL: Only reference data from the headlines and events provided above. Do NOT fabricate price levels, percentage moves, stock tickers, or actual/forecast numbers that aren't in the input. If you don't have specific data, say so — never hallucinate.
+CRITICAL: Only reference data from the headlines and events provided above. Do NOT fabricate price levels, percentage moves, stock tickers, or actual/forecast numbers that aren't in the input. If you don't have specific data, say so — never hallucinate. NEVER use emojis, decorative unicode symbols, or ASCII art of any kind. Use plain Markdown headers, bullet points, and bold text only.
 
-Be direct, use financial shorthand. Anchor ONLY to key macro events. 300-500 words.`
+Be direct, use financial shorthand. Anchor ONLY to key macro events. 300-500 words. NEVER use emojis or decorative unicode symbols.`
     : `Write the Weekly Tribune for Priced In Capital. This is a two-part report: Past Week Recap + What We Got Ahead.
 
 # PART 1: Past Week Recap
@@ -270,10 +270,10 @@ ${chamberSection}${deskThemeSection}
 ## Instructions
 ${
   briefType === "ADB"
-    ? "Write 3-5 bullet points covering ONLY new headlines and data since the morning that moved or could move the market. Skip anything already covered in the MDB. Be direct and actionable. Max 200 words."
+    ? "Write 3-5 bullet points covering ONLY new headlines and data since the morning that moved or could move the market. Skip anything already covered in the MDB. Be direct and actionable. Max 200 words. NEVER use emojis."
     : chamberRead
-      ? "Write 4-6 bullet points covering new developments since the afternoon brief — post-market moves, after-hours earnings, overnight catalysts. Lead with a 1-sentence restatement of the Chamber Read consensus above, flag any dissent, then the bullets. Be direct and actionable. Max 250 words."
-      : "Write 3-5 bullet points covering ONLY new developments since the afternoon brief — post-market moves, after-hours earnings, overnight catalysts. Be direct and actionable. Max 200 words."
+      ? "Write the PMDB (Post-Market Daily Brief) for Thursday, May 7, 2026. Use plain Markdown — no emojis, no decorative symbols. Format as: ## PMDB header, then bullet-point sections covering new developments since the afternoon brief — post-market moves, after-hours earnings, overnight catalysts. Lead with a 1-sentence restatement of the Chamber Read consensus above, flag any dissent, then the bullets. Be direct and actionable. Max 300 words."
+      : "Write the PMDB (Post-Market Daily Brief) for today. Use plain Markdown — no emojis, no decorative symbols. Format as: ## PMDB header, then bullet-point sections covering new developments since the afternoon brief — post-market moves, after-hours earnings, overnight catalysts. Be direct and actionable. Max 300 words."
 }`;
 
   log.info("Generating brief via DeepSeek primary provider chain...", {
@@ -281,7 +281,7 @@ ${
   });
   const result = await generateViaChain({
     systemPrompt:
-      "You are Fintheon, a macro trading assistant for Priced In Capital. You generate the recurring MDB, ADB, PMDB, and TWT reports exactly when requested.",
+      "You are Fintheon, a macro trading assistant for Priced In Capital. You generate the recurring MDB, ADB, PMDB, and TWT reports exactly when requested. NEVER use emojis or decorative unicode symbols — plain Markdown only. Use ## headers, bullet points (-), and **bold** text.",
     prompt,
     model: "deepseek-reasoner",
     temperature: 0.4,

@@ -211,7 +211,7 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
           </span>
         </div>
       </div>
-      <div className="flex flex-col md:flex-row md:items-stretch">
+      <div className="flex flex-col md:flex-row md:items-stretch md:overflow-x-auto">
         {seats.map((seat, i) => (
           <div key={`${seat.role}-${i}`} className="contents">
             {i > 0 && (

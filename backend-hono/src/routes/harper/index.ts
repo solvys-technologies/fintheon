@@ -11,12 +11,10 @@
 import { Hono } from "hono";
 import {
   streamHarperChat,
-  isVProxyEnabled,
   FINTHEON_PATHS,
 } from "../../services/strands/index.js";
 import {
   checkDeepSeekDirectHealth,
-  checkVProxyHealth,
 } from "../../services/strands/provider.js";
 import { uiStreamToSSEResponse } from "../../services/strands/stream-adapter.js";
 import { createRequestCognition } from "../../services/cognition-emitter.js";
@@ -55,7 +53,7 @@ export function createHarperRoutes() {
       agent: "harper",
       model: "deepseek-reasoner",
       provider: "deepseek-direct",
-      fallback: isVProxyEnabled() ? "strands-vproxy" : "disabled",
+      fallback: "disabled",
       error: deepseek.error,
     });
   });
