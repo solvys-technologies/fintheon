@@ -28,7 +28,7 @@ import {
 } from "./coordination.js";
 
 const UNIFIED_INTERVAL_MS = 60_000; // 60s between X cycles when active
-const FINANCIALJUICE_INTERVAL_MS = 15_000; // Real-time RSS wire poll
+const FINANCIALJUICE_INTERVAL_MS = 60_000; // Real-time RSS wire poll
 const STANDARD_INTERVAL_MS = 300_000; // 5m between non-X sweeps when active
 
 interface TierState {
@@ -94,7 +94,7 @@ async function runCycle(
           : await runStandardTier();
     ingested = result.ingested;
     errors = result.errors;
-    if (tier === "unified" && ingested > 0) {
+    if ((tier === "unified" || tier === "financialjuice") && ingested > 0) {
       recordCycleSuccess().catch(() => {});
     }
   } catch (err) {
@@ -149,6 +149,20 @@ async function unifiedPollLoop(): Promise<void> {
   }
 }
 
+async function financialJuicePollLoop(): Promise<void> {
+  const shouldPoll = await shouldPollThisCycle();
+  if (shouldPoll) {
+    await runCycle("financialjuice");
+    state.financialjuice.timer = setTimeout(
+      financialJuicePollLoop,
+      FINANCIALJUICE_INTERVAL_MS,
+    );
+  } else {
+    const checkMs = getCheckIntervalMs();
+    state.financialjuice.timer = setTimeout(financialJuicePollLoop, checkMs);
+  }
+}
+
 export function startScheduler(): void {
   if (state.unified.timer || state.standard.timer) return;
 
@@ -170,11 +184,8 @@ export function startScheduler(): void {
   );
 
   // FinancialJuice RSS — primary real-time wire pipe, independent of X auth.
-  setTimeout(() => void runCycle("financialjuice"), 1_000);
-  state.financialjuice.timer = setInterval(
-    () => void runCycle("financialjuice"),
-    FINANCIALJUICE_INTERVAL_MS,
-  );
+  // Coordination still matters on Fly because multiple worker machines run.
+  setTimeout(() => void financialJuicePollLoop(), 1_000);
 
   // Unified X tier — coordination-aware loop
   setTimeout(() => void unifiedPollLoop(), 2_000);
@@ -190,7 +201,7 @@ export function startScheduler(): void {
 
 export async function stopScheduler(): Promise<void> {
   if (state.unified.timer) clearTimeout(state.unified.timer);
-  if (state.financialjuice.timer) clearInterval(state.financialjuice.timer);
+  if (state.financialjuice.timer) clearTimeout(state.financialjuice.timer);
   if (state.standard.timer) clearInterval(state.standard.timer);
   state.financialjuice.timer = null;
   state.unified.timer = null;

@@ -12,7 +12,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-05-07T09:55:00-04:00",
     agent: "codex",
     summary:
-      "v6.0.22 hotfix: FinancialJuice RSS is RiskFlow primary wire intake with GUID dedup, ads-only filtering, and scorer editorial bypass.",
+      "v6.0.23 hotfix: FinancialJuice RSS is RiskFlow primary wire intake with GUID dedup, ads-only filtering, scorer bypass, and coordinated polling.",
     files: [
       "backend-hono/src/workers/riskflow-worker/sources/financialjuice-rss.ts",
       "backend-hono/src/workers/riskflow-worker/scheduler.ts",
