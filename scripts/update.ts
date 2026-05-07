@@ -57,7 +57,7 @@ async function main() {
     stash.stop("Changes stashed");
   }
 
-  // Step 3: Fetch + pull (prune stale tags + branches)
+  // Step 3: Fetch + sync to latest published release tag (fallback: pull rebase)
   const pullSpinner = p.spinner();
   pullSpinner.start("Pulling latest changes");
   await runCommand("git", ["fetch", "--all", "--prune", "--prune-tags"], {
@@ -65,22 +65,55 @@ async function main() {
   });
   // Also force-sync tags so deleted remote tags are removed locally
   await runCommand("git", ["fetch", "--tags", "--force"], { cwd: ROOT });
-  const pull = await runCommand("git", ["pull", "--rebase"], { cwd: ROOT });
+  const latestRelease = await runCommand(
+    "gh",
+    [
+      "release",
+      "view",
+      "--repo",
+      "solvys-technologies/fintheon",
+      "--json",
+      "tagName",
+      "--jq",
+      ".tagName",
+    ],
+    { cwd: ROOT },
+  );
 
-  if (!pull.ok) {
-    pullSpinner.stop("Pull failed");
-    p.log.error(pull.stderr.slice(0, 300));
-    p.log.info("Resolve conflicts manually, then re-run: bun run update");
-    process.exit(1);
+  let syncedToRelease = false;
+  if (latestRelease.ok) {
+    const tag = latestRelease.stdout.trim();
+    if (/^v\d+\.\d+\.\d+$/.test(tag)) {
+      await runCommand(
+        "git",
+        ["fetch", "origin", `refs/tags/${tag}:refs/tags/${tag}`],
+        { cwd: ROOT },
+      );
+      const reset = await runCommand("git", ["reset", "--hard", tag], {
+        cwd: ROOT,
+      });
+      if (reset.ok) {
+        syncedToRelease = true;
+        pullSpinner.stop(`Synced to release ${tag}`);
+      }
+    }
   }
 
-  if (pull.stdout.includes("Already up to date")) {
-    pullSpinner.stop("Already up to date");
-    p.outro(pc.yellow("No updates available."));
-    return;
+  if (!syncedToRelease) {
+    const pull = await runCommand("git", ["pull", "--rebase"], { cwd: ROOT });
+    if (!pull.ok) {
+      pullSpinner.stop("Pull failed");
+      p.log.error(pull.stderr.slice(0, 300));
+      p.log.info("Resolve conflicts manually, then re-run: bun run update");
+      process.exit(1);
+    }
+    if (pull.stdout.includes("Already up to date")) {
+      pullSpinner.stop("Already up to date");
+      p.outro(pc.yellow("No updates available."));
+      return;
+    }
+    pullSpinner.stop("Latest changes pulled");
   }
-
-  pullSpinner.stop("Latest changes pulled");
 
   // Step 4: Install deps (in case package.json changed)
   const workspaces = [

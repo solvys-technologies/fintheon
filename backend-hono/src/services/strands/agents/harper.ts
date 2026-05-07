@@ -40,6 +40,8 @@ export interface HarperChatOptions {
   userContext?: UserContext;
   /** AI provider override: DeepSeek direct/OC API, local VProxy, or legacy fallbacks. */
   provider?: HarperProvider;
+  /** Per-user OpenCode Go model choice from Hermes:Admin. */
+  model?: string;
   /** When true, tool approvals block indefinitely (no 30s auto-approve) — mobile user decides */
   relayOriginated?: boolean;
 }
@@ -55,6 +57,7 @@ export async function createHarperAgent(
     conversationId?: string;
     userId?: string;
     provider?: HarperProvider;
+    model?: string;
     relayOriginated?: boolean;
   },
 ) {
@@ -77,7 +80,7 @@ export async function createHarperAgent(
     if (deepseekHealth.available) {
       effectiveProvider = "deepseek-direct";
     } else {
-      effectiveProvider = "deepseek-oc-api";
+      effectiveProvider = "opencode-go";
       log.warn("DeepSeek direct unavailable, trying opencode-go", {
         deepseekError: deepseekHealth.error,
       });
@@ -91,7 +94,7 @@ export async function createHarperAgent(
     systemPrompt,
     tools: [...coreTools, ...solvysTools],
     model: {
-      model: "deepseek-reasoner",
+      model: opts?.model || "deepseek-reasoner",
       temperature: 0.3,
       maxTokens: 16384,
     },
@@ -101,7 +104,10 @@ export async function createHarperAgent(
       opts?.userId
         ? await getUserApiKey(
             opts.userId,
-            effectiveProvider === "deepseek-oc-api" ? "opencode-go" : "deepseek",
+            effectiveProvider === "opencode-go" ||
+            effectiveProvider === "deepseek-oc-api"
+              ? "opencode-go"
+              : "deepseek",
           )
         : undefined,
   });
@@ -120,6 +126,7 @@ export async function streamHarperChat(
     conversationId,
     userId,
     provider: options.provider,
+    model: options.model,
     relayOriginated: options.relayOriginated,
   });
 

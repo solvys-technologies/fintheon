@@ -96,12 +96,18 @@ export function DeepSeekApiKeySection() {
       if (!res.ok) {
         setError(data.error || data.message || "Failed to add API key");
       } else {
+        const backendSaved = data.backendSaved !== false;
+        const localHermesSaved = data.localHermesSaved === true;
         if (provider === "deepseek") {
-          setSuccess("DeepSeek key saved for personal CAO chat.");
+          setSuccess(
+            `DeepSeek key saved${backendSaved ? " to backend" : ""}${localHermesSaved ? " and local Hermes" : ""}.`,
+          );
           setDeepSeekKey("");
           localStorage.setItem(DEEPSEEK_KEY_STATUS, "set");
         } else {
-          setSuccess("OpenCode Go key saved.");
+          setSuccess(
+            `OpenCode Go key saved${backendSaved ? " to backend" : ""}${localHermesSaved ? " and local Hermes" : ""}.`,
+          );
           setOpenCodeGoKey("");
           localStorage.setItem(OC_API_KEY_STATUS, "set");
         }
@@ -148,8 +154,8 @@ export function DeepSeekApiKeySection() {
         AI Provider API Keys
       </h3>
       <p className="text-xs text-gray-500 mb-4">
-        Store your personal provider keys server-side for chat routing.
-        Backend jobs still use server-managed Hermes routing.
+        Save personal provider keys to backend and local Hermes so agent routing
+        works across desktop/local tasks while preserving server-backed sync.
       </p>
 
       <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-3 mb-4">

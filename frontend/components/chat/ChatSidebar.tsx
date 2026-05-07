@@ -39,6 +39,10 @@ const HERMES_TO_AGENT_ID: Record<string, string> = {
   herald: "herald",
 };
 
+const PLAN_DRAFT_KEY = "fintheon:plan-markdown-v1";
+const COMPOSER_MODE_KEY = "fintheon:composer-mode-v1";
+const PLAN_DRAFT_TEMPLATE = `# Plan\n\n## Objectives\n- [ ] \n\n## Steps\n1. \n\n## Notes\n`;
+
 interface SidebarToast {
   id: string;
   agentId: string;
@@ -55,6 +59,10 @@ function ChatSidebarInner({
   setConversationId,
   clearConversationId,
   compact = true,
+  mode,
+  onModeChange,
+  planMarkdown,
+  onPlanMarkdownChange,
 }: {
   lastError: string | null;
   lastRequestId: string | null;
@@ -64,6 +72,10 @@ function ChatSidebarInner({
   setConversationId: (id: string) => void;
   clearConversationId: () => void;
   compact?: boolean;
+  mode: "work" | "plan";
+  onModeChange: (mode: "work" | "plan") => void;
+  planMarkdown: string;
+  onPlanMarkdownChange: (value: string) => void;
 }) {
   const { activeAgent, agents } = useFintheonAgents();
   const runtime = useThreadRuntime();
@@ -161,7 +173,19 @@ function ChatSidebarInner({
   }, [clearConversationId, handleSend, isRunning, setConversationId]);
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-[var(--fintheon-bg)]">
+    <div
+      className={`relative flex h-full flex-col overflow-hidden bg-[var(--fintheon-bg)] transition-[padding-right] duration-300 ${
+        !compact && mode === "plan" ? "md:pr-[40%]" : "md:pr-0"
+      }`}
+    >
+      {mode === "plan" && (
+        <button
+          aria-label="Close plan drawer backdrop"
+          className="absolute inset-0 z-30 bg-black/20 lg:hidden"
+          onClick={() => onModeChange("work")}
+        />
+      )}
+
       {/* Cross-agent notification toasts */}
       {toasts.length > 0 && (
         <div className="absolute left-2 right-2 top-2 z-50 flex flex-col gap-1.5 pointer-events-none">
@@ -219,7 +243,44 @@ function ChatSidebarInner({
         onToggleSkills={() => setShowSkills((v) => !v)}
         conversationId={conversationId}
         onConversationGone={clearConversationId}
+        mode={mode}
+        onModeChange={onModeChange}
       />
+
+      <aside
+        className={`absolute right-0 top-0 z-40 h-full border-l border-[var(--fintheon-accent)]/20 bg-[#090704] shadow-2xl transition-transform duration-300 ease-out ${
+          mode === "plan" ? "translate-x-0" : "translate-x-full"
+        } w-full md:w-[40%]`}
+        aria-label="Plan mode drawer"
+      >
+        <div className="flex h-full flex-col">
+          <div className="flex items-center justify-between border-b border-[var(--fintheon-accent)]/20 px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">
+                Plan Mode
+              </p>
+              <p className="truncate text-[12px] font-semibold text-[var(--fintheon-accent)]">
+                plan.md
+              </p>
+            </div>
+            <button
+              onClick={() => onModeChange("work")}
+              className="rounded border border-[var(--fintheon-accent)]/30 px-2 py-1 text-[10px] text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
+            >
+              Work Mode
+            </button>
+          </div>
+          <div className="flex-1 p-3">
+            <textarea
+              value={planMarkdown}
+              onChange={(e) => onPlanMarkdownChange(e.target.value)}
+              spellCheck={false}
+              className="h-full w-full resize-none rounded-md border border-[var(--fintheon-accent)]/15 bg-[#0d0a06] p-3 font-mono text-[12px] leading-5 text-[#f0ead6] outline-none focus:border-[var(--fintheon-accent)]/45"
+              aria-label="Plan markdown editor"
+            />
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }
@@ -235,6 +296,37 @@ export function ChatSidebar({ compact = true }: { compact?: boolean } = {}) {
     lastError,
     lastRequestId,
   } = useHermesRuntime(activeAgent?.id ?? "default", thinkHarder, "chat");
+  const [mode, setMode] = useState<"work" | "plan">(() => {
+    try {
+      const saved = localStorage.getItem(COMPOSER_MODE_KEY);
+      return saved === "plan" ? "plan" : "work";
+    } catch {
+      return "work";
+    }
+  });
+  const [planMarkdown, setPlanMarkdown] = useState<string>(() => {
+    try {
+      return localStorage.getItem(PLAN_DRAFT_KEY) ?? PLAN_DRAFT_TEMPLATE;
+    } catch {
+      return PLAN_DRAFT_TEMPLATE;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(COMPOSER_MODE_KEY, mode);
+    } catch {
+      // no-op
+    }
+  }, [mode]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(PLAN_DRAFT_KEY, planMarkdown);
+    } catch {
+      // no-op
+    }
+  }, [planMarkdown]);
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
@@ -247,6 +339,10 @@ export function ChatSidebar({ compact = true }: { compact?: boolean } = {}) {
         setConversationId={setConversationId}
         clearConversationId={clearConversationId}
         compact={compact}
+        mode={mode}
+        onModeChange={setMode}
+        planMarkdown={planMarkdown}
+        onPlanMarkdownChange={setPlanMarkdown}
       />
     </AssistantRuntimeProvider>
   );

@@ -94,7 +94,14 @@ export function createHarperRoutes() {
         persona?: string;
         riskFlowContext?: string;
         activeConnectors?: string[];
-        provider?: "deepseek-direct" | "deepseek-oc-api" | "local" | "ollama-qwen" | "nous";
+        provider?:
+          | "deepseek-direct"
+          | "opencode-go"
+          | "deepseek-oc-api"
+          | "local"
+          | "ollama-qwen"
+          | "nous";
+        model?: string;
         /** Explicit boardroom surface flag — triggers multi-agent DAG dispatch */
         surface?: string;
         boardroom?: boolean;
@@ -426,6 +433,9 @@ export function createHarperRoutes() {
       const providerLabel =
         body.provider === "nous"
           ? "Nous Research (Hermes-4)"
+          : body.provider === "opencode-go" ||
+              body.provider === "deepseek-oc-api"
+            ? "OpenCode Go"
           : "DeepSeek v4 Pro";
       cognition.step(
         "agent-route",
@@ -453,6 +463,7 @@ export function createHarperRoutes() {
           surface: body.surface,
           userContext: body.userContext,
           provider: body.provider,
+          model: body.model,
         },
         {
           "Access-Control-Allow-Origin": c.req.header("Origin") || "*",

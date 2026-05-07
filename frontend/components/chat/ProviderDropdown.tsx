@@ -1,6 +1,7 @@
 // [claude-code 2026-05-03] S38-T5: Provider Dropdown v2 — 3 providers, RECOMMENDED badge, flat palette, API key hints.
 import { useState, useRef, useEffect } from "react";
 import { Cpu, Cloud } from "lucide-react";
+import { useSettings } from "../../contexts/SettingsContext";
 
 /* ─────────────────────────────────────────────────────── HarperProvider ── */
 
@@ -74,11 +75,34 @@ function getDotColor(provider: HarperProvider): string {
 /* ─────────────────────────────────────────────────────── Hook ── */
 
 export function useHarperProvider() {
-  const [provider, setProviderState] =
-    useState<HarperProvider>(initialProvider);
+  const { defaultChatProvider, setDefaultChatProvider } = useSettings();
+  const [provider, setProviderState] = useState<HarperProvider>(() => {
+    if (
+      defaultChatProvider === "deepseek-direct" ||
+      defaultChatProvider === "opencode-go"
+    ) {
+      return defaultChatProvider;
+    }
+    return initialProvider();
+  });
+
+  useEffect(() => {
+    if (
+      defaultChatProvider === "deepseek-direct" ||
+      defaultChatProvider === "opencode-go"
+    ) {
+      setProviderState(defaultChatProvider);
+      try {
+        localStorage.setItem(STORAGE_KEY, defaultChatProvider);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [defaultChatProvider]);
 
   const setProvider = (p: HarperProvider) => {
     setProviderState(p);
+    setDefaultChatProvider(p);
     try {
       localStorage.setItem(STORAGE_KEY, p);
     } catch {

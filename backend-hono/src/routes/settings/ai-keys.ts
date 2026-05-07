@@ -5,6 +5,11 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { getSupabaseClient, isSupabaseConfigured } from "../../config/supabase.js";
 import { decryptApiKey, encryptApiKey, maskApiKey } from "../../services/ai/api-key-crypto.js";
+import {
+  deleteLocalProviderKey,
+  getLocalProviderKey,
+  upsertLocalProviderKey,
+} from "../../services/hermes/local-user-config.js";
 
 const ProviderSchema = z.enum(["deepseek", "opencode-go"]);
 const UpsertKeySchema = z.object({
@@ -46,7 +51,6 @@ export function createAiKeysRoutes(): Hono {
   router.get("/", async (c) => {
     const userId = authedUserId(c);
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
-    if (!isSupabaseConfigured()) return c.json({ keys: [], keyCount: 0 });
     const uid = dbUserId(userId);
 
     const providerQuery = c.req.query("provider");
@@ -56,6 +60,21 @@ export function createAiKeysRoutes(): Hono {
         return c.json({ error: "Unsupported provider" }, 400);
       }
       const provider = parsedProvider.data;
+      // Local-only/bypass path
+      if (userId === "local-user" || !isSupabaseConfigured()) {
+        const localKey = getLocalProviderKey(userId, provider);
+        return c.json({
+          provider,
+          hasKey: Boolean(localKey),
+          maskedKey: localKey ? maskApiKey(localKey) : null,
+          keyLabel: localKey ? defaultKeyLabel(provider) : null,
+          apiKey: localKey,
+          ...(provider === "opencode-go"
+            ? { baseUrl: resolveOpenCodeBaseUrl() }
+            : {}),
+        });
+      }
+
       const sb = getSupabaseClient()!;
       const { data, error } = await sb
         .from("user_api_keys")
@@ -65,12 +84,13 @@ export function createAiKeysRoutes(): Hono {
         .maybeSingle();
       if (error) return c.json({ error: error.message }, 500);
       if (!data?.encrypted_key) {
+        const localKey = getLocalProviderKey(userId, provider);
         return c.json({
           provider,
-          hasKey: false,
-          maskedKey: null,
-          keyLabel: null,
-          apiKey: null,
+          hasKey: Boolean(localKey),
+          maskedKey: localKey ? maskApiKey(localKey) : null,
+          keyLabel: localKey ? defaultKeyLabel(provider) : null,
+          apiKey: localKey,
           ...(provider === "opencode-go"
             ? { baseUrl: resolveOpenCodeBaseUrl() }
             : {}),
@@ -104,6 +124,23 @@ export function createAiKeysRoutes(): Hono {
       }
     }
 
+    if (!isSupabaseConfigured() || userId === "local-user") {
+      const keys = (["deepseek", "opencode-go"] as const)
+        .map((provider) => {
+          const local = getLocalProviderKey(userId, provider);
+          if (!local) return null;
+          return {
+            provider,
+            keyLabel: defaultKeyLabel(provider),
+            masked: maskApiKey(local),
+            createdAt: null,
+            updatedAt: null,
+          };
+        })
+        .filter(Boolean);
+      return c.json({ keys, keyCount: keys.length });
+    }
+
     const sb = getSupabaseClient()!;
     const { data, error } = await sb
       .from("user_api_keys")
@@ -133,13 +170,30 @@ export function createAiKeysRoutes(): Hono {
   router.post("/", async (c) => {
     const userId = authedUserId(c);
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
-    if (!isSupabaseConfigured()) return c.json({ error: "DB not configured" }, 500);
-    if (userId === "local-user") return c.json({ error: "Sign in to save API keys" }, 400);
-    const uid = dbUserId(userId);
 
     const parsed = UpsertKeySchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: "Invalid API key payload" }, 400);
 
+    // Always write user key into Hermes-local config so local agentic tasks
+    // can resolve credentials even when backend DB access is unavailable.
+    upsertLocalProviderKey(
+      userId,
+      parsed.data.provider,
+      parsed.data.apiKey,
+      parsed.data.provider === "opencode-go" ? resolveOpenCodeBaseUrl() : undefined,
+    );
+
+    if (!isSupabaseConfigured() || userId === "local-user") {
+      return c.json({
+        success: true,
+        provider: parsed.data.provider,
+        updatedAt: new Date().toISOString(),
+        backendSaved: false,
+        localHermesSaved: true,
+      });
+    }
+
+    const uid = dbUserId(userId);
     const now = new Date().toISOString();
     const sb = getSupabaseClient()!;
     let encryptedKey: string;
@@ -168,15 +222,18 @@ export function createAiKeysRoutes(): Hono {
       { onConflict: "user_id,provider" },
     );
     if (error) return c.json({ error: error.message }, 500);
-    return c.json({ success: true, provider: parsed.data.provider, updatedAt: now });
+    return c.json({
+      success: true,
+      provider: parsed.data.provider,
+      updatedAt: now,
+      backendSaved: true,
+      localHermesSaved: true,
+    });
   });
 
   router.delete("/", async (c) => {
     const userId = authedUserId(c);
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
-    if (!isSupabaseConfigured()) return c.json({ error: "DB not configured" }, 500);
-    if (userId === "local-user") return c.json({ error: "Sign in to manage API keys" }, 400);
-    const uid = dbUserId(userId);
 
     const providerQuery = c.req.query("provider") || "deepseek";
     const parsedProvider = ProviderSchema.safeParse(providerQuery);
@@ -184,13 +241,30 @@ export function createAiKeysRoutes(): Hono {
       return c.json({ error: "Unsupported provider" }, 400);
     }
     const provider = parsedProvider.data;
+    deleteLocalProviderKey(userId, provider);
+
+    if (!isSupabaseConfigured() || userId === "local-user") {
+      return c.json({
+        success: true,
+        provider,
+        backendSaved: false,
+        localHermesSaved: true,
+      });
+    }
+
+    const uid = dbUserId(userId);
     const { error } = await getSupabaseClient()!
       .from("user_api_keys")
       .delete()
       .eq("user_id", uid)
       .eq("provider", provider);
     if (error) return c.json({ error: error.message }, 500);
-    return c.json({ success: true, provider });
+    return c.json({
+      success: true,
+      provider,
+      backendSaved: true,
+      localHermesSaved: true,
+    });
   });
 
   return router;

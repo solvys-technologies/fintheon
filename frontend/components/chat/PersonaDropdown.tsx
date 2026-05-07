@@ -1,10 +1,7 @@
 // [claude-code 2026-03-22] Track 4: inline persona dropdown replacing persona pills
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
-import {
-  useFintheonAgents,
-  type FintheonAgent,
-} from "../../contexts/FintheonAgentContext";
+import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 
 const PERSONA_META: Record<string, string> = {
   harper: "CAO",
@@ -27,7 +24,15 @@ function statusColor(status: string): string {
   }
 }
 
-export function PersonaDropdown() {
+interface PersonaDropdownProps {
+  mode?: "work" | "plan";
+  onModeChange?: (mode: "work" | "plan") => void;
+}
+
+export function PersonaDropdown({
+  mode = "work",
+  onModeChange,
+}: PersonaDropdownProps) {
   const { agents, activeAgent, setActiveAgent } = useFintheonAgents();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -77,6 +82,33 @@ export function PersonaDropdown() {
           className="absolute bottom-full mb-1 left-0 w-[200px] rounded-2xl border border-[var(--fintheon-accent)]/20 overflow-hidden shadow-xl z-50"
           style={{ backgroundColor: "#0a0805" }}
         >
+          <div className="px-3 py-2 border-b border-[var(--fintheon-accent)]/10">
+            <div className="text-[9px] uppercase tracking-[0.12em] text-zinc-500 mb-1.5">
+              Mode
+            </div>
+            <div className="grid grid-cols-2 gap-1">
+              <button
+                onClick={() => onModeChange?.("work")}
+                className={`rounded-md px-2 py-1 text-[10px] font-medium transition-colors ${
+                  mode === "work"
+                    ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]"
+                    : "bg-transparent text-zinc-400 hover:bg-[var(--fintheon-accent)]/5 hover:text-zinc-200"
+                }`}
+              >
+                Work
+              </button>
+              <button
+                onClick={() => onModeChange?.("plan")}
+                className={`rounded-md px-2 py-1 text-[10px] font-medium transition-colors ${
+                  mode === "plan"
+                    ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]"
+                    : "bg-transparent text-zinc-400 hover:bg-[var(--fintheon-accent)]/5 hover:text-zinc-200"
+                }`}
+              >
+                Plan
+              </button>
+            </div>
+          </div>
           {agents.map((agent) => {
             const isActive = agent.id === current.id;
             const sectorLabel = PERSONA_META[agent.id] ?? agent.sector;

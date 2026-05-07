@@ -2,6 +2,7 @@
 // [claude-code 2026-05-03] S58-T1: encrypted user AI API key storage.
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
 import { getSupabaseClient, isSupabaseConfigured } from "../../config/supabase.js";
+import { getLocalProviderKey } from "../hermes/local-user-config.js";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_BYTES = 12;
@@ -49,8 +50,14 @@ export async function getUserApiKey(
   userId: string,
   provider: string,
 ): Promise<string | null> {
-  if (!userId || userId === "anonymous" || userId === "local-user") return null;
-  if (!isSupabaseConfigured()) return null;
+  if (!userId || userId === "anonymous") return null;
+  if (provider !== "deepseek" && provider !== "opencode-go") return null;
+
+  // Local-user (bypass auth) and no-DB modes resolve from Hermes-local config.
+  if (userId === "local-user" || !isSupabaseConfigured()) {
+    return getLocalProviderKey(userId, provider);
+  }
+
   try {
     const sb = getSupabaseClient()!;
     const { data, error } = await sb
@@ -59,9 +66,11 @@ export async function getUserApiKey(
       .eq("user_id", userId)
       .eq("provider", provider)
       .maybeSingle();
-    if (error || !data?.encrypted_key) return null;
+    if (error || !data?.encrypted_key) {
+      return getLocalProviderKey(userId, provider);
+    }
     return decryptApiKey(String(data.encrypted_key));
   } catch {
-    return null;
+    return getLocalProviderKey(userId, provider);
   }
 }

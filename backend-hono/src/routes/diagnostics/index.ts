@@ -32,7 +32,10 @@ import {
   triggerReflect,
   isReflectRunning,
 } from "../../services/autoresearch/reflect-scheduler.js";
-import { getLatestReflectReport } from "../../services/autoresearch/reflect-engine.js";
+import {
+  getLatestReflectReport,
+  distributeExternalReflectInsights,
+} from "../../services/autoresearch/reflect-engine.js";
 import { getBrowseTaskStats24h } from "../../services/browser/operator.js";
 import { getBrowserHarnessStats24h } from "../../services/browser/harness-tool.js";
 import { getFiscalSpeakerStats } from "../../services/cron/fiscal-speaker-populator.js";
@@ -1080,6 +1083,50 @@ export function createDiagnosticsRoutes(): Hono {
     );
 
     return c.json({ status: "started", daysBack });
+  });
+
+  router.post("/reflect/ingest", async (c) => {
+    const body = await c.req
+      .json<{
+        scope?: string;
+        summary?: string;
+        findings?: Array<{
+          severity?: "info" | "warning" | "critical";
+          message?: string;
+          recommendation?: string;
+          metric?: string;
+        }>;
+        metadata?: Record<string, unknown>;
+      }>()
+      .catch(() => null);
+
+    const summary = body?.summary?.trim();
+    if (!summary) {
+      return c.json({ error: "summary is required" }, 400);
+    }
+
+    const findings =
+      body?.findings
+        ?.filter((f) => !!f?.message && !!f?.severity)
+        .map((f) => ({
+          severity: f.severity as "info" | "warning" | "critical",
+          message: String(f.message),
+          recommendation: f.recommendation,
+          metric: f.metric,
+        })) ?? [];
+
+    await distributeExternalReflectInsights({
+      scope: body?.scope?.trim() || "agentic",
+      summary,
+      findings,
+      metadata: body?.metadata,
+    });
+
+    return c.json({
+      status: "distributed",
+      scope: body?.scope?.trim() || "agentic",
+      findingsDistributed: findings.length,
+    });
   });
 
   // [claude-code 2026-04-06] Debug: check unscored items count

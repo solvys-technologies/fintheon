@@ -147,8 +147,7 @@ export interface PromptBoxProps {
   headlineChips?: HeadlineChip[];
   onHeadlineToggle?: (chip: HeadlineChip) => void;
   onHeadlineClear?: () => void;
-  // S38-T1: Plan mode slot (clipboard icon) and history navigation
-  planSlot?: React.ReactNode;
+  // S38-T1: History navigation
   recallText?: string | null;
   onRecallConsumed?: () => void;
   onHistoryUp?: () => void;
@@ -194,7 +193,6 @@ export function PromptBox({
   onHeadlineToggle,
   onHeadlineClear,
   hideThinkHarder,
-  planSlot,
   recallText,
   onRecallConsumed,
   onHistoryUp,
@@ -628,9 +626,6 @@ export function PromptBox({
             <div className="flex items-center gap-1">
               {/* Relay dispatch (leftmost) — S21-T1 */}
               {relaySlot}
-
-              {/* Plan mode toggle — S38-T1 */}
-              {planSlot}
 
               {/* Attach */}
               <button

@@ -9,7 +9,7 @@
 // [claude-code 2026-05-06] S60-T3: provider/MCP/plugin modals wired to composer toolbar
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useThread, useThreadRuntime } from "@assistant-ui/react";
-import { ClipboardList, Cpu, Plug, Puzzle } from "lucide-react";
+import { Cpu, Plug, Puzzle } from "lucide-react";
 import { PromptBox } from "../ui/chatgpt-prompt-input";
 import { SKILL_PREFIXES } from "../../lib/skillPrefixes";
 import { SKILLS } from "../../lib/skills";
@@ -19,7 +19,7 @@ import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import { useMcpConnectors } from "../../hooks/useMcpConnectors";
 import { PersonaDropdown } from "./PersonaDropdown";
 import { ToolsDropdown } from "./ToolsDropdown";
-import { ProviderDropdown, useHarperProvider } from "./ProviderDropdown";
+import { useHarperProvider } from "./ProviderDropdown";
 import { FintheonProviderModal } from "./FintheonProviderModal";
 import { FintheonMcpModal } from "./FintheonMcpModal";
 import { FintheonPluginModal } from "./FintheonPluginModal";
@@ -65,6 +65,8 @@ interface FintheonComposerProps {
   conversationId?: string;
   /** @deprecated S38-T1: Dispatch removed — kept for backwards compat */
   onConversationGone?: () => void;
+  mode?: "work" | "plan";
+  onModeChange?: (mode: "work" | "plan") => void;
 }
 
 export function FintheonComposer({
@@ -79,6 +81,8 @@ export function FintheonComposer({
   compact,
   conversationId: _conversationId,
   onConversationGone: _onConversationGone,
+  mode,
+  onModeChange,
 }: FintheonComposerProps) {
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
@@ -100,6 +104,15 @@ export function FintheonComposer({
 
   // ── Command palette (Cmd+K) ────────────────────────────────────────────
   const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [localMode, setLocalMode] = useState<"work" | "plan">("work");
+  const composerMode = mode ?? localMode;
+  const setComposerMode = useCallback(
+    (nextMode: "work" | "plan") => {
+      onModeChange?.(nextMode);
+      if (!onModeChange) setLocalMode(nextMode);
+    },
+    [onModeChange],
+  );
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -110,33 +123,6 @@ export function FintheonComposer({
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
-
-  // ── Plan mode ──────────────────────────────────────────────────────────
-  const [planMode, setPlanMode] = useState(false);
-  const [planTodos, setPlanTodos] = useState<
-    { id: string; text: string; done: boolean }[]
-  >([]);
-
-  const togglePlanMode = useCallback(() => {
-    setPlanMode((v) => {
-      if (v) {
-        // Exiting plan mode — clear todos
-        setPlanTodos([]);
-      }
-      return !v;
-    });
-  }, []);
-
-  const handlePlanTodoToggle = useCallback((id: string) => {
-    setPlanTodos((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
-    );
-  }, []);
-
-  const handlePlanComplete = useCallback(() => {
-    setPlanMode(false);
-    setPlanTodos([]);
   }, []);
 
   // ── Message history navigation (↑↓) ──────────────────────────────────
@@ -262,7 +248,7 @@ export function FintheonComposer({
 
       // Detect /plan toggle
       if (msg.trim() === "/plan") {
-        togglePlanMode();
+        setComposerMode(composerMode === "plan" ? "work" : "plan");
         onSelectSkill(null);
         return;
       }
@@ -321,7 +307,8 @@ export function FintheonComposer({
       headlineChips,
       agents,
       setActiveAgent,
-      togglePlanMode,
+      composerMode,
+      setComposerMode,
     ],
   );
 
@@ -358,7 +345,9 @@ export function FintheonComposer({
     </button>
   );
   // Sidebar (compact) routes through CAO only — no persona selector
-  const personaEl = compact ? undefined : <PersonaDropdown />;
+  const personaEl = compact ? undefined : (
+    <PersonaDropdown mode={composerMode} onModeChange={setComposerMode} />
+  );
 
   // Plugin trigger button
   const pluginEl = compact ? undefined : (
@@ -404,81 +393,6 @@ export function FintheonComposer({
     />
   );
 
-  // ── Plan mode button ──────────────────────────────────────────────────
-  const planEl = (
-    <button
-      onClick={togglePlanMode}
-      className={`flex items-center justify-center rounded-lg transition-colors ${
-        planMode
-          ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10 hover:bg-[var(--fintheon-accent)]/20"
-          : "text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
-      }`}
-      style={{ width: "32px", height: "32px" }}
-      title={planMode ? "Exit Plan Mode" : "Plan Mode"}
-    >
-      <ClipboardList size={16} />
-    </button>
-  );
-
-  // ── Plan mode input (shown above PromptBox when plan mode active) ─────
-  const planModeInputEl = planMode ? (
-    <div className="mb-3 rounded-lg border border-[var(--fintheon-accent)]/25 bg-[#0d0c09] px-4 py-3">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--fintheon-accent)]">
-          Plan Mode
-        </span>
-        <button
-          onClick={handlePlanComplete}
-          className="text-[11px] font-medium text-[var(--fintheon-accent)] hover:text-[#f0ead6] underline underline-offset-2 transition-colors"
-        >
-          Complete Plan
-        </button>
-      </div>
-      {/* Inline to-dos */}
-      {planTodos.length > 0 ? (
-        <ul className="space-y-1 mb-2">
-          {planTodos.map((todo) => (
-            <li key={todo.id} className="flex items-center gap-2 text-[12px]">
-              <button
-                onClick={() => handlePlanTodoToggle(todo.id)}
-                className={`flex-shrink-0 w-4 h-4 rounded border ${
-                  todo.done
-                    ? "bg-[var(--fintheon-accent)]/20 border-[var(--fintheon-accent)]/50"
-                    : "border-zinc-600"
-                } flex items-center justify-center transition-colors`}
-              >
-                {todo.done && (
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                    <path
-                      d="M2 5l2 2 4-4"
-                      stroke="var(--fintheon-accent)"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                )}
-              </button>
-              <span
-                className={
-                  todo.done
-                    ? "text-[#f0ead6]/40 line-through"
-                    : "text-[#f0ead6]/80"
-                }
-              >
-                {todo.text}
-              </span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-[11px] text-zinc-500 italic mb-2">
-          No plan steps yet — start typing to build your plan
-        </p>
-      )}
-    </div>
-  ) : null;
-
   return (
     <>
       {/* Command palette (Cmd+K) */}
@@ -486,15 +400,14 @@ export function FintheonComposer({
         <CommandPalette
           onClose={() => setShowCommandPalette(false)}
           onSelectSkill={onSelectSkill}
-          onTogglePlan={togglePlanMode}
+          onTogglePlan={() =>
+            setComposerMode(composerMode === "plan" ? "work" : "plan")
+          }
           onStop={handleStop}
           agents={agents}
           onSwitchAgent={(agent) => setActiveAgent(agent)}
         />
       )}
-
-      {/* Plan mode input */}
-      {planModeInputEl}
 
       <PromptBox
         onSend={handleSend}
@@ -517,7 +430,6 @@ export function FintheonComposer({
         pluginSlot={pluginEl}
         mcpSlot={mcpEl}
         toolsSlot={toolsEl}
-        planSlot={planEl}
         recallText={recallText}
         onRecallConsumed={() => setRecallText(null)}
         onHistoryUp={handleHistoryUp}

@@ -41,6 +41,10 @@ function extractRawContent(msg: any): any {
   return msg.parts ?? msg.content;
 }
 
+function hasVisibleAssistantText(msg: any): boolean {
+  return extractText(msg).trim().length > 0;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Scroll-to-bottom button                                             */
 /* ------------------------------------------------------------------ */
@@ -181,6 +185,7 @@ export function FintheonThread({
               );
             }
             if (msg.role === "assistant") {
+              if (!hasVisibleAssistantText(msg)) return null;
               return (
                 <AssistantMessagePrimitive
                   key={msg.id}
@@ -198,17 +203,6 @@ export function FintheonThread({
             }
             return null;
           })}
-
-          {/* Streaming assistant placeholder — shown while generating */}
-          {isLoading &&
-            messages.length > 0 &&
-            messages[messages.length - 1]?.role === "user" && (
-              <AssistantMessagePrimitive
-                rawContent={[]}
-                agentName={resolvedAgent}
-                isStreaming
-              />
-            )}
 
           {/* Thinking indicator */}
           <ThreadPrimitive.If running>

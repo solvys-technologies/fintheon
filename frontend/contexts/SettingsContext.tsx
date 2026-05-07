@@ -103,6 +103,7 @@ export type DefaultPlatform =
   | "tradesea"
   | "tradovate"
   | "tradingview";
+export type DefaultChatProvider = "deepseek-direct" | "opencode-go";
 
 interface SettingsContextType {
   apiKeys: APIKeys;
@@ -164,6 +165,12 @@ interface SettingsContextType {
   /** Custom CAO display name (default: "Harper") */
   caoName: string;
   setCaoName: (name: string) => void;
+  /** Default chat provider for Harper sessions. */
+  defaultChatProvider: DefaultChatProvider;
+  setDefaultChatProvider: (provider: DefaultChatProvider) => void;
+  /** Preferred OpenCode Go model for personal chat sessions. */
+  openCodeGoModel: string;
+  setOpenCodeGoModel: (model: string) => void;
   /** v5.22 S1: cross-device preferences contract (theme, notifications, fuse palette). */
   preferences: UserPreferences;
   updatePreferences: (patch: Partial<UserPreferences>) => void;
@@ -492,6 +499,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [caoName, setCaoName] = useState<string>(() =>
     loadFromStorage("caoName", "Harper"),
   );
+  const [defaultChatProvider, setDefaultChatProvider] =
+    useState<DefaultChatProvider>(() =>
+      loadFromStorage("defaultChatProvider", "deepseek-direct"),
+    );
+  const [openCodeGoModel, setOpenCodeGoModel] = useState<string>(() =>
+    loadFromStorage("openCodeGoModel", "deepseek-reasoner"),
+  );
 
   // [claude-code 2026-04-19] v5.22 S1: shared cross-platform preferences.
   const [preferences, setPreferences] = useState<UserPreferences>(() =>
@@ -669,6 +683,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         if (remote.proposerDefaultIframe)
           setProposerDefaultIframe(remote.proposerDefaultIframe as string);
         if (remote.caoName) setCaoName(remote.caoName as string);
+        if (remote.defaultChatProvider)
+          setDefaultChatProvider(
+            remote.defaultChatProvider as DefaultChatProvider,
+          );
+        if (remote.openCodeGoModel)
+          setOpenCodeGoModel(remote.openCodeGoModel as string);
       }
       backendSynced.current = true;
     });
@@ -704,6 +724,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       proposerIframeSources,
       proposerDefaultIframe,
       caoName,
+      defaultChatProvider,
+      openCodeGoModel,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
@@ -742,7 +764,21 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     proposerIframeSources,
     proposerDefaultIframe,
     caoName,
+    defaultChatProvider,
+    openCodeGoModel,
   ]);
+
+  // Keep chat routing preferences mirrored into legacy localStorage keys used
+  // by composer/runtime hooks so provider/model changes apply immediately.
+  useEffect(() => {
+    try {
+      localStorage.setItem("fintheon:default-chat-provider", defaultChatProvider);
+      localStorage.setItem("fintheon:harper-provider", defaultChatProvider);
+      localStorage.setItem("fintheon:opencode-go-model", openCodeGoModel);
+    } catch {
+      /* ignore local storage sync issues */
+    }
+  }, [defaultChatProvider, openCodeGoModel]);
 
   return (
     <SettingsContext.Provider
@@ -801,6 +837,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setProposerDefaultIframe,
         caoName,
         setCaoName,
+        defaultChatProvider,
+        setDefaultChatProvider,
+        openCodeGoModel,
+        setOpenCodeGoModel,
         preferences,
         updatePreferences,
       }}

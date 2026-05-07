@@ -8,6 +8,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Copy, RefreshCw } from "lucide-react";
 import { useGateway } from "../../contexts/GatewayContext";
 import { useToast } from "../../contexts/ToastContext";
+import { useSettings } from "../../contexts/SettingsContext";
 import Toggle from "../Toggle";
 import { HermesSettings } from "./HermesSettings";
 import { HeadlineVolumeWidget } from "../diagnostics/HeadlineVolumeWidget";
@@ -32,6 +33,12 @@ interface DiagnosticsData {
 export function HermesAdminTab() {
   const { status, lastHealthCheck, reconnect, gatewayUrl } = useGateway();
   const { addToast } = useToast();
+  const {
+    defaultChatProvider,
+    setDefaultChatProvider,
+    openCodeGoModel,
+    setOpenCodeGoModel,
+  } = useSettings();
   const statusColor =
     status === "connected"
       ? "#34D399"
@@ -48,21 +55,9 @@ export function HermesAdminTab() {
   const [persistentThreadId, setPersistentThreadId] = useState(
     () => localStorage.getItem("fintheon:gateway-persistent-thread-id") ?? "",
   );
-  const [defaultProvider, setDefaultProvider] = useState<HarperProvider>(() => {
-    const saved = localStorage.getItem("fintheon:default-chat-provider");
-    if (
-      saved === "deepseek-direct" ||
-      saved === "opencode-go"
-    ) {
-      return saved;
-    }
-    // Migrate stale provider values
-    if (saved === "deepseek-oc-api" || saved === "orouter" || saved === "local" || saved === "nous") {
-      localStorage.setItem("fintheon:default-chat-provider", "deepseek-direct");
-      localStorage.setItem("fintheon:harper-provider", "deepseek-direct");
-    }
-    return "deepseek-direct";
-  });
+  const [defaultProvider, setDefaultProvider] = useState<HarperProvider>(
+    defaultChatProvider === "opencode-go" ? "opencode-go" : "deepseek-direct",
+  );
 
   // Diagnostics state
   const [diagnostics, setDiagnostics] = useState<DiagnosticsData | null>(null);
@@ -126,8 +121,28 @@ export function HermesAdminTab() {
 
   const handleDefaultProviderChange = (provider: HarperProvider) => {
     setDefaultProvider(provider);
+    setDefaultChatProvider(provider);
     localStorage.setItem("fintheon:default-chat-provider", provider);
     localStorage.setItem("fintheon:harper-provider", provider);
+  };
+
+  useEffect(() => {
+    if (
+      defaultChatProvider === "deepseek-direct" ||
+      defaultChatProvider === "opencode-go"
+    ) {
+      setDefaultProvider(defaultChatProvider);
+    }
+  }, [defaultChatProvider]);
+
+  const handleOpenCodeGoModelChange = (model: string) => {
+    const normalized = model.trim() || "deepseek-reasoner";
+    setOpenCodeGoModel(normalized);
+    try {
+      localStorage.setItem("fintheon:opencode-go-model", normalized);
+    } catch {
+      /* ignore */
+    }
   };
 
   const handleCopyHandoff = useCallback(() => {
@@ -189,6 +204,38 @@ export function HermesAdminTab() {
             <option value="deepseek-direct">DeepSeek v4 Pro (Direct API)</option>
             <option value="opencode-go">DeepSeek v4 Pro (OpenCode Go)</option>
           </select>
+          {defaultProvider === "opencode-go" && (
+            <div className="space-y-2">
+              <label className="block text-xs text-gray-400">
+                OpenCode Go Model
+              </label>
+              <select
+                value={openCodeGoModel}
+                onChange={(event) =>
+                  handleOpenCodeGoModelChange(event.target.value)
+                }
+                className="w-full bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/30 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/60"
+              >
+                <option value="deepseek-reasoner">deepseek-reasoner</option>
+                <option value="deepseek-chat">deepseek-chat</option>
+                <option value="hermes-4-70b">hermes-4-70b</option>
+                <option value="hermes-4-405b">hermes-4-405b</option>
+              </select>
+              <input
+                type="text"
+                value={openCodeGoModel}
+                onChange={(event) =>
+                  handleOpenCodeGoModelChange(event.target.value)
+                }
+                placeholder="Custom model id (any OpenCode Go model)"
+                className="w-full bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-[var(--fintheon-accent)]/50"
+              />
+              <p className="text-[11px] text-gray-500">
+                This persists in user settings and stays active until changed
+                or reset.
+              </p>
+            </div>
+          )}
           <div className="bg-amber-900/20 border border-amber-700/30 rounded-lg p-3 text-xs text-amber-100/80 leading-relaxed">
             Backend processes (briefs, Arbitrum, RiskFlow) always run on Hermes
             via OpenCode Go or the server DeepSeek API regardless of your

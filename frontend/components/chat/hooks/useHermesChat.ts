@@ -18,11 +18,6 @@ import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
 import { API_BASE_URL } from "../constants.js";
 import { getAccessToken } from "../../../lib/supabase";
-import {
-  createDeepSeekStreamResponse,
-  type DeepSeekChatMessage,
-  type DeepSeekProvider,
-} from "../../../lib/deepseek-sdk";
 
 /** Convert backend ChatMessage -> UIMessage for useChat hydration */
 function backendToUIMessage(msg: {
@@ -38,14 +33,10 @@ function backendToUIMessage(msg: {
   };
 }
 
-// S38-T5: Only deepseek-direct uses the client SDK; nous + opencode-go route through backend
-function isDeepSeekProvider(provider: string): provider is DeepSeekProvider {
-  return provider === "deepseek-direct";
-}
-
 function readHarperProvider(): string {
   try {
     const saved = localStorage.getItem("fintheon:harper-provider");
+    if (saved === "deepseek-oc-api") return "opencode-go";
     return saved && saved !== "local" && saved !== "orouter"
       ? saved
       : "deepseek-direct";
@@ -54,26 +45,13 @@ function readHarperProvider(): string {
   }
 }
 
-function bodyToDeepSeekMessages(
-  body: BodyInit | null | undefined,
-): DeepSeekChatMessage[] {
-  if (!body || typeof body !== "string") return [];
-  const parsed = JSON.parse(body) as {
-    message?: string;
-    history?: Array<{ role?: string; content?: string }>;
-  };
-  const history = (parsed.history ?? [])
-    .filter(
-      (message): message is { role: "user" | "assistant"; content: string } =>
-        (message.role === "user" || message.role === "assistant") &&
-        typeof message.content === "string" &&
-        message.content.trim().length > 0,
-    )
-    .map((message) => ({ role: message.role, content: message.content }));
-  if (typeof parsed.message === "string" && parsed.message.trim()) {
-    history.push({ role: "user", content: parsed.message });
+function readOpenCodeGoModel(): string | null {
+  try {
+    const model = localStorage.getItem("fintheon:opencode-go-model");
+    return model && model.trim().length > 0 ? model.trim() : null;
+  } catch {
+    return null;
   }
-  return history;
 }
 
 export function useHermesChat(
@@ -147,26 +125,6 @@ export function useHermesChat(
         timeoutMs > 0 ? setTimeout(() => controller.abort(), timeoutMs) : null;
 
       try {
-        const selectedProvider = readHarperProvider();
-        if (isHarper && isDeepSeekProvider(selectedProvider)) {
-          const messages = bodyToDeepSeekMessages(body);
-          if (messages.length === 0) {
-            throw new Error("No chat message supplied for DeepSeek.");
-          }
-          const result = await createDeepSeekStreamResponse(messages, {
-            provider: selectedProvider,
-            apiBaseUrl: API_BASE_URL,
-            conversationId: conversationIdRef.current,
-            getAccessToken,
-            signal: controller.signal,
-            title: messages[messages.length - 1]?.content.slice(0, 80),
-          });
-          if (timeoutId) clearTimeout(timeoutId);
-          if (result.conversationId) setConversationId(result.conversationId);
-          setLastError(null);
-          return result.response;
-        }
-
         const response = await fetch(fullUrl, {
           ...init,
           headers,
@@ -275,12 +233,15 @@ export function useHermesChat(
               return "deepseek-direct";
             }
           })();
+          const opencodeGoModel =
+            harperProvider === "opencode-go" ? readOpenCodeGoModel() : null;
           return {
             body: {
               message: msgText,
               ...(images.length > 0 && { images }),
               history,
               provider: harperProvider,
+              ...(opencodeGoModel ? { model: opencodeGoModel } : {}),
               ...(conversationIdRef.current && {
                 conversationId: conversationIdRef.current,
               }),

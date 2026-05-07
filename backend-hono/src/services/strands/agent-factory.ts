@@ -29,6 +29,7 @@ const log = createLogger("StrandsFactory");
 // [claude-code 2026-04-23] S32-T3 added "ollama-qwen" fallback chain provider
 export type HarperProvider =
   | "deepseek-direct"
+  | "opencode-go"
   | "deepseek-oc-api"
   | "local"
   | "ollama-qwen"
@@ -96,6 +97,7 @@ export function createAgent(options: CreateAgentOptions): Agent {
       });
       model = createDeepSeekDirectModel(options.model, options.userApiKey);
       break;
+    case "opencode-go":
     case "deepseek-oc-api":
       log.info("Creating Strands agent (DeepSeek OC API)", {
         name: options.name,
