@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-07T02:00:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Deployed v6.0.21 to all 3 targets (Fly.io backend + Vercel desktop + Vercel mobile). Set DEEPSEEK_API_KEY on Fly.io. All smoke tests pass. Sanitation: clean.",
+    files: [
+      "scripts/fintheon-update.sh (UPDATE_VERSION=6.0.21)",
+      "scripts/fintheon-cli.sh (v6.0.21 URL refs)",
+      "scripts/fintheon-setup.sh (v6.0.21 URL refs)",
+      "scripts/install-cli.sh (v6.0.21 URL refs)",
+      "package.json (6.0.21)",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-07T01:45:00-04:00",
     agent: "claude-code",
     summary:
