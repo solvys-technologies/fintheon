@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-08T03:15:00-04:00",
+    agent: "codex",
+    summary:
+      "S61 shipped: agent governance, SOUL fileroom, and Chamber/RiskFlow context controls unified. Archived to sprint-changelog/.",
+    files: ["sprint-changelog/S61-ORCHESTRATION.md"],
+  },
+  {
     date: "2026-05-08T00:00:00-04:00",
     agent: "codex",
     summary:
