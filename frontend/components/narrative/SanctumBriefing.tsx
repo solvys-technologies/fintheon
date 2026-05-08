@@ -3,7 +3,8 @@
 // [claude-code 2026-04-17] Slop-fallback rendering: compact empty-state with ArbitrumChamber trigger link when backend emits SLOP_FALLBACK
 import type { AgentDeskBriefing } from "../../types/agent-desk";
 
-const SLOP_FALLBACK = "No new agentic updates. Trigger an update in ArbitrumChamber.";
+const SLOP_FALLBACK =
+  "No new agentic updates. Trigger an update in ArbitrumChamber.";
 
 interface SanctumBriefingProps {
   briefing: AgentDeskBriefing | null;

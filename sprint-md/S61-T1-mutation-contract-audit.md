@@ -55,17 +55,20 @@ Today's `tool-approval-store.ts` manages permissions and pending approvals but h
    - Import `logAuditDecision` from new audit-logger
    - Inside `resolveApproval()` (after line `approval.resolution = decision`), call:
      ```typescript
-     logAuditDecision({
-       agent_id: approval.submittedBy ?? "unknown",
-       tool_name: approval.toolName,
-       tool_input: approval.toolInput,
-       description: approval.description,
-       surface: approval.surface ?? "chat",
-       correlation_id: approval.requestId ?? approval.id,
-     }, {
-       decision: decision as "approved" | "denied" | "timed_out",
-       reason: reason ?? null,
-     }).catch(err => log.error("audit write failed", err));
+     logAuditDecision(
+       {
+         agent_id: approval.submittedBy ?? "unknown",
+         tool_name: approval.toolName,
+         tool_input: approval.toolInput,
+         description: approval.description,
+         surface: approval.surface ?? "chat",
+         correlation_id: approval.requestId ?? approval.id,
+       },
+       {
+         decision: decision as "approved" | "denied" | "timed_out",
+         reason: reason ?? null,
+       },
+     ).catch((err) => log.error("audit write failed", err));
      ```
    - In `grantPermission()`: add audit log call (decision=approved, tool_name="permission_grant")
    - In `revokePermission()`: add audit log call (decision=denied, tool_name="permission_revoke")

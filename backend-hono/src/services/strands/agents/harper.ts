@@ -100,16 +100,15 @@ export async function createHarperAgent(
     },
     conversationManager,
     provider: effectiveProvider,
-    userApiKey:
-      opts?.userId
-        ? await getUserApiKey(
-            opts.userId,
-            effectiveProvider === "opencode-go" ||
+    userApiKey: opts?.userId
+      ? await getUserApiKey(
+          opts.userId,
+          effectiveProvider === "opencode-go" ||
             effectiveProvider === "deepseek-oc-api"
-              ? "opencode-go"
-              : "deepseek",
-          )
-        : undefined,
+            ? "opencode-go"
+            : "deepseek",
+        )
+      : undefined,
   });
 }
 
@@ -157,7 +156,8 @@ export async function streamHarperChat(
     !!options.activeConnectors?.includes("arbitrumChamber");
   if (arbitrumChamberActive) {
     try {
-      const { buildArbitrumChamberContext } = await import("../../harper-handler.js");
+      const { buildArbitrumChamberContext } =
+        await import("../../harper-handler.js");
       const arbitrumChamberContext = await buildArbitrumChamberContext();
       if (arbitrumChamberContext) {
         prompt = `${arbitrumChamberContext}\n\n${prompt}`;

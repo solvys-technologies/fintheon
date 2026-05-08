@@ -2,9 +2,7 @@
 import type { IVScoreResponse } from "../../types/market-data";
 import { FadingRuler } from "../shared/FadingRuler";
 
-type Scenario = NonNullable<
-  IVScoreResponse["prediction"]
->["scenarios"][number];
+type Scenario = NonNullable<IVScoreResponse["prediction"]>["scenarios"][number];
 
 interface NextSessionScenariosStripProps {
   scenarios?: Scenario[];

@@ -68,7 +68,8 @@ export function FintheonPluginModal({
           background: "rgba(10, 8, 5, 0.92)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
-          border: "1px solid color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
+          border:
+            "1px solid color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
           boxShadow: "0 4px 32px rgba(0,0,0,0.5)",
           display: "flex",
           flexDirection: "column",

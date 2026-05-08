@@ -93,7 +93,10 @@ function getDeepSeekDirectBaseUrl(): string {
 }
 
 function getOpenCodeGoBaseUrl(): string {
-  const raw = process.env.OPENCODE_GO_API_URL || process.env.HERMES_API_URL || OC_API_BASE_URL;
+  const raw =
+    process.env.OPENCODE_GO_API_URL ||
+    process.env.HERMES_API_URL ||
+    OC_API_BASE_URL;
   return normalizeUrl(raw);
 }
 
@@ -137,7 +140,11 @@ export function createDeepSeekOcApiModel(
   options?: VProxyModelOptions,
   overrideApiKey?: string | null,
 ): OpenAIModel {
-  const apiKey = overrideApiKey || process.env.OPENCODE_GO_API_KEY || process.env.HERMES_API_KEY || "opencode-go";
+  const apiKey =
+    overrideApiKey ||
+    process.env.OPENCODE_GO_API_KEY ||
+    process.env.HERMES_API_KEY ||
+    "opencode-go";
   return new OpenAIModel({
     api: "chat",
     apiKey,

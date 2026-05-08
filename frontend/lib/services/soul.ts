@@ -24,7 +24,13 @@ export class SoulService {
     return this.client.get<SoulContent>(`/api/soul/${agentId}`);
   }
 
-  async update(agentId: string, content: string): Promise<{ ok: boolean; agent_id: string }> {
-    return this.client.put<{ ok: boolean; agent_id: string }>(`/api/soul/${agentId}`, { content });
+  async update(
+    agentId: string,
+    content: string,
+  ): Promise<{ ok: boolean; agent_id: string }> {
+    return this.client.put<{ ok: boolean; agent_id: string }>(
+      `/api/soul/${agentId}`,
+      { content },
+    );
   }
 }

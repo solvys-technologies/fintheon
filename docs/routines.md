@@ -32,7 +32,7 @@ The backend scheduler checks these flags at startup. When `true`, the backend cr
 | 5   | Boardroom Synthesis             | `trig_012vcEGvYY4cdHSK2yMKp2wk` | `3 14 * * 1-5`   | 10:03 AM ET weekdays | 1        |
 | 6   | MiroShark Meta                  | `trig_01UkDCRytVP42cd7C6tUzon1` | `17 15 * * 1-5`  | 11:17 AM ET weekdays | 1        |
 | 7   | Poly/Kalshi Divergence Analysis | `trig_01LBtc1yHL8gEv4ofh4UP2eH` | `17 13,21 * * *` | 9:17 AM + 5:17 PM ET | 2        |
-| 8   | ArbitrumChamber Deep Outlook           | `trig_01MgCTN6ALWt4Jr4eZkqimWi` | `33 12,20 * * *` | 8:33 AM + 4:33 PM ET | 2        |
+| 8   | ArbitrumChamber Deep Outlook    | `trig_01MgCTN6ALWt4Jr4eZkqimWi` | `33 12,20 * * *` | 8:33 AM + 4:33 PM ET | 2        |
 
 **Total: 13 runs/day** (2 buffer within 15-run ceiling)
 

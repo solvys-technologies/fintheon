@@ -61,13 +61,16 @@ export function AiProviderSection({
 
   const removeDeepSeekKey = async () => {
     const token = await getAccessToken();
-    const res = await fetch(`${API_BASE}/api/settings/ai-keys?provider=deepseek`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const res = await fetch(
+      `${API_BASE}/api/settings/ai-keys?provider=deepseek`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
       },
-    }).catch(() => null);
+    ).catch(() => null);
     if (!res?.ok) {
       setMessage("DeepSeek key removal failed.");
       return;
@@ -98,7 +101,8 @@ export function AiProviderSection({
           width: "100%",
           minHeight: 44,
           borderRadius: 8,
-          border: "1px solid color-mix(in srgb, var(--accent) 28%, transparent)",
+          border:
+            "1px solid color-mix(in srgb, var(--accent) 28%, transparent)",
           background: "rgba(5,4,2,0.72)",
           color: "var(--text-primary)",
           padding: "0 12px",
@@ -113,7 +117,8 @@ export function AiProviderSection({
             minHeight: 44,
             padding: "0 16px",
             borderRadius: 8,
-            border: "1px solid color-mix(in srgb, var(--accent) 45%, transparent)",
+            border:
+              "1px solid color-mix(in srgb, var(--accent) 45%, transparent)",
             background: "rgba(199,159,74,0.16)",
             color: "var(--accent)",
             fontFamily: "var(--font-data)",

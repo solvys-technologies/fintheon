@@ -277,7 +277,10 @@ export function useHermesChat(
                   const surface = localStorage.getItem(
                     "fintheon:current-surface",
                   );
-                  if (surface === "arbitrumChamber" && !base.includes("arbitrumChamber")) {
+                  if (
+                    surface === "arbitrumChamber" &&
+                    !base.includes("arbitrumChamber")
+                  ) {
                     return [...base, "arbitrumChamber"];
                   }
                   return base;

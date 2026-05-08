@@ -29,7 +29,9 @@ export async function getChainHealth(): Promise<ChainHealth> {
     }
   }
 
-  const ocGoKeySet = Boolean(process.env.OPENCODE_GO_API_KEY || process.env.HERMES_API_KEY);
+  const ocGoKeySet = Boolean(
+    process.env.OPENCODE_GO_API_KEY || process.env.HERMES_API_KEY,
+  );
   const ocGoReachable = Boolean(process.env.HERMES_API_URL) && ocGoKeySet;
 
   return {
@@ -41,7 +43,11 @@ export async function getChainHealth(): Promise<ChainHealth> {
     fallback: {
       provider: "opencode-go",
       available: ocGoReachable,
-      error: !ocGoKeySet ? "OPENCODE_GO_API_KEY or HERMES_API_KEY not set" : !process.env.HERMES_API_URL ? "HERMES_API_URL not set" : null,
+      error: !ocGoKeySet
+        ? "OPENCODE_GO_API_KEY or HERMES_API_KEY not set"
+        : !process.env.HERMES_API_URL
+          ? "HERMES_API_URL not set"
+          : null,
     },
   };
 }

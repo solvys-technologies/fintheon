@@ -72,7 +72,12 @@ function normalizeTweetText(text: string): string {
 function isGuardrailRejected(text: string): boolean {
   const t = text.toLowerCase();
   // Keep this narrow: drop only obvious joke/meme/noise patterns.
-  if (/\b(lol|lmao|haha|meme|joke|shitpost|nostalgia|you had to be there)\b/.test(t)) return true;
+  if (
+    /\b(lol|lmao|haha|meme|joke|shitpost|nostalgia|you had to be there)\b/.test(
+      t,
+    )
+  )
+    return true;
   return false;
 }
 
@@ -122,52 +127,52 @@ function parseAuthAccountsFromJson(raw: string): XLoginCredential[] {
 
     const out: XLoginCredential[] = [];
     parsed.forEach((entry, idx) => {
-        if (!entry || typeof entry !== "object") return null;
-        const obj = entry as Record<string, unknown>;
-        const email =
-          typeof obj.email === "string"
-            ? obj.email.trim()
-            : typeof obj.x_email === "string"
-              ? obj.x_email.trim()
+      if (!entry || typeof entry !== "object") return null;
+      const obj = entry as Record<string, unknown>;
+      const email =
+        typeof obj.email === "string"
+          ? obj.email.trim()
+          : typeof obj.x_email === "string"
+            ? obj.x_email.trim()
+            : "";
+      const password =
+        typeof obj.password === "string"
+          ? obj.password.trim()
+          : typeof obj.x_password === "string"
+            ? obj.x_password.trim()
+            : "";
+      const username =
+        typeof obj.username === "string"
+          ? obj.username.trim()
+          : typeof obj.x_username === "string"
+            ? obj.x_username.trim()
+            : "";
+      const altEmail =
+        typeof obj.altEmail === "string"
+          ? obj.altEmail.trim()
+          : typeof obj.alt_email === "string"
+            ? obj.alt_email.trim()
+            : typeof obj.x_alt_email === "string"
+              ? obj.x_alt_email.trim()
               : "";
-        const password =
-          typeof obj.password === "string"
-            ? obj.password.trim()
-            : typeof obj.x_password === "string"
-              ? obj.x_password.trim()
-              : "";
-        const username =
-          typeof obj.username === "string"
-            ? obj.username.trim()
-            : typeof obj.x_username === "string"
-              ? obj.x_username.trim()
-              : "";
-        const altEmail =
-          typeof obj.altEmail === "string"
-            ? obj.altEmail.trim()
-            : typeof obj.alt_email === "string"
-              ? obj.alt_email.trim()
-              : typeof obj.x_alt_email === "string"
-                ? obj.x_alt_email.trim()
-                : "";
-        const loginIdentity = username || email;
-        if (!loginIdentity || !password) return null;
-        const labelRaw =
-          typeof obj.label === "string"
-            ? obj.label
-            : typeof obj.name === "string"
-              ? obj.name
-              : loginIdentity;
-        const cred: XLoginCredential = {
-          email: loginIdentity,
-          password,
-          label: parseAccountLabel(labelRaw, `acct-${idx + 1}`),
-        };
-        if (username) cred.username = username;
-        if (altEmail) cred.altEmail = altEmail;
-        out.push(cred);
-        return null;
-      });
+      const loginIdentity = username || email;
+      if (!loginIdentity || !password) return null;
+      const labelRaw =
+        typeof obj.label === "string"
+          ? obj.label
+          : typeof obj.name === "string"
+            ? obj.name
+            : loginIdentity;
+      const cred: XLoginCredential = {
+        email: loginIdentity,
+        password,
+        label: parseAccountLabel(labelRaw, `acct-${idx + 1}`),
+      };
+      if (username) cred.username = username;
+      if (altEmail) cred.altEmail = altEmail;
+      out.push(cred);
+      return null;
+    });
     return out;
   } catch {
     return [];
@@ -212,7 +217,8 @@ function getXLoginCredentials(): XLoginCredential[] {
   );
   if (fromJson.length > 0) return fromJson;
 
-  const email = process.env.X_EMAIL?.trim() ?? process.env.X_USERNAME?.trim() ?? "";
+  const email =
+    process.env.X_EMAIL?.trim() ?? process.env.X_USERNAME?.trim() ?? "";
   const password = process.env.X_PASSWORD?.trim() ?? "";
   if (!email || !password) return [];
 
@@ -253,7 +259,10 @@ let lastSuccessfulLoginAt = 0;
 let lastLoginAccountLabel = "";
 
 function shouldRefreshAuthProactively(): boolean {
-  if (!Number.isFinite(AUTH_PROACTIVE_REFRESH_MS) || AUTH_PROACTIVE_REFRESH_MS <= 0) {
+  if (
+    !Number.isFinite(AUTH_PROACTIVE_REFRESH_MS) ||
+    AUTH_PROACTIVE_REFRESH_MS <= 0
+  ) {
     return false;
   }
   if (lastSuccessfulLoginAt === 0) return false;
@@ -287,7 +296,9 @@ function markAccountSuccess(cred: XLoginCredential): void {
   h.cooldownUntil = 0;
 }
 
-function orderCredentialsForAttempt(creds: XLoginCredential[]): XLoginCredential[] {
+function orderCredentialsForAttempt(
+  creds: XLoginCredential[],
+): XLoginCredential[] {
   if (creds.length <= 1) return creds;
   const now = Date.now();
   const available: XLoginCredential[] = [];
@@ -305,7 +316,9 @@ function orderCredentialsForAttempt(creds: XLoginCredential[]): XLoginCredential
   return available.length > 0 ? available : cooling;
 }
 
-async function attemptLoginWithCredential(cred: XLoginCredential): Promise<boolean> {
+async function attemptLoginWithCredential(
+  cred: XLoginCredential,
+): Promise<boolean> {
   const prevAuthToken = process.env.X_AUTH_TOKEN;
   const prevCt0Token = process.env.X_CT0_TOKEN;
   // Prevent persistent context bootstrap from re-injecting stale cookies.
@@ -348,7 +361,9 @@ async function attemptLoginWithCredential(cred: XLoginCredential): Promise<boole
           );
           if (!/\bsomething went wrong\b/i.test(shellText)) break;
           const retryBtn = page
-            .locator('[role="button"]:has-text("Retry"), button:has-text("Retry")')
+            .locator(
+              '[role="button"]:has-text("Retry"), button:has-text("Retry")',
+            )
             .first();
           if (await retryBtn.isVisible({ timeout: 1_500 }).catch(() => false)) {
             await retryBtn.click().catch(() => undefined);
@@ -367,10 +382,14 @@ async function attemptLoginWithCredential(cred: XLoginCredential): Promise<boole
 
         // X now serves a two-step flow: sign-up shell first, "Sign in" link to
         // reach the actual login form. Click "Sign in" if it's present.
-        const signInLink = page.locator(
-          'a[href*="login"]:has-text("Sign in"), [role="button"]:has-text("Sign in"), span:has-text("Sign in")',
-        ).first();
-        const signInVisible = await signInLink.isVisible({ timeout: 2_000 }).catch(() => false);
+        const signInLink = page
+          .locator(
+            'a[href*="login"]:has-text("Sign in"), [role="button"]:has-text("Sign in"), span:has-text("Sign in")',
+          )
+          .first();
+        const signInVisible = await signInLink
+          .isVisible({ timeout: 2_000 })
+          .catch(() => false);
         if (signInVisible) {
           await signInLink.click().catch(() => undefined);
           await page.waitForTimeout(3_000);
@@ -380,8 +399,9 @@ async function attemptLoginWithCredential(cred: XLoginCredential): Promise<boole
           document.body.innerText.slice(0, 800),
         );
         const hasLoginForm =
-          /\b(sign in to x|log in to x|phone, email, or username|enter your (phone|password|email))\b/i.test(loginPageText) &&
-          !/\bsomething went wrong\b/i.test(loginPageText);
+          /\b(sign in to x|log in to x|phone, email, or username|enter your (phone|password|email))\b/i.test(
+            loginPageText,
+          ) && !/\bsomething went wrong\b/i.test(loginPageText);
         if (!hasLoginForm) {
           console.error(
             JSON.stringify({
@@ -396,11 +416,15 @@ async function attemptLoginWithCredential(cred: XLoginCredential): Promise<boole
           return false;
         }
 
-        const identityCandidates = [cred.username, cred.altEmail, cred.email].filter(
-          (v): v is string => Boolean(v && v.length > 0),
-        );
+        const identityCandidates = [
+          cred.username,
+          cred.altEmail,
+          cred.email,
+        ].filter((v): v is string => Boolean(v && v.length > 0));
         const usernameInput = page
-          .locator('input[autocomplete="username"], input[name="text"], input[type="text"]')
+          .locator(
+            'input[autocomplete="username"], input[name="text"], input[type="text"]',
+          )
           .first();
         const nextButton = page
           .locator(
@@ -411,19 +435,25 @@ async function attemptLoginWithCredential(cred: XLoginCredential): Promise<boole
           .locator('input[type="password"], input[name="password"]')
           .first();
 
-        if (await usernameInput.isVisible({ timeout: 6_000 }).catch(() => false)) {
+        if (
+          await usernameInput.isVisible({ timeout: 6_000 }).catch(() => false)
+        ) {
           for (const identity of identityCandidates) {
             await usernameInput.click().catch(() => undefined);
             await usernameInput.fill("");
             await usernameInput.type(identity, { delay: 75 });
             await page.waitForTimeout(300);
-            if (await nextButton.isVisible({ timeout: 2_000 }).catch(() => false)) {
+            if (
+              await nextButton.isVisible({ timeout: 2_000 }).catch(() => false)
+            ) {
               await nextButton.click().catch(() => undefined);
             } else {
               await usernameInput.press("Enter").catch(() => undefined);
             }
             await page.waitForTimeout(2_500);
-            if (await passwordInput.isVisible({ timeout: 800 }).catch(() => false)) {
+            if (
+              await passwordInput.isVisible({ timeout: 800 }).catch(() => false)
+            ) {
               break;
             }
             // If flow reset to shell, continue with next identity candidate.
@@ -444,7 +474,9 @@ async function attemptLoginWithCredential(cred: XLoginCredential): Promise<boole
         const afterNextText = await page.evaluate(() =>
           document.body.innerText.slice(0, 300),
         );
-        const stillOnUsernameStep = /\b(phone, email, or username)\b/i.test(afterNextText);
+        const stillOnUsernameStep = /\b(phone, email, or username)\b/i.test(
+          afterNextText,
+        );
         console.log(
           JSON.stringify({
             ts: new Date().toISOString(),
@@ -455,7 +487,8 @@ async function attemptLoginWithCredential(cred: XLoginCredential): Promise<boole
             stillOnUsernameStep,
             pagePreview: afterNextText.slice(0, 250),
             hasPasswordField:
-              /\bpassword\b/i.test(afterNextText) && !/\bforgot password\b/i.test(afterNextText),
+              /\bpassword\b/i.test(afterNextText) &&
+              !/\bforgot password\b/i.test(afterNextText),
           }),
         );
 
@@ -463,15 +496,23 @@ async function attemptLoginWithCredential(cred: XLoginCredential): Promise<boole
         const challengeText = await page.evaluate(() =>
           document.body.innerText.slice(0, 300),
         );
-        if (/\b(verify|unusual|challenge|phone|username)\b/i.test(challengeText)) {
+        if (
+          /\b(verify|unusual|challenge|phone|username)\b/i.test(challengeText)
+        ) {
           // X may ask to verify the username before showing password.
           const verifyInput = page
-            .locator('input[autocomplete="on"], input[name="text"], input[type="text"]')
+            .locator(
+              'input[autocomplete="on"], input[name="text"], input[type="text"]',
+            )
             .first();
-          if (await verifyInput.isVisible({ timeout: 1_000 }).catch(() => false)) {
+          if (
+            await verifyInput.isVisible({ timeout: 1_000 }).catch(() => false)
+          ) {
             const verifyValue = await verifyInput.inputValue();
             if (!verifyValue) {
-              await verifyInput.fill(cred.username ?? cred.altEmail ?? cred.email ?? "");
+              await verifyInput.fill(
+                cred.username ?? cred.altEmail ?? cred.email ?? "",
+              );
               await page.waitForTimeout(500);
               await verifyInput.press("Enter").catch(() => undefined);
               const verifyBtns = page
@@ -479,7 +520,11 @@ async function attemptLoginWithCredential(cred: XLoginCredential): Promise<boole
                   '[role="button"]:has-text("Next"), [role="button"]:has-text("next"), button:has-text("Next")',
                 )
                 .first();
-              if (await verifyBtns.isVisible({ timeout: 1_000 }).catch(() => false)) {
+              if (
+                await verifyBtns
+                  .isVisible({ timeout: 1_000 })
+                  .catch(() => false)
+              ) {
                 await verifyBtns.click();
                 await page.waitForTimeout(2_500);
               }
@@ -488,7 +533,9 @@ async function attemptLoginWithCredential(cred: XLoginCredential): Promise<boole
         }
 
         // Fill password.
-        if (await passwordInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        if (
+          await passwordInput.isVisible({ timeout: 3_000 }).catch(() => false)
+        ) {
           await passwordInput.fill(cred.password);
           await page.waitForTimeout(800);
 
@@ -498,7 +545,9 @@ async function attemptLoginWithCredential(cred: XLoginCredential): Promise<boole
               '[role="button"]:has-text("Log in"), [role="button"]:has-text("Sign in"), button:has-text("Log in"), button:has-text("Sign in")',
             )
             .first();
-          if (await loginButton.isVisible({ timeout: 3_000 }).catch(() => false)) {
+          if (
+            await loginButton.isVisible({ timeout: 3_000 }).catch(() => false)
+          ) {
             await loginButton.click();
             await page.waitForTimeout(6_000);
           }
@@ -554,12 +603,14 @@ async function attemptLoginWithCredential(cred: XLoginCredential): Promise<boole
             account: cred.label,
             currentUrl,
             pagePreview: finalText.slice(0, 250),
-            has2fa: /\b(authenticator|verification code|two.factor|2FA|confirm your identity)\b/i.test(
-              finalText,
-            ),
-            hasCaptcha: /\b(captcha|prove you|not a robot|verify you are human)\b/i.test(
-              finalText,
-            ),
+            has2fa:
+              /\b(authenticator|verification code|two.factor|2FA|confirm your identity)\b/i.test(
+                finalText,
+              ),
+            hasCaptcha:
+              /\b(captcha|prove you|not a robot|verify you are human)\b/i.test(
+                finalText,
+              ),
           }),
         );
         return false;
@@ -654,7 +705,8 @@ export async function attemptXLogin(): Promise<boolean> {
         markAccountSuccess(cred);
         lastSuccessfulLoginAt = Date.now();
         lastLoginAccountLabel = cred.label;
-        loginAccountCursor = (credentials.indexOf(cred) + 1) % credentials.length;
+        loginAccountCursor =
+          (credentials.indexOf(cred) + 1) % credentials.length;
         consecutiveEmptyCycles = 0;
         return true;
       }
@@ -678,19 +730,28 @@ export async function attemptXLogin(): Promise<boolean> {
 
 async function checkXAuth(page: import("playwright").Page): Promise<boolean> {
   const url = page.url();
-  const bodyText = await page.evaluate(() => document.body.innerText.slice(0, 800));
+  const bodyText = await page.evaluate(() =>
+    document.body.innerText.slice(0, 800),
+  );
   const isLoginPage =
-    /\b(sign in to x|log in to x|sign up for x|join x today)\b/i.test(bodyText) ||
-    /\bDon.t have an account\?.*Sign up\b/i.test(bodyText);
+    /\b(sign in to x|log in to x|sign up for x|join x today)\b/i.test(
+      bodyText,
+    ) || /\bDon.t have an account\?.*Sign up\b/i.test(bodyText);
   if (isLoginPage) return false;
   const isLoggedOutShell =
-    /\b(Welcome to X|See what.s happening|Don.t miss what.s happening|Sign in to see|Happening now)\b/i.test(bodyText);
+    /\b(Welcome to X|See what.s happening|Don.t miss what.s happening|Sign in to see|Happening now)\b/i.test(
+      bodyText,
+    );
   if (isLoggedOutShell) return false;
   const isErrorPage =
     /\bsomething went wrong\b/i.test(bodyText) ||
     /\bthis page isn.t available\b/i.test(bodyText) ||
     /\bTry reloading\b/i.test(bodyText);
-  if (url.includes("x.com/home") || url === "https://x.com/" || url === "https://x.com") {
+  if (
+    url.includes("x.com/home") ||
+    url === "https://x.com/" ||
+    url === "https://x.com"
+  ) {
     if (isErrorPage) return false;
     return true;
   }
@@ -701,7 +762,10 @@ async function checkXAuth(page: import("playwright").Page): Promise<boolean> {
 }
 
 async function fetchHomeTimeline(): Promise<ExtractedTweet[]> {
-  if (homeTimelineCache && Date.now() - homeTimelineCache.at < HOME_CACHE_TTL_MS) {
+  if (
+    homeTimelineCache &&
+    Date.now() - homeTimelineCache.at < HOME_CACHE_TTL_MS
+  ) {
     return homeTimelineCache.tweets;
   }
 
@@ -766,7 +830,8 @@ async function scrapeHomeTimeline(): Promise<ExtractedTweet[] | null> {
           /\bfollowing\b/i.test((el.textContent || "").trim()),
         );
         if (!following) return false;
-        const alreadySelected = following.getAttribute("aria-selected") === "true";
+        const alreadySelected =
+          following.getAttribute("aria-selected") === "true";
         if (!alreadySelected) following.click();
         return true;
       });
@@ -780,12 +845,18 @@ async function scrapeHomeTimeline(): Promise<ExtractedTweet[] | null> {
       }
 
       const rawRows = await page.evaluate(() => {
-        function normalizeMediaUrl(raw: string | null | undefined): string | null {
+        function normalizeMediaUrl(
+          raw: string | null | undefined,
+        ): string | null {
           if (!raw) return null;
           const first = raw.split(",")[0]?.trim().split(/\s+/)[0]?.trim();
           if (!first) return null;
           if (!/^https?:\/\//i.test(first)) return null;
-          if (/profile_images|profile_banners|emoji\/v2|abs-0\.twimg\.com/i.test(first)) {
+          if (
+            /profile_images|profile_banners|emoji\/v2|abs-0\.twimg\.com/i.test(
+              first,
+            )
+          ) {
             return null;
           }
           return first;
@@ -806,7 +877,9 @@ async function scrapeHomeTimeline(): Promise<ExtractedTweet[] | null> {
 
           let best: { score: number; url: string } | null = null;
           for (const sel of selectors) {
-            const imgs = Array.from(article.querySelectorAll(sel)) as HTMLImageElement[];
+            const imgs = Array.from(
+              article.querySelectorAll(sel),
+            ) as HTMLImageElement[];
             for (const img of imgs) {
               const candidate =
                 normalizeMediaUrl(img.currentSrc) ??
@@ -817,8 +890,10 @@ async function scrapeHomeTimeline(): Promise<ExtractedTweet[] | null> {
               const width = img.naturalWidth || img.clientWidth || 0;
               const height = img.naturalHeight || img.clientHeight || 0;
               let score = 0;
-              if (/media|card_img|amplify_video_thumb/i.test(candidate)) score += 4;
-              if (sel.includes("tweetPhoto") || sel.includes("/photo/")) score += 3;
+              if (/media|card_img|amplify_video_thumb/i.test(candidate))
+                score += 4;
+              if (sel.includes("tweetPhoto") || sel.includes("/photo/"))
+                score += 3;
               if (sel.includes("card.wrapper")) score += 2;
               if (width >= 180 || height >= 180) score += 1;
               if (!best || score > best.score) best = { score, url: candidate };
@@ -826,80 +901,94 @@ async function scrapeHomeTimeline(): Promise<ExtractedTweet[] | null> {
           }
 
           const videoPoster = normalizeMediaUrl(
-            (article.querySelector("video") as HTMLVideoElement | null)?.poster ?? null,
+            (article.querySelector("video") as HTMLVideoElement | null)
+              ?.poster ?? null,
           );
           if (best) return best.url;
           return videoPoster;
         }
 
         function extractBestVideo(article: Element): string | null {
-          const videoEls = Array.from(article.querySelectorAll("video")) as HTMLVideoElement[];
+          const videoEls = Array.from(
+            article.querySelectorAll("video"),
+          ) as HTMLVideoElement[];
           for (const ve of videoEls) {
             const direct = normalizeMediaUrl(ve.src);
-            if (direct && /video\.twimg\.com|twimg\.com|\.mp4($|\?)/i.test(direct)) {
+            if (
+              direct &&
+              /video\.twimg\.com|twimg\.com|\.mp4($|\?)/i.test(direct)
+            ) {
               return direct;
             }
-            const sources = Array.from(ve.querySelectorAll("source")) as HTMLSourceElement[];
+            const sources = Array.from(
+              ve.querySelectorAll("source"),
+            ) as HTMLSourceElement[];
             for (const src of sources) {
               const u = normalizeMediaUrl(src.src);
-              if (u && /video\.twimg\.com|twimg\.com|\.mp4($|\?)/i.test(u)) return u;
+              if (u && /video\.twimg\.com|twimg\.com|\.mp4($|\?)/i.test(u))
+                return u;
             }
           }
           return null;
         }
 
-        return Array.from(document.querySelectorAll("article[data-testid='tweet']")).flatMap(
-          (article) => {
-            const articleText = (article as HTMLElement).innerText || "";
-            if (
-              /\b(promoted|sponsored|paid partnership|advertisement)\b/i.test(
-                articleText,
-              )
-            ) {
-              return [];
-            }
-            if (/\bPinned\b/i.test(articleText)) {
-              return [];
-            }
-            const statusLinks = Array.from(article.querySelectorAll("a[href*='/status/']"))
-              .map((a) => (a as HTMLAnchorElement).href)
-              .filter((href) => /\/\w+\/status\/\d+/.test(href));
-            const permalink = statusLinks[0];
-            if (!permalink) return [];
-            const tweetIdMatch = permalink.match(/\/status\/(\d+)/);
-            const tweetId = tweetIdMatch?.[1];
-            const tweetTextEl = article.querySelector("[data-testid='tweetText']") as
-              | HTMLElement
-              | null;
-            const tweetText = (tweetTextEl?.innerText || articleText)
-              .replace(/\s+/g, " ")
-              .replace(/\b(Show more|Quote|Replying to)\b/gi, "")
-              .trim();
-            const timestamp = article.querySelector("time")?.getAttribute("datetime") ?? "";
-            const imageUrl = extractBestImg(article);
-            const videoUrl = extractBestVideo(article);
-            if (!tweetId || !tweetText || !timestamp) return [];
-            if (
-              tweetText.length < 15 ||
-              /\b(?:sponsored|advert|promoted|paid partnership)\b/i.test(tweetText) ||
-              /\b(?:sign up|subscribe|free trial|use code|coupon|promo code)\b/i.test(
-                tweetText,
-              )
-            ) {
-              return [];
-            }
-            return [
-              {
-                tweetId,
-                text: tweetText,
-                timestamp,
-                permalink,
-                imageUrl: imageUrl || null,
-                videoUrl: videoUrl || null,
-              },
-            ];
-          },
-        );
+        return Array.from(
+          document.querySelectorAll("article[data-testid='tweet']"),
+        ).flatMap((article) => {
+          const articleText = (article as HTMLElement).innerText || "";
+          if (
+            /\b(promoted|sponsored|paid partnership|advertisement)\b/i.test(
+              articleText,
+            )
+          ) {
+            return [];
+          }
+          if (/\bPinned\b/i.test(articleText)) {
+            return [];
+          }
+          const statusLinks = Array.from(
+            article.querySelectorAll("a[href*='/status/']"),
+          )
+            .map((a) => (a as HTMLAnchorElement).href)
+            .filter((href) => /\/\w+\/status\/\d+/.test(href));
+          const permalink = statusLinks[0];
+          if (!permalink) return [];
+          const tweetIdMatch = permalink.match(/\/status\/(\d+)/);
+          const tweetId = tweetIdMatch?.[1];
+          const tweetTextEl = article.querySelector(
+            "[data-testid='tweetText']",
+          ) as HTMLElement | null;
+          const tweetText = (tweetTextEl?.innerText || articleText)
+            .replace(/\s+/g, " ")
+            .replace(/\b(Show more|Quote|Replying to)\b/gi, "")
+            .trim();
+          const timestamp =
+            article.querySelector("time")?.getAttribute("datetime") ?? "";
+          const imageUrl = extractBestImg(article);
+          const videoUrl = extractBestVideo(article);
+          if (!tweetId || !tweetText || !timestamp) return [];
+          if (
+            tweetText.length < 15 ||
+            /\b(?:sponsored|advert|promoted|paid partnership)\b/i.test(
+              tweetText,
+            ) ||
+            /\b(?:sign up|subscribe|free trial|use code|coupon|promo code)\b/i.test(
+              tweetText,
+            )
+          ) {
+            return [];
+          }
+          return [
+            {
+              tweetId,
+              text: tweetText,
+              timestamp,
+              permalink,
+              imageUrl: imageUrl || null,
+              videoUrl: videoUrl || null,
+            },
+          ];
+        });
       });
 
       const seen = new Set<string>();
@@ -1012,17 +1101,25 @@ function extractTweetsFromNextData(
           const media = m as {
             media_url_https?: string;
             type?: string;
-            video_info?: { variants?: Array<{ bitrate?: number; content_type?: string; url?: string }> };
+            video_info?: {
+              variants?: Array<{
+                bitrate?: number;
+                content_type?: string;
+                url?: string;
+              }>;
+            };
           };
           if (typeof media?.media_url_https === "string") {
             imageUrls.push(media.media_url_https);
           }
-          if (!videoUrl &&
+          if (
+            !videoUrl &&
             (media?.type === "video" || media?.type === "animated_gif") &&
             Array.isArray(media.video_info?.variants)
           ) {
-            const mp4s = (media.video_info!.variants!).filter(
-              (v) => v.content_type === "video/mp4" && typeof v.url === "string",
+            const mp4s = media.video_info!.variants!.filter(
+              (v) =>
+                v.content_type === "video/mp4" && typeof v.url === "string",
             );
             mp4s.sort((a, b) => (b.bitrate ?? 0) - (a.bitrate ?? 0));
             if (mp4s.length > 0 && mp4s[0].url) videoUrl = mp4s[0].url;
@@ -1033,7 +1130,9 @@ function extractTweetsFromNextData(
       out.push({
         tweet_id: idStr,
         text: String(text),
-        timestamp: Number.isFinite(ts) ? new Date(ts).toISOString() : String(created),
+        timestamp: Number.isFinite(ts)
+          ? new Date(ts).toISOString()
+          : String(created),
         permalink: `https://twitter.com/${cleanHandle}/status/${idStr}`,
         author_handle: cleanHandle,
         image_url: imageUrl,
@@ -1160,7 +1259,9 @@ export async function collectFromXHandlesBrowser(
         latency_ms: fetchLatency,
       }),
     );
-    const allowedHandles = new Set(opts.handles.map(stripHandle).filter(Boolean));
+    const allowedHandles = new Set(
+      opts.handles.map(stripHandle).filter(Boolean),
+    );
     for (const tw of homeTweets) {
       if (!allowedHandles.has(stripHandle(tw.author_handle))) continue;
       const routings = getRoutingForHandle(tw.author_handle);
@@ -1169,7 +1270,8 @@ export async function collectFromXHandlesBrowser(
       if (isDisallowedRepostOrRetweet(rawText, allowedHandles)) continue;
       const cleanText = sanitizeTweetBody(rawText);
       if (!cleanText || cleanText.length < 15) continue;
-      const headline = cleanText.length > 220 ? cleanText.slice(0, 220) : cleanText;
+      const headline =
+        cleanText.length > 220 ? cleanText.slice(0, 220) : cleanText;
       if (!scoreHeadline(headline)) continue;
       if (isGuardrailRejected(cleanText)) continue;
       if (isStrictPromoRejected(cleanText)) continue;
@@ -1237,7 +1339,8 @@ export async function collectFromXHandlesBrowser(
           item_id: tw.tweet_id,
           source: `twitter:${tw.author_handle}`,
           source_domain: "x.com",
-          headline: cleanText.length > 220 ? cleanText.slice(0, 220) : cleanText,
+          headline:
+            cleanText.length > 220 ? cleanText.slice(0, 220) : cleanText,
           body: cleanText,
           url: tw.permalink,
           image_url: tw.image_url ?? null,
@@ -1259,7 +1362,10 @@ export async function collectFromXHandlesBrowser(
       service: "riskflow-worker",
       stage: "x_collect_done",
       total_out: out.length,
-      sources: [...new Set(out.map(i => i.source_domain ?? i.source))].slice(0, 10),
+      sources: [...new Set(out.map((i) => i.source_domain ?? i.source))].slice(
+        0,
+        10,
+      ),
     }),
   );
 

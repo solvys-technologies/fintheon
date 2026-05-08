@@ -50,7 +50,11 @@ function readConfig(): LocalConfigFile {
   try {
     const raw = readFileSync(LOCAL_CONFIG_PATH, "utf-8");
     const parsed = JSON.parse(raw) as LocalConfigFile;
-    if (!parsed || typeof parsed !== "object" || typeof parsed.users !== "object") {
+    if (
+      !parsed ||
+      typeof parsed !== "object" ||
+      typeof parsed.users !== "object"
+    ) {
       return { version: 1, users: {} };
     }
     return {
@@ -123,8 +127,12 @@ export function setLocalRoutingConfig(
   const config = readConfig();
   const user = ensureUser(config, userId);
   user.routing = {
-    ...(routing.defaultProvider ? { defaultProvider: routing.defaultProvider } : {}),
-    ...(routing.opencodeGoModel ? { opencodeGoModel: routing.opencodeGoModel } : {}),
+    ...(routing.defaultProvider
+      ? { defaultProvider: routing.defaultProvider }
+      : {}),
+    ...(routing.opencodeGoModel
+      ? { opencodeGoModel: routing.opencodeGoModel }
+      : {}),
     updatedAt: new Date().toISOString(),
   };
   writeConfig(config);
@@ -143,4 +151,3 @@ export function getLocalRoutingConfig(userId: string): {
     opencodeGoModel: routing.opencodeGoModel,
   };
 }
-

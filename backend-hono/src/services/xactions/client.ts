@@ -91,16 +91,36 @@ function harvestTweets(node: unknown, handle: string): XActionsTweet[] {
       let imageUrl: string | null = null;
       const imageUrls: string[] = [];
       let videoUrl: string | null = null;
-      const mediaArr = (obj.media ?? (obj as any).extended_entities?.media ?? (obj as any).entities?.media) as
-        Array<{ media_url_https?: string; type?: string; video_info?: { variants?: Array<{ bitrate?: number; content_type?: string; url?: string }> } }> | undefined;
+      const mediaArr = (obj.media ??
+        (obj as any).extended_entities?.media ??
+        (obj as any).entities?.media) as
+        | Array<{
+            media_url_https?: string;
+            type?: string;
+            video_info?: {
+              variants?: Array<{
+                bitrate?: number;
+                content_type?: string;
+                url?: string;
+              }>;
+            };
+          }>
+        | undefined;
       if (Array.isArray(mediaArr)) {
         for (const m of mediaArr) {
           if (typeof m?.media_url_https === "string") {
             if (!imageUrl) imageUrl = m.media_url_https;
             imageUrls.push(m.media_url_https);
           }
-          if (!videoUrl && (m?.type === "video" || m?.type === "animated_gif") && Array.isArray(m.video_info?.variants)) {
-            const mp4s = (m.video_info!.variants!).filter(v => v.content_type === "video/mp4" && typeof v.url === "string");
+          if (
+            !videoUrl &&
+            (m?.type === "video" || m?.type === "animated_gif") &&
+            Array.isArray(m.video_info?.variants)
+          ) {
+            const mp4s = m.video_info!.variants!.filter(
+              (v) =>
+                v.content_type === "video/mp4" && typeof v.url === "string",
+            );
             mp4s.sort((a, b) => (b.bitrate ?? 0) - (a.bitrate ?? 0));
             if (mp4s.length > 0 && mp4s[0].url) videoUrl = mp4s[0].url;
           }

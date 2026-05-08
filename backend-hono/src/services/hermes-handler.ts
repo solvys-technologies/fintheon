@@ -828,7 +828,9 @@ export async function initHermesAgent(): Promise<void> {
     }
   }
 
-  log.info("DeepSeek unavailable and VProxy unavailable; OpenRouter remains request-time fallback");
+  log.info(
+    "DeepSeek unavailable and VProxy unavailable; OpenRouter remains request-time fallback",
+  );
 }
 
 /**

@@ -310,7 +310,8 @@ export async function harperChat(
     const deskContext = await preflight("harper", {
       userId,
       includeArbitrumChamber:
-        surface === "arbitrumChamber" || !!activeConnectors?.includes("arbitrumChamber"),
+        surface === "arbitrumChamber" ||
+        !!activeConnectors?.includes("arbitrumChamber"),
     });
     if (deskContext) {
       systemPrompt += deskContext;

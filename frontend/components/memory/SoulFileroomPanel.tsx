@@ -36,7 +36,10 @@ export function SoulFileroomPanel({}: SoulFileroomPanelProps) {
   const [contentLoading, setContentLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [saveMessage, setSaveMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   const fetchSouls = useCallback(async () => {
     setLoading(true);
@@ -198,9 +201,7 @@ export function SoulFileroomPanel({}: SoulFileroomPanelProps) {
                     <div className="px-4 pb-3 pl-10">
                       <div className="text-[10px] text-[var(--fintheon-text)]/25 font-mono leading-relaxed">
                         {soul.model_prefer && (
-                          <span>
-                            Model: {soul.model_prefer} —{" "}
-                          </span>
+                          <span>Model: {soul.model_prefer} — </span>
                         )}
                         Click to load full content
                       </div>
@@ -217,7 +218,9 @@ export function SoulFileroomPanel({}: SoulFileroomPanelProps) {
         {!selectedId ? (
           <div className="flex flex-col items-center justify-center h-full text-[var(--fintheon-text)]/20">
             <User size={32} className="mb-2 opacity-30" />
-            <p className="text-xs">Select an agent to view and edit their soul</p>
+            <p className="text-xs">
+              Select an agent to view and edit their soul
+            </p>
           </div>
         ) : contentLoading ? (
           <div className="flex items-center justify-center py-16">

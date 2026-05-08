@@ -66,9 +66,10 @@ export function useAskCAO() {
       setIsPending(true);
       try {
         const hasDirectKey = Boolean(
-          await fetchDeepSeekKey({ apiBaseUrl: API_BASE, getAccessToken }).catch(
-            () => null,
-          ),
+          await fetchDeepSeekKey({
+            apiBaseUrl: API_BASE,
+            getAccessToken,
+          }).catch(() => null),
         );
         if (hasDirectKey) {
           const messages: DeepSeekChatMessage[] = [

@@ -94,13 +94,13 @@ When TP directs an agent to "fix X," these are the authoritative names. Any inte
 | Canonical name                            | What it is                                                       | Internal locator                                               |
 | ----------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------- |
 | **Consilium**                             | Main workspace                                                   | `frontend/components/consilium/`                               |
-| **Sanctum**                               | Timeline + ArbitrumChamber + NarrativeFlow composite                    | `frontend/components/narrative/Sanctum.tsx`                    |
+| **Sanctum**                               | Timeline + ArbitrumChamber + NarrativeFlow composite             | `frontend/components/narrative/Sanctum.tsx`                    |
 | **Forum**                                 | Team channel (Fluxer iframe)                                     | `frontend/components/consilium/FluxerEmbed.tsx`                |
 | **Agentic Forum** (aka Agentic Boardroom) | DAG + agent-swarm runtime                                        | `backend-hono/src/services/boardroom-*` + DAG routes           |
 | **Apparatus**                             | Where the agents live (agent registry)                           | `frontend/components/apparatus/`                               |
 | **Strategium**                            | Right rail — mission control + RiskFlow feed + economic calendar | `frontend/components/MissionControl.tsx` + Strategium panels   |
 | **Arbitrum**                              | 5-seat deliberation engine (replaces MiroShark)                  | `backend-hono/src/services/arbitrum/`                          |
-| **ArbitrumChamber**                              | Surface label inside Sanctum for Arbitrum output                 | `frontend/components/narrative/Sanctum.tsx` (chart-mode panel) |
+| **ArbitrumChamber**                       | Surface label inside Sanctum for Arbitrum output                 | `frontend/components/narrative/Sanctum.tsx` (chart-mode panel) |
 | **RiskFlow**                              | Scored news feed                                                 | `backend-hono/src/services/riskflow/`                          |
 | **NarrativeFlow**                         | Catalyst cards promoted from RiskFlow                            | `frontend/components/narrative/NarrativeCanvas.tsx`            |
 | **CAO chat**                              | Main chat feature (persona: Harper)                              | `/api/harper/chat` + frontend ChatInterface                    |

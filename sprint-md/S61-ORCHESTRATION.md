@@ -37,12 +37,12 @@ When S61 ships, every agent mutation across Fintheon flows through one pipeline:
 
 ### T1: Shared Mutation Contract + Audit Logger
 
-| Attribute | Value |
-|-----------|-------|
-| **Files** | 6 (all backend) |
-| **Complexity** | High |
+| Attribute        | Value             |
+| ---------------- | ----------------- |
+| **Files**        | 6 (all backend)   |
+| **Complexity**   | High              |
 | **Dependencies** | None (foundation) |
-| **Owner** | T1 agent |
+| **Owner**        | T1 agent          |
 
 **Owns:** `supabase/migrations/20260507_s61_agent_audit_log.sql`, `backend-hono/src/types/audit.ts`, `backend-hono/src/services/audit-logger.ts`, `backend-hono/src/services/tool-approval-store.ts` (edit), `backend-hono/src/routes/audit/index.ts`, `backend-hono/src/routes/index.ts` (edit)
 
@@ -50,12 +50,12 @@ When S61 ships, every agent mutation across Fintheon flows through one pipeline:
 
 ### T2: Capability Registry + Agent Tool Wiring
 
-| Attribute | Value |
-|-----------|-------|
-| **Files** | 11 (all backend) |
-| **Complexity** | High |
-| **Dependencies** | Waits for T1 |
-| **Owner** | T2 agent |
+| Attribute        | Value            |
+| ---------------- | ---------------- |
+| **Files**        | 11 (all backend) |
+| **Complexity**   | High             |
+| **Dependencies** | Waits for T1     |
+| **Owner**        | T2 agent         |
 
 **Owns:** `backend-hono/src/services/capability-registry/types.ts`, `registry.ts`, `enforcer.ts`, `backend-hono/src/services/ai/agent-instructions/index.ts` (edit), `backend-hono/src/services/ai/soul/*.md` (5 edits), `backend-hono/src/services/strands/agent-factory.ts` (edit), `backend-hono/src/services/strands/agents/{oracle,feucht,consul,herald}.ts` (4 edits)
 
@@ -63,12 +63,12 @@ When S61 ships, every agent mutation across Fintheon flows through one pipeline:
 
 ### T3: Agent Context Preflight
 
-| Attribute | Value |
-|-----------|-------|
-| **Files** | 4 (all backend) |
-| **Complexity** | Medium |
-| **Dependencies** | Waits for T1 |
-| **Owner** | T3 agent |
+| Attribute        | Value           |
+| ---------------- | --------------- |
+| **Files**        | 4 (all backend) |
+| **Complexity**   | Medium          |
+| **Dependencies** | Waits for T1    |
+| **Owner**        | T3 agent        |
 
 **Owns:** `backend-hono/src/services/desk-context/preflight.ts`, `agent-outputs.ts`, `backend-hono/src/services/hermes/context-engine.ts` (edit), `backend-hono/src/services/harper-handler.ts` (edit)
 
@@ -76,12 +76,12 @@ When S61 ships, every agent mutation across Fintheon flows through one pipeline:
 
 ### T4: Frontend Approval UI (New Components Only)
 
-| Attribute | Value |
-|-----------|-------|
-| **Files** | 5 (all new frontend) |
-| **Complexity** | Medium |
-| **Dependencies** | Waits for T1 |
-| **Owner** | T4 agent |
+| Attribute        | Value                |
+| ---------------- | -------------------- |
+| **Files**        | 5 (all new frontend) |
+| **Complexity**   | Medium               |
+| **Dependencies** | Waits for T1         |
+| **Owner**        | T4 agent             |
 
 **Owns:** `frontend/components/governance/UnifiedApprovalPipeline.tsx`, `DiffPreview.tsx`, `AuditTrailViewer.tsx`, `frontend/hooks/useAuditLog.ts`, `useUnifiedApproval.ts` (all NEW)
 
@@ -89,25 +89,25 @@ When S61 ships, every agent mutation across Fintheon flows through one pipeline:
 
 ## File Ownership Matrix (Conflict Prevention)
 
-| File | T1 | T2 | T3 | T4 | Notes |
-|------|----|----|----|----|-------|
-| `supabase/migrations/20260507_*.sql` | X | - | - | - | New |
-| `backend-hono/src/types/audit.ts` | X | - | - | - | New |
-| `backend-hono/src/services/audit-logger.ts` | X | - | - | - | New |
-| `backend-hono/src/services/tool-approval-store.ts` | X | - | - | - | Edit - add audit hooks |
-| `backend-hono/src/routes/audit/index.ts` | X | - | - | - | New |
-| `backend-hono/src/routes/index.ts` | X* | - | - | - | Edit - mount /api/audit |
-| `backend-hono/src/services/capability-registry/` | - | X | - | - | New directory |
-| `backend-hono/src/services/ai/agent-instructions/index.ts` | - | X | - | - | Edit |
-| `backend-hono/src/services/ai/soul/*.md` | - | X | - | - | 5 edits |
-| `backend-hono/src/services/strands/agent-factory.ts` | - | X | - | - | Edit |
-| `backend-hono/src/services/strands/agents/*.ts` | - | X | - | - | 4 edits |
-| `backend-hono/src/services/desk-context/` | - | - | X | - | New directory |
-| `backend-hono/src/services/hermes/context-engine.ts` | - | - | X | - | Edit |
-| `backend-hono/src/services/harper-handler.ts` | - | - | X | - | Edit |
-| `frontend/components/governance/` | - | - | - | X | New directory |
-| `frontend/hooks/useAuditLog.ts` | - | - | - | X | New |
-| `frontend/hooks/useUnifiedApproval.ts` | - | - | - | X | New |
+| File                                                       | T1  | T2  | T3  | T4  | Notes                   |
+| ---------------------------------------------------------- | --- | --- | --- | --- | ----------------------- |
+| `supabase/migrations/20260507_*.sql`                       | X   | -   | -   | -   | New                     |
+| `backend-hono/src/types/audit.ts`                          | X   | -   | -   | -   | New                     |
+| `backend-hono/src/services/audit-logger.ts`                | X   | -   | -   | -   | New                     |
+| `backend-hono/src/services/tool-approval-store.ts`         | X   | -   | -   | -   | Edit - add audit hooks  |
+| `backend-hono/src/routes/audit/index.ts`                   | X   | -   | -   | -   | New                     |
+| `backend-hono/src/routes/index.ts`                         | X\* | -   | -   | -   | Edit - mount /api/audit |
+| `backend-hono/src/services/capability-registry/`           | -   | X   | -   | -   | New directory           |
+| `backend-hono/src/services/ai/agent-instructions/index.ts` | -   | X   | -   | -   | Edit                    |
+| `backend-hono/src/services/ai/soul/*.md`                   | -   | X   | -   | -   | 5 edits                 |
+| `backend-hono/src/services/strands/agent-factory.ts`       | -   | X   | -   | -   | Edit                    |
+| `backend-hono/src/services/strands/agents/*.ts`            | -   | X   | -   | -   | 4 edits                 |
+| `backend-hono/src/services/desk-context/`                  | -   | -   | X   | -   | New directory           |
+| `backend-hono/src/services/hermes/context-engine.ts`       | -   | -   | X   | -   | Edit                    |
+| `backend-hono/src/services/harper-handler.ts`              | -   | -   | X   | -   | Edit                    |
+| `frontend/components/governance/`                          | -   | -   | -   | X   | New directory           |
+| `frontend/hooks/useAuditLog.ts`                            | -   | -   | -   | X   | New                     |
+| `frontend/hooks/useUnifiedApproval.ts`                     | -   | -   | -   | X   | New                     |
 
 \* T1 takes `index.ts` mount edit. T2/T3 don't touch routes.
 

@@ -201,7 +201,9 @@ export function createArbitrumRoutes(): Hono {
         .select("generated_at")
         .order("generated_at", { ascending: false })
         .limit(1);
-      const sinceIso = latestBrief?.[0]?.generated_at ?? new Date(Date.now() - 6 * 3_600_000).toISOString();
+      const sinceIso =
+        latestBrief?.[0]?.generated_at ??
+        new Date(Date.now() - 6 * 3_600_000).toISOString();
 
       // Check for high-scored RiskFlow items since last brief
       const { data: recentItems, error: itemsErr } = await sb
@@ -213,13 +215,19 @@ export function createArbitrumRoutes(): Hono {
         .limit(10);
 
       if (itemsErr) {
-        log.warn("revision-check item fetch failed", { error: itemsErr.message });
-        return c.json({ hasChanges: false, statusMessage: "Unable to scan recent items." });
+        log.warn("revision-check item fetch failed", {
+          error: itemsErr.message,
+        });
+        return c.json({
+          hasChanges: false,
+          statusMessage: "Unable to scan recent items.",
+        });
       }
 
       const notable = (recentItems ?? []).filter((item: any) => {
         const score = Number(item.iv_score);
-        const minsAgo = (Date.now() - new Date(item.published_at).getTime()) / 60_000;
+        const minsAgo =
+          (Date.now() - new Date(item.published_at).getTime()) / 60_000;
         return score >= 8 || (score >= 7 && minsAgo < 60);
       });
 
@@ -233,10 +241,15 @@ export function createArbitrumRoutes(): Hono {
       }
 
       // Notable items found — trigger a quick 1-round deliberation
-      const headlines = notable.map((n: any) => n.headline).filter(Boolean).slice(0, 5).join(" | ");
+      const headlines = notable
+        .map((n: any) => n.headline)
+        .filter(Boolean)
+        .slice(0, 5)
+        .join(" | ");
       const result = await runChamber(
         {
-          question: "Review these recent developments — does anything warrant revising the active desk plan or briefing?",
+          question:
+            "Review these recent developments — does anything warrant revising the active desk plan or briefing?",
           category: "revision-check",
           context: `Recent high-impact items: ${headlines}`,
         },
@@ -247,13 +260,21 @@ export function createArbitrumRoutes(): Hono {
       // Regenerate the desk plan if chamber suggests revision
       let planUpdated = false;
       const digest = result.verdict.digest_text?.toLowerCase() ?? "";
-      if (digest.includes("revise") || digest.includes("revision") || digest.includes("update") || digest.includes("change")) {
+      if (
+        digest.includes("revise") ||
+        digest.includes("revision") ||
+        digest.includes("update") ||
+        digest.includes("change")
+      ) {
         try {
-          const { regenerateDayPlan } = await import("../../services/day-plan/day-plan-service.js");
+          const { regenerateDayPlan } =
+            await import("../../services/day-plan/day-plan-service.js");
           await regenerateDayPlan({ overrideReason: "chamber-revision" });
           planUpdated = true;
         } catch (planErr) {
-          log.warn("Desk plan regeneration failed during revision check", { error: String(planErr) });
+          log.warn("Desk plan regeneration failed during revision check", {
+            error: String(planErr),
+          });
         }
       }
 

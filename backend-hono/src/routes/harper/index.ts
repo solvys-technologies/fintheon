@@ -13,9 +13,7 @@ import {
   streamHarperChat,
   FINTHEON_PATHS,
 } from "../../services/strands/index.js";
-import {
-  checkDeepSeekDirectHealth,
-} from "../../services/strands/provider.js";
+import { checkDeepSeekDirectHealth } from "../../services/strands/provider.js";
 import { uiStreamToSSEResponse } from "../../services/strands/stream-adapter.js";
 import { createRequestCognition } from "../../services/cognition-emitter.js";
 import * as conversationStore from "../../services/ai/conversation-store.js";
@@ -434,7 +432,7 @@ export function createHarperRoutes() {
           : body.provider === "opencode-go" ||
               body.provider === "deepseek-oc-api"
             ? "OpenCode Go"
-          : "DeepSeek v4 Pro";
+            : "DeepSeek v4 Pro";
       cognition.step(
         "agent-route",
         `Harper (${providerLabel})`,

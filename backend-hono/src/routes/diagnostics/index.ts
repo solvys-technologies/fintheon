@@ -734,7 +734,13 @@ async function loadRiskFlowRuntime(): Promise<
 /*  Agent Health — per-agent SOUL/memory/GEPA/REFLECT status             */
 /* ------------------------------------------------------------------ */
 
-const AGENT_IDS_DIAG = ["harper", "oracle", "feucht", "consul", "herald"] as const;
+const AGENT_IDS_DIAG = [
+  "harper",
+  "oracle",
+  "feucht",
+  "consul",
+  "herald",
+] as const;
 const AGENT_ROLES_DIAG: Record<string, string> = {
   harper: "CAO",
   oracle: "Forecaster",
@@ -743,17 +749,13 @@ const AGENT_ROLES_DIAG: Record<string, string> = {
   herald: "Contrarian",
 };
 
-async function loadAgentHealth(): Promise<
-  DiagnosticsResponse["agent_health"]
-> {
+async function loadAgentHealth(): Promise<DiagnosticsResponse["agent_health"]> {
   try {
     // SOUL checks (all 5 agents)
     const soulResults = await Promise.all(
       AGENT_IDS_DIAG.map(async (agentId) => {
         try {
-          const { loadSoul } = await import(
-            "../../services/ai/soul/loader.js"
-          );
+          const { loadSoul } = await import("../../services/ai/soul/loader.js");
           const soul = await loadSoul(agentId);
           const identity = soul.identity;
           const nativeHomeIntact =
@@ -811,9 +813,8 @@ async function loadAgentHealth(): Promise<
     const memoryCounts = await Promise.all(
       AGENT_IDS_DIAG.map(async (agentId) => {
         try {
-          const { getSupabaseClient } = await import(
-            "../../config/supabase.js"
-          );
+          const { getSupabaseClient } =
+            await import("../../config/supabase.js");
           const sb = getSupabaseClient();
           if (!sb) return { agentId, count: 0 };
           const { count, error } = await sb

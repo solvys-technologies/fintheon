@@ -34,41 +34,44 @@ export function DeepSeekApiKeySection() {
     };
   }, []);
 
-  const fetchProviderStatus = useCallback(async (provider: ProviderId) => {
-    try {
-      const res = await fetch(
-        `${API_BASE}/api/settings/ai-keys?provider=${encodeURIComponent(provider)}`,
-        {
-          headers: await aiKeyHeaders(),
-          credentials: "include",
-        },
-      );
-      if (!res.ok) return;
-      const data = await res.json();
-      const masked =
-        data.maskedKey ??
-        data.masked ??
-        data.keys?.[0]?.maskedKey ??
-        data.keys?.[0]?.masked ??
-        null;
-      if (provider === "deepseek") {
-        setDeepSeekMaskedKey(masked);
-        localStorage.setItem(DEEPSEEK_KEY_STATUS, masked ? "set" : "missing");
-      } else {
-        setOpenCodeGoMaskedKey(masked);
-        setOpenCodeGoBaseUrl(
-          typeof data.baseUrl === "string" ? data.baseUrl : null,
+  const fetchProviderStatus = useCallback(
+    async (provider: ProviderId) => {
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/settings/ai-keys?provider=${encodeURIComponent(provider)}`,
+          {
+            headers: await aiKeyHeaders(),
+            credentials: "include",
+          },
         );
-        localStorage.setItem(OC_API_KEY_STATUS, masked ? "set" : "missing");
+        if (!res.ok) return;
+        const data = await res.json();
+        const masked =
+          data.maskedKey ??
+          data.masked ??
+          data.keys?.[0]?.maskedKey ??
+          data.keys?.[0]?.masked ??
+          null;
+        if (provider === "deepseek") {
+          setDeepSeekMaskedKey(masked);
+          localStorage.setItem(DEEPSEEK_KEY_STATUS, masked ? "set" : "missing");
+        } else {
+          setOpenCodeGoMaskedKey(masked);
+          setOpenCodeGoBaseUrl(
+            typeof data.baseUrl === "string" ? data.baseUrl : null,
+          );
+          localStorage.setItem(OC_API_KEY_STATUS, masked ? "set" : "missing");
+        }
+      } catch {
+        if (provider === "deepseek") {
+          localStorage.setItem(DEEPSEEK_KEY_STATUS, "missing");
+        } else {
+          localStorage.setItem(OC_API_KEY_STATUS, "missing");
+        }
       }
-    } catch {
-      if (provider === "deepseek") {
-        localStorage.setItem(DEEPSEEK_KEY_STATUS, "missing");
-      } else {
-        localStorage.setItem(OC_API_KEY_STATUS, "missing");
-      }
-    }
-  }, [aiKeyHeaders]);
+    },
+    [aiKeyHeaders],
+  );
 
   useEffect(() => {
     void Promise.all([

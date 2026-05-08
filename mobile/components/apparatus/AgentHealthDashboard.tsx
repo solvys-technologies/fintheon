@@ -102,7 +102,14 @@ function AgentRow({ agent }: AgentRowProps) {
           gap: 8,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            minWidth: 0,
+          }}
+        >
           <span
             style={{
               width: 8,
@@ -112,7 +119,9 @@ function AgentRow({ agent }: AgentRowProps) {
               flexShrink: 0,
             }}
           />
-          <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+          <div
+            style={{ display: "flex", flexDirection: "column", minWidth: 0 }}
+          >
             <span
               style={{
                 fontFamily: "var(--font-data)",
@@ -135,7 +144,14 @@ function AgentRow({ agent }: AgentRowProps) {
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            flexShrink: 0,
+          }}
+        >
           <span
             style={{
               fontFamily: "var(--font-mono)",
@@ -197,7 +213,10 @@ function AgentRow({ agent }: AgentRowProps) {
             gap: 10,
           }}
         >
-          <DetailRow label="SOUL Load" value={agent.soulLoaded ? "Loaded" : "Failed"} />
+          <DetailRow
+            label="SOUL Load"
+            value={agent.soulLoaded ? "Loaded" : "Failed"}
+          />
           <DetailRow
             label="Native Home"
             value={
@@ -215,14 +234,14 @@ function AgentRow({ agent }: AgentRowProps) {
                 ? `${agent.reflectScore.toFixed(3)}`
                 : "No data"
             }
-            secondary={agent.reflectLastRun ? timeAgo(agent.reflectLastRun) : undefined}
+            secondary={
+              agent.reflectLastRun ? timeAgo(agent.reflectLastRun) : undefined
+            }
           />
           <DetailRow
             label="GEPA"
             value={`${agent.gepaOpenPrs} open`}
-            secondary={
-              agent.gepaLastRun ? timeAgo(agent.gepaLastRun) : "never"
-            }
+            secondary={agent.gepaLastRun ? timeAgo(agent.gepaLastRun) : "never"}
           />
           <DetailRow label="Memories" value={`${agent.memoryCount} stored`} />
           {agent.soulVersion && (

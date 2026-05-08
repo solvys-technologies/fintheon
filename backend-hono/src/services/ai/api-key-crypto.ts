@@ -1,14 +1,23 @@
 // [claude-code 2026-05-05] Added getUserApiKey() to resolve per-user BYOK for chat inference.
 // [claude-code 2026-05-03] S58-T1: encrypted user AI API key storage.
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
-import { getSupabaseClient, isSupabaseConfigured } from "../../config/supabase.js";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  randomBytes,
+} from "crypto";
+import {
+  getSupabaseClient,
+  isSupabaseConfigured,
+} from "../../config/supabase.js";
 import { getLocalProviderKey } from "../hermes/local-user-config.js";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_BYTES = 12;
 
 function getEncryptionKey(): Buffer {
-  const secret = process.env.ENCRYPTION_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const secret =
+    process.env.ENCRYPTION_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!secret) throw new Error("ENCRYPTION_SECRET not set");
   return createHash("sha256").update(secret).digest();
 }
@@ -17,9 +26,14 @@ export function encryptApiKey(apiKey: string): string {
   if (!apiKey.trim()) throw new Error("apiKey is required");
   const iv = randomBytes(IV_BYTES);
   const cipher = createCipheriv(ALGORITHM, getEncryptionKey(), iv);
-  const encrypted = Buffer.concat([cipher.update(apiKey, "utf8"), cipher.final()]);
+  const encrypted = Buffer.concat([
+    cipher.update(apiKey, "utf8"),
+    cipher.final(),
+  ]);
   const authTag = cipher.getAuthTag();
-  return [iv, authTag, encrypted].map((part) => part.toString("base64url")).join(".");
+  return [iv, authTag, encrypted]
+    .map((part) => part.toString("base64url"))
+    .join(".");
 }
 
 export function decryptApiKey(payload: string): string {

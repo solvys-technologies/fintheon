@@ -146,45 +146,43 @@ export function RiskFlowCardExpanded({
               }}
               aria-label={isMuted ? "Unmute" : "Mute"}
             >
-              {isMuted ? (
-                <VolumeX size={14} />
-              ) : (
-                <Volume2 size={14} />
-              )}
+              {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
             </button>
           </div>
-        ) : alert.imageUrl && (
-          <a
-            href={alert.url ?? alert.imageUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              display: "block",
-              marginBottom: "12px",
-              borderRadius: "8px",
-              overflow: "hidden",
-              border: "1px solid var(--border)",
-            }}
-          >
-            <img
-              src={alert.imageUrl}
-              alt=""
-              loading="lazy"
-              referrerPolicy="no-referrer"
-              onError={(e) => {
-                const wrap = e.currentTarget
-                  .parentElement as HTMLElement | null;
-                if (wrap) wrap.style.display = "none";
-              }}
+        ) : (
+          alert.imageUrl && (
+            <a
+              href={alert.url ?? alert.imageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
               style={{
-                width: "100%",
-                maxHeight: "200px",
-                objectFit: "cover",
                 display: "block",
+                marginBottom: "12px",
+                borderRadius: "8px",
+                overflow: "hidden",
+                border: "1px solid var(--border)",
               }}
-            />
-          </a>
+            >
+              <img
+                src={alert.imageUrl}
+                alt=""
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  const wrap = e.currentTarget
+                    .parentElement as HTMLElement | null;
+                  if (wrap) wrap.style.display = "none";
+                }}
+                style={{
+                  width: "100%",
+                  maxHeight: "200px",
+                  objectFit: "cover",
+                  display: "block",
+                }}
+              />
+            </a>
+          )
         )}
 
         {/* Agent notes */}

@@ -6,7 +6,11 @@ export type DailyColor = "green" | "red" | "flat";
 
 export type FeedbackAction = "followed" | "faded" | "sat_out";
 
-export type PositioningBias = "bullish" | "tactically_bullish" | "bearish" | "tactically_bearish";
+export type PositioningBias =
+  | "bullish"
+  | "tactically_bullish"
+  | "bearish"
+  | "tactically_bearish";
 
 export interface DayPlanWindow {
   id: string;

@@ -179,7 +179,11 @@ function MainLayoutInner() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
   const compactLevel: 0 | 1 | 2 =
-    viewportWidth < COMPACT_SEVERE_BP ? 2 : viewportWidth < COMPACT_MODERATE_BP ? 1 : 0;
+    viewportWidth < COMPACT_SEVERE_BP
+      ? 2
+      : viewportWidth < COMPACT_MODERATE_BP
+        ? 1
+        : 0;
 
   const {
     topStepXEnabled,

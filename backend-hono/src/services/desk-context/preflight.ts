@@ -73,17 +73,20 @@ export async function preflight(
   await pushSection(sections, "Active Desk Plan", async () => {
     const plan = await readDayPlan(DEFAULT_TEAM_ID, todayInNewYork());
     if (!plan) return [];
-    const windows = plan.windows
-      .slice(0, 3)
-      .map((w) => {
-        const prices = w.pricesOfInterest?.length
-          ? ` | POI ${w.pricesOfInterest.join(", ")}`
-          : "";
-        const entries = w.entries?.length ? ` | entries ${w.entries.join(", ")}` : "";
-        const target = w.profitTarget ? ` | target ${w.profitTarget}` : "";
-        return `- ${w.startTime}-${w.endTime}${prices}${entries}${target}`;
-      });
-    return [`- Theme: ${clip(plan.deskTheme ?? "No desk theme set.", 320)}`, ...windows];
+    const windows = plan.windows.slice(0, 3).map((w) => {
+      const prices = w.pricesOfInterest?.length
+        ? ` | POI ${w.pricesOfInterest.join(", ")}`
+        : "";
+      const entries = w.entries?.length
+        ? ` | entries ${w.entries.join(", ")}`
+        : "";
+      const target = w.profitTarget ? ` | target ${w.profitTarget}` : "";
+      return `- ${w.startTime}-${w.endTime}${prices}${entries}${target}`;
+    });
+    return [
+      `- Theme: ${clip(plan.deskTheme ?? "No desk theme set.", 320)}`,
+      ...windows,
+    ];
   });
 
   if (normalized === "harper") {
@@ -94,16 +97,22 @@ export async function preflight(
 
     if (options.includeArbitrumChamber) {
       await pushRaw(sections, async () => {
-        const { buildArbitrumChamberContext } = await import("../harper-handler.js");
+        const { buildArbitrumChamberContext } =
+          await import("../harper-handler.js");
         const arbitrumChamber = await buildArbitrumChamberContext();
-        return arbitrumChamber ? `## ArbitrumChamber Context${arbitrumChamber}` : "";
+        return arbitrumChamber
+          ? `## ArbitrumChamber Context${arbitrumChamber}`
+          : "";
       });
     }
   }
 
   if (sections.length === 0) return "";
 
-  return clip(`\n\n<desk-context>\n${sections.join("\n\n")}\n</desk-context>`, MAX_PREFLIGHT_CHARS);
+  return clip(
+    `\n\n<desk-context>\n${sections.join("\n\n")}\n</desk-context>`,
+    MAX_PREFLIGHT_CHARS,
+  );
 }
 
 function normalizeAgentId(agentId: string): AgentId | null {

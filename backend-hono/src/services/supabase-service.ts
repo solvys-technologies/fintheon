@@ -801,7 +801,11 @@ export async function writeBrief(
   for (const storageType of storageTypes) {
     const { data, error } = await sb
       .from("briefs")
-      .insert({ ...brief, brief_type: storageType, status: brief.status ?? "Active" })
+      .insert({
+        ...brief,
+        brief_type: storageType,
+        status: brief.status ?? "Active",
+      })
       .select()
       .single();
 

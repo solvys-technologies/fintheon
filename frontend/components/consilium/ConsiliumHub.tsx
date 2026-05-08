@@ -476,7 +476,11 @@ export function ConsiliumHub() {
           body: JSON.stringify({}),
         });
         if (revRes.ok) {
-          const rev = await revRes.json() as { hasChanges: boolean; statusMessage: string; planUpdated?: boolean };
+          const rev = (await revRes.json()) as {
+            hasChanges: boolean;
+            statusMessage: string;
+            planUpdated?: boolean;
+          };
           if (!rev.hasChanges) {
             setRevisionStatus(rev.statusMessage);
             setRevisionChecking(false);

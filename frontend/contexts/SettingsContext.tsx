@@ -772,7 +772,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   // by composer/runtime hooks so provider/model changes apply immediately.
   useEffect(() => {
     try {
-      localStorage.setItem("fintheon:default-chat-provider", defaultChatProvider);
+      localStorage.setItem(
+        "fintheon:default-chat-provider",
+        defaultChatProvider,
+      );
       localStorage.setItem("fintheon:harper-provider", defaultChatProvider);
       localStorage.setItem("fintheon:opencode-go-model", openCodeGoModel);
     } catch {

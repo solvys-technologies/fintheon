@@ -205,7 +205,9 @@ export function RiskFlowMain({ onChatAlert }: RiskFlowMainProps) {
             />
             <span
               className={
-                sourceStatus.xHomeTimeline ? "text-emerald-400/90" : "text-zinc-500"
+                sourceStatus.xHomeTimeline
+                  ? "text-emerald-400/90"
+                  : "text-zinc-500"
               }
             >
               X

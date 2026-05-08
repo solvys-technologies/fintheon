@@ -33,13 +33,17 @@ export async function getAgentSoul(agentId: AgentId): Promise<LoadedSoul> {
   }
 }
 
-export async function renderAgentSystemPrompt(agentId: AgentId): Promise<string> {
+export async function renderAgentSystemPrompt(
+  agentId: AgentId,
+): Promise<string> {
   const soul = await getAgentSoul(agentId);
   const basePrompt = renderSystemPrompt(soul);
   return `${basePrompt}\n\n${FINTHEON_IDENTITY_BLOCK}`;
 }
 
-export async function buildSoulPipeline(agentId: AgentId): Promise<SoulPipelineResult> {
+export async function buildSoulPipeline(
+  agentId: AgentId,
+): Promise<SoulPipelineResult> {
   const soul = await getAgentSoul(agentId);
   const basePrompt = renderSystemPrompt(soul);
   const systemPrompt = `${basePrompt}\n\n${FINTHEON_IDENTITY_BLOCK}`;

@@ -10,15 +10,16 @@
 
 ## Track Summary
 
-| Track | Title | Complexity | Est. Files | Depends On |
-|-------|-------|-----------|------------|------------|
-| T1 | Backend Provider Pipeline + API Key Infrastructure | High | ~14 files | None |
-| T2 | Client SDK + Frontend Chat Overhaul | High | ~12 files | T1 |
-| T3 | Unification & Cross-Platform Validation | Medium | merge-only | T1, T2 |
+| Track | Title                                              | Complexity | Est. Files | Depends On |
+| ----- | -------------------------------------------------- | ---------- | ---------- | ---------- |
+| T1    | Backend Provider Pipeline + API Key Infrastructure | High       | ~14 files  | None       |
+| T2    | Client SDK + Frontend Chat Overhaul                | High       | ~12 files  | T1         |
+| T3    | Unification & Cross-Platform Validation            | Medium     | merge-only | T1, T2     |
 
 ## Wave 1 — T1 solo (backend must land first)
 
 T1 creates the API key endpoints and Supabase migration that T2 depends on. T2 cannot start until:
+
 - `POST/GET/DELETE /api/settings/ai-keys` routes exist
 - `user_api_keys` table migration is created
 - The backend build passes

@@ -465,28 +465,64 @@ export function CatalystStatsDrawer({
             <>
               {/* X/Twitter section */}
               <div style={{ marginTop: 12 }}>
-                <h3 style={{
-                  fontFamily: "var(--font-heading)", fontSize: 11, fontWeight: 700,
-                  letterSpacing: "0.14em", textTransform: "uppercase",
-                  color: "var(--fintheon-accent)", marginBottom: 8,
-                }}>
+                <h3
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    color: "var(--fintheon-accent)",
+                    marginBottom: 8,
+                  }}
+                >
                   X / TWITTER
                 </h3>
                 {social.length === 0 ? (
-                  <p style={{ fontSize: 10, color: "var(--fintheon-muted)" }}>No X sources in window.</p>
+                  <p style={{ fontSize: 10, color: "var(--fintheon-muted)" }}>
+                    No X sources in window.
+                  </p>
                 ) : (
-                  <div style={{ borderLeft: "1px solid rgba(199,159,74,0.12)", paddingLeft: 10 }}>
+                  <div
+                    style={{
+                      borderLeft: "1px solid rgba(199,159,74,0.12)",
+                      paddingLeft: 10,
+                    }}
+                  >
                     {social.map(([cat, entry]) => (
                       <div key={cat}>
                         <div className="flex items-baseline justify-between py-1.5">
-                          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--fintheon-text)]">{cat}</span>
-                          <span className="text-[var(--fintheon-accent)] tabular-nums" style={{ fontFamily: "var(--font-data)", fontSize: 14 }}>{entry.aggregate}</span>
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--fintheon-text)]">
+                            {cat}
+                          </span>
+                          <span
+                            className="text-[var(--fintheon-accent)] tabular-nums"
+                            style={{
+                              fontFamily: "var(--font-data)",
+                              fontSize: 14,
+                            }}
+                          >
+                            {entry.aggregate}
+                          </span>
                         </div>
                         {entry.sources.map((stat) => (
-                          <label key={stat.source} className="flex items-center gap-2 px-0 py-1 text-[10px] cursor-pointer hover:bg-[var(--fintheon-accent)]/5">
-                            <input type="checkbox" disabled={disabled} checked={selected.has(stat.source)} onChange={() => toggleSource(stat.source)} className="accent-[var(--fintheon-accent)]" />
-                            <span className="flex-1 truncate text-zinc-300 font-mono">{stat.source.replace(/^twitter:/, "@")}</span>
-                            <span className="tabular-nums text-zinc-300">{stat.count}</span>
+                          <label
+                            key={stat.source}
+                            className="flex items-center gap-2 px-0 py-1 text-[10px] cursor-pointer hover:bg-[var(--fintheon-accent)]/5"
+                          >
+                            <input
+                              type="checkbox"
+                              disabled={disabled}
+                              checked={selected.has(stat.source)}
+                              onChange={() => toggleSource(stat.source)}
+                              className="accent-[var(--fintheon-accent)]"
+                            />
+                            <span className="flex-1 truncate text-zinc-300 font-mono">
+                              {stat.source.replace(/^twitter:/, "@")}
+                            </span>
+                            <span className="tabular-nums text-zinc-300">
+                              {stat.count}
+                            </span>
                           </label>
                         ))}
                       </div>
@@ -495,31 +531,68 @@ export function CatalystStatsDrawer({
                 )}
               </div>
 
-              <div style={{ height: 1, margin: "16px 0", background: "linear-gradient(to right, rgba(199,159,74,0.18), transparent 80%)" }} />
+              <div
+                style={{
+                  height: 1,
+                  margin: "16px 0",
+                  background:
+                    "linear-gradient(to right, rgba(199,159,74,0.18), transparent 80%)",
+                }}
+              />
 
               {/* RSS/Web section */}
               <div>
-                <h3 style={{
-                  fontFamily: "var(--font-heading)", fontSize: 11, fontWeight: 700,
-                  letterSpacing: "0.14em", textTransform: "uppercase",
-                  color: "var(--fintheon-accent)", marginBottom: 8,
-                }}>
+                <h3
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    color: "var(--fintheon-accent)",
+                    marginBottom: 8,
+                  }}
+                >
                   RSS / WEB
                 </h3>
                 {web.length === 0 ? (
-                  <p style={{ fontSize: 10, color: "var(--fintheon-muted)" }}>No web sources in window.</p>
+                  <p style={{ fontSize: 10, color: "var(--fintheon-muted)" }}>
+                    No web sources in window.
+                  </p>
                 ) : (
-                  <div style={{ borderLeft: "1px solid rgba(199,159,74,0.12)", paddingLeft: 10 }}>
+                  <div
+                    style={{
+                      borderLeft: "1px solid rgba(199,159,74,0.12)",
+                      paddingLeft: 10,
+                    }}
+                  >
                     {web.map(([cat, entry]) => (
                       <div key={cat}>
                         <div className="flex items-baseline justify-between py-1.5">
-                          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--fintheon-text)]">{cat}</span>
-                          <span className="text-[var(--fintheon-accent)] tabular-nums" style={{ fontFamily: "var(--font-data)", fontSize: 14 }}>{entry.aggregate}</span>
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--fintheon-text)]">
+                            {cat}
+                          </span>
+                          <span
+                            className="text-[var(--fintheon-accent)] tabular-nums"
+                            style={{
+                              fontFamily: "var(--font-data)",
+                              fontSize: 14,
+                            }}
+                          >
+                            {entry.aggregate}
+                          </span>
                         </div>
                         {entry.sources.map((stat) => (
-                          <div key={stat.source} className="flex justify-between items-center py-1 text-[10px]">
-                            <span className="text-zinc-300 font-mono truncate flex-1 mr-2">{stat.source}</span>
-                            <span className="tabular-nums text-zinc-300">{stat.count}</span>
+                          <div
+                            key={stat.source}
+                            className="flex justify-between items-center py-1 text-[10px]"
+                          >
+                            <span className="text-zinc-300 font-mono truncate flex-1 mr-2">
+                              {stat.source}
+                            </span>
+                            <span className="tabular-nums text-zinc-300">
+                              {stat.count}
+                            </span>
                           </div>
                         ))}
                       </div>

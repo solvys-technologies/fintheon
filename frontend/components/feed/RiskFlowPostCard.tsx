@@ -2,7 +2,14 @@
 // stop on collapse (component unmount destroys the <video> element). X-inspired
 // mute toggle button at bottom-left overlays the video poster area.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ExternalLink, MessageSquare, ThumbsDown, Video, Volume2, VolumeX } from "lucide-react";
+import {
+  ExternalLink,
+  MessageSquare,
+  ThumbsDown,
+  Video,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import { BeatMissBadge } from "./BeatMissBadge";
 import { openSourcePopup } from "../../lib/source-popup";

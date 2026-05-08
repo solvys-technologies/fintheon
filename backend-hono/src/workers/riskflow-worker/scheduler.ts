@@ -42,7 +42,10 @@ interface TierState {
 
 const state: Record<
   "financialjuice" | "unified" | "standard",
-  TierState & { timer: ReturnType<typeof setTimeout> | null; intervalMs: number }
+  TierState & {
+    timer: ReturnType<typeof setTimeout> | null;
+    intervalMs: number;
+  }
 > = {
   financialjuice: {
     running: false,
@@ -167,8 +170,7 @@ export function startScheduler(): void {
   if (state.unified.timer || state.standard.timer) return;
 
   const deviceId = getDeviceId();
-  const rotationMin =
-    Math.round(getRotationIntervalMs() / 60_000);
+  const rotationMin = Math.round(getRotationIntervalMs() / 60_000);
 
   console.log(
     JSON.stringify({
@@ -210,21 +212,19 @@ export async function stopScheduler(): Promise<void> {
 }
 
 export function getSchedulerSnapshot() {
-  const tiers = ([
-    "financialjuice",
-    "unified",
-    "standard",
-  ] as const).map((t) => {
-    const s = state[t];
-    return {
-      tier: t,
-      running: s.running,
-      last_run_at: s.lastRunAt,
-      last_items_ingested: s.lastItemsIngested,
-      last_errors: s.lastErrors,
-      total_runs: s.totalRuns,
-      total_errors: s.totalErrors,
-    };
-  });
+  const tiers = (["financialjuice", "unified", "standard"] as const).map(
+    (t) => {
+      const s = state[t];
+      return {
+        tier: t,
+        running: s.running,
+        last_run_at: s.lastRunAt,
+        last_items_ingested: s.lastItemsIngested,
+        last_errors: s.lastErrors,
+        total_runs: s.totalRuns,
+        total_errors: s.totalErrors,
+      };
+    },
+  );
   return { tiers, device: getDeviceId() };
 }

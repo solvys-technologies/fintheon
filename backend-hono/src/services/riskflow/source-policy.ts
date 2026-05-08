@@ -5,7 +5,10 @@
 // default. Leak sentinel counters track every rejection for operator visibility.
 
 import { createLogger } from "../../lib/logger.js";
-import { getSupabaseClient, isSupabaseConfigured } from "../../config/supabase.js";
+import {
+  getSupabaseClient,
+  isSupabaseConfigured,
+} from "../../config/supabase.js";
 
 const log = createLogger("SourcePolicy");
 

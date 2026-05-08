@@ -76,7 +76,9 @@ async function launchContext(): Promise<BrowserContext> {
       );
 
       if (hasAuthCookie) {
-        log.info("Using existing X auth cookie from persistent profile — skipping env token injection");
+        log.info(
+          "Using existing X auth cookie from persistent profile — skipping env token injection",
+        );
       } else {
         const authToken = process.env.X_AUTH_TOKEN?.trim();
         if (authToken) {

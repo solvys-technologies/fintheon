@@ -23,7 +23,13 @@ function lookupSecret(keyId: string): string | null {
 
 export interface SignatureVerificationResult {
   valid: boolean;
-  reason?: "missing_secret" | "unknown_key_id" | "stale_timestamp" | "invalid_timestamp" | "malformed_signature" | "signature_mismatch";
+  reason?:
+    | "missing_secret"
+    | "unknown_key_id"
+    | "stale_timestamp"
+    | "invalid_timestamp"
+    | "malformed_signature"
+    | "signature_mismatch";
 }
 
 export function verifyPlaneSignature(opts: {

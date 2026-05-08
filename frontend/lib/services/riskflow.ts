@@ -124,7 +124,9 @@ export class RiskFlowService {
             tags: item.tags || [],
             urgency: item.urgency || "normal",
             priceBrainScore,
-            authorHandle: isTwitterSource ? undefined : item.authorHandle ?? undefined,
+            authorHandle: isTwitterSource
+              ? undefined
+              : (item.authorHandle ?? undefined),
           };
         }),
         total: response.total ?? items.length,

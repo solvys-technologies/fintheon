@@ -122,7 +122,7 @@ const modelAliases: Record<string, AiModelKey> = {
   haiku: "deepseek-direct",
   tech: "deepseek-direct",
   "deepseek-direct": "deepseek-direct",
-      "opencode-go": "opencode-go",
+  "opencode-go": "opencode-go",
   "oc-go": "opencode-go",
   "llama-70b": "deepseek-direct",
   "grok-4.20": "deepseek-direct",

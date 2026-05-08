@@ -17,8 +17,10 @@ function timeAgo(iso: string | null): string {
 export function AgentHealthDashboard() {
   const { data, isLoading, error, lastUpdated, refresh } = useAgentHealth();
 
-  const greenCount = data?.filter((a) => a.personaHealth === "green").length ?? 0;
-  const amberCount = data?.filter((a) => a.personaHealth === "amber").length ?? 0;
+  const greenCount =
+    data?.filter((a) => a.personaHealth === "green").length ?? 0;
+  const amberCount =
+    data?.filter((a) => a.personaHealth === "amber").length ?? 0;
   const redCount = data?.filter((a) => a.personaHealth === "red").length ?? 0;
 
   return (

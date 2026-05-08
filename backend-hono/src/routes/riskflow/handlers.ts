@@ -948,7 +948,7 @@ export async function handleRettiwtKickstart(c: Context) {
   try {
     const body = await c.req
       .json<{ handles?: string[] }>()
-      .catch(() => ({} as { handles?: string[] }));
+      .catch(() => ({}) as { handles?: string[] });
     const [
       { forceRefreshPool, getPoolStatus },
       { getBrowserHandles },
@@ -982,7 +982,9 @@ export async function handleRettiwtKickstart(c: Context) {
       requestedHandles.length > 0
         ? requestedHandles.filter((h) => handleAllow.has(h.toLowerCase()))
         : allHandles;
-    const selectedHandleSet = new Set(selectedHandles.map((h) => h.toLowerCase()));
+    const selectedHandleSet = new Set(
+      selectedHandles.map((h) => h.toLowerCase()),
+    );
     const selectedHandleLabel = new Map(
       selectedHandles.map((h) => [h.toLowerCase(), h]),
     );
@@ -1047,7 +1049,8 @@ export async function handleRettiwtKickstart(c: Context) {
             text: tw.text ?? "",
             username: (tw.author_handle || handle).replace(/^@/, "").trim(),
             publishedAt: tw.timestamp,
-            url: tw.permalink || `https://x.com/${handle}/status/${tw.tweet_id}`,
+            url:
+              tw.permalink || `https://x.com/${handle}/status/${tw.tweet_id}`,
             pipeline: "xactions" as const,
           }));
         }),
@@ -1104,8 +1107,12 @@ export async function handleRettiwtKickstart(c: Context) {
     const isStrictPromoRejected = (text: string): boolean => {
       const t = text.toLowerCase();
       return (
-        /\b(promoted|sponsored|paid partnership|ad:|advertisement)\b/i.test(t) ||
-        /\b(sign up|subscribe|free trial|join now|use code|coupon|promo code)\b/i.test(t) ||
+        /\b(promoted|sponsored|paid partnership|ad:|advertisement)\b/i.test(
+          t,
+        ) ||
+        /\b(sign up|subscribe|free trial|join now|use code|coupon|promo code)\b/i.test(
+          t,
+        ) ||
         /\b(discord\.gg|t\.me\/|patreon|affiliate|referral)\b/i.test(t)
       );
     };
@@ -1190,9 +1197,9 @@ export async function handleRettiwtKickstart(c: Context) {
     await seedCacheFromDb().catch((err: unknown) => {
       console.warn("[RiskFlow] Rettiwt kickstart cache seed failed:", err);
     });
-    const rescored = await feedService.rescoreInMemoryFeed().catch(
-      (_err: unknown) => 0,
-    );
+    const rescored = await feedService
+      .rescoreInMemoryFeed()
+      .catch((_err: unknown) => 0);
 
     return c.json({
       success: true,
@@ -1479,7 +1486,9 @@ export async function handleGetSources(c: Context) {
         }
       }
     }
-  } catch { /* heartbeat read is best-effort */ }
+  } catch {
+    /* heartbeat read is best-effort */
+  }
 
   const xHomeTimeline = unifiedActive || standardActive || commentaryActive;
   const financialJuiceRss = financialJuiceActive;
@@ -1499,10 +1508,26 @@ export async function handleGetSources(c: Context) {
     xHomeTimeline: {
       active: xHomeTimeline,
       tiers: {
-        breaking: { active: breakingActive, lastRunAt: breakingLastRun, ingested: breakingIngested },
-        standard: { active: standardActive, lastRunAt: standardLastRun, ingested: standardIngested },
-        commentary: { active: commentaryActive, lastRunAt: commentaryLastRun, ingested: commentaryIngested },
-        unified: { active: unifiedActive, lastRunAt: unifiedLastRun, ingested: unifiedIngested },
+        breaking: {
+          active: breakingActive,
+          lastRunAt: breakingLastRun,
+          ingested: breakingIngested,
+        },
+        standard: {
+          active: standardActive,
+          lastRunAt: standardLastRun,
+          ingested: standardIngested,
+        },
+        commentary: {
+          active: commentaryActive,
+          lastRunAt: commentaryLastRun,
+          ingested: commentaryIngested,
+        },
+        unified: {
+          active: unifiedActive,
+          lastRunAt: unifiedLastRun,
+          ingested: unifiedIngested,
+        },
       },
     },
     financialJuiceRss: {
@@ -1545,7 +1570,12 @@ export async function handleGetSources(c: Context) {
     rettiwt: false,
     rettiwtRateLimited: false,
     rettiwtCooldownSec: 0,
-    rettiwtPool: { totalKeys: 0, availableKeys: 0, cooldownKeys: 0, disabledKeys: 0 },
+    rettiwtPool: {
+      totalKeys: 0,
+      availableKeys: 0,
+      cooldownKeys: 0,
+      disabledKeys: 0,
+    },
     pollingOwner: null,
     activePollers: [],
     xApi: false,

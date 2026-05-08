@@ -201,7 +201,9 @@ export function HermesAdminTab() {
             }
             className="w-full bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/30 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/60"
           >
-            <option value="deepseek-direct">DeepSeek v4 Pro (Direct API)</option>
+            <option value="deepseek-direct">
+              DeepSeek v4 Pro (Direct API)
+            </option>
             <option value="opencode-go">DeepSeek v4 Pro (OpenCode Go)</option>
           </select>
           {defaultProvider === "opencode-go" && (
@@ -231,8 +233,8 @@ export function HermesAdminTab() {
                 className="w-full bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-[var(--fintheon-accent)]/50"
               />
               <p className="text-[11px] text-gray-500">
-                This persists in user settings and stays active until changed
-                or reset.
+                This persists in user settings and stays active until changed or
+                reset.
               </p>
             </div>
           )}

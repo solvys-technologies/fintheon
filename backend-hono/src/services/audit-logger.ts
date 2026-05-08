@@ -4,7 +4,11 @@ import { resolve } from "node:path";
 import { homedir } from "node:os";
 import { createLogger } from "../lib/logger.js";
 import { getSupabaseClient } from "../config/supabase.js";
-import type { AuditRecord, AuditQueryFilters, AuditLogInput } from "../types/audit.js";
+import type {
+  AuditRecord,
+  AuditQueryFilters,
+  AuditLogInput,
+} from "../types/audit.js";
 
 const log = createLogger("AuditLogger");
 
@@ -25,9 +29,7 @@ async function appendJsonlLine(data: Record<string, unknown>): Promise<void> {
   await appendFile(AUDIT_LOG_FILE, line, "utf8");
 }
 
-export async function logAuditDecision(
-  record: AuditLogInput,
-): Promise<void> {
+export async function logAuditDecision(record: AuditLogInput): Promise<void> {
   const entry = {
     ...record,
     logged_at: new Date().toISOString(),

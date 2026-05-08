@@ -330,8 +330,7 @@ function scheduleNextGepaRun(): void {
   });
   const nowEt = etFormatter.format(now);
   const [h, m, s] = nowEt.split(":").map(Number);
-  let msUntilTarget =
-    ((2 - h) * 60 - m) * 60 * 1000 - (s ?? 0) * 1000;
+  let msUntilTarget = ((2 - h) * 60 - m) * 60 * 1000 - (s ?? 0) * 1000;
   if (msUntilTarget <= 0) msUntilTarget += 24 * 60 * 60 * 1000;
 
   gepaTimer = setTimeout(() => {

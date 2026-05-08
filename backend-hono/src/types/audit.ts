@@ -25,7 +25,10 @@ export const AuditRecordSchema = MutationContractSchema.extend({
 });
 export type AuditRecord = z.infer<typeof AuditRecordSchema>;
 
-export type AuditLogInput = Omit<AuditRecord, "created_by" | "created_at" | "id">;
+export type AuditLogInput = Omit<
+  AuditRecord,
+  "created_by" | "created_at" | "id"
+>;
 
 export interface AuditQueryFilters {
   agentId?: string;

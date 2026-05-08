@@ -94,7 +94,9 @@ async function runDispatch(job: DispatchJob): Promise<void> {
       { lanes: [], catalysts: [], ropes: [] },
       undefined,
       "full-brief",
-    ).catch((err) => log.warn(`Post-brief ArbitrumChamber trigger failed:`, err));
+    ).catch((err) =>
+      log.warn(`Post-brief ArbitrumChamber trigger failed:`, err),
+    );
 
     log.info(`${job.briefType} dispatch complete`, {
       supabaseId: result.supabaseId,

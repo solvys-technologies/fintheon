@@ -27,12 +27,22 @@ export function FirstTimeApiKeyPopup({
         zIndex: 9999,
       }}
     >
-      <div style={{ width: 420, border: "1px solid #3f3f46", borderRadius: 8, background: "#09090b", padding: 14 }}>
+      <div
+        style={{
+          width: 420,
+          border: "1px solid #3f3f46",
+          borderRadius: 8,
+          background: "#09090b",
+          padding: 14,
+        }}
+      >
         <div style={{ fontSize: 14, marginBottom: 8 }}>Add your API key</div>
         <p style={{ fontSize: 12, color: "#a1a1aa", marginBottom: 12 }}>
           Configure your key in Settings → API to use direct providers.
         </p>
-        <button type="button" onClick={handleClose}>Continue</button>
+        <button type="button" onClick={handleClose}>
+          Continue
+        </button>
       </div>
     </div>
   );

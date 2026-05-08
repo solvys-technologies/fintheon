@@ -32,10 +32,7 @@ export interface VerificationResult {
 // Required health check keys (empty = no required checks, everything advisory)
 // ---------------------------------------------------------------------------
 
-const REQUIRED_HEALTH_CHECKS: string[] = [
-  "database",
-  "supabase",
-];
+const REQUIRED_HEALTH_CHECKS: string[] = ["database", "supabase"];
 
 const HEALTH_LABELS: Record<string, string> = {
   database: "Database connectivity",
@@ -50,7 +47,9 @@ const HEALTH_LABELS: Record<string, string> = {
 // Verify
 // ---------------------------------------------------------------------------
 
-export function checkVerification(input: VerificationInput): VerificationResult {
+export function checkVerification(
+  input: VerificationInput,
+): VerificationResult {
   const failures: string[] = [];
   const healthStatuses: HealthStatus[] = [];
 
@@ -114,10 +113,7 @@ export function setVerificationResult(result: VerificationResult): void {
 }
 
 export function getVerificationResult(): VerificationResult | null {
-  if (
-    cachedVerification &&
-    Date.now() - cacheTimestamp < CACHE_TTL_MS
-  ) {
+  if (cachedVerification && Date.now() - cacheTimestamp < CACHE_TTL_MS) {
     return cachedVerification;
   }
   return null;

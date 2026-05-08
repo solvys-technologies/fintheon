@@ -136,6 +136,7 @@ echo "If all above pass: sprint ready for /solvys-deploy"
 ## Post-Track Handoff
 
 After this track passes all validation, the orchestrator runs `/solvys-deploy` to ship to all 3 targets:
+
 1. Fly.io backend (`fintheon.fly.dev`)
 2. Vercel desktop frontend
 3. Vercel mobile PWA

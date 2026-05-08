@@ -155,4 +155,6 @@ Optional: `X_AUTH_TOKEN`, `X_CT0_TOKEN` (X browser auth), `XACTIONS_API_BASE` (T
 - Solvys visual language: industrial-luxe — warm near-black canvas, gold accent, frosted glass surfaces
 - TP-vetoed references (do NOT use): `Xquik-dev/x-twitter-scraper`, `EveryInc/compound-engineering-plugin`, `jamiepine/voicebox`, `elder-plinius/CL4R1T4S`, `Bitterbot-AI/bitterbot-desktop`
 
---- End Briefing ---
+---
+
+End Briefing ---

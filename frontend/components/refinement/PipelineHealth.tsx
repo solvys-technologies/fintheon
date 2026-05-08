@@ -104,7 +104,14 @@ export function PipelineHealth({
 
   return (
     <div style={{ marginTop: 16 }}>
-      <div style={{ height: 1, background: "linear-gradient(to right, rgba(199,159,74,0.18), transparent 80%)", marginBottom: 12 }} />
+      <div
+        style={{
+          height: 1,
+          background:
+            "linear-gradient(to right, rgba(199,159,74,0.18), transparent 80%)",
+          marginBottom: 12,
+        }}
+      />
       <div
         style={{
           fontFamily: "var(--font-heading)",
@@ -215,9 +222,7 @@ export function PipelineHealth({
           }}
         >
           <thead>
-            <tr
-              style={{ borderBottom: "1px solid rgba(199,159,74,0.08)" }}
-            >
+            <tr style={{ borderBottom: "1px solid rgba(199,159,74,0.08)" }}>
               <th
                 style={{
                   textAlign: "left",

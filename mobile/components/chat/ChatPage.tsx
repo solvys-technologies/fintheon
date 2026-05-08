@@ -59,7 +59,11 @@ import {
   fetchDeepSeekKey,
   type DeepSeekChatMessage,
 } from "@frontend/lib/deepseek-sdk";
-import { ProviderDropdown, useHarperProvider, type HarperProvider } from "@frontend/components/chat/ProviderDropdown";
+import {
+  ProviderDropdown,
+  useHarperProvider,
+  type HarperProvider,
+} from "@frontend/components/chat/ProviderDropdown";
 import { FirstTimeApiKeyPopup } from "@frontend/components/chat/FirstTimeApiKeyPopup";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
@@ -117,7 +121,6 @@ export default function ChatPage({ visible }: ChatPageProps) {
       cancelled = true;
     };
   }, [getAccessToken]);
-
 
   // S38-T5: First-time API key popup — check on mount
   useEffect(() => {
@@ -690,9 +693,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
               borderRadius: 4,
             }}
           >
-            {provider === "deepseek-direct"
-              ? "DEEPSEEK DIRECT"
-              : "OPENCODE GO"}
+            {provider === "deepseek-direct" ? "DEEPSEEK DIRECT" : "OPENCODE GO"}
           </span>
           <ConnectionStatus onStateChange={setRelayState} />
         </div>

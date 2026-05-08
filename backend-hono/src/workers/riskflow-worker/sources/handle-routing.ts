@@ -14,7 +14,13 @@ export type XPostingRule =
 export interface HandleRoutingConfig {
   handle: string;
   displayName: string;
-  category: "wire" | "macro" | "osint" | "stock-news" | "options" | "commentary";
+  category:
+    | "wire"
+    | "macro"
+    | "osint"
+    | "stock-news"
+    | "options"
+    | "commentary";
   tier: "breaking" | "standard" | "commentary";
   /** Content filter: include only if headline/body passes these checks */
   contentFilter: {
@@ -33,10 +39,7 @@ export interface HandleRoutingConfig {
   posting: XPostingRule[];
 }
 
-const CATEGORY_KEYWORDS: Record<
-  HandleRoutingConfig["category"],
-  string[]
-> = {
+const CATEGORY_KEYWORDS: Record<HandleRoutingConfig["category"], string[]> = {
   wire: [
     "breaking",
     "fed",
@@ -250,13 +253,7 @@ export const HANDLE_ROUTING: HandleRoutingConfig[] = [
         "Guindos",
       ],
       minLength: 30,
-      exclude: [
-        "Sponsored",
-        "Advert",
-        "Subscribe",
-        "Sign up",
-        "Promoted",
-      ],
+      exclude: ["Sponsored", "Advert", "Subscribe", "Sign up", "Promoted"],
     },
     posting: ["commentary"],
   },
@@ -391,9 +388,7 @@ for (const entry of HANDLE_ROUTING) {
   byHandle.set(lower, existing);
 }
 
-export function getRoutingForHandle(
-  handle: string,
-): HandleRoutingConfig[] {
+export function getRoutingForHandle(handle: string): HandleRoutingConfig[] {
   return byHandle.get(handle.toLowerCase()) ?? [];
 }
 

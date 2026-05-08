@@ -47,7 +47,6 @@ export function FintheonSkillsPopup({
       .catch(() => setAgentSkills([]));
   }, [open]);
 
-
   const handleClick = (skillId: string) => {
     if (disabledSkills?.[skillId]) return;
     if (onSelectSkill) {
@@ -198,7 +197,6 @@ export function FintheonSkillsPopup({
         })}
       </div>
 
-
       {/* Agent-created skills divider */}
       {agentSkills.length > 0 && (
         <div className="px-3 py-1.5 border-t border-[var(--fintheon-accent)]/10">
@@ -222,7 +220,9 @@ export function FintheonSkillsPopup({
         return (
           <div key={skill.id}>
             <button
-              onClick={() => onSelectSkill?.(isActive ? null : `agent:${skill.id}`)}
+              onClick={() =>
+                onSelectSkill?.(isActive ? null : `agent:${skill.id}`)
+              }
               className={`w-full flex items-start gap-2.5 px-3 py-2 hover:bg-white/[0.025] transition-colors`}
               style={
                 isActive
@@ -234,9 +234,7 @@ export function FintheonSkillsPopup({
                 <Bot
                   size={15}
                   style={{
-                    color: isActive
-                      ? "var(--fintheon-accent)"
-                      : "#6B7280",
+                    color: isActive ? "var(--fintheon-accent)" : "#6B7280",
                   }}
                 />
                 {isActive && (
@@ -282,11 +280,7 @@ export function FintheonSkillsPopup({
                 className="flex-shrink-0 mt-0.5 p-0.5 text-gray-600 hover:text-gray-400 transition-colors"
                 onClick={(e) => toggleExpand(e, skill.id)}
               >
-                {expanded ? (
-                  <ChevronUp size={12} />
-                ) : (
-                  <ChevronDown size={12} />
-                )}
+                {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
               </div>
             </button>
 

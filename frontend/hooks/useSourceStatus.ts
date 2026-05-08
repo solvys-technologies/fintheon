@@ -21,7 +21,11 @@ export interface SourceStatus {
   methodBreakdown: Record<string, number> | null;
 }
 
-const DEFAULT_TIER: TierStatus = { active: false, lastRunAt: null, ingested: 0 };
+const DEFAULT_TIER: TierStatus = {
+  active: false,
+  lastRunAt: null,
+  ingested: 0,
+};
 
 const DEFAULT_STATUS: SourceStatus = {
   supabase: false,
@@ -75,7 +79,8 @@ export function useSourceStatus(): SourceStatus {
       .then((r) => r.json())
       .then((data: Record<string, unknown>) => {
         const sources = (data.sources as Record<string, unknown>) ?? {};
-        const timeline = (sources.xHomeTimeline as Record<string, unknown>) ?? {};
+        const timeline =
+          (sources.xHomeTimeline as Record<string, unknown>) ?? {};
         const tiers = (timeline.tiers as Record<string, unknown>) ?? {};
         const next: SourceStatus = {
           supabase: Boolean(data.supabase),
@@ -93,7 +98,9 @@ export function useSourceStatus(): SourceStatus {
         setStatus(next);
         try {
           localStorage.setItem(CACHE_KEY, JSON.stringify(next));
-        } catch { /* quota exceeded — non-critical */ }
+        } catch {
+          /* quota exceeded — non-critical */
+        }
       })
       .catch(() => {
         setStatus((prev) => ({ ...prev, backendReachable: false }));

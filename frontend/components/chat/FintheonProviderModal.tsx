@@ -115,7 +115,8 @@ export function FintheonProviderModal({
           background: "rgba(10, 8, 5, 0.92)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
-          border: "1px solid color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
+          border:
+            "1px solid color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
           boxShadow: "0 4px 32px rgba(0,0,0,0.5)",
           display: "flex",
           flexDirection: "column",
@@ -288,8 +289,10 @@ export function FintheonProviderModal({
               alignItems: "center",
               gap: 5,
               padding: "4px 10px",
-              background: "color-mix(in srgb, var(--fintheon-accent) 12%, transparent)",
-              border: "1px solid color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
+              background:
+                "color-mix(in srgb, var(--fintheon-accent) 12%, transparent)",
+              border:
+                "1px solid color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
               color: "var(--fintheon-accent)",
               fontFamily: "var(--font-mono)",
               fontSize: 10,

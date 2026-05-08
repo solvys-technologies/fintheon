@@ -3,9 +3,19 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { z } from "zod";
-import { relayToPlane, getDLQEntries } from "../../../services/integrations/plane/outbound-client.js";
-import { evaluatePolicy, type PolicyAction } from "../../../services/integrations/plane/policy-gate.js";
-import { isVerificationPassed, setVerificationResult, checkVerification } from "../../../services/integrations/plane/verification-gate.js";
+import {
+  relayToPlane,
+  getDLQEntries,
+} from "../../../services/integrations/plane/outbound-client.js";
+import {
+  evaluatePolicy,
+  type PolicyAction,
+} from "../../../services/integrations/plane/policy-gate.js";
+import {
+  isVerificationPassed,
+  setVerificationResult,
+  checkVerification,
+} from "../../../services/integrations/plane/verification-gate.js";
 import { createLogger } from "../../../lib/logger.js";
 
 const log = createLogger("PlaneOutboundRoute");
@@ -75,8 +85,13 @@ export function createPlaneOutboundRoute(): Hono {
 
     const parsed = outboundRequestSchema.safeParse(body);
     if (!parsed.success) {
-      log.warn("outbound schema validation failed", { issues: parsed.error.issues });
-      return c.json({ error: "schema_validation_failed", issues: parsed.error.issues }, 422);
+      log.warn("outbound schema validation failed", {
+        issues: parsed.error.issues,
+      });
+      return c.json(
+        { error: "schema_validation_failed", issues: parsed.error.issues },
+        422,
+      );
     }
 
     const req = parsed.data;
@@ -150,7 +165,10 @@ export function createPlaneOutboundRoute(): Hono {
 
     const parsed = verificationUpdateSchema.safeParse(body);
     if (!parsed.success) {
-      return c.json({ error: "schema_validation_failed", issues: parsed.error.issues }, 422);
+      return c.json(
+        { error: "schema_validation_failed", issues: parsed.error.issues },
+        422,
+      );
     }
 
     const verificationResult = checkVerification(parsed.data);

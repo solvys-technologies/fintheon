@@ -98,9 +98,7 @@ async function claimSlot(deviceId: string): Promise<boolean> {
     ? Date.parse(row.polling_started_at)
     : 0;
   const rotationExpired =
-    currentOwner === deviceId
-      ? false
-      : now - startedAt > ROTATION_INTERVAL_MS;
+    currentOwner === deviceId ? false : now - startedAt > ROTATION_INTERVAL_MS;
 
   if (!currentOwner || rotationExpired) {
     return updateCoordinator({

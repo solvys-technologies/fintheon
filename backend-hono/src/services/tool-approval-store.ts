@@ -115,7 +115,9 @@ export async function grantPermission(toolName: string): Promise<void> {
     description: `Permanent permission granted for ${toolName}`,
     surface: "settings",
     decision: "approved",
-  }).catch((err: unknown) => log.error("audit write failed", { error: String(err) }));
+  }).catch((err: unknown) =>
+    log.error("audit write failed", { error: String(err) }),
+  );
 }
 
 /** Revoke permission for a tool */
@@ -130,7 +132,9 @@ export async function revokePermission(toolName: string): Promise<void> {
     description: `Permission revoked for ${toolName}`,
     surface: "settings",
     decision: "denied",
-  }).catch((err: unknown) => log.error("audit write failed", { error: String(err) }));
+  }).catch((err: unknown) =>
+    log.error("audit write failed", { error: String(err) }),
+  );
 }
 
 /** Get all permanent permissions */
@@ -249,7 +253,9 @@ export function requestApproval(
           correlation_id: requestId,
           decision: "timed_out",
           reason: `Auto-approved after ${APPROVAL_TIMEOUT_MS}ms timeout`,
-        }).catch((err: unknown) => log.error("audit write failed", { error: String(err) }));
+        }).catch((err: unknown) =>
+          log.error("audit write failed", { error: String(err) }),
+        );
         settle("approved");
       }, APPROVAL_TIMEOUT_MS);
     }
@@ -296,7 +302,9 @@ export async function resolveApproval(
     surface: "chat",
     correlation_id: pending.requestId ?? pending.id,
     decision,
-  }).catch((err: unknown) => log.error("audit write failed", { error: String(err) }));
+  }).catch((err: unknown) =>
+    log.error("audit write failed", { error: String(err) }),
+  );
 
   log.info(
     `Approval resolved: ${pending.toolName} → ${decision} (${approvalId})`,

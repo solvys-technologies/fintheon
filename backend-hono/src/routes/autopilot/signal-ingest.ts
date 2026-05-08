@@ -66,7 +66,12 @@ export async function handleSignalIngest(c: Context) {
         correlationId: `autopilot-${userId}`,
         eventType: "notify",
         status: "open",
-        severity: body.confidence < 0.5 ? "low" : body.confidence < 0.75 ? "medium" : "high",
+        severity:
+          body.confidence < 0.5
+            ? "low"
+            : body.confidence < 0.75
+              ? "medium"
+              : "high",
         evidence: {
           source: body.source,
           strategy: body.strategy,

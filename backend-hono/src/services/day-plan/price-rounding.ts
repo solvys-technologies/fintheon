@@ -45,7 +45,10 @@ export function roundTo80or20(price: number, instrument: string): number {
   let bestDist = Math.abs(price - best);
   for (const c of candidates) {
     const d = Math.abs(price - c);
-    if (d < bestDist) { bestDist = d; best = c; }
+    if (d < bestDist) {
+      bestDist = d;
+      best = c;
+    }
   }
   return best;
 }

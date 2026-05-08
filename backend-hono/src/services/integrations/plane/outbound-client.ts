@@ -47,7 +47,10 @@ const DEFAULT_RETRY_POLICY: RetryPolicy = {
 };
 
 function getPlaneOutboundUrl(): string {
-  return process.env.PLANE_OUTBOUND_URL || "http://localhost:8080/api/plane/mock-outbound";
+  return (
+    process.env.PLANE_OUTBOUND_URL ||
+    "http://localhost:8080/api/plane/mock-outbound"
+  );
 }
 
 function lookupSecret(keyId: string): string | null {
@@ -123,7 +126,11 @@ interface DLQEntry {
 
 const deadLetterQueue: DLQEntry[] = [];
 
-function pushToDLQ(payload: PlaneOutboundPayload, error: string, attempts: number): void {
+function pushToDLQ(
+  payload: PlaneOutboundPayload,
+  error: string,
+  attempts: number,
+): void {
   const entry: DLQEntry = {
     payload,
     failedAt: new Date().toISOString(),
@@ -220,7 +227,11 @@ export async function sendOutbound(
 
     if (attempt < retryPolicy.maxAttempts - 1) {
       const waitMs = backoffDelay(attempt, retryPolicy);
-      log.info("outbound relay retrying", { eventId: payload.event_id, attempt, waitMs });
+      log.info("outbound relay retrying", {
+        eventId: payload.event_id,
+        attempt,
+        waitMs,
+      });
       await delay(waitMs);
     }
   }
@@ -243,17 +254,15 @@ export async function sendOutbound(
 
 let relayCounter = 0;
 
-export async function relayToPlane(
-  incident: {
-    incidentId: string;
-    correlationId: string;
-    eventType: PlaneOutboundPayload["event_type"];
-    status: PlaneOutboundPayload["status"];
-    severity?: PlaneOutboundPayload["severity"];
-    evidence?: Record<string, unknown>;
-    actions?: string[];
-  },
-): Promise<OutboundResult> {
+export async function relayToPlane(incident: {
+  incidentId: string;
+  correlationId: string;
+  eventType: PlaneOutboundPayload["event_type"];
+  status: PlaneOutboundPayload["status"];
+  severity?: PlaneOutboundPayload["severity"];
+  evidence?: Record<string, unknown>;
+  actions?: string[];
+}): Promise<OutboundResult> {
   relayCounter++;
   const payload: PlaneOutboundPayload = {
     incident_id: incident.incidentId,

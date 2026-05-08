@@ -213,7 +213,11 @@ export async function createAgentForTask(
         description:
           "DAG synthesis — consolidates multi-agent findings into a unified outlook",
         systemPrompt: await getAgentSystemPrompt("harper-cao", {}),
-        model: { model: "deepseek-reasoner", temperature: 0.3, maxTokens: 8192 },
+        model: {
+          model: "deepseek-reasoner",
+          temperature: 0.3,
+          maxTokens: 8192,
+        },
         provider: "deepseek-direct",
       });
 

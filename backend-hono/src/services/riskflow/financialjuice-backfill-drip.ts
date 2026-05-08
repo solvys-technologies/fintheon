@@ -56,7 +56,6 @@ const state: DripState = {
   lastError: null,
 };
 
-
 async function runOneTick(force = false): Promise<void> {
   if ((!state.running && !force) || inFlight) return;
   inFlight = true;

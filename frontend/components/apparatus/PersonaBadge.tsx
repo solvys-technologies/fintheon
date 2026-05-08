@@ -7,7 +7,10 @@ interface PersonaBadgeProps {
   compact?: boolean;
 }
 
-const STYLES: Record<string, { border: string; bg: string; text: string; label: string }> = {
+const STYLES: Record<
+  string,
+  { border: string; bg: string; text: string; label: string }
+> = {
   green: {
     border: "border-emerald-500/30",
     bg: "bg-emerald-500/10",
@@ -45,7 +48,9 @@ export function PersonaBadge({ status, compact = false }: PersonaBadgeProps) {
         title={`Persona: ${s.label}`}
       >
         <Icon size={9} className={s.text} />
-        <span className={`text-[8px] font-mono uppercase tracking-wider ${s.text}`}>
+        <span
+          className={`text-[8px] font-mono uppercase tracking-wider ${s.text}`}
+        >
           {s.label}
         </span>
       </span>
@@ -57,7 +62,9 @@ export function PersonaBadge({ status, compact = false }: PersonaBadgeProps) {
       className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 border ${s.border} ${s.bg}`}
     >
       <Icon size={10} className={s.text} />
-      <span className={`text-[9px] font-mono uppercase tracking-wider ${s.text}`}>
+      <span
+        className={`text-[9px] font-mono uppercase tracking-wider ${s.text}`}
+      >
         Persona {s.label}
       </span>
     </span>

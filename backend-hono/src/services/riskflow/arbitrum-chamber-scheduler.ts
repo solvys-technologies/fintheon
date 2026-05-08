@@ -83,7 +83,9 @@ async function fetchRecentHeadlines(): Promise<string> {
       )
       .join("\n");
   } catch (err) {
-    log.warn("Failed to fetch headlines for ArbitrumChamber", { error: String(err) });
+    log.warn("Failed to fetch headlines for ArbitrumChamber", {
+      error: String(err),
+    });
     return "(headline fetch failed)";
   }
 }
@@ -158,9 +160,12 @@ Rules:
       source: "oracle-nous",
     };
 
-    log.info(`ArbitrumChamber AI run complete — ${instruments.length} instruments`, {
-      generatedAt: cachedOutlook.generatedAt,
-    });
+    log.info(
+      `ArbitrumChamber AI run complete — ${instruments.length} instruments`,
+      {
+        generatedAt: cachedOutlook.generatedAt,
+      },
+    );
   } catch (err) {
     log.error("ArbitrumChamber AI run failed", { error: String(err) });
   }

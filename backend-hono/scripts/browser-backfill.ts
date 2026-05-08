@@ -12,8 +12,14 @@ const DRY_RUN = process.env.DRY_RUN === "true";
 const FROM = process.env.FROM ?? "2026-04-26";
 const TO = process.env.TO ?? new Date().toISOString().slice(0, 10);
 const SCROLL_COUNT = Math.max(1, Number(process.env.SCROLL_COUNT ?? 6));
-const SCROLL_DELAY_MS = Math.max(300, Number(process.env.SCROLL_DELAY_MS ?? 1200));
-const HANDLE_PAUSE_MS = Math.max(500, Number(process.env.HANDLE_PAUSE_MS ?? 3000));
+const SCROLL_DELAY_MS = Math.max(
+  300,
+  Number(process.env.SCROLL_DELAY_MS ?? 1200),
+);
+const HANDLE_PAUSE_MS = Math.max(
+  500,
+  Number(process.env.HANDLE_PAUSE_MS ?? 3000),
+);
 const MIN_TWEET_LENGTH = 15;
 
 if (!DRY_RUN) {
@@ -108,10 +114,7 @@ async function scrapeProfileTweets(
       return Array.from(document.querySelectorAll("article")).flatMap(
         (article) => {
           const articleText = (article as HTMLElement).innerText || "";
-          if (
-            /\bPromoted\b/i.test(articleText) &&
-            articleText.length < 300
-          ) {
+          if (/\bPromoted\b/i.test(articleText) && articleText.length < 300) {
             return [];
           }
           const statusLinks = Array.from(
@@ -185,14 +188,17 @@ async function scrapeProfileTweets(
 
     // Debug: show first 3 timestamps
     if (out.length > 0) {
-      const samples = out.slice(0, 3).map((t) => `${t.tweet_id.slice(0, 6)}... @ ${t.timestamp.slice(0, 19)}`).join(", ");
+      const samples = out
+        .slice(0, 3)
+        .map(
+          (t) => `${t.tweet_id.slice(0, 6)}... @ ${t.timestamp.slice(0, 19)}`,
+        )
+        .join(", ");
       console.log(
         `[browser-backfill] ${cleanHandle}: ${out.length} tweets extracted, sample timestamps: ${samples}`,
       );
     } else {
-      console.log(
-        `[browser-backfill] ${cleanHandle}: 0 tweets extracted`,
-      );
+      console.log(`[browser-backfill] ${cleanHandle}: 0 tweets extracted`);
     }
     return out;
   } catch (err) {
@@ -287,7 +293,10 @@ async function main() {
   const commentarySet = new Set(commentary.map(stripHandle));
 
   // Deduplicated unique handles (macro/browser as standard tier)
-  const uniqueHandles = new Map<string, "breaking" | "standard" | "commentary">();
+  const uniqueHandles = new Map<
+    string,
+    "breaking" | "standard" | "commentary"
+  >();
   for (const h of wire) {
     const c = stripHandle(h);
     if (c) uniqueHandles.set(c, "breaking");
@@ -301,7 +310,9 @@ async function main() {
     if (c && !uniqueHandles.has(c)) uniqueHandles.set(c, "commentary");
   }
 
-  console.log(`[browser-backfill] unique handles to scrape: ${uniqueHandles.size}`);
+  console.log(
+    `[browser-backfill] unique handles to scrape: ${uniqueHandles.size}`,
+  );
 
   // ── Scrape profile pages (per-handle browser session for crash resilience) ──
 
@@ -317,8 +328,8 @@ async function main() {
 
     let tweets: ExtractedTweet[] = [];
     try {
-      tweets = await withPersistentBrowserPage(
-        async (page) => scrapeProfileTweets(page, handle),
+      tweets = await withPersistentBrowserPage(async (page) =>
+        scrapeProfileTweets(page, handle),
       );
     } catch (err) {
       console.warn(
@@ -328,8 +339,8 @@ async function main() {
       // Retry once with a fresh session
       try {
         await new Promise((r) => setTimeout(r, 2000));
-        tweets = await withPersistentBrowserPage(
-          async (page) => scrapeProfileTweets(page, handle),
+        tweets = await withPersistentBrowserPage(async (page) =>
+          scrapeProfileTweets(page, handle),
         );
       } catch (retryErr) {
         console.error(
@@ -375,7 +386,9 @@ async function main() {
     console.log("[browser-backfill] DRY_RUN -- skipping writes");
     // Show a sample
     for (const item of allItems.slice(0, 5)) {
-      console.log(`  ${item.published_at} @${item.source} ${item.headline.slice(0, 80)}`);
+      console.log(
+        `  ${item.published_at} @${item.source} ${item.headline.slice(0, 80)}`,
+      );
     }
   } else {
     // Write in batches of 100

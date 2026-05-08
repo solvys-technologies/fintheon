@@ -1,6 +1,9 @@
 // [claude-code 2026-05-07] S61-T1: Audit log API routes
 import { Hono } from "hono";
-import { queryAuditLog, getAuditRecordById } from "../../services/audit-logger.js";
+import {
+  queryAuditLog,
+  getAuditRecordById,
+} from "../../services/audit-logger.js";
 import type { AuditQueryFilters } from "../../types/audit.js";
 
 type AuditVars = { Variables: { userId: string } };

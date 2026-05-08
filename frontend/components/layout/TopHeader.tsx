@@ -514,9 +514,7 @@ export function TopHeader({
               disablePulse={!(alertConfig.nametagEmoPulse ?? true)}
             />
           )}
-          {compactLevel < 1 && (
-            <FluxerCallWidget />
-          )}
+          {compactLevel < 1 && <FluxerCallWidget />}
           {topStepXEnabled && (
             <button
               onClick={toggleManualDnd}

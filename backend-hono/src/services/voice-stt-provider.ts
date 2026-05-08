@@ -73,9 +73,7 @@ export function resolveSttProvider(): SttProviderInfo {
       provider: "sidecar",
       model: "whisper-turbo",
       available,
-      reason: available
-        ? undefined
-        : "hermes sidecar removed S59-T1",
+      reason: available ? undefined : "hermes sidecar removed S59-T1",
     };
   }
 

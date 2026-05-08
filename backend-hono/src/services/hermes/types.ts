@@ -50,9 +50,18 @@ export interface ChatMemoryWritesEvent {
 
 export type ChatEvent =
   | ChatDeltaEvent
-  | { type: "tool_call"; payload: { id: string; name: string; args: Record<string, unknown> } }
-  | { type: "tool_result"; payload: { id: string; result: unknown; error?: string } }
-  | { type: "context_view"; payload: { engine: string; turns_included: number; tokens_total: number } }
+  | {
+      type: "tool_call";
+      payload: { id: string; name: string; args: Record<string, unknown> };
+    }
+  | {
+      type: "tool_result";
+      payload: { id: string; result: unknown; error?: string };
+    }
+  | {
+      type: "context_view";
+      payload: { engine: string; turns_included: number; tokens_total: number };
+    }
   | ChatMemoryWritesEvent
   | ChatDoneEvent
   | ChatErrorEvent;

@@ -18,8 +18,7 @@ export function createPlaneInboundRoute(): Hono {
     const rawBody = await c.req.text();
 
     const sigHeader =
-      c.req.header("X-Plane-Signature") ||
-      c.req.header("X-Hub-Signature-256");
+      c.req.header("X-Plane-Signature") || c.req.header("X-Hub-Signature-256");
     const timestamp = c.req.header("X-Plane-Timestamp");
     const keyId = c.req.header("X-Plane-Key-Id") || "default";
 

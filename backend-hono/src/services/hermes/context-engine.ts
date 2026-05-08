@@ -63,7 +63,10 @@ export async function buildContext(
   );
   const processed = compressIfNeeded(messages, availableForMessages);
 
-  const messageTokens = processed.reduce((sum, m) => sum + estimateTokens(m.content), 0);
+  const messageTokens = processed.reduce(
+    (sum, m) => sum + estimateTokens(m.content),
+    0,
+  );
   const total = systemTokens + messageTokens;
 
   log.info("Context built", {
@@ -88,10 +91,16 @@ export async function buildContext(
   };
 }
 
-function compressIfNeeded(messages: ChatMessage[], budget: number): ChatMessage[] {
+function compressIfNeeded(
+  messages: ChatMessage[],
+  budget: number,
+): ChatMessage[] {
   if (messages.length === 0) return [];
 
-  const totalTokens = messages.reduce((sum, m) => sum + estimateTokens(m.content), 0);
+  const totalTokens = messages.reduce(
+    (sum, m) => sum + estimateTokens(m.content),
+    0,
+  );
   if (totalTokens <= budget) return messages;
 
   log.info("Context compression triggered", {
@@ -102,7 +111,10 @@ function compressIfNeeded(messages: ChatMessage[], budget: number): ChatMessage[
 
   const keep = Math.min(6, messages.length);
   const recentTurns = messages.slice(-keep);
-  const recentTokens = recentTurns.reduce((sum, m) => sum + estimateTokens(m.content), 0);
+  const recentTokens = recentTurns.reduce(
+    (sum, m) => sum + estimateTokens(m.content),
+    0,
+  );
 
   if (recentTokens > budget) {
     const compressed: ChatMessage[] = [];
@@ -112,7 +124,10 @@ function compressIfNeeded(messages: ChatMessage[], budget: number): ChatMessage[
       if (used + tokens > budget) {
         const ratio = (budget - used) / tokens;
         const truncatedLen = Math.floor(m.content.length * ratio);
-        compressed.unshift({ ...m, content: m.content.slice(-truncatedLen) + "\n[truncated]" });
+        compressed.unshift({
+          ...m,
+          content: m.content.slice(-truncatedLen) + "\n[truncated]",
+        });
         break;
       }
       compressed.unshift(m);

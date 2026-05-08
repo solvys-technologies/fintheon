@@ -17,11 +17,22 @@ function textFromRawContent(rawContent: unknown): string {
     .join("\n\n");
 }
 
-export function UserMessagePrimitive({ rawContent }: UserMessagePrimitiveProps) {
+export function UserMessagePrimitive({
+  rawContent,
+}: UserMessagePrimitiveProps) {
   const text = textFromRawContent(rawContent);
   return (
     <div style={{ display: "flex", justifyContent: "flex-end" }}>
-      <div style={{ maxWidth: "85%", border: "1px solid #3f3f46", borderRadius: 8, padding: "10px 12px", whiteSpace: "pre-wrap", fontSize: 13 }}>
+      <div
+        style={{
+          maxWidth: "85%",
+          border: "1px solid #3f3f46",
+          borderRadius: 8,
+          padding: "10px 12px",
+          whiteSpace: "pre-wrap",
+          fontSize: 13,
+        }}
+      >
         {text}
       </div>
     </div>

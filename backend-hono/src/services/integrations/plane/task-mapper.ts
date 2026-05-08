@@ -33,11 +33,34 @@ interface MappingRule {
 }
 
 const MAPPING_RULES: MappingRule[] = [
-  { severityMin: "critical", deskId: null, assignedAgent: "harper", priority: 0 },
+  {
+    severityMin: "critical",
+    deskId: null,
+    assignedAgent: "harper",
+    priority: 0,
+  },
   { severityMin: "high", deskId: null, assignedAgent: "oracle", priority: 1 },
-  { severityMin: "medium", componentMatch: "riskflow", deskId: null, assignedAgent: "feucht", priority: 2 },
-  { severityMin: "medium", componentMatch: "autopilot", deskId: null, assignedAgent: "consul", priority: 2 },
-  { severityMin: "medium", componentMatch: "trading", deskId: null, assignedAgent: "harper", priority: 3 },
+  {
+    severityMin: "medium",
+    componentMatch: "riskflow",
+    deskId: null,
+    assignedAgent: "feucht",
+    priority: 2,
+  },
+  {
+    severityMin: "medium",
+    componentMatch: "autopilot",
+    deskId: null,
+    assignedAgent: "consul",
+    priority: 2,
+  },
+  {
+    severityMin: "medium",
+    componentMatch: "trading",
+    deskId: null,
+    assignedAgent: "harper",
+    priority: 3,
+  },
 ];
 
 const SEVERITY_WEIGHT: Record<string, number> = {
@@ -53,7 +76,10 @@ function severityMeets(minSeverity: string, actual: string): boolean {
   return actualWeight >= minWeight;
 }
 
-function componentMatches(pattern: string | undefined, component: string | undefined): boolean {
+function componentMatches(
+  pattern: string | undefined,
+  component: string | undefined,
+): boolean {
   if (!pattern) return true;
   if (!component) return false;
   return component.toLowerCase().includes(pattern.toLowerCase());
@@ -63,7 +89,9 @@ function componentMatches(pattern: string | undefined, component: string | undef
 // Map incident to research task input (or null if no rule matches)
 // ---------------------------------------------------------------------------
 
-export function mapIncidentToTask(incident: MappedIncident): ResearchTaskInput | null {
+export function mapIncidentToTask(
+  incident: MappedIncident,
+): ResearchTaskInput | null {
   const severity = incident.severity ?? "low";
   const component = incident.component ?? "";
 
@@ -84,10 +112,10 @@ export function mapIncidentToTask(incident: MappedIncident): ResearchTaskInput |
 
   const rule = matchingRules[0];
 
-  const narrative = incident.narrative
-    ?? incident.data
-    ? JSON.stringify(incident.data)
-    : `Auto-mapped from Plane incident ${incident.incidentId}. Event type: ${incident.eventType}, Severity: ${severity}`;
+  const narrative =
+    (incident.narrative ?? incident.data)
+      ? JSON.stringify(incident.data)
+      : `Auto-mapped from Plane incident ${incident.incidentId}. Event type: ${incident.eventType}, Severity: ${severity}`;
 
   const task: ResearchTaskInput = {
     title: incident.title ?? `Incident: ${incident.incidentId} (${severity})`,

@@ -3,8 +3,15 @@
 // for deepseek + opencode-go so personal provider selection can hydrate keys.
 import { Hono } from "hono";
 import { z } from "zod";
-import { getSupabaseClient, isSupabaseConfigured } from "../../config/supabase.js";
-import { decryptApiKey, encryptApiKey, maskApiKey } from "../../services/ai/api-key-crypto.js";
+import {
+  getSupabaseClient,
+  isSupabaseConfigured,
+} from "../../config/supabase.js";
+import {
+  decryptApiKey,
+  encryptApiKey,
+  maskApiKey,
+} from "../../services/ai/api-key-crypto.js";
 import {
   deleteLocalProviderKey,
   getLocalProviderKey,
@@ -171,8 +178,11 @@ export function createAiKeysRoutes(): Hono {
     const userId = authedUserId(c);
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
-    const parsed = UpsertKeySchema.safeParse(await c.req.json().catch(() => null));
-    if (!parsed.success) return c.json({ error: "Invalid API key payload" }, 400);
+    const parsed = UpsertKeySchema.safeParse(
+      await c.req.json().catch(() => null),
+    );
+    if (!parsed.success)
+      return c.json({ error: "Invalid API key payload" }, 400);
 
     // Always write user key into Hermes-local config so local agentic tasks
     // can resolve credentials even when backend DB access is unavailable.
@@ -180,7 +190,9 @@ export function createAiKeysRoutes(): Hono {
       userId,
       parsed.data.provider,
       parsed.data.apiKey,
-      parsed.data.provider === "opencode-go" ? resolveOpenCodeBaseUrl() : undefined,
+      parsed.data.provider === "opencode-go"
+        ? resolveOpenCodeBaseUrl()
+        : undefined,
     );
 
     if (!isSupabaseConfigured() || userId === "local-user") {

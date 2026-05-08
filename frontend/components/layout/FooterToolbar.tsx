@@ -11,10 +11,7 @@ import {
   FileText,
   AlertTriangle,
 } from "lucide-react";
-import {
-  PLATFORM_URLS,
-  type TradingPlatform,
-} from "../TradingBrowser";
+import { PLATFORM_URLS, type TradingPlatform } from "../TradingBrowser";
 import { changelog } from "../../../src/lib/changelog";
 import { useErrorLog } from "../../hooks/useErrorLog";
 import { useSystemStatus } from "../../hooks/useSystemStatus";
@@ -495,9 +492,10 @@ export function FooterToolbar({
   const { overall: systemOverall, services } = useSystemStatus();
   const { status: gatewayStatus } = useGateway();
   const narrowedServiceNames = new Set(["Hermes", "AI", "X"]);
-  const visibleServices = compactLevel >= 1
-    ? services.filter((svc) => narrowedServiceNames.has(svc.name))
-    : services;
+  const visibleServices =
+    compactLevel >= 1
+      ? services.filter((svc) => narrowedServiceNames.has(svc.name))
+      : services;
   const togglePanel = () => setPanelOpen((v) => !v);
 
   // [claude-code 2026-04-26] Listen for the header PanelToggleGroup footer
@@ -724,9 +722,7 @@ export function FooterToolbar({
           ) : (
             <ChevronUp className="w-3 h-3" />
           )}
-          <span className="font-mono tracking-[0.12em]">
-            {EPOCH_VERSION}
-          </span>
+          <span className="font-mono tracking-[0.12em]">{EPOCH_VERSION}</span>
         </button>
 
         <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />

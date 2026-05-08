@@ -19,7 +19,9 @@ export function AgentActivityRail({
 }: AgentActivityRailProps) {
   if (!entries.length) return null;
   return (
-    <div style={{ marginTop: 8, padding: "6px 10px", border: "1px solid #27272a" }}>
+    <div
+      style={{ marginTop: 8, padding: "6px 10px", border: "1px solid #27272a" }}
+    >
       {entries.map((entry) => (
         <div key={entry.id} style={{ fontSize: 11, color: "#a1a1aa" }}>
           {entry.label}

@@ -22,7 +22,9 @@ function clearCache(): void {
   cacheLoadedAt = 0;
 }
 
-function pairKey(filter: Pick<EconWatchFilter, "country" | "category" | "user_id">): string {
+function pairKey(
+  filter: Pick<EconWatchFilter, "country" | "category" | "user_id">,
+): string {
   return `${String(filter.user_id ?? "global")}:${String(filter.country).toUpperCase()}:${filter.category}`;
 }
 
@@ -43,8 +45,12 @@ function normalizeFilters(filters: EconWatchFilter[]): EconWatchFilter[] {
       byPair.set(key, normalized);
       continue;
     }
-    const existingTs = Date.parse(existing.updated_at ?? existing.created_at ?? "");
-    const nextTs = Date.parse(normalized.updated_at ?? normalized.created_at ?? "");
+    const existingTs = Date.parse(
+      existing.updated_at ?? existing.created_at ?? "",
+    );
+    const nextTs = Date.parse(
+      normalized.updated_at ?? normalized.created_at ?? "",
+    );
     if (!Number.isFinite(existingTs) || nextTs >= existingTs) {
       byPair.set(key, normalized);
     }

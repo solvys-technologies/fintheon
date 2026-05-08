@@ -43,8 +43,13 @@ async function summarizeOlderMessages(
   const olderMessages = messages.slice(0, messages.length - VERBATIM_TAIL);
   if (olderMessages.length === 0) return null;
 
-  const apiKey = process.env.OPENCODE_GO_API_KEY || process.env.HERMES_API_KEY || "opencode-go";
-  const baseUrl = (process.env.HERMES_API_URL || "http://localhost:8317/v1").replace(/\/+$/, "");
+  const apiKey =
+    process.env.OPENCODE_GO_API_KEY ||
+    process.env.HERMES_API_KEY ||
+    "opencode-go";
+  const baseUrl = (
+    process.env.HERMES_API_URL || "http://localhost:8317/v1"
+  ).replace(/\/+$/, "");
 
   const summaryPrompt = `Summarize this conversation history concisely, preserving key facts, decisions, and context:\n\n${olderMessages.map((m) => `${m.role}: ${m.content}`).join("\n\n")}`;
 
@@ -71,10 +76,7 @@ async function summarizeOlderMessages(
     });
 
     if (!response.ok) {
-      console.warn(
-        "[ConversationStore] Summarization error:",
-        response.status,
-      );
+      console.warn("[ConversationStore] Summarization error:", response.status);
       return null;
     }
 

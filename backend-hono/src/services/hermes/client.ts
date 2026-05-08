@@ -66,7 +66,10 @@ export interface StreamChatOptions {
 export async function* streamChat(
   agentId: AgentId,
   message: string,
-  history: Array<{ role: "user" | "assistant" | "system"; content: string }> = [],
+  history: Array<{
+    role: "user" | "assistant" | "system";
+    content: string;
+  }> = [],
   options: StreamChatOptions = {},
 ): AsyncGenerator<ChatEvent> {
   yield* hermesChatStream(agentId, message, history, options);
@@ -75,7 +78,10 @@ export async function* streamChat(
 export async function chat(
   agentId: AgentId,
   message: string,
-  history: Array<{ role: "user" | "assistant" | "system"; content: string }> = [],
+  history: Array<{
+    role: "user" | "assistant" | "system";
+    content: string;
+  }> = [],
   options: StreamChatOptions = {},
 ): Promise<{ content: string; tokens?: { in: number; out: number } }> {
   return hermesChat(agentId, message, history, options);
@@ -84,7 +90,10 @@ export async function chat(
 export async function chatSync(
   agentId: AgentId,
   message: string,
-  history: Array<{ role: "user" | "assistant" | "system"; content: string }> = [],
+  history: Array<{
+    role: "user" | "assistant" | "system";
+    content: string;
+  }> = [],
   options: StreamChatOptions = {},
 ): Promise<string> {
   const result = await hermesChat(agentId, message, history, options);
@@ -97,7 +106,9 @@ export const SIDECAR_CLIENT_READY = true;
 
 export const sidecarClient = {
   async healthz() {
-    log.warn("sidecarClient.healthz called — sidecar removed, returning degraded");
+    log.warn(
+      "sidecarClient.healthz called — sidecar removed, returning degraded",
+    );
     return {
       ok: false,
       version: "native-ts-runtime",
@@ -151,8 +162,13 @@ export const sidecarClient = {
     async stt(_args?: {
       audio_bytes?: string;
       lang?: string;
-    }): Promise<{ transcript: string; words: { word: string; start: number; end: number }[] }> {
-      throw new SidecarDisabledError("sidecarClient.voice.stt unavailable — sidecar removed");
+    }): Promise<{
+      transcript: string;
+      words: { word: string; start: number; end: number }[];
+    }> {
+      throw new SidecarDisabledError(
+        "sidecarClient.voice.stt unavailable — sidecar removed",
+      );
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async tts(_args?: {
@@ -160,7 +176,9 @@ export const sidecarClient = {
       voice_id?: string;
       stream?: boolean;
     }): Promise<ArrayBuffer> {
-      throw new SidecarDisabledError("sidecarClient.voice.tts unavailable — sidecar removed");
+      throw new SidecarDisabledError(
+        "sidecarClient.voice.tts unavailable — sidecar removed",
+      );
     },
   },
 

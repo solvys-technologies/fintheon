@@ -178,8 +178,7 @@ export function RefinementEngine() {
   // --- Plane view mode ---
   const [viewMode, setViewMode] = useState<"scoring" | "plane">("scoring");
 
-  const planeUrl =
-    import.meta.env.VITE_PLANE_URL || "https://app.plane.so";
+  const planeUrl = import.meta.env.VITE_PLANE_URL || "https://app.plane.so";
 
   // --- Edit lock ---
   const [editUnlocked, setEditUnlocked] = useState(() =>
@@ -291,7 +290,8 @@ export function RefinementEngine() {
   const kickstartSources = useMemo(
     () =>
       sourceAccounts.filter(
-        (a) => a.active && a.method === "browser" && !isWebSourceHandle(a.handle),
+        (a) =>
+          a.active && a.method === "browser" && !isWebSourceHandle(a.handle),
       ),
     [sourceAccounts],
   );
@@ -302,7 +302,9 @@ export function RefinementEngine() {
       return;
     }
     setKickstartHandles((prev) => {
-      const allowed = new Set(kickstartSources.map((s) => s.handle.toLowerCase()));
+      const allowed = new Set(
+        kickstartSources.map((s) => s.handle.toLowerCase()),
+      );
       const retained = kickstartSources
         .map((s) => s.handle)
         .filter((h) => prev.has(h) || prev.has(h.toLowerCase()));
@@ -505,23 +507,20 @@ export function RefinementEngine() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       };
 
-      const kickstartRes = await fetch(
-        `${API_BASE}/api/riskflow/kickstart`,
-        {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            handles: Array.from(kickstartHandles),
-          }),
-        },
-      );
+      const kickstartRes = await fetch(`${API_BASE}/api/riskflow/kickstart`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          handles: Array.from(kickstartHandles),
+        }),
+      });
       if (!kickstartRes.ok) {
         const text = await kickstartRes.text().catch(() => "");
         throw new Error(text || `HTTP ${kickstartRes.status}`);
       }
-      const kickstartJson = (await kickstartRes.json().catch(
-        () => null,
-      )) as KickstartResult | null;
+      const kickstartJson = (await kickstartRes
+        .json()
+        .catch(() => null)) as KickstartResult | null;
       setLastKickstart(kickstartJson);
 
       addToast(
@@ -568,7 +567,13 @@ export function RefinementEngine() {
                 <Tv className="w-3.5 h-3.5" />
                 Plane
               </button>
-              <span style={{ width: 1, height: 14, background: "rgba(199,159,74,0.15)" }} />
+              <span
+                style={{
+                  width: 1,
+                  height: 14,
+                  background: "rgba(199,159,74,0.15)",
+                }}
+              />
             </>
           )}
           {viewMode === "plane" ? (
@@ -582,7 +587,10 @@ export function RefinementEngine() {
           ) : (
             <>
               {isDirty && (
-                <button onClick={onDiscardChanges} className="text-[11px] font-medium text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] transition-colors">
+                <button
+                  onClick={onDiscardChanges}
+                  className="text-[11px] font-medium text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] transition-colors"
+                >
                   Discard
                 </button>
               )}
@@ -593,20 +601,35 @@ export function RefinementEngine() {
               >
                 {isRescoring ? "Saving…" : "Save"}
               </button>
-              <span style={{ width: 1, height: 14, background: "rgba(199,159,74,0.15)" }} />
+              <span
+                style={{
+                  width: 1,
+                  height: 14,
+                  background: "rgba(199,159,74,0.15)",
+                }}
+              />
               <button
                 onClick={() => setIsKickstartDrawerOpen(true)}
                 disabled={isRefreshingAuth || kickstartSources.length === 0}
                 className="flex items-center gap-1.5 text-xs font-medium text-[var(--fintheon-accent)]/70 hover:text-[var(--fintheon-accent)] disabled:opacity-30 transition-colors"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingAuth ? "animate-spin" : ""}`} />
+                <RefreshCw
+                  className={`w-3.5 h-3.5 ${isRefreshingAuth ? "animate-spin" : ""}`}
+                />
                 Kickstart
               </button>
             </>
           )}
         </div>
       </div>
-      <div style={{ height: 1, margin: "0 20px", background: "linear-gradient(to right, rgba(199,159,74,0.18), transparent 80%)" }} />
+      <div
+        style={{
+          height: 1,
+          margin: "0 20px",
+          background:
+            "linear-gradient(to right, rgba(199,159,74,0.18), transparent 80%)",
+        }}
+      />
 
       {viewMode === "scoring" && isKickstartDrawerOpen && (
         <div className="absolute inset-0 z-40">
@@ -709,7 +732,8 @@ export function RefinementEngine() {
               {lastKickstart && (
                 <div className="mt-4 border border-[var(--fintheon-glass-border)]">
                   <div className="px-3 py-2 border-b border-[var(--fintheon-glass-border)] text-[10px] text-[var(--fintheon-muted)]">
-                    Last run: {new Date(lastKickstart.kickedAt).toLocaleString()}
+                    Last run:{" "}
+                    {new Date(lastKickstart.kickedAt).toLocaleString()}
                   </div>
                   <div className="px-3 py-2 text-[11px] text-[var(--fintheon-text)]">
                     fetched {lastKickstart.fetched} · candidates{" "}

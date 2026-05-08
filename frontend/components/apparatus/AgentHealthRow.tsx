@@ -1,7 +1,14 @@
 // [claude-code 2026-05-05] S59-T3: AgentHealthRow — individual agent health row with expandable detail.
 // Glassmorphic surface, status dot, inline metrics, click-to-expand detail panel.
 import { useState } from "react";
-import { ChevronDown, ChevronUp, HardDrive, Brain, GitMerge, Activity } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  HardDrive,
+  Brain,
+  GitMerge,
+  Activity,
+} from "lucide-react";
 import { PersonaBadge } from "./PersonaBadge";
 import type { AgentHealthEntry } from "../../hooks/useAgentHealth";
 
@@ -45,7 +52,9 @@ export function AgentHealthRow({ agent }: AgentHealthRowProps) {
       {/* Row header: agent name, role, status dot, key metrics */}
       <div className="flex items-center justify-between px-3 py-2 gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[agent.personaHealth]}`} />
+          <span
+            className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[agent.personaHealth]}`}
+          />
           <div className="flex items-baseline gap-1.5 min-w-0">
             <span className="text-[11px] font-semibold text-[var(--fintheon-text)] tracking-wide truncate">
               {label}
@@ -84,11 +93,7 @@ export function AgentHealthRow({ agent }: AgentHealthRowProps) {
 
           {/* Expand chevron */}
           <span className="text-[var(--fintheon-accent)]/30">
-            {expanded ? (
-              <ChevronUp size={12} />
-            ) : (
-              <ChevronDown size={12} />
-            )}
+            {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           </span>
         </div>
       </div>
@@ -190,7 +195,10 @@ export function AgentHealthRow({ agent }: AgentHealthRowProps) {
           {/* Memories */}
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-1.5">
-              <HardDrive size={9} className="text-[var(--fintheon-accent)]/50" />
+              <HardDrive
+                size={9}
+                className="text-[var(--fintheon-accent)]/50"
+              />
               <span className="text-[9px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">
                 Memories
               </span>

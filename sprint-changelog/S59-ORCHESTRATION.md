@@ -13,12 +13,12 @@ S55 Wave 2 deferred "Hermes App-Native Runtime migration, DeepSeek/NOUS routing,
 
 ## Track Summary
 
-| Track | Title | Complexity | Est. Files | Depends On |
-|-------|-------|-----------|------------|------------|
-| T1 | Sidecar Removal + Native Hermes Agent Core | High | ~18 files | None |
-| T2 | Persona Unification — SOUL.md as Canonical Source for ALL Agents | High | ~14 files | None |
-| T3 | Agent Health Dashboard + Persona Status UI | Medium | ~8 files | None |
-| T4 | Unification + Full Stack Validation | Medium | merge + changelog | T1, T2, T3 |
+| Track | Title                                                            | Complexity | Est. Files        | Depends On |
+| ----- | ---------------------------------------------------------------- | ---------- | ----------------- | ---------- |
+| T1    | Sidecar Removal + Native Hermes Agent Core                       | High       | ~18 files         | None       |
+| T2    | Persona Unification — SOUL.md as Canonical Source for ALL Agents | High       | ~14 files         | None       |
+| T3    | Agent Health Dashboard + Persona Status UI                       | Medium     | ~8 files          | None       |
+| T4    | Unification + Full Stack Validation                              | Medium     | merge + changelog | T1, T2, T3 |
 
 ## Wave 1 — T1, T2, T3 in parallel
 

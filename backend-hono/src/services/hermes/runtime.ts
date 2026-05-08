@@ -28,10 +28,16 @@ export interface HermesChatResult {
 export async function hermesChat(
   agentId: AgentId,
   userMessage: string,
-  history: Array<{ role: "user" | "assistant" | "system"; content: string }> = [],
+  history: Array<{
+    role: "user" | "assistant" | "system";
+    content: string;
+  }> = [],
   options: HermesChatOptions = {},
 ): Promise<HermesChatResult> {
-  const messages = [...history, { role: "user" as const, content: userMessage }];
+  const messages = [
+    ...history,
+    { role: "user" as const, content: userMessage },
+  ];
 
   const ctx = await buildContext(agentId, messages, 120_000);
 
@@ -40,7 +46,9 @@ export async function hermesChat(
     ...ctx.messages,
   ];
 
-  const fullPrompt = promptMessages.map((m) => `${m.role}: ${m.content}`).join("\n\n");
+  const fullPrompt = promptMessages
+    .map((m) => `${m.role}: ${m.content}`)
+    .join("\n\n");
 
   log.info("hermesChat invoking DeepSeek", {
     agentId,
@@ -69,7 +77,10 @@ export async function hermesChat(
 export async function* hermesChatStream(
   agentId: AgentId,
   userMessage: string,
-  history: Array<{ role: "user" | "assistant" | "system"; content: string }> = [],
+  history: Array<{
+    role: "user" | "assistant" | "system";
+    content: string;
+  }> = [],
   options: HermesChatOptions = {},
 ): AsyncGenerator<ChatEvent> {
   const result = await hermesChat(agentId, userMessage, history, options);

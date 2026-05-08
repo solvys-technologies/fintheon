@@ -96,29 +96,33 @@ export async function generateDayPlan(
 
   const ivScore = dominantWindow.ivScore;
   const vixLevel = vix?.value ?? 18;
-  const implied = calculateImpliedPoints(vixLevel, spot ?? undefined, instrument);
+  const implied = calculateImpliedPoints(
+    vixLevel,
+    spot ?? undefined,
+    instrument,
+  );
   // ~12% of daily implied move = 35-40 pts on /NQ, scales with VIX
   const ivSpread = Math.round(implied.adjustedPoints * 0.12);
 
   // Direction: spot above POC = bullish bias (buy off liquidity below)
-  const bias: "long" | "short" =
-    spot && poc && spot > poc ? "long" : "short";
+  const bias: "long" | "short" = spot && poc && spot > poc ? "long" : "short";
 
   // Entry zone: nearest liquidity (VAL for longs, VAH for shorts)
-  const liquidityZone = bias === "long"
-    ? (va?.val ?? spot ?? 0)
-    : (va?.vah ?? spot ?? 0);
+  const liquidityZone =
+    bias === "long" ? (va?.val ?? spot ?? 0) : (va?.vah ?? spot ?? 0);
 
   // Two entries at 80-or-20 handles near the liquidity zone
-  const rawEntry1 = bias === "long"
-    ? liquidityZone + ivSpread * 0.15  // slight premium from zone
-    : liquidityZone - ivSpread * 0.15;
+  const rawEntry1 =
+    bias === "long"
+      ? liquidityZone + ivSpread * 0.15 // slight premium from zone
+      : liquidityZone - ivSpread * 0.15;
   const entry1 = roundTo80or20(rawEntry1, instrument);
-  const entry2 = bias === "long"
-    ? roundTo80or20(entry1 - ivSpread * 0.3, instrument) // lower entry = better fill
-    : roundTo80or20(entry1 + ivSpread * 0.3, instrument);
-  const entries = [entry1, entry2].sort((a, b) =>
-    bias === "long" ? b - a : a - b, // longs: higher first; shorts: lower first
+  const entry2 =
+    bias === "long"
+      ? roundTo80or20(entry1 - ivSpread * 0.3, instrument) // lower entry = better fill
+      : roundTo80or20(entry1 + ivSpread * 0.3, instrument);
+  const entries = [entry1, entry2].sort(
+    (a, b) => (bias === "long" ? b - a : a - b), // longs: higher first; shorts: lower first
   );
 
   const candidatePrices = [vwap, poc, va?.vah, va?.val].filter(
@@ -128,9 +132,8 @@ export async function generateDayPlan(
   const invalidation = invalidationOffset(entries[1]!, bias);
 
   // Profit target: 25-multiple handle in the profit direction, ~IV spread away
-  const targetRaw = bias === "long"
-    ? entries[0]! + ivSpread
-    : entries[0]! - ivSpread;
+  const targetRaw =
+    bias === "long" ? entries[0]! + ivSpread : entries[0]! - ivSpread;
   const profitTarget = roundTo25multiple(targetRaw);
 
   const topHeadline = (feedResponse.items ?? [])[0]?.headline ?? "";

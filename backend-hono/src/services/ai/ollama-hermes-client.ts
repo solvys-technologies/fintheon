@@ -45,9 +45,7 @@ export function isOllamaFallbackEnabled(): boolean {
 }
 
 export function getOllamaBaseUrl(): string {
-  const raw =
-    process.env.OLLAMA_BASE_URL ||
-    DEFAULT_BASE_URL;
+  const raw = process.env.OLLAMA_BASE_URL || DEFAULT_BASE_URL;
   return raw.replace(/\/+$/, "");
 }
 
@@ -111,7 +109,10 @@ export async function getOllamaHealth(force = false): Promise<OllamaHealth> {
       checkedAt: Date.now(),
       error: message,
     };
-    log.warn("DeepSeek-compatible health check failed", { error: message, baseUrl });
+    log.warn("DeepSeek-compatible health check failed", {
+      error: message,
+      baseUrl,
+    });
   }
 
   return healthCache;

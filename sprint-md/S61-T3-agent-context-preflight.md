@@ -44,7 +44,7 @@ Today, only Harper gets rich context injection (RiskFlow context, ArbitrumChambe
 ## Implementation Steps
 
 1. Create `backend-hono/src/services/desk-context/agent-outputs.ts`:
-   - `getRecentOutputs(agentId, hoursBack = 24): Promise<string[]>` 
+   - `getRecentOutputs(agentId, hoursBack = 24): Promise<string[]>`
    - Query the ops feed / journal table via Supabase for entries matching agentId
    - Fall back gracefully (return []) on DB failure
    - Format each output as: `[${timestamp}] ${agentId}: ${summary}`

@@ -14,7 +14,9 @@ function getDeepSeekDirectBaseUrl(): string {
 
 function getOpenCodeGoBaseUrl(): string {
   return normalizeUrl(
-    process.env.OPENCODE_GO_API_URL || process.env.HERMES_API_URL || OC_API_BASE_URL,
+    process.env.OPENCODE_GO_API_URL ||
+      process.env.HERMES_API_URL ||
+      OC_API_BASE_URL,
   );
 }
 
@@ -50,6 +52,9 @@ export async function checkDeepSeekOcApiHealth(): Promise<{
   available: boolean;
   error: string | null;
 }> {
-  const apiKey = process.env.OPENCODE_GO_API_KEY || process.env.HERMES_API_KEY || "opencode-go";
+  const apiKey =
+    process.env.OPENCODE_GO_API_KEY ||
+    process.env.HERMES_API_KEY ||
+    "opencode-go";
   return checkOpenAiCompatHealth(getOpenCodeGoBaseUrl(), apiKey);
 }

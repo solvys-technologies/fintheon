@@ -61,9 +61,7 @@ function cleanDigestText(text: string): string {
 
 function renderRichDigest(text: string) {
   const cleaned = cleanDigestText(text);
-  const parts = cleaned
-    .split(/(\*\*[^*]+\*\*)/g)
-    .filter(Boolean);
+  const parts = cleaned.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
 
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
@@ -279,7 +277,10 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
       </div>
       <div className="flex flex-col md:flex-row md:items-stretch md:overflow-x-auto">
         {agentRowSeats.map((seat, i) => (
-          <div key={`${verdict?.id ?? "empty"}-${seat.role}-${i}`} className="contents">
+          <div
+            key={`${verdict?.id ?? "empty"}-${seat.role}-${i}`}
+            className="contents"
+          >
             {i > 0 && (
               <>
                 <FadingRuler className="my-1 md:hidden" />

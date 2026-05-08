@@ -150,7 +150,8 @@ const KNOWN_SERVERS: Record<string, Partial<McpServerEntry>> = {
   },
   plane: {
     name: "Plane",
-    description: "Issue tracking, sprints, cycles, modules, and product planning",
+    description:
+      "Issue tracking, sprints, cycles, modules, and product planning",
     category: "productivity",
     toolCount: 15,
     requiresApiKey: true,

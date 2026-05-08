@@ -369,7 +369,10 @@ export async function handleChat(c: Context) {
       ? ((body as any).mcpServers as string[])
       : [];
     const hermesSurface = (body as any)?.surface as string | undefined;
-    if (hermesSurface === "arbitrumChamber" || mcpActive.includes("arbitrumChamber")) {
+    if (
+      hermesSurface === "arbitrumChamber" ||
+      mcpActive.includes("arbitrumChamber")
+    ) {
       try {
         const { buildArbitrumChamberContext } =
           await import("../../../services/harper-handler.js");

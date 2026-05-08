@@ -49,6 +49,7 @@ Existing approval UI (`ToolApprovalCard.tsx` in chat, `ApprovalModal.tsx` for se
 ### Component Layouts
 
 **UnifiedApprovalPipeline** (vertical stack, max-w-2xl):
+
 ```
 ┌──────────────────────────────────────────┐
 │ [tool icon] [tool name]        [pending] │  ← frosted-glass header
@@ -62,6 +63,7 @@ Existing approval UI (`ToolApprovalCard.tsx` in chat, `ApprovalModal.tsx` for se
 ```
 
 **AuditTrailViewer** (paginated table):
+
 ```
 ┌──────────────────────────────────────────────────────────┐
 │ Timestamp          Agent     Tool          Decision      │
@@ -76,6 +78,7 @@ Existing approval UI (`ToolApprovalCard.tsx` in chat, `ApprovalModal.tsx` for se
 ```
 
 **DiffPreview** (code-diff style):
+
 ```
 ┌──────────────────────────────────────────┐
 │ Before                    After           │

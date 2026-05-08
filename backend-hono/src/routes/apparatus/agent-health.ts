@@ -71,9 +71,8 @@ interface ReflectSnapshot {
 
 async function checkReflect(): Promise<ReflectSnapshot> {
   try {
-    const { getLatestReflectReport } = await import(
-      "../../services/autoresearch/reflect-engine.js"
-    );
+    const { getLatestReflectReport } =
+      await import("../../services/autoresearch/reflect-engine.js");
     const report = await getLatestReflectReport();
     if (!report) return { reflectScore: null, reflectLastRun: null };
     return {
@@ -97,9 +96,8 @@ interface GepaSnapshot {
 
 async function checkGepa(): Promise<GepaSnapshot> {
   try {
-    const { loadGepaDiagnostics } = await import(
-      "../../services/gepa/runner.js"
-    );
+    const { loadGepaDiagnostics } =
+      await import("../../services/gepa/runner.js");
     const diag = await loadGepaDiagnostics();
     return {
       gepaLastRun: diag.last_run_at,
@@ -160,7 +158,9 @@ export function createApparatusRoutes(): Hono {
     const start = Date.now();
 
     const [souls, reflect, gepa] = await Promise.all([
-      Promise.all(AGENT_IDS.map(async (id) => ({ id, ...(await checkSoul(id)) }))),
+      Promise.all(
+        AGENT_IDS.map(async (id) => ({ id, ...(await checkSoul(id)) })),
+      ),
       checkReflect(),
       checkGepa(),
     ]);

@@ -1,6 +1,9 @@
 // [claude-code 2026-05-07] S61-T2: Capability enforcer — tool permission checks at runtime
 import { getProfile } from "./registry.js";
-import type { AgentCapabilityProfile, RegistryEnforcementResult } from "./types.js";
+import type {
+  AgentCapabilityProfile,
+  RegistryEnforcementResult,
+} from "./types.js";
 import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger("capability-registry");
@@ -27,7 +30,8 @@ export function enforceCapability(
     return { allowed: true, reason };
   }
 
-  const reason = "unknown tool — not in required, optional, or prohibited lists";
+  const reason =
+    "unknown tool — not in required, optional, or prohibited lists";
   log.info(`DENIED: ${agentId} → ${toolName} (${reason})`);
   return { allowed: false, reason };
 }

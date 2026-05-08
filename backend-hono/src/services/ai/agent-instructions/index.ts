@@ -119,8 +119,10 @@ function renderRegistryBlock(): string {
   const profiles = getAllProfiles();
   const agentLabels: Record<string, string> = {
     oracle: "Prediction markets / implied probabilities / Kalshi / Polymarket",
-    feucht: "Technical levels / futures execution / VWAP-EMA confluence / /NQ / /ES",
-    consul: "Fundamentals / earnings / mega-cap / sector rotation / 10-K analysis",
+    feucht:
+      "Technical levels / futures execution / VWAP-EMA confluence / /NQ / /ES",
+    consul:
+      "Fundamentals / earnings / mega-cap / sector rotation / 10-K analysis",
     herald: "News velocity / sentiment / social chatter / headline risk",
     harper: "Cross-desk synthesis / approval decisions / executive summary",
   };
@@ -131,7 +133,8 @@ function renderRegistryBlock(): string {
     const label = agentLabels[profile.agent_id] ?? profile.responsibilities[0];
     block += `\n- **${profile.agent_id}**: ${label} → handoff_to_${profile.agent_id}`;
   }
-  block += "\n\nMax 3 handoffs per turn. Max depth 2 in any chain (A → B → C stops). Self-handoff is rejected.";
+  block +=
+    "\n\nMax 3 handoffs per turn. Max depth 2 in any chain (A → B → C stops). Self-handoff is rejected.";
   return block;
 }
 

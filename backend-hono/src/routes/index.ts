@@ -379,7 +379,6 @@ export function registerRoutes(app: Hono): void {
   // Phase 6: Agent routes
   app.route("/api/agents", createAgentRoutes());
 
-
   // ER telemetry routes
   app.route("/api/er", createERRoutes());
 

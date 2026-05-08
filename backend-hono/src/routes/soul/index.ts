@@ -8,8 +8,17 @@ import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger("SoulRoutes");
 
-const VALID_AGENTS = ["harper", "oracle", "feucht", "consul", "herald"] as const;
-const SOUL_DIR = join(dirname(fileURLToPath(import.meta.url)), "../../services/ai/soul");
+const VALID_AGENTS = [
+  "harper",
+  "oracle",
+  "feucht",
+  "consul",
+  "herald",
+] as const;
+const SOUL_DIR = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../services/ai/soul",
+);
 
 interface SoulMeta {
   agent_id: string;
@@ -56,7 +65,7 @@ export function createSoulRoutes(): Hono {
   app.get("/:agentId", async (c) => {
     try {
       const agentId = c.req.param("agentId");
-      if (!VALID_AGENTS.includes(agentId as typeof VALID_AGENTS[number])) {
+      if (!VALID_AGENTS.includes(agentId as (typeof VALID_AGENTS)[number])) {
         return c.json({ error: `Unknown agent: ${agentId}` }, 404);
       }
       const filePath = join(SOUL_DIR, `${agentId}.md`);
@@ -72,7 +81,7 @@ export function createSoulRoutes(): Hono {
   app.put("/:agentId", async (c) => {
     try {
       const agentId = c.req.param("agentId");
-      if (!VALID_AGENTS.includes(agentId as typeof VALID_AGENTS[number])) {
+      if (!VALID_AGENTS.includes(agentId as (typeof VALID_AGENTS)[number])) {
         return c.json({ error: `Unknown agent: ${agentId}` }, 404);
       }
       const body = await c.req.json<{ content: string }>();

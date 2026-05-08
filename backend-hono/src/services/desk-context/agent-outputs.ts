@@ -111,8 +111,8 @@ async function readOpsOutputs(
     .filter((entry) => isRecent(entry.createdAt, sinceMs))
     .map((entry) => formatOutput(agentId, entry.createdAt, entry.content));
 
-  return [...opsLines, ...journalLines].filter(
-    (line): line is string => Boolean(line),
+  return [...opsLines, ...journalLines].filter((line): line is string =>
+    Boolean(line),
   );
 }
 

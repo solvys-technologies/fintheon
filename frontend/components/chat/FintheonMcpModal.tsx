@@ -4,16 +4,10 @@ import type { McpServerConfig, McpServerId } from "../../types/mcp";
 
 function StatusDot({ server }: { server: McpServerConfig }) {
   if (!server.installed)
-    return (
-      <span className="w-2 h-2 rounded-full bg-red-500/80 shrink-0" />
-    );
+    return <span className="w-2 h-2 rounded-full bg-red-500/80 shrink-0" />;
   if (server.requiresApiKey && !server.hasApiKey)
-    return (
-      <span className="w-2 h-2 rounded-full bg-yellow-500/80 shrink-0" />
-    );
-  return (
-    <span className="w-2 h-2 rounded-full bg-emerald-500/80 shrink-0" />
-  );
+    return <span className="w-2 h-2 rounded-full bg-yellow-500/80 shrink-0" />;
+  return <span className="w-2 h-2 rounded-full bg-emerald-500/80 shrink-0" />;
 }
 
 function Toggle({
@@ -154,7 +148,8 @@ export function FintheonMcpModal({
           background: "rgba(10, 8, 5, 0.92)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
-          border: "1px solid color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
+          border:
+            "1px solid color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
           boxShadow: "0 4px 32px rgba(0,0,0,0.5)",
           display: "flex",
           flexDirection: "column",

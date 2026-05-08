@@ -106,13 +106,7 @@ const CAPABILITY_PROFILES: Omit<AgentCapabilityProfile, "agent_id">[] = [
   },
 ];
 
-const agentIds: AgentId[] = [
-  "harper",
-  "oracle",
-  "feucht",
-  "consul",
-  "herald",
-];
+const agentIds: AgentId[] = ["harper", "oracle", "feucht", "consul", "herald"];
 
 let registry: Record<string, AgentCapabilityProfile> | null = null;
 

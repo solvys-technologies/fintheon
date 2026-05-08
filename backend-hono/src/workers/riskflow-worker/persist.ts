@@ -282,12 +282,7 @@ export async function writeCollectedItems(
 
 // [claude-code 2026-05-03] Added "unified" tier for merged X feed
 export async function upsertHeartbeat(row: {
-  tier:
-    | "breaking"
-    | "standard"
-    | "commentary"
-    | "unified"
-    | "financialjuice";
+  tier: "breaking" | "standard" | "commentary" | "unified" | "financialjuice";
   last_run_at: string;
   items_ingested: number;
   errors: number;

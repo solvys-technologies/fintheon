@@ -84,8 +84,11 @@ function isRetryable(err: unknown): boolean {
 
 // ── Hermes Agent API server generation (primary) ─────────────────────────
 
-async function generateTextViaHermesAgent(request: ChainRequest): Promise<string> {
-  const apiKey = process.env.DEEPSEEK_API_KEY || process.env.HERMES_API_KEY || "";
+async function generateTextViaHermesAgent(
+  request: ChainRequest,
+): Promise<string> {
+  const apiKey =
+    process.env.DEEPSEEK_API_KEY || process.env.HERMES_API_KEY || "";
   const baseUrl = process.env.HERMES_API_URL || "http://localhost:8081/v1";
 
   const messages = [] as Array<{ role: "system" | "user"; content: string }>;
@@ -138,17 +141,24 @@ export async function generateViaChain(
         latencyMs: Date.now() - start,
         requestId: request.requestId,
       });
-      return { response, provider: "hermes-agent", latencyMs: Date.now() - start };
+      return {
+        response,
+        provider: "hermes-agent",
+        latencyMs: Date.now() - start,
+      };
     } catch (err) {
       const e = err instanceof Error ? err : new Error(String(err));
       errors.push(`Hermes Agent: ${e.message}`);
       if (!isRetryable(e)) {
         // Non-retryable (e.g. auth), fall through to fallback
         recordFallback();
-        log.warn("[ai-chain] hermes-agent non-retryable; trying DeepSeek direct", {
-          error: e.message,
-          requestId: request.requestId,
-        });
+        log.warn(
+          "[ai-chain] hermes-agent non-retryable; trying DeepSeek direct",
+          {
+            error: e.message,
+            requestId: request.requestId,
+          },
+        );
       } else {
         recordFallback();
         log.warn("[ai-chain] hermes-agent failed; trying DeepSeek direct", {
@@ -176,7 +186,11 @@ export async function generateViaChain(
         latencyMs: Date.now() - start,
         requestId: request.requestId,
       });
-      return { response, provider: "deepseek-direct", latencyMs: Date.now() - start };
+      return {
+        response,
+        provider: "deepseek-direct",
+        latencyMs: Date.now() - start,
+      };
     } catch (err) {
       const e = err instanceof Error ? err : new Error(String(err));
       errors.push(`DeepSeek: ${e.message}`);
@@ -191,7 +205,12 @@ export async function generateViaChain(
 export async function* streamViaChain(
   request: ChainRequest,
 ): AsyncGenerator<
-  { type: "text" | "end" | "error"; text?: string; provider?: ChainProvider; error?: string },
+  {
+    type: "text" | "end" | "error";
+    text?: string;
+    provider?: ChainProvider;
+    error?: string;
+  },
   void,
   unknown
 > {
@@ -204,10 +223,13 @@ export async function* streamViaChain(
       yield { type: "end", provider: "hermes-agent" };
       return;
     } catch (err) {
-      log.warn("[ai-chain] hermes-agent stream failed; trying DeepSeek direct", {
-        error: String(err),
-        requestId: request.requestId,
-      });
+      log.warn(
+        "[ai-chain] hermes-agent stream failed; trying DeepSeek direct",
+        {
+          error: String(err),
+          requestId: request.requestId,
+        },
+      );
     }
   }
 
