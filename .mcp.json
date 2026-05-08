@@ -31,7 +31,7 @@
       "command": "npx",
       "args": ["-y", "@makeplane/plane-mcp-server"],
       "env": {
-        "PLANE_API_KEY": "${PLANE_API_KEY}",
+        "PLANE_API_KEY": "plane_api_d6b2e163af6d41d3942f39ed0d5749b8",
         "PLANE_WORKSPACE_SLUG": "fintheon"
       }
     }

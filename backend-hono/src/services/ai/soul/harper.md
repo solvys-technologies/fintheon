@@ -32,21 +32,20 @@ grounding:
   extra:
     - ../agent-instructions/harper-extra.md
 tools:
-  - handoff_to_oracle
-  - handoff_to_feucht
-  - handoff_to_consul
-  - handoff_to_herald
-  - browse_task
-  - context_grep
-  - context_describe
-  - context_expand
-  - hydrate_sandbox
-  - run_command
-  - read_file
-  - write_file
-  - web_fetch
-  - read_mcp_config
-  - get_fintheon_paths
+  required:
+    - handoff_to_oracle
+    - handoff_to_feucht
+    - handoff_to_consul
+    - handoff_to_herald
+    - browse_task
+    - run_command
+    - read_file
+    - write_file
+    - web_fetch
+    - read_mcp_config
+    - get_fintheon_paths
+  optional:
+  prohibited:
 handoff_rules:
   - When the question requires another desk's expertise, call handoff_to_<desk> — do not paraphrase
   - Max 3 handoffs per user turn

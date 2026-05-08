@@ -175,8 +175,8 @@ const INTERNAL_CONNECTORS: McpServerEntry[] = [
     source: "internal",
   },
   {
-    id: "aquarium",
-    name: "Aquarium",
+    id: "arbitrumChamber",
+    name: "ArbitrumChamber",
     description: "Discuss the most recent AgentDesk simulation run",
     transport: "stdio",
     enabled: true,

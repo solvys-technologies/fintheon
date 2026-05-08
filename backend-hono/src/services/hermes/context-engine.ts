@@ -3,6 +3,7 @@
 // Compression when budget is exceeded — keeps most recent turns + summary of earlier ones.
 
 import { buildMemoryBlock } from "../agent-memory/memory-injector.js";
+import { preflight } from "../desk-context/preflight.js";
 import { buildSoulPipeline } from "./soul-pipeline.js";
 import type { AgentId } from "./types.js";
 import { createLogger } from "../../lib/logger.js";
@@ -40,15 +41,26 @@ export async function buildContext(
 ): Promise<ContextEngineResult> {
   const { soul, systemPrompt } = await buildSoulPipeline(agentId);
 
+  const deskContext = await preflight(agentId).catch((err) => {
+    log.warn("Desk context preflight failed", {
+      agent: agentId,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return "";
+  });
+  const deskContextTokens = deskContext ? estimateTokens(deskContext) : 0;
+
   const memoryBlock = await buildMemoryBlock(agentId);
   const memoryTokens = memoryBlock ? estimateTokens(memoryBlock) : 0;
 
-  const fullSystemPrompt = memoryBlock
-    ? `${systemPrompt}\n\n${memoryBlock}`
-    : systemPrompt;
+  const systemParts = [systemPrompt, deskContext, memoryBlock].filter(Boolean);
+  const fullSystemPrompt = systemParts.join("\n\n");
   const systemTokens = estimateTokens(fullSystemPrompt);
 
-  const availableForMessages = budgetTokens - systemTokens - SYSTEM_RESERVED_TOKENS;
+  const availableForMessages = Math.max(
+    0,
+    budgetTokens - systemTokens - SYSTEM_RESERVED_TOKENS,
+  );
   const processed = compressIfNeeded(messages, availableForMessages);
 
   const messageTokens = processed.reduce((sum, m) => sum + estimateTokens(m.content), 0);
@@ -57,6 +69,7 @@ export async function buildContext(
   log.info("Context built", {
     agent: agentId,
     systemTokens,
+    deskContextTokens,
     memoryTokens,
     messageTokens,
     total,
@@ -68,7 +81,7 @@ export async function buildContext(
     messages: processed,
     tokenBreakdown: {
       system: systemTokens,
-      memory: memoryTokens,
+      memory: memoryTokens + deskContextTokens,
       messages: messageTokens,
       total,
     },

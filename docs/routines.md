@@ -32,7 +32,7 @@ The backend scheduler checks these flags at startup. When `true`, the backend cr
 | 5   | Boardroom Synthesis             | `trig_012vcEGvYY4cdHSK2yMKp2wk` | `3 14 * * 1-5`   | 10:03 AM ET weekdays | 1        |
 | 6   | MiroShark Meta                  | `trig_01UkDCRytVP42cd7C6tUzon1` | `17 15 * * 1-5`  | 11:17 AM ET weekdays | 1        |
 | 7   | Poly/Kalshi Divergence Analysis | `trig_01LBtc1yHL8gEv4ofh4UP2eH` | `17 13,21 * * *` | 9:17 AM + 5:17 PM ET | 2        |
-| 8   | Aquarium Deep Outlook           | `trig_01MgCTN6ALWt4Jr4eZkqimWi` | `33 12,20 * * *` | 8:33 AM + 4:33 PM ET | 2        |
+| 8   | ArbitrumChamber Deep Outlook           | `trig_01MgCTN6ALWt4Jr4eZkqimWi` | `33 12,20 * * *` | 8:33 AM + 4:33 PM ET | 2        |
 
 **Total: 13 runs/day** (2 buffer within 15-run ceiling)
 
@@ -73,7 +73,7 @@ The backend scheduler checks these flags at startup. When `true`, the backend cr
 
 ### 6. MiroShark Meta
 
-- **Monitors**: `startMiroSharkDaily()` and `startAquariumScheduler()`
+- **Monitors**: `startMiroSharkDaily()` and `startArbitrumChamberScheduler()`
 - **What**: Daily health check on MiroShark simulations. Detects stale predictions, agent convergence/groupthink risk, prediction drift, and outlier signals
 - **Output**: Report with convergence score and freshness status
 
@@ -83,11 +83,11 @@ The backend scheduler checks these flags at startup. When `true`, the backend cr
 - **What**: 2x/day deep analysis on persistent prediction market divergences (>= 10%). Investigates root causes (liquidity, jurisdiction, timing lag) and actionable signals
 - **Output**: Structured report with top 3 divergence deep dives
 
-### 8. Aquarium Deep Outlook
+### 8. ArbitrumChamber Deep Outlook
 
-- **Monitors**: Aquarium AI scheduler + Context Bank
+- **Monitors**: ArbitrumChamber AI scheduler + Context Bank
 - **What**: 2x/day full Context Bank synthesis + calibration preview. Compares predicted vs actual instrument movement, generates calibration score and 24h forward outlook
-- **Output**: Writes to `desk_reports` table (desk='aquarium-deep')
+- **Output**: Writes to `desk_reports` table (desk='arbitrum-chamber-deep')
 
 ## Harper Ops Feed Integration
 

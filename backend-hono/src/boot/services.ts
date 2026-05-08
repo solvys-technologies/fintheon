@@ -65,7 +65,7 @@ import * as projectxService from "../services/projectx-service.js";
 import { startSharedMemoryCleanup } from "../services/peers/shared-memory.js";
 import { startReflectScheduler } from "../services/autoresearch/reflect-scheduler.js";
 import { startAgentDeskDaily } from "../services/cron/agent-desk-daily.js";
-import { startAquariumScheduler } from "../services/riskflow/aquarium-scheduler.js";
+import { startArbitrumChamberScheduler } from "../services/riskflow/arbitrum-chamber-scheduler.js";
 import { restoreAgentDeskRunningState } from "../services/agent-desk/agent-desk-boot.js";
 import { startDivergenceDetector } from "../services/polymarket-kalshi-divergence.js";
 import { startPredictionResolver } from "../services/polymarket-prediction-resolver.js";
@@ -212,7 +212,7 @@ export async function bootBackground(): Promise<void> {
   startCatalystPromoter();
   log.info("CatalystPromoter started");
 
-  // AgentDesk running state restore (from latest Aquarium simulation — non-blocking)
+  // AgentDesk running state restore (from latest ArbitrumChamber simulation — non-blocking)
   restoreAgentDeskRunningState().catch((err) =>
     log.warn("AgentDesk running state restore failed (non-fatal)", {
       error: String(err),
@@ -399,8 +399,8 @@ export async function bootBackground(): Promise<void> {
   startAgentDeskDaily();
   log.info("AgentDeskDaily cron scheduled");
 
-  // Aquarium AI scheduler (Oracle/Nous — 60min interval, first run 20s after boot)
-  startAquariumScheduler();
+  // ArbitrumChamber AI scheduler (Oracle/Nous — 60min interval, first run 20s after boot)
+  startArbitrumChamberScheduler();
 
   // Polymarket/Kalshi divergence detector (15min interval, first run 30s after boot)
   startDivergenceDetector();

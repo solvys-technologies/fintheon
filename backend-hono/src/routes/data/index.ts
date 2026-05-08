@@ -264,7 +264,7 @@ export function createDataRoutes(): Hono {
   // Delegates to shared brief-generator service (also used by dispatch-scheduler crons)
   // Optional body `{ type: "MDB"|"ADB"|"PMDB"|"TWT" }`. Legacy "TOTT" / "WT" normalized to "TWT".
   // [claude-code 2026-04-24] S35-T5: accept body.type with legacy TOTT/WT alias
-  // [claude-code 2026-04-16] Triggers AgentDesk Aquarium run after successful brief publish
+  // [claude-code 2026-04-16] Triggers AgentDesk ArbitrumChamber run after successful brief publish
   app.post("/brief/generate", async (c) => {
     try {
       let overrideType: BriefType | undefined;
@@ -278,14 +278,14 @@ export function createDataRoutes(): Hono {
       }
       const result = await generateBrief(overrideType);
 
-      // Fire-and-forget: trigger Aquarium deliberation after brief publish
+      // Fire-and-forget: trigger ArbitrumChamber deliberation after brief publish
       // Empty lanes → AgentDesk synthesizes from RiskFlow headlines
       startPrediction(
         { lanes: [], catalysts: [], ropes: [] },
         undefined,
         "full-brief",
       ).catch((err) =>
-        console.warn("[Data] Post-brief Aquarium trigger failed:", err),
+        console.warn("[Data] Post-brief ArbitrumChamber trigger failed:", err),
       );
 
       return c.json({

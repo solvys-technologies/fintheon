@@ -12,7 +12,7 @@ export type McpServerId =
   | "qc-mcp"
   | "tradingview"
   | "figma"
-  | "aquarium"
+  | "arbitrumChamber"
   | "boardroom"
   | (string & {});
 

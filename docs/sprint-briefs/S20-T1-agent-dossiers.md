@@ -24,7 +24,7 @@ The 4 PIC analyst agents (Oracle, Feucht, Consul, Herald) have thin 3-line role 
 ## Scope — Excluded (DO NOT TOUCH)
 
 - `miroshark-template.ts` (T2 owns)
-- `aquarium-scheduler.ts` (T2 owns)
+- `arbitrum-chamber-scheduler.ts` (T2 owns)
 - `miroshark-client.ts` (T2 owns)
 - `agent-memory/` (T4 owns)
 - `outcome-tracker.ts` (T4 owns)
@@ -106,5 +106,5 @@ The 4 PIC analyst agents (Oracle, Feucht, Consul, Herald) have thin 3-line role 
 ```bash
 cd backend-hono && bun run build
 npx tsc --noEmit --project frontend/tsconfig.json
-# Manual: trigger Aquarium deliberation and verify agent outputs are differentiated
+# Manual: trigger ArbitrumChamber deliberation and verify agent outputs are differentiated
 ```

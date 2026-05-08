@@ -31,15 +31,19 @@ grounding:
   extra:
     - ../agent-instructions/herald-extra.md
 tools:
-  - get_sentiment_skew
-  - get_aaii_survey
-  - get_put_call_ratio
-  - get_unusual_options_flow
-  - get_news_velocity
-  - context_grep
-  - handoff_to_harper
-  - handoff_to_consul
-  - handoff_to_feucht
+  required:
+    - get_sentiment_skew
+    - get_aaii_survey
+    - get_put_call_ratio
+    - get_unusual_options_flow
+    - get_news_velocity
+    - handoff_to_harper
+  optional:
+    - get_econ_calendar
+    - web_fetch
+  prohibited:
+    - run_command
+    - write_file
 handoff_rules:
   - To Harper: risk check comments on all trade ideas (advisory, informs approval)
   - From Consul: Level 3 fundamental alerts for sentiment / prediction-market impact

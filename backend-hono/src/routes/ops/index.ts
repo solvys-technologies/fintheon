@@ -1,5 +1,5 @@
 // [claude-code 2026-04-24] S35-T5: WT → TWT in cadence check and inline comment
-// [claude-code 2026-04-19] S25-T7: Ops endpoint surface — last-run + next-run for Aquarium simulation and the four scheduled briefs (MDB/ADB/PMDB/TWT). Frontend uses this for the Aquarium last-run timer + brief countdown chip in the Sanctum header. Failure state is inferred from age vs expected cadence.
+// [claude-code 2026-04-19] S25-T7: Ops endpoint surface — last-run + next-run for ArbitrumChamber simulation and the four scheduled briefs (MDB/ADB/PMDB/TWT). Frontend uses this for the ArbitrumChamber last-run timer + brief countdown chip in the Sanctum header. Failure state is inferred from age vs expected cadence.
 import { Hono } from "hono";
 import { readLatestBrief } from "../../services/supabase-service.js";
 import type { BriefType } from "../../services/supabase-service.js";
@@ -133,7 +133,7 @@ function ageMinutesFrom(
 export function createOpsRoutes() {
   const app = new Hono();
 
-  // GET /api/ops/schedule-status — last/next-run for Aquarium + briefs
+  // GET /api/ops/schedule-status — last/next-run for ArbitrumChamber + briefs
   app.get("/schedule-status", async (c) => {
     const now = new Date();
 
@@ -194,7 +194,7 @@ export function createOpsRoutes() {
       }),
     );
 
-    // Aquarium / MiroShark ──────────────────────────────────
+    // ArbitrumChamber / MiroShark ──────────────────────────────────
     let agentDeskLastRunAt: string | null = null;
     try {
       const report = (await getLatestReport()) as Record<

@@ -1,5 +1,5 @@
 // [claude-code 2026-04-25] S38: Econ Pulse (EconKpiFuses) wrapped in a collapsible header row;
-//   InstrumentCardsRow swapped for AquariumPredictionCards (horizontal heat bars, matches
+//   InstrumentCardsRow swapped for ArbitrumChamberPredictionCards (horizontal heat bars, matches
 //   Sanctum Command tab); EconInstrumentFuses dead-file deleted.
 // [claude-code 2026-04-24] S35-T12 Phase B: Reflowed Econ Intel header — KPI fuses get
 //   their own full-width row (was squeezed left half), InstrumentCardsRow takes the

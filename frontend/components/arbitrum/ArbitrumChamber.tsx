@@ -39,6 +39,13 @@ const DEFAULT_ROLES: ReadonlyArray<ArbitrumSeat["role"]> = [
   "Skeptic",
 ];
 
+const AGENT_ROW_ROLES: ReadonlyArray<ArbitrumSeat["role"]> = [
+  "Forecaster",
+  "Future PM",
+  "Quant",
+  "Skeptic",
+];
+
 const EMPTY_COPY =
   "No fresh read — chamber convenes at 17:00 ET or on IV ≥ 8.5.";
 
@@ -120,6 +127,46 @@ function useStaggeredReveal(count: number, stepMs = 200): boolean[] {
   return revealed;
 }
 
+function ConfidencePair({
+  caoConfidence,
+  chamberConfidence,
+}: {
+  caoConfidence: number;
+  chamberConfidence: number;
+}) {
+  const rows = [
+    { label: "CAO confidence", value: caoConfidence },
+    { label: "Chamber confidence", value: chamberConfidence },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 px-1">
+      {rows.map((row) => {
+        const value = Math.max(0, Math.min(1, row.value));
+        return (
+          <div key={row.label} className="min-w-0">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="text-[9px] uppercase tracking-wider text-[var(--fintheon-text)]/45">
+                {row.label}
+              </span>
+              <span className="font-mono text-[10px] text-[var(--fintheon-text)]/65 tabular-nums">
+                {(value * 100).toFixed(0)}%
+              </span>
+            </div>
+            <NothingFuse
+              value={value}
+              color="var(--fintheon-accent)"
+              thickness={3}
+              segments={10}
+              animateIn
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function ArbitrumChamber(props: ArbitrumChamberProps) {
   const { onSynthesisComplete } = props;
   const { verdict, isLoading, error, refresh } = useArbitrumLatest();
@@ -144,14 +191,33 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
     );
   }, [verdict]);
 
-  const revealed = useStaggeredReveal(seats.length);
+  const caoSeat = useMemo(
+    () => seats.find((seat) => seat.role === "Lead") ?? null,
+    [seats],
+  );
+
+  const agentRowSeats = useMemo<ArbitrumSeat[]>(() => {
+    const byRole = new Map(seats.map((seat) => [seat.role, seat] as const));
+    return AGENT_ROW_ROLES.map(
+      (role): ArbitrumSeat =>
+        byRole.get(role) ?? {
+          role,
+          model: "—",
+          probability: 0,
+          confidence: 0,
+          rationale: "",
+        },
+    );
+  }, [seats]);
+
+  const revealed = useStaggeredReveal(agentRowSeats.length);
 
   const openSummaries = useMemo(
     () =>
       openSummaryRoles
-        .map((role) => seats.find((seat) => seat.role === role))
+        .map((role) => agentRowSeats.find((seat) => seat.role === role))
         .filter((seat): seat is ArbitrumSeat => Boolean(seat?.rationale)),
-    [openSummaryRoles, seats],
+    [openSummaryRoles, agentRowSeats],
   );
 
   const openAgentSummary = useCallback((role: ArbitrumSeat["role"]) => {
@@ -212,8 +278,8 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
         </div>
       </div>
       <div className="flex flex-col md:flex-row md:items-stretch md:overflow-x-auto">
-        {seats.map((seat, i) => (
-          <div key={`${seat.role}-${i}`} className="contents">
+        {agentRowSeats.map((seat, i) => (
+          <div key={`${verdict?.id ?? "empty"}-${seat.role}-${i}`} className="contents">
             {i > 0 && (
               <>
                 <FadingRuler className="my-1 md:hidden" />
@@ -243,6 +309,13 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
           </div>
         ))}
       </div>
+
+      {hasVerdict && (
+        <ConfidencePair
+          caoConfidence={caoSeat?.confidence ?? 0}
+          chamberConfidence={verdict?.confidence ?? 0}
+        />
+      )}
 
       {/* Consensus sits directly under the seat row; digest follows it. */}
       {hasVerdict && (

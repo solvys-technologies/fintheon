@@ -1,8 +1,8 @@
 // [claude-code 2026-04-18] v5.22 S2: rename MiroShark → Agent Desk; hook now useAgentDeskLatest.
-// [claude-code 2026-04-15] Aquarium summary — briefing text block, Nothing-styled
+// [claude-code 2026-04-15] ArbitrumChamber summary — briefing text block, Nothing-styled
 import { useAgentDeskLatest } from "../../hooks/useAgentDeskLatest";
 
-export function AquariumSummary() {
+export function ArbitrumChamberSummary() {
   const { data, isLoading } = useAgentDeskLatest();
 
   if (isLoading) {
@@ -17,7 +17,7 @@ export function AquariumSummary() {
             color: "var(--text-disabled)",
           }}
         >
-          [LOADING AQUARIUM...]
+          [LOADING ArbitrumChamber...]
         </span>
       </div>
     );
@@ -36,7 +36,7 @@ export function AquariumSummary() {
             color: "var(--text-disabled)",
           }}
         >
-          [NO AQUARIUM DATA]
+          [NO ArbitrumChamber DATA]
         </span>
       </div>
     );
@@ -53,7 +53,7 @@ export function AquariumSummary() {
           color: "var(--text-secondary)",
         }}
       >
-        AQUARIUM ANALYSIS
+        ArbitrumChamber ANALYSIS
       </span>
       <p
         style={{

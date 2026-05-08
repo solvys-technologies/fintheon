@@ -23,7 +23,7 @@ import {
   buildReflectContext,
 } from "./ai/agent-instructions/index.js";
 import { buildThoughtBankPromptBlock } from "./ai/agent-instructions/thought-bank-awareness.js";
-// [claude-code 2026-04-17] S23-T4: HermesChatRequest now accepts userId + surface so per-user agent_context_bank memories and Aquarium surface context can be injected when available.
+// [claude-code 2026-04-17] S23-T4: HermesChatRequest now accepts userId + surface so per-user agent_context_bank memories and ArbitrumChamber surface context can be injected when available.
 import { getContextForAgent } from "./agent-context-bank-service.js";
 import type { AgentMemoryEntry } from "./agent-context-bank-service.js";
 import { createLogger } from "../lib/logger.js";

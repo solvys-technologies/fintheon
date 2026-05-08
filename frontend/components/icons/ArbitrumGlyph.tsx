@@ -1,5 +1,5 @@
 // [claude-code 2026-04-25] S35: Arbitrum dropdown glyph — stacked +/- in Nothing Display font.
-// Replaces the lucide Fish icon (Arbitrum != Aquarium-the-aquatic-thing; the surface label
+// Replaces the lucide Fish icon (Arbitrum != ArbitrumChamber-the-aquatic-thing; the surface label
 // stayed but the dropdown icon needs to read as "deliberation / weighing both sides").
 //
 // Renders a tight 2-row glyph: "+" on top, "−" on bottom, sized to lucide's icon convention.

@@ -18,6 +18,8 @@ export * from "./journal";
 export * from "./memory";
 export * from "./editor";
 
+export * from "./soul";
+
 import ApiClient from "../apiClient";
 import { McpService } from "../mcp-service";
 
@@ -61,6 +63,7 @@ import {
   BulletinService,
   StickyBulletinService,
 } from "./editor";
+import { SoulService } from "./soul";
 
 // Main Backend Client Interface
 export interface BackendClient {
@@ -98,6 +101,7 @@ export interface BackendClient {
   memory: MemoryService;
   editorSidebar: EditorSidebarService;
   stickyBulletin: StickyBulletinService;
+  soul: SoulService;
 }
 
 // Create backend client from API client
@@ -137,5 +141,6 @@ export function createBackendClient(client: ApiClient): BackendClient {
     memory: new MemoryService(client),
     editorSidebar: new EditorSidebarService(client),
     stickyBulletin: new StickyBulletinService(client),
+    soul: new SoulService(client),
   };
 }

@@ -272,13 +272,13 @@ export function useHermesChat(
                     localStorage.getItem("fintheon:mcp-active-connectors") ??
                       "[]",
                   );
-                  // [S23-T3] Auto-append "aquarium" when the user is on the Aquarium surface
+                  // [S23-T3] Auto-append "arbitrumChamber" when the user is on the ArbitrumChamber surface
                   // so Harper receives the latest AgentDesk context without manual toggling.
                   const surface = localStorage.getItem(
                     "fintheon:current-surface",
                   );
-                  if (surface === "aquarium" && !base.includes("aquarium")) {
-                    return [...base, "aquarium"];
+                  if (surface === "arbitrumChamber" && !base.includes("arbitrumChamber")) {
+                    return [...base, "arbitrumChamber"];
                   }
                   return base;
                 } catch {
@@ -345,7 +345,7 @@ export function useHermesChat(
                 return [];
               }
             })(),
-            // [S23-T3] Surface flag so Hermes handlers can auto-inject Aquarium context.
+            // [S23-T3] Surface flag so Hermes handlers can auto-inject ArbitrumChamber context.
             surface: (() => {
               try {
                 return (

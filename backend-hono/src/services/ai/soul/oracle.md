@@ -31,15 +31,17 @@ grounding:
   extra:
     - ../agent-instructions/oracle-extra.md
 tools:
-  - get_kalshi_quote
-  - get_polymarket_quote
-  - get_options_iv_surface
-  - get_econ_calendar
-  - context_grep
-  - context_expand
-  - handoff_to_feucht
-  - handoff_to_consul
-  - handoff_to_herald
+  required:
+    - get_kalshi_quote
+    - get_polymarket_quote
+    - get_options_iv_surface
+    - handoff_to_harper
+  optional:
+    - get_econ_calendar
+  prohibited:
+    - run_command
+    - write_file
+    - web_fetch
 handoff_rules:
   - To Feucht: "The odds shifted — here's the directional bias and the key level where the edge expires"
   - To Consul: "Prediction markets are pricing X for earnings — does the fundamental data support or contradict?"

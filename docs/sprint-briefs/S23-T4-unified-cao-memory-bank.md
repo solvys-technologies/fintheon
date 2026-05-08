@@ -26,7 +26,7 @@ Three agent-memory substrates coexist and none are fully wired:
 
 ## Scope — Excluded (DO NOT TOUCH)
 
-- Aquarium UI — T1
+- ArbitrumChamber UI — T1
 - Deliberation polling — T2
 - Surface-based context injection — T3 owns that gating change (T4 composes with it)
 - Supabase migrations — `agent_context_bank` already exists; `agent_memory` deprecated-in-place (don't drop yet)

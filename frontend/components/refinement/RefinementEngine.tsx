@@ -28,7 +28,6 @@ import { QuickWeightEditor } from "./QuickWeightEditor";
 import { CommentatorManager } from "./CommentatorManager";
 import { SourceAccountsManager } from "./SourceAccountsManager";
 import { EconFiltersManager } from "./EconFiltersManager";
-import { EconFilterEditor } from "./EconFilterEditor";
 import { CatalystStatsDrawer } from "./CatalystStatsDrawer";
 import { PipelineHealth } from "./PipelineHealth";
 import { PipelineToggles } from "./PipelineToggles";
@@ -928,11 +927,6 @@ export function RefinementEngine() {
               <EconFiltersManager
                 filters={econFilters}
                 onFiltersChanged={fetchEconFilters}
-              />
-              <EconFilterEditor
-                lastAppliedAt={lastAppliedAt}
-                isMutating={isMutating}
-                degradedReason={econSummary.error ?? degradedReason}
               />
             </AdvancedPane>
           </div>

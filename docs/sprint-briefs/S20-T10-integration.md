@@ -19,7 +19,7 @@ This is the unification pass. All 9 tracks merge here. The orchestrating Claude 
 - [ ] Verify outcome tracker captures predictions from deliberation
 - [ ] Verify conversation persistence across mobile/desktop
 - [ ] Verify mobile tool approval UX works end-to-end
-- [ ] Run full Aquarium deliberation and inspect all 4 agent outputs for differentiation
+- [ ] Run full ArbitrumChamber deliberation and inspect all 4 agent outputs for differentiation
 - [ ] Full build verification (backend, frontend, desktop, mobile)
 - [ ] Deploy to Fly.io (backend)
 - [ ] Deploy to Vercel (desktop)
@@ -45,7 +45,7 @@ This is the unification pass. All 9 tracks merge here. The orchestrating Claude 
 
 ### Agent Swarm
 
-- [ ] Trigger Aquarium deliberation → 4 agents produce divergent scores and reasoning
+- [ ] Trigger ArbitrumChamber deliberation → 4 agents produce divergent scores and reasoning
 - [ ] Oracle references prediction market data from scheduled research
 - [ ] Feucht references specific price levels and playbook models
 - [ ] Consul references specific mega-cap fundamentals (not narratives)

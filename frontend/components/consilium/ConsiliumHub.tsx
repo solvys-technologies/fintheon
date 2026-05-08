@@ -1,8 +1,8 @@
-// [claude-code 2026-04-17] S23-T1/T2: Debate button → Chart button (LineChart icon, toggles Sanctum 50/50 with TradingView), Proposals iframe-toggle removed, reloadLatestReport wired into AgentDesk synthesis-complete callback to fix Aquarium hang
+// [claude-code 2026-04-17] S23-T1/T2: Debate button → Chart button (LineChart icon, toggles Sanctum 50/50 with TradingView), Proposals iframe-toggle removed, reloadLatestReport wired into AgentDesk synthesis-complete callback to fix ArbitrumChamber hang
 // [claude-code 2026-04-03] Spring-physics CSS transitions for dropdowns, tab content, side panels
 // [claude-code 2026-04-03] S14-T3: Consilium restructure — Boardroom + Apparatus as dropdowns
-// [claude-code 2026-03-30] Wire narratives from NarrativeContext → Sanctum (Aquarium)
-// [claude-code 2026-03-28] S7: Sanctum dropdown (NarrativeFlow/Aquarium/Timeline) inside Consilium tab bar
+// [claude-code 2026-03-30] Wire narratives from NarrativeContext → Sanctum (ArbitrumChamber)
+// [claude-code 2026-03-28] S7: Sanctum dropdown (NarrativeFlow/ArbitrumChamber/Timeline) inside Consilium tab bar
 import {
   useState,
   useCallback,
@@ -39,7 +39,7 @@ import { ApparatusFlowMap } from "../apparatus/ApparatusFlowMap";
 import { FluxerEmbed } from "./FluxerEmbed";
 import { AgentLounge } from "./AgentLounge";
 import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
-import { SharedMemoryPanel } from "../memory/SharedMemoryPanel";
+import { SoulFileroomPanel } from "../memory/SoulFileroomPanel";
 import { AiLoader } from "../chat/FintheonThread";
 import { useHarperOps } from "../../hooks/useHarperOps";
 import type {
@@ -71,7 +71,7 @@ const ResearchBoard = lazy(() => import("../research/ResearchBoard"));
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-/** Bridge: reads NarrativeContext lanes → SanctumNarrative[] for Sanctum (Aquarium) */
+/** Bridge: reads NarrativeContext lanes → SanctumNarrative[] for Sanctum (ArbitrumChamber) */
 function SanctumWithNarratives(
   props: Omit<React.ComponentProps<typeof Sanctum>, "narratives" | "catalysts">,
 ) {
@@ -198,14 +198,14 @@ export function ConsiliumHub() {
   const boardroomDropdownRef = useRef<HTMLDivElement>(null);
   const apparatusDropdownRef = useRef<HTMLDivElement>(null);
 
-  // [S23-T3] Persist current Consilium surface so useHermesChat can auto-inject Aquarium/surface
+  // [S23-T3] Persist current Consilium surface so useHermesChat can auto-inject ArbitrumChamber/surface
   // context into Harper + Hermes prompts without threading props through every chat widget.
   useEffect(() => {
     try {
       const surface =
         activeTab === "sanctum"
-          ? sanctumSubView === "aquarium"
-            ? "aquarium"
+          ? sanctumSubView === "arbitrumChamber"
+            ? "arbitrumChamber"
             : sanctumSubView === "narratives"
               ? "narratives"
               : "timeline"
@@ -918,7 +918,7 @@ export function ConsiliumHub() {
           {displayedTab === "sanctum" && (
             <NarrativeProvider>
               {displayedSubView === "narratives" && <NarrativeMap />}
-              {displayedSubView === "aquarium" && (
+              {displayedSubView === "arbitrumChamber" && (
                 <SanctumWithNarratives
                   data={agentDeskData}
                   onRun={handleRunAgentDesk}
@@ -1003,9 +1003,7 @@ export function ConsiliumHub() {
           {displayedTab === "apparatus" && (
             <>
               {displayedApparatusSub === "desk" && <ApparatusFlowMap />}
-              {displayedApparatusSub === "fileroom" && (
-                <SharedMemoryPanel mode="fileroom" />
-              )}
+              {displayedApparatusSub === "fileroom" && <SoulFileroomPanel />}
               {displayedApparatusSub === "lounge" && <AgentLounge />}
             </>
           )}

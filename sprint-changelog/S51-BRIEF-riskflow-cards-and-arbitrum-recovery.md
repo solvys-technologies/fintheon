@@ -6,7 +6,7 @@ Two adjacent asks land in the same window, and they are file-disjoint enough to 
 
 **Part 1 — Expanded RiskFlow Card refactor (mobile + desktop parity).** TP wants the desktop expanded RiskFlow card to import the mobile card's anatomy and the mobile card itself simplified. Specific spec: bucket-left + time-ago-right header, descriptive source icons replacing today's X-marks, no duplicate body block, remainder of the headline streams in on expand, deviation row only when an econ-print is detected, sawdust fuse with vertical rules at the bottom (mirroring Arbitrum's volatility-read fuse), and the desktop's gray rule moves from the preview/expanded boundary to the bottom of the expanded card. New EARNINGS category gets tagged + demoted to LOW priority — full earnings handling deferred.
 
-**Part 2 — Reconstruct + execute the missing S47-T3 Arbitrum Sanctum Performance UI scope.** Discovery confirmed there is **no stranded code to cherry-pick**: `S47-ORCHESTRATION.md` listed `@sprint-md/S47-T3-arbitrum-sanctum-performance-ui.md` but that brief was never authored, never branched, never committed. Only S47-T2 backend (commit `1c0a6416`) ever shipped. So Part 2's first move is to re-derive scope from a live walkthrough of Sanctum + Aquarium + the Arbitrum chamber, write the implementation plan into this same brief's Part 2 scope section, and execute. The known dual-source bug from memory (`SanctumHeader` reads `agentDeskData` while `ArbitrumChamber` reads `useArbitrumLatest`) is the prime candidate.
+**Part 2 — Reconstruct + execute the missing S47-T3 Arbitrum Sanctum Performance UI scope.** Discovery confirmed there is **no stranded code to cherry-pick**: `S47-ORCHESTRATION.md` listed `@sprint-md/S47-T3-arbitrum-sanctum-performance-ui.md` but that brief was never authored, never branched, never committed. Only S47-T2 backend (commit `1c0a6416`) ever shipped. So Part 2's first move is to re-derive scope from a live walkthrough of Sanctum + ArbitrumChamber + the Arbitrum chamber, write the implementation plan into this same brief's Part 2 scope section, and execute. The known dual-source bug from memory (`SanctumHeader` reads `agentDeskData` while `ArbitrumChamber` reads `useArbitrumLatest`) is the prime candidate.
 
 ## Branch Target
 
@@ -49,7 +49,7 @@ Two adjacent asks land in the same window, and they are file-disjoint enough to 
 
 ### Part 2 — Arbitrum Sanctum Performance UI
 
-- [ ] **Discovery walkthrough first** (no edits yet): open the running app on `s48-unified`, walk through Consilium → Sanctum, the Aquarium surface, the Arbitrum chamber peek inside the IV scoring widget hover, and the right-rail surfaces. Record:
+- [ ] **Discovery walkthrough first** (no edits yet): open the running app on `s48-unified`, walk through Consilium → Sanctum, the ArbitrumChamber surface, the Arbitrum chamber peek inside the IV scoring widget hover, and the right-rail surfaces. Record:
   - Layout glitches (alignment, spacing, concentric radii, optical alignment, antialiasing).
   - Loading/empty/error states that are missing or rough.
   - Motion that breaks on first paint (especially `data-open="true"` mounts that skip the entry tween).
@@ -83,7 +83,7 @@ Two adjacent asks land in the same window, and they are file-disjoint enough to 
 - `t-panel-slide` / `t-text-reveal` first-paint rAF rule for any new transition that mounts with `data-open="true"`.
 - `scored_riskflow_items.source` is the ingest channel, not the publisher — for source-display logic use the `bucket` derivation, never `source` directly.
 - Arbitrum chamber locked v5.32.1: preserve seat composition + Hermes routing.
-- Aquarium surface label inside Sanctum stays as "Aquarium" (UI label) even though the engine is Arbitrum.
+- ArbitrumChamber surface label inside Sanctum stays as "ArbitrumChamber" (UI label) even though the engine is Arbitrum.
 
 ## Design Pass
 
@@ -197,7 +197,7 @@ Arbitrum data flow (Part 2): single source of truth via `useArbitrumLatest`. Bot
 6. **Mobile card** (Part 1). Refactor `RiskFlowCard.tsx` + `RiskFlowCardExpanded.tsx`: header split, icon swap, delete duplicate body, t-text-reveal, deviation gate, sawdust fuse, drop `IVFuseBar` from expanded.
 7. **Filter chips** (Part 1). Add Earnings chip to `useRiskFlowFilters` + desktop filter UI.
 8. **Validation gate A** (Part 1). `npx tsc --noEmit --project frontend/tsconfig.json` → `rm -rf dist && npx vite build` → `cd backend-hono && bun run build`. Restart backend. Live smoke per commands below. Do not proceed to Part 2 until Part 1 is green.
-9. **Part 2 walkthrough.** Open Consilium → Sanctum + Aquarium + IV-hover Arbitrum peek on the running app. Record findings (layout, states, motion, dual-source).
+9. **Part 2 walkthrough.** Open Consilium → Sanctum + ArbitrumChamber + IV-hover Arbitrum peek on the running app. Record findings (layout, states, motion, dual-source).
 10. **Append Part 2 Scope (post-walkthrough)** section to this brief file. Include concrete fixes + acceptance criteria. If the list contains any backend item, STOP and confirm with TP before continuing.
 11. **Part 2 execute.** Implement fixes against `frontend/components/arbitrum/*` + `frontend/components/narrative/Sanctum.tsx`. Resolve dual-source bug — both surfaces consume `useArbitrumLatest`. Apply rAF first-paint to any new transition.
 12. **Validation gate B** (full sprint). Re-run type/build commands. Restart backend. Live smoke RiskFlow + Arbitrum + Sanctum.
@@ -233,7 +233,7 @@ Arbitrum data flow (Part 2): single source of truth via `useArbitrumLatest`. Bot
 - [ ] `npx tsc --noEmit --project frontend/tsconfig.json` passes.
 - [ ] `rm -rf dist && npx vite build` passes.
 - [ ] `cd backend-hono && bun run build` passes.
-- [ ] Live UI smoke passes on Strategium RiskFlow feed (desktop), mobile RiskFlow page, and Sanctum + Aquarium (desktop).
+- [ ] Live UI smoke passes on Strategium RiskFlow feed (desktop), mobile RiskFlow page, and Sanctum + ArbitrumChamber (desktop).
 - [ ] Single S51 changelog entry covering both parts; all modified files carry `// [claude-code 2026-04-29]` header.
 
 ## Validation Commands

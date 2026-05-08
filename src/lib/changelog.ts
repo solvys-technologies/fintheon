@@ -9,6 +9,60 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-07T22:00:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Fileroom SOUL card editor — stacked chevron agent soul cards with editable detail pane. Created /api/soul backend routes (GET list, GET by id, PUT update) with auth gating. Added SoulService to frontend backend client. Built SoulFileroomPanel with glass-surface left sidebar showing stacked expandable chevron cards for all 5 agents (Harper/Oracle/Feucht/Consul/Herald), each with a colored dot, chevron expand/collapse, and the right detail pane is a full-size editable textarea with Ctrl+S save. Replaced the SharedMemoryPanel fileroom view in ConsiliumHub. Harper CAO chat can now edit agent souls via the PUT endpoint — all destructive actions still require user approval via the existing approval widget.",
+    files: [
+      "backend-hono/src/routes/soul/index.ts",
+      "backend-hono/src/routes/index.ts",
+      "frontend/lib/services/soul.ts",
+      "frontend/lib/services/index.ts",
+      "frontend/components/memory/SoulFileroomPanel.tsx",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/components/consilium/ConsiliumTabConfig.ts",
+    ],
+  },
+  {
+    date: "2026-05-07T20:00:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S61-T2: Capability registry runtime enforcement + agent tool wiring. Created Zod-validated static registry (types/registry/enforcer) with all 5 agent profiles — required/optional/prohibited tool lists + handoff targets. Replaced static CROSS_AGENT_REGISTRY_BLOCK with renderRegistryBlock() reading from runtime registry. Replaced CRUD_CAPABILITY_BLOCK (advertising non-existent endpoints) with unified approval pipeline note. Updated all 5 SOUL.md tools sections from flat arrays to required/optional/prohibited structure. Updated SoulSchema in loader.ts to accept new nested tools format with catch([]) for empty optional/prohibited. Wired getRequiredTools() into createAgentForTask() in agent-factory.ts (oracle/feucht/consul/herald now have actual tool sets, not bare agents). Updated 4 strand agent files (oracle/feucht/consul/herald.ts) to pass registry-resolved tool lists.",
+    files: [
+      "backend-hono/src/services/capability-registry/types.ts",
+      "backend-hono/src/services/capability-registry/registry.ts",
+      "backend-hono/src/services/capability-registry/enforcer.ts",
+      "backend-hono/src/services/ai/agent-instructions/index.ts",
+      "backend-hono/src/services/ai/soul/loader.ts",
+      "backend-hono/src/services/ai/soul/harper.md",
+      "backend-hono/src/services/ai/soul/oracle.md",
+      "backend-hono/src/services/ai/soul/feucht.md",
+      "backend-hono/src/services/ai/soul/consul.md",
+      "backend-hono/src/services/ai/soul/herald.md",
+      "backend-hono/src/services/strands/agent-factory.ts",
+      "backend-hono/src/services/strands/agents/oracle.ts",
+      "backend-hono/src/services/strands/agents/feucht.ts",
+      "backend-hono/src/services/strands/agents/consul.ts",
+      "backend-hono/src/services/strands/agents/herald.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-07T10:30:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S61-T1: Shared mutation contract + audit logger. Created agent_audit_log Supabase table with RLS, Zod contract types (AuditRecord, MutationContract, AuditDecision), audit-logger service with Supabase primary + JSONL fallback, GET /api/audit/log endpoints. Integrated logAuditDecision into resolveApproval, grantPermission, revokePermission, and 30s timeout handler.",
+    files: [
+      "supabase/migrations/20260507_s61_agent_audit_log.sql",
+      "backend-hono/src/types/audit.ts",
+      "backend-hono/src/services/audit-logger.ts",
+      "backend-hono/src/services/tool-approval-store.ts",
+      "backend-hono/src/routes/audit/index.ts",
+      "backend-hono/src/routes/index.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-07T09:55:00-04:00",
     agent: "codex",
     summary:
@@ -526,7 +580,7 @@ export const changelog: ChangelogEntry[] = [
   {
     date: "2026-05-03T15:26:00-04:00",
     agent: "claude-code",
-    summary: "S57 shipped: Arbitrum dashboard UI — RiskSignalCards feed from Aquarium, chevron rows with FadingRuler separators, height-locked Page 0 with internal scroll, Chamber tiles with vertical score fuses. Unified X tier + cross-device round-robin coordinator deployed to all 3 targets. Archived to sprint-changelog/.",
+    summary: "S57 shipped: Arbitrum dashboard UI — RiskSignalCards feed from ArbitrumChamber, chevron rows with FadingRuler separators, height-locked Page 0 with internal scroll, Chamber tiles with vertical score fuses. Unified X tier + cross-device round-robin coordinator deployed to all 3 targets. Archived to sprint-changelog/.",
     files: ["sprint-changelog/S57-BRIEF-arbitrum-dashboard-ui-refinement.md"],
   },
   {
@@ -655,7 +709,7 @@ export const changelog: ChangelogEntry[] = [
       "frontend/components/arbitrum/ArbitrumChamber.tsx",
       "frontend/components/narrative/Sanctum.tsx",
       "frontend/components/narrative/BlendedIVForecastCard.tsx",
-      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "frontend/components/narrative/ArbitrumChamberPredictionCards.tsx",
       "frontend/components/executive/MainDashboard.tsx",
       "frontend/hooks/useArbitrumHealth.ts",
       "frontend/hooks/useArbitrumSeatOverrides.ts",
@@ -2097,7 +2151,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-25T19:10:00",
     agent: "claude-code",
     summary:
-      "S35-cleanup: (1) Backend DB purge — 544 Reuters/Bloomberg headlines removed (176 scored_riskflow_items + 151 raw_riskflow_items + 35 news_feed_items + 182 narrative_card_links) and 1,566 duplicate-headline rows deduped (846 scored + 656 orphan links + 48 raw + 16 news_feed). (2) Arbitrum econ-context wiring — new services/arbitrum/econ-context.ts loads last-21d econ_prints + next-7d economic_events on every chamber run; seats.ts buildUserPrompt + buildDistillPrompt now thread that context into Qwen seats so they reason over the same data the Aquarium event-card surfaces; ArbitrumDeliberateInput gained econ_context. (3) Manual backfill trigger — POST /api/admin/econ/backfill-tick + /backfill-drain (gated on x-routine-secret) so the dormant econ-backfill-orchestrator can drain the 7 April-2026 country slices that have been pending since Mar 26 (econ_prints went silent that day; only 1 of 79 economic_events in the last 30d had `actual` populated). (4) Bridge — services/econ/bridge-actuals.ts copies populated economic_events.actual rows into econ_prints (idempotent on lowercased headline + day), so /api/econ/synthesize and EconEventCard print history populate immediately after a drain instead of waiting for riskflow-econ-enricher's daily roll-over. backfill-drain auto-runs the bridge after each drain; standalone POST /api/admin/econ/bridge-actuals also added.",
+      "S35-cleanup: (1) Backend DB purge — 544 Reuters/Bloomberg headlines removed (176 scored_riskflow_items + 151 raw_riskflow_items + 35 news_feed_items + 182 narrative_card_links) and 1,566 duplicate-headline rows deduped (846 scored + 656 orphan links + 48 raw + 16 news_feed). (2) Arbitrum econ-context wiring — new services/arbitrum/econ-context.ts loads last-21d econ_prints + next-7d economic_events on every chamber run; seats.ts buildUserPrompt + buildDistillPrompt now thread that context into Qwen seats so they reason over the same data the ArbitrumChamber event-card surfaces; ArbitrumDeliberateInput gained econ_context. (3) Manual backfill trigger — POST /api/admin/econ/backfill-tick + /backfill-drain (gated on x-routine-secret) so the dormant econ-backfill-orchestrator can drain the 7 April-2026 country slices that have been pending since Mar 26 (econ_prints went silent that day; only 1 of 79 economic_events in the last 30d had `actual` populated). (4) Bridge — services/econ/bridge-actuals.ts copies populated economic_events.actual rows into econ_prints (idempotent on lowercased headline + day), so /api/econ/synthesize and EconEventCard print history populate immediately after a drain instead of waiting for riskflow-econ-enricher's daily roll-over. backfill-drain auto-runs the bridge after each drain; standalone POST /api/admin/econ/bridge-actuals also added.",
     files: [
       "backend-hono/src/routes/admin/econ-backfill.ts",
       "backend-hono/src/routes/index.ts",
@@ -2284,7 +2338,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-25T06:30:00",
     agent: "claude-code",
     summary:
-      "S38 design patches — voice + Sanctum + RiskFlow slice. (1) Voice orb ring now binds to a new --accent-primary CSS variable (alias of --fintheon-accent so theme swaps still work) and a deterministic VoiceModePixelOverlay sweeps in from the four corners, holds a ~60%-viewport circle, dissolves back to the corners, then runs a deterministic low-amplitude corner flicker on a ~520ms cadence while voice is active — WAAPI driven, no random shimmer. (2) SanctumHeader 'Aquarium' renamed to 'Arbitrum' with a larger lockup; the 'shark tank' subtitle is gone. The Consilium tab dropdown + SanctumSitemapDrawer now label the destination 'Arbitrum'; the underlying SanctumSubView id stays 'aquarium' for backend/route compatibility. (3) Sanctum Econ tab: EconKpiFuses wrapped in a click-to-toggle 'Econ Pulse' collapsible header (default expanded); InstrumentCardsRow swapped for AquariumPredictionCards (the horizontal heat-bar variant from the Command tab) so both tabs share one instrument-card pattern; AquariumPredictionCards heat bar bumped 3px → 5px so the gauge reads at a glance; dead EconInstrumentFuses.tsx file deleted. (4) RiskFlow 'Generate Note +' CTA now hits /api/riskflow/:id/generate-note with the user's selected instrument (localStorage fintheon:selected-instrument, default /ES) and renders a structured response: linked source headline + ≤200-char summary + a 'Bullish/Bearish/Neutral for {instrument}' badge. New backend service exports generateNoteForItemDetailed; route handler returns the detailed shape when an instrument is in the body and falls back to the legacy plain-text path otherwise. tsc clean, vite build clean (3391 modules), backend bun build clean.",
+      "S38 design patches — voice + Sanctum + RiskFlow slice. (1) Voice orb ring now binds to a new --accent-primary CSS variable (alias of --fintheon-accent so theme swaps still work) and a deterministic VoiceModePixelOverlay sweeps in from the four corners, holds a ~60%-viewport circle, dissolves back to the corners, then runs a deterministic low-amplitude corner flicker on a ~520ms cadence while voice is active — WAAPI driven, no random shimmer. (2) SanctumHeader 'ArbitrumChamber' renamed to 'Arbitrum' with a larger lockup; the 'shark tank' subtitle is gone. The Consilium tab dropdown + SanctumSitemapDrawer now label the destination 'Arbitrum'; the underlying SanctumSubView id stays 'arbitrumChamber' for backend/route compatibility. (3) Sanctum Econ tab: EconKpiFuses wrapped in a click-to-toggle 'Econ Pulse' collapsible header (default expanded); InstrumentCardsRow swapped for ArbitrumChamberPredictionCards (the horizontal heat-bar variant from the Command tab) so both tabs share one instrument-card pattern; ArbitrumChamberPredictionCards heat bar bumped 3px → 5px so the gauge reads at a glance; dead EconInstrumentFuses.tsx file deleted. (4) RiskFlow 'Generate Note +' CTA now hits /api/riskflow/:id/generate-note with the user's selected instrument (localStorage fintheon:selected-instrument, default /ES) and renders a structured response: linked source headline + ≤200-char summary + a 'Bullish/Bearish/Neutral for {instrument}' badge. New backend service exports generateNoteForItemDetailed; route handler returns the detailed shape when an instrument is in the body and falls back to the legacy plain-text path otherwise. tsc clean, vite build clean (3391 modules), backend bun build clean.",
     files: [
       "frontend/components/voice/VoiceAuroraOrb.tsx",
       "frontend/components/voice/VoiceModePixelOverlay.tsx",
@@ -2294,7 +2348,7 @@ export const changelog: ChangelogEntry[] = [
       "frontend/components/consilium/ConsiliumTabConfig.ts",
       "frontend/components/layout/SanctumSitemapDrawer.tsx",
       "frontend/components/narrative/SanctumEconIntel.tsx",
-      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "frontend/components/narrative/ArbitrumChamberPredictionCards.tsx",
       "frontend/components/narrative/econ/EconInstrumentFuses.tsx",
       "frontend/components/feed/RiskFlowDetailCard.tsx",
       "backend-hono/src/services/riskflow/agent-notes.ts",
@@ -2390,12 +2444,12 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-24T23:30:00",
     agent: "claude-code",
     summary:
-      "S35 unification UI follow-up. (a) Sanctum Page 0 chart-mode height fix — page wrapper conditionally h-full (was min-h-full) when chartMode is on, and the chart column drops `min-h-[60vh] xl:min-h-0` for plain `min-h-0 overflow-hidden` so the TradingView iframe is bounded by viewport instead of bleeding past the snap boundary into Page 1 (Econ Intelligence). Left column gets matching min-h-0 so it scrolls internally. (b) Renamed orphan `frontend/components/narrative/InstrumentFusesPanel.tsx` → `InstrumentCardsRow.tsx`, internal export `InstrumentFusesPanel` → `InstrumentCardsRow`. Added in d5556408 (v5.22 S1) but never wired after Track 4a (c5f32a8d) replaced its host. Now wired into `SanctumEconIntel` as a full-width row above the event filter (replacing the old split header where KPI fuses + EconInstrumentFuses sat side-by-side at half width). KPI fuses now own their own full row; instrument cards stretch the next full row at 5-col grid. (c) `SanctumEconIntel` event-card container changed from `flex flex-col divide-y` → `grid grid-cols-1 lg:grid-cols-2 gap-3 p-3` so expanded econ event cards render side-by-side at lg+. (d) `EconEventCard` print grid tightened from `grid-cols-[68px_1fr_56px_56px_56px_64px]` → `grid-cols-[60px_1fr_48px_48px_48px_56px]` so the per-print rows stay legible at half-pane width. (e) `AquariumPredictionCards` row no longer horizontal-scrolls fixed 220px cards — children are now `flex-1 min-w-0` so they stretch and share row width (Sanctum Page 0 non-chart-mode instrument fuses row, plus anywhere else the component renders). EconInstrumentFuses left in tree but unimported (orphaned by this reflow). FadingVRule helper removed from SanctumEconIntel (no longer used after split-header removal). All four builds clean: backend bun, frontend tsc+vite, mobile vite.",
+      "S35 unification UI follow-up. (a) Sanctum Page 0 chart-mode height fix — page wrapper conditionally h-full (was min-h-full) when chartMode is on, and the chart column drops `min-h-[60vh] xl:min-h-0` for plain `min-h-0 overflow-hidden` so the TradingView iframe is bounded by viewport instead of bleeding past the snap boundary into Page 1 (Econ Intelligence). Left column gets matching min-h-0 so it scrolls internally. (b) Renamed orphan `frontend/components/narrative/InstrumentFusesPanel.tsx` → `InstrumentCardsRow.tsx`, internal export `InstrumentFusesPanel` → `InstrumentCardsRow`. Added in d5556408 (v5.22 S1) but never wired after Track 4a (c5f32a8d) replaced its host. Now wired into `SanctumEconIntel` as a full-width row above the event filter (replacing the old split header where KPI fuses + EconInstrumentFuses sat side-by-side at half width). KPI fuses now own their own full row; instrument cards stretch the next full row at 5-col grid. (c) `SanctumEconIntel` event-card container changed from `flex flex-col divide-y` → `grid grid-cols-1 lg:grid-cols-2 gap-3 p-3` so expanded econ event cards render side-by-side at lg+. (d) `EconEventCard` print grid tightened from `grid-cols-[68px_1fr_56px_56px_56px_64px]` → `grid-cols-[60px_1fr_48px_48px_48px_56px]` so the per-print rows stay legible at half-pane width. (e) `ArbitrumChamberPredictionCards` row no longer horizontal-scrolls fixed 220px cards — children are now `flex-1 min-w-0` so they stretch and share row width (Sanctum Page 0 non-chart-mode instrument fuses row, plus anywhere else the component renders). EconInstrumentFuses left in tree but unimported (orphaned by this reflow). FadingVRule helper removed from SanctumEconIntel (no longer used after split-header removal). All four builds clean: backend bun, frontend tsc+vite, mobile vite.",
     files: [
       "frontend/components/narrative/Sanctum.tsx",
       "frontend/components/narrative/SanctumEconIntel.tsx",
       "frontend/components/narrative/InstrumentCardsRow.tsx",
-      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "frontend/components/narrative/ArbitrumChamberPredictionCards.tsx",
       "frontend/components/narrative/econ/EconEventCard.tsx",
     ],
   },
@@ -3124,7 +3178,7 @@ export const changelog: ChangelogEntry[] = [
       "Swapped all 244 consumers (219 frontend + 25 mobile) from '@/components/shared/iso-icons' and '../shared/iso-icons' back to 'lucide-react'; " +
       "deleted frontend/components/shared/iso-icons/ and mobile/components/shared/iso-icons/. " +
       "Restored frontend/components/icon-bank/UnicodeSpinners.tsx from pre-c243abac HEAD; swapped the 6 agent-spinner consumers " +
-      "(App.tsx, ai-loader.tsx, FintheonThinkingIndicator.tsx, SessionsModal.tsx, FintheonThread.tsx, AquariumPredictionCards.tsx, RiskFlowMain.tsx) " +
+      "(App.tsx, ai-loader.tsx, FintheonThinkingIndicator.tsx, SessionsModal.tsx, FintheonThread.tsx, ArbitrumChamberPredictionCards.tsx, RiskFlowMain.tsx) " +
       "back to HelixVertical / CircleQuarters / MeterToShimmer / FishSwimmer; deleted frontend/components/icon-bank/agent-spinners/. " +
       "Frontend + mobile tsc clean, vite builds pass (3234 + 2416 modules).",
     files: [
@@ -3133,7 +3187,7 @@ export const changelog: ChangelogEntry[] = [
       "frontend/components/chat/FintheonThinkingIndicator.tsx",
       "frontend/components/chat/FintheonThread.tsx",
       "frontend/components/chat/SessionsModal.tsx",
-      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "frontend/components/narrative/ArbitrumChamberPredictionCards.tsx",
       "frontend/components/feed/RiskFlowMain.tsx",
       "frontend/components/icon-bank/UnicodeSpinners.tsx",
       "frontend/components/shared/iso-icons/ (deleted)",
@@ -3319,7 +3373,7 @@ export const changelog: ChangelogEntry[] = [
       "BaseSpinner + useSpinnerFrame + useReducedMotion hook, frame definitions in " +
       "frames.ts, 54 named exports. App splash → CircleQuartersSpinner, RiskFlow " +
       "header refresh → FillsweepSpinner + CircleQuartersSpinner, chat thinking/AiLoader " +
-      "→ HelixSpinner, Aquarium loader → SnakeSpinner. Old UnicodeSpinners removed.",
+      "→ HelixSpinner, ArbitrumChamber loader → SnakeSpinner. Old UnicodeSpinners removed.",
     files: [
       "backend-hono/src/services/omi/speak.ts",
       "backend-hono/src/routes/voice/handlers.ts",
@@ -3336,7 +3390,7 @@ export const changelog: ChangelogEntry[] = [
       "frontend/components/chat/FintheonThread.tsx",
       "frontend/components/chat/SessionsModal.tsx",
       "frontend/components/feed/RiskFlowMain.tsx",
-      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "frontend/components/narrative/ArbitrumChamberPredictionCards.tsx",
       "frontend/components/ui/ai-loader.tsx",
     ],
   },
@@ -3413,11 +3467,11 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-19T23:45:00",
     agent: "claude-code",
     summary:
-      "Icon Bank — Unicode spinner library (aesthetic pivot inspired by Irfan Aziz's Unicode Spinner, unicode.framer.website). Five presets: FishSwimmer (Aquarium loader, `><((º>` through tilde stream), CircleQuarters (`◴→◷→◶→◵` clockwise — now the app's refresh icon + splash LOADING microinteraction), MeterBar (`▱→▰`), ArrowShimmer (`▹▹▹▹▹` with moving `▸`), MeterToShimmer (meter→arrow hand-off — RiskFlow header refresh motion), HelixVertical (Braille weave — replaces the chat radar pulse + AiLoader circular spinner). Every preset reads two driver props: `severity` (maps to --fintheon-severe/--fintheon-neutral-severe/--fintheon-neutral CSS vars) and `priority` (maps to animation interval: 60/100/150/220ms). Honors prefers-reduced-motion. Touchpoints: RiskFlowMain header refresh button + top-bar shimmer, AquariumPredictionCards loader, FintheonThinkingIndicator, FintheonThread.AiLoader, App.tsx splash. Did NOT touch any fuse surface (NothingFuse/VerticalFuseBar or adjacent loadingMore indicators in card lists) per standing design rule.",
+      "Icon Bank — Unicode spinner library (aesthetic pivot inspired by Irfan Aziz's Unicode Spinner, unicode.framer.website). Five presets: FishSwimmer (ArbitrumChamber loader, `><((º>` through tilde stream), CircleQuarters (`◴→◷→◶→◵` clockwise — now the app's refresh icon + splash LOADING microinteraction), MeterBar (`▱→▰`), ArrowShimmer (`▹▹▹▹▹` with moving `▸`), MeterToShimmer (meter→arrow hand-off — RiskFlow header refresh motion), HelixVertical (Braille weave — replaces the chat radar pulse + AiLoader circular spinner). Every preset reads two driver props: `severity` (maps to --fintheon-severe/--fintheon-neutral-severe/--fintheon-neutral CSS vars) and `priority` (maps to animation interval: 60/100/150/220ms). Honors prefers-reduced-motion. Touchpoints: RiskFlowMain header refresh button + top-bar shimmer, ArbitrumChamberPredictionCards loader, FintheonThinkingIndicator, FintheonThread.AiLoader, App.tsx splash. Did NOT touch any fuse surface (NothingFuse/VerticalFuseBar or adjacent loadingMore indicators in card lists) per standing design rule.",
     files: [
       "frontend/components/icon-bank/UnicodeSpinners.tsx",
       "frontend/components/feed/RiskFlowMain.tsx",
-      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "frontend/components/narrative/ArbitrumChamberPredictionCards.tsx",
       "frontend/components/chat/FintheonThinkingIndicator.tsx",
       "frontend/components/chat/FintheonThread.tsx",
       "frontend/App.tsx",
@@ -3846,7 +3900,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-20T02:30:00",
     agent: "claude-code",
     summary:
-      "v5.22 mobile dash polish per TP screenshot. (1) Page 2 calendar swap: TradingView EconCalendarEmbed was rendering as a black void on TP's phone; replaced with the native MiniSessionCalendar (reads /api/econ/calendar directly, no third-party widget, scroll-overflow inside the page so the Aquarium summary still anchors the bottom). (2) Mobile Instrument Outlook drops YM client-side via a small blocklist in useInstrumentOutlook — desktop keeps the full /NQ /ES /YM /CL /GC grid. (3) Catalyst snap-page deleted from HomePage — RiskFlow already covers that surface per TP; Timeline shifts up to page 5; CatalystCards.tsx file kept on disk for the catalyst-detail modal route. (4) Risk signals data flow verified: mobile dash page 4 (MobileRiskSignalCards) reads /api/riskflow/risk-signals, same source as desktop Aquarium's RiskSignalCards; endpoint returned 200 with empty `signals` at curl time (cache cold), but mobile's localStorage cache + 120s repoll handles it. tsc clean, vite build clean.",
+      "v5.22 mobile dash polish per TP screenshot. (1) Page 2 calendar swap: TradingView EconCalendarEmbed was rendering as a black void on TP's phone; replaced with the native MiniSessionCalendar (reads /api/econ/calendar directly, no third-party widget, scroll-overflow inside the page so the ArbitrumChamber summary still anchors the bottom). (2) Mobile Instrument Outlook drops YM client-side via a small blocklist in useInstrumentOutlook — desktop keeps the full /NQ /ES /YM /CL /GC grid. (3) Catalyst snap-page deleted from HomePage — RiskFlow already covers that surface per TP; Timeline shifts up to page 5; CatalystCards.tsx file kept on disk for the catalyst-detail modal route. (4) Risk signals data flow verified: mobile dash page 4 (MobileRiskSignalCards) reads /api/riskflow/risk-signals, same source as desktop ArbitrumChamber's RiskSignalCards; endpoint returned 200 with empty `signals` at curl time (cache cold), but mobile's localStorage cache + 120s repoll handles it. tsc clean, vite build clean.",
     files: [
       "mobile/components/home/HomePage.tsx",
       "mobile/hooks/useInstrumentOutlook.ts",
@@ -3857,20 +3911,20 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-20T02:10:00",
     agent: "claude-code",
     summary:
-      "v.26.5 Aquarium revert per TP. My v.26.3 commit incorrectly placed the pricedinresearch.io/fintheon URL as an iFrame in the Aquarium (replacing the MiroShark Deliberation pane) AND removed the NextSessionForecastCard. That was a misread of TP's instruction — the URL was already placed in mobile About (Part 1, correct), and the 'embed' in 'where you put the embed' was not something I had actually placed. Sanctum.tsx restored to its ccee7f4^ state: MiroShark Deliberation pane back, NextSessionForecastCard back, iFrame removed. Mobile About link stays correctly pointed at pricedinresearch.io/fintheon.",
+      "v.26.5 ArbitrumChamber revert per TP. My v.26.3 commit incorrectly placed the pricedinresearch.io/fintheon URL as an iFrame in the ArbitrumChamber (replacing the MiroShark Deliberation pane) AND removed the NextSessionForecastCard. That was a misread of TP's instruction — the URL was already placed in mobile About (Part 1, correct), and the 'embed' in 'where you put the embed' was not something I had actually placed. Sanctum.tsx restored to its ccee7f4^ state: MiroShark Deliberation pane back, NextSessionForecastCard back, iFrame removed. Mobile About link stays correctly pointed at pricedinresearch.io/fintheon.",
     files: ["frontend/components/narrative/Sanctum.tsx"],
   },
   {
     date: "2026-04-20T01:30:00",
     agent: "claude-code",
     summary:
-      "v5.22 S2 (mobile) — TP audit fixes + cross-platform settings sync + MiroShark→Agent Desk rename. Chat: assistant message now inserts on first text-delta (no more hollow thinking bubble per TP); per-user-message status caption (sending → sent → error); 12s no-stream watchdog (HARPER SILENT — CHECK DESKTOP RELAY) without closing the stream; DEV console.debug for unknown SSE event types; thinking-indicator gate widened to cover the lazy-insert window. ChatInput: caret alignment fix (verticalAlign top, boxSizing border-box, explicit minHeight, useLayoutEffect on mount, caretColor accent). HomePage: AGENTIC DESK → AGENT DESK label; hero ticker IV/VIX/IMPLIED labels share one baseline (alignItems flex-start + lineHeight 1). Fuses: nothing-fuse-shimmer keyframe (4.2s, 76%-100% dwell, reduced-motion guard) added to mobile/index.css; IVFuseBar/VerticalFuseBar/HomePage IVSubScores/NotificationDrawer/RiskFlowCard now route color through colorForSeverity/colorForScore from mobile/lib/fuse-palette and use opaque var(--fintheon-surface) tracks with the shimmer overlay. Catalyst tap: NotificationDrawer.onItemTap now dispatches catalyst/riskflow/maintenance/briefing URLs through useNotificationModal instead of window.location.href, so drawer taps open the DetailSheet (matches push-tap). MiroShark rename: useMirosharkLatest → useAgentDeskLatest (file + export + types + cache key); AGENTIC DESK label + miroshark prop → agentDesk; AquariumSummary import updated. /api/miroshark/* URL kept (S1 maintains backend alias); ivData.mirosharkComponent backend response field kept (no-op for client). Settings sync: SettingsContext additively fetches /api/preferences on mount and polls every 30s; setPreferences PUTs the shared UserPreferences shape; theme bridges both directions through ThemeContext (mobile picker → /api/preferences PUT; remote poll detects desktop theme change → ThemeContext.setTheme). Falls back silently to DEFAULT_PREFERENCES if S1 hasn't deployed /api/preferences yet — no feature flag, no blocking. SettingToggle gained a readOnly variant with a SET FROM DESKTOP caption for desktop-authoritative fields. tsc clean, vite build clean.",
+      "v5.22 S2 (mobile) — TP audit fixes + cross-platform settings sync + MiroShark→Agent Desk rename. Chat: assistant message now inserts on first text-delta (no more hollow thinking bubble per TP); per-user-message status caption (sending → sent → error); 12s no-stream watchdog (HARPER SILENT — CHECK DESKTOP RELAY) without closing the stream; DEV console.debug for unknown SSE event types; thinking-indicator gate widened to cover the lazy-insert window. ChatInput: caret alignment fix (verticalAlign top, boxSizing border-box, explicit minHeight, useLayoutEffect on mount, caretColor accent). HomePage: AGENTIC DESK → AGENT DESK label; hero ticker IV/VIX/IMPLIED labels share one baseline (alignItems flex-start + lineHeight 1). Fuses: nothing-fuse-shimmer keyframe (4.2s, 76%-100% dwell, reduced-motion guard) added to mobile/index.css; IVFuseBar/VerticalFuseBar/HomePage IVSubScores/NotificationDrawer/RiskFlowCard now route color through colorForSeverity/colorForScore from mobile/lib/fuse-palette and use opaque var(--fintheon-surface) tracks with the shimmer overlay. Catalyst tap: NotificationDrawer.onItemTap now dispatches catalyst/riskflow/maintenance/briefing URLs through useNotificationModal instead of window.location.href, so drawer taps open the DetailSheet (matches push-tap). MiroShark rename: useMirosharkLatest → useAgentDeskLatest (file + export + types + cache key); AGENTIC DESK label + miroshark prop → agentDesk; ArbitrumChamberSummary import updated. /api/miroshark/* URL kept (S1 maintains backend alias); ivData.mirosharkComponent backend response field kept (no-op for client). Settings sync: SettingsContext additively fetches /api/preferences on mount and polls every 30s; setPreferences PUTs the shared UserPreferences shape; theme bridges both directions through ThemeContext (mobile picker → /api/preferences PUT; remote poll detects desktop theme change → ThemeContext.setTheme). Falls back silently to DEFAULT_PREFERENCES if S1 hasn't deployed /api/preferences yet — no feature flag, no blocking. SettingToggle gained a readOnly variant with a SET FROM DESKTOP caption for desktop-authoritative fields. tsc clean, vite build clean.",
     files: [
       "mobile/components/chat/ChatPage.tsx",
       "mobile/components/chat/ChatMessage.tsx",
       "mobile/components/chat/ChatInput.tsx",
       "mobile/components/home/HomePage.tsx",
-      "mobile/components/home/AquariumSummary.tsx",
+      "mobile/components/home/ArbitrumChamberSummary.tsx",
       "mobile/components/shared/IVFuseBar.tsx",
       "mobile/components/shared/VerticalFuseBar.tsx",
       "mobile/components/notifications/NotificationDrawer.tsx",
@@ -3886,12 +3940,12 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-19T23:55:00",
     agent: "claude-code",
     summary:
-      "v5.22 S1 — desktop refit + backend preferences + MiroShark → Agent Desk rename. (Rename) Swept frontend/ + backend-hono/src/ over 84 files: folders frontend/components/miroshark → agent-desk, backend-hono/src/{routes,services}/miroshark → agent-desk; files types/miroshark.ts → agent-desk.ts, agent-bus/templates/miroshark-template.ts, cron/miroshark-daily.ts; MIROSHARK_ENABLED → AGENT_DESK_ENABLED in .env.example; MIROSHARK_WEIGHT → AGENT_DESK_WEIGHT in iv-scorer. Dual-mount /api/agent-desk (new) + /api/miroshark (legacy alias for v5.22) in backend-hono/src/routes/index.ts. DB columns (miroshark_deliberations) and harper-autonomous historical annotations deliberately untouched. Mobile unchanged (Session 2 owns). (CSS) New @keyframes nothing-fuse-shimmer + .nothing-fuse-shimmer class in frontend/index.css — 4.2s linear cycle with 76%→100% dwell for ~1s of dead time; prefers-reduced-motion gates the animation. New shared component frontend/components/shared/NothingFuse.tsx as the single fuse primitive (horizontal + vertical, value 0-1, severity/score color resolution via shared palette). (Sanctum layout) Aquarium page 0: removed max-w-2xl + flex justify-center from the KPI row, applied dashboard-margin alignment (mx-1) matching the top VOLATILITY READ frame, gap-10 replaces vertical dividers; ANALYSIS now sits in its own framed glass surface (accent border + color-mix surface). Prediction cards switched to grid-cols-5 so /NQ /ES /YM /CL /GC headers sit on one line. (Deliberation) AgentDeskDebatePanel gains a footer row of three nothing-shimmer fuses — Signal / Regime / Heat — reading compositeIV, regimeShiftProbability, confidence from Sanctum. (Econ + Instrument Fuses) Page 1 now splits flex gap-4 60/40: SanctumEconIntel left, new InstrumentFusesPanel right rendering /NQ /ES /YM /CL /GC as vertical NothingFuse bars polled from /api/predictions/outlook. (RiskFlow desktop card) AlertRow rebuilt with mobile vocabulary at larger desktop density: left severity fuse, palette-driven border-left + severity tint from colorForSeverity/severityFromScore; TradeIdeaRow also gets the palette border-left. Footer IV wire kept on the existing riskflow-fuse-shimmer. (Fuse shimmer application) BlendedVIXCard component bars, NextSessionForecastCard confidence, AquariumPredictionCards HEAT bar — all now use NothingFuse with palette colors; rounded-full + bg-zinc-800 replaced with rounded-[2px] + var(--fintheon-surface). (Preferences spine) New supabase/migrations/20260419_user_preferences.sql creating public.user_preferences (user_id UUID PK → auth.users, prefs JSONB, updated_at) with 4 RLS policies (select/insert/update self + service_role ALL). Applied via Supabase MCP. New backend-hono/src/routes/preferences/index.ts with Zod-validated GET/PUT, registered at /api/preferences under authMiddleware+requireAuth. SettingsContext extended with preferences state, updatePreferences helper, localStorage fallback (fintheon:preferences), PUT-on-change + GET-poll-every-30s-when-tab-visible. Validation: frontend tsc clean, vite build clean (2278 kB main bundle, gzip 583 kB), backend bun run build clean, grep residual for miroshark zero live hits.",
+      "v5.22 S1 — desktop refit + backend preferences + MiroShark → Agent Desk rename. (Rename) Swept frontend/ + backend-hono/src/ over 84 files: folders frontend/components/miroshark → agent-desk, backend-hono/src/{routes,services}/miroshark → agent-desk; files types/miroshark.ts → agent-desk.ts, agent-bus/templates/miroshark-template.ts, cron/miroshark-daily.ts; MIROSHARK_ENABLED → AGENT_DESK_ENABLED in .env.example; MIROSHARK_WEIGHT → AGENT_DESK_WEIGHT in iv-scorer. Dual-mount /api/agent-desk (new) + /api/miroshark (legacy alias for v5.22) in backend-hono/src/routes/index.ts. DB columns (miroshark_deliberations) and harper-autonomous historical annotations deliberately untouched. Mobile unchanged (Session 2 owns). (CSS) New @keyframes nothing-fuse-shimmer + .nothing-fuse-shimmer class in frontend/index.css — 4.2s linear cycle with 76%→100% dwell for ~1s of dead time; prefers-reduced-motion gates the animation. New shared component frontend/components/shared/NothingFuse.tsx as the single fuse primitive (horizontal + vertical, value 0-1, severity/score color resolution via shared palette). (Sanctum layout) ArbitrumChamber page 0: removed max-w-2xl + flex justify-center from the KPI row, applied dashboard-margin alignment (mx-1) matching the top VOLATILITY READ frame, gap-10 replaces vertical dividers; ANALYSIS now sits in its own framed glass surface (accent border + color-mix surface). Prediction cards switched to grid-cols-5 so /NQ /ES /YM /CL /GC headers sit on one line. (Deliberation) AgentDeskDebatePanel gains a footer row of three nothing-shimmer fuses — Signal / Regime / Heat — reading compositeIV, regimeShiftProbability, confidence from Sanctum. (Econ + Instrument Fuses) Page 1 now splits flex gap-4 60/40: SanctumEconIntel left, new InstrumentFusesPanel right rendering /NQ /ES /YM /CL /GC as vertical NothingFuse bars polled from /api/predictions/outlook. (RiskFlow desktop card) AlertRow rebuilt with mobile vocabulary at larger desktop density: left severity fuse, palette-driven border-left + severity tint from colorForSeverity/severityFromScore; TradeIdeaRow also gets the palette border-left. Footer IV wire kept on the existing riskflow-fuse-shimmer. (Fuse shimmer application) BlendedVIXCard component bars, NextSessionForecastCard confidence, ArbitrumChamberPredictionCards HEAT bar — all now use NothingFuse with palette colors; rounded-full + bg-zinc-800 replaced with rounded-[2px] + var(--fintheon-surface). (Preferences spine) New supabase/migrations/20260419_user_preferences.sql creating public.user_preferences (user_id UUID PK → auth.users, prefs JSONB, updated_at) with 4 RLS policies (select/insert/update self + service_role ALL). Applied via Supabase MCP. New backend-hono/src/routes/preferences/index.ts with Zod-validated GET/PUT, registered at /api/preferences under authMiddleware+requireAuth. SettingsContext extended with preferences state, updatePreferences helper, localStorage fallback (fintheon:preferences), PUT-on-change + GET-poll-every-30s-when-tab-visible. Validation: frontend tsc clean, vite build clean (2278 kB main bundle, gzip 583 kB), backend bun run build clean, grep residual for miroshark zero live hits.",
     files: [
       "frontend/index.css",
       "frontend/components/shared/NothingFuse.tsx",
       "frontend/components/narrative/Sanctum.tsx",
-      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "frontend/components/narrative/ArbitrumChamberPredictionCards.tsx",
       "frontend/components/narrative/BlendedVIXCard.tsx",
       "frontend/components/narrative/NextSessionForecastCard.tsx",
       "frontend/components/narrative/InstrumentFusesPanel.tsx",
@@ -4067,7 +4121,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-19T19:40:00",
     agent: "claude-code",
     summary:
-      "Mobile beta finalization sweep per TP audit (pre-DMG cycle). (1) Dashboard page 1 — briefing area reclaims ~30px: top padding 20→15, gap 24→18, paddingBottom 24→12, BriefingCard shellStyle 12→9 top, body mask 28→32 so more preview text shows before [READ MORE]. (2) Dashboard page 2 — TradingView econ calendar no longer leaves a black gap above Aquarium. EconCalendarEmbed observes its container via ResizeObserver and feeds the measured pixel height into the widget JSON instead of '100%' (TradingView's embed reads height at script-load and doesn't auto-grow). Aquarium footer compacted 16+16+24 → 12+16+16. (3) SnapSheet promoted to THE popup surface — pill bar 36×3 → 40×5 (matches the old BriefingOverlay), title padding 8→12, drag threshold 100→120. BriefingCard migrated off its one-off BriefingOverlay onto SnapSheet, BriefingOverlay.tsx deleted. (4) Chat FAB now navigates to the Chat tab instead of popping a mini overlay. Removed chatOpen state from App.tsx and the floating ChatPage; MobileShell now takes onChatTap that calls handleTabChange(2). (5) MobileBulletin textareas rebuilt as TapToEditField — glass read-only plate until tap, flips to focused textarea that auto-saves 900ms after last keystroke. Notes/event rows 14/10. Glassy input, larger font, iOS-safe 16px. (6) NotificationDrawer cards reshaped to the RiskFlow layout: left VerticalFuseBar (severity-driven 0-10), center title/body/severity/time, right approve/deny stacked as icon-only 36×36 hit targets (Check over X). Approve = accent gold, Deny = text-secondary muted. Glassmorphic surface, no kanban stripes. (7) Settings page full rewrite — now scrollable (was clipped), full-width (maxWidth 480 removed), 16px gutters. Five glassmorphic CollapsibleSection cards (Notifications, Appearance, Trader, Account, About) with persistent open-state (localStorage). Appearance exposes an accordion ThemePickerAccordion (standard presets + a muted 'NOTHING DESIGN' divider + SPECIAL_PRESETS) and a full 5-font FontPickerList showing each fontHeading sample. SettingsContext dropped the 800ms auto-save debounce — changes stage locally; the new SaveButton (pill with Save → Saved → hides) is the only way to commit. MobileToolbar's global save also switched from SaveCheckmark to SaveButton; SaveCheckmark.tsx deleted. (8) Font kit — added Inter, Playfair Display, Roboto, Cinzel, Cormorant Garamond to index.html so all 5 font themes render. (9) Interaction sweep — index.css now declares --ease-spring, --duration-long; global button/[role=button] gets 150ms transition token + :active scale(0.97). Respects prefers-reduced-motion. Verified via tsc --noEmit + vite build.",
+      "Mobile beta finalization sweep per TP audit (pre-DMG cycle). (1) Dashboard page 1 — briefing area reclaims ~30px: top padding 20→15, gap 24→18, paddingBottom 24→12, BriefingCard shellStyle 12→9 top, body mask 28→32 so more preview text shows before [READ MORE]. (2) Dashboard page 2 — TradingView econ calendar no longer leaves a black gap above ArbitrumChamber. EconCalendarEmbed observes its container via ResizeObserver and feeds the measured pixel height into the widget JSON instead of '100%' (TradingView's embed reads height at script-load and doesn't auto-grow). ArbitrumChamber footer compacted 16+16+24 → 12+16+16. (3) SnapSheet promoted to THE popup surface — pill bar 36×3 → 40×5 (matches the old BriefingOverlay), title padding 8→12, drag threshold 100→120. BriefingCard migrated off its one-off BriefingOverlay onto SnapSheet, BriefingOverlay.tsx deleted. (4) Chat FAB now navigates to the Chat tab instead of popping a mini overlay. Removed chatOpen state from App.tsx and the floating ChatPage; MobileShell now takes onChatTap that calls handleTabChange(2). (5) MobileBulletin textareas rebuilt as TapToEditField — glass read-only plate until tap, flips to focused textarea that auto-saves 900ms after last keystroke. Notes/event rows 14/10. Glassy input, larger font, iOS-safe 16px. (6) NotificationDrawer cards reshaped to the RiskFlow layout: left VerticalFuseBar (severity-driven 0-10), center title/body/severity/time, right approve/deny stacked as icon-only 36×36 hit targets (Check over X). Approve = accent gold, Deny = text-secondary muted. Glassmorphic surface, no kanban stripes. (7) Settings page full rewrite — now scrollable (was clipped), full-width (maxWidth 480 removed), 16px gutters. Five glassmorphic CollapsibleSection cards (Notifications, Appearance, Trader, Account, About) with persistent open-state (localStorage). Appearance exposes an accordion ThemePickerAccordion (standard presets + a muted 'NOTHING DESIGN' divider + SPECIAL_PRESETS) and a full 5-font FontPickerList showing each fontHeading sample. SettingsContext dropped the 800ms auto-save debounce — changes stage locally; the new SaveButton (pill with Save → Saved → hides) is the only way to commit. MobileToolbar's global save also switched from SaveCheckmark to SaveButton; SaveCheckmark.tsx deleted. (8) Font kit — added Inter, Playfair Display, Roboto, Cinzel, Cormorant Garamond to index.html so all 5 font themes render. (9) Interaction sweep — index.css now declares --ease-spring, --duration-long; global button/[role=button] gets 150ms transition token + :active scale(0.97). Respects prefers-reduced-motion. Verified via tsc --noEmit + vite build.",
     files: [
       "mobile/App.tsx",
       "mobile/index.css",
@@ -4098,7 +4152,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-19T18:15:00",
     agent: "claude-code",
     summary:
-      "Mobile UX polish pass per TP — notification/bulletin/briefing all snap under the dash fuse row; push copy speaks English; approve/deny buttons drop the Kanban look. (1) New `mobile/components/shared/SnapSheet.tsx` generalizes the old `NotificationSheet`: on open, queries `[data-snap-anchor='fuses']` in the DOM, reads that element's bottom edge, positions the sheet's top at that + 6px margin, stretches height to bottom. Fallback inset 340px when the anchor isn't rendered (e.g. sheet opens from a tab without the dash visible). Drag-down-to-close, glassmorphic surface (`backdrop-filter: blur(24px) saturate(1.4)`, thin border-top, accent shadow). (2) `HomePage.tsx` IVSubScores row (VIX / HEADLINE / AGENTIC DESK fuses) gains `data-snap-anchor='fuses'` so sheets know where to stop. (3) `NotificationDrawer.tsx` swapped import BottomSheet → SnapSheet. (4) `MobileBulletin.tsx` swapped BottomSheet → SnapSheet so bulletin sizing matches per TP ('same sizing should apply to the bulletin'). Non-snap callers (HeadlinePickerSheet, MiniRegimeTracker) stay on the original BottomSheet — TP only asked for notifications/bulletin/brief. (5) `BriefingOverlay.tsx` rewritten from `inset: 0` full-screen to `top: <fuses.bottom>` — briefing now covers the rest of the page per TP instead of obscuring tickers. Same anchor discovery, portal/drag/safe-area polish preserved. (6) Approval card buttons in NotificationDrawer stripped to bare — no border, no background fill, accent-color letters for both Deny and Approve (Approve gets weight 600 for primary affordance). Press states + icons carry the interaction weight. Matches the new global rule 'glassmorphic before Kanban; approve/deny buttons borderless + no-bg + accent letters'. (7) Push copy rewrites — `services/regime/propose.ts` replaces 'Regime proposal: BULL_TREND / <proposer> proposes GEO_TENSIONS → BULL_TREND' with plain title 'Regime Change' + body 'Geopol → Bear Market' via a REGIME_PLAIN code→label map. `services/notifications/riskflow-payload.ts` replaces 'Catalyst · /ES · FOMC Minutes / 9.2 · headline' with title 'Catalyst · <Category>' (Econ / Geopolitical / Monetary Policy / Market via keyword-driven pickCategoryLabel) + body = raw headline. iOS lock screen now reads like a human wrote it. (8) Dash econ calendar layout — HomePage Page 2 flex column now `flex: 1; minHeight: 0` with Aquarium Analysis `flexShrink: 0` so the calendar iframe fills every pixel between the fuses and the Aquarium card (no dead space). Per TP: 'Econ calendar on dash should end at the aquarium analysis section.' (9) `NotificationSheet.tsx` deleted (superseded by SnapSheet). Verified: mobile tsc + backend bun build both clean.",
+      "Mobile UX polish pass per TP — notification/bulletin/briefing all snap under the dash fuse row; push copy speaks English; approve/deny buttons drop the Kanban look. (1) New `mobile/components/shared/SnapSheet.tsx` generalizes the old `NotificationSheet`: on open, queries `[data-snap-anchor='fuses']` in the DOM, reads that element's bottom edge, positions the sheet's top at that + 6px margin, stretches height to bottom. Fallback inset 340px when the anchor isn't rendered (e.g. sheet opens from a tab without the dash visible). Drag-down-to-close, glassmorphic surface (`backdrop-filter: blur(24px) saturate(1.4)`, thin border-top, accent shadow). (2) `HomePage.tsx` IVSubScores row (VIX / HEADLINE / AGENTIC DESK fuses) gains `data-snap-anchor='fuses'` so sheets know where to stop. (3) `NotificationDrawer.tsx` swapped import BottomSheet → SnapSheet. (4) `MobileBulletin.tsx` swapped BottomSheet → SnapSheet so bulletin sizing matches per TP ('same sizing should apply to the bulletin'). Non-snap callers (HeadlinePickerSheet, MiniRegimeTracker) stay on the original BottomSheet — TP only asked for notifications/bulletin/brief. (5) `BriefingOverlay.tsx` rewritten from `inset: 0` full-screen to `top: <fuses.bottom>` — briefing now covers the rest of the page per TP instead of obscuring tickers. Same anchor discovery, portal/drag/safe-area polish preserved. (6) Approval card buttons in NotificationDrawer stripped to bare — no border, no background fill, accent-color letters for both Deny and Approve (Approve gets weight 600 for primary affordance). Press states + icons carry the interaction weight. Matches the new global rule 'glassmorphic before Kanban; approve/deny buttons borderless + no-bg + accent letters'. (7) Push copy rewrites — `services/regime/propose.ts` replaces 'Regime proposal: BULL_TREND / <proposer> proposes GEO_TENSIONS → BULL_TREND' with plain title 'Regime Change' + body 'Geopol → Bear Market' via a REGIME_PLAIN code→label map. `services/notifications/riskflow-payload.ts` replaces 'Catalyst · /ES · FOMC Minutes / 9.2 · headline' with title 'Catalyst · <Category>' (Econ / Geopolitical / Monetary Policy / Market via keyword-driven pickCategoryLabel) + body = raw headline. iOS lock screen now reads like a human wrote it. (8) Dash econ calendar layout — HomePage Page 2 flex column now `flex: 1; minHeight: 0` with ArbitrumChamber Analysis `flexShrink: 0` so the calendar iframe fills every pixel between the fuses and the ArbitrumChamber card (no dead space). Per TP: 'Econ calendar on dash should end at the arbitrumChamber analysis section.' (9) `NotificationSheet.tsx` deleted (superseded by SnapSheet). Verified: mobile tsc + backend bun build both clean.",
     files: [
       "mobile/components/shared/SnapSheet.tsx",
       "mobile/components/shared/NotificationSheet.tsx",
@@ -4438,7 +4492,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-17T22:00:00",
     agent: "claude-code",
     summary:
-      '7-part drag/Strategium/Aquarium overhaul: (1) new useDraggable hook (Pointer Events + setPointerCapture + rAF + transform3d) kills sticky-cursor + friction across DraggablePanel/PsychAssistDockable/YouTubeMiniplayer/StickyBulletin — strict grip-only handles, removed glass/shadow chrome; (2) Strategium gear→Edit (Pencil), widget cards become drag-reorderable with Nothing-Design microinteractions, unified layoutEditMode drives sidebar+toolbar+widgets; (3) NavSidebar now accepts controlled editMode; (4) Blindspots widget: 140-char cap + 4-entry cap, monochrome FuseBar with shimmer, IV chip replaces W/L% (backend joins against scored_riskflow_items for ivScore enrichment, POST rejects >140char); (5) 3-state Strategium pane mode (balanced/feedOnly/widgetsOnly) with peek footer + header, fixes collapsed-RiskFlow no-restore bug; (6) RiskFlow feed flickers the single most-recent new headline in theme accent color on every refresh (freshAlertId tracked in context, auto-clears 1.2s); (7) Harper Aquarium synthesis now awaited inline with briefing, prompt reframed so Harper IS the narrator (not cold analyst), red-flag-phrase + slop-input detectors replace templated heat/regime output with "No new agentic updates. Trigger an update in Aquarium." — SanctumBriefing renders fallback with Trigger Aquarium CTA',
+      '7-part drag/Strategium/ArbitrumChamber overhaul: (1) new useDraggable hook (Pointer Events + setPointerCapture + rAF + transform3d) kills sticky-cursor + friction across DraggablePanel/PsychAssistDockable/YouTubeMiniplayer/StickyBulletin — strict grip-only handles, removed glass/shadow chrome; (2) Strategium gear→Edit (Pencil), widget cards become drag-reorderable with Nothing-Design microinteractions, unified layoutEditMode drives sidebar+toolbar+widgets; (3) NavSidebar now accepts controlled editMode; (4) Blindspots widget: 140-char cap + 4-entry cap, monochrome FuseBar with shimmer, IV chip replaces W/L% (backend joins against scored_riskflow_items for ivScore enrichment, POST rejects >140char); (5) 3-state Strategium pane mode (balanced/feedOnly/widgetsOnly) with peek footer + header, fixes collapsed-RiskFlow no-restore bug; (6) RiskFlow feed flickers the single most-recent new headline in theme accent color on every refresh (freshAlertId tracked in context, auto-clears 1.2s); (7) Harper ArbitrumChamber synthesis now awaited inline with briefing, prompt reframed so Harper IS the narrator (not cold analyst), red-flag-phrase + slop-input detectors replace templated heat/regime output with "No new agentic updates. Trigger an update in ArbitrumChamber." — SanctumBriefing renders fallback with Trigger ArbitrumChamber CTA',
     files: [
       "frontend/hooks/useDraggable.ts",
       "frontend/components/layout/DraggablePanel.tsx",
@@ -4479,7 +4533,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-17T15:30:00",
     agent: "claude-code",
     summary:
-      "S23-T3: Harper Aquarium literacy — ConsiliumHub persists current surface (aquarium/narratives/timeline/boardroom/apparatus/chat) to localStorage on tab change, useHermesChat auto-appends 'aquarium' to activeConnectors + sends surface flag when on the Aquarium surface, backend harper-handler + strands/harper + /api/ai/chat handlers inject buildAquariumContext() whenever surface===aquarium (no manual connector toggle needed), buildAquariumContext now exports from harper-handler with a 'How to read this' preamble explaining IV/regime/signal bands so agents interpret MiroShark output as ground truth (not debug noise), Harper base prompt gains an 'Aquarium' capability block",
+      "S23-T3: Harper ArbitrumChamber literacy — ConsiliumHub persists current surface (arbitrumChamber/narratives/timeline/boardroom/apparatus/chat) to localStorage on tab change, useHermesChat auto-appends 'arbitrumChamber' to activeConnectors + sends surface flag when on the ArbitrumChamber surface, backend harper-handler + strands/harper + /api/ai/chat handlers inject buildArbitrumChamberContext() whenever surface===arbitrumChamber (no manual connector toggle needed), buildArbitrumChamberContext now exports from harper-handler with a 'How to read this' preamble explaining IV/regime/signal bands so agents interpret MiroShark output as ground truth (not debug noise), Harper base prompt gains an 'ArbitrumChamber' capability block",
     files: [
       "frontend/components/consilium/ConsiliumHub.tsx",
       "frontend/components/chat/hooks/useHermesChat.ts",
@@ -4493,12 +4547,12 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-17T15:15:00",
     agent: "claude-code",
     summary:
-      "S23-T2: Aquarium delivery hang fix — MiroSharkDebatePanel fires onSynthesisComplete once per simulationId when deliberation reaches phase=complete, ConsiliumHub refetches /api/miroshark/latest to refresh KPIs/briefing without waiting for poll, backend updatePhase(complete) now merges Harper's refined composite IV/regime risk/briefing into the in-memory prediction cache so /latest returns post-synthesis numbers (not the stale pre-Harper scoring), AquariumPredictionCards fallback poll 120s → 30s",
+      "S23-T2: ArbitrumChamber delivery hang fix — MiroSharkDebatePanel fires onSynthesisComplete once per simulationId when deliberation reaches phase=complete, ConsiliumHub refetches /api/miroshark/latest to refresh KPIs/briefing without waiting for poll, backend updatePhase(complete) now merges Harper's refined composite IV/regime risk/briefing into the in-memory prediction cache so /latest returns post-synthesis numbers (not the stale pre-Harper scoring), ArbitrumChamberPredictionCards fallback poll 120s → 30s",
     files: [
       "frontend/components/miroshark/MiroSharkDebatePanel.tsx",
       "frontend/components/narrative/Sanctum.tsx",
       "frontend/components/consilium/ConsiliumHub.tsx",
-      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "frontend/components/narrative/ArbitrumChamberPredictionCards.tsx",
       "backend-hono/src/services/miroshark/miroshark-service.ts",
       "backend-hono/src/services/miroshark/miroshark-deliberation.ts",
     ],
@@ -4507,7 +4561,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-17T15:00:00",
     agent: "claude-code",
     summary:
-      "S23-T1: Aquarium UI restructure — removed top QQQ TradingView chart, new brief-pattern top container (Blended IV + Next Session Forecast left 55%, MiroShark Deliberation right 45%, needle divider matching Dashboard aesthetic), replaced Debate button in Consilium tab bar with Chart button (LineChart icon) that toggles full 50/50 split with TradingView iframe on right, removed redundant TradingView iframe toggle from Proposals panel, theme-sensitive CSS-var styling throughout",
+      "S23-T1: ArbitrumChamber UI restructure — removed top QQQ TradingView chart, new brief-pattern top container (Blended IV + Next Session Forecast left 55%, MiroShark Deliberation right 45%, needle divider matching Dashboard aesthetic), replaced Debate button in Consilium tab bar with Chart button (LineChart icon) that toggles full 50/50 split with TradingView iframe on right, removed redundant TradingView iframe toggle from Proposals panel, theme-sensitive CSS-var styling throughout",
     files: [
       "frontend/components/narrative/Sanctum.tsx",
       "frontend/components/consilium/ConsiliumHub.tsx",
@@ -4588,7 +4642,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-17T00:30:00",
     agent: "claude-code",
     summary:
-      "Trigger MiroShark Aquarium run after every briefing generation — cron dispatch and catch-up paths now fire startPrediction() post-brief, matching the existing behavior on the manual POST /api/data/brief/generate route.",
+      "Trigger MiroShark ArbitrumChamber run after every briefing generation — cron dispatch and catch-up paths now fire startPrediction() post-brief, matching the existing behavior on the manual POST /api/data/brief/generate route.",
     files: ["backend-hono/src/services/cron/dispatch-scheduler.ts"],
   },
   {
@@ -4656,7 +4710,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-17T09:00:00",
     agent: "claude-code",
     summary:
-      "RiskFlow fuzzy dedup: token-overlap similarity (70% threshold) removes near-duplicate headlines from different sources. Fixed agent subject tags to match DB vocabulary (subj:macro, subj:geopolitical, subj:vol, subj:structure, subj:earnings, subj:credit, subj:sentiment) — each MiroShark agent now gets differentiated headline context instead of groupthink. Auto-trigger MiroShark Aquarium run after every Brief publish. Created 4 missing Supabase tables (miroshark_deliberations, agent_memory, deliberation_outcomes, oracle_research_findings).",
+      "RiskFlow fuzzy dedup: token-overlap similarity (70% threshold) removes near-duplicate headlines from different sources. Fixed agent subject tags to match DB vocabulary (subj:macro, subj:geopolitical, subj:vol, subj:structure, subj:earnings, subj:credit, subj:sentiment) — each MiroShark agent now gets differentiated headline context instead of groupthink. Auto-trigger MiroShark ArbitrumChamber run after every Brief publish. Created 4 missing Supabase tables (miroshark_deliberations, agent_memory, deliberation_outcomes, oracle_research_findings).",
     files: [
       "backend-hono/src/services/riskflow/feed-service.ts",
       "backend-hono/src/services/agent-bus/templates/miroshark-template.ts",
@@ -4674,7 +4728,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-16T22:00:00",
     agent: "claude-code",
     summary:
-      "S20-T9: Backend Streamlining. Two-phase boot (bootCritical + bootBackground via queueMicrotask). Split iv-scoring-v2.ts (1954 lines) into 9 modules under services/iv-scoring/. Split central-scorer.ts (1073 lines) into scorer-pipeline + scorer-tagging + scorer-watchlist. Created unified feature-flag-service.ts with single getFlag(). Created health-registry.ts for background service monitoring. Created base-poller abstraction for ingestion consolidation. Tuned intervals: Aquarium 30→60min, Agent Notes 3→5min, Shared Memory 30→60min. /health endpoint now includes service registry data.",
+      "S20-T9: Backend Streamlining. Two-phase boot (bootCritical + bootBackground via queueMicrotask). Split iv-scoring-v2.ts (1954 lines) into 9 modules under services/iv-scoring/. Split central-scorer.ts (1073 lines) into scorer-pipeline + scorer-tagging + scorer-watchlist. Created unified feature-flag-service.ts with single getFlag(). Created health-registry.ts for background service monitoring. Created base-poller abstraction for ingestion consolidation. Tuned intervals: ArbitrumChamber 30→60min, Agent Notes 3→5min, Shared Memory 30→60min. /health endpoint now includes service registry data.",
     files: [
       "backend-hono/src/boot/services.ts",
       "backend-hono/src/index.ts",
@@ -4693,7 +4747,7 @@ export const changelog: ChangelogEntry[] = [
       "backend-hono/src/services/feature-flag-service.ts",
       "backend-hono/src/services/health-registry.ts",
       "backend-hono/src/services/ingestion/base-poller.ts",
-      "backend-hono/src/services/riskflow/aquarium-scheduler.ts",
+      "backend-hono/src/services/riskflow/arbitrum-chamber-scheduler.ts",
       "backend-hono/src/services/riskflow/agent-notes.ts",
       "backend-hono/src/services/peers/shared-memory.ts",
     ],
@@ -4702,14 +4756,14 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-17T00:15:00",
     agent: "claude-code",
     summary:
-      "S20-T2: Differentiated context feeding + legacy kill. Ported subject-tag filtering from miroshark-client into shared fetchFilteredHeadlines() in miroshark-context.ts. Rewrote buildAnalystPrompt/buildNarrativeContext/buildGovPrompt/buildDeliberationPrompt/buildHarperPrompt to be async and query DB with per-agent subject filtering (12 matched + 3 cross-domain). Made createMiroSharkDAG async. Removed legacy MARKET_ANALYSTS array (Alex Vane, Priya Nair, James Osei, Sophie Kwan, Marcus Webb), fetchHeadlinesForAnalyst, fetchExaHeadlinesForAgent, runMarketAnalystDebate, getMarketAnalysts from miroshark-client.ts. Updated miroshark-deliberation.ts to use ANALYST_META from template. Updated aquarium-scheduler fetchRecentHeadlines to filter by Oracle subjects. Renamed Agentic Chatroom to Agentic Forum in harper-handler.ts and HARPER-SOUL.md.",
+      "S20-T2: Differentiated context feeding + legacy kill. Ported subject-tag filtering from miroshark-client into shared fetchFilteredHeadlines() in miroshark-context.ts. Rewrote buildAnalystPrompt/buildNarrativeContext/buildGovPrompt/buildDeliberationPrompt/buildHarperPrompt to be async and query DB with per-agent subject filtering (12 matched + 3 cross-domain). Made createMiroSharkDAG async. Removed legacy MARKET_ANALYSTS array (Alex Vane, Priya Nair, James Osei, Sophie Kwan, Marcus Webb), fetchHeadlinesForAnalyst, fetchExaHeadlinesForAgent, runMarketAnalystDebate, getMarketAnalysts from miroshark-client.ts. Updated miroshark-deliberation.ts to use ANALYST_META from template. Updated arbitrum-chamber-scheduler fetchRecentHeadlines to filter by Oracle subjects. Renamed Agentic Chatroom to Agentic Forum in harper-handler.ts and HARPER-SOUL.md.",
     files: [
       "backend-hono/src/services/miroshark/miroshark-context.ts",
       "backend-hono/src/services/agent-bus/templates/miroshark-template.ts",
       "backend-hono/src/services/miroshark/miroshark-client.ts",
       "backend-hono/src/services/miroshark/miroshark-deliberation.ts",
       "backend-hono/src/services/miroshark/miroshark-service.ts",
-      "backend-hono/src/services/riskflow/aquarium-scheduler.ts",
+      "backend-hono/src/services/riskflow/arbitrum-chamber-scheduler.ts",
       "backend-hono/src/routes/miroshark/handlers.ts",
       "backend-hono/src/routes/harper/index.ts",
       "backend-hono/src/routes/boardroom/index.ts",
@@ -4755,7 +4809,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-16T17:45:00",
     agent: "claude-code",
     summary:
-      "S20-T8: Claude Code Routines — 8 cloud-based autonomous agents on Anthropic infrastructure. 3 MOVE routines (REFLECT, Prediction Resolver, Market Impact Enricher) fully migrated from backend with env flags to disable local schedulers. 5 AUGMENT routines (Dispatch Watchdog, Boardroom Synthesis, MiroShark Meta, Poly/Kalshi Divergence Analysis, Aquarium Deep Outlook) monitor/enrich existing backend jobs. Total 13 runs/day within 15-run budget.",
+      "S20-T8: Claude Code Routines — 8 cloud-based autonomous agents on Anthropic infrastructure. 3 MOVE routines (REFLECT, Prediction Resolver, Market Impact Enricher) fully migrated from backend with env flags to disable local schedulers. 5 AUGMENT routines (Dispatch Watchdog, Boardroom Synthesis, MiroShark Meta, Poly/Kalshi Divergence Analysis, ArbitrumChamber Deep Outlook) monitor/enrich existing backend jobs. Total 13 runs/day within 15-run budget.",
     files: [
       "backend-hono/src/services/autoresearch/reflect-scheduler.ts",
       "backend-hono/src/services/polymarket-prediction-resolver.ts",
@@ -4831,7 +4885,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-16T13:30:00",
     agent: "claude-code",
     summary:
-      "fix: IV Scoring Engine reconnected — rewired iv-score-ticker + handler fallback to read from scored_riskflow_items (live pipeline) instead of deprecated news_feed_items. Added MiroShark boot restore from latest Aquarium simulation so mirosharkComponent survives backend restarts. Fixed merge conflict in feed-health.log.",
+      "fix: IV Scoring Engine reconnected — rewired iv-score-ticker + handler fallback to read from scored_riskflow_items (live pipeline) instead of deprecated news_feed_items. Added MiroShark boot restore from latest ArbitrumChamber simulation so mirosharkComponent survives backend restarts. Fixed merge conflict in feed-health.log.",
     files: [
       "backend-hono/src/services/market-data/iv-score-ticker.ts",
       "backend-hono/src/routes/market-data/handlers.ts",
@@ -4922,7 +4976,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-16T01:30:00",
     agent: "claude-code",
     summary:
-      "feat: Mobile Nothing Design overhaul — favicon, full Nothing font takeover, RiskFlow X-feed redesign with vertical fuse bars + IV scores + zero-gap + full-width segmented filter strip, hero row rearranged to IV/VIX/Implied Points, scroll-lock dash pages with Aquarium summary + instrument outlook cards + agent trade proposals, 5-tab nav (DASH/RISKFLOW/CHAT/ECON/SETTINGS), chat thinking indicator with segmented spinner + tool call streaming + Nothing-styled input, TradingView economic calendar embed tab, bulletin fix, toolbar wordmark in Doto display font",
+      "feat: Mobile Nothing Design overhaul — favicon, full Nothing font takeover, RiskFlow X-feed redesign with vertical fuse bars + IV scores + zero-gap + full-width segmented filter strip, hero row rearranged to IV/VIX/Implied Points, scroll-lock dash pages with ArbitrumChamber summary + instrument outlook cards + agent trade proposals, 5-tab nav (DASH/RISKFLOW/CHAT/ECON/SETTINGS), chat thinking indicator with segmented spinner + tool call streaming + Nothing-styled input, TradingView economic calendar embed tab, bulletin fix, toolbar wordmark in Doto display font",
     files: [
       "mobile/public/favicon.svg",
       "frontend/public/favicon.svg",
@@ -4943,7 +4997,7 @@ export const changelog: ChangelogEntry[] = [
       "mobile/components/riskflow/RiskFlowCardExpanded.tsx",
       "mobile/components/shared/VerticalFuseBar.tsx",
       "mobile/components/home/HomePage.tsx",
-      "mobile/components/home/AquariumSummary.tsx",
+      "mobile/components/home/ArbitrumChamberSummary.tsx",
       "mobile/components/home/InstrumentOutlookCards.tsx",
       "mobile/components/home/AgentTradeCards.tsx",
       "mobile/components/home/MiniSessionCalendar.tsx",
@@ -5337,7 +5391,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-15T00:00:00",
     agent: "claude-code",
     summary:
-      "S16-T4: Blended VIX Score + Next Session Forecast as visible cards on Aquarium Page 0. Three-component IV breakdown, implied range, scenario table, systemic risk overlay. 60s polling.",
+      "S16-T4: Blended VIX Score + Next Session Forecast as visible cards on ArbitrumChamber Page 0. Three-component IV breakdown, implied range, scenario table, systemic risk overlay. 60s polling.",
     files: [
       "frontend/components/narrative/BlendedVIXCard.tsx",
       "frontend/components/narrative/NextSessionForecastCard.tsx",
@@ -5358,7 +5412,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-13T00:00:00",
     agent: "claude-code",
     summary:
-      "S15-T3: Aquarium Polymarket prediction cards, Kalshi/Polymarket divergence detector (15min), prediction accuracy tracking + resolution cron (1h). Divergence >10% flagged as Kalshi trade signal.",
+      "S15-T3: ArbitrumChamber Polymarket prediction cards, Kalshi/Polymarket divergence detector (15min), prediction accuracy tracking + resolution cron (1h). Divergence >10% flagged as Kalshi trade signal.",
     files: [
       "frontend/components/narrative/PolymarketPredictionCards.tsx",
       "frontend/components/narrative/Sanctum.tsx",
@@ -6107,7 +6161,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-04T12:00:00",
     agent: "claude-code",
     summary:
-      "[v1.4.0] T1-T5 unified release: Default connectors (RiskFlow/Aquarium/Boardroom + UW MCP), chat icons in Consilium bar, sidebar icons fixed, SessionsDropdown replaces full-screen modal, Settings iFrame list with persistent proposer default (5 built-in sources + custom).",
+      "[v1.4.0] T1-T5 unified release: Default connectors (RiskFlow/ArbitrumChamber/Boardroom + UW MCP), chat icons in Consilium bar, sidebar icons fixed, SessionsDropdown replaces full-screen modal, Settings iFrame list with persistent proposer default (5 built-in sources + custom).",
     files: [
       "frontend/types/mcp.ts",
       "frontend/lib/internalConnectors.ts",
@@ -6397,7 +6451,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-03-31T18:30:00",
     agent: "claude-code",
     summary:
-      "feat(pipeline): Unified catalyst pipeline — POI priority boost (Top 3=Critical, Top 8=High), instant promotion for macroLevel 3-4 (no 30-min delay), NarrativeFlow auto-population from DB (60s polling, zero manual import), Aquarium polling (120s), dynamic feed-poller intervals (5min market/30min off-hours), pipeline observability logging. Added ceasefire to ME conflict keywords.",
+      "feat(pipeline): Unified catalyst pipeline — POI priority boost (Top 3=Critical, Top 8=High), instant promotion for macroLevel 3-4 (no 30-min delay), NarrativeFlow auto-population from DB (60s polling, zero manual import), ArbitrumChamber polling (120s), dynamic feed-poller intervals (5min market/30min off-hours), pipeline observability logging. Added ceasefire to ME conflict keywords.",
     files: [
       "backend-hono/src/services/riskflow/central-scorer.ts",
       "backend-hono/src/services/riskflow/catalyst-promoter.ts",
@@ -6406,7 +6460,7 @@ export const changelog: ChangelogEntry[] = [
       "backend-hono/src/routes/narrative/index.ts",
       "frontend/lib/narrative-store.ts",
       "frontend/lib/services.ts",
-      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "frontend/components/narrative/ArbitrumChamberPredictionCards.tsx",
     ],
   },
   {
@@ -6505,13 +6559,13 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-03-30T00:30:00",
     agent: "claude-code",
     summary:
-      "feat(aquarium+boardroom): Aquarium compaction (p-3, 58vh chart), KPI severity coloring + shimmer fuse, briefing above predictions, wider prediction cards (220px), CategoryScoreCard center-justified score + description row, rounded-lg on all cards (econ, thesis, KPI), header button compaction, thesis always-visible descriptions + italic multiplier. Boardroom: removed agent filter, rectangular timeframe bar right-justified, new-message pulse indicator.",
+      "feat(arbitrumChamber+boardroom): ArbitrumChamber compaction (p-3, 58vh chart), KPI severity coloring + shimmer fuse, briefing above predictions, wider prediction cards (220px), CategoryScoreCard center-justified score + description row, rounded-lg on all cards (econ, thesis, KPI), header button compaction, thesis always-visible descriptions + italic multiplier. Boardroom: removed agent filter, rectangular timeframe bar right-justified, new-message pulse indicator.",
     files: [
       "frontend/index.css",
       "frontend/types/miroshark.ts",
       "frontend/components/narrative/Sanctum.tsx",
       "frontend/components/narrative/SanctumBriefing.tsx",
-      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "frontend/components/narrative/ArbitrumChamberPredictionCards.tsx",
       "frontend/components/narrative/CategoryScoreCard.tsx",
       "frontend/components/narrative/SanctumEconIntel.tsx",
       "frontend/components/narrative/SanctumHeader.tsx",

@@ -379,7 +379,7 @@ export function getLatestCachedPrediction(): AgentDeskPrediction | undefined {
 
 /** [S23-T2] After deliberation completes, overwrite the cached prediction with Harper's refined
  * composite IV / regime risk / briefing so GET /api/agent-desk/latest returns the post-synthesis
- * payload (fixes the Aquarium "Updating…" hang where the frontend showed stale pre-Harper numbers). */
+ * payload (fixes the ArbitrumChamber "Updating…" hang where the frontend showed stale pre-Harper numbers). */
 export function mergeHarperScoringIntoCache(
   simId: string,
   harperScoring: {
@@ -690,7 +690,7 @@ export async function shouldAutoRun(): Promise<{
 // Generates a narrative market breakdown using Harper (AI), stored in briefing.harperAnalysis.
 // Mutates the briefing object in-place + updates the persisted run in Supabase.
 
-const HARPER_ANALYSIS_PROMPT = `You are Harper, the Chief Agentic Officer at Priced In Capital. You ARE the narrator of the Aquarium multi-agent run whose output is shown below — you are NOT an outside analyst reviewing unfamiliar data. Do NOT say "it looks like", "this appears to be", "I can see", "what do you need", "for example", or ask the user what they want. Do NOT describe the run as a "template" or "test" or "simulation output". Extend the briefing below with 2-3 tight paragraphs of narrative synthesis — senior macro strategist addressing a trading desk, direct, no hedging, actionable. Cover in prose (not headers): macro regime + dominant driver, what's being underpriced, futures positioning, and the next 24-72h catalysts. Reference the actual scores, scenarios, and headlines from this run by name. If the inputs are sparse, say so in one sentence and stop — don't invent.`;
+const HARPER_ANALYSIS_PROMPT = `You are Harper, the Chief Agentic Officer at Priced In Capital. You ARE the narrator of the ArbitrumChamber multi-agent run whose output is shown below — you are NOT an outside analyst reviewing unfamiliar data. Do NOT say "it looks like", "this appears to be", "I can see", "what do you need", "for example", or ask the user what they want. Do NOT describe the run as a "template" or "test" or "simulation output". Extend the briefing below with 2-3 tight paragraphs of narrative synthesis — senior macro strategist addressing a trading desk, direct, no hedging, actionable. Cover in prose (not headers): macro regime + dominant driver, what's being underpriced, futures positioning, and the next 24-72h catalysts. Reference the actual scores, scenarios, and headlines from this run by name. If the inputs are sparse, say so in one sentence and stop — don't invent.`;
 
 const HARPER_RED_FLAG_PHRASES = [
   "it looks like",

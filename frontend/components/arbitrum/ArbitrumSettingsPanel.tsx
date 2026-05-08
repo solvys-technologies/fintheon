@@ -419,7 +419,7 @@ export function ArbitrumSettingsPanel({ onClose }: ArbitrumSettingsPanelProps) {
               <div className="flex flex-col gap-3">
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/50 mb-1 font-mono">
-                    Prompt Override
+                    Extra Context / Run Guidelines
                   </label>
                   <textarea
                     value={currentEdit.override_prompt}
@@ -433,7 +433,7 @@ export function ArbitrumSettingsPanel({ onClose }: ArbitrumSettingsPanelProps) {
                     rows={6}
                     className="w-full bg-[#0b0b08] border border-[var(--fintheon-accent)]/20 p-2 text-[11px] font-mono text-[var(--fintheon-text)]/80 resize-y outline-none focus:border-[var(--fintheon-accent)]/50"
                     style={{ fontFamily: "Doto, ui-monospace, monospace" }}
-                    placeholder="Additional instructions for this seat..."
+                    placeholder="Additional context or decision rules for this seat..."
                   />
                 </div>
 

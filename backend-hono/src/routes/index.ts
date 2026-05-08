@@ -121,6 +121,10 @@ import { createDeskCalendarRoutes } from "./desk-calendar/index.js";
 import { createApparatusRoutes } from "./apparatus/agent-health.js";
 // [claude-code 2026-05-06] S60-T5: Plane integration — inbound + outbound relay with policy gate
 import { createPlaneIntegrationRoutes } from "./integrations/plane/index.js";
+// [claude-code 2026-05-07] S61-T1: Audit logger routes — mutation contract audit trail
+import { createAuditRoutes } from "./audit/index.js";
+// [claude-code 2026-05-07] Fileroom SOUL card editor — read/write agent soul files
+import { createSoulRoutes } from "./soul/index.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -128,6 +132,10 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/diagnostics", createDiagnosticsRoutes());
   // [S59-T3] Agent Health Dashboard — per-agent SOUL/memory/GEPA/REFLECT status
   app.route("/api/apparatus", createApparatusRoutes());
+  // [claude-code 2026-05-07] Fileroom SOUL card editor — read/write agent soul files (auth-gated)
+  app.use("/api/soul", authMiddleware, requireAuth);
+  app.use("/api/soul/*", authMiddleware, requireAuth);
+  app.route("/api/soul", createSoulRoutes());
   // Terminal — local-dev shell execution (localhost guard inside handler)
   app.route("/api/terminal", createTerminalRoutes());
   // Setup — CLI onboarding welcome endpoint (localhost guard inside handler)
@@ -170,7 +178,7 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/context-bank", createContextBankRoutes());
   // Agent Desk multi-agent simulation — feature-flagged via AGENT_DESK_ENABLED
   // [claude-code 2026-04-24] S35-T9: dropped /api/miroshark legacy alias.
-  //   Arbitrum (S35-T1) is the deliberation engine now; Aquarium UI stays on
+  //   Arbitrum (S35-T1) is the deliberation engine now; ArbitrumChamber UI stays on
   //   /api/agent-desk for historical simulations until AgentDesk fully retires.
   app.route("/api/agent-desk", createAgentDeskRoutes());
   // [claude-code 2026-04-24] S35-T1: Arbitrum deliberation chamber —
@@ -263,7 +271,7 @@ export function registerRoutes(app: Hono): void {
   );
   // Harper Ops — autonomous loop monitoring + control (public, local-only)
   app.route("/api/harper-ops", createHarperOpsRoutes());
-  // Aquarium ops — context audit badges + groupthink guard (Track 7b)
+  // ArbitrumChamber ops — context audit badges + groupthink guard (Track 7b)
   app.route("/api/ops", createOpsRoutes());
   // Econ Intelligence — event cards, filters, KPI/instrument fuses (Track 4a/4b)
   app.route("/api/econ", createEconRoutes());
@@ -420,6 +428,11 @@ export function registerRoutes(app: Hono): void {
 
   // S60-T5: Plane integration — inbound webhook (public, signature-gated) + outbound relay (auth-gated)
   app.route("/api/integrations/plane", createPlaneIntegrationRoutes());
+
+  // S61-T1: Audit log — auth-gated mutation decision trail
+  app.use("/api/audit", authMiddleware, requireAuth);
+  app.use("/api/audit/*", authMiddleware, requireAuth);
+  app.route("/api/audit", createAuditRoutes());
 
   // Shared memory — team-level KV store + analysis history FTS (S13-T3)
   app.use("/api/memory", authMiddleware, requireAuth);

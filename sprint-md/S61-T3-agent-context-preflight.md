@@ -2,7 +2,7 @@
 
 ## Context
 
-Today, only Harper gets rich context injection (RiskFlow context, Aquarium context, user profile, memory blocks) via `harper-handler.ts`. The `hermes/context-engine.ts` builds context but is Harper-centric. Sub-agents in the Strands pipeline receive only a bare system prompt. T3 extends context preflight to all 5 agents so every agent receives desk context (recent agent outputs, task artifacts, memory blocks) before external tool use.
+Today, only Harper gets rich context injection (RiskFlow context, ArbitrumChamber context, user profile, memory blocks) via `harper-handler.ts`. The `hermes/context-engine.ts` builds context but is Harper-centric. Sub-agents in the Strands pipeline receive only a bare system prompt. T3 extends context preflight to all 5 agents so every agent receives desk context (recent agent outputs, task artifacts, memory blocks) before external tool use.
 
 ## Branch Target
 
@@ -13,7 +13,7 @@ Today, only Harper gets rich context injection (RiskFlow context, Aquarium conte
 - [ ] `backend-hono/src/services/desk-context/preflight.ts` [NEW] -- `async preflight(agentId: string): Promise<DeskContextBlock>` assembles: recent agent outputs (last 24h from ops feed/journal), task artifacts (last 10 from memory), relevant memory blocks, active desk plan. Returns structured context block as string for prompt injection. Gracefully degrades on any failure (returns empty context, never crashes).
 - [ ] `backend-hono/src/services/desk-context/agent-outputs.ts` [NEW] -- reads recent agent outputs from the ops feed (`harper-ops` journal) and/or memory table. `getRecentOutputs(agentId, hoursBack): Promise<string[]>` returns formatted text blocks.
 - [ ] `backend-hono/src/services/hermes/context-engine.ts` [EDIT] -- extend `buildContext()` to call `preflight(agentId)` for any agent (not just Harper). Insert preflight context between system prompt and conversation history. Preserve existing compression logic (6 recent turns + summary when budget exceeded).
-- [ ] `backend-hono/src/services/harper-handler.ts` [EDIT] -- delegate ad-hoc context building (Aquarium, RiskFlow, user profile assembly) to the new preflight service. Replace `buildAquariumContext()` call with preflight result. Preserve Harper Vision context (screen + audio, last 120s) which is Harper-specific and not part of general preflight.
+- [ ] `backend-hono/src/services/harper-handler.ts` [EDIT] -- delegate ad-hoc context building (ArbitrumChamber, RiskFlow, user profile assembly) to the new preflight service. Replace `buildArbitrumChamberContext()` call with preflight result. Preserve Harper Vision context (screen + audio, last 120s) which is Harper-specific and not part of general preflight.
 
 ## Scope -- Excluded (DO NOT TOUCH)
 
@@ -73,7 +73,7 @@ Today, only Harper gets rich context injection (RiskFlow context, Aquarium conte
    - If preflight string is empty (degraded), skip insertion silently
 
 4. Edit `backend-hono/src/services/harper-handler.ts`:
-   - In `streamHarperChat()`, replace the `buildAquariumContext()` call (around line 220) with the preflight result
+   - In `streamHarperChat()`, replace the `buildArbitrumChamberContext()` call (around line 220) with the preflight result
    - The preflight already includes RiskFlow context for Harper (from `buildFeedContext()`)
    - Keep Harper Vision context assembly (screen + audio, last 120s) as-is -- it's Harper-specific
    - Keep user profile assembly (trader name, symbols, instruments, risk settings) as-is

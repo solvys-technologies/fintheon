@@ -1,7 +1,7 @@
 // [claude-code 2026-04-26] S45-T1: CAO override path — detects "redo today's plan" intents and pre-runs day-plan-service.regenerate so Harper's reply can reference the freshly-generated DayPlan via injected context.
 // [claude-code 2026-04-19] S27-T9 W2e: Harper CLI bridge invocation now records a routing_decisions row via llmCall wrapper — even though the model is pinned to Opus via Claude Code CLI, the telemetry feeds diagnostics + GEPA metrics.
 // [claude-code 2026-04-19] S27-T8 W1d: Harper system prompt now loads from SOUL.md (grounded on CLAUDE.md literal import). Hardcoded HARPER_BASE_SYSTEM_PROMPT retained as fallback only.
-// [claude-code 2026-04-17] S23-T3: buildAquariumContext now exported + enhanced with "how to read this" preamble + surface-gated injection (Harper reads her own AgentDesk output as ground truth)
+// [claude-code 2026-04-17] S23-T3: buildArbitrumChamberContext now exported + enhanced with "how to read this" preamble + surface-gated injection (Harper reads her own AgentDesk output as ground truth)
 // [claude-code 2026-03-28] S8-T7: Harper handler — Claude CLI session handler for Chat
 /**
  * Harper Handler
@@ -29,7 +29,7 @@ import {
   type BridgeStreamEvent,
   type BridgeChatRequest,
 } from "./claude-sdk/bridge.js";
-import { buildFeedContext } from "./ai/agent-instructions/index.js";
+import { preflight } from "./desk-context/preflight.js";
 import {
   loadSoul,
   renderSystemPrompt as renderSoulPrompt,
@@ -59,7 +59,7 @@ export interface HarperChatRequest {
   riskFlowContext?: string;
   /** Active connector IDs from frontend (internal + MCP) */
   activeConnectors?: string[];
-  /** [S23-T3] Active Consilium surface (aquarium, narratives, timeline, boardroom, etc.) — auto-enables surface-specific context injection. */
+  /** [S23-T3] Active Consilium surface (arbitrumChamber, narratives, timeline, boardroom, etc.) — auto-enables surface-specific context injection. */
   surface?: string;
   /** [S23-T4] Authenticated user id for agent_context_bank memory reads. */
   userId?: string;
@@ -122,7 +122,7 @@ Use these freely to inspect code, grep logs, query the database, run scripts, bu
 
 ## Platform Sections
 - **Consilium** = Main workspace with tabs: Sanctum (narratives), Chat (you), Boardroom (team), Apparatus (tools)
-- **Sanctum** = NarrativeMap (force-directed canvas), Aquarium (AgentDesk sim), Timeline
+- **Sanctum** = NarrativeMap (force-directed canvas), ArbitrumChamber (AgentDesk sim), Timeline
 - **Boardroom** = Forum (bulletin), Imperium (task command), Agentic Forum, Scriptorium (docs)
 - **Apparatus** = Desk (agent monitoring), Fileroom (context bank)
 - **Strategium** = Right panel: mission control widgets, RiskFlow feed, economic calendar
@@ -156,8 +156,8 @@ Use these freely to inspect code, grep logs, query the database, run scripts, bu
 - **Consul** — Mega-cap tech, earnings, sector rotation, fundamental valuations
 - **Herald** — Breaking news, social sentiment, headline risk, information asymmetry
 
-## Aquarium (AgentDesk)
-When the user is on the Aquarium surface, or when a simulation report appears in your context, you are looking at the live AgentDesk deliberation you helped score. Treat the Composite IV / Regime Risk / Signal Strength / Surfaced+Contested findings as ground-truth output of the platform — not as a broken data dump or a test run. The user wants interpretation: what the numbers imply for session positioning, what the contested findings mean for conviction, what the surfaced theses imply for risk. Never respond with "it looks like the pipeline is broken" — that's a category error.
+## ArbitrumChamber (AgentDesk)
+When the user is on the ArbitrumChamber surface, or when a simulation report appears in your context, you are looking at the live AgentDesk deliberation you helped score. Treat the Composite IV / Regime Risk / Signal Strength / Surfaced+Contested findings as ground-truth output of the platform — not as a broken data dump or a test run. The user wants interpretation: what the numbers imply for session positioning, what the contested findings mean for conviction, what the surfaced theses imply for risk. Never respond with "it looks like the pipeline is broken" — that's a category error.
 
 ## Communication Style
 Concise, authoritative, data-driven. No hedging unless genuinely uncertain.
@@ -186,11 +186,11 @@ information asymmetry detection. Fast, alert-oriented.`,
 // ── Internal Connector Context Builders ───────────────────────────────────
 
 /**
- * Build Aquarium context: injects latest AgentDesk simulation summary with interpretation scaffolding.
+ * Build ArbitrumChamber context: injects latest AgentDesk simulation summary with interpretation scaffolding.
  * [S23-T3] "How to read this" preamble so the agent interprets the simulation as ground-truth
  * market signal instead of treating it as a broken data dump.
  */
-export async function buildAquariumContext(): Promise<string> {
+export async function buildArbitrumChamberContext(): Promise<string> {
   try {
     const { getLatestReport } =
       await import("./agent-desk/agent-desk-service.js");
@@ -222,7 +222,7 @@ export async function buildAquariumContext(): Promise<string> {
               ? "Light Winds"
               : "Calm Seas";
 
-    return `\n\n--- AQUARIUM (AgentDesk) CONTEXT ---
+    return `\n\n--- ArbitrumChamber (AgentDesk) CONTEXT ---
 How to read this:
 - Composite IV (0-10): 0-2 Calm Seas, 2-4 Light Winds, 4-6 Gathering Storm, 6-8 Tipping Point, 8-10 Shit Show.
 - Regime Risk is the probability (%) the current regime flips in the next session. >30% = elevated reversal risk.
@@ -304,14 +304,19 @@ export async function harperChat(
     systemPrompt += `\n\n--- PERSONA ACTIVE ---\n${PERSONA_MODIFIERS[persona]}`;
   }
 
-  // Inject Fintheon context (scored catalysts)
+  // Inject generalized desk preflight context. Harper keeps user profile,
+  // attachments, and Vision-specific context below.
   try {
-    const feedContext = await buildFeedContext();
-    if (feedContext) {
-      systemPrompt += `\n\n--- FINTHEON CONTEXT ---\n${feedContext}`;
+    const deskContext = await preflight("harper", {
+      userId,
+      includeArbitrumChamber:
+        surface === "arbitrumChamber" || !!activeConnectors?.includes("arbitrumChamber"),
+    });
+    if (deskContext) {
+      systemPrompt += deskContext;
     }
   } catch (err) {
-    log.warn("Failed to build feed context (non-fatal)", {
+    log.warn("Failed to build desk preflight context (non-fatal)", {
       error: String(err),
     });
   }
@@ -354,27 +359,6 @@ export async function harperChat(
   // Add RiskFlow items if attached
   if (riskFlowContext) {
     systemPrompt += `\n\n--- ATTACHED RISKFLOW ITEMS ---\n${riskFlowContext}`;
-  }
-
-  // [S23-T3] Inject Aquarium context whenever connector is active OR user is on the Aquarium surface.
-  const aquariumActive =
-    surface === "aquarium" || !!activeConnectors?.includes("aquarium");
-  if (aquariumActive) {
-    try {
-      const aquariumContext = await buildAquariumContext();
-      if (aquariumContext) {
-        systemPrompt += aquariumContext;
-        log.info("aquarium context injected", {
-          conversationId,
-          surface,
-          viaConnector: !!activeConnectors?.includes("aquarium"),
-        });
-      }
-    } catch (err) {
-      log.warn("Failed to build Aquarium context (non-fatal)", {
-        error: String(err),
-      });
-    }
   }
 
   if (activeConnectors?.includes("boardroom")) {

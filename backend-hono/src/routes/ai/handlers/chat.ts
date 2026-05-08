@@ -363,26 +363,26 @@ export async function handleChat(c: Context) {
       prompt = `${feedContext}\n\n${prompt}`;
     }
 
-    // [S23-T3] Aquarium awareness: Hermes CAOs (Oracle, Feucht, Consul, Herald) should also
-    // interpret AgentDesk output when the user is on the Aquarium surface.
+    // [S23-T3] ArbitrumChamber awareness: Hermes CAOs (Oracle, Feucht, Consul, Herald) should also
+    // interpret AgentDesk output when the user is on the ArbitrumChamber surface.
     const mcpActive = Array.isArray((body as any)?.mcpServers)
       ? ((body as any).mcpServers as string[])
       : [];
     const hermesSurface = (body as any)?.surface as string | undefined;
-    if (hermesSurface === "aquarium" || mcpActive.includes("aquarium")) {
+    if (hermesSurface === "arbitrumChamber" || mcpActive.includes("arbitrumChamber")) {
       try {
-        const { buildAquariumContext } =
+        const { buildArbitrumChamberContext } =
           await import("../../../services/harper-handler.js");
-        const aquariumContext = await buildAquariumContext();
-        if (aquariumContext) {
-          prompt = `${aquariumContext}\n\n${prompt}`;
+        const arbitrumChamberContext = await buildArbitrumChamberContext();
+        if (arbitrumChamberContext) {
+          prompt = `${arbitrumChamberContext}\n\n${prompt}`;
           console.log(
-            `[Hermes][${requestId}] Aquarium context injected (surface=${hermesSurface ?? "none"})`,
+            `[Hermes][${requestId}] ArbitrumChamber context injected (surface=${hermesSurface ?? "none"})`,
           );
         }
       } catch (err) {
         console.warn(
-          `[Hermes][${requestId}] Failed to build Aquarium context:`,
+          `[Hermes][${requestId}] Failed to build ArbitrumChamber context:`,
           err,
         );
       }

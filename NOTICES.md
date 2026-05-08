@@ -34,9 +34,9 @@ grant; see each project's own license for terms of use.
   family and shares the "tool-using assistant" spirit; the runtime is an
   independent Fintheon implementation.
 - **aaronjmars/MiroShark** — the original swarm-deliberation prototype
-  that Aquarium and the (now retired) MiroShark engine were modeled on.
+  that ArbitrumChamber and the (now retired) MiroShark engine were modeled on.
   The S35 Arbitrum engine replaces MiroShark's persona-sim approach with
-  a 5-seat weighted deliberation, but the Aquarium surface concept
+  a 5-seat weighted deliberation, but the ArbitrumChamber surface concept
   carries forward.
 - **TradingAgents (multi-agent stock trading framework, academic)** —
   the "structured roles + dissent surfacing" framing behind Arbitrum's

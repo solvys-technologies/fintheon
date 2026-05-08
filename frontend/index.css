@@ -1382,7 +1382,7 @@ html *::-webkit-scrollbar {
     animation: regime-badge-shimmer 2.5s ease-in-out infinite;
 }
 
-/* IV card shimmer — Aquarium CategoryScoreCards */
+/* IV card shimmer — ArbitrumChamber CategoryScoreCards */
 @keyframes iv-card-shimmer {
     0%,
     100% {

@@ -1,6 +1,6 @@
 // [claude-code 2026-04-19] Fix iframe height flat-render — TradingView embed reads height
 //   from JSON on script load. Passing "100%" into a flex child produces an iframe that
-//   renders at ~300px and leaves a dead gap above the Aquarium on dash page 2. We now
+//   renders at ~300px and leaves a dead gap above the ArbitrumChamber on dash page 2. We now
 //   observe the wrapper with ResizeObserver and rebuild the script with an explicit
 //   pixel height so the calendar actually fills its container.
 // [claude-code 2026-04-16] TradingView economic calendar embed — Nothing-styled, full-height tab

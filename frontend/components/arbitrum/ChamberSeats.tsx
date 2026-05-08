@@ -1,5 +1,5 @@
-// [claude-code 2026-05-05] S59-T4: removed horizontal confidence fuses, removed first-letter
-//   initials, added dual-role fine-print descriptors under each agent name.
+// [claude-code 2026-05-05] S59-T4: removed first-letter initials, added
+//   dual-role fine-print descriptors under each agent name.
 import { NothingFuse } from "../shared/NothingFuse";
 import { DigitGroup } from "../shared/DigitGroup";
 import type { ArbitrumSeat } from "./types";

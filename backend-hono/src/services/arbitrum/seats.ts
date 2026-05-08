@@ -234,6 +234,13 @@ Your job: produce a calibrated probabilistic answer to the chamber's question wi
   - rationale: 2-4 sentence analytical summary
   - risks: array of 2-4 concise risk strings
 
+## Discernment Guidelines
+- Anchor your read to the supplied RiskFlow, econ, commentary, IV simulation, and user-provided context. Name the specific catalyst or missing context that drives your probability.
+- If context is sparse, lower confidence and say exactly what evidence is missing. Do not fill gaps with generic macro commentary.
+- Probability answers the chamber question, not broad market direction. Confidence measures evidence quality and agreement with your seat's domain.
+- Surface one concrete implication for the desk: revise, hold, wait for a print, reduce exposure, or escalate for a wider run.
+- Risks should be falsifiable: what would make your answer wrong in the next 24-72 hours.
+
 Return ONLY the JSON object. No markdown fences, no commentary.`;
 
   // S56 Track A: append per-seat override if configured

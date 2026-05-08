@@ -1,4 +1,4 @@
-// [claude-code 2026-04-19] S25-T7: Ops chips in the Sanctum header — Aquarium last-run timer + next-brief countdown. Polls GET /api/ops/schedule-status every 60s. Countdown is replaced with an ERROR badge when the brief's status is "stale" or "failed" (missed its cadence window), matching the spec's 'error handling replacing the countdown if the brief fails to generate'.
+// [claude-code 2026-04-19] S25-T7: Ops chips in the Sanctum header — ArbitrumChamber last-run timer + next-brief countdown. Polls GET /api/ops/schedule-status every 60s. Countdown is replaced with an ERROR badge when the brief's status is "stale" or "failed" (missed its cadence window), matching the spec's 'error handling replacing the countdown if the brief fails to generate'.
 import { useEffect, useState } from "react";
 import { AlertTriangle, Clock } from "lucide-react";
 

@@ -33,7 +33,7 @@ TP gets a fully-aligned Arbitrum surface across desktop and mobile. The Chamber 
   - Three scenarios (Continuation / Risk-on rally / Headline escalation) reflowed into ONE row with prob+score inline
   - Blended IV components (VIX / Headlines / Agent Desk) rendered BELOW
   - Drop the regime-shift bips line
-- [ ] `AquariumPredictionCards.tsx`:
+- [ ] `ArbitrumChamberPredictionCards.tsx`:
   - Remove "Heat" label at top-left of heat fuse (lines 160–162)
   - Replace conviction tag (lines 187–195) with a "MARKET HEAT" label in the same slot
   - Drop the Drivers section + data-point footer (lines 199–210)
@@ -248,7 +248,7 @@ No agent owns the override prompt — it's appended verbatim, no LLM rewriting.
 5. **Backend build + smoke** — `cd backend-hono && bun run build`; `launchctl unload && load io.solvys.fintheon-backend.plist`; curl all three endpoints.
 6. **Frontend types + hooks** — extend `frontend/components/arbitrum/types.ts`; new `useArbitrumHealth.ts` + `useArbitrumSeatOverrides.ts` under `frontend/hooks/`.
 7. **Frontend Track A UI** — `ArbitrumSettingsPanel.tsx` (health + editor modes); modify `ArbitrumChamber.tsx` (gear icon + overlay mount).
-8. **Frontend Track B (Sanctum)** — restructure `BlendedIVForecastCard`; swap right-bottom slot in `Sanctum.tsx`; rip `AquariumPredictionCards`.
+8. **Frontend Track B (Sanctum)** — restructure `BlendedIVForecastCard`; swap right-bottom slot in `Sanctum.tsx`; rip `ArbitrumChamberPredictionCards`.
 9. **Frontend Track C (Dashboard)** — mount Chamber Risk Signals beneath DayCard in `MainDashboard.tsx`.
 10. **Mobile Track D** — write `MainMenuDrawer.tsx`; wrap `MobileShell.tsx <main>` in transform container; update `MobileToolbar` icon cross-fade; delete `HamburgerMenu.tsx`.
 11. **Validation** — `tsc --noEmit`, `rm -rf dist && npx vite build`, mobile clean build, `bun run build` (backend), curl smoke, manual mobile drag/swipe verify.

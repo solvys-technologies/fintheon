@@ -1,4 +1,4 @@
-// [claude-code 2026-04-19] S25-T3: Right-rail hover drawer — 4px hot zone on screen-right slides out a 240px Sanctum sitemap (Narrative Flow / Timeline / Aquarium → Command/Econ/Risk/5D). Auto-hides 1.5s after mouse leaves. Lets users jump anywhere in Sanctum without going back to the top tab strip.
+// [claude-code 2026-04-19] S25-T3: Right-rail hover drawer — 4px hot zone on screen-right slides out a 240px Sanctum sitemap (Narrative Flow / Timeline / ArbitrumChamber → Command/Econ/Risk/5D). Auto-hides 1.5s after mouse leaves. Lets users jump anywhere in Sanctum without going back to the top tab strip.
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Clock, GitBranch, ChevronRight } from "lucide-react";
 import { ArbitrumGlyph } from "../icons/ArbitrumGlyph";
@@ -6,8 +6,8 @@ import type { SanctumSubView } from "../consilium/ConsiliumTabConfig";
 
 const AUTO_HIDE_MS = 1500;
 
-/** Aquarium sub-pages mirrored from SanctumPresets visible-list. Keep in sync. */
-const AQUARIUM_PAGES: { id: number; label: string }[] = [
+/** ArbitrumChamber sub-pages mirrored from SanctumPresets visible-list. Keep in sync. */
+const ARBITRUM_CHAMBER_PAGES: { id: number; label: string }[] = [
   { id: 0, label: "Command" },
   { id: 1, label: "Econ" },
   { id: 2, label: "Risk" },
@@ -20,11 +20,11 @@ interface SanctumSitemapDrawerProps {
 
 /**
  * Dispatches a window CustomEvent for Sanctum to scroll its internal page.
- * Sanctum.tsx listens via window.addEventListener("fintheon:aquarium-scroll-to", ...).
+ * Sanctum.tsx listens via window.addEventListener("fintheon:arbitrumChamber-scroll-to", ...).
  */
-function navigateAquariumPage(pageIndex: number): void {
+function navigateArbitrumChamberPage(pageIndex: number): void {
   window.dispatchEvent(
-    new CustomEvent("fintheon:aquarium-scroll-to", {
+    new CustomEvent("fintheon:arbitrumChamber-scroll-to", {
       detail: { page: pageIndex },
     }),
   );
@@ -56,10 +56,10 @@ export function SanctumSitemapDrawer({
     scheduleHide();
   };
 
-  const handleAquariumPage = (pageIndex: number) => {
-    if (activeSubView !== "aquarium") onNavigate("aquarium");
+  const handleArbitrumChamberPage = (pageIndex: number) => {
+    if (activeSubView !== "arbitrumChamber") onNavigate("arbitrumChamber");
     // Defer to next frame so Sanctum has mounted before receiving the event
-    requestAnimationFrame(() => navigateAquariumPage(pageIndex));
+    requestAnimationFrame(() => navigateArbitrumChamberPage(pageIndex));
     scheduleHide();
   };
 
@@ -112,19 +112,19 @@ export function SanctumSitemapDrawer({
             onClick={() => handleSubClick("timeline")}
           />
 
-          {/* Arbitrum (Aquarium internal id) with nested page links */}
+          {/* Arbitrum (ArbitrumChamber internal id) with nested page links */}
           <DrawerLeaf
             icon={<ArbitrumGlyph size={13} />}
             label="Arbitrum"
-            active={activeSubView === "aquarium"}
-            onClick={() => handleSubClick("aquarium")}
+            active={activeSubView === "arbitrumChamber"}
+            onClick={() => handleSubClick("arbitrumChamber")}
           />
           <div className="pl-9 pr-3 py-1 flex flex-col">
-            {AQUARIUM_PAGES.map((p) => (
+            {ARBITRUM_CHAMBER_PAGES.map((p) => (
               <button
                 key={p.id}
                 type="button"
-                onClick={() => handleAquariumPage(p.id)}
+                onClick={() => handleArbitrumChamberPage(p.id)}
                 className="group flex items-center justify-between text-left text-[10px] tracking-wide py-1 px-2 rounded text-[var(--fintheon-muted)]/55 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8 transition-colors"
                 style={{ fontFamily: "var(--font-body)" }}
               >

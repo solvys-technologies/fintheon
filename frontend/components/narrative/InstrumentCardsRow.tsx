@@ -3,7 +3,7 @@
 //   cards (/NQ /ES /YM /CL /GC), not a "panel" sitting in a right column. Wired into
 //   SanctumEconIntel as a full-width row above the event filter so the cards stretch
 //   and don't conflict with the surrounding flex layout.
-//   Data sourced from /api/predictions/outlook (same as AquariumPredictionCards).
+//   Data sourced from /api/predictions/outlook (same as ArbitrumChamberPredictionCards).
 // [claude-code 2026-04-19] v5.22 S1: Original implementation, orphaned by the
 //   Track 4a Econ Intel rebuild.
 import { useEffect, useRef, useState } from "react";
@@ -12,7 +12,7 @@ import { NothingFuse } from "../shared/NothingFuse";
 import { severityFromScore } from "../../lib/fuse-palette";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
-const CACHE_KEY = "fintheon:aquarium-predictions";
+const CACHE_KEY = "fintheon:arbitrumChamber-predictions";
 
 interface InstrumentOutlook {
   symbol: string;

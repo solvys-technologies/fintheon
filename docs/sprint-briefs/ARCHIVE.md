@@ -64,7 +64,7 @@ Condensed record of completed sprint briefs. Full content preserved in git histo
 - T1: Bug fixes + foundation (+ AMEND)
 - T2: Observatory layout engine + canvas command palette (+ AMEND)
 - T3: Rope engine [dedicated, mission critical] (+ AMEND)
-- T4: Aquarium/Sanctum redesign + econ intelligence (+ AMEND)
+- T4: ArbitrumChamber/Sanctum redesign + econ intelligence (+ AMEND)
 - T5: MiroShark engine (gov officials + deliberation pipeline) (+ AMEND)
 - T6: RiskFlow + timeline + apparatus polish (+ AMEND)
 - T7: Ask Harp + Claude CLI (Harper) integration (+ AMEND)
@@ -108,9 +108,9 @@ Condensed record of completed sprint briefs. Full content preserved in git histo
 - T2: Team presence + panel / Claude computer use + TradingView trade plan
 - T3: LiveKit group voice call integration / shared memory + agentic editor sidebar
 
-## S14 — Aquarium Revival + Pipeline + CAO
+## S14 — ArbitrumChamber Revival + Pipeline + CAO
 
-- PLAN: Aquarium revival, pipeline hardening, CAO enhancements
+- PLAN: ArbitrumChamber revival, pipeline hardening, CAO enhancements
 - T1: MiroShark revival
 - T2: Boardroom DAG streaming
 - T3: Feed pipeline hardening
@@ -127,7 +127,7 @@ Condensed record of completed sprint briefs. Full content preserved in git histo
 
 - T1: Hermes Polymarket MCP integration
 - T2: Fintheon Polymarket service
-- T3: Aquarium divergence tracking
+- T3: ArbitrumChamber divergence tracking
 
 ## S16 — Agent Individuality + Risk Signals + VIX Cards
 

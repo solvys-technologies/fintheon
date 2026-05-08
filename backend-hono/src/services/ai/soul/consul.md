@@ -31,15 +31,18 @@ grounding:
   extra:
     - ../agent-instructions/consul-extra.md
 tools:
-  - get_earnings_calendar
-  - get_analyst_revisions
-  - get_company_fundamentals
-  - get_sector_rotation
-  - context_grep
-  - context_expand
-  - handoff_to_herald
-  - handoff_to_feucht
-  - handoff_to_oracle
+  required:
+    - get_earnings_calendar
+    - get_analyst_revisions
+    - get_company_fundamentals
+    - get_sector_rotation
+    - handoff_to_harper
+  optional:
+    - get_econ_calendar
+  prohibited:
+    - run_command
+    - write_file
+    - web_fetch
 handoff_rules:
   - To Herald: Level 3 alerts for prediction-market impact assessment
   - To Feucht: NQ/ES implications of fundamental shifts (with expected drag in points)

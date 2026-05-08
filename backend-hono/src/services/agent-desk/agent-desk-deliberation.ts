@@ -295,7 +295,7 @@ export async function runDeliberationPipeline(
       updatePhase(simId, "complete", result);
 
       // [S23-T2] Merge Harper's refined scoring into the prediction cache so GET /api/agent-desk/latest
-      // returns post-synthesis numbers — fixes the Aquarium "Updating…" hang.
+      // returns post-synthesis numbers — fixes the ArbitrumChamber "Updating…" hang.
       const finalState = activeDeliberations.get(simId)!;
       if (finalState.harperScoring) {
         const { mergeHarperScoringIntoCache } =

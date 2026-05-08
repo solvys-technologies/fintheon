@@ -1,6 +1,7 @@
 // [claude-code 2026-04-16] S20-T1: Agent dossiers injected after base prompt
 // [claude-code 2026-04-19] S27-T8 W1d: Identity/scope/constraints/grounding now load from SOUL.md per agent.
 //   BASE_PROMPTS + DOSSIER_* remain as fallbacks for legacy code paths and surface-specific layers (capabilities, gates, skills).
+// [claude-code 2026-05-07] S61-T2: CROSS_AGENT_REGISTRY_BLOCK & CRUD_CAPABILITY_BLOCK now runtime-resolved from capability registry.
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
@@ -23,6 +24,10 @@ import {
   renderSystemPrompt as renderSoulPrompt,
   type AgentId as SoulAgentId,
 } from "../soul/loader.js";
+import {
+  getAllProfiles,
+  getHandoffTargets,
+} from "../../capability-registry/registry.js";
 
 const ROLE_TO_SOUL_ID: Record<HermesAgentRole, SoulAgentId> = {
   "harper-cao": "harper",
@@ -107,38 +112,49 @@ Your peers are:
 `;
 
 /**
- * Cross-Agent Capability Registry — agents know when to hand off to which peer.
+ * Cross-Agent Capability Registry — runtime-resolved from the Zod-validated capability registry.
+ * Tells agents when to hand off to which peer.
  */
-const CROSS_AGENT_REGISTRY_BLOCK = `
+function renderRegistryBlock(): string {
+  const profiles = getAllProfiles();
+  const agentLabels: Record<string, string> = {
+    oracle: "Prediction markets / implied probabilities / Kalshi / Polymarket",
+    feucht: "Technical levels / futures execution / VWAP-EMA confluence / /NQ / /ES",
+    consul: "Fundamentals / earnings / mega-cap / sector rotation / 10-K analysis",
+    herald: "News velocity / sentiment / social chatter / headline risk",
+    harper: "Cross-desk synthesis / approval decisions / executive summary",
+  };
 
-## Cross-Agent Capability Registry
-When a task requires another agent's expertise, hand off rather than guessing:
-- **Prediction markets / implied probabilities / Kalshi / Polymarket** → handoff_to_oracle
-- **Technical levels / futures execution / VWAP-EMA confluence / /NQ / /ES** → handoff_to_feucht
-- **Fundamentals / earnings / mega-cap / sector rotation / 10-K analysis** → handoff_to_consul
-- **News velocity / sentiment / social chatter / headline risk** → handoff_to_herald
-- **Cross-desk synthesis / approval decisions / executive summary** → handoff_to_harper
-
-Max 3 handoffs per turn. Max depth 2 in any chain (A → B → C stops). Self-handoff is rejected.
-`;
+  let block = "\n\n## Cross-Agent Capability Registry";
+  for (const profile of profiles) {
+    if (profile.agent_id === "harper") continue; // harper is the router, not a handoff target in its own block
+    const label = agentLabels[profile.agent_id] ?? profile.responsibilities[0];
+    block += `\n- **${profile.agent_id}**: ${label} → handoff_to_${profile.agent_id}`;
+  }
+  block += "\n\nMax 3 handoffs per turn. Max depth 2 in any chain (A → B → C stops). Self-handoff is rejected.";
+  return block;
+}
 
 /**
- * CRUD Capability Block — informs agents they can modify the app itself.
+ * Unified Approval Pipeline — mutations now go through the unified approval pipeline.
+ * Replaces the old CRUD_CAPABILITY_BLOCK which advertised non-existent endpoints.
  */
-const CRUD_CAPABILITY_BLOCK = `
+const UNIFIED_APPROVAL_BLOCK = `
 
 ## App Control Capabilities
-You can modify the Fintheon app itself via backend API endpoints:
-- **Narratives**: create, edit, delete, move catalysts between lanes (POST/PUT/DELETE /api/agent/narratives)
-- **RiskFlow**: modify scoring criteria, provide intake quality feedback (PUT /api/agent/riskflow/criteria)
-- **Regimes**: add new trading regimes (POST /api/agent/regimes)
-- **Agent Instructions**: update Chamber instructions — Arbitrum (PUT /api/agent/instructions/:agent)
-- **Settings**: modify user settings — preferences, alerts, iframes (API keys excluded) (PUT /api/agent/settings)
-- **Desk Plans**: modify upcoming desk plan events (PUT /api/agent/desk-plan)
-- **GitHub**: file issues on solvys-technologies/fintheon (POST /api/agent/github/issues)
+You can modify the Fintheon app itself:
+- Narratives: create, edit, delete, move catalysts between lanes
+- RiskFlow: modify scoring criteria, provide intake quality feedback
+- Regimes: add new trading regimes
+- Agent Instructions: update Chamber instructions (Arbitrum)
+- Settings: modify user settings (preferences, alerts, iframes — API keys excluded)
+- Desk Plans: modify upcoming desk plan events
+- Skills: propose new agent skills for user approval
+- Code: write code patches for admin approval
+- GitHub: file issues on solvys-technologies/fintheon
 
-ALL destructive actions (delete, modify criteria, update instructions, add regimes)
-require explicit user approval via the approval widget before execution.
+ALL destructive actions (delete, modify criteria, update instructions)
+require explicit user approval via the unified approval pipeline (see /api/harper/tool-decision).
 `;
 
 /**
@@ -261,11 +277,11 @@ export async function getAgentSystemPrompt(
   // 2.5. Dynamic org identity — PIC, Chief TP, Solvys, peer roster
   prompt += ORG_IDENTITY_BLOCK;
 
-  // 2.6. Cross-agent capability registry — when to hand off to which peer
-  prompt += CROSS_AGENT_REGISTRY_BLOCK;
+  // 2.6. Cross-agent capability registry — runtime-resolved from capability registry
+  prompt += renderRegistryBlock();
 
-  // 2.7. CRUD capability — agents can modify the app itself
-  prompt += CRUD_CAPABILITY_BLOCK;
+  // 2.7. Unified approval pipeline — mutations through unified approval
+  prompt += UNIFIED_APPROVAL_BLOCK;
 
   // 2.8. Self-learning loop — reflect and store learnings
   prompt += SELF_LEARNING_BLOCK;

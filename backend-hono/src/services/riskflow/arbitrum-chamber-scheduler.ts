@@ -1,10 +1,10 @@
 // [claude-code 2026-04-16] S20-T2: Filter fetchRecentHeadlines by Oracle's subjects (macro/monetary-policy/prediction-markets/regime)
-// [claude-code 2026-04-10] Aquarium AI scheduler — Oracle (Nous) generates forward-looking outlook every 30min
+// [claude-code 2026-04-10] ArbitrumChamber AI scheduler — Oracle (Nous) generates forward-looking outlook every 30min
 import { invokeAgent } from "../strands/invoke-helper.js";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
 
-const log = createLogger("AquariumScheduler");
+const log = createLogger("ArbitrumChamberScheduler");
 
 const RUN_INTERVAL_MS = 60 * 60 * 1000; // 60 min
 const CATCH_UP_DELAY_MS = 20_000; // wait 20s after boot before first run
@@ -28,11 +28,11 @@ interface AIOutlookCache {
 
 let cachedOutlook: AIOutlookCache | null = null;
 
-export function getAIAquariumOutlook(): AIOutlookCache | null {
+export function getAIArbitrumChamberOutlook(): AIOutlookCache | null {
   return cachedOutlook;
 }
 
-// Oracle's subject domains — used to filter headlines for Aquarium outlook
+// Oracle's subject domains — used to filter headlines for ArbitrumChamber outlook
 const ORACLE_SUBJECTS = new Set([
   "macro",
   "monetary-policy",
@@ -83,16 +83,16 @@ async function fetchRecentHeadlines(): Promise<string> {
       )
       .join("\n");
   } catch (err) {
-    log.warn("Failed to fetch headlines for Aquarium", { error: String(err) });
+    log.warn("Failed to fetch headlines for ArbitrumChamber", { error: String(err) });
     return "(headline fetch failed)";
   }
 }
 
-async function runAquariumJob(): Promise<void> {
-  log.info("Aquarium AI run starting (Oracle via Nous)");
+async function runArbitrumChamberJob(): Promise<void> {
+  log.info("ArbitrumChamber AI run starting (Oracle via Nous)");
   const headlines = await fetchRecentHeadlines();
 
-  const systemPrompt = `You are Oracle, the All-Seer analyst at Priced In Capital. You produce forward-looking instrument outlooks for the Aquarium dashboard. You analyze scored news items and produce structured JSON. Be precise and direct. Only output valid JSON, no markdown.`;
+  const systemPrompt = `You are Oracle, the All-Seer analyst at Priced In Capital. You produce forward-looking instrument outlooks for the ArbitrumChamber dashboard. You analyze scored news items and produce structured JSON. Be precise and direct. Only output valid JSON, no markdown.`;
 
   const userPrompt = `Based on the following high-impact scored news items from the last 12 hours, generate a forward-looking outlook for the next trading session for each instrument: /NQ (Nasdaq), /ES (S&P 500), /YM (Dow Jones), /CL (Crude Oil), /GC (Gold).
 
@@ -138,7 +138,7 @@ Rules:
     const arrayStart = raw.indexOf("[");
     const arrayEnd = raw.lastIndexOf("]");
     if (arrayStart === -1 || arrayEnd === -1) {
-      log.warn("Aquarium: Oracle response had no JSON array", {
+      log.warn("ArbitrumChamber: Oracle response had no JSON array", {
         preview: raw.slice(0, 200),
       });
       return;
@@ -148,7 +148,7 @@ Rules:
       raw.slice(arrayStart, arrayEnd + 1),
     ) as AIInstrumentOutlook[];
     if (!Array.isArray(instruments) || instruments.length === 0) {
-      log.warn("Aquarium: Oracle returned empty array");
+      log.warn("ArbitrumChamber: Oracle returned empty array");
       return;
     }
 
@@ -158,27 +158,27 @@ Rules:
       source: "oracle-nous",
     };
 
-    log.info(`Aquarium AI run complete — ${instruments.length} instruments`, {
+    log.info(`ArbitrumChamber AI run complete — ${instruments.length} instruments`, {
       generatedAt: cachedOutlook.generatedAt,
     });
   } catch (err) {
-    log.error("Aquarium AI run failed", { error: String(err) });
+    log.error("ArbitrumChamber AI run failed", { error: String(err) });
   }
 }
 
-export function startAquariumScheduler(): void {
+export function startArbitrumChamberScheduler(): void {
   // Delayed first run — let other services boot first
   setTimeout(() => {
-    runAquariumJob().catch((err) =>
-      log.warn("Aquarium initial run failed (non-fatal)", {
+    runArbitrumChamberJob().catch((err) =>
+      log.warn("ArbitrumChamber initial run failed (non-fatal)", {
         error: String(err),
       }),
     );
   }, CATCH_UP_DELAY_MS);
 
   const timer = setInterval(() => {
-    runAquariumJob().catch((err) =>
-      log.warn("Aquarium scheduled run failed (non-fatal)", {
+    runArbitrumChamberJob().catch((err) =>
+      log.warn("ArbitrumChamber scheduled run failed (non-fatal)", {
         error: String(err),
       }),
     );
@@ -186,6 +186,6 @@ export function startAquariumScheduler(): void {
 
   timer.unref?.();
   log.info(
-    `AquariumScheduler started (30min interval, first run in ${CATCH_UP_DELAY_MS / 1000}s)`,
+    `ArbitrumChamberScheduler started (30min interval, first run in ${CATCH_UP_DELAY_MS / 1000}s)`,
   );
 }

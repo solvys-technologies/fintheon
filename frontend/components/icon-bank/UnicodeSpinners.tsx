@@ -3,7 +3,7 @@
 // Every spinner is driven by two vars: `severity` (color) and `priority` (speed),
 // both mapped to the existing Fintheon severity/priority enum so no new data shape.
 //
-// Presets: FishSwimmer (aquarium), CircleQuarters (refresh icon),
+// Presets: FishSwimmer (arbitrumChamber), CircleQuarters (refresh icon),
 // MeterBar + ArrowShimmer + MeterToShimmer (riskflow top-bar refresh motion),
 // HelixVertical (chat "thinking").
 

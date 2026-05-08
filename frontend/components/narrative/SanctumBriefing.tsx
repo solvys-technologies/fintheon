@@ -1,15 +1,15 @@
 // [claude-code 2026-03-28] S4-T3: Enhanced briefing display — structured sections, severity indicators, accent borders
 // [claude-code 2026-03-23] AgentDesk briefing panel — agent reasoning synthesis
-// [claude-code 2026-04-17] Slop-fallback rendering: compact empty-state with Aquarium trigger link when backend emits SLOP_FALLBACK
+// [claude-code 2026-04-17] Slop-fallback rendering: compact empty-state with ArbitrumChamber trigger link when backend emits SLOP_FALLBACK
 import type { AgentDeskBriefing } from "../../types/agent-desk";
 
-const SLOP_FALLBACK = "No new agentic updates. Trigger an update in Aquarium.";
+const SLOP_FALLBACK = "No new agentic updates. Trigger an update in ArbitrumChamber.";
 
 interface SanctumBriefingProps {
   briefing: AgentDeskBriefing | null;
   isLoading?: boolean;
   noBorder?: boolean;
-  onTriggerAquarium?: () => void;
+  onTriggerArbitrumChamber?: () => void;
   revisionStatus?: string | null;
   revisionChecking?: boolean;
 }
@@ -18,7 +18,7 @@ export function SanctumBriefing({
   briefing,
   isLoading,
   noBorder,
-  onTriggerAquarium,
+  onTriggerArbitrumChamber,
   revisionStatus,
   revisionChecking,
 }: SanctumBriefingProps) {
@@ -48,13 +48,13 @@ export function SanctumBriefing({
         <p className="text-[11px] text-[var(--fintheon-text)]/60 leading-relaxed">
           {SLOP_FALLBACK}
         </p>
-        {onTriggerAquarium && (
+        {onTriggerArbitrumChamber && (
           <button
             type="button"
-            onClick={onTriggerAquarium}
+            onClick={onTriggerArbitrumChamber}
             className="mt-3 text-[10px] uppercase tracking-wider text-[var(--fintheon-accent)] hover:text-[var(--fintheon-text)] transition-colors"
           >
-            Trigger Aquarium →
+            Trigger ArbitrumChamber →
           </button>
         )}
       </div>

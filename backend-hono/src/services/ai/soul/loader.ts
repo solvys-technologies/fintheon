@@ -44,7 +44,11 @@ export const SoulSchema = z.object({
     source_of_truth: z.string().min(1),
     extra: z.array(z.string().min(1)).optional(),
   }),
-  tools: z.array(z.string().min(1)),
+  tools: z.object({
+    required: z.array(z.string().min(1)),
+    optional: z.array(z.string().min(1)).catch([]),
+    prohibited: z.array(z.string().min(1)).catch([]),
+  }),
   handoff_rules: z.array(z.string().min(1)),
   voice_style: z.string().min(1),
   memory_policy: z.object({
@@ -240,7 +244,13 @@ export function renderSystemPrompt(soul: LoadedSoul): string {
     `## Constraints\n${soul.constraints.map((s) => `- ${s}`).join("\n")}`,
   );
   parts.push(`## Voice\n${soul.voice_style}`);
-  parts.push(`## Tools\n${soul.tools.map((t) => `- ${t}`).join("\n")}`);
+  const toolLines: string[] = [];
+  toolLines.push(
+    `Required: ${soul.tools.required.join(", ")}`,
+    `Optional: ${soul.tools.optional.join(", ") || "(none)"}`,
+    `Prohibited: ${soul.tools.prohibited.join(", ") || "(none)"}`,
+  );
+  parts.push(`## Tools\n${toolLines.join("\n")}`);
   parts.push(
     `## Handoff Rules\n${soul.handoff_rules.map((r) => `- ${r}`).join("\n")}`,
   );

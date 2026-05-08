@@ -2,8 +2,8 @@
 // [claude-code 2026-04-17] S23-T2: Poll cadence 120s → 30s as fallback for synthesis-complete event
 // [claude-code 2026-04-04] Persist last prediction to localStorage — shows instantly on startup, refreshes in background
 // [claude-code 2026-03-31] Added 120s polling interval (was static one-time fetch)
-// [claude-code 2026-03-28] S7: 5 forward-looking prediction cards under TradingView in Aquarium
-// [claude-code 2026-04-19] Loader swapped to Unicode FishSwimmer — aquarium-themed microinteraction
+// [claude-code 2026-03-28] S7: 5 forward-looking prediction cards under TradingView in ArbitrumChamber
+// [claude-code 2026-04-19] Loader swapped to Unicode FishSwimmer — arbitrumChamber-themed microinteraction
 // [claude-code 2026-05-01] S56 Track B: removed Heat label, replaced conviction tag
 //   with MARKET HEAT, dropped Drivers section + data-point footer
 import { useState, useEffect, useRef } from "react";
@@ -52,7 +52,7 @@ function IVHeatBar({ score }: { score: number }) {
   );
 }
 
-const CACHE_KEY = "fintheon:aquarium-predictions";
+const CACHE_KEY = "fintheon:arbitrumChamber-predictions";
 
 function loadCachedOutlook(): InstrumentOutlook[] {
   try {
@@ -71,7 +71,7 @@ function cacheOutlook(data: InstrumentOutlook[]): void {
   }
 }
 
-export function AquariumPredictionCards() {
+export function ArbitrumChamberPredictionCards() {
   const cached = loadCachedOutlook();
   const [outlook, setOutlook] = useState<InstrumentOutlook[]>(cached);
   const [loading, setLoading] = useState(cached.length === 0);

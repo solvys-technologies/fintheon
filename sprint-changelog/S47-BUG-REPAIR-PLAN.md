@@ -156,7 +156,7 @@ Primary files:
 - `frontend/components/arbitrum/VerdictCard.tsx`
 - `frontend/components/arbitrum/ArbitrumPeek.tsx`
 - `frontend/components/narrative/Sanctum.tsx`
-- `frontend/components/narrative/AquariumPredictionCards.tsx`
+- `frontend/components/narrative/ArbitrumChamberPredictionCards.tsx`
 - `frontend/components/narrative/InstrumentCardsRow.tsx`
 - `frontend/components/narrative/SanctumEconIntel.tsx`
 - `backend-hono/src/services/arbitrum/*`

@@ -1,4 +1,4 @@
-# Sprint Brief: S23-T2 — Aquarium Delivery Hang Fix
+# Sprint Brief: S23-T2 — ArbitrumChamber Delivery Hang Fix
 
 ## Context
 
@@ -13,7 +13,7 @@ When a MiroShark simulation completes the deliberation phase and Harper finishes
 - [ ] Wire deliberation-phase completion to trigger an immediate refetch of `/api/miroshark/latest`
 - [ ] Add a callback/event from [MiroSharkDebatePanel.tsx](../../frontend/components/miroshark/MiroSharkDebatePanel.tsx) → `Sanctum.tsx` the first time `phase === "complete"` is observed
 - [ ] Derive `isLoading` in `Sanctum.tsx` to clear when either top-level status flips OR deliberation reaches complete
-- [ ] Lower `AquariumPredictionCards` fallback polling from 120s to 30s — as fallback only, not primary path
+- [ ] Lower `ArbitrumChamberPredictionCards` fallback polling from 120s to 30s — as fallback only, not primary path
 - [ ] Backend sanity check in [backend-hono/src/routes/miroshark/index.ts](../../backend-hono/src/routes/miroshark/index.ts) and [backend-hono/src/services/miroshark/miroshark-service.ts](../../backend-hono/src/services/miroshark/miroshark-service.ts): confirm `GET /latest` returns the post-synthesis Harper-scored payload (persistent, not in-memory only). If cached only in memory on synthesis completion, add the durable write.
 
 ## Scope — Excluded (DO NOT TOUCH)
@@ -33,7 +33,7 @@ When a MiroShark simulation completes the deliberation phase and Harper finishes
 2. In `Sanctum.tsx`, pass `onSynthesisComplete={() => queryClient.invalidateQueries({ queryKey: ["miroshark","latest"] })}` (or equivalent refetch hook if React Query isn't used).
 3. Update derived loading: `isLoading = running || (status === "running" && deliberationPhase !== "complete")` so the header spinner clears immediately when synthesis lands.
 4. Read [backend-hono/src/services/miroshark/miroshark-service.ts](../../backend-hono/src/services/miroshark/miroshark-service.ts) and confirm the Harper-scored report is written to durable Supabase persistence in the deliberation-completion path (the `getLatestReport` chain must see post-synthesis data). If not, add the write.
-5. Lower [frontend/components/narrative/AquariumPredictionCards.tsx:12](../../frontend/components/narrative/AquariumPredictionCards.tsx#L12) from `120_000` to `30_000`.
+5. Lower [frontend/components/narrative/ArbitrumChamberPredictionCards.tsx:12](../../frontend/components/narrative/ArbitrumChamberPredictionCards.tsx#L12) from `120_000` to `30_000`.
 6. Add changelog entry + file-header comment.
 
 ## Acceptance Criteria
@@ -62,5 +62,5 @@ curl -s http://localhost:8080/api/miroshark/latest | head
 ## Commit Format
 
 ```
-[v.04.17.1] feat: S23-T2 aquarium delivery hang fix
+[v.04.17.1] feat: S23-T2 arbitrumChamber delivery hang fix
 ```

@@ -2,7 +2,7 @@
 // [claude-code 2026-03-24] Persistence refactor: Run → Update button label when data exists
 // [claude-code 2026-03-23] Persistent Sanctum header — presets, run button, status, rolling period
 // [claude-code 2026-03-25] Theme-sensitive fonts — use var(--font-heading) and var(--font-body)
-// [claude-code 2026-04-25] S38: Aquarium → Arbitrum UI surface rename. Header lockup bumped, "shark tank" subtitle removed.
+// [claude-code 2026-04-25] S38: ArbitrumChamber → Arbitrum UI surface rename. Header lockup bumped, "shark tank" subtitle removed.
 import { RefreshCw, Loader2 } from "lucide-react";
 import type { SanctumPreset } from "../../types/agent-desk";
 import { SanctumPresets } from "./SanctumPresets";

@@ -70,7 +70,7 @@ export async function runChamber(
   const rounds = clampRounds(opts.rounds);
 
   // Load recent econ prints + upcoming releases so every seat reasons over the
-  // same data the Aquarium event-card surfaces. Caller-supplied context wins.
+  // same data the ArbitrumChamber event-card surfaces. Caller-supplied context wins.
   const [econ_context, commentary_context] = await Promise.all([
     input.econ_context !== undefined
       ? Promise.resolve(input.econ_context)

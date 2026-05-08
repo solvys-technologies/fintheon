@@ -212,7 +212,7 @@ export function createHarperRoutes() {
             //   Streaming those deltas verbatim leaked raw `{"agentId":"feucht",...}`
             //   into the Harper chat bubble. Buffer per agent, parse on completion,
             //   and emit a one-line prose summary — the source truth (JSON) stays
-            //   available via the Aquarium/AgentDesk surfaces where it belongs.
+            //   available via the ArbitrumChamber/AgentDesk surfaces where it belongs.
             const agentBuffers = new Map<string, string>();
             const agentCompleted = new Set<string>();
 

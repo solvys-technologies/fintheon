@@ -4,7 +4,7 @@
 //   EconCalendarEmbed (rendered as a black void on TP's screenshot) to native
 //   MiniSessionCalendar — same data, no third-party iframe, no widget rendering bug.
 //   (b) Catalyst page removed from the snap stack — RiskFlow already covers that surface
-//   per TP. (c) Briefing-page Aquarium row moved out of page 2 and lives below the
+//   per TP. (c) Briefing-page ArbitrumChamber row moved out of page 2 and lives below the
 //   calendar still, but page count drops from 6 → 5.
 // [claude-code 2026-04-18] v5.22 S2 (post-S1 reconcile): AGENTIC DESK → AGENT DESK; hero
 //   ticker labels aligned on one row (alignItems flex-start + lineHeight 1 on labels);
@@ -13,14 +13,14 @@
 //   name. Legacy `/api/miroshark/*` URLs still aliased on the backend.
 // [claude-code 2026-04-19] Tighten page 1 padding (−25% above brief), give briefing card
 //   more vertical room; page 2 calendar now owns real pixel height so no black gap above
-//   Aquarium. Aquarium rendered in a compact glass sliver at bottom.
+//   ArbitrumChamber. ArbitrumChamber rendered in a compact glass sliver at bottom.
 // [claude-code 2026-04-16] T7: Dash — snap pages, Risk Signals replaces Proposals, NarrativeFlow catalysts + timeline
 // [claude-code 2026-04-17] Observe hero VIX visibility so toolbar VIX can fade in/out
 import { useRef } from "react";
 import { motion, type Variants } from "framer-motion";
 import { VixBadge } from "../shared/VixBadge";
 import { BriefingCard } from "./BriefingCard";
-import { AquariumSummary } from "./AquariumSummary";
+import { ArbitrumChamberSummary } from "./ArbitrumChamberSummary";
 import { InstrumentOutlookCards } from "./InstrumentOutlookCards";
 // [claude-code 2026-04-25] S35: mobile Arbitrum surface — chamber consensus + dissent
 //   on the home dash. Was missing entirely; risk signals from the chamber were never
@@ -350,7 +350,7 @@ export function HomePage() {
         </motion.div>
       </SnapPage>
 
-      {/* Page 2: Aquarium Analysis */}
+      {/* Page 2: ArbitrumChamber Analysis */}
       <SnapPage>
         <div
           style={{
@@ -361,7 +361,7 @@ export function HomePage() {
             zIndex: 1,
           }}
         >
-          <AquariumSummary />
+          <ArbitrumChamberSummary />
         </div>
       </SnapPage>
 

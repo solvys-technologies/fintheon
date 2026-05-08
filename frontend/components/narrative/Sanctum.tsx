@@ -1,7 +1,7 @@
 // [claude-code 2026-04-29] S51: removed unused compositeIV/regimeShiftProbability/confidence props from ArbitrumChamber call (stale AgentDeskDebatePanel API)
 // [claude-code 2026-04-19] S25-T1: Removed KPI row (moved to Agent Desk fuses), stripped card borders to fading edges, viewport lock ≥1440px, fuses piped into DebatePanel
 // [claude-code 2026-04-25] S38: Chart-mode pin-through — TradingView/SanctumChart is hoisted out of Page 0 into a persistent right-half panel, visible across every Sanctum page. Left half scrolls/snaps independently.
-// [claude-code 2026-04-17] S23-T1: Aquarium restructure — top chart replaced with brief-pattern container (IV+Forecast | Deliberation), Chart toggle renders 50/50 with TradingView iframe, feels polish
+// [claude-code 2026-04-17] S23-T1: ArbitrumChamber restructure — top chart replaced with brief-pattern container (IV+Forecast | Deliberation), Chart toggle renders 50/50 with TradingView iframe, feels polish
 // [claude-code 2026-04-16] Sanctum — full-border severity on Risk Signals containers, solvys-feels polish
 // [claude-code 2026-05-03] S57: Page 0 uses flex height and fading rulers, no chamber inner scroll.
 // [claude-code 2026-03-28] S8-T4: Chart cleanup, Page 2 restructure (50/50 narratives+risk), sim history removed
@@ -31,7 +31,7 @@ import { SanctumEconIntel } from "./SanctumEconIntel";
 import { SanctumHeader } from "./SanctumHeader";
 import { SanctumBriefing } from "./SanctumBriefing";
 import { SanctumNarratives } from "./SanctumNarratives";
-import { AquariumPredictionCards } from "./AquariumPredictionCards";
+import { ArbitrumChamberPredictionCards } from "./ArbitrumChamberPredictionCards";
 import { ConsolidatedTradeLedger } from "./ConsolidatedTradeLedger";
 import { BlendedIVForecastCard } from "./BlendedIVForecastCard";
 import { DayCard } from "./DayCard";
@@ -60,7 +60,7 @@ interface SanctumProps {
   macroContext?: SimulationContext | null;
   narratives?: SanctumNarrative[];
   selectedSymbol?: string;
-  /** Chart mode — splits Aquarium 50/50 with a TradingView iframe on the right. Toggled from the Consilium tab bar Chart button. */
+  /** Chart mode — splits ArbitrumChamber 50/50 with a TradingView iframe on the right. Toggled from the Consilium tab bar Chart button. */
   chartMode?: boolean;
   /** Fires once per simulationId when AgentDesk deliberation completes — parent should reload latest report. */
   onSynthesisComplete?: () => void;
@@ -147,9 +147,9 @@ export function Sanctum({
       const detail = (e as CustomEvent<{ page?: number }>).detail;
       if (typeof detail?.page === "number") scrollToPage(detail.page);
     };
-    window.addEventListener("fintheon:aquarium-scroll-to", handler);
+    window.addEventListener("fintheon:arbitrumChamber-scroll-to", handler);
     return () =>
-      window.removeEventListener("fintheon:aquarium-scroll-to", handler);
+      window.removeEventListener("fintheon:arbitrumChamber-scroll-to", handler);
   }, [scrollToPage]);
 
   const handlePresetChange = useCallback(
@@ -200,7 +200,7 @@ export function Sanctum({
   return (
     <div
       className="h-full w-full flex flex-col bg-[var(--fintheon-bg)]"
-      data-aquarium-viewport-lock
+      data-arbitrum-chamber-viewport-lock
     >
       {/* Persistent header — always visible */}
       <SanctumHeader
@@ -245,7 +245,7 @@ export function Sanctum({
                   )}
                   {/* [claude-code 2026-04-27] S46.4/K: combined IV+forecast card */}
                   <BlendedIVForecastCard data={ivData} isLoading={ivLoading} />
-                  <AquariumPredictionCards />
+                  <ArbitrumChamberPredictionCards />
                 </div>
               ) : (
                 <div className="flex-1 min-h-0 flex flex-col gap-4">
@@ -289,7 +289,7 @@ export function Sanctum({
 
                   {/* Instrument Fuses — single fused row, /NQ /ES /YM /CL /GC with fading rulers */}
                   <div className="flex justify-center">
-                    <AquariumPredictionCards />
+                    <ArbitrumChamberPredictionCards />
                   </div>
                 </div>
               )}

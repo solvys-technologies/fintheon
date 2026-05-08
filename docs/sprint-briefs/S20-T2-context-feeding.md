@@ -17,7 +17,7 @@ The DAG template (`miroshark-template.ts`) feeds every agent the same unfiltered
 - [ ] Remove legacy `MARKET_ANALYSTS` array from `miroshark-client.ts`
 - [ ] Remove `fetchHeadlinesForAnalyst()` from `miroshark-client.ts` (after porting logic)
 - [ ] Remove `fetchExaHeadlinesForAgent()` if only used by legacy system
-- [ ] Update `aquarium-scheduler.ts` `fetchRecentHeadlines()` to use subject-filtered pattern
+- [ ] Update `arbitrum-chamber-scheduler.ts` `fetchRecentHeadlines()` to use subject-filtered pattern
 - [ ] Fix "Agentic Chatroom" → "Agentic Forum" in `harper-handler.ts`
 - [ ] Fix "Agentic Chatroom" → "Agentic Forum" in `docs/HARPER-SOUL.md`
 - [ ] Search + fix any other "Agentic Chatroom" references
@@ -53,7 +53,7 @@ The DAG template (`miroshark-template.ts`) feeds every agent the same unfiltered
 4. Update `buildMiroSharkDAG()` — the analyst tasks in Wave 0 need to await the filtered headlines per agent
 5. Remove the `CatalystCard` interface from the params (lanes can stay — they're narrative context, not headlines)
 6. Remove legacy `MARKET_ANALYSTS`, `fetchHeadlinesForAnalyst()`, `fetchExaHeadlinesForAgent()` from `miroshark-client.ts`
-7. Update `aquarium-scheduler.ts` — `fetchRecentHeadlines()` should filter by Oracle's subjects since it's Oracle-specific
+7. Update `arbitrum-chamber-scheduler.ts` — `fetchRecentHeadlines()` should filter by Oracle's subjects since it's Oracle-specific
 8. Global search + replace "Agentic Chatroom" → "Agentic Forum"
 9. Verify builds pass
 
@@ -66,7 +66,7 @@ The DAG template (`miroshark-template.ts`) feeds every agent the same unfiltered
 - [ ] `MARKET_ANALYSTS` array fully removed (grep returns 0)
 - [ ] `fetchHeadlinesForAnalyst` removed
 - [ ] "Agentic Chatroom" found 0 times in entire codebase
-- [ ] `aquarium-scheduler.ts` uses filtered headlines for Oracle
+- [ ] `arbitrum-chamber-scheduler.ts` uses filtered headlines for Oracle
 - [ ] DAG deliberation still executes end-to-end
 
 ## Validation Commands

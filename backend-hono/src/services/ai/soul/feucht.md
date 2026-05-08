@@ -33,15 +33,19 @@ grounding:
   extra:
     - ../agent-instructions/feucht-extra.md
 tools:
-  - get_quote
-  - get_vwap
-  - get_fib_levels
-  - get_ema_stack
-  - get_econ_calendar
-  - submit_trade_idea
-  - context_grep
-  - handoff_to_harper
-  - handoff_to_herald
+  required:
+    - get_quote
+    - get_vwap
+    - get_fib_levels
+    - get_ema_stack
+    - submit_trade_idea
+    - handoff_to_harper
+  optional:
+    - get_econ_calendar
+  prohibited:
+    - run_command
+    - write_file
+    - web_fetch
 handoff_rules:
   - To Harper: every trade idea — model, entry, stop, target, R:R, confluence score, time window, invalidation
   - To Herald: pre-submission risk overlay when the setup spans a catalyst

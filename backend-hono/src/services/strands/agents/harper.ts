@@ -35,7 +35,7 @@ export interface HarperChatOptions {
   persona?: string;
   riskFlowContext?: string;
   activeConnectors?: string[];
-  /** [S23-T3] Active Consilium surface — auto-enables surface-specific context injection (e.g. "aquarium"). */
+  /** [S23-T3] Active Consilium surface — auto-enables surface-specific context injection (e.g. "arbitrumChamber"). */
   surface?: string;
   userContext?: UserContext;
   /** AI provider override: DeepSeek direct/OC API, local VProxy, or legacy fallbacks. */
@@ -149,25 +149,25 @@ export async function streamHarperChat(
     prompt = `[RiskFlow Context]\n${options.riskFlowContext}\n\n${prompt}`;
   }
 
-  // [S23-T3] Aquarium awareness: when the user is on the Aquarium surface (or the connector is
+  // [S23-T3] ArbitrumChamber awareness: when the user is on the ArbitrumChamber surface (or the connector is
   // explicitly active), inject the latest AgentDesk simulation with interpretation scaffolding so
   // Harper reads her own output as ground truth instead of treating it as debug noise.
-  const aquariumActive =
-    options.surface === "aquarium" ||
-    !!options.activeConnectors?.includes("aquarium");
-  if (aquariumActive) {
+  const arbitrumChamberActive =
+    options.surface === "arbitrumChamber" ||
+    !!options.activeConnectors?.includes("arbitrumChamber");
+  if (arbitrumChamberActive) {
     try {
-      const { buildAquariumContext } = await import("../../harper-handler.js");
-      const aquariumContext = await buildAquariumContext();
-      if (aquariumContext) {
-        prompt = `${aquariumContext}\n\n${prompt}`;
-        log.info("aquarium context injected (strands)", {
+      const { buildArbitrumChamberContext } = await import("../../harper-handler.js");
+      const arbitrumChamberContext = await buildArbitrumChamberContext();
+      if (arbitrumChamberContext) {
+        prompt = `${arbitrumChamberContext}\n\n${prompt}`;
+        log.info("arbitrumChamber context injected (strands)", {
           requestId,
           surface: options.surface,
         });
       }
     } catch (err) {
-      log.warn("failed to build aquarium context (non-fatal, strands)", {
+      log.warn("failed to build arbitrumChamber context (non-fatal, strands)", {
         error: String(err),
       });
     }

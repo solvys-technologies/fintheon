@@ -17,7 +17,7 @@ import { ArbitrumGlyph } from "../icons/ArbitrumGlyph";
 
 // Top-level tabs: Sanctum, Boardroom, Apparatus are dropdowns; Chat is a direct button
 export type ConsiliumTab = "sanctum" | "chat" | "boardroom" | "apparatus";
-export type SanctumSubView = "narratives" | "aquarium" | "timeline";
+export type SanctumSubView = "narratives" | "arbitrumChamber" | "timeline";
 export type BoardroomSubView = "forum" | "agentic-chat" | "research";
 export type ApparatusSubView = "desk" | "fileroom" | "lounge";
 
@@ -51,7 +51,7 @@ export const SANCTUM_SUB_VIEWS: {
     icon: GitBranch,
   },
   {
-    id: "aquarium",
+    id: "arbitrumChamber",
     label: "Arbitrum",
     subtitle: "Deliberate it.",
     icon: ArbitrumGlyph,
@@ -99,7 +99,7 @@ export const APPARATUS_SUB_VIEWS: {
   {
     id: "fileroom",
     label: "Fileroom",
-    subtitle: "AI-generated context bank",
+    subtitle: "Agent soul card editor",
     icon: Brain,
   },
   {

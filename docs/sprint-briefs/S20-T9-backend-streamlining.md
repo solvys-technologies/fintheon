@@ -49,7 +49,7 @@ The backend boots ~70 services serially (hurts cold-start on Fly.io), has 3 file
 
 ### Interval Tuning
 
-- [ ] Aquarium: 30 min → 60 min
+- [ ] ArbitrumChamber: 30 min → 60 min
 - [ ] Agent Notes: 3 min → 5 min
 - [ ] Shared Memory Cleanup: 30 min → 60 min
 
@@ -116,7 +116,7 @@ The backend boots ~70 services serially (hurts cold-start on Fly.io), has 3 file
 - [ ] All 4 ingestion pollers use shared base
 - [ ] Single `getFlag()` function replaces all 3 flag systems
 - [ ] `/health` endpoint reports last-run timestamps for background services
-- [ ] Aquarium runs every 60 min, Agent Notes every 5 min
+- [ ] ArbitrumChamber runs every 60 min, Agent Notes every 5 min
 - [ ] `cd backend-hono && bun run build` passes
 - [ ] No runtime behavior changes (same outputs, same intervals, same data flow)
 

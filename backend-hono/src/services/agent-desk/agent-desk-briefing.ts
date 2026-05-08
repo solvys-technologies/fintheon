@@ -8,7 +8,7 @@ import type {
 } from "./agent-desk-types.js";
 
 export const SLOP_FALLBACK =
-  "No new agentic updates. Trigger an update in Aquarium.";
+  "No new agentic updates. Trigger an update in ArbitrumChamber.";
 
 function isSlopRun(
   report: AgentDeskReport,
