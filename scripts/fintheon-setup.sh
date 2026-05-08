@@ -7,10 +7,10 @@
 # install-cli, peer-bootstrap) pick it up on subsequent runs.
 #
 # Usage:
-#   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.0.24/scripts/fintheon-setup.sh)"
+#   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.0.25/scripts/fintheon-setup.sh)"
 #
 # Non-interactive (skip the prompt):
-#   FINTHEON_DIR=/opt/fintheon /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.0.24/scripts/fintheon-setup.sh)"
+#   FINTHEON_DIR=/opt/fintheon /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.0.25/scripts/fintheon-setup.sh)"
 # ============================================================================
 set -euo pipefail
 

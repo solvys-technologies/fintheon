@@ -42,7 +42,20 @@ mkdir -p "$USER_DATA"
       DOWNLOAD_OK=true
       echo "downloaded $DMG_NAME"
     else
-      echo "gh release download failed — will rebuild locally"
+      echo "gh release download failed — trying release asset API"
+      ASSET_API_URL=$(gh release view "$TAG" \
+        --repo solvys-technologies/fintheon \
+        --json assets \
+        --jq ".assets[] | select(.name == \"$DMG_NAME\") | .apiUrl" 2>/dev/null || true)
+      if [[ -n "$ASSET_API_URL" ]] && gh api "$ASSET_API_URL" \
+        -H "Accept: application/octet-stream" > "${DMG_LOCAL}.tmp" 2>/dev/null; then
+        mv "${DMG_LOCAL}.tmp" "$DMG_LOCAL"
+        DOWNLOAD_OK=true
+        echo "downloaded $DMG_NAME via asset API"
+      else
+        /bin/rm -f "${DMG_LOCAL}.tmp" 2>/dev/null || true
+        echo "release asset API download failed — will rebuild locally"
+      fi
     fi
   else
     echo "gh CLI not authed — will rebuild locally"

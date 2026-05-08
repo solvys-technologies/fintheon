@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-08T03:20:00-04:00",
+    agent: "codex",
+    summary:
+      "v6.0.25 updater hotfix: release DMG download now falls back to GitHub asset API before rebuilding locally.",
+    files: [
+      "scripts/fintheon-update.sh",
+      "scripts/fintheon-install-update.sh",
+      "scripts/fintheon-setup.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "package.json",
+    ],
+  },
+  {
     date: "2026-05-08T03:15:00-04:00",
     agent: "codex",
     summary:
