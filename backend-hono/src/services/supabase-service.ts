@@ -10,9 +10,12 @@
 import { getSupabaseClient, isSupabaseConfigured } from "../config/supabase.js";
 import { sql as dbSql, isDatabaseAvailable } from "../config/database.js";
 import { filterBlockedPublishers } from "./riskflow/publisher-blocklist.js";
+import { checkEconWatchGate } from "./econ-watch-filters/econ-watch-gate.js";
+import { bumpCounter } from "./riskflow/drop-counters.js";
 import { checkSourcePolicy } from "./riskflow/source-policy.js";
 import {
   recordIngestAttempt,
+  recordBlockedBeforeFeed,
   recordLeakEvent,
 } from "./riskflow/ingest-ledger.js";
 
@@ -110,6 +113,38 @@ export async function writeRawItems(items: RawRiskFlowItem[]): Promise<number> {
     );
   }
   items = filtered.kept;
+  if (items.length === 0) return 0;
+
+  // [codex 2026-05-08] Econ country/category filters apply at the raw ingest
+  // boundary too, not only to scheduled calendar upserts. This catches browser,
+  // feed-poller, Agent-Reach, Exa, and any other service using writeRawItems().
+  const econWatchPassed: RawRiskFlowItem[] = [];
+  for (const item of items) {
+    const verdict = await checkEconWatchGate(item);
+    if (verdict.allowed) {
+      econWatchPassed.push(item);
+      continue;
+    }
+
+    const source = item.source ?? "unknown";
+    bumpCounter(source, "persist", "blocked_econ_watch_filter");
+    recordBlockedBeforeFeed(
+      `${verdict.reason}: ${source} — ${item.headline?.slice(0, 80) ?? "(no headline)"}`,
+    );
+    recordIngestAttempt({
+      source,
+      pipeline: item.ingest_pipeline ?? "unknown",
+      decision: "dropped_before_feed",
+      reason: verdict.reason,
+      headlinePreview: item.headline?.slice(0, 80),
+    });
+  }
+  if (econWatchPassed.length < items.length) {
+    console.log(
+      `[EconWatch] blocked ${items.length - econWatchPassed.length}/${items.length} item(s) by country/category filter`,
+    );
+  }
+  items = econWatchPassed;
   if (items.length === 0) return 0;
 
   // [claude-code 2026-04-29] S53-T4B: source-policy enforcement — deny by default.

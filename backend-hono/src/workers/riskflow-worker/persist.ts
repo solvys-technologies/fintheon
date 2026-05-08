@@ -25,9 +25,11 @@
 // via bumpCounter so the quiet "items_ingested: 0" zero is traceable.
 
 import { getSupabaseClient } from "../../config/supabase.js";
+import { checkEconWatchGate } from "../../services/econ-watch-filters/econ-watch-gate.js";
 import { bumpCounter } from "../../services/riskflow/drop-counters.js";
 import { isBannedPublisher } from "../../services/riskflow/content-guard.js";
 import {
+  recordBlockedBeforeFeed,
   recordIngestAttempt,
   recordLeakEvent,
 } from "../../services/riskflow/ingest-ledger.js";
@@ -144,9 +146,37 @@ export async function writeCollectedItems(
   }
   if (eligible.length === 0) return 0;
 
+  // [codex 2026-05-08] Worker writes bypass supabase-service.ts, so mirror the
+  // shared econ watch gate here. This is the path used by FinancialJuice RSS.
+  const econWatchEligible: CollectedNewsItem[] = [];
+  for (const item of eligible) {
+    const verdict = await checkEconWatchGate(item);
+    if (verdict.allowed) {
+      econWatchEligible.push(item);
+      continue;
+    }
+
+    bumpCounter(
+      item.source || "unknown",
+      "persist",
+      "blocked_econ_watch_filter",
+    );
+    recordBlockedBeforeFeed(
+      `${verdict.reason}: ${item.source_domain || item.source} — ${item.headline.slice(0, 80)}`,
+    );
+    recordIngestAttempt({
+      source: item.source,
+      pipeline: item.ingest_pipeline ?? "riskflow-worker",
+      decision: "dropped_before_feed",
+      reason: verdict.reason,
+      headlinePreview: item.headline,
+    });
+  }
+  if (econWatchEligible.length === 0) return 0;
+
   await refreshAllowlist();
   const policyEligible: CollectedNewsItem[] = [];
-  for (const item of eligible) {
+  for (const item of econWatchEligible) {
     const verdict = checkSourcePolicy(item.source, item.url, {
       pipeline: item.ingest_pipeline,
       sourceDomain: item.source_domain,
@@ -223,7 +253,7 @@ export async function writeCollectedItems(
           error: error.message,
         }),
       );
-      for (const item of eligible) {
+      for (const item of policyEligible) {
         bumpCounter(
           item.source || "unknown",
           "persist",
@@ -233,19 +263,19 @@ export async function writeCollectedItems(
       return 0;
     }
     const written = data?.length ?? 0;
-    const droppedDedup = Math.max(0, eligible.length - written);
+    const droppedDedup = Math.max(0, policyEligible.length - written);
     if (droppedDedup > 0) {
       // ignoreDuplicates doesn't tell us WHICH rows got dropped, so distribute
       // the dedup count across sources proportionally to their share of the
       // eligible batch. This is good-enough attribution for trend detection;
       // per-row precision would require a read-before-write per batch.
       const perSource = new Map<string, number>();
-      for (const item of eligible) {
+      for (const item of policyEligible) {
         const src = item.source || "unknown";
         perSource.set(src, (perSource.get(src) ?? 0) + 1);
       }
       const entries = Array.from(perSource.entries());
-      const total = eligible.length;
+      const total = policyEligible.length;
       let allocated = 0;
       for (let i = 0; i < entries.length; i++) {
         const [src, share] = entries[i];
@@ -269,7 +299,7 @@ export async function writeCollectedItems(
         error: err instanceof Error ? err.message : String(err),
       }),
     );
-    for (const item of eligible) {
+    for (const item of policyEligible) {
       bumpCounter(
         item.source || "unknown",
         "persist",

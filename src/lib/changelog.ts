@@ -9,6 +9,24 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-08T00:00:00-04:00",
+    agent: "codex",
+    summary:
+      "v6.0.24 deploy: Arbitrum Chamber rename/context refinements, SOUL fileroom unification, and econ country filters now gate raw RiskFlow/RSS ingestion.",
+    files: [
+      "backend-hono/src/services/econ-watch-filters/econ-watch-gate.ts",
+      "backend-hono/src/services/supabase-service.ts",
+      "backend-hono/src/workers/riskflow-worker/persist.ts",
+      "backend-hono/src/routes/soul/index.ts",
+      "frontend/components/memory/SoulFileroomPanel.tsx",
+      "scripts/fintheon-update.sh",
+      "scripts/fintheon-setup.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "package.json",
+    ],
+  },
+  {
     date: "2026-05-07T22:00:00-04:00",
     agent: "claude-code",
     summary:

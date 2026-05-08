@@ -30,7 +30,7 @@ interface SoulMeta {
 export function createSoulRoutes(): Hono {
   const app = new Hono();
 
-  // GET /api/souls — list all agent souls with metadata
+  // GET /api/soul — list all agent souls with metadata
   app.get("/", async (c) => {
     try {
       const souls: SoulMeta[] = [];

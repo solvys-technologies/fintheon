@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   ChevronDown,
-  ChevronRight,
   Save,
   Loader2,
   Brain,
