@@ -10359,4 +10359,21 @@ export const changelog: ChangelogEntry[] = [
       "~/CLAUDE.md",
     ],
   },
+  {
+    date: "2026-05-12T10:30:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Claude Peers type system: agent-to-agent messaging protocol with structured handoff/delegation semantics, peer-chat backend service (shared-memory-backed), REST API for send/list/read/unread, frontend PeerChat UI panel (Consilium → Apparatus → Peer Chat), useLocalPeer hook, and updated agent-orchestration rules with cross-agent handoff protocol.",
+    files: [
+      "backend-hono/src/types/peers.ts",
+      "backend-hono/src/services/peers/peer-chat.ts",
+      "backend-hono/src/routes/peers/index.ts",
+      "frontend/lib/services/team.ts",
+      "frontend/components/peers/PeerChat.tsx",
+      "frontend/hooks/useLocalPeer.ts",
+      "frontend/components/consilium/ConsiliumTabConfig.ts",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      ".cursor/rules/agent-orchestration.md",
+    ],
+  },
 ];

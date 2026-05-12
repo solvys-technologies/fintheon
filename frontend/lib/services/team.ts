@@ -43,6 +43,45 @@ export interface VoiceParticipantsResponse {
   configured: boolean;
 }
 
+// ── Peer Chat Types ──────────────────────────────────────────────────────────
+
+export type PeerChatMessageType =
+  | "text"
+  | "handoff"
+  | "handoff_ack"
+  | "handoff_decline"
+  | "status"
+  | "request"
+  | "response"
+  | "ack"
+  | "error";
+
+export interface PeerChatMessageRecord {
+  id: string;
+  conversationId: string;
+  senderPeerId: string;
+  senderAgentName: string;
+  recipientPeerId: string;
+  recipientAgentName: string;
+  type: PeerChatMessageType;
+  role: "agent" | "system";
+  body: string;
+  payload?: Record<string, unknown>;
+  inReplyTo?: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface PeerConversationRecord {
+  id: string;
+  title: string;
+  participantPeerIds: string[];
+  participantAgentNames: string[];
+  lastActivityAt: string;
+  unreadByPeer: Record<string, number>;
+  createdAt: string;
+}
+
 export class PeersService {
   constructor(private client: ApiClient) {}
 
@@ -128,5 +167,78 @@ export class PeersService {
     return this.client.get(
       `/api/peers/voice/participants?roomId=${encodeURIComponent(roomId)}`,
     );
+  }
+
+  // ── Peer Chat Methods ──────────────────────────────────────────────────────
+
+  async chatSend(data: {
+    senderPeerId: string;
+    senderAgentName: string;
+    recipientPeerId: string;
+    recipientAgentName: string;
+    type: PeerChatMessageType;
+    role: "agent" | "system";
+    body: string;
+    payload?: Record<string, unknown>;
+    conversationId?: string;
+    inReplyTo?: string;
+  }): Promise<{
+    message: PeerChatMessageRecord;
+    conversation: PeerConversationRecord;
+    isNewConversation: boolean;
+  }> {
+    return this.client.post("/api/peers/chat/send", data);
+  }
+
+  async chatConversations(
+    peerId: string,
+    limit?: number,
+  ): Promise<{
+    conversations: PeerConversationRecord[];
+    total: number;
+  }> {
+    return this.client.get(
+      `/api/peers/chat/conversations?peerId=${encodeURIComponent(peerId)}${limit ? `&limit=${limit}` : ""}`,
+    );
+  }
+
+  async chatMessages(
+    conversationId: string,
+    opts?: { since?: string; limit?: number },
+  ): Promise<{
+    messages: PeerChatMessageRecord[];
+    conversation: PeerConversationRecord | null;
+  }> {
+    const params = new URLSearchParams();
+    if (opts?.since) params.set("since", opts.since);
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    const qs = params.toString();
+    return this.client.get(
+      `/api/peers/chat/messages/${encodeURIComponent(conversationId)}${qs ? `?${qs}` : ""}`,
+    );
+  }
+
+  async chatMarkRead(
+    conversationId: string,
+    peerId: string,
+  ): Promise<{ ok: boolean }> {
+    return this.client.post(
+      `/api/peers/chat/conversations/${encodeURIComponent(conversationId)}/read`,
+      { peerId },
+    );
+  }
+
+  async chatUnread(peerId: string): Promise<{ unread: number }> {
+    return this.client.get(
+      `/api/peers/chat/unread/${encodeURIComponent(peerId)}`,
+    );
+  }
+
+  async chatCreateConversation(data: {
+    participantPeerIds: string[];
+    participantAgentNames?: string[];
+    title?: string;
+  }): Promise<{ conversation: PeerConversationRecord }> {
+    return this.client.post("/api/peers/chat/conversation", data);
   }
 }
