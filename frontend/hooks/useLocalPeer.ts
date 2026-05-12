@@ -1,7 +1,7 @@
 // [claude-code 2026-05-12] Hook to resolve the local peer ID by matching the authenticated user
 import { useCallback, useEffect, useState } from "react";
-import { useBackend } from "../../lib/backend";
-import { useAuth } from "../../contexts/AuthContext";
+import { useBackend } from "../lib/backend";
+import { useAuth } from "../contexts/AuthContext";
 
 interface LocalPeerState {
   peerId: string | null;
@@ -13,7 +13,9 @@ interface LocalPeerState {
  * Resolves the local peer ID from the peer registry.
  * Must be called after the peer has been registered (via TeamOnboarding).
  */
-export function useLocalPeer(): LocalPeerState & { refresh: () => Promise<void> } {
+export function useLocalPeer(): LocalPeerState & {
+  refresh: () => Promise<void>;
+} {
   const backend = useBackend();
   const { userId } = useAuth();
   const [state, setState] = useState<LocalPeerState>({
