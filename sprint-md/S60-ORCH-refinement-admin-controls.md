@@ -80,6 +80,7 @@ Also verify the Plane embed integration (S60-T1) is clean — `viewMode` state i
 This file is your single entry point for the S60-ORCH Refinement Admin Controls work. This is a single-ticket ORCH (SOL-64), so work through the suggested audit checklist.
 
 **To execute:**
+
 1. Read this entire plan file for codebase map and context
 2. Work through SOL-64 audit items: modularity → consistency → dead code → prop interfaces → error states
 3. The child ticket in Linear has enriched context with specific files and validation steps

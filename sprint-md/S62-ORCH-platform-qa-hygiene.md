@@ -168,6 +168,7 @@ Branch: `sprint/S62`
 This file is your single entry point for the S62-ORCH Platform QA and Hygiene work. Pick it up and work through the child tickets in wave order.
 
 **To execute:**
+
 1. Read this entire plan file for codebase map and context
 2. Start with Wave 1 (SOL-49 rename, SOL-50 docs, SOL-52 QA checklist — parallel), then Wave 2 (SOL-51 modularity, SOL-68 micro-interactions, SOL-70 econ countdown, SOL-71 PsychAssist — parallel)
 3. Each child ticket in Linear has enriched context with specific files and validation steps

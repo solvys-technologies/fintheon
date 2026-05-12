@@ -114,6 +114,7 @@ However, recommended order if sequencing needed:
 This file is your single entry point for the S63-ORCH Phase 2 — Theme Intelligence work. Can run in parallel after Phase 1 contract is locked.
 
 **To execute:**
+
 1. Read this entire plan file for codebase map and context
 2. All three tickets can run in parallel, but recommended order: SOL-82 (Theme Tracker) → SOL-81 (Catalyst Drift) → SOL-83 (NarrativeFlow refactor)
 3. Each child ticket in Linear has enriched context with specific files and validation steps

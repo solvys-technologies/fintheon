@@ -125,6 +125,7 @@ Recommended order:
 This file is your single entry point for the S63-ORCH Phase 3 — Theme Intelligence work. All three tickets can run in parallel after Phase 1+2 foundations are stable.
 
 **To execute:**
+
 1. Read this entire plan file for codebase map and context
 2. All three tickets are independent; recommended order: SOL-84 (KPI explainability) → SOL-86 (observability) → SOL-85 (Stage C enrichment)
 3. Each child ticket in Linear has enriched context with specific files and validation steps

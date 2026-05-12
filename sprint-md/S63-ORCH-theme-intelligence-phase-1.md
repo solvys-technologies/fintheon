@@ -103,6 +103,7 @@ Branch: `sprint/S63`
 This file is your single entry point for the S63-ORCH Phase 1 — Theme Intelligence work. Strict sequential dependency chain — do NOT skip ahead.
 
 **To execute:**
+
 1. Read this entire plan file for codebase map and context
 2. Execute strictly in order: SOL-78 (product contract) → SOL-79 (IPV Engine) → SOL-80 (Stage B gate)
 3. Each child ticket in Linear has enriched context with specific files and validation steps

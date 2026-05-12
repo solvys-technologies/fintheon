@@ -137,6 +137,7 @@ Branch: `sprint/S62`
 This file is your single entry point for the S62-ORCH Parity and Ship Hygiene work. Pick it up and work through the child tickets in wave order.
 
 **To execute:**
+
 1. Read this entire plan file for codebase map and context
 2. Start with Wave 1 (SOL-74 smoke tests + SOL-77 route logging — parallel), then Wave 2 (SOL-75 brief parity + SOL-76 predictions guard — parallel)
 3. Each child ticket in Linear has enriched context with specific files and validation steps

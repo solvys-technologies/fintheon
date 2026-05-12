@@ -100,6 +100,7 @@ Single ticket, but suggested work order:
 This file is your single entry point for the S50-ORCH Performance Tab work. This is a single-ticket ORCH (SOL-60), so work through it in the suggested sub-steps.
 
 **To execute:**
+
 1. Read this entire plan file for codebase map and context
 2. Work through SOL-60 sub-steps: visual audit → fix regressions → strip dead code → verify toggle → final validation
 3. The child ticket in Linear has enriched context with specific files and validation steps

@@ -79,6 +79,7 @@ Branch: `sprint/S27`
 This file is your single entry point for the S27-ORCH Voice Engine work. Pick it up and work through the child tickets in wave order.
 
 **To execute:**
+
 1. Read this entire plan file for codebase map and context
 2. Start with Wave 1 (SOL-66 — consul-control audit), then Wave 2 (SOL-67 — STT model upgrade)
 3. Each child ticket in Linear has enriched context with specific files and validation steps
