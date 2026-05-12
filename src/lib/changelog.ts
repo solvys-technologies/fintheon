@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-12T00:30:00-04:00",
+    agent: "codex",
+    summary:
+      "S62 shipped: Sanctum polish and Zen RiskFlow toast stack. Archived to sprint-changelog/. 1 track, 1 file.",
+    files: ["sprint-changelog/S62-T1-sanctum-layout.md"],
+  },
+  {
     date: "2026-05-12T00:00:00-04:00",
     agent: "codex",
     summary:
@@ -26,9 +33,9 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-05-11T11:50:00-04:00",
     agent: "claude-code",
     summary:
-      "S62-T1: Desktop Sanctum layout audit — remaining deltas. Page 1 (Economic Intelligence) and Page 2 (Risk & Narratives) headers + sub-tags normalized from cyan-300/emerald-300 to Solvys Gold accent (var(--fintheon-accent)/85 + font-heading). Page 2 vertical FadingRuler dropped its orphan mx-2 to match Page 0 spacing. Page 2 solid horizontal divider between Risk/Narratives row and Trade Ledger swapped for FadingRuler orientation=horizontal. Page 0 non-chart wrapper padding bumped to p-5 for parity with Pages 1 & 2 (chart-mode branch keeps p-3 pt-2). SanctumBriefing severe risk alert row border switched from Tailwind red-500/15 to var(--fintheon-severe)/15 token, matching its inline border-left-color. No structural changes — chart mode, page snap, preset routing, hero 50/50 split, and SanctumNarratives internal label all preserved. Brief committed to sprint-md/S62-T1-sanctum-layout.md. Branch sprint/S62 cut from s60-openagents-plane-loop tip.",
+      "S62-T1: Desktop Sanctum layout audit — remaining deltas. Page 1 (Economic Intelligence) and Page 2 (Risk & Narratives) headers + sub-tags normalized from cyan-300/emerald-300 to Solvys Gold accent (var(--fintheon-accent)/85 + font-heading). Page 2 vertical FadingRuler dropped its orphan mx-2 to match Page 0 spacing. Page 2 solid horizontal divider between Risk/Narratives row and Trade Ledger swapped for FadingRuler orientation=horizontal. Page 0 non-chart wrapper padding bumped to p-5 for parity with Pages 1 & 2 (chart-mode branch keeps p-3 pt-2). SanctumBriefing severe risk alert row border switched from Tailwind red-500/15 to var(--fintheon-severe)/15 token, matching its inline border-left-color. No structural changes — chart mode, page snap, preset routing, hero 50/50 split, and SanctumNarratives internal label all preserved. Brief committed to sprint-changelog/S62-T1-sanctum-layout.md. Branch sprint/S62 cut from s60-openagents-plane-loop tip.",
     files: [
-      "sprint-md/S62-T1-sanctum-layout.md",
+      "sprint-changelog/S62-T1-sanctum-layout.md",
       "frontend/components/narrative/Sanctum.tsx",
       "frontend/components/narrative/SanctumBriefing.tsx",
       "src/lib/changelog.ts",
