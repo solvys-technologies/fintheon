@@ -1,3 +1,4 @@
+// [claude-code 2026-05-11] S62-T1: Risk alert row border uses var(--fintheon-severe)/15 token (replaced red-500/15) to align with inline border-left-color.
 // [claude-code 2026-03-28] S4-T3: Enhanced briefing display — structured sections, severity indicators, accent borders
 // [claude-code 2026-03-23] AgentDesk briefing panel — agent reasoning synthesis
 // [claude-code 2026-04-17] Slop-fallback rendering: compact empty-state with ArbitrumChamber trigger link when backend emits SLOP_FALLBACK
@@ -118,7 +119,7 @@ export function SanctumBriefing({
               return (
                 <div
                   key={i}
-                  className="flex items-start gap-2 pl-2 border border-red-500/15 rounded"
+                  className="flex items-start gap-2 pl-2 border border-[var(--fintheon-severe)]/15 rounded"
                   style={{
                     borderLeftColor: isSevere
                       ? "var(--fintheon-severe)"

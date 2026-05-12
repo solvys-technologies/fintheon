@@ -1,3 +1,4 @@
+// [claude-code 2026-05-11] S62-T1: Sanctum desktop layout audit — Solvys Gold page headers/tags (Page 1 & 2), vertical FadingRuler spacing parity, horizontal FadingRuler replaces solid divider, Page 0 non-chart padding to p-5.
 // [claude-code 2026-04-29] S51: removed unused compositeIV/regimeShiftProbability/confidence props from ArbitrumChamber call (stale AgentDeskDebatePanel API)
 // [claude-code 2026-04-19] S25-T1: Removed KPI row (moved to Agent Desk fuses), stripped card borders to fading edges, viewport lock ≥1440px, fuses piped into DebatePanel
 // [claude-code 2026-04-25] S38: Chart-mode pin-through — TradingView/SanctumChart is hoisted out of Page 0 into a persistent right-half panel, visible across every Sanctum page. Left half scrolls/snaps independently.
@@ -227,7 +228,7 @@ export function Sanctum({
           {showPage(0) && (
             <div
               data-aud-page="0"
-              className={`${chartMode ? "h-full" : "min-h-full"} snap-start p-3 pt-2 flex flex-col`}
+              className={`${chartMode ? "h-full p-3 pt-2" : "min-h-full p-5"} snap-start flex flex-col`}
             >
               {chartMode ? (
                 /* [claude-code 2026-04-25] S38: Chart now lives in the persistent right-half
@@ -319,10 +320,13 @@ export function Sanctum({
             >
               <div className="shrink-0 mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-[11px] font-semibold text-[#67e8f9] tracking-[0.2em] uppercase">
+                  <h2
+                    className="text-[11px] font-semibold text-[var(--fintheon-accent)]/85 tracking-[0.2em] uppercase"
+                    style={{ fontFamily: "var(--font-heading)" }}
+                  >
                     Economic Intelligence
                   </h2>
-                  <span className="text-[9px] tracking-[0.22em] uppercase text-[#67e8f9]/60">
+                  <span className="text-[9px] tracking-[0.22em] uppercase text-[var(--fintheon-accent)]/60">
                     Econ Watch
                   </span>
                 </div>
@@ -347,10 +351,13 @@ export function Sanctum({
               className="min-h-full snap-start p-5 flex flex-col"
             >
               <div className="shrink-0 mb-4 flex items-center gap-2">
-                <h2 className="text-[11px] font-semibold text-emerald-300 tracking-[0.2em] uppercase">
+                <h2
+                  className="text-[11px] font-semibold text-[var(--fintheon-accent)]/85 tracking-[0.2em] uppercase"
+                  style={{ fontFamily: "var(--font-heading)" }}
+                >
                   Risk & Narratives
                 </h2>
-                <span className="text-[9px] tracking-[0.22em] uppercase text-emerald-300/60">
+                <span className="text-[9px] tracking-[0.22em] uppercase text-[var(--fintheon-accent)]/60">
                   Risk Scan
                 </span>
               </div>
@@ -375,10 +382,7 @@ export function Sanctum({
                     </div>
 
                     {/* Vertical ruler */}
-                    <FadingRuler
-                      orientation="vertical"
-                      className="shrink-0 mx-2"
-                    />
+                    <FadingRuler orientation="vertical" className="shrink-0" />
 
                     {/* Right: Active Narratives */}
                     <div className="flex-1 min-w-0 flex flex-col">
@@ -392,7 +396,7 @@ export function Sanctum({
                   </div>
 
                   {/* Horizontal ruler */}
-                  <div className="h-px bg-[var(--fintheon-accent)]/10" />
+                  <FadingRuler orientation="horizontal" />
 
                   {/* Consolidated Trade Ledger — replaces Polymarket kanban */}
                   <div>

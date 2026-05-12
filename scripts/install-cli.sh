@@ -48,7 +48,7 @@ if [[ ! -d "$FINTHEON_ROOT/.git" ]] && [[ "$1" != "setup" ]]; then
   echo "  Fintheon not found at $FINTHEON_ROOT"
   echo "  Run setup first:"
   echo ""
-  echo '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.0.25/scripts/fintheon-setup.sh)"'
+  echo '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.0.27/scripts/fintheon-setup.sh)"'
   echo ""
   exit 1
 fi
@@ -62,7 +62,7 @@ case "$1" in
       bash "$FINTHEON_ROOT/scripts/fintheon-setup.sh"
     else
       echo "Downloading setup script..."
-      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.0.25/scripts/fintheon-setup.sh)"
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.0.27/scripts/fintheon-setup.sh)"
     fi
     ;;
   start)

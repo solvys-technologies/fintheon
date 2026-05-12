@@ -200,11 +200,32 @@ function ToastItem({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Container — split by position: bottom-left (system) + top-right   */
+/*  Container — split by position; Zen reroutes market toasts off top-right */
 /* ------------------------------------------------------------------ */
 
 export function ToastContainer() {
   const { toasts, dismissToast, blockNotificationType } = useToast();
+  const [zenModeActive, setZenModeActive] = useState(() => {
+    if (typeof document === "undefined") return false;
+    return document.body.dataset.fintheonZenMode === "true";
+  });
+
+  useEffect(() => {
+    const handleZenModeChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ active?: boolean }>).detail;
+      setZenModeActive(Boolean(detail?.active));
+    };
+
+    window.addEventListener("fintheon:zen-mode-change", handleZenModeChange);
+    setZenModeActive(document.body.dataset.fintheonZenMode === "true");
+
+    return () => {
+      window.removeEventListener(
+        "fintheon:zen-mode-change",
+        handleZenModeChange,
+      );
+    };
+  }, []);
 
   if (toasts.length === 0) return null;
 
@@ -216,7 +237,9 @@ export function ToastContainer() {
   };
 
   const bottomLeft = toasts.filter((t) => t.position !== "top-right");
-  const topRight = toasts.filter((t) => t.position === "top-right");
+  const marketToasts = toasts.filter((t) => t.position === "top-right");
+  const topRight = zenModeActive ? [] : marketToasts;
+  const bottomRight = zenModeActive ? marketToasts : [];
 
   return (
     <>
@@ -241,7 +264,7 @@ export function ToastContainer() {
           ))}
         </div>
       )}
-      {/* Trading/market toasts — top-right */}
+      {/* Trading/market toasts — top-right outside Zen */}
       {topRight.length > 0 && (
         <div
           className="fixed z-[100] flex flex-col items-end"
@@ -253,6 +276,27 @@ export function ToastContainer() {
           }}
         >
           {topRight.map((toast) => (
+            <ToastItem
+              key={toast.id}
+              toast={toast}
+              onDismiss={dismissToast}
+              onBlock={handleBlock}
+            />
+          ))}
+        </div>
+      )}
+      {/* Zen mode: no toast may pop in top-right; market toasts sit above the headline pile. */}
+      {bottomRight.length > 0 && (
+        <div
+          className="fixed z-[100] flex flex-col items-end"
+          style={{
+            right: "24px",
+            bottom: "364px",
+            gap: "10px",
+            pointerEvents: "none",
+          }}
+        >
+          {bottomRight.map((toast) => (
             <ToastItem
               key={toast.id}
               toast={toast}

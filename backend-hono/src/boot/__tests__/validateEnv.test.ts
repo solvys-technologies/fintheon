@@ -6,6 +6,7 @@ const FULL_VALID_ENV = {
   DATABASE_URL: "postgresql://user:pass@host/db",
   SUPABASE_URL: "https://abc.supabase.co",
   SUPABASE_SERVICE_ROLE_KEY: "a-very-long-service-role-key-value",
+  DEEPSEEK_API_KEY: "sk-deepseek-test-key-value",
   OPENROUTER_API_KEY: "sk-or-test-key-value",
   ENABLE_CENTRAL_SCORING: "true",
 };
@@ -68,7 +69,7 @@ describe("validateEnv", () => {
     );
   });
 
-  it("fails when OPENROUTER_API_KEY is missing and VProxy Anthropic is disabled", () => {
+  it("allows missing OPENROUTER_API_KEY when DeepSeek primary is configured", () => {
     withEnv(
       {
         ...FULL_VALID_ENV,
@@ -76,7 +77,8 @@ describe("validateEnv", () => {
         USE_VPROXY_ANTHROPIC: "false",
       },
       () => {
-        expect(() => validateEnv()).toThrow("process.exit called");
+        const result = validateEnv();
+        expect(result.ok).toBe(true);
       },
     );
   });

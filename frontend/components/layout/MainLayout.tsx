@@ -508,6 +508,27 @@ function MainLayoutInner() {
   const showTape = topStepXEnabled && tapePosition !== "floating";
   const showFloatingWidget = topStepXEnabled && layoutOption === "tickers-only";
   const showCombinedPanel = topStepXEnabled && layoutOption === "combined";
+  const zenModeActive = topStepXEnabled && layoutOption === "tickers-only";
+
+  useEffect(() => {
+    document.body.dataset.fintheonZenMode = zenModeActive ? "true" : "false";
+    document.body.classList.toggle("fintheon-zen-mode", zenModeActive);
+    window.dispatchEvent(
+      new CustomEvent("fintheon:zen-mode-change", {
+        detail: { active: zenModeActive },
+      }),
+    );
+
+    return () => {
+      document.body.dataset.fintheonZenMode = "false";
+      document.body.classList.remove("fintheon-zen-mode");
+      window.dispatchEvent(
+        new CustomEvent("fintheon:zen-mode-change", {
+          detail: { active: false },
+        }),
+      );
+    };
+  }, [zenModeActive]);
 
   // Determine panel order based on position and layout option
   const leftPanels: React.ReactNode[] = [];
@@ -1004,6 +1025,7 @@ function MainLayoutInner() {
             {showMissionControlNotification && (
               <PanelNotificationWidget
                 panelName="Mission Control"
+                position={zenModeActive ? "bottom-right" : "top-right"}
                 onRestore={() => {
                   setMissionControlPosition("right");
                   setShowMissionControlNotification(false);
@@ -1014,6 +1036,7 @@ function MainLayoutInner() {
             {showTapeNotification && (
               <PanelNotificationWidget
                 panelName="RiskFlow"
+                position={zenModeActive ? "bottom-right" : "top-right"}
                 onRestore={() => {
                   setTapePosition("right");
                   setShowTapeNotification(false);

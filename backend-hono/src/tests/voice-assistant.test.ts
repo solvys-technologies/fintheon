@@ -12,6 +12,8 @@ import assert from "node:assert/strict";
 // S59-T1: sidecar removed — isSidecarEnabled() always returns false.
 // Voice operations are degraded until T2 re-wires them. The sidecar-disabled
 // test is the only one expected to pass in the current state.
+// [codex 2026-05-12] Keep the retired sidecar-path assertions skipped until
+// voice T2 reintroduces an enabled sidecar path.
 // Set VOICE_SIDECAR_DISABLED=false so the gate is purely isSidecarEnabled().
 
 const { streamVoiceReply } = await import("../services/voice-service.js");
@@ -69,7 +71,7 @@ function installSidecarMocks(args: {
   return stats;
 }
 
-test("streamVoiceReply emits transcript → text → audio → done in order", async () => {
+test.skip("streamVoiceReply emits transcript → text → audio → done in order", async () => {
   const originals = snapshot();
   const stats = installSidecarMocks({
     chunks: ["Hello.", " Ready to trade."],
@@ -100,7 +102,7 @@ test("streamVoiceReply emits transcript → text → audio → done in order", a
   }
 });
 
-test("first audio event lands under 2.5s CI budget", async () => {
+test.skip("first audio event lands under 2.5s CI budget", async () => {
   const originals = snapshot();
   installSidecarMocks({
     chunks: ["Quick.", " Answer."],
@@ -131,7 +133,7 @@ test("first audio event lands under 2.5s CI budget", async () => {
   }
 });
 
-test("abortSignal interrupts the stream cleanly", async () => {
+test.skip("abortSignal interrupts the stream cleanly", async () => {
   const originals = snapshot();
   installSidecarMocks({
     chunks: ["A.", " B.", " C.", " D."],
