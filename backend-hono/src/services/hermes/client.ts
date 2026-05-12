@@ -159,10 +159,7 @@ export const sidecarClient = {
 
   voice: {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async stt(_args?: {
-      audio_bytes?: string;
-      lang?: string;
-    }): Promise<{
+    async stt(_args?: { audio_bytes?: string; lang?: string }): Promise<{
       transcript: string;
       words: { word: string; start: number; end: number }[];
     }> {

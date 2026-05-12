@@ -59,7 +59,9 @@ const COUNTRY_PATTERNS: Array<{
   },
   {
     country: "AU",
-    patterns: [/\b(?:australia|australian|aud|rba|reserve bank of australia)\b/i],
+    patterns: [
+      /\b(?:australia|australian|aud|rba|reserve bank of australia)\b/i,
+    ],
   },
   {
     country: "CA",

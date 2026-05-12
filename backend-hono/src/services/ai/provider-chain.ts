@@ -202,9 +202,7 @@ export async function generateViaChain(
 
 // ── Streaming ─────────────────────────────────────────────────────────────
 
-export async function* streamViaChain(
-  request: ChainRequest,
-): AsyncGenerator<
+export async function* streamViaChain(request: ChainRequest): AsyncGenerator<
   {
     type: "text" | "end" | "error";
     text?: string;

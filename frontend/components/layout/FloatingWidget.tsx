@@ -318,9 +318,7 @@ export function FloatingWidget({
                             style={{
                               color: ivHeatColor(
                                 Number(
-                                  newsItem.ivScore ??
-                                    newsItem.pointRange ??
-                                    0,
+                                  newsItem.ivScore ?? newsItem.pointRange ?? 0,
                                 ),
                               ),
                             }}
@@ -355,16 +353,12 @@ export function FloatingWidget({
                               width: `${Math.max(0, Math.min(100, Number(newsItem.ivScore ?? newsItem.pointRange ?? 0) * 10))}%`,
                               backgroundColor: ivHeatColor(
                                 Number(
-                                  newsItem.ivScore ??
-                                    newsItem.pointRange ??
-                                    0,
+                                  newsItem.ivScore ?? newsItem.pointRange ?? 0,
                                 ),
                               ),
                               boxShadow: `0 0 10px ${ivHeatColor(
                                 Number(
-                                  newsItem.ivScore ??
-                                    newsItem.pointRange ??
-                                    0,
+                                  newsItem.ivScore ?? newsItem.pointRange ?? 0,
                                 ),
                               )}`,
                             }}
@@ -374,9 +368,7 @@ export function FloatingWidget({
                     )}
                   </div>
                   <button
-                    onClick={() =>
-                      dismissNotification(newsItem.notificationId)
-                    }
+                    onClick={() => dismissNotification(newsItem.notificationId)}
                     className="p-1 hover:bg-[var(--fintheon-accent)]/20 rounded-lg text-[var(--fintheon-accent)]/70 hover:text-[var(--fintheon-accent)] flex-shrink-0 backdrop-blur-sm transition-all"
                   >
                     <X className="w-3 h-3" />

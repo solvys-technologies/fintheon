@@ -52,13 +52,15 @@ export async function runMacroChain(
   const evidence: MacroChainEvidence[] = [
     {
       node: "PMI / NFIB Input Costs",
-      signal: "Small business input cost subcomponents elevated >40% for 4 consecutive months",
+      signal:
+        "Small business input cost subcomponents elevated >40% for 4 consecutive months",
       direction: "sticky",
       magnitude: 8,
     },
     {
       node: "PPI — Producer Price Stickiness",
-      signal: "4 months of elevated input costs now fully transmitting through distribution chain",
+      signal:
+        "4 months of elevated input costs now fully transmitting through distribution chain",
       direction: "sticky",
       magnitude: 8,
     },
@@ -76,13 +78,15 @@ export async function runMacroChain(
     },
     {
       node: "Sell-Side Tell Signals",
-      signal: "BofA pushed rate cuts to mid-2027; Bessent's 'transient' vocabulary echoes 2021",
+      signal:
+        "BofA pushed rate cuts to mid-2027; Bessent's 'transient' vocabulary echoes 2021",
       direction: "bearish",
       magnitude: 10,
     },
     {
       node: "Supply Chain Velocity",
-      signal: "Russian Urals premium falling to $2-4/bbl — downstream margin compression, not disinflation",
+      signal:
+        "Russian Urals premium falling to $2-4/bbl — downstream margin compression, not disinflation",
       direction: "neutral",
       magnitude: 3,
     },
@@ -90,14 +94,18 @@ export async function runMacroChain(
 
   return {
     targetPrint: input.targetPrint,
-    consensusEstimate: "+0.3% MoM Headline / 3.2% YoY Headline / +0.3% Core MoM / 2.8% Core YoY",
-    picCall: "+0.4% MoM Headline / 3.5-3.6% YoY Headline / +0.3% Core MoM / 2.9% Core YoY",
+    consensusEstimate:
+      "+0.3% MoM Headline / 3.2% YoY Headline / +0.3% Core MoM / 2.8% Core YoY",
+    picCall:
+      "+0.4% MoM Headline / 3.5-3.6% YoY Headline / +0.3% Core MoM / 2.9% Core YoY",
     deviation: "+1 sigma on headline; core inline but sticky",
     direction: "hot",
     confidence: 72,
     evidence,
-    secondOrder: "First order sees +0.3% as inline. Second order: the composition (energy-driven headline reacceleration + PPI passthrough closing the lag window) signals structural stickiness that kills 2026 rate cuts. The market will reprice the terminal rate higher even if the number is only +0.3%. BofA already priced mid-2027 cuts — they're front-running this.",
+    secondOrder:
+      "First order sees +0.3% as inline. Second order: the composition (energy-driven headline reacceleration + PPI passthrough closing the lag window) signals structural stickiness that kills 2026 rate cuts. The market will reprice the terminal rate higher even if the number is only +0.3%. BofA already priced mid-2027 cuts — they're front-running this.",
     previousPrintRef: "Mar CPI: +0.3% MoM / 3.5% YoY Headline",
-    nextNodeInChain: "GDP (May 28 advance revision) — PCE passthrough into final demand",
+    nextNodeInChain:
+      "GDP (May 28 advance revision) — PCE passthrough into final demand",
   };
 }
