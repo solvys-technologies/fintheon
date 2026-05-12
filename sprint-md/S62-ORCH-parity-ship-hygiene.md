@@ -131,3 +131,16 @@ Branch: `sprint/S62`
 - [ ] `cd backend-hono && bun run build` passes
 - [ ] `npx vite build` passes
 - [ ] Add changelog entry
+
+## Handoff to Developer (Shashank)
+
+This file is your single entry point for the S62-ORCH Parity and Ship Hygiene work. Pick it up and work through the child tickets in wave order.
+
+**To execute:**
+1. Read this entire plan file for codebase map and context
+2. Start with Wave 1 (SOL-74 smoke tests + SOL-77 route logging — parallel), then Wave 2 (SOL-75 brief parity + SOL-76 predictions guard — parallel)
+3. Each child ticket in Linear has enriched context with specific files and validation steps
+4. After each ticket, run the validation steps listed in this file
+5. Add changelog entries to `src/lib/changelog.ts` after each ticket
+
+**Branch**: `sprint/S62` | **Cycle**: Cycle 7 (Pre-Release) | **Due**: May 16

@@ -98,6 +98,20 @@ Branch: `sprint/S63`
 - [ ] `npx tsc --noEmit --project frontend/tsconfig.json` passes
 - [ ] Add changelog entry
 
+## Handoff to Developer (Shashank)
+
+This file is your single entry point for the S63-ORCH Phase 1 — Theme Intelligence work. Strict sequential dependency chain — do NOT skip ahead.
+
+**To execute:**
+1. Read this entire plan file for codebase map and context
+2. Execute strictly in order: SOL-78 (product contract) → SOL-79 (IPV Engine) → SOL-80 (Stage B gate)
+3. Each child ticket in Linear has enriched context with specific files and validation steps
+4. After each ticket, run the validation steps listed in this file
+5. Phase 1 output feeds directly into Phase 2 — document the contract carefully in SOL-78
+6. Add changelog entries to `src/lib/changelog.ts` after each ticket
+
+**Branch**: `sprint/S63` | **Cycle**: Cycle 8 (Closed Beta) | **Due**: June 6 | **Milestone**: Phase 1
+
 ## Reference
 
 - @sprint-md/S43-T7-component-extraction.md — component extraction patterns (for any new UI surfaces)

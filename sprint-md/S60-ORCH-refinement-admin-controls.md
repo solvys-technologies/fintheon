@@ -75,6 +75,20 @@ Also verify the Plane embed integration (S60-T1) is clean — `viewMode` state i
 - [ ] `tsc` and `vite build` pass
 - [ ] Add changelog entry
 
+## Handoff to Developer (Shashank)
+
+This file is your single entry point for the S60-ORCH Refinement Admin Controls work. This is a single-ticket ORCH (SOL-64), so work through the suggested audit checklist.
+
+**To execute:**
+1. Read this entire plan file for codebase map and context
+2. Work through SOL-64 audit items: modularity → consistency → dead code → prop interfaces → error states
+3. The child ticket in Linear has enriched context with specific files and validation steps
+4. After completing, run all validation steps listed in this file
+5. Reference `@sprint-md/S60-T1-refinement-plane-surface.md` for Plane embed context and `@sprint-md/S44-T1-refinement-glass-gate.md` for GlassGate context
+6. Add changelog entry to `src/lib/changelog.ts`
+
+**Branch**: `sprint/S60` | **Cycle**: Cycle 7 (Pre-Release) | **Due**: May 16
+
 ## Reference
 
 - @sprint-md/S60-T1-refinement-plane-surface.md — original Plane embed sprint brief

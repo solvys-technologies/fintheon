@@ -163,6 +163,20 @@ Branch: `sprint/S62`
 - [ ] `npx vite build` passes
 - [ ] Add changelog entry
 
+## Handoff to Developer (Shashank)
+
+This file is your single entry point for the S62-ORCH Platform QA and Hygiene work. Pick it up and work through the child tickets in wave order.
+
+**To execute:**
+1. Read this entire plan file for codebase map and context
+2. Start with Wave 1 (SOL-49 rename, SOL-50 docs, SOL-52 QA checklist — parallel), then Wave 2 (SOL-51 modularity, SOL-68 micro-interactions, SOL-70 econ countdown, SOL-71 PsychAssist — parallel)
+3. Each child ticket in Linear has enriched context with specific files and validation steps
+4. After each ticket, run the validation steps listed in this file
+5. Note: SOL-49 and SOL-50 are assigned to Sam Frederique — coordinate if needed or defer
+6. Add changelog entries to `src/lib/changelog.ts` after each ticket
+
+**Branch**: `sprint/S62` | **Cycle**: Cycle 7 (Pre-Release) | **Due**: May 16
+
 ## Reference
 
 - @sprint-md/S62-T1-sanctum-layout.md — S62 T1 brief (Sanctum layout audit, sibling track)

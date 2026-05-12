@@ -95,6 +95,20 @@ Single ticket, but suggested work order:
 - [ ] No iframe was modified
 - [ ] Add changelog entry to `src/lib/changelog.ts`
 
+## Handoff to Developer (Shashank)
+
+This file is your single entry point for the S50-ORCH Performance Tab work. This is a single-ticket ORCH (SOL-60), so work through it in the suggested sub-steps.
+
+**To execute:**
+1. Read this entire plan file for codebase map and context
+2. Work through SOL-60 sub-steps: visual audit → fix regressions → strip dead code → verify toggle → final validation
+3. The child ticket in Linear has enriched context with specific files and validation steps
+4. After completing, run all validation steps listed in this file
+5. Reference `@sprint-md/S50-T2-performance-tab-migration.md` for full migration context and `@sprint-md/S50-T1-recharts-foundation-kit.md` for wrapper API reference
+6. Add changelog entry to `src/lib/changelog.ts`
+
+**Branch**: `sprint/S50` | **Cycle**: Cycle 7 (Pre-Release) | **Due**: May 16
+
 ## Reference
 
 - @sprint-md/S50-T2-performance-tab-migration.md — original sprint brief with full migration context

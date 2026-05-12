@@ -74,6 +74,20 @@ Branch: `sprint/S27`
 - [ ] Error path works when OPENAI_API_KEY is missing (graceful fallback, no crash)
 - [ ] Add changelog entry to `src/lib/changelog.ts`
 
+## Handoff to Developer (Shashank)
+
+This file is your single entry point for the S27-ORCH Voice Engine work. Pick it up and work through the child tickets in wave order.
+
+**To execute:**
+1. Read this entire plan file for codebase map and context
+2. Start with Wave 1 (SOL-66 — consul-control audit), then Wave 2 (SOL-67 — STT model upgrade)
+3. Each child ticket in Linear has enriched context with specific files and validation steps
+4. After each ticket, run the validation steps listed in this file
+5. Reference `@sprint-md/S43-T7-component-extraction.md` for original sprint context
+6. Add changelog entries to `src/lib/changelog.ts` after each ticket
+
+**Branch**: `sprint/S27` | **Cycle**: Cycle 7 (Pre-Release) | **Due**: May 16
+
 ## Reference
 
 - @sprint-md/S43-T7-component-extraction.md — referenced in child ticket descriptions (original sprint context)

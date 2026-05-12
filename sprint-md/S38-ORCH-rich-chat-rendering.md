@@ -75,6 +75,20 @@ Branch: `sprint/S38`
 - [ ] No console errors when rendering chat slots
 - [ ] Add changelog entry to `src/lib/changelog.ts`
 
+## Handoff to Developer (Shashank)
+
+This file is your single entry point for the S38-ORCH Rich Chat Rendering work. Pick it up and work through the child tickets in wave order.
+
+**To execute:**
+1. Read this entire plan file for codebase map and context
+2. Start with Wave 1 (SOL-63 — Streamdown slot coverage), then Wave 2 (SOL-65 — Arbitrum rich text)
+3. Each child ticket in Linear has enriched context with specific files and validation steps
+4. After each ticket, run the validation steps listed in this file
+5. Reference `@sprint-md/S44-T1-refinement-glass-gate.md` for related GlassGate context (unrelated but cross-referenced)
+6. Add changelog entries to `src/lib/changelog.ts` after each ticket
+
+**Branch**: `sprint/S38` | **Cycle**: Cycle 7 (Pre-Release) | **Due**: May 16
+
 ## Reference
 
 - @sprint-md/S44-T1-refinement-glass-gate.md — referenced in child ticket descriptions (original sprint context, refinement unrelated but referenced)
