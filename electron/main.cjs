@@ -26,9 +26,8 @@ const fs = require("fs");
 const IS_MAC = process.platform === "darwin";
 const IS_WIN = process.platform === "win32";
 
-// [claude-code 2026-05-12] TopStepX PWA blocker — domains to block at system + session level.
-// FINTHEON-BLOCKER-START/END markers delimit /etc/hosts entries for safe add/remove.
-const BLOCKED_DOMAINS = [
+// [claude-code 2026-05-13] Default blocked domains (TopStepX-related). User can customize in settings.
+const DEFAULT_BLOCKED_DOMAINS = [
   "topstepx.com",
   "www.topstepx.com",
   "app.topstepx.com",
@@ -38,6 +37,31 @@ const BLOCKED_DOMAINS = [
   "projectx.com",
   "www.projectx.com",
 ];
+const BLOCKED_DOMAINS_PATH = "fintheon-blocked-domains.json";
+
+/** Load blocked domains from userData, falling back to defaults */
+function loadBlockedDomains() {
+  try {
+    const p = path.join(app.getPath("userData"), BLOCKED_DOMAINS_PATH);
+    if (fs.existsSync(p)) {
+      const raw = fs.readFileSync(p, "utf8");
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return [...DEFAULT_BLOCKED_DOMAINS];
+}
+
+/** Save blocked domains to userData */
+function saveBlockedDomains(domains) {
+  try {
+    const p = path.join(app.getPath("userData"), BLOCKED_DOMAINS_PATH);
+    fs.writeFileSync(p, JSON.stringify(domains, null, 2), "utf8");
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // [claude-code 2026-04-23] Windows runs in remote-backend mode: no local spawn,
 // no launchd, frontend hits fintheon.fly.dev directly. macOS keeps the localhost
@@ -1431,18 +1455,17 @@ const BLOCKER_MARKER_START = "# FINTHEON-BLOCKER-START";
 const BLOCKER_MARKER_END = "# FINTHEON-BLOCKER-END";
 const RESOLVER_DIR = "/etc/resolver";
 
-/** Build the /etc/hosts block entries */
-function buildHostsBlockEntries() {
-  const lines = BLOCKED_DOMAINS.map((d) => `0.0.0.0 ${d}`);
+/** Build the /etc/hosts block entries from a domain list */
+function buildHostsBlockEntries(domains) {
+  const lines = domains.map((d) => `0.0.0.0 ${d}`);
   return [BLOCKER_MARKER_START, ...lines, BLOCKER_MARKER_END].join("\n");
 }
 
-/** Get unique eTLD+1 domains from BLOCKED_DOMAINS (for /etc/resolver/ files) */
-function getEtldPlusOne() {
+/** Get unique eTLD+1 domains from a domain list (for /etc/resolver/ files) */
+function getEtldPlusOne(domains) {
   return Array.from(
     new Set(
-      BLOCKED_DOMAINS.map((d) => {
-        // Strip known subdomain prefixes to get base domain
+      domains.map((d) => {
         const parts = d.split(".");
         return parts.length >= 2 ? parts.slice(-2).join(".") : d;
       }),
@@ -1474,13 +1497,12 @@ function readHostsBlocked() {
   }
 }
 
-/** Check resolver dir exists with at least one resolver file for our domains */
+/** Check resolver dir exists with at least one resolver file for known resolver domains */
 function readResolverBlocked() {
   try {
     if (!fs.existsSync(RESOLVER_DIR)) return false;
     const files = fs.readdirSync(RESOLVER_DIR);
-    const etld = getEtldPlusOne();
-    return etld.some((d) => files.includes(d));
+    return files.length > 0;
   } catch {
     return false;
   }
@@ -1493,11 +1515,13 @@ function readResolverBlocked() {
  */
 function enableBlocking() {
   if (IS_WIN) return { ok: false, reason: "blocker is macOS-only" };
+  const domains = loadBlockedDomains();
+  if (domains.length === 0) return { ok: false, reason: "no domains configured" };
 
   // Layer 1: /etc/hosts
   let hostsResult = "noop";
   if (!readHostsBlocked()) {
-    const entries = buildHostsBlockEntries();
+    const entries = buildHostsBlockEntries(domains);
     const current = fs.readFileSync("/etc/hosts", "utf8");
     const updated = current.trimEnd() + "\n\n" + entries + "\n";
     const escaped = updated.replace(/"/g, '\\"').replace(/\n/g, "\\n");
@@ -1507,7 +1531,7 @@ function enableBlocking() {
 
   // Layer 2: /etc/resolver/ per-domain overrides
   let resolverResult = "noop";
-  const etld = getEtldPlusOne();
+  const etld = getEtldPlusOne(domains);
   const commands = [`mkdir -p ${RESOLVER_DIR}`];
   for (const domain of etld) {
     commands.push(`echo 'nameserver 127.0.0.1' > ${RESOLVER_DIR}/${domain}`);
@@ -1516,7 +1540,7 @@ function enableBlocking() {
   resolverResult = "written";
 
   flushDns();
-  return { ok: true, hosts: hostsResult, resolver: resolverResult };
+  return { ok: true, hosts: hostsResult, resolver: resolverResult, domainCount: domains.length };
 }
 
 /**
@@ -1542,12 +1566,18 @@ function disableBlocking() {
     }
   }
 
-  // Layer 2: /etc/resolver/ removals
+  // Layer 2: /etc/resolver/ removals — remove ALL resolver files (not just known ones)
   let resolverResult = "noop";
-  const etld = getEtldPlusOne();
-  const removeCmds = etld.map((d) => `rm -f ${RESOLVER_DIR}/${d}`);
-  sudoRun(removeCmds.join(" && "));
-  resolverResult = "removed";
+  try {
+    if (fs.existsSync(RESOLVER_DIR)) {
+      const files = fs.readdirSync(RESOLVER_DIR);
+      if (files.length > 0) {
+        const removeCmds = files.map((f) => `rm -f ${RESOLVER_DIR}/${f}`);
+        sudoRun(removeCmds.join(" && "));
+      }
+    }
+    resolverResult = "removed";
+  } catch {}
 
   flushDns();
   return { ok: true, hosts: hostsResult, resolver: resolverResult };
@@ -1560,14 +1590,51 @@ ipcMain.handle("blocker:status", async () => {
     const hostsBlocked = readHostsBlocked();
     const resolverBlocked = readResolverBlocked();
     const blocked = hostsBlocked || resolverBlocked;
+    const domains = loadBlockedDomains();
     return {
       ok: true,
       blocked,
       layers: { hosts: hostsBlocked, resolver: resolverBlocked },
+      domains,
     };
   } catch (err) {
     return { ok: false, blocked: false, reason: err.message };
   }
+});
+
+ipcMain.handle("blocker:get-domains", async () => {
+  try {
+    return { ok: true, domains: loadBlockedDomains() };
+  } catch (err) {
+    return { ok: false, domains: [...DEFAULT_BLOCKED_DOMAINS], reason: err.message };
+  }
+});
+
+ipcMain.handle("blocker:set-domains", async (_event, domains) => {
+  if (!Array.isArray(domains)) {
+    return { ok: false, reason: "domains must be an array" };
+  }
+  const cleaned = domains
+    .map((d) => {
+      if (typeof d !== "string") return null;
+      // Strip protocol, path, trailing slash, whitespace
+      let s = d.trim().toLowerCase();
+      s = s.replace(/^https?:\/\//, "");
+      s = s.replace(/\/.*$/, "");
+      s = s.replace(/^www\./, "");
+      return s || null;
+    })
+    .filter(Boolean);
+  if (cleaned.length === 0) {
+    return { ok: false, reason: "at least one valid domain required" };
+  }
+  saveBlockedDomains(cleaned);
+  // If blocking is currently active, re-enable it with new domains
+  if (readHostsBlocked() || readResolverBlocked()) {
+    await disableBlocking();
+    await enableBlocking();
+  }
+  return { ok: true, domains: cleaned };
 });
 
 ipcMain.handle("blocker:enable", async () => {
