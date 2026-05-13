@@ -10380,7 +10380,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-05-13T09:08:00-04:00",
     agent: "claude-code",
     summary:
-      "TopStepX PWA Blocker: 3-layer system-wide blocking via /etc/hosts (DNS redirect), /etc/resolver/ (per-domain DNS override for custom resolvers like Control D/NextDNS), and Electron webRequest (in-app filter). Settings UI with per-layer status indicators. Blocks topstepx.com, topstep.com, projectx.com and subdomains across all browsers, PWAs, and apps.",
+      "Website Blocker: universal system-wide blocking for any configurable domain list. 3 layers: /etc/hosts (DNS), /etc/resolver/ (per-domain DNS override for custom resolvers like Control D/NextDNS), and Electron webRequest (in-app iframes/webviews). Settings UI with domain list manager (add/remove, defaults to TopStepX domains). Blocks PWAs, browsers, and apps across all macOS configurations.",
     files: [
       "electron/main.cjs",
       "electron/preload.cjs",

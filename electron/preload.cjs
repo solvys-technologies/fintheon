@@ -119,11 +119,13 @@ contextBridge.exposeInMainWorld("electron", {
     },
   },
 
-  // [claude-code 2026-05-12] TopStepX PWA Blocker — enable/disable/status
+  // [claude-code 2026-05-12] TopStepX PWA Blocker — enable/disable/status + domain management
   blocker: {
     enable: () => ipcRenderer.invoke("blocker:enable"),
     disable: () => ipcRenderer.invoke("blocker:disable"),
     getStatus: () => ipcRenderer.invoke("blocker:status"),
+    getDomains: () => ipcRenderer.invoke("blocker:get-domains"),
+    setDomains: (domains) => ipcRenderer.invoke("blocker:set-domains", domains),
   },
 
   // [claude-code 2026-04-23] Harper Vision — screen + audio capture bridge

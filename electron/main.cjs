@@ -611,36 +611,44 @@ function createWindow(apiBase) {
 
   // [claude-code 2026-05-12] TopStepX PWA Blocker — session-level webRequest guard.
   // Blocks navigation to blocked domains in ALL Electron sessions (default + persist:fintheon).
-  // This is Layer 2 (belt-and-suspenders) — checks /etc/hosts marker state at request time
-  // so the filter self-activates/deactivates in sync with Layer 1.
+  // Uses a callback filter so domain list changes take effect without re-registration.
+  // This catches PWAs loaded inside the app, iframes, and webviews.
   try {
     const { session: electronSession } = require("electron");
     const blockTargets = [
       electronSession.defaultSession,
       electronSession.fromPartition("persist:fintheon"),
     ];
-    const blockFilter = {
-      urls: [
-        "*://*.topstepx.com/*",
-        "*://topstepx.com/*",
-        "*://*.topstep.com/*",
-        "*://topstep.com/*",
-        "*://*.projectx.com/*",
-        "*://projectx.com/*",
-      ],
-    };
+    const isBlocked = loadBlockedDomains();
     for (const sess of blockTargets) {
-      sess.webRequest.onBeforeRequest(blockFilter, (_details, callback) => {
-        // Cancel when either /etc/hosts markers or /etc/resolver overrides are active
-        if (readHostsBlocked() || readResolverBlocked()) {
-          callback({ cancel: true });
-        } else {
-          callback({ cancel: false });
-        }
-      });
+      sess.webRequest.onBeforeRequest(
+        { urls: ["*://*/*"] },
+        (details, callback) => {
+          if (!(readHostsBlocked() || readResolverBlocked())) {
+            callback({ cancel: false });
+            return;
+          }
+          const domains = loadBlockedDomains();
+          if (domains.length === 0) {
+            callback({ cancel: false });
+            return;
+          }
+          let host;
+          try {
+            host = new URL(details.url).hostname.toLowerCase();
+          } catch {
+            callback({ cancel: false });
+            return;
+          }
+          const blocked = domains.some(
+            (d) => host === d || host.endsWith("." + d),
+          );
+          callback({ cancel: blocked });
+        },
+      );
     }
     console.log(
-      "[Blocker] webRequest filter installed for topstep domains (defaultSession + persist:fintheon).",
+      "[Blocker] webRequest filter installed (callback-based, dynamic domain list).",
     );
   } catch (err) {
     console.warn("[Blocker] Failed to install webRequest filter:", err);
@@ -1516,7 +1524,8 @@ function readResolverBlocked() {
 function enableBlocking() {
   if (IS_WIN) return { ok: false, reason: "blocker is macOS-only" };
   const domains = loadBlockedDomains();
-  if (domains.length === 0) return { ok: false, reason: "no domains configured" };
+  if (domains.length === 0)
+    return { ok: false, reason: "no domains configured" };
 
   // Layer 1: /etc/hosts
   let hostsResult = "noop";
@@ -1540,7 +1549,12 @@ function enableBlocking() {
   resolverResult = "written";
 
   flushDns();
-  return { ok: true, hosts: hostsResult, resolver: resolverResult, domainCount: domains.length };
+  return {
+    ok: true,
+    hosts: hostsResult,
+    resolver: resolverResult,
+    domainCount: domains.length,
+  };
 }
 
 /**
@@ -1606,7 +1620,11 @@ ipcMain.handle("blocker:get-domains", async () => {
   try {
     return { ok: true, domains: loadBlockedDomains() };
   } catch (err) {
-    return { ok: false, domains: [...DEFAULT_BLOCKED_DOMAINS], reason: err.message };
+    return {
+      ok: false,
+      domains: [...DEFAULT_BLOCKED_DOMAINS],
+      reason: err.message,
+    };
   }
 });
 
