@@ -105,7 +105,7 @@ export async function runFinancialJuiceRssTier(): Promise<TierRunResult> {
   const result = await safeCollect(
     "financialjuice-rss",
     () => collectFromFinancialJuiceRss({ tier: "breaking" }),
-    15_000,
+    7_000,
   );
   const ingested = await writeCollectedItems(result.items);
   return { ingested, errors: result.errors };

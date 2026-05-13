@@ -1,3 +1,4 @@
+// [claude-code 2026-05-12] FinancialJuice at 5s; X throttled to 10m during after-hours.
 // [claude-code 2026-05-03] Round-robin multi-device scheduler for X polling.
 // Replaced the 3-tier timer architecture with a single coordination-aware loop:
 //   1. Check cross-device coordinator (Supabase) — should THIS Mac mini poll now?
@@ -26,10 +27,16 @@ import {
   getDeviceId,
   getRotationIntervalMs,
 } from "./coordination.js";
+import { isAfterHours } from "../../services/riskflow/market-hours.js";
 
-const UNIFIED_INTERVAL_MS = 60_000; // 60s between X cycles when active
-const FINANCIALJUICE_INTERVAL_MS = 60_000; // Real-time RSS wire poll
+const UNIFIED_INTERVAL_RTH_MS = 60_000; // 60s between X cycles during regular trading hours
+const UNIFIED_INTERVAL_AH_MS = 600_000; // 10m between X cycles during after-hours
+const FINANCIALJUICE_INTERVAL_MS = 5_000; // Real-time RSS wire poll every 5s
 const STANDARD_INTERVAL_MS = 300_000; // 5m between non-X sweeps when active
+
+function getUnifiedIntervalMs(): number {
+  return isAfterHours() ? UNIFIED_INTERVAL_AH_MS : UNIFIED_INTERVAL_RTH_MS;
+}
 
 interface TierState {
   running: boolean;
@@ -65,7 +72,7 @@ const state: Record<
     totalRuns: 0,
     totalErrors: 0,
     timer: null,
-    intervalMs: UNIFIED_INTERVAL_MS,
+    intervalMs: getUnifiedIntervalMs(),
   },
   standard: {
     running: false,
@@ -145,7 +152,8 @@ async function unifiedPollLoop(): Promise<void> {
   const shouldPoll = await shouldPollThisCycle();
   if (shouldPoll) {
     await runCycle("unified");
-    state.unified.timer = setTimeout(unifiedPollLoop, UNIFIED_INTERVAL_MS);
+    state.unified.intervalMs = getUnifiedIntervalMs();
+    state.unified.timer = setTimeout(unifiedPollLoop, state.unified.intervalMs);
   } else {
     const checkMs = getCheckIntervalMs();
     state.unified.timer = setTimeout(unifiedPollLoop, checkMs);
@@ -179,7 +187,8 @@ export function startScheduler(): void {
       stage: "scheduler_started",
       device: deviceId,
       rotation_interval_minutes: rotationMin,
-      unified_interval_ms: UNIFIED_INTERVAL_MS,
+      unified_interval_rth_ms: UNIFIED_INTERVAL_RTH_MS,
+      unified_interval_ah_ms: UNIFIED_INTERVAL_AH_MS,
       standard_interval_ms: STANDARD_INTERVAL_MS,
       financialjuice_interval_ms: FINANCIALJUICE_INTERVAL_MS,
     }),

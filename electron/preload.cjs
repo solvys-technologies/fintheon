@@ -1,3 +1,4 @@
+// [claude-code 2026-05-12] TopStepX PWA Blocker — electron.blocker bridge
 // [claude-code 2026-04-29] Switched to SOTA manual desktop updater bridge
 // [claude-code 2026-03-23] Browser Use Phase 2 — browserUse IPC bridge
 // [claude-code 2026-03-24] Auth deep link callback bridge for Supabase OAuth
@@ -116,6 +117,13 @@ contextBridge.exposeInMainWorld("electron", {
     onFailed: (cb) => {
       deskCalendarFailedCallback = typeof cb === "function" ? cb : null;
     },
+  },
+
+  // [claude-code 2026-05-12] TopStepX PWA Blocker — enable/disable/status
+  blocker: {
+    enable: () => ipcRenderer.invoke("blocker:enable"),
+    disable: () => ipcRenderer.invoke("blocker:disable"),
+    getStatus: () => ipcRenderer.invoke("blocker:status"),
   },
 
   // [claude-code 2026-04-23] Harper Vision — screen + audio capture bridge

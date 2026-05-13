@@ -1,3 +1,4 @@
+// [claude-code 2026-05-12] TopStepX PWA Blocker — /etc/hosts IPC + webRequest guard
 // [claude-code 2026-04-25] S35: window-close + app-quit instrumentation. The S35 crash.log
 // captured render-process-gone cascades but never WHY — macOS log show revealed AppKit
 // `windowShouldClose:` events at every crash timestamp, so the closes were either
@@ -24,6 +25,19 @@ const fs = require("fs");
 
 const IS_MAC = process.platform === "darwin";
 const IS_WIN = process.platform === "win32";
+
+// [claude-code 2026-05-12] TopStepX PWA blocker — domains to block at system + session level.
+// FINTHEON-BLOCKER-START/END markers delimit /etc/hosts entries for safe add/remove.
+const BLOCKED_DOMAINS = [
+  "topstepx.com",
+  "www.topstepx.com",
+  "app.topstepx.com",
+  "topstep.com",
+  "www.topstep.com",
+  "dashboard.topstep.com",
+  "projectx.com",
+  "www.projectx.com",
+];
 
 // [claude-code 2026-04-23] Windows runs in remote-backend mode: no local spawn,
 // no launchd, frontend hits fintheon.fly.dev directly. macOS keeps the localhost
@@ -569,6 +583,43 @@ function createWindow(apiBase) {
     });
   } catch (err) {
     console.warn("[Electron] Failed to install media permission handler:", err);
+  }
+
+  // [claude-code 2026-05-12] TopStepX PWA Blocker — session-level webRequest guard.
+  // Blocks navigation to blocked domains in ALL Electron sessions (default + persist:fintheon).
+  // This is Layer 2 (belt-and-suspenders) — checks /etc/hosts marker state at request time
+  // so the filter self-activates/deactivates in sync with Layer 1.
+  try {
+    const { session: electronSession } = require("electron");
+    const blockTargets = [
+      electronSession.defaultSession,
+      electronSession.fromPartition("persist:fintheon"),
+    ];
+    const blockFilter = {
+      urls: [
+        "*://*.topstepx.com/*",
+        "*://topstepx.com/*",
+        "*://*.topstep.com/*",
+        "*://topstep.com/*",
+        "*://*.projectx.com/*",
+        "*://projectx.com/*",
+      ],
+    };
+    for (const sess of blockTargets) {
+      sess.webRequest.onBeforeRequest(blockFilter, (_details, callback) => {
+        // Only cancel when /etc/hosts markers are present (blocker is enabled)
+        if (readHostsBlocked()) {
+          callback({ cancel: true });
+        } else {
+          callback({ cancel: false });
+        }
+      });
+    }
+    console.log(
+      "[Blocker] webRequest filter installed for topstep domains (defaultSession + persist:fintheon).",
+    );
+  } catch (err) {
+    console.warn("[Blocker] Failed to install webRequest filter:", err);
   }
 
   // [claude-code 2026-04-26] S46: TV Calendar Final Integration.
@@ -1366,6 +1417,96 @@ ipcMain.handle("menu:register-shortcut", (_event, shortcut) => {
     require("electron").Menu.setApplicationMenu(menu);
     delete savedShortcuts[shortcut];
     return { ok: true };
+  } catch (err) {
+    return { ok: false, reason: err.message };
+  }
+});
+
+// [claude-code 2026-05-12] TopStepX PWA Blocker — /etc/hosts IPC handlers
+/* ------------------------------------------------------------------ */
+const BLOCKER_MARKER_START = "# FINTHEON-BLOCKER-START";
+const BLOCKER_MARKER_END = "# FINTHEON-BLOCKER-END";
+
+function buildBlockEntries() {
+  const lines = BLOCKED_DOMAINS.map((d) => `0.0.0.0 ${d}`);
+  return [BLOCKER_MARKER_START, ...lines, BLOCKER_MARKER_END].join("\n");
+}
+
+function flushDns() {
+  try {
+    execFileSync("dscacheutil", ["-flushcache"], { timeout: 5000 });
+    execFileSync("killall", ["-HUP", "mDNSResponder"], { timeout: 5000 });
+  } catch {}
+}
+
+function sudoRun(command) {
+  const script = `do shell script "${command.replace(/"/g, '\\"')}" with administrator privileges`;
+  return execFileSync("osascript", ["-e", script], { timeout: 30000 });
+}
+
+function readHostsBlocked() {
+  try {
+    const hosts = fs.readFileSync("/etc/hosts", "utf8");
+    return hosts.includes(BLOCKER_MARKER_START);
+  } catch {
+    return false;
+  }
+}
+
+function enableBlocking() {
+  if (IS_WIN) return { ok: false, reason: "blocker is macOS-only" };
+  if (readHostsBlocked()) return { ok: true, alreadyBlocked: true };
+  const entries = buildBlockEntries();
+  const current = fs.readFileSync("/etc/hosts", "utf8");
+  const updated = current.trimEnd() + "\n\n" + entries + "\n";
+  const escaped = updated.replace(/"/g, '\\"').replace(/\n/g, "\\n");
+  sudoRun(`printf '%b' '${escaped}' > /etc/hosts`);
+  flushDns();
+  return { ok: true, alreadyBlocked: false };
+}
+
+function disableBlocking() {
+  if (IS_WIN) return { ok: false, reason: "blocker is macOS-only" };
+  if (!readHostsBlocked()) return { ok: true, alreadyUnblocked: true };
+  const current = fs.readFileSync("/etc/hosts", "utf8");
+  const startIdx = current.indexOf(BLOCKER_MARKER_START);
+  const endIdx = current.indexOf(BLOCKER_MARKER_END);
+  if (startIdx === -1 || endIdx === -1)
+    return { ok: false, reason: "markers not found" };
+  const updated =
+    current.slice(0, startIdx - 1).trimEnd() +
+    "\n" +
+    current.slice(endIdx + BLOCKER_MARKER_END.length + 1).trimStart();
+  const escaped = updated.replace(/"/g, '\\"').replace(/\n/g, "\\n");
+  sudoRun(`printf '%b' '${escaped}' > /etc/hosts`);
+  flushDns();
+  return { ok: true, alreadyUnblocked: false };
+}
+
+ipcMain.handle("blocker:status", async () => {
+  if (IS_WIN)
+    return { ok: true, blocked: false, reason: "blocker is macOS-only" };
+  try {
+    const blocked = readHostsBlocked();
+    return { ok: true, blocked };
+  } catch (err) {
+    return { ok: false, blocked: false, reason: err.message };
+  }
+});
+
+ipcMain.handle("blocker:enable", async () => {
+  if (IS_WIN) return { ok: false, reason: "blocker is macOS-only" };
+  try {
+    return enableBlocking();
+  } catch (err) {
+    return { ok: false, reason: err.message };
+  }
+});
+
+ipcMain.handle("blocker:disable", async () => {
+  if (IS_WIN) return { ok: false, reason: "blocker is macOS-only" };
+  try {
+    return disableBlocking();
   } catch (err) {
     return { ok: false, reason: err.message };
   }

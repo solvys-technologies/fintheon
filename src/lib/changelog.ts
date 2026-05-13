@@ -10376,4 +10376,16 @@ export const changelog: ChangelogEntry[] = [
       ".cursor/rules/agent-orchestration.md",
     ],
   },
+  {
+    date: "2026-05-13T09:08:00-04:00",
+    agent: "claude-code",
+    summary:
+      "TopStepX PWA Blocker: system-wide /etc/hosts blocking via osascript sudo elevation, session-level webRequest filter for all Electron sessions, and settings UI toggle. Two-layer defense blocks topstepx.com, topstep.com, projectx.com and subdomains across all browsers and apps.",
+    files: [
+      "electron/main.cjs",
+      "electron/preload.cjs",
+      "frontend/components/settings/BlockerTab.tsx",
+      "frontend/components/SettingsPanel.tsx",
+    ],
+  },
 ];

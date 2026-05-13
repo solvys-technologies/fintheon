@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   Globe,
+  Shield,
 } from "lucide-react";
 import { useSettings, type APIKeys } from "../contexts/SettingsContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -37,6 +38,7 @@ import { ApiTab } from "./settings/ApiTab";
 import { IframesTab } from "./settings/IframesTab";
 import { DangerTab } from "./settings/DangerTab";
 import { DeveloperTab } from "./settings/DeveloperTab";
+import { BlockerTab } from "./settings/BlockerTab";
 
 type SettingsTab =
   | "general"
@@ -47,6 +49,7 @@ type SettingsTab =
   | "trading"
   | "api"
   | "iframes"
+  | "blocker"
   | "developer"
   | "danger";
 
@@ -126,6 +129,12 @@ const TABS = [
     label: "iFrames",
     icon: Globe,
     description: "Embed URLs for Boardroom, Research, and more",
+  },
+  {
+    id: "blocker" as const,
+    label: "Blocker",
+    icon: Shield,
+    description: "Block TopStepX across all apps and browsers",
   },
   {
     id: "developer" as const,
@@ -402,6 +411,8 @@ export function SettingsPage() {
         return wrap("desk", <AgenticDesk />);
       case "danger":
         return wrap("danger", <DangerTab />);
+      case "blocker":
+        return wrap("blocker", <BlockerTab />);
       case "developer":
         return wrap(
           "developer",
