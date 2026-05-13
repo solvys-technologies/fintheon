@@ -1,4 +1,5 @@
 // [codex 2026-05-07] S61-T3: Agent desk context preflight for all native agents.
+// [claude-code 2026-05-13] Inject lockout state into agent context
 
 import { createLogger } from "../../lib/logger.js";
 import type { AgentId } from "../hermes/types.js";
@@ -7,6 +8,7 @@ import { getMemories } from "../agent-memory/memory-store.js";
 import { buildFeedContext } from "../ai/agent-instructions/index.js";
 import { readDayPlan } from "../day-plan/day-plan-service.js";
 import { getRecentOutputs } from "./agent-outputs.js";
+import { getLockoutSummary } from "../lockout.js";
 
 const log = createLogger("desk-context");
 
@@ -87,6 +89,10 @@ export async function preflight(
       `- Theme: ${clip(plan.deskTheme ?? "No desk theme set.", 320)}`,
       ...windows,
     ];
+  });
+
+  await pushSection(sections, "Lockout Status", async () => {
+    return [getLockoutSummary(options.userId)];
   });
 
   if (normalized === "harper") {

@@ -1,8 +1,12 @@
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — trading tab
-import React from "react";
+// [claude-code 2026-05-13] Added lockout controls + quick access URL
+import React, { useState } from "react";
 import Toggle from "../Toggle";
+import { useLockout } from "../../hooks/useLockout";
 
 type PrimaryBroker = "rithmic" | "projectx" | "mmt";
+
+const LOCKOUT_PRESETS = [5, 10, 15, 30, 60, 120];
 
 interface TradingTabProps {
   riskSettings: any;
@@ -15,6 +19,10 @@ interface TradingTabProps {
   setAutoPilotSettings: (settings: any) => void;
   tradingModels: any;
   setTradingModels: (models: any) => void;
+  lockoutDefaultDuration: number;
+  setLockoutDefaultDuration: (minutes: number) => void;
+  quickAccessUrl: string;
+  setQuickAccessUrl: (url: string) => void;
 }
 
 export function TradingTab({
@@ -28,7 +36,17 @@ export function TradingTab({
   setAutoPilotSettings,
   tradingModels,
   setTradingModels,
+  lockoutDefaultDuration,
+  setLockoutDefaultDuration,
+  quickAccessUrl,
+  setQuickAccessUrl,
 }: TradingTabProps) {
+  const {
+    state: lockoutState,
+    lock: lockoutLock,
+    unlock: lockoutUnlock,
+  } = useLockout();
+
   return (
     <>
       <section>
@@ -161,6 +179,120 @@ export function TradingTab({
             <p className="text-xs text-gray-500 mt-2">
               Maximum number of trades allowed within the specified duration
               window
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="pt-6 border-t border-zinc-800">
+        <h2 className="text-lg font-semibold text-[var(--fintheon-accent)] mb-4">
+          Lockout
+        </h2>
+        <div className="space-y-6">
+          {/* Lockout status */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-medium text-gray-300">Status</h4>
+              <span
+                className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                  lockoutState.locked
+                    ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                    : "bg-green-500/10 text-green-400 border border-green-500/20"
+                }`}
+              >
+                {lockoutState.locked ? "Locked" : "Unlocked"}
+              </span>
+            </div>
+            {lockoutState.locked && lockoutState.remaining && (
+              <div className="bg-[var(--fintheon-surface)] border border-zinc-800 rounded-lg p-3">
+                <div className="text-xs text-gray-400">
+                  Remaining:{" "}
+                  <span className="text-white font-mono">
+                    {Math.floor(lockoutState.remaining / 60)}m{" "}
+                    {lockoutState.remaining % 60}s
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Lock/unlock button */}
+          <div>
+            {lockoutState.locked ? (
+              <button
+                onClick={() => lockoutUnlock()}
+                className="w-full px-3 py-2 rounded-lg border text-sm transition-all bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20"
+              >
+                Unlock Trading
+              </button>
+            ) : (
+              <>
+                <h4 className="text-sm font-medium text-gray-300 mb-3">
+                  Lock Trading
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {LOCKOUT_PRESETS.map((min) => (
+                    <button
+                      key={min}
+                      onClick={() => lockoutLock(min)}
+                      className="px-3 py-2 rounded-lg border text-sm transition-all bg-[var(--fintheon-bg)] border-zinc-800 hover:border-zinc-700 text-gray-400 hover:text-white"
+                    >
+                      {min >= 60
+                        ? `${Math.floor(min / 60)}h${min % 60 > 0 ? ` ${min % 60}m` : ""}`
+                        : `${min}m`}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Default lockout duration */}
+          <div>
+            <h4 className="text-sm font-medium text-gray-300 mb-3">
+              Default Lockout Duration
+            </h4>
+            <select
+              value={lockoutDefaultDuration}
+              onChange={(e) =>
+                setLockoutDefaultDuration(parseInt(e.target.value))
+              }
+              className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/30"
+            >
+              {LOCKOUT_PRESETS.map((min) => (
+                <option key={min} value={min}>
+                  {min >= 60
+                    ? `${Math.floor(min / 60)}h${min % 60 > 0 ? ` ${min % 60}m` : ""}`
+                    : `${min} min`}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-2">
+              Default lockout duration used by the toolbar button
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="pt-6 border-t border-zinc-800">
+        <h2 className="text-lg font-semibold text-[var(--fintheon-accent)] mb-4">
+          Quick Access
+        </h2>
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-sm font-medium text-gray-300 mb-3">
+              Quick Access URL
+            </h4>
+            <input
+              type="url"
+              value={quickAccessUrl}
+              onChange={(e) => setQuickAccessUrl(e.target.value)}
+              placeholder="https://example.com"
+              className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/30 placeholder-gray-600"
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              URL opened from the macOS dock menu / system tray quick access
+              item
             </p>
           </div>
         </div>

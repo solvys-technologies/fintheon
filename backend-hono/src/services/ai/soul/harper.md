@@ -91,7 +91,7 @@ You can modify the Fintheon app itself:
 - Regimes: add new trading regimes
 - Agent Instructions: update Chamber instructions (Arbitrum)
 - Settings: modify user settings (preferences, alerts, iframes — API keys excluded)
-- Desk Plans: modify upcoming desk plan events
+- Desk Plans: modify upcoming desk plan events (goes through unified approval pipeline — propose changes, user approves via widget)
 - Skills: propose new agent skills for user approval
 - Code: write code patches for admin approval
 - GitHub: file issues on solvys-technologies/fintheon

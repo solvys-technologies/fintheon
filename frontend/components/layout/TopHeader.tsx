@@ -124,8 +124,13 @@ export function TopHeader({
 }: TopHeaderProps) {
   const { tier } = useAuth();
   const backend = useBackend();
-  const { selectedSymbol, traderName, alertConfig, proposerIframeSources } =
-    useSettings();
+  const {
+    selectedSymbol,
+    traderName,
+    alertConfig,
+    proposerIframeSources,
+    lockoutDefaultDuration,
+  } = useSettings();
   const { addToast } = useToast();
   const instanceName =
     import.meta.env.VITE_FINTHEON_INSTANCE_NAME || "Fintheon";
@@ -179,9 +184,14 @@ export function TopHeader({
       });
     } catch {}
   }, []);
-  const { state: lockoutState, lock: lockoutLock, unlock: lockoutUnlock } = useLockout();
+  const {
+    state: lockoutState,
+    lock: lockoutLock,
+    unlock: lockoutUnlock,
+  } = useLockout();
   useEffect(() => {
     setToolbarOrderState(getToolbarOrder());
+  }, []);
 
   const handleToolbarDragStart = useCallback(
     (e: React.DragEvent, id: ToolbarItemId) => {
@@ -550,7 +560,7 @@ export function TopHeader({
               onClick={() =>
                 lockoutState.locked
                   ? lockoutUnlock()
-                  : lockoutLock()
+                  : lockoutLock(lockoutDefaultDuration)
               }
               className={`toolbar-icon-btn ${lockoutState.locked ? "toolbar-active" : ""}`}
               title={

@@ -211,6 +211,10 @@ export function SettingsPage() {
     setProposerIframeSources,
     proposerDefaultIframe,
     setProposerDefaultIframe,
+    lockoutDefaultDuration,
+    setLockoutDefaultDuration,
+    quickAccessUrl,
+    setQuickAccessUrl,
   } = useSettings();
   const backend = useBackend();
   const voiceMemory = useVoiceMemory();
@@ -367,6 +371,10 @@ export function SettingsPage() {
             setAutoPilotSettings={setAutoPilotSettings}
             tradingModels={tradingModels}
             setTradingModels={setTradingModels}
+            lockoutDefaultDuration={lockoutDefaultDuration}
+            setLockoutDefaultDuration={setLockoutDefaultDuration}
+            quickAccessUrl={quickAccessUrl}
+            setQuickAccessUrl={setQuickAccessUrl}
           />,
         );
       case "general":
