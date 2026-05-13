@@ -1,3 +1,5 @@
+// [claude-code 2026-05-13] S64-T1: prices now come from TV scanner via day-plan-service pipeline.
+//   No direct price-fetching change needed — pricesOfInterest is passed in.
 // [claude-code 2026-04-29] S49: Rewrote SYSTEM_PROMPT, sanitizeTheme, and
 //   fallbackTheme to produce a <=160 char actionable plan (not a brief recap).
 //   sanitizeTheme now hard-caps at 160 chars on a word boundary.

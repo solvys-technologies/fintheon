@@ -9,6 +9,25 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-13T15:15:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S64-T1: TV scanner pricing + WH Pool Call + window scheduler expansion. Replaced Yahoo Finance UDF with TradingView scanner for live OHLCV bars (NQ=F, ES=F, YM=F). Added MAX_PROFIT_POINTS=80 clamp to profit targets. Removed hardcoded currentPrice from INSTRUMENT_BETAS, added refreshFromTVScanner() fallback chain. Created WH Press Pool RSS scraper (wh-pool-call.ts). Extended window-scheduler with speech/summit/pool_call/cross_border_macro event types and isCrossBorderMacro() classifier. Wired new event sources into day-plan-service. Added TWT-triggered week desk plan generation.",
+    files: [
+      "backend-hono/src/services/day-plan/tv-bars-fetcher.ts",
+      "backend-hono/src/services/day-plan/price-rounding.ts",
+      "backend-hono/src/services/iv-scoring/instrument.ts",
+      "backend-hono/src/services/fiscal-sources/types.ts",
+      "backend-hono/src/services/fiscal-sources/wh-pool-call.ts",
+      "backend-hono/src/services/cron/fiscal-speaker-populator.ts",
+      "backend-hono/src/services/day-plan/window-scheduler.ts",
+      "backend-hono/src/services/day-plan/day-plan-service.ts",
+      "backend-hono/src/services/desk-planner.ts",
+      "backend-hono/src/services/brief-generator.ts",
+      "backend-hono/src/services/day-plan/desk-theme-generator.ts",
+    ],
+  },
+  {
     date: "2026-05-12T00:00:00-04:00",
     agent: "codex",
     summary:

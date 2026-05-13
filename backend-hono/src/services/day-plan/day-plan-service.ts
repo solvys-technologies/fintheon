@@ -1,3 +1,7 @@
+// [claude-code 2026-05-13] S64-T1: wired new event sources (speech, summit, pool_call,
+//   cross_border_macro) via window-scheduler. Added refreshPricesFromTV() call to
+//   populate live prices from TV scanner before desk plan generation.
+//   Multiple windows per day now supported from scheduler output.
 // [claude-code 2026-05-06] S59-T4: desk plan entries now snap to 80-or-20 handles, profit targets
 //   to 25-multiple handles, invalidation 35pts past Entry2. Entries derived from POC/VWAP/VA
 //   positioning (where retail liquidity pools). VIX adjusts spread via implied points.
@@ -8,7 +12,11 @@ import { readEconEvents } from "../supabase-service.js";
 import { getFeed } from "../riskflow/feed-service.js";
 import { getCurrentRegime } from "../regime/regime-service.js";
 import { fetchVIX } from "../market-data/router.js";
-import { calculateImpliedPoints } from "../iv-scoring/instrument.js";
+import {
+  calculateImpliedPoints,
+  refreshPricesFromTV,
+  getLivePrice,
+} from "../iv-scoring/instrument.js";
 import { fetchInstrumentBars } from "./tv-bars-fetcher.js";
 import {
   pointOfControl,
@@ -61,6 +69,9 @@ export async function generateDayPlan(
     }
   }
 
+  // Refresh live prices from TV scanner before computing bars/prices
+  await refreshPricesFromTV().catch(() => {});
+
   const [econEvents, feedResponse, regimeState, vix] = await Promise.all([
     readEconEvents({ from: dateIso, to: dateIso }).catch(() => []),
     getFeed("system", { limit: 20 }).catch(() => ({ items: [] }) as never),
@@ -94,22 +105,25 @@ export async function generateDayPlan(
 
   const spot = latestClose(barsForInstrument) ?? vwap ?? poc ?? null;
 
+  // Use live TV price if bars are sparse
+  const livePrice = getLivePrice(instrument, spot ?? undefined);
+  const effectiveSpot = spot ?? livePrice;
+
   const ivScore = dominantWindow.ivScore;
   const vixLevel = vix?.value ?? 18;
-  const implied = calculateImpliedPoints(
-    vixLevel,
-    spot ?? undefined,
-    instrument,
-  );
+  const implied = calculateImpliedPoints(vixLevel, effectiveSpot, instrument);
   // ~12% of daily implied move = 35-40 pts on /NQ, scales with VIX
   const ivSpread = Math.round(implied.adjustedPoints * 0.12);
 
   // Direction: spot above POC = bullish bias (buy off liquidity below)
-  const bias: "long" | "short" = spot && poc && spot > poc ? "long" : "short";
+  const bias: "long" | "short" =
+    effectiveSpot && poc && effectiveSpot > poc ? "long" : "short";
 
   // Entry zone: nearest liquidity (VAL for longs, VAH for shorts)
   const liquidityZone =
-    bias === "long" ? (va?.val ?? spot ?? 0) : (va?.vah ?? spot ?? 0);
+    bias === "long"
+      ? (va?.val ?? effectiveSpot ?? 0)
+      : (va?.vah ?? effectiveSpot ?? 0);
 
   // Two entries at 80-or-20 handles near the liquidity zone
   const rawEntry1 =
@@ -149,24 +163,25 @@ export async function generateDayPlan(
     regime: regimeState?.regime ?? null,
   });
 
+  // Build windows from all scheduler windows (multi-window support)
+  const windows = planned.windows.map((pw) => ({
+    windowIndex: pw.windowIndex,
+    startTime: pw.startTime,
+    endTime: pw.endTime,
+    pricesOfInterest,
+    entries,
+    invalidation,
+    profitTarget,
+    expectedMovePct: ivSpread,
+  }));
+
   const plan = await persistDayPlan({
     teamId,
     dateIso,
     eventName,
     deskTheme,
     generatedBy: input.generatedBy ?? "day-plan-cron",
-    windows: [
-      {
-        windowIndex: dominantWindow.windowIndex,
-        startTime: dominantWindow.startTime,
-        endTime: dominantWindow.endTime,
-        pricesOfInterest,
-        entries,
-        invalidation,
-        profitTarget,
-        expectedMovePct: ivSpread,
-      },
-    ],
+    windows,
   });
 
   // Auto-lock when a new desk plan is generated — review before trading
@@ -189,6 +204,7 @@ export async function generateDayPlan(
     pricesOfInterest,
     invalidation,
     profitTarget,
+    windowCount: windows.length,
     override: !!input.override,
     overrideReason: input.overrideReason,
   });

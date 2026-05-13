@@ -11,6 +11,7 @@ import { createLogger } from "../../lib/logger.js";
 import { scrapeFedSpeeches } from "../fiscal-sources/fed-speeches.js";
 import { scrapeBessentSpeeches } from "../fiscal-sources/bessent-speeches.js";
 import { scrapeTrumpSchedule } from "../fiscal-sources/trump-schedule.js";
+import { scrapePoolCallEvents } from "../fiscal-sources/wh-pool-call.js";
 import type {
   ScrapedFiscalEvent,
   FiscalSource,
@@ -83,7 +84,7 @@ export interface FiscalSpeakerStats {
   skippedFilter: number;
   skippedInvalid: number;
   perSource: Record<FiscalSource, number>;
-  errors: Partial<Record<"fed" | "bessent" | "trump", string>>;
+  errors: Partial<Record<"fed" | "bessent" | "trump" | "poolCall", string>>;
 }
 
 function zeroPerSource(): Record<FiscalSource, number> {
@@ -93,6 +94,7 @@ function zeroPerSource(): Record<FiscalSource, number> {
     "treasury-rss": 0,
     "whitehouse-rss": 0,
     "truth-rss": 0,
+    "wh-pool-rss": 0,
   };
 }
 
@@ -132,16 +134,23 @@ export async function runFiscalSpeakerPopulator(): Promise<FiscalSpeakerRunResul
   };
   const errors: FiscalSpeakerStats["errors"] = {};
 
-  const [fed, bessent, trump] = await Promise.all([
+  const [fed, bessent, trump, poolCall] = await Promise.all([
     scrapeFedSpeeches(),
     scrapeBessentSpeeches(),
     scrapeTrumpSchedule(),
+    scrapePoolCallEvents(),
   ]);
   if (fed.errored) errors.fed = "scrape errored";
   if (bessent.errored) errors.bessent = "scrape errored";
   if (trump.errored) errors.trump = "scrape errored";
+  if (poolCall.errored) errors.poolCall = "scrape errored";
 
-  const events = [...fed.events, ...bessent.events, ...trump.events];
+  const events = [
+    ...fed.events,
+    ...bessent.events,
+    ...trump.events,
+    ...poolCall.events,
+  ];
   result.fetched = events.length;
 
   if (events.length === 0) {

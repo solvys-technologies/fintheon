@@ -1,5 +1,10 @@
+// [claude-code 2026-05-13] S64-T1: added MAX_PROFIT_POINTS clamp to roundTo25multiple.
+//   Profit targets for 15-45 minute windows must never exceed 80 points.
 // [claude-code 2026-05-06] S59-T4: added roundTo80or20, roundTo25multiple, invalidationOffset for
 //   desk plan entry/target/invalidation handle snapping per TP's 80/20 entry + 25-multiple target rules.
+
+/** Maximum profit target in points for a 15-45 minute trading window. */
+export const MAX_PROFIT_POINTS = 80;
 
 interface RoundingProfile {
   anchor: number;
@@ -53,20 +58,22 @@ export function roundTo80or20(price: number, instrument: string): number {
   return best;
 }
 
-/** Snap to nearest handle ending in 00, 25, 50, or 75. */
+/** Snap to nearest handle ending in 00, 25, 50, or 75, capped at MAX_PROFIT_POINTS. */
 export function roundTo25multiple(price: number): number {
   if (!Number.isFinite(price)) return price;
   const quarter = Math.round(price / 25) * 25;
-  // Ensure it's one of 00, 25, 50, 75
-  return quarter;
+  // Clamp profit targets to MAX_PROFIT_POINTS for 15-45 minute windows
+  const clamped = Math.min(Math.abs(quarter), MAX_PROFIT_POINTS);
+  return Math.sign(quarter) * clamped;
 }
 
-/** Invalidation = Entry 2 ± offset (below for longs, above for shorts). */
+/** Invalidation = Entry 2 ± offset (below for longs, above for shorts).
+ *  Offset kept below MAX_PROFIT_POINTS/2 = 40 points per S64 spec. */
 export function invalidationOffset(
   entry2: number,
   direction: "long" | "short",
 ): number {
-  const offset = 35; // ~35 points breathing room
+  const offset = 35; // ~35 points breathing room, < 40 per spec
   return direction === "long" ? entry2 - offset : entry2 + offset;
 }
 

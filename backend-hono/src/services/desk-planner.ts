@@ -1,3 +1,5 @@
+// [claude-code 2026-05-13] S64-T1: added triggerWeekPlan() for TWT-publish-driven weekly
+//   plan generation. Called from brief-generator.ts after TWT completes.
 // [claude-code 2026-04-28] S48-T2: CAO Desk Plan midnight pulse.
 // Runs at 00:00 ET weekdays. Harper polls economic_events for today's
 // scheduled prints and produces a desk_plan with countdown timestamps.
@@ -6,6 +8,8 @@
 import cron from "node-cron";
 import { createLogger } from "../lib/logger.js";
 import { getSupabaseClient } from "../config/supabase.js";
+import { planWeek } from "./day-plan/window-scheduler.js";
+import { generateDayPlan, readDayPlan } from "./day-plan/day-plan-service.js";
 
 const log = createLogger("DeskPlanner");
 
@@ -98,6 +102,58 @@ async function tick(): Promise<void> {
     log.error("DeskPlan tick threw", {
       error: err instanceof Error ? err.message : String(err),
     });
+  }
+}
+
+/**
+ * Trigger a week-long desk plan generation. Called from brief-generator.ts
+ * after TWT (Weekly Tribune) is published. Generates day plans for the next
+ * 5 weekdays using the window scheduler.
+ */
+export async function triggerWeekPlan(): Promise<void> {
+  if (running) {
+    log.info("triggerWeekPlan skipped — already running");
+    return;
+  }
+
+  running = true;
+  try {
+    const plannedDays = await planWeek(new Date());
+    log.info("triggerWeekPlan: planning week", {
+      dayCount: plannedDays.length,
+    });
+
+    for (const day of plannedDays) {
+      const ref = new Date(`${day.date}T12:00:00Z`);
+      const existing = await readDayPlan("pic", day.date);
+      if (existing) {
+        log.info("Day plan already exists, skipping", { date: day.date });
+        continue;
+      }
+
+      try {
+        await generateDayPlan({
+          date: ref,
+          generatedBy: "twt-trigger",
+          override: false,
+        });
+        log.info("Day plan generated from TWT trigger", { date: day.date });
+      } catch (planErr) {
+        log.warn("Day plan generation from TWT trigger failed", {
+          date: day.date,
+          error: planErr instanceof Error ? planErr.message : String(planErr),
+        });
+      }
+    }
+
+    lastGeneratedAt = new Date().toISOString();
+    log.info("triggerWeekPlan complete", { dayCount: plannedDays.length });
+  } catch (err) {
+    log.error("triggerWeekPlan failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  } finally {
+    running = false;
   }
 }
 

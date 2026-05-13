@@ -360,6 +360,21 @@ ${
     length: text.length,
   });
 
+  // [claude-code 2026-05-13] S64-T1: After TWT generation, trigger week desk plan generation.
+  if (briefType === "TWT") {
+    void (async () => {
+      try {
+        const { triggerWeekPlan } = await import("./desk-planner.js");
+        await triggerWeekPlan();
+        log.info("Week desk plan triggered from TWT publish");
+      } catch (err) {
+        log.warn("TWT->desk-plan trigger failed (non-fatal)", {
+          error: String(err),
+        });
+      }
+    })();
+  }
+
   // [claude-code 2026-04-18] A1: Daily Brief push trigger. Idempotent via fingerprint (one push per type per day).
   void (async () => {
     try {
