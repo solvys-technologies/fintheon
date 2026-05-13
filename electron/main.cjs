@@ -607,8 +607,8 @@ function createWindow(apiBase) {
     };
     for (const sess of blockTargets) {
       sess.webRequest.onBeforeRequest(blockFilter, (_details, callback) => {
-        // Only cancel when /etc/hosts markers are present (blocker is enabled)
-        if (readHostsBlocked()) {
+        // Cancel when either /etc/hosts markers or /etc/resolver overrides are active
+        if (readHostsBlocked() || readResolverBlocked()) {
           callback({ cancel: true });
         } else {
           callback({ cancel: false });
@@ -1422,16 +1422,35 @@ ipcMain.handle("menu:register-shortcut", (_event, shortcut) => {
   }
 });
 
-// [claude-code 2026-05-12] TopStepX PWA Blocker — /etc/hosts IPC handlers
+// [claude-code 2026-05-12] TopStepX PWA Blocker — system-level IPC handlers
+// Layer 1: /etc/hosts (zero-config block on standard macOS)
+// Layer 2: /etc/resolver/ (per-domain DNS override for systems with custom DNS resolvers)
+// Layer 3: Electron webRequest (blocks in-app, see createWindow() for registration)
 /* ------------------------------------------------------------------ */
 const BLOCKER_MARKER_START = "# FINTHEON-BLOCKER-START";
 const BLOCKER_MARKER_END = "# FINTHEON-BLOCKER-END";
+const RESOLVER_DIR = "/etc/resolver";
 
-function buildBlockEntries() {
+/** Build the /etc/hosts block entries */
+function buildHostsBlockEntries() {
   const lines = BLOCKED_DOMAINS.map((d) => `0.0.0.0 ${d}`);
   return [BLOCKER_MARKER_START, ...lines, BLOCKER_MARKER_END].join("\n");
 }
 
+/** Get unique eTLD+1 domains from BLOCKED_DOMAINS (for /etc/resolver/ files) */
+function getEtldPlusOne() {
+  return Array.from(
+    new Set(
+      BLOCKED_DOMAINS.map((d) => {
+        // Strip known subdomain prefixes to get base domain
+        const parts = d.split(".");
+        return parts.length >= 2 ? parts.slice(-2).join(".") : d;
+      }),
+    ),
+  );
+}
+
+/** Flush macOS DNS cache */
 function flushDns() {
   try {
     execFileSync("dscacheutil", ["-flushcache"], { timeout: 5000 });
@@ -1439,11 +1458,13 @@ function flushDns() {
   } catch {}
 }
 
+/** Run a shell command with sudo via osascript (standard macOS auth dialog) */
 function sudoRun(command) {
   const script = `do shell script "${command.replace(/"/g, '\\"')}" with administrator privileges`;
   return execFileSync("osascript", ["-e", script], { timeout: 30000 });
 }
 
+/** Read /etc/hosts and check for blocker markers */
 function readHostsBlocked() {
   try {
     const hosts = fs.readFileSync("/etc/hosts", "utf8");
@@ -1453,42 +1474,97 @@ function readHostsBlocked() {
   }
 }
 
-function enableBlocking() {
-  if (IS_WIN) return { ok: false, reason: "blocker is macOS-only" };
-  if (readHostsBlocked()) return { ok: true, alreadyBlocked: true };
-  const entries = buildBlockEntries();
-  const current = fs.readFileSync("/etc/hosts", "utf8");
-  const updated = current.trimEnd() + "\n\n" + entries + "\n";
-  const escaped = updated.replace(/"/g, '\\"').replace(/\n/g, "\\n");
-  sudoRun(`printf '%b' '${escaped}' > /etc/hosts`);
-  flushDns();
-  return { ok: true, alreadyBlocked: false };
+/** Check resolver dir exists with at least one resolver file for our domains */
+function readResolverBlocked() {
+  try {
+    if (!fs.existsSync(RESOLVER_DIR)) return false;
+    const files = fs.readdirSync(RESOLVER_DIR);
+    const etld = getEtldPlusOne();
+    return etld.some((d) => files.includes(d));
+  } catch {
+    return false;
+  }
 }
 
+/**
+ * Enable blocking: writes /etc/hosts entries AND creates /etc/resolver/ overrides.
+ * The resolver files force macOS to use 127.0.0.1 for DNS on just these domains,
+ * which takes priority over system-wide custom resolvers (Control D, NextDNS, etc.).
+ */
+function enableBlocking() {
+  if (IS_WIN) return { ok: false, reason: "blocker is macOS-only" };
+
+  // Layer 1: /etc/hosts
+  let hostsResult = "noop";
+  if (!readHostsBlocked()) {
+    const entries = buildHostsBlockEntries();
+    const current = fs.readFileSync("/etc/hosts", "utf8");
+    const updated = current.trimEnd() + "\n\n" + entries + "\n";
+    const escaped = updated.replace(/"/g, '\\"').replace(/\n/g, "\\n");
+    sudoRun(`printf '%b' '${escaped}' > /etc/hosts`);
+    hostsResult = "written";
+  }
+
+  // Layer 2: /etc/resolver/ per-domain overrides
+  let resolverResult = "noop";
+  const etld = getEtldPlusOne();
+  const commands = [`mkdir -p ${RESOLVER_DIR}`];
+  for (const domain of etld) {
+    commands.push(`echo 'nameserver 127.0.0.1' > ${RESOLVER_DIR}/${domain}`);
+  }
+  sudoRun(commands.join(" && "));
+  resolverResult = "written";
+
+  flushDns();
+  return { ok: true, hosts: hostsResult, resolver: resolverResult };
+}
+
+/**
+ * Disable blocking: removes /etc/hosts entries AND removes /etc/resolver/ overrides.
+ */
 function disableBlocking() {
   if (IS_WIN) return { ok: false, reason: "blocker is macOS-only" };
-  if (!readHostsBlocked()) return { ok: true, alreadyUnblocked: true };
-  const current = fs.readFileSync("/etc/hosts", "utf8");
-  const startIdx = current.indexOf(BLOCKER_MARKER_START);
-  const endIdx = current.indexOf(BLOCKER_MARKER_END);
-  if (startIdx === -1 || endIdx === -1)
-    return { ok: false, reason: "markers not found" };
-  const updated =
-    current.slice(0, startIdx - 1).trimEnd() +
-    "\n" +
-    current.slice(endIdx + BLOCKER_MARKER_END.length + 1).trimStart();
-  const escaped = updated.replace(/"/g, '\\"').replace(/\n/g, "\\n");
-  sudoRun(`printf '%b' '${escaped}' > /etc/hosts`);
+
+  // Layer 1: /etc/hosts
+  let hostsResult = "noop";
+  if (readHostsBlocked()) {
+    const current = fs.readFileSync("/etc/hosts", "utf8");
+    const startIdx = current.indexOf(BLOCKER_MARKER_START);
+    const endIdx = current.indexOf(BLOCKER_MARKER_END);
+    if (startIdx !== -1 && endIdx !== -1) {
+      const updated =
+        current.slice(0, startIdx - 1).trimEnd() +
+        "\n" +
+        current.slice(endIdx + BLOCKER_MARKER_END.length + 1).trimStart();
+      const escaped = updated.replace(/"/g, '\\"').replace(/\n/g, "\\n");
+      sudoRun(`printf '%b' '${escaped}' > /etc/hosts`);
+      hostsResult = "removed";
+    }
+  }
+
+  // Layer 2: /etc/resolver/ removals
+  let resolverResult = "noop";
+  const etld = getEtldPlusOne();
+  const removeCmds = etld.map((d) => `rm -f ${RESOLVER_DIR}/${d}`);
+  sudoRun(removeCmds.join(" && "));
+  resolverResult = "removed";
+
   flushDns();
-  return { ok: true, alreadyUnblocked: false };
+  return { ok: true, hosts: hostsResult, resolver: resolverResult };
 }
 
 ipcMain.handle("blocker:status", async () => {
   if (IS_WIN)
     return { ok: true, blocked: false, reason: "blocker is macOS-only" };
   try {
-    const blocked = readHostsBlocked();
-    return { ok: true, blocked };
+    const hostsBlocked = readHostsBlocked();
+    const resolverBlocked = readResolverBlocked();
+    const blocked = hostsBlocked || resolverBlocked;
+    return {
+      ok: true,
+      blocked,
+      layers: { hosts: hostsBlocked, resolver: resolverBlocked },
+    };
   } catch (err) {
     return { ok: false, blocked: false, reason: err.message };
   }

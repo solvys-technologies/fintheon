@@ -10380,7 +10380,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-05-13T09:08:00-04:00",
     agent: "claude-code",
     summary:
-      "TopStepX PWA Blocker: system-wide /etc/hosts blocking via osascript sudo elevation, session-level webRequest filter for all Electron sessions, and settings UI toggle. Two-layer defense blocks topstepx.com, topstep.com, projectx.com and subdomains across all browsers and apps.",
+      "TopStepX PWA Blocker: 3-layer system-wide blocking via /etc/hosts (DNS redirect), /etc/resolver/ (per-domain DNS override for custom resolvers like Control D/NextDNS), and Electron webRequest (in-app filter). Settings UI with per-layer status indicators. Blocks topstepx.com, topstep.com, projectx.com and subdomains across all browsers, PWAs, and apps.",
     files: [
       "electron/main.cjs",
       "electron/preload.cjs",
