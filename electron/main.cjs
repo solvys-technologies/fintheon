@@ -17,7 +17,15 @@
 // [claude-code 2026-03-24] Supabase Google OAuth deep link: fintheon:// protocol + open-url handler
 // [claude-code 2026-04-19] S27-T5 W2c: voice window chrome hook for active voice sessions
 // [claude-code 2026-04-23] Windows build support — remote-backend mode, platform gating, titleBarOverlay chrome
-const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
+const {
+  app,
+  BrowserWindow,
+  ipcMain,
+  shell,
+  dialog,
+  Menu,
+  Notification,
+} = require("electron");
 const { installVoiceChromeHook } = require("./window-chrome-voice.cjs");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
@@ -87,6 +95,13 @@ let backendProcess = null;
 let pendingAuthUrl = null;
 let backendStopInFlight = null;
 let deferredUpdateOnClose = false;
+
+// [claude-code 2026-05-13] S63 T3: Dock menu state + notification tracking
+let dockQuickAccessUrl = "";
+let lastDockLockState = null; // Track transitions for expiry notification
+let notifiedHighIvIds = new Set(); // Track notified RiskFlow items
+let dockMenuPollInterval = null;
+let riskflowPollInterval = null;
 
 // [claude-code 2026-04-16] Track whether WE spawned the backend or found it already running
 let backendOwnedByApp = false;
@@ -221,6 +236,222 @@ async function isBackendAlive() {
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/* ------------------------------------------------------------------ */
+/*  S63 T3: Dock menu + notification polling (macOS)                  */
+/* ------------------------------------------------------------------ */
+
+/** Fetch lockout status from backend */
+async function fetchLockoutStatus() {
+  try {
+    const http = require("http");
+    return new Promise((resolve) => {
+      const req = http.get(
+        "http://localhost:8080/api/lockout/status",
+        { timeout: 3000 },
+        (res) => {
+          let data = "";
+          res.on("data", (chunk) => (data += chunk));
+          res.on("end", () => {
+            try {
+              resolve(JSON.parse(data));
+            } catch {
+              resolve(null);
+            }
+          });
+        },
+      );
+      req.on("error", () => resolve(null));
+      req.setTimeout(3000, () => {
+        req.destroy();
+        resolve(null);
+      });
+    });
+  } catch {
+    return null;
+  }
+}
+
+/** Fetch RiskFlow feed items for high-IV notification check */
+async function fetchRiskFlowFeed() {
+  try {
+    const http = require("http");
+    return new Promise((resolve) => {
+      const req = http.get(
+        "http://localhost:8080/api/riskflow/feed?limit=20&breaking=true",
+        { timeout: 5000 },
+        (res) => {
+          let data = "";
+          res.on("data", (chunk) => (data += chunk));
+          res.on("end", () => {
+            try {
+              resolve(JSON.parse(data));
+            } catch {
+              resolve(null);
+            }
+          });
+        },
+      );
+      req.on("error", () => resolve(null));
+      req.setTimeout(5000, () => {
+        req.destroy();
+        resolve(null);
+      });
+    });
+  } catch {
+    return null;
+  }
+}
+
+/** Build and set the macOS dock menu from current state */
+function updateDockMenu(lockStatus) {
+  if (!IS_MAC || !app.dock) return;
+
+  const menuItems = [];
+
+  // Status label
+  if (lockStatus && lockStatus.locked) {
+    const minutes = lockStatus.remaining
+      ? Math.round(lockStatus.remaining / 60)
+      : "?";
+    menuItems.push({
+      label: `Trading Locked \u2014 ${minutes}m remaining`,
+      enabled: false,
+    });
+  } else {
+    menuItems.push({ label: "Trading Unlocked", enabled: false });
+  }
+
+  menuItems.push({ type: "separator" });
+
+  // Lock/unlock action
+  if (lockStatus && lockStatus.locked) {
+    menuItems.push({
+      label: "Unlock Trading",
+      click: () => {
+        postToBackend("/api/lockout/toggle", { locked: false }).catch(() => {});
+      },
+    });
+  } else {
+    menuItems.push({
+      label: "Lock Trading (30m)",
+      click: () => {
+        postToBackend("/api/lockout/toggle", {
+          locked: true,
+          durationMinutes: 30,
+        }).catch(() => {});
+      },
+    });
+  }
+
+  menuItems.push({ type: "separator" });
+
+  // Quick access
+  menuItems.push({
+    label: "Quick Access",
+    click: () => {
+      if (dockQuickAccessUrl && mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send("dock:quick-access", dockQuickAccessUrl);
+      }
+    },
+  });
+
+  menuItems.push({ type: "separator" });
+
+  menuItems.push({
+    label: "Quit",
+    click: () => {
+      closeReason = "dock-menu-quit";
+      app.quit();
+    },
+  });
+
+  const dockMenu = Menu.buildFromTemplate(menuItems);
+  try {
+    app.dock.setMenu(dockMenu);
+  } catch (err) {
+    console.error("[DockMenu] Failed to set menu:", err.message);
+  }
+}
+
+/** Poll lockout + RiskFlow and update dock menu / fire notifications */
+function startPolling() {
+  if (dockMenuPollInterval) clearInterval(dockMenuPollInterval);
+  if (riskflowPollInterval) clearInterval(riskflowPollInterval);
+
+  // Lockout poll — 5s interval
+  dockMenuPollInterval = setInterval(async () => {
+    const status = await fetchLockoutStatus();
+    if (!status) return;
+
+    updateDockMenu(status);
+
+    // Lockout expiry notification
+    const currentLocked = !!status.locked;
+    if (lastDockLockState === true && currentLocked === false) {
+      try {
+        const n = new Notification({
+          title: "Trading Lockout Expired",
+          body: "Your trading lockout has expired. Trading is now enabled.",
+        });
+        n.show();
+      } catch (err) {
+        console.error("[DockMenu] Expiry notification failed:", err.message);
+      }
+    }
+    lastDockLockState = currentLocked;
+  }, 5000);
+
+  // RiskFlow high-IV poll — 60s interval
+  riskflowPollInterval = setInterval(async () => {
+    try {
+      const feed = await fetchRiskFlowFeed();
+      if (!feed || !Array.isArray(feed.items)) return;
+
+      for (const item of feed.items) {
+        const ivScore = item.ivScore ?? item.iv_score ?? 0;
+        if (ivScore >= 8.5 && !notifiedHighIvIds.has(item.id)) {
+          notifiedHighIvIds.add(item.id);
+          const headline = item.headline ?? item.title ?? "High-IV alert";
+          const symbol = item.symbols
+            ? Array.isArray(item.symbols)
+              ? item.symbols.slice(0, 3).join(", ")
+              : String(item.symbols)
+            : "";
+          const prefix = symbol ? `[${symbol}] ` : "";
+          try {
+            const n = new Notification({
+              title: `High-IV Alert (${ivScore.toFixed(1)})`,
+              body: `${prefix}${headline}`,
+            });
+            n.show();
+          } catch (err) {
+            console.error("[RiskFlowNotify] Notification failed:", err.message);
+          }
+        }
+      }
+
+      // Prune set to last 200 to avoid unbounded growth
+      if (notifiedHighIvIds.size > 200) {
+        const arr = Array.from(notifiedHighIvIds);
+        notifiedHighIvIds = new Set(arr.slice(arr.length - 200));
+      }
+    } catch (err) {
+      console.error("[RiskFlowNotify] Poll failed:", err.message);
+    }
+  }, 60000);
+}
+
+function stopPolling() {
+  if (dockMenuPollInterval) {
+    clearInterval(dockMenuPollInterval);
+    dockMenuPollInterval = null;
+  }
+  if (riskflowPollInterval) {
+    clearInterval(riskflowPollInterval);
+    riskflowPollInterval = null;
+  }
 }
 
 async function waitForBackendHealthy(timeoutMs = 15000) {
@@ -860,6 +1091,17 @@ app.whenReady().then(async () => {
     `[Electron] Renderer api-base resolved to ${apiBase} (local healthy: ${localBackendHealthy})`,
   );
   createWindow(apiBase);
+
+  // [claude-code 2026-05-13] S63 T3: Start dock menu + notification polling
+  if (IS_MAC && localBackendHealthy) {
+    // Do an initial dock menu build even before the first poll fires
+    fetchLockoutStatus().then((status) => {
+      if (status) updateDockMenu(status);
+    });
+    startPolling();
+    console.log("[DockMenu] Polling started (lockout 5s, RiskFlow 60s)");
+  }
+
   // Forward any pending auth URL AFTER the renderer finishes loading
   // (sending before did-finish-load means the IPC message is lost)
   if (mainWindow) {
@@ -1028,6 +1270,7 @@ app.whenReady().then(async () => {
 
 // [claude-code 2026-04-16] Smart shutdown: kill if app-owned, arm idle timeout if routine-owned
 app.on("window-all-closed", () => {
+  stopPolling();
   void smartShutdownBackend();
   if (process.platform !== "darwin") app.quit();
 });
@@ -1259,6 +1502,26 @@ ipcMain.handle("system-permissions:request", async (_event, name) => {
   } catch {
     return "denied";
   }
+});
+
+/* ------------------------------------------------------------------ */
+/*  S63 T3: Dock menu + notification IPC handlers                    */
+/* ------------------------------------------------------------------ */
+
+// Renderer sends system toast notifications (RiskFlow, etc.)
+ipcMain.handle("system-notification:show", (_event, { title, body }) => {
+  try {
+    const n = new Notification({ title, body });
+    n.show();
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+// Renderer persists the quick access URL to main process for dock menu
+ipcMain.on("quick-access:set-url", (_event, url) => {
+  dockQuickAccessUrl = typeof url === "string" ? url : "";
 });
 
 /* ------------------------------------------------------------------ */

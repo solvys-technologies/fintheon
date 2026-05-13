@@ -1,6 +1,6 @@
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — trading tab
 // [claude-code 2026-05-13] Added lockout controls + quick access URL
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Toggle from "../Toggle";
 import { useLockout } from "../../hooks/useLockout";
 
@@ -46,6 +46,14 @@ export function TradingTab({
     lock: lockoutLock,
     unlock: lockoutUnlock,
   } = useLockout();
+
+  // [claude-code 2026-05-13] S63 T3: Sync quick access URL to main process for dock menu
+  useEffect(() => {
+    const el = (window as any).electron;
+    if (el?.quickAccess?.setUrl) {
+      el.quickAccess.setUrl(quickAccessUrl);
+    }
+  }, [quickAccessUrl]);
 
   return (
     <>

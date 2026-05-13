@@ -10388,4 +10388,40 @@ export const changelog: ChangelogEntry[] = [
       "frontend/components/SettingsPanel.tsx",
     ],
   },
+  {
+    date: "2026-05-13T11:00:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S63 T1+T2: Lockout button in TopHeader toolbar, lockout controls in TradingTab settings, backend lockout API (GET /status, POST /toggle, POST /set) with in-memory timer. Capability registry updated with lockout tool for Harper/Feucht. Desk-context preflight injects lockout state. SOUL files corrected with accurate desk plan pipeline description (approval widget). SettingsContext extended with lockoutDefaultDuration, quickAccessUrl preferences. useLockout hook with polling.",
+    files: [
+      "backend-hono/src/routes/lockout/",
+      "backend-hono/src/types/lockout.ts",
+      "backend-hono/src/services/lockout.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/services/capability-registry/registry.ts",
+      "backend-hono/src/services/desk-context/preflight.ts",
+      "backend-hono/src/services/ai/soul/harper.md",
+      "backend-hono/src/services/ai/soul/feucht.md",
+      "backend-hono/src/services/ai/soul/oracle.md",
+      "backend-hono/src/services/ai/soul/consul.md",
+      "backend-hono/src/services/ai/soul/herald.md",
+      "frontend/hooks/useLockout.ts",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/settings/TradingTab.tsx",
+      "frontend/components/SettingsPanel.tsx",
+      "frontend/contexts/SettingsContext.tsx",
+    ],
+  },
+  {
+    date: "2026-05-13T11:10:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S63 T3: macOS Dock integration + lockout/RiskFlow system notifications. Dynamic dock menu showing lockout status with lock/unlock action, Quick Access URL open, and Quit. Lockout expiry fires native Notification on unlock transition. RiskFlow high-IV polling fires native toasts for items scored >= 8.5. Quick Access URL persisted via IPC from renderer TradingTab to main process. Exposed dock, systemNotification, and quickAccess APIs in preload bridge.",
+    files: [
+      "electron/main.cjs",
+      "electron/preload.cjs",
+      "frontend/components/settings/TradingTab.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
 ];

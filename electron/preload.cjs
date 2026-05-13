@@ -142,6 +142,26 @@ contextBridge.exposeInMainWorld("electron", {
       ipcRenderer.invoke("harper-vision:set-privacy-mode", enabled),
     getPrivacyMode: () => ipcRenderer.invoke("harper-vision:get-privacy-mode"),
   },
+
+  // [claude-code 2026-05-13] S63 T3: macOS Dock integration + system notifications
+  dock: {
+    updateMenu: (state) => ipcRenderer.send("dock:update-menu", state),
+    onQuickAccess: (cb) => {
+      const handler = (_event, url) => {
+        if (typeof cb === "function") cb(url);
+      };
+      ipcRenderer.on("dock:quick-access", handler);
+      // Return cleanup function
+      return () => ipcRenderer.removeListener("dock:quick-access", handler);
+    },
+  },
+  systemNotification: {
+    show: (title, body) =>
+      ipcRenderer.invoke("system-notification:show", { title, body }),
+  },
+  quickAccess: {
+    setUrl: (url) => ipcRenderer.send("quick-access:set-url", url),
+  },
 });
 
 // [claude-code 2026-04-20] S21: System permissions bridge for the Omi voice layer.
