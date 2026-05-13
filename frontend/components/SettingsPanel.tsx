@@ -1,3 +1,4 @@
+// [claude-code 2026-05-13] S63 T1: Wired lockoutDefaultDuration + quickAccessUrl props to TradingTab
 // [claude-code 2026-04-25] Settings tab content swap now uses t-panel-slide (solvys-transitions)
 //   for translate-Y + blur + fade entry per tab. Replaces animate-fade-in-tab / animate-fade-out-tab.
 // [claude-code 2026-04-03] Refactored: thin shell that imports tab sub-components

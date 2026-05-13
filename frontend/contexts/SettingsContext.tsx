@@ -1,6 +1,7 @@
 // [claude-code 2026-04-19] v5.22 S1: added cross-platform preferences sync (GET/PUT
 //   /api/preferences). Runs PARALLEL to the existing /api/settings trading-settings pipe —
 //   the UserPreferences contract is the cross-device shape shared with mobile.
+// [claude-code 2026-05-13] S63 T1+T3: Added lockoutDefaultDuration + quickAccessUrl state and context
 // [claude-code 2026-04-18] Attach Supabase JWT to backend-settings fetches. After the bare-URL
 //   fix (file:// → localhost:8080) the requests were reaching the backend but without an
 //   Authorization header, producing 401 in the Electron console. Now gets the token via
