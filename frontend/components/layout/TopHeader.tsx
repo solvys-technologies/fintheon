@@ -162,6 +162,8 @@ export function TopHeader({
   // [claude-code 2026-04-29] S53-T3: Econ watch health moved to FooterToolbar (S55)
   const totalBadgeCount = queueCount + serverUnread;
   const [quickClockPulse, setQuickClockPulse] = useState(false);
+  const [customLockoutMin, setCustomLockoutMin] = useState("");
+  const customLockoutRef = useRef<HTMLInputElement>(null);
   const panelToggleMode = topStepXEnabled
     ? layoutOption === "tickers-only"
       ? "hidden"
@@ -556,25 +558,64 @@ export function TopHeader({
             </button>
           )}
           {compactLevel < 2 && (
-            <button
-              onClick={() =>
-                lockoutState.locked
-                  ? lockoutUnlock()
-                  : lockoutLock(lockoutDefaultDuration)
-              }
-              className={`toolbar-icon-btn ${lockoutState.locked ? "toolbar-active" : ""}`}
-              title={
-                lockoutState.locked && lockoutState.remaining
-                  ? `Locked -- ${Math.round(lockoutState.remaining / 60)}m remaining`
-                  : "Lockout trading"
-              }
-            >
-              {lockoutState.locked ? (
-                <Lock className="w-3 h-3" />
-              ) : (
-                <LockOpen className="w-3 h-3" />
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() =>
+                  lockoutState.locked
+                    ? lockoutUnlock()
+                    : lockoutLock(lockoutDefaultDuration)
+                }
+                className={`toolbar-icon-btn ${lockoutState.locked ? "toolbar-active" : ""}`}
+                title={
+                  lockoutState.locked && lockoutState.remaining
+                    ? `${Math.round(lockoutState.remaining / 60)}m left`
+                    : "Lock"
+                }
+              >
+                {lockoutState.locked ? (
+                  <Lock className="w-3 h-3" />
+                ) : (
+                  <LockOpen className="w-3 h-3" />
+                )}
+              </button>
+              {!lockoutState.locked && (
+                <>
+                  <input
+                    ref={customLockoutRef}
+                    type="number"
+                    min={1}
+                    max={480}
+                    value={customLockoutMin}
+                    onChange={(e) => setCustomLockoutMin(e.target.value)}
+                    placeholder="min"
+                    className="w-11 h-6 bg-[var(--fintheon-surface)] border border-zinc-800 rounded text-[10px] text-gray-400 text-center focus:outline-none focus:border-[var(--fintheon-accent)]/30 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const m = parseInt(customLockoutMin);
+                        if (m > 0 && m <= 480) {
+                          lockoutLock(m);
+                          setCustomLockoutMin("");
+                        }
+                      }
+                    }}
+                  />
+                  {customLockoutMin && parseInt(customLockoutMin) > 0 && (
+                    <button
+                      onClick={() => {
+                        const m = parseInt(customLockoutMin);
+                        if (m > 0 && m <= 480) {
+                          lockoutLock(m);
+                          setCustomLockoutMin("");
+                        }
+                      }}
+                      className="text-[10px] px-1 py-0.5 rounded border bg-[var(--fintheon-accent)]/10 border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/20"
+                    >
+                      Go
+                    </button>
+                  )}
+                </>
               )}
-            </button>
+            </div>
           )}
           {compactLevel < 2 && voiceRoomWidget}
         </div>

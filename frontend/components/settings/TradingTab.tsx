@@ -196,11 +196,9 @@ export function TradingTab({
         <h2 className="text-lg font-semibold text-[var(--fintheon-accent)] mb-4">
           Lockout
         </h2>
-        <div className="space-y-6">
-          {/* Lockout status */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-medium text-gray-300">Status</h4>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
               <span
                 className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                   lockoutState.locked
@@ -210,74 +208,54 @@ export function TradingTab({
               >
                 {lockoutState.locked ? "Locked" : "Unlocked"}
               </span>
+              {lockoutState.locked && lockoutState.remaining && (
+                <span className="text-xs text-gray-400 font-mono">
+                  {Math.floor(lockoutState.remaining / 60)}m{" "}
+                  {lockoutState.remaining % 60}s
+                </span>
+              )}
             </div>
-            {lockoutState.locked && lockoutState.remaining && (
-              <div className="bg-[var(--fintheon-surface)] border border-zinc-800 rounded-lg p-3">
-                <div className="text-xs text-gray-400">
-                  Remaining:{" "}
-                  <span className="text-white font-mono">
-                    {Math.floor(lockoutState.remaining / 60)}m{" "}
-                    {lockoutState.remaining % 60}s
-                  </span>
-                </div>
+            {lockoutState.locked ? (
+              <button
+                onClick={() => lockoutUnlock()}
+                className="text-xs px-2 py-1 rounded border bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20"
+              >
+                Unlock
+              </button>
+            ) : (
+              <div className="flex gap-1.5">
+                {LOCKOUT_PRESETS.map((min) => (
+                  <button
+                    key={min}
+                    onClick={() => lockoutLock(min)}
+                    className="text-xs px-2 py-1 rounded border bg-[var(--fintheon-bg)] border-zinc-800 hover:border-zinc-700 text-gray-400 hover:text-white"
+                  >
+                    {min >= 60
+                      ? `${Math.floor(min / 60)}h${min % 60 > 0 ? min % 60 : ""}`
+                      : `${min}m`}
+                  </button>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Lock/unlock button */}
-          <div>
-            {lockoutState.locked ? (
-              <button
-                onClick={() => lockoutUnlock()}
-                className="w-full px-3 py-2 rounded-lg border text-sm transition-all bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20"
-              >
-                Unlock Trading
-              </button>
-            ) : (
-              <>
-                <h4 className="text-sm font-medium text-gray-300 mb-3">
-                  Lock Trading
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {LOCKOUT_PRESETS.map((min) => (
-                    <button
-                      key={min}
-                      onClick={() => lockoutLock(min)}
-                      className="px-3 py-2 rounded-lg border text-sm transition-all bg-[var(--fintheon-bg)] border-zinc-800 hover:border-zinc-700 text-gray-400 hover:text-white"
-                    >
-                      {min >= 60
-                        ? `${Math.floor(min / 60)}h${min % 60 > 0 ? ` ${min % 60}m` : ""}`
-                        : `${min}m`}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Default lockout duration */}
-          <div>
-            <h4 className="text-sm font-medium text-gray-300 mb-3">
-              Default Lockout Duration
-            </h4>
+          <div className="flex items-center gap-3">
+            <label className="text-xs text-gray-400 shrink-0">Default</label>
             <select
               value={lockoutDefaultDuration}
               onChange={(e) =>
                 setLockoutDefaultDuration(parseInt(e.target.value))
               }
-              className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/30"
+              className="bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[var(--fintheon-accent)]/30"
             >
               {LOCKOUT_PRESETS.map((min) => (
                 <option key={min} value={min}>
                   {min >= 60
                     ? `${Math.floor(min / 60)}h${min % 60 > 0 ? ` ${min % 60}m` : ""}`
-                    : `${min} min`}
+                    : `${min}m`}
                 </option>
               ))}
             </select>
-            <p className="text-xs text-gray-500 mt-2">
-              Default lockout duration used by the toolbar button
-            </p>
           </div>
         </div>
       </section>

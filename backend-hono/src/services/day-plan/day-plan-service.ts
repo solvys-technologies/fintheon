@@ -169,6 +169,14 @@ export async function generateDayPlan(
     ],
   });
 
+  // Auto-lock when a new desk plan is generated — review before trading
+  try {
+    const { setLockout } = await import("../lockout.js");
+    setLockout("default", true, 30 * 60 * 1000);
+  } catch {
+    // lockout service unavailable — non-fatal
+  }
+
   log.info("Day-plan generated", {
     date: dateIso,
     teamId,
