@@ -125,6 +125,8 @@ import { createPlaneIntegrationRoutes } from "./integrations/plane/index.js";
 import { createAuditRoutes } from "./audit/index.js";
 // [claude-code 2026-05-07] Fileroom SOUL card editor — read/write agent soul files
 import { createSoulRoutes } from "./soul/index.js";
+// [claude-code 2026-05-13] Lockout — trading lockout with countdown
+import { createLockoutRoutes } from "./lockout/index.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -250,6 +252,11 @@ export function registerRoutes(app: Hono): void {
   // [S25] Public OG preview — allow-listed domains only. Served unauthenticated so the
   // mobile EmbedPreview can render even before Supabase token is hydrated on cold start.
   app.route("/api/preview", createPreviewRoutes());
+
+  // [claude-code 2026-05-13] Lockout — in-memory trading lockout. Auth-gated.
+  app.use("/api/lockout", authMiddleware);
+  app.use("/api/lockout/*", authMiddleware);
+  app.route("/api/lockout", createLockoutRoutes());
 
   // [S26-P2 T9] Maintenance — super-admin commit/deploy/deny for agent-proposed fixes.
   // GET /api/maintenance/request/:id is public (modal renders for anyone), POST

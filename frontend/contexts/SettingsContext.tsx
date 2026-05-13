@@ -171,6 +171,12 @@ interface SettingsContextType {
   /** Preferred OpenCode Go model for personal chat sessions. */
   openCodeGoModel: string;
   setOpenCodeGoModel: (model: string) => void;
+  /** Lockout default duration in minutes (default: 30) */
+  lockoutDefaultDuration: number;
+  setLockoutDefaultDuration: (minutes: number) => void;
+  /** Quick Access URL for dock menu / system tray */
+  quickAccessUrl: string;
+  setQuickAccessUrl: (url: string) => void;
   /** v5.22 S1: cross-device preferences contract (theme, notifications, fuse palette). */
   preferences: UserPreferences;
   updatePreferences: (patch: Partial<UserPreferences>) => void;
@@ -506,6 +512,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [openCodeGoModel, setOpenCodeGoModel] = useState<string>(() =>
     loadFromStorage("openCodeGoModel", "deepseek-reasoner"),
   );
+  const [lockoutDefaultDuration, setLockoutDefaultDuration] = useState<number>(
+    () => loadFromStorage("lockoutDefaultDuration", 30),
+  );
+  const [quickAccessUrl, setQuickAccessUrl] = useState<string>(() =>
+    loadFromStorage("quickAccessUrl", ""),
+  );
 
   // [claude-code 2026-04-19] v5.22 S1: shared cross-platform preferences.
   const [preferences, setPreferences] = useState<UserPreferences>(() =>
@@ -689,6 +701,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           );
         if (remote.openCodeGoModel)
           setOpenCodeGoModel(remote.openCodeGoModel as string);
+        if (remote.lockoutDefaultDuration !== undefined)
+          setLockoutDefaultDuration(remote.lockoutDefaultDuration as number);
+        if (remote.quickAccessUrl)
+          setQuickAccessUrl(remote.quickAccessUrl as string);
       }
       backendSynced.current = true;
     });
@@ -726,6 +742,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       caoName,
       defaultChatProvider,
       openCodeGoModel,
+      lockoutDefaultDuration,
+      quickAccessUrl,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
@@ -766,6 +784,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     caoName,
     defaultChatProvider,
     openCodeGoModel,
+    lockoutDefaultDuration,
+    quickAccessUrl,
   ]);
 
   // Keep chat routing preferences mirrored into legacy localStorage keys used
@@ -844,6 +864,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setDefaultChatProvider,
         openCodeGoModel,
         setOpenCodeGoModel,
+        lockoutDefaultDuration,
+        setLockoutDefaultDuration,
+        quickAccessUrl,
+        setQuickAccessUrl,
         preferences,
         updatePreferences,
       }}

@@ -35,6 +35,8 @@ import {
   BellOff,
   ClipboardList,
   Zap,
+  Lock,
+  LockOpen,
 } from "lucide-react";
 import { WhatsNewButton } from "../onboarding/FirstTimeTour";
 import { StickyBulletin } from "../StickyBulletin";
@@ -44,6 +46,7 @@ import type { IVScoreResponse } from "../../types/market-data";
 import type { TradingPlatform } from "../TradingBrowser";
 import { useDND } from "../../contexts/DNDContext";
 import { useServerNotifications } from "../../contexts/NotificationsContext";
+import { useLockout } from "../../hooks/useLockout";
 
 type NavTab =
   | "feed"
@@ -176,9 +179,9 @@ export function TopHeader({
       });
     } catch {}
   }, []);
+  const { state: lockoutState, lock: lockoutLock, unlock: lockoutUnlock } = useLockout();
   useEffect(() => {
     setToolbarOrderState(getToolbarOrder());
-  }, []);
 
   const handleToolbarDragStart = useCallback(
     (e: React.DragEvent, id: ToolbarItemId) => {
@@ -540,6 +543,27 @@ export function TopHeader({
               title="Quick clock antilag"
             >
               <Zap className="w-3 h-3" />
+            </button>
+          )}
+          {compactLevel < 2 && (
+            <button
+              onClick={() =>
+                lockoutState.locked
+                  ? lockoutUnlock()
+                  : lockoutLock()
+              }
+              className={`toolbar-icon-btn ${lockoutState.locked ? "toolbar-active" : ""}`}
+              title={
+                lockoutState.locked && lockoutState.remaining
+                  ? `Locked -- ${Math.round(lockoutState.remaining / 60)}m remaining`
+                  : "Lockout trading"
+              }
+            >
+              {lockoutState.locked ? (
+                <Lock className="w-3 h-3" />
+              ) : (
+                <LockOpen className="w-3 h-3" />
+              )}
             </button>
           )}
           {compactLevel < 2 && voiceRoomWidget}
