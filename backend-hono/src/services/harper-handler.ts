@@ -29,20 +29,17 @@ import {
   type BridgeStreamEvent,
   type BridgeChatRequest,
 } from "./claude-sdk/bridge.js";
-import { buildFeedContext } from "./ai/agent-instructions/index.js";
 import {
   loadSoul,
   renderSystemPrompt as renderSoulPrompt,
 } from "./ai/soul/loader.js";
-import {
-  getContextForAgent,
-  type AgentMemoryEntry,
-} from "./agent-context-bank-service.js";
 import { createLogger } from "../lib/logger.js";
 import { selectModel } from "./ai/routing.js";
 import { getSupabaseClient } from "../config/supabase.js";
 // [claude-code 2026-04-23] Harper Vision — screen + audio context injection
 import { buildVisionContext } from "./harper-vision/engine.js";
+// [claude-code 2026-05-14] S61-T3: desk preflight replaces ad-hoc RiskFlow + memory injection
+import { preflight } from "./desk-context/preflight.js";
 
 const log = createLogger("Harper");
 
@@ -296,49 +293,14 @@ export async function harperChat(
     systemPrompt += `\n\n--- PERSONA ACTIVE ---\n${PERSONA_MODIFIERS[persona]}`;
   }
 
-  // Inject Fintheon context (scored catalysts)
+  // [S61-T3] Preflight: recent agent outputs + memory blocks + RiskFlow context (Harper-specific)
   try {
-    const feedContext = await buildFeedContext();
-    if (feedContext) {
-      systemPrompt += `\n\n--- FINTHEON CONTEXT ---\n${feedContext}`;
+    const preflightCtx = await preflight("harper");
+    if (preflightCtx) {
+      systemPrompt += preflightCtx;
     }
   } catch (err) {
-    log.warn("Failed to build feed context (non-fatal)", {
-      error: String(err),
-    });
-  }
-
-  // Inject context bank memories — [S23-T4] uses authenticated user id when available
-  try {
-    const memories = await getContextForAgent(
-      userId ?? "00000000-0000-0000-0000-000000000000",
-      "harper",
-    );
-    if (memories.length > 0) {
-      const grouped: Record<string, string[]> = {};
-      for (const entry of memories) {
-        const type = entry.memory_type;
-        if (!grouped[type]) grouped[type] = [];
-        grouped[type].push(entry.content);
-      }
-      const typeLabels: Record<string, string> = {
-        soul: "Soul",
-        protocol: "Protocol",
-        observation: "Observations",
-        preference: "Preferences",
-        artifact: "Artifacts",
-      };
-      let memBlock = "\n\n--- AGENT MEMORY BANK ---\n## Agent Memory Bank";
-      for (const [type, items] of Object.entries(grouped)) {
-        memBlock += `\n### ${typeLabels[type] ?? type}`;
-        for (const content of items) {
-          memBlock += `\n${content}`;
-        }
-      }
-      systemPrompt += memBlock;
-    }
-  } catch (err) {
-    log.warn("Failed to inject context bank memories (non-fatal)", {
+    log.warn("Failed to build preflight context (non-fatal)", {
       error: String(err),
     });
   }
