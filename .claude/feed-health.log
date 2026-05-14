@@ -821,3 +821,8 @@
 [2026-05-13T19:01:50Z] status=poller_stopped cache=500 poller=False scorer=True unscored=306 newest=2026-05-13T19:00:30.000Z itemAge=0.0h cacheAge=24350ms rateLimited=False
 [2026-05-13T19:14:18Z] status=poller_stopped cache=500 poller=False scorer=True unscored=295 newest=2026-05-13T19:04:25.000Z itemAge=0.2h cacheAge=10962ms rateLimited=False
 [2026-05-14T00:10:00Z] status=poller_stopped cache=500 poller=False scorer=True unscored=300 newest=2026-05-13T23:51:14.000Z itemAge=0.3h cacheAge=5114ms rateLimited=False
+<<<<<<< Updated upstream
+=======
+[2026-05-14T01:25:50Z] status=poller_stopped cache=500 poller=False scorer=True unscored=330 newest=2026-05-14T01:21:02.000Z itemAge=0.1h cacheAge=24996ms rateLimited=False
+[2026-05-14T01:35:54Z] status=poller_stopped cache=500 poller=False scorer=True unscored=312 newest=2026-05-14T01:21:02.000Z itemAge=0.2h cacheAge=29017ms rateLimited=False
+>>>>>>> Stashed changes
