@@ -9,11 +9,16 @@
 //   (DayPlan: deskTheme/eventName + windows[]; DayPlanWindow: startTime/endTime,
 //   pricesOfInterest, invalidation, profitTarget, expectedMovePct).
 // [claude-code 2026-05-03] S57: optional header streak + hidden footer streak.
+// [claude-code 2026-05-13] T2: multi-window chevron nav, lockout button, price gating
+import { useState } from "react";
 import { useDayPlan } from "../../hooks/useDayPlan";
 import { useStreak } from "../../hooks/useStreak";
 import { useDriftStatus } from "../../hooks/useDriftStatus";
+import { useLockout } from "../../hooks/useLockout";
 import { FadingRuler } from "../shared/FadingRuler";
 import { StreakBadge } from "../streak/StreakBadge";
+import { DayPlanChevronNav } from "./DayPlanChevronNav";
+import { PriceRevealTag } from "./PriceRevealTag";
 import type { DayPlanWindow, DriftKind } from "../../types/day-plan";
 
 const DRIFT_LABELS: Record<DriftKind | "in-window", string> = {
@@ -43,7 +48,7 @@ interface DayCardProps {
 }
 
 function fmtPrice(v: number | null): string {
-  if (v == null) return "—";
+  if (v == null) return "\u2014";
   return v.toFixed(2);
 }
 
@@ -59,8 +64,8 @@ function fmtTradingWindow(w: DayPlanWindow): string {
 }
 
 function fmtExpectedMove(pct: number | null): string {
-  if (pct == null) return "—";
-  return `± ${pct.toFixed(2)}%`;
+  if (pct == null) return "\u2014";
+  return `\u00b1 ${pct.toFixed(2)}%`;
 }
 
 export function DayCard({
@@ -73,10 +78,23 @@ export function DayCard({
   const { data, isLoading } = useDayPlan();
   const { data: streak } = useStreak();
   const { data: drift } = useDriftStatus();
+  const {
+    state: lockoutState,
+    lock: lockoutLock,
+    unlock: lockoutUnlock,
+  } = useLockout();
+
+  const [currentWindowIndex, setCurrentWindowIndex] = useState(0);
 
   const plan = data;
-  const window = plan?.windows?.[0] ?? null;
-  const hasWindow = !!window;
+  const windows = plan?.windows ?? [];
+  const currentWindow = windows[currentWindowIndex] ?? null;
+  const hasWindow = !!currentWindow;
+
+  // Reset index when windows change
+  if (currentWindowIndex >= windows.length && windows.length > 0) {
+    setCurrentWindowIndex(0);
+  }
 
   const driftVisual: DriftKind | "in-window" = drift?.kind ?? "in-window";
 
@@ -123,49 +141,65 @@ export function DayCard({
         }}
       >
         {isLoading
-          ? "Loading…"
+          ? "Loading\u2026"
           : plan?.deskTheme || "No plan published for today."}
       </p>
 
       <FadingRuler />
 
       <dl className="font-mono text-[12px] py-3 space-y-1.5">
-        <Row label="Event" value={plan?.eventName ?? "—"} loading={isLoading} />
         <Row
-          label="Trading Window"
-          value={hasWindow ? fmtTradingWindow(window!) : "—"}
+          label="Event"
+          value={plan?.eventName ?? "\u2014"}
           loading={isLoading}
         />
         <Row
+          label="Trading Window"
+          value={hasWindow ? fmtTradingWindow(currentWindow!) : "\u2014"}
+          loading={isLoading}
+        />
+        <GatedPriceRow
           label="Prices of Interest"
-          value={
-            hasWindow && window!.pricesOfInterest.length > 0
-              ? fmtPrices(window!.pricesOfInterest)
-              : "—"
-          }
+          window={currentWindow}
           loading={isLoading}
           doto
           tone="neutral"
+          renderValue={() =>
+            currentWindow!.pricesOfInterest.length > 0
+              ? fmtPrices(currentWindow!.pricesOfInterest)
+              : "\u2014"
+          }
         />
-        <Row
+        <GatedPriceRow
           label="Invalidation Point"
-          value={hasWindow ? fmtPrice(window!.invalidation) : "—"}
+          window={currentWindow}
           loading={isLoading}
           doto
           tone="bearish"
+          renderValue={() =>
+            currentWindow ? fmtPrice(currentWindow.invalidation) : "\u2014"
+          }
         />
-        <Row
+        <GatedPriceRow
           label="Profit Target"
-          value={hasWindow ? fmtPrice(window!.profitTarget) : "—"}
+          window={currentWindow}
           loading={isLoading}
           doto
           tone="bullish"
+          renderValue={() =>
+            currentWindow ? fmtPrice(currentWindow.profitTarget) : "\u2014"
+          }
         />
-        <Row
+        <GatedPriceRow
           label="Expected Move"
-          value={hasWindow ? fmtExpectedMove(window!.expectedMovePct) : "—"}
+          window={currentWindow}
           loading={isLoading}
           doto
+          renderValue={() =>
+            currentWindow
+              ? fmtExpectedMove(currentWindow.expectedMovePct)
+              : "\u2014"
+          }
         />
       </dl>
 
@@ -173,44 +207,84 @@ export function DayCard({
 
       {((!hideStreak && !showStreakInHeader) || drift) && (
         <footer className="flex items-center justify-between pt-3">
-          {!hideStreak && !showStreakInHeader ? (
-            <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={16} />
-          ) : (
-            <span aria-hidden />
-          )}
-          {drift && (
-            <span
-              className="inline-flex items-center gap-1.5"
-              title={drift.message ?? undefined}
-              aria-label={`Drift ${DRIFT_LABELS[driftVisual]}${drift.message ? ` — ${drift.message}` : ""}`}
+          <div className="flex items-center gap-2">
+            {!hideStreak && !showStreakInHeader ? (
+              <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={16} />
+            ) : (
+              <span aria-hidden />
+            )}
+            {/* Lockout pill — left of chevrons on the same row */}
+            <button
+              onClick={() =>
+                lockoutState.locked ? lockoutUnlock() : lockoutLock(30)
+              }
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] uppercase tracking-[0.12em] border transition-colors cursor-pointer"
+              style={{
+                fontFamily: "var(--font-data, monospace)",
+                color: lockoutState.locked
+                  ? "rgba(199, 159, 74, 0.9)"
+                  : "var(--fintheon-muted, #908774)",
+                borderColor: lockoutState.locked
+                  ? "rgba(199, 159, 74, 0.3)"
+                  : "rgba(255, 255, 255, 0.08)",
+                background: lockoutState.locked
+                  ? "rgba(199, 159, 74, 0.1)"
+                  : "transparent",
+              }}
+              title={
+                lockoutState.locked && lockoutState.remaining
+                  ? `${Math.round(lockoutState.remaining / 60)}m left`
+                  : undefined
+              }
             >
+              {lockoutState.locked ? "UNLOCK" : "LOCK"}
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            {drift && (
               <span
-                className="text-[9px] uppercase tracking-[0.16em]"
-                style={{
-                  color: "var(--fintheon-muted, #908774)",
-                  fontFamily: "var(--font-data, monospace)",
-                }}
+                className="inline-flex items-center gap-1.5"
+                title={drift.message ?? undefined}
+                aria-label={`Drift ${DRIFT_LABELS[driftVisual]}${drift.message ? ` \u2014 ${drift.message}` : ""}`}
               >
-                Drift
+                <span
+                  className="text-[9px] uppercase tracking-[0.16em]"
+                  style={{
+                    color: "var(--fintheon-muted, #908774)",
+                    fontFamily: "var(--font-data, monospace)",
+                  }}
+                >
+                  Drift
+                </span>
+                <span
+                  aria-hidden
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: DRIFT_COLORS[driftVisual],
+                    display: "inline-block",
+                  }}
+                />
+                <span
+                  className="text-[10px]"
+                  style={{ color: "var(--fintheon-text)" }}
+                >
+                  {DRIFT_LABELS[driftVisual]}
+                </span>
               </span>
-              <span
-                aria-hidden
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: DRIFT_COLORS[driftVisual],
-                  display: "inline-block",
-                }}
-              />
-              <span
-                className="text-[10px]"
-                style={{ color: "var(--fintheon-text)" }}
-              >
-                {DRIFT_LABELS[driftVisual]}
-              </span>
-            </span>
-          )}
+            )}
+            <DayPlanChevronNav
+              currentIndex={currentWindowIndex}
+              totalWindows={windows.length}
+              onPrev={() => setCurrentWindowIndex((i) => Math.max(0, i - 1))}
+              onNext={() =>
+                setCurrentWindowIndex((i) =>
+                  Math.min(windows.length - 1, i + 1),
+                )
+              }
+            />
+          </div>
         </footer>
       )}
     </section>
@@ -218,6 +292,78 @@ export function DayCard({
 }
 
 type RowTone = "neutral" | "bullish" | "bearish";
+
+function GatedPriceRow({
+  label,
+  window,
+  loading,
+  doto,
+  tone = "neutral",
+  renderValue,
+}: {
+  label: string;
+  window: DayPlanWindow | null;
+  loading: boolean;
+  doto?: boolean;
+  tone?: RowTone;
+  renderValue: () => string;
+}) {
+  if (loading || !window) {
+    return (
+      <Row label={label} value={"\u2014"} loading doto={doto} tone={tone} />
+    );
+  }
+
+  return (
+    <div className="flex items-baseline gap-3">
+      <dt
+        className="text-[11px]"
+        style={{
+          color: "var(--fintheon-muted, #908774)",
+          fontFamily: "var(--font-body)",
+          letterSpacing: "0.02em",
+        }}
+      >
+        {label}
+      </dt>
+      <span
+        aria-hidden
+        className="flex-1"
+        style={{
+          height: 0,
+          borderBottom:
+            "1px dotted color-mix(in srgb, var(--fintheon-accent) 14%, transparent)",
+          transform: "translateY(-3px)",
+        }}
+      />
+      <dd
+        className="tabular-nums text-right shrink-0"
+        style={{
+          fontFamily: doto
+            ? "'Doto', 'Readable Digits', var(--font-data, monospace)"
+            : "var(--font-data, monospace)",
+          letterSpacing: doto ? "0.04em" : "0.01em",
+          fontWeight: doto ? 600 : 400,
+        }}
+      >
+        <PriceRevealTag windowStartTime={window.startTime}>
+          <span
+            style={{
+              color:
+                tone === "neutral"
+                  ? "var(--fintheon-text)"
+                  : tone === "bullish"
+                    ? "var(--fintheon-bullish)"
+                    : "var(--fintheon-bearish)",
+            }}
+          >
+            {renderValue()}
+          </span>
+        </PriceRevealTag>
+      </dd>
+    </div>
+  );
+}
 
 function Row({
   label,
