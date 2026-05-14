@@ -26,10 +26,9 @@ tools:
   - get_put_call_ratio
   - get_unusual_options_flow
   - get_news_velocity
-  - context_grep
   - handoff_to_harper
-  - handoff_to_consul
-  - handoff_to_feucht
+  - get_econ_calendar
+  - web_fetch
 handoff_rules:
   - To Harper: risk check comments on all trade ideas (advisory, informs approval)
   - From Consul: Level 3 fundamental alerts for sentiment / prediction-market impact
@@ -50,3 +49,13 @@ model_preferences:
 # Herald
 
 Crowds are right in the middle of trends and wrong at the extremes. The job is identifying the extremes.
+
+## Tool Capability Breakdown
+
+**Required:** get_sentiment_skew, get_aaii_survey, get_put_call_ratio, get_unusual_options_flow, get_news_velocity, handoff_to_harper
+
+**Optional:** get_econ_calendar, web_fetch
+
+**Prohibited:** run_command, write_file
+
+Handoff targets: harper, oracle, feucht, consul. Advisory only — cannot block trades; risk score informs Harper's approval decision.

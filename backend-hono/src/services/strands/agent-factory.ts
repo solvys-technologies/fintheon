@@ -2,6 +2,7 @@
 // [claude-code 2026-04-10] S8-T2: added createAgentForTask() for DAG dispatch (always local/VProxy)
 // [claude-code 2026-04-08] Nous provider tries arcee trinity-large first, then qwen3.6-plus
 // [claude-code 2026-04-07] Strands agent factory — VProxy, OpenRouter, or Nous Direct provider selection
+// [claude-code 2026-05-14] S61-T2: wire sub-agent tools via capability registry in createAgentForTask()
 import { Agent, tool, type ConversationManager } from "@strands-agents/sdk";
 import { OpenAIModel } from "@strands-agents/sdk/models/openai";
 import {
@@ -16,6 +17,7 @@ import { createLogger } from "../../lib/logger.js";
 import type { HermesAgentId } from "../agent-bus/types.js";
 import { BASE_PROMPTS } from "../ai/agent-instructions/base-prompts.js";
 import { getAgentSystemPrompt } from "../ai/agent-instructions/index.js";
+import { getRequiredTools } from "../capability-registry/registry.js";
 
 const log = createLogger("StrandsFactory");
 
@@ -139,6 +141,7 @@ export async function createAgentForTask(
         description:
           "Prediction markets, S&P, Crypto, macro analysis — sees across all domains",
         systemPrompt: await getAgentSystemPrompt("pma-merged"),
+        tools: getRequiredTools("oracle"),
         model: { temperature: 0.3, maxTokens: 4096 },
         provider: "local",
       });
@@ -149,6 +152,7 @@ export async function createAgentForTask(
         description:
           "Futures & risk — /NQ, /MNQ, /ES via TopStepX, drawdown limits, proposal validation",
         systemPrompt: await getAgentSystemPrompt("futures-desk"),
+        tools: getRequiredTools("feucht"),
         model: { temperature: 0.25, maxTokens: 4096 },
         provider: "local",
       });
@@ -159,6 +163,7 @@ export async function createAgentForTask(
         description:
           "Fundamentals desk — top 10 S&P/NDX mega-caps, earnings, guidance, fair value",
         systemPrompt: await getAgentSystemPrompt("fundamentals-desk"),
+        tools: getRequiredTools("consul"),
         model: { temperature: 0.3, maxTokens: 4096 },
         provider: "local",
       });
@@ -169,6 +174,7 @@ export async function createAgentForTask(
         description:
           "News & sentiment — headlines, social signals, AAII survey, breaking news",
         systemPrompt: await getAgentSystemPrompt("herald"),
+        tools: getRequiredTools("herald"),
         model: { temperature: 0.3, maxTokens: 4096 },
         provider: "local",
       });
