@@ -214,6 +214,10 @@ export function SettingsPage() {
     setProposerDefaultIframe,
     lockoutDefaultDuration,
     setLockoutDefaultDuration,
+    lockoutAutoReleaseMinutes,
+    setLockoutAutoReleaseMinutes,
+    persistentLockout,
+    setPersistentLockout,
     quickAccessUrl,
     setQuickAccessUrl,
   } = useSettings();
@@ -374,6 +378,10 @@ export function SettingsPage() {
             setTradingModels={setTradingModels}
             lockoutDefaultDuration={lockoutDefaultDuration}
             setLockoutDefaultDuration={setLockoutDefaultDuration}
+            lockoutAutoReleaseMinutes={lockoutAutoReleaseMinutes}
+            setLockoutAutoReleaseMinutes={setLockoutAutoReleaseMinutes}
+            persistentLockout={persistentLockout}
+            setPersistentLockout={setPersistentLockout}
             quickAccessUrl={quickAccessUrl}
             setQuickAccessUrl={setQuickAccessUrl}
           />,

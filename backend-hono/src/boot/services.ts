@@ -437,6 +437,13 @@ export async function bootBackground(): Promise<void> {
   startGepaRunner();
   log.info("GepaRunner started");
 
+  // [claude-code 2026-05-13] T4: CAO evening review — 17:00 ET Sun-Thu.
+  // Injects [SKILL:EVENING_REVIEW] into Harper's chat pipeline.
+  const { startCaoEveningReviewScheduler } =
+    await import("../services/cron/cao-evening-review-scheduler.js");
+  startCaoEveningReviewScheduler();
+  log.info("CaoEveningReviewScheduler started");
+
   // [claude-code 2026-04-19] Relay connector moved to bootCritical — duplicate call removed here.
 
   // [S27-T10 W2e] Register local skills with the Hermes sidecar so cross-agent skill invocation

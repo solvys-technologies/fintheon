@@ -1,6 +1,7 @@
 // [claude-code 2026-04-26] S45-T1: Day-plan API handlers.
 // GET /today, GET /week, GET /streak, GET /drift-status, POST /feedback,
 // GET /feedback?range=week.
+// [claude-code 2026-05-13] T4: Added handlePostCaoEveningReview().
 
 import type { Context } from "hono";
 import { z } from "zod";
@@ -15,6 +16,8 @@ import { planWeek } from "../../services/day-plan/window-scheduler.js";
 import { getLastDriftEvent } from "../../services/desk-drift/drift-monitor.js";
 import { isInsideAnyWindow } from "../../services/desk-drift/dead-volume-rule.js";
 import type {
+  DayPlan,
+  DayPlanWindow,
   DriftStatus,
   StreakResponse,
   WeekDayEntry,
@@ -33,11 +36,27 @@ const FeedbackSchema = z.object({
   outcome_pnl: z.number().optional(),
 });
 
+/** Schema for a single window update from the CAO evening review. */
+const TradingWindowUpdateSchema = z.object({
+  startTime: z.string().regex(/^\d{2}:\d{2}$/, "HH:MM format required"),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, "HH:MM format required"),
+  eventName: z.string().max(256).optional(),
+  catalystDetail: z.string().max(1024).optional(),
+  expectedMovePct: z.number().min(0).max(100).optional(),
+  pricesOfInterest: z.array(z.number()).optional(),
+  entries: z.array(z.number()).optional(),
+});
+
+/** Schema for the CAO evening review POST body. */
+const CaoEveningReviewSchema = z.object({
+  windows: z.array(TradingWindowUpdateSchema).min(1).max(10),
+  reason: z.string().min(1).max(2000),
+});
+
 export async function handleGetToday(c: Context): Promise<Response> {
   const dateIso = new Date().toISOString().slice(0, 10);
   let plan = await readDayPlan(TEAM_ID, dateIso);
   if (!plan) {
-    // Best-effort live generation if the cron hasn't run yet today
     try {
       const result = await generateDayPlan({ teamId: TEAM_ID });
       plan = result.plan;
@@ -205,4 +224,203 @@ export async function handleGetFeedback(c: Context): Promise<Response> {
     return c.json({ feedback: [] });
   }
   return c.json({ feedback: data ?? [] });
+}
+
+/**
+ * POST /api/day-plan/cao-evening-review
+ *
+ * Accepts window updates from Harper's evening review and merges them into
+ * the existing day plan. New windows are appended — existing ones are NOT
+ * replaced. Returns the updated plan.
+ *
+ * Body: { windows: TradingWindowUpdate[], reason: string }
+ */
+export async function handlePostCaoEveningReview(
+  c: Context,
+): Promise<Response> {
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "invalid_json" }, 400);
+  }
+
+  const parsed = CaoEveningReviewSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      { error: "invalid_body", detail: parsed.error.flatten() },
+      400,
+    );
+  }
+
+  const dateIso = new Date().toISOString().slice(0, 10);
+  const existingPlan = await readDayPlan(TEAM_ID, dateIso);
+
+  // Derive next window index
+  const existingWindows = existingPlan?.windows ?? [];
+  const nextIndex = existingWindows.length;
+
+  // Build new DayPlanWindow entries
+  const newWindows: Array<{
+    windowIndex: number;
+    startTime: string;
+    endTime: string;
+    pricesOfInterest: number[];
+    entries: number[];
+    invalidation: null;
+    profitTarget: null;
+    expectedMovePct: number | null;
+  }> = parsed.data.windows.map((wu, i) => ({
+    windowIndex: nextIndex + i,
+    startTime: wu.startTime,
+    endTime: wu.endTime,
+    pricesOfInterest: wu.pricesOfInterest ?? [],
+    entries: wu.entries ?? [],
+    invalidation: null,
+    profitTarget: null,
+    expectedMovePct: wu.expectedMovePct ?? null,
+  }));
+
+  // Merge: existing + new (additive, not replacement)
+  const allWindows = [
+    ...existingWindows.map((w: DayPlanWindow) => ({
+      windowIndex: w.windowIndex,
+      startTime: w.startTime,
+      endTime: w.endTime,
+      pricesOfInterest: w.pricesOfInterest,
+      entries: w.entries,
+      invalidation: w.invalidation,
+      profitTarget: w.profitTarget,
+      expectedMovePct: w.expectedMovePct,
+    })),
+    ...newWindows,
+  ];
+
+  // Persist through Supabase
+  const sb = getSupabaseClient();
+  if (!sb) {
+    log.warn("Supabase unavailable — returning in-memory merged plan");
+    return c.json({
+      plan: {
+        id: `mem-${TEAM_ID}-${dateIso}`,
+        teamId: TEAM_ID,
+        date: dateIso,
+        eventName: existingPlan?.eventName ?? null,
+        deskTheme: existingPlan?.deskTheme ?? null,
+        generatedBy: "cao-evening-review",
+        generatedAt: new Date().toISOString(),
+        sourceBriefId: null,
+        institutionalPositioning: null,
+        windows: allWindows.map((w, i) => ({
+          id: `mem-w-${i}`,
+          dayPlanId: `mem-${TEAM_ID}-${dateIso}`,
+          windowIndex: w.windowIndex,
+          startTime: w.startTime,
+          endTime: w.endTime,
+          pricesOfInterest: w.pricesOfInterest,
+          entries: w.entries,
+          invalidation: w.invalidation,
+          profitTarget: w.profitTarget,
+          expectedMovePct: w.expectedMovePct,
+        })),
+      } satisfies DayPlan,
+      reason: parsed.data.reason,
+    });
+  }
+
+  // Upsert the day plan row
+  const { data: planRow, error: planErr } = await sb
+    .from("day_plans")
+    .upsert(
+      {
+        team_id: TEAM_ID,
+        date: dateIso,
+        event_name: existingPlan?.eventName ?? null,
+        desk_theme: existingPlan?.deskTheme ?? null,
+        generated_by: "cao-evening-review",
+        generated_at: new Date().toISOString(),
+      },
+      { onConflict: "team_id,date" },
+    )
+    .select()
+    .single();
+
+  if (planErr || !planRow) {
+    log.warn("day_plans upsert failed for evening review", {
+      error: planErr?.message,
+    });
+    return c.json({ error: "persist_failed" }, 500);
+  }
+
+  // Insert the new windows only (delete + reinsert all to keep things clean)
+  await sb.from("day_plan_windows").delete().eq("day_plan_id", planRow.id);
+
+  const inserts = allWindows.map((w) => ({
+    day_plan_id: planRow.id,
+    window_index: w.windowIndex,
+    start_time: w.startTime,
+    end_time: w.endTime,
+    prices_of_interest: w.pricesOfInterest,
+    entries: w.entries,
+    invalidation: w.invalidation,
+    profit_target: w.profitTarget,
+    expected_move_pct: w.expectedMovePct,
+  }));
+
+  const { data: insertedWindows, error: winErr } = await sb
+    .from("day_plan_windows")
+    .insert(inserts)
+    .select();
+
+  if (winErr) {
+    log.warn("day_plan_windows insert failed for evening review", {
+      error: winErr.message,
+    });
+  }
+
+  const resolvedWindows = (insertedWindows ?? []).map((w: any) => ({
+    id: w.id,
+    dayPlanId: w.day_plan_id,
+    windowIndex: w.window_index,
+    startTime:
+      typeof w.start_time === "string"
+        ? w.start_time.slice(0, 5)
+        : w.start_time,
+    endTime:
+      typeof w.end_time === "string" ? w.end_time.slice(0, 5) : w.end_time,
+    pricesOfInterest: Array.isArray(w.prices_of_interest)
+      ? w.prices_of_interest.map((n: any) => Number(n))
+      : [],
+    entries: Array.isArray(w.entries)
+      ? w.entries.map((n: any) => Number(n))
+      : [],
+    invalidation: w.invalidation == null ? null : Number(w.invalidation),
+    profitTarget: w.profit_target == null ? null : Number(w.profit_target),
+    expectedMovePct:
+      w.expected_move_pct == null ? null : Number(w.expected_move_pct),
+  }));
+
+  log.info("CAO evening review merged windows", {
+    date: dateIso,
+    existingCount: existingWindows.length,
+    addedCount: parsed.data.windows.length,
+    totalCount: allWindows.length,
+    reason: parsed.data.reason,
+  });
+
+  return c.json({
+    plan: {
+      id: planRow.id,
+      teamId: planRow.team_id,
+      date: planRow.date,
+      eventName: planRow.event_name,
+      deskTheme: planRow.desk_theme,
+      generatedBy: planRow.generated_by,
+      generatedAt: planRow.generated_at,
+      sourceBriefId: planRow.source_brief_id,
+      institutionalPositioning: planRow.institutional_positioning ?? null,
+      windows: resolvedWindows,
+    } satisfies DayPlan,
+    reason: parsed.data.reason,
+  });
 }

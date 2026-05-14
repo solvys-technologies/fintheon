@@ -164,6 +164,7 @@ export interface HarperTask {
     | "consilium-intervention"
     | "feed-quality-feedback"
     | "batch-review-low-priority"
+    | "evening-review"
     | "manual";
   payload: Record<string, unknown>;
   priority: "low" | "normal" | "high" | "critical";

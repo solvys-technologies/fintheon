@@ -162,6 +162,11 @@ contextBridge.exposeInMainWorld("electron", {
   quickAccess: {
     setUrl: (url) => ipcRenderer.send("quick-access:set-url", url),
   },
+
+  // [claude-code 2026-05-13] S64 T3: Lockout OS notification bridge
+  lockout: {
+    showNotification: () => ipcRenderer.send("show-lockout-notification"),
+  },
 });
 
 // [claude-code 2026-04-20] S21: System permissions bridge for the Omi voice layer.

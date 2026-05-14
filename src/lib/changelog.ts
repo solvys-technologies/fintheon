@@ -9,6 +9,39 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-13T19:30:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S64 sprint complete: Desk Plan overhaul + enhanced lockout suite. T2: Multi-window DayCard chevron nav, lockout button on streak row, price gating 15min pre-window (desktop + mobile). T3: Persistent Supabase lockout tables, auto-release timer 15min before trading windows, OS notification ('touch grass, kid.') via Electron, lockout audit log, lockout settings in TradingTab. T4: CAO 5PM evening review cron (Sun-Thu) with skill instructions, agent pricing literacy beliefs (max 80pt, TV authority, futures notation), MEGACAP-only Trade Ledger with confidence scoring, per-instrument heat correlation in agent-desk-briefing. T5: Unification and validation clean.",
+    files: [
+      "frontend/components/narrative/DayCard.tsx",
+      "frontend/components/narrative/DayPlanChevronNav.tsx",
+      "frontend/components/narrative/PriceRevealTag.tsx",
+      "mobile/components/home/MobileDeskPlan.tsx",
+      "backend-hono/migrations/042_lockout_persistence.sql",
+      "backend-hono/src/services/lockout.ts",
+      "backend-hono/src/types/lockout.ts",
+      "backend-hono/src/routes/lockout/index.ts",
+      "frontend/hooks/useLockout.ts",
+      "frontend/contexts/SettingsContext.tsx",
+      "frontend/components/settings/TradingTab.tsx",
+      "frontend/components/SettingsPanel.tsx",
+      "electron/main.cjs",
+      "electron/preload.cjs",
+      "backend-hono/src/services/ai/soul/harper.md",
+      "backend-hono/src/services/ai/agent-instructions/harper-extra.md",
+      "backend-hono/src/services/ai/agent-instructions/shared-beliefs.ts",
+      "backend-hono/src/services/skills/evening-review-instructions.ts",
+      "backend-hono/src/services/cron/cao-evening-review-scheduler.ts",
+      "backend-hono/src/routes/day-plan/handlers.ts",
+      "backend-hono/src/routes/day-plan/index.ts",
+      "backend-hono/src/services/harper-autonomous/context-builder.ts",
+      "backend-hono/src/boot/services.ts",
+      "frontend/components/narrative/ConsolidatedTradeLedger.tsx",
+      "backend-hono/src/services/agent-desk/agent-desk-briefing.ts",
+    ],
+  },
+  {
     date: "2026-05-13T15:15:00-04:00",
     agent: "claude-code",
     summary:

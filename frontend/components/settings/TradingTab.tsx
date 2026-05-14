@@ -1,5 +1,6 @@
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — trading tab
 // [claude-code 2026-05-13] Added lockout controls + quick access URL
+// [claude-code 2026-05-13] S64 T3: Enhanced lockout settings (auto-release, persistent, scheduled unlock status)
 import React, { useState, useEffect } from "react";
 import Toggle from "../Toggle";
 import { useLockout } from "../../hooks/useLockout";
@@ -21,6 +22,10 @@ interface TradingTabProps {
   setTradingModels: (models: any) => void;
   lockoutDefaultDuration: number;
   setLockoutDefaultDuration: (minutes: number) => void;
+  lockoutAutoReleaseMinutes: number;
+  setLockoutAutoReleaseMinutes: (minutes: number) => void;
+  persistentLockout: boolean;
+  setPersistentLockout: (enabled: boolean) => void;
   quickAccessUrl: string;
   setQuickAccessUrl: (url: string) => void;
 }
@@ -38,6 +43,10 @@ export function TradingTab({
   setTradingModels,
   lockoutDefaultDuration,
   setLockoutDefaultDuration,
+  lockoutAutoReleaseMinutes,
+  setLockoutAutoReleaseMinutes,
+  persistentLockout,
+  setPersistentLockout,
   quickAccessUrl,
   setQuickAccessUrl,
 }: TradingTabProps) {
@@ -256,6 +265,55 @@ export function TradingTab({
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* S64 T3: Enhanced lockout settings */}
+          <div className="pt-4 space-y-4">
+            <Toggle
+              label="Auto-lock from Desk Plan"
+              enabled={true}
+              onChange={() => {}}
+            />
+            <div className="flex items-center gap-3">
+              <label className="text-xs text-gray-400 shrink-0">
+                Auto-release (min before window)
+              </label>
+              <input
+                type="number"
+                min={5}
+                max={30}
+                value={lockoutAutoReleaseMinutes}
+                onChange={(e) =>
+                  setLockoutAutoReleaseMinutes(
+                    Math.max(5, Math.min(30, parseInt(e.target.value) || 15)),
+                  )
+                }
+                className="w-16 bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-2 py-1 text-xs text-white text-center focus:outline-none focus:border-[var(--fintheon-accent)]/30"
+              />
+            </div>
+            <Toggle
+              label="Persistent lockout (survives restart)"
+              enabled={persistentLockout}
+              onChange={setPersistentLockout}
+            />
+            {lockoutState.locked && lockoutState.autoReleaseAt && (
+              <div className="bg-[var(--fintheon-surface)] border border-zinc-800 rounded p-3 text-xs text-gray-400 space-y-1">
+                <p>
+                  <span className="text-gray-500">Scheduled unlock:</span>{" "}
+                  {new Date(lockoutState.autoReleaseAt).toLocaleTimeString()}
+                </p>
+                {lockoutState.scheduledBy && (
+                  <p>
+                    <span className="text-gray-500">Triggered by:</span>{" "}
+                    {lockoutState.scheduledBy === "desk_plan"
+                      ? "Desk Plan"
+                      : lockoutState.scheduledBy === "system"
+                        ? "System"
+                        : "Manual"}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </section>

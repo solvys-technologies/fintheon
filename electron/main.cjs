@@ -1508,7 +1508,7 @@ ipcMain.handle("system-permissions:request", async (_event, name) => {
 /*  S63 T3: Dock menu + notification IPC handlers                    */
 /* ------------------------------------------------------------------ */
 
-// Renderer sends system toast notifications (RiskFlow, etc.)
+// Renderer sends system toast notifications (RiskFlow, lockout, etc.)
 ipcMain.handle("system-notification:show", (_event, { title, body }) => {
   try {
     const n = new Notification({ title, body });
@@ -1516,6 +1516,19 @@ ipcMain.handle("system-notification:show", (_event, { title, body }) => {
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err.message };
+  }
+});
+
+// [claude-code 2026-05-13] S64 T3: Lockout OS notification — "touch grass, kid."
+ipcMain.on("show-lockout-notification", () => {
+  try {
+    const n = new Notification({
+      title: "touch grass, kid.",
+      body: "this app has been blocked by the agentic desk. see you next session!",
+    });
+    n.show();
+  } catch (err) {
+    console.error("[Lockout] Notification failed:", err.message);
   }
 });
 

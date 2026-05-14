@@ -175,6 +175,12 @@ interface SettingsContextType {
   /** Lockout default duration in minutes (default: 30) */
   lockoutDefaultDuration: number;
   setLockoutDefaultDuration: (minutes: number) => void;
+  /** Auto-release minutes before next trading window (default: 15) */
+  lockoutAutoReleaseMinutes: number;
+  setLockoutAutoReleaseMinutes: (minutes: number) => void;
+  /** Whether lockout persists across app restart (default: false) */
+  persistentLockout: boolean;
+  setPersistentLockout: (enabled: boolean) => void;
   /** Quick Access URL for dock menu / system tray */
   quickAccessUrl: string;
   setQuickAccessUrl: (url: string) => void;
@@ -519,6 +525,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [quickAccessUrl, setQuickAccessUrl] = useState<string>(() =>
     loadFromStorage("quickAccessUrl", ""),
   );
+  const [lockoutAutoReleaseMinutes, setLockoutAutoReleaseMinutes] =
+    useState<number>(() => loadFromStorage("lockoutAutoReleaseMinutes", 15));
+  const [persistentLockout, setPersistentLockout] = useState<boolean>(() =>
+    loadFromStorage("persistentLockout", false),
+  );
 
   // [claude-code 2026-04-19] v5.22 S1: shared cross-platform preferences.
   const [preferences, setPreferences] = useState<UserPreferences>(() =>
@@ -704,6 +715,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           setOpenCodeGoModel(remote.openCodeGoModel as string);
         if (remote.lockoutDefaultDuration !== undefined)
           setLockoutDefaultDuration(remote.lockoutDefaultDuration as number);
+        if (remote.lockoutAutoReleaseMinutes !== undefined)
+          setLockoutAutoReleaseMinutes(
+            remote.lockoutAutoReleaseMinutes as number,
+          );
+        if (remote.persistentLockout !== undefined)
+          setPersistentLockout(remote.persistentLockout as boolean);
         if (remote.quickAccessUrl)
           setQuickAccessUrl(remote.quickAccessUrl as string);
       }
@@ -744,6 +761,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       defaultChatProvider,
       openCodeGoModel,
       lockoutDefaultDuration,
+      lockoutAutoReleaseMinutes,
+      persistentLockout,
       quickAccessUrl,
     };
     try {
@@ -786,6 +805,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     defaultChatProvider,
     openCodeGoModel,
     lockoutDefaultDuration,
+    lockoutAutoReleaseMinutes,
+    persistentLockout,
     quickAccessUrl,
   ]);
 
@@ -867,6 +888,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setOpenCodeGoModel,
         lockoutDefaultDuration,
         setLockoutDefaultDuration,
+        lockoutAutoReleaseMinutes,
+        setLockoutAutoReleaseMinutes,
+        persistentLockout,
+        setPersistentLockout,
         quickAccessUrl,
         setQuickAccessUrl,
         preferences,

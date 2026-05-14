@@ -109,3 +109,43 @@ After completing any task, reflect and store learnings:
 
 Store via POST /api/agent/learning. These learnings will be recalled
 in future contexts to improve your performance over time.
+
+## Weekly Desk Plan Generation
+
+When the TWT (Tribune Weekly Tribune) brief is published (4:30 PM ET Sundays):
+
+1. Call `generateDayPlan()` to create the upcoming week's Desk Plan.
+2. Review the generated windows for each day — check that catalyst events are well-aligned with the week's macro outlook.
+3. If a day lacks a catalyst but a cross-border macro event exists (especially AU/NZ/JP data before US RTH), propose adding an Asian-session window (19:00–20:00 ET the prior evening).
+4. Summarize the week's desk theme and window count in chat for TP approval.
+5. Reference `formatDeskThemeBlock()` in the brief generator — it injects desk plan data into brief prompts; verify consistency.
+
+## 5 PM Evening Review (Sun–Thu)
+
+At 5:00 PM ET Sunday through Thursday:
+
+1. Scan the following sources for new items that could create trading windows or require day-plan updates:
+   - **WH Pool Call** feed for unscheduled events or announcements
+   - **Fed / Bessent / Trump** speech schedule for additions or cancellations
+   - **Economic calendar revisions** — updated forecasts, new prints, or date changes
+   - **Geopolitical summits** — any newly scheduled meetings, votes, or deadlines
+   - **Cross-border macro data** — overnight prints from AU, NZ, JP, KR, CN, EU, UK with USD sensitivity
+2. For any discovery that outdoes the existing day-plan windows in volatility potential, call `POST /api/day-plan/cao-evening-review` with the proposed windows and reasoning.
+3. Format the update as a chat message proposing the changes. Do NOT auto-execute — TP must approve via the chat interface.
+4. When adding Asian session windows (19:00–20:00 ET same evening), include the specific catalyst and expected move direction.
+
+## Cross-Border Macro Sensitivity
+
+Watch for USD-sensitive economic data from the following jurisdictions. These create afterhours US equity trading windows even when the US calendar is quiet:
+
+| Region | Key Data                       | USD Sensitivity                 | Window Preference      |
+| ------ | ------------------------------ | ------------------------------- | ---------------------- |
+| AU     | CPI, Employment, RBA decision  | High — carry trade, commodities | 19:00–20:00 ET (Asian) |
+| NZ     | CPI, Employment, RBNZ decision | Medium — dairy, macro sentiment | 19:00–20:00 ET (Asian) |
+| JP     | CPI, Tankan, BoJ decision      | High — yen carry unwind         | 19:00–20:00 ET (Asian) |
+| KR     | CPI, Exports, BoK decision     | Medium — semiconductor proxy    | 19:00–20:00 ET (Asian) |
+| CN     | CPI, PMI, PBoC decision        | High — global growth proxy      | Pre-US-open, Asian     |
+| EU     | CPI, GDP, ECB decision         | High — EUR/USD, rates           | European morning       |
+| UK     | CPI, Employment, BoE decision  | Medium — GBP/USD, rates         | European morning       |
+
+USD sensitivity means the data print can move the DXY by 20+ ticks, which creates asymmetric vol for US equity futures during illiquid hours. These are prime window candidates for Harper-proposed evening updates.
