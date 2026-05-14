@@ -1,6 +1,6 @@
 {
   "name": "fintheon",
-  "version": "6.1.0",
+  "version": "6.1.1",
   "type": "module",
   "packageManager": "bun",
   "dependencies": {
@@ -73,7 +73,8 @@
     "files": [
       "electron/**/*",
       "frontend/dist/**/*",
-      "frontend/package.json"
+      "frontend/package.json",
+      "scripts/fintheon-install-update.sh"
     ],
     "directories": {
       "output": "desktop-dist"

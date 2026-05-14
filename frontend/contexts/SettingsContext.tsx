@@ -103,7 +103,10 @@ export type DefaultPlatform =
   | "research"
   | "tradesea"
   | "tradovate"
-  | "tradingview";
+  | "tradelocker"
+  | "tradingview"
+  | "unusual-whales"
+  | (string & {});
 export type DefaultChatProvider = "deepseek-direct" | "opencode-go";
 
 interface SettingsContextType {
@@ -178,6 +181,9 @@ interface SettingsContextType {
   /** Auto-release minutes before next trading window (default: 15) */
   lockoutAutoReleaseMinutes: number;
   setLockoutAutoReleaseMinutes: (minutes: number) => void;
+  /** Whether Desk Plan automatically locks trading outside active windows */
+  lockoutAutoBlockOutsideTradingWindow: boolean;
+  setLockoutAutoBlockOutsideTradingWindow: (enabled: boolean) => void;
   /** Whether lockout persists across app restart (default: false) */
   persistentLockout: boolean;
   setPersistentLockout: (enabled: boolean) => void;
@@ -527,6 +533,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   );
   const [lockoutAutoReleaseMinutes, setLockoutAutoReleaseMinutes] =
     useState<number>(() => loadFromStorage("lockoutAutoReleaseMinutes", 15));
+  const [
+    lockoutAutoBlockOutsideTradingWindow,
+    setLockoutAutoBlockOutsideTradingWindow,
+  ] = useState<boolean>(() =>
+    loadFromStorage("lockoutAutoBlockOutsideTradingWindow", true),
+  );
   const [persistentLockout, setPersistentLockout] = useState<boolean>(() =>
     loadFromStorage("persistentLockout", false),
   );
@@ -696,13 +708,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         if (remote.proposerIframeSources) {
           const remoteSources =
             remote.proposerIframeSources as ProposerIframeSource[];
-          const customEntries = remoteSources.filter(
-            (s: ProposerIframeSource) => !s.builtin,
-          );
-          setProposerIframeSources([
-            ...BUILTIN_PROPOSER_SOURCES,
-            ...customEntries,
-          ]);
+          if (Array.isArray(remoteSources) && remoteSources.length > 0) {
+            setProposerIframeSources(remoteSources);
+          }
         }
         if (remote.proposerDefaultIframe)
           setProposerDefaultIframe(remote.proposerDefaultIframe as string);
@@ -718,6 +726,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         if (remote.lockoutAutoReleaseMinutes !== undefined)
           setLockoutAutoReleaseMinutes(
             remote.lockoutAutoReleaseMinutes as number,
+          );
+        if (remote.lockoutAutoBlockOutsideTradingWindow !== undefined)
+          setLockoutAutoBlockOutsideTradingWindow(
+            remote.lockoutAutoBlockOutsideTradingWindow as boolean,
           );
         if (remote.persistentLockout !== undefined)
           setPersistentLockout(remote.persistentLockout as boolean);
@@ -762,6 +774,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       openCodeGoModel,
       lockoutDefaultDuration,
       lockoutAutoReleaseMinutes,
+      lockoutAutoBlockOutsideTradingWindow,
       persistentLockout,
       quickAccessUrl,
     };
@@ -806,6 +819,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     openCodeGoModel,
     lockoutDefaultDuration,
     lockoutAutoReleaseMinutes,
+    lockoutAutoBlockOutsideTradingWindow,
     persistentLockout,
     quickAccessUrl,
   ]);
@@ -890,6 +904,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setLockoutDefaultDuration,
         lockoutAutoReleaseMinutes,
         setLockoutAutoReleaseMinutes,
+        lockoutAutoBlockOutsideTradingWindow,
+        setLockoutAutoBlockOutsideTradingWindow,
         persistentLockout,
         setPersistentLockout,
         quickAccessUrl,

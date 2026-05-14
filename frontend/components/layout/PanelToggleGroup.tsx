@@ -19,22 +19,22 @@
 
 import { useEffect, useState } from "react";
 
-type Side = "left" | "footer" | "right";
+export type PanelSide = "left" | "footer" | "right";
 
-const EVENT_NAME: Record<Side, string> = {
+const EVENT_NAME: Record<PanelSide, string> = {
   left: "fintheon:toggle-nav-sidebar",
   footer: "fintheon:toggle-footer-panel",
   right: "fintheon:toggle-strategium",
 };
 
-const STATE_EVENT_NAME: Record<Side, string> = {
+const STATE_EVENT_NAME: Record<PanelSide, string> = {
   left: "fintheon:nav-sidebar-state",
   footer: "fintheon:footer-panel-state",
   right: "fintheon:strategium-state",
 };
 
 interface PanelIconProps {
-  side: Side;
+  side: PanelSide;
   active: boolean;
 }
 
@@ -112,11 +112,11 @@ function PanelIcon({ side, active }: PanelIconProps) {
 }
 
 interface PanelToggleButtonProps {
-  side: Side;
+  side: PanelSide;
   label: string;
 }
 
-function PanelToggleButton({ side, label }: PanelToggleButtonProps) {
+export function PanelToggleButton({ side, label }: PanelToggleButtonProps) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {

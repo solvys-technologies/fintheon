@@ -1841,12 +1841,8 @@ export async function handleDeletePhrase(c: Context) {
 export async function handleGetRiskSignals(c: Context) {
   const { getRiskSignals } =
     await import("../../services/riskflow/risk-signal-generator.js");
-  const signals = await getRiskSignals();
-  return c.json({
-    signals,
-    generatedAt:
-      signals.length > 0 ? signals[0].generatedAt : new Date().toISOString(),
-  });
+  const result = await getRiskSignals();
+  return c.json(result);
 }
 
 // ── Single-item lookup for mobile DetailSheet (S25) ─────────────────────────

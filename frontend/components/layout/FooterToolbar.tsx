@@ -76,6 +76,13 @@ function resolveSlashCommand(input: string): string | null {
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
+function compactPrompt(cwd: string) {
+  const parts = cwd.split("/").filter(Boolean);
+  if (parts.length <= 1) return cwd;
+  const tail = parts.slice(-2).join("/");
+  return parts.length === 2 ? tail : `.../${tail}`;
+}
+
 /** Render terminal output with clickable `backtick commands` */
 function renderOutputLine(text: string, onClickCommand: (cmd: string) => void) {
   const parts = text.split(/`([^`]+)`/);
@@ -138,11 +145,11 @@ export function FooterToolbar({
       text: "Slash commands: /start-backend, /frontend, /install, /build, /typecheck, /hermes-start, /hermes-restart, /hermes-port",
     },
   ]);
+  const [terminalCwd, setTerminalCwd] = useState("fintheon");
   const [slashSuggestionsOpen, setSlashSuggestionsOpen] = useState(false);
   const [slashSuggestionsIndex, setSlashSuggestionsIndex] = useState(0);
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const prevPanelOpenRef = useRef(false);
   const activeProcessRef = useRef<{
     processId: string;
     es: EventSource;
@@ -170,6 +177,7 @@ export function FooterToolbar({
     : CLI_SLASH_COMMANDS;
   const showSlashSuggestions =
     slashSuggestionsOpen && (cliInput === "/" || slashSuggestions.length > 0);
+  const terminalPrompt = compactPrompt(terminalCwd);
 
   useEffect(() => {
     setSlashSuggestionsIndex(0);
@@ -210,17 +218,11 @@ export function FooterToolbar({
     terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [cliHistory]);
 
-  // When panel first opens on terminal tab: focus input and show commands list (popup)
+  // When panel opens on terminal tab: focus an empty shell-style prompt.
   useEffect(() => {
     if (panelOpen && activeTab === "terminal") {
       inputRef.current?.focus();
-      const justOpened = !prevPanelOpenRef.current;
-      if (justOpened) {
-        setCliInput("/");
-        setSlashSuggestionsOpen(true);
-      }
     }
-    prevPanelOpenRef.current = panelOpen;
   }, [panelOpen, activeTab]);
 
   const runViaBackend = useCallback((cmd: string) => {
@@ -230,53 +232,61 @@ export function FooterToolbar({
       body: JSON.stringify({ command: cmd }),
     })
       .then((r) => r.json())
-      .then((data: { ok?: boolean; processId?: string; error?: string }) => {
-        if (!data.ok || !data.processId) {
-          setCliHistory((prev) => [
-            ...prev,
-            { type: "output", text: data.error ?? "Failed to start command" },
-          ]);
-          return;
-        }
-        const es = new EventSource(
-          `${API_BASE}/api/terminal/stream/${data.processId}`,
-        );
-        activeProcessRef.current = { processId: data.processId, es };
-
-        const stripAnsi = (s: string) =>
-          s.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "");
-        const onData = (e: MessageEvent) => {
-          const lines = stripAnsi(String(e.data)).split("\n").filter(Boolean);
-          setCliHistory((prev) => [
-            ...prev,
-            ...lines.map((text) => ({ type: "output" as const, text })),
-          ]);
-        };
-        es.addEventListener("stdout", onData);
-        es.addEventListener("stderr", onData);
-        es.addEventListener("exit", (e: MessageEvent) => {
-          try {
-            const { code, signal } = JSON.parse(e.data);
-            const exitVal = code ?? signal ?? "?";
+      .then(
+        (data: {
+          ok?: boolean;
+          processId?: string;
+          cwd?: string;
+          error?: string;
+        }) => {
+          if (!data.ok || !data.processId) {
             setCliHistory((prev) => [
               ...prev,
-              { type: "output", text: `[exit ${exitVal}]` },
+              { type: "output", text: data.error ?? "Failed to start command" },
             ]);
-          } catch {
-            setCliHistory((prev) => [
-              ...prev,
-              { type: "output", text: "[exit]" },
-            ]);
+            return;
           }
-          es.close();
-          activeProcessRef.current = null;
-        });
-        es.onerror = () => {
-          es.close();
-          activeProcessRef.current = null;
-        };
-      })
-      .catch((err) => {
+          if (data.cwd) setTerminalCwd(data.cwd);
+          const es = new EventSource(
+            `${API_BASE}/api/terminal/stream/${data.processId}`,
+          );
+          activeProcessRef.current = { processId: data.processId, es };
+
+          const stripAnsi = (s: string) =>
+            s.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "");
+          const onData = (e: MessageEvent) => {
+            const lines = stripAnsi(String(e.data)).split("\n").filter(Boolean);
+            setCliHistory((prev) => [
+              ...prev,
+              ...lines.map((text) => ({ type: "output" as const, text })),
+            ]);
+          };
+          es.addEventListener("stdout", onData);
+          es.addEventListener("stderr", onData);
+          es.addEventListener("exit", (e: MessageEvent) => {
+            try {
+              const { code, signal } = JSON.parse(e.data);
+              const exitVal = code ?? signal ?? "?";
+              setCliHistory((prev) => [
+                ...prev,
+                { type: "output", text: `[exit ${exitVal}]` },
+              ]);
+            } catch {
+              setCliHistory((prev) => [
+                ...prev,
+                { type: "output", text: "[exit]" },
+              ]);
+            }
+            es.close();
+            activeProcessRef.current = null;
+          });
+          es.onerror = () => {
+            es.close();
+            activeProcessRef.current = null;
+          };
+        },
+      )
+      .catch(() => {
         setCliHistory((prev) => [
           ...prev,
           {
@@ -357,7 +367,7 @@ export function FooterToolbar({
 
       const newHistory = [
         ...cliHistory,
-        { type: "input" as const, text: displayCmd },
+        { type: "input" as const, text: `${terminalPrompt} $ ${displayCmd}` },
       ];
 
       const lower = cmd.toLowerCase().trim();
@@ -431,7 +441,7 @@ export function FooterToolbar({
                   ...prev,
                   {
                     type: "output",
-                    text: `Update available: ${result.latest ?? "new version"}. Use the toast CTA or run \`fintheon update\` again and click Download.`,
+                    text: `Update available: ${result.latest ?? "new version"}. Download will continue in the background; install from the toast when ready.`,
                   },
                 ]);
                 return;
@@ -475,6 +485,7 @@ export function FooterToolbar({
       showSlashSuggestions,
       slashSuggestions,
       slashSuggestionsIndex,
+      terminalPrompt,
     ],
   );
 
@@ -620,7 +631,7 @@ export function FooterToolbar({
                       }
                     >
                       {line.type === "input"
-                        ? `> ${line.text}`
+                        ? line.text
                         : renderOutputLine(line.text, (cmd) => {
                             setCliInput(cmd);
                             inputRef.current?.focus();
@@ -632,8 +643,8 @@ export function FooterToolbar({
                 {/* Terminal input + slash suggestions */}
                 <div className="relative shrink-0">
                   <div className="flex items-center gap-1.5 px-3 py-2 border-t border-[var(--fintheon-accent)]/10">
-                    <span className="text-[var(--fintheon-accent)]/50 text-[11px] font-mono">
-                      {">"}
+                    <span className="min-w-fit text-[var(--fintheon-accent)]/70 text-[11px] font-mono">
+                      {terminalPrompt} $
                     </span>
                     <input
                       ref={inputRef}
@@ -712,18 +723,22 @@ export function FooterToolbar({
             [claude-code 2026-04-30] S56-shell: bumped contrast — gold/50 was
             illegible against the new --fintheon-surface footer; using
             --fintheon-text/75 with accent on hover. */}
-        <button
-          onClick={togglePanel}
-          className="flex items-center gap-1 text-[10px] text-[var(--fintheon-text)]/75 hover:text-[var(--fintheon-accent)] transition-colors"
-          title={panelOpen ? "Close panel" : "Open panel"}
-        >
-          {panelOpen ? (
-            <ChevronDown className="w-3 h-3" />
-          ) : (
-            <ChevronUp className="w-3 h-3" />
-          )}
-          <span className="font-mono tracking-[0.12em]">{EPOCH_VERSION}</span>
-        </button>
+        <div className="flex items-center gap-1">
+          <span className="font-mono tracking-[0.12em] text-[10px] text-[var(--fintheon-text)]/75">
+            {EPOCH_VERSION}
+          </span>
+          <button
+            onClick={togglePanel}
+            className="flex h-5 w-5 items-center justify-center text-[var(--fintheon-text)]/75 hover:text-[var(--fintheon-accent)] transition-colors"
+            title={panelOpen ? "Close panel" : "Open panel"}
+          >
+            {panelOpen ? (
+              <ChevronDown className="w-3 h-3" />
+            ) : (
+              <ChevronUp className="w-3 h-3" />
+            )}
+          </button>
+        </div>
 
         <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
 

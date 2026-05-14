@@ -4,9 +4,14 @@ import { useERSafe } from "../contexts/ERContext";
 interface TraderNametagProps {
   name: string;
   disablePulse?: boolean;
+  variant?: "standalone" | "embedded";
 }
 
-export function TraderNametag({ name, disablePulse }: TraderNametagProps) {
+export function TraderNametag({
+  name,
+  disablePulse,
+  variant = "standalone",
+}: TraderNametagProps) {
   if (!name) return null;
 
   const er = useERSafe();
@@ -19,10 +24,19 @@ export function TraderNametag({ name, disablePulse }: TraderNametagProps) {
       : "nametag-pulse-tilt"
     : "";
 
+  const chromeClass =
+    variant === "embedded"
+      ? "h-full px-2"
+      : "bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-md px-2 h-7";
+
   return (
     <div
-      className={`relative bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-md px-2 h-7 flex items-center overflow-hidden ${pulseClass}`}
-      style={{ boxShadow: "inset 0 1px 0 rgba(199,159,74,0.25)" }}
+      className={`relative flex items-center overflow-hidden ${chromeClass} ${pulseClass}`}
+      style={
+        variant === "standalone"
+          ? { boxShadow: "inset 0 1px 0 rgba(199,159,74,0.25)" }
+          : undefined
+      }
     >
       <span className="relative z-10 text-[10px] font-semibold tracking-[0.14em] text-[var(--fintheon-accent)] uppercase select-none">
         {name}

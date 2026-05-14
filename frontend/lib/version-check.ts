@@ -44,12 +44,20 @@ function recentlyNagged(): boolean {
   }
 }
 
-function recordNag(): void {
+export function recordVersionNag(): void {
   try {
     localStorage.setItem(LAST_NAG_KEY, String(Date.now()));
   } catch {
     /* localStorage can be disabled — best-effort only */
   }
+}
+
+export function shouldPromptForVersion(version: string): boolean {
+  const latestClean = version.replace(/^v/, "");
+  if (!isNewerThan(latestClean, BUILD_VERSION)) return false;
+  if (isDismissedForVersion(latestClean)) return false;
+  if (recentlyNagged()) return false;
+  return true;
 }
 
 function isNewerThan(candidate: string, current: string): boolean {
@@ -84,19 +92,11 @@ async function checkOnce(cb: VersionCheckCallbacks) {
 
     if (!data.updateAvailable || !data.latest) return;
 
-    // Defense in depth: only nag when the latest release is STRICTLY newer than
-    // the running build. Prevents the "already latest" nag loop TP flagged.
     const latestClean = data.latest.replace(/^v/, "");
-    if (!isNewerThan(latestClean, BUILD_VERSION)) return;
-
-    // Respect per-version dismissals
-    if (isDismissedForVersion(latestClean)) return;
-
-    // Global 24h cooldown after ANY dismissal — user said no, don't ask again soon
-    if (recentlyNagged()) return;
+    if (!shouldPromptForVersion(latestClean)) return;
 
     alreadyNotified = true;
-    recordNag();
+    recordVersionNag();
     cb.onUpdateAvailable(latestClean);
   } catch {
     // Silently ignore — backend may be offline
@@ -121,7 +121,7 @@ export function stopVersionCheck() {
 export function dismissVersion(version: string): void {
   try {
     localStorage.setItem(DISMISS_KEY_PREFIX + version, "1");
-    recordNag();
+    recordVersionNag();
   } catch {
     /* localStorage can be disabled — best-effort only */
   }

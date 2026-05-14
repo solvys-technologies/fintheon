@@ -20,7 +20,7 @@ import {
   type ToolbarItemId,
 } from "../../lib/layoutOrderStorage";
 import { HeaderVoiceControl } from "../voice/HeaderVoiceControl";
-import { PanelToggleGroup } from "./PanelToggleGroup";
+import { PanelToggleButton } from "./PanelToggleGroup";
 import {
   GripVertical,
   Layers,
@@ -74,6 +74,13 @@ const TAB_LABELS: Record<NavTab, string> = {
 };
 
 type LayoutOption = "tickers-only" | "combined";
+
+const TOOLBAR_PILL_CLASS =
+  "flex items-center gap-0.5 h-8 rounded-md border border-[rgba(199,159,74,0.12)] bg-[rgba(5,4,2,0.55)] px-1";
+
+function activeIconStyle(color: string) {
+  return { "--toolbar-icon-active-color": color } as React.CSSProperties;
+}
 
 interface TopHeaderProps {
   topStepXEnabled?: boolean;
@@ -164,11 +171,11 @@ export function TopHeader({
   const [quickClockPulse, setQuickClockPulse] = useState(false);
   const [customLockoutMin, setCustomLockoutMin] = useState("");
   const customLockoutRef = useRef<HTMLInputElement>(null);
-  const panelToggleMode = topStepXEnabled
-    ? layoutOption === "tickers-only"
-      ? "hidden"
-      : "right-only"
-    : "full";
+  const shouldShowLeftPanelToggle = !topStepXEnabled && compactLevel < 2;
+  const shouldShowFooterPanelToggle = !topStepXEnabled && compactLevel < 2;
+  const shouldShowRightPanelToggle = !(
+    topStepXEnabled && layoutOption === "tickers-only"
+  );
   const handleQuickClock = useCallback(async () => {
     const now = new Date();
     const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
@@ -486,9 +493,13 @@ export function TopHeader({
             )}
           </div>
 
+          {shouldShowLeftPanelToggle && (
+            <PanelToggleButton side="left" label="left panel" />
+          )}
+
           {/* Breadcrumb navigation — back/forward + section name */}
           {!topStepXEnabled && compactLevel < 2 && (
-            <div className="flex items-center gap-1 ml-2">
+            <div className="flex items-center gap-1">
               <button
                 onClick={onBack}
                 disabled={historyIndex <= 0}
@@ -514,72 +525,88 @@ export function TopHeader({
           )}
 
           {compactLevel < 1 && (
-            <button
-              onClick={() => setShowUpgrade(true)}
-              className="relative bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg px-2.5 h-7 hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors cursor-pointer flex items-center hidden xl:flex"
-            >
-              <span className="text-[13px] text-gray-300">
-                {getTierDisplayName()}
-              </span>
-            </button>
-          )}
-          {traderName && compactLevel < 1 && (
-            <TraderNametag
-              name={traderName}
-              disablePulse={!(alertConfig.nametagEmoPulse ?? true)}
-            />
-          )}
-          {compactLevel < 1 && <FluxerCallWidget />}
-          {topStepXEnabled && (
-            <button
-              onClick={toggleManualDnd}
-              className={`relative toolbar-icon-btn ${dndActive ? "toolbar-active" : ""}`}
-              title={dndActive ? "Do Not Disturb (ON)" : "Notifications"}
-            >
-              {dndActive ? (
-                <BellOff className="w-3 h-3" />
-              ) : (
-                <Bell className="w-3 h-3" />
-              )}
-              {totalBadgeCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-500/80 text-white text-[8px] font-bold leading-none">
-                  {totalBadgeCount > 99 ? "99+" : totalBadgeCount}
-                </span>
-              )}
-            </button>
-          )}
-          {compactLevel < 2 && (
-            <button
-              onClick={handleQuickClock}
-              className={`toolbar-icon-btn ${quickClockPulse ? "toolbar-active" : ""}`}
-              title="Quick clock antilag"
-            >
-              <Zap className="w-3 h-3" />
-            </button>
-          )}
-          {compactLevel < 2 && (
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() =>
-                  lockoutState.locked
-                    ? lockoutUnlock()
-                    : lockoutLock(lockoutDefaultDuration)
-                }
-                className={`toolbar-icon-btn ${lockoutState.locked ? "toolbar-active" : ""}`}
-                title={
-                  lockoutState.locked && lockoutState.remaining
-                    ? `${Math.round(lockoutState.remaining / 60)}m left`
-                    : "Lock"
-                }
-              >
-                {lockoutState.locked ? (
-                  <Lock className="w-3 h-3" />
-                ) : (
-                  <LockOpen className="w-3 h-3" />
-                )}
-              </button>
-              {!lockoutState.locked && (
+            <div className="hidden xl:flex items-center h-7 overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)]">
+              {traderName && (
                 <>
+                  <TraderNametag
+                    name={traderName}
+                    variant="embedded"
+                    disablePulse={!(alertConfig.nametagEmoPulse ?? true)}
+                  />
+                  <span
+                    className="h-4 w-px bg-[linear-gradient(to_bottom,transparent,rgba(199,159,74,0.42),transparent)]"
+                    aria-hidden="true"
+                  />
+                </>
+              )}
+              <button
+                onClick={() => setShowUpgrade(true)}
+                className="h-full px-2.5 text-[11px] text-gray-300 hover:text-[var(--fintheon-accent)] transition-colors"
+              >
+                <span className="whitespace-nowrap">
+                  {getTierDisplayName()}
+                </span>
+              </button>
+            </div>
+          )}
+          {(compactLevel < 2 || topStepXEnabled) && (
+            <div className={TOOLBAR_PILL_CLASS}>
+              {compactLevel < 1 && <FluxerCallWidget />}
+              {topStepXEnabled && (
+                <button
+                  onClick={toggleManualDnd}
+                  className={`relative toolbar-icon-btn ${dndActive ? "toolbar-active" : ""}`}
+                  title={dndActive ? "Do Not Disturb (ON)" : "Notifications"}
+                >
+                  {dndActive ? (
+                    <BellOff className="w-3 h-3 toolbar-icon-active" />
+                  ) : (
+                    <Bell className="w-3 h-3" />
+                  )}
+                  {totalBadgeCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-500/80 text-white text-[8px] font-bold leading-none">
+                      {totalBadgeCount > 99 ? "99+" : totalBadgeCount}
+                    </span>
+                  )}
+                </button>
+              )}
+              {compactLevel < 2 && (
+                <button
+                  onClick={handleQuickClock}
+                  className={`toolbar-icon-btn ${quickClockPulse ? "toolbar-active" : ""}`}
+                  title="Quick clock antilag"
+                >
+                  <Zap
+                    className={`w-3 h-3 ${quickClockPulse ? "toolbar-icon-active" : ""}`}
+                  />
+                </button>
+              )}
+              {compactLevel < 2 && (
+                <button
+                  onClick={() =>
+                    lockoutState.locked
+                      ? lockoutUnlock()
+                      : lockoutLock(lockoutDefaultDuration)
+                  }
+                  className={`toolbar-icon-btn ${lockoutState.locked ? "toolbar-active" : ""}`}
+                  title={
+                    lockoutState.locked && lockoutState.remaining
+                      ? `${Math.round(lockoutState.remaining / 60)}m left`
+                      : "Lock"
+                  }
+                >
+                  {lockoutState.locked ? (
+                    <Lock
+                      className="w-3 h-3 toolbar-icon-active"
+                      style={activeIconStyle("#f87171")}
+                    />
+                  ) : (
+                    <LockOpen className="w-3 h-3" />
+                  )}
+                </button>
+              )}
+              {compactLevel < 2 && !lockoutState.locked && (
+                <div className="flex items-center gap-1">
                   <input
                     ref={customLockoutRef}
                     type="number"
@@ -613,7 +640,7 @@ export function TopHeader({
                       Go
                     </button>
                   )}
-                </>
+                </div>
               )}
             </div>
           )}
@@ -627,12 +654,9 @@ export function TopHeader({
           {psychAssistHeadingWidget}
           {econCountdownWidget}
           {activeTab === "performance" && performanceChatWidget}
-          {/* [claude-code 2026-04-26] Per TP: layout buttons sit FIRST, then
-              the iFrame/Browser dropdown, then the VIX ticker, then the rest
-              of the toolbar. PanelToggleGroup is transparent (no bg/border).
-              The platform/iFrame slot is rendered inline here so the order is
-              fixed; toolbarOrder.map skips id==="platform" further down. */}
-          <PanelToggleGroup mode={panelToggleMode} />
+          {shouldShowFooterPanelToggle && (
+            <PanelToggleButton side="footer" label="footer panel" />
+          )}
           {topStepXEnabled && onLayoutOptionChange ? (
             // iFrame active → Castra/Zen layout dropdown
             <div className="relative" ref={dropdownRef}>
@@ -807,72 +831,6 @@ export function TopHeader({
                 {node}
               </div>
             );
-            // [claude-code 2026-04-26] platform slot rendered inline above
-            // (before VIX) to enforce: layout buttons → browser dropdown → VIX.
-            if (id === "platform") return null;
-            if (id === "power" && onTopStepXDisable) {
-              return wrapper(
-                <button
-                  onClick={onTopStepXDisable}
-                  className={`toolbar-icon-btn ${
-                    topStepXEnabled
-                      ? "!border-emerald-500/30 !bg-emerald-500/10 !text-emerald-400"
-                      : ""
-                  }`}
-                  title={
-                    topStepXEnabled
-                      ? "Hide iFrame layouts"
-                      : "Show iFrame layouts"
-                  }
-                >
-                  <Power className="w-3 h-3" />
-                </button>,
-              );
-            }
-            if (id === "layout") {
-              return null; // Layout dropdown is rendered in the 'platform' slot
-            }
-            if (id === "chat" && onChatToggle) {
-              return wrapper(
-                <button
-                  onClick={onChatToggle}
-                  className={`toolbar-icon-btn ${
-                    chatOpen
-                      ? "!bg-[#6366f1]/15 !border-[#6366f1]/30 !text-[#6366f1]"
-                      : "!border-[#6366f1]/20 !text-[#6366f1]/50"
-                  }`}
-                  title="Convene"
-                >
-                  <MessageCircle className="w-3 h-3" />
-                </button>,
-              );
-            }
-            if (id === "voice") {
-              return wrapper(
-                <HeaderVoiceControl
-                  compact={topStepXEnabled && layoutOption === "tickers-only"}
-                />,
-              );
-            }
-            if (id === "bulletin") {
-              return wrapper(
-                <>
-                  <button
-                    ref={bulletinBtnRef}
-                    onClick={() => setShowBulletin(!showBulletin)}
-                    className={`toolbar-icon-btn ${showBulletin ? "toolbar-active" : ""}`}
-                    title="Bulletin"
-                  >
-                    <ClipboardList className="w-3 h-3" />
-                  </button>
-                  <StickyBulletin
-                    open={showBulletin}
-                    onClose={() => setShowBulletin(false)}
-                    anchorRef={bulletinBtnRef}
-                  />
-                </>,
-              );
-            }
             if (id === "ivScore") {
               return wrapper(
                 <IVScoreCard
@@ -885,6 +843,61 @@ export function TopHeader({
             }
             return null;
           })}
+          <div className={TOOLBAR_PILL_CLASS}>
+            {onTopStepXDisable && (
+              <button
+                onClick={onTopStepXDisable}
+                className={`toolbar-icon-btn ${topStepXEnabled ? "toolbar-active" : ""}`}
+                title={
+                  topStepXEnabled ? "Hide iFrame layouts" : "Show iFrame layouts"
+                }
+              >
+                <Power
+                  className={`w-3 h-3 ${topStepXEnabled ? "toolbar-icon-active" : ""}`}
+                  style={
+                    topStepXEnabled
+                      ? activeIconStyle("#34d399")
+                      : undefined
+                  }
+                />
+              </button>
+            )}
+            <button
+              ref={bulletinBtnRef}
+              onClick={() => setShowBulletin(!showBulletin)}
+              className={`toolbar-icon-btn ${showBulletin ? "toolbar-active" : ""}`}
+              title="Bulletin"
+            >
+              <ClipboardList
+                className={`w-3 h-3 ${showBulletin ? "toolbar-icon-active" : ""}`}
+              />
+            </button>
+            <StickyBulletin
+              open={showBulletin}
+              onClose={() => setShowBulletin(false)}
+              anchorRef={bulletinBtnRef}
+            />
+            {onChatToggle && (
+              <button
+                onClick={onChatToggle}
+                className={`toolbar-icon-btn ${chatOpen ? "toolbar-active" : ""}`}
+                title="Convene"
+              >
+                <MessageCircle
+                  className={`w-3 h-3 ${
+                    chatOpen ? "toolbar-icon-active" : "text-[#6366f1]/50"
+                  }`}
+                  style={chatOpen ? activeIconStyle("#6366f1") : undefined}
+                />
+              </button>
+            )}
+            <HeaderVoiceControl
+              compact={topStepXEnabled && layoutOption === "tickers-only"}
+            />
+          </div>
+          {shouldShowRightPanelToggle && (
+            <PanelToggleButton side="right" label="right panel" />
+          )}
         </div>
       </div>
       {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}

@@ -1,6 +1,6 @@
 // [claude-code 2026-04-04] T5: Settings iFrame list with persistent proposer default
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — iFrames settings tab
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Plus, Trash2, ExternalLink } from "lucide-react";
 import type { ProposerIframeSource } from "../../contexts/SettingsContext";
 
@@ -32,6 +32,17 @@ export function IframesTab({
   const [showAddForm, setShowAddForm] = useState(false);
   const [newLabel, setNewLabel] = useState("");
   const [newUrl, setNewUrl] = useState("");
+  const selectedDefaultPlatform = proposerIframeSources.some(
+    (source) => source.id === defaultPlatform,
+  )
+    ? defaultPlatform
+    : (proposerIframeSources[0]?.id ?? "");
+
+  useEffect(() => {
+    if (!selectedDefaultPlatform || selectedDefaultPlatform === defaultPlatform)
+      return;
+    setDefaultPlatform(selectedDefaultPlatform);
+  }, [defaultPlatform, selectedDefaultPlatform, setDefaultPlatform]);
 
   const handleAddCustom = () => {
     if (!newLabel.trim() || !newUrl.trim()) return;
@@ -52,6 +63,9 @@ export function IframesTab({
     setProposerIframeSources(updated);
     if (proposerDefaultIframe === id && updated.length > 0) {
       setProposerDefaultIframe(updated[0].id);
+    }
+    if (defaultPlatform === id && updated.length > 0) {
+      setDefaultPlatform(updated[0].id);
     }
   };
 
@@ -211,16 +225,15 @@ export function IframesTab({
               Default Platform
             </label>
             <select
-              value={defaultPlatform}
+              value={selectedDefaultPlatform}
               onChange={(e) => setDefaultPlatform(e.target.value as any)}
               className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/30"
             >
-              <option value="tradesea">TradeSea</option>
-              <option value="topstepx">TopStepX</option>
-              <option value="mmt">MMT</option>
-              <option value="kalshi">Kalshi</option>
-              <option value="tradovate">Tradovate</option>
-              <option value="research">Research</option>
+              {proposerIframeSources.map((source) => (
+                <option key={source.id} value={source.id}>
+                  {source.label}
+                </option>
+              ))}
             </select>
             <p className="text-[10px] text-gray-600 mt-1">
               Which platform loads when you open the Browser.

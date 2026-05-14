@@ -13,6 +13,17 @@ export interface DesktopUpdateStatus {
   latest?: string | null;
   updateAvailable: boolean;
   downloadUrl?: string;
+  downloaded?: boolean;
+  downloading?: boolean;
+  reason?: string;
+}
+
+export interface DesktopDownloadedUpdate {
+  version: string;
+  tag?: string;
+  assetName?: string;
+  dmgPath?: string;
+  reason?: string;
 }
 
 export interface StartupConfig {
@@ -46,8 +57,10 @@ export interface ElectronAPI {
   checkForUpdate: () => Promise<DesktopUpdateStatus>;
   downloadUpdate: () => Promise<{
     ok: boolean;
-    opened?: boolean;
-    downloadUrl?: string;
+    version?: string;
+    assetName?: string;
+    dmgPath?: string;
+    reason?: string;
   }>;
   installUpdate: () => Promise<{
     ok: boolean;
@@ -60,6 +73,12 @@ export interface ElectronAPI {
   deferUpdateUntilClose: () => Promise<{ ok: boolean; deferred?: boolean }>;
   onUpdateJustInstalled: (
     cb: ((payload: { version: string }) => void) | null,
+  ) => void;
+  onUpdateDownloaded: (
+    cb: ((payload: DesktopDownloadedUpdate) => void) | null,
+  ) => void;
+  onUpdateDownloadFailed: (
+    cb: ((payload: DesktopDownloadedUpdate) => void) | null,
   ) => void;
 
   // [claude-code 2026-03-24] Auth — deep link callback + system browser open

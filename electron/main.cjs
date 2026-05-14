@@ -10,8 +10,8 @@
 // [claude-code 2026-02-26] Ensure OAuth popups work for embedded webviews.
 // [claude-code 2026-03-11] Auto-start backend on app init.
 // [claude-code 2026-03-16] Backend build fallback dialog, Discord OAuth popup support
-// [claude-code 2026-04-29] Replaced electron-updater auto flow with SOTA manual updater:
-// explicit version check + explicit release download handoff (no auto-download/install).
+// [claude-code 2026-05-14] In-app updater: explicit check, background DMG
+// download, downloaded CTA, then install from the prepared artifact.
 // [claude-code 2026-03-20] Configurable backend autostart + launch-on-login toggles (stored in userData)
 // [claude-code 2026-03-23] Browser Use Phase 2 — CDP + browser-use CLI bridge
 // [claude-code 2026-03-24] Supabase Google OAuth deep link: fintheon:// protocol + open-url handler
@@ -27,6 +27,7 @@ const {
   Notification,
 } = require("electron");
 const { installVoiceChromeHook } = require("./window-chrome-voice.cjs");
+const { createUpdateManager } = require("./update-manager.cjs");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
@@ -78,6 +79,13 @@ const REMOTE_BACKEND_URL = "https://fintheon.fly.dev";
 const RELEASES_LATEST_URL =
   "https://github.com/solvys-technologies/fintheon/releases/latest";
 let currentApiBase = REMOTE_BACKEND_URL;
+const updateManager = createUpdateManager({
+  app,
+  getCurrentApiBase: () => currentApiBase,
+  getMainWindow: () => mainWindow,
+  releasesLatestUrl: RELEASES_LATEST_URL,
+  remoteBackendUrl: REMOTE_BACKEND_URL,
+});
 
 // [claude-code 2026-04-23] Harper Vision — macOS-only (uses ScreenCaptureKit under the hood).
 // Windows build stubs these out and returns { ok: false } from the IPC handlers.
@@ -165,10 +173,7 @@ app.on("gpu-process-crashed", (_event, killed) => {
 let closeReason = null; // Set by the listener that fires first; read by quit hooks
 
 app.on("before-quit", (_event) => {
-  if (deferredUpdateOnClose) {
-    deferredUpdateOnClose = false;
-    shell.openExternal(RELEASES_LATEST_URL).catch(() => {});
-  }
+  deferredUpdateOnClose = false;
   logCrash("app-before-quit", { reason: closeReason ?? "unknown" });
 });
 
@@ -685,36 +690,8 @@ async function smartShutdownBackend() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  SOTA Updater (manual download/install handoff)                     */
+/*  In-app updater: check -> background download -> installed asset     */
 /* ------------------------------------------------------------------ */
-
-async function checkForDesktopUpdate() {
-  try {
-    const base = (currentApiBase || REMOTE_BACKEND_URL).replace(/\/$/, "");
-    const res = await fetch(`${base}/api/version/check`);
-    if (!res.ok) {
-      return {
-        ok: false,
-        updateAvailable: false,
-        downloadUrl: RELEASES_LATEST_URL,
-      };
-    }
-    const data = await res.json();
-    return {
-      ok: true,
-      current: data.current ?? null,
-      latest: data.latest ?? null,
-      updateAvailable: data.updateAvailable === true,
-      downloadUrl: RELEASES_LATEST_URL,
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      updateAvailable: false,
-      downloadUrl: RELEASES_LATEST_URL,
-    };
-  }
-}
 
 const shouldAllowInAppPopup = (urlString) => {
   try {
@@ -1295,49 +1272,26 @@ ipcMain.handle("open-external", (_event, url) => {
   return { ok: true };
 });
 
-// SOTA updater IPC handlers (manual flow)
+// In-app updater IPC handlers (background download flow)
 ipcMain.handle("update-check", async () => {
-  return await checkForDesktopUpdate();
+  return await updateManager.checkForDesktopUpdate();
 });
 
 ipcMain.handle("update-download", async () => {
-  await shell.openExternal(RELEASES_LATEST_URL);
-  return { ok: true, opened: true, downloadUrl: RELEASES_LATEST_URL };
+  const info = await updateManager.checkForDesktopUpdate();
+  if (!info.ok || !info.updateAvailable || !info.latest) {
+    return { ok: false, reason: info.reason ?? "no update available" };
+  }
+  return await updateManager.downloadUpdate(info.latest);
 });
 
-// [claude-code 2026-05-01] In-app one-click updater. Spawns the install script
-// detached so it survives app.quit(), then quits. Script handles DMG download,
-// /Applications swap, and reopens the new build. New launch sees the marker
-// (just-updated.json) and emits the success toast.
 ipcMain.handle("update-install", async () => {
   deferredUpdateOnClose = false;
-  const info = await checkForDesktopUpdate();
-  if (!info.ok || !info.updateAvailable || !info.latest) {
-    return { ok: false, reason: "no update available" };
-  }
-  const repoRoot = app.isPackaged
-    ? path.join(require("os").homedir(), "Documents", "Fintheon")
-    : path.join(__dirname, "..");
-  const scriptPath = path.join(
-    repoRoot,
-    "scripts",
-    "fintheon-install-update.sh",
-  );
-  if (!fs.existsSync(scriptPath)) {
-    return { ok: false, reason: `install script missing at ${scriptPath}` };
-  }
-  const child = spawn("/bin/bash", [scriptPath, info.latest], {
-    detached: true,
-    stdio: "ignore",
-    env: { ...process.env, HOME: require("os").homedir() },
-  });
-  child.unref();
-  setTimeout(() => app.quit(), 200);
-  return { ok: true, installing: true, target: info.latest };
+  return await updateManager.installUpdate();
 });
 
 ipcMain.handle("update-defer-until-close", async () => {
-  deferredUpdateOnClose = true;
+  deferredUpdateOnClose = false;
   return { ok: true, deferred: true };
 });
 

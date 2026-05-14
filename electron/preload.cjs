@@ -36,6 +36,16 @@ ipcRenderer.on("update-just-installed", (_event, payload) => {
   if (typeof updateJustInstalledHandler === "function")
     updateJustInstalledHandler(payload);
 });
+let updateDownloadedHandler = null;
+ipcRenderer.on("update-downloaded", (_event, payload) => {
+  if (typeof updateDownloadedHandler === "function")
+    updateDownloadedHandler(payload);
+});
+let updateDownloadFailedHandler = null;
+ipcRenderer.on("update-download-failed", (_event, payload) => {
+  if (typeof updateDownloadFailedHandler === "function")
+    updateDownloadFailedHandler(payload);
+});
 
 // [claude-code 2026-04-27] S46.4 Desk Calendar IPC bridge — TV iframe .ics
 // downloads are intercepted in main.cjs and emitted as saving/saved/failed
@@ -92,6 +102,12 @@ contextBridge.exposeInMainWorld("electron", {
   deferUpdateUntilClose: () => ipcRenderer.invoke("update-defer-until-close"),
   onUpdateJustInstalled: (cb) => {
     updateJustInstalledHandler = typeof cb === "function" ? cb : null;
+  },
+  onUpdateDownloaded: (cb) => {
+    updateDownloadedHandler = typeof cb === "function" ? cb : null;
+  },
+  onUpdateDownloadFailed: (cb) => {
+    updateDownloadFailedHandler = typeof cb === "function" ? cb : null;
   },
 
   // Auth — deep link callback + open URL in system browser

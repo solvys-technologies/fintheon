@@ -1,11 +1,11 @@
 #!/bin/bash
-# [claude-code 2026-05-01] In-app one-click updater. Spawned detached from
-# main.cjs after app.quit() so it can replace /Applications/Fintheon.app
-# safely. Drops a marker file so the new launch can show "Epoch X has risen."
+# [claude-code 2026-05-14] In-app updater installs a pre-downloaded DMG when
+# Electron passes one, with gh download and local rebuild retained as fallback.
 set -eo pipefail
 
-TAG="${1:?usage: fintheon-install-update.sh <vTAG>}"
+TAG="${1:?usage: fintheon-install-update.sh <vTAG> [downloaded-dmg-path]}"
 VERSION_NUM="${TAG#v}"
+PRELOADED_DMG="${2:-}"
 ARCH="$(uname -m)"
 if [[ "$ARCH" == "arm64" ]]; then
   DMG_SUFFIX="arm64"
@@ -14,6 +14,9 @@ else
 fi
 DMG_NAME="Fintheon-${VERSION_NUM}-${DMG_SUFFIX}.dmg"
 DMG_LOCAL="$HOME/Downloads/$DMG_NAME"
+if [[ -n "$PRELOADED_DMG" ]]; then
+  DMG_LOCAL="$PRELOADED_DMG"
+fi
 USER_DATA="$HOME/Library/Application Support/Fintheon"
 MARKER="$USER_DATA/just-updated.json"
 LOG="/tmp/fintheon-install-update.log"
@@ -30,9 +33,13 @@ mkdir -p "$USER_DATA"
   pkill -f "Fintheon.app/Contents/MacOS/Fintheon" 2>/dev/null || true
   sleep 1
 
-  # Download via authenticated gh CLI (private repo)
+  # Use Electron's background download if it is already present.
   DOWNLOAD_OK=false
-  if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+  if [[ -n "$PRELOADED_DMG" ]] && [[ -f "$PRELOADED_DMG" ]]; then
+    DOWNLOAD_OK=true
+    echo "using pre-downloaded $PRELOADED_DMG"
+  elif command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+    # Download via authenticated gh CLI (private repo)
     echo "downloading $DMG_NAME"
     if gh release download "$TAG" \
       --repo solvys-technologies/fintheon \

@@ -3,49 +3,45 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronDown, ChevronRight, Loader2, ShieldAlert } from "lucide-react";
 import { FadingRuler } from "../shared/FadingRuler";
+import {
+  emptyCachedSignals,
+  formatAge,
+  isFreshGenerated,
+  scoreColor,
+  SOURCE_LABEL,
+  type CachedSignals,
+  type RiskSignal,
+  type RiskSignalPayload,
+} from "./risk-signal-card-utils";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const CACHE_KEY = "fintheon:risk-signals";
 const POLL_INTERVAL = 120_000;
 
-interface RiskSignal {
-  id: string;
-  title: string;
-  summary: string;
-  analysis: string;
-  score: number;
-  severity: "critical" | "high" | "medium" | "low";
-  source: "bulletin" | "catalyst-watch" | "risk-detector";
-  relatedHeadlines: string[];
-  narrativeThreads: string[];
-  generatedAt: string;
-}
-
-function scoreColor(score: number): string {
-  if (score >= 8) return "var(--fintheon-bearish)";
-  if (score >= 6) return "#f97316"; // orange
-  if (score >= 4) return "var(--fintheon-accent)";
-  return "var(--fintheon-muted)";
-}
-
-const SOURCE_LABEL: Record<string, string> = {
-  bulletin: "Bulletin",
-  "catalyst-watch": "Catalyst",
-  "risk-detector": "Systemic",
-};
-
-function loadCached(): RiskSignal[] {
+function loadCached(): CachedSignals {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) throw new Error("empty");
+    const parsed = JSON.parse(raw);
+    const signals = Array.isArray(parsed) ? parsed : (parsed.signals ?? []);
+    const generatedAt =
+      (Array.isArray(parsed) ? signals[0]?.generatedAt : parsed.generatedAt) ??
+      signals[0]?.generatedAt ??
+      null;
+    return {
+      signals,
+      generatedAt,
+      stale: !isFreshGenerated(generatedAt) || Boolean(parsed.stale),
+      freshnessStatus: parsed.freshnessStatus ?? "fresh",
+    };
   } catch {
-    return [];
+    return emptyCachedSignals();
   }
 }
 
-function saveCached(signals: RiskSignal[]): void {
+function saveCached(payload: CachedSignals): void {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(signals));
+    localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
   } catch {
     /* silent */
   }
@@ -53,8 +49,9 @@ function saveCached(signals: RiskSignal[]): void {
 
 export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
   const cached = loadCached();
-  const [signals, setSignals] = useState<RiskSignal[]>(cached);
-  const [loading, setLoading] = useState(cached.length === 0);
+  const [signals, setSignals] = useState<RiskSignal[]>(cached.signals);
+  const [freshness, setFreshness] = useState<CachedSignals>(cached);
+  const [loading, setLoading] = useState(cached.signals.length === 0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -64,12 +61,24 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
     try {
       const res = await fetch(`${API_BASE}/api/riskflow/risk-signals`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const items = data.signals ?? [];
-      if (items.length > 0) {
-        setSignals(items);
-        saveCached(items);
-      }
+      const data = (await res.json()) as RiskSignalPayload;
+      const freshItems = data.signals ?? [];
+      const staleItems = data.staleSignals ?? [];
+      const items = freshItems.length > 0 ? freshItems : staleItems;
+      const generatedAt =
+        data.generatedAt ?? items[0]?.generatedAt ?? cached.generatedAt;
+      const nextFreshness: CachedSignals = {
+        signals: items,
+        generatedAt,
+        stale:
+          Boolean(data.stale) ||
+          freshItems.length === 0 ||
+          !isFreshGenerated(generatedAt),
+        freshnessStatus: data.freshnessStatus ?? "empty",
+      };
+      setSignals(items);
+      setFreshness(nextFreshness);
+      saveCached(nextFreshness);
     } catch (err) {
       console.warn("[RiskSignals] fetch failed:", err);
     } finally {
@@ -135,7 +144,12 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
       <div ref={containerRef} className="text-center py-4">
         <ShieldAlert className="w-4 h-4 text-[var(--fintheon-muted)]/30 mx-auto mb-1" />
         <div className="text-[9px] text-[var(--fintheon-muted)]/40">
-          No risk signals — waiting for bulletins or high-severity catalysts
+          {freshness.freshnessStatus === "generation-error"
+            ? "Risk signals unavailable"
+            : "No fresh risk signals"}
+        </div>
+        <div className="mt-1 text-[8px] text-[var(--fintheon-muted)]/30">
+          Inputs checked {formatAge(freshness.generatedAt)}
         </div>
       </div>
     );
@@ -143,6 +157,11 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
 
   return (
     <div ref={containerRef} className="flex flex-col py-1">
+      {freshness.stale && (
+        <div className="px-2 pb-1 text-[8px] text-[var(--fintheon-muted)]/35">
+          Last generated {formatAge(freshness.generatedAt)}
+        </div>
+      )}
       {signals.map((signal, index) => {
         const expanded = expandedId === signal.id;
         const badgeColor = scoreColor(signal.score);
@@ -153,7 +172,9 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
             <button
               type="button"
               onClick={() => setExpandedId(expanded ? null : signal.id)}
-              className={`w-full min-w-0 text-left transition-colors hover:bg-[var(--fintheon-accent)]/5 ${padding}`}
+              className={`w-full min-w-0 rounded-md text-left transition-colors hover:bg-[var(--fintheon-accent)]/5 ${
+                expanded ? "bg-[var(--fintheon-accent)]/5" : ""
+              } ${freshness.stale ? "opacity-70" : ""} ${padding}`}
             >
               <div className="flex min-w-0 items-center gap-2">
                 {expanded ? (
@@ -184,7 +205,7 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
               </div>
 
               {expanded && (
-                <div className="ml-5 mt-2 space-y-2">
+                <div className="ml-5 mt-2 space-y-2 rounded-md bg-[var(--fintheon-accent)]/[0.035] px-2 py-2">
                   <FadingRuler />
                   <p
                     className={`${textSize} text-[var(--fintheon-text)]/70 leading-relaxed`}
@@ -199,17 +220,7 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
                           Related Headlines
                         </span>
                         <span className="text-[7px] text-[var(--fintheon-muted)]/30">
-                          {(() => {
-                            const h = Math.max(
-                              0,
-                              (Date.now() -
-                                new Date(signal.generatedAt).getTime()) /
-                                3_600_000,
-                            );
-                            if (h < 1) return "just now";
-                            if (h < 24) return `${Math.round(h)}h ago`;
-                            return `${Math.floor(h / 24)}d ago`;
-                          })()}
+                          {formatAge(signal.generatedAt)}
                         </span>
                       </div>
                       {signal.relatedHeadlines.map((h, i) => (

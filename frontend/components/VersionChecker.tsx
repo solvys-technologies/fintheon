@@ -9,25 +9,116 @@ import {
   startVersionCheck,
   stopVersionCheck,
   dismissVersion,
+  recordVersionNag,
+  shouldPromptForVersion,
 } from "../lib/version-check";
 import { isElectron } from "../lib/platform";
+
+const ELECTRON_CHECK_INTERVAL_MS = 30 * 60 * 1000;
 
 export function VersionChecker() {
   const { addToast } = useToast();
 
   useEffect(() => {
     const isE = isElectron();
+    const electron = window.electron;
 
-    startVersionCheck({
-      onUpdateAvailable: (serverVersion) => {
+    if (isE && electron?.checkForUpdate) {
+      let active = true;
+      const shownVersions = new Set<string>();
+      const showDownloadedUpdate = (payload: { version: string }) => {
+        const version = payload.version?.replace(/^v/, "");
+        if (!active || !version || shownVersions.has(version)) return;
+        if (!shouldPromptForVersion(version)) return;
+        shownVersions.add(version);
+        recordVersionNag();
         addToast(
-          `A new epoch was released. (${serverVersion})`,
+          `A new version is available (${version})`,
           "info",
           undefined,
           "system-update",
           "bottom-left",
           {
-            label: "Update",
+            label: "Install now",
+            onClick: async () => {
+              window.dispatchEvent(
+                new CustomEvent("fintheon:update-installing"),
+              );
+              const result = await electron.installUpdate?.();
+              if (result?.ok) return;
+              addToast(
+                "Update install failed",
+                "error",
+                result?.reason ?? "Try the CLI fallback: fintheon update",
+                "system-update",
+                "bottom-left",
+              );
+            },
+          },
+          {
+            label: "Later",
+            onClick: () => {
+              dismissVersion(version);
+              electron.deferUpdateUntilClose?.();
+            },
+          },
+        );
+      };
+
+      electron.onUpdateDownloaded?.(showDownloadedUpdate);
+      electron.onUpdateDownloadFailed?.(({ reason }) => {
+        if (!active) return;
+        addToast(
+          "Update download failed",
+          "error",
+          reason ?? "Try the CLI fallback: fintheon update",
+          "system-update",
+          "bottom-left",
+        );
+      });
+
+      const check = () => {
+        electron.checkForUpdate().then((result) => {
+          if (result.downloaded && result.latest) {
+            showDownloadedUpdate({ version: result.latest });
+          }
+        });
+      };
+      const timeoutId = window.setTimeout(check, 10_000);
+      const intervalId = window.setInterval(check, ELECTRON_CHECK_INTERVAL_MS);
+
+      if (electron.onUpdateJustInstalled) {
+        electron.onUpdateJustInstalled(({ version }) => {
+          addToast(
+            `Epoch ${version} has risen.`,
+            "success",
+            undefined,
+            "system-update",
+            "bottom-left",
+          );
+        });
+      }
+
+      return () => {
+        active = false;
+        window.clearTimeout(timeoutId);
+        window.clearInterval(intervalId);
+        electron.onUpdateDownloaded?.(null);
+        electron.onUpdateDownloadFailed?.(null);
+        electron.onUpdateJustInstalled?.(null);
+      };
+    }
+
+    startVersionCheck({
+      onUpdateAvailable: (serverVersion) => {
+        addToast(
+          `A new version is available (${serverVersion})`,
+          "info",
+          undefined,
+          "system-update",
+          "bottom-left",
+          {
+            label: "Install now",
             onClick: () => {
               dismissVersion(serverVersion);
               window.dispatchEvent(
@@ -40,15 +131,10 @@ export function VersionChecker() {
               window.location.reload();
             },
           },
-          isE
-            ? {
-                label: "Later",
-                onClick: () => {
-                  dismissVersion(serverVersion);
-                  window.electron?.deferUpdateUntilClose?.();
-                },
-              }
-            : undefined,
+          {
+            label: "Later",
+            onClick: () => dismissVersion(serverVersion),
+          },
         );
       },
     });

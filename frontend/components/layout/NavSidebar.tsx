@@ -93,6 +93,9 @@ const NAV_ITEMS_MAP: Record<
 // Icon size: original was w-6 h-6 (24px). 35% smaller = ~15.6px → w-4 h-4 (16px)
 // Button size: original was w-12 h-12 (48px). 35% smaller = ~31px → w-8 h-8 (32px)
 // Sidebar collapsed width: original w-16 (64px). 35% smaller = ~42px → w-11 (44px)
+const SIDEBAR_BUTTON_CLASS =
+  "flex items-center gap-2.5 rounded-md transition-colors min-w-0 px-2 py-1.5 justify-start";
+const SIDEBAR_ICON_CLASS = "w-4 h-4 shrink-0";
 
 export function NavSidebar({
   activeTab,
@@ -277,12 +280,12 @@ export function NavSidebar({
               <button
                 onClick={() => onTabChange(tabId as NavTab)}
                 data-tour-target={tabId}
-                className={`${expanded && isDashboard ? "flex-1" : "w-full"} flex items-center gap-2.5 rounded-md transition-colors min-w-0 px-2 py-2 justify-start ${
+                className={`${expanded && isDashboard ? "flex-1" : "w-full"} ${SIDEBAR_BUTTON_CLASS} ${
                   isActive ? "fintheon-nav-active" : "fintheon-nav-inactive"
                 }`}
                 title={expanded ? undefined : label}
               >
-                <Icon className="w-5 h-5 shrink-0" />
+                <Icon className={SIDEBAR_ICON_CLASS} />
                 {expanded && (
                   <div className="min-w-0 text-left">
                     <div

@@ -38,7 +38,6 @@ import {
 import { ApparatusFlowMap } from "../apparatus/ApparatusFlowMap";
 import { FluxerEmbed } from "./FluxerEmbed";
 import { AgentLounge } from "./AgentLounge";
-import { PeerChat } from "../peers/PeerChat";
 import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
 import { SoulFileroomPanel } from "../memory/SoulFileroomPanel";
 import { AiLoader } from "../chat/FintheonThread";
@@ -68,7 +67,6 @@ import type {
   ApparatusSubView,
 } from "./ConsiliumTabConfig";
 import { usePanelState } from "./usePanelState";
-import { useLocalPeer } from "../../hooks/useLocalPeer";
 const ResearchBoard = lazy(() => import("../research/ResearchBoard"));
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -141,7 +139,6 @@ function SanctumWithNarratives(
 export function ConsiliumHub() {
   const { selectedSymbol, iframeUrls } = useSettings();
   const { status: harperStatus } = useHarperOps();
-  const { peerId: localPeerId, loading: peerLoading } = useLocalPeer();
   const [activeTab, setActiveTab] = useState<ConsiliumTab>("chat");
   const [sanctumSubView, setSanctumSubView] =
     useState<SanctumSubView>("narratives");
@@ -1012,21 +1009,6 @@ export function ConsiliumHub() {
               {displayedApparatusSub === "desk" && <ApparatusFlowMap />}
               {displayedApparatusSub === "fileroom" && <SoulFileroomPanel />}
               {displayedApparatusSub === "lounge" && <AgentLounge />}
-              {displayedApparatusSub === "peer-chat" &&
-                (localPeerId ? (
-                  <PeerChat
-                    localPeerId={localPeerId}
-                    localAgentName="claude-code"
-                  />
-                ) : peerLoading ? (
-                  <div className="flex items-center justify-center h-full text-xs text-zinc-500">
-                    Loading peer info...
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-xs text-zinc-500">
-                    Register a device in the Team panel first.
-                  </div>
-                ))}
             </>
           )}
         </div>

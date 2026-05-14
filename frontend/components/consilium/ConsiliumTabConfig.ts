@@ -1,4 +1,3 @@
-// [claude-code 2026-05-12] Added "peer-chat" sub-view to Apparatus — agent-to-agent messaging UI
 // [claude-code 2026-04-10] Extracted from ConsiliumHub.tsx
 import {
   MessageSquare,
@@ -10,7 +9,6 @@ import {
   Brain,
   BookOpen,
   Moon,
-  Radio,
 } from "lucide-react";
 import { ArbitrumGlyph } from "../icons/ArbitrumGlyph";
 
@@ -18,7 +16,7 @@ import { ArbitrumGlyph } from "../icons/ArbitrumGlyph";
 export type ConsiliumTab = "sanctum" | "chat" | "boardroom" | "apparatus";
 export type SanctumSubView = "narratives" | "arbitrumChamber" | "timeline";
 export type BoardroomSubView = "forum" | "agentic-chat" | "research";
-export type ApparatusSubView = "desk" | "fileroom" | "lounge" | "peer-chat";
+export type ApparatusSubView = "desk" | "fileroom" | "lounge";
 
 // Chat is the only direct button now
 export const REGULAR_TABS: {
@@ -106,11 +104,5 @@ export const APPARATUS_SUB_VIEWS: {
     label: "Agent Lounge",
     subtitle: "Agents and their thoughts",
     icon: Moon,
-  },
-  {
-    id: "peer-chat",
-    label: "Peer Chat",
-    subtitle: "Agent-to-agent messaging",
-    icon: Radio,
   },
 ];

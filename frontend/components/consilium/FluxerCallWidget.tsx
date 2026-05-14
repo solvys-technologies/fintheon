@@ -113,14 +113,17 @@ export function FluxerCallWidget({ className = "" }: FluxerCallWidgetProps) {
         {/* Trigger button — phone icon */}
         <button
           onClick={() => setExpanded((v) => !v)}
-          className={`relative toolbar-icon-btn ${
-            connected
-              ? "!border-emerald-500/30 !bg-emerald-500/10 !text-emerald-400"
-              : ""
-          }`}
+          className={`relative toolbar-icon-btn ${connected ? "toolbar-active" : ""}`}
           title={connected ? "Voice connected" : "Voice room"}
         >
-          <Phone className="w-3 h-3" />
+          <Phone
+            className={`w-3 h-3 ${connected ? "toolbar-icon-active" : ""}`}
+            style={
+              connected
+                ? ({ "--toolbar-icon-active-color": "#34d399" } as React.CSSProperties)
+                : undefined
+            }
+          />
           {connected && (
             <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
           )}

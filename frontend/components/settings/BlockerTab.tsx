@@ -11,6 +11,8 @@ import {
   Trash2,
   AlertTriangle,
 } from "lucide-react";
+import Toggle from "../Toggle";
+import { useSettings } from "../../contexts/SettingsContext";
 
 interface BlockerApi {
   enable: () => Promise<unknown>;
@@ -48,6 +50,10 @@ function normalizeDomain(input: string): string | null {
 }
 
 export function BlockerTab() {
+  const {
+    lockoutAutoBlockOutsideTradingWindow,
+    setLockoutAutoBlockOutsideTradingWindow,
+  } = useSettings();
   const [state, setState] = useState<BlockerState>({
     blocked: false,
     layers: { hosts: false, resolver: false },
@@ -168,6 +174,24 @@ export function BlockerTab() {
   const layerCount = [state.layers.hosts, state.layers.resolver].filter(
     Boolean,
   ).length;
+  const autoLockPolicy = (
+    <div className="rounded-lg border border-[var(--fintheon-accent)]/10 p-5 bg-[rgba(10,10,0,0.4)]">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <div className="text-[13px] font-semibold text-white">
+            Desk Plan Auto-Lock
+          </div>
+          <p className="text-[11px] text-gray-500 mt-1 leading-relaxed max-w-md">
+            Lock trading outside active Desk Plan windows.
+          </p>
+        </div>
+        <Toggle
+          enabled={lockoutAutoBlockOutsideTradingWindow}
+          onChange={setLockoutAutoBlockOutsideTradingWindow}
+        />
+      </div>
+    </div>
+  );
 
   if (!isElectron) {
     return (
@@ -178,6 +202,7 @@ export function BlockerTab() {
             Website Blocker
           </span>
         </div>
+        {autoLockPolicy}
         <div className="rounded-lg border border-[var(--fintheon-accent)]/10 p-5 bg-[rgba(10,10,0,0.4)]">
           <p className="text-[13px] text-gray-500">
             Website blocker is only available in the Electron desktop app. Open
@@ -196,6 +221,8 @@ export function BlockerTab() {
           Website Blocker
         </span>
       </div>
+
+      {autoLockPolicy}
 
       {/* Status card */}
       <div

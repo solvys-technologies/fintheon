@@ -25,6 +25,8 @@ const SetSchema = z.object({
 const ScheduleSchema = z.object({
   lockUntil: z.string().optional(),
   windowStartTime: z.string().optional(),
+  durationMinutes: z.number().int().min(1).max(480).optional(),
+  autoReleaseMinutes: z.number().int().min(0).max(120).optional(),
 });
 
 function getUserId(c: Context): string {
@@ -136,16 +138,21 @@ export function createLockoutRoutes() {
       }
 
       if (body.windowStartTime) {
-        const autoReleaseAt = scheduleAutoRelease(userId, body.windowStartTime);
+        const autoReleaseAt = scheduleAutoRelease(
+          userId,
+          body.windowStartTime,
+          body.autoReleaseMinutes,
+        );
         if (!autoReleaseAt) {
           return c.json(
             { ok: false, reason: "Invalid windowStartTime timestamp" },
             400,
           );
         }
-        // Default lock until the auto-release time (so it unlocks before window)
         const releaseMs = new Date(autoReleaseAt).getTime();
-        const durationMs = Math.max(releaseMs - Date.now(), 60_000);
+        const durationMs = body.durationMinutes
+          ? body.durationMinutes * 60 * 1000
+          : Math.max(releaseMs - Date.now(), 60_000);
         const state = setLockout(userId, true, durationMs, {
           autoReleaseAt,
           scheduledBy: "desk_plan",
@@ -153,8 +160,21 @@ export function createLockoutRoutes() {
         return c.json({ ok: true, ...state });
       }
 
+      if (body.durationMinutes) {
+        const state = setLockout(
+          userId,
+          true,
+          body.durationMinutes * 60 * 1000,
+          { scheduledBy: "system" },
+        );
+        return c.json({ ok: true, ...state });
+      }
+
       return c.json(
-        { ok: false, reason: "Provide lockUntil or windowStartTime" },
+        {
+          ok: false,
+          reason: "Provide lockUntil, windowStartTime, or durationMinutes",
+        },
         400,
       );
     } catch (err) {

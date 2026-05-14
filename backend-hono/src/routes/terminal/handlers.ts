@@ -4,6 +4,7 @@ import { EventEmitter } from "node:events";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { existsSync } from "node:fs";
 import type { Context } from "hono";
 import { streamSSE } from "hono/streaming";
 import { createLogger } from "../../lib/logger.js";
@@ -11,7 +12,7 @@ import { createLogger } from "../../lib/logger.js";
 const log = createLogger("terminal");
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = resolve(__dirname, "../../.."); // backend-hono/ → project root
+const PROJECT_ROOT = resolve(__dirname, "../../../..");
 
 const MAX_BUFFER = 200;
 const PROCESS_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
@@ -30,7 +31,31 @@ function isLocalRequest(c: Context): boolean {
   // Allow terminal access from localhost in all environments.
   // This is a desktop Electron app — the backend always runs locally.
   const host = c.req.header("host") || "";
-  return host.startsWith("localhost:") || host.startsWith("127.0.0.1:");
+  return (
+    host.startsWith("localhost:") ||
+    host.startsWith("127.0.0.1:") ||
+    host.startsWith("[::1]:")
+  );
+}
+
+function buildTerminalPath(): string {
+  const appCliPaths = [
+    "/Applications/Visual Studio Code.app/Contents/Resources/app/bin",
+    "/Applications/Cursor.app/Contents/Resources/app/bin",
+  ].filter((entry) => existsSync(entry));
+  const pathEntries = [
+    process.env.PATH ?? "",
+    "/opt/homebrew/bin",
+    "/usr/local/bin",
+    "/usr/bin",
+    "/bin",
+    "/usr/sbin",
+    "/sbin",
+    ...appCliPaths,
+  ]
+    .flatMap((entry) => entry.split(":"))
+    .filter(Boolean);
+  return [...new Set(pathEntries)].join(":");
 }
 
 function pushEvent(entry: ProcessEntry, event: string, data: string) {
@@ -71,10 +96,10 @@ export async function handleRun(c: Context) {
   log.info(`Spawning command`, { processId, command: command.slice(0, 120) });
 
   const emitter = new EventEmitter();
-  const child = spawn(command, {
-    shell: true,
+  const shell = process.env.SHELL || "/bin/zsh";
+  const child = spawn(shell, ["-lc", command], {
     cwd: PROJECT_ROOT,
-    env: process.env,
+    env: { ...process.env, PATH: buildTerminalPath() },
     stdio: ["ignore", "pipe", "pipe"],
   });
 
@@ -120,7 +145,7 @@ export async function handleRun(c: Context) {
     setTimeout(() => cleanup(processId), 5000);
   });
 
-  return c.json({ ok: true, processId });
+  return c.json({ ok: true, processId, cwd: PROJECT_ROOT });
 }
 
 /** GET /api/terminal/stream/:processId — SSE stream of stdout/stderr/exit */

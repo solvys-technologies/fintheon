@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>io.solvys.fintheon-linear-watcher</string>
+
+    <key>Comment</key>
+    <string>Fintheon Linear watcher — dispatches In Progress (Solvys Agent) issues to local Codex CLI, with Cursor fallback</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>ProgramArguments</key>
+    <array>
+      <string>/bin/bash</string>
+      <string>/Users/tifos/Documents/Codebases/fintheon/scripts/linear-watcher.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/tifos/Documents/Codebases/fintheon</string>
+
+    <key>StandardOutPath</key>
+    <string>/Users/tifos/.hermes/logs/linear-watcher.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/tifos/.hermes/logs/linear-watcher.err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>HOME</key>
+      <string>/Users/tifos</string>
+      <key>FINTHEON_ROOT</key>
+      <string>/Users/tifos/Documents/Codebases/fintheon</string>
+      <key>WORKSPACE</key>
+      <string>/Users/tifos/Documents/Codebases/fintheon</string>
+      <key>SOLVYS_AGENT_STATE_NAME</key>
+      <string>In Progress (Solvys Agent)</string>
+      <key>PATH</key>
+      <string>/opt/homebrew/bin:/Users/tifos/.bun/bin:/Users/tifos/.local/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+  </dict>
+</plist>

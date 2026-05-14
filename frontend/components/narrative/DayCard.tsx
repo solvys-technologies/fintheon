@@ -10,16 +10,21 @@
 //   pricesOfInterest, invalidation, profitTarget, expectedMovePct).
 // [claude-code 2026-05-03] S57: optional header streak + hidden footer streak.
 // [claude-code 2026-05-13] T2: multi-window chevron nav, lockout button, price gating
-import { useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useDayPlan } from "../../hooks/useDayPlan";
 import { useStreak } from "../../hooks/useStreak";
 import { useDriftStatus } from "../../hooks/useDriftStatus";
 import { useLockout } from "../../hooks/useLockout";
+import { useSettings } from "../../contexts/SettingsContext";
 import { FadingRuler } from "../shared/FadingRuler";
 import { StreakBadge } from "../streak/StreakBadge";
 import { DayPlanChevronNav } from "./DayPlanChevronNav";
 import { PriceRevealTag } from "./PriceRevealTag";
 import type { DayPlanWindow, DriftKind } from "../../types/day-plan";
+import {
+  getDayPlanHeading,
+  getDeskPlanLockoutDecision,
+} from "../../utils/day-plan-lockout";
 
 const DRIFT_LABELS: Record<DriftKind | "in-window", string> = {
   "in-window": "in-window",
@@ -79,12 +84,19 @@ export function DayCard({
   const { data: streak } = useStreak();
   const { data: drift } = useDriftStatus();
   const {
+    lockoutDefaultDuration,
+    lockoutAutoBlockOutsideTradingWindow,
+    lockoutAutoReleaseMinutes,
+  } = useSettings();
+  const {
     state: lockoutState,
     lock: lockoutLock,
     unlock: lockoutUnlock,
+    lockUntil: lockoutLockUntil,
   } = useLockout();
 
   const [currentWindowIndex, setCurrentWindowIndex] = useState(0);
+  const autoLockKeyRef = useRef<string | null>(null);
 
   const plan = data;
   const windows = plan?.windows ?? [];
@@ -99,6 +111,44 @@ export function DayCard({
   const driftVisual: DriftKind | "in-window" = drift?.kind ?? "in-window";
 
   const baseSurface = bare ? "" : "bg-[var(--fintheon-surface)] rounded-lg p-3";
+  const lockoutButtonTitle =
+    lockoutState.locked && lockoutState.remaining
+      ? `${Math.round(lockoutState.remaining / 60)}m left`
+      : undefined;
+
+  useEffect(() => {
+    if (!lockoutAutoBlockOutsideTradingWindow) {
+      autoLockKeyRef.current = null;
+      return;
+    }
+    if (isLoading || lockoutState.locked || !plan?.date || windows.length === 0)
+      return;
+
+    const decision = getDeskPlanLockoutDecision({
+      planDate: plan.date,
+      windows,
+      autoReleaseMinutes: lockoutAutoReleaseMinutes,
+    });
+    if (decision.isAllowed || !decision.lockUntil) {
+      autoLockKeyRef.current = null;
+      return;
+    }
+
+    const key = `${plan.date}:${decision.lockUntil}`;
+    if (autoLockKeyRef.current === key) return;
+    autoLockKeyRef.current = key;
+    lockoutLockUntil(decision.lockUntil).then((ok) => {
+      if (!ok) autoLockKeyRef.current = null;
+    });
+  }, [
+    isLoading,
+    lockoutAutoBlockOutsideTradingWindow,
+    lockoutAutoReleaseMinutes,
+    lockoutLockUntil,
+    lockoutState.locked,
+    plan?.date,
+    windows,
+  ]);
 
   return (
     <section
@@ -153,10 +203,29 @@ export function DayCard({
           value={plan?.eventName ?? "\u2014"}
           loading={isLoading}
         />
-        <Row
-          label="Trading Window"
+        <WindowControlRow
+          label={getDayPlanHeading(plan?.date)}
           value={hasWindow ? fmtTradingWindow(currentWindow!) : "\u2014"}
           loading={isLoading}
+          lockoutState={lockoutState}
+          lockoutTitle={lockoutButtonTitle}
+          onLockToggle={() =>
+            lockoutState.locked
+              ? lockoutUnlock()
+              : lockoutLock(lockoutDefaultDuration)
+          }
+          nav={
+            <DayPlanChevronNav
+              currentIndex={currentWindowIndex}
+              totalWindows={windows.length}
+              onPrev={() => setCurrentWindowIndex((i) => Math.max(0, i - 1))}
+              onNext={() =>
+                setCurrentWindowIndex((i) =>
+                  Math.min(windows.length - 1, i + 1),
+                )
+              }
+            />
+          }
         />
         <GatedPriceRow
           label="Prices of Interest"
@@ -213,32 +282,6 @@ export function DayCard({
             ) : (
               <span aria-hidden />
             )}
-            {/* Lockout pill — left of chevrons on the same row */}
-            <button
-              onClick={() =>
-                lockoutState.locked ? lockoutUnlock() : lockoutLock(30)
-              }
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] uppercase tracking-[0.12em] border transition-colors cursor-pointer"
-              style={{
-                fontFamily: "var(--font-data, monospace)",
-                color: lockoutState.locked
-                  ? "rgba(199, 159, 74, 0.9)"
-                  : "var(--fintheon-muted, #908774)",
-                borderColor: lockoutState.locked
-                  ? "rgba(199, 159, 74, 0.3)"
-                  : "rgba(255, 255, 255, 0.08)",
-                background: lockoutState.locked
-                  ? "rgba(199, 159, 74, 0.1)"
-                  : "transparent",
-              }}
-              title={
-                lockoutState.locked && lockoutState.remaining
-                  ? `${Math.round(lockoutState.remaining / 60)}m left`
-                  : undefined
-              }
-            >
-              {lockoutState.locked ? "UNLOCK" : "LOCK"}
-            </button>
           </div>
           <div className="flex items-center gap-2">
             {drift && (
@@ -274,20 +317,87 @@ export function DayCard({
                 </span>
               </span>
             )}
-            <DayPlanChevronNav
-              currentIndex={currentWindowIndex}
-              totalWindows={windows.length}
-              onPrev={() => setCurrentWindowIndex((i) => Math.max(0, i - 1))}
-              onNext={() =>
-                setCurrentWindowIndex((i) =>
-                  Math.min(windows.length - 1, i + 1),
-                )
-              }
-            />
           </div>
         </footer>
       )}
     </section>
+  );
+}
+
+function WindowControlRow({
+  label,
+  value,
+  loading,
+  lockoutState,
+  lockoutTitle,
+  onLockToggle,
+  nav,
+}: {
+  label: string;
+  value: string;
+  loading: boolean;
+  lockoutState: { locked: boolean };
+  lockoutTitle?: string;
+  onLockToggle: () => void;
+  nav: ReactNode;
+}) {
+  return (
+    <div className="flex items-baseline gap-3">
+      <dt
+        className="text-[11px]"
+        style={{
+          color: "var(--fintheon-muted, #908774)",
+          fontFamily: "var(--font-body)",
+          letterSpacing: "0.02em",
+        }}
+      >
+        {label}
+      </dt>
+      <span
+        aria-hidden
+        className="flex-1"
+        style={{
+          height: 0,
+          borderBottom:
+            "1px dotted color-mix(in srgb, var(--fintheon-accent) 14%, transparent)",
+          transform: "translateY(-3px)",
+        }}
+      />
+      <dd className="flex items-center gap-1.5 text-right shrink-0">
+        <span
+          className="tabular-nums"
+          style={{
+            color: loading
+              ? "var(--fintheon-muted, #908774)"
+              : "var(--fintheon-text)",
+            fontFamily: "var(--font-data, monospace)",
+            letterSpacing: "0.01em",
+          }}
+        >
+          {value}
+        </span>
+        {nav}
+        <button
+          onClick={onLockToggle}
+          className="inline-flex items-center px-2 py-0.5 rounded text-[9px] uppercase tracking-[0.12em] border transition-colors cursor-pointer"
+          style={{
+            fontFamily: "var(--font-data, monospace)",
+            color: lockoutState.locked
+              ? "rgba(199, 159, 74, 0.9)"
+              : "var(--fintheon-muted, #908774)",
+            borderColor: lockoutState.locked
+              ? "rgba(199, 159, 74, 0.3)"
+              : "rgba(255, 255, 255, 0.08)",
+            background: lockoutState.locked
+              ? "rgba(199, 159, 74, 0.1)"
+              : "transparent",
+          }}
+          title={lockoutTitle}
+        >
+          {lockoutState.locked ? "UNLOCK" : "LOCK"}
+        </button>
+      </dd>
+    </div>
   );
 }
 

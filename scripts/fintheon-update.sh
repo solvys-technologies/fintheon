@@ -13,7 +13,7 @@ set -eo pipefail
 
 # [claude-code 2026-04-18] Resolve install path: FINTHEON_ROOT env > ~/.fintheon/install-path > default
 FINTHEON_ROOT="${FINTHEON_ROOT:-$(cat "$HOME/.fintheon/install-path" 2>/dev/null || echo "$HOME/Documents/Codebases/fintheon")}"
-UPDATE_VERSION="6.1.0"
+UPDATE_VERSION="6.1.1"
 
 # ── Self-update bootstrap (v5.25.2) ──────────────────────────────────────────
 # Root cause fix: bash loads the entire script into memory at invocation, so
@@ -99,7 +99,7 @@ torch_banner "FINTHEON UPDATE v${UPDATE_VERSION}" "Priced In Capital"
 if [[ ! -d "$FINTHEON_ROOT/.git" ]]; then
   echo -e "  ${_RED}✗${_R} ${_CREAM}Fintheon not found at $FINTHEON_ROOT${_R}"
   echo '    Run the setup script first:'
-  echo '    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.1.0/scripts/fintheon-setup.sh)"'
+  echo '    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.1.1/scripts/fintheon-setup.sh)"'
   exit 1
 fi
 
@@ -267,13 +267,34 @@ else
   bash "$FINTHEON_ROOT/scripts/fintheon-setup.sh" 2>/dev/null || true
 fi
 
-# ── Step 5.5: Install launchd units (news-worker, gepa) ──
+# ── Step 5.5: Install launchd units (Solvys Agent watcher, news-worker, gepa) ──
 # [claude-code 2026-05-05] S59-T1: Hermes sidecar removed, plist dropped.
 # Symlink plists from the repo into ~/Library/LaunchAgents so launchctl can load them.
 # Loading is opt-in per service — news-worker/gepa need their Fly counterparts live first.
 
 LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
 mkdir -p "$LAUNCH_AGENTS_DIR" 2>/dev/null || true
+mkdir -p "$HOME/.hermes/logs" 2>/dev/null || true
+
+CODEX_WATCHER_SRC="$FINTHEON_ROOT/launchd/io.solvys.fintheon-linear-watcher.plist"
+CODEX_WATCHER_DEST="$LAUNCH_AGENTS_DIR/io.solvys.fintheon-linear-watcher.plist"
+if [[ -f "$FINTHEON_ROOT/scripts/linear-watcher.sh" && -f "$CODEX_WATCHER_SRC" ]]; then
+  chmod +x "$FINTHEON_ROOT/scripts/linear-watcher.sh" 2>/dev/null || true
+  if [[ ! -L "$CODEX_WATCHER_DEST" && ! -f "$CODEX_WATCHER_DEST" ]]; then
+    ln -s "$CODEX_WATCHER_SRC" "$CODEX_WATCHER_DEST" 2>/dev/null && ok "Linked launchd plist: io.solvys.fintheon-linear-watcher.plist"
+  fi
+  if ! launchctl list 2>/dev/null | awk '{print $3}' | grep -qx "io.solvys.fintheon-linear-watcher"; then
+    if launchctl bootstrap "gui/$(id -u)" "$CODEX_WATCHER_DEST" 2>/dev/null || launchctl load -w "$CODEX_WATCHER_DEST" 2>/dev/null; then
+      ok "Solvys Agent watcher opened at startup"
+    else
+      warn "Solvys Agent watcher plist linked but not loaded — run: launchctl load -w ~/Library/LaunchAgents/io.solvys.fintheon-linear-watcher.plist"
+    fi
+  else
+    ok "Solvys Agent watcher running"
+  fi
+else
+  info "Solvys Agent watcher files not present — skipping startup watcher"
+fi
 
 UNLOADED_LABELS=()
 for PLIST_PAIR in \

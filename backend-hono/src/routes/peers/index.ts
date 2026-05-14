@@ -1,4 +1,3 @@
-// [claude-code 2026-05-12] Peer-chat endpoints added — agent-to-agent messaging protocol
 // [claude-code 2026-04-05] Claude Peers — peer/auth/desk/voice endpoints + test-fire on twitter-round-robin registration
 import { Hono } from "hono";
 import type { Context } from "hono";
@@ -26,14 +25,6 @@ import {
   leaveRoom,
   listParticipants,
 } from "../../services/peers/voice-room.js";
-import {
-  sendMessage,
-  listConversations,
-  getMessages,
-  markAsRead,
-  getUnreadCount,
-  findOrCreateConversation,
-} from "../../services/peers/peer-chat.js";
 import type { HeartbeatPayload, PeerRegistration } from "../../types/peers.js";
 
 function getUserId(c: Context): string | null {
@@ -225,126 +216,6 @@ export function createPeersRoutes(): Hono {
     }
     const ok = await deregisterPeer(id);
     return c.json({ ok });
-  });
-
-  // ── Peer Chat Endpoints ───────────────────────────────────────────────────
-
-  router.post("/chat/send", async (c) => {
-    const userId = getUserId(c);
-    if (!userId) return c.json({ error: "Authentication required" }, 401);
-
-    const body = await c.req
-      .json<{
-        senderPeerId: string;
-        senderAgentName: string;
-        recipientPeerId: string;
-        recipientAgentName: string;
-        type: string;
-        role: string;
-        body: string;
-        payload?: Record<string, unknown>;
-        conversationId?: string;
-        inReplyTo?: string;
-      }>()
-      .catch(() => null);
-
-    if (!body || !body.senderPeerId || !body.recipientPeerId || !body.body) {
-      return c.json(
-        { error: "senderPeerId, recipientPeerId, and body are required" },
-        400,
-      );
-    }
-
-    const result = await sendMessage({
-      senderPeerId: body.senderPeerId,
-      senderAgentName: body.senderAgentName ?? "claude-code",
-      recipientPeerId: body.recipientPeerId,
-      recipientAgentName: body.recipientAgentName ?? "*",
-      type: (body.type ?? "text") as any,
-      role: (body.role ?? "agent") as any,
-      body: body.body,
-      payload: body.payload,
-      conversationId: body.conversationId,
-      inReplyTo: body.inReplyTo,
-    });
-
-    return c.json(result);
-  });
-
-  router.get("/chat/conversations", async (c) => {
-    const userId = getUserId(c);
-    if (!userId) return c.json({ error: "Authentication required" }, 401);
-
-    const peerId = c.req.query("peerId");
-    const limit = parseInt(c.req.query("limit") ?? "50", 10);
-    if (!peerId)
-      return c.json({ error: "peerId query parameter is required" }, 400);
-
-    const result = await listConversations(peerId, limit);
-    return c.json(result);
-  });
-
-  router.get("/chat/messages/:conversationId", async (c) => {
-    const userId = getUserId(c);
-    if (!userId) return c.json({ error: "Authentication required" }, 401);
-
-    const conversationId = c.req.param("conversationId");
-    const since = c.req.query("since");
-    const limitStr = c.req.query("limit");
-
-    const result = await getMessages(conversationId, {
-      since: since ?? undefined,
-      limit: limitStr ? parseInt(limitStr, 10) : undefined,
-    });
-
-    return c.json(result);
-  });
-
-  router.post("/chat/conversations/:conversationId/read", async (c) => {
-    const userId = getUserId(c);
-    if (!userId) return c.json({ error: "Authentication required" }, 401);
-
-    const conversationId = c.req.param("conversationId");
-    const body = await c.req.json<{ peerId: string }>().catch(() => null);
-    if (!body?.peerId)
-      return c.json({ error: "peerId is required in body" }, 400);
-
-    const ok = await markAsRead(conversationId, body.peerId);
-    return c.json({ ok });
-  });
-
-  router.get("/chat/unread/:peerId", async (c) => {
-    const userId = getUserId(c);
-    if (!userId) return c.json({ error: "Authentication required" }, 401);
-
-    const peerId = c.req.param("peerId");
-    const count = await getUnreadCount(peerId);
-    return c.json({ peerId, unread: count });
-  });
-
-  router.post("/chat/conversation", async (c) => {
-    const userId = getUserId(c);
-    if (!userId) return c.json({ error: "Authentication required" }, 401);
-
-    const body = await c.req
-      .json<{
-        participantPeerIds: string[];
-        participantAgentNames: string[];
-        title?: string;
-      }>()
-      .catch(() => null);
-
-    if (!body?.participantPeerIds?.length) {
-      return c.json({ error: "participantPeerIds is required" }, 400);
-    }
-
-    const conversation = await findOrCreateConversation({
-      participantPeerIds: body.participantPeerIds,
-      participantAgentNames: body.participantAgentNames ?? ["*"],
-      title: body.title,
-    });
-
-    return c.json({ conversation });
   });
 
   return router;

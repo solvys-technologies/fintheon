@@ -269,11 +269,6 @@ export function TradingTab({
 
           {/* S64 T3: Enhanced lockout settings */}
           <div className="pt-4 space-y-4">
-            <Toggle
-              label="Auto-lock from Desk Plan"
-              enabled={true}
-              onChange={() => {}}
-            />
             <div className="flex items-center gap-3">
               <label className="text-xs text-gray-400 shrink-0">
                 Auto-release (min before window)
