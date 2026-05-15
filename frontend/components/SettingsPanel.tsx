@@ -1,3 +1,4 @@
+// [claude-code 2026-05-15] S66: instrument selector dropdown wired to TradingTab props.
 // [claude-code 2026-05-13] S63 T1: Wired lockoutDefaultDuration + quickAccessUrl props to TradingTab
 // [claude-code 2026-04-25] Settings tab content swap now uses t-panel-slide (solvys-transitions)
 //   for translate-Y + blur + fade entry per tab. Replaces animate-fade-in-tab / animate-fade-out-tab.
@@ -220,6 +221,8 @@ export function SettingsPage() {
     setPersistentLockout,
     quickAccessUrl,
     setQuickAccessUrl,
+    selectedInstrument,
+    setSelectedInstrument,
   } = useSettings();
   const backend = useBackend();
   const voiceMemory = useVoiceMemory();
@@ -384,6 +387,8 @@ export function SettingsPage() {
             setPersistentLockout={setPersistentLockout}
             quickAccessUrl={quickAccessUrl}
             setQuickAccessUrl={setQuickAccessUrl}
+            selectedInstrument={selectedInstrument}
+            setSelectedInstrument={setSelectedInstrument}
           />,
         );
       case "general":

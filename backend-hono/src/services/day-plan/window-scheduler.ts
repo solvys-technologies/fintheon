@@ -1,3 +1,6 @@
+// [claude-code 2026-05-15] S66-T1: added planWeeks() for multi-week generation.
+//   Removed categoriesSeen constraint in buildPlannedDay so each distinct
+//   event category window produces a separate PlannedDay entry.
 // [claude-code 2026-05-13] S64-T1: extended for speech/summit/pool_call/cross_border_macro event
 //   types. Added isCrossBorderMacro() classifier for AU/NZ/JP/KR/CN/EU/UK data
 //   with USD sensitivity. Supports generating multiple windows per day.
@@ -225,7 +228,60 @@ export async function planWeek(
     eventsByDate.get(evt.date)!.push(evt);
   }
 
-  return days.map((iso) => buildPlannedDay(iso, eventsByDate.get(iso) ?? []));
+  const result: PlannedDay[] = [];
+  for (const iso of days) {
+    const plans = buildPlannedDays(iso, eventsByDate.get(iso) ?? []);
+    result.push(...plans);
+  }
+  return result;
+}
+
+/**
+ * Generate plans for multiple weeks ahead. Returns an array of week arrays.
+ * Each inner array contains the PlannedDay entries for that week.
+ */
+export async function planWeeks(
+  ref: Date = new Date(),
+  weekCount: number = 4,
+): Promise<PlannedDay[][]> {
+  const weeks: PlannedDay[][] = [];
+  let cursor = new Date(ref);
+  cursor.setUTCHours(12, 0, 0, 0);
+
+  for (let w = 0; w < weekCount; w++) {
+    const weekDays = collectWeekdays(cursor, 5);
+    const fromIso = weekDays[0];
+    const toIso = weekDays[weekDays.length - 1];
+
+    let events: Awaited<ReturnType<typeof readEconEvents>> = [];
+    try {
+      events = await readEconEvents({ from: fromIso, to: toIso });
+    } catch (err) {
+      log.warn("planWeeks: readEconEvents failed", {
+        week: w,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    const eventsByDate = new Map<string, typeof events>();
+    for (const evt of events) {
+      if (!evt.date) continue;
+      if (!eventsByDate.has(evt.date)) eventsByDate.set(evt.date, []);
+      eventsByDate.get(evt.date)!.push(evt);
+    }
+
+    const weekPlans: PlannedDay[] = [];
+    for (const iso of weekDays) {
+      const plans = buildPlannedDays(iso, eventsByDate.get(iso) ?? []);
+      weekPlans.push(...plans);
+    }
+    weeks.push(weekPlans);
+
+    // Advance cursor to next Monday
+    cursor.setUTCDate(cursor.getUTCDate() + 7);
+  }
+
+  return weeks;
 }
 
 export function planDay(
@@ -233,7 +289,14 @@ export function planDay(
   events: Awaited<ReturnType<typeof readEconEvents>> = [],
 ): PlannedDay {
   const iso = date.toISOString().slice(0, 10);
-  return buildPlannedDay(iso, events);
+  const plans = buildPlannedDays(iso, events);
+  return plans[0] ?? {
+    date: iso,
+    day: DAY_LABELS[date.getUTCDay()] ?? "?",
+    windows: [{ windowIndex: 0, startTime: "09:30", endTime: "11:00", eventName: null, ivScore: null }],
+    dominantEvent: null,
+    ivScore: null,
+  };
 }
 
 // ── Internals ───────────────────────────────────────────────────────────────
@@ -252,18 +315,20 @@ function collectWeekdays(reference: Date, count: number): string[] {
   return out;
 }
 
-function buildPlannedDay(
+/**
+ * Build one or more PlannedDay entries for a given date. Each distinct event
+ * category that has a valid print time gets its own PlannedDay entry, enabling
+ * multi-plan-per-day cycling. If no events have times, a single standing-window
+ * entry is returned.
+ */
+function buildPlannedDays(
   iso: string,
   events: Awaited<ReturnType<typeof readEconEvents>>,
-): PlannedDay {
+): PlannedDay[] {
   const dow = new Date(`${iso}T12:00:00Z`).getUTCDay();
   const dayLabel = DAY_LABELS[dow] ?? "?";
 
   const dominant = pickDominantEvent(events);
-  const windows: PlannedWindow[] = [];
-
-  // Group events by category, generate a window for each non-holiday category
-  const categoriesSeen = new Set<EconWindowCategory>();
 
   // Sort events by impact to give priority to high-impact windows
   const sorted = [...events].sort(
@@ -272,48 +337,61 @@ function buildPlannedDay(
       (impactWeight(a.impact ?? "low") ?? 0),
   );
 
+  // Build a window for each event with a valid print time, tracking by category
+  const categoryWindows = new Map<EconWindowCategory, PlannedWindow[]>();
+
   for (const evt of sorted) {
     const cat = plannedWindowTypeForEvent(evt);
     if (cat === "holiday") continue;
-    if (categoriesSeen.has(cat)) continue;
-    categoriesSeen.add(cat);
-
     if (evt.time && evt.name) {
       const band = bandAroundPrint(evt.time);
       if (band) {
-        windows.push({
-          windowIndex: windows.length,
+        const list = categoryWindows.get(cat) ?? [];
+        list.push({
+          windowIndex: list.length,
           startTime: band.start,
           endTime: band.end,
           eventName: evt.name,
           ivScore: scoreForImpact(evt.impact),
         });
+        categoryWindows.set(cat, list);
       }
     }
   }
 
-  // Ensure at least one window exists (standing default)
-  if (windows.length === 0) {
+  // If no windows found, generate a single standing-window plan
+  if (categoryWindows.size === 0) {
     const earningsTilt = events.some((e) =>
       (e.category ?? "").toLowerCase().includes("earnings"),
     );
     const standing = earningsTilt ? STANDING_AFTERNOON : STANDING_MORNING;
-    windows.push({
-      windowIndex: 0,
-      startTime: standing.startTime,
-      endTime: standing.endTime,
-      eventName: dominant?.name ?? null,
-      ivScore: scoreForImpact(dominant?.impact),
-    });
+    return [
+      {
+        date: iso,
+        day: dayLabel,
+        windows: [
+          {
+            windowIndex: 0,
+            startTime: standing.startTime,
+            endTime: standing.endTime,
+            eventName: dominant?.name ?? null,
+            ivScore: scoreForImpact(dominant?.impact),
+          },
+        ],
+        dominantEvent: dominant?.name ?? null,
+        ivScore: scoreForImpact(dominant?.impact),
+      },
+    ];
   }
 
-  return {
+  // Produce one PlannedDay per distinct category
+  return [...categoryWindows.entries()].map(([cat, windows]) => ({
     date: iso,
     day: dayLabel,
     windows,
-    dominantEvent: dominant?.name ?? null,
-    ivScore: scoreForImpact(dominant?.impact),
-  };
+    dominantEvent: windows[0]?.eventName ?? dominant?.name ?? null,
+    ivScore: windows[0]?.ivScore ?? scoreForImpact(dominant?.impact),
+  }));
 }
 
 function pickDominantEvent(

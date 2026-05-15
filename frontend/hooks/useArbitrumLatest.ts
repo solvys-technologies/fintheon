@@ -1,3 +1,4 @@
+// [claude-code 2026-05-15] S66-T1: added optional instrument parameter to fetchLatest.
 // [claude-code 2026-04-24] S35-T3: fetch /api/arbitrum/latest with 60s poll
 // [claude-code 2026-04-29] S52-T3: normalize API response shape → ArbitrumVerdict/ArbitrumSeat
 //   types. API nests probability/confidence/rationale inside rounds[0]; roles use long
@@ -110,15 +111,23 @@ interface ArbitrumLatestState {
   refresh: () => Promise<void>;
 }
 
-export function useArbitrumLatest(): ArbitrumLatestState {
+export function useArbitrumLatest(
+  instrument?: string,
+): ArbitrumLatestState {
   const [verdict, setVerdict] = useState<ArbitrumVerdict | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
+  const instrumentRef = useRef(instrument);
+  instrumentRef.current = instrument;
 
   const fetchLatest = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/arbitrum/latest`, {
+      const params = new URLSearchParams();
+      if (instrumentRef.current) params.set("instrument", instrumentRef.current);
+      const query = params.toString();
+      const url = `${API_BASE}/api/arbitrum/latest${query ? `?${query}` : ""}`;
+      const res = await fetch(url, {
         credentials: "include",
       });
       if (!mountedRef.current) return;

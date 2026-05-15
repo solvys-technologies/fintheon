@@ -1,3 +1,4 @@
+// [claude-code 2026-05-15] S66-T1: added instrument selector dropdown grouped by asset class.
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — trading tab
 // [claude-code 2026-05-13] Added lockout controls + quick access URL
 // [claude-code 2026-05-13] S64 T3: Enhanced lockout settings (auto-release, persistent, scheduled unlock status)
@@ -6,6 +7,60 @@ import Toggle from "../Toggle";
 import { useLockout } from "../../hooks/useLockout";
 
 type PrimaryBroker = "rithmic" | "projectx" | "mmt";
+
+const INSTRUMENT_GROUPS: { label: string; instruments: { symbol: string; name: string }[] }[] = [
+  {
+    label: "Equity Index Futures",
+    instruments: [
+      { symbol: "/NQ", name: "Nasdaq 100" },
+      { symbol: "/ES", name: "S&P 500" },
+      { symbol: "/YM", name: "Dow Jones" },
+      { symbol: "/RTY", name: "Russell 2000" },
+      { symbol: "/MNQ", name: "Micro Nasdaq" },
+      { symbol: "/MES", name: "Micro S&P" },
+      { symbol: "/MYM", name: "Micro Dow" },
+      { symbol: "/M2K", name: "Micro Russell" },
+    ],
+  },
+  {
+    label: "Commodities",
+    instruments: [
+      { symbol: "/CL", name: "Crude Oil" },
+      { symbol: "/GC", name: "Gold" },
+      { symbol: "/SI", name: "Silver" },
+      { symbol: "/NG", name: "Natural Gas" },
+      { symbol: "/MCL", name: "Micro Crude" },
+      { symbol: "/MGC", name: "Micro Gold" },
+      { symbol: "/SIL", name: "Micro Silver" },
+    ],
+  },
+  {
+    label: "Bonds",
+    instruments: [
+      { symbol: "/ZB", name: "30-Year T-Bond" },
+      { symbol: "/ZN", name: "10-Year T-Note" },
+      { symbol: "/ZT", name: "2-Year T-Note" },
+    ],
+  },
+  {
+    label: "Crypto",
+    instruments: [
+      { symbol: "/BTC", name: "Bitcoin Futures" },
+      { symbol: "/ETH", name: "Ethereum Futures" },
+    ],
+  },
+  {
+    label: "Currencies",
+    instruments: [
+      { symbol: "/6E", name: "Euro FX" },
+      { symbol: "/6J", name: "Japanese Yen" },
+      { symbol: "/6B", name: "British Pound" },
+      { symbol: "/6A", name: "Australian Dollar" },
+      { symbol: "/6C", name: "Canadian Dollar" },
+      { symbol: "/6S", name: "Swiss Franc" },
+    ],
+  },
+];
 
 const LOCKOUT_PRESETS = [5, 10, 15, 30, 60, 120];
 
@@ -28,6 +83,8 @@ interface TradingTabProps {
   setPersistentLockout: (enabled: boolean) => void;
   quickAccessUrl: string;
   setQuickAccessUrl: (url: string) => void;
+  selectedInstrument: string;
+  setSelectedInstrument: (instrument: string) => void;
 }
 
 export function TradingTab({
@@ -49,6 +106,8 @@ export function TradingTab({
   setPersistentLockout,
   quickAccessUrl,
   setQuickAccessUrl,
+  selectedInstrument,
+  setSelectedInstrument,
 }: TradingTabProps) {
   const {
     state: lockoutState,
@@ -66,6 +125,38 @@ export function TradingTab({
 
   return (
     <>
+      <section>
+        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-4">
+          Instrument
+        </h3>
+        <div className="space-y-3 mb-6">
+          <div>
+            <label className="block text-xs text-gray-400 mb-2">
+              Selected Instrument
+            </label>
+            <select
+              value={selectedInstrument}
+              onChange={(e) => setSelectedInstrument(e.target.value)}
+              className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/30"
+            >
+              {INSTRUMENT_GROUPS.map((group) => (
+                <optgroup key={group.label} label={group.label}>
+                  {group.instruments.map((inst) => (
+                    <option key={inst.symbol} value={inst.symbol}>
+                      {inst.symbol} — {inst.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-2">
+              IV scores and Desk Plan entries are tailored to the selected
+              instrument. Changing applies globally.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section>
         <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-4">
           Risk Management

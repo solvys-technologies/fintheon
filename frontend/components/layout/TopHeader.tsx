@@ -6,6 +6,7 @@
 // [claude-code 2026-03-20] S3:T4c: createPortal for platform/layout dropdowns — fixes z-index behind Strategium panel
 // [claude-code 2026-03-20] S3:T5 — VIX spike toast trigger when VIX crosses above threshold
 // [claude-code 2026-03-24] Change VIX risk toast from threshold-crossing to scheduled pre-market-open times (EST)
+// [claude-code 2026-05-15] S66: lockout lock button + custom minutes input, drag-to-reorder toolbar, instrument-aware IV score streaming.
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "../../contexts/AuthContext";

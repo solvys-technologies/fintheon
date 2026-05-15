@@ -1,3 +1,4 @@
+// [claude-code 2026-05-15] S66-T1: added GET /multi-week endpoint for multi-week desk plan cycling.
 // [claude-code 2026-04-26] S45-T1: Day-plan API handlers.
 // GET /today, GET /week, GET /streak, GET /drift-status, POST /feedback,
 // GET /feedback?range=week.
@@ -12,7 +13,7 @@ import {
   readDayPlan,
   readWeekPlans,
 } from "../../services/day-plan/day-plan-service.js";
-import { planWeek } from "../../services/day-plan/window-scheduler.js";
+import { planWeek, planWeeks } from "../../services/day-plan/window-scheduler.js";
 import { getLastDriftEvent } from "../../services/desk-drift/drift-monitor.js";
 import { isInsideAnyWindow } from "../../services/desk-drift/dead-volume-rule.js";
 import type {
@@ -88,6 +89,75 @@ export async function handleGetWeek(c: Context): Promise<Response> {
     };
   });
   return c.json({ week });
+}
+
+export async function handleGetMultiWeek(c: Context): Promise<Response> {
+  const from = c.req.query("from");
+  const to = c.req.query("to");
+
+  let result: DayPlan[][] = [];
+
+  if (from && to) {
+    const plans = await readWeekPlans(TEAM_ID, from, to);
+    const byWeek = new Map<string, DayPlan[]>();
+    for (const plan of plans) {
+      const d = new Date(`${plan.date}T12:00:00Z`);
+      const dow = d.getUTCDay();
+      const weekStart = new Date(d);
+      weekStart.setUTCDate(d.getUTCDate() - (dow === 0 ? 6 : dow - 1));
+      const key = weekStart.toISOString().slice(0, 10);
+      const list = byWeek.get(key) ?? [];
+      list.push(plan);
+      byWeek.set(key, list);
+    }
+    result = [...byWeek.values()];
+  } else {
+    const weekCount = parseInt(c.req.query("weeks") ?? "4", 10);
+    const plannedWeeks = await planWeeks(new Date(), Math.max(1, Math.min(12, weekCount)));
+
+    const allDates = plannedWeeks.flat().map((p) => p.date);
+    const fromIso = allDates[0] ?? new Date().toISOString().slice(0, 10);
+    const toIso = allDates[allDates.length - 1] ?? fromIso;
+    const persisted = await readWeekPlans(TEAM_ID, fromIso, toIso);
+    const persistedByDate = new Map<string, DayPlan[]>();
+    for (const p of persisted) {
+      const list = persistedByDate.get(p.date) ?? [];
+      list.push(p);
+      persistedByDate.set(p.date, list);
+    }
+
+    result = plannedWeeks.map((weekPlans) =>
+      weekPlans.map((pd) => {
+        const existingPlans = persistedByDate.get(pd.date) ?? [];
+        if (existingPlans.length > 0) return existingPlans[0];
+        return {
+          id: `plan-${pd.date}`,
+          teamId: TEAM_ID,
+          date: pd.date,
+          eventName: pd.dominantEvent,
+          deskTheme: null,
+          generatedBy: "multi-week-planner",
+          generatedAt: new Date().toISOString(),
+          sourceBriefId: null,
+          institutionalPositioning: null,
+          windows: pd.windows.map((pw, i) => ({
+            id: `w-${pd.date}-${i}`,
+            dayPlanId: `plan-${pd.date}`,
+            windowIndex: pw.windowIndex,
+            startTime: pw.startTime,
+            endTime: pw.endTime,
+            pricesOfInterest: [],
+            entries: [],
+            invalidation: null,
+            profitTarget: null,
+            expectedMovePct: null,
+          })),
+        } satisfies DayPlan;
+      }),
+    );
+  }
+
+  return c.json({ weeks: result });
 }
 
 export async function handleGetStreak(c: Context): Promise<Response> {

@@ -1,3 +1,5 @@
+// [claude-code 2026-05-15] S66-T1: added /ZT, /BTC, /ETH, /6A, /6C, /6S instruments.
+//   Expanded refreshPricesFromTV() defaults to include new additions.
 // [claude-code 2026-05-13] S64-T1: removed hardcoded currentPrice from INSTRUMENT_BETAS;
 //   replaced with fallbackPrice + live price cache refreshed via refreshPricesFromTV().
 //   The TV scanner fetcher in tv-bars-fetcher provides real-time quotes; when
@@ -175,6 +177,54 @@ export const INSTRUMENT_BETAS: Record<string, InstrumentBetaEntry> = {
     fallbackPrice: 110,
     notes: "10-Year Treasury Note",
   },
+
+  // Short-term Bonds
+  "/ZT": {
+    beta: -0.2,
+    tickValue: 7.8125,
+    tickSize: 0.0078125,
+    fallbackPrice: 108,
+    notes: "2-Year Treasury Note",
+  },
+
+  // Crypto Futures
+  "/BTC": {
+    beta: 0.15,
+    tickValue: 5.0,
+    tickSize: 5.0,
+    fallbackPrice: 95000,
+    notes: "BTC Futures — low SPX correlation",
+  },
+  "/ETH": {
+    beta: 0.18,
+    tickValue: 0.5,
+    tickSize: 0.25,
+    fallbackPrice: 3500,
+    notes: "ETH Futures — low SPX correlation",
+  },
+
+  // Additional Currencies
+  "/6A": {
+    beta: 0.2,
+    tickValue: 10.0,
+    tickSize: 0.0001,
+    fallbackPrice: 0.67,
+    notes: "Australian Dollar",
+  },
+  "/6C": {
+    beta: 0.25,
+    tickValue: 10.0,
+    tickSize: 0.00005,
+    fallbackPrice: 0.74,
+    notes: "Canadian Dollar",
+  },
+  "/6S": {
+    beta: 0.15,
+    tickValue: 12.5,
+    tickSize: 0.00005,
+    fallbackPrice: 1.1,
+    notes: "Swiss Franc",
+  },
 };
 
 // ── TV Live Price Cache ─────────────────────────────────────────────────────
@@ -203,6 +253,13 @@ export async function refreshPricesFromTV(
     "/6E",
     "/6J",
     "/6B",
+    "/ZN",
+    "/ZT",
+    "/BTC",
+    "/ETH",
+    "/6A",
+    "/6C",
+    "/6S",
   ];
 
   try {

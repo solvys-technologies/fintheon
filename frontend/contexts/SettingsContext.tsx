@@ -1,3 +1,4 @@
+// [claude-code 2026-05-15] S66-T1: added selectedInstrument for global instrument selection.
 // [claude-code 2026-04-19] v5.22 S1: added cross-platform preferences sync (GET/PUT
 //   /api/preferences). Runs PARALLEL to the existing /api/settings trading-settings pipe —
 //   the UserPreferences contract is the cross-device shape shared with mobile.
@@ -190,6 +191,9 @@ interface SettingsContextType {
   /** Quick Access URL for dock menu / system tray */
   quickAccessUrl: string;
   setQuickAccessUrl: (url: string) => void;
+  /** Selected instrument for IV scoring and desk plan (default: /NQ) */
+  selectedInstrument: string;
+  setSelectedInstrument: (instrument: string) => void;
   /** v5.22 S1: cross-device preferences contract (theme, notifications, fuse palette). */
   preferences: UserPreferences;
   updatePreferences: (patch: Partial<UserPreferences>) => void;
@@ -542,6 +546,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [persistentLockout, setPersistentLockout] = useState<boolean>(() =>
     loadFromStorage("persistentLockout", false),
   );
+  const [selectedInstrument, setSelectedInstrumentValue] = useState<string>(() =>
+    loadFromStorage("selectedInstrument", "/NQ"),
+  );
+
+  const INSTRUMENT_STORAGE_KEY = "fintheon:selected-instrument";
+
+  const setSelectedInstrument = (instrument: string) => {
+    setSelectedInstrumentValue(instrument);
+    try {
+      localStorage.setItem(INSTRUMENT_STORAGE_KEY, instrument);
+    } catch {}
+  };
 
   // [claude-code 2026-04-19] v5.22 S1: shared cross-platform preferences.
   const [preferences, setPreferences] = useState<UserPreferences>(() =>
@@ -777,6 +793,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       lockoutAutoBlockOutsideTradingWindow,
       persistentLockout,
       quickAccessUrl,
+      selectedInstrument,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
@@ -822,6 +839,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     lockoutAutoBlockOutsideTradingWindow,
     persistentLockout,
     quickAccessUrl,
+    selectedInstrument,
   ]);
 
   // Keep chat routing preferences mirrored into legacy localStorage keys used
@@ -910,6 +928,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setPersistentLockout,
         quickAccessUrl,
         setQuickAccessUrl,
+        selectedInstrument,
+        setSelectedInstrument,
         preferences,
         updatePreferences,
       }}

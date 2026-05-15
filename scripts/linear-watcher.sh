@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
+# [claude-code 2026-05-14] Switched primary runner from Codex CLI to OpenCode CLI (DeepSeek v4 Pro)
 # Fintheon Linear watcher.
 # Polls Linear for issues moved to "In Progress (Solvys Agent)" and dispatches
-# a local Solvys agent worker. Codex CLI is primary; Cursor is fallback.
+# a local Solvys agent worker. OpenCode CLI is primary; Cursor is fallback.
 set -uo pipefail
 
 FINTHEON_ROOT="${FINTHEON_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
@@ -13,11 +14,11 @@ POLL_INTERVAL="${SOLVYS_AGENT_POLL_INTERVAL:-5}"
 LINEAR_API="${LINEAR_API:-https://api.linear.app/graphql}"
 SOLVYS_AGENT_STATE_NAME="${SOLVYS_AGENT_STATE_NAME:-In Progress (Solvys Agent)}"
 LINEAR_FIRST="${LINEAR_WATCHER_FIRST:-25}"
-CODEX_BIN="${CODEX_BIN:-$(command -v codex 2>/dev/null || true)}"
+OPENCODE_BIN="${OPENCODE_BIN:-$(command -v opencode 2>/dev/null || true)}"
 CURSOR_CLI="${CURSOR_CLI:-/Applications/Cursor.app/Contents/Resources/app/bin/cursor}"
-CODEX_MODEL="${CODEX_MODEL:-gpt-5.4}"
+OPENCODE_MODEL="${OPENCODE_MODEL:-opencode-go/deepseek-v4-pro}"
 CURSOR_MODEL="${CURSOR_MODEL:-claude-4.6-sonnet-medium}"
-DISABLE_CODEX="${SOLVYS_AGENT_DISABLE_CODEX:-false}"
+DISABLE_OPENCODE="${SOLVYS_AGENT_DISABLE_OPENCODE:-false}"
 DISABLE_CURSOR_FALLBACK="${SOLVYS_AGENT_DISABLE_CURSOR_FALLBACK:-false}"
 
 mkdir -p "$STATE_DIR" "$LOG_DIR"
@@ -127,25 +128,24 @@ Start by grounding in the repo and then implement the issue end to end.
 PROMPT
 }
 
-launch_codex() {
+launch_opencode() {
   local issue_key="$1"
   local prompt_path="$2"
   local log_path="$3"
   local last_message_path="$4"
 
-  if [[ "$DISABLE_CODEX" == "true" || -z "$CODEX_BIN" || ! -x "$CODEX_BIN" ]]; then
+  if [[ "$DISABLE_OPENCODE" == "true" || -z "$OPENCODE_BIN" || ! -x "$OPENCODE_BIN" ]]; then
     return 1
   fi
 
-  nohup "$CODEX_BIN" exec \
-    --cd "$WORKSPACE" \
-    --model "$CODEX_MODEL" \
-    --sandbox danger-full-access \
-    --ask-for-approval never \
-    --output-last-message "$last_message_path" \
-    - < "$prompt_path" >> "$log_path" 2>&1 &
+  nohup "$OPENCODE_BIN" run \
+    --dir "$WORKSPACE" \
+    --model "$OPENCODE_MODEL" \
+    --dangerously-skip-permissions \
+    --file "$prompt_path" \
+    "Execute the attached Linear issue prompt end to end in the workspace." >> "$log_path" 2>&1 &
 
-  log "Dispatched $issue_key to Codex CLI (pid $!)"
+  log "Dispatched $issue_key to OpenCode CLI (pid $!)"
   return 0
 }
 
@@ -196,12 +196,12 @@ dispatch_issue() {
   last_message_path="$LOG_DIR/${identifier}.last.md"
   write_prompt "$issue_json" "$prompt_path"
 
-  if launch_codex "$identifier" "$prompt_path" "$log_path" "$last_message_path"; then
-    printf 'codex %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" > "$marker"
+  if launch_opencode "$identifier" "$prompt_path" "$log_path" "$last_message_path"; then
+    printf 'opencode %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" > "$marker"
     return 0
   fi
 
-  log "Codex CLI unavailable for $identifier; trying Cursor fallback"
+  log "OpenCode CLI unavailable for $identifier; trying Cursor fallback"
   if launch_cursor_fallback "$identifier" "$prompt_path" "$log_path"; then
     printf 'cursor-fallback %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" > "$marker"
     return 0

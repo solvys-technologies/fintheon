@@ -57,6 +57,8 @@ Platform-wide QA and hygiene pass before Closed Beta. Covers MiroShark rename, c
 
 ### SOL-49 — S62-T11: MiroShark rename to Agent Desk (code + UI)
 
+@file:S62-T11-miroshark-agent-desk-rename.md
+
 Branch: `sprint/S62`
 Assignee: Sam Frederique
 
@@ -67,6 +69,8 @@ Assignee: Sam Frederique
 **Validation**: `rg -i "miroshark" --type ts --type tsx` returns only legitimate internal module/function references (no user-facing stale names). Build passes.
 
 ### SOL-50 — S62-T12: Docs: canonical naming (routines, internal refs)
+
+@file:S62-T12-canonical-naming-docs.md
 
 Branch: `sprint/S62`
 Assignee: Sam Frederique
@@ -79,13 +83,18 @@ Assignee: Sam Frederique
 
 ### SOL-51 — S62-T13: Modularity pass: files over 300 lines
 
+@file:S62-T13-modularity-pass.md
+
 Branch: `sprint/S62`
+Assignee: Shashank
 
 **What to do**: Find all `.ts`/`.tsx` files exceeding 300 lines and split them. Per project rules, each file serves one purpose and stays under 300 lines. Use `find . -name '*.ts' -o -name '*.tsx' | xargs wc -l | sort -rn | head -30` to identify offenders. For each oversized file, extract related functionality into separate files. Preserve exports at the original file (re-export from new files if needed). Do NOT split files that are intentionally monolithic (e.g., `src/lib/changelog.ts`, generated files, third-party types).
 
 **Validation**: All frontend source `.tsx`/`.ts` files under 300 lines. `npx tsc --noEmit` passes after all splits.
 
 ### SOL-52 — S62-T14: Pre-release QA checklist (builds + smoke)
+
+@file:S62-T14-qa-checklist.md
 
 Branch: `sprint/S62`
 Assignee: Sam Frederique
@@ -106,7 +115,10 @@ Document the checklist in `sprint-md/S62-T14-qa-checklist.md`.
 
 ### SOL-68 — S62-T22: MicroInteractions pass (chat drawer, rich text, econ countdown)
 
+@file:S62-T22-micro-interactions-pass.md
+
 Branch: `sprint/S62`
+Assignee: Shashank
 
 **What to do**: Audit micro-interactions across key surfaces. Check:
 
@@ -122,7 +134,10 @@ Branch: `sprint/S62`
 
 ### SOL-70 — S62-T24: Econ countdown widget: review states + slot alignment
 
+@file:S62-T24-econ-countdown-review.md
+
 Branch: `sprint/S62`
+Assignee: Shashank
 
 **What to do**: Review the econ countdown widget (`EconCountdownWidget.tsx`) for completeness. Check: all loading/error/empty states render correctly; slot alignment in the header matches other header widgets; the widget works with and without data (no crashes if API returns empty). Verify the countdown modal (`EconCountdownModal.tsx`) shares the same state logic.
 
@@ -132,7 +147,10 @@ Branch: `sprint/S62`
 
 ### SOL-71 — S62-T25: PsychAssist: assess tilt scoring + lockout UX
 
+@file:S62-T25-psychassist-tilt-lockout.md
+
 Branch: `sprint/S62`
+Assignee: Shashank
 
 **What to do**: Review the PsychAssist tilt detection system. Check ER scoring feeds into the UI correctly. Verify lockout UX (when tilt score exceeds threshold, the user should see a clear lockout state). Check `useERScoring` hook state transitions. Ensure the lockout is not permanent (auto-resets after cooldown or manual reset).
 

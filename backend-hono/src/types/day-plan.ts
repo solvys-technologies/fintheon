@@ -1,3 +1,4 @@
+// [claude-code 2026-05-15] S66-T1: added planVariant field for multi-plan-per-day support
 // [claude-code 2026-05-06] S59-T4: added entries[] (80/20 handles) + institutionalPositioning field.
 
 export type DriftKind = "drift_alert" | "tilt_stop" | "dead_volume";
@@ -23,6 +24,7 @@ export interface DayPlanWindow {
   invalidation: number | null;
   profitTarget: number | null;
   expectedMovePct: number | null;
+  sessionPrice?: number | null;
 }
 
 export interface DayPlan {
@@ -36,6 +38,7 @@ export interface DayPlan {
   sourceBriefId: string | null;
   windows: DayPlanWindow[];
   institutionalPositioning: PositioningBias | null;
+  planVariant?: string | null;
 }
 
 export interface DayPlanFeedback {

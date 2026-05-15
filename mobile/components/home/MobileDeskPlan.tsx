@@ -1,3 +1,5 @@
+// [claude-code 2026-05-15] S66-T1: multi-week cycling via /api/day-plan/multi-week.
+//   Chelvron nav cycles through all plans across weeks; dots stay per-plan windows.
 // [claude-code 2026-04-29] S49: MobileDeskPlan — compact desk plan card for the
 //   mobile PWA dash. Fetches /api/day-plan/today, shows actionable plan text
 //   + compact price block with bearish/bullish color semantics.
@@ -150,7 +152,8 @@ function usePriceReveal(windowStartTime: string) {
 }
 
 export function MobileDeskPlan() {
-  const [plan, setPlan] = useState<DayPlan | null>(null);
+  const [allPlans, setAllPlans] = useState<DayPlan[]>([]);
+  const [planIndex, setPlanIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [currentWindowIndex, setCurrentWindowIndex] = useState(0);
   const [lockoutLocked, setLockoutLocked] = useState(false);
@@ -158,15 +161,26 @@ export function MobileDeskPlan() {
   const fetchPlan = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/day-plan/today`);
+      const res = await fetch(`${API_BASE}/api/day-plan/multi-week`);
       if (!res.ok) {
-        setPlan(null);
+        // Fallback to today
+        const todayRes = await fetch(`${API_BASE}/api/day-plan/today`);
+        if (todayRes.ok) {
+          const json = (await todayRes.json()) as { plan: DayPlan | null };
+          setAllPlans(json.plan ? [json.plan] : []);
+        } else {
+          setAllPlans([]);
+        }
         return;
       }
-      const json = (await res.json()) as { plan: DayPlan | null };
-      setPlan(json.plan ?? null);
+      const json = (await res.json()) as { weeks: DayPlan[][] };
+      setAllPlans((json.weeks ?? []).flat());
+      setPlanIndex((prev) => {
+        const flat = (json.weeks ?? []).flat();
+        return prev >= flat.length ? 0 : prev;
+      });
     } catch {
-      setPlan(null);
+      setAllPlans([]);
     } finally {
       setLoading(false);
     }
@@ -177,6 +191,9 @@ export function MobileDeskPlan() {
     const id = window.setInterval(fetchPlan, 5 * 60_000);
     return () => window.clearInterval(id);
   }, [fetchPlan]);
+
+  const plan = allPlans[planIndex] ?? null;
+  const totalPlans = allPlans.length;
 
   // Poll lockout status
   useEffect(() => {
@@ -240,21 +257,73 @@ export function MobileDeskPlan() {
         }}
       >
         <Label>DESK PLAN</Label>
-        {/* Lockout status badge */}
-        <span
-          style={{
-            fontFamily: "var(--font-data, monospace)",
-            fontSize: 9,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            color: lockoutLocked
-              ? "var(--accent, #c79f4a)"
-              : "var(--text-secondary)",
-            opacity: lockoutLocked ? 1 : 0.5,
-          }}
-        >
-          {lockoutLocked ? "LOCKED" : "OPEN"}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {/* Plan-level cycling */}
+          {totalPlans > 1 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <button
+                onClick={() => setPlanIndex((i) => Math.max(0, i - 1))}
+                disabled={planIndex <= 0}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: planIndex > 0 ? "pointer" : "default",
+                  opacity: planIndex > 0 ? 0.6 : 0.2,
+                  padding: 4,
+                  color: "var(--accent)",
+                  fontSize: 14,
+                  lineHeight: 1,
+                }}
+              >
+                &#8249;
+              </button>
+              <span
+                style={{
+                  fontFamily: "var(--font-data, monospace)",
+                  fontSize: 9,
+                  color: "var(--text-secondary)",
+                  minWidth: 24,
+                  textAlign: "center",
+                }}
+              >
+                {planIndex + 1}/{totalPlans}
+              </span>
+              <button
+                onClick={() =>
+                  setPlanIndex((i) => Math.min(totalPlans - 1, i + 1))
+                }
+                disabled={planIndex >= totalPlans - 1}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: planIndex < totalPlans - 1 ? "pointer" : "default",
+                  opacity: planIndex < totalPlans - 1 ? 0.6 : 0.2,
+                  padding: 4,
+                  color: "var(--accent)",
+                  fontSize: 14,
+                  lineHeight: 1,
+                }}
+              >
+                &#8250;
+              </button>
+            </div>
+          )}
+          {/* Lockout status badge */}
+          <span
+            style={{
+              fontFamily: "var(--font-data, monospace)",
+              fontSize: 9,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: lockoutLocked
+                ? "var(--accent, #c79f4a)"
+                : "var(--text-secondary)",
+              opacity: lockoutLocked ? 1 : 0.5,
+            }}
+          >
+            {lockoutLocked ? "LOCKED" : "OPEN"}
+          </span>
+        </div>
       </div>
 
       {themeText && (

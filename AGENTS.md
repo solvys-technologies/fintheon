@@ -1,6 +1,6 @@
 ## Learned User Preferences
 
-- Codex CLI is the default local Solvys Agent runner; Cursor CLI is only the fallback runner
+- OpenCode CLI (DeepSeek v4 Pro) is the default local Solvys Agent runner; Cursor CLI is only the fallback runner
 - Use `--sandbox disabled` flag for fallback Cursor CLI agent commands to bypass git write approval prompts
 - Prefer `linear-ack-complete.sh` script for moving issues to Awaiting Review state
 - All Linear issue prefixes must be uppercase (`S62-T1`, `S62-ORCH`, `S38-CHAT`)

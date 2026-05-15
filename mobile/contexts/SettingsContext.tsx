@@ -1,3 +1,4 @@
+// [claude-code 2026-05-15] S66: selectedInstrument state for mobile instrument selector, mirroring desktop TradingTab.
 // [claude-code 2026-04-18] v5.22 S2: cross-platform settings sync. Adds a parallel
 //   /api/preferences fetch + 30s poll for the shared UserPreferences contract (theme,
 //   delivery-window notifications, traderName, fusePalette overrides). The existing
@@ -70,6 +71,7 @@ interface MobileSettings {
   traderName: string;
   hermesEnabled: boolean;
   selectedSymbol: TradingSymbol;
+  selectedInstrument: string;
   alertConfig: AlertConfig;
   bulletinReminder: "once" | "until-pressed";
 }
@@ -112,6 +114,7 @@ const DEFAULT_SETTINGS: MobileSettings = {
   traderName: "",
   hermesEnabled: true,
   selectedSymbol: { symbol: "/MNQ", contractName: "/MNQZ25" },
+  selectedInstrument: "/NQ",
   alertConfig: {
     soundEnabled: true,
     vixSpikeThreshold: 22,

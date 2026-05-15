@@ -1,3 +1,5 @@
+// [claude-code 2026-05-15] S66-T1: expanded SYMBOL_MAP for /ZT, /BTC, /ETH, /6A, /6C, /6S.
+//   fetchTvQuotes now groups by market segment so crypto symbols use "crypto" market.
 // [claude-code 2026-05-13] S64-T1: replaced Yahoo Finance UDF with TradingView
 // scanner quotes() for live OHLCV snapshots + TV UDF history endpoint for bar
 // data. The scanner gives us live close/open/high/low as a QuoteRow; the UDF
@@ -46,6 +48,81 @@ const SYMBOL_MAP: Record<string, TvSymbolInfo> = {
     scanSymbol: "CME_MINI:RTY1!",
     market: "futures",
     udfSymbol: "RTY1!",
+  },
+  "/CL": {
+    scanSymbol: "NYMEX:CL1!",
+    market: "futures",
+    udfSymbol: "CL1!",
+  },
+  "/GC": {
+    scanSymbol: "COMEX:GC1!",
+    market: "futures",
+    udfSymbol: "GC1!",
+  },
+  "/SI": {
+    scanSymbol: "COMEX:SI1!",
+    market: "futures",
+    udfSymbol: "SI1!",
+  },
+  "/NG": {
+    scanSymbol: "NYMEX:NG1!",
+    market: "futures",
+    udfSymbol: "NG1!",
+  },
+  "/6E": {
+    scanSymbol: "CME:6E1!",
+    market: "futures",
+    udfSymbol: "6E1!",
+  },
+  "/6J": {
+    scanSymbol: "CME:6J1!",
+    market: "futures",
+    udfSymbol: "6J1!",
+  },
+  "/6B": {
+    scanSymbol: "CME:6B1!",
+    market: "futures",
+    udfSymbol: "6B1!",
+  },
+  "/ZB": {
+    scanSymbol: "CBOT:ZB1!",
+    market: "futures",
+    udfSymbol: "ZB1!",
+  },
+  "/ZN": {
+    scanSymbol: "CBOT:ZN1!",
+    market: "futures",
+    udfSymbol: "ZN1!",
+  },
+  "/ZT": {
+    scanSymbol: "CBOT:ZT1!",
+    market: "futures",
+    udfSymbol: "ZT1!",
+  },
+  "/BTC": {
+    scanSymbol: "COINBASE:BTCUSD",
+    market: "crypto",
+    udfSymbol: "COINBASE:BTCUSD",
+  },
+  "/ETH": {
+    scanSymbol: "COINBASE:ETHUSD",
+    market: "crypto",
+    udfSymbol: "COINBASE:ETHUSD",
+  },
+  "/6A": {
+    scanSymbol: "CME:6A1!",
+    market: "futures",
+    udfSymbol: "6A1!",
+  },
+  "/6C": {
+    scanSymbol: "CME:6C1!",
+    market: "futures",
+    udfSymbol: "6C1!",
+  },
+  "/6S": {
+    scanSymbol: "CME:6S1!",
+    market: "futures",
+    udfSymbol: "6S1!",
   },
 };
 
@@ -133,36 +210,44 @@ export async function fetchInstrumentBars(
 export async function fetchTvQuotes(
   instruments: string[] = ["/NQ", "/ES", "/YM"],
 ): Promise<TvQuoteSnapshot[]> {
-  const scanSymbols: string[] = [];
-  const lookup = new Map<string, string>();
+  const byMarket = new Map<ScannerMarket, { scanSymbol: string; inst: string }[]>();
   for (const inst of instruments) {
     const info = SYMBOL_MAP[inst.toUpperCase()];
     if (info) {
-      scanSymbols.push(info.scanSymbol);
-      lookup.set(info.scanSymbol, inst);
+      const group = byMarket.get(info.market) ?? [];
+      group.push({ scanSymbol: info.scanSymbol, inst });
+      byMarket.set(info.market, group);
     }
   }
-  if (scanSymbols.length === 0) return [];
+  if (byMarket.size === 0) return [];
 
-  try {
-    const rows = await quotes(scanSymbols, "futures");
-    return rows.map((r) => {
-      const inst = lookup.get(r.symbol) ?? r.symbol;
-      return {
-        symbol: inst,
-        close: r.close,
-        open: r.open,
-        high: r.high,
-        low: r.low,
-        volume: r.volume,
-      };
-    });
-  } catch (err) {
-    log.warn("fetchTvQuotes failed", {
-      error: err instanceof Error ? err.message : String(err),
-    });
-    return [];
+  const results: TvQuoteSnapshot[] = [];
+
+  for (const [market, symbols] of byMarket) {
+    try {
+      const scanSymbols = symbols.map((s) => s.scanSymbol);
+      const rows = await quotes(scanSymbols, market);
+      const lookup = new Map(symbols.map((s) => [s.scanSymbol, s.inst] as const));
+      for (const r of rows) {
+        const inst = lookup.get(r.symbol) ?? r.symbol;
+        results.push({
+          symbol: inst,
+          close: r.close,
+          open: r.open,
+          high: r.high,
+          low: r.low,
+          volume: r.volume,
+        });
+      }
+    } catch (err) {
+      log.warn("fetchTvQuotes failed for market segment", {
+        market,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
+
+  return results;
 }
 
 // ── Internals ───────────────────────────────────────────────────────────────

@@ -1,3 +1,5 @@
+// [claude-code 2026-05-15] S66-T1: changed WindowControlRow label to "Trading Window",
+//   added header lock button with desk-plan-lock-btn CSS class.
 // [claude-code 2026-04-29] S49: Added tone prop to Row for bearish/bullish
 //   color binding via CSS vars (--fintheon-bearish, --fintheon-bullish).
 // [claude-code 2026-04-28] T3: Renamed Desk Theme -> Desk Plan in visible UI.
@@ -12,6 +14,7 @@
 // [claude-code 2026-05-13] T2: multi-window chevron nav, lockout button, price gating
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useDayPlan } from "../../hooks/useDayPlan";
+import { useDayPlanMultiWeek } from "../../hooks/useDayPlanWeek";
 import { useStreak } from "../../hooks/useStreak";
 import { useDriftStatus } from "../../hooks/useDriftStatus";
 import { useLockout } from "../../hooks/useLockout";
@@ -22,7 +25,6 @@ import { DayPlanChevronNav } from "./DayPlanChevronNav";
 import { PriceRevealTag } from "./PriceRevealTag";
 import type { DayPlanWindow, DriftKind } from "../../types/day-plan";
 import {
-  getDayPlanHeading,
   getDeskPlanLockoutDecision,
 } from "../../utils/day-plan-lockout";
 
@@ -80,7 +82,15 @@ export function DayCard({
   hideStreak,
   showStreakInHeader,
 }: DayCardProps) {
-  const { data, isLoading } = useDayPlan();
+  const { data: todayData, isLoading: todayLoading } = useDayPlan();
+  const {
+    currentPlan: multiWeekPlan,
+    totalPlans,
+    currentPlanIndex,
+    goNext: goNextPlan,
+    goPrev: goPrevPlan,
+    isLoading: multiWeekLoading,
+  } = useDayPlanMultiWeek();
   const { data: streak } = useStreak();
   const { data: drift } = useDriftStatus();
   const {
@@ -98,12 +108,13 @@ export function DayCard({
   const [currentWindowIndex, setCurrentWindowIndex] = useState(0);
   const autoLockKeyRef = useRef<string | null>(null);
 
-  const plan = data;
+  const plan = multiWeekPlan ?? todayData;
+  const isLoading = multiWeekLoading && todayLoading;
   const windows = plan?.windows ?? [];
   const currentWindow = windows[currentWindowIndex] ?? null;
   const hasWindow = !!currentWindow;
 
-  // Reset index when windows change
+  // Reset index when windows or plan change
   if (currentWindowIndex >= windows.length && windows.length > 0) {
     setCurrentWindowIndex(0);
   }
@@ -177,9 +188,53 @@ export function DayCard({
             </span>
           )}
         </div>
-        {showStreakInHeader && !hideStreak && (
-          <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={14} />
-        )}
+        <div className="flex items-center gap-2">
+          {showStreakInHeader && !hideStreak && (
+            <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={14} />
+          )}
+          <button
+            onClick={() =>
+              lockoutState.locked
+                ? lockoutUnlock()
+                : lockoutLock(lockoutDefaultDuration)
+            }
+            title={lockoutButtonTitle}
+            className="desk-plan-lock-btn inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] uppercase tracking-[0.12em] cursor-pointer transition-colors"
+            style={{
+              fontFamily: "var(--font-data, monospace)",
+              color: lockoutState.locked
+                ? "rgba(199, 159, 74, 0.9)"
+                : "var(--fintheon-muted, #908774)",
+              border: `1px solid ${lockoutState.locked ? "rgba(199, 159, 74, 0.3)" : "rgba(255, 255, 255, 0.08)"}`,
+              background: "transparent",
+            }}
+          >
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              {lockoutState.locked ? (
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              ) : (
+                <>
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 9 0v4" />
+                </>
+              )}
+              {lockoutState.locked && (
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              )}
+            </svg>
+            {lockoutState.locked ? "LOCK" : "UNLOCK"}
+          </button>
+        </div>
       </header>
 
       <p
@@ -204,7 +259,7 @@ export function DayCard({
           loading={isLoading}
         />
         <WindowControlRow
-          label={getDayPlanHeading(plan?.date)}
+          label="Trading Window"
           value={hasWindow ? fmtTradingWindow(currentWindow!) : "\u2014"}
           loading={isLoading}
           lockoutState={lockoutState}
@@ -216,14 +271,10 @@ export function DayCard({
           }
           nav={
             <DayPlanChevronNav
-              currentIndex={currentWindowIndex}
-              totalWindows={windows.length}
-              onPrev={() => setCurrentWindowIndex((i) => Math.max(0, i - 1))}
-              onNext={() =>
-                setCurrentWindowIndex((i) =>
-                  Math.min(windows.length - 1, i + 1),
-                )
-              }
+              currentIndex={currentPlanIndex}
+              totalPlans={totalPlans}
+              onPrev={goPrevPlan}
+              onNext={goNextPlan}
             />
           }
         />

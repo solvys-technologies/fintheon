@@ -1,3 +1,5 @@
+// [claude-code 2026-05-15] S66-T1: added planVariant support for multi-plan-per-day.
+//   persistDayPlan includes planVariant in upsert conflict to allow multiple plans per date.
 // [claude-code 2026-05-13] S64-T1: wired new event sources (speech, summit, pool_call,
 //   cross_border_macro) via window-scheduler. Added refreshPricesFromTV() call to
 //   populate live prices from TV scanner before desk plan generation.
@@ -46,6 +48,7 @@ export interface GenerateDayPlanInput {
   override?: boolean;
   overrideReason?: string;
   generatedBy?: string;
+  planVariant?: string | null;
 }
 
 export interface GenerateDayPlanResult {
@@ -181,6 +184,7 @@ export async function generateDayPlan(
     eventName,
     deskTheme,
     generatedBy: input.generatedBy ?? "day-plan-cron",
+    planVariant: input.planVariant ?? null,
     windows,
   });
 
@@ -297,6 +301,7 @@ interface PersistInput {
   eventName: string | null;
   deskTheme: string | null;
   generatedBy: string;
+  planVariant?: string | null;
   windows: Array<{
     windowIndex: number;
     startTime: string;
@@ -325,6 +330,7 @@ async function persistDayPlan(input: PersistInput): Promise<DayPlan> {
         desk_theme: input.deskTheme,
         generated_by: input.generatedBy,
         generated_at: new Date().toISOString(),
+        plan_variant: input.planVariant ?? null,
       },
       { onConflict: "team_id,date" },
     )
@@ -375,6 +381,7 @@ function synthesizeInMemoryPlan(input: PersistInput): DayPlan {
     generatedAt: new Date().toISOString(),
     sourceBriefId: null,
     institutionalPositioning: null,
+    planVariant: input.planVariant ?? null,
     windows: input.windows.map((w, i) => ({
       id: `mem-w-${i}`,
       dayPlanId: planId,
@@ -401,6 +408,7 @@ function rowsToDayPlan(planRow: any, windowRows: any[]): DayPlan {
     generatedAt: planRow.generated_at,
     sourceBriefId: planRow.source_brief_id,
     institutionalPositioning: planRow.institutional_positioning ?? null,
+    planVariant: planRow.plan_variant ?? null,
     windows: windowRows.map(rowToWindow),
   };
 }
@@ -428,6 +436,7 @@ function rowToWindow(row: any): DayPlanWindow {
     profitTarget: row.profit_target == null ? null : Number(row.profit_target),
     expectedMovePct:
       row.expected_move_pct == null ? null : Number(row.expected_move_pct),
+    sessionPrice: row.session_price == null ? null : Number(row.session_price),
   };
 }
 

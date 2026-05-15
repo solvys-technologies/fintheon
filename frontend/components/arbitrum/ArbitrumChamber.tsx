@@ -1,3 +1,5 @@
+// [claude-code 2026-05-15] S66-T1: added instrument dropdown in chamber header, passes
+//   selected instrument to useArbitrumLatest.
 // [claude-code 2026-04-29] S52-T3: added question/category display in chamber header;
 //   extracted SeatCard/EmptySeat → ChamberSeats.tsx to stay under 300-line limit.
 // [claude-code 2026-04-29] S51: removed unused compositeIV/regimeShiftProbability/confidence
@@ -15,6 +17,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Settings } from "lucide-react";
 import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
+import { useSettings } from "../../contexts/SettingsContext";
 import { FadingRuler } from "../shared/FadingRuler";
 import { NothingFuse } from "../shared/NothingFuse";
 import { SolvysLoader } from "../shared/SolvysLoader";
@@ -167,7 +170,8 @@ function ConfidencePair({
 
 export function ArbitrumChamber(props: ArbitrumChamberProps) {
   const { onSynthesisComplete } = props;
-  const { verdict, isLoading, error, refresh } = useArbitrumLatest();
+  const { selectedInstrument, setSelectedInstrument } = useSettings();
+  const { verdict, isLoading, error, refresh } = useArbitrumLatest(selectedInstrument);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [openSummaryRoles, setOpenSummaryRoles] = useState<
     ArbitrumSeat["role"][]
@@ -256,11 +260,25 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
 
   return (
     <div className="relative flex flex-col min-h-0 min-w-0 gap-2.5">
-      {/* Header: title + phase badge only */}
+      {/* Header: title + instrument dropdown + phase badge only */}
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/60">
-          Arbitrum Chamber
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/60">
+            Arbitrum Chamber
+          </span>
+          <select
+            value={selectedInstrument}
+            onChange={(e) => setSelectedInstrument(e.target.value)}
+            className="text-[9px] uppercase tracking-wider bg-transparent border border-[var(--fintheon-accent)]/20 rounded px-1.5 py-0.5 text-[var(--fintheon-text)]/60 focus:outline-none focus:border-[var(--fintheon-accent)]/50"
+            style={{ fontFamily: "var(--font-data, monospace)" }}
+          >
+            {["/NQ","/ES","/YM","/RTY","/CL","/GC","/ZB","/ZN","/ZT","/BTC","/ETH","/6E","/6J","/6B","/6A","/6C","/6S"].map((s) => (
+              <option key={s} value={s} className="bg-[var(--fintheon-bg)] text-[var(--fintheon-text)]">
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setSettingsOpen((v) => !v)}

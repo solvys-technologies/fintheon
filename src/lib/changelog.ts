@@ -9,6 +9,66 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-15T12:32:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S66 Release Suite: instrument expansion + per-instrument IV scoring globally, multi-week Desk Plan with TWT, pre-session pricing 30min before via TV RSS, permanent macOS lockout permissions + themed lock screen, customizable drag-and-drop toolbar with pill bar icon swapping, chat overhaul with collapsible iOS-style tool call cards and Nothing-style braille spinners, and global rich text rendering. All builds clean (tsc + vite), all curl smoke tests pass.",
+    files: [
+      "backend-hono/src/services/iv-scoring/instrument.ts",
+      "backend-hono/src/services/day-plan/tv-bars-fetcher.ts",
+      "backend-hono/src/services/day-plan/window-scheduler.ts",
+      "backend-hono/src/services/day-plan/day-plan-service.ts",
+      "backend-hono/src/services/desk-planner.ts",
+      "backend-hono/src/routes/day-plan/handlers.ts",
+      "backend-hono/src/routes/day-plan/index.ts",
+      "backend-hono/src/types/day-plan.ts",
+      "backend-hono/migrations/043_instrument_preferences.sql",
+      "backend-hono/migrations/044_session_prices.sql",
+      "frontend/components/narrative/DayCard.tsx",
+      "frontend/components/narrative/DayPlanChevronNav.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/layout/FooterToolbar.tsx",
+      "frontend/hooks/useDayPlanWeek.ts",
+      "frontend/contexts/SettingsContext.tsx",
+      "frontend/components/settings/TradingTab.tsx",
+      "frontend/components/SettingsPanel.tsx",
+      "frontend/components/arbitrum/ArbitrumChamber.tsx",
+      "frontend/hooks/useArbitrumLatest.ts",
+      "frontend/index.css",
+      "mobile/contexts/SettingsContext.tsx",
+      "mobile/components/settings/TraderSection.tsx",
+      "mobile/components/home/MobileDeskPlan.tsx",
+    ],
+  },
+  {
+    date: "2026-05-15T13:30:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S65-T3 verification: confirmed header/sidebar chrome polish is complete. NavSidebar top/bottom icon sizes unified at w-4 h-4 via shared constants. Left panel toggle between app title and history chevrons. Right panel toggle outside second control pill. IdentityTierPill with nametag + fading divider + tier. Two grouped toolbar control pills (call/antilag/lockout/minutes; power/bulletin/chat/voice). Active states shimmer icons only via CSS toolbar-icon-active class. tsc + vite build clean.",
+    files: [
+      "frontend/components/layout/NavSidebar.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/layout/PanelToggleGroup.tsx",
+      "frontend/index.css",
+    ],
+  },
+  {
+    date: "2026-05-15T12:00:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S65-T4 terminal and in-app updater verification: updated terminal initial history + help/clear outputs to present shell-first CLI (no / emphasis), verified backend PROJECT_ROOT resolves to repo root, PATH builder includes homebrew and global CLI paths, local-only guard, background updater download-check-install flow, VersionChecker toast copy with Later/Install now CTAs.",
+    files: [
+      "frontend/components/layout/FooterToolbar.tsx",
+      "backend-hono/src/routes/terminal/handlers.ts",
+      "electron/main.cjs",
+      "electron/preload.cjs",
+      "electron/update-manager.cjs",
+      "frontend/components/VersionChecker.tsx",
+      "frontend/lib/version-check.ts",
+      "scripts/fintheon-install-update.sh",
+    ],
+  },
+  {
     date: "2026-05-14T02:30:00-04:00",
     agent: "codex",
     summary:

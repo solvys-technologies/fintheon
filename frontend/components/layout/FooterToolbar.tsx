@@ -1,4 +1,5 @@
-// [claude-code 2026-05-05] Restored full-width right-aligned status section: desk name "Priced In Capital" between fetch/update messages and system status indicators, wrapped in ml-auto container. Quick terminal rail remains in drawer.
+// [claude-code 2026-05-15] S66: chat overhaul + rich text rendering toolbar integration.
+// [claude-code 2026-05-15] S65-T4: Updated terminal initial history, help, and clear outputs to present shell-first CLI (no / emphasis). De-emphasized slash-command-centric language so the terminal reads like a real shell prompt.
 // [claude-code 2026-04-03] Removed stale heartbeat/pulse/NTN/X indicators — system status now from /api/diagnostics only
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
@@ -138,11 +139,7 @@ export function FooterToolbar({
   >([
     {
       type: "output",
-      text: 'Fintheon CLI — type / for commands or "help" for built-ins.',
-    },
-    {
-      type: "output",
-      text: "Slash commands: /start-backend, /frontend, /install, /build, /typecheck, /hermes-start, /hermes-restart, /hermes-port",
+      text: 'Fintheon CLI — type any shell command. "help" for built-ins, / for slash shortcuts.',
     },
   ]);
   const [terminalCwd, setTerminalCwd] = useState("fintheon");
@@ -374,21 +371,24 @@ export function FooterToolbar({
       if (lower === "help") {
         newHistory.push({
           type: "output",
-          text: "Built-in: help, changelog, clear, status, version, update. Slash: /start-backend, /frontend, /install, /build, /typecheck, /hermes-start, /hermes-restart, /hermes-port",
+          text: "Any line runs as a shell command from the project root. Ctrl+C kills a running process.",
         });
         newHistory.push({
           type: "output",
-          text: "Any line runs as a shell command. Ctrl+C to kill a running process.",
+          text: "Built-in: help, changelog, clear, status, version, update",
+        });
+        newHistory.push({
+          type: "output",
+          text: "Slash shortcuts: /start-backend, /frontend, /install, /build, /typecheck, /hermes-start, /hermes-restart, /hermes-port",
         });
         setCliHistory(newHistory);
         return;
       }
       if (lower === "clear") {
         setCliHistory([
-          { type: "output", text: "Fintheon CLI — type / for commands." },
           {
             type: "output",
-            text: "Slash: /start-backend, /backend, /frontend, /install, /build, /typecheck",
+            text: 'Fintheon CLI — type any shell command. "help" for built-ins, / for slash shortcuts.',
           },
         ]);
         return;
