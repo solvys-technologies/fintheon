@@ -392,7 +392,7 @@ function startPolling() {
 
     updateDockMenu(status);
 
-    // Lockout expiry notification
+    // Lockout expiry notification + lock-screen broadcast
     const currentLocked = !!status.locked;
     if (lastDockLockState === true && currentLocked === false) {
       try {
@@ -404,6 +404,18 @@ function startPolling() {
       } catch (err) {
         console.error("[DockMenu] Expiry notification failed:", err.message);
       }
+      try {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send("lock-screen:hide");
+        }
+      } catch {}
+    }
+    if (lastDockLockState === false && currentLocked === true) {
+      try {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send("lock-screen:show");
+        }
+      } catch {}
     }
     lastDockLockState = currentLocked;
   }, 5000);
@@ -1455,6 +1467,32 @@ ipcMain.handle("system-permissions:request", async (_event, name) => {
     return granted ? "granted" : "denied";
   } catch {
     return "denied";
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/*  S66 T2: Lockout accessibility + lock screen IPC                  */
+/* ------------------------------------------------------------------ */
+
+ipcMain.handle("lockout:check-accessibility", () => {
+  if (!app.isPackaged) return { granted: false, reason: "dev-mode" };
+  if (!IS_MAC) return { granted: true };
+  try {
+    const granted = systemPreferences.isTrustedAccessibilityClient(false);
+    return { granted };
+  } catch {
+    return { granted: false };
+  }
+});
+
+ipcMain.handle("lockout:request-accessibility", () => {
+  if (!app.isPackaged) return { granted: false, reason: "dev-mode" };
+  if (!IS_MAC) return { granted: true };
+  try {
+    const granted = systemPreferences.isTrustedAccessibilityClient(true);
+    return { granted };
+  } catch {
+    return { granted: false };
   }
 });
 

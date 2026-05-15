@@ -1,5 +1,6 @@
 // [claude-code 2026-05-13] Lockout hook — polls lockout status, provides toggle
 // [claude-code 2026-05-13] S64 T3: Added scheduleLock, lockUntil, getNextWindow, auto-release polling, OS notification
+// [claude-code 2026-05-15] S66-T2: Added lockUntilDeskSession, lock screen IPC listeners
 import { useState, useEffect, useCallback, useRef } from "react";
 
 export interface LockoutState {
@@ -223,6 +224,30 @@ export function useLockout(pollMs = 5000) {
   );
 
   /**
+   * Lock until next desk session window (minus 15 min auto-release).
+   */
+  const lockUntilDeskSession = useCallback(async (): Promise<LockoutState> => {
+    try {
+      const res = await fetch(`${API_BASE}/api/lockout/lock-until-desk-session`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (res.ok) await refresh();
+      return {
+        locked: !!data.locked,
+        until: data.until ?? null,
+        remaining: data.remaining ?? null,
+        autoReleaseAt: data.autoReleaseAt ?? null,
+        scheduledBy: data.scheduledBy ?? null,
+      };
+    } catch {
+      return { locked: false, until: null, remaining: null };
+    }
+  }, [refresh]);
+
+  /**
    * Fetch next scheduled window info.
    */
   const getNextWindow = useCallback(async (): Promise<NextWindowInfo> => {
@@ -237,6 +262,7 @@ export function useLockout(pollMs = 5000) {
     refresh,
     scheduleLock,
     lockUntil,
+    lockUntilDeskSession,
     getNextWindow,
   };
 }

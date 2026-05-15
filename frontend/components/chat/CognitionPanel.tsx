@@ -6,7 +6,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { API_BASE_URL } from "./constants.js";
-import { StreamdownChat } from "./slots";
+import { RichTextRenderer } from "../shared/RichTextRenderer";
 
 export type CognitionStepKind =
   | "agent-route"
@@ -33,7 +33,6 @@ interface Props {
   isStreaming: boolean;
 }
 
-// Human-readable kind → short phrase prefix. Keeps the thought stream natural.
 const KIND_PHRASE: Record<CognitionStepKind, string> = {
   "agent-route": "Routing",
   "context-build": "Building context",
@@ -47,32 +46,22 @@ const KIND_PHRASE: Record<CognitionStepKind, string> = {
   error: "Error",
 };
 
-function stepsToMarkdown(steps: CognitionStep[]): string {
-  // Render each step as a single line, tool calls in inline code. Keep markdown
-  // minimal so Streamdown streams it without slot dispatch or block styling.
-  return steps
-    .map((s) => {
-      const prefix = KIND_PHRASE[s.kind] ?? s.kind;
-      const detail = s.detail
-        ? s.kind === "tool-dispatch" || s.kind === "gateway-call"
-          ? ` \`${s.detail}\``
-          : ` — ${s.detail}`
-        : "";
-      const dur = s.durationMs !== undefined ? ` _(${s.durationMs}ms)_` : "";
-      return `${prefix}${detail ? ":" : ""}${detail}${dur}`;
-    })
-    .join("\n\n");
-}
-
 function formatElapsed(ms: number): string {
   if (ms < 1000) return `${ms}ms`;
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
-/**
- * Hook: opens SSE connection to cognition stream for a given requestId.
- * Collects steps until `done` event or requestId changes.
- */
+function stepToText(s: CognitionStep): string {
+  const prefix = KIND_PHRASE[s.kind] ?? s.kind;
+  const detail = s.detail
+    ? s.kind === "tool-dispatch" || s.kind === "gateway-call"
+      ? ` \`${s.detail}\``
+      : ` — ${s.detail}`
+    : "";
+  const dur = s.durationMs !== undefined ? ` (${s.durationMs}ms)` : "";
+  return `${prefix}${detail ? ":" : ""}${detail}${dur}`;
+}
+
 export function useCognitionStream(requestId: string | null) {
   const [steps, setSteps] = useState<CognitionStep[]>([]);
   const [done, setDone] = useState(false);
@@ -121,15 +110,10 @@ export function useCognitionStream(requestId: string | null) {
   return { steps, done };
 }
 
-/**
- * CognitionPanel — collapsible "thought for …" panel that streams the agent's
- * thinking phrases (routing, tool calls, gateway hops) via Streamdown.
- */
 export function CognitionPanel({ requestId, isStreaming }: Props) {
   const { steps, done } = useCognitionStream(requestId);
   const [collapsed, setCollapsed] = useState(false);
 
-  // Elapsed: live while streaming, frozen at last step once done.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (done || !isStreaming) return;
@@ -155,14 +139,12 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
     if (requestId) setCollapsed(false);
   }, [requestId]);
 
-  const markdown = useMemo(() => stepsToMarkdown(steps), [steps]);
   const stillThinking = isStreaming && !done;
 
   if (!requestId || steps.length === 0) return null;
 
   return (
     <div className="rounded-2xl bg-[var(--fintheon-bg)]/90 overflow-hidden transition-all">
-      {/* Header — "thought for {elapsed}" with caret. No status dot. */}
       <button
         onClick={() => setCollapsed((c) => !c)}
         className="w-full flex items-center justify-between px-3 py-2 hover:bg-white/3 transition-colors"
@@ -191,7 +173,6 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
         </span>
       </button>
 
-      {/* Thinking stream — Streamdown renders phrases as they arrive. */}
       {!collapsed && (
         <div className="px-3 pb-2.5">
           <div
@@ -200,7 +181,9 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
               (stillThinking ? " cognition-thought-shimmer" : "")
             }
           >
-            <StreamdownChat content={markdown} streaming={stillThinking} />
+            {steps.map((s, i) => (
+              <RichTextRenderer key={i} text={stepToText(s)} />
+            ))}
           </div>
         </div>
       )}

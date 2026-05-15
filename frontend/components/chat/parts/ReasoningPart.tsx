@@ -1,6 +1,7 @@
 // [claude-code 2026-03-06] Collapsible reasoning/thinking part renderer
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { RichTextRenderer } from "../../shared/RichTextRenderer";
 
 interface ReasoningPartProps {
   text: string;
@@ -24,7 +25,7 @@ export function ReasoningPartRenderer({
       </button>
       {isOpen && (
         <div className="border border-[var(--fintheon-accent)]/10 rounded pl-3 mt-2 text-xs text-zinc-500 font-mono whitespace-pre-wrap">
-          {text}
+          <RichTextRenderer text={text} />
         </div>
       )}
     </div>

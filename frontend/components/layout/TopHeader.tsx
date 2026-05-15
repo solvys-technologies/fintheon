@@ -17,7 +17,6 @@ import { useSettings } from "../../contexts/SettingsContext";
 import { useToast } from "../../contexts/ToastContext";
 import {
   getToolbarOrder,
-  setToolbarOrder,
   type ToolbarItemId,
 } from "../../lib/layoutOrderStorage";
 import { HeaderVoiceControl } from "../voice/HeaderVoiceControl";
@@ -42,12 +41,14 @@ import {
 import { WhatsNewButton } from "../onboarding/FirstTimeTour";
 import { StickyBulletin } from "../StickyBulletin";
 import { TraderNametag } from "../TraderNametag";
+import { FadingRuler } from "../shared/FadingRuler";
 import { FluxerCallWidget } from "../consilium/FluxerCallWidget";
 import type { IVScoreResponse } from "../../types/market-data";
 import type { TradingPlatform } from "../TradingBrowser";
 import { useDND } from "../../contexts/DNDContext";
 import { useServerNotifications } from "../../contexts/NotificationsContext";
 import { useLockout } from "../../hooks/useLockout";
+import { ToolbarDnD } from "./ToolbarDnD";
 
 type NavTab =
   | "feed"
@@ -77,7 +78,7 @@ const TAB_LABELS: Record<NavTab, string> = {
 type LayoutOption = "tickers-only" | "combined";
 
 const TOOLBAR_PILL_CLASS =
-  "flex items-center gap-0.5 h-8 rounded-md border border-[rgba(199,159,74,0.12)] bg-[rgba(5,4,2,0.55)] px-1";
+  "flex items-center gap-0.5 h-8 rounded-md bg-[rgba(5,4,2,0.55)] px-1";
 
 function activeIconStyle(color: string) {
   return { "--toolbar-icon-active-color": color } as React.CSSProperties;
@@ -173,7 +174,6 @@ export function TopHeader({
   const [customLockoutMin, setCustomLockoutMin] = useState("");
   const customLockoutRef = useRef<HTMLInputElement>(null);
   const shouldShowLeftPanelToggle = !topStepXEnabled && compactLevel < 2;
-  const shouldShowFooterPanelToggle = !topStepXEnabled && compactLevel < 2;
   const shouldShowRightPanelToggle = !(
     topStepXEnabled && layoutOption === "tickers-only"
   );
@@ -198,44 +198,11 @@ export function TopHeader({
     state: lockoutState,
     lock: lockoutLock,
     unlock: lockoutUnlock,
+    lockUntilDeskSession: lockoutDeskSession,
   } = useLockout();
   useEffect(() => {
     setToolbarOrderState(getToolbarOrder());
   }, []);
-
-  const handleToolbarDragStart = useCallback(
-    (e: React.DragEvent, id: ToolbarItemId) => {
-      e.dataTransfer.setData("text/plain", id);
-      e.dataTransfer.effectAllowed = "move";
-    },
-    [],
-  );
-
-  const handleToolbarDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  }, []);
-
-  const handleToolbarDrop = useCallback(
-    (e: React.DragEvent, targetId: ToolbarItemId) => {
-      e.preventDefault();
-      const sourceId = e.dataTransfer.getData("text/plain") as
-        | ToolbarItemId
-        | "";
-      if (!sourceId || sourceId === targetId) return;
-      setToolbarOrderState((prev) => {
-        const next = [...prev];
-        const si = next.indexOf(sourceId);
-        const ti = next.indexOf(targetId);
-        if (si === -1 || ti === -1) return prev;
-        next.splice(si, 1);
-        next.splice(ti, 0, sourceId);
-        setToolbarOrder(next);
-        return next;
-      });
-    },
-    [],
-  );
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -526,7 +493,7 @@ export function TopHeader({
           )}
 
           {compactLevel < 1 && (
-            <div className="hidden xl:flex items-center h-7 overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)]">
+            <div className="hidden xl:flex items-center h-8 overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)]">
               {traderName && (
                 <>
                   <TraderNametag
@@ -534,10 +501,7 @@ export function TopHeader({
                     variant="embedded"
                     disablePulse={!(alertConfig.nametagEmoPulse ?? true)}
                   />
-                  <span
-                    className="h-4 w-px bg-[linear-gradient(to_bottom,transparent,rgba(199,159,74,0.42),transparent)]"
-                    aria-hidden="true"
-                  />
+                  <FadingRuler orientation="vertical" className="mx-0.5" />
                 </>
               )}
               <button
@@ -553,6 +517,7 @@ export function TopHeader({
           {(compactLevel < 2 || topStepXEnabled) && (
             <div className={TOOLBAR_PILL_CLASS}>
               {compactLevel < 1 && <FluxerCallWidget />}
+              {compactLevel < 1 && topStepXEnabled && <FadingRuler orientation="vertical" className="mx-0.5" />}
               {topStepXEnabled && (
                 <button
                   onClick={toggleManualDnd}
@@ -571,6 +536,7 @@ export function TopHeader({
                   )}
                 </button>
               )}
+              {((compactLevel < 1 && topStepXEnabled) || (compactLevel < 2 && topStepXEnabled)) && compactLevel < 2 && <FadingRuler orientation="vertical" className="mx-0.5" />}
               {compactLevel < 2 && (
                 <button
                   onClick={handleQuickClock}
@@ -582,6 +548,7 @@ export function TopHeader({
                   />
                 </button>
               )}
+              {compactLevel < 2 && <FadingRuler orientation="vertical" className="mx-0.5" />}
               {compactLevel < 2 && (
                 <button
                   onClick={() =>
@@ -606,6 +573,17 @@ export function TopHeader({
                   )}
                 </button>
               )}
+              {compactLevel < 2 && !lockoutState.locked && <FadingRuler orientation="vertical" className="mx-0.5" />}
+              {compactLevel < 2 && !lockoutState.locked && (
+                <button
+                  onClick={() => lockoutDeskSession()}
+                  className="text-[9px] uppercase tracking-[0.12em] px-2 py-0.5 rounded border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
+                  title="Lock until next desk session"
+                >
+                  til Desk
+                </button>
+              )}
+              {compactLevel < 2 && !lockoutState.locked && <FadingRuler orientation="vertical" className="mx-0.5" />}
               {compactLevel < 2 && !lockoutState.locked && (
                 <div className="flex items-center gap-1">
                   <input
@@ -643,6 +621,11 @@ export function TopHeader({
                   )}
                 </div>
               )}
+              {compactLevel < 2 && lockoutState.locked && lockoutState.remaining != null && (
+                <span className="text-[9px] text-gray-500 tracking-[0.07em] tabular-nums">
+                  {Math.round(lockoutState.remaining / 60)}m left
+                </span>
+              )}
             </div>
           )}
           {compactLevel < 2 && voiceRoomWidget}
@@ -655,9 +638,6 @@ export function TopHeader({
           {psychAssistHeadingWidget}
           {econCountdownWidget}
           {activeTab === "performance" && performanceChatWidget}
-          {shouldShowFooterPanelToggle && (
-            <PanelToggleButton side="footer" label="footer panel" />
-          )}
           {topStepXEnabled && onLayoutOptionChange ? (
             // iFrame active → Castra/Zen layout dropdown
             <div className="relative" ref={dropdownRef}>
@@ -795,7 +775,7 @@ export function TopHeader({
                 )}
             </div>
           )}
-          <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-2.5 h-7 flex items-center flex-shrink-0">
+          <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-2.5 h-8 flex items-center flex-shrink-0">
             <div className="flex items-center gap-1.5">
               {compactLevel < 2 && (
                 <span className="text-[9px] text-gray-500">VIX</span>
@@ -805,45 +785,25 @@ export function TopHeader({
               </span>
             </div>
           </div>
-          {toolbarOrder.map((id) => {
-            const wrapper = (node: React.ReactNode) => (
-              <div
-                key={id}
-                draggable={toolbarEditMode}
-                onDragStart={
-                  toolbarEditMode
-                    ? (e) => handleToolbarDragStart(e, id)
-                    : undefined
-                }
-                onDragOver={toolbarEditMode ? handleToolbarDragOver : undefined}
-                onDrop={
-                  toolbarEditMode ? (e) => handleToolbarDrop(e, id) : undefined
-                }
-                className="flex items-center gap-0.5 group/toolbar"
-              >
-                {toolbarEditMode && (
-                  <div
-                    className="cursor-grab active:cursor-grabbing touch-none shrink-0 p-0.5 text-gray-600 hover:text-[var(--fintheon-accent)]"
-                    title="Drag to reorder"
-                  >
-                    <GripVertical className="w-3 h-3" />
-                  </div>
-                )}
-                {node}
-              </div>
-            );
-            if (id === "ivScore") {
-              return wrapper(
-                <IVScoreCard
-                  data={ivData}
-                  loading={ivLoading}
-                  layoutOption={layoutOption}
-                  compactCopy={!topStepXEnabled && compactLevel >= 1}
-                />,
-              );
-            }
-            return null;
-          })}
+          <ToolbarDnD
+            items={toolbarOrder}
+            editMode={toolbarEditMode}
+            onOrderChange={setToolbarOrderState}
+          >
+            {(id) => {
+              if (id === "ivScore") {
+                return (
+                  <IVScoreCard
+                    data={ivData}
+                    loading={ivLoading}
+                    layoutOption={layoutOption}
+                    compactCopy={!topStepXEnabled && compactLevel >= 1}
+                  />
+                );
+              }
+              return null;
+            }}
+          </ToolbarDnD>
           <div className={TOOLBAR_PILL_CLASS}>
             {onTopStepXDisable && (
               <button
@@ -863,6 +823,7 @@ export function TopHeader({
                 />
               </button>
             )}
+            {onTopStepXDisable && <FadingRuler orientation="vertical" className="mx-0.5" />}
             <button
               ref={bulletinBtnRef}
               onClick={() => setShowBulletin(!showBulletin)}
@@ -878,6 +839,7 @@ export function TopHeader({
               onClose={() => setShowBulletin(false)}
               anchorRef={bulletinBtnRef}
             />
+            <FadingRuler orientation="vertical" className="mx-0.5" />
             {onChatToggle && (
               <button
                 onClick={onChatToggle}
@@ -892,6 +854,7 @@ export function TopHeader({
                 />
               </button>
             )}
+            {onChatToggle && <FadingRuler orientation="vertical" className="mx-0.5" />}
             <HeaderVoiceControl
               compact={topStepXEnabled && layoutOption === "tickers-only"}
             />

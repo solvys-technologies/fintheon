@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useDND } from "../../contexts/DNDContext";
 import { useServerNotifications } from "../../contexts/NotificationsContext";
+import { FadingRuler } from "../shared/FadingRuler";
 import {
   getSidebarOrder,
   setSidebarOrder,
@@ -255,7 +256,7 @@ export function NavSidebar({
           the layout buttons in the heading toolbar control visibility. */}
 
       <div className="flex-1 space-y-1 px-1.5">
-        {orderedItems.map(({ tabId, icon: Icon, label, description }) => {
+        {orderedItems.map(({ tabId, icon: Icon, label, description }, idx) => {
           const isActive = activeTab === tabId;
           const isDashboard = tabId === "dashboard";
           return (
@@ -269,6 +270,7 @@ export function NavSidebar({
               onDrop={editMode ? (e) => handleDrop(e, tabId) : undefined}
               className={`flex items-center gap-1 rounded-md transition-colors ${expanded ? "group" : ""}`}
             >
+              {expanded && idx > 0 && <FadingRuler className="mx-1.5" />}
               {expanded && editMode && (
                 <div
                   className="cursor-grab active:cursor-grabbing touch-none shrink-0 p-0.5 text-gray-500 fintheon-accent-hover"

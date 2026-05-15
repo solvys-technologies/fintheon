@@ -194,6 +194,9 @@ interface SettingsContextType {
   /** Selected instrument for IV scoring and desk plan (default: /NQ) */
   selectedInstrument: string;
   setSelectedInstrument: (instrument: string) => void;
+  /** Lockout accessibility permission status (default: "granted") */
+  lockoutPermission: "prompt" | "granted" | "denied";
+  setLockoutPermission: (status: "prompt" | "granted" | "denied") => void;
   /** v5.22 S1: cross-device preferences contract (theme, notifications, fuse palette). */
   preferences: UserPreferences;
   updatePreferences: (patch: Partial<UserPreferences>) => void;
@@ -549,6 +552,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [selectedInstrument, setSelectedInstrumentValue] = useState<string>(() =>
     loadFromStorage("selectedInstrument", "/NQ"),
   );
+  const [lockoutPermission, setLockoutPermission] = useState<
+    "prompt" | "granted" | "denied"
+  >(() => loadFromStorage("lockoutPermission", "granted"));
 
   const INSTRUMENT_STORAGE_KEY = "fintheon:selected-instrument";
 
@@ -794,6 +800,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       persistentLockout,
       quickAccessUrl,
       selectedInstrument,
+      lockoutPermission,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
@@ -840,7 +847,20 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     persistentLockout,
     quickAccessUrl,
     selectedInstrument,
+    lockoutPermission,
   ]);
+
+  // Check lockout accessibility permission via Electron IPC on init
+  useEffect(() => {
+    const el = (window as any).electron;
+    if (el?.lockout?.checkAccessibility) {
+      el.lockout.checkAccessibility().then((result: { granted: boolean }) => {
+        if (result && typeof result.granted === "boolean") {
+          setLockoutPermission(result.granted ? "granted" : "denied");
+        }
+      }).catch(() => {});
+    }
+  }, []);
 
   // Keep chat routing preferences mirrored into legacy localStorage keys used
   // by composer/runtime hooks so provider/model changes apply immediately.
@@ -930,6 +950,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setQuickAccessUrl,
         selectedInstrument,
         setSelectedInstrument,
+        lockoutPermission,
+        setLockoutPermission,
         preferences,
         updatePreferences,
       }}

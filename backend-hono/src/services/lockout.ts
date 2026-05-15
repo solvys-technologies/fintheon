@@ -1,17 +1,22 @@
 // [claude-code 2026-05-13] Lockout — in-memory trading lockout with countdown
 // [claude-code 2026-05-13] S64 T3: Added Supabase persistence + auto-release scheduling
+// [claude-code 2026-05-15] S66-T2: added lockUntilDeskSession, reason union type
 import type { LockoutState } from "../types/lockout.js";
 import { createLogger } from "../lib/logger.js";
 import { getSupabaseClient } from "../config/supabase.js";
+import { getLatestDeskPlan } from "../services/desk-planner.js";
 
 const log = createLogger("lockout");
+
+export type LockoutReason = "desk_session" | "manual" | "system";
+export type ScheduledBy = "desk_plan" | "manual" | "system";
 
 interface LockoutEntry {
   locked: boolean;
   until: number | null; // epoch ms
-  reason?: string;
+  reason?: LockoutReason;
   autoReleaseAt?: string; // ISO timestamp
-  scheduledBy?: "desk_plan" | "manual" | "system";
+  scheduledBy?: ScheduledBy;
 }
 
 const store = new Map<string, LockoutEntry>();
@@ -46,8 +51,8 @@ export function setLockout(
   locked: boolean,
   durationMs?: number,
   override?: {
-    reason?: string;
-    scheduledBy?: "desk_plan" | "manual" | "system";
+    reason?: LockoutReason;
+    scheduledBy?: ScheduledBy;
     autoReleaseAt?: string;
   },
 ): LockoutState {
@@ -106,6 +111,58 @@ export function getLockoutSummary(userId?: string): string {
   if (!state.locked) return "Trading is not locked.";
   const min = state.remaining ? Math.round(state.remaining / 60) : 0;
   return `Trading is LOCKED for another ${min} minute${min === 1 ? "" : "s"}. No trade actions should be suggested.`;
+}
+
+/**
+ * Lock until the next desk session window minus 15 minutes.
+ * If no desk plan exists, falls back to a 30-minute lockout.
+ */
+export function lockUntilDeskSession(userId: string): LockoutState {
+  const now = Date.now();
+  const plan = getLatestDeskPlan();
+
+  if (!plan || !plan.events || plan.events.length === 0) {
+    log.info("No desk plan available, falling back to 30m lockout", { userId });
+    return setLockout(userId, true, DEFAULT_DURATION_MS, {
+      reason: "desk_session",
+      scheduledBy: "desk_plan",
+    });
+  }
+
+  let earliestWindow: Date | null = null;
+  for (const ev of plan.events) {
+    const countdownTo = new Date(ev.countdownTo).getTime();
+    if (!isNaN(countdownTo) && countdownTo > now) {
+      if (!earliestWindow || countdownTo < earliestWindow.getTime()) {
+        earliestWindow = new Date(countdownTo);
+      }
+    }
+  }
+
+  if (!earliestWindow) {
+    log.info("No upcoming desk plan windows, falling back to 30m lockout", { userId });
+    return setLockout(userId, true, DEFAULT_DURATION_MS, {
+      reason: "desk_session",
+      scheduledBy: "desk_plan",
+    });
+  }
+
+  const releaseTime = earliestWindow.getTime() - 15 * 60 * 1000;
+  const durationMs = Math.max(releaseTime - now, 60_000);
+  const autoReleaseAt = new Date(releaseTime).toISOString();
+
+  log.info("Lockout until desk session computed", {
+    userId,
+    windowStartTime: earliestWindow.toISOString(),
+    autoReleaseAt,
+    durationMs: Math.round(durationMs / 60000) + "m",
+  });
+
+  return setLockout(userId, true, durationMs, {
+    reason: "desk_session",
+    scheduledBy: "desk_plan",
+    autoReleaseAt,
+  });
 }
 
 /**
@@ -177,7 +234,7 @@ export async function loadLockoutSettings(userId: string): Promise<{
 export async function saveLockoutAudit(
   userId: string,
   action: string,
-  reason?: string,
+  reason?: LockoutReason | string,
   triggeredBy: string = "manual",
 ): Promise<void> {
   try {

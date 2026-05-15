@@ -1,14 +1,13 @@
 // [claude-code 2026-03-06] Tool call/result part renderer with per-tool formatting
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ChevronDown,
   ChevronRight,
   Check,
   AlertCircle,
-  Copy,
-  Clock,
 } from "lucide-react";
 import { BrailleSpinner } from "../primitive/BrailleSpinner";
+import { RichTextRenderer } from "../../shared/RichTextRenderer";
 import type { ToolInvocationPart, ToolResultPart } from "../types";
 
 interface ToolCallPartProps {
@@ -30,269 +29,106 @@ const TOOL_COLORS: Record<string, string> = {
   default: "#9CA3AF",
 };
 
+const TOOL_PHRASES: Record<string, string[]> = {
+  bash: ["Running command...", "Executing script...", "Processing shell..."],
+  read: ["Reading file...", "Scanning contents...", "Looking at code..."],
+  edit: ["Editing file...", "Applying changes...", "Modifying code..."],
+  grep: ["Searching codebase...", "Finding patterns...", "Indexing results..."],
+  glob: ["Exploring files...", "Discovering paths...", "Listing matches..."],
+  web_search: ["Searching the web...", "Scanning sources...", "Retrieving insights..."],
+  code_exec: ["Running code...", "Executing logic...", "Computing result..."],
+  browser: ["Navigating page...", "Loading browser...", "Rendering content..."],
+  research: ["Gathering data...", "Analyzing findings...", "Synthesizing research..."],
+  market_scanner: ["Scanning markets...", "Pulling tick data...", "Mapping flows..."],
+  default: ["Processing...", "Working on it...", "One moment..."],
+};
+
 function getToolColor(name: string): string {
   const lower = name.toLowerCase();
   return TOOL_COLORS[lower] || TOOL_COLORS.default;
 }
 
-function StatusIcon({ state }: { state: ToolInvocationPart["state"] }) {
-  switch (state) {
-    case "pending":
-    case "running":
-      return <BrailleSpinner size={13} className="flex-shrink-0" />;
-    case "done":
-      return <Check size={13} className="text-green-500 flex-shrink-0" />;
-    case "error":
-      return <AlertCircle size={13} className="text-red-500 flex-shrink-0" />;
-  }
-}
+const expandStates = new Map<string, boolean>();
 
-function BashBlock({ part, result }: ToolCallPartProps) {
-  const [copied, setCopied] = useState(false);
+function ToolCallCard({ part, result }: ToolCallPartProps) {
+  const toolName = part.toolName;
+  const color = getToolColor(toolName);
   const output = result?.output || "";
-  const color = getToolColor("bash");
+  const state = part.state;
+  const isRunning = state === "running" || state === "pending";
+  const isDone = state === "done";
+  const isError = state === "error";
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(output);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+  const cardKey = `${toolName}-${part.id}`;
+  if (!expandStates.has(cardKey)) {
+    expandStates.set(cardKey, false);
+  }
+  const [expanded, setExpanded] = useState(expandStates.get(cardKey)!);
+
+  const [phrase] = useState(() => {
+    const phrases =
+      TOOL_PHRASES[toolName.toLowerCase()] || TOOL_PHRASES.default;
+    return phrases[Math.floor(Math.random() * phrases.length)];
+  });
+
+  const toggle = () => {
+    const next = !expanded;
+    setExpanded(next);
+    expandStates.set(cardKey, next);
   };
 
-  return (
-    <div className="bg-[var(--fintheon-surface)] rounded-lg border border-zinc-800 overflow-hidden">
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-800">
-        <StatusIcon state={part.state} />
-        <span
-          className="text-[10px] font-medium px-1.5 py-0.5 rounded"
-          style={{ backgroundColor: `${color}15`, color }}
-        >
-          Bash
-        </span>
-        {part.args?.command && (
-          <span className="text-[10px] text-zinc-600 font-mono truncate max-w-[200px]">
-            {part.args.command}
-          </span>
-        )}
-        <span className="flex-1" />
-        {result?.durationMs != null && (
-          <span className="flex items-center gap-1 text-[10px] text-gray-600">
-            <Clock size={9} />
-            {(result.durationMs / 1000).toFixed(1)}s
-          </span>
-        )}
-        <button
-          onClick={handleCopy}
-          className="text-gray-600 hover:text-white transition-colors"
-          title="Copy output"
-        >
-          {copied ? (
-            <Check size={11} className="text-emerald-400" />
-          ) : (
-            <Copy size={11} />
-          )}
-        </button>
-      </div>
-      {output && (
-        <pre className="text-xs text-green-400/80 p-3 font-mono whitespace-pre-wrap overflow-x-auto max-h-[200px] overflow-y-auto">
-          {output}
-        </pre>
-      )}
-      {result?.exitCode != null && result.exitCode !== 0 && (
-        <div className="text-[10px] text-red-400 px-3 py-1.5 border-t border-zinc-800">
-          Exit code: {result.exitCode}
-        </div>
-      )}
-    </div>
-  );
-}
+  useEffect(() => {
+    if (isRunning) {
+      setExpanded(true);
+      expandStates.set(cardKey, true);
+    }
+  }, [isRunning]);
 
-function ReadBlock({ part, result }: ToolCallPartProps) {
-  const [expanded, setExpanded] = useState(false);
-  const output = result?.output || "";
-  const filePath = part.args?.file_path || part.args?.path || "file";
-  const color = getToolColor("read");
+  useEffect(() => {
+    if (state === "done" || state === "error") {
+      const t = setTimeout(() => {
+        setExpanded(false);
+        expandStates.set(cardKey, false);
+      }, 2500);
+      return () => clearTimeout(t);
+    }
+  }, [state]);
+
+  const headerLabel = isRunning
+    ? phrase
+    : isError
+      ? "Error"
+      : toolName.charAt(0).toUpperCase() + toolName.slice(1).toLowerCase();
 
   return (
     <div
-      className="rounded-lg border border-zinc-800 overflow-hidden"
-      style={{ backgroundColor: "#0b0b08" }}
+      className="rounded-xl bg-[rgba(5,4,2,0.45)] overflow-hidden mb-1.5"
+      style={{
+        border: "1px solid rgba(199,159,74,0.15)",
+        borderLeft: `2px solid ${color}`,
+      }}
     >
       <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-white/5 transition-colors"
+        onClick={toggle}
+        className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-[var(--fintheon-accent)]/5 transition-colors w-full text-left"
       >
-        <StatusIcon state={part.state} />
-        <span
-          className="text-[10px] font-medium px-1.5 py-0.5 rounded"
-          style={{ backgroundColor: `${color}15`, color }}
-        >
-          Read
-        </span>
-        <span className="text-xs text-zinc-500 font-mono truncate">
-          {filePath}
-        </span>
-        <span className="flex-1" />
+        {isRunning && <BrailleSpinner size={8} gap={2} />}
+        {isDone && (
+          <Check size={13} className="text-green-500 flex-shrink-0" />
+        )}
+        {isError && (
+          <AlertCircle size={13} className="text-red-500 flex-shrink-0" />
+        )}
+        <span className="text-xs text-zinc-400 flex-1">{headerLabel}</span>
         {expanded ? (
-          <ChevronDown size={13} className="text-gray-500" />
+          <ChevronDown size={13} className="text-gray-500 flex-shrink-0" />
         ) : (
-          <ChevronRight size={13} className="text-gray-500" />
+          <ChevronRight size={13} className="text-gray-500 flex-shrink-0" />
         )}
       </button>
       {expanded && output && (
-        <div className="border-t border-zinc-800">
-          <pre className="text-[11px] text-zinc-400 p-3 font-mono whitespace-pre-wrap overflow-x-auto max-h-[200px] overflow-y-auto">
-            {output}
-          </pre>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function EditBlock({ part, result }: ToolCallPartProps) {
-  const [expanded, setExpanded] = useState(false);
-  const output = result?.output || "";
-  const filePath = part.args?.file_path || part.args?.path || "file";
-  const color = getToolColor("edit");
-  const lines = output.split("\n");
-
-  return (
-    <div
-      className="rounded-lg border border-zinc-800 overflow-hidden"
-      style={{ backgroundColor: "#0b0b08" }}
-    >
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-white/5 transition-colors"
-      >
-        <StatusIcon state={part.state} />
-        <span
-          className="text-[10px] font-medium px-1.5 py-0.5 rounded"
-          style={{ backgroundColor: `${color}15`, color }}
-        >
-          Edit
-        </span>
-        <span className="text-xs text-zinc-500 font-mono truncate">
-          {filePath}
-        </span>
-        <span className="flex-1" />
-        {expanded ? (
-          <ChevronDown size={13} className="text-gray-500" />
-        ) : (
-          <ChevronRight size={13} className="text-gray-500" />
-        )}
-      </button>
-      {expanded && output && (
-        <div className="border-t border-zinc-800 p-3 font-mono text-[11px] overflow-x-auto max-h-[200px] overflow-y-auto">
-          {lines.map((line, i) => {
-            if (line.startsWith("+")) {
-              return (
-                <div key={i} className="bg-green-500/10 text-green-400">
-                  {line}
-                </div>
-              );
-            }
-            if (line.startsWith("-")) {
-              return (
-                <div key={i} className="bg-red-500/10 text-red-400">
-                  {line}
-                </div>
-              );
-            }
-            return (
-              <div key={i} className="text-zinc-500">
-                {line}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function SearchBlock({ part, result }: ToolCallPartProps) {
-  const output = result?.output || "";
-  const toolName =
-    part.toolName.charAt(0).toUpperCase() +
-    part.toolName.slice(1).toLowerCase();
-  const color = getToolColor(part.toolName);
-  const lines = output.split("\n").filter(Boolean);
-
-  return (
-    <div
-      className="rounded-lg border border-zinc-800 overflow-hidden"
-      style={{ backgroundColor: "#0b0b08" }}
-    >
-      <div className="flex items-center gap-2 px-3 py-2">
-        <StatusIcon state={part.state} />
-        <span
-          className="text-[10px] font-medium px-1.5 py-0.5 rounded"
-          style={{ backgroundColor: `${color}15`, color }}
-        >
-          {toolName}
-        </span>
-        <span className="text-[10px] text-zinc-600">
-          {lines.length} result{lines.length !== 1 ? "s" : ""}
-        </span>
-      </div>
-      {lines.length > 0 && (
-        <div className="border-t border-zinc-800 px-3 py-2 text-xs font-mono text-zinc-400 max-h-[150px] overflow-y-auto">
-          {lines.slice(0, 20).map((line, i) => (
-            <div key={i} className="truncate">
-              {line}
-            </div>
-          ))}
-          {lines.length > 20 && (
-            <div className="text-zinc-600 mt-1">
-              ... and {lines.length - 20} more
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DefaultBlock({ part, result }: ToolCallPartProps) {
-  const [expanded, setExpanded] = useState(false);
-  const output = result?.output || "";
-  const color = getToolColor(part.toolName);
-
-  return (
-    <div
-      className="rounded-lg border border-zinc-800 overflow-hidden"
-      style={{ backgroundColor: "#0b0b08" }}
-    >
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-white/5 transition-colors"
-      >
-        <StatusIcon state={part.state} />
-        <span
-          className="text-[10px] font-medium px-1.5 py-0.5 rounded"
-          style={{ backgroundColor: `${color}15`, color }}
-        >
-          {part.toolName}
-        </span>
-        <span className="flex-1" />
-        {result?.durationMs != null && (
-          <span className="flex items-center gap-1 text-[10px] text-gray-600">
-            <Clock size={9} />
-            {(result.durationMs / 1000).toFixed(1)}s
-          </span>
-        )}
-        {expanded ? (
-          <ChevronDown size={13} className="text-gray-500" />
-        ) : (
-          <ChevronRight size={13} className="text-gray-500" />
-        )}
-      </button>
-      {expanded && output && (
-        <div className="border-t border-zinc-800">
-          <pre className="text-[11px] text-zinc-400 p-3 font-mono whitespace-pre-wrap overflow-x-auto max-h-[200px] overflow-y-auto">
-            {output}
-          </pre>
+        <div className="border-t border-[var(--fintheon-accent)]/10 px-3 py-2.5 text-[11px] text-zinc-400 font-mono whitespace-pre-wrap overflow-x-auto max-h-[200px] overflow-y-auto">
+          <RichTextRenderer text={output} />
         </div>
       )}
     </div>
@@ -300,13 +136,5 @@ function DefaultBlock({ part, result }: ToolCallPartProps) {
 }
 
 export function ToolCallPartRenderer({ part, result }: ToolCallPartProps) {
-  const lower = part.toolName.toLowerCase();
-
-  if (lower === "bash") return <BashBlock part={part} result={result} />;
-  if (lower === "read") return <ReadBlock part={part} result={result} />;
-  if (lower === "edit") return <EditBlock part={part} result={result} />;
-  if (lower === "grep" || lower === "glob")
-    return <SearchBlock part={part} result={result} />;
-
-  return <DefaultBlock part={part} result={result} />;
+  return <ToolCallCard part={part} result={result} />;
 }

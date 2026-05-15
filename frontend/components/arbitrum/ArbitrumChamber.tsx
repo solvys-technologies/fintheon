@@ -288,7 +288,7 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
           >
             <Settings className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] transition-colors" />
           </button>
-          <span className="text-[9px] uppercase tracking-wider text-[var(--fintheon-text)]/35">
+          <span className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/35">
             {phase}
           </span>
         </div>

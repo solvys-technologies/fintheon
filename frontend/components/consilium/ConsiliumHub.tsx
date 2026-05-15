@@ -597,7 +597,7 @@ export function ConsiliumHub() {
   return (
     <div className="flex h-full flex-col bg-[var(--fintheon-bg)]">
       {/* Tab bar: Sanctum dropdown + regular tabs + Proposals toggle */}
-      <div className="flex items-center gap-0.5 px-4 pt-3 pb-1">
+      <div className="flex items-center gap-0.5 px-4 pt-3 pb-1.5">
         <h2
           className="mr-3 text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
           style={{ fontFamily: "var(--font-heading, Roboto, sans-serif)" }}

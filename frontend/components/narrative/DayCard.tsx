@@ -106,6 +106,7 @@ export function DayCard({
   } = useLockout();
 
   const [currentWindowIndex, setCurrentWindowIndex] = useState(0);
+  const [shimmering, setShimmering] = useState(false);
   const autoLockKeyRef = useRef<string | null>(null);
 
   const plan = multiWeekPlan ?? todayData;
@@ -193,13 +194,16 @@ export function DayCard({
             <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={14} />
           )}
           <button
-            onClick={() =>
-              lockoutState.locked
+            onClick={() => {
+              const action = lockoutState.locked
                 ? lockoutUnlock()
-                : lockoutLock(lockoutDefaultDuration)
-            }
+                : lockoutLock(lockoutDefaultDuration);
+              setShimmering(true);
+              setTimeout(() => setShimmering(false), 600);
+              return action;
+            }}
             title={lockoutButtonTitle}
-            className="desk-plan-lock-btn inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] uppercase tracking-[0.12em] cursor-pointer transition-colors"
+            className={`desk-plan-lock-btn inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] uppercase tracking-[0.12em] cursor-pointer transition-colors ${shimmering ? "shimmering" : ""}`}
             style={{
               fontFamily: "var(--font-data, monospace)",
               color: lockoutState.locked

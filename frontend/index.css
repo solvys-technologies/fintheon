@@ -1519,3 +1519,24 @@ html *::-webkit-scrollbar {
     animation: none;
   }
 }
+
+/* S66-T3: Desk plan lock button single-pass shimmer */
+.desk-plan-lock-btn {
+  position: relative;
+  overflow: hidden;
+}
+.desk-plan-lock-btn::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; width: 100%; height: 100%;
+  background: linear-gradient(
+    90deg, transparent 0%, rgba(199,159,74,0.18) 50%, transparent 100%
+  );
+  opacity: 0;
+  transition: none;
+}
+.desk-plan-lock-btn.shimmering::after {
+  left: 100%;
+  opacity: 1;
+  transition: left 0.55s ease-in-out, opacity 0.15s;
+}

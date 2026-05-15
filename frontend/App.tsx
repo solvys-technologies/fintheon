@@ -34,6 +34,7 @@ import { AuthShell } from "./components/auth/AuthShell";
 import { CircleQuarters } from "./components/icon-bank/UnicodeSpinners";
 import { ConsulControlCorners } from "./components/consul-control/ConsulControlCorners";
 import { useConsulControlStatus } from "./hooks/useConsulControlStatus";
+import { LockScreen } from "./components/LockScreen";
 
 // Run storage migration before any providers read localStorage
 migrateStorageKeys();
@@ -213,6 +214,7 @@ function AuthGate() {
                                 <ApiErrorToastBridge />
                                 <VersionChecker />
                                 <MainLayout />
+                                <LockScreen />
                                 <ConsulControlLayer />
                                 <NotificationContainer />
                                 <ToastContainer />

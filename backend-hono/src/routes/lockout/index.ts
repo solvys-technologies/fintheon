@@ -1,5 +1,6 @@
 // [claude-code 2026-05-13] Lockout route — GET /status, POST /toggle, POST /set, POST /schedule, GET /next-window
 // [claude-code 2026-05-13] S64 T3: Added POST /schedule, GET /next-window, windowStartTime on toggle
+// [claude-code 2026-05-15] S66-T2: Added POST /lock-until-desk-session, reason discriminator on toggle
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { z } from "zod";
@@ -7,15 +8,20 @@ import {
   getLockout,
   setLockout,
   scheduleAutoRelease,
+  lockUntilDeskSession,
 } from "../../services/lockout.js";
+import type { LockoutReason, ScheduledBy } from "../../services/lockout.js";
 import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger("lockout-route");
+
+const reasonValues: [LockoutReason, ...LockoutReason[]] = ["desk_session", "manual", "system"];
 
 const ToggleSchema = z.object({
   locked: z.boolean(),
   durationMinutes: z.number().int().min(1).max(480).optional(),
   windowStartTime: z.string().optional(),
+  reason: z.enum(reasonValues).optional(),
 });
 
 const SetSchema = z.object({
@@ -57,11 +63,13 @@ export function createLockoutRoutes() {
           autoReleaseAt =
             scheduleAutoRelease(userId, body.windowStartTime) ?? undefined;
         }
+        const reason: LockoutReason = body.reason ?? "manual";
+        const scheduledBy: ScheduledBy = reason === "desk_session" ? "desk_plan" : "manual";
         const state = setLockout(
           userId,
           true,
           body.durationMinutes ? body.durationMinutes * 60 * 1000 : undefined,
-          { autoReleaseAt, scheduledBy: "manual" },
+          { autoReleaseAt, reason, scheduledBy },
         );
         return c.json({ ok: true, ...state });
       }
@@ -184,6 +192,27 @@ export function createLockoutRoutes() {
           reason: err instanceof Error ? err.message : "invalid body",
         },
         400,
+      );
+    }
+  });
+
+  /**
+   * POST /api/lockout/lock-until-desk-session
+   * Locks trading until the next desk plan window start minus 15 minutes.
+   * Falls back to a 30-minute lockout if no desk plan exists.
+   */
+  app.post("/lock-until-desk-session", async (c) => {
+    try {
+      const userId = getUserId(c);
+      const state = lockUntilDeskSession(userId);
+      return c.json({ ok: true, ...state });
+    } catch (err) {
+      return c.json(
+        {
+          ok: false,
+          reason: err instanceof Error ? err.message : "lock-until-desk-session failed",
+        },
+        500,
       );
     }
   });

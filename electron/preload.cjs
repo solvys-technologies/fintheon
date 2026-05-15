@@ -180,8 +180,26 @@ contextBridge.exposeInMainWorld("electron", {
   },
 
   // [claude-code 2026-05-13] S64 T3: Lockout OS notification bridge
+  // [claude-code 2026-05-15] S66-T2: added accessibility + lock screen listeners
   lockout: {
     showNotification: () => ipcRenderer.send("show-lockout-notification"),
+    checkAccessibility: () => ipcRenderer.invoke("lockout:check-accessibility"),
+    requestAccessibility: () =>
+      ipcRenderer.invoke("lockout:request-accessibility"),
+    onLockScreenShow: (callback) => {
+      const handler = (_event) => {
+        if (typeof callback === "function") callback();
+      };
+      ipcRenderer.on("lock-screen:show", handler);
+      return () => ipcRenderer.removeListener("lock-screen:show", handler);
+    },
+    onLockScreenHide: (callback) => {
+      const handler = (_event) => {
+        if (typeof callback === "function") callback();
+      };
+      ipcRenderer.on("lock-screen:hide", handler);
+      return () => ipcRenderer.removeListener("lock-screen:hide", handler);
+    },
   },
 });
 

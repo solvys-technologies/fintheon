@@ -14,6 +14,11 @@ import {
 import Toggle from "../Toggle";
 import { useSettings } from "../../contexts/SettingsContext";
 
+interface LockoutElectron {
+  checkAccessibility: () => Promise<{ granted: boolean }>;
+  requestAccessibility: () => Promise<{ granted: boolean }>;
+}
+
 interface BlockerApi {
   enable: () => Promise<unknown>;
   disable: () => Promise<unknown>;
@@ -53,7 +58,10 @@ export function BlockerTab() {
   const {
     lockoutAutoBlockOutsideTradingWindow,
     setLockoutAutoBlockOutsideTradingWindow,
+    lockoutPermission,
+    setLockoutPermission,
   } = useSettings();
+  const [accessibilityCheckLoading, setAccessibilityCheckLoading] = useState(false);
   const [state, setState] = useState<BlockerState>({
     blocked: false,
     layers: { hosts: false, resolver: false },
@@ -223,6 +231,60 @@ export function BlockerTab() {
       </div>
 
       {autoLockPolicy}
+
+      {/* Lockout Accessibility Permission */}
+      <div className="rounded-lg border border-[var(--fintheon-accent)]/10 p-5 bg-[rgba(10,10,0,0.4)]">
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <div className="text-[13px] font-semibold text-white">
+              Accessibility Permission
+            </div>
+            <p className="text-[11px] text-gray-500 mt-1 leading-relaxed max-w-md">
+              Pre-authorizes Fintheon so locking works without a password prompt.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span
+              className={`text-[10px] font-medium ${
+                lockoutPermission === "granted"
+                  ? "text-green-400"
+                  : lockoutPermission === "denied"
+                    ? "text-red-400"
+                    : "text-[var(--fintheon-accent)]"
+              }`}
+            >
+              {lockoutPermission === "granted"
+                ? "Granted"
+                : lockoutPermission === "denied"
+                  ? "Not Granted"
+                  : "Not required"}
+            </span>
+            <button
+              onClick={async () => {
+                setAccessibilityCheckLoading(true);
+                try {
+                  const el = (window as any).electron;
+                  const result = el?.lockout?.requestAccessibility
+                    ? await el.lockout.requestAccessibility()
+                    : el?.lockout?.checkAccessibility
+                      ? await el.lockout.checkAccessibility()
+                      : null;
+                  if (result && typeof result.granted === "boolean") {
+                    setLockoutPermission(result.granted ? "granted" : "denied");
+                  }
+                } catch {
+                } finally {
+                  setAccessibilityCheckLoading(false);
+                }
+              }}
+              disabled={accessibilityCheckLoading}
+              className="px-3 py-1.5 rounded-md text-[11px] font-semibold bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/25 border border-[var(--fintheon-accent)]/20 disabled:opacity-40 transition-all"
+            >
+              {accessibilityCheckLoading ? "Checking..." : "Grant Permission"}
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Status card */}
       <div
