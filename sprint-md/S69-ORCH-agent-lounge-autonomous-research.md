@@ -201,11 +201,11 @@ T7 builds the UI on top of all backend APIs.
 
 | Issue | Title | Points |
 | ----- | ----- | ------ |
-| SOL-128 | S69-ORCH: Agent Lounge Autonomous Research & Deliberation | — |
-| SOL-126 | S69-T1: YouTube Transcript Ingestion Service | 5 |
-| SOL-125 | S69-T2: X Account Monitor with Chart Image Extraction | 8 |
+| SOL-121 | S69-ORCH: Agent Lounge Autonomous Research & Deliberation | — |
+| SOL-122 | S69-T1: YouTube Transcript Ingestion Service | 5 |
+| SOL-123 | S69-T2: X Account Monitor with Chart Image Extraction | 8 |
 | SOL-124 | S69-T3: Free LLM Model Scout for Hermes | 3 |
-| SOL-123 | S69-T4: Lounge Gatherer + Brief Pipeline | 8 |
-| SOL-122 | S69-T5: Multi-Agent Deliberation Engine | 8 |
-| SOL-121 | S69-T6: Output Router + Headline Correlation | 5 |
-| SOL-127 | S69-T7: Lounge Frontend Overhaul | 5 |
+| SOL-125 | S69-T4: Lounge Gatherer + Brief Pipeline | 8 |
+| SOL-126 | S69-T5: Multi-Agent Deliberation Engine | 8 |
+| SOL-127 | S69-T6: Output Router + Headline Correlation | 5 |
+| SOL-128 | S69-T7: Lounge Frontend Overhaul | 5 |
