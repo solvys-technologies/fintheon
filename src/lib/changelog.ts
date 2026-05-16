@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-15T16:24:00-04:00",
+    agent: "claude-code",
+    summary:
+      "fix: removed LockScreen overlay from App.tsx — lockout should block trading apps only, not Fintheon itself (post-session analysis now accessible). Removed borders from .toolbar-icon-btn — FadingRuler vertical separators handle visual division in pill groups.",
+    files: [
+      "frontend/App.tsx",
+      "frontend/index.css",
+    ],
+  },
+  {
     date: "2026-05-15T13:33:00-04:00",
     agent: "claude-code",
     summary:
