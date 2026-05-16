@@ -9,6 +9,34 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-16T18:00:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S67 UI Polish Wave 1: toolbar theming (var(--fintheon-accent) for all icons except Trading green), TOOLBAR_PILL_CLASS bg removed, lock button dropdown with briefing anchors (MDB/ADB/PMDB/Next Desk Plan), d+h timer format, widget heights h-8→h-7 (IVScoreCard, TraderNametag, VIX), Agentic Scoring Breakdown rename with 5-agent fuses, Rationale/Chamber Reading removed, color matrix with fading row backgrounds, IV popup right-edge alignment, Desk Plan duplicate lock removed + streak hover popup + reposition, Risk Signals collapsed narrative + Estimated Drift KPI, microphone border removed + brighter shimmer, VoiceBorderGlow replaces VoiceModePixelOverlay, bulletin tabs bg removed, sidebar rulers stripped, cursor:pointer on all buttons, 15/30min auto-release toggle, lockout briefingAnchor param.",
+    files: [
+      "backend-hono/src/services/riskflow/estimated-drift-service.ts",
+      "backend-hono/src/services/econ-grading-service.ts",
+      "backend-hono/src/routes/riskflow/index.ts",
+      "backend-hono/src/routes/riskflow/handlers.ts",
+      "backend-hono/src/routes/day-plan/index.ts",
+      "backend-hono/src/routes/day-plan/handlers.ts",
+      "backend-hono/src/routes/lockout/index.ts",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/IVScoreCard.tsx",
+      "frontend/components/TraderNametag.tsx",
+      "frontend/components/narrative/DayCard.tsx",
+      "frontend/components/narrative/RiskSignalCards.tsx",
+      "frontend/components/voice/HeaderVoiceControl.tsx",
+      "frontend/components/voice/VoiceBorderGlow.tsx",
+      "frontend/components/StickyBulletin.tsx",
+      "frontend/components/layout/NavSidebar.tsx",
+      "frontend/components/LockScreen.tsx",
+      "frontend/components/settings/TradingTab.tsx",
+      "frontend/contexts/SettingsContext.tsx",
+      "frontend/index.css",
+    ],
+  },
+  {
     date: "2026-05-15T20:30:00-04:00",
     agent: "claude-code",
     summary:

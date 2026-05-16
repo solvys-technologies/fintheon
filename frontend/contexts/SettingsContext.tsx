@@ -539,7 +539,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     loadFromStorage("quickAccessUrl", ""),
   );
   const [lockoutAutoReleaseMinutes, setLockoutAutoReleaseMinutes] =
-    useState<number>(() => loadFromStorage("lockoutAutoReleaseMinutes", 15));
+    useState<number>(() => loadFromStorage("lockoutAutoReleaseMinutes", 30));
   const [
     lockoutAutoBlockOutsideTradingWindow,
     setLockoutAutoBlockOutsideTradingWindow,

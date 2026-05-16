@@ -1,6 +1,7 @@
 // [claude-code 2026-05-13] Lockout route — GET /status, POST /toggle, POST /set, POST /schedule, GET /next-window
 // [claude-code 2026-05-13] S64 T3: Added POST /schedule, GET /next-window, windowStartTime on toggle
 // [claude-code 2026-05-15] S66-T2: Added POST /lock-until-desk-session, reason discriminator on toggle
+// [claude-code 2026-05-16] S67: Added briefingAnchor param to toggle — locks until next MDB/ADB/PMDB briefing time
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { z } from "zod";
@@ -16,13 +17,47 @@ import { createLogger } from "../../lib/logger.js";
 const log = createLogger("lockout-route");
 
 const reasonValues: [LockoutReason, ...LockoutReason[]] = ["desk_session", "manual", "system"];
+const briefingAnchorValues = ["mdb", "adb", "pmdb"] as const;
 
 const ToggleSchema = z.object({
   locked: z.boolean(),
   durationMinutes: z.number().int().min(1).max(480).optional(),
   windowStartTime: z.string().optional(),
   reason: z.enum(reasonValues).optional(),
+  briefingAnchor: z.enum(briefingAnchorValues).optional(),
 });
+
+const BRIEFING_TIMES_ET: Record<string, { hour: number; minute: number }> = {
+  mdb: { hour: 6, minute: 30 },
+  adb: { hour: 10, minute: 45 },
+  pmdb: { hour: 17, minute: 15 },
+};
+
+function resolveBriefingTime(anchor: string): string | null {
+  const times = BRIEFING_TIMES_ET[anchor];
+  if (!times) return null;
+
+  // Compute next occurrence of this briefing time in America/New_York
+  const now = new Date();
+  const etStr = now.toLocaleString("en-US", { timeZone: "America/New_York" });
+  const etNow = new Date(etStr);
+
+  const briefingET = new Date(etNow);
+  briefingET.setHours(times.hour, times.minute, 0, 0);
+
+  if (briefingET <= etNow) {
+    // Already past today's briefing — schedule for tomorrow (or next weekday)
+    briefingET.setDate(briefingET.getDate() + 1);
+    // Skip to Monday if on weekend for MDB/ADB/PMDB (weekday briefs)
+    const dow = briefingET.getDay();
+    if (dow === 0) briefingET.setDate(briefingET.getDate() + 1); // Sun → Mon
+    if (dow === 6) briefingET.setDate(briefingET.getDate() + 2); // Sat → Mon
+  }
+
+  // Convert ET back to UTC
+  const utc = new Date(briefingET.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  return utc.toISOString();
+}
 
 const SetSchema = z.object({
   durationMinutes: z.number().int().min(1).max(480).default(30),
@@ -57,6 +92,27 @@ export function createLockoutRoutes() {
       const userId = getUserId(c);
 
       if (body.locked) {
+        // Handle briefingAnchor — lock until next briefing time minus 30min auto-release
+        if (body.briefingAnchor) {
+          const briefingTime = resolveBriefingTime(body.briefingAnchor);
+          if (!briefingTime) {
+            return c.json(
+              { ok: false, reason: "Invalid briefing anchor" },
+              400,
+            );
+          }
+          const releaseMs = new Date(briefingTime).getTime() - 30 * 60 * 1000;
+          const now = Date.now();
+          const durationMs = Math.max(releaseMs - now, 60_000);
+          const autoReleaseAt = new Date(releaseMs).toISOString();
+          const state = setLockout(userId, true, durationMs, {
+            reason: "desk_session",
+            scheduledBy: "desk_plan",
+            autoReleaseAt,
+          });
+          return c.json({ ok: true, ...state });
+        }
+
         // Compute auto-release if windowStartTime provided
         let autoReleaseAt: string | undefined;
         if (body.windowStartTime) {

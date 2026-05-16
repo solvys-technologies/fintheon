@@ -6,7 +6,7 @@
 // [claude-code 2026-03-20] S3:T4c: createPortal for platform/layout dropdowns — fixes z-index behind Strategium panel
 // [claude-code 2026-03-20] S3:T5 — VIX spike toast trigger when VIX crosses above threshold
 // [claude-code 2026-03-24] Change VIX risk toast from threshold-crossing to scheduled pre-market-open times (EST)
-// [claude-code 2026-05-15] S66: lockout lock button + custom minutes input, drag-to-reorder toolbar, instrument-aware IV score streaming.
+// [claude-code 2026-05-16] S67: lockout dropdown with briefing anchor options, toolbar icon colors → var(--fintheon-accent), pill bg removed, d+h timer format
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "../../contexts/AuthContext";
@@ -37,6 +37,10 @@ import {
   Zap,
   Lock,
   LockOpen,
+  Sun,
+  Sunset,
+  Moon,
+  ArrowRight,
 } from "lucide-react";
 import { WhatsNewButton } from "../onboarding/FirstTimeTour";
 import { StickyBulletin } from "../StickyBulletin";
@@ -78,7 +82,7 @@ const TAB_LABELS: Record<NavTab, string> = {
 type LayoutOption = "tickers-only" | "combined";
 
 const TOOLBAR_PILL_CLASS =
-  "flex items-center gap-0.5 h-8 rounded-md bg-[rgba(5,4,2,0.55)] px-1";
+  "flex items-center gap-0.5 h-8 rounded-md px-1";
 
 function activeIconStyle(color: string) {
   return { "--toolbar-icon-active-color": color } as React.CSSProperties;
@@ -550,80 +554,29 @@ export function TopHeader({
               )}
               {compactLevel < 2 && <FadingRuler orientation="vertical" className="mx-0.5" />}
               {compactLevel < 2 && (
-                <button
-                  onClick={() =>
-                    lockoutState.locked
-                      ? lockoutUnlock()
-                      : lockoutLock(lockoutDefaultDuration)
-                  }
-                  className={`toolbar-icon-btn ${lockoutState.locked ? "toolbar-active" : ""}`}
-                  title={
-                    lockoutState.locked && lockoutState.remaining
-                      ? `${Math.round(lockoutState.remaining / 60)}m left`
-                      : "Lock"
-                  }
-                >
-                  {lockoutState.locked ? (
-                    <Lock
-                      className="w-3 h-3 toolbar-icon-active"
-                      style={activeIconStyle("#f87171")}
-                    />
-                  ) : (
-                    <LockOpen className="w-3 h-3" />
-                  )}
-                </button>
-              )}
-              {compactLevel < 2 && !lockoutState.locked && <FadingRuler orientation="vertical" className="mx-0.5" />}
-              {compactLevel < 2 && !lockoutState.locked && (
-                <button
-                  onClick={() => lockoutDeskSession()}
-                  className="text-[9px] uppercase tracking-[0.12em] px-2 py-0.5 rounded border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-                  title="Lock until next desk session"
-                >
-                  til Desk
-                </button>
-              )}
-              {compactLevel < 2 && !lockoutState.locked && <FadingRuler orientation="vertical" className="mx-0.5" />}
-              {compactLevel < 2 && !lockoutState.locked && (
-                <div className="flex items-center gap-1">
-                  <input
-                    ref={customLockoutRef}
-                    type="number"
-                    min={1}
-                    max={480}
-                    value={customLockoutMin}
-                    onChange={(e) => setCustomLockoutMin(e.target.value)}
-                    placeholder="min"
-                    className="w-11 h-6 bg-[var(--fintheon-surface)] border border-zinc-800 rounded text-[10px] text-gray-400 text-center focus:outline-none focus:border-[var(--fintheon-accent)]/30 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        const m = parseInt(customLockoutMin);
-                        if (m > 0 && m <= 480) {
-                          lockoutLock(m);
-                          setCustomLockoutMin("");
-                        }
-                      }
-                    }}
-                  />
-                  {customLockoutMin && parseInt(customLockoutMin) > 0 && (
-                    <button
-                      onClick={() => {
-                        const m = parseInt(customLockoutMin);
-                        if (m > 0 && m <= 480) {
-                          lockoutLock(m);
-                          setCustomLockoutMin("");
-                        }
-                      }}
-                      className="text-[10px] px-1 py-0.5 rounded border bg-[var(--fintheon-accent)]/10 border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/20"
-                    >
-                      Go
-                    </button>
-                  )}
-                </div>
+                <LockDropdown
+                  locked={lockoutState.locked}
+                  remaining={lockoutState.remaining}
+                  onLock={(minutes, anchor) => {
+                    if (anchor) {
+                      // Lock via briefing anchor
+                      fetch(`${(import.meta.env.VITE_API_URL || "http://localhost:8080").replace(/\/$/, "")}/api/lockout/toggle`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ locked: true, briefingAnchor: anchor }),
+                      }).catch(() => {});
+                    } else if (minutes) {
+                      lockoutLock(minutes);
+                    } else {
+                      lockoutLock(lockoutDefaultDuration);
+                    }
+                  }}
+                  onUnlock={lockoutUnlock}
+                />
               )}
               {compactLevel < 2 && lockoutState.locked && lockoutState.remaining != null && (
                 <span className="text-[9px] text-gray-500 tracking-[0.07em] tabular-nums">
-                  {Math.round(lockoutState.remaining / 60)}m left
+                  {formatLockoutRemaining(lockoutState.remaining)}
                 </span>
               )}
             </div>
@@ -775,7 +728,7 @@ export function TopHeader({
                 )}
             </div>
           )}
-          <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-2.5 h-8 flex items-center flex-shrink-0">
+          <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-2.5 h-7 flex items-center flex-shrink-0">
             <div className="flex items-center gap-1.5">
               {compactLevel < 2 && (
                 <span className="text-[9px] text-gray-500">VIX</span>
@@ -847,10 +800,7 @@ export function TopHeader({
                 title="Convene"
               >
                 <MessageCircle
-                  className={`w-3 h-3 ${
-                    chatOpen ? "toolbar-icon-active" : "text-[#6366f1]/50"
-                  }`}
-                  style={chatOpen ? activeIconStyle("#6366f1") : undefined}
+                  className={`w-3 h-3 ${chatOpen ? "toolbar-icon-active" : ""}`}
                 />
               </button>
             )}
@@ -866,5 +816,149 @@ export function TopHeader({
       </div>
       {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
     </div>
+  );
+}
+
+function formatLockoutRemaining(seconds: number | null): string {
+  if (seconds == null || seconds <= 0) return "0m left";
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const parts: string[] = [];
+  if (d > 0) parts.push(`${d}d`);
+  if (h > 0) parts.push(`${h}h`);
+  parts.push(`${m}m left`);
+  return parts.join(" ");
+}
+
+const LOCK_OPTIONS: Array<{
+  anchor?: "mdb" | "adb" | "pmdb";
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+}> = [
+  { anchor: "mdb", label: "Morning", description: "Until MDB briefing (6:30 AM ET)", icon: <Sun className="w-3 h-3" /> },
+  { anchor: "adb", label: "Afternoon", description: "Until ADB briefing (10:45 AM ET)", icon: <Sunset className="w-3 h-3" /> },
+  { anchor: "pmdb", label: "Afterhours", description: "Until PMDB briefing (5:15 PM ET)", icon: <Moon className="w-3 h-3" /> },
+  { label: "Next Desk Plan", description: "Until next scheduled desk plan window", icon: <ArrowRight className="w-3 h-3" /> },
+];
+
+function LockDropdown({
+  locked,
+  remaining,
+  onLock,
+  onUnlock,
+}: {
+  locked: boolean;
+  remaining: number | null;
+  onLock: (minutes?: number, anchor?: string) => void;
+  onUnlock: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (
+        open &&
+        !triggerRef.current?.contains(e.target as Node) &&
+        !dropdownRef.current?.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !triggerRef.current) {
+      setPos(null);
+      return;
+    }
+    const rect = triggerRef.current.getBoundingClientRect();
+    const dropdownW = 240;
+    let left = rect.right - dropdownW;
+    if (left < 8) left = 8;
+    setPos({ top: rect.bottom + 6, left });
+  }, [open]);
+
+  const handleUnlock = () => {
+    onUnlock();
+    setOpen(false);
+  };
+
+  const handleLockOption = (option: (typeof LOCK_OPTIONS)[number]) => {
+    if (option.anchor) {
+      onLock(undefined, option.anchor);
+    } else {
+      onLock(undefined, undefined); // triggers desk session lock
+    }
+    setOpen(false);
+  };
+
+  if (locked) {
+    return (
+      <button
+        ref={triggerRef}
+        onClick={handleUnlock}
+        className={`toolbar-icon-btn toolbar-active`}
+        title="Unlock"
+      >
+        <Lock className="w-3 h-3 toolbar-icon-active" />
+      </button>
+    );
+  }
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        onClick={() => setOpen(!open)}
+        className="toolbar-icon-btn"
+        title="Lock options"
+      >
+        <LockOpen className="w-3 h-3" />
+      </button>
+      {open &&
+        pos &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            style={{
+              position: "fixed",
+              top: pos.top,
+              left: pos.left,
+              zIndex: 9999,
+            }}
+            className="w-[240px] bg-[rgba(10,9,5,0.72)] backdrop-blur-[18px] saturate-[1.08] border border-[rgba(199,159,74,0.14)] rounded-lg overflow-hidden animate-dropdown-enter"
+          >
+            {LOCK_OPTIONS.map((opt, i) => (
+              <div key={opt.label}>
+                {i > 0 && <FadingRuler />}
+                <button
+                  onClick={() => handleLockOption(opt)}
+                  className="w-full px-4 py-3 text-left hover:bg-[rgba(199,159,74,0.05)] transition-colors flex items-start gap-3"
+                >
+                  <div className="mt-0.5 text-[var(--fintheon-accent)]/60">
+                    {opt.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium text-[var(--fintheon-accent)]">
+                      {opt.label}
+                    </div>
+                    <div className="text-[10px] text-gray-500 mt-0.5">
+                      {opt.description}
+                    </div>
+                  </div>
+                </button>
+              </div>
+            ))}
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }

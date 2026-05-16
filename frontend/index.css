@@ -496,6 +496,9 @@ html *::-webkit-scrollbar {
   * {
     @apply border-border outline-ring/50;
   }
+  button:not([disabled]) {
+    cursor: pointer;
+  }
   html {
     /* [claude-code 2026-04-29] Global legibility pass: lift rem-based UI type by ~10%. */
     font-size: 110%;

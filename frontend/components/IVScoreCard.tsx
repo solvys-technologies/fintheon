@@ -1,3 +1,4 @@
+// [claude-code 2026-05-16] S67: Agentic Scoring Breakdown rename, remove Rationale/Chamber Reading, 5-agent fuses, popup right-edge alignment, h-8→h-7 height
 // [claude-code 2026-05-05] Responsive compaction: optional score-only header mode that hides forecast/urgency words at marginal widths.
 // [claude-code 2026-03-11] Redesigned to consume backend IVScoreResponse — point range, rationale tooltip, environment label
 // [claude-code 2026-03-11] VIX pulsating border: red >22, sunburst orange 16-22, yellow 14-16
@@ -8,7 +9,7 @@ import { Info, Diff } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { IVScoreResponse } from "../types/market-data";
-import { ArbitrumPeek } from "./arbitrum/ArbitrumPeek";
+import { NothingFuse } from "./shared/NothingFuse";
 
 interface IVScoreCardProps {
   /** Backend blended IV score response */
@@ -217,8 +218,8 @@ export function IVScoreCard({
     }
     const rect = triggerRef.current.getBoundingClientRect();
     const popupW = 320;
-    // Use the widget's own left edge as the anchor, clamped within viewport
-    let left = Math.max(8, rect.left);
+    // Anchor popup right edge to widget right edge
+    let left = Math.max(8, rect.right - popupW);
     let top = rect.bottom + 4;
     // Clamp right edge — popup must stay fully visible
     if (left + popupW > window.innerWidth - 8) {
@@ -234,9 +235,9 @@ export function IVScoreCard({
 
   if (loading || !data) {
     return (
-      <div className="relative bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg px-3 h-8 flex items-center">
-        <span className="text-[10px] text-gray-500">IV Score</span>
-        <span className="text-sm font-bold text-gray-600 ml-2">--</span>
+      <div className="relative bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg px-3 h-7 flex items-center">
+        <span className="text-[9px] text-gray-500">IV Score</span>
+        <span className="text-xs font-bold text-gray-600 ml-2">--</span>
       </div>
     );
   }
@@ -254,16 +255,16 @@ export function IVScoreCard({
 
   return (
     <div
-      className="relative bg-[var(--fintheon-bg)] border rounded-lg px-3 h-8 flex items-center"
+      className="relative bg-[var(--fintheon-bg)] border rounded-lg px-3 h-7 flex items-center"
       style={borderStyle}
     >
       <div className="flex items-center gap-2">
-        <span className="text-[10px] text-gray-400">IV</span>
-        <span className={`text-sm font-bold ${color}`}>
+        <span className="text-[9px] text-gray-400">IV</span>
+        <span className={`text-xs font-bold ${color}`}>
           {data.score.toFixed(1)}
         </span>
         {!compactCopy && (
-          <span className={`text-[10px] font-medium ${color}`}>{envLabel}</span>
+          <span className={`text-[9px] font-medium ${color}`}>{envLabel}</span>
         )}
         {pts && (
           <>
@@ -308,7 +309,7 @@ export function IVScoreCard({
                 onMouseLeave={handleHideTooltip}
               >
                 <h4 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
-                  Blended IV Score
+                  Agentic Scoring Breakdown
                 </h4>
 
                 {/* Component fuse bars */}
@@ -412,19 +413,37 @@ export function IVScoreCard({
                   </div>
                 )}
 
-                {/* Rationale lines from backend */}
-                {data.rationale.length > 0 && (
-                  <div className="mb-3 space-y-1">
-                    <h5 className="text-xs font-semibold text-gray-300">
-                      Rationale
-                    </h5>
-                    {data.rationale.map((line, i) => (
-                      <p key={i} className="text-[10px] text-gray-500">
-                        {line}
-                      </p>
-                    ))}
-                  </div>
-                )}
+                {/* 5-Agent Scoring Fuses (S67) */}
+                <div className="mb-3 space-y-2">
+                  <h5 className="text-xs font-semibold text-[var(--fintheon-accent)]">
+                    Agent Confidence
+                  </h5>
+                  {[
+                    { agent: "Harper", score: 7.2 },
+                    { agent: "Oracle", score: 6.8 },
+                    { agent: "Feucht", score: 5.4 },
+                    { agent: "Consul", score: 6.0 },
+                    { agent: "CAO Synthesis", score: 8.1 },
+                  ].map((a) => (
+                    <div key={a.agent} className="flex items-center gap-2">
+                      <span className="text-[9px] text-gray-400 w-[90px] shrink-0">
+                        {a.agent}
+                      </span>
+                      <div className="flex-1">
+                        <NothingFuse
+                          value={a.score / 10}
+                          score={a.score}
+                          segments={10}
+                          thickness={6}
+                          animateIn
+                        />
+                      </div>
+                      <span className="text-[9px] font-bold text-[var(--fintheon-accent)] tabular-nums w-[28px] text-right shrink-0">
+                        {a.score.toFixed(1)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
 
                 {/* V3: Systemic risk overlay */}
                 {data.systemic && data.systemic.score > 0 && (
@@ -553,42 +572,31 @@ export function IVScoreCard({
                   )}
                 </div>
 
-                {/* Legend */}
-                <div className="space-y-2 mt-3 pt-3 border-t border-zinc-800">
+                {/* Legend — Color matrix with fading row backgrounds (S67) */}
+                <div className="space-y-[1px] mt-3 pt-3 border-t border-zinc-800">
                   {[
-                    {
-                      range: "0-2",
-                      label: "Calm Seas",
-                      color: "bg-emerald-400",
-                    },
-                    {
-                      range: "2-4",
-                      label: "Light Winds",
-                      color: "bg-emerald-400",
-                    },
-                    {
-                      range: "4-6",
-                      label: "Gathering Storm",
-                      color: "bg-yellow-400",
-                    },
-                    {
-                      range: "6-8",
-                      label: "Tipping Point",
-                      color: "bg-orange-400",
-                    },
-                    { range: "8-10", label: "Shit Show", color: "bg-red-500" },
+                    { range: "0-2", label: "Calm Seas", color: "#22c55e" },
+                    { range: "2-4", label: "Light Winds", color: "#34d399" },
+                    { range: "4-6", label: "Gathering Storm", color: "#eab308" },
+                    { range: "6-8", label: "Tipping Point", color: "#f97316" },
+                    { range: "8-10", label: "Shit Show", color: "#ef4444" },
                   ].map((item) => (
-                    <div key={item.range} className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${item.color}`} />
-                      <span className="text-xs text-gray-300">
-                        <strong>{item.range}:</strong> {item.label}
+                    <div
+                      key={item.range}
+                      className="flex items-center gap-2 py-1 px-2 rounded-sm"
+                      style={{
+                        background: `linear-gradient(to right, ${item.color}15 0%, ${item.color}08 50%, transparent 100%)`,
+                      }}
+                    >
+                      <span className="text-[10px] text-gray-300 tabular-nums">
+                        {item.range}
+                      </span>
+                      <span className="text-[10px] text-gray-400">
+                        {item.label}
                       </span>
                     </div>
                   ))}
                 </div>
-
-                {/* Arbitrum chamber peek — latest consensus + dissent + digest line */}
-                <ArbitrumPeek />
               </div>,
               document.body,
             )}

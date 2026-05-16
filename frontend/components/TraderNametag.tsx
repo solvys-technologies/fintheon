@@ -27,7 +27,7 @@ export function TraderNametag({
   const chromeClass =
     variant === "embedded"
       ? "h-full px-2"
-      : "bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-md px-2 h-8";
+      : "bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-md px-2 h-7";
 
   return (
     <div

@@ -79,6 +79,7 @@ export function DayCard({
 
   const [currentWindowIndex, setCurrentWindowIndex] = useState(0);
   const [shimmering, setShimmering] = useState(false);
+  const [showStreakPopup, setShowStreakPopup] = useState(false);
   const autoLockKeyRef = useRef<string | null>(null);
 
   const plan = multiWeekPlan ?? todayData;
@@ -92,6 +93,14 @@ export function DayCard({
   }
 
   const driftVisual: DriftKind | "in-window" = drift?.kind ?? "in-window";
+
+  const dayOfWeekLabel = plan?.date ? (() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const [y, m, d] = plan.date.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    return `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}`;
+  })() : null;
 
   const baseSurface = bare ? "" : "bg-[var(--fintheon-surface)] rounded-lg p-3";
   const lockoutButtonTitle =
@@ -140,6 +149,41 @@ export function DayCard({
       aria-label="Day card"
       data-tour-target="day-card"
     >
+      {!showStreakInHeader && !hideStreak && plan?.date && (
+        <div className="flex items-center justify-between mb-1">
+          <span
+            className="text-[10px] ml-[2px]"
+            style={{
+              color: "var(--fintheon-muted, #908774)",
+              fontFamily: "var(--font-data, monospace)",
+            }}
+          >
+            {dayOfWeekLabel}
+          </span>
+          <span
+            className="relative"
+            onMouseEnter={() => setShowStreakPopup(true)}
+            onMouseLeave={() => setShowStreakPopup(false)}
+          >
+            <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={14} />
+            {showStreakPopup && (
+              <div className="absolute top-full right-0 mt-2 p-3 bg-[#1a1915] border border-white/8 rounded-lg shadow-lg z-50">
+                <div className="flex gap-1">
+                  {Array.from({ length: 14 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="w-3.5 h-3.5 rounded"
+                      style={{
+                        background: i < 10 ? '#4ade80' : '#ef4444'
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </span>
+        </div>
+      )}
       <header className="flex items-center justify-between gap-3 mb-1">
         <div className="flex items-baseline gap-2">
           <span
@@ -237,13 +281,6 @@ export function DayCard({
           label="Trading Window"
           value={hasWindow ? fmtTradingWindow(currentWindow!) : "\u2014"}
           loading={isLoading}
-          lockoutState={lockoutState}
-          lockoutTitle={lockoutButtonTitle}
-          onLockToggle={() =>
-            lockoutState.locked
-              ? lockoutUnlock()
-              : lockoutLock(lockoutDefaultDuration)
-          }
           nav={
             <DayPlanChevronNav
               currentIndex={currentPlanIndex}
@@ -292,17 +329,9 @@ export function DayCard({
 
       <FadingRuler />
 
-      {((!hideStreak && !showStreakInHeader) || drift) && (
-        <footer className="flex items-center justify-between pt-3">
+      {drift && (
+        <footer className="flex items-center justify-end pt-3">
           <div className="flex items-center gap-2">
-            {!hideStreak && !showStreakInHeader ? (
-              <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={16} />
-            ) : (
-              <span aria-hidden />
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {drift && (
               <span
                 className="inline-flex items-center gap-1.5"
                 title={drift.message ?? undefined}
@@ -334,7 +363,6 @@ export function DayCard({
                   {DRIFT_LABELS[driftVisual]}
                 </span>
               </span>
-            )}
           </div>
         </footer>
       )}
@@ -346,17 +374,11 @@ function WindowControlRow({
   label,
   value,
   loading,
-  lockoutState,
-  lockoutTitle,
-  onLockToggle,
   nav,
 }: {
   label: string;
   value: string;
   loading: boolean;
-  lockoutState: { locked: boolean };
-  lockoutTitle?: string;
-  onLockToggle: () => void;
   nav: ReactNode;
 }) {
   return (
@@ -395,25 +417,6 @@ function WindowControlRow({
           {value}
         </span>
         {nav}
-        <button
-          onClick={onLockToggle}
-          className="inline-flex items-center px-2 py-0.5 rounded text-[9px] uppercase tracking-[0.12em] border transition-colors cursor-pointer"
-          style={{
-            fontFamily: "var(--font-data, monospace)",
-            color: lockoutState.locked
-              ? "rgba(199, 159, 74, 0.9)"
-              : "var(--fintheon-muted, #908774)",
-            borderColor: lockoutState.locked
-              ? "rgba(199, 159, 74, 0.3)"
-              : "rgba(255, 255, 255, 0.08)",
-            background: lockoutState.locked
-              ? "rgba(199, 159, 74, 0.1)"
-              : "transparent",
-          }}
-          title={lockoutTitle}
-        >
-          {lockoutState.locked ? "UNLOCK" : "LOCK"}
-        </button>
       </dd>
     </div>
   );

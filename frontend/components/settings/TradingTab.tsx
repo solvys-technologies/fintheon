@@ -364,18 +364,36 @@ export function TradingTab({
               <label className="text-xs text-gray-400 shrink-0">
                 Auto-release (min before window)
               </label>
-              <input
-                type="number"
-                min={5}
-                max={30}
-                value={lockoutAutoReleaseMinutes}
-                onChange={(e) =>
-                  setLockoutAutoReleaseMinutes(
-                    Math.max(5, Math.min(30, parseInt(e.target.value) || 15)),
-                  )
-                }
-                className="w-16 bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-2 py-1 text-xs text-white text-center focus:outline-none focus:border-[var(--fintheon-accent)]/30"
-              />
+              <button
+                onClick={() => setLockoutAutoReleaseMinutes(15)}
+                className="px-2 py-1 rounded text-[11px] font-mono border transition-colors"
+                style={{
+                  color: lockoutAutoReleaseMinutes === 15
+                    ? "var(--fintheon-accent, #c79f4a)"
+                    : "var(--fintheon-muted, #908774)",
+                  borderColor: lockoutAutoReleaseMinutes === 15
+                    ? "rgba(199, 159, 74, 0.4)"
+                    : "rgba(255, 255, 255, 0.08)",
+                  background: "transparent",
+                }}
+              >
+                15
+              </button>
+              <button
+                onClick={() => setLockoutAutoReleaseMinutes(30)}
+                className="px-2 py-1 rounded text-[11px] font-mono border transition-colors"
+                style={{
+                  color: lockoutAutoReleaseMinutes === 30
+                    ? "var(--fintheon-accent, #c79f4a)"
+                    : "var(--fintheon-muted, #908774)",
+                  borderColor: lockoutAutoReleaseMinutes === 30
+                    ? "rgba(199, 159, 74, 0.4)"
+                    : "rgba(255, 255, 255, 0.08)",
+                  background: "transparent",
+                }}
+              >
+                30
+              </button>
             </div>
             <Toggle
               label="Persistent lockout (survives restart)"

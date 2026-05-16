@@ -167,9 +167,7 @@ export function StickyBulletin({
                   color: isActive
                     ? "var(--fintheon-accent)"
                     : "var(--fintheon-muted)",
-                  background: isActive
-                    ? "color-mix(in srgb, var(--fintheon-accent) 12%, transparent)"
-                    : "transparent",
+                  background: "transparent",
                 }}
               >
                 <s.icon className="w-3 h-3" />

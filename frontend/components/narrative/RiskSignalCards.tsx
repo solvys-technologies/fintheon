@@ -53,6 +53,9 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
   const [freshness, setFreshness] = useState<CachedSignals>(cached);
   const [loading, setLoading] = useState(cached.signals.length === 0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [driftData, setDriftData] = useState<
+    Record<string, { label: string; loading: boolean }>
+  >({});
   const [visible, setVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -127,6 +130,31 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
     };
   }, [visible, fetchSignals]);
 
+  useEffect(() => {
+    if (!expandedId) return;
+    if (driftData[expandedId]) return;
+    setDriftData((prev) => ({ ...prev, [expandedId]: { label: "", loading: true } }));
+    fetch(
+      `${API_BASE}/api/riskflow/risk-signals/estimated-drift?signalId=${expandedId}`,
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        setDriftData((prev) => ({
+          ...prev,
+          [expandedId]: {
+            label: String(data.label ?? data.drift ?? "N/A"),
+            loading: false,
+          },
+        }));
+      })
+      .catch(() => {
+        setDriftData((prev) => ({
+          ...prev,
+          [expandedId]: { label: "Unavailable", loading: false },
+        }));
+      });
+  }, [expandedId]);
+
   const textSize = compact ? "text-[9px]" : "text-[10px]";
   const titleSize = compact ? "text-[10px]" : "text-[11px]";
   const padding = compact ? "px-1 py-2" : "px-2 py-3";
@@ -172,7 +200,7 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
             <button
               type="button"
               onClick={() => setExpandedId(expanded ? null : signal.id)}
-              className={`w-full min-w-0 rounded-md text-left transition-colors hover:bg-[var(--fintheon-accent)]/5 ${
+              className={`w-full min-w-0 cursor-pointer rounded-md text-left transition-colors hover:bg-[var(--fintheon-accent)]/5 ${
                 expanded ? "bg-[var(--fintheon-accent)]/5" : ""
               } ${freshness.stale ? "opacity-70" : ""} ${padding}`}
             >
@@ -188,13 +216,12 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
                   {signal.title}
                 </span>
                 <span
-                  className="shrink-0 text-[8px] font-mono font-bold tabular-nums"
-                  style={{ color: badgeColor }}
+                  className="shrink-0 text-[9px] text-[var(--fintheon-muted)]/50 line-clamp-1 max-w-[160px]"
+                  title={signal.summary}
                 >
-                  {signal.score.toFixed(1)}
-                </span>
-                <span className="shrink-0 text-[7px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider">
-                  {SOURCE_LABEL[signal.source] || signal.source}
+                  {signal.summary?.length > 60
+                    ? signal.summary.slice(0, 60) + "..."
+                    : signal.summary}
                 </span>
               </div>
 
@@ -212,6 +239,19 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
                   >
                     {signal.analysis}
                   </p>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-[7px] text-[var(--fintheon-muted)]/30 uppercase tracking-wider">
+                      Estimated Drift
+                    </span>
+                    {driftData[signal.id]?.loading ? (
+                      <span className="h-3 w-20 rounded-sm bg-[var(--fintheon-accent)]/10 animate-pulse" />
+                    ) : (
+                      <span className="text-[9px] text-[var(--fintheon-accent)] font-mono font-medium">
+                        {driftData[signal.id]?.label ?? "—"}
+                      </span>
+                    )}
+                  </div>
 
                   {signal.relatedHeadlines.length > 0 && (
                     <div>

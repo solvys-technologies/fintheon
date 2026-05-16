@@ -270,7 +270,6 @@ export function NavSidebar({
               onDrop={editMode ? (e) => handleDrop(e, tabId) : undefined}
               className={`flex items-center gap-1 rounded-md transition-colors ${expanded ? "group" : ""}`}
             >
-              {expanded && idx > 0 && <FadingRuler className="mx-1.5" />}
               {expanded && editMode && (
                 <div
                   className="cursor-grab active:cursor-grabbing touch-none shrink-0 p-0.5 text-gray-500 fintheon-accent-hover"

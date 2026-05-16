@@ -199,6 +199,19 @@ export async function handleGetStreak(c: Context): Promise<Response> {
   return c.json({ streakAtClose, last30 } satisfies StreakResponse);
 }
 
+// [claude-code 2026-05-16] S67: Graded streak — compares Agentic Desk forecasts
+// against actual econ print outcomes, producing analysis_correct boolean per day.
+export async function handleGetGradedStreak(c: Context): Promise<Response> {
+  const userId = c.get("userId") as string | undefined;
+  if (!userId) {
+    return c.json({ streakAtClose: 0, last30: [] });
+  }
+
+  const { getGradedStreak } = await import("../../services/econ-grading-service.js");
+  const result = await getGradedStreak(userId);
+  return c.json(result);
+}
+
 export async function handleGetDriftStatus(c: Context): Promise<Response> {
   const dateIso = new Date().toISOString().slice(0, 10);
   const plan = await readDayPlan(TEAM_ID, dateIso);

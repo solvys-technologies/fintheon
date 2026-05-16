@@ -10,6 +10,7 @@ import {
   handleGetWeek,
   handleGetMultiWeek,
   handleGetStreak,
+  handleGetGradedStreak,
   handleGetDriftStatus,
   handlePostFeedback,
   handleGetFeedback,
@@ -24,6 +25,7 @@ export function createDayPlanRoutes(): Hono {
   router.get("/multi-week", handleGetMultiWeek);
 
   router.get("/streak", requireAuth, handleGetStreak);
+  router.get("/streak/graded", requireAuth, handleGetGradedStreak);
   router.get("/drift-status", requireAuth, handleGetDriftStatus);
   router.get("/feedback", requireAuth, handleGetFeedback);
   router.post("/feedback", requireAuth, handlePostFeedback);
