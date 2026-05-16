@@ -1,7 +1,5 @@
-// [claude-code 2026-04-26] S45-T2: Day-plan types (mobile copy) — mirrors
-//   backend-hono/src/types/day-plan.ts verbatim. Mobile keeps its own inline
-//   copy because the mobile bundle does not import from frontend/ (separate
-//   vite build, separate token system).
+// [claude-code 2026-05-15] Econ forecast: replaced price fields with econForecast.
+//   Mirrors backend-hono/src/types/day-plan.ts verbatim. Mobile keeps its own copy.
 
 export type DriftKind = "drift_alert" | "tilt_stop" | "dead_volume";
 
@@ -9,16 +7,29 @@ export type DailyColor = "green" | "red" | "flat";
 
 export type FeedbackAction = "followed" | "faded" | "sat_out";
 
+export interface EconForecastScenario {
+  description: string;
+  isBullishForEquities: boolean;
+  probability: number;
+}
+
+export interface EconForecast {
+  forecast: string;
+  miss: EconForecastScenario;
+  beat: EconForecastScenario;
+  otherNotableEvents: string[];
+  aiPrediction: string;
+  generatedAt: string;
+}
+
 export interface DayPlanWindow {
   id: string;
   dayPlanId: string;
   windowIndex: number;
   startTime: string;
   endTime: string;
-  pricesOfInterest: number[];
-  invalidation: number | null;
-  profitTarget: number | null;
-  expectedMovePct: number | null;
+  eventName?: string | null;
+  econForecast: EconForecast | null;
 }
 
 export interface DayPlan {

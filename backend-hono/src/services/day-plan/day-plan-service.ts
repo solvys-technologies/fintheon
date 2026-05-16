@@ -1,39 +1,20 @@
-// [claude-code 2026-05-15] S66-T1: added planVariant support for multi-plan-per-day.
-//   persistDayPlan includes planVariant in upsert conflict to allow multiple plans per date.
-// [claude-code 2026-05-13] S64-T1: wired new event sources (speech, summit, pool_call,
-//   cross_border_macro) via window-scheduler. Added refreshPricesFromTV() call to
-//   populate live prices from TV scanner before desk plan generation.
-//   Multiple windows per day now supported from scheduler output.
-// [claude-code 2026-05-06] S59-T4: desk plan entries now snap to 80-or-20 handles, profit targets
-//   to 25-multiple handles, invalidation 35pts past Entry2. Entries derived from POC/VWAP/VA
-//   positioning (where retail liquidity pools). VIX adjusts spread via implied points.
+// [claude-code 2026-05-15] Econ forecast: replaced TV-based price computation with
+//   AI-powered econ forecast engine. Each window now carries miss/beat scenarios,
+//   AI prediction, and notable events instead of invalidation/profit-target/entries.
+//   Prices pulled fresh at viewing time (30 min before window) via maybeRefreshForecast.
+//   Old price fields retained as optional for migration transition.
 
 import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
 import { readEconEvents } from "../supabase-service.js";
 import { getFeed } from "../riskflow/feed-service.js";
 import { getCurrentRegime } from "../regime/regime-service.js";
-import { fetchVIX } from "../market-data/router.js";
 import {
-  calculateImpliedPoints,
-  refreshPricesFromTV,
-  getLivePrice,
-} from "../iv-scoring/instrument.js";
-import { fetchInstrumentBars } from "./tv-bars-fetcher.js";
-import {
-  pointOfControl,
-  timeAnchoredVWAP,
-  valueArea,
-  type OHLCVBar,
-} from "./vwap-poc-math.js";
-import {
-  roundTo80or20,
-  roundTo25multiple,
-  invalidationOffset,
-  roundPricesOfInterest,
-} from "./price-rounding.js";
+  generateEconForecast,
+  isSpeechEvent,
+} from "../econ-forecast/econ-forecast-service.js";
 import { generateDeskTheme } from "./desk-theme-generator.js";
-import { planDay } from "./window-scheduler.js";
+import { planDay, type PlannedWindow } from "./window-scheduler.js";
 import type { DayPlan, DayPlanWindow } from "../../types/day-plan.js";
 
 const log = createLogger("DayPlanService");
@@ -57,126 +38,59 @@ export interface GenerateDayPlanResult {
   reused: boolean;
 }
 
+/**
+ * Generate the Desk Plan for a given date. Pulls econ events, schedules windows,
+ * generates AI forecasts per window, and persists.
+ */
 export async function generateDayPlan(
   input: GenerateDayPlanInput = {},
 ): Promise<GenerateDayPlanResult> {
   const teamId = input.teamId ?? DEFAULT_TEAM;
   const reference = input.date ?? new Date();
   const dateIso = reference.toISOString().slice(0, 10);
-  const instrument = input.instrument ?? DEFAULT_INSTRUMENT;
 
   if (!input.override) {
     const existing = await readDayPlan(teamId, dateIso);
     if (existing) {
-      return { plan: existing, persisted: false, reused: true };
+      // Check if any existing windows need forecast refresh (30-min pre-window)
+      const updated = await maybeRefreshExisting(existing);
+      return updated
+        ? { plan: updated, persisted: true, reused: true }
+        : { plan: existing, persisted: false, reused: true };
     }
   }
 
-  // Refresh live prices from TV scanner before computing bars/prices
-  await refreshPricesFromTV().catch(() => {});
-
-  const [econEvents, feedResponse, regimeState, vix] = await Promise.all([
+  const [econEvents, feedResponse, regimeState] = await Promise.all([
     readEconEvents({ from: dateIso, to: dateIso }).catch(() => []),
-    getFeed("system", { limit: 20 }).catch(() => ({ items: [] }) as never),
+    getFeed("system", { limit: 20 }).catch(() => ({ items: [] } as never)),
     getCurrentRegime().catch(() => null),
-    fetchVIX()
-      .then((r) => r.vix)
-      .catch(() => null),
   ]);
 
   const planned = planDay(reference, econEvents);
-  const dominantWindow = planned.windows[0] ?? {
-    windowIndex: 0,
-    startTime: "09:30",
-    endTime: "11:00",
-    eventName: null,
-    ivScore: null,
-  };
-
-  // Pull bars for the three benchmarks; the planner ultimately keys off
-  // `instrument` but the fetcher does it in one shot for cost.
-  const barSets = await fetchInstrumentBars(["/NQ", "/ES", "/YM"]);
-  const barsForInstrument =
-    barSets.find((b) => b.symbol === instrument)?.bars ??
-    barSets[0]?.bars ??
-    [];
-
-  const anchorTs = anchorForWindow(reference, dominantWindow.startTime);
-  const vwap = timeAnchoredVWAP(barsForInstrument, anchorTs);
-  const poc = pointOfControl(barsForInstrument);
-  const va = valueArea(barsForInstrument);
-
-  const spot = latestClose(barsForInstrument) ?? vwap ?? poc ?? null;
-
-  // Use live TV price if bars are sparse
-  const livePrice = getLivePrice(instrument, spot ?? undefined);
-  const effectiveSpot = spot ?? livePrice;
-
-  const ivScore = dominantWindow.ivScore;
-  const vixLevel = vix?.value ?? 18;
-  const implied = calculateImpliedPoints(vixLevel, effectiveSpot, instrument);
-  // ~12% of daily implied move = 35-40 pts on /NQ, scales with VIX
-  const ivSpread = Math.round(implied.adjustedPoints * 0.12);
-
-  // Direction: spot above POC = bullish bias (buy off liquidity below)
-  const bias: "long" | "short" =
-    effectiveSpot && poc && effectiveSpot > poc ? "long" : "short";
-
-  // Entry zone: nearest liquidity (VAL for longs, VAH for shorts)
-  const liquidityZone =
-    bias === "long"
-      ? (va?.val ?? effectiveSpot ?? 0)
-      : (va?.vah ?? effectiveSpot ?? 0);
-
-  // Two entries at 80-or-20 handles near the liquidity zone
-  const rawEntry1 =
-    bias === "long"
-      ? liquidityZone + ivSpread * 0.15 // slight premium from zone
-      : liquidityZone - ivSpread * 0.15;
-  const entry1 = roundTo80or20(rawEntry1, instrument);
-  const entry2 =
-    bias === "long"
-      ? roundTo80or20(entry1 - ivSpread * 0.3, instrument) // lower entry = better fill
-      : roundTo80or20(entry1 + ivSpread * 0.3, instrument);
-  const entries = [entry1, entry2].sort(
-    (a, b) => (bias === "long" ? b - a : a - b), // longs: higher first; shorts: lower first
-  );
-
-  const candidatePrices = [vwap, poc, va?.vah, va?.val].filter(
-    (n): n is number => typeof n === "number" && Number.isFinite(n),
-  );
-  const pricesOfInterest = roundPricesOfInterest(candidatePrices, instrument);
-  const invalidation = invalidationOffset(entries[1]!, bias);
-
-  // Profit target: 25-multiple handle in the profit direction, ~IV spread away
-  const targetRaw =
-    bias === "long" ? entries[0]! + ivSpread : entries[0]! - ivSpread;
-  const profitTarget = roundTo25multiple(targetRaw);
 
   const topHeadline = (feedResponse.items ?? [])[0]?.headline ?? "";
   const eventName = planned.dominantEvent;
+
+  // Build windows with econ forecasts
+  const windows = await buildWindows(
+    dateIso,
+    planned,
+    econEvents,
+  );
+
+  // Generate desk theme (no price references)
   const deskTheme = await generateDeskTheme({
     date: dateIso,
     catalystHeadline: topHeadline || (eventName ?? "today's session"),
-    ivScore,
+    ivScore: planned.ivScore,
     eventName,
-    windowLabel: `${dominantWindow.startTime}-${dominantWindow.endTime}`,
-    instrument,
-    pricesOfInterest,
+    windowLabel: windows[0]
+      ? `${windows[0].startTime}-${windows[0].endTime}`
+      : "09:30-11:00",
+    instrument: input.instrument ?? DEFAULT_INSTRUMENT,
+    pricesOfInterest: [], // no longer used for price-based theme
     regime: regimeState?.regime ?? null,
   });
-
-  // Build windows from all scheduler windows (multi-window support)
-  const windows = planned.windows.map((pw) => ({
-    windowIndex: pw.windowIndex,
-    startTime: pw.startTime,
-    endTime: pw.endTime,
-    pricesOfInterest,
-    entries,
-    invalidation,
-    profitTarget,
-    expectedMovePct: ivSpread,
-  }));
 
   const plan = await persistDayPlan({
     teamId,
@@ -188,29 +102,11 @@ export async function generateDayPlan(
     windows,
   });
 
-  // Auto-lock when a new desk plan is generated — review before trading
-  try {
-    const { setLockout } = await import("../lockout.js");
-    setLockout("default", true, 30 * 60 * 1000);
-  } catch {
-    // lockout service unavailable — non-fatal
-  }
-
-  log.info("Day-plan generated", {
+  log.info("Day-plan generated with econ forecasts", {
     date: dateIso,
     teamId,
-    instrument,
-    bias,
-    vixLevel,
-    impliedSpread: ivSpread,
-    barsCount: barsForInstrument.length,
-    entries,
-    pricesOfInterest,
-    invalidation,
-    profitTarget,
     windowCount: windows.length,
     override: !!input.override,
-    overrideReason: input.overrideReason,
   });
 
   return { plan, persisted: true, reused: false };
@@ -295,6 +191,175 @@ export async function readWeekPlans(
   return planRows.map((p) => rowsToDayPlan(p, grouped.get(p.id) ?? []));
 }
 
+// ── Window building ─────────────────────────────────────────────────────────
+
+async function buildWindows(
+  dateIso: string,
+  planned: { windows: PlannedWindow[] },
+  econEvents: Awaited<ReturnType<typeof readEconEvents>>,
+): Promise<
+  Array<{
+    windowIndex: number;
+    startTime: string;
+    endTime: string;
+    eventName: string | null;
+    econForecast: any;
+  }>
+> {
+  const results: Array<{
+    windowIndex: number;
+    startTime: string;
+    endTime: string;
+    eventName: string | null;
+    econForecast: any;
+  }> = [];
+
+  for (const pw of planned.windows ?? []) {
+    const matchedEvent = findMatchingEvent(pw.eventName, econEvents);
+    const isSpeech = matchedEvent ? isSpeechEvent(matchedEvent) : false;
+
+    let econForecast = null;
+    if (matchedEvent) {
+      econForecast = await generateEconForecast({
+        eventName: matchedEvent.name,
+        eventDate: dateIso,
+        eventTime: matchedEvent.time ?? pw.startTime,
+        eventCountry: matchedEvent.country ?? undefined,
+        eventCategory: matchedEvent.category ?? undefined,
+        forecast: matchedEvent.forecast ?? undefined,
+        previous: matchedEvent.previous ?? undefined,
+        isSpeech,
+      }).catch((err) => {
+        log.warn("Econ forecast generation failed for window", {
+          event: matchedEvent.name,
+          error: err instanceof Error ? err.message : String(err),
+        });
+        return null;
+      });
+    }
+
+    results.push({
+      windowIndex: pw.windowIndex,
+      startTime: pw.startTime,
+      endTime: pw.endTime,
+      eventName: pw.eventName ?? null,
+      econForecast,
+    });
+  }
+
+  return results;
+}
+
+function findMatchingEvent(
+  eventName: string | null | undefined,
+  events: Awaited<ReturnType<typeof readEconEvents>>,
+): (typeof events)[number] | null {
+  if (!eventName) return null;
+  const name = eventName.toLowerCase().trim();
+  const match = events.find(
+    (e) => (e.name ?? "").toLowerCase().trim() === name,
+  );
+  if (match) return match;
+  // Fuzzy match: event name contains the matching event
+  for (const e of events) {
+    const en = (e.name ?? "").toLowerCase().trim();
+    if (en && (name.includes(en) || en.includes(name))) return e;
+  }
+  return null;
+}
+
+// ── Refresh logic ───────────────────────────────────────────────────────────
+
+/**
+ * Check if any existing windows need forecast refresh (within 30-min pre-window).
+ * If so, regenerate the forecast and update persistence.
+ */
+async function maybeRefreshExisting(plan: DayPlan): Promise<DayPlan | null> {
+  let changed = false;
+  const updatedWindows: DayPlanWindow[] = [];
+
+  for (const w of plan.windows) {
+    if (!w.eventName || w.econForecast) {
+      // Already has a forecast — check if it needs refreshing
+      const now = Date.now();
+      const age = w.econForecast?.generatedAt
+        ? now - new Date(w.econForecast.generatedAt).getTime()
+        : Infinity;
+
+      if (age < 10 * 60_000) {
+        updatedWindows.push(w);
+        continue;
+      }
+    }
+
+    // Check if we should generate/refresh
+    const [h, m] = w.startTime.split(":").map(Number);
+    const startDate = new Date();
+    startDate.setHours(h, m, 0, 0);
+    const startMs = startDate.getTime();
+    const effectiveStart = startMs <= Date.now() ? startMs + 86_400_000 : startMs;
+    const refreshStart = effectiveStart - 30 * 60_000;
+
+    if (Date.now() >= refreshStart && Date.now() < effectiveStart) {
+      // Within 30-min refresh window — regenerate
+      try {
+        const econEvents = await readEconEvents({
+          from: plan.date,
+          to: plan.date,
+        });
+        const matchedEvent = findMatchingEvent(w.eventName, econEvents);
+        if (matchedEvent) {
+          const isSpeech = isSpeechEvent(matchedEvent);
+          const forecast = await generateEconForecast({
+            eventName: matchedEvent.name,
+            eventDate: plan.date,
+            eventTime: matchedEvent.time ?? w.startTime,
+            eventCountry: matchedEvent.country ?? undefined,
+            eventCategory: matchedEvent.category ?? undefined,
+            forecast: matchedEvent.forecast ?? undefined,
+            previous: matchedEvent.previous ?? undefined,
+            isSpeech,
+          }).catch(() => null);
+
+          changed = true;
+          updatedWindows.push({
+            ...w,
+            econForecast: forecast ?? w.econForecast,
+          });
+          continue;
+        }
+      } catch {
+        // Non-fatal
+      }
+    }
+
+    updatedWindows.push(w);
+  }
+
+  if (!changed) return null;
+
+  // Persist the refreshed forecasts
+  const sb = getSupabaseClient();
+  if (sb) {
+    try {
+      for (const w of updatedWindows) {
+        await sb
+          .from("day_plan_windows")
+          .update({ econ_forecast: w.econForecast })
+          .eq("id", w.id);
+      }
+    } catch (err) {
+      log.warn("Failed to persist refreshed forecasts", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  return { ...plan, windows: updatedWindows };
+}
+
+// ── Persistence ─────────────────────────────────────────────────────────────
+
 interface PersistInput {
   teamId: string;
   dateIso: string;
@@ -306,11 +371,8 @@ interface PersistInput {
     windowIndex: number;
     startTime: string;
     endTime: string;
-    pricesOfInterest: number[];
-    entries: number[];
-    invalidation: number | null;
-    profitTarget: number | null;
-    expectedMovePct: number | null;
+    eventName: string | null;
+    econForecast: any;
   }>;
 }
 
@@ -343,7 +405,6 @@ async function persistDayPlan(input: PersistInput): Promise<DayPlan> {
     return synthesizeInMemoryPlan(input);
   }
 
-  // Replace windows for the day to keep persistence idempotent.
   await sb.from("day_plan_windows").delete().eq("day_plan_id", planRow.id);
 
   const windowInserts = input.windows.map((w) => ({
@@ -351,11 +412,8 @@ async function persistDayPlan(input: PersistInput): Promise<DayPlan> {
     window_index: w.windowIndex,
     start_time: w.startTime,
     end_time: w.endTime,
-    prices_of_interest: w.pricesOfInterest,
-    entries: w.entries,
-    invalidation: w.invalidation,
-    profit_target: w.profitTarget,
-    expected_move_pct: w.expectedMovePct,
+    event_name: w.eventName,
+    econ_forecast: w.econForecast,
   }));
 
   const { data: insertedWindows, error: winErr } = await sb
@@ -388,11 +446,8 @@ function synthesizeInMemoryPlan(input: PersistInput): DayPlan {
       windowIndex: w.windowIndex,
       startTime: w.startTime,
       endTime: w.endTime,
-      pricesOfInterest: w.pricesOfInterest,
-      entries: w.entries,
-      invalidation: w.invalidation,
-      profitTarget: w.profitTarget,
-      expectedMovePct: w.expectedMovePct,
+      eventName: w.eventName,
+      econForecast: w.econForecast ?? null,
     })),
   };
 }
@@ -426,6 +481,9 @@ function rowToWindow(row: any): DayPlanWindow {
       typeof row.end_time === "string"
         ? row.end_time.slice(0, 5)
         : row.end_time,
+    eventName: row.event_name ?? null,
+    econForecast: row.econ_forecast ?? null,
+    // Deprecated price fields — retained for migration transition
     pricesOfInterest: Array.isArray(row.prices_of_interest)
       ? row.prices_of_interest.map((n: any) => Number(n))
       : [],
@@ -438,19 +496,4 @@ function rowToWindow(row: any): DayPlanWindow {
       row.expected_move_pct == null ? null : Number(row.expected_move_pct),
     sessionPrice: row.session_price == null ? null : Number(row.session_price),
   };
-}
-
-function anchorForWindow(reference: Date, hhmm: string): number {
-  const [hh, mm] = hhmm.split(":").map((n) => parseInt(n, 10));
-  const dt = new Date(reference);
-  dt.setHours(hh ?? 9, mm ?? 30, 0, 0);
-  return dt.getTime();
-}
-
-function latestClose(bars: OHLCVBar[]): number | null {
-  for (let i = bars.length - 1; i >= 0; i--) {
-    const close = bars[i]?.close;
-    if (typeof close === "number" && Number.isFinite(close)) return close;
-  }
-  return null;
 }

@@ -561,18 +561,20 @@ function renderRegeneratedPlanContext(
   if (plan.deskTheme) lines.push(`Desk Theme: ${plan.deskTheme}`);
   for (const w of plan.windows) {
     lines.push(`Window ${w.windowIndex}: ${w.startTime}-${w.endTime} ET`);
-    if (w.pricesOfInterest.length > 0) {
-      lines.push(`  Prices: ${w.pricesOfInterest.join(", ")}`);
-    }
-    if (w.invalidation != null) lines.push(`  Invalidation: ${w.invalidation}`);
-    if (w.profitTarget != null)
-      lines.push(`  Profit target: ${w.profitTarget}`);
-    if (w.expectedMovePct != null) {
-      lines.push(`  Expected move: ${w.expectedMovePct.toFixed(2)}%`);
+    if (w.eventName) lines.push(`  Catalyst: ${w.eventName}`);
+    if (w.econForecast) {
+      lines.push(`  Forecast: ${w.econForecast.forecast}`);
+      lines.push(
+        `  Miss: ${w.econForecast.miss.description} (${w.econForecast.miss.probability}%)`,
+      );
+      lines.push(
+        `  Beat: ${w.econForecast.beat.description} (${w.econForecast.beat.probability}%)`,
+      );
+      lines.push(`  Prediction: ${w.econForecast.aiPrediction}`);
     }
   }
   lines.push(
-    "Tell the user the plan has been regenerated and quote these levels back to them.",
+    "Tell the user the plan has been regenerated and quote these details back to them.",
   );
   return lines.join("\n");
 }

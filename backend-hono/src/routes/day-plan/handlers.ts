@@ -146,11 +146,8 @@ export async function handleGetMultiWeek(c: Context): Promise<Response> {
             windowIndex: pw.windowIndex,
             startTime: pw.startTime,
             endTime: pw.endTime,
-            pricesOfInterest: [],
-            entries: [],
-            invalidation: null,
-            profitTarget: null,
-            expectedMovePct: null,
+            eventName: pw.eventName ?? null,
+            econForecast: null,
           })),
         } satisfies DayPlan;
       }),
@@ -335,20 +332,14 @@ export async function handlePostCaoEveningReview(
     windowIndex: number;
     startTime: string;
     endTime: string;
-    pricesOfInterest: number[];
-    entries: number[];
-    invalidation: null;
-    profitTarget: null;
-    expectedMovePct: number | null;
+    eventName: string | null;
+    econForecast: null;
   }> = parsed.data.windows.map((wu, i) => ({
     windowIndex: nextIndex + i,
     startTime: wu.startTime,
     endTime: wu.endTime,
-    pricesOfInterest: wu.pricesOfInterest ?? [],
-    entries: wu.entries ?? [],
-    invalidation: null,
-    profitTarget: null,
-    expectedMovePct: wu.expectedMovePct ?? null,
+    eventName: wu.eventName ?? null,
+    econForecast: null,
   }));
 
   // Merge: existing + new (additive, not replacement)
@@ -357,11 +348,8 @@ export async function handlePostCaoEveningReview(
       windowIndex: w.windowIndex,
       startTime: w.startTime,
       endTime: w.endTime,
-      pricesOfInterest: w.pricesOfInterest,
-      entries: w.entries,
-      invalidation: w.invalidation,
-      profitTarget: w.profitTarget,
-      expectedMovePct: w.expectedMovePct,
+      eventName: w.eventName ?? null,
+      econForecast: w.econForecast ?? null,
     })),
     ...newWindows,
   ];
@@ -387,11 +375,8 @@ export async function handlePostCaoEveningReview(
           windowIndex: w.windowIndex,
           startTime: w.startTime,
           endTime: w.endTime,
-          pricesOfInterest: w.pricesOfInterest,
-          entries: w.entries,
-          invalidation: w.invalidation,
-          profitTarget: w.profitTarget,
-          expectedMovePct: w.expectedMovePct,
+          eventName: w.eventName,
+          econForecast: w.econForecast,
         })),
       } satisfies DayPlan,
       reason: parsed.data.reason,
@@ -430,11 +415,8 @@ export async function handlePostCaoEveningReview(
     window_index: w.windowIndex,
     start_time: w.startTime,
     end_time: w.endTime,
-    prices_of_interest: w.pricesOfInterest,
-    entries: w.entries,
-    invalidation: w.invalidation,
-    profit_target: w.profitTarget,
-    expected_move_pct: w.expectedMovePct,
+    event_name: w.eventName,
+    econ_forecast: w.econForecast,
   }));
 
   const { data: insertedWindows, error: winErr } = await sb
@@ -458,16 +440,8 @@ export async function handlePostCaoEveningReview(
         : w.start_time,
     endTime:
       typeof w.end_time === "string" ? w.end_time.slice(0, 5) : w.end_time,
-    pricesOfInterest: Array.isArray(w.prices_of_interest)
-      ? w.prices_of_interest.map((n: any) => Number(n))
-      : [],
-    entries: Array.isArray(w.entries)
-      ? w.entries.map((n: any) => Number(n))
-      : [],
-    invalidation: w.invalidation == null ? null : Number(w.invalidation),
-    profitTarget: w.profit_target == null ? null : Number(w.profit_target),
-    expectedMovePct:
-      w.expected_move_pct == null ? null : Number(w.expected_move_pct),
+    eventName: w.event_name ?? null,
+    econForecast: w.econ_forecast ?? null,
   }));
 
   log.info("CAO evening review merged windows", {

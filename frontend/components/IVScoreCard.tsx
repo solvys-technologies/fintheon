@@ -217,14 +217,18 @@ export function IVScoreCard({
     }
     const rect = triggerRef.current.getBoundingClientRect();
     const popupW = 320;
-    const popupH = 480; // estimate
-    let left = rect.left;
+    // Use the widget's own left edge as the anchor, clamped within viewport
+    let left = Math.max(8, rect.left);
     let top = rect.bottom + 4;
-    // Keep within viewport
-    if (left + popupW > window.innerWidth - 16)
-      left = window.innerWidth - popupW - 16;
-    if (left < 16) left = 16;
-    if (top + popupH > window.innerHeight - 16) top = rect.top - popupH - 4;
+    // Clamp right edge — popup must stay fully visible
+    if (left + popupW > window.innerWidth - 8) {
+      left = Math.max(8, window.innerWidth - popupW - 8);
+    }
+    // Clamp bottom — if not enough space below, position above
+    const estimatedHeight = 520;
+    if (top + estimatedHeight > window.innerHeight - 8) {
+      top = Math.max(8, rect.top - estimatedHeight - 4);
+    }
     setPopupPos({ top, left });
   }, [showTooltip]);
 

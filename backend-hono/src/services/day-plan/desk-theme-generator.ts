@@ -33,14 +33,14 @@ export interface DeskThemeInput {
   regime?: string | null;
 }
 
-const SYSTEM_PROMPT = `You write actionable Desk Plan messages for Priced In Capital traders. The output is a plan, not a recap — it tells the trader what to do at the levels.
+const SYSTEM_PROMPT = `You write actionable Desk Plan messages for Priced In Capital traders. The output is a plan, not a recap — it tells the trader what to expect from the catalyst.
 
 Output rules:
 - Exactly one sentence, no more than 160 characters total (including spaces).
 - Plain text only. No emojis, no decorative glyphs, no headers, no quotes.
-- Reference behavior at the levels: fade, target, abandon below. The sentence must include specific price actions tied to the given levels.
-- The catalyst may be named in 1–3 words for context, but the sentence body must be about the trade plan, not about restating the catalyst.
-- Financial shorthand allowed (CPI, PCE, /NQ, VIX) but no fabricated numbers — only use the prices provided.
+- Describe the trade setup around the catalyst: what the event means, how it could move markets, and what traders should watch for.
+- The catalyst may be named in 1–3 words for context, but the sentence body must be about the trading implications, not restating the catalyst.
+- Financial shorthand allowed (CPI, PCE, /NQ, VIX). No fabricated numbers.
 - Do NOT include phrasing copied from any daily brief (MDB/ADB/PMDB).
 - Voice is sharp, convicted, declarative — never hedging.`;
 
@@ -77,12 +77,9 @@ function buildPrompt(input: DeskThemeInput): string {
     lines.push(`IV score: ${input.ivScore.toFixed(1)} / 10`);
   if (input.regime) lines.push(`Market regime: ${input.regime}`);
   lines.push(`Trading window: ${input.windowLabel} ET on ${input.instrument}`);
-  if (input.pricesOfInterest.length > 0) {
-    lines.push(`Prices of interest: ${input.pricesOfInterest.join(", ")}`);
-  }
   lines.push("");
   lines.push(
-    "Write the single Desk Theme sentence that explains why these levels matter today given the catalyst.",
+    "Write the single Desk Theme sentence that explains the trade setup around today's catalyst and what traders should expect.",
   );
   return lines.join("\n");
 }
@@ -109,24 +106,8 @@ function sanitizeTheme(raw: string): string {
 }
 
 function fallbackTheme(input: DeskThemeInput): string {
-  const entry =
-    input.pricesOfInterest.length > 0
-      ? input.pricesOfInterest[0].toFixed(0)
-      : null;
-  const target =
-    input.pricesOfInterest.length > 1
-      ? input.pricesOfInterest[input.pricesOfInterest.length - 1].toFixed(0)
-      : null;
-  const invalidation =
-    input.pricesOfInterest.length > 1
-      ? input.pricesOfInterest[1].toFixed(0)
-      : entry;
-  const parts: string[] = [];
-  parts.push(`${input.windowLabel} ET ${input.instrument}`);
-  if (entry) parts.push(`fade ${entry}`);
-  if (target) parts.push(`target ${target}`);
-  if (invalidation) parts.push(`abandon below ${invalidation}`);
-  const sentence = parts.join(", ") + ".";
-  if (sentence.length <= 160) return sentence;
-  return `${input.windowLabel} ET ${input.instrument}${entry ? `: fade ${entry}` : ""}.`;
+  if (input.eventName) {
+    return `${input.windowLabel} ET ${input.instrument}: trade the ${input.eventName} print.`;
+  }
+  return `${input.windowLabel} ET ${input.instrument}: standing trading window.`;
 }

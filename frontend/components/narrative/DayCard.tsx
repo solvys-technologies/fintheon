@@ -1,17 +1,10 @@
-// [claude-code 2026-05-15] S66-T1: changed WindowControlRow label to "Trading Window",
-//   added header lock button with desk-plan-lock-btn CSS class.
-// [claude-code 2026-04-29] S49: Added tone prop to Row for bearish/bullish
-//   color binding via CSS vars (--fintheon-bearish, --fintheon-bullish).
-// [claude-code 2026-04-28] T3: Renamed Desk Theme -> Desk Plan in visible UI.
-// [claude-code 2026-04-26] S45-T2: DayCard — Sanctum surface under Volatility Read.
-//   Lays out Desk Plan + data table + streak/drift footer. NO border on the
-//   container; FadingRuler primitives carry the visual character. Titles
-//   left-justified, values right-justified (Doto), monospace gutter via
-//   font-mono. Two prices max, one target. Field names mirror T1 backend types
-//   (DayPlan: deskTheme/eventName + windows[]; DayPlanWindow: startTime/endTime,
-//   pricesOfInterest, invalidation, profitTarget, expectedMovePct).
-// [claude-code 2026-05-03] S57: optional header streak + hidden footer streak.
-// [claude-code 2026-05-13] T2: multi-window chevron nav, lockout button, price gating
+// [claude-code 2026-05-15] Econ forecast: replaced price rows (Prices of Interest,
+//   Invalidation Point, Profit Target, Expected Move) with econ forecast rows
+//   (Forecast, Miss, Beat, Notable Events, AI Prediction). Speeches show
+//   hawkish/dovish/none instead of numerical values. Chevron arrows indicate
+//   bullish (green up) or bearish (red down) for equities per scenario.
+//   Prices hidden until 30 min before window — fresh data pulled at that time.
+
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useDayPlan } from "../../hooks/useDayPlan";
 import { useDayPlanMultiWeek } from "../../hooks/useDayPlanWeek";
@@ -43,36 +36,15 @@ const DRIFT_COLORS: Record<DriftKind | "in-window", string> = {
 };
 
 interface DayCardProps {
-  /** Anchor id used by the Strategium daycard tab to scrollIntoView. */
   id?: string;
   className?: string;
-  /** [claude-code 2026-04-26] When the parent container already supplies the
-   * surface (e.g. MainDashboard's brief/plan split), drop the inner bg + p-3
-   * so the content stretches to fill flush. */
   bare?: boolean;
   hideStreak?: boolean;
   showStreakInHeader?: boolean;
 }
 
-function fmtPrice(v: number | null): string {
-  if (v == null) return "\u2014";
-  return v.toFixed(2);
-}
-
-function fmtPrices(values: number[]): string {
-  return values
-    .slice(0, 2)
-    .map((v) => v.toFixed(2))
-    .join(", ");
-}
-
 function fmtTradingWindow(w: DayPlanWindow): string {
   return `${w.startTime}-${w.endTime}`;
-}
-
-function fmtExpectedMove(pct: number | null): string {
-  if (pct == null) return "\u2014";
-  return `\u00b1 ${pct.toFixed(2)}%`;
 }
 
 export function DayCard({
@@ -115,7 +87,6 @@ export function DayCard({
   const currentWindow = windows[currentWindowIndex] ?? null;
   const hasWindow = !!currentWindow;
 
-  // Reset index when windows or plan change
   if (currentWindowIndex >= windows.length && windows.length > 0) {
     setCurrentWindowIndex(0);
   }
@@ -282,48 +253,40 @@ export function DayCard({
             />
           }
         />
-        <GatedPriceRow
-          label="Prices of Interest"
+        <GatedForecastRow
+          label="Forecast"
           window={currentWindow}
           loading={isLoading}
-          doto
-          tone="neutral"
-          renderValue={() =>
-            currentWindow!.pricesOfInterest.length > 0
-              ? fmtPrices(currentWindow!.pricesOfInterest)
-              : "\u2014"
-          }
+          renderValue={(f) => f.forecast}
         />
-        <GatedPriceRow
-          label="Invalidation Point"
+        <GatedForecastRow
+          label="Miss"
           window={currentWindow}
           loading={isLoading}
-          doto
-          tone="bearish"
-          renderValue={() =>
-            currentWindow ? fmtPrice(currentWindow.invalidation) : "\u2014"
-          }
+          renderValue={(f) => `${f.miss.description} (${f.miss.probability}%)`}
+          scenario={currentWindow?.econForecast?.miss}
         />
-        <GatedPriceRow
-          label="Profit Target"
+        <GatedForecastRow
+          label="Beat"
           window={currentWindow}
           loading={isLoading}
-          doto
-          tone="bullish"
-          renderValue={() =>
-            currentWindow ? fmtPrice(currentWindow.profitTarget) : "\u2014"
-          }
+          renderValue={(f) => `${f.beat.description} (${f.beat.probability}%)`}
+          scenario={currentWindow?.econForecast?.beat}
         />
-        <GatedPriceRow
-          label="Expected Move"
+        {currentWindow?.econForecast?.otherNotableEvents &&
+          currentWindow.econForecast.otherNotableEvents.length > 0 && (
+          <Row
+            label="Notable"
+            value={currentWindow.econForecast.otherNotableEvents.join(", ")}
+            loading={false}
+          />
+        )}
+        <GatedForecastRow
+          label="AI Prediction"
           window={currentWindow}
           loading={isLoading}
-          doto
-          renderValue={() =>
-            currentWindow
-              ? fmtExpectedMove(currentWindow.expectedMovePct)
-              : "\u2014"
-          }
+          renderValue={(f) => f.aiPrediction}
+          textLine
         />
       </dl>
 
@@ -456,28 +419,34 @@ function WindowControlRow({
   );
 }
 
-type RowTone = "neutral" | "bullish" | "bearish";
+type ScenarioTone = "neutral" | "bullish" | "bearish";
 
-function GatedPriceRow({
+function GatedForecastRow({
   label,
   window,
   loading,
-  doto,
-  tone = "neutral",
   renderValue,
+  scenario,
+  textLine,
 }: {
   label: string;
   window: DayPlanWindow | null;
   loading: boolean;
-  doto?: boolean;
-  tone?: RowTone;
-  renderValue: () => string;
+  renderValue: (f: NonNullable<DayPlanWindow["econForecast"]>) => string;
+  scenario?: { isBullishForEquities: boolean } | null;
+  textLine?: boolean;
 }) {
   if (loading || !window) {
     return (
-      <Row label={label} value={"\u2014"} loading doto={doto} tone={tone} />
+      <Row label={label} value={"\u2014"} loading />
     );
   }
+
+  const tone: ScenarioTone = scenario
+    ? scenario.isBullishForEquities
+      ? "bullish"
+      : "bearish"
+    : "neutral";
 
   return (
     <div className="flex items-baseline gap-3">
@@ -504,11 +473,9 @@ function GatedPriceRow({
       <dd
         className="tabular-nums text-right shrink-0"
         style={{
-          fontFamily: doto
-            ? "'Doto', 'Readable Digits', var(--font-data, monospace)"
-            : "var(--font-data, monospace)",
-          letterSpacing: doto ? "0.04em" : "0.01em",
-          fontWeight: doto ? 600 : 400,
+          fontFamily: "var(--font-data, monospace)",
+          letterSpacing: "0.01em",
+          maxWidth: textLine ? "280px" : undefined,
         }}
       >
         <PriceRevealTag windowStartTime={window.startTime}>
@@ -522,7 +489,20 @@ function GatedPriceRow({
                     : "var(--fintheon-bearish)",
             }}
           >
-            {renderValue()}
+            {window.econForecast ? (
+              <span className="inline-flex items-center gap-1">
+                {tone !== "neutral" && (
+                  <Chevron
+                    bullish={tone === "bullish"}
+                  />
+                )}
+                <span className={textLine ? "text-[11px] leading-snug inline-block" : ""}>
+                  {renderValue(window.econForecast)}
+                </span>
+              </span>
+            ) : (
+              "\u2014"
+            )}
           </span>
         </PriceRevealTag>
       </dd>
@@ -530,18 +510,43 @@ function GatedPriceRow({
   );
 }
 
+function Chevron({ bullish }: { bullish: boolean }) {
+  return (
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 10 10"
+      style={{
+        color: bullish
+          ? "var(--fintheon-bullish)"
+          : "var(--fintheon-bearish)",
+        transform: bullish ? "rotate(0deg)" : "rotate(180deg)",
+        flexShrink: 0,
+      }}
+      aria-hidden
+    >
+      <path
+        d="M3 6L5 3L7 6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function Row({
   label,
   value,
   loading,
-  doto,
   tone = "neutral",
 }: {
   label: string;
   value: string;
   loading: boolean;
-  doto?: boolean;
-  tone?: RowTone;
+  tone?: ScenarioTone;
 }) {
   const valueColor =
     loading || tone === "neutral"
@@ -580,11 +585,8 @@ function Row({
             (loading
               ? "var(--fintheon-muted, #908774)"
               : "var(--fintheon-text)"),
-          fontFamily: doto
-            ? "'Doto', 'Readable Digits', var(--font-data, monospace)"
-            : "var(--font-data, monospace)",
-          letterSpacing: doto ? "0.04em" : "0.01em",
-          fontWeight: doto ? 600 : 400,
+          fontFamily: "var(--font-data, monospace)",
+          letterSpacing: "0.01em",
         }}
       >
         {value}

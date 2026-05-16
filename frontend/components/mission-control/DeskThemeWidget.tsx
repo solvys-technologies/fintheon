@@ -1,18 +1,10 @@
-// [claude-code 2026-04-29] S49: Rewrote DeskThemeWidget with compact price
-//   block + read-expansion to full DayCard layout. Dropped brief body fetch
-//   and <pre> mirror. Color binding via --fintheon-bullish / --fintheon-bearish
-//   CSS vars. Expansion uses t-panel-slide + rAF reveal.
-// [claude-code 2026-04-27] S46.4/G: DeskTheme widget for the Strategium
-// pane. Pulls the latest desk theme from /api/day-plan/today (which is
-// populated by the same generator that writes the desk_theme block into
-// MDB / ADB / PMDB briefs). Tap-to-expand -> in-place full reader.
-//
-// Visual: flat solvys-feels surface — translucent bg + thin accent border,
-// no Kanban frames, no gradients, no AI sparkles, no backdrop-blur ornament.
+// [claude-code 2026-05-15] Econ forecast: replaced price rows with econ forecast rows.
+//   Forecast, Miss (with chevron + probability), Beat (with chevron + probability),
+//   Other Notable Events, and AI Prediction. Speeches show hawkish/dovish/none.
 
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, BookOpen } from "lucide-react";
-import type { DayPlan, DayPlanWindow } from "../../types/day-plan";
+import type { DayPlan, DayPlanWindow, EconForecastScenario } from "../../types/day-plan";
 
 const API_BASE = (
   import.meta.env.VITE_API_URL || "http://localhost:8080"
@@ -33,25 +25,11 @@ function pickBriefType(): BriefType {
   return "PMDB";
 }
 
-// ---- shared price formatters (same shape as DayCard) ----
-
-function fmtPrice(v: number | null): string {
-  if (v == null) return "\u2014";
-  return v.toFixed(2);
-}
-
-function fmtPrices(values: number[]): string {
-  return values.map((v) => v.toFixed(2)).join(", ");
-}
-
 function fmtTradingWindow(w: DayPlanWindow): string {
   return `${w.startTime}-${w.endTime}`;
 }
 
-function fmtExpectedMove(pct: number | null): string {
-  if (pct == null) return "\u2014";
-  return `\u00b1 ${pct.toFixed(2)}%`;
-}
+type ScenarioTone = "neutral" | "bullish" | "bearish";
 
 // ---- inline Doto numeral span ----
 
@@ -60,7 +38,7 @@ function DotoNum({
   tone = "neutral",
 }: {
   children: string;
-  tone?: "neutral" | "bullish" | "bearish";
+  tone?: ScenarioTone;
 }) {
   const color =
     tone === "bullish"
@@ -84,18 +62,41 @@ function DotoNum({
   );
 }
 
-// ---- expanded data row (mirrors DayCard Row shape) ----
+function ChevronIcon({ bullish }: { bullish: boolean }) {
+  return (
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 10 10"
+      style={{
+        color: bullish
+          ? "var(--fintheon-bullish)"
+          : "var(--fintheon-bearish)",
+        transform: bullish ? "rotate(0deg)" : "rotate(180deg)",
+        flexShrink: 0,
+      }}
+      aria-hidden
+    >
+      <path
+        d="M3 6L5 3L7 6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 function DataRow({
   label,
   value,
-  doto,
   tone = "neutral",
 }: {
   label: string;
   value: string;
-  doto?: boolean;
-  tone?: "neutral" | "bullish" | "bearish";
+  tone?: ScenarioTone;
 }) {
   const color =
     tone === "bullish"
@@ -130,14 +131,59 @@ function DataRow({
         className="tabular-nums text-right shrink-0"
         style={{
           color,
-          fontFamily: doto
-            ? "'Doto', 'Readable Digits', var(--font-data, monospace)"
-            : "var(--font-data, monospace)",
-          letterSpacing: doto ? "0.04em" : "0.01em",
-          fontWeight: doto ? 600 : 400,
+          fontFamily: "var(--font-data, monospace)",
+          letterSpacing: "0.01em",
         }}
       >
         {value}
+      </dd>
+    </div>
+  );
+}
+
+function ScenarioRow({
+  label,
+  scenario,
+}: {
+  label: string;
+  scenario: EconForecastScenario;
+}) {
+  const tone: ScenarioTone = scenario.isBullishForEquities ? "bullish" : "bearish";
+  const color =
+    tone === "bullish"
+      ? "var(--fintheon-bullish)"
+      : "var(--fintheon-bearish)";
+
+  return (
+    <div className="flex items-baseline gap-2">
+      <dt
+        className="text-[10px] shrink-0"
+        style={{
+          color: "var(--fintheon-muted, #908774)",
+          fontFamily: "var(--font-body)",
+          letterSpacing: "0.02em",
+        }}
+      >
+        {label}
+      </dt>
+      <span
+        aria-hidden
+        className="flex-1"
+        style={{
+          height: 0,
+          borderBottom:
+            "1px dotted color-mix(in srgb, var(--fintheon-accent) 14%, transparent)",
+          transform: "translateY(-3px)",
+        }}
+      />
+      <dd
+        className="tabular-nums text-right shrink-0 inline-flex items-center gap-1"
+        style={{ color, fontFamily: "var(--font-data, monospace)", letterSpacing: "0.01em" }}
+      >
+        <ChevronIcon bullish={tone === "bullish"} />
+        <span className="text-[11px]">
+          {scenario.description} ({scenario.probability}%)
+        </span>
       </dd>
     </div>
   );
@@ -176,7 +222,6 @@ export function DeskThemeWidget() {
     return () => window.clearInterval(id);
   }, [fetchPlan]);
 
-  // rAF reveal so t-panel-slide runs on entry.
   useEffect(() => {
     if (!open) {
       setRevealed(false);
@@ -190,6 +235,7 @@ export function DeskThemeWidget() {
   const eventName = plan?.eventName ?? null;
   const dayWindow = plan?.windows?.[0] ?? null;
   const hasWindow = !!dayWindow;
+  const forecast = dayWindow?.econForecast ?? null;
 
   return (
     <div
@@ -275,53 +321,73 @@ export function DeskThemeWidget() {
                   >
                     {fmtTradingWindow(dayWindow)} ET
                   </div>
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span
-                      className="shrink-0"
-                      style={{
-                        color: "var(--fintheon-muted, #908774)",
-                        fontFamily: "var(--font-body)",
-                        letterSpacing: "0.02em",
-                      }}
-                    >
-                      Entry
-                    </span>
-                    <DotoNum>
-                      {dayWindow.pricesOfInterest.length > 0
-                        ? fmtPrices(dayWindow.pricesOfInterest)
-                        : "\u2014"}
-                    </DotoNum>
-                  </div>
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span
-                      className="shrink-0"
-                      style={{
-                        color: "var(--fintheon-muted, #908774)",
-                        fontFamily: "var(--font-body)",
-                        letterSpacing: "0.02em",
-                      }}
-                    >
-                      Invalid
-                    </span>
-                    <DotoNum tone="bearish">
-                      {fmtPrice(dayWindow.invalidation)}
-                    </DotoNum>
-                  </div>
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span
-                      className="shrink-0"
-                      style={{
-                        color: "var(--fintheon-muted, #908774)",
-                        fontFamily: "var(--font-body)",
-                        letterSpacing: "0.02em",
-                      }}
-                    >
-                      Target
-                    </span>
-                    <DotoNum tone="bullish">
-                      {fmtPrice(dayWindow.profitTarget)}
-                    </DotoNum>
-                  </div>
+                  {forecast && (
+                    <>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span
+                          className="shrink-0"
+                          style={{
+                            color: "var(--fintheon-muted, #908774)",
+                            fontFamily: "var(--font-body)",
+                            letterSpacing: "0.02em",
+                          }}
+                        >
+                          Forecast
+                        </span>
+                        <DotoNum>{forecast.forecast}</DotoNum>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span
+                          className="shrink-0"
+                          style={{
+                            color: "var(--fintheon-muted, #908774)",
+                            fontFamily: "var(--font-body)",
+                            letterSpacing: "0.02em",
+                          }}
+                        >
+                          Miss
+                        </span>
+                        <span
+                          className="inline-flex items-center gap-1"
+                          style={{
+                            fontFamily: "var(--font-data, monospace)",
+                            color: forecast.miss.isBullishForEquities
+                              ? "var(--fintheon-bullish)"
+                              : "var(--fintheon-bearish)",
+                            fontSize: 10,
+                          }}
+                        >
+                          <ChevronIcon bullish={forecast.miss.isBullishForEquities} />
+                          {forecast.miss.description}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span
+                          className="shrink-0"
+                          style={{
+                            color: "var(--fintheon-muted, #908774)",
+                            fontFamily: "var(--font-body)",
+                            letterSpacing: "0.02em",
+                          }}
+                        >
+                          Beat
+                        </span>
+                        <span
+                          className="inline-flex items-center gap-1"
+                          style={{
+                            fontFamily: "var(--font-data, monospace)",
+                            color: forecast.beat.isBullishForEquities
+                              ? "var(--fintheon-bullish)"
+                              : "var(--fintheon-bearish)",
+                            fontSize: 10,
+                          }}
+                        >
+                          <ChevronIcon bullish={forecast.beat.isBullishForEquities} />
+                          {forecast.beat.description}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -362,34 +428,26 @@ export function DeskThemeWidget() {
                 label="Trading Window"
                 value={fmtTradingWindow(dayWindow)}
               />
-              <DataRow
-                label="Prices of Interest"
-                value={
-                  dayWindow.pricesOfInterest.length > 0
-                    ? fmtPrices(dayWindow.pricesOfInterest)
-                    : "\u2014"
-                }
-                doto
-                tone="neutral"
-              />
-              <DataRow
-                label="Invalidation Point"
-                value={fmtPrice(dayWindow.invalidation)}
-                doto
-                tone="bearish"
-              />
-              <DataRow
-                label="Profit Target"
-                value={fmtPrice(dayWindow.profitTarget)}
-                doto
-                tone="bullish"
-              />
-              <DataRow
-                label="Expected Move"
-                value={fmtExpectedMove(dayWindow.expectedMovePct)}
-                doto
-                tone="neutral"
-              />
+              {forecast && (
+                <>
+                  <DataRow label="Forecast" value={forecast.forecast} />
+                  <ScenarioRow label="Miss" scenario={forecast.miss} />
+                  <ScenarioRow label="Beat" scenario={forecast.beat} />
+                  {forecast.otherNotableEvents.length > 0 && (
+                    <DataRow
+                      label="Notable"
+                      value={forecast.otherNotableEvents.join(", ")}
+                    />
+                  )}
+                  <DataRow
+                    label="AI Prediction"
+                    value={forecast.aiPrediction}
+                  />
+                </>
+              )}
+              {!forecast && (
+                <DataRow label="Forecast" value="Awaiting data..." />
+              )}
             </dl>
           )}
 

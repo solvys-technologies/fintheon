@@ -9,6 +9,30 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-15T20:30:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Desk Plan redesign: replaced price fields (invalidation, profit targets, entries, prices of interest) with AI-generated econ forecast — miss/beat scenarios with bullish/bearish chevron arrows and probability percentages, AI agent prediction text, and other notable events. Fresh data pulled at viewing time (30 min before trading window). Econ forecasts generated via DeepSeek/econ-forecast-service. Speeches display hawkish/dovish/none instead of numerical values. Also fixed IV scoring widget hover panel positioning, merged S61 branch.",
+    files: [
+      "backend-hono/src/types/econ-forecast.ts",
+      "backend-hono/src/types/day-plan.ts",
+      "frontend/types/day-plan.ts",
+      "mobile/types/day-plan.ts",
+      "backend-hono/src/services/econ-forecast/econ-forecast-service.ts",
+      "backend-hono/src/services/day-plan/day-plan-service.ts",
+      "backend-hono/src/services/day-plan/desk-theme-generator.ts",
+      "backend-hono/src/services/brief-generator.ts",
+      "backend-hono/src/services/harper-handler.ts",
+      "backend-hono/src/routes/day-plan/handlers.ts",
+      "frontend/components/narrative/DayCard.tsx",
+      "frontend/components/narrative/PriceRevealTag.tsx",
+      "frontend/components/mission-control/DeskThemeWidget.tsx",
+      "frontend/components/IVScoreCard.tsx",
+      "mobile/components/home/MobileDeskPlan.tsx",
+      "supabase/migrations/20260515180000_econ_forecast_day_plan_windows.sql",
+    ],
+  },
+  {
     date: "2026-05-15T16:24:00-04:00",
     agent: "claude-code",
     summary:

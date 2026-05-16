@@ -77,22 +77,26 @@ async function fetchDeskThemeBlock(dateIso: string): Promise<string | null> {
 }
 
 function formatDeskThemeBlock(plan: DayPlan): string {
-  const lines: string[] = ["## Desk Theme", "```"];
+  const lines: string[] = ["## Desk Plan", "```"];
   if (plan.eventName) lines.push(padRow("Event", plan.eventName));
   if (plan.deskTheme) lines.push(padRow("Theme", plan.deskTheme));
   for (const w of plan.windows) {
     lines.push(padRow("Window", `${w.startTime}-${w.endTime} ET`));
-    if (w.pricesOfInterest.length > 0) {
-      lines.push(padRow("Prices", w.pricesOfInterest.join(" / ")));
+    if (w.eventName) {
+      lines.push(padRow("Catalyst", w.eventName));
     }
-    if (w.invalidation != null) {
-      lines.push(padRow("Invalidation", String(w.invalidation)));
-    }
-    if (w.profitTarget != null) {
-      lines.push(padRow("Profit target", String(w.profitTarget)));
-    }
-    if (w.expectedMovePct != null) {
-      lines.push(padRow("Expected move", `${w.expectedMovePct.toFixed(2)}%`));
+    if (w.econForecast) {
+      lines.push(padRow("Forecast", w.econForecast.forecast));
+      lines.push(
+        padRow("Miss", `${w.econForecast.miss.description} (${w.econForecast.miss.probability}%)`),
+      );
+      lines.push(
+        padRow("Beat", `${w.econForecast.beat.description} (${w.econForecast.beat.probability}%)`),
+      );
+      if (w.econForecast.otherNotableEvents.length > 0) {
+        lines.push(padRow("Also", w.econForecast.otherNotableEvents.join(", ")));
+      }
+      lines.push(padRow("Prediction", w.econForecast.aiPrediction));
     }
   }
   lines.push("```");

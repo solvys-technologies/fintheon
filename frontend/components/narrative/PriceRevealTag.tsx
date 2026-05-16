@@ -1,4 +1,6 @@
-// [claude-code 2026-05-13] T2: Price reveal countdown — hides prices until 15min before window
+// [claude-code 2026-05-15] Econ forecast: reveal window changed from 15min to 30min
+//   before session — fresh econ data pulled at that time. Hides econ forecasts
+//   until 30min before the window starts.
 import { useEffect, useState, type ReactNode } from "react";
 
 function LockIcon() {
@@ -48,11 +50,11 @@ export function PriceRevealTag({
 
       const diffMs = adjustedStart - now;
       const diffMin = Math.floor(diffMs / 60_000);
-      const fifteenMin = 15 * 60_000;
+      const thirtyMin = 30 * 60_000;
 
       if (diffMs <= 0) {
         setState("visible");
-      } else if (diffMs <= fifteenMin) {
+      } else if (diffMs <= thirtyMin) {
         setState("countdown");
         setMinutes(Math.max(1, diffMin));
       } else {

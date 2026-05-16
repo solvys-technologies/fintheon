@@ -1,33 +1,25 @@
-// [claude-code 2026-05-15] S66-T1: multi-week cycling via /api/day-plan/multi-week.
-//   Chelvron nav cycles through all plans across weeks; dots stay per-plan windows.
-// [claude-code 2026-04-29] S49: MobileDeskPlan — compact desk plan card for the
-//   mobile PWA dash. Fetches /api/day-plan/today, shows actionable plan text
-//   + compact price block with bearish/bullish color semantics.
-// [claude-code 2026-05-13] T2: multi-window dot navigation, price hiding, lockout badge
+// [claude-code 2026-05-15] Econ forecast: replaced price rows with econ forecast rows.
+//   Multi-week cycling via /api/day-plan/multi-week. Chevron nav cycles through
+//   all plans across weeks; dots stay per-plan windows.
+//   Miss/Beat rows show bullish (green up) or bearish (red down) chevron arrows.
+
 import { useEffect, useState, useCallback } from "react";
-import type { DayPlan, DayPlanWindow } from "../../types/day-plan";
+import type { DayPlan, DayPlanWindow, EconForecastScenario } from "../../types/day-plan";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
-
-function fmtPrice(v: number | null): string {
-  if (v == null) return "\u2014";
-  return v.toFixed(2);
-}
-
-function fmtPrices(values: number[]): string {
-  return values.map((v) => v.toFixed(2)).join(", ");
-}
 
 function fmtTradingWindow(w: DayPlanWindow): string {
   return `${w.startTime}-${w.endTime} ET`;
 }
+
+type ScenarioTone = "neutral" | "bullish" | "bearish";
 
 function DotoNum({
   value,
   tone = "neutral",
 }: {
   value: string;
-  tone?: "neutral" | "bullish" | "bearish";
+  tone?: ScenarioTone;
 }) {
   const color =
     tone === "bullish"
@@ -49,6 +41,35 @@ function DotoNum({
     >
       {value}
     </span>
+  );
+}
+
+function ChevronIcon({ bullish }: { bullish: boolean }) {
+  return (
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 10 10"
+      style={{
+        color: bullish
+          ? "var(--fintheon-bullish)"
+          : "var(--fintheon-bearish)",
+        transform: bullish ? "rotate(0deg)" : "rotate(180deg)",
+        flexShrink: 0,
+        display: "inline-block",
+        verticalAlign: "middle",
+      }}
+      aria-hidden
+    >
+      <path
+        d="M3 6L5 3L7 6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
@@ -116,7 +137,7 @@ function DesktopMobileDotNav({
   );
 }
 
-function usePriceReveal(windowStartTime: string) {
+function useEconReveal(windowStartTime: string) {
   const [revealed, setRevealed] = useState(false);
   const [countdown, setCountdown] = useState<string | null>(null);
 
@@ -129,12 +150,12 @@ function usePriceReveal(windowStartTime: string) {
       const startMs = startDate.getTime();
       const adjustedStart = startMs <= now ? startMs + 86_400_000 : startMs;
       const diffMs = adjustedStart - now;
-      const fifteenMin = 15 * 60_000;
+      const thirtyMin = 30 * 60_000;
 
       if (diffMs <= 0) {
         setRevealed(true);
         setCountdown(null);
-      } else if (diffMs <= fifteenMin) {
+      } else if (diffMs <= thirtyMin) {
         setRevealed(false);
         setCountdown(`Reveals in ${Math.max(1, Math.floor(diffMs / 60_000))}m`);
       } else {
@@ -163,7 +184,6 @@ export function MobileDeskPlan() {
     try {
       const res = await fetch(`${API_BASE}/api/day-plan/multi-week`);
       if (!res.ok) {
-        // Fallback to today
         const todayRes = await fetch(`${API_BASE}/api/day-plan/today`);
         if (todayRes.ok) {
           const json = (await todayRes.json()) as { plan: DayPlan | null };
@@ -195,7 +215,6 @@ export function MobileDeskPlan() {
   const plan = allPlans[planIndex] ?? null;
   const totalPlans = allPlans.length;
 
-  // Poll lockout status
   useEffect(() => {
     async function pollLockout() {
       try {
@@ -220,6 +239,7 @@ export function MobileDeskPlan() {
   const windows = plan?.windows ?? [];
   const dayWindow = windows[currentWindowIndex] ?? null;
   const hasWindow = !!dayWindow;
+  const forecast = dayWindow?.econForecast ?? null;
 
   if (loading) {
     return (
@@ -258,7 +278,6 @@ export function MobileDeskPlan() {
       >
         <Label>DESK PLAN</Label>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {/* Plan-level cycling */}
           {totalPlans > 1 && (
             <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
               <button
@@ -308,7 +327,6 @@ export function MobileDeskPlan() {
               </button>
             </div>
           )}
-          {/* Lockout status badge */}
           <span
             style={{
               fontFamily: "var(--font-data, monospace)",
@@ -368,32 +386,40 @@ export function MobileDeskPlan() {
           <Row label="Event" value={eventName ?? "\u2014"} />
           <Row label={fmtTradingWindow(dayWindow)} value="" />
 
-          <PriceRow
-            label="Entry"
-            window={dayWindow}
-            field="pricesOfInterest"
-            formatter={(w) =>
-              w.pricesOfInterest.length > 0
-                ? fmtPrices(w.pricesOfInterest)
-                : "\u2014"
-            }
-          />
-
-          <PriceRow
-            label="Invalid"
-            window={dayWindow}
-            field="invalidation"
-            tone="bearish"
-            formatter={(w) => fmtPrice(w.invalidation)}
-          />
-
-          <PriceRow
-            label="Target"
-            window={dayWindow}
-            field="profitTarget"
-            tone="bullish"
-            formatter={(w) => fmtPrice(w.profitTarget)}
-          />
+          {forecast ? (
+            <>
+              <EconRow
+                label="Forecast"
+                window={dayWindow}
+                renderValue={(f) => f.forecast}
+              />
+              <EconScenarioRow
+                label="Miss"
+                window={dayWindow}
+                renderValue={(f) => `${f.miss.description} (${f.miss.probability}%)`}
+                scenario={forecast.miss}
+              />
+              <EconScenarioRow
+                label="Beat"
+                window={dayWindow}
+                renderValue={(f) => `${f.beat.description} (${f.beat.probability}%)`}
+                scenario={forecast.beat}
+              />
+              {forecast.otherNotableEvents.length > 0 && (
+                <Row
+                  label="Notable"
+                  value={forecast.otherNotableEvents.join(", ")}
+                />
+              )}
+              <EconRow
+                label="AI"
+                window={dayWindow}
+                renderValue={(f) => f.aiPrediction}
+              />
+            </>
+          ) : (
+            <Row label="Forecast" value="Awaiting data..." />
+          )}
         </div>
       )}
 
@@ -409,13 +435,11 @@ export function MobileDeskPlan() {
 function Row({
   label,
   value,
-  doto,
   tone = "neutral",
 }: {
   label: string;
   value: string;
-  doto?: boolean;
-  tone?: "neutral" | "bullish" | "bearish";
+  tone?: ScenarioTone;
 }) {
   const valueColor =
     tone === "bullish"
@@ -447,13 +471,10 @@ function Row({
       </span>
       <span
         style={{
-          fontFamily: doto
-            ? "'Doto', 'Readable Digits', var(--font-data, monospace)"
-            : "var(--font-data, monospace)",
+          fontFamily: "var(--font-data, monospace)",
           fontSize: 13,
-          fontWeight: doto ? 600 : 400,
           fontVariantNumeric: "tabular-nums",
-          letterSpacing: doto ? "0.04em" : "0.02em",
+          letterSpacing: "0.02em",
           color: valueColor,
           textAlign: "right",
         }}
@@ -464,20 +485,17 @@ function Row({
   );
 }
 
-function PriceRow({
+function EconRow({
   label,
   window: w,
-  field,
-  tone = "neutral",
-  formatter,
+  renderValue,
 }: {
   label: string;
   window: DayPlanWindow;
-  field: keyof DayPlanWindow;
-  tone?: "neutral" | "bullish" | "bearish";
-  formatter: (w: DayPlanWindow) => string;
+  renderValue: (f: NonNullable<DayPlanWindow["econForecast"]>) => string;
 }) {
-  const { revealed, countdown } = usePriceReveal(w.startTime);
+  const { revealed, countdown } = useEconReveal(w.startTime);
+  const forecast = w.econForecast;
 
   if (!revealed) {
     return (
@@ -526,7 +544,122 @@ function PriceRow({
     );
   }
 
-  return <Row label={label} value={formatter(w)} tone={tone} doto />;
+  return (
+    <Row
+      label={label}
+      value={forecast ? renderValue(forecast) : "\u2014"}
+      tone="neutral"
+    />
+  );
+}
+
+function EconScenarioRow({
+  label,
+  window: w,
+  renderValue,
+  scenario,
+}: {
+  label: string;
+  window: DayPlanWindow;
+  renderValue: (f: NonNullable<DayPlanWindow["econForecast"]>) => string;
+  scenario: EconForecastScenario;
+}) {
+  const { revealed, countdown } = useEconReveal(w.startTime);
+  const forecast = w.econForecast;
+  const tone: ScenarioTone = scenario.isBullishForEquities ? "bullish" : "bearish";
+
+  if (!revealed) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-data)",
+            fontSize: 11,
+            letterSpacing: "0.04em",
+            textTransform: "uppercase",
+            color: "var(--text-secondary)",
+            flexShrink: 0,
+          }}
+        >
+          {label}
+        </span>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            fontFamily: "var(--font-data, monospace)",
+            fontSize: 10,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "var(--text-secondary)",
+          }}
+        >
+          {countdown ? (
+            <>{countdown}</>
+          ) : (
+            <>
+              <LockIcon />
+              HIDDEN
+            </>
+          )}
+        </span>
+      </div>
+    );
+  }
+
+  if (!forecast) {
+    return <Row label={label} value={"\u2014"} tone={tone} />;
+  }
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 8,
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "var(--font-data)",
+          fontSize: 11,
+          letterSpacing: "0.04em",
+          textTransform: "uppercase",
+          color: "var(--text-secondary)",
+          flexShrink: 0,
+        }}
+      >
+        {label}
+      </span>
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 4,
+          fontFamily: "var(--font-data, monospace)",
+          fontSize: 10,
+          letterSpacing: "0.02em",
+          color:
+            tone === "bullish"
+              ? "var(--fintheon-bullish)"
+              : "var(--fintheon-bearish)",
+          textAlign: "right",
+        }}
+      >
+        <ChevronIcon bullish={tone === "bullish"} />
+        {renderValue(forecast)}
+      </span>
+    </div>
+  );
 }
 
 const shellStyle: React.CSSProperties = {

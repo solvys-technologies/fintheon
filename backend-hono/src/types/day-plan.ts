@@ -1,5 +1,7 @@
 // [claude-code 2026-05-15] S66-T1: added planVariant field for multi-plan-per-day support
-// [claude-code 2026-05-06] S59-T4: added entries[] (80/20 handles) + institutionalPositioning field.
+// [claude-code 2026-05-15] Econ forecast: replaced price fields (invalidation/profitTarget/entries/
+//   pricesOfInterest/expectedMovePct) with econForecast containing miss/beat scenarios,
+//   AI prediction, and other notable events. Prices now pulled fresh at viewing time.
 
 export type DriftKind = "drift_alert" | "tilt_stop" | "dead_volume";
 
@@ -13,17 +15,37 @@ export type PositioningBias =
   | "bearish"
   | "tactically_bearish";
 
+export interface EconForecastScenario {
+  description: string;
+  isBullishForEquities: boolean;
+  probability: number;
+}
+
+export interface EconForecast {
+  forecast: string;
+  miss: EconForecastScenario;
+  beat: EconForecastScenario;
+  otherNotableEvents: string[];
+  aiPrediction: string;
+  generatedAt: string;
+}
+
 export interface DayPlanWindow {
   id: string;
   dayPlanId: string;
   windowIndex: number;
   startTime: string;
   endTime: string;
-  pricesOfInterest: number[];
-  entries: number[];
-  invalidation: number | null;
-  profitTarget: number | null;
-  expectedMovePct: number | null;
+  /** Enriched economic event name for this window */
+  eventName?: string | null;
+  /** AI-generated econ forecast (miss/beat scenarios + prediction) */
+  econForecast: EconForecast | null;
+  /** Deprecated — retained for schema compatibility during migration transition */
+  pricesOfInterest?: number[];
+  entries?: number[];
+  invalidation?: number | null;
+  profitTarget?: number | null;
+  expectedMovePct?: number | null;
   sessionPrice?: number | null;
 }
 
