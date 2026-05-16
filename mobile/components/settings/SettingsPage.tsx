@@ -32,7 +32,6 @@ export function SettingsPage() {
     fontTheme,
     setFontTheme,
     availableThemes,
-    specialThemes,
     availableFonts,
   } = useTheme();
   const { user, signOut, getAccessToken } = useAuth();
@@ -78,8 +77,7 @@ export function SettingsPage() {
             <ThemePickerAccordion
               current={theme}
               onPick={setTheme}
-              standard={availableThemes}
-              special={specialThemes}
+              themes={availableThemes}
             />
             <FontPickerList
               current={fontTheme}

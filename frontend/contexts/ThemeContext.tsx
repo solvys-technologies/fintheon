@@ -1,10 +1,4 @@
-// [claude-code 2026-04-18] Attach JWT to backend-settings sync. Pairs with SettingsContext fix:
-//   absolute URL alone produced 401 because we weren't sending Authorization.
-// [claude-code 2026-04-18] Revert digit-scale runtime override — Readable Digits back to Inter via static @font-face
-// [claude-code 2026-04-18] Nothing Font Kit (color-agnostic Nothing Design typography)
-// [claude-code 2026-04-15] Special themes — Nothing Design visual overrides (Something Solvys/Monochrome)
-// [claude-code 2026-03-14] Theme context — color + font theme, applies CSS variables to :root
-// [claude-code 2026-03-24] Add backend settings sync for per-user theme persistence
+// [claude-code 2026-05-16] Added light/dark mode support
 import {
   createContext,
   useContext,
@@ -18,8 +12,6 @@ import { getAccessToken } from "../lib/supabase";
 import {
   type ThemeConfig,
   THEME_PRESETS,
-  SPECIAL_PRESETS,
-  ALL_PRESETS,
   DEFAULT_THEME,
   loadStoredTheme,
   saveTheme,
@@ -33,51 +25,77 @@ import {
   saveFontTheme,
 } from "../lib/font-theme";
 
-// [claude-code 2026-04-18] Absolute URL — relative paths resolve against file:// under Electron
-//   and return ERR_FILE_NOT_FOUND, leaving theme sync broken without a visible error.
 const API_BASE =
   (import.meta as any).env?.VITE_API_URL || "http://localhost:8080";
 const BACKEND_SETTINGS_URL = `${API_BASE}/api/settings`;
+const MODE_STORAGE_KEY = "fintheon:theme-mode:desktop";
+
+export type ThemeMode = "dark" | "light";
 
 interface ThemeContextValue {
   theme: ThemeConfig;
   setTheme: (theme: ThemeConfig) => void;
   presets: Record<string, ThemeConfig>;
-  specialPresets: Record<string, ThemeConfig>;
   fontTheme: FontTheme;
   setFontTheme: (theme: FontTheme) => void;
   fontThemes: Record<string, FontTheme>;
   pompaEnabled: boolean;
   setPompaEnabled: (v: boolean) => void;
+  mode: ThemeMode;
+  setMode: (mode: ThemeMode) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function applyThemeToDOM(theme: ThemeConfig) {
+const LIGHT_SURFACE = {
+  bg: "#f2ede1",
+  surface: "#e9e2cf",
+  text: "#171310",
+  muted: "#6b6455",
+  border: "#1a1612",
+};
+
+function loadStoredMode(): ThemeMode {
+  try {
+    const stored = localStorage.getItem(MODE_STORAGE_KEY);
+    return stored === "light" ? "light" : "dark";
+  } catch {
+    return "dark";
+  }
+}
+
+function saveMode(mode: ThemeMode) {
+  try {
+    localStorage.setItem(MODE_STORAGE_KEY, mode);
+  } catch {}
+}
+
+function applyThemeToDOM(theme: ThemeConfig, mode?: ThemeMode) {
   const root = document.documentElement;
+  const isLight = mode === "light";
+  const bg = isLight ? LIGHT_SURFACE.bg : theme.bg;
+  const text = isLight ? LIGHT_SURFACE.text : theme.text;
+  const surface = isLight ? LIGHT_SURFACE.surface : theme.surface;
+  const muted = isLight ? LIGHT_SURFACE.muted : theme.muted;
+  const border = isLight ? LIGHT_SURFACE.border : theme.border;
+
+  root.setAttribute("data-theme", mode || "dark");
   root.style.setProperty("--fintheon-accent", theme.accent);
-  root.style.setProperty("--fintheon-bg", theme.bg);
-  root.style.setProperty("--fintheon-text", theme.text);
+  root.style.setProperty("--fintheon-bg", bg);
+  root.style.setProperty("--fintheon-text", text);
   root.style.setProperty("--fintheon-bullish", theme.bullish);
   root.style.setProperty("--fintheon-bearish", theme.bearish);
-  root.style.setProperty("--fintheon-surface", theme.surface);
-  root.style.setProperty("--fintheon-border", theme.border);
-  root.style.setProperty("--fintheon-muted", theme.muted);
+  root.style.setProperty("--fintheon-surface", surface);
+  root.style.setProperty("--fintheon-border", border);
+  root.style.setProperty("--fintheon-muted", muted);
   root.style.setProperty("--fintheon-severe", theme.severe ?? "#EF4444");
-  root.style.setProperty(
-    "--fintheon-neutral-severe",
-    theme.neutralSevere ?? "#F59E0B",
-  );
+  root.style.setProperty("--fintheon-neutral-severe", theme.neutralSevere ?? "#F59E0B");
   root.style.setProperty("--fintheon-neutral", theme.neutral ?? "#6B7280");
-  root.style.setProperty(
-    "--fintheon-low-neutral",
-    theme.lowNeutral ?? "#3B82F6",
-  );
+  root.style.setProperty("--fintheon-low-neutral", theme.lowNeutral ?? "#3B82F6");
   root.style.setProperty("--fintheon-low", theme.low ?? "#34D399");
+  root.style.setProperty("--accent", theme.accent);
+  root.style.setProperty("--accent-subtle", `${theme.accent}1f`);
 
-  // Legacy Special themes (Something Solvys / Monochrome) bundle their own
-  // font stack. Kept for backward compat — Nothing Font Kit is the preferred
-  // path going forward.
   if (theme.special && theme.fontBody) {
     const bodyStack = `'Readable Digits', ${theme.fontBody}`;
     const headingStack = `'Readable Digits', ${theme.fontHeading ?? theme.fontBody}`;
@@ -137,9 +155,11 @@ function applyFontThemeToDOM(fontTheme: FontTheme, activeTheme?: ThemeConfig) {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [mode, setModeState] = useState<ThemeMode>(() => loadStoredMode());
+
   const [theme, setThemeState] = useState<ThemeConfig>(() => {
     const stored = loadStoredTheme();
-    applyThemeToDOM(stored);
+    applyThemeToDOM(stored, mode);
     return stored;
   });
 
@@ -163,11 +183,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const setTheme = useCallback(
     (next: ThemeConfig) => {
       setThemeState(next);
-      applyThemeToDOM(next);
+      applyThemeToDOM(next, mode);
       saveTheme(next);
       applyFontThemeToDOM(fontTheme, next);
     },
-    [fontTheme],
+    [fontTheme, mode],
+  );
+
+  const setMode = useCallback(
+    (next: ThemeMode) => {
+      setModeState(next);
+      applyThemeToDOM(theme, next);
+      saveMode(next);
+    },
+    [theme],
   );
 
   const setFontTheme = useCallback(
@@ -180,7 +209,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    applyThemeToDOM(theme);
+    applyThemeToDOM(theme, mode);
     applyFontThemeToDOM(fontTheme, theme);
 
     (async () => {
@@ -206,7 +235,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           ) {
             nextTheme = colorTheme as ThemeConfig;
             setThemeState(nextTheme);
-            applyThemeToDOM(nextTheme);
+            applyThemeToDOM(nextTheme, mode);
             saveTheme(nextTheme);
           }
           if (fontThemeId && FONT_THEMES[fontThemeId as FontThemeId]) {
@@ -231,6 +260,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       colorTheme: theme,
       fontThemeId: fontTheme.id,
       pompaMode: pompaEnabled,
+      themeMode: mode,
     };
     (async () => {
       const token = await getAccessToken();
@@ -245,7 +275,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ settings: { appearance } }),
       }).catch(() => {});
     })();
-  }, [theme, fontTheme, pompaEnabled]);
+  }, [theme, fontTheme, pompaEnabled, mode]);
 
   return (
     <ThemeContext.Provider
@@ -253,12 +283,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         theme,
         setTheme,
         presets: THEME_PRESETS,
-        specialPresets: SPECIAL_PRESETS,
         fontTheme,
         setFontTheme,
         fontThemes: FONT_THEMES,
         pompaEnabled,
         setPompaEnabled,
+        mode,
+        setMode,
       }}
     >
       {children}
@@ -271,5 +302,3 @@ export function useTheme(): ThemeContextValue {
   if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
   return ctx;
 }
-
-export { ALL_PRESETS };

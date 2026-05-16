@@ -1,8 +1,5 @@
-// [claude-code 2026-05-01] S56 Track D: Twitter-style left drawer replacing
-//   the bottom-up HamburgerMenu sheet. Slides content right 80vw with scrim.
-//   Flat --fintheon-bg surface, no gradients/Kanban borders. Framer-motion
-//   transformX 250ms ease-in-out.
-import { useState, useCallback } from "react";
+// [claude-code 2026-05-16] Stripped profile cruft — app name, no following/followers/@/pic
+import { useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -16,11 +13,11 @@ import {
   HelpCircle,
   Sun,
   Moon,
-  UserPlus,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
-import { useSettings } from "../../contexts/SettingsContext";
+import { useSwipeGesture } from "../../hooks/useSwipeGesture";
+import { useHaptic } from "../../hooks/useHaptic";
 
 interface MainMenuDrawerProps {
   open: boolean;
@@ -69,20 +66,29 @@ export function MainMenuDrawer({
 }: MainMenuDrawerProps) {
   const { user, signOut } = useAuth();
   const { mode, setMode } = useTheme();
-  const { settings } = useSettings();
-  const traderName = settings.traderName || "T.P.";
-  const handle = `@${(settings.traderName || "tp").toLowerCase().replace(/\s+/g, "")}`;
-
+  const vibrate = useHaptic();
+  const drawerRef = useRef<HTMLDivElement>(null);
   const handleSignOut = useCallback(async () => {
+    vibrate(10);
     await signOut();
     onClose();
-  }, [signOut, onClose]);
+  }, [signOut, onClose, vibrate]);
+
+  const handleHelpCenter = useCallback(() => {
+    vibrate(6);
+    window.open("https://docs.pricedinresearch.io/fintheon", "_blank");
+    onClose();
+  }, [onClose, vibrate]);
+
+  useSwipeGesture(drawerRef, {
+    onSwipeLeft: onClose,
+  });
 
   return (
     <AnimatePresence>
       {open && (
         <div style={{ position: "fixed", inset: 0, zIndex: 60 }}>
-          {/* Scrim — only over the 20vw peek strip right of drawer, tap to close */}
+          {/* Scrim — tap to close, no blur */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -96,13 +102,12 @@ export function MainMenuDrawer({
               bottom: 0,
               left: DRAWER_WIDTH,
               background: "rgba(0,0,0,0.45)",
-              backdropFilter: "blur(2px)",
-              WebkitBackdropFilter: "blur(2px)",
             }}
           />
 
           {/* Drawer */}
           <motion.div
+            ref={drawerRef}
             initial={{ x: `-${DRAWER_WIDTH}` }}
             animate={{ x: 0 }}
             exit={{ x: `-${DRAWER_WIDTH}` }}
@@ -120,95 +125,19 @@ export function MainMenuDrawer({
               overflowY: "auto",
             }}
           >
-            {/* Header — profile area */}
+            {/* Header — app name branding */}
             <div style={{ padding: "20px 16px 12px" }}>
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                }}
-              >
-                {/* Target glyph */}
-                <div
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: "50%",
-                    border: "2px solid var(--accent, #c79f4a)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      background: "var(--accent, #c79f4a)",
-                    }}
-                  />
-                </div>
-
-                <button
-                  onClick={() => onNavigate("add")}
-                  aria-label="Add person"
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    padding: 6,
-                    cursor: "pointer",
-                    WebkitTapHighlightColor: "transparent",
-                  }}
-                >
-                  <UserPlus size={18} color="var(--accent, #c79f4a)" />
-                </button>
-              </div>
-
-              <div
-                style={{
                   fontFamily: "var(--font-display)",
-                  fontSize: 15,
+                  fontSize: 18,
                   fontWeight: 600,
-                  color: "var(--text-primary, #f0ead6)",
-                  marginTop: 8,
+                  color: "var(--accent)",
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
                 }}
               >
-                {traderName}
-              </div>
-              <div
-                style={{
-                  fontFamily: "var(--font-data)",
-                  fontSize: 11,
-                  color: "var(--text-secondary)",
-                  marginTop: 2,
-                }}
-              >
-                {handle}
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  gap: 12,
-                  marginTop: 8,
-                  fontFamily: "var(--font-data)",
-                  fontSize: 11,
-                }}
-              >
-                <span style={{ color: "var(--text-primary, #f0ead6)" }}>
-                  <strong>144</strong>{" "}
-                  <span style={{ color: "var(--text-secondary)" }}>
-                    Following
-                  </span>
-                </span>
-                <span style={{ color: "var(--text-primary, #f0ead6)" }}>
-                  <strong>40</strong>{" "}
-                  <span style={{ color: "var(--text-secondary)" }}>
-                    Followers
-                  </span>
-                </span>
+                Fintheon
               </div>
             </div>
 
@@ -230,6 +159,7 @@ export function MainMenuDrawer({
                   <button
                     key={item.id}
                     onClick={() => {
+                      vibrate(6);
                       onNavigate(item.id);
                       onClose();
                     }}
@@ -275,11 +205,16 @@ export function MainMenuDrawer({
             <div style={{ padding: "8px 0" }}>
               {FOOTER_NAV.map((item) => {
                 const Icon = item.icon;
+                const isHelp = item.id === "help";
                 return (
                   <button
                     key={item.id}
                     onClick={() => {
-                      onNavigate(item.id);
+                      if (isHelp) {
+                        window.open("https://docs.pricedinresearch.io/fintheon", "_blank");
+                      } else {
+                        onNavigate(item.id);
+                      }
                       onClose();
                     }}
                     style={{
@@ -358,7 +293,10 @@ export function MainMenuDrawer({
                   type="button"
                   role="tab"
                   aria-selected={mode === "light"}
-                  onClick={() => setMode("light")}
+                  onClick={() => {
+                    vibrate(6);
+                    setMode("light");
+                  }}
                   style={modeSegmentStyle(mode === "light")}
                 >
                   <Sun size={14} strokeWidth={1.8} />
@@ -367,7 +305,10 @@ export function MainMenuDrawer({
                   type="button"
                   role="tab"
                   aria-selected={mode === "dark"}
-                  onClick={() => setMode("dark")}
+                  onClick={() => {
+                    vibrate(6);
+                    setMode("dark");
+                  }}
                   style={modeSegmentStyle(mode === "dark")}
                 >
                   <Moon size={14} strokeWidth={1.8} />

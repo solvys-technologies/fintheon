@@ -226,7 +226,7 @@ const SettingsContext = createContext<SettingsContextValue | undefined>(
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const { getAccessToken, isAuthenticated } = useAuth();
-  const { theme, setTheme, allThemes } = useTheme();
+  const { theme, setTheme, availableThemes } = useTheme();
   const [settings, setSettings] = useState<MobileSettings>(loadSettings);
   const [synced, setSynced] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -418,11 +418,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   // Falls back silently when the remote name doesn't map to a known preset.
   useEffect(() => {
     if (preferences.theme === (theme.name as ThemeMode)) return;
-    const next = allThemes[preferences.theme];
+    const next = availableThemes[preferences.theme];
     if (!next) return;
     lastRemoteThemeRef.current = preferences.theme;
     setTheme(next);
-  }, [preferences.theme, theme.name, allThemes, setTheme]);
+  }, [preferences.theme, theme.name, availableThemes, setTheme]);
 
   return (
     <SettingsContext.Provider

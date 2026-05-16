@@ -1,10 +1,4 @@
-// [claude-code 2026-04-19] S26-P2 T5: theme picker rewritten per TP — "let's just make
-//   it a drop-down menu, like a list drop-down menu... the preview swatch should be the
-//   whole color... People should have the option to switch between the light theme and
-//   the dark theme on a toggle inside of the menu that pops up from the hamburger menu."
-//   Each row IS the full-bleed primary accent colour (44×full-width, rounded 8px). The
-//   active theme gets a 2px inset ring in --fintheon-text. The NOTHING DESIGN divider
-//   sits between the presets and the Nothing Design specials.
+// [claude-code 2026-05-16] Simplified to Something Solvys + Something Monochrome only
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
@@ -16,12 +10,9 @@ const NOTHING_EASE: [number, number, number, number] = [0.25, 0.1, 0.25, 1];
 interface ThemePickerAccordionProps {
   current: ThemeConfig;
   onPick: (t: ThemeConfig) => void;
-  standard: Record<string, ThemeConfig>;
-  special: Record<string, ThemeConfig>;
+  themes: Record<string, ThemeConfig>;
 }
 
-/** Luminance-based contrast pick so a row label reads cleanly on its swatch.
- *  Simple relative-luminance approximation — good enough for hex accents. */
 function textOnSwatch(hex: string): string {
   const clean = hex.replace("#", "");
   const n =
@@ -34,7 +25,6 @@ function textOnSwatch(hex: string): string {
   const r = parseInt(n.slice(0, 2), 16);
   const g = parseInt(n.slice(2, 4), 16);
   const b = parseInt(n.slice(4, 6), 16);
-  // Perceptual luminance (Rec. 709)
   const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
   return lum > 0.55 ? "#0a0a0a" : "#ffffff";
 }
@@ -42,8 +32,7 @@ function textOnSwatch(hex: string): string {
 export function ThemePickerAccordion({
   current,
   onPick,
-  standard,
-  special,
+  themes,
 }: ThemePickerAccordionProps) {
   const vibrate = useHaptic();
   const [open, setOpen] = useState(false);
@@ -133,44 +122,10 @@ export function ThemePickerAccordion({
           >
             <div style={{ paddingTop: 10 }}>
               <SwatchList
-                themes={standard}
+                themes={themes}
                 current={current}
                 onPick={handlePick}
               />
-              {Object.keys(special).length > 0 && (
-                <>
-                  <div
-                    style={{
-                      marginTop: 14,
-                      marginBottom: 10,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      fontFamily: "var(--font-data)",
-                      fontSize: 9,
-                      letterSpacing: "0.14em",
-                      textTransform: "uppercase",
-                      color: "var(--text-disabled)",
-                    }}
-                  >
-                    <span>NOTHING DESIGN</span>
-                    <span
-                      aria-hidden
-                      style={{
-                        flex: 1,
-                        height: 1,
-                        background:
-                          "color-mix(in srgb, var(--accent) 10%, transparent)",
-                      }}
-                    />
-                  </div>
-                  <SwatchList
-                    themes={special}
-                    current={current}
-                    onPick={handlePick}
-                  />
-                </>
-              )}
             </div>
           </motion.div>
         )}

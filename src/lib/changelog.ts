@@ -10737,4 +10737,21 @@ export const changelog: ChangelogEntry[] = [
       "src/lib/changelog.ts",
     ],
   },
+  {
+    date: "2026-05-17T00:00:00-04:00",
+    agent: "claude-code",
+    summary:
+      "Full mobile/web audit and theme overhaul. Stripped all old color presets (Solvys Gold, iOS, Dark Trading, etc.) to only Something Solvys + Something Monochrome. Added light/dark mode to desktop (mirrors mobile pattern). MainMenuDrawer: removed profile pic, @handle, following/followers count, UserPlus button; replaced nametag with app name 'Fintheon'. Removed blur on scrim overlay. Added swipe-to-close via useSwipeGesture. Wired Help Center to open mintlify docs (docs.pricedinresearch.io/fintheon). Added haptic feedback to all drawer interactions. Desktop ThemeSettings simplified to mode toggle + 2 presets. Mobile Settings: theme picker simplified. tsc + vite build clean for both targets.",
+    files: [
+      "frontend/lib/theme.ts",
+      "frontend/contexts/ThemeContext.tsx",
+      "frontend/components/settings/ThemeSettings.tsx",
+      "mobile/contexts/ThemeContext.tsx",
+      "mobile/contexts/SettingsContext.tsx",
+      "mobile/components/layout/MainMenuDrawer.tsx",
+      "mobile/components/settings/ThemePickerAccordion.tsx",
+      "mobile/components/settings/SettingsPage.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
 ];
