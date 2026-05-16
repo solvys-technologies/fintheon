@@ -37,6 +37,13 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
+    date: "2026-05-16T14:20:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S67 shipped: UI Polish Wave 1 deployed to production. 3 new backend endpoints, 17 frontend changes across 13 files. Archived to sprint-changelog/. 1 track, 22 files.",
+    files: ["sprint-changelog/S67-BRIEF-ui-polish-wave-1.md"],
+  },
+  {
     date: "2026-05-15T20:30:00-04:00",
     agent: "claude-code",
     summary:
