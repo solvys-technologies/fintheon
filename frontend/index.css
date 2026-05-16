@@ -1063,6 +1063,12 @@ html *::-webkit-scrollbar {
   }
 }
 
+// [claude-code 2026-05-16] S68-T2: Catalyst drift bubble pulse — opacity-based (no box-shadow per Solvys rules)
+@keyframes drift-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
 /* NarrativeFlow — SVG rope draw-in animation */
 @keyframes rope-draw {
   from {

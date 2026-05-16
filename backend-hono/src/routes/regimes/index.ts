@@ -1,4 +1,5 @@
 // [claude-code 2026-03-06] Regime Tracker API — returns active trading regimes for agent context
+// [claude-code 2026-05-16] DEPRECATED — replaced by theme-tracker (S68-T1). Preserved for migration reference.
 import { Hono } from "hono";
 
 interface RegimeTimeRange {

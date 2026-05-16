@@ -127,6 +127,8 @@ import { createAuditRoutes } from "./audit/index.js";
 import { createSoulRoutes } from "./soul/index.js";
 // [claude-code 2026-05-13] Lockout — trading lockout with countdown
 import { createLockoutRoutes } from "./lockout/index.js";
+// [claude-code 2026-05-16] S68-T1: Theme route — replaces regime tracker
+import { createThemeRoutes } from "./themes/index.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -150,8 +152,10 @@ export function registerRoutes(app: Hono): void {
   // Data routes — Supabase-backed (replaces Notion polling routes)
   app.route("/api/data", createDataRoutes());
 
+  // [claude-code 2026-05-16] DEPRECATED — replaced by /api/themes (S68-T1). Kept for backward compat.
   // Regime tracker — public, returns active trading regimes (session-based time windows)
   app.route("/api/regimes", createRegimeRoutes());
+  // [claude-code 2026-05-16] DEPRECATED — replaced by /api/themes (S68-T1). Kept for backward compat.
   // Market regime engine — public, macro regime classification (CRUD + detect)
   // [S24-T1] /proposals subroute: agent proposals + TP approval queue.
   app.route("/api/regime", createMarketRegimeRoutes());
@@ -257,6 +261,9 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/lockout", authMiddleware);
   app.use("/api/lockout/*", authMiddleware);
   app.route("/api/lockout", createLockoutRoutes());
+
+  // Theme tracker — replaces regime tracker (S68-T1). Public read/write, in-memory.
+  app.route("/api/themes", createThemeRoutes());
 
   // [S26-P2 T9] Maintenance — super-admin commit/deploy/deny for agent-proposed fixes.
   // GET /api/maintenance/request/:id is public (modal renders for anyone), POST

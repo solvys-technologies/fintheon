@@ -1,3 +1,4 @@
+// [claude-code 2026-05-16] S68-T4: Camera pan/zoom persistence, Reset View button, layout save/restore includes viewport
 // [claude-code 2026-03-30] Added narrative visibility filter dropdown in top-right of canvas
 // [claude-code 2026-03-30] Unified data: seed events + RiskFlow alerts both load into NarrativeContext
 // [claude-code 2026-03-29] Catalysts sourced from DB via RiskFlowContext — seed JSON and localStorage import removed
@@ -56,10 +57,17 @@ export function NarrativeMap() {
   const [editingCard, setEditingCard] = useState<CatalystCard | null>(null);
   const [canvasTool, setCanvasTool] = useState<CanvasTool>("select");
   const [canvasScale, setCanvasScale] = useState(1.0);
+  const [canvasCamera, setCanvasCamera] = useState({
+    x: 0,
+    y: 0,
+    zoom: 0.15,
+  });
   const [timeframeFilter, setTimeframeFilter] = useState<string>("all");
   const [zoomFns, setZoomFns] = useState<{
     zoomTo: (level: number) => void;
     fitView: () => void;
+    resetView: () => void;
+    setViewport: (vp: { x: number; y: number; zoom: number }) => void;
   } | null>(null);
   const { alerts } = useRiskFlow();
   const seedLoadedRef = useRef(false);
@@ -147,14 +155,14 @@ export function NarrativeMap() {
       visibleLaneIds: Array.from(visibleLaneIds),
       activeTags: Array.from(activeTags),
       canvasScale,
-      // TODO: save canvas pan position when NarrativeForceCanvas exposes it
+      viewport: canvasCamera,
     };
     try {
       localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
     } catch {
       // silent
     }
-  }, [visibleLaneIds, activeTags, canvasScale]);
+  }, [visibleLaneIds, activeTags, canvasScale, canvasCamera]);
 
   const handleResetLayout = useCallback(() => {
     try {
@@ -165,10 +173,32 @@ export function NarrativeMap() {
         setVisibleLaneIds(new Set(layout.visibleLaneIds));
       if (layout.activeTags) setActiveTags(new Set(layout.activeTags));
       if (layout.canvasScale != null) setCanvasScale(layout.canvasScale);
+      if (layout.viewport && zoomFns?.setViewport) {
+        zoomFns.setViewport(layout.viewport);
+      }
     } catch {
       // silent
     }
-  }, []);
+  }, [zoomFns]);
+
+  const handleResetView = useCallback(() => {
+    zoomFns?.resetView();
+  }, [zoomFns]);
+
+  // Auto-save layout on navigate away (visibility change)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") handleSaveLayout();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibility);
+  }, [handleSaveLayout]);
+
+  // Restore layout on mount
+  useEffect(() => {
+    handleResetLayout();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSelectCard = useCallback((_id: string) => {
     // Selection is visual-only, handled inside the force canvas
@@ -193,6 +223,7 @@ export function NarrativeMap() {
             activeTool={canvasTool}
             timeframeFilter={timeframeFilter}
             onScaleChange={setCanvasScale}
+            onCameraChange={setCanvasCamera}
             onSelectCard={handleSelectCard}
             onEditCard={handleEditCard}
             onZoomFnsReady={setZoomFns}
@@ -259,6 +290,7 @@ export function NarrativeMap() {
             scale={canvasScale}
             onZoomTo={zoomFns?.zoomTo}
             onFitView={zoomFns?.fitView}
+            onResetView={handleResetView}
           />
         </div>
 

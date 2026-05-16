@@ -1,4 +1,5 @@
 // [claude-code 2026-03-26] S2-T2: Regime detector — proposes regime changes from news flow heuristics
+// [claude-code 2026-05-16] DEPRECATED — replaced by theme-tracker (S68-T1). Preserved for migration reference.
 import type { MarketRegime } from "../../types/regime.js";
 import type { FeedItem } from "../../types/riskflow.js";
 

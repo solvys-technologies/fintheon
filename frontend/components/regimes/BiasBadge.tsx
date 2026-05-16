@@ -1,4 +1,5 @@
 // [claude-code 2026-04-15] T2: BiasBadge — 5 heuristic bias classifications with distinct icons
+// [claude-code 2026-05-16] DEPRECATED — regime tracker replaced by theme-tracker (S68-T1). Kept for backward compat.
 import {
   ArrowRight,
   ArrowLeftRight,

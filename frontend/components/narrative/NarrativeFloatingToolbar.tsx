@@ -1,3 +1,4 @@
+// [claude-code 2026-05-16] S68-T4: Added onResetView prop and Reset View button in zoom dropdown
 // [claude-code 2026-04-19] S25-T6: Added computer-chip toggle in the actions row that shows/hides the NarrativeCanvasChat input (hidden by default).
 // [claude-code 2026-03-28] S8-T2: Unified bottom bar — static toolkit + expandable command-palette chat
 import { useState } from "react";
@@ -31,6 +32,7 @@ interface NarrativeFloatingToolbarProps {
   scale: number;
   onZoomTo?: (level: number) => void;
   onFitView?: () => void;
+  onResetView?: () => void;
   /** Card chips dragged/added from canvas for chat context */
   pendingChips?: { id: string; title: string }[];
   onClearChip?: (id: string) => void;
@@ -127,6 +129,7 @@ export function NarrativeFloatingToolbar({
   scale,
   onZoomTo,
   onFitView,
+  onResetView,
   pendingChips,
   onClearChip,
 }: NarrativeFloatingToolbarProps) {
@@ -323,6 +326,16 @@ export function NarrativeFloatingToolbar({
                 style={{ fontFamily: "var(--font-body)" }}
               >
                 Fit to Screen
+              </button>
+              <button
+                onClick={() => {
+                  onResetView?.();
+                  setZoomOpen(false);
+                }}
+                className="w-full text-left px-3 py-1.5 text-[10px] text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)] hover:bg-[var(--fintheon-accent)]/5 transition-colors"
+                style={{ fontFamily: "var(--font-body)" }}
+              >
+                Reset View
               </button>
               <div className="border-t border-[var(--fintheon-border)]/10 px-3 py-1">
                 <span

@@ -1,3 +1,4 @@
+// [claude-code 2026-05-16] S68-T4: Camera pan/zoom persistence (localStorage save/restore), onCameraChange prop, Reset View callback
 // [claude-code 2026-04-24] S36 ClusterBeam — wrapped canvas with ClusterBeamProvider, mounted
 // ClusterBeamPanel + ShockLayer, replaced local expandedGroups state with the panel context,
 // added narrative:echo listener for cross-surface hover pulse, wired shock-on-arrival for new
@@ -57,6 +58,7 @@ import { ShockLayer } from "./ShockLayer";
 
 // ── Persistent node positions (localStorage) ──────────────────
 const POSITIONS_KEY = "fintheon-narrative-positions";
+const CAMERA_KEY = "narrativeflow:force-camera";
 
 function loadSavedPositions(): Map<string, { x: number; y: number }> {
   try {
@@ -515,11 +517,14 @@ interface NarrativeForceCanvasProps {
   activeTool: CanvasTool;
   timeframeFilter?: string;
   onScaleChange?: (scale: number) => void;
+  onCameraChange?: (viewport: { x: number; y: number; zoom: number }) => void;
   onSelectCard?: (id: string) => void;
   onEditCard?: (card: CatalystCard) => void;
   onZoomFnsReady?: (fns: {
     zoomTo: (level: number) => void;
     fitView: () => void;
+    resetView: () => void;
+    setViewport: (vp: { x: number; y: number; zoom: number }) => void;
   }) => void;
 }
 
@@ -529,6 +534,7 @@ function NarrativeFlowCanvas({
   activeTool,
   timeframeFilter,
   onScaleChange,
+  onCameraChange,
   onZoomFnsReady,
 }: NarrativeForceCanvasProps) {
   const { state } = useNarrative();
@@ -556,6 +562,20 @@ function NarrativeFlowCanvas({
     onZoomFnsReady?.({
       zoomTo: (level: number) => reactFlow.zoomTo(level, { duration: 200 }),
       fitView: () => reactFlow.fitView({ padding: 0.1, duration: 300 }),
+      resetView: () => {
+        reactFlow.setViewport(
+          { x: 0, y: 0, zoom: 0.15 },
+          { duration: 400 },
+        );
+        try {
+          localStorage.removeItem(CAMERA_KEY);
+        } catch {
+          // silent
+        }
+      },
+      setViewport: (vp: { x: number; y: number; zoom: number }) => {
+        reactFlow.setViewport(vp, { duration: 200 });
+      },
     });
   }, [onZoomFnsReady, reactFlow]);
 
@@ -763,8 +783,9 @@ function NarrativeFlowCanvas({
   }, [state.catalysts, activeCluster]);
 
   const handleViewportMove = useCallback(
-    (_event: unknown, viewport: { zoom: number }) => {
+    (_event: unknown, viewport: { x: number; y: number; zoom: number }) => {
       onScaleChange?.(viewport.zoom);
+      onCameraChange?.(viewport);
       if (forcedView || transitioning) return;
 
       const semanticView = getSemanticZoom(viewport.zoom);
@@ -778,7 +799,7 @@ function NarrativeFlowCanvas({
         setTransitioning(false);
       }, 150);
     },
-    [forcedView, onScaleChange, rebuildView, transitioning],
+    [forcedView, onScaleChange, onCameraChange, rebuildView, transitioning],
   );
 
   const handleForceView = useCallback(
@@ -862,6 +883,59 @@ function NarrativeFlowCanvas({
     },
     [],
   );
+
+  // Restore camera from localStorage after nodes settle
+  useEffect(() => {
+    if (nodes.length === 0 || loadingPhase !== "ready") return;
+    try {
+      const raw = localStorage.getItem(CAMERA_KEY);
+      if (raw) {
+        const saved = JSON.parse(raw) as {
+          x: number;
+          y: number;
+          zoom: number;
+        };
+        reactFlow.setViewport(saved, { duration: 0 });
+      }
+    } catch {
+      // silent
+    }
+  }, [nodes.length, loadingPhase, reactFlow]);
+
+  // Save camera on unmount
+  useEffect(() => {
+    return () => {
+      try {
+        const vp = reactFlow.getViewport();
+        localStorage.setItem(
+          CAMERA_KEY,
+          JSON.stringify({ x: vp.x, y: vp.y, zoom: vp.zoom }),
+        );
+      } catch {
+        // silent
+      }
+    };
+  }, [reactFlow]);
+
+  // Save camera on page hide (navigate away / tab switch)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        try {
+          const vp = reactFlow.getViewport();
+          localStorage.setItem(
+            CAMERA_KEY,
+            JSON.stringify({ x: vp.x, y: vp.y, zoom: vp.zoom }),
+          );
+        } catch {
+          // silent
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibility);
+  }, [reactFlow]);
 
   const activeView = forcedView ?? currentView;
 

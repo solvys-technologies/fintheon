@@ -1,4 +1,5 @@
 // [claude-code 2026-03-27] S2-T1: Market regime classification system — 8 regimes with multiplier profiles
+// [claude-code 2026-05-16] DEPRECATED — replaced by theme-tracker types (S68-T1). Preserved for migration reference.
 
 export const MARKET_REGIMES = [
   "BULL_TREND",

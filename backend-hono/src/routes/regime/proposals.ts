@@ -1,4 +1,5 @@
 // [claude-code 2026-04-19] S24-T1: regime proposals CRUD — agents propose, TP approves/denies, approval applies the regime + sets lock.
+// [claude-code 2026-05-16] DEPRECATED — replaced by themes route (S68-T1). Preserved for migration reference.
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { sql, isDatabaseAvailable } from "../../config/database.js";

@@ -1,8 +1,9 @@
 // [claude-code 2026-04-25] S38: same-state guard — proposeRegimeChange now rejects no-op
 //   proposals where currentRegime === proposedRegime; they never reach the approval inbox.
 // [claude-code 2026-04-19] S24-T1: regime proposal helper — MDB + any agent calls this instead of setRegime().
+// [claude-code 2026-05-16] DEPRECATED — replaced by theme-tracker (S68-T1). Preserved for migration reference.
+
 /**
- * proposeRegimeChange — the one function agents call to request a regime flip.
  *
  * Behavior:
  *   - Always inserts a regime_proposals row (status=pending).

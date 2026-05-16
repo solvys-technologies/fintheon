@@ -9,6 +9,43 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-16T22:00:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S68 shipped: Theme Tracker (T1), Catalyst Drift (T2), NarrativeFlow impact-intelligence surface (T3), NarrativeMap pan persistence (T4), Canvas polish + micro-interactions (T5). Archived to sprint-changelog/. 5 tracks, 37 files. Deployed v6.5.0 to all 3 targets.",
+    files: [
+      "sprint-changelog/S68-ORCH-narrativeflow-theme-intelligence.md",
+    ],
+  },
+  {
+    date: "2026-05-16T21:30:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S68-T5: NarrativeFlow canvas polish and micro-interactions. CatalystCard hover lift (translateY(-2px) + gold border) and click-to-expand frosted-glass detail modal (full description, source, timestamp, bias, thread, tags, market impact). ThemeHeader hover/active gold text state. ThemeCatalystGroup hover border brighten + shadow. NarrativeCanvas smooth camera zoom via requestAnimationFrame cubic ease interpolation (200ms). Loading state with SolvysLoaderCentered. Empty state with clock SVG icon. isLoading prop threaded from useThemes in Sanctum. tsc + vite build clean.",
+    files: [
+      "frontend/components/narrative/CatalystCard.tsx",
+      "frontend/components/narrative/ThemeHeader.tsx",
+      "frontend/components/narrative/ThemeCatalystGroup.tsx",
+      "frontend/components/narrative/NarrativeCanvas.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-16T19:00:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S68-T3: NarrativeFlow surface refactor to impact intelligence. Created ThemeCatalystGroup (frosted-glass container with ThemeHeader + CatalystCards sorted by severity), NarrativeFlowFilterBar (All/Active/By Theme pill-style filter with dropdown), refactored NarrativeCanvas to overlay structured theme-grouped list above canvas background, added Page 3 (Narrative Flow) to Sanctum with useThemes wiring, added 'Narrative Flow' to AUDITORIUM_PAGES. tsc + vite build clean.",
+    files: [
+      "frontend/components/narrative/ThemeCatalystGroup.tsx",
+      "frontend/components/narrative/NarrativeFlowFilterBar.tsx",
+      "frontend/components/narrative/NarrativeCanvas.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+      "frontend/types/agent-desk.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-16T18:00:00-04:00",
     agent: "claude-code",
     summary:
@@ -10665,6 +10702,38 @@ export const changelog: ChangelogEntry[] = [
       "electron/main.cjs",
       "electron/preload.cjs",
       "frontend/components/settings/TradingTab.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-16T22:00:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S68-T2: Catalyst drift model and drift bubble UI. Backend: new catalyst-drift service (types, drift-calculator with trailing N-period average vs current IPV comparison, magnitude/direction/confidence computation), wired into GET /api/themes/:id/drift. Frontend: DriftBubble component (color-coded positive/negative/neutral, confidence-proportional size, pulse animation on high magnitude, hover tooltip), ThemeHeader component (name, IPV, status badge, drift bubble), CatalystCard accepts optional drift prop with small indicator overlay. drift-pulse CSS keyframe added to index.css.",
+    files: [
+      "backend-hono/src/services/catalyst-drift/types.ts",
+      "backend-hono/src/services/catalyst-drift/drift-calculator.ts",
+      "backend-hono/src/services/catalyst-drift/index.ts",
+      "backend-hono/src/routes/themes/handlers.ts",
+      "backend-hono/src/routes/themes/index.ts",
+      "frontend/components/narrative/DriftBubble.tsx",
+      "frontend/components/narrative/ThemeHeader.tsx",
+      "frontend/components/narrative/CatalystCard.tsx",
+      "frontend/index.css",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-16T22:30:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S68-T4: NarrativeMap pan/zoom persistence and Sanctum nav polish. Camera state persisted to localStorage for both bubble canvas (narrativeflow:bubble-camera) and force canvas (narrativeflow:force-camera). NarrativeForceCanvas exposes onCameraChange callback + resetView/setViewport via onZoomFnsReady. NarrativeMap layout save/restore includes viewport, auto-saves on visibility change, auto-restores on mount. Reset View button in floating toolbar zoom dropdown resets to default viewport with animation. Sanctum pages get a fade-in animation on scroll-snap entry. tsc --noEmit + vite build both pass.",
+    files: [
+      "frontend/components/narrative/NarrativeCanvas.tsx",
+      "frontend/components/narrative/NarrativeForceCanvas.tsx",
+      "frontend/components/narrative/NarrativeMap.tsx",
+      "frontend/components/narrative/NarrativeFloatingToolbar.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
       "src/lib/changelog.ts",
     ],
   },

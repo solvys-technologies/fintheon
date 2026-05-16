@@ -1,3 +1,5 @@
+// [claude-code 2026-05-16] S68-T3: Added page 3 (Narrative Flow) with useThemes + NarrativeCanvas
+// [claude-code 2026-05-16] S68-T4: Smooth page transitions with fade-in animation on page sections
 // [claude-code 2026-05-11] S62-T1: Sanctum desktop layout audit — Solvys Gold page headers/tags (Page 1 & 2), vertical FadingRuler spacing parity, horizontal FadingRuler replaces solid divider, Page 0 non-chart padding to p-5.
 // [claude-code 2026-04-29] S51: removed unused compositeIV/regimeShiftProbability/confidence props from ArbitrumChamber call (stale AgentDeskDebatePanel API)
 // [claude-code 2026-04-19] S25-T1: Removed KPI row (moved to Agent Desk fuses), stripped card borders to fading edges, viewport lock ≥1440px, fuses piped into DebatePanel
@@ -38,6 +40,8 @@ import { BlendedIVForecastCard } from "./BlendedIVForecastCard";
 import { DayCard } from "./DayCard";
 import { RiskSignalCards } from "./RiskSignalCards";
 import { useIVScoreData } from "./useIVScoreData";
+import { useThemes } from "../../hooks/useThemes";
+import { NarrativeCanvas } from "./NarrativeCanvas";
 // [claude-code 2026-04-24] S35-T3: swap AgentDeskDebatePanel -> ArbitrumChamber
 // [claude-code 2026-05-01] S56 Track B: removed ArbitrumRiskSignals from Sanctum
 //   (moved to Dashboard right rail, bottom slot now shows SanctumBriefing)
@@ -85,6 +89,7 @@ export function Sanctum({
   revisionChecking,
 }: SanctumProps) {
   const { data: ivData, isLoading: ivLoading } = useIVScoreData();
+  const { themes: flowThemes, isLoading: flowThemesLoading } = useThemes();
 
   // Guardrailed 5-day rolling window — no user toggle
   const rollingDays = 5 as const;
@@ -194,7 +199,7 @@ export function Sanctum({
   // All pages always render — preset controls which page scrolls into focus
   const showPage = useCallback((_pageIdx: number) => true, []);
 
-  const visiblePages = [0, 1, 2].filter(showPage);
+  const visiblePages = [0, 1, 2, 3].filter(showPage);
 
   const displayContext = data?.contextSnapshot ?? macroContext ?? null;
 
@@ -203,6 +208,12 @@ export function Sanctum({
       className="h-full w-full flex flex-col bg-[var(--fintheon-bg)]"
       data-arbitrum-chamber-viewport-lock
     >
+      <style>{`
+        @keyframes sanctum-fade-in {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
       {/* Persistent header — always visible */}
       <SanctumHeader
         preset={preset}
@@ -229,6 +240,7 @@ export function Sanctum({
             <div
               data-aud-page="0"
               className={`${chartMode ? "h-full p-3 pt-2" : "min-h-full p-5"} snap-start flex flex-col`}
+              style={{ animation: "sanctum-fade-in 0.35s ease-out" }}
             >
               {chartMode ? (
                 /* [claude-code 2026-04-25] S38: Chart now lives in the persistent right-half
@@ -317,6 +329,7 @@ export function Sanctum({
             <div
               data-aud-page="1"
               className="min-h-full snap-start p-5 flex flex-col"
+              style={{ animation: "sanctum-fade-in 0.35s ease-out" }}
             >
               <div className="shrink-0 mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -349,6 +362,7 @@ export function Sanctum({
             <div
               data-aud-page="2"
               className="min-h-full snap-start p-5 flex flex-col"
+              style={{ animation: "sanctum-fade-in 0.35s ease-out" }}
             >
               <div className="shrink-0 mb-4 flex items-center gap-2">
                 <h2
@@ -410,6 +424,17 @@ export function Sanctum({
                   </p>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ── Page 3: Narrative Flow ── */}
+          {showPage(3) && (
+            <div
+              data-aud-page="3"
+              className="min-h-full snap-start flex flex-col"
+              style={{ animation: "sanctum-fade-in 0.35s ease-out" }}
+            >
+              <NarrativeCanvas themes={flowThemes} isLoading={flowThemesLoading} />
             </div>
           )}
         </div>

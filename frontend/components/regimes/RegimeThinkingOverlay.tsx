@@ -1,4 +1,5 @@
 // [claude-code 2026-04-15] T3: Glassmorphic thinking overlay for AI regime generation
+// [claude-code 2026-05-16] DEPRECATED — regime tracker replaced by theme-tracker (S68-T1). Kept for backward compat.
 import { useEffect, useRef, useState } from "react";
 import { GlassEffect } from "../ui/liquid-glass";
 

@@ -1,4 +1,5 @@
 // [claude-code 2026-04-15] T2: OrbRecord — ORB direction record with optional mini history bars
+// [claude-code 2026-05-16] DEPRECATED — regime tracker replaced by theme-tracker (S68-T1). Kept for backward compat.
 import { Diff, TrendingDown } from "lucide-react";
 import type { TradingRegime } from "../../lib/regimes";
 

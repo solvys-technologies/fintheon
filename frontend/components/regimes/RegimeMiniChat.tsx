@@ -1,4 +1,5 @@
 // [claude-code 2026-04-15] T3: Mini chat input per regime card — dispatches to sidebar chat
+// [claude-code 2026-05-16] DEPRECATED — regime tracker replaced by theme-tracker (S68-T1). Kept for backward compat.
 import { useState, useRef } from "react";
 import { ArrowUp } from "lucide-react";
 import type { TradingRegime } from "../../lib/regimes";
