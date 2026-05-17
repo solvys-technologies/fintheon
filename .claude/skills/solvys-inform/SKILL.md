@@ -51,13 +51,34 @@ git log --oneline main..HEAD  # If on a feature branch
 
 - Summarize current Solvys engineering doctrine: small vertical slices, diagnosis loop, service boundaries, Zod at boundaries, validation gates, changelog discipline.
 - Summarize current Solvys design doctrine: Solvys Gold, warm near-black, frosted-glass surfaces over Kanban cards, no gradients, no emojis, no AI sparkles, no generic shadows.
-- Call out TP-vetoed S47 references so incoming agents do not use them as influence sources.
+- Call out TP-vetoed references or deprecated product names so incoming agents do not use them as influence sources.
+
+### Operational Protocol and Tool Updates
+
+- Inspect recent changelog entries, sprint briefs, agent instruction files, and tool/skill changes for new operational protocols.
+- If new routes, scripts, skills, Linear rules, release rules, learning loops, approval flows, or orchestration conventions exist, include them in the briefing as first-class operating instructions.
+- In Fintheon, check `backend-hono/src/services/ai/agent-instructions/`, `backend-hono/src/routes/`, `backend-hono/package.json`, `scripts/`, `sprint-md/`, and `src/lib/changelog.ts` for newly available tools and protocols.
+- Specifically call out agent learning tools when present: `POST /api/agent/learning`, `GET /api/agent/learning/summary?days=7`, automatic post-analysis learning sessions, and `bun run memory:obsidian`.
+- Include Linear/ORCH operating rules when present: uppercase sprint prefixes, every Linear issue references `@sprint-md/...`, ORCH tickets are planning/runbook items, and implementation tickets stay open until repo evidence plus validation support closure.
 
 ### Environment
 
 - Build commands (from `package.json` scripts)
 - Deploy targets (Vercel, Workers, local DMG)
 - Required environment variables (from `.env.example`)
+
+## Phase 1.25 -- Embedded Agent Instruction Sync
+
+When briefing embedded Fintheon agents, do not stop at a chat summary. Ensure the agent-facing instruction source is updated when new tools or protocols should persist across future sessions:
+
+- Shared behavior for all agents belongs in `backend-hono/src/services/ai/agent-instructions/index.ts` or shared belief/instruction modules.
+- Harper/CAO-specific operating rules belong in `backend-hono/src/services/ai/agent-instructions/harper-extra.md`.
+- Role-specific rules belong in the matching `oracle-extra.md`, `feucht-extra.md`, `consul-extra.md`, or `herald-extra.md`.
+- Add a changelog entry in `src/lib/changelog.ts` for any persistent instruction update.
+- Validate with `cd backend-hono && bun run build` after touching backend instruction assembly.
+- Never embed secrets, private credentials, or machine-specific tokens into agent instructions.
+
+The briefing must state what was updated, which agents now receive it, and which command or endpoint they should use.
 
 ## Phase 2 -- Briefing Assembly
 
@@ -115,6 +136,10 @@ Branch: {current branch} (main: {commits ahead/behind})
 | ---------- | -------------- |
 | {/command} | {what it does} |
 
+## Tools and Operational Protocol Updates
+
+{New routes, scripts, skills, MCP tools, Linear/ORCH rules, release rules, approval flows, learning loops, and agent-facing instruction updates. Include exact commands/endpoints and who should use them.}
+
 ## Build and Deploy
 
 ```bash
@@ -139,7 +164,7 @@ Branch: {current branch} (main: {commits ahead/behind})
 
 ## Architectural Guidance
 
-{Short summary of engineering and design doctrine, including approved-reference-as-thinking-only rule and vetoed references}
+{Short summary of engineering and design doctrine, approved-reference-as-thinking-only rules, deprecated names, and vetoed references}
 
 --- End Briefing ---
 

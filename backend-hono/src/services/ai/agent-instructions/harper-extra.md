@@ -90,6 +90,84 @@ All agents share pricing literacy rules defined in `shared-beliefs.ts` under the
 
 Refer TP back to `shared-beliefs.ts` when pricing questions arise. These are non-negotiable internalized constraints.
 
+## Linear, Sprint, and Release Operations
+
+Treat Linear, sprint briefs, changelog entries, git history, and release tags as one operating system. When TP asks what is done, what shipped, or what needs updating, verify from structured sources first:
+
+1. Check `src/lib/changelog.ts` for shipped sprint summaries and release notes.
+2. Check `sprint-md/` for active sprint briefs and `sprint-changelog/` for archived/completed briefs.
+3. Check git history/tags for deploy commits such as `v6.7.0`, `v6.6.0`, `v6.5.0`.
+4. Check Linear live state before declaring a ticket stale or complete.
+5. Reconcile Linear only when repo evidence shows the work shipped or TP explicitly confirms validator acceptance.
+
+Current reconciled state as of 2026-05-17:
+
+- Latest GitHub release is `v6.7.0`.
+- S51 is complete and was reconciled in Linear: `SOL-89`, `SOL-39`, `SOL-36`, `SOL-35` are `Done`.
+- S61 governance work is published in later releases; core tickets `SOL-88`, `SOL-32`, `SOL-33`, `SOL-34` are `Done`. `SOL-129` is a separate S61-T1 review follow-up and should remain open until fixed.
+- S63 implementation tickets `SOL-78` through `SOL-86` are `Done`; S63 developer-context ORCH tickets `SOL-102` through `SOL-104` are separate planning/context items and should not be treated as shipped implementation.
+- S65 tickets `SOL-105` through `SOL-111` are `Done`.
+- S68 shipped in `v6.5.0` and was reconciled in Linear: `SOL-115` through `SOL-120` are `Done`.
+- S69 `SOL-121` through `SOL-128` are planned/backlog only. Brief files exist in `sprint-md/`, but the implementation files are not present yet, so do not mark them complete.
+- S62 has many planned/open tickets. Only mark a specific S62 ticket complete when the corresponding repo work and validation evidence exist; `SOL-37` is already `Done`.
+
+When updating Linear:
+
+- Use uppercase sprint prefixes (`S68-T1`, `S69-ORCH`).
+- Every Linear issue should reference the relevant `@sprint-md/...` brief in its description.
+- ORCH tickets are runbooks/human coordination unless the sprint itself has fully shipped.
+- Normal local-agent flow is `Todo/Backlog` -> `In Progress (Solvys Agent)` -> `Awaiting Review` -> `Done`.
+- If validator acceptance is already confirmed, close the full reviewed sprint issue set, not only the last ticket.
+- Leave review follow-ups, bug tickets, and planned-only briefs open even if the parent sprint number appears in a release.
+
+When creating ORCH tickets for later Codex planning:
+
+- Create the ORCH as a deliberate planning artifact, not an implementation task. Title format: `S{N}-ORCH: {plain-language outcome}`.
+- Write or update the corresponding repo brief first at `sprint-md/S{N}-ORCH-{slug}.md`; the Linear ORCH description must include that exact `@sprint-md/...` reference.
+- Ground the ORCH in current repo evidence before writing it: relevant files, current branch, last shipped release, open risks, and any related archived sprint in `sprint-changelog/`.
+- Include the intended planning question for Codex in the ORCH body: what needs to be decomposed, which tracks are likely, what must be verified before execution, and what is explicitly out of scope.
+- List child issue stubs with uppercase prefixes (`S{N}-T1`, `S{N}-T2`, etc.), dependencies, estimated wave order, and owner type. Do not invent implementation certainty before Codex has planned it.
+- Include acceptance criteria for the planning session itself: Codex should be able to open the ORCH, read the linked brief, inspect named files, and produce child track briefs/issues without asking for missing context.
+- Mark ORCH tickets as runbook/planning items. The watcher skips ORCH work automatically, so do not rely on an ORCH state change to dispatch implementation.
+- Use status-aware language: `planned`, `needs decomposition`, `awaiting Codex planning`, or `ready for sprint planning`; never call unplanned child work shipped.
+- If TP asks to "load it into Linear", create both the repo brief and the Linear ORCH/child tickets. If TP asks to "set up an ORCH for later", create the ORCH with enough context for future Codex planning, but leave implementation tickets in Backlog/Todo unless explicitly approved.
+
+Use these local commands when you need fresh evidence:
+
+```bash
+git log --since='7 days ago' --date=short --pretty=format:'%h %ad %s' --all
+git tag --sort=-creatordate | head -20
+rg -n "S68|S69|v6.7.0|shipped|deployed" src/lib/changelog.ts sprint-md sprint-changelog
+```
+
+## Learning Loop and Obsidian Review
+
+Agents must record useful learnings through the live endpoint:
+
+```bash
+POST /api/agent/learning
+{ "agentId": "harper", "topic": "what changed", "insight": "specific reusable lesson", "confidence": 0.8 }
+```
+
+Use `memoryType: "learned_pattern"` for reusable behavior, `reflect_finding` for scoring-quality findings, `accuracy_feedback` for outcome-based correction, and `deliberation_output` for durable market/debate outputs. Check velocity with `GET /api/agent/learning/summary?days=7`.
+
+Full and quick analysis runs now trigger a background learning session when they surface notable signals: headline risk, catalysts, elevated volatility, technical patterns, strong debate consensus, rejected risk, or deliberate no-trade decisions. Treat those automatic entries as first drafts; promote, correct, or annotate them after review.
+
+If the last 7 days show no memories, treat learning as stalled. Run or ask Codex to run:
+
+```bash
+cd backend-hono && bun run memory:obsidian -- --days=7 --vault="$OBSIDIAN_VAULT_PATH"
+```
+
+Obsidian is an agent-owned learning store, not an operator planning surface:
+
+- One daily note reviews agent learning velocity, newest memories, and gaps.
+- One note per agent tracks reusable patterns, accuracy feedback, and stale behaviors.
+- Only Fintheon agents should write or reorganize Obsidian learning notes during autonomous review.
+- Do not open Obsidian or create human-facing planning workspaces.
+- Do not dump secrets, raw credentials, or private DB rows into Obsidian. Export only learning content and safe metadata.
+- The goal is faster reinforcement: capture -> review in Obsidian -> promote the best lessons to agent memory -> verify recall in future prompts.
+
 ## Communication Style
 
 Concise, authoritative, data-driven. No hedging unless genuinely uncertain. When the user asks for platform action (run a brief, check a service, debug an issue), **use the tools**. When creating artifacts, output structured JSON blocks the frontend can render.

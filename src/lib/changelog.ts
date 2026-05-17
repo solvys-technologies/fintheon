@@ -9,6 +9,35 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-17T13:15:00-04:00",
+    agent: "codex",
+    summary:
+      "Informed the embedded Fintheon agents through the shared instruction assembly: all agents now receive the expanded learning protocol with post-task and post-analysis memory capture, learning velocity checks, Obsidian export review, safe-memory constraints, and explicit memoryType guidance. Updated the local /solvys-inform skill so future invocations must brief agents on new tools, routes, operational protocols, ORCH/Linear rules, and persistent instruction updates.",
+    files: [
+      "backend-hono/src/services/ai/agent-instructions/index.ts",
+      "src/lib/changelog.ts",
+      "~/.codex/skills/solvys-inform/SKILL.md",
+      "~/.claude/skills/solvys-inform/SKILL.md",
+      "/Users/tifos/Documents/Codebases/solvys-skills/.claude/skills/solvys-inform/SKILL.md",
+    ],
+  },
+  {
+    date: "2026-05-17T12:45:00-04:00",
+    agent: "codex",
+    summary:
+      "Harper CAO operational briefing updated with Linear/sprint/release reconciliation rules, ORCH ticket protocol for Codex planning, and the agent learning loop. Added /api/agent/learning plus /api/agent/learning/summary so agents can store learned patterns through the endpoint already referenced by SOUL prompts. Full and quick analysis pipelines now trigger background learning sessions when notable signals appear. Added Obsidian export script for weekly agent-learning reviews.",
+    files: [
+      "backend-hono/src/services/ai/agent-instructions/harper-extra.md",
+      "backend-hono/src/routes/agent-learning/index.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/services/agents/learning-session.ts",
+      "backend-hono/src/services/agents/pipeline.ts",
+      "backend-hono/scripts/export-agent-memory-obsidian.ts",
+      "backend-hono/package.json",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-16T23:00:00-04:00",
     agent: "claude-code",
     summary:

@@ -166,13 +166,20 @@ require explicit user approval via the unified approval pipeline (see /api/harpe
 const SELF_LEARNING_BLOCK = `
 
 ## Learning Protocol
-After completing any task, reflect and store insights:
+After completing any task or analysis, reflect and store useful insights:
 1. What worked well in this task?
 2. What would you do differently next time?
-3. What new pattern or insight emerged?
+3. What new pattern, signal, or operational protocol emerged?
 
 Store via POST /api/agent/learning with { agentId, topic, insight, confidence }.
-Your learnings will be recalled in future contexts to improve your performance.
+Use memoryType when known: learned_pattern, reflect_finding, accuracy_feedback, or deliberation_output.
+
+Full and quick analysis runs also trigger a background learning session when notable signals appear: headline risk, catalysts, elevated volatility, technical patterns, strong debate consensus, rejected risk, or a deliberate no-trade decision. Treat automatic entries as first drafts; correct, promote, or annotate them during review.
+
+Check learning velocity with GET /api/agent/learning/summary?days=7. If the last 7 days show no memories, treat learning as stalled and ask Harper or another Fintheon agent to run the Obsidian export review:
+cd backend-hono && bun run memory:obsidian -- --days=7 --vault="$OBSIDIAN_VAULT_PATH"
+
+Your learnings will be recalled in future contexts to improve your performance. Do not store secrets, raw credentials, or private account data.
 `;
 
 const CAPABILITIES_BLOCK = `

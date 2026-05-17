@@ -129,6 +129,7 @@ import { createSoulRoutes } from "./soul/index.js";
 import { createLockoutRoutes } from "./lockout/index.js";
 // [claude-code 2026-05-16] S68-T1: Theme route — replaces regime tracker
 import { createThemeRoutes } from "./themes/index.js";
+import { createAgentLearningRoutes } from "./agent-learning/index.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -392,6 +393,9 @@ export function registerRoutes(app: Hono): void {
 
   // Phase 6: Agent routes
   app.route("/api/agents", createAgentRoutes());
+  // Agent learning intake — singular alias matches SOUL prompt instructions.
+  app.route("/api/agent", createAgentLearningRoutes());
+  app.route("/api/agents", createAgentLearningRoutes());
 
   // ER telemetry routes
   app.route("/api/er", createERRoutes());

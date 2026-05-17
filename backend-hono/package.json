@@ -12,7 +12,8 @@
     "test:24h": "bun scripts/riskflow-24h-harness.ts",
     "riskflow:backfill": "bun scripts/riskflow-feed-backfill.ts",
     "skills:import": "bun scripts/skills-import-cli.ts",
-    "gepa:dry-run": "bun src/services/gepa/runner.ts --dry-run"
+    "gepa:dry-run": "bun src/services/gepa/runner.ts --dry-run",
+    "memory:obsidian": "bun scripts/export-agent-memory-obsidian.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.2",
