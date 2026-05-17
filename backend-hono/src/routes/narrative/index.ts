@@ -11,11 +11,25 @@ import {
   getCatalystById,
 } from "./handlers.js";
 import { clusterSummary } from "./cluster-summary.js";
+import {
+  acceptNarrativeHypothesis,
+  createNarrativeResearchTask,
+  getNarrativeOrchestra,
+  pinNarrativeHypothesis,
+  rejectNarrativeHypothesis,
+  researchNarrativeHypothesis,
+} from "./orchestra.js";
 
 export function createNarrativeRoutes(): Hono {
   const app = new Hono();
   app.get("/threads", getThreads);
   app.get("/card-links", getCardLinks);
+  app.get("/orchestra", getNarrativeOrchestra);
+  app.post("/orchestra/:hypothesisId/accept", acceptNarrativeHypothesis);
+  app.post("/orchestra/:hypothesisId/research", researchNarrativeHypothesis);
+  app.post("/orchestra/:hypothesisId/reject", rejectNarrativeHypothesis);
+  app.post("/orchestra/:hypothesisId/pin", pinNarrativeHypothesis);
+  app.post("/orchestra/:hypothesisId/task", createNarrativeResearchTask);
   app.get("/catalysts", getCatalysts);
   // [S25] Single-catalyst lookup for mobile DetailSheet. Param last so `/catalysts/:id` wins after `/catalysts`.
   app.get("/catalysts/:id", getCatalystById);

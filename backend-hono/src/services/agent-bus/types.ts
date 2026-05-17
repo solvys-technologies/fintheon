@@ -84,6 +84,10 @@ export type BusTopic =
   | "dag.task.result"
   | "dag.task.error"
   | "dag.status"
+  | "lounge.brief"
+  | "lounge.reflection"
+  | "lounge.consensus"
+  | "lounge.routing"
   | "surface.narrative"
   | "surface.sidebar"
   | "surface.boardroom"
@@ -115,7 +119,7 @@ export interface DAGProgressEvent {
   tasks: Array<{ id: string; agentId: HermesAgentId; status: TaskStatus }>;
 }
 
-export interface NarrativePushEvent {
+export interface NarrativeCatalystDiscoveredEvent {
   type: "catalyst-discovered";
   dagId: string;
   agentId: HermesAgentId;
@@ -128,6 +132,33 @@ export interface NarrativePushEvent {
     source: string;
   };
 }
+
+export interface NarrativeDeliberationEntryPayload {
+  id: string;
+  hypothesisId: string;
+  agentId: string;
+  agentName: string;
+  stance: "supports" | "contradicts" | "neutral";
+  summary: string;
+  confidence: number;
+  createdAt: string;
+  sourceSessionId: string | null;
+}
+
+export interface NarrativeHypothesisUpdatedEvent {
+  type: "hypothesis-updated";
+  dagId: string;
+  hypothesisId: string;
+  updatedAt: string;
+  sourceSessionId: string | null;
+  deliberationEntry: NarrativeDeliberationEntryPayload;
+  consensus?: string | null;
+  routingStatus?: "candidate" | "needs_research" | "promoted" | "rejected" | "pinned";
+}
+
+export type NarrativePushEvent =
+  | NarrativeCatalystDiscoveredEvent
+  | NarrativeHypothesisUpdatedEvent;
 
 export interface SidebarNotifyEvent {
   type: "agent-finding";

@@ -15,7 +15,10 @@ import type {
   Rope,
   NarrativeLane,
 } from "../lib/narrative-types";
-import type { NarrativePushEvent } from "../../backend-hono/src/services/agent-bus/types";
+import type {
+  NarrativeCatalystDiscoveredEvent,
+  NarrativePushEvent,
+} from "../../backend-hono/src/services/agent-bus/types";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -47,7 +50,7 @@ export function NarrativeProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
-    if (!narrativePush || narrativePush.type !== "catalyst-discovered") return;
+    if (!isCatalystDiscoveredEvent(narrativePush)) return;
     const c = narrativePush.catalyst;
     const catalyst: Omit<CatalystCard, "id" | "createdAt" | "updatedAt"> = {
       title: c.headline,
@@ -168,4 +171,10 @@ export function useNarrative(): NarrativeContextValue {
   if (!ctx)
     throw new Error("useNarrative must be used within NarrativeProvider");
   return ctx;
+}
+
+function isCatalystDiscoveredEvent(
+  event: NarrativePushEvent | null,
+): event is NarrativeCatalystDiscoveredEvent {
+  return event?.type === "catalyst-discovered";
 }

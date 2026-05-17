@@ -9,6 +9,99 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-17T18:56:23-04:00",
+    agent: "codex",
+    summary:
+      "S70-T6 follow-up: Corrected the rendered NarrativeFlow evidence surface from a card board into a Mermaid-style node-link chart. The selected hypothesis now sits as the central chart node, evidence nodes connect from both sides, and a post-render edit input lets the operator apply an edit directive back onto the rendered chart.",
+    files: [
+      "frontend/components/narrative/NarrativeEvidenceConstellation.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-17T18:48:55-04:00",
+    agent: "codex",
+    summary:
+      "S70-T6: Completed Narrative Orchestra unification validation and visual tightening. The Consilium NarrativeFlow entry now renders the rebuilt story spine, evidence constellation, agent rail, and routing gate; the S70 panels use flat Solvys surfaces with inline loading/error states; review actions collect required rationale inline before persisting; and the three narrative endpoints were smoke-tested together.",
+    files: [
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/components/narrative/NarrativeStorySpine.tsx",
+      "frontend/components/narrative/NarrativeEvidenceConstellation.tsx",
+      "frontend/components/narrative/NarrativeAgentRail.tsx",
+      "frontend/components/narrative/NarrativeRoutingGate.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-17T18:40:00-04:00",
+    agent: "codex",
+    summary:
+      "S70-T5: Added human promotion and review controls for Narrative Orchestra hypotheses. The routing gate now supports accept, needs-research, reject-with-reason, pin, and research-task actions; review decisions persist to narrative_review_actions, rejected hypotheses retain auditable rationale, needs-research/task actions reuse the research task board, and /api/narrative/orchestra overlays the latest human decision back onto each hypothesis.",
+    files: [
+      "backend-hono/src/services/narrative-orchestra/review-actions.ts",
+      "backend-hono/src/routes/narrative/orchestra.ts",
+      "backend-hono/src/routes/narrative/index.ts",
+      "backend-hono/src/services/narrative-orchestra/projector.ts",
+      "frontend/components/narrative/NarrativeRoutingGate.tsx",
+      "supabase/migrations/20260517180000_narrative_review_actions.sql",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-17T18:25:00-04:00",
+    agent: "codex",
+    summary:
+      "S70-T4: Rebuilt NarrativeFlow as a research-room surface. NarrativeCanvas now composes a story spine, evidence constellation, agent rail, and routing gate over the existing ambient physics canvas, with a typed useNarrativeOrchestra hook reading /api/narrative/orchestra and showing compact fallback/error states.",
+    files: [
+      "frontend/hooks/useNarrativeOrchestra.ts",
+      "frontend/components/narrative/NarrativeCanvas.tsx",
+      "frontend/components/narrative/NarrativeAmbientCanvas.tsx",
+      "frontend/components/narrative/NarrativeStorySpine.tsx",
+      "frontend/components/narrative/NarrativeEvidenceConstellation.tsx",
+      "frontend/components/narrative/NarrativeAgentRail.tsx",
+      "frontend/components/narrative/NarrativeRoutingGate.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-17T17:10:00-04:00",
+    agent: "codex",
+    summary:
+      "S70-T3: Added the Agent Deliberation Bridge for Narrative Orchestra. surface.narrative now supports the existing catalyst-discovered event plus hypothesis-updated updates carrying typed deliberation entries, and the bridge maps lounge brief, reflection, consensus, and routing events into NarrativeFlow hypothesis updates without replacing the legacy catalyst SSE path.",
+    files: [
+      "backend-hono/src/services/agent-bus/types.ts",
+      "backend-hono/src/services/narrative-orchestra/lounge-bridge.ts",
+      "frontend/contexts/NarrativeContext.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-17T14:00:00-04:00",
+    agent: "codex",
+    summary:
+      "S70-T1: Added the Narrative Orchestra projection contract and read endpoint. /api/narrative/orchestra now returns hypotheses with evidence, empty deliberation summaries, and routing decisions, reading future lounge projections when present and otherwise falling back to Theme Tracker plus promoted RiskFlow catalysts without changing /api/narrative/catalysts.",
+    files: [
+      "backend-hono/src/services/narrative-orchestra/types.ts",
+      "backend-hono/src/services/narrative-orchestra/store.ts",
+      "backend-hono/src/services/narrative-orchestra/projector.ts",
+      "backend-hono/src/routes/narrative/orchestra.ts",
+      "backend-hono/src/routes/narrative/index.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-17T16:13:53-04:00",
+    agent: "codex",
+    summary:
+      "S70-T2: Added Narrative Orchestra evidence/corroboration layer. Created shared narrative hypothesis/evidence/deliberation/routing types, linked Theme Tracker catalyst IDs and RiskFlow catalyst IDs onto the same hypothesis ID, grouped evidence by supports/contradicts/neutral stance, and added explainable corroboration scoring from evidence count, stance mix, recency, and confidence. No route registration or ownership shift from NarrativeFlow to Theme Tracker.",
+    files: [
+      "backend-hono/src/services/narrative-orchestra/types.ts",
+      "backend-hono/src/services/narrative-orchestra/evidence-linker.ts",
+      "backend-hono/src/services/narrative-orchestra/corroboration.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-17T13:15:00-04:00",
     agent: "codex",
     summary:

@@ -30,7 +30,7 @@ import { AgentChattr } from "./AgentChattr";
 import { Sanctum } from "../narrative/Sanctum";
 import { TimelinePanel } from "../narrative/TimelinePanel";
 import { ProposalWidget } from "../proposals/ProposalWidget";
-import { NarrativeMap } from "../narrative/NarrativeMap";
+import { NarrativeCanvas } from "../narrative/NarrativeCanvas";
 import {
   NarrativeProvider,
   useNarrative,
@@ -42,6 +42,7 @@ import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
 import { SoulFileroomPanel } from "../memory/SoulFileroomPanel";
 import { AiLoader } from "../chat/FintheonThread";
 import { useHarperOps } from "../../hooks/useHarperOps";
+import { useThemes } from "../../hooks/useThemes";
 import type {
   SanctumData,
   SanctumPreset,
@@ -139,6 +140,7 @@ function SanctumWithNarratives(
 export function ConsiliumHub() {
   const { selectedSymbol, iframeUrls } = useSettings();
   const { status: harperStatus } = useHarperOps();
+  const { themes: flowThemes, isLoading: flowThemesLoading } = useThemes();
   const [activeTab, setActiveTab] = useState<ConsiliumTab>("chat");
   const [sanctumSubView, setSanctumSubView] =
     useState<SanctumSubView>("narratives");
@@ -642,7 +644,7 @@ export function ConsiliumHub() {
           </button>
 
           <div
-            className="absolute top-full left-0 mt-1 z-50 min-w-[220px] rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl overflow-hidden"
+            className="absolute top-full left-0 mt-1 z-50 min-w-[220px] overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]"
             style={{
               opacity: sanctumDropdownOpen ? 1 : 0,
               transform: sanctumDropdownOpen
@@ -715,7 +717,7 @@ export function ConsiliumHub() {
           </button>
 
           <div
-            className="absolute top-full left-0 mt-1 z-50 min-w-[200px] rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl overflow-hidden"
+            className="absolute top-full left-0 mt-1 z-50 min-w-[200px] overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]"
             style={{
               opacity: boardroomDropdownOpen ? 1 : 0,
               transform: boardroomDropdownOpen
@@ -779,7 +781,7 @@ export function ConsiliumHub() {
           </button>
 
           <div
-            className="absolute top-full left-0 mt-1 z-50 min-w-[210px] rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl overflow-hidden"
+            className="absolute top-full left-0 mt-1 z-50 min-w-[210px] overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]"
             style={{
               opacity: apparatusDropdownOpen ? 1 : 0,
               transform: apparatusDropdownOpen
@@ -921,7 +923,12 @@ export function ConsiliumHub() {
           {/* Sanctum sub-views — shared NarrativeProvider so seeds carry across views */}
           {displayedTab === "sanctum" && (
             <NarrativeProvider>
-              {displayedSubView === "narratives" && <NarrativeMap />}
+              {displayedSubView === "narratives" && (
+                <NarrativeCanvas
+                  themes={flowThemes}
+                  isLoading={flowThemesLoading}
+                />
+              )}
               {displayedSubView === "arbitrumChamber" && (
                 <SanctumWithNarratives
                   data={agentDeskData}
