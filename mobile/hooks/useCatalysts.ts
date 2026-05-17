@@ -1,8 +1,9 @@
-// [claude-code 2026-04-16] T7: Data hook for NarrativeFlow catalyst cards
-import { useState, useEffect, useCallback } from "react";
+// [claude-code 2026-05-16] S67: added 60s polling for timeline auto-refresh.
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
+const POLL_MS = 60_000;
 
 export interface Catalyst {
   id: string;
@@ -16,6 +17,7 @@ export interface Catalyst {
   category: string;
   narrative: string | null;
   narrativeThreads: string[];
+  createdAt?: string;
 }
 
 export function useCatalysts() {
@@ -23,11 +25,9 @@ export function useCatalysts() {
   const [catalysts, setCatalysts] = useState<Catalyst[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
 
   const fetchCatalysts = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
     try {
       const token = await getAccessToken();
       const headers: Record<string, string> = {};
@@ -36,20 +36,29 @@ export function useCatalysts() {
       const res = await fetch(`${API_BASE}/api/narrative/catalysts?days=7`, {
         headers,
       });
+      if (!mountedRef.current) return;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
+      if (!mountedRef.current) return;
       setCatalysts(data.catalysts ?? []);
+      setError(null);
     } catch (err) {
+      if (!mountedRef.current) return;
       setError(err instanceof Error ? err.message : "Failed to load");
-      setCatalysts([]);
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current) setIsLoading(false);
     }
   }, [getAccessToken]);
 
   useEffect(() => {
-    fetchCatalysts();
+    mountedRef.current = true;
+    void fetchCatalysts();
+    const id = setInterval(() => void fetchCatalysts(), POLL_MS);
+    return () => {
+      mountedRef.current = false;
+      clearInterval(id);
+    };
   }, [fetchCatalysts]);
 
   return { catalysts, isLoading, error, refresh: fetchCatalysts };

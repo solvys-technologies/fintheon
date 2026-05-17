@@ -9,6 +9,28 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-16T23:00:00-04:00",
+    agent: "claude-code",
+    summary:
+      "S67: Full arbitrum + timeline port to mobile PWA. Track A: created mobile/types/components for Arbitrum (proper Lead/Forecaster/Future PM/Quant/Skeptic roles), rewrote useArbitrumLatest hook with instrument param + API normalization, built DigitGroup/FadingRuler/DissentBadge shared components, rewrote VerdictCard with desktop-quality DigitGroup+SegmentedBar+DissentBadge, built mobile-adapted ArbitrumChamber with agent seat cards (Harper/Oracle/Feucht/Consul/Herald), expandable rationale, ConfidencePair, instrument dropdown. Track B: added 60s polling to useCatalysts, rewrote TimelineView with narrative thread/severity/time-range filtering (FILTERS toggle). Track C: sidebar menu — Sanctum dropdown chevron with Timeline(Clock)+Arbitrum(ArbitrumGlyph) sub-items, renamed Chat button (was Open Harper Chat), removed Apparatus, trimmed item heights 48->42px, dark gray surface bg (was black), rounded top-right/bottom-right content corners. Chat interface already migrated (ChatPage 905 lines, SSE streaming, tool approvals, shared primitives). tsc + vite build clean.",
+    files: [
+      "mobile/components/arbitrum/types.ts",
+      "mobile/components/arbitrum/ArbitrumChamber.tsx",
+      "mobile/components/arbitrum/DissentBadge.tsx",
+      "mobile/hooks/useArbitrumLatest.ts",
+      "mobile/hooks/useCatalysts.ts",
+      "mobile/components/shared/DigitGroup.tsx",
+      "mobile/components/shared/FadingRuler.tsx",
+      "mobile/components/home/ArbitrumVerdictCard.tsx",
+      "mobile/components/home/TimelineView.tsx",
+      "mobile/components/home/HomePage.tsx",
+      "mobile/components/layout/MainMenuDrawer.tsx",
+      "mobile/components/layout/MobileShell.tsx",
+      "mobile/index.css",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-16T22:00:00-04:00",
     agent: "claude-code",
     summary:

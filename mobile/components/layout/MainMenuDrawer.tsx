@@ -1,23 +1,49 @@
-// [claude-code 2026-05-16] Stripped profile cruft — app name, no following/followers/@/pic
-import { useCallback, useRef } from "react";
+// [claude-code 2026-05-16] S67: Sanctum dropdown with Timeline + Arbitrum sub-items,
+//   renamed Chat button, removed Apparatus, trimmed 10%, dark gray bg, rounded corners.
+
+import { useCallback, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Eye,
   Zap,
   Calendar,
-  TrendingUp,
-  Wrench,
   MessageCircle,
   Shield,
   HelpCircle,
   Sun,
   Moon,
+  Clock,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useSwipeGesture } from "../../hooks/useSwipeGesture";
 import { useHaptic } from "../../hooks/useHaptic";
+
+function ArbitrumGlyph({ size = 14 }: { size?: number }) {
+  return (
+    <span
+      aria-hidden
+      style={{
+        display: "inline-flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        width: size,
+        height: size,
+        lineHeight: 1,
+        fontFamily: "var(--font-display)",
+        fontWeight: 500,
+        color: "inherit",
+      }}
+    >
+      <span style={{ fontSize: size * 0.72, lineHeight: 0.85 }}>+</span>
+      <span style={{ fontSize: size * 0.72, lineHeight: 0.85 }}>−</span>
+    </span>
+  );
+}
 
 interface MainMenuDrawerProps {
   open: boolean;
@@ -27,25 +53,26 @@ interface MainMenuDrawerProps {
 
 const PRIMARY_NAV = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "sanctum", label: "Sanctum", icon: Eye },
+  null as { id: "sanctum" } | null, // placeholder — rendered inline as dropdown
   { id: "riskflow", label: "RiskFlow", icon: Zap },
   { id: "calendar", label: "Calendar", icon: Calendar },
-  { id: "performance", label: "Performance", icon: TrendingUp },
-  { id: "apparatus", label: "Apparatus", icon: Wrench },
+  { id: "chat", label: "Chat", icon: MessageCircle },
 ] as const;
 
 const FOOTER_NAV = [
-  { id: "chat", label: "Open Harper Chat", icon: MessageCircle },
   { id: "settings", label: "Settings & Privacy", icon: Shield },
   { id: "help", label: "Help Center", icon: HelpCircle },
 ] as const;
 
 const DRAWER_WIDTH = "80vw";
+const ITEM_HEIGHT = 42;
+const ITEM_PADDING = "0 18px";
+const ITEM_FONT_SIZE = 12;
 
 function modeSegmentStyle(active: boolean): React.CSSProperties {
   return {
-    width: 32,
-    height: 26,
+    width: 28,
+    height: 22,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -68,6 +95,8 @@ export function MainMenuDrawer({
   const { mode, setMode } = useTheme();
   const vibrate = useHaptic();
   const drawerRef = useRef<HTMLDivElement>(null);
+  const [sanctumOpen, setSanctumOpen] = useState(false);
+
   const handleSignOut = useCallback(async () => {
     vibrate(10);
     await signOut();
@@ -88,7 +117,7 @@ export function MainMenuDrawer({
     <AnimatePresence>
       {open && (
         <div style={{ position: "fixed", inset: 0, zIndex: 60 }}>
-          {/* Scrim — tap to close, no blur */}
+          {/* Scrim */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -118,19 +147,19 @@ export function MainMenuDrawer({
               left: 0,
               bottom: 0,
               width: DRAWER_WIDTH,
-              background: "var(--black, #050402)",
+              background: "var(--surface, #0a0a0a)",
               display: "flex",
               flexDirection: "column",
               paddingTop: "env(safe-area-inset-top)",
               overflowY: "auto",
             }}
           >
-            {/* Header — app name branding */}
-            <div style={{ padding: "20px 16px 12px" }}>
+            {/* Header */}
+            <div style={{ padding: "16px 16px 10px" }}>
               <div
                 style={{
                   fontFamily: "var(--font-display)",
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: 600,
                   color: "var(--accent)",
                   letterSpacing: "0.04em",
@@ -152,43 +181,134 @@ export function MainMenuDrawer({
             />
 
             {/* Primary nav */}
-            <div style={{ padding: "8px 0" }}>
-              {PRIMARY_NAV.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      vibrate(6);
-                      onNavigate(item.id);
-                      onClose();
-                    }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 14,
-                      width: "100%",
-                      height: 48,
-                      padding: "0 20px",
-                      background: "transparent",
-                      border: "none",
-                      cursor: "pointer",
-                      WebkitTapHighlightColor: "transparent",
-                      fontFamily: "var(--font-data)",
-                      fontSize: 13,
-                      color: "var(--text-primary, #f0ead6)",
-                      letterSpacing: "0.03em",
-                    }}
+            <div style={{ padding: "6px 0" }}>
+              {/* Dashboard */}
+              <NavItem
+                icon={LayoutDashboard}
+                label="Dashboard"
+                onClick={() => { vibrate(6); onNavigate("dashboard"); onClose(); }}
+              />
+
+              {/* Sanctum dropdown */}
+              <div>
+                <button
+                  onClick={() => { vibrate(6); setSanctumOpen((v) => !v); }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 14,
+                    width: "100%",
+                    height: ITEM_HEIGHT,
+                    padding: ITEM_PADDING,
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    WebkitTapHighlightColor: "transparent",
+                    fontFamily: "var(--font-data)",
+                    fontSize: ITEM_FONT_SIZE,
+                    color: "var(--text-primary, #f0ead6)",
+                    letterSpacing: "0.03em",
+                  }}
+                >
+                  <Eye
+                    size={16}
+                    strokeWidth={1.5}
+                    color="var(--text-secondary)"
+                  />
+                  <span style={{ flex: 1, textAlign: "left" }}>Sanctum</span>
+                  <motion.span
+                    animate={{ rotate: sanctumOpen ? 0 : -90 }}
+                    transition={{ duration: 0.15 }}
                   >
-                    <Icon
-                      size={18}
+                    <ChevronDown
+                      size={14}
                       strokeWidth={1.5}
                       color="var(--text-secondary)"
                     />
-                    {item.label}
-                  </button>
-                );
-              })}
+                  </motion.span>
+                </button>
+
+                <AnimatePresence>
+                  {sanctumOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                      style={{ overflow: "hidden" }}
+                    >
+                      {/* Timeline sub-item */}
+                      <button
+                        onClick={() => { vibrate(6); onNavigate("timeline"); onClose(); }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 14,
+                          width: "100%",
+                          height: ITEM_HEIGHT,
+                          padding: "0 18px 0 50px",
+                          background: "transparent",
+                          border: "none",
+                          cursor: "pointer",
+                          WebkitTapHighlightColor: "transparent",
+                          fontFamily: "var(--font-data)",
+                          fontSize: ITEM_FONT_SIZE - 1,
+                          color: "var(--text-secondary)",
+                          letterSpacing: "0.03em",
+                        }}
+                      >
+                        <Clock size={14} strokeWidth={1.5} color="var(--text-secondary)" />
+                        Timeline
+                      </button>
+
+                      {/* Arbitrum sub-item */}
+                      <button
+                        onClick={() => { vibrate(6); onNavigate("arbitrum"); onClose(); }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 14,
+                          width: "100%",
+                          height: ITEM_HEIGHT,
+                          padding: "0 18px 0 50px",
+                          background: "transparent",
+                          border: "none",
+                          cursor: "pointer",
+                          WebkitTapHighlightColor: "transparent",
+                          fontFamily: "var(--font-data)",
+                          fontSize: ITEM_FONT_SIZE - 1,
+                          color: "var(--text-secondary)",
+                          letterSpacing: "0.03em",
+                        }}
+                      >
+                        <ArbitrumGlyph size={14} />
+                        Arbitrum
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* RiskFlow */}
+              <NavItem
+                icon={Zap}
+                label="RiskFlow"
+                onClick={() => { vibrate(6); onNavigate("riskflow"); onClose(); }}
+              />
+
+              {/* Calendar */}
+              <NavItem
+                icon={Calendar}
+                label="Calendar"
+                onClick={() => { vibrate(6); onNavigate("calendar"); onClose(); }}
+              />
+
+              {/* Chat */}
+              <NavItem
+                icon={MessageCircle}
+                label="Chat"
+                onClick={() => { vibrate(6); onNavigate("chat"); onClose(); }}
+              />
             </div>
 
             {/* Divider */}
@@ -202,7 +322,7 @@ export function MainMenuDrawer({
             />
 
             {/* Footer nav */}
-            <div style={{ padding: "8px 0" }}>
+            <div style={{ padding: "6px 0" }}>
               {FOOTER_NAV.map((item) => {
                 const Icon = item.icon;
                 const isHelp = item.id === "help";
@@ -222,19 +342,19 @@ export function MainMenuDrawer({
                       alignItems: "center",
                       gap: 14,
                       width: "100%",
-                      height: 48,
-                      padding: "0 20px",
+                      height: ITEM_HEIGHT,
+                      padding: ITEM_PADDING,
                       background: "transparent",
                       border: "none",
                       cursor: "pointer",
                       WebkitTapHighlightColor: "transparent",
                       fontFamily: "var(--font-data)",
-                      fontSize: 13,
+                      fontSize: ITEM_FONT_SIZE,
                       color: "var(--text-secondary)",
                     }}
                   >
                     <Icon
-                      size={18}
+                      size={16}
                       strokeWidth={1.5}
                       color="var(--text-secondary)"
                     />
@@ -260,14 +380,14 @@ export function MainMenuDrawer({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                height: 48,
-                padding: "0 20px",
+                height: ITEM_HEIGHT,
+                padding: ITEM_PADDING,
               }}
             >
               <span
                 style={{
                   fontFamily: "var(--font-data)",
-                  fontSize: 12,
+                  fontSize: 11,
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
                   color: "var(--text-secondary)",
@@ -293,25 +413,19 @@ export function MainMenuDrawer({
                   type="button"
                   role="tab"
                   aria-selected={mode === "light"}
-                  onClick={() => {
-                    vibrate(6);
-                    setMode("light");
-                  }}
+                  onClick={() => { vibrate(6); setMode("light"); }}
                   style={modeSegmentStyle(mode === "light")}
                 >
-                  <Sun size={14} strokeWidth={1.8} />
+                  <Sun size={13} strokeWidth={1.8} />
                 </button>
                 <button
                   type="button"
                   role="tab"
                   aria-selected={mode === "dark"}
-                  onClick={() => {
-                    vibrate(6);
-                    setMode("dark");
-                  }}
+                  onClick={() => { vibrate(6); setMode("dark"); }}
                   style={modeSegmentStyle(mode === "dark")}
                 >
-                  <Moon size={14} strokeWidth={1.8} />
+                  <Moon size={13} strokeWidth={1.8} />
                 </button>
               </div>
             </div>
@@ -319,8 +433,8 @@ export function MainMenuDrawer({
             {/* Session */}
             <div
               style={{
-                padding: "0 20px",
-                height: 48,
+                padding: ITEM_PADDING,
+                height: ITEM_HEIGHT,
                 display: "flex",
                 alignItems: "center",
               }}
@@ -328,12 +442,12 @@ export function MainMenuDrawer({
               <span
                 style={{
                   fontFamily: "var(--font-data)",
-                  fontSize: 11,
+                  fontSize: 10,
                   color: "var(--text-secondary)",
                   letterSpacing: "0.03em",
                 }}
               >
-                {user?.email || "—"}
+                {user?.email || "\u2014"}
               </span>
             </div>
 
@@ -344,14 +458,14 @@ export function MainMenuDrawer({
                 display: "flex",
                 alignItems: "center",
                 width: "100%",
-                height: 48,
-                padding: "0 20px",
+                height: ITEM_HEIGHT,
+                padding: ITEM_PADDING,
                 background: "transparent",
                 border: "none",
                 cursor: "pointer",
                 WebkitTapHighlightColor: "transparent",
                 fontFamily: "var(--font-data)",
-                fontSize: 12,
+                fontSize: 11,
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
                 color: "var(--error, #ef4444)",
@@ -371,5 +485,40 @@ export function MainMenuDrawer({
         </div>
       )}
     </AnimatePresence>
+  );
+}
+
+function NavItem({
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; color?: string }>;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 14,
+        width: "100%",
+        height: ITEM_HEIGHT,
+        padding: ITEM_PADDING,
+        background: "transparent",
+        border: "none",
+        cursor: "pointer",
+        WebkitTapHighlightColor: "transparent",
+        fontFamily: "var(--font-data)",
+        fontSize: ITEM_FONT_SIZE,
+        color: "var(--text-primary, #f0ead6)",
+        letterSpacing: "0.03em",
+      }}
+    >
+      <Icon size={16} strokeWidth={1.5} color="var(--text-secondary)" />
+      {label}
+    </button>
   );
 }

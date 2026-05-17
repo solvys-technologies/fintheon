@@ -1,57 +1,44 @@
-// [claude-code 2026-04-25] S35: mobile Arbitrum surface — compact verdict card (consensus
-// %, confidence %, dissent count, digest, seat strip) so chamber risk signals reach the
-// mobile dash. Reads from /api/arbitrum/latest via useArbitrumLatest. Empty-state copy
-// matches the desktop ArbitrumChamber so users see the same "no fresh read" wording.
-import {
-  useArbitrumLatest,
-  type ArbitrumSeat,
-} from "../../hooks/useArbitrumLatest";
+// [claude-code 2026-05-16] S67: desktop-quality verdict card — DigitGroup consensus,
+//   SegmentedBar confidence, DissentBadge, seat strip with proper agent names. Aligned
+//   to desktop arbitrum types (Lead/Forecaster/Future PM/Quant/Skeptic).
+
+import { useSettings } from "../../contexts/SettingsContext";
+import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
+import { DigitGroup } from "../shared/DigitGroup";
+import { FadingRuler } from "../shared/FadingRuler";
+import { SegmentedBar } from "../shared/SegmentedBar";
+import { DissentBadge } from "../arbitrum/DissentBadge";
+import type { ArbitrumSeat } from "../arbitrum/types";
+
+const ROLE_DISPLAY_NAMES: Record<ArbitrumSeat["role"], string> = {
+  Lead: "Harper",
+  Forecaster: "Oracle",
+  "Future PM": "Feucht",
+  Quant: "Consul",
+  Skeptic: "Herald",
+};
 
 const SEAT_ROLES: ReadonlyArray<ArbitrumSeat["role"]> = [
   "Lead",
   "Forecaster",
-  "Risk",
+  "Future PM",
   "Quant",
-  "Bear",
+  "Skeptic",
 ];
 
-const EMPTY_COPY = "No fresh chamber read — convenes 17:00 ET or on IV ≥ 8.5.";
-
 function seatLetter(role: string): string {
-  return role.charAt(0).toUpperCase();
+  const display = ROLE_DISPLAY_NAMES[role as ArbitrumSeat["role"]] ?? role;
+  return display.charAt(0).toUpperCase();
 }
 
 function HeaderRow({ trigger }: { trigger?: string }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginBottom: "8px",
-      }}
-    >
-      <span
-        style={{
-          fontFamily: "var(--font-data)",
-          fontSize: "11px",
-          letterSpacing: "0.06em",
-          textTransform: "uppercase",
-          color: "var(--text-secondary)",
-        }}
-      >
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+      <span style={{ fontFamily: "var(--font-data)", fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-secondary)" }}>
         ARBITRUM CHAMBER
       </span>
       {trigger && (
-        <span
-          style={{
-            fontFamily: "var(--font-data)",
-            fontSize: "9px",
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            color: "var(--text-disabled)",
-          }}
-        >
+        <span style={{ fontFamily: "var(--font-data)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-disabled)" }}>
           {trigger}
         </span>
       )}
@@ -60,59 +47,52 @@ function HeaderRow({ trigger }: { trigger?: string }) {
 }
 
 function ConsensusRow({
-  pct,
-  conf,
-  dissentCount,
+  consensusScore,
+  confidence,
+  dissent,
 }: {
-  pct: number;
-  conf: number;
-  dissentCount: number;
+  consensusScore: number;
+  confidence: number;
+  dissent?: { seat: string; magnitude_pp: number } | null;
 }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "baseline",
-        gap: "16px",
-        marginBottom: "8px",
-      }}
-    >
-      <span
-        style={{
-          fontFamily: "Doto, var(--font-data)",
-          fontSize: "32px",
-          color: "var(--accent)",
-          lineHeight: 1,
-        }}
-      >
-        {pct}%
-      </span>
-      <span
-        style={{
-          fontFamily: "var(--font-data)",
-          fontSize: "11px",
-          color: "var(--text-secondary)",
-        }}
-      >
-        consensus · conf {conf}%
-      </span>
-      {dissentCount > 0 && (
-        <span
+    <div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 10 }}>
+        <DigitGroup
+          value={consensusScore.toFixed(1)}
           style={{
-            marginLeft: "auto",
-            fontFamily: "var(--font-data)",
-            fontSize: "10px",
-            color: "var(--error)",
-            border: "1px solid var(--error)",
-            borderRadius: "999px",
-            padding: "2px 8px",
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
+            fontFamily: "Doto, var(--font-data)",
+            fontSize: 32,
+            color: "var(--accent)",
+            lineHeight: 1,
           }}
-        >
-          {dissentCount} dissent
+        />
+        <span style={{ fontFamily: "var(--font-data)", fontSize: 10, color: "var(--text-secondary)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          consensus
         </span>
-      )}
+        {dissent && (
+          <div style={{ marginLeft: "auto" }}>
+            <DissentBadge dissent={dissent} />
+          </div>
+        )}
+      </div>
+      <div style={{ marginBottom: 2 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+          <span style={{ fontFamily: "var(--font-data)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-secondary)" }}>
+            chamber confidence
+          </span>
+          <DigitGroup
+            value={confidence.toFixed(1)}
+            style={{ fontFamily: "Doto, var(--font-data)", fontSize: 10, color: "var(--text-primary)" }}
+          />
+        </div>
+        <SegmentedBar
+          value={Math.round(confidence * 100)}
+          color="var(--accent)"
+          size="compact"
+          segments={10}
+        />
+      </div>
     </div>
   );
 }
@@ -120,14 +100,7 @@ function ConsensusRow({
 function SeatStrip({ seats }: { seats: ArbitrumSeat[] }) {
   const bySlot = new Map(seats.map((s) => [s.role, s] as const));
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(5, 1fr)",
-        gap: "6px",
-        marginTop: "12px",
-      }}
-    >
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6, marginTop: 12 }}>
       {SEAT_ROLES.map((role) => {
         const seat = bySlot.get(role);
         const has = Boolean(seat);
@@ -137,36 +110,19 @@ function SeatStrip({ seats }: { seats: ArbitrumSeat[] }) {
           <div
             key={role}
             style={{
-              border: dissented
-                ? "1px solid var(--accent)"
-                : "1px solid var(--border)",
-              borderRadius: "8px",
+              border: dissented ? "1px solid var(--accent)" : "1px solid var(--border)",
+              borderRadius: 8,
               padding: "6px 4px",
               textAlign: "center",
-              backgroundColor: "var(--surface)",
+              background: "var(--surface)",
               opacity: has ? 1 : 0.45,
             }}
           >
-            <div
-              style={{
-                fontFamily: "var(--font-data)",
-                fontSize: "9px",
-                color: "var(--accent)",
-                letterSpacing: "0.06em",
-                marginBottom: "2px",
-              }}
-            >
+            <div style={{ fontFamily: "var(--font-data)", fontSize: 9, color: "var(--accent)", letterSpacing: "0.06em", marginBottom: 2 }}>
               {seatLetter(role)}
             </div>
-            <div
-              style={{
-                fontFamily: "Doto, var(--font-data)",
-                fontSize: "13px",
-                color: "var(--text-primary)",
-                lineHeight: 1,
-              }}
-            >
-              {has ? `${pct}%` : "—"}
+            <div style={{ fontFamily: "Doto, var(--font-data)", fontSize: 13, color: "var(--text-primary)", lineHeight: 1 }}>
+              {has ? `${pct}%` : "\u2014"}
             </div>
           </div>
         );
@@ -176,83 +132,52 @@ function SeatStrip({ seats }: { seats: ArbitrumSeat[] }) {
 }
 
 export function ArbitrumVerdictCard() {
-  const { verdict, isLoading, error } = useArbitrumLatest();
+  const { settings } = useSettings();
+  const { verdict, isLoading, error } = useArbitrumLatest(settings.selectedInstrument);
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-        padding: "16px 20px",
-      }}
-    >
-      <HeaderRow trigger={verdict?.trigger_type?.toUpperCase()} />
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "16px 20px" }}>
+      <HeaderRow trigger={verdict?.trigger} />
 
       {!verdict && (
-        <div
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: "12px",
-            color: "var(--text-secondary)",
-            border: "1px solid var(--border)",
-            borderRadius: "8px",
-            padding: "12px",
-            backgroundColor: "var(--surface)",
-          }}
-        >
+        <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: "var(--text-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 12, background: "var(--surface)" }}>
           {isLoading
-            ? "Loading chamber read…"
+            ? "Loading chamber read\u2026"
             : error
               ? `Chamber unreachable (${error})`
-              : EMPTY_COPY}
+              : "No fresh chamber read \u2014 convenes 17:00 ET or on IV \u2265 8.5."}
         </div>
       )}
 
       {verdict && (
-        <div
-          style={{
-            border: "1px solid var(--border)",
-            borderRadius: "12px",
-            padding: "14px 16px",
-            backgroundColor: "var(--surface)",
-          }}
-        >
+        <div style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px", background: "var(--surface)" }}>
           <ConsensusRow
-            pct={Math.round((verdict.consensus_probability ?? 0) * 100)}
-            conf={Math.round((verdict.confidence ?? 0) * 100)}
-            dissentCount={verdict.dissent?.count ?? 0}
+            consensusScore={Math.max(0, Math.min(10, (verdict.consensus_probability ?? 0) * 10))}
+            confidence={verdict.confidence ?? 0}
+            dissent={verdict.dissent}
           />
+
           {verdict.digest_text && (
-            <p
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: "13px",
-                color: "var(--text-primary)",
-                lineHeight: 1.5,
-                margin: 0,
-              }}
-            >
-              {verdict.digest_text}
-            </p>
+            <>
+              <FadingRuler style={{ margin: "10px 0" }} />
+              <p style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--text-primary)", lineHeight: 1.5, margin: 0 }}>
+                {verdict.digest_text}
+              </p>
+            </>
           )}
+
           {verdict.seats && verdict.seats.length > 0 && (
             <SeatStrip seats={verdict.seats} />
           )}
-          <div
-            style={{
-              marginTop: "10px",
-              fontFamily: "var(--font-data)",
-              fontSize: "9px",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "var(--text-disabled)",
-            }}
-          >
-            {new Date(verdict.created_at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
+
+          {!verdict.digest_text && verdict.seats && verdict.seats.length > 0 && (
+            <SeatStrip seats={verdict.seats} />
+          )}
+
+          <div style={{ marginTop: 10, fontFamily: "var(--font-data)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-disabled)" }}>
+            {new Date(verdict.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            {" \u00B7 "}
+            {new Date(verdict.created_at).toLocaleDateString([], { month: "short", day: "numeric" })}
           </div>
         </div>
       )}

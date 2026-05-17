@@ -82,7 +82,9 @@ export function MobileShell({
   const handleMenuNavigate = useCallback(
     (route: string) => {
       switch (route) {
-        case "dashboard":
+          case "dashboard":
+          case "timeline":
+          case "arbitrum":
           onTabChange(0);
           break;
         case "riskflow":
@@ -135,6 +137,8 @@ export function MobileShell({
           minHeight: 0,
           display: "flex",
           flexDirection: "column",
+          borderRadius: menuOpen ? "0 12px 12px 0" : "0",
+          overflow: "hidden",
         }}
       >
         <main

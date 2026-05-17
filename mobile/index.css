@@ -212,3 +212,91 @@ textarea,
 select {
   font-size: 16px;
 }
+
+/* ── FadingRuler (desktop parity) ── */
+.fading-ruler {
+  display: block;
+  border: none;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in srgb, var(--accent, #c79f4a) 20%, transparent) 30%,
+    color-mix(in srgb, var(--accent, #c79f4a) 20%, transparent) 70%,
+    transparent
+  );
+}
+.fading-ruler--vertical {
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--accent, #c79f4a) 18%, transparent) 30%,
+    color-mix(in srgb, var(--accent, #c79f4a) 18%, transparent) 70%,
+    transparent
+  );
+}
+
+/* ── DigitGroup number pop-in animation (desktop parity) ── */
+:root {
+  --t-digit-dur: 500ms;
+  --t-digit-distance: 8px;
+  --t-digit-stagger: 70ms;
+  --t-digit-blur: 2px;
+  --t-digit-ease: cubic-bezier(0.34, 1.45, 0.64, 1);
+  --t-digit-dir-x: 0;
+  --t-digit-dir-y: 1;
+}
+
+@keyframes t-digit-pop-in {
+  from {
+    opacity: 0;
+    transform: translate(
+      calc(var(--t-digit-distance) * var(--t-digit-dir-x)),
+      calc(var(--t-digit-distance) * var(--t-digit-dir-y))
+    );
+    filter: blur(var(--t-digit-blur));
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0);
+    filter: blur(0);
+  }
+}
+
+.t-digit-group {
+  display: inline;
+  white-space: nowrap;
+}
+
+.t-digit {
+  display: inline-block;
+  transition: transform 200ms ease, opacity 200ms ease;
+}
+
+.t-digit-group.is-animating .t-digit {
+  animation: t-digit-pop-in var(--t-digit-dur) var(--t-digit-ease) both;
+}
+
+.t-digit-group.is-animating .t-digit[data-stagger="1"] {
+  animation-delay: var(--t-digit-stagger);
+}
+
+.t-digit-group.is-animating .t-digit[data-stagger="2"] {
+  animation-delay: calc(var(--t-digit-stagger) * 2);
+}
+
+.t-digit-group.is-animating .t-digit[data-stagger="3"] {
+  animation-delay: calc(var(--t-digit-stagger) * 3);
+}
+
+.t-digit-group.is-animating .t-digit[data-stagger="4"] {
+  animation-delay: calc(var(--t-digit-stagger) * 4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-digit-group.is-animating .t-digit {
+    animation: none;
+  }
+}

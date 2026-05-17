@@ -20,7 +20,7 @@ import { useRef } from "react";
 import { motion, type Variants } from "framer-motion";
 import { VixBadge } from "../shared/VixBadge";
 import { BriefingCard } from "./BriefingCard";
-import { ArbitrumChamberSummary } from "./ArbitrumChamberSummary";
+import { ArbitrumChamber } from "../arbitrum/ArbitrumChamber";
 import { InstrumentOutlookCards } from "./InstrumentOutlookCards";
 // [claude-code 2026-04-25] S35: mobile Arbitrum surface — chamber consensus + dissent
 //   on the home dash. Was missing entirely; risk signals from the chamber were never
@@ -350,7 +350,7 @@ export function HomePage() {
         </motion.div>
       </SnapPage>
 
-      {/* Page 2: ArbitrumChamber Analysis */}
+      {/* Page 2: Arbitrum Chamber */}
       <SnapPage>
         <div
           style={{
@@ -361,7 +361,7 @@ export function HomePage() {
             zIndex: 1,
           }}
         >
-          <ArbitrumChamberSummary />
+          <ArbitrumChamber />
         </div>
       </SnapPage>
 
