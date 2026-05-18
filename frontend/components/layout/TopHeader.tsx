@@ -497,7 +497,7 @@ export function TopHeader({
           )}
 
           {compactLevel < 1 && (
-            <div className="hidden xl:flex items-center h-8 overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)]">
+            <div className="hidden xl:flex items-center h-7 overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)]">
               {traderName && (
                 <>
                   <TraderNametag

@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, BookOpen } from "lucide-react";
 import type { DayPlan, DayPlanWindow, EconForecastScenario } from "../../types/day-plan";
+import { formatEasternClockRange } from "../../lib/eastern-time-format";
 
 const API_BASE = (
   import.meta.env.VITE_API_URL || "http://localhost:8080"
@@ -26,7 +27,7 @@ function pickBriefType(): BriefType {
 }
 
 function fmtTradingWindow(w: DayPlanWindow): string {
-  return `${w.startTime}-${w.endTime}`;
+  return formatEasternClockRange(w.startTime, w.endTime);
 }
 
 type ScenarioTone = "neutral" | "bullish" | "bearish";

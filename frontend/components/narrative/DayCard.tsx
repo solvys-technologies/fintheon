@@ -5,7 +5,7 @@
 //   bullish (green up) or bearish (red down) for equities per scenario.
 //   Prices hidden until 30 min before window — fresh data pulled at that time.
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDayPlan } from "../../hooks/useDayPlan";
 import { useDayPlanMultiWeek } from "../../hooks/useDayPlanWeek";
 import { useStreak } from "../../hooks/useStreak";
@@ -16,6 +16,7 @@ import { FadingRuler } from "../shared/FadingRuler";
 import { StreakBadge } from "../streak/StreakBadge";
 import { DayPlanChevronNav } from "./DayPlanChevronNav";
 import { PriceRevealTag } from "./PriceRevealTag";
+import { formatEasternClockRange } from "../../lib/eastern-time-format";
 import type { DayPlanWindow, DriftKind } from "../../types/day-plan";
 import {
   getDeskPlanLockoutDecision,
@@ -44,7 +45,7 @@ interface DayCardProps {
 }
 
 function fmtTradingWindow(w: DayPlanWindow): string {
-  return `${w.startTime}-${w.endTime}`;
+  return formatEasternClockRange(w.startTime, w.endTime);
 }
 
 export function DayCard({
@@ -161,10 +162,16 @@ export function DayCard({
             {dayOfWeekLabel}
           </span>
           <span
-            className="relative"
+            className="relative inline-flex items-center gap-1.5"
             onMouseEnter={() => setShowStreakPopup(true)}
             onMouseLeave={() => setShowStreakPopup(false)}
           >
+            <DayPlanChevronNav
+              currentIndex={currentPlanIndex}
+              totalPlans={totalPlans}
+              onPrev={goPrevPlan}
+              onNext={goNextPlan}
+            />
             <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={14} />
             {showStreakPopup && (
               <div className="absolute top-full right-0 mt-2 p-3 bg-[#1a1915] border border-white/8 rounded-lg shadow-lg z-50">
@@ -206,7 +213,15 @@ export function DayCard({
         </div>
         <div className="flex items-center gap-2">
           {showStreakInHeader && !hideStreak && (
-            <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={14} />
+            <span className="inline-flex items-center gap-1.5">
+              <DayPlanChevronNav
+                currentIndex={currentPlanIndex}
+                totalPlans={totalPlans}
+                onPrev={goPrevPlan}
+                onNext={goNextPlan}
+              />
+              <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={14} />
+            </span>
           )}
           <button
             onClick={() => {
@@ -281,23 +296,17 @@ export function DayCard({
           label="Trading Window"
           value={hasWindow ? fmtTradingWindow(currentWindow!) : "\u2014"}
           loading={isLoading}
-          nav={
-            <DayPlanChevronNav
-              currentIndex={currentPlanIndex}
-              totalPlans={totalPlans}
-              onPrev={goPrevPlan}
-              onNext={goNextPlan}
-            />
-          }
         />
         <GatedForecastRow
           label="Forecast"
+          planDate={plan?.date}
           window={currentWindow}
           loading={isLoading}
           renderValue={(f) => f.forecast}
         />
         <GatedForecastRow
           label="Miss"
+          planDate={plan?.date}
           window={currentWindow}
           loading={isLoading}
           renderValue={(f) => `${f.miss.description} (${f.miss.probability}%)`}
@@ -305,6 +314,7 @@ export function DayCard({
         />
         <GatedForecastRow
           label="Beat"
+          planDate={plan?.date}
           window={currentWindow}
           loading={isLoading}
           renderValue={(f) => `${f.beat.description} (${f.beat.probability}%)`}
@@ -320,6 +330,7 @@ export function DayCard({
         )}
         <GatedForecastRow
           label="AI Prediction"
+          planDate={plan?.date}
           window={currentWindow}
           loading={isLoading}
           renderValue={(f) => f.aiPrediction}
@@ -374,12 +385,10 @@ function WindowControlRow({
   label,
   value,
   loading,
-  nav,
 }: {
   label: string;
   value: string;
   loading: boolean;
-  nav: ReactNode;
 }) {
   return (
     <div className="flex items-baseline gap-3">
@@ -416,7 +425,6 @@ function WindowControlRow({
         >
           {value}
         </span>
-        {nav}
       </dd>
     </div>
   );
@@ -426,6 +434,7 @@ type ScenarioTone = "neutral" | "bullish" | "bearish";
 
 function GatedForecastRow({
   label,
+  planDate,
   window,
   loading,
   renderValue,
@@ -433,6 +442,7 @@ function GatedForecastRow({
   textLine,
 }: {
   label: string;
+  planDate?: string | null;
   window: DayPlanWindow | null;
   loading: boolean;
   renderValue: (f: NonNullable<DayPlanWindow["econForecast"]>) => string;
@@ -481,7 +491,7 @@ function GatedForecastRow({
           maxWidth: textLine ? "280px" : undefined,
         }}
       >
-        <PriceRevealTag windowStartTime={window.startTime}>
+        <PriceRevealTag planDate={planDate} windowStartTime={window.startTime}>
           <span
             style={{
               color:

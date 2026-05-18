@@ -9,6 +9,50 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-18T12:00:00-04:00",
+    agent: "codex",
+    summary:
+      "Dashboard desk-plan polish: fixed redeliberation reveal state for elapsed desk-plan windows, moved multi-plan chevrons beside Streak, standardized frontend time display to 12h America/New_York, matched identity tier pill height to VIX/IV pills, replaced Risk Signal placeholder copy with directional drift/confidence metadata, removed main content borders, and added a borderless Desk Plan Map page with timeline/calendar views.",
+    files: [
+      "frontend/lib/eastern-time-format.ts",
+      "frontend/lib/time-utils.ts",
+      "frontend/main.tsx",
+      "frontend/components/narrative/PriceRevealTag.tsx",
+      "frontend/components/narrative/DayCard.tsx",
+      "frontend/components/narrative/RiskSignalCards.tsx",
+      "frontend/components/narrative/useRiskSignalDrift.ts",
+      "frontend/components/mission-control/DeskThemeWidget.tsx",
+      "frontend/components/journal/PlanFeedbackBlock.tsx",
+      "frontend/components/executive/MainDashboard.tsx",
+      "frontend/components/executive/DeskPlanSprintMap.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/TraderNametag.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-18T00:00:00-04:00",
+    agent: "codex",
+    summary:
+      "S71: Rebuilt NarrativeFlow as a catalyst sensemaking surface. Users now attach required RiskFlow headlines from a slide-out drawer, submit through a bottom CAO-style composer, and receive a chronological React Flow or Mermaid narrative map with a right-side synthesis card and evidence-backed forecast when available.",
+    files: [
+      "backend-hono/src/routes/narrative/sensemaking.ts",
+      "backend-hono/src/services/narrative-sensemaking/catalyst-reader.ts",
+      "backend-hono/src/services/narrative-sensemaking/sensemaker.ts",
+      "backend-hono/src/services/narrative-sensemaking/types.ts",
+      "frontend/components/narrative/NarrativeCanvas.tsx",
+      "frontend/components/narrative/NarrativeCatalystDrawer.tsx",
+      "frontend/components/narrative/NarrativeSensemakingComposer.tsx",
+      "frontend/components/narrative/NarrativeSensemakingMap.tsx",
+      "frontend/components/narrative/NarrativeSensemakingDetail.tsx",
+      "frontend/components/narrative/NarrativeMermaidView.tsx",
+      "frontend/components/narrative/sensemaking-types.ts",
+      "package.json",
+      "bun.lock",
+    ],
+  },
+  {
     date: "2026-05-17T18:56:23-04:00",
     agent: "codex",
     summary:

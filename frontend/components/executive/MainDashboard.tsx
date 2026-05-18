@@ -19,6 +19,7 @@ import { ExpandableTapeItem } from "./ExpandableTapeItem";
 import TradeIdeaModal from "../TradeIdeaModal";
 import { DayCard } from "../narrative/DayCard";
 import { RiskSignalCards } from "../narrative/RiskSignalCards";
+import { DeskPlanSprintMap } from "./DeskPlanSprintMap";
 import { RegimeCard } from "../dashboard/RegimeCard";
 import { RegimeTrackerModal } from "../regimes/RegimeTrackerModal";
 import {
@@ -32,7 +33,7 @@ import { useRiskFlowFilters } from "../../hooks/useRiskFlowFilters";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-const DASHBOARD_PAGES = ["Briefing", "RiskFlow"];
+const DASHBOARD_PAGES = ["Briefing", "Desk Map", "RiskFlow"];
 
 function briefTypeToLabel(bt: string): string {
   switch (bt) {
@@ -341,7 +342,7 @@ export function MainDashboard({
             )}
             {/* Main content — Brief left, Calendar right */}
             <div className="flex-1 min-h-0 flex mt-2">
-              <div className="flex-1 min-w-0 min-h-0 flex border border-[var(--fintheon-accent)]/12 rounded-xl overflow-hidden mx-1 my-1">
+              <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden mx-1 my-1">
                 {/* Left: Morning Daily Brief (50%) */}
                 <div className="flex-1 min-w-0 overflow-y-auto p-4 flex flex-col">
                   <KanbanTitle
@@ -634,9 +635,17 @@ export function MainDashboard({
             </div>
           </div>
 
-          {/* Page 2: Full RiskFlow */}
+          {/* Page 2: Desk plan sprint map */}
           <div
             data-dash-page="1"
+            className="h-full min-h-0 snap-start pt-0.5 pb-1 px-2 flex flex-col"
+          >
+            <DeskPlanSprintMap />
+          </div>
+
+          {/* Page 3: Full RiskFlow */}
+          <div
+            data-dash-page="2"
             className="h-full min-h-0 snap-start pt-0.5 pb-1 px-2 flex flex-col"
           >
             <KanbanTitle

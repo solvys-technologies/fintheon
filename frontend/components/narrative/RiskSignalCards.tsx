@@ -7,12 +7,15 @@ import {
   emptyCachedSignals,
   formatAge,
   isFreshGenerated,
-  scoreColor,
-  SOURCE_LABEL,
   type CachedSignals,
   type RiskSignal,
   type RiskSignalPayload,
 } from "./risk-signal-card-utils";
+import {
+  formatDriftLabel,
+  inferSignalDirection,
+  useRiskSignalDrift,
+} from "./useRiskSignalDrift";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const CACHE_KEY = "fintheon:risk-signals";
@@ -53,9 +56,6 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
   const [freshness, setFreshness] = useState<CachedSignals>(cached);
   const [loading, setLoading] = useState(cached.signals.length === 0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [driftData, setDriftData] = useState<
-    Record<string, { label: string; loading: boolean }>
-  >({});
   const [visible, setVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -130,30 +130,7 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
     };
   }, [visible, fetchSignals]);
 
-  useEffect(() => {
-    if (!expandedId) return;
-    if (driftData[expandedId]) return;
-    setDriftData((prev) => ({ ...prev, [expandedId]: { label: "", loading: true } }));
-    fetch(
-      `${API_BASE}/api/riskflow/risk-signals/estimated-drift?signalId=${expandedId}`,
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        setDriftData((prev) => ({
-          ...prev,
-          [expandedId]: {
-            label: String(data.label ?? data.drift ?? "N/A"),
-            loading: false,
-          },
-        }));
-      })
-      .catch(() => {
-        setDriftData((prev) => ({
-          ...prev,
-          [expandedId]: { label: "Unavailable", loading: false },
-        }));
-      });
-  }, [expandedId]);
+  const driftData = useRiskSignalDrift(signals);
 
   const textSize = compact ? "text-[9px]" : "text-[10px]";
   const titleSize = compact ? "text-[10px]" : "text-[11px]";
@@ -192,7 +169,8 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
       )}
       {signals.map((signal, index) => {
         const expanded = expandedId === signal.id;
-        const badgeColor = scoreColor(signal.score);
+        const direction = inferSignalDirection(signal);
+        const driftLabel = formatDriftLabel(driftData[signal.id]?.label);
 
         return (
           <div key={signal.id} className="min-w-0">
@@ -215,20 +193,22 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
                 >
                   {signal.title}
                 </span>
-                <span
-                  className="shrink-0 text-[9px] text-[var(--fintheon-muted)]/50 line-clamp-1 max-w-[160px]"
-                  title={signal.summary}
-                >
-                  {signal.summary?.length > 60
-                    ? signal.summary.slice(0, 60) + "..."
-                    : signal.summary}
+                <span className="shrink-0 text-right font-mono leading-tight">
+                  <span
+                    className="block text-[9px]"
+                    style={{
+                      color:
+                        direction === "BULLISH"
+                          ? "var(--fintheon-bullish)"
+                          : "var(--fintheon-bearish)",
+                    }}
+                  >
+                    [{direction}] {driftLabel}
+                  </span>
+                  <span className="block text-[8px] text-[var(--fintheon-muted)]/50">
+                    Confidence: {signal.score.toFixed(1)}
+                  </span>
                 </span>
-              </div>
-
-              <div
-                className={`${textSize} ml-5 mt-1 min-w-0 text-[var(--fintheon-muted)]/50 line-clamp-1`}
-              >
-                {signal.summary}
               </div>
 
               {expanded && (

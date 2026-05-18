@@ -9,6 +9,7 @@ import { useState } from "react";
 import { ArrowUp, ChevronRight } from "lucide-react";
 import { usePlanFeedback } from "../../hooks/usePlanFeedback";
 import type { DayPlanWindow, FeedbackAction } from "../../types/day-plan";
+import { formatEasternClockRange } from "../../lib/eastern-time-format";
 
 const ACTIONS: { id: FeedbackAction; label: string }[] = [
   { id: "followed", label: "Followed" },
@@ -60,7 +61,7 @@ export function PlanFeedbackBlock({ window }: PlanFeedbackBlockProps) {
     !submitted &&
     (action !== "faded" || !!reasonCode);
 
-  const tradingWindow = `${window.startTime}-${window.endTime}`;
+  const tradingWindow = formatEasternClockRange(window.startTime, window.endTime);
 
   const onSubmit = async () => {
     if (!canSubmit || !action) return;

@@ -11,6 +11,7 @@ import {
   getCatalystById,
 } from "./handlers.js";
 import { clusterSummary } from "./cluster-summary.js";
+import { createNarrativeSensemaking } from "./sensemaking.js";
 import {
   acceptNarrativeHypothesis,
   createNarrativeResearchTask,
@@ -25,6 +26,7 @@ export function createNarrativeRoutes(): Hono {
   app.get("/threads", getThreads);
   app.get("/card-links", getCardLinks);
   app.get("/orchestra", getNarrativeOrchestra);
+  app.post("/sensemaking", createNarrativeSensemaking);
   app.post("/orchestra/:hypothesisId/accept", acceptNarrativeHypothesis);
   app.post("/orchestra/:hypothesisId/research", researchNarrativeHypothesis);
   app.post("/orchestra/:hypothesisId/reject", rejectNarrativeHypothesis);

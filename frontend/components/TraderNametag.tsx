@@ -32,11 +32,6 @@ export function TraderNametag({
   return (
     <div
       className={`relative flex items-center overflow-hidden ${chromeClass} ${pulseClass}`}
-      style={
-        variant === "standalone"
-          ? { boxShadow: "inset 0 1px 0 rgba(199,159,74,0.25)" }
-          : undefined
-      }
     >
       <span className="relative z-10 text-[10px] font-semibold tracking-[0.14em] text-[var(--fintheon-accent)] uppercase select-none">
         {name}
@@ -44,9 +39,7 @@ export function TraderNametag({
       <div
         className="absolute inset-0 z-0 nametag-shimmer"
         style={{
-          background:
-            "linear-gradient(135deg, rgba(199,159,74,0.15) 0%, transparent 50%, rgba(199,159,74,0.08) 100%)",
-          backgroundSize: "200% 100%",
+          background: "rgba(199,159,74,0.06)",
         }}
       />
       <style>{`
