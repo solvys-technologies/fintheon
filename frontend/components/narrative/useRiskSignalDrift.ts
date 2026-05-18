@@ -48,14 +48,21 @@ export function useRiskSignalDrift(signals: RiskSignal[]) {
   return driftData;
 }
 
-export function inferSignalDirection(signal: RiskSignal): "BULLISH" | "BEARISH" {
+export function inferSignalDirection(
+  signal: RiskSignal,
+): "BULLISH" | "BEARISH" | "NEUTRAL" {
+  if (signal.direction === "bullish") return "BULLISH";
+  if (signal.direction === "bearish") return "BEARISH";
+  if (signal.direction === "neutral") return "NEUTRAL";
+
   const text = `${signal.title} ${signal.summary} ${signal.analysis}`.toLowerCase();
   const bullish = ["bullish", "upside", "rally", "bid", "relief", "de-escalat"];
   const bearish = ["bearish", "downside", "risk-off", "sell", "pressure", "escalat"];
   const bullishHits = bullish.filter((word) => text.includes(word)).length;
   const bearishHits = bearish.filter((word) => text.includes(word)).length;
   if (bullishHits > bearishHits) return "BULLISH";
-  return "BEARISH";
+  if (bearishHits > bullishHits) return "BEARISH";
+  return "NEUTRAL";
 }
 
 export function formatDriftLabel(value?: string): string {

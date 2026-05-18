@@ -1,6 +1,7 @@
 // [claude-code 2026-05-03] S58-T1: DeepSeek v4 Pro primary provider migration
 // [claude-code 2026-04-23] S32-T3 Ollama fallback chain — local provider now goes through createChainModel
-// [claude-code 2026-04-10] S8-T2: added createAgentForTask() for DAG dispatch (always local/VProxy)
+// [codex 2026-05-18] v6.7.3: default Strands agent routing is DeepSeek direct.
+// [claude-code 2026-04-10] S8-T2: added createAgentForTask() for DAG dispatch.
 // [claude-code 2026-04-08] Nous provider tries arcee trinity-large first, then qwen3.6-plus
 // [claude-code 2026-04-07] Strands agent factory — VProxy, OpenRouter, or Nous Direct provider selection
 // [claude-code 2026-05-07] S61-T2: Sub-agent tools wired from capability registry
@@ -55,7 +56,7 @@ export interface CreateAgentOptions {
   tools?: any[];
   printer?: boolean;
   conversationManager?: ConversationManager;
-  /** Override the AI provider (default: local VProxy) */
+  /** Override the AI provider (default: DeepSeek direct) */
   provider?: HarperProvider;
   /** Override model ID when provider is 'nous' */
   nousModelId?: string;
@@ -154,7 +155,7 @@ export async function isStrandsAvailable(): Promise<boolean> {
 
 /**
  * Create a one-shot agent for a DAG task.
- * Always uses VProxy (local) — DAGs run during active sessions and should fail fast.
+ * Always uses DeepSeek direct — DAGs run during active sessions and should fail fast.
  * No conversationManager, no tools (one-shot synthesis/analysis only).
  */
 export async function createAgentForTask(

@@ -3,6 +3,8 @@ export interface RiskSignal {
   title: string;
   summary: string;
   analysis: string;
+  direction: "bullish" | "bearish" | "neutral";
+  refinementStatus: "agentic" | "pending-refinement";
   score: number;
   severity: "critical" | "high" | "medium" | "low";
   source: "bulletin" | "catalyst-watch" | "risk-detector";

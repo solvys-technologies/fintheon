@@ -38,7 +38,7 @@ export interface HarperChatOptions {
   /** [S23-T3] Active Consilium surface — auto-enables surface-specific context injection (e.g. "arbitrumChamber"). */
   surface?: string;
   userContext?: UserContext;
-  /** AI provider override: DeepSeek direct/OC API, local VProxy, or legacy fallbacks. */
+  /** AI provider override: DeepSeek direct or OpenCode Go utility path. */
   provider?: HarperProvider;
   /** Per-user OpenCode Go model choice from Hermes:Admin. */
   model?: string;

@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 export interface AgentHealthEntry {
   agentId: string;
   role: string;
+  provider: string;
+  model: string;
   soulLoaded: boolean;
   soulVersion: number | null;
   nativeHomeIntact: boolean;

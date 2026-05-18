@@ -13,6 +13,7 @@ import { useDriftStatus } from "../../hooks/useDriftStatus";
 import { useLockout } from "../../hooks/useLockout";
 import { useSettings } from "../../contexts/SettingsContext";
 import { FadingRuler } from "../shared/FadingRuler";
+import { AgenticFeedbackControls } from "../shared/AgenticFeedbackControls";
 import { StreakBadge } from "../streak/StreakBadge";
 import { DayPlanChevronNav } from "./DayPlanChevronNav";
 import { PriceRevealTag } from "./PriceRevealTag";
@@ -103,7 +104,9 @@ export function DayCard({
     return `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}`;
   })() : null;
 
-  const baseSurface = bare ? "" : "bg-[var(--fintheon-surface)] rounded-lg p-3";
+  const baseSurface = bare
+    ? "relative"
+    : "relative bg-[var(--fintheon-surface)] rounded-lg p-3";
   const lockoutButtonTitle =
     lockoutState.locked && lockoutState.remaining
       ? `${Math.round(lockoutState.remaining / 60)}m left`
@@ -376,6 +379,12 @@ export function DayCard({
               </span>
           </div>
         </footer>
+      )}
+      {plan?.date && (
+        <AgenticFeedbackControls
+          surface="desk-plan"
+          itemId={`${plan.date}:${currentWindow?.id ?? currentWindowIndex}`}
+        />
       )}
     </section>
   );

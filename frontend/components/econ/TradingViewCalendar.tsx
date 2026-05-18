@@ -111,17 +111,14 @@ export function TradingViewCalendar() {
   }, []);
 
   return (
-    <div className="h-full w-full flex flex-col bg-[var(--fintheon-bg)]">
-      <div className="flex-shrink-0 px-4 py-3 border-b border-zinc-800/60">
+    <div className="h-full w-full flex flex-col bg-black">
+      <div className="flex-shrink-0 px-4 py-3 bg-black">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             <CalendarDays className="w-4 h-4 text-[var(--fintheon-accent)]" />
             <h2 className="text-sm font-semibold text-[var(--fintheon-accent)]">
-              Economic Calendar
+              Econ Calendar
             </h2>
-            <span className="text-[9px] text-zinc-500 uppercase tracking-wider">
-              TradingView
-            </span>
             {saveState.phase === "saving" && (
               <span className="ml-2 inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
                 <Loader2 className="w-3 h-3 animate-spin" />

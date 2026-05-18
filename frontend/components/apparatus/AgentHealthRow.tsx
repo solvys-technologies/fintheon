@@ -62,6 +62,9 @@ export function AgentHealthRow({ agent }: AgentHealthRowProps) {
             <span className="text-[9px] text-[var(--fintheon-accent)]/50 font-mono uppercase shrink-0">
               {agent.role}
             </span>
+            <span className="hidden sm:inline text-[8px] text-[var(--fintheon-text)]/30 font-mono uppercase shrink-0">
+              {agent.model}
+            </span>
           </div>
         </div>
 
@@ -101,6 +104,18 @@ export function AgentHealthRow({ agent }: AgentHealthRowProps) {
       {/* Expanded detail panel */}
       {expanded && (
         <div className="border-t border-[var(--fintheon-accent)]/10 px-3 py-2.5 space-y-2.5">
+          {/* SOUL status */}
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">
+                Model
+              </span>
+            </div>
+            <span className="text-[9px] font-mono text-emerald-400">
+              {agent.provider} · {agent.model}
+            </span>
+          </div>
+
           {/* SOUL status */}
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-1.5">

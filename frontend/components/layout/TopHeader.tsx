@@ -73,7 +73,7 @@ const TAB_LABELS: Record<NavTab, string> = {
   proposals: "Proposals",
   apparatus: "Apparatus",
   riskflow: "RiskFlow",
-  econ: "Economic Calendar",
+  econ: "Econ Calendar",
   narrative: "NarrativeMap",
   performance: "Performance",
   settings: "Settings",

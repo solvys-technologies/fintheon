@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronDown, ChevronRight, Loader2, ShieldAlert } from "lucide-react";
 import { FadingRuler } from "../shared/FadingRuler";
+import { AgenticFeedbackControls } from "../shared/AgenticFeedbackControls";
 import {
   emptyCachedSignals,
   formatAge,
@@ -20,6 +21,22 @@ import {
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const CACHE_KEY = "fintheon:risk-signals";
 const POLL_INTERVAL = 120_000;
+const LEGACY_FALLBACK_COPY =
+  "Recent RiskFlow input cleared the signal threshold before the AI refinement layer produced a card.";
+
+function displayAnalysis(signal: RiskSignal): string {
+  if (signal.analysis.includes(LEGACY_FALLBACK_COPY)) {
+    return "Pending Agentic Desk refinement. This catalyst met the desk-watch threshold and needs Herald/CAO synthesis before it should be treated as a full Risk Signal.";
+  }
+  return signal.analysis;
+}
+
+function isPendingRefinement(signal: RiskSignal): boolean {
+  return (
+    signal.refinementStatus === "pending-refinement" ||
+    signal.analysis.includes(LEGACY_FALLBACK_COPY)
+  );
+}
 
 function loadCached(): CachedSignals {
   try {
@@ -171,6 +188,12 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
         const expanded = expandedId === signal.id;
         const direction = inferSignalDirection(signal);
         const driftLabel = formatDriftLabel(driftData[signal.id]?.label);
+        const directionColor =
+          direction === "BULLISH"
+            ? "var(--fintheon-bullish)"
+            : direction === "BEARISH"
+              ? "var(--fintheon-bearish)"
+              : "var(--fintheon-muted)";
 
         return (
           <div key={signal.id} className="min-w-0">
@@ -196,12 +219,7 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
                 <span className="shrink-0 text-right font-mono leading-tight">
                   <span
                     className="block text-[9px]"
-                    style={{
-                      color:
-                        direction === "BULLISH"
-                          ? "var(--fintheon-bullish)"
-                          : "var(--fintheon-bearish)",
-                    }}
+                    style={{ color: directionColor }}
                   >
                     [{direction}] {driftLabel}
                   </span>
@@ -211,64 +229,74 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
                 </span>
               </div>
 
-              {expanded && (
-                <div className="ml-5 mt-2 space-y-2 rounded-md bg-[var(--fintheon-accent)]/[0.035] px-2 py-2">
-                  <FadingRuler />
-                  <p
-                    className={`${textSize} text-[var(--fintheon-text)]/70 leading-relaxed`}
-                  >
-                    {signal.analysis}
-                  </p>
+            </button>
+            {expanded && (
+              <div className="relative ml-5 mt-2 space-y-2 rounded-md bg-[var(--fintheon-accent)]/[0.035] px-2 py-2 pr-16">
+                <FadingRuler />
+                <p
+                  className={`${textSize} text-[var(--fintheon-text)]/70 leading-relaxed`}
+                >
+                  {displayAnalysis(signal)}
+                </p>
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-[7px] text-[var(--fintheon-muted)]/30 uppercase tracking-wider">
-                      Estimated Drift
-                    </span>
-                    {driftData[signal.id]?.loading ? (
-                      <span className="h-3 w-20 rounded-sm bg-[var(--fintheon-accent)]/10 animate-pulse" />
-                    ) : (
-                      <span className="text-[9px] text-[var(--fintheon-accent)] font-mono font-medium">
-                        {driftData[signal.id]?.label ?? "—"}
-                      </span>
-                    )}
+                {isPendingRefinement(signal) && (
+                  <div className="text-[8px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/55">
+                    Pending Agentic Desk refinement
                   </div>
+                )}
 
-                  {signal.relatedHeadlines.length > 0 && (
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[7px] text-[var(--fintheon-muted)]/30 uppercase tracking-wider">
-                          Related Headlines
-                        </span>
-                        <span className="text-[7px] text-[var(--fintheon-muted)]/30">
-                          {formatAge(signal.generatedAt)}
-                        </span>
-                      </div>
-                      {signal.relatedHeadlines.map((h, i) => (
-                        <div
-                          key={i}
-                          className={`${textSize} text-[var(--fintheon-muted)]/50 line-clamp-1`}
-                        >
-                          {h}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {signal.narrativeThreads.length > 0 && (
-                    <div className="flex flex-wrap gap-x-2 gap-y-1">
-                      {signal.narrativeThreads.map((t) => (
-                        <span
-                          key={t}
-                          className="text-[7px] text-[var(--fintheon-accent)]/70"
-                        >
-                          {t}
-                        </span>
-                      ))}
-                    </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[7px] text-[var(--fintheon-muted)]/30 uppercase tracking-wider">
+                    Estimated Drift
+                  </span>
+                  {driftData[signal.id]?.loading ? (
+                    <span className="h-3 w-20 rounded-sm bg-[var(--fintheon-accent)]/10 animate-pulse" />
+                  ) : (
+                    <span className="text-[9px] text-[var(--fintheon-accent)] font-mono font-medium">
+                      {driftData[signal.id]?.label ?? "—"}
+                    </span>
                   )}
                 </div>
-              )}
-            </button>
+
+                {signal.relatedHeadlines.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[7px] text-[var(--fintheon-muted)]/30 uppercase tracking-wider">
+                        Related Headlines
+                      </span>
+                      <span className="text-[7px] text-[var(--fintheon-muted)]/30">
+                        {formatAge(signal.generatedAt)}
+                      </span>
+                    </div>
+                    {signal.relatedHeadlines.map((h, i) => (
+                      <div
+                        key={i}
+                        className={`${textSize} text-[var(--fintheon-muted)]/50 line-clamp-1`}
+                      >
+                        {h}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {signal.narrativeThreads.length > 0 && (
+                  <div className="flex flex-wrap gap-x-2 gap-y-1">
+                    {signal.narrativeThreads.map((t) => (
+                      <span
+                        key={t}
+                        className="text-[7px] text-[var(--fintheon-accent)]/70"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <AgenticFeedbackControls
+                  surface="risk-signals"
+                  itemId={signal.id}
+                />
+              </div>
+            )}
           </div>
         );
       })}

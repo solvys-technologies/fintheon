@@ -5,6 +5,7 @@
 import { NothingFuse } from "../shared/NothingFuse";
 import { DigitGroup } from "../shared/DigitGroup";
 import { FadingRuler } from "../shared/FadingRuler";
+import { AgenticFeedbackControls } from "../shared/AgenticFeedbackControls";
 import { DissentBadge } from "./DissentBadge";
 import type { ArbitrumVerdict } from "./types";
 
@@ -49,7 +50,7 @@ export function VerdictCard({
       }`;
 
   return (
-    <div className={`${surfaceClass} ${className ?? ""}`}>
+    <div className={`relative ${surfaceClass} ${className ?? ""}`}>
       {embedded && <FadingRuler className="mb-2" />}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-baseline gap-2">
@@ -110,6 +111,7 @@ export function VerdictCard({
         {trigger && <span className="uppercase tracking-wider">{trigger}</span>}
       </div>
       {embedded && <FadingRuler className="mt-2" />}
+      <AgenticFeedbackControls surface="arbitrum-chamber" itemId={verdict.id} />
     </div>
   );
 }

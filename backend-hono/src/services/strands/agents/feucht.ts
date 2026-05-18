@@ -1,6 +1,6 @@
 // [claude-code 2026-05-07] S61-T2: Feucht tools wired from capability registry
 // [claude-code 2026-04-15] Wire full system prompt (persona + philosophy + shared beliefs) to fix groupthink
-// [claude-code 2026-04-08] Set provider to nous (arcee trinity → qwen3.6-plus fallback)
+// [codex 2026-05-18] v6.7.3: Feucht routes through DeepSeek direct.
 // [claude-code 2026-04-04] Feucht — Strands agent for futures, execution & risk
 import { createAgent } from "../agent-factory.js";
 import { getAgentSystemPrompt } from "../../ai/agent-instructions/index.js";
@@ -13,7 +13,7 @@ export async function createFeuchtAgent() {
       "Futures & risk — /NQ, /MNQ, /ES via TopStepX, drawdown limits, proposal validation",
     systemPrompt: await getAgentSystemPrompt("futures-desk"),
     model: { temperature: 0.25, maxTokens: 4096 },
-    provider: "nous",
+    provider: "deepseek-direct",
     tools: getRequiredTools("feucht"),
   });
 }

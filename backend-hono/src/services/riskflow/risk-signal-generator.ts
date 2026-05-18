@@ -97,6 +97,12 @@ function formatCatalysts(catalysts: CatalystCandidate[]): string[] {
   );
 }
 
+function normalizeDirection(value: unknown): RiskSignal["direction"] {
+  const raw = String(value ?? "").toLowerCase();
+  if (raw === "bullish" || raw === "bearish") return raw;
+  return "neutral";
+}
+
 function toResult(
   signals: RiskSignal[],
   status: RiskSignalResult["freshnessStatus"],
@@ -131,7 +137,9 @@ function buildFallbackSignals(catalysts: CatalystCandidate[]): RiskSignal[] {
       title: row.headline.slice(0, 96),
       summary: `IV ${row.ivScore.toFixed(1)} / ML${row.macroLevel} catalyst`,
       analysis:
-        "Recent RiskFlow input cleared the signal threshold before the AI refinement layer produced a card. Treat this as a desk-watch signal until the next analyst pass merges or dismisses it.",
+        "Pending Agentic Desk refinement. This catalyst met the desk-watch threshold and needs Herald/CAO synthesis before it should be treated as a full Risk Signal.",
+      direction: normalizeDirection(row.sentiment),
+      refinementStatus: "pending-refinement",
       score: Number(score.toFixed(1)),
       severity: severityFromScore(score),
       source: "catalyst-watch",
@@ -176,6 +184,7 @@ Return a JSON array with this exact structure:
     "title": "<clear concise title>",
     "summary": "<one-liner summary>",
     "analysis": "<2-4 sentence deep analysis>",
+    "direction": "<bullish|bearish|neutral>",
     "score": <0-10 float>,
     "source": "<bulletin|catalyst-watch|risk-detector>",
     "relatedHeadlines": ["<headline1>", "<headline2>"],
@@ -185,6 +194,7 @@ Return a JSON array with this exact structure:
 
 Rules:
 - score 0-10: market impact potential (0=negligible, 10=massive)
+- direction must reflect the catalyst's likely market effect, not severity; use "neutral" when the evidence is mixed or insufficient
 - source: "bulletin" if derived from analyst bulletins, "catalyst-watch" if from catalysts, "risk-detector" if from systemic context
 - Deduplicate overlapping signals — merge related items into one signal
 - relatedHeadlines: 1-3 original headlines that informed this signal
@@ -195,7 +205,7 @@ Rules:
     const result = await invokeAgent({
       systemPrompt,
       userPrompt,
-      provider: "nous",
+      provider: "deepseek-direct",
     });
 
     const raw = result.text
@@ -225,7 +235,7 @@ Rules:
     }
 
     const now = new Date().toISOString();
-    const signals = parsed.map((item) => {
+    const signals: RiskSignal[] = parsed.map((item) => {
       const score = Math.min(10, Math.max(0, Number(item.score) || 0));
       const source = String(item.source);
       return {
@@ -233,6 +243,8 @@ Rules:
         title: String(item.title || "Untitled Signal"),
         summary: String(item.summary || ""),
         analysis: String(item.analysis || ""),
+        direction: normalizeDirection(item.direction),
+        refinementStatus: "agentic",
         score: Number(score.toFixed(1)),
         severity: severityFromScore(score),
         source: (["bulletin", "catalyst-watch", "risk-detector"].includes(

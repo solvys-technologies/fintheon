@@ -14,6 +14,7 @@ import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import { BeatMissBadge } from "./BeatMissBadge";
 import { openSourcePopup } from "../../lib/source-popup";
 import { NothingFuse } from "../shared/NothingFuse";
+import { AgenticFeedbackControls } from "../shared/AgenticFeedbackControls";
 import {
   alertSeverityToPalette,
   fuseScoreFromAlert,
@@ -58,7 +59,7 @@ export function RiskFlowPostCard({
   }, []);
 
   return (
-    <article className="border-t border-[var(--fintheon-accent)]/8 bg-[rgba(5,4,2,0.42)] px-3 py-3 sm:px-4">
+    <article className="relative border-t border-[var(--fintheon-accent)]/8 bg-[rgba(5,4,2,0.42)] px-3 py-3 sm:px-4">
       <div className="min-w-0">
         {alert.videoUrl ? (
           <div className="relative block overflow-hidden rounded-[6px] border border-[var(--fintheon-accent)]/10 bg-[var(--fintheon-bg)]">
@@ -238,6 +239,7 @@ export function RiskFlowPostCard({
           )}
         </footer>
       </div>
+      <AgenticFeedbackControls surface="riskflow-item" itemId={alert.id} />
     </article>
   );
 }

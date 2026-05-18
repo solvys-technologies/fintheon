@@ -9,6 +9,26 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-18T13:45:00-04:00",
+    agent: "codex",
+    summary:
+      "v6.7.3 hotfix: restored the outer main-content border, blended the Econ Calendar header, added hover feedback controls to agentic desk cards, added explicit Risk Signal direction/refinement status, and re-verified Agentic Desk routing on DeepSeek.",
+    files: [
+      "backend-hono/src/services/riskflow/risk-signal-generator.ts",
+      "backend-hono/src/services/riskflow/arbitrum-chamber-scheduler.ts",
+      "backend-hono/src/routes/apparatus/agent-health.ts",
+      "frontend/components/shared/AgenticFeedbackControls.tsx",
+      "frontend/components/apparatus/AgentHealthRow.tsx",
+      "frontend/hooks/useAgentHealth.ts",
+      "frontend/components/narrative/RiskSignalCards.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/econ/TradingViewCalendar.tsx",
+      "package.json",
+      "mobile/package.json",
+      "scripts/fintheon-update.sh",
+    ],
+  },
+  {
     date: "2026-05-18T12:00:00-04:00",
     agent: "codex",
     summary:

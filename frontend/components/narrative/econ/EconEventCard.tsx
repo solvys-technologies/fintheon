@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown } from "lucide-react";
 import { SolvysLoader } from "../../shared/SolvysLoader";
+import { AgenticFeedbackControls } from "../../shared/AgenticFeedbackControls";
 import type { EconHistoryPrint } from "../../../types/agent-desk";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -118,7 +119,7 @@ export function EconEventCard({ event, appearDelay }: EconEventCardProps) {
 
   return (
     <div
-      className="w-full transition-all duration-300 ease-out"
+      className="relative w-full transition-all duration-300 ease-out"
       style={{
         opacity: appeared ? 1 : 0,
         transform: appeared ? "translateY(0)" : "translateY(8px)",
@@ -265,6 +266,10 @@ export function EconEventCard({ event, appearDelay }: EconEventCardProps) {
 
               {/* AI synthesis confidence — Nothing-Design fuse footer */}
               <ConfidenceFuse confidence={synthesis.confidence} />
+              <AgenticFeedbackControls
+                surface="econ-intelligence"
+                itemId={event.ticker}
+              />
             </>
           )}
         </div>

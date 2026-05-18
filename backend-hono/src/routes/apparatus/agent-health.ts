@@ -14,10 +14,14 @@ const AGENT_ROLES: Record<AgentId, string> = {
   consul: "Quantitative",
   herald: "Contrarian",
 };
+const AGENT_PROVIDER = "deepseek-direct";
+const AGENT_MODEL = "deepseek-reasoner";
 
 interface AgentHealthEntry {
   agentId: AgentId;
   role: string;
+  provider: typeof AGENT_PROVIDER;
+  model: typeof AGENT_MODEL;
   soulLoaded: boolean;
   soulVersion: number | null;
   nativeHomeIntact: boolean;
@@ -181,6 +185,8 @@ export function createApparatusRoutes(): Hono {
       entryMap.set(agentId, {
         agentId,
         role: AGENT_ROLES[agentId],
+        provider: AGENT_PROVIDER,
+        model: AGENT_MODEL,
         soulLoaded: soul.soulLoaded,
         soulVersion: soul.soulVersion,
         nativeHomeIntact: soul.nativeHomeIntact,

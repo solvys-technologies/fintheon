@@ -943,8 +943,11 @@ function MainLayoutInner() {
             {/* Left Panels */}
             {leftPanels.length > 0 && <div className="flex">{leftPanels}</div>}
 
-            {/* Center Content - TopStepX or Main Content with crossfade. */}
-            <div className="z-10 flex-1 overflow-hidden relative min-w-0 flex flex-col bg-[var(--fintheon-bg)] rounded-tl-2xl rounded-bl-2xl rounded-tr-2xl rounded-br-2xl">
+            {/* Center Content - TopStepX or Main Content with crossfade.
+                Full 4-sided gold hairline border + rounded corners so the main
+                content floats above both the left sidebar and the right Strategium
+                (which use bg-surface, lighter than the main content's bg-bg). */}
+            <div className="z-10 flex-1 overflow-hidden relative min-w-0 flex flex-col border-t border-b border-l border-r border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] rounded-tl-2xl rounded-bl-2xl rounded-tr-2xl rounded-br-2xl">
               {/* Timeline overlay — slides over browser, does not affect iframe sizing */}
               <TimelineOverlay
                 open={timelineOverlayOpen}

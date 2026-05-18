@@ -1,5 +1,6 @@
 // [claude-code 2026-04-16] S20-T2: Filter fetchRecentHeadlines by Oracle's subjects (macro/monetary-policy/prediction-markets/regime)
-// [claude-code 2026-04-10] ArbitrumChamber AI scheduler — Oracle (Nous) generates forward-looking outlook every 30min
+// [claude-code 2026-05-18] Oracle scheduler now routes through DeepSeek direct.
+// [claude-code 2026-04-10] ArbitrumChamber AI scheduler — Oracle generates forward-looking outlook every 30min
 import { invokeAgent } from "../strands/invoke-helper.js";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
@@ -23,7 +24,7 @@ export interface AIInstrumentOutlook {
 interface AIOutlookCache {
   instruments: AIInstrumentOutlook[];
   generatedAt: string;
-  source: "oracle-nous";
+  source: "oracle-deepseek";
 }
 
 let cachedOutlook: AIOutlookCache | null = null;
@@ -91,7 +92,7 @@ async function fetchRecentHeadlines(): Promise<string> {
 }
 
 async function runArbitrumChamberJob(): Promise<void> {
-  log.info("ArbitrumChamber AI run starting (Oracle via Nous)");
+  log.info("ArbitrumChamber AI run starting (Oracle via DeepSeek)");
   const headlines = await fetchRecentHeadlines();
 
   const systemPrompt = `You are Oracle, the All-Seer analyst at Priced In Capital. You produce forward-looking instrument outlooks for the ArbitrumChamber dashboard. You analyze scored news items and produce structured JSON. Be precise and direct. Only output valid JSON, no markdown.`;
@@ -126,7 +127,7 @@ Rules:
     const result = await invokeAgent({
       systemPrompt,
       userPrompt,
-      provider: "nous",
+      provider: "deepseek-direct",
       model: { temperature: 0.2, maxTokens: 2048 },
     });
 
@@ -157,7 +158,7 @@ Rules:
     cachedOutlook = {
       instruments,
       generatedAt: new Date().toISOString(),
-      source: "oracle-nous",
+      source: "oracle-deepseek",
     };
 
     log.info(
