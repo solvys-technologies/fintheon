@@ -25,6 +25,8 @@ const log = createLogger("WindowScheduler");
 const STANDING_MORNING = { startTime: "09:30", endTime: "11:00" } as const;
 const STANDING_AFTERNOON = { startTime: "14:30", endTime: "16:00" } as const;
 const PRINT_BAND_MIN = 45;
+const ACTIONABLE_START_MIN = 8 * 60;
+const ACTIONABLE_END_MIN = 16 * 60;
 
 export interface PlannedWindow {
   windowIndex: number;
@@ -328,10 +330,11 @@ function buildPlannedDays(
   const dow = new Date(`${iso}T12:00:00Z`).getUTCDay();
   const dayLabel = DAY_LABELS[dow] ?? "?";
 
-  const dominant = pickDominantEvent(events);
+  const actionableEvents = filterActionableEvents(iso, events);
+  const dominant = pickDominantEvent(actionableEvents);
 
   // Sort events by impact to give priority to high-impact windows
-  const sorted = [...events].sort(
+  const sorted = [...actionableEvents].sort(
     (a, b) =>
       (impactWeight(b.impact ?? "low") ?? 0) -
       (impactWeight(a.impact ?? "low") ?? 0),
@@ -361,7 +364,7 @@ function buildPlannedDays(
 
   // If no windows found, generate a single standing-window plan
   if (categoryWindows.size === 0) {
-    const earningsTilt = events.some((e) =>
+    const earningsTilt = actionableEvents.some((e) =>
       (e.category ?? "").toLowerCase().includes("earnings"),
     );
     const standing = earningsTilt ? STANDING_AFTERNOON : STANDING_MORNING;
@@ -405,6 +408,61 @@ function pickDominantEvent(
   )[0];
 }
 
+function filterActionableEvents(
+  iso: string,
+  events: Awaited<ReturnType<typeof readEconEvents>>,
+): Awaited<ReturnType<typeof readEconEvents>> {
+  const now = new Date();
+  const ny = nowInNewYork(now);
+  const todayIso = ny.dateIso;
+  const nowMinutes = ny.minutes;
+  return events.filter((event) => {
+    if (!event.date || event.date !== iso) return false;
+    if (isMultiDayEvent(event)) return true;
+    if (!event.time) return true;
+    const minutes = minutesFromHHMM(event.time);
+    if (minutes == null) return false;
+    if (minutes < ACTIONABLE_START_MIN || minutes > ACTIONABLE_END_MIN) {
+      return false;
+    }
+    if (iso === todayIso && minutes < nowMinutes - 15) return false;
+    return true;
+  });
+}
+
+function isMultiDayEvent(event: {
+  name?: string | null;
+  category?: string | null;
+}): boolean {
+  const text = `${event.name ?? ""} ${event.category ?? ""}`.toLowerCase();
+  return /\b(jackson hole|summit|symposium|forum|conference|meetings?)\b/.test(
+    text,
+  );
+}
+
+function nowInNewYork(date: Date): { dateIso: string; minutes: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  })
+    .formatToParts(date)
+    .reduce<Record<string, string>>((acc, part) => {
+      if (part.type !== "literal") acc[part.type] = part.value;
+      return acc;
+    }, {});
+  const hour = Number(parts.hour ?? "0");
+  const minute = Number(parts.minute ?? "0");
+  return {
+    dateIso: `${parts.year}-${parts.month}-${parts.day}`,
+    minutes: hour * 60 + minute,
+  };
+}
+
 function impactWeight(impact: string): number {
   const order: Record<string, number> = { high: 3, medium: 2, low: 1 };
   return order[impact] ?? 1;
@@ -413,16 +471,27 @@ function impactWeight(impact: string): number {
 function bandAroundPrint(
   timeHHMM: string,
 ): { start: string; end: string } | null {
+  const total = minutesFromHHMM(timeHHMM);
+  if (total == null) return null;
+  if (total < ACTIONABLE_START_MIN || total > ACTIONABLE_END_MIN) return null;
+
+  const start = clampMinutes(
+    total - PRINT_BAND_MIN,
+    ACTIONABLE_START_MIN,
+    ACTIONABLE_END_MIN - 30,
+  );
+  const end = clampMinutes(total + PRINT_BAND_MIN, start + 30, ACTIONABLE_END_MIN);
+  return { start: minutesToHHMM(start), end: minutesToHHMM(end) };
+}
+
+function minutesFromHHMM(timeHHMM: string): number | null {
   const match = timeHHMM.match(/^(\d{1,2}):(\d{2})/);
   if (!match) return null;
   const hours = parseInt(match[1], 10);
   const minutes = parseInt(match[2], 10);
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
-
-  const total = hours * 60 + minutes;
-  const start = clampMinutes(total - PRINT_BAND_MIN, 8 * 60, 16 * 60 - 30);
-  const end = clampMinutes(total + PRINT_BAND_MIN, start + 30, 16 * 60);
-  return { start: minutesToHHMM(start), end: minutesToHHMM(end) };
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+  return hours * 60 + minutes;
 }
 
 function clampMinutes(value: number, min: number, max: number): number {

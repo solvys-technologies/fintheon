@@ -14,6 +14,7 @@ import { createLogger } from "../../lib/logger.js";
 import type { EconForecast, EconForecastScenario } from "../../types/day-plan.js";
 
 const log = createLogger("EconForecast");
+const FORECAST_TIMEOUT_MS = 25_000;
 
 export interface EconForecastInput {
   eventName: string;
@@ -80,15 +81,19 @@ export async function generateEconForecast(
   try {
     const { prompt, systemPrompt } = await buildPrompt(input);
 
-    const result = await invokeAgent({
-      systemPrompt,
-      userPrompt: prompt,
-      model: {
-        model: "deepseek-v4-pro",
-        temperature: 0.45,
-        maxTokens: 600,
-      },
-    });
+    const result = await withTimeout(
+      invokeAgent({
+        systemPrompt,
+        userPrompt: prompt,
+        model: {
+          model: "deepseek-reasoner",
+          temperature: 0.45,
+          maxTokens: 600,
+        },
+        provider: "deepseek-direct",
+      }),
+      FORECAST_TIMEOUT_MS,
+    );
 
     const forecast = parseForecastResponse(result.text, input);
     if (!forecast) {
@@ -114,6 +119,24 @@ export async function generateEconForecast(
     });
     return buildFallbackForecast(input);
   }
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Econ forecast timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
 }
 
 /**

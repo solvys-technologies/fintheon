@@ -6,7 +6,7 @@ import type { AgentId } from "../hermes/types.js";
 import { getContextForAgent } from "../agent-context-bank-service.js";
 import { getMemories } from "../agent-memory/memory-store.js";
 import { buildFeedContext } from "../ai/agent-instructions/index.js";
-import { readDayPlan } from "../day-plan/day-plan-service.js";
+import { generateDayPlan } from "../day-plan/day-plan-service.js";
 import { getRecentOutputs } from "./agent-outputs.js";
 import { getLockoutSummary } from "../lockout.js";
 
@@ -73,7 +73,7 @@ export async function preflight(
   });
 
   await pushSection(sections, "Active Desk Plan", async () => {
-    const plan = await readDayPlan(DEFAULT_TEAM_ID, todayInNewYork());
+    const { plan } = await generateDayPlan({ teamId: DEFAULT_TEAM_ID });
     if (!plan) return [];
     const windows = plan.windows.slice(0, 3).map((w) => {
       const prices = w.pricesOfInterest?.length
@@ -83,7 +83,8 @@ export async function preflight(
         ? ` | entries ${w.entries.join(", ")}`
         : "";
       const target = w.profitTarget ? ` | target ${w.profitTarget}` : "";
-      return `- ${w.startTime}-${w.endTime}${prices}${entries}${target}`;
+      const event = w.eventName ? ` | event ${w.eventName}` : "";
+      return `- ${w.startTime}-${w.endTime}${event}${prices}${entries}${target}`;
     });
     return [
       `- Theme: ${clip(plan.deskTheme ?? "No desk theme set.", 320)}`,
@@ -167,13 +168,4 @@ async function pushRaw(
 function clip(value: string, max: number): string {
   if (value.length <= max) return value;
   return `${value.slice(0, Math.max(0, max - 15)).trimEnd()}\n[truncated]`;
-}
-
-function todayInNewYork(): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/New_York",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
 }

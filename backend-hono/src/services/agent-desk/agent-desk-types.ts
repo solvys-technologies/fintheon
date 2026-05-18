@@ -298,11 +298,23 @@ export interface EconPrintStat {
   printedAt: string | null;
 }
 
+export interface UpcomingEconEvent {
+  eventName: string;
+  date: string;
+  time: string | null;
+  country: string | null;
+  category: string | null;
+  impact: string | null;
+  forecast: string | null;
+  previous: string | null;
+}
+
 export interface SimulationContext {
   vixLevel: number | null;
   fredIndicators: Record<string, number>;
   riskflowHeadlines: RiskFlowHeadline[];
   econPrintHistory?: EconPrintStat[];
+  upcomingEconEvents?: UpcomingEconEvent[];
   fredFetchedAt: string | null;
   fetchedAt: string;
 }

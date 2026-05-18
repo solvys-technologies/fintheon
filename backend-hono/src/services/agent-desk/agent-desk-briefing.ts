@@ -311,6 +311,15 @@ export function generateBriefing(
     );
   }
 
+  if (context.upcomingEconEvents?.length) {
+    const nextEvents = context.upcomingEconEvents.slice(0, 5).map((event) => {
+      const time = event.time ? ` ${event.time} ET` : "";
+      const impact = event.impact ? `, ${event.impact} impact` : "";
+      return `${event.eventName} (${event.date}${time}${impact})`;
+    });
+    keyFindings.push(`Upcoming econ catalysts: ${nextEvents.join("; ")}.`);
+  }
+
   // Econ print pattern analysis
   if (context.econPrintHistory?.length) {
     const beats = context.econPrintHistory.filter(

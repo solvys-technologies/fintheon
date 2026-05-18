@@ -21,6 +21,7 @@ const log = createLogger("DayPlanService");
 
 const DEFAULT_TEAM = "pic";
 const DEFAULT_INSTRUMENT = "/NQ";
+const FORECAST_REFRESH_WINDOW_MINUTES = 30;
 
 export interface GenerateDayPlanInput {
   teamId?: string;
@@ -47,26 +48,38 @@ export async function generateDayPlan(
 ): Promise<GenerateDayPlanResult> {
   const teamId = input.teamId ?? DEFAULT_TEAM;
   const reference = input.date ?? new Date();
-  const dateIso = reference.toISOString().slice(0, 10);
+  const dateIso = input.date
+    ? reference.toISOString().slice(0, 10)
+    : dateInNewYork(reference);
+  const econEvents = await readEconEvents({ from: dateIso, to: dateIso }).catch(
+    () => [],
+  );
+  const planned = planDay(new Date(`${dateIso}T12:00:00Z`), econEvents);
 
   if (!input.override) {
     const existing = await readDayPlan(teamId, dateIso);
     if (existing) {
-      // Check if any existing windows need forecast refresh (30-min pre-window)
-      const updated = await maybeRefreshExisting(existing);
-      return updated
-        ? { plan: updated, persisted: true, reused: true }
-        : { plan: existing, persisted: false, reused: true };
+      const candidate = hydrateLegacyWindowNames(existing, planned);
+      if (isStaleAgainstUpcomingEvents(candidate, planned)) {
+        log.warn("Existing day-plan is stale against upcoming econ events", {
+          date: dateIso,
+          existingEvent: candidate.eventName,
+          plannedEvent: planned.dominantEvent,
+        });
+      } else {
+        // Check if any existing windows need forecast refresh (30-min pre-window)
+        const updated = await maybeRefreshExisting(candidate);
+        return updated
+          ? { plan: updated, persisted: true, reused: true }
+          : { plan: candidate, persisted: false, reused: true };
+      }
     }
   }
 
-  const [econEvents, feedResponse, regimeState] = await Promise.all([
-    readEconEvents({ from: dateIso, to: dateIso }).catch(() => []),
+  const [feedResponse, regimeState] = await Promise.all([
     getFeed("system", { limit: 20 }).catch(() => ({ items: [] } as never)),
     getCurrentRegime().catch(() => null),
   ]);
-
-  const planned = planDay(reference, econEvents);
 
   const topHeadline = (feedResponse.items ?? [])[0]?.headline ?? "";
   const eventName = planned.dominantEvent;
@@ -110,6 +123,72 @@ export async function generateDayPlan(
   });
 
   return { plan, persisted: true, reused: false };
+}
+
+function isStaleAgainstUpcomingEvents(
+  existing: DayPlan,
+  planned: ReturnType<typeof planDay>,
+): boolean {
+  if (planned.windows.length > 0 && existing.windows.length === 0) return true;
+  const plannedNames = new Set(
+    planned.windows
+      .map((window) => normalizeEventName(window.eventName))
+      .filter((name): name is string => Boolean(name)),
+  );
+  const plannedDominant = normalizeEventName(planned.dominantEvent);
+  const existingNames = new Set(
+    [
+      existing.eventName,
+      ...existing.windows.map((window) => window.eventName),
+    ]
+      .map(normalizeEventName)
+      .filter((name): name is string => Boolean(name)),
+  );
+
+  if (plannedNames.size === 0 && !plannedDominant) {
+    return existingNames.size > 0;
+  }
+  const existingWindowNames = existing.windows
+    .map((window) => normalizeEventName(window.eventName))
+    .filter(Boolean);
+  if (plannedNames.size > 0 && existingWindowNames.length === 0) return true;
+  if (plannedDominant && !existingNames.has(plannedDominant)) return true;
+  for (const name of existingNames) {
+    if (!plannedNames.has(name) && name !== plannedDominant) return true;
+  }
+  return false;
+}
+
+function hydrateLegacyWindowNames(
+  existing: DayPlan,
+  planned: ReturnType<typeof planDay>,
+): DayPlan {
+  if (existing.windows.length === 0) return existing;
+  const hasStoredWindowNames = existing.windows.some((window) =>
+    normalizeEventName(window.eventName),
+  );
+  if (hasStoredWindowNames) return existing;
+  return {
+    ...existing,
+    windows: existing.windows.map((window, index) => ({
+      ...window,
+      eventName: planned.windows[index]?.eventName ?? window.eventName,
+    })),
+  };
+}
+
+function normalizeEventName(value: string | null | undefined): string | null {
+  const normalized = value?.trim().toLowerCase().replace(/\s+/g, " ");
+  return normalized || null;
+}
+
+function dateInNewYork(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
 }
 
 export async function regenerateDayPlan(
@@ -219,7 +298,7 @@ async function buildWindows(
     const isSpeech = matchedEvent ? isSpeechEvent(matchedEvent) : false;
 
     let econForecast = null;
-    if (matchedEvent) {
+    if (matchedEvent && shouldGenerateForecastForWindow(dateIso, pw.startTime)) {
       econForecast = await generateEconForecast({
         eventName: matchedEvent.name,
         eventDate: dateIso,
@@ -266,6 +345,51 @@ function findMatchingEvent(
     if (en && (name.includes(en) || en.includes(name))) return e;
   }
   return null;
+}
+
+function shouldGenerateForecastForWindow(
+  dateIso: string,
+  startTime: string,
+): boolean {
+  const now = nowInNewYork(new Date());
+  if (dateIso !== now.dateIso) return false;
+  const startMinutes = minutesFromHHMM(startTime);
+  if (startMinutes == null) return false;
+  return (
+    now.minutes >= startMinutes - FORECAST_REFRESH_WINDOW_MINUTES &&
+    now.minutes < startMinutes
+  );
+}
+
+function nowInNewYork(date: Date): { dateIso: string; minutes: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  })
+    .formatToParts(date)
+    .reduce<Record<string, string>>((acc, part) => {
+      if (part.type !== "literal") acc[part.type] = part.value;
+      return acc;
+    }, {});
+  return {
+    dateIso: `${parts.year}-${parts.month}-${parts.day}`,
+    minutes: Number(parts.hour ?? "0") * 60 + Number(parts.minute ?? "0"),
+  };
+}
+
+function minutesFromHHMM(value: string): number | null {
+  const match = value.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+  return hours * 60 + minutes;
 }
 
 // ── Refresh logic ───────────────────────────────────────────────────────────
@@ -382,22 +506,31 @@ async function persistDayPlan(input: PersistInput): Promise<DayPlan> {
     return synthesizeInMemoryPlan(input);
   }
 
-  const { data: planRow, error: planErr } = await sb
+  const generatedAt = new Date().toISOString();
+  const planPayload = {
+    team_id: input.teamId,
+    date: input.dateIso,
+    event_name: input.eventName,
+    desk_theme: input.deskTheme,
+    generated_by: input.generatedBy,
+    generated_at: generatedAt,
+    plan_variant: input.planVariant ?? null,
+  };
+  let { data: planRow, error: planErr } = await sb
     .from("day_plans")
-    .upsert(
-      {
-        team_id: input.teamId,
-        date: input.dateIso,
-        event_name: input.eventName,
-        desk_theme: input.deskTheme,
-        generated_by: input.generatedBy,
-        generated_at: new Date().toISOString(),
-        plan_variant: input.planVariant ?? null,
-      },
-      { onConflict: "team_id,date" },
-    )
+    .upsert(planPayload, { onConflict: "team_id,date" })
     .select()
     .single();
+  if (planErr?.message?.includes("plan_variant")) {
+    const { plan_variant: _planVariant, ...legacyPayload } = planPayload;
+    const legacyResult = await sb
+      .from("day_plans")
+      .upsert(legacyPayload, { onConflict: "team_id,date" })
+      .select()
+      .single();
+    planRow = legacyResult.data;
+    planErr = legacyResult.error;
+  }
   if (planErr || !planRow) {
     log.warn("day_plans upsert failed — returning in-memory plan", {
       error: planErr?.message,
@@ -416,15 +549,50 @@ async function persistDayPlan(input: PersistInput): Promise<DayPlan> {
     econ_forecast: w.econForecast,
   }));
 
-  const { data: insertedWindows, error: winErr } = await sb
+  let { data: insertedWindows, error: winErr } = await sb
     .from("day_plan_windows")
     .insert(windowInserts)
     .select();
+  if (winErr?.message?.includes("econ_forecast")) {
+    const legacyWindowInserts = windowInserts.map(
+      ({ econ_forecast: _econForecast, ...legacyWindow }) => legacyWindow,
+    );
+    const legacyWindowResult = await sb
+      .from("day_plan_windows")
+      .insert(legacyWindowInserts)
+      .select();
+    insertedWindows = legacyWindowResult.data;
+    winErr = legacyWindowResult.error;
+  }
+  if (winErr?.message?.includes("event_name")) {
+    const minimalWindowInserts = windowInserts.map(
+      ({
+        event_name: _eventName,
+        econ_forecast: _econForecast,
+        ...legacyWindow
+      }) => legacyWindow,
+    );
+    const minimalWindowResult = await sb
+      .from("day_plan_windows")
+      .insert(minimalWindowInserts)
+      .select();
+    insertedWindows = minimalWindowResult.data;
+    winErr = minimalWindowResult.error;
+  }
   if (winErr) {
     log.warn("day_plan_windows insert failed", { error: winErr.message });
   }
 
-  return rowsToDayPlan(planRow, insertedWindows ?? []);
+  const persisted = rowsToDayPlan(planRow, insertedWindows ?? []);
+  if (persisted.windows.length === 0) return persisted;
+  return {
+    ...persisted,
+    windows: persisted.windows.map((window, index) => ({
+      ...window,
+      eventName: input.windows[index]?.eventName ?? window.eventName,
+      econForecast: input.windows[index]?.econForecast ?? window.econForecast,
+    })),
+  };
 }
 
 function synthesizeInMemoryPlan(input: PersistInput): DayPlan {

@@ -5,14 +5,14 @@
 //   sanitizeTheme now hard-caps at 160 chars on a word boundary.
 // [claude-code 2026-04-26] S45-T1: Desk Theme generator. Composes a prompt from
 // today's top RiskFlow catalyst, IV score, planned window + prices, and asks
-// claude-sonnet-4-6 (via VProxy at localhost:8317) for a single-sentence theme
-// message that ties the day's setup to its catalyst. Plain text only — no
-// emojis, no decorative glyphs.
+// DeepSeek for a single-sentence theme that ties the day's setup to its
+// catalyst. Plain text only — no emojis, no decorative glyphs.
 
 import { invokeAgent } from "../strands/index.js";
 import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger("DeskTheme");
+const THEME_TIMEOUT_MS = 20_000;
 
 export interface DeskThemeInput {
   /** ISO date "YYYY-MM-DD" */
@@ -50,15 +50,19 @@ export async function generateDeskTheme(
   const prompt = buildPrompt(input);
 
   try {
-    const result = await invokeAgent({
-      systemPrompt: SYSTEM_PROMPT,
-      userPrompt: prompt,
-      model: {
-        model: "claude-sonnet-4-6",
-        temperature: 0.55,
-        maxTokens: 200,
-      },
-    });
+    const result = await withTimeout(
+      invokeAgent({
+        systemPrompt: SYSTEM_PROMPT,
+        userPrompt: prompt,
+        model: {
+          model: "deepseek-reasoner",
+          temperature: 0.55,
+          maxTokens: 200,
+        },
+        provider: "deepseek-direct",
+      }),
+      THEME_TIMEOUT_MS,
+    );
     return sanitizeTheme(result.text) || fallbackTheme(input);
   } catch (err) {
     log.warn("Desk theme generation failed — using fallback", {
@@ -66,6 +70,24 @@ export async function generateDeskTheme(
     });
     return fallbackTheme(input);
   }
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Desk theme generation timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
 }
 
 function buildPrompt(input: DeskThemeInput): string {

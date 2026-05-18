@@ -55,17 +55,14 @@ const CaoEveningReviewSchema = z.object({
 });
 
 export async function handleGetToday(c: Context): Promise<Response> {
-  const dateIso = new Date().toISOString().slice(0, 10);
-  let plan = await readDayPlan(TEAM_ID, dateIso);
-  if (!plan) {
-    try {
-      const result = await generateDayPlan({ teamId: TEAM_ID });
-      plan = result.plan;
-    } catch (err) {
-      log.warn("on-demand day-plan generation failed", {
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
+  let plan: DayPlan | null = null;
+  try {
+    const result = await generateDayPlan({ teamId: TEAM_ID });
+    plan = result.plan;
+  } catch (err) {
+    log.warn("on-demand day-plan generation failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
   return c.json({ plan });
 }
@@ -85,7 +82,7 @@ export async function handleGetWeek(c: Context): Promise<Response> {
       day: p.day,
       ivScore: p.ivScore,
       windowCount: persisted?.windows.length ?? p.windows.length,
-      eventName: persisted?.eventName ?? p.dominantEvent,
+      eventName: p.dominantEvent,
     };
   });
   return c.json({ week });
