@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-19T01:00:00",
+    agent: "claude-code",
+    summary:
+      "S62-T22: Micro-interactions pass — removed transition-all from CognitionPanel, caret now uses --t-icon-swap-dur/ease token, SlotReveal uses CSS var duration + prefersReducedMotion guard, SlotSkeleton stagger aligned to --t-digit-stagger (70ms), EconCountdownModal transitions use --t-panel-open-dur/ease + --t-modal-open-dur tokens, full prefers-reduced-motion support in CountdownCard + inline style block. Fixed Tailwind canonical class lint warning.",
+    files: [
+      "frontend/components/chat/CognitionPanel.tsx",
+      "frontend/components/chat/slots/SlotShell.tsx",
+      "frontend/components/feed/EconCountdownModal.tsx",
+    ],
+  },
+  {
     date: "2026-04-29T14:30:00",
     agent: "claude-code",
     summary:
