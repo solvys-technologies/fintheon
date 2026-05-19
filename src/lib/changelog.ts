@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-19T00:00:00",
+    agent: "claude-code",
+    summary:
+      "SOL-65: Arbitrum verdict digest now uses markdown formatting — bold consensus/confidence numerals, structured seat reads list, dissent callout, risk bullet list, HR separator, italic disclaimer. VerdictCard renders via StreamdownChat with Solvys-correct prose overrides.",
+    files: [
+      "backend-hono/src/services/arbitrum/facilitator.ts",
+      "frontend/components/arbitrum/VerdictCard.tsx",
+    ],
+  },
+  {
     date: "2026-04-29T14:30:00",
     agent: "claude-code",
     summary:
