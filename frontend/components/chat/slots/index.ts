@@ -8,4 +8,8 @@ export { PsychTableSlot } from "./PsychTableSlot";
 export { PerfTableSlot } from "./PerfTableSlot";
 export { VisionInsightSlot } from "./VisionInsightSlot";
 export { TVChartSlot } from "./TVChartSlot";
+export { PriceLevelSlot } from "./PriceLevelSlot";
+export { ProbabilityTableSlot } from "./ProbabilityTableSlot";
+export { AgentHandoffSlot } from "./AgentHandoffSlot";
+export { BacktestResultSlot } from "./BacktestResultSlot";
 export { SLOT_LANGUAGES, SLOT_RENDERERS } from "./StreamdownChat";

@@ -9,6 +9,24 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-19T02:00:00",
+    agent: "claude-code",
+    summary:
+      "SOL-63: Streamdown slot coverage — added 4 missing renderers (price-level, probability-table, agent-handoff, backtest-result). Fixed CatalystCardSlot link click-through + as_of display. Fixed NarrativePreviewSlot last_update display. Added overflowX scroll wrapper to PsychTableSlot + PerfTableSlot for mobile. Registered all new slots in StreamdownChat and index.",
+    files: [
+      "frontend/components/chat/slots/PriceLevelSlot.tsx",
+      "frontend/components/chat/slots/ProbabilityTableSlot.tsx",
+      "frontend/components/chat/slots/AgentHandoffSlot.tsx",
+      "frontend/components/chat/slots/BacktestResultSlot.tsx",
+      "frontend/components/chat/slots/StreamdownChat.tsx",
+      "frontend/components/chat/slots/index.ts",
+      "frontend/components/chat/slots/CatalystCardSlot.tsx",
+      "frontend/components/chat/slots/NarrativePreviewSlot.tsx",
+      "frontend/components/chat/slots/PsychTableSlot.tsx",
+      "frontend/components/chat/slots/PerfTableSlot.tsx",
+    ],
+  },
+  {
     date: "2026-05-19T01:00:00",
     agent: "claude-code",
     summary:
