@@ -6,6 +6,11 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 
+function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+}
+
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
 const POLL_INTERVAL_MS = 30_000;
 const VISIBLE_WINDOW_MS = 5 * 60 * 1000; // T-5min gate
@@ -226,6 +231,7 @@ interface CountdownCardProps {
 
 function CountdownCard({ card, msUntil }: CountdownCardProps) {
   const [visible, setVisible] = useState(false);
+  const reduced = prefersReducedMotion();
   useEffect(() => {
     const id = window.setTimeout(() => setVisible(true), 16);
     return () => window.clearTimeout(id);
@@ -246,13 +252,16 @@ function CountdownCard({ card, msUntil }: CountdownCardProps) {
       style={{
         backgroundColor: "#050402",
         border: "1px solid var(--fintheon-accent)",
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(8px)",
-        transition:
-          "opacity 400ms ease, transform 400ms ease, border-color 600ms ease",
-        animation: isPrinted
-          ? "econ-flash 300ms ease-out"
-          : "econ-border-pulse 600ms ease-out",
+        opacity: reduced ? 1 : visible ? 1 : 0,
+        transform: reduced ? "none" : visible ? "translateY(0)" : "translateY(8px)",
+        transition: reduced
+          ? "none"
+          : "opacity var(--t-panel-open-dur) var(--t-panel-ease), transform var(--t-panel-open-dur) var(--t-panel-ease)",
+        animation: reduced
+          ? "none"
+          : isPrinted
+            ? "econ-flash var(--t-modal-open-dur) ease-out"
+            : "econ-border-pulse var(--t-panel-open-dur) ease-out",
       }}
     >
       <div className="flex items-center justify-between text-[9px] uppercase tracking-[0.14em] text-[#f0ead6]/60 mb-1.5">
@@ -306,7 +315,7 @@ function CountdownCard({ card, msUntil }: CountdownCardProps) {
       ) : (
         <div
           style={{ fontFamily: "var(--font-data)" }}
-          className="text-[32px] leading-none text-[var(--fintheon-accent)] tabular-nums"
+          className="text-[32px] leading-none text-(--fintheon-accent) tabular-nums"
         >
           {formatCountdown(msUntil)}
         </div>
@@ -320,6 +329,9 @@ function CountdownCard({ card, msUntil }: CountdownCardProps) {
         @keyframes econ-flash {
           0% { background-color: color-mix(in srgb, var(--fintheon-accent) 18%, #050402); }
           100% { background-color: #050402; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          * { animation: none !important; transition: none !important; }
         }
       `}</style>
     </div>
