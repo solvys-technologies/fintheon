@@ -27,8 +27,15 @@ export function NarrativePreviewSlot({
   const d = validated.data;
   const confidencePct = Math.round(d.confidence * 100);
 
+  const metaLabel = [
+    `${confidencePct}% conf`,
+    d.last_update ? d.last_update.slice(0, 10) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   const content = (
-    <SlotShell label={`narrative · ${confidencePct}% conf`}>
+    <SlotShell label={`narrative · ${metaLabel}`}>
       <div
         style={{
           fontFamily: "var(--font-display, ui-sans-serif)",
