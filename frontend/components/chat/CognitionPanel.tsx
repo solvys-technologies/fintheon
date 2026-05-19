@@ -163,10 +163,11 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
           </span>
         </div>
         <span
-          className="text-[var(--fintheon-text)]/25 text-[10px] transition-transform"
+          className="text-[var(--fintheon-text)]/25 text-[10px]"
           style={{
             display: "inline-block",
             transform: collapsed ? "rotate(-90deg)" : "rotate(0)",
+            transition: "transform var(--t-icon-swap-dur) var(--t-icon-swap-ease)",
           }}
         >
           ▾
