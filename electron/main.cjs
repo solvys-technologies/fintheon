@@ -47,6 +47,7 @@ const DEFAULT_BLOCKED_DOMAINS = [
   "www.projectx.com",
 ];
 const BLOCKED_DOMAINS_PATH = "fintheon-blocked-domains.json";
+let fastBlockerEnabled = false;
 
 /** Load blocked domains from userData, falling back to defaults */
 function loadBlockedDomains() {
@@ -844,7 +845,10 @@ function createWindow(apiBase) {
       sess.webRequest.onBeforeRequest(
         { urls: ["*://*/*"] },
         (details, callback) => {
-          if (!(readHostsBlocked() || readResolverBlocked())) {
+          if (
+            !fastBlockerEnabled &&
+            !(readHostsBlocked() || readResolverBlocked())
+          ) {
             callback({ cancel: false });
             return;
           }
@@ -1871,12 +1875,16 @@ ipcMain.handle("blocker:status", async () => {
   try {
     const hostsBlocked = readHostsBlocked();
     const resolverBlocked = readResolverBlocked();
-    const blocked = hostsBlocked || resolverBlocked;
+    const blocked = hostsBlocked || resolverBlocked || fastBlockerEnabled;
     const domains = loadBlockedDomains();
     return {
       ok: true,
       blocked,
-      layers: { hosts: hostsBlocked, resolver: resolverBlocked },
+      layers: {
+        hosts: hostsBlocked,
+        resolver: resolverBlocked,
+        runtime: fastBlockerEnabled,
+      },
       domains,
     };
   } catch (err) {
@@ -1915,11 +1923,8 @@ ipcMain.handle("blocker:set-domains", async (_event, domains) => {
     return { ok: false, reason: "at least one valid domain required" };
   }
   saveBlockedDomains(cleaned);
-  // If blocking is currently active, re-enable it with new domains
-  if (readHostsBlocked() || readResolverBlocked()) {
-    await disableBlocking();
-    await enableBlocking();
-  }
+  // Keep domain updates passwordless during runtime lock cycles.
+  // webRequest reads domains dynamically, so it picks up changes instantly.
   return { ok: true, domains: cleaned };
 });
 
@@ -1932,9 +1937,18 @@ ipcMain.handle("blocker:enable", async () => {
   }
 });
 
+ipcMain.handle("blocker:enable-fast", async () => {
+  fastBlockerEnabled = true;
+  return { ok: true, mode: "runtime" };
+});
+
 ipcMain.handle("blocker:disable", async () => {
   if (IS_WIN) return { ok: false, reason: "blocker is macOS-only" };
   try {
+    fastBlockerEnabled = false;
+    if (!readHostsBlocked() && !readResolverBlocked()) {
+      return { ok: true, hosts: "noop", resolver: "noop", mode: "runtime" };
+    }
     return disableBlocking();
   } catch (err) {
     return { ok: false, reason: err.message };

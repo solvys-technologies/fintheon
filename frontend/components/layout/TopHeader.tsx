@@ -571,6 +571,9 @@ export function TopHeader({
                       lockoutLock(lockoutDefaultDuration);
                     }
                   }}
+                  onLockNextDeskPlan={() => {
+                    void lockoutDeskSession();
+                  }}
                   onUnlock={lockoutUnlock}
                 />
               )}
@@ -833,6 +836,7 @@ function formatLockoutRemaining(seconds: number | null): string {
 
 const LOCK_OPTIONS: Array<{
   anchor?: "mdb" | "adb" | "pmdb";
+  nextDeskPlan?: boolean;
   label: string;
   description: string;
   icon: React.ReactNode;
@@ -840,18 +844,20 @@ const LOCK_OPTIONS: Array<{
   { anchor: "mdb", label: "Morning", description: "Until MDB briefing (6:30 AM ET)", icon: <Sun className="w-3 h-3" /> },
   { anchor: "adb", label: "Afternoon", description: "Until ADB briefing (10:45 AM ET)", icon: <Sunset className="w-3 h-3" /> },
   { anchor: "pmdb", label: "Afterhours", description: "Until PMDB briefing (5:15 PM ET)", icon: <Moon className="w-3 h-3" /> },
-  { label: "Next Desk Plan", description: "Until next scheduled desk plan window", icon: <ArrowRight className="w-3 h-3" /> },
+  { nextDeskPlan: true, label: "Next Desk Plan", description: "Until next scheduled desk plan window", icon: <ArrowRight className="w-3 h-3" /> },
 ];
 
 function LockDropdown({
   locked,
   remaining,
   onLock,
+  onLockNextDeskPlan,
   onUnlock,
 }: {
   locked: boolean;
   remaining: number | null;
   onLock: (minutes?: number, anchor?: string) => void;
+  onLockNextDeskPlan: () => void;
   onUnlock: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -893,8 +899,10 @@ function LockDropdown({
   const handleLockOption = (option: (typeof LOCK_OPTIONS)[number]) => {
     if (option.anchor) {
       onLock(undefined, option.anchor);
+    } else if (option.nextDeskPlan) {
+      onLockNextDeskPlan();
     } else {
-      onLock(undefined, undefined); // triggers desk session lock
+      onLock(undefined, undefined);
     }
     setOpen(false);
   };

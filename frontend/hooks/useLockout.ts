@@ -2,6 +2,7 @@
 // [claude-code 2026-05-13] S64 T3: Added scheduleLock, lockUntil, getNextWindow, auto-release polling, OS notification
 // [claude-code 2026-05-15] S66-T2: Added lockUntilDeskSession, lock screen IPC listeners
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSettings } from "../contexts/SettingsContext";
 
 export interface LockoutState {
   locked: boolean;
@@ -19,8 +20,56 @@ interface NextWindowInfo {
   remaining: number | null;
 }
 
+interface BlockerApi {
+  enableFast: () => Promise<unknown>;
+  getDomains: () => Promise<{ domains: string[] }>;
+  setDomains: (
+    domains: string[],
+  ) => Promise<{ ok: boolean; domains?: string[]; reason?: string }>;
+}
+
+interface LockoutElectronApi {
+  checkAccessibility?: () => Promise<{ granted: boolean }>;
+  requestAccessibility?: () => Promise<{ granted: boolean }>;
+}
+
 const API_BASE =
   (import.meta as any).env?.VITE_API_URL || "http://localhost:8080";
+
+function normalizeDomain(input: string): string | null {
+  let s = input.trim().toLowerCase();
+  if (!s) return null;
+  s = s.replace(/^https?:\/\//, "");
+  s = s.replace(/\/.*$/, "");
+  s = s.replace(/^www\./, "");
+  if (!s.includes(".") || s.endsWith(".")) return null;
+  return s;
+}
+
+function domainsFromUrl(rawUrl: string): string[] {
+  if (!rawUrl) return [];
+  try {
+    const withProtocol = /^https?:\/\//i.test(rawUrl)
+      ? rawUrl
+      : `https://${rawUrl}`;
+    const host = new URL(withProtocol).hostname;
+    const normalized = normalizeDomain(host);
+    if (!normalized) return [];
+    return Array.from(new Set([normalized, `www.${normalized}`]));
+  } catch {
+    return [];
+  }
+}
+
+function getBlockerApi(): BlockerApi | null {
+  const e = window as unknown as { electron?: { blocker?: BlockerApi } };
+  return e.electron?.blocker ?? null;
+}
+
+function getLockoutApi(): LockoutElectronApi | null {
+  const e = window as unknown as { electron?: { lockout?: LockoutElectronApi } };
+  return e.electron?.lockout ?? null;
+}
 
 async function fetchLockout(): Promise<LockoutState> {
   try {
@@ -104,6 +153,12 @@ function fireOsNotification() {
 }
 
 export function useLockout(pollMs = 5000) {
+  const {
+    defaultPlatform,
+    proposerIframeSources,
+    lockoutPermission,
+    setLockoutPermission,
+  } = useSettings();
   const [state, setState] = useState<LockoutState>({
     locked: false,
     until: null,
@@ -118,6 +173,52 @@ export function useLockout(pollMs = 5000) {
   );
   const previousLockedRef = useRef(false);
   const notifiedRef = useRef(false);
+
+  const ensureSelectedPlatformBlocked = useCallback(async () => {
+    const api = getBlockerApi();
+    if (!api) return;
+    const selectedSource = proposerIframeSources.find(
+      (source) => source.id === defaultPlatform,
+    );
+    if (!selectedSource?.url) return;
+
+    const platformDomains = domainsFromUrl(selectedSource.url);
+    if (platformDomains.length === 0) return;
+
+    try {
+      const existing = await api.getDomains();
+      const merged = Array.from(
+        new Set([...(existing?.domains ?? []), ...platformDomains]),
+      )
+        .map((domain) => normalizeDomain(domain))
+        .filter((domain): domain is string => !!domain);
+      if (merged.length === 0) return;
+      await api.setDomains(merged);
+      await api.enableFast();
+    } catch {
+      // Best effort only — lockout itself should still proceed.
+    }
+  }, [defaultPlatform, proposerIframeSources]);
+
+  const ensureAccessibilityPermission = useCallback(async () => {
+    const api = getLockoutApi();
+    if (!api?.checkAccessibility) return true;
+    try {
+      const current = await api.checkAccessibility();
+      if (current?.granted) {
+        if (lockoutPermission !== "granted") setLockoutPermission("granted");
+        return true;
+      }
+      const requested = api.requestAccessibility
+        ? await api.requestAccessibility()
+        : current;
+      const granted = !!requested?.granted;
+      setLockoutPermission(granted ? "granted" : "denied");
+      return granted;
+    } catch {
+      return false;
+    }
+  }, [lockoutPermission, setLockoutPermission]);
 
   const refresh = useCallback(async () => {
     const s = await fetchLockout();
@@ -163,11 +264,15 @@ export function useLockout(pollMs = 5000) {
 
   const lock = useCallback(
     async (durationMinutes?: number, windowStartTime?: string) => {
+      await ensureAccessibilityPermission();
       const ok = await toggleLockout(true, durationMinutes, windowStartTime);
-      if (ok) await refresh();
+      if (ok) {
+        await ensureSelectedPlatformBlocked();
+        await refresh();
+      }
       return ok;
     },
-    [refresh],
+    [ensureAccessibilityPermission, ensureSelectedPlatformBlocked, refresh],
   );
 
   const unlock = useCallback(async () => {
@@ -183,6 +288,7 @@ export function useLockout(pollMs = 5000) {
   const scheduleLock = useCallback(
     async (durationMinutes: number, windowStartTime?: string) => {
       try {
+        await ensureAccessibilityPermission();
         const body: Record<string, unknown> = { durationMinutes };
         if (windowStartTime) body.windowStartTime = windowStartTime;
         const res = await fetch(`${API_BASE}/api/lockout/schedule`, {
@@ -192,13 +298,16 @@ export function useLockout(pollMs = 5000) {
           body: JSON.stringify(body),
         });
         const ok = res.ok;
-        if (ok) await refresh();
+        if (ok) {
+          await ensureSelectedPlatformBlocked();
+          await refresh();
+        }
         return ok;
       } catch {
         return false;
       }
     },
-    [refresh],
+    [ensureAccessibilityPermission, ensureSelectedPlatformBlocked, refresh],
   );
 
   /**
@@ -207,6 +316,7 @@ export function useLockout(pollMs = 5000) {
   const lockUntil = useCallback(
     async (isoTimestamp: string) => {
       try {
+        await ensureAccessibilityPermission();
         const res = await fetch(`${API_BASE}/api/lockout/schedule`, {
           method: "POST",
           credentials: "include",
@@ -214,13 +324,16 @@ export function useLockout(pollMs = 5000) {
           body: JSON.stringify({ lockUntil: isoTimestamp }),
         });
         const ok = res.ok;
-        if (ok) await refresh();
+        if (ok) {
+          await ensureSelectedPlatformBlocked();
+          await refresh();
+        }
         return ok;
       } catch {
         return false;
       }
     },
-    [refresh],
+    [ensureAccessibilityPermission, ensureSelectedPlatformBlocked, refresh],
   );
 
   /**
@@ -228,13 +341,17 @@ export function useLockout(pollMs = 5000) {
    */
   const lockUntilDeskSession = useCallback(async (): Promise<LockoutState> => {
     try {
+      await ensureAccessibilityPermission();
       const res = await fetch(`${API_BASE}/api/lockout/lock-until-desk-session`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
       });
       const data = await res.json();
-      if (res.ok) await refresh();
+      if (res.ok) {
+        await ensureSelectedPlatformBlocked();
+        await refresh();
+      }
       return {
         locked: !!data.locked,
         until: data.until ?? null,
@@ -245,7 +362,7 @@ export function useLockout(pollMs = 5000) {
     } catch {
       return { locked: false, until: null, remaining: null };
     }
-  }, [refresh]);
+  }, [ensureAccessibilityPermission, ensureSelectedPlatformBlocked, refresh]);
 
   /**
    * Fetch next scheduled window info.

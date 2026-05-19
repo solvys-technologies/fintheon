@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# [claude-code 2026-05-14] Switched primary runner from Codex CLI to OpenCode CLI (DeepSeek v4 Pro)
+# [codex 2026-05-18] Codex-first watcher with primary-runner flags: --codex / --opencode / --cursor
 # Fintheon Linear watcher.
 # Polls Linear for issues moved to "In Progress (Solvys Agent)" and dispatches
-# a local Solvys agent worker. OpenCode CLI is primary; Cursor is fallback.
+# a local Solvys agent worker.
 set -uo pipefail
 
 FINTHEON_ROOT="${FINTHEON_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
@@ -14,17 +14,67 @@ POLL_INTERVAL="${SOLVYS_AGENT_POLL_INTERVAL:-5}"
 LINEAR_API="${LINEAR_API:-https://api.linear.app/graphql}"
 SOLVYS_AGENT_STATE_NAME="${SOLVYS_AGENT_STATE_NAME:-In Progress (Solvys Agent)}"
 LINEAR_FIRST="${LINEAR_WATCHER_FIRST:-25}"
+
+CODEX_BIN="${CODEX_BIN:-$(command -v codex 2>/dev/null || true)}"
 OPENCODE_BIN="${OPENCODE_BIN:-$(command -v opencode 2>/dev/null || true)}"
 CURSOR_CLI="${CURSOR_CLI:-/Applications/Cursor.app/Contents/Resources/app/bin/cursor}"
+
+CODEX_MODEL="${CODEX_MODEL:-gpt-5.5}"
 OPENCODE_MODEL="${OPENCODE_MODEL:-opencode-go/deepseek-v4-pro}"
 CURSOR_MODEL="${CURSOR_MODEL:-claude-4.6-sonnet-medium}"
+
+DISABLE_CODEX="${SOLVYS_AGENT_DISABLE_CODEX:-false}"
 DISABLE_OPENCODE="${SOLVYS_AGENT_DISABLE_OPENCODE:-false}"
 DISABLE_CURSOR_FALLBACK="${SOLVYS_AGENT_DISABLE_CURSOR_FALLBACK:-false}"
+RUNNER_PRIMARY="${SOLVYS_AGENT_PRIMARY:-codex}"
 
 mkdir -p "$STATE_DIR" "$LOG_DIR"
 
 log() {
   printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
+}
+
+usage() {
+  cat <<'USAGE'
+Usage: linear-watcher.sh [--codex|--opencode|--cursor] [--help]
+
+Runner selection:
+  --codex     Codex primary (default)
+  --opencode  OpenCode primary
+  --cursor    Cursor primary
+
+Environment overrides:
+  SOLVYS_AGENT_PRIMARY=codex|opencode|cursor
+  CODEX_MODEL / OPENCODE_MODEL / CURSOR_MODEL
+USAGE
+}
+
+parse_args() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --codex)
+        RUNNER_PRIMARY="codex"
+        shift
+        ;;
+      --opencode)
+        RUNNER_PRIMARY="opencode"
+        shift
+        ;;
+      --cursor)
+        RUNNER_PRIMARY="cursor"
+        shift
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        log "Unknown argument: $1"
+        usage
+        exit 1
+        ;;
+    esac
+  done
 }
 
 load_env() {
@@ -123,16 +173,38 @@ LOCAL WORKER CONTRACT:
 - Follow existing repo conventions: no broad refactors, compact UI labels, uppercase Linear prefixes, no secrets in output.
 - Run the validation commands listed in the issue or brief.
 - When done, move the issue to Awaiting Review using linear-ack-complete.sh or the Codex equivalent if available.
+- When done, post a completion report in Slack #all-solvys with issue key, branch, validation status, and blockers.
 
 Start by grounding in the repo and then implement the issue end to end.
 PROMPT
+}
+
+launch_codex() {
+  local issue_key="$1"
+  local prompt_path="$2"
+  local log_path="$3"
+  local last_message_path="$4"
+
+  if [[ "$DISABLE_CODEX" == "true" || -z "$CODEX_BIN" || ! -x "$CODEX_BIN" ]]; then
+    return 1
+  fi
+
+  nohup "$CODEX_BIN" exec \
+    -C "$WORKSPACE" \
+    --model "$CODEX_MODEL" \
+    --sandbox danger-full-access \
+    --dangerously-bypass-approvals-and-sandbox \
+    --output-last-message "$last_message_path" \
+    "$(cat "$prompt_path")" >> "$log_path" 2>&1 &
+
+  log "Dispatched $issue_key to Codex CLI (pid $!)"
+  return 0
 }
 
 launch_opencode() {
   local issue_key="$1"
   local prompt_path="$2"
   local log_path="$3"
-  local last_message_path="$4"
 
   if [[ "$DISABLE_OPENCODE" == "true" || -z "$OPENCODE_BIN" || ! -x "$OPENCODE_BIN" ]]; then
     return 1
@@ -196,23 +268,69 @@ dispatch_issue() {
   last_message_path="$LOG_DIR/${identifier}.last.md"
   write_prompt "$issue_json" "$prompt_path"
 
-  if launch_opencode "$identifier" "$prompt_path" "$log_path" "$last_message_path"; then
-    printf 'opencode %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" > "$marker"
-    return 0
-  fi
+  case "$RUNNER_PRIMARY" in
+    codex)
+      if launch_codex "$identifier" "$prompt_path" "$log_path" "$last_message_path"; then
+        printf 'codex %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" > "$marker"
+        return 0
+      fi
+      log "Codex unavailable for $identifier; trying OpenCode fallback"
+      if launch_opencode "$identifier" "$prompt_path" "$log_path"; then
+        printf 'opencode-fallback %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" > "$marker"
+        return 0
+      fi
+      log "OpenCode unavailable for $identifier; trying Cursor fallback"
+      if launch_cursor_fallback "$identifier" "$prompt_path" "$log_path"; then
+        printf 'cursor-fallback %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" > "$marker"
+        return 0
+      fi
+      ;;
+    opencode)
+      if launch_opencode "$identifier" "$prompt_path" "$log_path"; then
+        printf 'opencode %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" > "$marker"
+        return 0
+      fi
+      log "OpenCode unavailable for $identifier; trying Codex fallback"
+      if launch_codex "$identifier" "$prompt_path" "$log_path" "$last_message_path"; then
+        printf 'codex-fallback %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" > "$marker"
+        return 0
+      fi
+      log "Codex unavailable for $identifier; trying Cursor fallback"
+      if launch_cursor_fallback "$identifier" "$prompt_path" "$log_path"; then
+        printf 'cursor-fallback %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" > "$marker"
+        return 0
+      fi
+      ;;
+    cursor)
+      if launch_cursor_fallback "$identifier" "$prompt_path" "$log_path"; then
+        printf 'cursor %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" > "$marker"
+        return 0
+      fi
+      log "Cursor unavailable for $identifier; trying Codex fallback"
+      if launch_codex "$identifier" "$prompt_path" "$log_path" "$last_message_path"; then
+        printf 'codex-fallback %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" > "$marker"
+        return 0
+      fi
+      log "Codex unavailable for $identifier; trying OpenCode fallback"
+      if launch_opencode "$identifier" "$prompt_path" "$log_path"; then
+        printf 'opencode-fallback %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" > "$marker"
+        return 0
+      fi
+      ;;
+    *)
+      log "Invalid SOLVYS_AGENT_PRIMARY value: $RUNNER_PRIMARY"
+      ;;
+  esac
 
-  log "OpenCode CLI unavailable for $identifier; trying Cursor fallback"
-  if launch_cursor_fallback "$identifier" "$prompt_path" "$log_path"; then
-    printf 'cursor-fallback %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" > "$marker"
-    return 0
-  fi
-
-  log "No local Solvys Agent runner available for $identifier"
+  log "No local Solvys Agent runner available for $identifier (primary: $RUNNER_PRIMARY)"
 }
 
 main() {
+  parse_args "$@"
+
   log "Starting Fintheon Linear watcher for state: $SOLVYS_AGENT_STATE_NAME"
   log "Workspace: $WORKSPACE"
+  log "Primary runner: $RUNNER_PRIMARY"
 
   while true; do
     if ! command -v jq >/dev/null 2>&1; then

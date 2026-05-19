@@ -9,6 +9,26 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-19T00:55:00-04:00",
+    agent: "codex",
+    summary:
+      "v6.7.4 hotfix: fixed Desk Plan lockout enforcement so Next Desk Plan uses desk-session locking, auto-lock syncs blocker domains from the selected trading platform, and runtime blocker mode avoids repeat password prompts after one-time accessibility grant.",
+    files: [
+      "electron/main.cjs",
+      "electron/preload.cjs",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/settings/BlockerTab.tsx",
+      "frontend/hooks/useLockout.ts",
+      "package.json",
+      "mobile/package.json",
+      "scripts/fintheon-update.sh",
+      "scripts/fintheon-setup.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-18T13:45:00-04:00",
     agent: "codex",
     summary:

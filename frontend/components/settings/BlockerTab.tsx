@@ -24,7 +24,7 @@ interface BlockerApi {
   disable: () => Promise<unknown>;
   getStatus: () => Promise<{
     blocked: boolean;
-    layers: { hosts: boolean; resolver: boolean };
+    layers: { hosts: boolean; resolver: boolean; runtime?: boolean };
   }>;
   getDomains: () => Promise<{ domains: string[] }>;
   setDomains: (
@@ -34,7 +34,7 @@ interface BlockerApi {
 
 interface BlockerState {
   blocked: boolean;
-  layers: { hosts: boolean; resolver: boolean };
+  layers: { hosts: boolean; resolver: boolean; runtime?: boolean };
   isLoading: boolean;
   error: string | null;
 }
@@ -179,9 +179,16 @@ export function BlockerTab() {
 
   const api = getBlockerApi();
   const isElectron = api !== null;
-  const layerCount = [state.layers.hosts, state.layers.resolver].filter(
-    Boolean,
-  ).length;
+  const layerCount = [
+    state.layers.hosts,
+    state.layers.resolver,
+    state.layers.runtime ?? false,
+  ].filter(Boolean).length;
+  const runtimeOnlyBlocked =
+    state.blocked &&
+    !!state.layers.runtime &&
+    !state.layers.hosts &&
+    !state.layers.resolver;
   const autoLockPolicy = (
     <div className="rounded-lg border border-[var(--fintheon-accent)]/10 p-5 bg-[rgba(10,10,0,0.4)]">
       <div className="flex items-center justify-between gap-4">
@@ -306,12 +313,14 @@ export function BlockerTab() {
                 {state.isLoading
                   ? "Checking status..."
                   : state.blocked
-                    ? `Blocked (${layerCount}/2 layers)`
+                    ? `Blocked (${layerCount}/3 layers)`
                     : "Not blocking"}
               </div>
               <p className="text-[11px] text-gray-500 mt-1 leading-relaxed max-w-md">
                 {state.blocked
-                  ? `${domains.length} domain${domains.length === 1 ? "" : "s"} blocked system-wide. No browser, PWA, or app can reach them.`
+                  ? runtimeOnlyBlocked
+                    ? `${domains.length} domain${domains.length === 1 ? "" : "s"} blocked in Fintheon runtime.`
+                    : `${domains.length} domain${domains.length === 1 ? "" : "s"} blocked system-wide. No browser, PWA, or app can reach them.`
                   : "Toggle blocking on to prevent access to the domains below across all browsers and applications on this computer."}
               </p>
               {state.error && (
