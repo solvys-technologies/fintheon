@@ -7,6 +7,7 @@ import { DigitGroup } from "../shared/DigitGroup";
 import { FadingRuler } from "../shared/FadingRuler";
 import { AgenticFeedbackControls } from "../shared/AgenticFeedbackControls";
 import { DissentBadge } from "./DissentBadge";
+import { StreamdownChat } from "../chat/slots";
 import type { ArbitrumVerdict } from "./types";
 
 interface VerdictCardProps {
@@ -88,13 +89,17 @@ export function VerdictCard({
         />
       </div>
 
-      {!compact && (
-        <p
-          className={`mt-3 text-[var(--fintheon-text)]/85 text-sm leading-relaxed`}
-        >
-          {cleanedDigest}
-        </p>
-      )}
+      <div
+        className={`mt-3 prose prose-invert prose-sm max-w-none
+          [&_p]:text-[var(--fintheon-text)]/85 [&_p]:leading-relaxed [&_p]:my-1
+          [&_li]:text-[var(--fintheon-text)]/75 [&_ul]:my-1 [&_ul]:pl-4
+          [&_strong]:text-[var(--fintheon-accent)] [&_strong]:font-medium
+          [&_em]:text-[var(--fintheon-text)]/55 [&_em]:not-italic
+          [&_hr]:border-[var(--fintheon-accent)]/15 [&_hr]:my-2
+          ${compact ? "text-[11px]" : "text-sm"}`}
+      >
+        <StreamdownChat content={cleanedDigest} />
+      </div>
 
       <div className="mt-3 flex items-center justify-between text-[10px] text-[var(--fintheon-text)]/40">
         <span className="tabular-nums">
