@@ -1003,8 +1003,9 @@ export function createDiagnosticsRoutes(): Hono {
 
     log.info("Diagnostics check", { overall, elapsed: Date.now() - start });
 
-    const statusCode =
-      overall === "ok" ? 200 : overall === "degraded" ? 207 : 503;
+    // Degraded optional services should stay visible in the body without
+    // failing release/load-balancer HTTP checks.
+    const statusCode = overall === "error" ? 503 : 200;
     return c.json(response, statusCode);
   });
 
