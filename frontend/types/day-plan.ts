@@ -20,6 +20,8 @@ export interface EconForecast {
   otherNotableEvents: string[];
   aiPrediction: string;
   generatedAt: string;
+  eventCountry?: string | null;
+  eventTime?: string | null;
   validationChecks?: EconForecastValidationCheck[];
 }
 
@@ -39,6 +41,7 @@ export interface DayPlanWindow {
   /** "HH:MM" America/New_York */
   endTime: string;
   eventName?: string | null;
+  eventCountry?: string | null;
   econForecast: EconForecast | null;
 }
 

@@ -5,7 +5,7 @@
 //   bullish (green up) or bearish (red down) for equities per scenario.
 //   Prices hidden until 30 min before window — fresh data pulled at that time.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDayPlan } from "../../hooks/useDayPlan";
 import { useDayPlanMultiWeek } from "../../hooks/useDayPlanWeek";
 import { useStreak } from "../../hooks/useStreak";
@@ -47,7 +47,74 @@ interface DayCardProps {
 }
 
 function fmtTradingWindow(w: DayPlanWindow): string {
-  return formatEasternClockRange(w.startTime, w.endTime);
+  const range = formatEasternClockRange(w.startTime, w.endTime);
+  const country = (w.eventCountry ?? w.econForecast?.eventCountry ?? "")
+    .toUpperCase()
+    .trim();
+  if (country && country !== "US" && isOvernightWindow(w)) {
+    return `(${country}) ${range}`;
+  }
+  return range;
+}
+
+function isOvernightWindow(w: Pick<DayPlanWindow, "startTime" | "endTime">): boolean {
+  const start = minutesFromClock(w.startTime);
+  const end = minutesFromClock(w.endTime);
+  if (start == null || end == null) return false;
+  return start < 8 * 60 || start >= 18 * 60 || end < start;
+}
+
+function minutesFromClock(value: string): number | null {
+  const match = value.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+  return hours * 60 + minutes;
+}
+
+function currentEasternMinutes(): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
+  const minute = Number(
+    parts.find((part) => part.type === "minute")?.value ?? "0",
+  );
+  return hour * 60 + minute;
+}
+
+function currentEasternDateIso(): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const get = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+function defaultWindowIndex(planDate: string | undefined, windows: DayPlanWindow[]): number {
+  if (windows.length === 0) return 0;
+  if (planDate !== currentEasternDateIso()) return 0;
+  const now = currentEasternMinutes();
+  const active = windows.findIndex((window) => {
+    const start = minutesFromClock(window.startTime);
+    const end = minutesFromClock(window.endTime);
+    if (start == null || end == null) return false;
+    return now >= start && now <= end;
+  });
+  if (active >= 0) return active;
+  const upcoming = windows.findIndex((window) => {
+    const start = minutesFromClock(window.startTime);
+    return start != null && start >= now;
+  });
+  return upcoming >= 0 ? upcoming : 0;
 }
 
 export function DayCard({
@@ -87,15 +154,23 @@ export function DayCard({
 
   const plan = multiWeekPlan ?? todayData;
   const isLoading = multiWeekLoading && todayLoading;
-  const windows = plan?.windows ?? [];
+  const windows = useMemo(
+    () => [...(plan?.windows ?? [])].sort((a, b) => a.startTime.localeCompare(b.startTime)),
+    [plan?.windows],
+  );
+  const windowSignature = windows
+    .map((window) => `${window.id}:${window.startTime}:${window.endTime}`)
+    .join("|");
   const currentWindow = windows[currentWindowIndex] ?? null;
   const hasWindow = !!currentWindow;
 
   useEffect(() => {
-    if (currentWindowIndex >= windows.length && windows.length > 0) {
+    if (windows.length === 0) {
       setCurrentWindowIndex(0);
+      return;
     }
-  }, [currentWindowIndex, windows.length]);
+    setCurrentWindowIndex(defaultWindowIndex(plan?.date, windows));
+  }, [plan?.date, windowSignature]);
 
   const driftVisual: DriftKind | "in-window" = drift?.kind ?? "in-window";
 

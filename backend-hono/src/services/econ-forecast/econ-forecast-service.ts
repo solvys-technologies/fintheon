@@ -176,18 +176,25 @@ export async function maybeRefreshForecast(
 // ── Refresh window logic ────────────────────────────────────────────────────
 
 function isWithinRefreshWindow(windowStartTime: string): boolean {
-  const now = Date.now();
   const [h, m] = windowStartTime.split(":").map(Number);
-  const startDate = new Date();
-  startDate.setHours(h, m, 0, 0);
-  const startMs = startDate.getTime();
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return false;
+  const startMinutes = h * 60 + m;
+  const now = nowInNewYorkMinutes();
+  return now >= startMinutes - 30 && now < startMinutes;
+}
 
-  // If the window has already started today, check if it's tomorrow's window
-  const effectiveStart = startMs <= now ? startMs + 86_400_000 : startMs;
-
-  // 30 minutes before window until window start
-  const refreshStart = effectiveStart - 30 * 60_000;
-  return now >= refreshStart && now < effectiveStart;
+function nowInNewYorkMinutes(): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
+  const minute = Number(
+    parts.find((part) => part.type === "minute")?.value ?? "0",
+  );
+  return hour * 60 + minute;
 }
 
 // ── Prompt construction ─────────────────────────────────────────────────────
@@ -284,6 +291,8 @@ function parseForecastResponse(
       otherNotableEvents,
       aiPrediction,
       generatedAt: new Date().toISOString(),
+      eventCountry: input.eventCountry ?? null,
+      eventTime: input.eventTime ?? null,
     };
   } catch {
     return null;
@@ -322,6 +331,8 @@ function buildFallbackForecast(input: EconForecastInput): EconForecast {
       ? `Watch for tone shifts in ${input.eventName}. Traders will react to any deviation from recent rhetoric.`
       : `Monitor ${input.eventName} closely. The print will set near-term direction.`,
     generatedAt: new Date().toISOString(),
+    eventCountry: input.eventCountry ?? null,
+    eventTime: input.eventTime ?? null,
   };
 }
 

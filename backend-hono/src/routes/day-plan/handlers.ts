@@ -220,7 +220,16 @@ async function forecastMissingWindows(
       previous: event.previous ?? undefined,
       isSpeech: isSpeechEvent(event),
     }).catch(() => null);
-    resolved.push({ ...window, econForecast });
+    resolved.push({
+      ...window,
+      econForecast: econForecast
+        ? {
+            ...econForecast,
+            eventCountry: event.country ?? null,
+            eventTime: event.time ?? window.startTime,
+          }
+        : econForecast,
+    });
   }
   return resolved;
 }

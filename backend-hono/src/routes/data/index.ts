@@ -22,6 +22,7 @@ import { getFeed } from "../../services/riskflow/feed-service.js";
 import { getUserSettings } from "../../services/settings-store.js";
 import {
   getCurrentBriefType,
+  isBriefCurrentForWindow,
   generateBrief,
   BRIEF_LABELS,
 } from "../../services/brief-generator.js";
@@ -298,6 +299,51 @@ export function createDataRoutes(): Hono {
     } catch (err) {
       console.error("[Data] /brief/generate error:", err);
       return c.json({ error: "Generation failed", details: String(err) }, 500);
+    }
+  });
+
+  // POST /api/data/brief/ensure-current
+  // Refresh-button contract: check the current Eastern Time briefing window first.
+  // If the frontend-visible brief for that window has not been published, generate it.
+  app.post("/brief/ensure-current", async (c) => {
+    try {
+      const briefType = getCurrentBriefType();
+      const latest = await readLatestBrief(briefType);
+      if (isBriefCurrentForWindow(latest, briefType)) {
+        return c.json({
+          content: latest?.content ?? "",
+          briefType,
+          generatedAt: latest?.created_at ?? new Date().toISOString(),
+          supabaseId: latest?.id ?? null,
+          generated: false,
+          status: "current",
+          timezone: "America/New_York",
+        });
+      }
+
+      const result = await generateBrief(briefType);
+
+      startPrediction(
+        { lanes: [], catalysts: [], ropes: [] },
+        undefined,
+        "full-brief",
+      ).catch((err) =>
+        console.warn("[Data] Post-brief ArbitrumChamber trigger failed:", err),
+      );
+
+      return c.json({
+        content: result.content,
+        briefType: result.briefType,
+        generatedAt: result.generatedAt,
+        supabaseId: result.supabaseId,
+        provider: result.provider,
+        generated: true,
+        status: "generated",
+        timezone: "America/New_York",
+      });
+    } catch (err) {
+      console.error("[Data] /brief/ensure-current error:", err);
+      return c.json({ error: "Ensure current brief failed", details: String(err) }, 500);
     }
   });
 

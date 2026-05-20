@@ -244,21 +244,36 @@ export function MainDashboard({
     try {
       const apiBase = API_BASE.replace(/\/$/, "");
       const feedRefreshPromise = refresh().catch(() => {});
-      await fetch(`${apiBase}/api/data/brief/generate`, {
+      const ensureRes = await fetch(`${apiBase}/api/data/brief/ensure-current`, {
         method: "POST",
-      }).catch(() => {});
-      await new Promise((r) => setTimeout(r, 2000));
-      const res = await backend.data.getMdbBrief();
-      setNtnText(res.items[0]?.detail ?? "");
-      if (res.briefType) setBriefLabel(briefTypeToLabel(res.briefType));
+      });
+      if (!ensureRes.ok) throw new Error(`HTTP ${ensureRes.status}`);
+      const ensured = (await ensureRes.json().catch(() => null)) as {
+        content?: string;
+        briefType?: string;
+        generated?: boolean;
+      } | null;
+      if (ensured?.content) {
+        setNtnText(ensured.content);
+        if (ensured.briefType) setBriefLabel(briefTypeToLabel(ensured.briefType));
+        addToast(
+          ensured.generated ? "Brief generated" : "Brief is current",
+          "success",
+        );
+      } else {
+        const res = await backend.data.getMdbBrief();
+        setNtnText(res.items[0]?.detail ?? "");
+        if (res.briefType) setBriefLabel(briefTypeToLabel(res.briefType));
+      }
 
       await feedRefreshPromise;
     } catch (error) {
       console.warn("[Dashboard] Brief refresh failed:", error);
+      addToast("Brief refresh failed", "error");
     } finally {
       setNtnRefreshing(false);
     }
-  }, [backend, refresh]);
+  }, [addToast, backend, refresh]);
 
   const refreshRiskSignals = useCallback(async () => {
     if (riskSignalsRefreshing) return;

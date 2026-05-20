@@ -282,6 +282,7 @@ async function buildWindows(
     startTime: string;
     endTime: string;
     eventName: string | null;
+    eventCountry?: string | null;
     econForecast: any;
   }>
 > {
@@ -290,6 +291,7 @@ async function buildWindows(
     startTime: string;
     endTime: string;
     eventName: string | null;
+    eventCountry?: string | null;
     econForecast: any;
   }> = [];
 
@@ -315,6 +317,13 @@ async function buildWindows(
         });
         return null;
       });
+      if (econForecast) {
+        econForecast = {
+          ...econForecast,
+          eventCountry: matchedEvent.country ?? null,
+          eventTime: matchedEvent.time ?? pw.startTime,
+        };
+      }
     }
 
     results.push({
@@ -322,6 +331,7 @@ async function buildWindows(
       startTime: pw.startTime,
       endTime: pw.endTime,
       eventName: pw.eventName ?? null,
+      eventCountry: matchedEvent?.country ?? null,
       econForecast,
     });
   }
@@ -394,7 +404,14 @@ async function maybeRefreshExisting(plan: DayPlan): Promise<DayPlan | null> {
         changed = true;
         updatedWindows.push({
           ...w,
-          econForecast: forecast ?? w.econForecast,
+          eventCountry: matchedEvent.country ?? w.eventCountry ?? null,
+          econForecast: forecast
+            ? {
+                ...forecast,
+                eventCountry: matchedEvent.country ?? null,
+                eventTime: matchedEvent.time ?? w.startTime,
+              }
+            : w.econForecast,
         });
         continue;
       }
@@ -441,6 +458,7 @@ interface PersistInput {
     startTime: string;
     endTime: string;
     eventName: string | null;
+    eventCountry?: string | null;
     econForecast: any;
   }>;
 }
@@ -535,6 +553,7 @@ async function persistDayPlan(input: PersistInput): Promise<DayPlan> {
     windows: persisted.windows.map((window, index) => ({
       ...window,
       eventName: input.windows[index]?.eventName ?? window.eventName,
+      eventCountry: input.windows[index]?.eventCountry ?? window.eventCountry,
       econForecast: input.windows[index]?.econForecast ?? window.econForecast,
     })),
   };
@@ -560,6 +579,7 @@ function synthesizeInMemoryPlan(input: PersistInput): DayPlan {
       startTime: w.startTime,
       endTime: w.endTime,
       eventName: w.eventName,
+      eventCountry: w.eventCountry ?? w.econForecast?.eventCountry ?? null,
       econForecast: w.econForecast ?? null,
     })),
   };
@@ -595,6 +615,7 @@ function rowToWindow(row: any): DayPlanWindow {
         ? row.end_time.slice(0, 5)
         : row.end_time,
     eventName: row.event_name ?? null,
+    eventCountry: row.econ_forecast?.eventCountry ?? null,
     econForecast: row.econ_forecast ?? null,
     // Deprecated price fields — retained for migration transition
     pricesOfInterest: Array.isArray(row.prices_of_interest)

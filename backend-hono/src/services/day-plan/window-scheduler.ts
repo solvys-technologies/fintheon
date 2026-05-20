@@ -366,6 +366,10 @@ function buildPlannedDays(
       }
     }
   }
+  windows.sort((a, b) => a.startTime.localeCompare(b.startTime));
+  windows.forEach((window, index) => {
+    window.windowIndex = index;
+  });
 
   // If no windows found, generate a single standing-window plan
   if (windows.length === 0) {

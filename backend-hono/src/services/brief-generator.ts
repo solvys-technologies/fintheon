@@ -107,8 +107,14 @@ function padRow(label: string, value: string): string {
   return `${label.padEnd(16, " ")}${value}`;
 }
 
-export function getCurrentBriefType(): BriefType {
-  const now = new Date();
+function toNewYorkWallDate(date: Date): Date {
+  return new Date(
+    date.toLocaleString("en-US", { timeZone: "America/New_York" }),
+  );
+}
+
+export function getCurrentBriefType(nowInput = new Date()): BriefType {
+  const now = toNewYorkWallDate(nowInput);
   const day = now.getDay();
   const h = now.getHours();
   const timeVal = h * 60 + now.getMinutes();
@@ -120,6 +126,50 @@ export function getCurrentBriefType(): BriefType {
   if (timeVal >= 17 * 60 + 30) return "PMDB";
   if (timeVal >= 11 * 60) return "ADB";
   return "MDB";
+}
+
+export function getBriefWindowStart(
+  type: BriefType,
+  nowInput = new Date(),
+): Date {
+  const now = toNewYorkWallDate(nowInput);
+  const start = new Date(now);
+  start.setSeconds(0, 0);
+
+  if (type === "TWT") {
+    const day = now.getDay();
+    const timeVal = now.getHours() * 60 + now.getMinutes();
+    const daysBackToSunday = day === 0 && timeVal >= 17 * 60 ? 0 : day;
+    start.setDate(now.getDate() - daysBackToSunday);
+    start.setHours(17, 0, 0, 0);
+    return start;
+  }
+
+  if (type === "PMDB") {
+    const timeVal = now.getHours() * 60 + now.getMinutes();
+    if (timeVal < 6 * 60 + 30) start.setDate(now.getDate() - 1);
+    start.setHours(17, 30, 0, 0);
+    return start;
+  }
+
+  if (type === "ADB") {
+    start.setHours(11, 0, 0, 0);
+    return start;
+  }
+
+  start.setHours(6, 30, 0, 0);
+  return start;
+}
+
+export function isBriefCurrentForWindow(
+  brief: Pick<BriefRecord, "created_at"> | null | undefined,
+  type: BriefType,
+  nowInput = new Date(),
+): boolean {
+  if (!brief?.created_at) return false;
+  const createdAt = toNewYorkWallDate(new Date(brief.created_at));
+  const windowStart = getBriefWindowStart(type, nowInput);
+  return createdAt >= windowStart;
 }
 
 /* ------------------------------------------------------------------ */
@@ -419,7 +469,5 @@ export async function wasBriefGeneratedToday(
   type: BriefType,
 ): Promise<boolean> {
   const latest = await readLatestBrief(type);
-  if (!latest?.created_at) return false;
-  const today = new Date().toISOString().slice(0, 10);
-  return latest.created_at.startsWith(today);
+  return isBriefCurrentForWindow(latest, type);
 }

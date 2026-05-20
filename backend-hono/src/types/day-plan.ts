@@ -28,6 +28,8 @@ export interface EconForecast {
   otherNotableEvents: string[];
   aiPrediction: string;
   generatedAt: string;
+  eventCountry?: string | null;
+  eventTime?: string | null;
   validationChecks?: EconForecastValidationCheck[];
 }
 
@@ -46,6 +48,8 @@ export interface DayPlanWindow {
   endTime: string;
   /** Enriched economic event name for this window */
   eventName?: string | null;
+  /** Country/region abbreviation for the matched overnight or international event */
+  eventCountry?: string | null;
   /** AI-generated econ forecast (miss/beat scenarios + prediction) */
   econForecast: EconForecast | null;
   /** Deprecated — retained for schema compatibility during migration transition */

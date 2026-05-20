@@ -9,6 +9,39 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-20T02:30:00-04:00",
+    agent: "codex",
+    summary:
+      "Pre-release dashboard fix: briefing refresh now force-checks the current America/New_York briefing window and only generates when the frontend-visible brief is missing or stale. Desk Plan windows are sorted chronologically, default to the active/upcoming Eastern window, and overnight non-US econ windows show the country abbreviation before the time.",
+    files: [
+      "backend-hono/src/routes/data/index.ts",
+      "backend-hono/src/services/brief-generator.ts",
+      "backend-hono/src/services/econ-forecast/econ-forecast-service.ts",
+      "backend-hono/src/services/day-plan/day-plan-service.ts",
+      "backend-hono/src/services/day-plan/window-scheduler.ts",
+      "backend-hono/src/types/day-plan.ts",
+      "frontend/components/executive/MainDashboard.tsx",
+      "frontend/components/narrative/DayCard.tsx",
+      "frontend/types/day-plan.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-20T02:15:00-04:00",
+    agent: "codex",
+    summary:
+      "v6.7.6 release prep: integrated recent Shashank task branches for S61-T4 governance approval UI, SOL-65 verdict digest Streamdown rendering, S62-T22 chat/econ micro-interactions, SOL-63 slot coverage parity, SOL-71 PsychAssist lockout UX, and SOL-62 chat todo drawer. Skipped Shashank S61-T2/S61-T3 cherry-picks because the current branch already contains newer capability registry and agent context preflight implementations.",
+    files: [
+      "package.json",
+      "mobile/package.json",
+      "scripts/fintheon-update.sh",
+      "scripts/fintheon-setup.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-20T00:35:00-04:00",
     agent: "codex",
     summary:
