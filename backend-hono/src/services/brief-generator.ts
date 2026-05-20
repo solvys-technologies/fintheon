@@ -113,6 +113,15 @@ function toNewYorkWallDate(date: Date): Date {
   );
 }
 
+function dateInNewYork(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
 export function getCurrentBriefType(nowInput = new Date()): BriefType {
   const now = toNewYorkWallDate(nowInput);
   const day = now.getDay();
@@ -230,7 +239,7 @@ export async function generateBrief(
   overrideType?: BriefType,
 ): Promise<GenerateBriefResult> {
   const briefType = overrideType ?? getCurrentBriefType();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = dateInNewYork(new Date());
 
   const [feedResponse, econEvents] = await Promise.allSettled([
     getFeed("system", { limit: 20 }),
@@ -299,6 +308,9 @@ export async function generateBrief(
 ## Today's Economic Events
 ${econSummary}
 
+## Brief Date (America/New_York)
+${today}
+
 ## Recent RiskFlow Headlines
 ${feedSummary}
 ${deskThemeSection}
@@ -355,6 +367,9 @@ Be direct, use financial shorthand. Anchor ONLY to key macro events. 300-500 wor
 
 ## Today's Economic Events
 ${econSummary}
+
+## Brief Date (America/New_York)
+${today}
 
 ## Recent RiskFlow Headlines
 ${feedSummary}
