@@ -162,14 +162,52 @@ export function getBriefWindowStart(
 }
 
 export function isBriefCurrentForWindow(
-  brief: Pick<BriefRecord, "created_at"> | null | undefined,
+  brief: Pick<BriefRecord, "created_at" | "content"> | null | undefined,
   type: BriefType,
   nowInput = new Date(),
 ): boolean {
   if (!brief?.created_at) return false;
   const createdAt = toNewYorkWallDate(new Date(brief.created_at));
   const windowStart = getBriefWindowStart(type, nowInput);
-  return createdAt >= windowStart;
+  return (
+    createdAt >= windowStart &&
+    briefContentMatchesCurrentDate(brief.content, nowInput)
+  );
+}
+
+function briefContentMatchesCurrentDate(
+  content: string | undefined,
+  nowInput: Date,
+): boolean {
+  if (!content) return false;
+  const header = content.slice(0, 800);
+  const match = header.match(
+    /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),\s+(\d{4})\b/i,
+  );
+  if (!match) return true;
+  const monthNames = [
+    "january",
+    "february",
+    "march",
+    "april",
+    "may",
+    "june",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december",
+  ];
+  const statedMonth = monthNames.indexOf(match[1].toLowerCase()) + 1;
+  const statedDay = Number(match[2]);
+  const statedYear = Number(match[3]);
+  const current = toNewYorkWallDate(nowInput);
+  return (
+    statedYear === current.getFullYear() &&
+    statedMonth === current.getMonth() + 1 &&
+    statedDay === current.getDate()
+  );
 }
 
 /* ------------------------------------------------------------------ */
