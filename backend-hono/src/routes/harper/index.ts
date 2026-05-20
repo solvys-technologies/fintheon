@@ -34,6 +34,10 @@ import {
 import { agentBus } from "../../services/agent-bus/bus.js";
 import { executeDag } from "../../services/agent-bus/dag-scheduler.js";
 import { createAgentDeskDAG } from "../../services/agent-bus/templates/agent-desk-template.js";
+import {
+  isAiCreditError,
+  recordAiProviderFailure,
+} from "../../services/ai/provider-credit-status.js";
 import type {
   AgentStreamEvent,
   DAGProgressEvent,
@@ -481,12 +485,17 @@ export function createHarperRoutes() {
     } catch (error) {
       console.error(`[Harper][${requestId}] Handler error:`, error);
       cognition.done();
+      const isCreditError = isAiCreditError(error);
+      if (isCreditError) recordAiProviderFailure("hermes-gateway", error);
       return c.json(
         {
-          error: "Harper request failed",
+          error: isCreditError
+            ? "Hermes gateway credits exhausted"
+            : "Harper request failed",
           details: error instanceof Error ? error.message : String(error),
+          code: isCreditError ? "ai_credits_exhausted" : undefined,
         },
-        500,
+        isCreditError ? 402 : 500,
       );
     }
   });

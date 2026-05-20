@@ -8,6 +8,7 @@ import type { DayPlan } from "../types/day-plan";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const POLL_INTERVAL = 60_000;
+export const DAY_PLAN_REFETCH_EVENT = "fintheon:day-plan-refetch";
 
 export function useDayPlan() {
   const [data, setData] = useState<DayPlan | null>(null);
@@ -40,10 +41,12 @@ export function useDayPlan() {
     }
 
     fetchPlan();
+    window.addEventListener(DAY_PLAN_REFETCH_EVENT, fetchPlan);
     intervalRef.current = setInterval(fetchPlan, POLL_INTERVAL);
 
     return () => {
       cancelled = true;
+      window.removeEventListener(DAY_PLAN_REFETCH_EVENT, fetchPlan);
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);

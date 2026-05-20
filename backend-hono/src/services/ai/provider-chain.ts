@@ -8,6 +8,7 @@ import {
   getOllamaModel,
   streamTextViaOllama,
 } from "./ollama-hermes-client.js";
+import { recordAiProviderFailure } from "./provider-credit-status.js";
 
 const log = createLogger("AIChain");
 
@@ -148,6 +149,7 @@ export async function generateViaChain(
       };
     } catch (err) {
       const e = err instanceof Error ? err : new Error(String(err));
+      recordAiProviderFailure("hermes-agent", e);
       errors.push(`Hermes Agent: ${e.message}`);
       if (!isRetryable(e)) {
         // Non-retryable (e.g. auth), fall through to fallback
@@ -193,6 +195,7 @@ export async function generateViaChain(
       };
     } catch (err) {
       const e = err instanceof Error ? err : new Error(String(err));
+      recordAiProviderFailure("deepseek-direct", e);
       errors.push(`DeepSeek: ${e.message}`);
     }
   }
@@ -221,6 +224,7 @@ export async function* streamViaChain(request: ChainRequest): AsyncGenerator<
       yield { type: "end", provider: "hermes-agent" };
       return;
     } catch (err) {
+      recordAiProviderFailure("hermes-agent", err);
       log.warn(
         "[ai-chain] hermes-agent stream failed; trying DeepSeek direct",
         {
@@ -248,6 +252,7 @@ export async function* streamViaChain(request: ChainRequest): AsyncGenerator<
       yield { type: "end", provider: "deepseek-direct" };
       return;
     } catch (err) {
+      recordAiProviderFailure("deepseek-direct", err);
       yield { type: "error", error: `AI chain exhausted: ${String(err)}` };
       return;
     }

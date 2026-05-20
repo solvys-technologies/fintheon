@@ -27,6 +27,8 @@ const STANDING_AFTERNOON = { startTime: "14:30", endTime: "16:00" } as const;
 const PRINT_BAND_MIN = 45;
 const ACTIONABLE_START_MIN = 8 * 60;
 const ACTIONABLE_END_MIN = 16 * 60;
+const FULL_SESSION_START_MIN = 0;
+const FULL_SESSION_END_MIN = 23 * 60 + 59;
 
 export interface PlannedWindow {
   windowIndex: number;
@@ -61,6 +63,21 @@ const CROSS_BORDER_COUNTRIES = new Set([
   "EU", // Eurozone — ECB, CPI, GDP
   "GB", // UK — BoE, CPI, employment
   "UK", // UK alias
+]);
+
+const OBSERVED_COUNTRIES = new Set([
+  "US",
+  "AU",
+  "NZ",
+  "JP",
+  "KR",
+  "CN",
+  "HK",
+  "SG",
+  "TW",
+  "EU",
+  "GB",
+  "UK",
 ]);
 
 /**
@@ -318,10 +335,8 @@ function collectWeekdays(reference: Date, count: number): string[] {
 }
 
 /**
- * Build one or more PlannedDay entries for a given date. Each distinct event
- * category that has a valid print time gets its own PlannedDay entry, enabling
- * multi-plan-per-day cycling. If no events have times, a single standing-window
- * entry is returned.
+ * Build a PlannedDay for every notable observed event on the date. Windows can
+ * span the overnight session for Asia/cross-border prints and Fed speakers.
  */
 function buildPlannedDays(
   iso: string,
@@ -332,38 +347,28 @@ function buildPlannedDays(
 
   const actionableEvents = filterActionableEvents(iso, events);
   const dominant = pickDominantEvent(actionableEvents);
-
-  // Sort events by impact to give priority to high-impact windows
-  const sorted = [...actionableEvents].sort(
-    (a, b) =>
-      (impactWeight(b.impact ?? "low") ?? 0) -
-      (impactWeight(a.impact ?? "low") ?? 0),
-  );
-
-  // Build a window for each event with a valid print time, tracking by category
-  const categoryWindows = new Map<EconWindowCategory, PlannedWindow[]>();
+  const sorted = sortDeskEvents(actionableEvents);
+  const windows: PlannedWindow[] = [];
 
   for (const evt of sorted) {
     const cat = plannedWindowTypeForEvent(evt);
     if (cat === "holiday") continue;
     if (evt.time && evt.name) {
-      const band = bandAroundPrint(evt.time);
+      const band = bandAroundPrint(evt.time, shouldAllowFullSession(evt));
       if (band) {
-        const list = categoryWindows.get(cat) ?? [];
-        list.push({
-          windowIndex: list.length,
+        windows.push({
+          windowIndex: windows.length,
           startTime: band.start,
           endTime: band.end,
           eventName: evt.name,
           ivScore: scoreForImpact(evt.impact),
         });
-        categoryWindows.set(cat, list);
       }
     }
   }
 
   // If no windows found, generate a single standing-window plan
-  if (categoryWindows.size === 0) {
+  if (windows.length === 0) {
     const earningsTilt = actionableEvents.some((e) =>
       (e.category ?? "").toLowerCase().includes("earnings"),
     );
@@ -387,25 +392,34 @@ function buildPlannedDays(
     ];
   }
 
-  // Produce one PlannedDay per distinct category
-  return [...categoryWindows.entries()].map(([cat, windows]) => ({
-    date: iso,
-    day: dayLabel,
-    windows,
-    dominantEvent: windows[0]?.eventName ?? dominant?.name ?? null,
-    ivScore: windows[0]?.ivScore ?? scoreForImpact(dominant?.impact),
-  }));
+  return [
+    {
+      date: iso,
+      day: dayLabel,
+      windows,
+      dominantEvent: dominant?.name ?? windows[0]?.eventName ?? null,
+      ivScore: scoreForImpact(dominant?.impact) ?? windows[0]?.ivScore ?? null,
+    },
+  ];
 }
 
 function pickDominantEvent(
   events: Awaited<ReturnType<typeof readEconEvents>>,
 ): (typeof events)[number] | null {
   if (events.length === 0) return null;
-  return [...events].sort(
-    (a, b) =>
-      (impactWeight(b.impact ?? "low") ?? 0) -
-      (impactWeight(a.impact ?? "low") ?? 0),
-  )[0];
+  return sortDeskEvents(events)[0] ?? null;
+}
+
+function sortDeskEvents(
+  events: Awaited<ReturnType<typeof readEconEvents>>,
+): Awaited<ReturnType<typeof readEconEvents>> {
+  return [...events]
+    .sort((a, b) => {
+      const priorityDelta = deskPriority(b) - deskPriority(a);
+      if (priorityDelta !== 0) return priorityDelta;
+      return (a.time ?? "23:59").localeCompare(b.time ?? "23:59");
+    })
+    .slice(0, 18);
 }
 
 function filterActionableEvents(
@@ -418,16 +432,79 @@ function filterActionableEvents(
   const nowMinutes = ny.minutes;
   return events.filter((event) => {
     if (!event.date || event.date !== iso) return false;
+    if (!isObservedEvent(event)) return false;
+    if (!isNotableEvent(event)) return false;
     if (isMultiDayEvent(event)) return true;
     if (!event.time) return true;
     const minutes = minutesFromHHMM(event.time);
     if (minutes == null) return false;
-    if (minutes < ACTIONABLE_START_MIN || minutes > ACTIONABLE_END_MIN) {
+    if (
+      !shouldAllowFullSession(event) &&
+      (minutes < ACTIONABLE_START_MIN || minutes > ACTIONABLE_END_MIN)
+    ) {
       return false;
     }
     if (iso === todayIso && minutes < nowMinutes - 15) return false;
     return true;
   });
+}
+
+function isObservedEvent(event: {
+  country?: string | null;
+  category?: string | null;
+  name?: string | null;
+  impact?: string | null;
+}): boolean {
+  const country = (event.country ?? "").toUpperCase().trim();
+  if (OBSERVED_COUNTRIES.has(country)) return true;
+  const type = plannedWindowTypeForEvent(event);
+  if (type === "speech" || type === "pool_call" || type === "summit")
+    return true;
+  return isWatchlistEventName(event.name);
+}
+
+function isNotableEvent(event: {
+  category?: string | null;
+  name?: string | null;
+  country?: string | null;
+  impact?: string | null;
+}): boolean {
+  const type = plannedWindowTypeForEvent(event);
+  if (type === "holiday") return false;
+  if (type === "speech" || type === "pool_call" || type === "summit") return true;
+  if (impactWeight(event.impact ?? "low") >= 2) return true;
+  return isWatchlistEventName(event.name);
+}
+
+function isWatchlistEventName(name?: string | null): boolean {
+  const text = (name ?? "").toLowerCase();
+  return /\b(fed|fomc|powell|barr|waller|williams|cpi|ppi|pce|payrolls?|nfp|claims|gdp|pmi|ism|retail sales|consumer confidence|nvidia|nvda)\b/.test(
+    text,
+  );
+}
+
+function shouldAllowFullSession(event: {
+  country?: string | null;
+  category?: string | null;
+  name?: string | null;
+}): boolean {
+  const type = plannedWindowTypeForEvent(event);
+  if (type === "speech" || type === "pool_call" || type === "summit") return true;
+  if (type === "cross_border_macro" || type === "earnings") return true;
+  const country = (event.country ?? "").toUpperCase().trim();
+  return OBSERVED_COUNTRIES.has(country) && country !== "US";
+}
+
+function deskPriority(event: {
+  category?: string | null;
+  name?: string | null;
+  country?: string | null;
+  impact?: string | null;
+}): number {
+  const type = plannedWindowTypeForEvent(event);
+  const typeWeight = CATEGORY_PREFERENCE[type]?.priority ?? 0;
+  const watchlistBoost = isWatchlistEventName(event.name) ? 1 : 0;
+  return typeWeight * 10 + impactWeight(event.impact ?? "low") + watchlistBoost;
 }
 
 function isMultiDayEvent(event: {
@@ -470,17 +547,22 @@ function impactWeight(impact: string): number {
 
 function bandAroundPrint(
   timeHHMM: string,
+  allowFullSession = false,
 ): { start: string; end: string } | null {
   const total = minutesFromHHMM(timeHHMM);
   if (total == null) return null;
-  if (total < ACTIONABLE_START_MIN || total > ACTIONABLE_END_MIN) return null;
+  const startLimit = allowFullSession
+    ? FULL_SESSION_START_MIN
+    : ACTIONABLE_START_MIN;
+  const endLimit = allowFullSession ? FULL_SESSION_END_MIN : ACTIONABLE_END_MIN;
+  if (total < startLimit || total > endLimit) return null;
 
   const start = clampMinutes(
     total - PRINT_BAND_MIN,
-    ACTIONABLE_START_MIN,
-    ACTIONABLE_END_MIN - 30,
+    startLimit,
+    endLimit - 30,
   );
-  const end = clampMinutes(total + PRINT_BAND_MIN, start + 30, ACTIONABLE_END_MIN);
+  const end = clampMinutes(total + PRINT_BAND_MIN, start + 30, endLimit);
   return { start: minutesToHHMM(start), end: minutesToHHMM(end) };
 }
 

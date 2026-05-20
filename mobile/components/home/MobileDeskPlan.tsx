@@ -138,38 +138,8 @@ function DesktopMobileDotNav({
 }
 
 function useEconReveal(windowStartTime: string) {
-  const [revealed, setRevealed] = useState(false);
-  const [countdown, setCountdown] = useState<string | null>(null);
-
-  useEffect(() => {
-    function evaluate() {
-      const now = Date.now();
-      const [h, m] = windowStartTime.split(":").map(Number);
-      const startDate = new Date();
-      startDate.setHours(h, m, 0, 0);
-      const startMs = startDate.getTime();
-      const adjustedStart = startMs <= now ? startMs + 86_400_000 : startMs;
-      const diffMs = adjustedStart - now;
-      const thirtyMin = 30 * 60_000;
-
-      if (diffMs <= 0) {
-        setRevealed(true);
-        setCountdown(null);
-      } else if (diffMs <= thirtyMin) {
-        setRevealed(false);
-        setCountdown(`Reveals in ${Math.max(1, Math.floor(diffMs / 60_000))}m`);
-      } else {
-        setRevealed(false);
-        setCountdown(null);
-      }
-    }
-
-    evaluate();
-    const id = window.setInterval(evaluate, 10_000);
-    return () => window.clearInterval(id);
-  }, [windowStartTime]);
-
-  return { revealed, countdown };
+  void windowStartTime;
+  return { revealed: true, countdown: null };
 }
 
 export function MobileDeskPlan() {

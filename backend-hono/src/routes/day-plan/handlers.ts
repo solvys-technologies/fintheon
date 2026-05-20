@@ -14,6 +14,11 @@ import {
   readWeekPlans,
 } from "../../services/day-plan/day-plan-service.js";
 import { planWeek, planWeeks } from "../../services/day-plan/window-scheduler.js";
+import {
+  generateEconForecast,
+  isSpeechEvent,
+} from "../../services/econ-forecast/econ-forecast-service.js";
+import { readEconEvents } from "../../services/supabase-service.js";
 import { getLastDriftEvent } from "../../services/desk-drift/drift-monitor.js";
 import { isInsideAnyWindow } from "../../services/desk-drift/dead-volume-rule.js";
 import type {
@@ -95,6 +100,7 @@ export async function handleGetMultiWeek(c: Context): Promise<Response> {
   let result: DayPlan[][] = [];
 
   if (from && to) {
+    await ensureGeneratedPlans(collectDateRange(from, to));
     const plans = await readWeekPlans(TEAM_ID, from, to);
     const byWeek = new Map<string, DayPlan[]>();
     for (const plan of plans) {
@@ -115,6 +121,7 @@ export async function handleGetMultiWeek(c: Context): Promise<Response> {
     const allDates = plannedWeeks.flat().map((p) => p.date);
     const fromIso = allDates[0] ?? new Date().toISOString().slice(0, 10);
     const toIso = allDates[allDates.length - 1] ?? fromIso;
+    await ensureGeneratedPlans(allDates);
     const persisted = await readWeekPlans(TEAM_ID, fromIso, toIso);
     const persistedByDate = new Map<string, DayPlan[]>();
     for (const p of persisted) {
@@ -152,6 +159,84 @@ export async function handleGetMultiWeek(c: Context): Promise<Response> {
   }
 
   return c.json({ weeks: result });
+}
+
+async function ensureGeneratedPlans(dates: string[]): Promise<void> {
+  const uniqueDates = [...new Set(dates)].filter(Boolean).slice(0, 31);
+  for (const date of uniqueDates) {
+    await generateDayPlan({
+      teamId: TEAM_ID,
+      date: new Date(`${date}T12:00:00Z`),
+      generatedBy: "multi-week-planner",
+    }).catch((err) => {
+      log.warn("multi-week day-plan materialization failed", {
+        date,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
+  }
+}
+
+function collectDateRange(from: string, to: string): string[] {
+  const dates: string[] = [];
+  const cursor = new Date(`${from}T12:00:00Z`);
+  const end = new Date(`${to}T12:00:00Z`);
+  while (dates.length < 31 && cursor <= end) {
+    dates.push(cursor.toISOString().slice(0, 10));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return dates;
+}
+
+async function forecastMissingWindows(
+  dateIso: string,
+  windows: Array<{
+    windowIndex: number;
+    startTime: string;
+    endTime: string;
+    eventName: string | null;
+    econForecast: DayPlanWindow["econForecast"];
+  }>,
+): Promise<typeof windows> {
+  const events = await readEconEvents({ from: dateIso, to: dateIso }).catch(() => []);
+  const resolved: typeof windows = [];
+  for (const window of windows) {
+    if (!window.eventName || window.econForecast) {
+      resolved.push(window);
+      continue;
+    }
+    const event = findEventForWindow(window.eventName, events);
+    if (!event) {
+      resolved.push(window);
+      continue;
+    }
+    const econForecast = await generateEconForecast({
+      eventName: event.name,
+      eventDate: dateIso,
+      eventTime: event.time ?? window.startTime,
+      eventCountry: event.country ?? undefined,
+      eventCategory: event.category ?? undefined,
+      forecast: event.forecast ?? undefined,
+      previous: event.previous ?? undefined,
+      isSpeech: isSpeechEvent(event),
+    }).catch(() => null);
+    resolved.push({ ...window, econForecast });
+  }
+  return resolved;
+}
+
+function findEventForWindow(
+  eventName: string,
+  events: Awaited<ReturnType<typeof readEconEvents>>,
+): (typeof events)[number] | null {
+  const name = eventName.toLowerCase().trim();
+  for (const event of events) {
+    const eventLabel = (event.name ?? "").toLowerCase().trim();
+    if (eventLabel === name || eventLabel.includes(name) || name.includes(eventLabel)) {
+      return event;
+    }
+  }
+  return null;
 }
 
 export async function handleGetStreak(c: Context): Promise<Response> {
@@ -343,7 +428,7 @@ export async function handlePostCaoEveningReview(
     startTime: string;
     endTime: string;
     eventName: string | null;
-    econForecast: null;
+    econForecast: DayPlanWindow["econForecast"];
   }> = parsed.data.windows.map((wu, i) => ({
     windowIndex: nextIndex + i,
     startTime: wu.startTime,
@@ -353,7 +438,7 @@ export async function handlePostCaoEveningReview(
   }));
 
   // Merge: existing + new (additive, not replacement)
-  const allWindows = [
+  const allWindows = await forecastMissingWindows(dateIso, [
     ...existingWindows.map((w: DayPlanWindow) => ({
       windowIndex: w.windowIndex,
       startTime: w.startTime,
@@ -362,7 +447,7 @@ export async function handlePostCaoEveningReview(
       econForecast: w.econForecast ?? null,
     })),
     ...newWindows,
-  ];
+  ]);
 
   // Persist through Supabase
   const sb = getSupabaseClient();

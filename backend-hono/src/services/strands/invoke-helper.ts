@@ -4,6 +4,7 @@
 import { createAgent, type HarperProvider } from "./agent-factory.js";
 import type { VProxyModelOptions } from "./provider.js";
 import { createLogger } from "../../lib/logger.js";
+import { recordAiProviderFailure } from "../ai/provider-credit-status.js";
 
 const log = createLogger("InvokeAgent");
 
@@ -38,6 +39,7 @@ export async function invokeAgent(
       return result;
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
+      recordAiProviderFailure(provider, lastError);
       log.warn(`Provider ${provider} failed, trying next`, {
         error: lastError.message,
       });

@@ -1,6 +1,5 @@
 // [claude-code 2026-04-23] Rollback: reinstate VProxy as primary; drop GitHub-backed inference provider
-// [claude-code 2026-03-29] Add Grok 4.20 via OpenRouter as scoring fallback (news, sentiment, econ, earnings)
-// [claude-code 2026-03-14] Default inference: OpenRouter (Nous subscription) + Claude Opus 4.6; Groq removed as primary
+// [claude-code 2026-03-14] Default inference provider config.
 import priceSystemPrompt from "../prompts/price-system-prompt.js";
 import type {
   AiProviderType,
@@ -17,7 +16,6 @@ const getEnv = (key: string): string | undefined => {
 // Model keys
 export type AiModelKey =
   | "sonnet"
-  | "grok"
   | "deepseek-direct"
   | "opencode-go"
   | "hermes-cao"
@@ -114,9 +112,9 @@ const modelAliases: Record<string, AiModelKey> = {
   "claude-sonnet": "sonnet",
   "sonnet-4.5": "sonnet",
   opus: "sonnet",
-  grok: "grok",
-  "grok-4.1": "grok",
-  general: "grok",
+  grok: "opencode-go",
+  "grok-4.1": "opencode-go",
+  general: "opencode-go",
   groq: "deepseek-direct",
   "llama-3.3-70b": "deepseek-direct",
   haiku: "deepseek-direct",
@@ -190,22 +188,6 @@ export const defaultAiConfig: AiConfig = {
       contextWindow: 200_000,
       supportsStreaming: true,
       supportsVision: true,
-    },
-    grok: {
-      id: "xai/grok-4.1",
-      displayName: "Grok 4.1 Reasoning",
-      provider: "openai-compatible",
-      providerType: "vercel-gateway",
-      apiKeyEnv: "VERCEL_AI_GATEWAY_API_KEY",
-      baseUrl: vercelGatewayBaseUrl,
-      temperature: 0.4,
-      maxTokens: 2048,
-      timeoutMs: 30_000,
-      costPer1kInputUsd: 0.003,
-      costPer1kOutputUsd: 0.015,
-      contextWindow: 128_000,
-      supportsStreaming: true,
-      supportsVision: false,
     },
     // DeepSeek v4 Pro — primary inference
     "deepseek-direct": {
@@ -306,7 +288,7 @@ export const defaultAiConfig: AiConfig = {
       supportsStreaming: true,
       supportsVision: false,
     },
-    // Nous Research direct inference — fallback when OpenRouter DNS is unreachable
+    // Nous Research direct inference fallback.
     "nous-direct": {
       id: "nousresearch/hermes-4-405b",
       displayName: "Hermes 4 405B (Nous Direct)",
@@ -346,7 +328,7 @@ export const defaultAiConfig: AiConfig = {
   routing: {
     defaultModel,
     taskModelMap: {
-      // All tasks through OpenRouter (Nous subscription) — Claude Opus 4.6
+      // All tasks through Hermes-compatible providers.
       analysis: "deepseek-direct",
       research: "deepseek-direct",
       reasoning: "deepseek-direct",
@@ -372,15 +354,14 @@ export const defaultAiConfig: AiConfig = {
     },
     fallbackMap: {
       sonnet: "deepseek-direct",
-      grok: "deepseek-direct",
       "deepseek-direct": "nous-direct",
       "opencode-go": "opencode-go",
-      // Hermes fallbacks (fall back to OpenRouter equivalents)
+      // Hermes fallbacks.
       "hermes-cao": "deepseek-direct",
       "hermes-research": "deepseek-direct",
       "hermes-fast": "deepseek-direct",
       "hermes-realtime": "deepseek-direct",
-      // Claude Local SDK fallback to OpenRouter Opus
+      // Claude Local SDK fallback.
       "claude-local": "deepseek-direct",
       // Nous Direct is terminal — no further fallback
       "nous-direct": "deepseek-direct",
@@ -427,7 +408,7 @@ export const defaultAiConfig: AiConfig = {
   systemPrompt: priceSystemPrompt,
 };
 
-// Hermes agent keys (routed to OpenRouter Opus 4.6)
+// Hermes agent keys.
 export const isHermesModel = (modelKey: AiModelKey): boolean => {
   return modelKey.startsWith("hermes-");
 };
@@ -442,7 +423,7 @@ export const isNousDirectModel = (modelKey: AiModelKey): boolean => {
   return modelKey === "nous-direct";
 };
 
-// Get the model ID for Hermes agent keys (OpenRouter Opus 4.6)
+// Get the model ID for Hermes agent keys.
 export const getHermesModelId = (modelKey: AiModelKey): string => {
   const config = defaultAiConfig.models[modelKey];
   return config?.id ?? "anthropic/claude-opus-4.6";

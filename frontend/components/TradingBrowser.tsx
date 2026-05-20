@@ -3,6 +3,7 @@
 import { EmbeddedBrowserFrame } from "./layout/EmbeddedBrowserFrame";
 import { useSettings } from "../contexts/SettingsContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { useEffect, useState } from "react";
 
 export type BuiltinPlatform =
   | "topstepx"
@@ -99,19 +100,73 @@ export function TradingBrowser({
       <div
         className={`h-full ${splitViewEnabled && allowSplitView ? "grid grid-cols-2 gap-0" : ""}`}
       >
-        <EmbeddedBrowserFrame
-          title={resolveLabel(primaryPlatform)}
-          src={primaryUrl}
-          className={`w-full h-full ${frameBg}`}
+        <BrowserPane
+          activePlatform={primaryPlatform}
+          activeUrl={primaryUrl}
+          resolveUrl={resolveUrl}
+          resolveLabel={resolveLabel}
+          frameBg={frameBg}
         />
         {splitViewEnabled && allowSplitView && (
-          <EmbeddedBrowserFrame
-            title={resolveLabel(secondaryPlatform)}
-            src={secondaryUrl}
-            className={`w-full h-full ${frameBg}`}
+          <BrowserPane
+            activePlatform={secondaryPlatform}
+            activeUrl={secondaryUrl}
+            resolveUrl={resolveUrl}
+            resolveLabel={resolveLabel}
+            frameBg={frameBg}
           />
         )}
       </div>
+    </div>
+  );
+}
+
+function BrowserPane({
+  activePlatform,
+  activeUrl,
+  resolveUrl,
+  resolveLabel,
+  frameBg,
+}: {
+  activePlatform: TradingPlatform;
+  activeUrl: string;
+  resolveUrl: (platform: TradingPlatform) => string;
+  resolveLabel: (platform: TradingPlatform) => string;
+  frameBg: string;
+}) {
+  const [visitedPlatforms, setVisitedPlatforms] = useState<TradingPlatform[]>(
+    () => (activeUrl ? [activePlatform] : []),
+  );
+
+  useEffect(() => {
+    if (!activeUrl) return;
+    setVisitedPlatforms((prev) =>
+      prev.includes(activePlatform) ? prev : [...prev, activePlatform],
+    );
+  }, [activePlatform, activeUrl]);
+
+  return (
+    <div className="relative h-full w-full overflow-hidden">
+      {visitedPlatforms.map((platform) => {
+        const url = resolveUrl(platform);
+        if (!url) return null;
+        const isActive = platform === activePlatform;
+        return (
+          <div
+            key={platform}
+            className="absolute inset-0"
+            style={{
+              display: isActive ? "block" : "none",
+            }}
+          >
+            <EmbeddedBrowserFrame
+              title={resolveLabel(platform)}
+              src={url}
+              className={`w-full h-full ${frameBg}`}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }

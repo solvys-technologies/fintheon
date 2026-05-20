@@ -16,6 +16,7 @@ import {
   handleGetFeedback,
   handlePostCaoEveningReview,
 } from "./handlers.js";
+import { handlePostKickstart } from "./kickstart.js";
 
 export function createDayPlanRoutes(): Hono {
   const router = new Hono();
@@ -23,6 +24,7 @@ export function createDayPlanRoutes(): Hono {
   router.get("/today", handleGetToday);
   router.get("/week", handleGetWeek);
   router.get("/multi-week", handleGetMultiWeek);
+  router.post("/kickstart", handlePostKickstart);
 
   router.get("/streak", requireAuth, handleGetStreak);
   router.get("/streak/graded", requireAuth, handleGetGradedStreak);

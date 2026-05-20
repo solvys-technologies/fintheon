@@ -134,7 +134,7 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
       setIsVerifyingHermes(false);
       setHermesStatus("error");
       addToast(
-        "Hermes AI unavailable — check OpenRouter API key",
+        "Hermes AI unavailable — check gateway API key",
         "error",
         undefined,
         "connection-status",

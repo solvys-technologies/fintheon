@@ -12,6 +12,7 @@ import {
   createContext,
   useContext,
   useState,
+  useCallback,
   useRef,
   ReactNode,
   useEffect,
@@ -208,6 +209,8 @@ const SettingsContext = createContext<SettingsContextType | undefined>(
 
 const STORAGE_KEY = "fintheon:settings";
 const PREFERENCES_STORAGE_KEY = "fintheon:preferences";
+const LOCKOUT_AUTO_BLOCK_EXPLICIT_KEY =
+  "fintheon:lockout-auto-block-explicit";
 // [claude-code 2026-04-18] Must be absolute: under Electron file:// a relative "/api/settings"
 //   resolves against the file protocol and throws ERR_FILE_NOT_FOUND, so both load+save silently
 //   no-op and settings never round-trip to Supabase until a reload on localhost.
@@ -224,6 +227,26 @@ function loadFromStorage<T>(key: string, defaultValue: T): T {
     }
   } catch {}
   return defaultValue;
+}
+
+function hasExplicitAutoBlockSetting(): boolean {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed.lockoutAutoBlockOutsideTradingWindowExplicit === true)
+        return true;
+    }
+    return localStorage.getItem(LOCKOUT_AUTO_BLOCK_EXPLICIT_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function loadAutoBlockSetting(): boolean {
+  return hasExplicitAutoBlockSetting()
+    ? loadFromStorage("lockoutAutoBlockOutsideTradingWindow", false)
+    : false;
 }
 
 async function fetchBackendSettings(): Promise<Record<string, unknown> | null> {
@@ -542,10 +565,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     useState<number>(() => loadFromStorage("lockoutAutoReleaseMinutes", 30));
   const [
     lockoutAutoBlockOutsideTradingWindow,
-    setLockoutAutoBlockOutsideTradingWindow,
-  ] = useState<boolean>(() =>
-    loadFromStorage("lockoutAutoBlockOutsideTradingWindow", true),
-  );
+    setLockoutAutoBlockOutsideTradingWindowValue,
+  ] = useState<boolean>(() => loadAutoBlockSetting());
+  const [
+    lockoutAutoBlockOutsideTradingWindowExplicit,
+    setLockoutAutoBlockOutsideTradingWindowExplicit,
+  ] = useState<boolean>(() => hasExplicitAutoBlockSetting());
   const [persistentLockout, setPersistentLockout] = useState<boolean>(() =>
     loadFromStorage("persistentLockout", false),
   );
@@ -555,6 +580,19 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [lockoutPermission, setLockoutPermission] = useState<
     "prompt" | "granted" | "denied"
   >(() => loadFromStorage("lockoutPermission", "granted"));
+
+  const setLockoutAutoBlockOutsideTradingWindow = useCallback(
+    (enabled: boolean) => {
+      setLockoutAutoBlockOutsideTradingWindowExplicit(true);
+      try {
+        localStorage.setItem(LOCKOUT_AUTO_BLOCK_EXPLICIT_KEY, "true");
+      } catch {
+        /* ignore */
+      }
+      setLockoutAutoBlockOutsideTradingWindowValue(enabled);
+    },
+    [],
+  );
 
   const INSTRUMENT_STORAGE_KEY = "fintheon:selected-instrument";
 
@@ -749,10 +787,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           setLockoutAutoReleaseMinutes(
             remote.lockoutAutoReleaseMinutes as number,
           );
-        if (remote.lockoutAutoBlockOutsideTradingWindow !== undefined)
-          setLockoutAutoBlockOutsideTradingWindow(
-            remote.lockoutAutoBlockOutsideTradingWindow as boolean,
-          );
+        if (remote.lockoutAutoBlockOutsideTradingWindow !== undefined) {
+          if (remote.lockoutAutoBlockOutsideTradingWindowExplicit === true) {
+            setLockoutAutoBlockOutsideTradingWindowExplicit(true);
+            setLockoutAutoBlockOutsideTradingWindowValue(
+              remote.lockoutAutoBlockOutsideTradingWindow as boolean,
+            );
+          } else if (remote.lockoutAutoBlockOutsideTradingWindow === false) {
+            setLockoutAutoBlockOutsideTradingWindowValue(false);
+          }
+        }
         if (remote.persistentLockout !== undefined)
           setPersistentLockout(remote.persistentLockout as boolean);
         if (remote.quickAccessUrl)
@@ -797,6 +841,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       lockoutDefaultDuration,
       lockoutAutoReleaseMinutes,
       lockoutAutoBlockOutsideTradingWindow,
+      lockoutAutoBlockOutsideTradingWindowExplicit,
       persistentLockout,
       quickAccessUrl,
       selectedInstrument,
@@ -844,6 +889,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     lockoutDefaultDuration,
     lockoutAutoReleaseMinutes,
     lockoutAutoBlockOutsideTradingWindow,
+    lockoutAutoBlockOutsideTradingWindowExplicit,
     persistentLockout,
     quickAccessUrl,
     selectedInstrument,

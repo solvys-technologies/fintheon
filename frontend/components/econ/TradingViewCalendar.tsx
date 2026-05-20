@@ -1,19 +1,16 @@
-// [claude-code 2026-04-27] S46.4: Restore the full TradingView Economic
-// Calendar iframe in the CALENDAR navtab. Lightweight script widget
-// (EconCalendar.tsx) stays around for surfaces that consume the events
-// context, but the navtab now renders the live TV page so TP can use the
-// "Add to Calendar" CTA. Electron intercepts the resulting .ics download
-// (electron/main.cjs:586+), POSTs to /api/desk/calendar/ingest-ics, and
-// emits desk-calendar:saving / :saved / :failed IPC events that drive the
-// green status text and the success toast — no Google Calendar window,
-// no chooser dialog, no app-leaving navigation.
+// [codex 2026-05-20] Main Calendar must use TradingView's full calendar page,
+// not the lightweight embeddable widget, so Economic/Earnings/Revenue/Dividend/
+// IPO tabs and all country filters stay available. The frame is keyed by the
+// current trading week so stale prior-week sessions snap back on week rollover,
+// while TabRenderer keeps the frame mounted during same-session tab switches.
 import { useEffect, useState } from "react";
 import { CalendarDays, CheckCircle2, Inbox, Loader2 } from "lucide-react";
 import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
 import { useToast } from "../../contexts/ToastContext";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
-const TRADINGVIEW_CALENDAR_URL = "https://www.tradingview.com/calendar/";
+const TRADINGVIEW_CALENDAR_URL =
+  "https://www.tradingview.com/economic-calendar/";
 
 interface DeskQueueStatus {
   count: number;
@@ -37,6 +34,47 @@ function formatRelative(iso: string | null): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+function tradingWeekKey(now: Date = new Date()): string {
+  const etParts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
+  const get = (type: string) =>
+    etParts.find((part) => part.type === type)?.value ?? "";
+  const weekday = get("weekday");
+  const hourEt = Number(get("hour"));
+  const yyyy = Number(get("year"));
+  const mm = Number(get("month"));
+  const dd = Number(get("day"));
+  const dayMap: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+  const dow = dayMap[weekday] ?? new Date(yyyy, mm - 1, dd).getDay();
+  const advancedToNextWeek =
+    dow === 0 || dow === 6 || (dow === 5 && hourEt >= 16);
+  const noonUtc = Date.UTC(yyyy, mm - 1, dd, 12);
+  const offsetToMonday = advancedToNextWeek
+    ? dow === 0
+      ? 1
+      : dow === 6
+        ? 2
+        : 3
+    : -((dow + 6) % 7);
+  const target = new Date(noonUtc + offsetToMonday * 86_400_000);
+  return target.toISOString().slice(0, 10);
+}
+
 export function TradingViewCalendar() {
   const { addToast } = useToast();
   const [queue, setQueue] = useState<DeskQueueStatus>({
@@ -44,6 +82,7 @@ export function TradingViewCalendar() {
     last_ingest_at: null,
   });
   const [saveState, setSaveState] = useState<SaveState>({ phase: "idle" });
+  const [weekKey, setWeekKey] = useState<string>(() => tradingWeekKey());
 
   const refreshQueue = async () => {
     try {
@@ -74,6 +113,14 @@ export function TradingViewCalendar() {
       cancelled = true;
       window.clearInterval(id);
     };
+  }, []);
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const next = tradingWeekKey();
+      setWeekKey((prev) => (prev === next ? prev : next));
+    }, 60_000);
+    return () => window.clearInterval(id);
   }, []);
 
   useEffect(() => {
@@ -156,6 +203,7 @@ export function TradingViewCalendar() {
       </div>
       <div className="flex-1 min-h-0">
         <EmbeddedBrowserFrame
+          key={weekKey}
           title="TradingView Economic Calendar"
           src={TRADINGVIEW_CALENDAR_URL}
           className="w-full h-full"

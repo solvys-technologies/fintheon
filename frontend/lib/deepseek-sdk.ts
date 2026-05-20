@@ -1,6 +1,13 @@
 // [claude-code 2026-05-03] S58-T2: shared client-side DeepSeek transport for desktop, web, mobile, and Electron.
 
 // S38-T5: deepseek-direct is primary; opencode-go path retained for callers.
+import { emitApiError } from "./errorBus";
+import {
+  AI_CREDITS_EXHAUSTED,
+  extractAiErrorMessage,
+  isAiCreditsExhausted,
+} from "./aiCreditErrors";
+
 export type DeepSeekProvider = "deepseek-direct" | "deepseek-oc-api";
 
 export interface DeepSeekKeyStatus {
@@ -256,6 +263,22 @@ export async function createDeepSeekStreamResponse(
   const upstream = await postChatCompletion(messages, options);
   if (!upstream.ok) {
     const text = await upstream.text().catch(() => upstream.statusText);
+    if (upstream.status === 402 || isAiCreditsExhausted(text)) {
+      const message = extractAiErrorMessage(text || upstream.statusText);
+      emitApiError({
+        code: AI_CREDITS_EXHAUSTED,
+        message: "Hermes gateway credits exhausted",
+        status: 402,
+        endpoint:
+          options.provider === "deepseek-oc-api"
+            ? "opencode-go/chat/completions"
+            : "deepseek/chat/completions",
+      });
+      throw new Error(
+        message ||
+          "Hermes gateway credits exhausted. Top up credits or replace the API key.",
+      );
+    }
     throw new Error(text || `DeepSeek request failed (${upstream.status})`);
   }
 

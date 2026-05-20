@@ -90,6 +90,34 @@ export function RiskFlowCardExpanded({
         className="pb-4 pt-2 fade-divider-top"
         style={{ borderTop: "none", padding: "8px 12px 16px 26px" }}
       >
+        <div style={{ marginBottom: 12 }}>
+          <span
+            style={{
+              fontFamily: "var(--font-data)",
+              fontSize: "10px",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "var(--text-secondary)",
+              display: "block",
+              marginBottom: 4,
+            }}
+          >
+            HEADLINE
+          </span>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 15,
+              color: "var(--text-primary)",
+              lineHeight: 1.45,
+              margin: 0,
+              overflowWrap: "anywhere",
+            }}
+          >
+            {alert.title}
+          </p>
+        </div>
+
         {/* Video: auto-play muted loop, stops on collapse (unmount). */}
         {alert.videoUrl ? (
           <div

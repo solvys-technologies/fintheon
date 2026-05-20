@@ -51,7 +51,7 @@ const POLL_INTERVAL_MS = 30_000;
 const KEY_MAP: Record<string, string> = {
   Hermes: "ai",
   "Hermes AI (DeepSeek primary)": "ai",
-  "Hermes AI (OpenRouter)": "ai",
+  "Hermes AI (Gateway)": "ai",
   Supabase: "database",
   "X Feed": "x-feed",
   "Supabase Auth": "auth",
@@ -62,7 +62,7 @@ const KEY_MAP: Record<string, string> = {
 const SHORT_NAMES: Record<string, string> = {
   Hermes: "Hermes",
   "Hermes AI (DeepSeek primary)": "Hermes",
-  "Hermes AI (OpenRouter)": "AI",
+  "Hermes AI (Gateway)": "AI",
   Supabase: "Database",
   "X Feed": "X",
   "Supabase Auth": "Auth",

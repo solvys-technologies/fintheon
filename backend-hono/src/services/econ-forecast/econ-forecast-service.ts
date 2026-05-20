@@ -12,6 +12,7 @@ import { readEconEvents } from "../supabase-service.js";
 import { readEconPrints } from "../supabase-service.js";
 import { createLogger } from "../../lib/logger.js";
 import type { EconForecast, EconForecastScenario } from "../../types/day-plan.js";
+import { redeliberateEconForecast } from "./econ-forecast-redeliberation.js";
 
 const log = createLogger("EconForecast");
 const FORECAST_TIMEOUT_MS = 25_000;
@@ -95,29 +96,39 @@ export async function generateEconForecast(
       FORECAST_TIMEOUT_MS,
     );
 
-    const forecast = parseForecastResponse(result.text, input);
-    if (!forecast) {
+    const parsed = parseForecastResponse(result.text, input);
+    const forecast = parsed ?? buildFallbackForecast(input);
+    if (!parsed) {
       log.warn("Failed to parse AI forecast response", {
         event: input.eventName,
         rawLength: result.text.length,
       });
-      return buildFallbackForecast(input);
     }
+    const validated = await redeliberateEconForecast({
+      input,
+      forecast,
+      passes: 2,
+    });
 
     log.info("Econ forecast generated", {
       event: input.eventName,
-      forecast: forecast.forecast,
-      missProb: forecast.miss.probability,
-      beatProb: forecast.beat.probability,
+      forecast: validated.forecast,
+      missProb: validated.miss.probability,
+      beatProb: validated.beat.probability,
+      validationCount: validated.validationChecks?.length ?? 0,
     });
 
-    return forecast;
+    return validated;
   } catch (err) {
     log.warn("Econ forecast generation failed — using fallback", {
       event: input.eventName,
       error: err instanceof Error ? err.message : String(err),
     });
-    return buildFallbackForecast(input);
+    return redeliberateEconForecast({
+      input,
+      forecast: buildFallbackForecast(input),
+      passes: 2,
+    });
   }
 }
 

@@ -63,7 +63,7 @@ export function ApiTab({ apiKeys, setAPIKeys }: ApiTabProps) {
       </section>
 
       <p className="text-xs text-gray-500 mt-4">
-        Agent inference uses OpenRouter (set OPENROUTER_API_KEY in backend{" "}
+        Agent inference uses Hermes gateway credentials (set HERMES_API_KEY in{" "}
         <code className="bg-zinc-800 px-1 rounded">backend-hono/.env</code>).
         Voice Engine uses OpenAI (set OPENAI_API_KEY in backend). See SETUP.md
         for details.

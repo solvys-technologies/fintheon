@@ -1,12 +1,11 @@
-// [claude-code 2026-04-27] S46.4: ECON navtab now renders the live TradingView
-// calendar iframe (TradingViewCalendar) so TP can use the "Add to Calendar"
-// CTA — the resulting .ics download is intercepted by Electron and POSTed to
-// /api/desk/calendar/ingest-ics. The lightweight EconCalendar widget is
-// retained for chat/mobile surfaces but is no longer in the navtab.
+// [codex 2026-05-20] ECON navtab uses the full TradingView calendar page, not
+// the lightweight widget, because the main calendar needs TradingView's full
+// Economic/Earnings/Revenue/Dividend/IPO tabs and country filters. It stays
+// mounted after first visit so the embedded frame preserves in-page history.
 // [claude-code 2026-04-18] S24-T4: Admin surface now wraps Refinement/Approvals/Monitor via AdminShell
 // [claude-code 2026-04-03] Extracted from MainLayout.tsx — tab content rendering
 // [claude-code 2026-04-30] RiskFlow tab accepts the shared Ask AI catalyst callback.
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { MinimalFeedSection } from "../feed/MinimalFeedSection";
 import { RiskFlowMain } from "../feed/RiskFlowMain";
 import { ConsiliumHub } from "../consilium/ConsiliumHub";
@@ -56,10 +55,15 @@ export function TabRenderer({
   navigateTab,
   onChatAlert,
 }: TabRendererProps) {
+  const [hasMountedEcon, setHasMountedEcon] = useState(activeTab === "econ");
   const animClass =
     tabTransitioning && prevTab
       ? "animate-fade-out-tab"
       : "animate-fade-in-tab";
+
+  useEffect(() => {
+    if (activeTab === "econ") setHasMountedEcon(true);
+  }, [activeTab]);
 
   return (
     <div className="flex-1 min-h-0 overflow-hidden">
@@ -95,11 +99,11 @@ export function TabRenderer({
           <RiskFlowMain onChatAlert={onChatAlert} />
         </div>
       )}
-      {!showRefinement && activeTab === "econ" && (
+      {!showRefinement && (activeTab === "econ" || hasMountedEcon) && (
         <div
           key="econ"
           data-tour-target="econ"
-          className={`h-full w-full ${animClass}`}
+          className={`h-full w-full ${activeTab === "econ" ? animClass : "hidden"}`}
         >
           <EconCalendarProvider>
             <TradingViewCalendar />

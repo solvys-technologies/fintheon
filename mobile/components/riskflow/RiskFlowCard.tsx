@@ -1,9 +1,9 @@
 // [claude-code 2026-05-01] S56 Track D: moved onClick outside SwipeAction so tapping
 //   anywhere on the card triggers expand/collapse (was only the fuse before).
-// [claude-code 2026-04-29] S52-T1: h3 always line-clamped (keyword-break removed
-//   on expand) — full headline remainder streams in via RiskFlowCardExpanded t-text-reveal,
-//   eliminating the duplicate expanded copy. S51: source-type icons, bucket-left/time-ago-right
-//   header, Earnings bucket support in source-buckets.
+// [codex 2026-05-20] S52 headline clamp remains the preview; expanded state now
+//   renders the full headline in RiskFlowCardExpanded so mobile users can read it
+//   without opening the desktop/feed detail. S51: source-type icons,
+//   bucket-left/time-ago-right header, Earnings bucket support in source-buckets.
 // [claude-code 2026-04-20] Tap-to-expand restored per TP — tap the card now
 //   expands RiskFlowCardExpanded inline (not the DetailSheet modal). The
 //   vertical fuse drains on tap, fades to zero opacity, then the expanded

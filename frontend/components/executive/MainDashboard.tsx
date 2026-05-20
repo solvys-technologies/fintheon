@@ -20,6 +20,10 @@ import TradeIdeaModal from "../TradeIdeaModal";
 import { DayCard } from "../narrative/DayCard";
 import { RiskSignalCards } from "../narrative/RiskSignalCards";
 import { DeskPlanSprintMap } from "./DeskPlanSprintMap";
+import {
+  DeskPlanAdvanceButton,
+  RiskSignalsRefreshButton,
+} from "./DashboardKickstartButtons";
 import { RegimeCard } from "../dashboard/RegimeCard";
 import { RegimeTrackerModal } from "../regimes/RegimeTrackerModal";
 import {
@@ -30,6 +34,7 @@ import { BlindspotsInterview } from "../onboarding/BlindspotsInterview";
 import { RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useRiskFlowFilters } from "../../hooks/useRiskFlowFilters";
+import { DAY_PLAN_REFETCH_EVENT } from "../../hooks/useDayPlan";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -77,6 +82,8 @@ export function MainDashboard({
   const [regimeCollapsed, setRegimeCollapsed] = useState(true);
   // [claude-code 2026-05-03] Risk Signals collapsible.
   const [signalsCollapsed, setSignalsCollapsed] = useState(false);
+  const [riskSignalsRefreshing, setRiskSignalsRefreshing] = useState(false);
+  const [deskPlanAdvancing, setDeskPlanAdvancing] = useState(false);
 
   const handleInterviewComplete = useCallback(
     (data: {
@@ -235,19 +242,13 @@ export function MainDashboard({
   const refreshBrief = useCallback(async () => {
     setNtnRefreshing(true);
     try {
-      // Trigger appwide feed refresh in parallel with brief refresh
+      const apiBase = API_BASE.replace(/\/$/, "");
       const feedRefreshPromise = refresh().catch(() => {});
-
-      // Fetch brief
-      let res = await backend.data.getMdbBrief();
-      if (!res.items[0]?.detail) {
-        await fetch(
-          `${(import.meta.env.VITE_API_URL || "http://localhost:8080").replace(/\/$/, "")}/api/data/brief/generate`,
-          { method: "POST" },
-        ).catch(() => {});
-        await new Promise((r) => setTimeout(r, 2000));
-        res = await backend.data.getMdbBrief();
-      }
+      await fetch(`${apiBase}/api/data/brief/generate`, {
+        method: "POST",
+      }).catch(() => {});
+      await new Promise((r) => setTimeout(r, 2000));
+      const res = await backend.data.getMdbBrief();
       setNtnText(res.items[0]?.detail ?? "");
       if (res.briefType) setBriefLabel(briefTypeToLabel(res.briefType));
 
@@ -258,6 +259,52 @@ export function MainDashboard({
       setNtnRefreshing(false);
     }
   }, [backend, refresh]);
+
+  const refreshRiskSignals = useCallback(async () => {
+    if (riskSignalsRefreshing) return;
+    setRiskSignalsRefreshing(true);
+    try {
+      const apiBase = API_BASE.replace(/\/$/, "");
+      const response = await fetch(`${apiBase}/api/riskflow/refresh`, {
+        method: "POST",
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      await refresh();
+      addToast("Risk signals refreshed", "success");
+    } catch (error) {
+      console.warn("[Dashboard] Risk signal refresh failed:", error);
+      addToast("Risk signal refresh failed", "error");
+    } finally {
+      setRiskSignalsRefreshing(false);
+    }
+  }, [addToast, refresh, riskSignalsRefreshing]);
+
+  const advanceDeskPlan = useCallback(async () => {
+    if (deskPlanAdvancing) return;
+    setDeskPlanAdvancing(true);
+    try {
+      const apiBase = API_BASE.replace(/\/$/, "");
+      const response = await fetch(`${apiBase}/api/day-plan/kickstart`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ days: 7 }),
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = (await response.json().catch(() => null)) as {
+        failures?: unknown[];
+      } | null;
+      if (payload?.failures?.length) {
+        throw new Error(`${payload.failures.length} day-plan failures`);
+      }
+      window.dispatchEvent(new Event(DAY_PLAN_REFETCH_EVENT));
+      addToast("Desk plan advanced", "success");
+    } catch (error) {
+      console.warn("[Dashboard] Desk plan kickstart failed:", error);
+      addToast("Desk plan advance failed", "error");
+    } finally {
+      setDeskPlanAdvancing(false);
+    }
+  }, [addToast, deskPlanAdvancing]);
   const [selectedIdea, setSelectedIdea] = useState<TradeIdeaDetail | null>(
     null,
   );
@@ -386,6 +433,12 @@ export function MainDashboard({
                       weekday: "long",
                     })}
                     tone="gold"
+                    headerRight={
+                      <DeskPlanAdvanceButton
+                        isLoading={deskPlanAdvancing}
+                        onClick={advanceDeskPlan}
+                      />
+                    }
                   />
                   <div className="mt-2 shrink-0 pr-1 relative">
                     <DayCard bare showStreakInHeader />
@@ -396,22 +449,28 @@ export function MainDashboard({
                       title="Risk Signals"
                       tone="gold"
                       headerRight={
-                        <button
-                          type="button"
-                          onClick={() => setSignalsCollapsed((v) => !v)}
-                          className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
-                          title={
-                            signalsCollapsed
-                              ? "Expand Risk Signals"
-                              : "Collapse Risk Signals"
-                          }
-                        >
-                          {signalsCollapsed ? (
-                            <ChevronDown className="w-3 h-3" />
-                          ) : (
-                            <ChevronUp className="w-3 h-3" />
-                          )}
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <RiskSignalsRefreshButton
+                            isLoading={riskSignalsRefreshing || refreshing}
+                            onClick={refreshRiskSignals}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setSignalsCollapsed((v) => !v)}
+                            className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
+                            title={
+                              signalsCollapsed
+                                ? "Expand Risk Signals"
+                                : "Collapse Risk Signals"
+                            }
+                          >
+                            {signalsCollapsed ? (
+                              <ChevronDown className="w-3 h-3" />
+                            ) : (
+                              <ChevronUp className="w-3 h-3" />
+                            )}
+                          </button>
+                        </div>
                       }
                     />
                     <div

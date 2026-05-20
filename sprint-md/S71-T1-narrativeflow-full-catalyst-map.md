@@ -1,4 +1,4 @@
-# S71-T6: NarrativeFlow Full Catalyst Map + Narrative Boundaries
+# S71-T1: NarrativeFlow Full Catalyst Map + Narrative Boundaries
 
 ## Summary
 
@@ -22,7 +22,7 @@ Add a full-map view back to NarrativeFlow so users can view the complete catalys
 
 ## References
 
-- @sprint-md/S71-T6-narrativeflow-full-catalyst-map.md
+- @sprint-md/S71-T1-narrativeflow-full-catalyst-map.md
 - @frontend/components/narrative/NarrativeCanvas.tsx
 - @frontend/components/narrative/NarrativeMap.tsx
 - @backend-hono/src/routes/narrative/handlers.ts

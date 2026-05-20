@@ -12,6 +12,7 @@ import { useStreak } from "../../hooks/useStreak";
 import { useDriftStatus } from "../../hooks/useDriftStatus";
 import { useLockout } from "../../hooks/useLockout";
 import { useSettings } from "../../contexts/SettingsContext";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { FadingRuler } from "../shared/FadingRuler";
 import { AgenticFeedbackControls } from "../shared/AgenticFeedbackControls";
 import { StreakBadge } from "../streak/StreakBadge";
@@ -90,9 +91,11 @@ export function DayCard({
   const currentWindow = windows[currentWindowIndex] ?? null;
   const hasWindow = !!currentWindow;
 
-  if (currentWindowIndex >= windows.length && windows.length > 0) {
-    setCurrentWindowIndex(0);
-  }
+  useEffect(() => {
+    if (currentWindowIndex >= windows.length && windows.length > 0) {
+      setCurrentWindowIndex(0);
+    }
+  }, [currentWindowIndex, windows.length]);
 
   const driftVisual: DriftKind | "in-window" = drift?.kind ?? "in-window";
 
@@ -299,6 +302,14 @@ export function DayCard({
           label="Trading Window"
           value={hasWindow ? fmtTradingWindow(currentWindow!) : "\u2014"}
           loading={isLoading}
+          currentIndex={currentWindowIndex}
+          totalWindows={windows.length}
+          onPrev={() => setCurrentWindowIndex((value) => Math.max(0, value - 1))}
+          onNext={() =>
+            setCurrentWindowIndex((value) =>
+              Math.min(windows.length - 1, value + 1),
+            )
+          }
         />
         <GatedForecastRow
           label="Forecast"
@@ -394,10 +405,18 @@ function WindowControlRow({
   label,
   value,
   loading,
+  currentIndex,
+  totalWindows,
+  onPrev,
+  onNext,
 }: {
   label: string;
   value: string;
   loading: boolean;
+  currentIndex: number;
+  totalWindows: number;
+  onPrev: () => void;
+  onNext: () => void;
 }) {
   return (
     <div className="flex items-baseline gap-3">
@@ -422,6 +441,34 @@ function WindowControlRow({
         }}
       />
       <dd className="flex items-center gap-1.5 text-right shrink-0">
+        {totalWindows > 1 && (
+          <span className="inline-flex items-center gap-1">
+            <button
+              type="button"
+              onClick={onPrev}
+              disabled={currentIndex <= 0}
+              className="p-0.5 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] disabled:text-gray-700 disabled:cursor-default transition-colors"
+              aria-label="Previous desk plan window"
+            >
+              <ChevronLeft className="w-3 h-3" />
+            </button>
+            <span
+              className="text-[10px] tabular-nums"
+              style={{ color: "var(--fintheon-muted, #908774)" }}
+            >
+              {currentIndex + 1}/{totalWindows}
+            </span>
+            <button
+              type="button"
+              onClick={onNext}
+              disabled={currentIndex >= totalWindows - 1}
+              className="p-0.5 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] disabled:text-gray-700 disabled:cursor-default transition-colors"
+              aria-label="Next desk plan window"
+            >
+              <ChevronRight className="w-3 h-3" />
+            </button>
+          </span>
+        )}
         <span
           className="tabular-nums"
           style={{

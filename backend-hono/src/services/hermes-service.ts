@@ -1,13 +1,12 @@
 // [claude-code 2026-05-03] S58-T1: DeepSeek v4 Pro primary provider migration
-// [claude-code 2026-03-28] S9-T4: Switch boardroom agents to Grok 4.20 Fast, Harper stays Claude Opus
-// [claude-code 2026-03-14] Hermes inference via OpenRouter (Nous) + Claude Opus 4.6
+// [codex 2026-05-19] Active agent inference routes through Hermes-compatible providers.
 /**
  * Hermes Service
  * Agentic backend layer for Priced In Capital (P.I.C.)
  * Orchestrates AI agents: Harper (CAO), Oracle (All-Seer), Feucht (Futures & Risk), Consul (Fundamentals), Herald (News)
  *
  * Architecture: HERMES AGENT → FINTHEON UI → H.E's (Human Executives)
- * Inference: OpenRouter (Nous subscription) + Claude Opus 4.6
+ * Inference: Hermes gateway compatible models
  */
 
 // [claude-code 2026-04-05] Strands Phase 8: Removed @ai-sdk/openai import — types/interfaces kept for consumers
@@ -367,7 +366,7 @@ export const validateTradeProposal = (
 
 /**
  * Hermes model IDs used by P.I.C.
- * CAO uses Claude Opus 4.6 (CLI bridge), sub-agents use Grok 4.20 Fast
+ * CAO and sub-agents use Hermes-compatible reasoning models.
  */
 export const HERMES_MODELS = {
   CAO_REASONING: "deepseek-reasoner",

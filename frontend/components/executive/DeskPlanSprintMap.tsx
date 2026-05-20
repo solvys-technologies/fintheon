@@ -127,7 +127,10 @@ function WindowList({ plan, compact = false }: { plan: DayPlan; compact?: boolea
             {formatEasternClockRange(window.startTime, window.endTime)}
           </span>
           <span className="mx-1">/</span>
-          <span>{window.eventName ?? window.econForecast?.forecast ?? "Notable event"}</span>
+          <span>
+            {window.eventName ?? "Notable event"}
+            {window.econForecast ? ` · Fcst ${window.econForecast.forecast}` : ""}
+          </span>
         </li>
       ))}
     </ul>

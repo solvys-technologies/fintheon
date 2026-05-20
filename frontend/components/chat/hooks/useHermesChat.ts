@@ -18,6 +18,11 @@ import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
 import { API_BASE_URL } from "../constants.js";
 import { getAccessToken } from "../../../lib/supabase";
+import { emitApiError } from "../../../lib/errorBus";
+import {
+  AI_CREDITS_EXHAUSTED,
+  isAiCreditsExhausted,
+} from "../../../lib/aiCreditErrors";
 
 /** Convert backend ChatMessage -> UIMessage for useChat hydration */
 function backendToUIMessage(msg: {
@@ -137,10 +142,19 @@ export function useHermesChat(
           let errText = `Chat request failed (${response.status})`;
           try {
             const json = await response.clone().json();
-            if (json?.error) errText = String(json.error);
+            if (json?.details) errText = String(json.details);
+            else if (json?.error) errText = String(json.error);
             else if (json?.message) errText = String(json.message);
           } catch {
             /* response may not be JSON */
+          }
+          if (response.status === 402 || isAiCreditsExhausted(errText)) {
+            emitApiError({
+              code: AI_CREDITS_EXHAUSTED,
+              message: "Hermes gateway credits exhausted",
+              status: 402,
+              endpoint: "/api/harper/chat",
+            });
           }
           setLastError(errText);
           throw new Error(errText);

@@ -9,6 +9,83 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-20T00:35:00-04:00",
+    agent: "codex",
+    summary:
+      "Follow-up sanitation: Desk Plan auto-lock is now explicit opt-in instead of a default-on behavior, mobile RiskFlow expanded cards render the full headline inside the expansion, the Calendar navtab uses TradingView's full calendar page on the current economic-calendar route with same-session frame preservation, and trading browser panes preserve per-platform iframe/webview state after first visit.",
+    files: [
+      "frontend/contexts/SettingsContext.tsx",
+      "frontend/components/TradingBrowser.tsx",
+      "frontend/components/layout/TabRenderer.tsx",
+      "frontend/components/econ/TradingViewCalendar.tsx",
+      "mobile/components/riskflow/RiskFlowCardExpanded.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-20T00:00:00-04:00",
+    agent: "codex",
+    summary:
+      "Mini sanitation sprint: dashboard refresh now actively generates the current briefing, Risk Signals has a manual backend refresh button beside its collapse chevron, and Desk Plan has a right-aligned triple-arrow advance control that kickstarts seven calendar days of notable observed US/Asia/Fed/econ events with forecast/miss/beat/AI prediction rows populated before the session.",
+    files: [
+      "backend-hono/src/routes/day-plan/index.ts",
+      "backend-hono/src/routes/day-plan/kickstart.ts",
+      "backend-hono/src/services/day-plan/window-scheduler.ts",
+      "frontend/components/executive/DashboardKickstartButtons.tsx",
+      "frontend/components/executive/MainDashboard.tsx",
+      "frontend/components/narrative/DayCard.tsx",
+      "frontend/hooks/useDayPlan.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-19T15:45:00-04:00",
+    agent: "codex",
+    summary:
+      "v6.7.5 release prep: bumped root/mobile package versions and install/update script pointers from v6.7.4 to v6.7.5, rolled the sprint planning state forward as a unified S71-S78 ORCH lane, and preserved the S71 NarrativeFlow full-map brief as S71-T1 instead of the stale S71-T6 numbering.",
+    files: [
+      "package.json",
+      "mobile/package.json",
+      "scripts/fintheon-update.sh",
+      "scripts/fintheon-setup.sh",
+      "scripts/fintheon-cli.sh",
+      "scripts/install-cli.sh",
+      "sprint-md/S71-S78-ORCH-unified-roll-forward.md",
+      "sprint-md/S71-ORCH-beta-stability-critical-surfaces.md",
+      "sprint-md/S71-T1-narrativeflow-full-catalyst-map.md",
+      "sprint-md/S72-ORCH-platform-polish-and-refinement.md",
+      "sprint-md/S73-ORCH-riskflow-and-brief-parity.md",
+      "sprint-md/S74-ORCH-rithmic-and-autopilot-core.md",
+      "sprint-md/S75-ORCH-trade-execution-and-ledger.md",
+      "sprint-md/S76-ORCH-mobile-and-sanctum-navigation.md",
+      "sprint-md/S77-ORCH-agent-desk-and-release-hygiene.md",
+      "sprint-md/S78-ORCH-voice-performance-and-low-priority-hygiene.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-19T14:35:00-04:00",
+    agent: "codex",
+    summary:
+      "AI credit visibility hotfix: added Hermes credit-exhaustion classification, exposed recent provider credit failures through /health, mounted a bottom-left system toast for depleted gateway credits, surfaced client-side 402 chat failures as explicit API errors, and stripped active Grok/OpenRouter-facing app/provider paths in favor of Hermes gateway routing.",
+    files: [
+      "backend-hono/src/services/ai/provider-credit-status.ts",
+      "backend-hono/src/services/health-service.ts",
+      "backend-hono/src/services/strands/invoke-helper.ts",
+      "backend-hono/src/services/ai/provider-chain.ts",
+      "backend-hono/src/services/strands/agent-factory.ts",
+      "backend-hono/src/services/analysis/grok-analyzer.ts",
+      "backend-hono/src/routes/harper/index.ts",
+      "frontend/components/AiCreditToastBridge.tsx",
+      "frontend/components/ApiErrorToastBridge.tsx",
+      "frontend/lib/aiCreditErrors.ts",
+      "frontend/lib/deepseek-sdk.ts",
+      "frontend/components/chat/hooks/useHermesChat.ts",
+      "frontend/contexts/ToastContext.tsx",
+      "frontend/App.tsx",
+    ],
+  },
+  {
     date: "2026-05-19T00:55:00-04:00",
     agent: "codex",
     summary:

@@ -28,6 +28,14 @@ export interface EconForecast {
   otherNotableEvents: string[];
   aiPrediction: string;
   generatedAt: string;
+  validationChecks?: EconForecastValidationCheck[];
+}
+
+export interface EconForecastValidationCheck {
+  pass: number;
+  verdict: "pass" | "adjusted" | "fallback_pass";
+  rationale: string;
+  checkedAt: string;
 }
 
 export interface DayPlanWindow {

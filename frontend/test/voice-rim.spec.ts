@@ -11,7 +11,10 @@
 // test doesn't need real microphone permission.
 import { test, expect } from "@playwright/test";
 
-test.describe("Voice rim UX (S27-T5)", () => {
+// Bun's generic `bun test` sweep imports *.spec.ts files directly during deploy
+// pre-flight. This file belongs to Playwright, so only register tests there.
+if (!process.versions.bun) {
+  test.describe("Voice rim UX (S27-T5)", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
     // Suppress real audio playback in CI so the greeting promise resolves cleanly.
@@ -121,4 +124,5 @@ test.describe("Voice rim UX (S27-T5)", () => {
       expect(after).not.toBeNull();
     }
   });
-});
+  });
+}

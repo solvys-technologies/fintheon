@@ -42,6 +42,8 @@ export function emitApiError(error: ApiErrorEvent): void {
 /* ------------------------------------------------------------------ */
 
 const FIX_MAP: Record<string, string> = {
+  ai_credits_exhausted:
+    "Top up Hermes gateway credits or replace the API key in Settings > API.",
   network_error: "Check if the backend is running on port 8080.",
   auth_skipped: "Auth failed recently. Restart the app or wait 30s.",
   unauthenticated: "Session expired. Refresh or re-login.",

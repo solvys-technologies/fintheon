@@ -21,7 +21,7 @@ const log = createLogger("DayPlanService");
 
 const DEFAULT_TEAM = "pic";
 const DEFAULT_INSTRUMENT = "/NQ";
-const FORECAST_REFRESH_WINDOW_MINUTES = 30;
+const FORECAST_MAX_AGE_MINUTES = 60;
 
 export interface GenerateDayPlanInput {
   teamId?: string;
@@ -298,7 +298,7 @@ async function buildWindows(
     const isSpeech = matchedEvent ? isSpeechEvent(matchedEvent) : false;
 
     let econForecast = null;
-    if (matchedEvent && shouldGenerateForecastForWindow(dateIso, pw.startTime)) {
+    if (matchedEvent) {
       econForecast = await generateEconForecast({
         eventName: matchedEvent.name,
         eventDate: dateIso,
@@ -347,51 +347,6 @@ function findMatchingEvent(
   return null;
 }
 
-function shouldGenerateForecastForWindow(
-  dateIso: string,
-  startTime: string,
-): boolean {
-  const now = nowInNewYork(new Date());
-  if (dateIso !== now.dateIso) return false;
-  const startMinutes = minutesFromHHMM(startTime);
-  if (startMinutes == null) return false;
-  return (
-    now.minutes >= startMinutes - FORECAST_REFRESH_WINDOW_MINUTES &&
-    now.minutes < startMinutes
-  );
-}
-
-function nowInNewYork(date: Date): { dateIso: string; minutes: number } {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  })
-    .formatToParts(date)
-    .reduce<Record<string, string>>((acc, part) => {
-      if (part.type !== "literal") acc[part.type] = part.value;
-      return acc;
-    }, {});
-  return {
-    dateIso: `${parts.year}-${parts.month}-${parts.day}`,
-    minutes: Number(parts.hour ?? "0") * 60 + Number(parts.minute ?? "0"),
-  };
-}
-
-function minutesFromHHMM(value: string): number | null {
-  const match = value.match(/^(\d{1,2}):(\d{2})/);
-  if (!match) return null;
-  const hours = Number(match[1]);
-  const minutes = Number(match[2]);
-  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
-  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
-  return hours * 60 + minutes;
-}
-
 // ── Refresh logic ───────────────────────────────────────────────────────────
 
 /**
@@ -401,60 +356,50 @@ function minutesFromHHMM(value: string): number | null {
 async function maybeRefreshExisting(plan: DayPlan): Promise<DayPlan | null> {
   let changed = false;
   const updatedWindows: DayPlanWindow[] = [];
+  const econEvents = await readEconEvents({
+    from: plan.date,
+    to: plan.date,
+  }).catch(() => []);
 
   for (const w of plan.windows) {
-    if (!w.eventName || w.econForecast) {
-      // Already has a forecast — check if it needs refreshing
-      const now = Date.now();
-      const age = w.econForecast?.generatedAt
-        ? now - new Date(w.econForecast.generatedAt).getTime()
-        : Infinity;
-
-      if (age < 10 * 60_000) {
-        updatedWindows.push(w);
-        continue;
-      }
+    if (!w.eventName) {
+      updatedWindows.push(w);
+      continue;
     }
 
-    // Check if we should generate/refresh
-    const [h, m] = w.startTime.split(":").map(Number);
-    const startDate = new Date();
-    startDate.setHours(h, m, 0, 0);
-    const startMs = startDate.getTime();
-    const effectiveStart = startMs <= Date.now() ? startMs + 86_400_000 : startMs;
-    const refreshStart = effectiveStart - 30 * 60_000;
+    const age = w.econForecast?.generatedAt
+      ? Date.now() - new Date(w.econForecast.generatedAt).getTime()
+      : Infinity;
+    const isFresh = age < FORECAST_MAX_AGE_MINUTES * 60_000;
+    if (w.econForecast && isFresh) {
+      updatedWindows.push(w);
+      continue;
+    }
 
-    if (Date.now() >= refreshStart && Date.now() < effectiveStart) {
-      // Within 30-min refresh window — regenerate
-      try {
-        const econEvents = await readEconEvents({
-          from: plan.date,
-          to: plan.date,
+    try {
+      const matchedEvent = findMatchingEvent(w.eventName, econEvents);
+      if (matchedEvent) {
+        const isSpeech = isSpeechEvent(matchedEvent);
+        const forecast = await generateEconForecast({
+          eventName: matchedEvent.name,
+          eventDate: plan.date,
+          eventTime: matchedEvent.time ?? w.startTime,
+          eventCountry: matchedEvent.country ?? undefined,
+          eventCategory: matchedEvent.category ?? undefined,
+          forecast: matchedEvent.forecast ?? undefined,
+          previous: matchedEvent.previous ?? undefined,
+          isSpeech,
+        }).catch(() => null);
+
+        changed = true;
+        updatedWindows.push({
+          ...w,
+          econForecast: forecast ?? w.econForecast,
         });
-        const matchedEvent = findMatchingEvent(w.eventName, econEvents);
-        if (matchedEvent) {
-          const isSpeech = isSpeechEvent(matchedEvent);
-          const forecast = await generateEconForecast({
-            eventName: matchedEvent.name,
-            eventDate: plan.date,
-            eventTime: matchedEvent.time ?? w.startTime,
-            eventCountry: matchedEvent.country ?? undefined,
-            eventCategory: matchedEvent.category ?? undefined,
-            forecast: matchedEvent.forecast ?? undefined,
-            previous: matchedEvent.previous ?? undefined,
-            isSpeech,
-          }).catch(() => null);
-
-          changed = true;
-          updatedWindows.push({
-            ...w,
-            econForecast: forecast ?? w.econForecast,
-          });
-          continue;
-        }
-      } catch {
-        // Non-fatal
+        continue;
       }
+    } catch {
+      // Non-fatal
     }
 
     updatedWindows.push(w);

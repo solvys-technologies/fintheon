@@ -3,7 +3,7 @@
 // [codex 2026-05-18] v6.7.3: default Strands agent routing is DeepSeek direct.
 // [claude-code 2026-04-10] S8-T2: added createAgentForTask() for DAG dispatch.
 // [claude-code 2026-04-08] Nous provider tries arcee trinity-large first, then qwen3.6-plus
-// [claude-code 2026-04-07] Strands agent factory — VProxy, OpenRouter, or Nous Direct provider selection
+// [claude-code 2026-04-07] Strands agent factory — VProxy, Hermes, or Nous Direct provider selection
 // [claude-code 2026-05-07] S61-T2: Sub-agent tools wired from capability registry
 import { Agent, tool, type ConversationManager } from "@strands-agents/sdk";
 import { OpenAIModel } from "@strands-agents/sdk/models/openai";
@@ -27,8 +27,6 @@ const log = createLogger("StrandsFactory");
 
 /** Provider override — which backend to route through */
 // [claude-code 2026-04-26] Removed "orouter" — paid path retired per TP.
-// "grok" kept as a labeled provider but it routes through Nous Research's
-// inference API now too, since OpenRouter is no longer a sanctioned backend.
 // [claude-code 2026-04-23] S32-T3 added "ollama-qwen" fallback chain provider
 export type HarperProvider =
   | "deepseek-direct"
@@ -36,12 +34,9 @@ export type HarperProvider =
   | "deepseek-oc-api"
   | "local"
   | "ollama-qwen"
-  | "nous"
-  | "grok";
+  | "nous";
 
-/** Nous fallback model chain — tried in order. Hits inference-api.nousresearch.com
- *  directly with NOUS_API_KEY. These are the actually-free Hermes models, not
- *  OpenRouter routes. */
+/** Nous fallback model chain — tried in order through direct Hermes models. */
 export const NOUS_MODELS = [
   "nousresearch/hermes-4-405b",
   "nousresearch/hermes-4-70b",
@@ -65,9 +60,7 @@ export interface CreateAgentOptions {
 }
 
 // [claude-code 2026-04-26] OpenRouter rung removed entirely. createNousModelWithId
-// now hits Nous Research's direct inference API at inference-api.nousresearch.com
-// with NOUS_API_KEY — gives us the free Hermes-4 405B and 70B models without
-// touching OpenRouter at all.
+// now hits Nous Research's direct inference API at inference-api.nousresearch.com.
 
 /** Create any model via Nous Research's direct inference API */
 function createNousModelWithId(
@@ -118,16 +111,6 @@ export function createAgent(options: CreateAgentOptions): Agent {
         nousId,
         options.model?.temperature,
         options.model?.maxTokens,
-      );
-      break;
-    case "grok":
-      log.info("Creating Strands agent (Grok 4.20 via Nous/OpenRouter)", {
-        name: options.name,
-      });
-      model = createNousModelWithId(
-        "x-ai/grok-4.20",
-        options.model?.temperature ?? 0.25,
-        options.model?.maxTokens ?? 4096,
       );
       break;
     default:

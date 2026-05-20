@@ -1,6 +1,6 @@
 /**
- * Grok Analyzer Service
- * Financial headline parsing and news analysis using Grok/AI models
+ * Headline Analyzer Service
+ * Financial headline parsing and news analysis using Hermes-compatible models
  * Day 16 - Phase 5 Implementation
  */
 
@@ -18,8 +18,8 @@ const isDev = process.env.NODE_ENV !== "production";
 const MAX_BATCH_SIZE = 10;
 const TIMEOUT_MS = 15_000;
 
-// Circuit breaker for OpenRouter credit exhaustion. RiskFlow scores every ~30s
-// with parallel chunks, so a 402 from Grok creates 50+ failed calls/min — each
+// Circuit breaker for provider credit exhaustion. RiskFlow scores every ~30s
+// with parallel chunks, so a 402 creates 50+ failed calls/min — each
 // one a wasted round-trip that also slows /health and stresses the event loop.
 // When we see repeated 402s, trip the breaker and fall back to deterministic
 // parsing (which analyzeHeadline already does on error). Auto-probes after the
@@ -146,7 +146,7 @@ export async function analyzeHeadline(
     // AI failed, return deterministic result. Quota errors are already
     // summarized by the circuit breaker; don't spam the log with stacks.
     if (!isQuotaError(error)) {
-      console.error("[GrokAnalyzer] AI analysis failed:", error);
+      console.error("[HeadlineAnalyzer] AI analysis failed:", error);
     }
     return {
       raw: headline,
@@ -169,7 +169,7 @@ async function analyzeWithAi(
 ): Promise<Partial<ParsedHeadline>> {
   // Circuit open: fail fast, caller falls back to deterministic parse.
   if (Date.now() < cbOpenUntil) {
-    throw new Error("grok-analyzer: circuit open (OpenRouter quota)");
+    throw new Error("headline-analyzer: circuit open (provider quota)");
   }
 
   const prompt = buildAnalysisPrompt(headline, source);
@@ -180,7 +180,7 @@ async function analyzeWithAi(
         "You are a financial news parser. Extract structured data from headlines. Respond only with valid JSON.",
       userPrompt: prompt,
       model: { temperature: 0.1, maxTokens: 512 },
-      provider: "grok",
+      provider: "opencode-go",
     });
 
     // Success → reset breaker
@@ -195,9 +195,9 @@ async function analyzeWithAi(
         if (cbOpenUntil !== cbLastLoggedOpen) {
           cbLastLoggedOpen = cbOpenUntil;
           console.warn(
-            `[GrokAnalyzer] OpenRouter quota exhausted — circuit open for ${Math.round(
+            `[HeadlineAnalyzer] Provider quota exhausted — circuit open for ${Math.round(
               CB_COOLDOWN_MS / 1000,
-            )}s. Deterministic parsing only until credits are restored.`,
+            )}s. Deterministic parsing only until Hermes credits are restored.`,
           );
         }
       }
