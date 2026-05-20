@@ -1,4 +1,5 @@
 // [claude-code 2026-03-11] Track 7B: Upgraded ER context — VAD trigger, Whisper-on-demand (no browser Speech API), escalating interventions
+// [claude-code 2026-05-19] SOL-71: lockout auto-reset cooldown, healing bowl wired to infraction
 import React, {
   createContext,
   useContext,
@@ -8,6 +9,7 @@ import React, {
   useEffect,
 } from "react";
 import { useBackend } from "../lib/backend";
+import { healingBowlPlayer } from "../utils/healingBowlSounds";
 
 export type ERState = "steadfast" | "poised" | "tilted";
 
@@ -92,6 +94,11 @@ interface ERProviderProps {
   children: React.ReactNode;
 }
 
+// Lockout auto-reset: 5-minute cooldown before auto-dismiss (if score recovered)
+const LOCKOUT_COOLDOWN_MS = 5 * 60 * 1000;
+// Healing bowl: fire at most once per 10s to avoid spam
+const HEALING_SOUND_COOLDOWN_MS = 10_000;
+
 // VAD config
 const VAD_ENERGY_THRESHOLD = 0.08; // RMS energy threshold for speech detection
 const VAD_SILENCE_DURATION_MS = 1500; // ms of silence before stopping recording
@@ -141,6 +148,9 @@ export function ERProvider({ children }: ERProviderProps) {
   const detectedKeywordsRef = useRef<string[]>([]);
   const snapshotsRef = useRef<ERSnapshot[]>([]);
   const infractionHoldTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lockoutTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastHealingSoundRef = useRef<number>(0);
+  const lockoutDismissedRef = useRef<boolean>(false);
 
   // VAD refs
   const vadIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -175,13 +185,24 @@ export function ERProvider({ children }: ERProviderProps) {
     erScoreRef.current = erScore;
   }, [erScore]);
 
-  // Update intervention level when score changes
+  // Update intervention level when score changes; trigger lockout with auto-reset timer
   useEffect(() => {
     const newLevel = computeInterventionLevel(erScore);
     setInterventionLevel(newLevel);
 
-    if (newLevel === "lockout" && !isLockedOut) {
+    // Only trigger lockout on first crossing; respect manual dismiss until score recovers
+    if (newLevel === "lockout" && !isLockedOut && !lockoutDismissedRef.current) {
       setIsLockedOut(true);
+      if (lockoutTimerRef.current) clearTimeout(lockoutTimerRef.current);
+      lockoutTimerRef.current = setTimeout(() => {
+        setIsLockedOut(false);
+        lockoutDismissedRef.current = false;
+        lockoutTimerRef.current = null;
+      }, LOCKOUT_COOLDOWN_MS);
+    }
+    // Clear dismissed flag once score recovers above lockout threshold
+    if (newLevel !== "lockout") {
+      lockoutDismissedRef.current = false;
     }
   }, [erScore, isLockedOut]);
 
@@ -273,6 +294,12 @@ export function ERProvider({ children }: ERProviderProps) {
       detectedKeywordsRef.current = [...new Set(detectedKeywordsRef.current)];
       infractionCountRef.current += 1;
       const timestamp = Date.now();
+
+      // Fire healing bowl sound on infraction (rate-limited)
+      if (timestamp - lastHealingSoundRef.current > HEALING_SOUND_COOLDOWN_MS) {
+        lastHealingSoundRef.current = timestamp;
+        healingBowlPlayer.play().catch(() => {});
+      }
       setLastInfractionAt(timestamp);
       setRecentInfraction(true);
 
@@ -318,7 +345,12 @@ export function ERProvider({ children }: ERProviderProps) {
   }, []);
 
   const dismissLockout = useCallback(() => {
+    lockoutDismissedRef.current = true;
     setIsLockedOut(false);
+    if (lockoutTimerRef.current) {
+      clearTimeout(lockoutTimerRef.current);
+      lockoutTimerRef.current = null;
+    }
   }, []);
 
   // ---- VAD + Whisper-on-demand ----
@@ -854,6 +886,9 @@ export function ERProvider({ children }: ERProviderProps) {
     return () => {
       if (infractionHoldTimeoutRef.current) {
         clearTimeout(infractionHoldTimeoutRef.current);
+      }
+      if (lockoutTimerRef.current) {
+        clearTimeout(lockoutTimerRef.current);
       }
     };
   }, []);
