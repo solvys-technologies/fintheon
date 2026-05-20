@@ -7,7 +7,7 @@
 // [claude-code 2026-04-21] Post-S35: removed relay dispatch; added Cmd+K palette, ↑↓ history,
 //   persona slash commands, plan mode toggle
 // [claude-code 2026-05-06] S60-T3: provider/MCP/plugin modals wired to composer toolbar
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import { useThread, useThreadRuntime } from "@assistant-ui/react";
 import { Cpu, Plug, Puzzle } from "lucide-react";
 import { PromptBox } from "../ui/chatgpt-prompt-input";
@@ -67,6 +67,7 @@ interface FintheonComposerProps {
   onConversationGone?: () => void;
   mode?: "work" | "plan";
   onModeChange?: (mode: "work" | "plan") => void;
+  todoSlot?: ReactNode;
 }
 
 export function FintheonComposer({
@@ -83,6 +84,7 @@ export function FintheonComposer({
   onConversationGone: _onConversationGone,
   mode,
   onModeChange,
+  todoSlot,
 }: FintheonComposerProps) {
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
@@ -430,6 +432,7 @@ export function FintheonComposer({
         pluginSlot={pluginEl}
         mcpSlot={mcpEl}
         toolsSlot={toolsEl}
+        todoSlot={todoSlot}
         recallText={recallText}
         onRecallConsumed={() => setRecallText(null)}
         onHistoryUp={handleHistoryUp}

@@ -298,7 +298,7 @@ function CountdownCard({ card, msUntil }: CountdownCardProps) {
       ) : (
         <div
           style={{ fontFamily: "var(--font-data)" }}
-          className="text-[32px] leading-none text-(--fintheon-accent) tabular-nums"
+          className="text-[32px] leading-none text-[var(--fintheon-accent)] tabular-nums"
         >
           {formatCountdown(msUntil)}
         </div>

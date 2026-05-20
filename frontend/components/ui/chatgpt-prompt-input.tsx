@@ -138,6 +138,8 @@ export interface PromptBoxProps {
   relaySlot?: React.ReactNode;
   // Optional banner shown above the input while dispatched (e.g. "Chatting on iPhone").
   dispatchBanner?: React.ReactNode;
+  // Todo + Queue drawer toggle button
+  todoSlot?: React.ReactNode;
   // Boardroom: swap pulsing icon for newspaper RiskFlow picker
   onRiskFlowPick?: () => void;
   // Hide the Think Harder toggle (used in Agentic Forum where deep-research is always on)
@@ -198,6 +200,7 @@ export function PromptBox({
   onHistoryUp,
   onHistoryDown,
   onHistoryEscape,
+  todoSlot,
 }: PromptBoxProps) {
   const [text, setText] = useState("");
   const [images, setImages] = useState<string[]>([]);
@@ -657,6 +660,9 @@ export function PromptBox({
                   <ThinkHarderIcon active={thinkHarder} />
                 </button>
               )}
+
+              {/* Todo + Queue drawer toggle */}
+              {todoSlot}
             </div>
 
             {/* Right: Persona + Usage + Send/Stop */}
