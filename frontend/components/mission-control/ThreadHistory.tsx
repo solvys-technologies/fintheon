@@ -78,11 +78,11 @@ export function ThreadHistory() {
               {thread.resonanceState && (
                 <span
                   className={`uppercase ${
-                    thread.resonanceState === "Tilt"
-                      ? "text-red-500"
-                      : thread.resonanceState === "Stable"
-                        ? "text-emerald-400"
-                        : "text-gray-400"
+                    thread.resonanceState === "tilted"
+                      ? "text-[var(--fintheon-accent)]/60"
+                      : thread.resonanceState === "steadfast"
+                        ? "text-[var(--fintheon-accent)]"
+                        : "text-[var(--fintheon-text)]/40"
                   }`}
                 >
                   {thread.resonanceState}
