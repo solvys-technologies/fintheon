@@ -314,7 +314,7 @@ for PLIST_PAIR in \
   fi
 done
 if (( ${#UNLOADED_LABELS[@]} > 0 )); then
-  info "S27 launchd plists linked but NOT loaded: ${UNLOADED_LABELS[*]} — run 'launchctl load -w ~/Library/LaunchAgents/<label>.plist' when ready"
+  info "Optional launchd plists linked but not loaded: ${UNLOADED_LABELS[*]} — run 'launchctl load -w ~/Library/LaunchAgents/<label>.plist' when ready"
 else
   ok "launchd plists loaded (news-worker, gepa)"
 fi
@@ -329,14 +329,7 @@ else
   warn "DeepSeek API key not found in Hermes Agent config — AI features may be degraded"
 fi
 
-# ── Step 6.5: Ensure Claude Code hooks are executable ───────────────────────
-
-if [[ -d "$FINTHEON_ROOT/.claude/hooks" ]]; then
-  chmod +x "$FINTHEON_ROOT/.claude/hooks/"*.sh 2>/dev/null || true
-  ok "Claude Code hooks executable"
-fi
-
-# ── Step 6.6: Ensure MCP servers are cloned/updated ────────────────────────
+# ── Step 6.5: Ensure MCP servers are cloned/updated ────────────────────────
 
 MCP_DIR="$HOME/Documents/Codebases"
 

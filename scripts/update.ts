@@ -177,37 +177,7 @@ async function main() {
     }
   }
 
-  // Step 5: Verify Anthropic OAuth via VProxy
-  const oauthScript = join(ROOT, "scripts", "vproxy-anthropic-oauth.sh");
-  const runOauth = await p.confirm({
-    message: "Verify Anthropic OAuth via VProxy now?",
-    initialValue: true,
-  });
-  if (p.isCancel(runOauth)) {
-    p.cancel("Update cancelled.");
-    process.exit(0);
-  }
-  if (runOauth) {
-    if (!existsSync(oauthScript)) {
-      p.log.warn(
-        "OAuth helper script missing — run `fintheon oauth` after update",
-      );
-    } else {
-      const oauthSpinner = p.spinner();
-      oauthSpinner.start("Checking VProxy Anthropic OAuth");
-      const oauth = await runCommand("bash", [oauthScript, "--yes"], {
-        cwd: ROOT,
-      });
-      oauthSpinner.stop(
-        oauth.ok ? "VProxy OAuth ready" : "VProxy OAuth check failed",
-      );
-      if (!oauth.ok) {
-        p.log.warn("Non-fatal — run `fintheon oauth` after update");
-      }
-    }
-  }
-
-  // Step 6: Rebuild backend
+  // Step 5: Rebuild backend
   const buildSpinner = p.spinner();
   buildSpinner.start("Rebuilding backend");
   const build = await runCommand("bun", ["run", "build"], { cwd: BACKEND_DIR });
@@ -218,7 +188,7 @@ async function main() {
     p.log.error(build.stderr.slice(0, 300));
   }
 
-  // Step 7: Rebuild frontend
+  // Step 6: Rebuild frontend
   const feBuildSpinner = p.spinner();
   feBuildSpinner.start("Rebuilding frontend");
   const feBuild = await runCommand("bunx", ["vite", "build"], {
@@ -231,7 +201,7 @@ async function main() {
     p.log.warn(feBuild.stderr.slice(0, 200));
   }
 
-  // Step 8: Verify mobile instance bridge (API proxy → fintheon.fly.dev)
+  // Step 7: Verify mobile instance bridge (API proxy → fintheon.fly.dev)
   const bridgeSpinner = p.spinner();
   bridgeSpinner.start("Checking mobile bridge connection");
   try {
@@ -253,7 +223,7 @@ async function main() {
     );
   }
 
-  // Step 9: Restart backend if it was running
+  // Step 8: Restart backend if it was running
   const wasRunning = await isFintheonRunning(8080);
   if (wasRunning) {
     p.log.info("Backend was running — it will pick up changes on next restart");
@@ -262,7 +232,7 @@ async function main() {
     );
   }
 
-  // Step 10: Show new version (from package.json — matches release tags)
+  // Step 9: Show new version (from package.json — matches release tags)
   let newVersion = "unknown";
   try {
     // Re-read after pull — package.json may have been updated

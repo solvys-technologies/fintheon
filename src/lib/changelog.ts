@@ -12,7 +12,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-05-21T12:00:00-04:00",
     agent: "codex",
     summary:
-      "v6.7.7 recovery: rebuilt from the known-good v6.7.6 release line, preserved the already-integrated Shashank patches without carrying the stale v5.35.0 merge stack, cherry-picked the missing SOL-69 econ calendar ingest hardening and SOL-60 Performance tab/account modal work, restored package plus installer/update metadata to 6.7.7, and added a bounded cached-plan fallback for /api/day-plan/today after live post-deploy smoke exposed synchronous regeneration timeouts.",
+      "v6.7.7 recovery: rebuilt from the known-good v6.7.6 release line, preserved the already-integrated Shashank patches without carrying the stale v5.35.0 merge stack, cherry-picked the missing SOL-69 econ calendar ingest hardening and SOL-60 Performance tab/account modal work, restored package plus installer/update metadata to 6.7.7, added a bounded cached-plan fallback for /api/day-plan/today after live post-deploy smoke exposed synchronous regeneration timeouts, and stripped the updater/installer package surface of VibeProxy OAuth plus Claude Code hook setup.",
     files: [
       "package.json",
       "mobile/package.json",
@@ -20,6 +20,9 @@ export const changelog: ChangelogEntry[] = [
       "scripts/fintheon-setup.sh",
       "scripts/install-cli.sh",
       "scripts/fintheon-cli.sh",
+      "scripts/setup.ts",
+      "scripts/update.ts",
+      "scripts/vproxy-anthropic-oauth.sh",
       "backend-hono/src/routes/data/index.ts",
       "backend-hono/src/routes/day-plan/handlers.ts",
       "backend-hono/src/services/cron/econ-calendar-populator.ts",

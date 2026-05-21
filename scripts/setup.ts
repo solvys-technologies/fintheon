@@ -40,7 +40,6 @@ interface SetupContext {
   openRouterKey: string;
   openAiKey: string;
   databaseUrl: string;
-  vproxyReady: boolean;
   hermesInstalled: boolean;
   backendRunning: boolean;
   backendAlreadyRunning: boolean;
@@ -51,7 +50,6 @@ const ctx: SetupContext = {
   openRouterKey: "",
   openAiKey: "",
   databaseUrl: "",
-  vproxyReady: false,
   hermesInstalled: false,
   backendRunning: false,
   backendAlreadyRunning: false,
@@ -302,11 +300,7 @@ function writeEnvFiles() {
   const updates: Record<string, string> = {
     BYPASS_AUTH: "true",
     DATABASE_URL: databaseUrl,
-    USE_VPROXY_ANTHROPIC: "true",
-    VPROXY_BASE_URL: "http://localhost:8317",
-    VPROXY_API_KEY: "CLI_PROXY_API_KEY",
-    VPROXY_ANTHROPIC_MODEL: "claude-opus-4.6",
-    AI_PRIMARY_PROVIDER: "anthropic-vproxy",
+    AI_PRIMARY_PROVIDER: "deepseek-direct",
   };
 
   if (ctx.openRouterKey) updates.OPENROUTER_API_KEY = ctx.openRouterKey;
@@ -337,46 +331,7 @@ function writeEnvFiles() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Step F: VProxy Anthropic OAuth                                     */
-/* ------------------------------------------------------------------ */
-
-async function ensureVProxyOAuth() {
-  const oauthScript = join(ROOT, "scripts", "vproxy-anthropic-oauth.sh");
-  if (!existsSync(oauthScript)) {
-    p.log.warn("VProxy OAuth helper script missing — run fintheon oauth later");
-    return;
-  }
-
-  const shouldRun = await p.confirm({
-    message: "Connect Anthropic subscription via VProxy now?",
-    initialValue: true,
-  });
-  if (p.isCancel(shouldRun)) {
-    p.cancel("Setup cancelled.");
-    process.exit(0);
-  }
-  if (!shouldRun) {
-    p.log.info("Skipping OAuth for now. Run later with: fintheon oauth");
-    return;
-  }
-
-  const s = p.spinner();
-  s.start("Launching VProxy Anthropic OAuth");
-  const result = await runCommand("bash", [oauthScript, "--yes"], {
-    cwd: ROOT,
-  });
-  if (result.ok) {
-    s.stop("Anthropic OAuth complete");
-    ctx.vproxyReady = true;
-  } else {
-    s.stop("Anthropic OAuth failed");
-    p.log.warn("You can retry later with: fintheon oauth");
-    if (result.stderr) p.log.warn(result.stderr.slice(0, 200));
-  }
-}
-
-/* ------------------------------------------------------------------ */
-/*  Step G: Port detection                                             */
+/*  Step F: Port detection                                             */
 /* ------------------------------------------------------------------ */
 
 async function detectPort() {
@@ -630,9 +585,10 @@ function showSummary() {
   const backendStatus = ctx.backendRunning
     ? pc.green("[running]")
     : pc.red("[stopped]");
-  const hermesStatus = ctx.vproxyReady
-    ? pc.green("[oauth ready]")
-    : pc.yellow("[run fintheon oauth]");
+  const hermesStatus =
+    ctx.openRouterKey || ctx.openAiKey
+      ? pc.green("[configured]")
+      : pc.yellow("[uses backend defaults]");
   const dbStatus = ctx.databaseUrl
     ? pc.green("[connected]")
     : pc.dim("[in-memory]");
@@ -641,7 +597,7 @@ function showSummary() {
   p.log.success(pc.bold("Setup Complete"));
   console.log("");
   console.log(`  Backend:    http://localhost:${ctx.port}  ${backendStatus}`);
-  console.log(`  Hermes AI:  Anthropic via VProxy   ${hermesStatus}`);
+  console.log(`  Hermes AI:  DeepSeek/OpenRouter chain ${hermesStatus}`);
   console.log(
     `  Database:   ${ctx.databaseUrl ? "PostgreSQL" : "In-memory mode"}         ${dbStatus}`,
   );
@@ -677,7 +633,6 @@ async function main() {
   await installHermes();
 
   // Phase 2: API Keys & Environment
-  await ensureVProxyOAuth();
   await collectApiKeys();
   await detectPort();
   writeEnvFiles();
