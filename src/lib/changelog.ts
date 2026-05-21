@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-21T00:00:00",
+    agent: "claude-code",
+    summary:
+      "SOL-69: Econ calendar ingest hardening — normalizeEventName() for case/whitespace-stable SHA-256 event_key, canonical ECON_SOURCE_ID constant, anchored dedupe check in econ-bridge (ingest_pipeline + lower() LIKE), dedupe test fixtures.",
+    files: [
+      "backend-hono/src/services/econ-calendar-service.ts",
+      "backend-hono/src/services/cron/econ-calendar-populator.ts",
+      "backend-hono/src/services/riskflow/econ-bridge.ts",
+      "backend-hono/src/tests/econ-calendar-dedupe.test.ts",
+    ],
+  },
+  {
     date: "2026-04-29T14:30:00",
     agent: "claude-code",
     summary:

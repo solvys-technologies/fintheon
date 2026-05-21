@@ -1,5 +1,6 @@
 // [claude-code 2026-04-16] Economic Calendar service — Supabase-backed
 // [claude-code 2026-04-24] S34-T3: added categorizeEvent heuristic + CountryCode / Category type exports for the populator + filter joins.
+// [claude-code 2026-05-21] SOL-69: canonical source ID + normalizeEventName for deterministic dedupe
 
 import {
   readEconEvents,
@@ -10,6 +11,20 @@ import {
   type EconEventRecord,
   type EconPrintRecord,
 } from "./supabase-service.js";
+
+// ── SOL-69: Canonical source ID ───────────────────────────────────────────
+
+/** Single source of truth for the ingest-source tag written to raw_riskflow_items. */
+export const ECON_SOURCE_ID = "tradingview-econ";
+
+/**
+ * Normalise an econ event name to a stable identity string before hashing.
+ * Collapses whitespace and lower-cases so variant capitalisations and extra
+ * spaces from upstream feeds map to the same SHA-256 event_key.
+ */
+export function normalizeEventName(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, " ");
+}
 
 // ── S34-T3: Filter taxonomy ────────────────────────────────────────────────
 
