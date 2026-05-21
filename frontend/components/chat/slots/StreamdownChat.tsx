@@ -17,6 +17,10 @@ import { PsychTableSlot } from "./PsychTableSlot";
 import { PerfTableSlot } from "./PerfTableSlot";
 import { VisionInsightSlot } from "./VisionInsightSlot";
 import { TVChartSlot } from "./TVChartSlot";
+import { PriceLevelSlot } from "./PriceLevelSlot";
+import { ProbabilityTableSlot } from "./ProbabilityTableSlot";
+import { AgentHandoffSlot } from "./AgentHandoffSlot";
+import { BacktestResultSlot } from "./BacktestResultSlot";
 
 export const SLOT_RENDERERS: Record<
   string,
@@ -28,6 +32,10 @@ export const SLOT_RENDERERS: Record<
   "perf-table": PerfTableSlot,
   "vision-insight": VisionInsightSlot,
   "tv-chart": TVChartSlot,
+  "price-level": PriceLevelSlot,
+  "probability-table": ProbabilityTableSlot,
+  "agent-handoff": AgentHandoffSlot,
+  "backtest-result": BacktestResultSlot,
 };
 
 export const SLOT_LANGUAGES = Object.keys(SLOT_RENDERERS);
