@@ -9,6 +9,32 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-21T12:00:00-04:00",
+    agent: "codex",
+    summary:
+      "v6.7.7 recovery: rebuilt from the known-good v6.7.6 release line, preserved the already-integrated Shashank patches without carrying the stale v5.35.0 merge stack, cherry-picked the missing SOL-69 econ calendar ingest hardening and SOL-60 Performance tab/account modal work, and restored package plus installer/update metadata to 6.7.7.",
+    files: [
+      "package.json",
+      "mobile/package.json",
+      "scripts/fintheon-update.sh",
+      "scripts/fintheon-setup.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "backend-hono/src/routes/data/index.ts",
+      "backend-hono/src/services/cron/econ-calendar-populator.ts",
+      "backend-hono/src/services/econ-calendar-service.ts",
+      "backend-hono/src/services/riskflow/econ-bridge.ts",
+      "backend-hono/src/tests/econ-calendar-dedupe.test.ts",
+      "frontend/components/journal/AddAccountModal.tsx",
+      "frontend/components/journal/PerformanceJournal.tsx",
+      "frontend/components/journal/SessionHistoryRow.tsx",
+      "frontend/components/journal/SessionJournalPanel.tsx",
+      "frontend/components/journal/performance/PerformanceHistoryPage.tsx",
+      "frontend/components/journal/performance/TradeActivityHeatmap.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-20T02:30:00-04:00",
     agent: "codex",
     summary:

@@ -20,6 +20,7 @@ import {
 } from "../../services/supabase-service.js";
 import { getFeed } from "../../services/riskflow/feed-service.js";
 import { getUserSettings } from "../../services/settings-store.js";
+import { query } from "../../db/optimized.js";
 import {
   getCurrentBriefType,
   isBriefCurrentForWindow,
@@ -146,6 +147,48 @@ function dailyPnlToKpis(records: DailyPnlRecord[]) {
   return kpis;
 }
 
+async function tradeKpisForDate(date?: string) {
+  const targetDate = date ?? new Date().toISOString().slice(0, 10);
+  try {
+    const result = await query<{
+      contracts: string | number | null;
+      notional: string | number | null;
+    }>(
+      `SELECT
+         COALESCE(SUM(ABS(qty)), 0) AS contracts,
+         COALESCE(SUM(ABS(qty * entry_price)), 0) AS notional
+       FROM trades
+       WHERE entry_at::date = $1::date`,
+      [targetDate],
+    );
+    const row = result.rows[0];
+    const contracts = Number(row?.contracts ?? 0);
+    const notional = Number(row?.notional ?? 0);
+    const kpis: Array<{ label: string; value: string; meta: string }> = [];
+
+    kpis.push({
+      label: "Contracts",
+      value: Number.isFinite(contracts)
+        ? contracts.toLocaleString(undefined, { maximumFractionDigits: 2 })
+        : "--",
+      meta: "Today",
+    });
+    kpis.push({
+      label: "Notional",
+      value: Number.isFinite(notional)
+        ? `$${Math.round(notional).toLocaleString()}`
+        : "--",
+      meta: "Gross exposure",
+    });
+    return kpis;
+  } catch (error) {
+    console.warn("[data/performance] trade KPI query skipped", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return [];
+  }
+}
+
 // ── Route factory ───────────────────────────────────────────────────────────
 
 export function createDataRoutes(): Hono {
@@ -190,7 +233,10 @@ export function createDataRoutes(): Hono {
   // GET /api/data/performance
   app.get("/performance", async (c) => {
     const records = await readDailyPnl({ limit: 1 });
-    const kpis = dailyPnlToKpis(records);
+    const kpis = [
+      ...dailyPnlToKpis(records),
+      ...(await tradeKpisForDate(records[0]?.date)),
+    ];
     return c.json({
       kpis,
       count: kpis.length,
