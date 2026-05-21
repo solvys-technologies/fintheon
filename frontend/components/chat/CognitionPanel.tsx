@@ -161,7 +161,7 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
   if (!requestId || steps.length === 0) return null;
 
   return (
-    <div className="rounded-xl bg-[var(--fintheon-bg)]/90 overflow-hidden transition-all">
+    <div className="rounded-xl bg-[var(--fintheon-bg)]/90 overflow-hidden">
       {/* Header — "thought for {elapsed}" with caret. No status dot. */}
       <button
         onClick={() => setCollapsed((c) => !c)}
@@ -181,10 +181,11 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
           </span>
         </div>
         <span
-          className="text-[var(--fintheon-text)]/25 text-[10px] transition-transform"
+          className="text-[var(--fintheon-text)]/25 text-[10px]"
           style={{
             display: "inline-block",
             transform: collapsed ? "rotate(-90deg)" : "rotate(0)",
+            transition: "transform var(--t-icon-swap-dur) var(--t-icon-swap-ease)",
           }}
         >
           ▾
