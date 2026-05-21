@@ -26,7 +26,7 @@ export interface Thread {
   createdAt: Date;
   messages: Message[];
   pnl?: number;
-  resonanceState?: "Stable" | "Tilt" | "Neutral";
+  resonanceState?: "steadfast" | "poised" | "tilted";
 }
 
 interface ThreadContextType {
@@ -123,7 +123,7 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
       title,
       createdAt: new Date(),
       messages: [],
-      resonanceState: "Neutral",
+      resonanceState: "poised",
     };
     setThreads((prev) => [newThread, ...prev]);
     setActiveThreadId(newThread.id);
@@ -162,6 +162,25 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
       setActiveThreadId(null);
     }
   };
+
+  // Mirror live ER score onto the active thread's resonanceState
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const score = (e as CustomEvent<{ score: number }>).detail?.score;
+      if (typeof score !== "number") return;
+      const resonanceState: Thread["resonanceState"] =
+        score > 0.5 ? "steadfast" : score < -0.5 ? "tilted" : "poised";
+      setThreads((prev) =>
+        prev.map((thread) =>
+          thread.id === activeThreadId
+            ? { ...thread, resonanceState }
+            : thread,
+        ),
+      );
+    };
+    window.addEventListener("psychassist:score", handler);
+    return () => window.removeEventListener("psychassist:score", handler);
+  }, [activeThreadId]);
 
   useEffect(() => {
     localStorage.setItem("fintheon:threads", JSON.stringify(threads));
