@@ -80,7 +80,8 @@ export function PerfTableSlot({ code, isIncomplete }: CustomRendererProps) {
   return (
     <SlotReveal>
       <SlotShell label={label} style={{ padding: "10px 4px" }}>
-        <div role="table" style={{ display: "flex", flexDirection: "column" }}>
+        <div style={{ overflowX: "auto" }}>
+        <div role="table" style={{ display: "flex", flexDirection: "column", minWidth: 280 }}>
           <div
             role="row"
             style={{
@@ -143,6 +144,7 @@ export function PerfTableSlot({ code, isIncomplete }: CustomRendererProps) {
               )}
             </div>
           ))}
+        </div>
         </div>
       </SlotShell>
     </SlotReveal>

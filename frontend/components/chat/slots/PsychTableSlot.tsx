@@ -76,7 +76,8 @@ export function PsychTableSlot({ code, isIncomplete }: CustomRendererProps) {
         label={`psych${as_of ? ` · ${as_of}` : ""}`}
         style={{ padding: "10px 4px" }}
       >
-        <div role="table" style={{ display: "flex", flexDirection: "column" }}>
+        <div style={{ overflowX: "auto" }}>
+        <div role="table" style={{ display: "flex", flexDirection: "column", minWidth: 280 }}>
           <div
             role="row"
             style={{
@@ -117,6 +118,7 @@ export function PsychTableSlot({ code, isIncomplete }: CustomRendererProps) {
               <span style={CELL}>{r.infractions}</span>
             </div>
           ))}
+        </div>
         </div>
       </SlotShell>
     </SlotReveal>
