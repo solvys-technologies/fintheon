@@ -9,14 +9,15 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
-    date: "2026-05-19T01:00:00",
+    date: "2026-05-21T00:00:00",
     agent: "claude-code",
     summary:
-      "S62-T22: Micro-interactions pass — removed transition-all from CognitionPanel, caret now uses --t-icon-swap-dur/ease token, SlotReveal uses CSS var duration + prefersReducedMotion guard, SlotSkeleton stagger aligned to --t-digit-stagger (70ms), EconCountdownModal transitions use --t-panel-open-dur/ease + --t-modal-open-dur tokens, full prefers-reduced-motion support in CountdownCard + inline style block. Fixed Tailwind canonical class lint warning.",
+      "SOL-69: Econ calendar ingest hardening — normalizeEventName() for case/whitespace-stable SHA-256 event_key, canonical ECON_SOURCE_ID constant, anchored dedupe check in econ-bridge (ingest_pipeline + lower() LIKE), dedupe test fixtures.",
     files: [
-      "frontend/components/chat/CognitionPanel.tsx",
-      "frontend/components/chat/slots/SlotShell.tsx",
-      "frontend/components/feed/EconCountdownModal.tsx",
+      "backend-hono/src/services/econ-calendar-service.ts",
+      "backend-hono/src/services/cron/econ-calendar-populator.ts",
+      "backend-hono/src/services/riskflow/econ-bridge.ts",
+      "backend-hono/src/tests/econ-calendar-dedupe.test.ts",
     ],
   },
   {
