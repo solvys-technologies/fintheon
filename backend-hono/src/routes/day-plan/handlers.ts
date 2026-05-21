@@ -32,6 +32,7 @@ import type {
 const log = createLogger("DayPlanHandlers");
 
 const TEAM_ID = "pic";
+const TODAY_GENERATION_TIMEOUT_MS = 8000;
 
 const FeedbackSchema = z.object({
   window_id: z.string().uuid(),
@@ -62,14 +63,45 @@ const CaoEveningReviewSchema = z.object({
 export async function handleGetToday(c: Context): Promise<Response> {
   let plan: DayPlan | null = null;
   try {
-    const result = await generateDayPlan({ teamId: TEAM_ID });
-    plan = result.plan;
+    const generation = generateDayPlan({ teamId: TEAM_ID });
+    generation.catch((err) => {
+      log.warn("background day-plan generation failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
+
+    const result = await Promise.race<
+      | { kind: "generated"; result: Awaited<ReturnType<typeof generateDayPlan>> }
+      | { kind: "timeout" }
+    >([
+      generation.then((result) => ({ kind: "generated", result })),
+      new Promise<{ kind: "timeout" }>((resolve) => {
+        setTimeout(
+          () => resolve({ kind: "timeout" }),
+          TODAY_GENERATION_TIMEOUT_MS,
+        );
+      }),
+    ]);
+
+    if (result.kind === "generated") {
+      plan = result.result.plan;
+    } else {
+      log.warn("on-demand day-plan generation timed out; returning cached plan", {
+        timeoutMs: TODAY_GENERATION_TIMEOUT_MS,
+      });
+      plan = await readDayPlan(TEAM_ID, dateInNewYork(new Date()));
+    }
   } catch (err) {
     log.warn("on-demand day-plan generation failed", {
       error: err instanceof Error ? err.message : String(err),
     });
+    plan = await readDayPlan(TEAM_ID, dateInNewYork(new Date())).catch(() => null);
   }
   return c.json({ plan });
+}
+
+function dateInNewYork(date: Date): string {
+  return date.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 }
 
 export async function handleGetWeek(c: Context): Promise<Response> {

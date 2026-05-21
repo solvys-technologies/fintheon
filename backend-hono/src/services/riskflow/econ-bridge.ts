@@ -17,6 +17,9 @@ import { broadcastEconPrint } from "./sse-broadcaster.js";
 import { isPipelineEnabled } from "./pipeline-gate.js";
 import { recordEconIngest, recordIngestAttempt } from "./ingest-ledger.js";
 import { ECON_SOURCE_ID } from "../econ-calendar-service.js";
+import { createLogger } from "../../lib/logger.js";
+
+const log = createLogger("EconBridge");
 
 interface EconPrintEvent {
   eventName: string;
@@ -41,7 +44,7 @@ export async function injectEconPrintToFeed(
     // S48-T1 Fix 1: Gate — skip if economic-calendar pipeline is disabled
     const enabled = await isPipelineEnabled("economic-calendar");
     if (!enabled) {
-      console.log("[EconBridge] Skipped: economic-calendar pipeline disabled");
+      log.info("Skipped: economic-calendar pipeline disabled");
       recordEconIngest(false);
       recordIngestAttempt({
         source: "EconomicCalendar",
@@ -160,9 +163,10 @@ export async function injectEconPrintToFeed(
       )
     `;
 
-    console.log(
-      `[EconBridge] Injected: ${headline} (macroLevel=${macroLevel})`,
-    );
+    log.info("Injected econ print into RiskFlow inbox", {
+      headline,
+      macroLevel,
+    });
     recordEconIngest(true);
     recordIngestAttempt({
       source: "EconomicCalendar",
