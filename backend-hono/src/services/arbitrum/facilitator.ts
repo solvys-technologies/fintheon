@@ -84,24 +84,24 @@ function buildDigest(
   dissent: ArbitrumDissent | null,
 ): string {
   const lines: string[] = [];
-  lines.push(`Chamber reads ${pctFmt(weightedProb)} on: ${input.question}`);
+  lines.push(`**Chamber reads ${pctFmt(weightedProb)}** on: ${input.question}`);
   lines.push(
-    `Weighted confidence ${pctFmt(weightedConf)} across ${finals.length} seats (category: ${input.category}).`,
+    `Weighted confidence **${pctFmt(weightedConf)}** across ${finals.length} seats (category: ${input.category}).`,
   );
 
   const sorted = [...finals].sort((a, b) => b.seat.weight - a.seat.weight);
   const bodyLines = sorted.map(
     (f) =>
-      `- ${f.seat.role} (${pctFmt(f.probability)}, conf ${pctFmt(f.confidence)}): ${f.rationale.trim()}`,
+      `- **${f.seat.role}** (${pctFmt(f.probability)}, conf ${pctFmt(f.confidence)}): ${f.rationale.trim()}`,
   );
   lines.push("");
-  lines.push("Seat reads:");
+  lines.push("**Seat reads:**");
   lines.push(...bodyLines);
 
   if (dissent) {
     lines.push("");
     lines.push(
-      `Dissent: ${dissent.seat} is ${dissent.magnitude_pp}pp off the weighted mean — ${dissent.rationale.trim()}`,
+      `**Dissent:** ${dissent.seat} is ${dissent.magnitude_pp}pp off the weighted mean — ${dissent.rationale.trim()}`,
     );
   }
 
@@ -110,12 +110,14 @@ function buildDigest(
   ).slice(0, 5);
   if (topRisks.length > 0) {
     lines.push("");
-    lines.push(`Top risks: ${topRisks.join("; ")}`);
+    lines.push("**Top risks:**");
+    lines.push(...topRisks.map((r) => `- ${r}`));
   }
 
   lines.push("");
+  lines.push("---");
   lines.push(
-    "This is a signal landscape, not an execution instruction. Human review required.",
+    "*Signal landscape — not an execution instruction. Human review required.*",
   );
 
   return lines.join("\n");
