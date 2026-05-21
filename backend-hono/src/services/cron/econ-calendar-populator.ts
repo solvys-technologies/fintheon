@@ -29,6 +29,7 @@ import { upsertEconEvent, type EconEventRecord } from "../supabase-service.js";
 import {
   categorizeEvent,
   ffCurrencyToCountry,
+  normalizeEventName,
   ECON_DEFAULT_COUNTRIES,
   type EconCountryCode,
 } from "../econ-calendar-service.js";
@@ -106,7 +107,7 @@ function eventKey(parts: {
 }): string {
   return createHash("sha256")
     .update(
-      `${parts.name.trim()}|${parts.date}|${parts.time}|${parts.country}`,
+      `${normalizeEventName(parts.name)}|${parts.date}|${parts.time}|${parts.country}`,
       "utf8",
     )
     .digest("hex");

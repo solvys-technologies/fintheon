@@ -9,16 +9,15 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
-    date: "2026-05-20T00:00:00",
+    date: "2026-05-21T00:00:00",
     agent: "claude-code",
     summary:
-      "SOL-71: PsychAssist tilt scoring + lockout UX — auto-clearing lockout via 5min cooldown timer, healing bowl sound on tilt threshold (10s rate-limit), Solvys palette throughout (no red/emerald), false-positive tilt pulse fix in TraderNametag (neutral→poised default), lockout overlay in CompactERMonitor with dismiss, WaveformCanvas lockout mode (25% amplitude slow gold pulse), psychassist:score event wired to ThreadContext active thread resonanceState.",
+      "SOL-69: Econ calendar ingest hardening — normalizeEventName() for case/whitespace-stable SHA-256 event_key, canonical ECON_SOURCE_ID constant, anchored dedupe check in econ-bridge (ingest_pipeline + lower() LIKE), dedupe test fixtures.",
     files: [
-      "frontend/contexts/ERContext.tsx",
-      "frontend/contexts/ThreadContext.tsx",
-      "frontend/components/TraderNametag.tsx",
-      "frontend/components/mission-control/CompactERMonitor.tsx",
-      "frontend/components/mission-control/WaveformCanvas.tsx",
+      "backend-hono/src/services/econ-calendar-service.ts",
+      "backend-hono/src/services/cron/econ-calendar-populator.ts",
+      "backend-hono/src/services/riskflow/econ-bridge.ts",
+      "backend-hono/src/tests/econ-calendar-dedupe.test.ts",
     ],
   },
   {
