@@ -78,6 +78,8 @@ import { createMemoryRoutes } from "./memory/index.js";
 import { createEditorRoutes } from "./editor/index.js";
 import { createMcpRoutes } from "./mcp/index.js";
 import { createDagRoutes } from "./dag/index.js";
+// [claude-code 2026-05-13] S61-T1: agent audit log — decision trail for all tool approvals and permission changes
+import { createAuditRoutes } from "./audit/index.js";
 import { createDreamRoutes } from "./agent-bus/dreams.js";
 import { createPolymarketRoutes } from "./polymarket/index.js";
 import { createRelayRoutes } from "./relay.js";
@@ -174,6 +176,10 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/consul-control", createConsulControlRoutes());
   // DAG scheduler — status, SSE stream, cancel (S8-T2)
   app.route("/api/dag", createDagRoutes());
+  // [S61-T1] Agent audit log — auth-gated decision trail for tool approvals and permission changes
+  app.use("/api/audit", authMiddleware, requireAuth);
+  app.use("/api/audit/*", authMiddleware, requireAuth);
+  app.route("/api/audit", createAuditRoutes());
   // Agent Dream Room — autonomous agent reflection channel
   app.route("/api/agent-bus/dreams", createDreamRoutes());
   // Proposal charting is public/local; resolution writes are auth-gated.

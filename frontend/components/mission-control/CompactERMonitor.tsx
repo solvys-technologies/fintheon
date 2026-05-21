@@ -1,4 +1,5 @@
 // [claude-code 2026-03-14] Refactored to use useERSafe() from ERContext (shared state), local fallback retained
+// [claude-code 2026-05-19] SOL-71: fixed color palette to Solvys, added lockout overlay, pass isLockedOut to WaveformCanvas
 import { useState, useEffect, useRef } from "react";
 import { Mic, MicOff, AlertTriangle } from "lucide-react";
 import { WaveformCanvas } from "./WaveformCanvas";
@@ -37,17 +38,19 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
   const erScore = erContext?.erScore ?? localErScore;
   const analyser = erContext?.analyser ?? localAnalyser;
 
+  const isLockedOut = erContext?.isLockedOut ?? false;
   const resonanceState =
     erScore > 0.5 ? "Steadfast" : erScore < -0.5 ? "Tilted" : "Poised";
+  // Solvys palette: gold accent for all states, no emerald/red
   const stateColor = {
-    Steadfast: "text-emerald-400",
-    Tilted: "text-red-500",
-    Poised: "text-gray-400",
+    Steadfast: "text-(--fintheon-accent)",
+    Tilted: "text-(--fintheon-accent)/70",
+    Poised: "text-(--fintheon-text)/40",
   };
   const stateBgColor = {
-    Steadfast: "bg-emerald-400",
-    Tilted: "bg-red-500",
-    Poised: "bg-gray-400",
+    Steadfast: "bg-(--fintheon-accent)",
+    Tilted: "bg-(--fintheon-accent)/50",
+    Poised: "bg-(--fintheon-text)/20",
   };
 
   const startMonitoring = async () => {
@@ -228,12 +231,26 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
   return (
     <div className="flex items-center gap-2 w-full py-1">
       {/* Waveform - Landscape oriented */}
-      <div className="relative h-7 flex-1 bg-black/50 rounded border border-[var(--fintheon-accent)]/10 overflow-hidden min-w-[80px]">
+      <div className="relative h-7 flex-1 bg-black/50 rounded border border-(--fintheon-accent)/10 overflow-hidden min-w-[80px]">
         <div className="absolute inset-0 scanline-overlay opacity-50" />
+        {isLockedOut && (
+          <div className="absolute inset-0 z-10 flex items-center justify-between px-1.5 bg-(--fintheon-bg)/90">
+            <span className="text-[8px] uppercase tracking-widest text-(--fintheon-accent) cognition-thought-shimmer">
+              locked out
+            </span>
+            <button
+              onClick={() => erContext?.dismissLockout()}
+              className="text-[8px] text-(--fintheon-text)/40 hover:text-(--fintheon-text)/80"
+            >
+              dismiss
+            </button>
+          </div>
+        )}
         {isMonitoring && analyser ? (
           <WaveformCanvas
             analyser={analyser}
             tiltMode={resonanceState === "Tilted"}
+            isLockedOut={isLockedOut}
           />
         ) : (
           <div className="h-full flex items-center justify-center text-[8px] text-gray-500">
@@ -243,7 +260,7 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
       </div>
 
       {/* Score + State inline */}
-      <div className="flex items-center gap-1.5 flex-shrink-0">
+      <div className="flex items-center gap-1.5 shrink-0">
         <div
           className={`w-1.5 h-1.5 rounded-full ${stateBgColor[resonanceState]} ${isMonitoring ? "animate-pulse" : ""}`}
         />
@@ -253,17 +270,17 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
         <span className={`text-[9px] ${stateColor[resonanceState]}`}>
           {resonanceState}
         </span>
-        {resonanceState === "Tilted" && (
-          <AlertTriangle className="w-3 h-3 text-red-500 animate-pulse" />
+        {resonanceState === "Tilted" && !isLockedOut && (
+          <AlertTriangle className="w-3 h-3 text-(--fintheon-accent)/60 animate-pulse" />
         )}
       </div>
 
       {/* Mic toggle button */}
       <button
         onClick={isMonitoring ? stopMonitoring : startMonitoring}
-        className={`toolbar-icon-btn flex-shrink-0 ${
+        className={`toolbar-icon-btn shrink-0 ${
           isMonitoring
-            ? "!bg-emerald-500/15 !border-emerald-500/30 !text-emerald-400"
+            ? "bg-(--fintheon-accent)/10! border-(--fintheon-accent)/30! text-(--fintheon-accent)!"
             : ""
         }`}
         title={isMonitoring ? "Stop PsychAssist" : "Start PsychAssist"}
