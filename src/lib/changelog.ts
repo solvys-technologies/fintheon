@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-21T01:00:00",
+    agent: "claude-code",
+    summary:
+      "SOL-60: Performance tab — Shares→Contracts in TradeActivityHeatmap, Contracts+Notional KPIs with leverage-adjusted notional, merged tab strip, AddAccountModal (Prop Firm/Broker/Account Size/screenshot), SessionHistoryRow slim chevron rows replacing DayHistoryCard, emerald→gold save flash.",
+    files: [
+      "frontend/components/journal/performance/TradeActivityHeatmap.tsx",
+      "frontend/components/journal/PerformanceJournal.tsx",
+      "frontend/components/journal/SessionJournalPanel.tsx",
+      "frontend/components/journal/performance/PerformanceHistoryPage.tsx",
+      "frontend/components/journal/SessionHistoryRow.tsx",
+      "frontend/components/journal/AddAccountModal.tsx",
+    ],
+  },
+  {
     date: "2026-05-21T00:00:00",
     agent: "claude-code",
     summary:

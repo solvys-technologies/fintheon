@@ -17,7 +17,7 @@ import {
   type HeatmapColumn,
 } from "./HeatmapGrid";
 
-type ActivityMetric = "trades" | "shares" | "notional";
+type ActivityMetric = "trades" | "contracts" | "notional";
 
 interface TradeRow {
   id: string;
@@ -34,7 +34,7 @@ interface TradeActivityHeatmapProps {
 
 const METRIC_LABELS: Record<ActivityMetric, string> = {
   trades: "Trades",
-  shares: "Shares",
+  contracts: "Contracts",
   notional: "Notional",
 };
 
@@ -43,7 +43,7 @@ const CELL_BORDER = "var(--fintheon-accent-10, rgba(199,159,74,0.12))";
 
 function contribution(metric: ActivityMetric, t: TradeRow): number {
   if (metric === "trades") return 1;
-  if (metric === "shares") return Math.abs(t.qty ?? 0);
+  if (metric === "contracts") return Math.abs(t.qty ?? 0);
   return Math.abs((t.qty ?? 0) * (t.entryPrice ?? 0));
 }
 
