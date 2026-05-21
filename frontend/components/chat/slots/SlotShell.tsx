@@ -5,6 +5,14 @@
 
 import type { CSSProperties, ReactNode } from "react";
 
+// Stagger step aligned with --t-digit-stagger token (70ms)
+const SKELETON_STAGGER_MS = 70;
+
+function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+}
+
 interface SlotShellProps {
   label?: string;
   children: ReactNode;
@@ -88,7 +96,7 @@ export function SlotSkeleton({
             borderRadius: 4,
             background: "rgba(199, 159, 74, 0.1)",
             animation: "p 1.5s ease-in-out infinite",
-            animationDelay: `${i * 120}ms`,
+            animationDelay: `${i * SKELETON_STAGGER_MS}ms`,
           }}
         />
       ))}
@@ -118,14 +126,17 @@ export function SlotError({
   );
 }
 
-// Reveal helper: once a slot flips from pending→ok, children fade in over
-// 200ms so the transition from skeleton is calm, not snappy.
+// Reveal helper: once a slot flips from pending→ok, children fade in using
+// the --t-icon-swap-dur token (200ms). Skipped when prefers-reduced-motion.
 export function SlotReveal({ children }: { children: ReactNode }) {
+  const reduced = prefersReducedMotion();
   return (
     <div
-      style={{
-        animation: "slotReveal 200ms ease-out",
-      }}
+      style={
+        reduced
+          ? undefined
+          : { animation: "slotReveal var(--t-icon-swap-dur) ease-out" }
+      }
     >
       {children}
     </div>

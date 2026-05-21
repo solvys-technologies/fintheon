@@ -12,6 +12,7 @@
 import { calculateIVScore } from "../analysis/iv-scorer.js";
 import { broadcastEconPrint } from "./sse-broadcaster.js";
 import { isPipelineEnabled } from "./pipeline-gate.js";
+import { ECON_SOURCE_ID } from "../econ-calendar-service.js";
 
 interface EconPrintEvent {
   eventName: string;
@@ -71,10 +72,13 @@ export async function injectEconPrintToFeed(
       // Fallback: econ prints are at least level 2
     }
 
-    // Check for duplicate (same event name + date) in raw_riskflow_items
+    // Check for duplicate: same pipeline + event name prefix + date.
+    // Anchored LIKE (no leading %) + ingest_pipeline filter prevents false
+    // positives from other sources that mention the same event keyword.
     const existing = await sql`
       SELECT id FROM raw_riskflow_items
-      WHERE headline ILIKE ${"%" + print.eventName + "%Actual%"}
+      WHERE ingest_pipeline = 'economic-calendar'
+        AND lower(headline) LIKE lower(${print.eventName + " Actual%"})
         AND created_at::date = ${print.date}::date
       LIMIT 1
     `;
@@ -90,7 +94,7 @@ export async function injectEconPrintToFeed(
     };
 
     // S48-T1 Fix 1: Write to raw_riskflow_items (not legacy news_feed_items)
-    // with source=EconomicCalendar + ingest_pipeline=economic-calendar + url=""
+    // with source=ECON_SOURCE_ID + ingest_pipeline=economic-calendar + url=""
     await sql`
       INSERT INTO raw_riskflow_items (
         headline, body, source, url, created_at, is_breaking,
@@ -99,7 +103,7 @@ export async function injectEconPrintToFeed(
       ) VALUES (
         ${headline},
         ${headline},
-        'EconomicCalendar',
+        ${ECON_SOURCE_ID},
         '',
         ${new Date(print.date).toISOString()},
         true,
