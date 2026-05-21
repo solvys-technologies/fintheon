@@ -1,8 +1,10 @@
 // [claude-code 2026-03-20] S3:T8f — Bloomberg-style chart, narrower blindspots, Missed Trades KPI, period filter
 // [claude-code 2026-04-23] S30-T1 heatmaps + KPI flip — top row rebuilt as two heatmap cards, KPI grid demoted below.
 // [claude-code 2026-04-23] S30-T2 — BlindspotsRow promoted full-width; session/Hermes/notes consolidated into SessionJournalPanel.
+// [claude-code 2026-05-21] SOL-60: Contracts metric, merged tab strip, Add Account modal, account-size state.
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { BookOpen, User, Bot, RefreshCw } from "lucide-react";
+import { BookOpen, User, Bot, RefreshCw, PlusCircle } from "lucide-react";
+import { AddAccountModal } from "./AddAccountModal";
 import { useBackend } from "../../lib/backend";
 import { KPICard } from "./KPICard";
 import { BlindspotsRow } from "./BlindspotsRow";
@@ -28,6 +30,10 @@ export function PerformanceJournal() {
   const [kpis, setKpis] = useState<PerformanceResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [showAddAccount, setShowAddAccount] = useState(false);
+  const [accountSize, setAccountSize] = useState<number>(() => {
+    try { return Number(localStorage.getItem("fintheon:account-size")) || 0; } catch { return 0; }
+  });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -59,6 +65,15 @@ export function PerformanceJournal() {
   const netPnl = findKpi("P&L") ?? findKpi("pnl") ?? findKpi("Net");
   const winRate = findKpi("Win Rate") ?? findKpi("win");
   const trades = findKpi("Trades") ?? findKpi("trades");
+  const contracts = findKpi("Contracts") ?? findKpi("contracts");
+  const rawNotional = findKpi("Notional") ?? findKpi("notional");
+  const notionalValue = (() => {
+    if (!rawNotional?.value || rawNotional.value === "--") return "--";
+    const raw = parseFloat(rawNotional.value.replace(/[^0-9.-]/g, ""));
+    if (Number.isNaN(raw)) return rawNotional.value;
+    if (accountSize > 0) return `${((raw / accountSize) * 100).toFixed(1)}%`;
+    return rawNotional.value;
+  })();
 
   const agentWinRate = summary?.avgWinRate ?? 0;
   const agentDecisions = entries
@@ -84,18 +99,31 @@ export function PerformanceJournal() {
       pieData: { value: parseFloat(winRate?.value ?? "0"), max: 100 },
     },
     {
-      label: "Trades Taken",
+      label: "Trades",
       value: trades?.value ?? "--",
-      subtitle: trades?.meta,
-      accentColor: undefined,
+      subtitle: "executions",
+      accentColor: "var(--fintheon-accent)",
+      pieData: undefined,
+    },
+    {
+      label: "Contracts",
+      value: contracts?.value ?? "--",
+      subtitle: "total qty",
+      accentColor: "var(--fintheon-accent)",
+      pieData: undefined,
+    },
+    {
+      label: "Notional",
+      value: notionalValue,
+      subtitle: accountSize > 0 ? "leverage-adj." : "gross",
+      accentColor: "var(--fintheon-accent)",
       pieData: undefined,
     },
     {
       label: "Avg R:R",
       value: summary?.avgRR?.toFixed(2) ?? "--",
       subtitle: "30-day",
-      accentColor:
-        (summary?.avgRR ?? 0) >= 1.5 ? "#34D399" : "var(--fintheon-accent)",
+      accentColor: "var(--fintheon-accent)",
       pieData: undefined,
     },
   ];
@@ -170,7 +198,8 @@ export function PerformanceJournal() {
         </div>
       </div>
 
-      <div className="flex px-3 pt-2 gap-1">
+      {/* Merged control strip: Human/Agent | separator | Dashboard/Calendar | Add Account */}
+      <div className="flex items-center px-3 pt-2 pb-1 gap-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
@@ -178,10 +207,10 @@ export function PerformanceJournal() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-xs font-medium transition-all ${
+              className={`flex items-center justify-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium transition-all ${
                 isActive
-                  ? "bg-[var(--fintheon-accent)] text-black"
-                  : "bg-[var(--fintheon-surface)] text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)] border border-[var(--fintheon-accent)]/10"
+                  ? "bg-(--fintheon-accent) text-black"
+                  : "bg-(--fintheon-surface) text-(--fintheon-muted) hover:text-(--fintheon-text) border border-(--fintheon-accent)/10"
               }`}
             >
               <Icon className="w-3 h-3" />
@@ -189,22 +218,28 @@ export function PerformanceJournal() {
             </button>
           );
         })}
-      </div>
-
-      <div className="flex px-3 pt-1 gap-1">
+        <div className="w-px h-4 bg-(--fintheon-accent)/20 mx-0.5" />
         {(["dashboard", "calendar"] as PerformanceView[]).map((v) => (
           <button
             key={v}
             onClick={() => setView(v)}
-            className={`flex-1 py-1 rounded text-[10px] font-medium transition-all ${
+            className={`px-2.5 py-1 rounded text-[11px] font-medium transition-all ${
               view === v
-                ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
-                : "text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]"
+                ? "bg-(--fintheon-accent)/15 text-(--fintheon-accent) border border-(--fintheon-accent)/30"
+                : "text-(--fintheon-muted) hover:text-(--fintheon-text)"
             }`}
           >
             {v === "dashboard" ? "Dashboard" : "Calendar"}
           </button>
         ))}
+        <button
+          onClick={() => setShowAddAccount(true)}
+          className="ml-auto flex items-center gap-1 px-2 py-1 rounded text-[10px] text-(--fintheon-muted) hover:text-(--fintheon-accent) transition-colors"
+          title="Add account"
+        >
+          <PlusCircle className="w-3 h-3" />
+          Account
+        </button>
       </div>
 
       {view === "calendar" && (
@@ -224,7 +259,7 @@ export function PerformanceJournal() {
               <>
                 <PerformanceHeatmapsRow />
 
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {orderedKpis.map((kpi, i) => (
                     <KPICard
                       key={i}
@@ -254,6 +289,18 @@ export function PerformanceJournal() {
             setWeekOffset={setWeekOffset}
           />
         </div>
+      )}
+
+      {showAddAccount && (
+        <AddAccountModal
+          onClose={() => setShowAddAccount(false)}
+          onSave={(size) => {
+            setAccountSize(size);
+            try { localStorage.setItem("fintheon:account-size", String(size)); } catch {}
+            setShowAddAccount(false);
+          }}
+          initialSize={accountSize}
+        />
       )}
     </div>
   );
