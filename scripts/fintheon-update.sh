@@ -15,6 +15,43 @@ set -eo pipefail
 FINTHEON_ROOT="${FINTHEON_ROOT:-$(cat "$HOME/.fintheon/install-path" 2>/dev/null || echo "$HOME/Documents/Codebases/fintheon")}"
 UPDATE_VERSION="6.7.7"
 
+expected_dmg_name_for_tag() {
+  local _tag="$1"
+  local _version="${_tag#v}"
+  local _arch
+  _arch="$(uname -m)"
+  local _suffix="x64"
+  if [[ "$_arch" == "arm64" ]]; then
+    _suffix="arm64"
+  fi
+  printf 'Fintheon-%s-%s.dmg' "$_version" "$_suffix"
+}
+
+release_has_expected_dmg_asset() {
+  local _tag="$1"
+  local _dmg_name
+  _dmg_name="$(expected_dmg_name_for_tag "$_tag")"
+  [[ -n "$_tag" ]] || return 1
+  command -v gh &>/dev/null || return 1
+  gh auth status &>/dev/null || return 1
+  gh release view "$_tag" \
+    --repo solvys-technologies/fintheon \
+    --json assets \
+    --jq ".assets[].name" 2>/dev/null | grep -Fxq "$_dmg_name"
+}
+
+require_release_dmg_asset() {
+  local _tag="$1"
+  local _dmg_name
+  _dmg_name="$(expected_dmg_name_for_tag "$_tag")"
+  if release_has_expected_dmg_asset "$_tag"; then
+    return 0
+  fi
+  warn "Release $_tag is missing required asset $_dmg_name — update aborted"
+  warn "Publish the Mac DMG to the GitHub release, then rerun fintheon update"
+  exit 1
+}
+
 # ── Self-update bootstrap (v5.25.2) ──────────────────────────────────────────
 # Root cause fix: bash loads the entire script into memory at invocation, so
 # `fintheon update` that fixed the repo body but left the script file untouched
@@ -38,8 +75,9 @@ if [[ -z "${FINTHEON_SELFUPDATED:-}" ]] && [[ -d "$FINTHEON_ROOT/.git" ]]; then
         --json tagName \
         --jq '.tagName' 2>/dev/null || true)
     fi
-    if [[ -z "$SELFUPDATE_TAG" ]]; then
-      SELFUPDATE_TAG=$(git tag -l --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+    if [[ -n "$SELFUPDATE_TAG" ]] && ! release_has_expected_dmg_asset "$SELFUPDATE_TAG"; then
+      echo "  · self-update: skipped $SELFUPDATE_TAG because $(expected_dmg_name_for_tag "$SELFUPDATE_TAG") is missing"
+      SELFUPDATE_TAG=""
     fi
     if [[ -n "$SELFUPDATE_TAG" ]]; then
       FRESH_CONTENT=$(git show "$SELFUPDATE_TAG:scripts/fintheon-update.sh" 2>/dev/null || true)
@@ -152,9 +190,10 @@ PULL_LOG="/tmp/fintheon-update-pull.log"
 git fetch --all --prune --prune-tags >>"$PULL_LOG" 2>&1 || true
 git fetch --tags --force >>"$PULL_LOG" 2>&1 || true
 
-# Resolve release tag with release-first precedence:
-#   1) latest published GitHub release (authoritative artifact source)
-#   2) newest semver tag as fallback
+# Resolve the latest published GitHub release. A release is update-eligible only
+# when it has the matching Mac DMG asset attached; otherwise we refuse to move
+# code or self-update the script. This prevents a tag-only release from sending
+# users into a broken download/local-rebuild path.
 LATEST_RELEASE_TAG=""
 if command -v gh &>/dev/null && gh auth status &>/dev/null; then
   LATEST_RELEASE_TAG=$(gh release view \
@@ -164,13 +203,13 @@ if command -v gh &>/dev/null && gh auth status &>/dev/null; then
 fi
 
 if [[ -n "$LATEST_RELEASE_TAG" ]]; then
+  require_release_dmg_asset "$LATEST_RELEASE_TAG"
   git fetch origin "refs/tags/${LATEST_RELEASE_TAG}:refs/tags/${LATEST_RELEASE_TAG}" >>"$PULL_LOG" 2>&1 || true
   LATEST_TAG="$LATEST_RELEASE_TAG"
 else
-  # Fallback to newest semver tag of the form v<major>.<minor>.<patch> (no suffix).
-  # `git tag -l` glob matching is coarse, so we filter with grep -E to reject
-  # tags like v8.30.1-s12-fix. `--sort=-v:refname` gives us semver order.
-  LATEST_TAG=$(git tag -l --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+  warn "Could not resolve the latest GitHub release via gh — update aborted"
+  warn "Install/authenticate gh so the updater can verify the required Mac DMG asset"
+  exit 1
 fi
 
 if [[ -z "$LATEST_TAG" ]]; then
