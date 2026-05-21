@@ -22,6 +22,7 @@ import { resolve } from "node:path";
 import { homedir } from "node:os";
 import { createLogger } from "../lib/logger.js";
 import { emitStep } from "./cognition-emitter.js";
+import { logAuditDecision } from "./audit-logger.js";
 
 const log = createLogger("ToolApproval");
 
@@ -105,6 +106,17 @@ export async function grantPermission(toolName: string): Promise<void> {
   permanentPermissions.set(toolName, permission);
   await savePermissions();
   log.info(`Permanent permission granted: ${toolName}`);
+  logAuditDecision(
+    {
+      agent_id: "user",
+      tool_name: "permission_grant",
+      tool_input: { toolName },
+      description: `Permanent permission granted for ${toolName}`,
+      surface: "settings",
+      correlation_id: toolName,
+    },
+    { decision: "approved", reason: null },
+  ).catch((err) => log.error("audit write failed", { error: String(err) }));
 }
 
 /** Revoke permission for a tool */
@@ -112,6 +124,17 @@ export async function revokePermission(toolName: string): Promise<void> {
   permanentPermissions.delete(toolName);
   await savePermissions();
   log.info(`Permission revoked: ${toolName}`);
+  logAuditDecision(
+    {
+      agent_id: "user",
+      tool_name: "permission_revoke",
+      tool_input: { toolName },
+      description: `Permanent permission revoked for ${toolName}`,
+      surface: "settings",
+      correlation_id: toolName,
+    },
+    { decision: "denied", reason: null },
+  ).catch((err) => log.error("audit write failed", { error: String(err) }));
 }
 
 /** Get all permanent permissions */
@@ -210,6 +233,17 @@ export function requestApproval(
         if (settled) return;
         log.warn(`Approval timeout — auto-approving: ${toolName} (${id})`);
         pendingApprovals.delete(id);
+        logAuditDecision(
+          {
+            agent_id: "unknown",
+            tool_name: toolName,
+            tool_input: toolInput,
+            description,
+            surface: "chat",
+            correlation_id: requestId,
+          },
+          { decision: "timed_out", reason: "30s approval timeout" },
+        ).catch((err) => log.error("audit write failed", { error: String(err) }));
         await grantPermission(toolName);
         emitStep(requestId, {
           kind: "tool-approval-resolved",
@@ -239,6 +273,21 @@ export async function resolveApproval(
   }
 
   pendingApprovals.delete(approvalId);
+
+  logAuditDecision(
+    {
+      agent_id: "unknown",
+      tool_name: pending.toolName,
+      tool_input: pending.toolInput,
+      description: pending.description,
+      surface: "chat",
+      correlation_id: pending.requestId,
+    },
+    {
+      decision: decision as "approved" | "denied" | "timed_out",
+      reason: null,
+    },
+  ).catch((err) => log.error("audit write failed", { error: String(err) }));
 
   if (decision === "approved") {
     // Grant permanent permission
