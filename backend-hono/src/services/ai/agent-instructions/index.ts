@@ -23,6 +23,7 @@ import {
   renderSystemPrompt as renderSoulPrompt,
   type AgentId as SoulAgentId,
 } from "../soul/loader.js";
+import { getAllProfiles } from "../../capability-registry/registry.js";
 
 const ROLE_TO_SOUL_ID: Record<HermesAgentRole, SoulAgentId> = {
   "harper-cao": "harper",
@@ -83,6 +84,40 @@ async function loadPersonaFile(role: HermesAgentRole): Promise<string> {
     );
     return "";
   }
+}
+
+/**
+ * Render a cross-agent capability registry block from the runtime registry.
+ * Replaces the old static CROSS_AGENT_REGISTRY_BLOCK string.
+ * Mutations go through the unified approval pipeline (see /api/harper/tool-decision).
+ */
+function renderRegistryBlock(): string {
+  const profiles = getAllProfiles();
+  const lines: string[] = [
+    "",
+    "## Agent Capability Registry",
+    "The following desk agents are available for handoff. Each has a defined tool scope.",
+    "",
+  ];
+  for (const p of profiles) {
+    lines.push(`### ${p.agent_id}`);
+    lines.push(`Responsibilities: ${p.responsibilities.join("; ")}`);
+    lines.push(`Required tools: ${p.required_tools.join(", ")}`);
+    if (p.optional_tools.length > 0) {
+      lines.push(`Optional tools: ${p.optional_tools.join(", ")}`);
+    }
+    if (p.prohibited_tools.length > 0) {
+      lines.push(`Prohibited tools: ${p.prohibited_tools.join(", ")}`);
+    }
+    if (p.handoff_targets.length > 0) {
+      lines.push(`Handoff targets: ${p.handoff_targets.join(", ")}`);
+    }
+    lines.push("");
+  }
+  lines.push(
+    "Mutations (write operations) go through the unified approval pipeline (see /api/harper/tool-decision).",
+  );
+  return lines.join("\n");
 }
 
 /**
@@ -193,6 +228,9 @@ export async function getAgentSystemPrompt(
 
   // 2.5. Capability awareness — what tools and data the agent has access to
   prompt += CAPABILITIES_BLOCK;
+
+  // 2.6. Runtime capability registry — cross-agent roster + tool scope (replaces static CROSS_AGENT_REGISTRY_BLOCK)
+  prompt += renderRegistryBlock();
 
   // 3. Agent-specific philosophy block
   const philosophy = AGENT_PHILOSOPHY[role];
