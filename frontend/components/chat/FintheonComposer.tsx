@@ -10,7 +10,7 @@
 // [claude-code 2026-03-12] Switched from independent useVoiceAssistant() to shared VoiceContext
 // [claude-code 2026-04-11] S14-T5: Headline attachment via HeadlinePickerPopover + context injection
 // [claude-code 2026-03-22] Track 4: persona pills → PersonaDropdown, Plug2+Wrench → ToolsDropdown
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useThread, useThreadRuntime } from "@assistant-ui/react";
 import { Radio, Unplug, Loader2 } from "lucide-react";
 import { PromptBox } from "../ui/chatgpt-prompt-input";
@@ -53,6 +53,7 @@ interface FintheonComposerProps {
    * and without this prop the user stays stuck with a broken relay button.
    */
   onConversationGone?: () => void;
+  todoSlot?: React.ReactNode;
 }
 
 export function FintheonComposer({
@@ -67,6 +68,7 @@ export function FintheonComposer({
   compact,
   conversationId,
   onConversationGone,
+  todoSlot,
 }: FintheonComposerProps) {
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
@@ -319,6 +321,7 @@ export function FintheonComposer({
       headlineChips={headlineChips}
       onHeadlineToggle={handleHeadlineToggle}
       onHeadlineClear={handleHeadlineClear}
+      todoSlot={todoSlot}
     />
   );
 }

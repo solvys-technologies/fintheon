@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-20T01:00:00",
+    agent: "claude-code",
+    summary:
+      "SOL-62: Chat Todo Drawer — slides up at 80% chat width from above composer. Two collapsible chevron sections: To-Do (add/toggle/remove, localStorage-persisted) and Queue (edit/remove). Wired todoSlot through FintheonComposer → PromptBox left toolbar. New: TodoDrawer.tsx, hooks/useTodoList.ts.",
+    files: [
+      "frontend/components/chat/TodoDrawer.tsx",
+      "frontend/components/chat/hooks/useTodoList.ts",
+      "frontend/components/ChatInterface.tsx",
+      "frontend/components/chat/FintheonComposer.tsx",
+      "frontend/components/ui/chatgpt-prompt-input.tsx",
+    ],
+  },
+  {
     date: "2026-04-29T14:30:00",
     agent: "claude-code",
     summary:
