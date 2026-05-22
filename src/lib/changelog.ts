@@ -9,6 +9,26 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-22T16:20:00-04:00",
+    agent: "codex",
+    summary:
+      "v6.7.11 release prep: captured the clean post-v6.7.10 mobile fixes into the updater path, including restored mobile chat provider context and stabilized mobile push notification toggle behavior, then bumped desktop/mobile package metadata plus install/update script pointers.",
+    files: [
+      "package.json",
+      "mobile/package.json",
+      "mobile/components/chat/ChatPage.tsx",
+      "mobile/hooks/usePushNotifications.ts",
+      "mobile/lib/push.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/routes/web-push.ts",
+      "scripts/fintheon-update.sh",
+      "scripts/fintheon-setup.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-22T10:05:00-04:00",
     agent: "codex",
     summary:
