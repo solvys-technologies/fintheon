@@ -68,7 +68,7 @@ const NAV_ITEMS_MAP: Record<
   dashboard: {
     id: "dashboard",
     icon: LayoutDashboard,
-    label: "Dashboard",
+    label: "Desk",
     description: "KPIs, calendar, RiskFlow",
   },
   analysis: {

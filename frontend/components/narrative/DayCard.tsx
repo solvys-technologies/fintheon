@@ -17,6 +17,7 @@ import { FadingRuler } from "../shared/FadingRuler";
 import { AgenticFeedbackControls } from "../shared/AgenticFeedbackControls";
 import { StreakBadge } from "../streak/StreakBadge";
 import { DayPlanChevronNav } from "./DayPlanChevronNav";
+import { DeskPlanCustomForm } from "./DeskPlanCustomForm";
 import { PriceRevealTag } from "./PriceRevealTag";
 import { formatEasternClockRange } from "../../lib/eastern-time-format";
 import type { DayPlanWindow, DriftKind } from "../../types/day-plan";
@@ -150,13 +151,36 @@ export function DayCard({
   const [currentWindowIndex, setCurrentWindowIndex] = useState(0);
   const [shimmering, setShimmering] = useState(false);
   const [showStreakPopup, setShowStreakPopup] = useState(false);
+  const [countryFilter, setCountryFilter] = useState("ALL");
   const autoLockKeyRef = useRef<string | null>(null);
 
   const plan = multiWeekPlan ?? todayData;
   const isLoading = multiWeekLoading && todayLoading;
-  const windows = useMemo(
+  const allWindows = useMemo(
     () => [...(plan?.windows ?? [])].sort((a, b) => a.startTime.localeCompare(b.startTime)),
     [plan?.windows],
+  );
+  const countries = useMemo(
+    () => [
+      ...new Set(
+        allWindows
+          .map((window) => window.eventCountry ?? window.econForecast?.eventCountry ?? "")
+          .filter(Boolean),
+      ),
+    ],
+    [allWindows],
+  );
+  const windows = useMemo(
+    () =>
+      countryFilter === "ALL"
+        ? allWindows
+        : allWindows.filter(
+            (window) =>
+              (window.eventCountry ?? window.econForecast?.eventCountry ?? "")
+                .toUpperCase()
+                .trim() === countryFilter,
+          ),
+    [allWindows, countryFilter],
   );
   const windowSignature = windows
     .map((window) => `${window.id}:${window.startTime}:${window.endTime}`)
@@ -253,6 +277,11 @@ export function DayCard({
               onPrev={goPrevPlan}
               onNext={goNextPlan}
             />
+            <DeskPlanCustomForm
+              countries={countries}
+              selectedCountry={countryFilter}
+              onCountryChange={setCountryFilter}
+            />
             <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={14} />
             {showStreakPopup && (
               <div className="absolute top-full right-0 mt-2 p-3 bg-[#1a1915] border border-white/8 rounded-lg shadow-lg z-50">
@@ -300,6 +329,11 @@ export function DayCard({
                 totalPlans={totalPlans}
                 onPrev={goPrevPlan}
                 onNext={goNextPlan}
+              />
+              <DeskPlanCustomForm
+                countries={countries}
+                selectedCountry={countryFilter}
+                onCountryChange={setCountryFilter}
               />
               <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={14} />
             </span>

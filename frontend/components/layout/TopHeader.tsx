@@ -67,8 +67,8 @@ type NavTab =
   | "settings";
 
 const TAB_LABELS: Record<NavTab, string> = {
-  dashboard: "Dashboard",
-  feed: "Dashboard", // feed section removed; fallback for history
+  dashboard: "Desk",
+  feed: "Desk", // feed section removed; fallback for history
   analysis: "Consilium",
   proposals: "Proposals",
   apparatus: "Apparatus",

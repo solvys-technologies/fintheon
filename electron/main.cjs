@@ -957,6 +957,7 @@ function createWindow(apiBase) {
                 ingested,
                 title: first?.title ?? null,
                 starts_at: first?.starts_at ?? null,
+                queueCount: Number(body.queueCount ?? 0),
               });
             } else {
               console.warn(

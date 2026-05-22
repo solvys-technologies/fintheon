@@ -10,6 +10,8 @@
 import { invokeAgent } from "../strands/index.js";
 import { readEconEvents } from "../supabase-service.js";
 import { readEconPrints } from "../supabase-service.js";
+import { getFeed } from "../riskflow/feed-service.js";
+import { getCurrentRegime } from "../regime/regime-service.js";
 import { createLogger } from "../../lib/logger.js";
 import type { EconForecast, EconForecastScenario } from "../../types/day-plan.js";
 import { redeliberateEconForecast } from "./econ-forecast-redeliberation.js";
@@ -60,6 +62,7 @@ Output strictly a JSON object with these fields:
 
 Rules:
 - forecast: use the provided consensus or previous value if no consensus exists
+- If consensus is missing, infer a directional forecast from recent prints, RiskFlow headlines, and regime data. Do not answer with a generic passage.
 - miss/beat isBullishForEquities depends on what's good/bad for risk assets:
   * Lower CPI/inflation = bullish (rates down). Higher = bearish.
   * Higher GDP/employment/PMI = bullish (growth). Lower = bearish.
@@ -234,6 +237,24 @@ async function buildPrompt(input: EconForecastInput): Promise<{
     } catch {
       // prints unavailable — non-fatal
     }
+  }
+  try {
+    const [feed, regime] = await Promise.all([
+      getFeed("econ-forecast", { limit: 8 }).catch(() => ({ items: [] } as never)),
+      getCurrentRegime().catch(() => null),
+    ]);
+    if (regime?.regime) lines.push(`Current macro regime: ${regime.regime}`);
+    const headlines = (feed.items ?? [])
+      .map((item: any) => item.headline)
+      .filter(Boolean)
+      .slice(0, 6);
+    if (headlines.length) {
+      lines.push("");
+      lines.push("Recent RiskFlow context:");
+      for (const headline of headlines) lines.push(`  - ${headline}`);
+    }
+  } catch {
+    // Context is additive; forecast still works without it.
   }
 
   lines.push("");

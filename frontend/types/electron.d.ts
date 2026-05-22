@@ -103,6 +103,7 @@ export interface ElectronAPI {
             ingested: number;
             title: string | null;
             starts_at: string | null;
+            queueCount?: number;
           }) => void)
         | null,
     ) => void;

@@ -9,6 +9,44 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-22T02:25:00-04:00",
+    agent: "codex",
+    summary:
+      "Desk surface follow-up: visible Dashboard tab copy now reads Desk while preserving internal tab IDs, Desk Plan Map renders designed blank timeline/calendar scaffolds when no plans are scheduled, persisted desk plans can be deleted directly from the map views, and sprint/plan cards use the Solvys-1 pop-out motion treatment.",
+    files: [
+      "backend-hono/src/routes/day-plan/index.ts",
+      "backend-hono/src/routes/day-plan/delete.ts",
+      "frontend/components/executive/DeskPlanMapEmptyStates.tsx",
+      "frontend/components/executive/DeskPlanSprintMap.tsx",
+      "frontend/components/executive/DeskPlanMapUtils.ts",
+      "frontend/components/layout/NavSidebar.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-22T02:00:00-04:00",
+    agent: "codex",
+    summary:
+      "Desk Plan control pass: TradingView Add to Calendar .ics captures now convert captured events into global Desk Plan windows, return an immediate queue count for the Econ Calendar success state, and feed Agentic Desk/econ forecasts with upcoming catalysts plus recent macro context. Added a compact plus-icon custom Desk Plan form beside the plan chevrons with country/currency filtering for speeches and non-calendar catalysts.",
+    files: [
+      "backend-hono/src/routes/day-plan/index.ts",
+      "backend-hono/src/routes/day-plan/custom.ts",
+      "backend-hono/src/routes/desk-calendar/handlers.ts",
+      "backend-hono/src/services/day-plan/custom-desk-plan.ts",
+      "backend-hono/src/services/agent-desk/agent-desk-client.ts",
+      "backend-hono/src/services/agent-desk/agent-desk-service.ts",
+      "backend-hono/src/services/econ-forecast/econ-forecast-service.ts",
+      "electron/main.cjs",
+      "frontend/components/econ/TradingViewCalendar.tsx",
+      "frontend/components/narrative/DayCard.tsx",
+      "frontend/components/narrative/DeskPlanCustomForm.tsx",
+      "frontend/hooks/useDayPlanWeek.ts",
+      "frontend/types/electron.d.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-21T12:00:00-04:00",
     agent: "codex",
     summary:

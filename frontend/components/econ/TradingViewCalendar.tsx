@@ -4,8 +4,9 @@
 // current trading week so stale prior-week sessions snap back on week rollover,
 // while TabRenderer keeps the frame mounted during same-session tab switches.
 import { useEffect, useState } from "react";
-import { CalendarDays, CheckCircle2, Inbox, Loader2 } from "lucide-react";
+import { CalendarDays, CheckCircle2, Inbox } from "lucide-react";
 import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
+import { BrailleSpinner } from "../chat/primitive/BrailleSpinner";
 import { useToast } from "../../contexts/ToastContext";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -131,10 +132,18 @@ export function TradingViewCalendar() {
     });
     bridge.onSaved((payload) => {
       setSaveState({ phase: "saved", title: payload.title });
+      const queueCount = payload.queueCount;
+      if (typeof queueCount === "number") {
+        setQueue((prev) => ({
+          ...prev,
+          count: queueCount,
+          last_ingest_at: new Date().toISOString(),
+        }));
+      }
       addToast(
         payload.ingested > 0
-          ? `Added to desk queue${payload.title ? ` · ${payload.title}` : ""}`
-          : "Event already in desk queue",
+          ? `Added to Desk Plan${payload.title ? ` · ${payload.title}` : ""}`
+          : "Event already in Desk Plan",
         "success",
       );
       void refreshQueue();
@@ -168,8 +177,8 @@ export function TradingViewCalendar() {
             </h2>
             {saveState.phase === "saving" && (
               <span className="ml-2 inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
-                <Loader2 className="w-3 h-3 animate-spin" />
-                Saving event to desk queue…
+                <BrailleSpinner size={10} color="rgb(52 211 153)" />
+                Saving to Desk Plan…
               </span>
             )}
             {saveState.phase === "saved" && (

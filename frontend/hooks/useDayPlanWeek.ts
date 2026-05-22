@@ -3,9 +3,11 @@
 // [claude-code 2026-04-26] S45-T2: useDayPlanWeek — Mon–Fri preview pills.
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { DayPlan, WeekDayEntry } from "../types/day-plan";
+import { DAY_PLAN_REFETCH_EVENT } from "./useDayPlan";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const POLL_INTERVAL = 5 * 60_000;
+const MULTI_REFETCH_EVENT = "fintheon:day-plan-multi-refetch";
 
 export function useDayPlanWeek() {
   const [data, setData] = useState<WeekDayEntry[] | null>(null);
@@ -112,10 +114,14 @@ export function useDayPlanMultiWeek(): DayPlanMultiWeekState {
     }
 
     fetchMultiWeek();
+    window.addEventListener(DAY_PLAN_REFETCH_EVENT, fetchMultiWeek);
+    window.addEventListener(MULTI_REFETCH_EVENT, fetchMultiWeek);
     intervalRef.current = setInterval(fetchMultiWeek, POLL_INTERVAL);
 
     return () => {
       cancelled = true;
+      window.removeEventListener(DAY_PLAN_REFETCH_EVENT, fetchMultiWeek);
+      window.removeEventListener(MULTI_REFETCH_EVENT, fetchMultiWeek);
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);

@@ -111,8 +111,10 @@ export async function startPrediction(
     const context = await assembleSimulationContext(preset);
 
     // Merge auto-fetched context with any explicit contextBank
-    const mergedContext: ContextBank & { econPrintHistory?: EconPrintStat[] } =
-      {
+    const mergedContext: ContextBank & {
+      econPrintHistory?: EconPrintStat[];
+      upcomingEconEvents?: SimulationContext["upcomingEconEvents"];
+    } = {
         vixLevel: contextBank?.vixLevel ?? context.vixLevel ?? undefined,
         gexNet: contextBank?.gexNet,
         macroIndicators: {
@@ -120,6 +122,7 @@ export async function startPrediction(
           ...context.fredIndicators,
         },
         econPrintHistory: context.econPrintHistory,
+        upcomingEconEvents: context.upcomingEconEvents,
       };
 
     // Fallback: if frontend sent empty lanes, synthesize from RiskFlow headlines
