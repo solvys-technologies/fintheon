@@ -1,6 +1,6 @@
 {
   "name": "fintheon",
-  "version": "6.7.8",
+  "version": "6.7.9",
   "type": "module",
   "packageManager": "bun",
   "dependencies": {
@@ -61,6 +61,7 @@
     "frontend:install": "cd frontend && bun install",
     "frontend:build": "cd frontend && bun run build",
     "desktop:build": "bun run frontend:build && electron-builder --mac dmg",
+    "desktop:smoke": "node scripts/desktop-smoke.mjs",
     "release:mac": "bun run frontend:build && cd backend-hono && bun run build && cd .. && bunx electron-builder --mac dmg --publish always",
     "frontend:build:windows": "cd frontend && bun run build:windows",
     "release:win": "bun run frontend:build:windows && bunx electron-builder --win nsis --publish never",

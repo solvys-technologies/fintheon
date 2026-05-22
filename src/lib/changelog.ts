@@ -9,6 +9,32 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-22T03:10:00-04:00",
+    agent: "codex",
+    summary:
+      "v6.7.9 release prep: bumped desktop/mobile package metadata and installer/update script pointers for the desktop Econ Calendar Add to Calendar capture + smoke-test hardening.",
+    files: [
+      "package.json",
+      "mobile/package.json",
+      "scripts/fintheon-update.sh",
+      "scripts/fintheon-setup.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-22T03:00:00-04:00",
+    agent: "codex",
+    summary:
+      "Desktop Econ Calendar hardening: added a real Electron/CDP smoke check for the packaged Fintheon app and a TradingView webview click-capture fallback so Add to Calendar still posts events into the Desk Calendar ingest path when TradingView does not emit a downloadable .ics file.",
+    files: [
+      "electron/main.cjs",
+      "electron/desk-calendar-click-capture.cjs",
+      "scripts/desktop-smoke.mjs",
+      "package.json",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-22T02:25:00-04:00",
     agent: "codex",
     summary:

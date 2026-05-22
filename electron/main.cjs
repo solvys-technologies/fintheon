@@ -28,6 +28,9 @@ const {
 } = require("electron");
 const { installVoiceChromeHook } = require("./window-chrome-voice.cjs");
 const { createUpdateManager } = require("./update-manager.cjs");
+const {
+  installDeskCalendarClickCapture,
+} = require("./desk-calendar-click-capture.cjs");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
@@ -984,6 +987,11 @@ function createWindow(apiBase) {
   } catch (err) {
     console.warn("[DeskCal] Failed to arm download interceptor:", err);
   }
+
+  installDeskCalendarClickCapture({
+    win,
+    getApiBase: () => currentApiBase || resolvedApiBase,
+  });
 
   const rendererPath = path.join(
     __dirname,
