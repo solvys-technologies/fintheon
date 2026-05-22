@@ -31,8 +31,8 @@ export function MorningRoutineGate({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-sm mx-4 border rounded-lg bg-[var(--fintheon-bg)] border-[var(--fintheon-accent)]/30 shadow-2xl">
+    <div className="fintheon-modal-backdrop fixed inset-0 z-[9999] flex items-center justify-center">
+      <div className="fintheon-modal-surface w-full max-w-sm mx-4">
         <div className="px-4 py-3 border-b border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-accent)]/5 flex items-center gap-2">
           <Lock size={14} className="text-[var(--fintheon-accent)]" />
           <span className="text-xs font-semibold text-[var(--fintheon-accent)] tracking-wider uppercase">

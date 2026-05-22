@@ -173,19 +173,11 @@ export function RiskFlowImportModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in-backdrop"
+      className="fintheon-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in-backdrop"
       onClick={handleClose}
     >
       <div
-        className="max-w-2xl w-full max-h-[80vh] flex flex-col rounded-xl shadow-[0_0_40px_rgba(199,159,74,0.15)] animate-fade-in"
-        style={{
-          backgroundColor:
-            "color-mix(in srgb, var(--fintheon-surface) 95%, transparent)",
-          backdropFilter: "blur(24px)",
-          WebkitBackdropFilter: "blur(24px)",
-          border:
-            "1px solid color-mix(in srgb, var(--fintheon-border) 30%, transparent)",
-        }}
+        className="fintheon-modal-surface max-w-2xl w-full max-h-[80vh] flex flex-col animate-fade-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

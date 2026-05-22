@@ -3,6 +3,7 @@
 //   the old ArbitrumChamberSummary (which used dead miroshark endpoint).
 
 import { useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
 import { DigitGroup } from "../shared/DigitGroup";
@@ -37,7 +38,7 @@ const ROLE_DESCRIPTORS: Record<ArbitrumSeatRole, string> = {
 
 const EMPTY_COPY = "No fresh read \u2014 chamber convenes at 17:00 ET or on IV \u2265 8.5.";
 
-function AgentSeatCard({
+function AgentSeatRow({
   seat,
   expanded,
   onToggle,
@@ -55,28 +56,14 @@ function AgentSeatCard({
   return (
     <div
       style={{
-        border: dissented ? "1px solid var(--accent)" : "1px solid var(--border)",
-        borderRadius: 10,
-        padding: 12,
-        background: "var(--surface)",
-        width: 160,
-        flexShrink: 0,
+        padding: "8px 0",
         cursor: hasRationale ? "pointer" : "default",
         WebkitTapHighlightColor: "transparent",
       }}
       onClick={() => { if (hasRationale) onToggle(); }}
     >
-      {/* Header row */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-        {/* Vertical fuse */}
-        <div style={{ width: 5, height: 56, flexShrink: 0 }}>
-          <SegmentedBar
-            value={score * 10}
-            color="var(--accent)"
-            segments={10}
-            size="compact"
-          />
-        </div>
+      <FadingRuler style={{ marginBottom: 10 }} />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 92px 16px", gap: 10, alignItems: "center" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <span
             style={{
@@ -101,32 +88,48 @@ function AgentSeatCard({
           }}>
             {descriptor}
           </p>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginTop: 6 }}>
+        </div>
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+            <span style={{
+              fontFamily: "var(--font-data)",
+              fontSize: 8,
+              color: "var(--text-disabled)",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+            }}>
+              Fuse
+            </span>
             <DigitGroup
               value={score.toFixed(1)}
               style={{
                 fontFamily: "Doto, var(--font-data)",
-                fontSize: 20,
+                fontSize: 9,
                 color: "var(--accent)",
-                lineHeight: 1,
               }}
             />
-            <span style={{
-              fontFamily: "var(--font-data)",
-              fontSize: 8,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              color: "var(--text-disabled)",
-            }}>
-              score
-            </span>
           </div>
+          <SegmentedBar
+            value={score * 10}
+            color="var(--accent)"
+            segments={10}
+            size="compact"
+          />
         </div>
+        {hasRationale ? (
+          expanded ? (
+            <ChevronDown size={14} color="var(--text-secondary)" />
+          ) : (
+            <ChevronRight size={14} color="var(--text-secondary)" />
+          )
+        ) : (
+          <span />
+        )}
       </div>
 
       {/* Expandable rationale */}
       {expanded && hasRationale && (
-        <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
+        <div style={{ marginTop: 10, paddingLeft: 4 }}>
           <p style={{
             fontFamily: "var(--font-body)",
             fontSize: 11,
@@ -197,6 +200,7 @@ export function ArbitrumChamber() {
   const { settings, updateSettings } = useSettings();
   const { verdict, isLoading, error, refresh } = useArbitrumLatest(settings.selectedInstrument);
   const [expandedSeat, setExpandedSeat] = useState<ArbitrumSeatRole | null>(null);
+  const [digestOpen, setDigestOpen] = useState(false);
 
   const seats: ArbitrumSeat[] = (() => {
     const supplied = verdict?.seats ?? [];
@@ -271,18 +275,15 @@ export function ArbitrumChamber() {
         )}
       </div>
 
-      {/* Seat cards row (horizontal scroll) */}
+      {/* Seat fuses */}
       <div style={{
         display: "flex",
-        gap: 8,
-        overflowX: "auto",
-        padding: "0 12px 4px",
-        scrollbarWidth: "none",
-        WebkitOverflowScrolling: "touch",
+        flexDirection: "column",
+        padding: "0 12px",
       }}>
         {hasRealSeats
           ? seats.map((seat) => (
-              <AgentSeatCard
+              <AgentSeatRow
                 key={`${verdict?.id ?? "empty"}-${seat.role}`}
                 seat={seat}
                 expanded={expandedSeat === seat.role}
@@ -295,15 +296,11 @@ export function ArbitrumChamber() {
               <div
                 key={`empty-${seat.role}`}
                 style={{
-                  border: "1px solid var(--border)",
-                  borderRadius: 10,
-                  padding: 12,
-                  width: 160,
-                  flexShrink: 0,
+                  padding: "10px 0",
                   opacity: 0.45,
-                  background: "var(--surface)",
                 }}
               >
+                <FadingRuler style={{ marginBottom: 10 }} />
                 <span style={{
                   fontFamily: "var(--font-data)",
                   fontSize: 10,
@@ -345,15 +342,12 @@ export function ArbitrumChamber() {
         </div>
       )}
 
-      {/* Consensus + digest */}
+      {/* Consensus + expandable chamber read */}
       {hasVerdict && (
         <div style={{
-          border: "1px solid var(--border)",
-          borderRadius: 10,
-          padding: "12px 14px",
           margin: "0 12px",
-          background: "var(--surface)",
         }}>
+          <FadingRuler style={{ marginBottom: 10 }} />
           <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
             <DigitGroup
               value={(Math.max(0, Math.min(10, (verdict!.consensus_probability ?? 0) * 10))).toFixed(1)}
@@ -379,7 +373,29 @@ export function ArbitrumChamber() {
               </div>
             )}
           </div>
-          {chamberSummary && (
+          <button
+            type="button"
+            onClick={() => setDigestOpen((v) => !v)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              width: "100%",
+              padding: "8px 0",
+              background: "transparent",
+              border: "none",
+              color: "var(--text-secondary)",
+              fontFamily: "var(--font-data)",
+              fontSize: 9,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+            }}
+          >
+            Chamber Read
+            {digestOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          </button>
+          {digestOpen && chamberSummary && (
             <p style={{
               fontFamily: "var(--font-body)",
               fontSize: 12,

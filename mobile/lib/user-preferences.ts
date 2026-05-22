@@ -14,6 +14,7 @@ export type Severity = "low" | "medium" | "high" | "critical";
 
 export const NOTIFICATION_CATEGORIES = [
   "riskflow",
+  "geopolitical_alerts",
   "dailyBrief",
   "regimeActivations",
   "regimeProposals",
@@ -39,6 +40,11 @@ export interface NotificationPrefs {
   severityThreshold: Severity;
   /** Mute everything except econ_alerts + critical. */
   econOnlyMode: boolean;
+  deliveryChannels: {
+    web: boolean;
+    push: boolean;
+    desktop: boolean;
+  };
 }
 
 // [claude-code 2026-04-26] S46: per-user RiskFlow filter persistence — mobile mirror
@@ -81,6 +87,11 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
     blockedCategories: [],
     severityThreshold: "medium",
     econOnlyMode: false,
+    deliveryChannels: {
+      web: true,
+      push: false,
+      desktop: true,
+    },
   },
   psychAssistEnabled: false,
   riskflowFilters: { severities: [], buckets: [] },

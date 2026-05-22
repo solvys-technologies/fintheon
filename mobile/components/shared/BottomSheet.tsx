@@ -35,10 +35,10 @@ export function BottomSheet({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={onClose}
+            className="fintheon-modal-backdrop"
             style={{
               position: "fixed",
               inset: 0,
-              background: "rgba(0,0,0,0.8)",
               zIndex: 998,
             }}
           />
@@ -54,15 +54,13 @@ export function BottomSheet({
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={0.1}
             onDragEnd={handleDragEnd}
+            className="fintheon-sheet-surface"
             style={{
               position: "fixed",
               bottom: 0,
               left: 0,
               right: 0,
               maxHeight: "92vh",
-              background: "var(--surface)",
-              borderTopLeftRadius: 16,
-              borderTopRightRadius: 16,
               zIndex: 999,
               display: "flex",
               flexDirection: "column",
@@ -79,12 +77,7 @@ export function BottomSheet({
               }}
             >
               <div
-                style={{
-                  width: 32,
-                  height: 2,
-                  borderRadius: 1,
-                  background: "var(--border-visible)",
-                }}
+                className="fintheon-glass-handle"
               />
             </div>
 

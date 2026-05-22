@@ -317,6 +317,10 @@ function loadPreferencesFromStorage(): UserPreferences {
       notifications: {
         ...DEFAULT_PREFERENCES.notifications,
         ...(parsed?.notifications ?? {}),
+        deliveryChannels: {
+          ...DEFAULT_PREFERENCES.notifications.deliveryChannels,
+          ...(parsed?.notifications?.deliveryChannels ?? {}),
+        },
       },
     };
   } catch {
@@ -617,6 +621,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         notifications: {
           ...prev.notifications,
           ...(patch.notifications ?? {}),
+          deliveryChannels: {
+            ...prev.notifications.deliveryChannels,
+            ...(patch.notifications?.deliveryChannels ?? {}),
+          },
         },
         updatedAt: new Date().toISOString(),
       };

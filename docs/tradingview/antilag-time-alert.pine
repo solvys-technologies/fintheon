@@ -1,0 +1,76 @@
+//@version=5
+indicator("Fintheon Antilag Time", overlay=false)
+
+secret = input.string("", "Fintheon webhook secret")
+timeframeInput = input.timeframe("1", "Spike timeframe")
+atrLookback = input.int(14, "ATR lookback", minval=1)
+atrMultiple = input.float(2.0, "ATR multiple", minval=0.1, step=0.1)
+
+nqSymbol = input.symbol("CME_MINI:NQ1!", "NQ barometer")
+us02ySymbol = input.symbol("TVC:US02Y", "2Y yield")
+us10ySymbol = input.symbol("TVC:US10Y", "10Y yield")
+us30ySymbol = input.symbol("TVC:US30Y", "30Y yield")
+
+spikeFor(symbol) =>
+    barRange = request.security(
+      symbol,
+      timeframeInput,
+      high - low,
+      barmerge.gaps_off,
+      barmerge.lookahead_off
+    )
+    atr = request.security(
+      symbol,
+      timeframeInput,
+      ta.atr(atrLookback),
+      barmerge.gaps_off,
+      barmerge.lookahead_off
+    )
+    [barRange >= atr * atrMultiple, barRange, atr]
+
+[nqSpiked, nqRange, nqAtr] = spikeFor(nqSymbol)
+[us02ySpiked, us02yRange, us02yAtr] = spikeFor(us02ySymbol)
+[us10ySpiked, us10yRange, us10yAtr] = spikeFor(us10ySymbol)
+[us30ySpiked, us30yRange, us30yAtr] = spikeFor(us30ySymbol)
+
+barometerCount =
+  (us02ySpiked ? 1 : 0) +
+  (us10ySpiked ? 1 : 0) +
+  (us30ySpiked ? 1 : 0)
+
+antilagTime = barstate.isconfirmed and nqSpiked and barometerCount >= 2
+
+boolJson(value) =>
+    value ? "true" : "false"
+
+payload =
+  '{"source":"tradingview",' +
+  '"eventType":"ANTILAG_TIME",' +
+  '"secret":"' + secret + '",' +
+  '"instrument":"NQ",' +
+  '"timeframe":"' + timeframeInput + '",' +
+  '"atrLookback":' + str.tostring(atrLookback) + ',' +
+  '"atrMultiple":' + str.tostring(atrMultiple) + ',' +
+  '"nq":{"spiked":' + boolJson(nqSpiked) +
+    ',"range":' + str.tostring(nqRange) +
+    ',"atr":' + str.tostring(nqAtr) + '},' +
+  '"barometers":{' +
+    '"US02Y":{"spiked":' + boolJson(us02ySpiked) +
+      ',"range":' + str.tostring(us02yRange) +
+      ',"atr":' + str.tostring(us02yAtr) + '},' +
+    '"US10Y":{"spiked":' + boolJson(us10ySpiked) +
+      ',"range":' + str.tostring(us10yRange) +
+      ',"atr":' + str.tostring(us10yAtr) + '},' +
+    '"US30Y":{"spiked":' + boolJson(us30ySpiked) +
+      ',"range":' + str.tostring(us30yRange) +
+      ',"atr":' + str.tostring(us30yAtr) + '}' +
+  '},' +
+  '"barometerSpikeCount":' + str.tostring(barometerCount) +
+  '}'
+
+if antilagTime
+    alert(payload, alert.freq_once_per_bar_close)
+
+plot(barometerCount, "Yield barometer spike count", color=color.gold)
+plot(antilagTime ? 1 : 0, "Antilag time", color=color.lime, style=plot.style_columns)
+

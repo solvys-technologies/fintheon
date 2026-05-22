@@ -1,6 +1,4 @@
-export type AiProviderIssueCode =
-  | "ai_credits_exhausted"
-  | "ai_auth_failed";
+export type AiProviderIssueCode = "ai_credits_exhausted" | "ai_auth_failed";
 
 export interface AiProviderIssue {
   code: AiProviderIssueCode;

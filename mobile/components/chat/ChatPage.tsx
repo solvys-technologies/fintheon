@@ -43,6 +43,8 @@ import ConnectionStatus, { type RelayState } from "./ConnectionStatus";
 import { ToolCallCard } from "./ToolCallCard";
 import { ToolApprovalCard } from "./ToolApprovalCard";
 import { useToolApprovals } from "../../hooks/useToolApprovals";
+import { useConversations } from "../../hooks/useConversations";
+import SessionList from "./SessionList";
 import { AssistantMessagePrimitive } from "@frontend/components/chat/AssistantMessagePrimitive";
 import { UserMessagePrimitive } from "@frontend/components/chat/UserMessagePrimitive";
 import {
@@ -101,6 +103,13 @@ export default function ChatPage({ visible }: ChatPageProps) {
   >(null);
   const { approvals, addApproval, resolveApproval, resolveFromEvent } =
     useToolApprovals();
+  const {
+    sessions,
+    isLoading: sessionsLoading,
+    loadSession,
+    refresh: refreshSessions,
+  } = useConversations();
+  const [sessionsOpen, setSessionsOpen] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -203,6 +212,34 @@ export default function ChatPage({ visible }: ChatPageProps) {
     },
     [getAccessToken],
   );
+
+  const handleSelectSession = useCallback(
+    async (id: string) => {
+      const session = await loadSession(id);
+      if (!session) return;
+      setMessages(
+        session.messages
+          .filter((m) => m.role === "user" || m.role === "assistant")
+          .map((m) => ({
+            id: m.id,
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            timestamp: m.createdAt,
+          })),
+      );
+      setConversationId(session.id);
+      setSessionsOpen(false);
+    },
+    [loadSession],
+  );
+
+  const handleNewSession = useCallback(() => {
+    abortRef.current?.abort();
+    setMessages([]);
+    setConversationId(null);
+    setMirrorDevice(null);
+    setSessionsOpen(false);
+  }, []);
 
   useEffect(() => {
     // Check sessionStorage for a pending relay conversation on mount
@@ -682,6 +719,26 @@ export default function ChatPage({ visible }: ChatPageProps) {
           )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <button
+            type="button"
+            onClick={() => {
+              void refreshSessions();
+              setSessionsOpen(true);
+            }}
+            style={{
+              background: "transparent",
+              border: "1px solid rgba(199,159,74,0.24)",
+              borderRadius: 4,
+              color: "var(--accent, #c79f4a)",
+              fontFamily: "var(--font-data)",
+              fontSize: 9,
+              letterSpacing: "0.08em",
+              padding: "3px 7px",
+              textTransform: "uppercase",
+            }}
+          >
+            History
+          </button>
           <span
             style={{
               fontFamily: "var(--font-data)",
@@ -900,6 +957,17 @@ export default function ChatPage({ visible }: ChatPageProps) {
           onDismiss={() => setShowFirstTimePopup(false)}
         />
       )}
+
+      <SessionList
+        open={sessionsOpen}
+        onClose={() => setSessionsOpen(false)}
+        sessions={sessions}
+        isLoading={sessionsLoading}
+        activeSessionId={conversationId}
+        onSelect={handleSelectSession}
+        onNewSession={handleNewSession}
+        onRefresh={refreshSessions}
+      />
     </div>
   );
 }

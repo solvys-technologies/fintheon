@@ -148,8 +148,8 @@ export function SetupWizard({ visible, onClose }: SetupWizardProps) {
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-[460px] bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-xl shadow-2xl overflow-hidden">
+    <div className="fintheon-modal-backdrop fixed inset-0 z-[9999] flex items-center justify-center">
+      <div className="fintheon-modal-surface w-[460px]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--fintheon-accent)]/15">
           <div className="flex items-center gap-2">

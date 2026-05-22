@@ -47,7 +47,7 @@ export function useConversations(): UseConversationsReturn {
       const backend = getMobileBackend(getAccessToken);
       const data = await backend.ai.listConversations();
       const mapped: ConversationSummary[] = (data ?? [])
-        .slice(0, 10)
+        .slice(0, 50)
         .map((c: any) => ({
           id: c.id,
           title: c.title || "Untitled",

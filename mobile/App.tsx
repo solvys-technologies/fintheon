@@ -43,6 +43,11 @@ const EconCalendarPage = lazy(() =>
     default: m.EconCalendarPage,
   })),
 );
+const ArbitrumPage = lazy(() =>
+  import("./components/arbitrum/ArbitrumPage").then((m) => ({
+    default: m.ArbitrumPage,
+  })),
+);
 
 function LazyFallback() {
   return (
@@ -181,6 +186,12 @@ function AuthenticatedApp() {
       case 4:
         return (
           <Suspense fallback={<LazyFallback />}>
+            <ArbitrumPage />
+          </Suspense>
+        );
+      case 5:
+        return (
+          <Suspense fallback={<LazyFallback />}>
             <SettingsPage />
           </Suspense>
         );
@@ -200,11 +211,10 @@ function AuthenticatedApp() {
           <motion.div
             key={activeTab}
             custom={direction}
-            initial={{ x: `${direction * 100}%`, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: `${-direction * 100}%`, opacity: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{
-              x: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] },
               opacity: { duration: 0.2, ease: "easeOut" },
             }}
             style={{

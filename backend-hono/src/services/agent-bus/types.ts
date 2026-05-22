@@ -153,7 +153,12 @@ export interface NarrativeHypothesisUpdatedEvent {
   sourceSessionId: string | null;
   deliberationEntry: NarrativeDeliberationEntryPayload;
   consensus?: string | null;
-  routingStatus?: "candidate" | "needs_research" | "promoted" | "rejected" | "pinned";
+  routingStatus?:
+    | "candidate"
+    | "needs_research"
+    | "promoted"
+    | "rejected"
+    | "pinned";
 }
 
 export type NarrativePushEvent =

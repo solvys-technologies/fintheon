@@ -18,7 +18,11 @@ import {
 } from "../systemic/fred-service.js";
 import { fetchVIX } from "../market-data/router.js";
 import { getSupabaseClient } from "../../config/supabase.js";
-import { readEconEvents, readRecentEconPrintStats } from "../supabase-service.js";
+import {
+  readEconEvents,
+  readRecentEconPrintStats,
+} from "../supabase-service.js";
+import { getAntilagSummary } from "./antilag-service.js";
 
 /**
  * Assemble a SimulationContext bundle by fetching live data from all available sources.
@@ -34,7 +38,14 @@ export async function assembleSimulationContext(
   const fetchEconHistory = preset === "full-brief" || preset === "econ-watch";
   const fetchUpcomingEcon = preset === "full-brief" || preset === "econ-watch";
 
-  const [vixResult, fredResult, riskflowResult, econResult, upcomingResult] =
+  const [
+    vixResult,
+    fredResult,
+    riskflowResult,
+    econResult,
+    upcomingResult,
+    antilagResult,
+  ] =
     await Promise.allSettled([
       fetchVix ? fetchVIX().then((r) => r.vix.value) : Promise.resolve(null),
       fetchFred
@@ -43,6 +54,7 @@ export async function assembleSimulationContext(
       fetchRiskFlow ? fetchRiskFlowHeadlines() : Promise.resolve([]),
       fetchEconHistory ? fetchEconPrintHistory() : Promise.resolve([]),
       fetchUpcomingEcon ? fetchUpcomingEconEvents() : Promise.resolve([]),
+      getAntilagSummary(),
     ]);
 
   const vixLevel = vixResult.status === "fulfilled" ? vixResult.value : null;
@@ -56,11 +68,14 @@ export async function assembleSimulationContext(
     econResult.status === "fulfilled" ? econResult.value : [];
   const upcomingEconEvents =
     upcomingResult.status === "fulfilled" ? upcomingResult.value : [];
+  const antilag =
+    antilagResult.status === "fulfilled" ? antilagResult.value : undefined;
 
   return {
     vixLevel,
     fredIndicators,
     riskflowHeadlines,
+    antilag,
     econPrintHistory:
       econPrintHistory.length > 0 ? econPrintHistory : undefined,
     upcomingEconEvents:

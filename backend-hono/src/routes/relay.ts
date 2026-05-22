@@ -457,13 +457,38 @@ export function createRelayRoutes() {
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
+        let assistantText = "";
         const send = (data: string) => {
           controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+        };
+        const captureAssistantText = (data: string) => {
+          try {
+            const event = JSON.parse(data) as {
+              type?: string;
+              delta?: string;
+              text?: string;
+            };
+            if (event.type === "text-delta" && event.delta) {
+              assistantText += event.delta;
+            } else if (event.type === "text" && event.text) {
+              assistantText += event.text;
+            }
+          } catch {
+            // Non-JSON relay frames are still forwarded but not persisted.
+          }
         };
 
         try {
           for await (const chunk of relayBridge.forward(userId, relayPayload)) {
+            captureAssistantText(chunk);
             send(chunk);
+          }
+          if (convId && assistantText.trim()) {
+            await addMessage(convId, {
+              conversationId: convId,
+              role: "assistant",
+              content: assistantText,
+            });
           }
           send("[DONE]");
         } catch (err: unknown) {

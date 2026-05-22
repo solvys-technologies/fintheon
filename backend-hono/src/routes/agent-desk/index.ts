@@ -19,6 +19,7 @@ import {
   handleGetOfficials,
   handleGetAnalysts,
 } from "./handlers.js";
+import { createAgentDeskAntilagRoutes } from "./antilag.js";
 
 export function createAgentDeskRoutes(): Hono {
   const app = new Hono();
@@ -39,6 +40,7 @@ export function createAgentDeskRoutes(): Hono {
   app.post("/deliberation/:id/inject", handleInjectTake);
   app.get("/officials", handleGetOfficials);
   app.get("/analysts", handleGetAnalysts);
+  app.route("/antilag", createAgentDeskAntilagRoutes());
 
   return app;
 }

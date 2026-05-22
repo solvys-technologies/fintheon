@@ -313,10 +313,28 @@ export interface SimulationContext {
   vixLevel: number | null;
   fredIndicators: Record<string, number>;
   riskflowHeadlines: RiskFlowHeadline[];
+  antilag?: AgentDeskAntilagSummary;
   econPrintHistory?: EconPrintStat[];
   upcomingEconEvents?: UpcomingEconEvent[];
   fredFetchedAt: string | null;
   fetchedAt: string;
+}
+
+export interface AgentDeskAntilagSummary {
+  activeBusinessDates: string[];
+  activeCount: number;
+  latestEvent: {
+    instrument: string;
+    instrumentClass: string;
+    triggeredAt: string;
+    barometerSpikeCount: number;
+    barometers: Record<
+      string,
+      { spiked: boolean; range?: number | null; atr?: number | null }
+    >;
+  } | null;
+  instruments: string[];
+  barometerMix: Array<{ mix: string; count: number }>;
 }
 
 export interface AgentDeskBriefing {

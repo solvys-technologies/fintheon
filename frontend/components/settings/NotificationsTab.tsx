@@ -1,12 +1,18 @@
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — notifications tab
-import React from "react";
-import { Volume2, Mic } from "lucide-react";
+import React, { useState } from "react";
+import { ChevronDown, Volume2, Mic } from "lucide-react";
 import Toggle from "../Toggle";
 import { useToast } from "../../contexts/ToastContext";
+import { useSettings } from "../../contexts/SettingsContext";
 import {
   HEALING_BOWL_SOUNDS,
   healingBowlPlayer,
 } from "../../utils/healingBowlSounds";
+import type {
+  NotificationCategory,
+  NotificationPrefs,
+  Severity,
+} from "../../lib/user-preferences";
 
 interface NotificationsTabProps {
   alertConfig: any;
@@ -18,13 +24,139 @@ interface NotificationsTabProps {
   };
 }
 
+const CHANNELS: Array<{
+  id: keyof NotificationPrefs["deliveryChannels"];
+  label: string;
+}> = [
+  { id: "web", label: "Web" },
+  { id: "push", label: "Push" },
+  { id: "desktop", label: "Desktop" },
+];
+const CATEGORY_TOGGLES: Array<{ id: NotificationCategory; label: string }> = [
+  { id: "riskflow", label: "RiskFlow" },
+  { id: "geopolitical_alerts", label: "Geopolitical" },
+  { id: "econ_alerts", label: "Economic" },
+  { id: "dailyBrief", label: "Daily Brief" },
+  { id: "regimeActivations", label: "Regime Activations" },
+  { id: "regimeProposals", label: "Regime Proposals" },
+  { id: "lexiconProposals", label: "Lexicon Proposals" },
+  { id: "walkBackReverts", label: "Walk-back Reverts" },
+  { id: "toolApprovals", label: "Tool Approvals" },
+  { id: "maintenance_request", label: "Maintenance" },
+  { id: "chat_relay", label: "Chat Relay" },
+  { id: "system", label: "System" },
+];
+const SEVERITY_SEGMENTS: Array<{ label: string; value: Severity }> = [
+  { label: "CRIT", value: "critical" },
+  { label: "HIGH", value: "high" },
+  { label: "MED", value: "medium" },
+  { label: "LOW", value: "low" },
+];
+
 export function NotificationsTab({
   alertConfig,
   setAlertConfig,
   voiceMemory,
 }: NotificationsTabProps) {
+  const { preferences, updatePreferences } = useSettings();
+  const notifications = preferences.notifications;
+  const blockedCategories = new Set(notifications.blockedCategories ?? []);
+  const [deliveryOpen, setDeliveryOpen] = useState(true);
+
+  const updateNotificationPrefs = (next: NotificationPrefs) => {
+    updatePreferences({ notifications: next });
+  };
+
+  const toggleChannel = (
+    channel: keyof NotificationPrefs["deliveryChannels"],
+    enabled: boolean,
+  ) => {
+    updateNotificationPrefs({
+      ...notifications,
+      deliveryChannels: {
+        ...notifications.deliveryChannels,
+        [channel]: enabled,
+      },
+    });
+  };
+
+  const toggleCategory = (category: NotificationCategory, enabled: boolean) => {
+    const nextBlocked = enabled
+      ? [...blockedCategories].filter((item) => item !== category)
+      : [...blockedCategories, category];
+    updateNotificationPrefs({
+      ...notifications,
+      blockedCategories: nextBlocked,
+    });
+  };
+
   return (
     <>
+      <section>
+        <button
+          type="button"
+          onClick={() => setDeliveryOpen((open) => !open)}
+          className="mb-3 flex w-full items-center justify-between text-sm font-semibold text-[var(--fintheon-accent)]"
+        >
+          <span>Delivery Channels</span>
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${deliveryOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+        {deliveryOpen && (
+          <div className="space-y-3">
+            {CHANNELS.map((channel) => (
+              <Toggle
+                key={channel.id}
+                label={channel.label}
+                enabled={notifications.deliveryChannels[channel.id]}
+                onChange={(val) => toggleChannel(channel.id, val)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="pt-6">
+        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
+          Notification Types
+        </h3>
+        <div className="space-y-3">
+          {CATEGORY_TOGGLES.map((category) => (
+            <Toggle
+              key={category.id}
+              label={category.label}
+              enabled={!blockedCategories.has(category.id)}
+              onChange={(val) => toggleCategory(category.id, val)}
+            />
+          ))}
+        </div>
+        <div className="mt-4 grid grid-cols-4 overflow-hidden rounded-lg border border-[var(--fintheon-accent)]/20">
+          {SEVERITY_SEGMENTS.map((item, index) => {
+            const active = notifications.severityThreshold === item.value;
+            return (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() =>
+                  updateNotificationPrefs({
+                    ...notifications,
+                    severityThreshold: item.value,
+                  })
+                }
+                className={`min-h-10 text-[11px] font-mono transition-colors ${
+                  active
+                    ? "bg-[var(--fintheon-accent)] text-black"
+                    : "text-zinc-400 hover:bg-[var(--fintheon-accent)]/10"
+                } ${index < 3 ? "border-r border-[var(--fintheon-accent)]/15" : ""}`}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       <section>
         <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
           Alert Configuration

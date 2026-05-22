@@ -52,10 +52,10 @@ interface MainMenuDrawerProps {
 }
 
 const PRIMARY_NAV = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "dashboard", label: "Desk", icon: LayoutDashboard },
   null as { id: "sanctum" } | null, // placeholder — rendered inline as dropdown
   { id: "riskflow", label: "RiskFlow", icon: Zap },
-  { id: "calendar", label: "Calendar", icon: Calendar },
+  { id: "calendar", label: "Econ", icon: Calendar },
   { id: "chat", label: "Chat", icon: MessageCircle },
 ] as const;
 
@@ -116,24 +116,7 @@ export function MainMenuDrawer({
   return (
     <AnimatePresence>
       {open && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 60 }}>
-          {/* Scrim */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            onClick={onClose}
-            style={{
-              position: "absolute",
-              top: 0,
-              right: 0,
-              bottom: 0,
-              left: DRAWER_WIDTH,
-              background: "rgba(0,0,0,0.45)",
-            }}
-          />
-
+        <div style={{ position: "fixed", inset: 0, zIndex: 10, pointerEvents: "none" }}>
           {/* Drawer */}
           <motion.div
             ref={drawerRef}
@@ -152,6 +135,7 @@ export function MainMenuDrawer({
               flexDirection: "column",
               paddingTop: "env(safe-area-inset-top)",
               overflowY: "auto",
+              pointerEvents: "auto",
             }}
           >
             {/* Header */}
@@ -185,7 +169,7 @@ export function MainMenuDrawer({
               {/* Dashboard */}
               <NavItem
                 icon={LayoutDashboard}
-                label="Dashboard"
+                label="Desk"
                 onClick={() => { vibrate(6); onNavigate("dashboard"); onClose(); }}
               />
 
@@ -299,7 +283,7 @@ export function MainMenuDrawer({
               {/* Calendar */}
               <NavItem
                 icon={Calendar}
-                label="Calendar"
+                label="Econ"
                 onClick={() => { vibrate(6); onNavigate("calendar"); onClose(); }}
               />
 

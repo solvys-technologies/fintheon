@@ -40,6 +40,7 @@ export default function SessionList({
         <>
           {/* Backdrop */}
           <motion.div
+            className="fintheon-modal-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -48,12 +49,12 @@ export default function SessionList({
             style={{
               position: "fixed",
               inset: 0,
-              background: "rgba(0,0,0,0.6)",
               zIndex: 90,
             }}
           />
           {/* Sheet */}
           <motion.div
+            className="fintheon-sheet-surface"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -64,7 +65,6 @@ export default function SessionList({
               left: 0,
               right: 0,
               maxHeight: "60vh",
-              background: "var(--surface)",
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
               zIndex: 91,
@@ -82,11 +82,11 @@ export default function SessionList({
               }}
             >
               <div
+                className="fintheon-glass-handle"
                 style={{
                   width: 32,
                   height: 2,
                   borderRadius: 1,
-                  background: "var(--border-visible)",
                 }}
               />
             </div>

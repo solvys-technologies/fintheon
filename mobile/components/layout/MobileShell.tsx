@@ -12,7 +12,6 @@ import {
 } from "react";
 import { motion } from "framer-motion";
 import { Newspaper, ShieldCheck } from "lucide-react";
-import { useSwipeGesture } from "../../hooks/useSwipeGesture";
 import { useVixTicker } from "../../hooks/useVixTicker";
 import { useHaptic } from "../../hooks/useHaptic";
 import { useSettings } from "../../contexts/SettingsContext";
@@ -31,7 +30,6 @@ interface MobileShellProps {
 }
 
 const TOOLBAR_HEIGHT = 48; // just the bar, no chevron
-const TAB_COUNT = 5;
 
 export function MobileShell({
   activeTab,
@@ -64,27 +62,11 @@ export function MobileShell({
     }
   }, [settings.bulletinReminder]);
 
-  const handleSwipeLeft = useCallback(() => {
-    if (activeTab < TAB_COUNT - 1) {
-      vibrate(10);
-      onTabChange(activeTab + 1);
-    }
-  }, [activeTab, onTabChange, vibrate]);
-
-  const handleSwipeRight = useCallback(() => {
-    if (activeTab > 0) {
-      vibrate(10);
-      onTabChange(activeTab - 1);
-    }
-  }, [activeTab, onTabChange, vibrate]);
-
   // S56 Track D: menu nav routes → mobile tab equivalents
   const handleMenuNavigate = useCallback(
     (route: string) => {
       switch (route) {
-          case "dashboard":
-          case "timeline":
-          case "arbitrum":
+        case "dashboard":
           onTabChange(0);
           break;
         case "riskflow":
@@ -96,8 +78,12 @@ export function MobileShell({
         case "calendar":
           onTabChange(3);
           break;
-        case "settings":
+        case "arbitrum":
+        case "timeline":
           onTabChange(4);
+          break;
+        case "settings":
+          onTabChange(5);
           break;
         default:
           break;
@@ -105,11 +91,6 @@ export function MobileShell({
     },
     [onTabChange, onChatTap],
   );
-
-  useSwipeGesture(contentRef, {
-    onSwipeLeft: handleSwipeLeft,
-    onSwipeRight: handleSwipeRight,
-  });
 
   return (
     <div
@@ -124,23 +105,32 @@ export function MobileShell({
         flexDirection: "column",
       }}
     >
-      <MobileToolbar
-        onHamburgerTap={() => setMenuOpen((v) => !v)}
-        menuOpen={menuOpen}
+      <MainMenuDrawer
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onNavigate={handleMenuNavigate}
       />
 
       <motion.div
-        animate={{ x: menuOpen ? "80vw" : 0 }}
+        animate={{ x: menuOpen ? "82vw" : 0 }}
         transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
         style={{
           flex: 1,
           minHeight: 0,
           display: "flex",
           flexDirection: "column",
-          borderRadius: menuOpen ? "0 12px 12px 0" : "0",
+          position: "relative",
+          zIndex: 30,
+          background: "var(--black)",
+          borderRadius: menuOpen ? "18px 0 0 18px" : "0",
           overflow: "hidden",
+          boxShadow: menuOpen ? "-16px 0 44px rgba(0,0,0,0.42)" : "none",
         }}
       >
+        <MobileToolbar
+          onHamburgerTap={() => setMenuOpen((v) => !v)}
+          menuOpen={menuOpen}
+        />
         <main
           ref={contentRef}
           style={{

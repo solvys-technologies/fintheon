@@ -16,7 +16,11 @@ import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger("lockout-route");
 
-const reasonValues: [LockoutReason, ...LockoutReason[]] = ["desk_session", "manual", "system"];
+const reasonValues: [LockoutReason, ...LockoutReason[]] = [
+  "desk_session",
+  "manual",
+  "system",
+];
 const briefingAnchorValues = ["mdb", "adb", "pmdb"] as const;
 
 const ToggleSchema = z.object({
@@ -55,7 +59,9 @@ function resolveBriefingTime(anchor: string): string | null {
   }
 
   // Convert ET back to UTC
-  const utc = new Date(briefingET.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const utc = new Date(
+    briefingET.toLocaleString("en-US", { timeZone: "America/New_York" }),
+  );
   return utc.toISOString();
 }
 
@@ -120,7 +126,8 @@ export function createLockoutRoutes() {
             scheduleAutoRelease(userId, body.windowStartTime) ?? undefined;
         }
         const reason: LockoutReason = body.reason ?? "manual";
-        const scheduledBy: ScheduledBy = reason === "desk_session" ? "desk_plan" : "manual";
+        const scheduledBy: ScheduledBy =
+          reason === "desk_session" ? "desk_plan" : "manual";
         const state = setLockout(
           userId,
           true,
@@ -266,7 +273,10 @@ export function createLockoutRoutes() {
       return c.json(
         {
           ok: false,
-          reason: err instanceof Error ? err.message : "lock-until-desk-session failed",
+          reason:
+            err instanceof Error
+              ? err.message
+              : "lock-until-desk-session failed",
         },
         500,
       );

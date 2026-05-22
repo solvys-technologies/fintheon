@@ -41,15 +41,19 @@ function notesFromSharedAnalysis(
   const headlines = result.sentiment.topHeadlines ?? [];
   const catalysts = result.sentiment.catalysts ?? [];
 
-  if (result.sentiment.breakingNewsDetected || result.sentiment.macroLevel >= 3) {
+  if (
+    result.sentiment.breakingNewsDetected ||
+    result.sentiment.macroLevel >= 3
+  ) {
     notes.push({
       agentId: "herald",
       topic: "headline-risk-analysis",
       insight:
         `Analysis found macro level ${result.sentiment.macroLevel} headline risk with ` +
-        `${headlines.length} top headline(s). Watch pattern: ${compactList(
-          headlines.map((h) => `${h.source}: ${h.headline}`),
-        ) || result.sentiment.summary}`,
+        `${headlines.length} top headline(s). Watch pattern: ${
+          compactList(headlines.map((h) => `${h.source}: ${h.headline}`)) ||
+          result.sentiment.summary
+        }`,
       confidence: Math.max(0.72, Math.abs(result.sentiment.sentimentScore)),
       metadata: { source, macroLevel: result.sentiment.macroLevel },
     });
@@ -61,7 +65,9 @@ function notesFromSharedAnalysis(
       topic: "catalyst-synthesis",
       insight:
         `Analysis surfaced ${catalysts.length} catalyst(s): ` +
-        compactList(catalysts.map((c) => `${c.event} (${c.impact}/${c.direction})`)),
+        compactList(
+          catalysts.map((c) => `${c.event} (${c.impact}/${c.direction})`),
+        ),
       confidence: 0.75,
       metadata: { source, catalystCount: catalysts.length },
     });
@@ -98,9 +104,7 @@ function notesFromSharedAnalysis(
   return notes;
 }
 
-function notesFromFullAnalysis(
-  result: AgentPipelineResult,
-): LearningNote[] {
+function notesFromFullAnalysis(result: AgentPipelineResult): LearningNote[] {
   const notes = notesFromSharedAnalysis(
     {
       marketData: result.marketData,
@@ -143,8 +147,7 @@ function notesFromFullAnalysis(
     notes.push({
       agentId: "harper",
       topic: "no-trade-discipline",
-      insight:
-        `Analysis ended with ${result.overallRecommendation.action}: ${result.overallRecommendation.reasoning}`,
+      insight: `Analysis ended with ${result.overallRecommendation.action}: ${result.overallRecommendation.reasoning}`,
       confidence: scoreConfidence(result.overallRecommendation.confidence),
       metadata: { source: "agents.full-analysis" },
     });

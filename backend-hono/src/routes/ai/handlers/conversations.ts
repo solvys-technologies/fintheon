@@ -107,6 +107,53 @@ export async function handleCreateConversation(c: Context) {
   }
 }
 
+/** POST /api/ai/conversations/:id/messages — append one owned message. */
+export async function handleAddConversationMessage(c: Context) {
+  const userId = resolveUserId(c);
+  if (!userId) return c.json(AUTH_REQUIRED, 401);
+
+  const conversationId = c.req.param("id");
+  if (!conversationId) {
+    return c.json({ error: "Conversation ID is required" }, 400);
+  }
+
+  const conversation = await conversationStore.getConversation(
+    conversationId,
+    userId,
+  );
+  if (!conversation) return c.json({ error: "Conversation not found" }, 404);
+
+  const body = await c.req
+    .json<{
+      role?: "user" | "assistant" | "system";
+      content?: string;
+      model?: string;
+      metadata?: Record<string, unknown>;
+    }>()
+    .catch(() => null);
+
+  if (!body?.role || !["user", "assistant", "system"].includes(body.role)) {
+    return c.json({ error: "Valid role is required" }, 400);
+  }
+  if (!body.content?.trim()) {
+    return c.json({ error: "Message content is required" }, 400);
+  }
+
+  try {
+    const message = await conversationStore.addMessage(conversation.id, {
+      conversationId: conversation.id,
+      role: body.role,
+      content: body.content,
+      model: body.model,
+      metadata: body.metadata,
+    });
+    return c.json(message, 201);
+  } catch (error) {
+    console.error("[Conversations] Add message error:", error);
+    return c.json({ error: "Failed to add message" }, 500);
+  }
+}
+
 /** PATCH /api/ai/conversations/:id */
 export async function handleUpdateConversation(c: Context) {
   const userId = resolveUserId(c);

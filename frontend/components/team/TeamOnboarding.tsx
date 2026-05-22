@@ -110,8 +110,8 @@ export function TeamOnboarding({
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-xl rounded-2xl border border-[var(--fintheon-accent)]/25 bg-[var(--fintheon-surface)] p-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div className="fintheon-modal-backdrop fixed inset-0 z-[70] flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="fintheon-modal-surface w-full max-w-xl p-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
         <div className="mb-4 flex items-start justify-between">
           <div>
             <h2 className="text-base font-semibold text-[var(--fintheon-text)]">

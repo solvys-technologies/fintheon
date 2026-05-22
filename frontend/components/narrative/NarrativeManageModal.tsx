@@ -109,23 +109,15 @@ export function NarrativeTimelineModal({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm ${
+      className={`fintheon-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 ${
         isClosing ? "animate-fade-out-backdrop" : "animate-fade-in-backdrop"
       }`}
       onClick={handleClose}
     >
       <div
-        className={`w-full max-w-xl max-h-[80vh] flex flex-col rounded-lg border shadow-[0_0_40px_rgba(199,159,74,0.12)] ${
+        className={`fintheon-modal-surface w-full max-w-xl max-h-[80vh] flex flex-col ${
           isClosing ? "animate-fade-out" : "animate-fade-in"
         }`}
-        style={{
-          backgroundColor:
-            "color-mix(in srgb, var(--fintheon-surface) 90%, transparent)",
-          backdropFilter: "blur(24px)",
-          WebkitBackdropFilter: "blur(24px)",
-          borderColor:
-            "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
-        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

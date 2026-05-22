@@ -46,6 +46,7 @@ const DEFAULT_DEDUP_WINDOW_MINS = 30;
  */
 export const NOTIFICATION_CATEGORIES = [
   "riskflow",
+  "geopolitical_alerts",
   "dailyBrief",
   "regimeActivations",
   "regimeProposals",

@@ -95,7 +95,7 @@ export class AIService {
   }
 
   async archiveConversation(id: string): Promise<void> {
-    await this.client.put(`/api/ai/conversations/${id}`, { isArchived: true });
+    await this.client.post(`/api/ai/conversations/${id}/archive`, {});
   }
 
   /**

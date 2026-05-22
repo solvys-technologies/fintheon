@@ -62,12 +62,12 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
       className={`fixed inset-0 z-50 flex items-center justify-center ${isClosing ? "animate-fade-out-backdrop" : "animate-fade-in-backdrop"}`}
     >
       <div
-        className={`absolute inset-0 bg-black/80 backdrop-blur-sm ${isClosing ? "animate-fade-out-backdrop" : "animate-fade-in-backdrop"}`}
+        className={`fintheon-modal-backdrop absolute inset-0 ${isClosing ? "animate-fade-out-backdrop" : "animate-fade-in-backdrop"}`}
         onClick={handleClose}
       />
 
       <div
-        className={`relative w-full max-w-2xl bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-[0_0_24px_rgba(255,192,56,0.15)] mx-4 ${isClosing ? "animate-fade-out" : "animate-fade-in"}`}
+        className={`fintheon-modal-surface relative w-full max-w-2xl mx-4 ${isClosing ? "animate-fade-out" : "animate-fade-in"}`}
       >
         <div className="flex items-center justify-between p-6 border-b border-zinc-900">
           <h2 className="text-lg font-medium text-[var(--fintheon-accent)] tracking-wider uppercase">

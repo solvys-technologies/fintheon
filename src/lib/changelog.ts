@@ -9,6 +9,21 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-22T10:05:00-04:00",
+    agent: "codex",
+    summary:
+      "v6.7.10 release prep: bumped desktop/mobile package metadata and installer/update script pointers after the mobile/web Desk, Arbitrum, notification sync, toast/modal, and chat-history persistence pass while preserving the existing sprint updates in the working tree.",
+    files: [
+      "package.json",
+      "mobile/package.json",
+      "scripts/fintheon-update.sh",
+      "scripts/fintheon-setup.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-22T03:45:00-04:00",
     agent: "codex",
     summary:

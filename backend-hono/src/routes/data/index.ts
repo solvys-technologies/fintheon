@@ -389,7 +389,10 @@ export function createDataRoutes(): Hono {
       });
     } catch (err) {
       console.error("[Data] /brief/ensure-current error:", err);
-      return c.json({ error: "Ensure current brief failed", details: String(err) }, 500);
+      return c.json(
+        { error: "Ensure current brief failed", details: String(err) },
+        500,
+      );
     }
   });
 

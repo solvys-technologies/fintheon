@@ -16,7 +16,10 @@ export async function handleDeleteDayPlan(c: Context): Promise<Response> {
     .delete()
     .eq("day_plan_id", id);
   if (windowError) {
-    log.warn("day_plan_windows delete failed", { id, error: windowError.message });
+    log.warn("day_plan_windows delete failed", {
+      id,
+      error: windowError.message,
+    });
     return c.json({ error: "window_delete_failed" }, 500);
   }
 

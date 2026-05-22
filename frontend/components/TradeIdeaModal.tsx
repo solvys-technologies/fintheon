@@ -76,14 +76,14 @@ export default function TradeIdeaModal({ idea, onClose }: TradeIdeaModalProps) {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm animate-[fadeIn_150ms_ease-out]"
+        className="fintheon-modal-backdrop fixed inset-0 z-50 animate-[fadeIn_150ms_ease-out]"
         onClick={onClose}
       />
 
       {/* Modal card */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
-          className="pointer-events-auto w-full max-w-lg bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/40 shadow-[0_0_40px_rgba(199,159,74,0.15)] flex flex-col max-h-[85vh] animate-[slideUp_200ms_ease-out]"
+          className="fintheon-modal-surface pointer-events-auto w-full max-w-lg flex flex-col max-h-[85vh] animate-[slideUp_200ms_ease-out]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

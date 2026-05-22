@@ -24,7 +24,9 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
 export async function subscribeToPush(
   token: string,
   categories: Record<string, boolean>,
+  severityThreshold?: string,
 ): Promise<boolean> {
+  if (!VAPID_PUBLIC_KEY) return false;
   const reg = await registerServiceWorker();
   if (!reg) return false;
 
@@ -43,7 +45,11 @@ export async function subscribeToPush(
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ subscription: subscription.toJSON(), categories }),
+    body: JSON.stringify({
+      subscription: subscription.toJSON(),
+      categories,
+      severityThreshold,
+    }),
   });
   return res.ok;
 }

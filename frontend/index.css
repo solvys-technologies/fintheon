@@ -1548,3 +1548,49 @@ html *::-webkit-scrollbar {
   opacity: 1;
   transition: left 0.55s ease-in-out, opacity 0.15s;
 }
+
+/* Shared Zen/RiskFlow glass chrome for toasts and pop-up surfaces. */
+.fintheon-toast-surface,
+.fintheon-modal-surface,
+.fintheon-sheet-surface {
+  border: 1px solid var(--fintheon-glass-border);
+  background: var(--fintheon-glass-bg);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  box-shadow: var(--fintheon-glass-shadow);
+}
+
+.fintheon-toast-surface {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.fintheon-modal-surface {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.fintheon-sheet-surface {
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  overflow: hidden;
+}
+
+.fintheon-modal-backdrop {
+  background: rgba(5, 4, 2, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.fintheon-glass-handle {
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--fintheon-accent) 36%, transparent);
+}
+
+.fintheon-toast-badge {
+  color: var(--fintheon-accent);
+  background: color-mix(in srgb, var(--fintheon-accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fintheon-accent) 20%, transparent);
+}

@@ -16,6 +16,7 @@ export type Severity = "low" | "medium" | "high" | "critical";
 // backend-hono/src/services/notifications/emit.ts; do not let it drift.
 export const NOTIFICATION_CATEGORIES = [
   "riskflow",
+  "geopolitical_alerts",
   "dailyBrief",
   "regimeActivations",
   "regimeProposals",
@@ -45,6 +46,12 @@ export interface NotificationPrefs {
   /** When true, only econ_alerts (and critical-severity) push. Convenient one-tap mute
    *  for everything except FOMC/CPI/NFP-class events without filling blockedCategories. */
   econOnlyMode: boolean;
+  /** Shared delivery channel intent. Push applies to all registered mobile/web push endpoints. */
+  deliveryChannels: {
+    web: boolean;
+    push: boolean;
+    desktop: boolean;
+  };
 }
 
 // [claude-code 2026-04-26] S46: Per-user RiskFlow filter persistence so a single
@@ -88,6 +95,11 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
     blockedCategories: [],
     severityThreshold: "medium",
     econOnlyMode: false,
+    deliveryChannels: {
+      web: true,
+      push: false,
+      desktop: true,
+    },
   },
   psychAssistEnabled: false,
   riskflowFilters: { severities: [], buckets: [] },

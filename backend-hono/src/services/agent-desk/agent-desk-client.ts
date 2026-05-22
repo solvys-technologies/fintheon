@@ -517,7 +517,7 @@ function formatSeedContext(seed: AgentDeskSeed): string {
         sections.push(
           `  TED Spread: ${macro.tedSpread.toFixed(2)}% (interbank stress — >0.5% = elevated)`,
         );
-    if (macro.fedFundsRate != null)
+      if (macro.fedFundsRate != null)
         sections.push(`  Fed Funds Rate: ${macro.fedFundsRate.toFixed(2)}%`);
     }
     const econStats = ctx.econPrintStats as

@@ -13,7 +13,10 @@ export async function createNarrativeSensemaking(c: Context) {
   const raw = await c.req.json().catch(() => ({}));
   const parsed = sensemakingBodySchema.safeParse(raw);
   if (!parsed.success) {
-    return c.json({ error: "validation failed", issues: parsed.error.issues }, 400);
+    return c.json(
+      { error: "validation failed", issues: parsed.error.issues },
+      400,
+    );
   }
 
   try {

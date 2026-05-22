@@ -1850,7 +1850,8 @@ export async function handleGetRiskSignals(c: Context) {
 export async function handleGetEstimatedDrift(c: Context) {
   const signalId = c.req.query("signalId") ?? "unknown";
   const eventType = c.req.query("eventType") ?? "default";
-  const { estimateDrift } = await import("../../services/riskflow/estimated-drift-service.js");
+  const { estimateDrift } =
+    await import("../../services/riskflow/estimated-drift-service.js");
   const result = estimateDrift(signalId, eventType);
   return c.json(result);
 }

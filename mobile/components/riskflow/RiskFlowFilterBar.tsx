@@ -6,6 +6,7 @@
 //   5-bucket bottom sheet. `sourceActive` drives the active visual when any
 //   bucket is selected.
 import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
+import { motion } from "framer-motion";
 
 interface RiskFlowFilterBarProps {
   activeSeverities: Set<AlertSeverity>;
@@ -85,9 +86,11 @@ function FilterTab({
   onClick: () => void;
 }) {
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
+      whileTap={{ scale: 0.96 }}
+      whileHover={{ y: -1 }}
       style={{
         flex: 1,
         fontFamily: "var(--font-data)",
@@ -125,6 +128,6 @@ function FilterTab({
           {count}
         </span>
       )}
-    </button>
+    </motion.button>
   );
 }

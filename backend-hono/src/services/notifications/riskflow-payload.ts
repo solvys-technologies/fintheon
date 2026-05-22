@@ -83,6 +83,7 @@ function hash32(input: string): string {
 export interface RiskFlowPushPayload {
   title: string;
   body: string;
+  category: "riskflow" | "geopolitical_alerts" | "econ_alerts";
   url: string;
   fingerprint: string;
   eventId: string;
@@ -92,10 +93,16 @@ export interface RiskFlowPushPayload {
 
 export function buildRiskFlowPush(item: FeedItem): RiskFlowPushPayload {
   const instrument = pickInstrument(item);
-  const category = pickCategoryLabel(item);
+  const categoryLabel = pickCategoryLabel(item);
+  const category =
+    categoryLabel === "Geopolitical"
+      ? "geopolitical_alerts"
+      : categoryLabel === "Econ" || categoryLabel === "Monetary Policy"
+        ? "econ_alerts"
+        : "riskflow";
   const headline = (item.headline || "").trim();
 
-  const title = `Fintheon · ${category}`;
+  const title = `Fintheon · ${categoryLabel}`;
   const body = headline;
 
   const normalized = normalizeHeadline(headline);
@@ -104,6 +111,7 @@ export function buildRiskFlowPush(item: FeedItem): RiskFlowPushPayload {
   return {
     title,
     body,
+    category,
     // [S25] Item-scoped deep link — SW maps this to DetailSheet modal open for the exact item.
     url: `/riskflow?item=${encodeURIComponent(item.id)}`,
     fingerprint,

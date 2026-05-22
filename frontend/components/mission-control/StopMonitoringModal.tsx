@@ -25,10 +25,10 @@ export function StopMonitoringModal({
 
   return (
     <div
-      className={`fixed inset-0 bg-black/80 flex items-center justify-center z-50 ${isClosing ? "animate-fade-out-backdrop" : "animate-fade-in-backdrop"}`}
+      className={`fintheon-modal-backdrop fixed inset-0 flex items-center justify-center z-50 ${isClosing ? "animate-fade-out-backdrop" : "animate-fade-in-backdrop"}`}
     >
       <div
-        className={`bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-lg p-6 max-w-md mx-4 ${isClosing ? "animate-fade-out" : "animate-fade-in"}`}
+        className={`fintheon-modal-surface p-6 max-w-md mx-4 ${isClosing ? "animate-fade-out" : "animate-fade-in"}`}
       >
         <div className="flex items-center gap-3 mb-4">
           <AlertTriangle className="w-6 h-6 text-[var(--fintheon-accent)]" />

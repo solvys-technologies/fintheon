@@ -88,13 +88,21 @@ function formatDeskThemeBlock(plan: DayPlan): string {
     if (w.econForecast) {
       lines.push(padRow("Forecast", w.econForecast.forecast));
       lines.push(
-        padRow("Miss", `${w.econForecast.miss.description} (${w.econForecast.miss.probability}%)`),
+        padRow(
+          "Miss",
+          `${w.econForecast.miss.description} (${w.econForecast.miss.probability}%)`,
+        ),
       );
       lines.push(
-        padRow("Beat", `${w.econForecast.beat.description} (${w.econForecast.beat.probability}%)`),
+        padRow(
+          "Beat",
+          `${w.econForecast.beat.description} (${w.econForecast.beat.probability}%)`,
+        ),
       );
       if (w.econForecast.otherNotableEvents.length > 0) {
-        lines.push(padRow("Also", w.econForecast.otherNotableEvents.join(", ")));
+        lines.push(
+          padRow("Also", w.econForecast.otherNotableEvents.join(", ")),
+        );
       }
       lines.push(padRow("Prediction", w.econForecast.aiPrediction));
     }

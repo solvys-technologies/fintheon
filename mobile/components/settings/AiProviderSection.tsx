@@ -15,12 +15,14 @@ export function AiProviderSection({
 }: AiProviderSectionProps) {
   const [deepSeekKey, setDeepSeekKey] = useState("");
   const [hasDeepSeekKey, setHasDeepSeekKey] = useState(false);
+  const [maskedDeepSeekKey, setMaskedDeepSeekKey] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const refreshDeepSeekKey = useCallback(async () => {
     const key = await getApiKey("deepseek", getAccessToken).catch(() => null);
     const hasKey = Boolean(key);
     setHasDeepSeekKey(hasKey);
+    setMaskedDeepSeekKey(key ? `••••${key.slice(-4)}` : null);
     onStatusChange(hasKey);
     try {
       localStorage.setItem(
@@ -91,6 +93,18 @@ export function AiProviderSection({
       >
         Personal CAO chat uses your DeepSeek key directly when available.
         Backend briefs, Arbitrum, and RiskFlow stay on server routing.
+      </div>
+      <div
+        style={{
+          fontFamily: "var(--font-data)",
+          fontSize: 11,
+          letterSpacing: "0.08em",
+          color: hasDeepSeekKey ? "var(--accent)" : "var(--text-disabled)",
+        }}
+      >
+        {hasDeepSeekKey
+          ? `Synced from desktop: ${maskedDeepSeekKey ?? "••••"}`
+          : "No synced DeepSeek key"}
       </div>
       <input
         type="password"

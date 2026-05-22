@@ -752,7 +752,6 @@ export async function scoringCycle(): Promise<number> {
           coalesceAndEmit(
             {
               userId: "all",
-              category: "riskflow",
               severity: item.macroLevel === 4 ? "critical" : "high",
               ...payload,
             },

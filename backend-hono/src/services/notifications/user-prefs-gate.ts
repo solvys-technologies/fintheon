@@ -10,6 +10,7 @@ import { sql, isDatabaseAvailable } from "../../config/database.js";
 export type Severity = "low" | "medium" | "high" | "critical";
 
 export interface DeliveryPrefs {
+  pushEnabled: boolean;
   manualDnd: boolean;
   criticalOnly: boolean;
   econOnlyMode: boolean;
@@ -23,6 +24,7 @@ export interface DeliveryPrefs {
 }
 
 const DEFAULT_PREFS: DeliveryPrefs = {
+  pushEnabled: false,
   manualDnd: false,
   criticalOnly: false,
   econOnlyMode: false,
@@ -71,6 +73,9 @@ async function loadFromUserPreferences(
       : [];
 
     return {
+      pushEnabled:
+        (notif.deliveryChannels as Record<string, unknown> | undefined)
+          ?.push === true,
       manualDnd: Boolean(notif.manualDnd),
       criticalOnly: Boolean(notif.criticalOnly),
       econOnlyMode: Boolean(notif.econOnlyMode),
@@ -121,6 +126,7 @@ async function loadFromLegacySubscriptionMetadata(
     const m2 = /^(\d{1,2}):(\d{2})$/.exec(end.trim());
     return {
       ...DEFAULT_PREFS,
+      pushEnabled: true,
       blockedCategories: new Set(),
       quietEnabled: qh.enabled !== false,
       quietStartMin: m1
@@ -182,8 +188,12 @@ export async function evaluateDeliveryGates(
 ): Promise<{ allow: boolean; reason?: string }> {
   const prefs = await getDeliveryPrefs(userId);
 
+  if (!prefs.pushEnabled) {
+    return { allow: false, reason: "push-channel-disabled" };
+  }
+
   if (severity === "critical") {
-    // Critical bypasses every user gate by design — margin calls, system-down.
+    // Critical bypasses content/schedule gates, but not explicit channel opt-out.
     return { allow: true };
   }
 

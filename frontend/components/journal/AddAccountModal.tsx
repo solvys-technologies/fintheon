@@ -31,13 +31,11 @@ export function AddAccountModal({ onClose, onSave, initialSize = 0 }: AddAccount
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.7)" }}
+      className="fintheon-modal-backdrop fixed inset-0 z-50 flex items-center justify-center"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-xl p-5 flex flex-col gap-4"
-        style={{ background: "var(--fintheon-surface)", border: "1px solid rgba(199,159,74,0.2)" }}
+        className="fintheon-modal-surface w-full max-w-sm p-5 flex flex-col gap-4"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

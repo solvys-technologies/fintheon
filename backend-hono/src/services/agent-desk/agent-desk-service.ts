@@ -115,15 +115,15 @@ export async function startPrediction(
       econPrintHistory?: EconPrintStat[];
       upcomingEconEvents?: SimulationContext["upcomingEconEvents"];
     } = {
-        vixLevel: contextBank?.vixLevel ?? context.vixLevel ?? undefined,
-        gexNet: contextBank?.gexNet,
-        macroIndicators: {
-          ...(contextBank?.macroIndicators ?? {}),
-          ...context.fredIndicators,
-        },
-        econPrintHistory: context.econPrintHistory,
-        upcomingEconEvents: context.upcomingEconEvents,
-      };
+      vixLevel: contextBank?.vixLevel ?? context.vixLevel ?? undefined,
+      gexNet: contextBank?.gexNet,
+      macroIndicators: {
+        ...(contextBank?.macroIndicators ?? {}),
+        ...context.fredIndicators,
+      },
+      econPrintHistory: context.econPrintHistory,
+      upcomingEconEvents: context.upcomingEconEvents,
+    };
 
     // Fallback: if frontend sent empty lanes, synthesize from RiskFlow headlines
     if (

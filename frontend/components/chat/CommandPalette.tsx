@@ -20,10 +20,10 @@ export function CommandPalette({
     <div
       role="dialog"
       aria-label="Command Palette"
+      className="fintheon-modal-backdrop"
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.35)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -33,11 +33,9 @@ export function CommandPalette({
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        className="fintheon-modal-surface"
         style={{
           width: 420,
-          border: "1px solid #3f3f46",
-          borderRadius: 8,
-          background: "#09090b",
           padding: 12,
         }}
       >

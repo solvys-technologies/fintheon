@@ -35,10 +35,10 @@ export function NarrativeSaveModal({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm ${isClosing ? "animate-fade-out-backdrop" : "animate-fade-in-backdrop"}`}
+      className={`fintheon-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? "animate-fade-out-backdrop" : "animate-fade-in-backdrop"}`}
     >
       <div
-        className={`max-w-sm w-full bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/40 rounded-lg shadow-[0_0_40px_rgba(199,159,74,0.15)] ${isClosing ? "animate-fade-out" : "animate-fade-in"}`}
+        className={`fintheon-modal-surface max-w-sm w-full ${isClosing ? "animate-fade-out" : "animate-fade-in"}`}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-zinc-900">

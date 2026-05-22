@@ -90,15 +90,13 @@ export function SnapSheet({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={onClose}
+            className="fintheon-modal-backdrop"
             style={{
               position: "fixed",
               top: `calc(env(safe-area-inset-top, 0px) + 48px)`,
               left: 0,
               right: 0,
               bottom: 0,
-              background: "rgba(0,0,0,0.55)",
-              backdropFilter: "blur(3px)",
-              WebkitBackdropFilter: "blur(3px)",
               zIndex: 998,
             }}
           />
@@ -111,22 +109,16 @@ export function SnapSheet({
             animate={{ y: 0 }}
             exit={{ y: "100%", opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+            className="fintheon-sheet-surface"
             style={{
               position: "fixed",
               top: topPx,
               left: 0,
               right: 0,
               bottom: 0,
-              background: "var(--surface)",
-              backdropFilter: "blur(24px) saturate(1.4)",
-              WebkitBackdropFilter: "blur(24px) saturate(1.4)",
-              borderTopLeftRadius: 16,
-              borderTopRightRadius: 16,
-              borderTop: "1px solid var(--border-visible)",
               zIndex: 999,
               display: "flex",
               flexDirection: "column",
-              boxShadow: "0 -12px 40px rgba(0,0,0,0.6)",
             }}
           >
             {/* Handle — the ONLY drag/tap dismiss target. Tap closes, swipe-down
@@ -151,19 +143,15 @@ export function SnapSheet({
             >
               <motion.div
                 initial={{
-                  background: "var(--border-visible)",
+                  background:
+                    "color-mix(in srgb, var(--fintheon-accent) 26%, transparent)",
                 }}
                 whileTap={{
                   background:
-                    "color-mix(in srgb, var(--accent) 40%, transparent)",
+                    "color-mix(in srgb, var(--fintheon-accent) 44%, transparent)",
                 }}
-                style={{
-                  width: 40,
-                  height: 5,
-                  borderRadius: 3,
-                  background: "var(--border-visible)",
-                  transition: "background 120ms ease",
-                }}
+                className="fintheon-glass-handle"
+                style={{ transition: "background 120ms ease" }}
               />
             </motion.div>
 

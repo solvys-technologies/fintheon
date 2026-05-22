@@ -194,12 +194,8 @@ export function ArbitrumSettingsPanel({ onClose }: ArbitrumSettingsPanelProps) {
 
   return (
     <div
-      className="absolute inset-0 z-50 flex flex-col bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 overflow-hidden"
+      className="fintheon-modal-surface absolute inset-0 z-50 flex flex-col"
       onKeyDown={handleKeyDown}
-      style={{
-        background: "color-mix(in srgb, var(--fintheon-bg) 92%, transparent)",
-        backdropFilter: "blur(8px)",
-      }}
       role="dialog"
       aria-label="Arbitrum Settings"
     >

@@ -47,6 +47,7 @@ export function FintheonPluginModal({
       role="dialog"
       aria-modal="true"
       aria-label="Plugins & Skills"
+      className="fintheon-modal-backdrop"
       style={{
         position: "fixed",
         inset: 0,
@@ -54,23 +55,15 @@ export function FintheonPluginModal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "rgba(5, 4, 2, 0.72)",
-        backdropFilter: "blur(6px)",
-        WebkitBackdropFilter: "blur(6px)",
       }}
     >
       <div
         ref={dialogRef}
+        className="fintheon-modal-surface"
         style={{
           width: 400,
           maxWidth: "calc(100vw - 40px)",
           maxHeight: "calc(100vh - 80px)",
-          background: "rgba(10, 8, 5, 0.92)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          border:
-            "1px solid color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
-          boxShadow: "0 4px 32px rgba(0,0,0,0.5)",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",

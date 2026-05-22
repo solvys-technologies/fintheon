@@ -75,15 +75,7 @@ function ToastItem({
       }}
     >
       <div
-        className="backdrop-blur-2xl overflow-hidden"
-        style={{
-          borderRadius: "8px",
-          border: "1px solid var(--fintheon-glass-border)",
-          backgroundColor: "var(--fintheon-glass-bg)",
-          backdropFilter: "blur(24px) saturate(1.4)",
-          WebkitBackdropFilter: "blur(24px) saturate(1.4)",
-          boxShadow: "var(--fintheon-glass-shadow)",
-        }}
+        className="fintheon-toast-surface"
       >
         <div
           className="flex items-start justify-between"
@@ -92,14 +84,7 @@ function ToastItem({
           <div className="flex items-start" style={{ gap: "8px" }}>
             {cfg.label && (
               <span
-                className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest flex-shrink-0 mt-0.5"
-                style={{
-                  color: "var(--fintheon-accent)",
-                  backgroundColor:
-                    "color-mix(in srgb, var(--fintheon-accent) 12%, transparent)",
-                  border:
-                    "1px solid color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
-                }}
+                className="fintheon-toast-badge inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest flex-shrink-0 mt-0.5"
               >
                 {cfg.label}
               </span>
