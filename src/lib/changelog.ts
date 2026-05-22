@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-22T03:20:00-04:00",
+    agent: "codex",
+    summary:
+      "Local Desk Plan validation follow-up: custom/speech desk plans now persist their schedule windows across legacy day_plan_windows schemas, so the weekly Desk schedule reports the created window after the POST instead of only returning it in-memory.",
+    files: [
+      "backend-hono/src/services/day-plan/custom-desk-plan.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-22T03:10:00-04:00",
     agent: "codex",
     summary:

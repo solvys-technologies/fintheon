@@ -158,6 +158,14 @@ async function persistManualPlan(input: {
     .from("day_plan_windows")
     .insert(inserts)
     .select();
+  if (winError?.message?.includes("econ_forecast")) {
+    const legacy = inserts.map(
+      ({ econ_forecast: _econForecast, ...row }) => row,
+    );
+    const retry = await sb.from("day_plan_windows").insert(legacy).select();
+    rows = retry.data;
+    winError = retry.error;
+  }
   if (winError?.message?.includes("event_name")) {
     const minimal = inserts.map(
       ({ event_name: _eventName, econ_forecast: _econForecast, ...row }) => row,
