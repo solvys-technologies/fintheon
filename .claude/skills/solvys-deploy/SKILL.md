@@ -11,6 +11,8 @@ You are a release engineer. Follow every phase in order. Do not skip pre-flight.
 **CRITICAL RULES (from operational history):**
 
 - **STANDING PUSH AUTHORIZATION**: every invocation of this skill = commit → push → publish GH release → prune older releases in the current major-version namespace → refresh install/update scripts so they fetch the latest tag. Do NOT ask TP for push approval. That authorization is standing.
+- **VALIDATOR-CHAIN INVOCATION**: a final unification validator may invoke `/solvys-deploy` automatically after every implementation track and the unification track are reviewed, accepted, and moved to `Done`. Treat that as an authorized skill invocation. Stop only if pre-flight fails, validation evidence is missing, or the sprint explicitly disabled auto-deploy.
+- **UNIFICATION RELEASE CAPTURE RULE**: every deploy after unification must include every feature commit that is already clean, validated, and reachable from the release branch HEAD. Never publish or leave active a tag/release that points behind clean committed feature work. Before tagging, compare the latest release tag to `HEAD`; if `git log <latest-tag>..HEAD` contains implementation, hotfix, Linear-closeout, mobile, installer, or unification commits, bump the release, refresh installers, rebuild artifacts, and tag `HEAD`. If a tag/release was created early and more clean commits landed afterward, move/recreate the tag/release so GitHub, updater scripts, and the DMG all resolve to the final `HEAD`.
 - **Release prune rule** (standing auth — TP confirmed 2026-04-26): after publishing the new GH release, run `gh release list` and `gh release delete <tag> --yes --cleanup-tag=false` for (a) every release whose tag starts with the current major-version prefix (e.g. `v5.*`) EXCEPT the one just published, AND (b) every release published in the last 5 days from any major-version namespace EXCEPT the one just published. Keep exactly one release per major version at any time AND zero stale releases from the last 5 days. `--cleanup-tag=false` preserves git tags so history/diffs remain intact.
 - **Install-script refresh rule** (MANDATORY every deploy, BOTH install AND update scripts): before the push, grep `scripts/fintheon-update.sh`, `scripts/fintheon-setup.sh`, `scripts/install-cli.sh` for version renders and fetch pointers. Any `git describe --tags --always` → swap to `git describe --tags --abbrev=0` (drops the `-N-gHASH` post-tag drift suffix). Any hardcoded `UPDATE_VERSION=` / `SETUP_VERSION=` / tag pointer → bump to the new tag. Any `git clone --branch <X>` or `curl .../raw/<X>/...` pointer must resolve to the new release. Commit the script changes with `INSTALL-UPDATE:` prefix as part of the deploy push — do NOT leave them for a follow-up. The final deploy report MUST confirm to TP that `fintheon update` (or equivalent global command) is ready to run the new version — do not say "DEPLOY COMPLETE" until the installer resolves to the new tag.
 - **DMG lands on Desktop rule** (every DMG publish — deploy OR /solvys-beta): after electron-builder emits the DMG, delete every `Fintheon-*.dmg` already on `~/Desktop/` and copy the new one there. TP installs from Desktop; old DMGs confuse it. `find ~/Desktop -maxdepth 1 -name "Fintheon-*.dmg" -type f -delete` then `cp dist-electron/Fintheon-*.dmg ~/Desktop/`.
@@ -64,6 +66,23 @@ git tag -l | tail -5
 
 - Verify install and update scripts reference the current version
 - WARN if scripts are out of date -- they MUST be updated before deploy
+
+### 1e. Unification Release Capture Audit
+
+Run this before deciding the release version or creating/moving tags:
+
+```bash
+LATEST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+git log --oneline "${LATEST_TAG}..HEAD"
+git branch --show-current
+git status --short
+```
+
+- PASS only when every clean committed feature intended for this unification is reachable from `HEAD`.
+- FAIL if expected implementation tracks live only on unmerged branches, open PRs, stashes, or another worktree.
+- FAIL if the release tag already exists but does not point to `HEAD` after final validation.
+- If `git log "${LATEST_TAG}..HEAD"` is non-empty, treat those commits as release contents: bump package/mobile versions, add or update the changelog, refresh install/update scripts, rebuild artifacts, and tag `HEAD`.
+- Mention the commit range in the deploy report so TP can see which post-tag or unification commits were captured.
 
 ---
 
