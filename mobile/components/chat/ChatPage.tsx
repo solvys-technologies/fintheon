@@ -61,14 +61,37 @@ import {
   fetchDeepSeekKey,
   type DeepSeekChatMessage,
 } from "@frontend/lib/deepseek-sdk";
-import {
-  ProviderDropdown,
-  useHarperProvider,
-  type HarperProvider,
-} from "@frontend/components/chat/ProviderDropdown";
 import { FirstTimeApiKeyPopup } from "@frontend/components/chat/FirstTimeApiKeyPopup";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
+const PROVIDER_STORAGE_KEY = "fintheon:harper-provider";
+
+type HarperProvider = "deepseek-direct" | "opencode-go";
+
+function normalizeProvider(raw: string | null): HarperProvider {
+  return raw === "opencode-go" ? "opencode-go" : "deepseek-direct";
+}
+
+function useMobileHarperProvider() {
+  const [provider, setProviderState] = useState<HarperProvider>(() => {
+    try {
+      return normalizeProvider(localStorage.getItem(PROVIDER_STORAGE_KEY));
+    } catch {
+      return "deepseek-direct";
+    }
+  });
+
+  const setProvider = useCallback((next: HarperProvider) => {
+    setProviderState(next);
+    try {
+      localStorage.setItem(PROVIDER_STORAGE_KEY, next);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  return { provider, setProvider };
+}
 
 interface ChatPageProps {
   visible: boolean;
@@ -87,7 +110,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
     name: string;
     input?: string;
   } | null>(null);
-  const { provider, setProvider } = useHarperProvider();
+  const { provider } = useMobileHarperProvider();
   const [showFirstTimePopup, setShowFirstTimePopup] = useState(false);
   const [activityEntries, setActivityEntries] = useState<ActivityEntry[]>([]);
   const [artifact, setArtifact] = useState<
