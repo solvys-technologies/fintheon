@@ -16,7 +16,7 @@ set -euo pipefail
 
 DEFAULT_DIR="$HOME/Documents/Codebases/fintheon"
 REPO_URL="https://github.com/solvys-technologies/fintheon.git"
-BRANCH="main"
+RELEASE_REF="v6.7.11"
 CONFIG_DIR="$HOME/.fintheon"
 CONFIG_PATH="$CONFIG_DIR/install-path"
 
@@ -90,16 +90,15 @@ fi
 
 # ── Clone or update ────────────────────────────────────────────────────────
 if [[ -d "$INSTALL_DIR/.git" ]]; then
-  echo "  · Repo exists — pulling latest..."
+  echo "  · Repo exists — switching to $RELEASE_REF..."
   cd "$INSTALL_DIR"
-  git fetch origin --prune 2>/dev/null || true
-  git checkout "$BRANCH" 2>/dev/null || true
-  git pull origin "$BRANCH" --rebase 2>/dev/null || true
+  git fetch origin --prune --tags 2>/dev/null || true
+  git checkout "$RELEASE_REF" 2>/dev/null || true
   echo "  ✓ Updated ($(git log --oneline -1 | cut -c1-7))"
 else
   echo "  · Cloning to $INSTALL_DIR..."
   mkdir -p "$(dirname "$INSTALL_DIR")"
-  git clone "$REPO_URL" "$INSTALL_DIR"
+  git clone --branch "$RELEASE_REF" "$REPO_URL" "$INSTALL_DIR"
   cd "$INSTALL_DIR"
   echo "  ✓ Cloned ($(git log --oneline -1 | cut -c1-7))"
 fi
