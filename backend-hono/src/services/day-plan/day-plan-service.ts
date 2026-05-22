@@ -54,10 +54,31 @@ export async function generateDayPlan(
   const econEvents = await readEconEvents({ from: dateIso, to: dateIso }).catch(
     () => [],
   );
-  const planned = planDay(new Date(`${dateIso}T12:00:00Z`), econEvents);
+  const autonomousEvents = econEvents.filter(isAutonomousDeskException);
+  const planned = planDay(new Date(`${dateIso}T12:00:00Z`), autonomousEvents);
 
+  const existing = await readDayPlan(teamId, dateIso);
+  if (existing?.generatedBy === "agentic-desk-manual") {
+    return { plan: existing, persisted: true, reused: true };
+  }
+  if (autonomousEvents.length === 0) {
+    return existing
+      ? { plan: existing, persisted: true, reused: true }
+      : {
+          plan: synthesizeInMemoryPlan({
+            teamId,
+            dateIso,
+            eventName: null,
+            deskTheme: null,
+            generatedBy: input.generatedBy ?? "day-plan-empty",
+            planVariant: input.planVariant ?? null,
+            windows: [],
+          }),
+          persisted: false,
+          reused: true,
+        };
+  }
   if (!input.override) {
-    const existing = await readDayPlan(teamId, dateIso);
     if (existing) {
       const candidate = hydrateLegacyWindowNames(existing, planned);
       if (isStaleAgainstUpcomingEvents(candidate, planned)) {
@@ -123,6 +144,18 @@ export async function generateDayPlan(
   });
 
   return { plan, persisted: true, reused: false };
+}
+
+function isAutonomousDeskException(event: {
+  category?: string | null;
+  name?: string | null;
+}): boolean {
+  const category = (event.category ?? "").toLowerCase();
+  const name = (event.name ?? "").toLowerCase();
+  if (category !== "speaker") return false;
+  return /\b(speech|speaks?|remarks|testimony|statement|press conference|briefing|gaggle|pool\s*(call|report|notice|log)|travel pool)\b/.test(
+    name,
+  );
 }
 
 function isStaleAgainstUpcomingEvents(
@@ -586,18 +619,25 @@ function synthesizeInMemoryPlan(input: PersistInput): DayPlan {
 }
 
 function rowsToDayPlan(planRow: any, windowRows: any[]): DayPlan {
+  const planEventName = planRow.event_name ?? null;
   return {
     id: planRow.id,
     teamId: planRow.team_id,
     date: planRow.date,
-    eventName: planRow.event_name,
+    eventName: planEventName,
     deskTheme: planRow.desk_theme,
     generatedBy: planRow.generated_by,
     generatedAt: planRow.generated_at,
     sourceBriefId: planRow.source_brief_id,
     institutionalPositioning: planRow.institutional_positioning ?? null,
     planVariant: planRow.plan_variant ?? null,
-    windows: windowRows.map(rowToWindow),
+    windows: windowRows.map((row) => {
+      const window = rowToWindow(row);
+      return {
+        ...window,
+        eventName: window.eventName ?? planEventName,
+      };
+    }),
   };
 }
 

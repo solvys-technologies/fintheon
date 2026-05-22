@@ -9,6 +9,29 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-22T03:45:00-04:00",
+    agent: "codex",
+    summary:
+      "Desk Plans are now user-controlled by default: today/week/multi-week reads no longer materialize automatic econ schedules, cron/kickstart generation is opt-in only, manual TradingView/custom events preserve their own windows, and the Desk second page is a real four-hour Sprint Map scrubber plus weekday calendar board with pop-out cards and delete controls.",
+    files: [
+      "backend-hono/src/routes/day-plan/handlers.ts",
+      "backend-hono/src/routes/day-plan/kickstart.ts",
+      "backend-hono/src/routes/desk-calendar/handlers.ts",
+      "backend-hono/src/services/cron/day-plan-cron.ts",
+      "backend-hono/src/services/day-plan/custom-desk-plan.ts",
+      "backend-hono/src/services/day-plan/day-plan-service.ts",
+      "backend-hono/src/services/desk-planner.ts",
+      "electron/desk-calendar-click-capture.cjs",
+      "frontend/components/executive/DeskPlanCalendarBoard.tsx",
+      "frontend/components/executive/DeskPlanDeleteButton.tsx",
+      "frontend/components/executive/DeskPlanMapUtils.ts",
+      "frontend/components/executive/DeskPlanSprintMap.tsx",
+      "frontend/components/executive/DeskPlanSprintTimeline.tsx",
+      "frontend/components/executive/MainDashboard.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-22T03:20:00-04:00",
     agent: "codex",
     summary:

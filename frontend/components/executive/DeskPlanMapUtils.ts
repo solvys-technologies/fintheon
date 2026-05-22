@@ -1,5 +1,15 @@
 import type { DayPlan } from "../../types/day-plan";
 
+export interface SprintSegment {
+  id: string;
+  date: string;
+  dateLabel: string;
+  startMinute: number;
+  endMinute: number;
+  label: string;
+  plans: DayPlan[];
+}
+
 export function sortPlans(plans: DayPlan[]): DayPlan[] {
   return [...plans].sort((a, b) => a.date.localeCompare(b.date));
 }
@@ -26,7 +36,8 @@ export function nextFiveDays(): string[] {
   const dates: string[] = [];
   const cursor = new Date();
   while (dates.length < 5) {
-    dates.push(cursor.toISOString().slice(0, 10));
+    const day = cursor.getDay();
+    if (day >= 1 && day <= 5) dates.push(cursor.toISOString().slice(0, 10));
     cursor.setDate(cursor.getDate() + 1);
   }
   return dates;
@@ -39,4 +50,53 @@ export function formatDate(date: string): string {
     month: "short",
     day: "numeric",
   });
+}
+
+export function buildSprintSegments(plans: DayPlan[]): SprintSegment[] {
+  const calendarDays = buildCalendarDays(plans);
+  return calendarDays.flatMap((day) =>
+    [0, 4, 8, 12, 16, 20].map((hour) => ({
+      id: `${day.date}-${hour}`,
+      date: day.date,
+      dateLabel: formatDate(day.date),
+      startMinute: hour * 60,
+      endMinute: (hour + 4) * 60,
+      label: `${formatClock(hour * 60)} - ${formatClock((hour + 4) * 60)}`,
+      plans: day.plans,
+    })),
+  );
+}
+
+export function parseClockMinutes(clock: string | null | undefined): number | null {
+  if (!clock) return null;
+  const [hours, minutes] = clock.split(":").map(Number);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+  return hours * 60 + minutes;
+}
+
+export function formatClock(minutes: number): string {
+  const bounded = ((minutes % 1440) + 1440) % 1440;
+  const hours = Math.floor(bounded / 60);
+  const mins = bounded % 60;
+  const suffix = hours >= 12 ? "PM" : "AM";
+  const displayHour = hours % 12 === 0 ? 12 : hours % 12;
+  return `${displayHour}:${String(mins).padStart(2, "0")} ${suffix}`;
+}
+
+export function sprintOverlap(
+  startTime: string | null | undefined,
+  endTime: string | null | undefined,
+  segment: SprintSegment,
+) {
+  const start = parseClockMinutes(startTime);
+  const end = parseClockMinutes(endTime);
+  if (start == null || end == null) return null;
+  const overlapStart = Math.max(start, segment.startMinute);
+  const overlapEnd = Math.min(end, segment.endMinute);
+  if (overlapEnd <= overlapStart) return null;
+  const span = segment.endMinute - segment.startMinute;
+  return {
+    left: ((overlapStart - segment.startMinute) / span) * 100,
+    width: Math.max(10, ((overlapEnd - overlapStart) / span) * 100),
+  };
 }

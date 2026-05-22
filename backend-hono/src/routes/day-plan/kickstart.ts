@@ -1,9 +1,7 @@
 import type { Context } from "hono";
 import { z } from "zod";
-import { createLogger } from "../../lib/logger.js";
-import { generateDayPlan } from "../../services/day-plan/day-plan-service.js";
+import { readWeekPlans } from "../../services/day-plan/day-plan-service.js";
 
-const log = createLogger("DayPlanKickstart");
 const TEAM_ID = "pic";
 
 const KickstartSchema = z
@@ -30,34 +28,27 @@ export async function handlePostKickstart(c: Context): Promise<Response> {
 
   const days = parsed.data?.days ?? 7;
   const dates = collectNextCalendarDates(days);
-  const plans = [];
-  const failures = [];
-
-  for (const dateIso of dates) {
-    try {
-      const result = await generateDayPlan({
-        teamId: TEAM_ID,
-        date: new Date(`${dateIso}T12:00:00Z`),
-        override: true,
-        generatedBy: "desk-plan-kickstart",
-      });
-      plans.push({
-        date: result.plan.date,
-        windowCount: result.plan.windows.length,
-        eventName: result.plan.eventName,
-      });
-    } catch (err) {
-      const error = err instanceof Error ? err.message : String(err);
-      failures.push({ date: dateIso, error });
-      log.warn("kickstart plan generation failed", { date: dateIso, error });
-    }
-  }
+  const existing = await readWeekPlans(
+    TEAM_ID,
+    dates[0] ?? formatIsoDate(dateInNewYork(new Date())),
+    dates[dates.length - 1] ?? formatIsoDate(dateInNewYork(new Date())),
+  );
+  const manualPlans = existing.filter(
+    (plan) => plan.generatedBy === "agentic-desk-manual",
+  );
 
   return c.json({
-    ok: failures.length === 0,
+    ok: true,
     days,
-    planned: plans,
-    failures,
+    planned: manualPlans.map((plan) => ({
+      date: plan.date,
+      windowCount: plan.windows.length,
+      eventName: plan.eventName,
+    })),
+    skippedGeneration: true,
+    statusMessage:
+      "Desk Plans are user-controlled; add events from the calendar or custom form.",
+    failures: [],
     generatedAt: new Date().toISOString(),
   });
 }

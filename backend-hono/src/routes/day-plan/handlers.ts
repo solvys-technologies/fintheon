@@ -9,11 +9,9 @@ import { z } from "zod";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
 import {
-  generateDayPlan,
   readDayPlan,
   readWeekPlans,
 } from "../../services/day-plan/day-plan-service.js";
-import { planWeek, planWeeks } from "../../services/day-plan/window-scheduler.js";
 import {
   generateEconForecast,
   isSpeechEvent,
@@ -32,7 +30,6 @@ import type {
 const log = createLogger("DayPlanHandlers");
 
 const TEAM_ID = "pic";
-const TODAY_GENERATION_TIMEOUT_MS = 8000;
 
 const FeedbackSchema = z.object({
   window_id: z.string().uuid(),
@@ -61,42 +58,9 @@ const CaoEveningReviewSchema = z.object({
 });
 
 export async function handleGetToday(c: Context): Promise<Response> {
-  let plan: DayPlan | null = null;
-  try {
-    const generation = generateDayPlan({ teamId: TEAM_ID });
-    generation.catch((err) => {
-      log.warn("background day-plan generation failed", {
-        error: err instanceof Error ? err.message : String(err),
-      });
-    });
-
-    const result = await Promise.race<
-      | { kind: "generated"; result: Awaited<ReturnType<typeof generateDayPlan>> }
-      | { kind: "timeout" }
-    >([
-      generation.then((result) => ({ kind: "generated", result })),
-      new Promise<{ kind: "timeout" }>((resolve) => {
-        setTimeout(
-          () => resolve({ kind: "timeout" }),
-          TODAY_GENERATION_TIMEOUT_MS,
-        );
-      }),
-    ]);
-
-    if (result.kind === "generated") {
-      plan = result.result.plan;
-    } else {
-      log.warn("on-demand day-plan generation timed out; returning cached plan", {
-        timeoutMs: TODAY_GENERATION_TIMEOUT_MS,
-      });
-      plan = await readDayPlan(TEAM_ID, dateInNewYork(new Date()));
-    }
-  } catch (err) {
-    log.warn("on-demand day-plan generation failed", {
-      error: err instanceof Error ? err.message : String(err),
-    });
-    plan = await readDayPlan(TEAM_ID, dateInNewYork(new Date())).catch(() => null);
-  }
+  const plan = await readDayPlan(TEAM_ID, dateInNewYork(new Date()))
+    .then((value) => (isUserControlledPlan(value) ? value : null))
+    .catch(() => null);
   return c.json({ plan });
 }
 
@@ -105,11 +69,16 @@ function dateInNewYork(date: Date): string {
 }
 
 export async function handleGetWeek(c: Context): Promise<Response> {
-  const planned = await planWeek(new Date());
+  const planned = collectWeekdays(new Date(), 5).map((date) => ({
+    date,
+    day: dayLabel(date),
+  }));
   const fromIso = planned[0]?.date;
   const toIso = planned[planned.length - 1]?.date;
   const persistedPlans =
-    fromIso && toIso ? await readWeekPlans(TEAM_ID, fromIso, toIso) : [];
+    fromIso && toIso
+      ? (await readWeekPlans(TEAM_ID, fromIso, toIso)).filter(isUserControlledPlan)
+      : [];
   const persistedByDate = new Map(persistedPlans.map((p) => [p.date, p]));
 
   const week: WeekDayEntry[] = planned.map((p) => {
@@ -117,9 +86,9 @@ export async function handleGetWeek(c: Context): Promise<Response> {
     return {
       date: p.date,
       day: p.day,
-      ivScore: p.ivScore,
-      windowCount: persisted?.windows.length ?? p.windows.length,
-      eventName: p.dominantEvent,
+      ivScore: inferPlanIvScore(persisted),
+      windowCount: persisted?.windows.length ?? 0,
+      eventName: persisted?.eventName ?? null,
     };
   });
   return c.json({ week });
@@ -132,8 +101,7 @@ export async function handleGetMultiWeek(c: Context): Promise<Response> {
   let result: DayPlan[][] = [];
 
   if (from && to) {
-    await ensureGeneratedPlans(collectDateRange(from, to));
-    const plans = await readWeekPlans(TEAM_ID, from, to);
+    const plans = (await readWeekPlans(TEAM_ID, from, to)).filter(isUserControlledPlan);
     const byWeek = new Map<string, DayPlan[]>();
     for (const plan of plans) {
       const d = new Date(`${plan.date}T12:00:00Z`);
@@ -148,13 +116,11 @@ export async function handleGetMultiWeek(c: Context): Promise<Response> {
     result = [...byWeek.values()];
   } else {
     const weekCount = parseInt(c.req.query("weeks") ?? "4", 10);
-    const plannedWeeks = await planWeeks(new Date(), Math.max(1, Math.min(12, weekCount)));
-
-    const allDates = plannedWeeks.flat().map((p) => p.date);
+    const plannedWeeks = collectWeekGrids(new Date(), Math.max(1, Math.min(12, weekCount)));
+    const allDates = plannedWeeks.flat();
     const fromIso = allDates[0] ?? new Date().toISOString().slice(0, 10);
     const toIso = allDates[allDates.length - 1] ?? fromIso;
-    await ensureGeneratedPlans(allDates);
-    const persisted = await readWeekPlans(TEAM_ID, fromIso, toIso);
+    const persisted = (await readWeekPlans(TEAM_ID, fromIso, toIso)).filter(isUserControlledPlan);
     const persistedByDate = new Map<string, DayPlan[]>();
     for (const p of persisted) {
       const list = persistedByDate.get(p.date) ?? [];
@@ -163,61 +129,56 @@ export async function handleGetMultiWeek(c: Context): Promise<Response> {
     }
 
     result = plannedWeeks.map((weekPlans) =>
-      weekPlans.map((pd) => {
-        const existingPlans = persistedByDate.get(pd.date) ?? [];
-        if (existingPlans.length > 0) return existingPlans[0];
-        return {
-          id: `plan-${pd.date}`,
-          teamId: TEAM_ID,
-          date: pd.date,
-          eventName: pd.dominantEvent,
-          deskTheme: null,
-          generatedBy: "multi-week-planner",
-          generatedAt: new Date().toISOString(),
-          sourceBriefId: null,
-          institutionalPositioning: null,
-          windows: pd.windows.map((pw, i) => ({
-            id: `w-${pd.date}-${i}`,
-            dayPlanId: `plan-${pd.date}`,
-            windowIndex: pw.windowIndex,
-            startTime: pw.startTime,
-            endTime: pw.endTime,
-            eventName: pw.eventName ?? null,
-            econForecast: null,
-          })),
-        } satisfies DayPlan;
-      }),
+      weekPlans.flatMap((date) => persistedByDate.get(date) ?? []),
     );
   }
 
   return c.json({ weeks: result });
 }
 
-async function ensureGeneratedPlans(dates: string[]): Promise<void> {
-  const uniqueDates = [...new Set(dates)].filter(Boolean).slice(0, 31);
-  for (const date of uniqueDates) {
-    await generateDayPlan({
-      teamId: TEAM_ID,
-      date: new Date(`${date}T12:00:00Z`),
-      generatedBy: "multi-week-planner",
-    }).catch((err) => {
-      log.warn("multi-week day-plan materialization failed", {
-        date,
-        error: err instanceof Error ? err.message : String(err),
-      });
-    });
-  }
+function isUserControlledPlan(plan: DayPlan | null | undefined): plan is DayPlan {
+  if (!plan) return false;
+  return plan.generatedBy === "agentic-desk-manual";
 }
 
-function collectDateRange(from: string, to: string): string[] {
-  const dates: string[] = [];
-  const cursor = new Date(`${from}T12:00:00Z`);
-  const end = new Date(`${to}T12:00:00Z`);
-  while (dates.length < 31 && cursor <= end) {
-    dates.push(cursor.toISOString().slice(0, 10));
+function inferPlanIvScore(plan: DayPlan | undefined): number | null {
+  if (!plan) return null;
+  return plan.eventName || plan.windows.some((window) => window.eventName)
+    ? 5
+    : null;
+}
+
+function dayLabel(dateIso: string): string {
+  const labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  return labels[new Date(`${dateIso}T12:00:00Z`).getUTCDay()] ?? "?";
+}
+
+function collectWeekdays(reference: Date, count: number): string[] {
+  const out: string[] = [];
+  const cursor = new Date(reference);
+  cursor.setUTCHours(12, 0, 0, 0);
+  while (out.length < count) {
+    const dow = cursor.getUTCDay();
+    if (dow >= 1 && dow <= 5) out.push(cursor.toISOString().slice(0, 10));
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
-  return dates;
+  return out;
+}
+
+function collectWeekGrids(reference: Date, weekCount: number): string[][] {
+  const weeks: string[][] = [];
+  const cursor = new Date(reference);
+  cursor.setUTCHours(12, 0, 0, 0);
+  while (weeks.length < weekCount) {
+    const week: string[] = [];
+    while (week.length < 5) {
+      const dow = cursor.getUTCDay();
+      if (dow >= 1 && dow <= 5) week.push(cursor.toISOString().slice(0, 10));
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+    weeks.push(week);
+  }
+  return weeks;
 }
 
 async function forecastMissingWindows(
@@ -230,7 +191,9 @@ async function forecastMissingWindows(
     econForecast: DayPlanWindow["econForecast"];
   }>,
 ): Promise<typeof windows> {
-  const events = await readEconEvents({ from: dateIso, to: dateIso }).catch(() => []);
+  const events = await readEconEvents({ from: dateIso, to: dateIso }).catch(
+    () => [],
+  );
   const resolved: typeof windows = [];
   for (const window of windows) {
     if (!window.eventName || window.econForecast) {
@@ -273,7 +236,11 @@ function findEventForWindow(
   const name = eventName.toLowerCase().trim();
   for (const event of events) {
     const eventLabel = (event.name ?? "").toLowerCase().trim();
-    if (eventLabel === name || eventLabel.includes(name) || name.includes(eventLabel)) {
+    if (
+      eventLabel === name ||
+      eventLabel.includes(name) ||
+      name.includes(eventLabel)
+    ) {
       return event;
     }
   }
@@ -330,7 +297,8 @@ export async function handleGetGradedStreak(c: Context): Promise<Response> {
     return c.json({ streakAtClose: 0, last30: [] });
   }
 
-  const { getGradedStreak } = await import("../../services/econ-grading-service.js");
+  const { getGradedStreak } =
+    await import("../../services/econ-grading-service.js");
   const result = await getGradedStreak(userId);
   return c.json(result);
 }

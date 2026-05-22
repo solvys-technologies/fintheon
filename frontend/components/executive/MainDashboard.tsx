@@ -38,7 +38,7 @@ import { DAY_PLAN_REFETCH_EVENT } from "../../hooks/useDayPlan";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-const DASHBOARD_PAGES = ["Briefing", "Desk Map", "RiskFlow"];
+const DASHBOARD_PAGES = ["Briefing", "Sprint Map", "RiskFlow"];
 
 function briefTypeToLabel(bt: string): string {
   switch (bt) {

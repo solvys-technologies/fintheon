@@ -10,8 +10,6 @@
 import cron from "node-cron";
 import { createLogger } from "../lib/logger.js";
 import { getSupabaseClient } from "../config/supabase.js";
-import { planWeek, planWeeks } from "./day-plan/window-scheduler.js";
-import { generateDayPlan, readDayPlan } from "./day-plan/day-plan-service.js";
 import { refreshPricesFromTV } from "./iv-scoring/instrument.js";
 
 const log = createLogger("DeskPlanner");
@@ -116,62 +114,9 @@ async function tick(): Promise<void> {
 export async function triggerWeekPlan(
   options?: { weekCount?: number },
 ): Promise<void> {
-  if (running) {
-    log.info("triggerWeekPlan skipped — already running");
-    return;
-  }
-
-  const weekCount = options?.weekCount ?? 4;
-  running = true;
-
-  try {
-    const weeks = await planWeeks(new Date(), weekCount);
-    log.info("triggerWeekPlan: planning weeks", {
-      weekCount: weeks.length,
-      totalDays: weeks.reduce((sum, w) => sum + w.length, 0),
-    });
-
-    for (const week of weeks) {
-      for (const day of week) {
-        const existing = await readDayPlan("pic", day.date);
-        if (existing && !day.windows[0]) {
-          log.info("Day plan already exists, skipping", { date: day.date });
-          continue;
-        }
-
-        const planVariant = day.windows[0]?.eventName
-          ?.toLowerCase()
-          .replace(/\s+/g, "-")
-          .slice(0, 40) ?? null;
-
-        try {
-          await generateDayPlan({
-            date: new Date(`${day.date}T12:00:00Z`),
-            generatedBy: "twt-trigger",
-            override: !!existing,
-            planVariant,
-          });
-          log.info("Day plan generated from TWT trigger", { date: day.date, planVariant });
-        } catch (planErr) {
-          log.warn("Day plan generation from TWT trigger failed", {
-            date: day.date,
-            error: planErr instanceof Error ? planErr.message : String(planErr),
-          });
-        }
-      }
-    }
-
-    lastGeneratedAt = new Date().toISOString();
-    log.info("triggerWeekPlan complete", {
-      weekCount: weeks.length,
-    });
-  } catch (err) {
-    log.error("triggerWeekPlan failed", {
-      error: err instanceof Error ? err.message : String(err),
-    });
-  } finally {
-    running = false;
-  }
+  log.info("triggerWeekPlan skipped — Desk Plans are user-controlled", {
+    requestedWeeks: options?.weekCount ?? 4,
+  });
 }
 
 const PRE_SESSION_SCHEDULE = "*/15 * * * 1-5";
@@ -257,8 +202,8 @@ const DEFAULT_INSTRUMENT = "/NQ";
 
 export function startDeskPlanCron(): void {
   if (running) return;
-  if (process.env.DESK_PLAN_CRON_ENABLED === "false") {
-    log.info("Disabled via DESK_PLAN_CRON_ENABLED=false");
+  if (process.env.DESK_PLAN_CRON_ENABLED !== "true") {
+    log.info("Disabled by default; set DESK_PLAN_CRON_ENABLED=true to allow legacy countdown cache generation");
     return;
   }
 

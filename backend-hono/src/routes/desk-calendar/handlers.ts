@@ -171,11 +171,13 @@ async function readUpcomingQueueCount(
 
 function icsEventToDeskPlan(evt: ReturnType<typeof parseIcsEvents>[number]) {
   const start = new Date(evt.startsAt);
-  const end = evt.endsAt ? new Date(evt.endsAt) : new Date(start.getTime() + 90 * 60_000);
+  const end = evt.endsAt
+    ? new Date(evt.endsAt)
+    : new Date(start.getTime() + 90 * 60_000);
   const country = inferCountry(evt.title, evt.description);
   return {
     date: formatInNewYork(start, "date"),
-    eventName: cleanEventTitle(evt.title),
+    eventName: cleanEventTitle(resolveDeskEventTitle(evt.title, evt.description)),
     country,
     currency: currencyForCountry(country),
     category: inferCategory(evt.title, evt.description),
@@ -184,9 +186,33 @@ function icsEventToDeskPlan(evt: ReturnType<typeof parseIcsEvents>[number]) {
     startTime: formatInNewYork(new Date(start.getTime() - 45 * 60_000), "time"),
     endTime: formatInNewYork(end, "time"),
     forecast: extractField(evt.description, "forecast"),
-    previous: extractField(evt.description, "previous") ?? extractField(evt.description, "prior"),
+    previous:
+      extractField(evt.description, "previous") ??
+      extractField(evt.description, "prior"),
     detail: evt.description ?? evt.url ?? undefined,
   };
+}
+
+function resolveDeskEventTitle(title: string, description: string | null): string {
+  const cleaned = cleanEventTitle(title);
+  if (cleaned && !isCountryOnly(cleaned)) return cleaned;
+  const lines = (description ?? "")
+    .split(/\r?\n/)
+    .map((line) => cleanEventTitle(line))
+    .filter(Boolean);
+  return (
+    lines.find((line) => !isCountryOnly(line) && !isMetadataLine(line)) ??
+    cleaned ??
+    title
+  );
+}
+
+function isCountryOnly(value: string): boolean {
+  return /^(US|USA|NZ|AU|JP|GB|UK|EU|CA|CN|CH)$/i.test(value.trim());
+}
+
+function isMetadataLine(value: string): boolean {
+  return /^(country|symbol)\s*:/i.test(value.trim());
 }
 
 function formatInNewYork(date: Date, kind: "date" | "time"): string {
@@ -206,7 +232,9 @@ function formatInNewYork(date: Date, kind: "date" | "time"): string {
 }
 
 function cleanEventTitle(title: string): string {
-  return title.replace(/^\s*([A-Z]{2,3}|USA|United States)\s*[-:]\s*/i, "").trim();
+  return title
+    .replace(/^\s*([A-Z]{2,3}|USA|United States)\s*[-:]\s*/i, "")
+    .trim();
 }
 
 function inferCountry(title: string, description: string | null): string {
@@ -234,7 +262,11 @@ function currencyForCountry(country: string): string {
 
 function inferCategory(title: string, description: string | null): string {
   const blob = `${title} ${description ?? ""}`.toLowerCase();
-  if (/\b(speech|speaks?|remarks|testimony|statement|press conference)\b/.test(blob))
+  if (
+    /\b(speech|speaks?|remarks|testimony|statement|press conference)\b/.test(
+      blob,
+    )
+  )
     return "Speaker";
   return "Economic";
 }
@@ -245,8 +277,13 @@ function severityToImpact(severity: number | null): "low" | "medium" | "high" {
   return "high";
 }
 
-function extractField(description: string | null, label: string): string | undefined {
+function extractField(
+  description: string | null,
+  label: string,
+): string | undefined {
   if (!description) return undefined;
-  const match = description.match(new RegExp(`${label}\\s*[:：]\\s*([^\\n|]+)`, "i"));
+  const match = description.match(
+    new RegExp(`${label}\\s*[:：]\\s*([^\\n|]+)`, "i"),
+  );
   return match?.[1]?.trim() || undefined;
 }

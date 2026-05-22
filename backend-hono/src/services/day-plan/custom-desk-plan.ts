@@ -62,6 +62,8 @@ export async function addCustomDeskPlanEvent(
   }
 
   const existing = await readDayPlan(TEAM_ID, input.date);
+  const mergeBase =
+    existing?.generatedBy === "agentic-desk-manual" ? existing : null;
   const forecast = await generateEconForecast({
     eventName: input.eventName,
     eventDate: input.date,
@@ -72,7 +74,7 @@ export async function addCustomDeskPlanEvent(
     previous: input.previous,
     isSpeech: isSpeechEvent(input),
   });
-  const windows = mergeWindows(existing?.windows ?? [], {
+  const windows = mergeWindows(mergeBase?.windows ?? [], {
     windowIndex: 0,
     startTime: input.startTime,
     endTime: input.endTime,
@@ -82,7 +84,7 @@ export async function addCustomDeskPlanEvent(
   });
 
   const plan = await persistManualPlan({
-    existing,
+    existing: mergeBase,
     input,
     windows,
   });
@@ -223,7 +225,7 @@ function rowPlan(
       windowIndex: window.window_index ?? fallback[index]?.windowIndex ?? index,
       startTime: String(window.start_time ?? fallback[index]?.startTime).slice(0, 5),
       endTime: String(window.end_time ?? fallback[index]?.endTime).slice(0, 5),
-      eventName: window.event_name ?? fallback[index]?.eventName ?? null,
+      eventName: window.event_name ?? fallback[index]?.eventName ?? row.event_name ?? null,
       eventCountry:
         window.econ_forecast?.eventCountry ?? fallback[index]?.eventCountry ?? null,
       econForecast: window.econ_forecast ?? fallback[index]?.econForecast ?? null,

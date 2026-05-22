@@ -26,6 +26,24 @@ function installDeskCalendarClickCapture({ win, getApiBase }) {
   });
 }
 
+function resolveEventTitle(event) {
+  if (event.eventTitle && !isCountryLabel(event.eventTitle)) {
+    return event.eventTitle;
+  }
+  if (event.eventName && !isCountryLabel(event.eventName)) {
+    return event.eventName;
+  }
+  const lines = String(event.description || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return lines.find((line) => !isCountryLabel(line)) || event.eventName || "TradingView event";
+}
+
+function isCountryLabel(value) {
+  return /^(us|usa|nz|au|jp|gb|uk|eu|ca|cn|ch)$/i.test(String(value || "").trim());
+}
+
 async function handleCapturedClick({ win, apiBase, payload }) {
   const send = (channel, body) => {
     if (!win.isDestroyed()) win.webContents.send(channel, body ?? {});
@@ -61,7 +79,7 @@ function buildIcs(event) {
     throw new Error("TradingView event did not expose a usable start time");
   }
   const end = new Date(start.getTime() + 90 * 60_000);
-  const summary = event.eventName || "TradingView economic event";
+  const summary = resolveEventTitle(event);
   const description = [
     `Country: ${event.country || "US"}`,
     `Symbol: ${event.symbol || ""}`,
@@ -134,9 +152,13 @@ const CAPTURE_SCRIPT = `(() => {
     const useful = stop === -1 ? lines : lines.slice(0, stop);
     const time = item.querySelector("time[datetime]");
     const startsAt = time?.getAttribute("datetime") || new Date().toISOString();
-    const eventName = useful[0] || item.getAttribute("data-symbol") || "TradingView event";
+    const eventTitle = clean(item.querySelector('[class*="titleText"]')?.textContent)
+      || useful.find((line) => !/^(us|usa|nz|au|jp|gb|uk|eu|ca|cn|ch)$/i.test(line))
+      || item.getAttribute("data-symbol")
+      || "TradingView event";
     const payload = {
-      eventName,
+      eventName: eventTitle,
+      eventTitle,
       startsAt,
       country: item.getAttribute("data-country") || "",
       symbol: item.getAttribute("data-symbol") || "",
