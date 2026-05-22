@@ -94,7 +94,7 @@ export function usePushNotifications() {
         token,
         categoriesFromPreferences(preferences.notifications, true),
         preferences.notifications.severityThreshold,
-      );
+      ).catch(() => false);
       setPermissionStatus(getPermissionStatus());
       if (!ok) {
         setIsSubscribed(false);

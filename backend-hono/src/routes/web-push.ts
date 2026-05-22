@@ -6,6 +6,7 @@ import { NOTIFICATION_CATEGORIES } from "../services/notifications/emit.js";
 import { createLogger } from "../lib/logger.js";
 
 const log = createLogger("WebPush");
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
 
 function getUserId(c: Context): string | null {
   const userId = c.get("userId") as string | undefined;
@@ -21,6 +22,19 @@ function normalizeCategories(
       categories?.[category] !== false,
     ]),
   );
+}
+
+export function createWebPushPublicRoutes(): Hono {
+  const router = new Hono();
+
+  router.get("/public-key", (c) => {
+    if (!VAPID_PUBLIC_KEY) {
+      return c.json({ error: "Web push is not configured" }, 503);
+    }
+    return c.json({ publicKey: VAPID_PUBLIC_KEY });
+  });
+
+  return router;
 }
 
 export function createWebPushRoutes(): Hono {

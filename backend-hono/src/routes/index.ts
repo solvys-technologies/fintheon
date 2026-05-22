@@ -83,7 +83,10 @@ import { createPolymarketRoutes } from "./polymarket/index.js";
 import { createRelayRoutes } from "./relay.js";
 import { createRelayQuickRoutes } from "./relay-quick.js";
 import { createPreviewRoutes } from "./preview.js";
-import { createWebPushRoutes } from "./web-push.js";
+import {
+  createWebPushPublicRoutes,
+  createWebPushRoutes,
+} from "./web-push.js";
 import { createOracleRoutes } from "./oracle.js";
 import { createMeRoutes } from "./me/index.js";
 import { createMaintenanceRoutes } from "./maintenance.js";
@@ -329,6 +332,9 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/agents/*", authMiddleware);
   app.use("/api/er", authMiddleware);
   app.use("/api/er/*", authMiddleware);
+
+  // Public metadata needed before a browser can create a web-push subscription.
+  app.route("/api/notifications/web-push", createWebPushPublicRoutes());
 
   // Hard auth required — these endpoints MUST have a verified identity
   app.use("/api/account", authMiddleware, requireAuth);
