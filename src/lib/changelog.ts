@@ -12,7 +12,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-05-22T16:20:00-04:00",
     agent: "codex",
     summary:
-      "v6.7.11 release prep: captured the clean post-v6.7.10 mobile fixes into the updater path, including restored mobile chat provider context and stabilized mobile push notification toggle behavior, then bumped desktop/mobile package metadata plus install/update script pointers.",
+      "v6.7.12 release prep: captured the clean post-v6.7.10 mobile fixes into the updater path, including restored mobile chat provider context and stabilized mobile push notification toggle behavior, then bumped desktop/mobile package metadata plus install/update script pointers.",
     files: [
       "package.json",
       "mobile/package.json",
