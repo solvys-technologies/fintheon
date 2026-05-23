@@ -201,6 +201,13 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
     verdict?.rounds_complete ?? (verdict ? roundsTotal : 0);
   const roundsValue = roundsTotal > 0 ? roundsComplete / roundsTotal : 0;
   const phase = verdict?.phase ?? (verdict ? "complete" : "convening");
+  const [phaseNotice, setPhaseNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPhaseNotice(phase);
+    const id = window.setTimeout(() => setPhaseNotice(null), 2600);
+    return () => window.clearTimeout(id);
+  }, [phase]);
 
   // Fire onSynthesisComplete once per verdict id when phase === "complete".
   const [firedFor, setFiredFor] = useState<string | null>(null);
@@ -239,6 +246,14 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
           </select>
         </div>
         <div className="flex items-center gap-2">
+          {phaseNotice ? (
+            <span
+              key={phaseNotice}
+              className="fintheon-status-notice-fade text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/45"
+            >
+              {phaseNotice}
+            </span>
+          ) : null}
           <button
             onClick={() => setSettingsOpen((v) => !v)}
             className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 transition-colors"
@@ -247,9 +262,6 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
           >
             <Settings className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] transition-colors" />
           </button>
-          <span className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/35">
-            {phase}
-          </span>
         </div>
       </div>
       <div className="grid grid-cols-1 gap-0 md:grid-cols-4">

@@ -1,6 +1,7 @@
 // [claude-code 2026-05-03] S57: shared canonical next-session scenario strip.
 import type { IVScoreResponse } from "../../types/market-data";
 import { FadingRuler } from "../shared/FadingRuler";
+import { NothingFuse } from "../shared/NothingFuse";
 
 type Scenario = NonNullable<IVScoreResponse["prediction"]>["scenarios"][number];
 
@@ -8,13 +9,6 @@ interface NextSessionScenariosStripProps {
   scenarios?: Scenario[];
   isLoading?: boolean;
   className?: string;
-}
-
-function getScoreColor(score: number): string {
-  if (score >= 8) return "text-red-500";
-  if (score >= 6) return "text-orange-400";
-  if (score >= 4) return "text-yellow-400";
-  return "text-emerald-400";
 }
 
 export function NextSessionScenariosStrip({
@@ -44,35 +38,27 @@ export function NextSessionScenariosStrip({
 
   return (
     <div
-      className={`flex flex-col sm:flex-row sm:items-stretch min-w-0 overflow-hidden ${className ?? ""}`}
+      className={`flex min-w-0 flex-col gap-1.5 overflow-hidden ${className ?? ""}`}
       aria-label="Next-session volatility scenarios"
     >
       {scenarios.map((scenario, index) => (
         <div key={scenario.label} className="contents">
           {index > 0 && (
-            <>
-              <FadingRuler className="my-1 sm:hidden" />
-              <FadingRuler
-                orientation="vertical"
-                className="mx-2 hidden sm:block"
-              />
-            </>
+            <FadingRuler className="my-0.5" />
           )}
-          <div className="flex-1 min-w-0 px-1.5 py-1">
-            <div className="text-[9px] uppercase tracking-[0.16em] text-[var(--fintheon-text)]/55 truncate">
+          <div className="grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)_2.5rem] items-center gap-2 px-1.5 py-0.5">
+            <span className="truncate text-[9px] uppercase tracking-[0.16em] text-[var(--fintheon-text)]/55">
               {scenario.label}
-            </div>
-            <div className="mt-1 flex items-baseline justify-between gap-3">
-              <span className="text-[10px] tabular-nums text-[var(--fintheon-muted)]/70">
-                {(scenario.probability * 100).toFixed(0)}%
-              </span>
-              <span
-                className={`text-[13px] font-bold tabular-nums ${getScoreColor(scenario.projectedScore)}`}
-                style={{ fontFamily: "Doto, ui-monospace, monospace" }}
-              >
-                {scenario.projectedScore.toFixed(1)}
-              </span>
-            </div>
+            </span>
+            <NothingFuse
+              value={scenario.probability}
+              score={scenario.probability * 10}
+              thickness={3}
+              segments={10}
+            />
+            <span className="text-right font-mono text-[10px] tabular-nums text-[var(--fintheon-muted)]/75">
+              {(scenario.probability * 100).toFixed(0)}%
+            </span>
           </div>
         </div>
       ))}

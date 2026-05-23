@@ -12,7 +12,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-05-23T14:57:02-04:00",
     agent: "codex",
     summary:
-      "v6.7.18 release polish: restored Solvys-gold chat send buttons, refined reasoning/provider popups, added ticker-card fade transitions, and refreshed installer pointers.",
+      "v6.7.18 release polish: restored gold chat sends, refined popups, added ticker fades, capped chamber reads, cleaned forecast fuses, and refreshed installers.",
     files: [
       "frontend/index.css",
       "frontend/components/chat/ReasoningLevelSelector.tsx",
@@ -20,6 +20,10 @@ export const changelog: ChangelogEntry[] = [
       "frontend/components/chat/slots/MarketTickerCard.tsx",
       "frontend/components/chat/slots/MarketTickerMention.tsx",
       "frontend/components/chat/slots/MarketTickerStripSlot.tsx",
+      "frontend/components/narrative/BlendedIVForecastCard.tsx",
+      "frontend/components/narrative/NextSessionScenariosStrip.tsx",
+      "frontend/components/arbitrum/ArbitrumChamber.tsx",
+      "frontend/components/arbitrum/VerdictCard.tsx",
       "scripts/fintheon-update.sh",
       "scripts/fintheon-setup.sh",
       "scripts/install-cli.sh",

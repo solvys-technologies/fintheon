@@ -50,6 +50,9 @@ export function BlendedIVForecastCard({
   const envLabel = getEnvironmentLabel(data.score);
   const scoreColor = getScoreColor(data.score);
   const prediction = data.prediction;
+  const confidencePct = prediction
+    ? Math.round(prediction.confidence * 100)
+    : 0;
 
   const components = [
     {
@@ -87,19 +90,19 @@ export function BlendedIVForecastCard({
           </div>
           <div className="flex items-center gap-3 mb-2">
             <span
-              className={`text-xl font-bold ${getScoreColor(prediction.nextSessionScore)}`}
+              className={`text-xl font-bold ${getScoreColor(prediction.confidence * 10)}`}
               style={{
                 fontFamily: "Doto, ui-monospace, monospace",
                 letterSpacing: "0.02em",
               }}
             >
-              {prediction.nextSessionScore.toFixed(1)}
+              {confidencePct}%
             </span>
             <div className="flex-1">
               <div className="flex items-center justify-between mb-0.5">
                 <span className="text-[8px] text-gray-500">Confidence</span>
                 <span className="text-[9px] text-gray-300">
-                  {(prediction.confidence * 100).toFixed(0)}%
+                  {confidencePct}%
                 </span>
               </div>
               <NothingFuse

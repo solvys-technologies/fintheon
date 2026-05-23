@@ -1620,6 +1620,10 @@ html *::-webkit-scrollbar {
   animation: fintheon-popover-fade-out 140ms ease-in both;
 }
 
+.fintheon-status-notice-fade {
+  animation: fintheon-status-notice-fade 2600ms ease-in-out both;
+}
+
 @keyframes fintheon-popover-fade-in {
   from {
     opacity: 0;
@@ -1639,6 +1643,22 @@ html *::-webkit-scrollbar {
   to {
     opacity: 0;
     transform: translateY(4px) scale(0.985);
+  }
+}
+
+@keyframes fintheon-status-notice-fade {
+  0% {
+    opacity: 0;
+    transform: translateX(5px);
+  }
+  12%,
+  72% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-5px);
   }
 }
 

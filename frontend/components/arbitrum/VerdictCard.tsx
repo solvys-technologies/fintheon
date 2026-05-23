@@ -96,7 +96,8 @@ export function VerdictCard({
           [&_strong]:text-[var(--fintheon-accent)] [&_strong]:font-medium
           [&_em]:text-[var(--fintheon-text)]/55 [&_em]:not-italic
           [&_hr]:border-[var(--fintheon-accent)]/15 [&_hr]:my-2
-          ${compact ? "text-[11px]" : "text-sm"}`}
+          ${compact ? "text-[11px]" : "text-sm"}
+          ${embedded ? "max-h-[18rem] overflow-y-auto pr-2" : ""}`}
       >
         <StreamdownChat content={cleanedDigest} />
       </div>
