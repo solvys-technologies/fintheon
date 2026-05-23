@@ -9,6 +9,21 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-23T01:15:00-04:00",
+    agent: "codex",
+    summary:
+      "v6.7.16 desktop hotfix: rebuilt the Mac release from an Electron-mode frontend bundle so packaged file:// assets resolve from app.asar instead of /assets, restoring the renderer after the v6.7.15 white-screen release.",
+    files: [
+      "package.json",
+      "mobile/package.json",
+      "scripts/fintheon-update.sh",
+      "scripts/fintheon-setup.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-23T00:00:00-04:00",
     agent: "codex",
     summary:
