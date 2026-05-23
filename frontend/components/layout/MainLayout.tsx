@@ -677,7 +677,7 @@ function MainLayoutInner() {
       rightPanels.push(
         <div
           key="combined"
-          className={`bg-[var(--fintheon-bg)] border-y border-r border-[var(--fintheon-accent)]/20 rounded-tr-2xl rounded-br-2xl transition-all duration-200 ${combinedPanelCollapsed ? "w-16" : "w-[min(380px,42vw)]"}`}
+          className={`fintheon-side-surface bg-[var(--fintheon-bg)] border-y border-r border-[var(--fintheon-accent)]/20 rounded-tr-2xl rounded-br-2xl transition-all duration-200 ${combinedPanelCollapsed ? "w-16" : "w-[min(380px,42vw)]"}`}
         >
           <div className="h-full flex flex-col">
             {combinedPanelCollapsed && (
@@ -760,7 +760,7 @@ function MainLayoutInner() {
               : "w-[min(380px,42vw)] opacity-100"
           }`}
         >
-          <div className="flex-1 min-h-0 flex flex-col bg-[var(--fintheon-surface)] border-r border-[var(--fintheon-accent)]/20 rounded-tr-2xl rounded-br-2xl">
+          <div className="fintheon-side-surface flex-1 min-h-0 flex flex-col bg-[var(--fintheon-surface)] border-r border-[var(--fintheon-accent)]/20 rounded-tr-2xl rounded-br-2xl">
             {/* Widgets pane — shown in balanced + widgetsOnly.
                   [claude-code 2026-04-24] min-h-0 is CRITICAL in widgetsOnly:
                   without it, flex-1 + inner content force the pane taller than
@@ -848,7 +848,7 @@ function MainLayoutInner() {
     <ScheduleProvider>
       <YouTubeMiniplayerProvider>
         <div
-          className={`h-screen w-full overflow-hidden flex flex-col bg-[var(--fintheon-bg)] text-white ${topStepXEnabled ? "topstepx-active" : ""}`}
+          className={`fintheon-app-shell h-screen w-full overflow-hidden flex flex-col bg-[var(--fintheon-bg)] text-white ${topStepXEnabled ? "topstepx-active" : ""}`}
         >
           {/* [claude-code 2026-04-24] Standalone waveform overlay — no border, no
             background. Doubles as user-mic indicator (when listening) and agent
@@ -947,7 +947,7 @@ function MainLayoutInner() {
                 Full 4-sided gold hairline border + rounded corners so the main
                 content floats above both the left sidebar and the right Strategium
                 (which use bg-surface, lighter than the main content's bg-bg). */}
-            <div className="z-10 flex-1 overflow-hidden relative min-w-0 flex flex-col border-t border-b border-l border-r border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] rounded-tl-2xl rounded-bl-2xl rounded-tr-2xl rounded-br-2xl">
+            <div className="fintheon-main-surface z-10 flex-1 overflow-hidden relative min-w-0 flex flex-col border-t border-b border-l border-r border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] rounded-tl-2xl rounded-bl-2xl rounded-tr-2xl rounded-br-2xl">
               {/* Timeline overlay — slides over browser, does not affect iframe sizing */}
               <TimelineOverlay
                 open={timelineOverlayOpen}

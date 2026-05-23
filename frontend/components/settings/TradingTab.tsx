@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from "react";
 import Toggle from "../Toggle";
 import { useLockout } from "../../hooks/useLockout";
+import { BlockerTab } from "./BlockerTab";
 
 type PrimaryBroker = "rithmic" | "projectx" | "mmt";
 
@@ -657,6 +658,10 @@ export function TradingTab({
           Enable or disable specific trading models for your algorithmic
           strategy
         </p>
+      </section>
+
+      <section className="pt-6 border-t border-zinc-800">
+        <BlockerTab />
       </section>
     </>
   );

@@ -10,6 +10,41 @@ interface ProfileSettingsSectionProps {
 }
 
 const socialKeys = ["x", "substack", "telegram", "discord"] as const;
+const MAX_AVATAR_INPUT_BYTES = 8_000_000;
+const MAX_AVATAR_OUTPUT_BYTES = 420_000;
+
+function resizeAvatar(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Unable to read image"));
+    reader.onload = () => {
+      img.onload = () => {
+        const size = Math.min(640, Math.max(img.width, img.height));
+        const scale = size / Math.max(img.width, img.height);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Unable to process image"));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        let quality = 0.82;
+        let dataUrl = canvas.toDataURL("image/jpeg", quality);
+        while (dataUrl.length > MAX_AVATAR_OUTPUT_BYTES && quality > 0.42) {
+          quality -= 0.08;
+          dataUrl = canvas.toDataURL("image/jpeg", quality);
+        }
+        resolve(dataUrl);
+      };
+      img.onerror = () => reject(new Error("Unsupported image"));
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 export function ProfileSettingsSection({
   traderName,
@@ -44,13 +79,19 @@ export function ProfileSettingsSection({
 
   const chooseAvatar = async (file: File | null) => {
     if (!file) return;
-    if (file.size > 500_000) {
-      setStatus("[IMAGE TOO LARGE]");
+    if (file.size > MAX_AVATAR_INPUT_BYTES) {
+      setStatus("[MAX 8MB]");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => setAvatarUrl(String(reader.result));
-    reader.readAsDataURL(file);
+    setStatus("[FORMATTING]");
+    try {
+      const nextAvatar = await resizeAvatar(file);
+      setAvatarUrl(nextAvatar);
+      setStatus("[READY]");
+      window.setTimeout(() => setStatus(null), 1200);
+    } catch {
+      setStatus("[IMAGE ERROR]");
+    }
   };
 
   const save = async () => {
@@ -74,19 +115,26 @@ export function ProfileSettingsSection({
 
   return (
     <section className="fintheon-fade-in space-y-5">
-      <div className="fintheon-fade-divider flex items-start justify-between gap-4 pb-1">
+      <div className="fintheon-fade-divider flex items-center justify-between gap-4 pb-1">
         <div className="flex min-w-0 items-center gap-3">
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt=""
-              className="h-12 w-12 rounded-full object-cover transition-opacity duration-200 hover:opacity-80"
-            />
-          ) : (
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--fintheon-surface)] text-[var(--fintheon-text)]/45">
-              <Mail className="h-4 w-4" />
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="group shrink-0 rounded-full focus:outline-none focus:ring-1 focus:ring-[var(--fintheon-accent)]/40"
+            title="Update profile picture"
+          >
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt=""
+                className="h-12 w-12 rounded-full object-cover transition-opacity duration-200 group-hover:opacity-80"
+              />
+            ) : (
+              <span className="settings-placeholder flex h-12 w-12 items-center justify-center rounded-full text-[var(--fintheon-text)]/45 transition-colors group-hover:text-[var(--fintheon-accent)]/80">
+                <Mail className="h-4 w-4" />
+              </span>
+            )}
+          </button>
           <div className="min-w-0">
             <h3 className="text-sm font-semibold text-[var(--fintheon-text)]">
               Public Profile
@@ -96,7 +144,7 @@ export function ProfileSettingsSection({
             </p>
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-3 text-right">
+        <div className="ml-auto flex shrink-0 items-center gap-3 text-right">
           {status && (
             <span className="font-mono text-[10px] text-[var(--fintheon-text)]/40">
               {status}

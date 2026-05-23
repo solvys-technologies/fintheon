@@ -1,7 +1,7 @@
 // [claude-code 2026-04-16] Added linked Google account display + switch account
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — general/profile tab
 import React, { useState } from "react";
-import { CreditCard } from "lucide-react";
+import { CreditCard, Download } from "lucide-react";
 import { ProfileSettingsSection } from "./ProfileSettingsSection";
 
 interface AvailableSymbol {
@@ -134,13 +134,15 @@ export function GeneralTab({
             <h4 className="text-sm font-medium text-gray-300 mb-3">
               Current Plan
             </h4>
-            <div className="rounded-md bg-[var(--fintheon-surface)] p-4">
+            <div className="settings-soft-panel rounded-md p-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-lg font-bold text-[var(--fintheon-accent)]">
+                  <p className="text-base font-bold text-[var(--fintheon-accent)]">
                     {tier.replace("_", " ").toUpperCase()}
                   </p>
-                  <p className="text-xs text-gray-500">Active subscription</p>
+                  <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-gray-500">
+                    Active subscription
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -150,13 +152,18 @@ export function GeneralTab({
                   Change Plan
                 </button>
               </div>
-              <div className="text-sm text-gray-400">
+              <div className="grid gap-2 text-sm text-gray-400 sm:grid-cols-2">
                 <p>
-                  Next billing date:{" "}
-                  <span className="text-[var(--fintheon-text)]">Jan 4, 2026</span>
+                  Next billing date{" "}
+                  <span className="block text-[var(--fintheon-text)]">
+                    Jan 4, 2026
+                  </span>
                 </p>
-                <p className="mt-1">
-                  Amount: <span className="text-[var(--fintheon-text)]">$149.00</span>
+                <p className="sm:text-right">
+                  Amount{" "}
+                  <span className="block font-semibold text-[var(--fintheon-text)]">
+                    $149.00
+                  </span>
                 </p>
               </div>
             </div>
@@ -166,7 +173,7 @@ export function GeneralTab({
             <h4 className="text-sm font-medium text-gray-300 mb-3">
               Payment Method
             </h4>
-            <div className="rounded-md bg-[var(--fintheon-surface)] p-4">
+            <div className="settings-soft-panel rounded-md p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-8 w-12 items-center justify-center rounded bg-[var(--fintheon-bg)]">
@@ -188,7 +195,7 @@ export function GeneralTab({
             <h4 className="text-sm font-medium text-gray-300 mb-3">
               Billing History
             </h4>
-            <div className="rounded-md bg-[var(--fintheon-surface)]">
+            <div className="divide-y divide-[var(--fintheon-accent)]/8">
               {[
                 { date: "Dec 4, 2025", amount: "$149.00", status: "Paid" },
                 { date: "Nov 4, 2025", amount: "$149.00", status: "Paid" },
@@ -196,7 +203,7 @@ export function GeneralTab({
               ].map((invoice, idx) => (
                 <div
                   key={idx}
-                  className="fintheon-fade-divider flex items-center justify-between px-4 py-3 transition-opacity duration-200 hover:opacity-80"
+                  className="flex items-center justify-between px-1 py-3 transition-opacity duration-200 hover:opacity-80"
                 >
                   <div>
                     <p className="text-sm text-[var(--fintheon-text)]">{invoice.date}</p>
@@ -206,29 +213,15 @@ export function GeneralTab({
                     <p className="text-sm font-semibold text-[var(--fintheon-text)]">
                       {invoice.amount}
                     </p>
-                    <button className="fintheon-action-link text-right text-[11px] font-semibold uppercase tracking-[0.12em]">
-                      Download
+                    <button
+                      className="fintheon-action-link inline-flex h-7 w-7 items-center justify-center rounded text-right"
+                      title="Download invoice"
+                    >
+                      <Download className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-medium text-red-500 mb-3">
-              Danger Zone
-            </h4>
-            <div className="rounded-md bg-[var(--fintheon-surface)] p-4">
-              <p className="text-sm text-gray-400 mb-3">
-                Cancel your subscription. You will retain access until the end
-                of your billing period.
-              </p>
-              <div className="flex justify-end">
-                <button className="fintheon-action-link text-right text-[11px] font-semibold uppercase tracking-[0.12em] text-red-400">
-                  Cancel Subscription
-                </button>
-              </div>
             </div>
           </div>
         </div>

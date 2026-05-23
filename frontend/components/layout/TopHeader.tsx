@@ -450,7 +450,7 @@ export function TopHeader({
     <div
       id="fintheon-heading-toolbar"
       data-tour-target="toolbar"
-      className={`relative bg-[var(--fintheon-surface)] flex items-center justify-between px-3 ${topStepXEnabled && layoutOption === "tickers-only" ? "h-[47px]" : "h-[50px]"}`}
+      className={`fintheon-side-surface relative bg-[var(--fintheon-surface)] flex items-center justify-between px-3 ${topStepXEnabled && layoutOption === "tickers-only" ? "h-[47px]" : "h-[50px]"}`}
     >
       <div className="flex items-center gap-2 lg:gap-4 xl:gap-6">
         <div

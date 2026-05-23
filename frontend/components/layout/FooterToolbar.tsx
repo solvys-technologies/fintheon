@@ -541,7 +541,7 @@ export function FooterToolbar({
     // [claude-code 2026-04-30] S56-shell: footer now shares --fintheon-surface
     // with TopHeader + sidebar so the left column blends continuously and no
     // corner triangles peek through main content's edges.
-    <div className="relative flex-shrink-0 bg-[var(--fintheon-surface)]">
+    <div className="fintheon-footer-surface relative flex-shrink-0 bg-[var(--fintheon-surface)]">
       {/* Slide-up panel */}
       <div
         className="overflow-hidden transition-all duration-300 ease-in-out"

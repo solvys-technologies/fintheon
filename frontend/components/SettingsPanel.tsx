@@ -17,8 +17,9 @@ import {
   Users,
   AlertTriangle,
   ArrowLeft,
+  ArrowDown,
+  ArrowUp,
   Globe,
-  Shield,
 } from "lucide-react";
 import { useSettings, type APIKeys } from "../contexts/SettingsContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -39,7 +40,6 @@ import { ApiTab } from "./settings/ApiTab";
 import { IframesTab } from "./settings/IframesTab";
 import { DangerTab } from "./settings/DangerTab";
 import { DeveloperTab } from "./settings/DeveloperTab";
-import { BlockerTab } from "./settings/BlockerTab";
 
 type SettingsTab =
   | "general"
@@ -50,7 +50,6 @@ type SettingsTab =
   | "trading"
   | "api"
   | "iframes"
-  | "blocker"
   | "developer"
   | "danger";
 
@@ -82,7 +81,7 @@ const AVAILABLE_SYMBOLS = [
   },
 ];
 
-const TABS = [
+const REORDERABLE_TABS = [
   {
     id: "general" as const,
     label: "Profile",
@@ -132,25 +131,35 @@ const TABS = [
     description: "Embed URLs for Boardroom, Research, and more",
   },
   {
-    id: "blocker" as const,
-    label: "Blocker",
-    icon: Shield,
-    description: "Block TopStepX across all apps and browsers",
-  },
-  {
     id: "developer" as const,
     label: "Developer",
     icon: Terminal,
     description:
       "RiskFlow calibration, mock data, test tools, and tier management",
   },
-  {
-    id: "danger" as const,
-    label: "Danger Zone",
-    icon: AlertTriangle,
-    description: "Reset analysts, clear data, and export config",
-  },
 ];
+const DANGER_TAB = {
+  id: "danger" as const,
+  label: "Danger Zone",
+  icon: AlertTriangle,
+  description: "Reset analysts, clear data, and export config",
+};
+const TABS = [...REORDERABLE_TABS, DANGER_TAB];
+const TAB_ORDER_KEY = "fintheon:settings-tab-order:v1";
+
+function loadTabOrder(): SettingsTab[] {
+  const fallback = REORDERABLE_TABS.map((tab) => tab.id);
+  try {
+    const parsed = JSON.parse(localStorage.getItem(TAB_ORDER_KEY) ?? "[]");
+    if (!Array.isArray(parsed)) return fallback;
+    const valid = parsed.filter((id) =>
+      REORDERABLE_TABS.some((tab) => tab.id === id),
+    ) as SettingsTab[];
+    return [...valid, ...fallback.filter((id) => !valid.includes(id))];
+  } catch {
+    return fallback;
+  }
+}
 
 // Per-tab wrapper that drives t-panel-slide entry on mount via a one-frame rAF so
 // the new tab content tweens in from the closed (translate-Y + blur + opacity:0)
@@ -236,8 +245,31 @@ export function SettingsPage() {
   const [tabTransitioning, setTabTransitioning] = useState(false);
   const [sidebarHovered, setSidebarHovered] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [tabOrder, setTabOrder] = useState<SettingsTab[]>(() => loadTabOrder());
+  const [isReorderingTabs, setIsReorderingTabs] = useState(false);
   const { addToast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const orderedTabs = [
+    ...tabOrder
+      .map((id) => REORDERABLE_TABS.find((tab) => tab.id === id))
+      .filter(Boolean),
+    DANGER_TAB,
+  ] as typeof TABS;
+
+  const moveTab = (id: SettingsTab, direction: -1 | 1) => {
+    setTabOrder((current) => {
+      const index = current.indexOf(id);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= current.length)
+        return current;
+      const next = [...current];
+      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+      try {
+        localStorage.setItem(TAB_ORDER_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
 
   const handleTabChange = (tab: SettingsTab) => {
     if (!showLanding && tab === activeTab && !tabTransitioning) return;
@@ -432,8 +464,6 @@ export function SettingsPage() {
         return wrap("desk", <AgenticDesk />);
       case "danger":
         return wrap("danger", <DangerTab />);
-      case "blocker":
-        return wrap("blocker", <BlockerTab />);
       case "developer":
         return wrap(
           "developer",
@@ -454,7 +484,7 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="h-full w-full flex relative">
+    <div className="settings-pass-through h-full w-full flex relative">
       <div className="flex-1 flex flex-col min-h-0">
         {showLanding ? (
           <div
@@ -468,19 +498,55 @@ export function SettingsPage() {
                 <p className="text-[13px] text-gray-500">
                   Configure your Fintheon environment
                 </p>
+                <button
+                  type="button"
+                  onClick={() => setIsReorderingTabs((value) => !value)}
+                  className="fintheon-action-link mt-3 text-[10px] font-semibold uppercase tracking-[0.16em]"
+                >
+                  {isReorderingTabs ? "Done" : "Reorder"}
+                </button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {TABS.map((tab) => {
+                {orderedTabs.map((tab) => {
                   const Icon = tab.icon;
                   const isDanger = tab.id === "danger";
                   return (
                     <React.Fragment key={tab.id}>
                       {isDanger && <div className="hidden lg:block" />}
-                      <button
-                        onClick={() => handleTabChange(tab.id)}
-                        className={`group text-right p-4 rounded-md transition-all duration-200 hover:opacity-80 ${isDanger ? "text-red-400" : "text-[var(--fintheon-text)]"}`}
+                      <div
+                        className={`group relative text-right p-4 rounded-md transition-all duration-200 hover:opacity-80 ${isDanger ? "text-red-400" : "text-[var(--fintheon-text)]"}`}
                       >
-                        <div className="flex items-start justify-end gap-3">
+                        {isReorderingTabs && !isDanger && (
+                          <span className="absolute left-3 top-3 flex gap-1">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                moveTab(tab.id, -1);
+                              }}
+                              className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]/70"
+                              title="Move up"
+                            >
+                              <ArrowUp className="h-3 w-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                moveTab(tab.id, 1);
+                              }}
+                              className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]/70"
+                              title="Move down"
+                            >
+                              <ArrowDown className="h-3 w-3" />
+                            </button>
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleTabChange(tab.id)}
+                          className="flex w-full items-start justify-end gap-3 text-right"
+                        >
                           <div
                             className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${isDanger ? "text-red-400" : "text-[var(--fintheon-accent)]/70"} transition-opacity duration-200`}
                           >
@@ -496,8 +562,8 @@ export function SettingsPage() {
                               {tab.description}
                             </div>
                           </div>
-                        </div>
-                      </button>
+                        </button>
+                      </div>
                     </React.Fragment>
                   );
                 })}
@@ -519,20 +585,20 @@ export function SettingsPage() {
               <div className="flex items-center gap-2">
                 {(() => {
                   const Icon =
-                    TABS.find((t) => t.id === activeTab)?.icon ?? Settings;
+                    orderedTabs.find((t) => t.id === activeTab)?.icon ?? Settings;
                   return (
                     <Icon className="w-4 h-4 text-[var(--fintheon-accent)]/60" />
                   );
                 })()}
                 <h2 className="text-[14px] font-semibold text-white tracking-tight">
-                  {TABS.find((t) => t.id === activeTab)?.label}
+                  {orderedTabs.find((t) => t.id === activeTab)?.label}
                 </h2>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto px-8 py-4 pb-20 space-y-6 relative">
+            <div className="flex-1 overflow-y-auto px-8 py-4 pb-28 space-y-6 relative">
               {renderTabContent()}
             </div>
-            <div className="sticky bottom-0 bg-[var(--fintheon-bg)] px-8 py-3">
+            <div className="sticky bottom-0 bg-[var(--fintheon-bg)] px-8 pb-7 pt-3">
               <div className="flex items-center justify-end gap-3">
                 <button
                   onClick={handleSave}
@@ -556,10 +622,10 @@ export function SettingsPage() {
           {!sidebarHovered && (
             <div className="absolute right-0 top-0 bottom-0 w-3 bg-transparent cursor-pointer">
               <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col gap-1.5">
-                {TABS.map((_, i) => (
+                {orderedTabs.map((_, i) => (
                   <div
                     key={i}
-                    className={`w-1 rounded-full transition-all ${TABS[i].id === activeTab ? "h-4 bg-[var(--fintheon-accent)]" : "h-1.5 bg-[var(--fintheon-accent)]/25"}`}
+                    className={`w-1 rounded-full transition-all ${orderedTabs[i].id === activeTab ? "h-4 bg-[var(--fintheon-accent)]" : "h-1.5 bg-[var(--fintheon-accent)]/25"}`}
                   />
                 ))}
               </div>
@@ -574,7 +640,7 @@ export function SettingsPage() {
               </span>
             </div>
             <div className="flex-1 space-y-0.5 px-2">
-              {TABS.map((tab) => {
+              {orderedTabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 return (

@@ -1,12 +1,59 @@
-// [claude-code 2026-05-16] Simplified to theme mode + 2 presets only
-import { Check } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, Pencil, Save, Trash2 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
-import { DEFAULT_THEME } from "../../lib/theme";
+import { DEFAULT_THEME, type ThemeConfig } from "../../lib/theme";
 import { DEFAULT_FONT_THEME } from "../../lib/font-theme";
+import { getAccessToken } from "../../lib/supabase";
 
-const SAMPLE_HEADING = "AAPL 189.42  +2.31%";
-const SAMPLE_BODY =
-  "ES broke above 5,420 resistance — watching $1,234.56 target with 62% probability. Risk/reward favors long above the VWAP.";
+interface ThemeProfile {
+  id: string;
+  name: string;
+  theme: ThemeConfig;
+}
+
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const PROFILE_KEY = "fintheon:theme-profiles:v1";
+const colorFields: { key: keyof ThemeConfig; label: string }[] = [
+  { key: "primary", label: "Primary" },
+  { key: "secondary", label: "Secondary" },
+  { key: "accent", label: "Accent" },
+  { key: "bg", label: "Background" },
+  { key: "border", label: "Border" },
+  { key: "severe", label: "Severity Critical" },
+  { key: "neutralSevere", label: "Severity High" },
+  { key: "neutral", label: "Severity Medium" },
+  { key: "lowNeutral", label: "Severity Low-Mid" },
+  { key: "low", label: "Severity Low" },
+  { key: "bullish", label: "Bullish" },
+  { key: "bearish", label: "Bearish" },
+];
+
+function loadLocalProfiles(): ThemeProfile[] {
+  try {
+    return JSON.parse(localStorage.getItem(PROFILE_KEY) ?? "[]");
+  } catch {
+    return [];
+  }
+}
+
+async function saveProfiles(profiles: ThemeProfile[]) {
+  try {
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(profiles));
+    const token = await getAccessToken();
+    if (!token) return;
+    await fetch(`${API_BASE}/api/settings`, {
+      method: "PUT",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ settings: { appearance: { savedThemes: profiles } } }),
+    });
+  } catch {
+    /* local theme saving should never block UI */
+  }
+}
 
 export function ThemeSettings() {
   const {
@@ -21,270 +68,200 @@ export function ThemeSettings() {
     mode,
     setMode,
   } = useTheme();
+  const [profiles, setProfiles] = useState<ThemeProfile[]>(loadLocalProfiles);
+  const [profileName, setProfileName] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const token = await getAccessToken();
+      if (!token) return;
+      const res = await fetch(`${API_BASE}/api/settings`, {
+        credentials: "include",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = res.ok ? await res.json() : null;
+      const saved = data?.settings?.appearance?.savedThemes;
+      if (!cancelled && Array.isArray(saved)) {
+        setProfiles(saved);
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(saved));
+      }
+    })().catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const updateThemeColor = (key: keyof ThemeConfig, value: string) => {
+    setTheme({
+      ...theme,
+      [key]: value,
+      name: "custom",
+      label: profileName.trim() || "Custom Theme",
+    });
+  };
+
+  const handleSaveProfile = () => {
+    const name = profileName.trim() || theme.label || "Custom Theme";
+    const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const nextTheme = { ...theme, name: id || "custom", label: name };
+    const next = [
+      ...profiles.filter((profile) => profile.id !== nextTheme.name),
+      { id: nextTheme.name, name, theme: nextTheme },
+    ];
+    setProfiles(next);
+    setTheme(nextTheme);
+    void saveProfiles(next);
+  };
+
+  const renameProfile = (profile: ThemeProfile) => {
+    const name = window.prompt("Theme name", profile.name)?.trim();
+    if (!name) return;
+    const next = profiles.map((item) =>
+      item.id === profile.id
+        ? { ...item, name, theme: { ...item.theme, label: name } }
+        : item,
+    );
+    setProfiles(next);
+    void saveProfiles(next);
+  };
+
+  const deleteProfile = (id: string) => {
+    const next = profiles.filter((profile) => profile.id !== id);
+    setProfiles(next);
+    void saveProfiles(next);
+  };
 
   return (
     <div className="space-y-6">
-      {/* Font Style — with live samples */}
       <section>
-        <h3
-          className="text-sm font-semibold mb-4"
-          style={{ color: "var(--fintheon-accent)" }}
-        >
-          Font Style
-        </h3>
-
-        {/* Live sample preview — uses current active font */}
-        <div
-          className="mb-4 p-4 rounded-lg border"
-          style={{
-            borderColor:
-              "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
-            backgroundColor: "rgba(10,10,0,0.3)",
-          }}
-        >
-          <div
-            className="text-lg font-semibold text-white mb-1.5"
-            style={{ fontFamily: fontTheme.fontHeading }}
-          >
-            {SAMPLE_HEADING}
-          </div>
-          <div
-            className="text-[13px] leading-relaxed text-zinc-400"
-            style={{ fontFamily: fontTheme.fontBody }}
-          >
-            {SAMPLE_BODY}
-          </div>
-          <div className="mt-2 text-[10px] text-zinc-600 font-mono">
-            Active: {fontTheme.label}
-          </div>
-        </div>
-
-        {/* Font theme cards — each with its own inline sample */}
-        <div
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"
-        >
-          {Object.values(fontThemes).map((ft) => {
-            const active = fontTheme.id === ft.id;
-            return (
-              <button
-                key={ft.id}
-                onClick={() => setFontTheme(ft)}
-                className="relative text-left p-3 rounded-lg border transition-all hover:scale-[1.01]"
-                style={{
-                  borderColor: active
-                    ? "var(--fintheon-accent)"
-                    : "rgba(255,255,255,0.08)",
-                  backgroundColor: active
-                    ? "color-mix(in srgb, var(--fintheon-accent) 10%, transparent)"
-                    : "rgba(10,10,0,0.4)",
-                }}
-              >
-                {active && (
-                  <div
-                    className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
-                    style={{ backgroundColor: "var(--fintheon-accent)" }}
-                  >
-                    <Check size={12} className="text-black" />
-                  </div>
-                )}
-                <div className="text-[12px] font-medium text-white">
-                  {ft.label}
-                </div>
-                <div className="text-[11px] text-zinc-500 mt-0.5">
-                  {ft.description}
-                </div>
-                {/* Inline font sample — trading context */}
-                <div
-                  className="mt-2 text-[14px] font-semibold text-zinc-300 leading-tight"
-                  style={{ fontFamily: ft.fontHeading }}
-                >
-                  $1,234.56
-                </div>
-                <div
-                  className="text-[11px] text-zinc-500 mt-0.5"
-                  style={{ fontFamily: ft.fontBody }}
-                >
-                  AAPL +2.3%
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Pompa Mode */}
-      <section>
-        <h3
-          className="text-sm font-semibold mb-1"
-          style={{ color: "var(--fintheon-accent)" }}
-        >
-          Pompa
-        </h3>
-        <p className="text-[11px] text-zinc-500 mb-3">
-          Ceremonial mode — Roman-themed effects, sounds &amp; animations
-        </p>
-        <button
-          role="switch"
-          aria-checked={pompaEnabled}
-          aria-label="Toggle Pompa ceremonial mode"
-          onClick={() => setPompaEnabled(!pompaEnabled)}
-          onKeyDown={(e) => {
-            if (e.key === " " || e.key === "Enter") {
-              e.preventDefault();
-              setPompaEnabled(!pompaEnabled);
-            }
-          }}
-          className="flex items-center gap-3 w-full p-3 rounded-lg border transition-all"
-          style={{
-            borderColor: pompaEnabled ? "#c79f4a" : "rgba(255,255,255,0.08)",
-            backgroundColor: pompaEnabled
-              ? "rgba(199,159,74,0.1)"
-              : "rgba(10,10,0,0.4)",
-          }}
-        >
-          <div
-            className="relative w-10 h-5 rounded-full transition-colors duration-200"
-            style={{ backgroundColor: pompaEnabled ? "#c79f4a" : "#3f3f46" }}
-          >
-            <div
-              className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200"
-              style={{
-                transform: pompaEnabled ? "translateX(20px)" : "translateX(0)",
-              }}
-            />
-          </div>
-          <span
-            className="text-[13px] font-medium"
-            style={{ color: pompaEnabled ? "#f0ead6" : "#71717a" }}
-          >
-            {pompaEnabled ? "Pompa Active" : "Pompa Disabled"}
-          </span>
-        </button>
-      </section>
-
-      {/* Theme Mode Toggle — Light/Dark */}
-      <section>
-        <h3
-          className="text-sm font-semibold mb-1"
-          style={{ color: "var(--fintheon-accent)" }}
-        >
-          Theme Mode
-        </h3>
-        <p className="text-[11px] text-zinc-500 mb-3">
-          Light or dark appearance
-        </p>
-        <button
-          role="switch"
-          aria-checked={mode === "light"}
-          onClick={() => setMode(mode === "light" ? "dark" : "light")}
-          className="flex items-center gap-3 w-full p-3 rounded-lg border transition-all"
-          style={{
-            borderColor: mode === "light" ? "#c79f4a" : "rgba(255,255,255,0.08)",
-            backgroundColor: mode === "light"
-              ? "rgba(199,159,74,0.1)"
-              : "rgba(10,10,0,0.4)",
-          }}
-        >
-          <div
-            className="relative w-10 h-5 rounded-full transition-colors duration-200"
-            style={{ backgroundColor: mode === "light" ? "#c79f4a" : "#3f3f46" }}
-          >
-            <div
-              className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200"
-              style={{
-                transform: mode === "light" ? "translateX(20px)" : "translateX(0)",
-              }}
-            />
-          </div>
-          <span
-            className="text-[13px] font-medium"
-            style={{ color: mode === "light" ? "#f0ead6" : "#71717a" }}
-          >
-            {mode === "light" ? "Light Mode" : "Dark Mode"}
-          </span>
-        </button>
-      </section>
-
-      {/* Color Presets — only Something Solvys + Something Monochrome */}
-      <section>
-        <h3
-          className="text-sm font-semibold mb-3"
-          style={{ color: "var(--fintheon-accent)" }}
-        >
+        <h3 className="mb-3 text-sm font-semibold text-[var(--fintheon-accent)]">
           Theme Preset
         </h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {Object.values(presets).map((preset) => {
             const active = theme.name === preset.name;
             return (
               <button
                 key={preset.name}
-                onClick={() => {
-                  setTheme(preset);
-                }}
-                className="relative text-left p-3 rounded-lg border transition-all hover:scale-[1.01]"
-                style={{
-                  borderColor: active
-                    ? preset.accent
-                    : "rgba(255,255,255,0.08)",
-                  backgroundColor: active
-                    ? `${preset.accent}10`
-                    : "rgba(10,10,0,0.4)",
-                }}
+                onClick={() => setTheme(preset)}
+                className="settings-soft-panel relative rounded-md p-3 text-left transition-opacity hover:opacity-85"
               >
-                {active && (
-                  <div
-                    className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
-                    style={{ backgroundColor: preset.accent }}
-                  >
-                    <Check size={12} className="text-black" />
-                  </div>
-                )}
-                <div className="flex gap-0 rounded overflow-hidden mb-2 h-5">
-                  {[
-                    { color: preset.accent, label: "Accent" },
-                    { color: preset.bg, label: "BG" },
-                    { color: preset.bullish, label: "Bull" },
-                    { color: preset.bearish, label: "Bear" },
-                    { color: preset.text, label: "Text" },
-                  ].map((s, i) => (
-                    <div
-                      key={i}
-                      className="flex-1"
-                      style={{ backgroundColor: s.color }}
-                      title={`${s.label}: ${s.color}`}
-                    />
+                {active && <Check className="absolute right-3 top-3 h-4 w-4 text-[var(--fintheon-accent)]" />}
+                <div className="mb-2 flex h-4 overflow-hidden rounded-sm">
+                  {[preset.accent, preset.bg, preset.bullish, preset.bearish].map((color) => (
+                    <span key={color} className="flex-1" style={{ backgroundColor: color }} />
                   ))}
                 </div>
-                <div
-                  className="text-[12px] font-medium"
-                  style={{ color: "var(--fintheon-text)" }}
-                >
+                <p className="text-[12px] font-semibold text-[var(--fintheon-text)]">
                   {preset.label}
-                </div>
-                <div className="text-[10px] text-zinc-500 mt-0.5">
-                  {preset.fontHeading?.split(",")[0]?.replace(/'/g, "")} +{" "}
-                  {preset.fontBody?.split(",")[0]?.replace(/'/g, "")}
-                </div>
+                </p>
+                <p className="text-[10px] text-zinc-500">
+                  {preset.glassVariant ?? "solid"}
+                </p>
               </button>
             );
           })}
         </div>
       </section>
 
-      {/* Reset to Default */}
-      <div className="pt-4">
-        <button
-          onClick={() => {
-            setTheme(DEFAULT_THEME);
-            setFontTheme(DEFAULT_FONT_THEME);
-            setMode("dark");
-          }}
-          className="px-4 py-2 rounded-md text-xs font-medium transition-colors border border-zinc-700 text-zinc-500 hover:text-zinc-300"
-        >
-          Reset to Default
-        </button>
-      </div>
+      <section>
+        <h3 className="mb-3 text-sm font-semibold text-[var(--fintheon-accent)]">
+          Theme Variables
+        </h3>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {colorFields.map(({ key, label }) => (
+            <label key={key} className="block">
+              <span className="mb-1 block text-[10px] uppercase text-[var(--fintheon-text)]/42">
+                {label}
+              </span>
+              <span className="settings-field-shell flex items-center gap-2 rounded-md px-2 py-1.5">
+                <input
+                  type="color"
+                  value={String(theme[key] ?? "#c79f4a")}
+                  onChange={(event) => updateThemeColor(key, event.target.value)}
+                  className="h-6 w-8 rounded border-0 bg-transparent p-0"
+                />
+                <input
+                  value={String(theme[key] ?? "")}
+                  onChange={(event) => updateThemeColor(key, event.target.value)}
+                  className="min-w-0 flex-1 bg-transparent text-[12px] text-[var(--fintheon-text)] outline-none"
+                />
+              </span>
+            </label>
+          ))}
+        </div>
+      </section>
+
+      <section className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
+        <div>
+          <h3 className="mb-3 text-sm font-semibold text-[var(--fintheon-accent)]">
+            Saved Themes
+          </h3>
+          <div className="flex gap-2">
+            <input
+              value={profileName}
+              onChange={(event) => setProfileName(event.target.value)}
+              placeholder="Name this theme"
+              className="flex-1 rounded-md bg-[var(--fintheon-surface)] px-3 py-2 text-sm text-[var(--fintheon-text)] placeholder:text-[var(--fintheon-text)]/22 focus:outline-none"
+            />
+            <button onClick={handleSaveProfile} className="fintheon-action-link inline-flex items-center gap-1 text-[11px] font-semibold uppercase">
+              <Save className="h-3.5 w-3.5" /> Save
+            </button>
+          </div>
+          <div className="mt-3 space-y-2">
+            {profiles.map((profile) => (
+              <div key={profile.id} className="flex items-center justify-between gap-3 rounded-md border border-[var(--fintheon-accent)]/8 px-3 py-2">
+                <button onClick={() => setTheme(profile.theme)} className="min-w-0 text-left">
+                  <span className="block truncate text-[12px] text-[var(--fintheon-text)]">{profile.name}</span>
+                  <span className="text-[10px] text-zinc-500">{profile.theme.glassVariant ?? "solid"}</span>
+                </button>
+                <span className="flex items-center gap-1">
+                  <button onClick={() => renameProfile(profile)} className="fintheon-icon-button" title="Rename theme">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button onClick={() => deleteProfile(profile.id)} className="fintheon-icon-button text-red-400" title="Delete theme">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-[var(--fintheon-accent)]">
+            Font & Mode
+          </h3>
+          <select
+            value={fontTheme.id}
+            onChange={(event) => setFontTheme(fontThemes[event.target.value])}
+            className="w-full rounded-md bg-[var(--fintheon-surface)] px-3 py-2 text-sm text-[var(--fintheon-text)] focus:outline-none"
+          >
+            {Object.values(fontThemes).map((item) => (
+              <option key={item.id} value={item.id}>{item.label}</option>
+            ))}
+          </select>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => setMode(mode === "light" ? "dark" : "light")} className="settings-soft-panel rounded-md px-3 py-2 text-[12px] text-[var(--fintheon-text)]">
+              {mode === "light" ? "Light" : "Dark"}
+            </button>
+            <button onClick={() => setPompaEnabled(!pompaEnabled)} className="settings-soft-panel rounded-md px-3 py-2 text-[12px] text-[var(--fintheon-text)]">
+              {pompaEnabled ? "Pompa On" : "Pompa Off"}
+            </button>
+          </div>
+          <button
+            onClick={() => {
+              setTheme(DEFAULT_THEME);
+              setFontTheme(DEFAULT_FONT_THEME);
+              setMode("dark");
+            }}
+            className="fintheon-action-link text-[11px] font-semibold uppercase"
+          >
+            Reset to Default
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

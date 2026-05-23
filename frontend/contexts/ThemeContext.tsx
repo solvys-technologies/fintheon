@@ -72,6 +72,7 @@ function saveMode(mode: ThemeMode) {
 
 function applyThemeToDOM(theme: ThemeConfig, mode?: ThemeMode) {
   const root = document.documentElement;
+  const body = document.body;
   const isLight = mode === "light";
   const bg = isLight ? LIGHT_SURFACE.bg : theme.bg;
   const text = isLight ? LIGHT_SURFACE.text : theme.text;
@@ -80,6 +81,10 @@ function applyThemeToDOM(theme: ThemeConfig, mode?: ThemeMode) {
   const border = isLight ? LIGHT_SURFACE.border : theme.border;
 
   root.setAttribute("data-theme", mode || "dark");
+  root.dataset.fintheonSurfaceTheme = theme.glassVariant ?? "solid";
+  if (body) body.dataset.fintheonSurfaceTheme = theme.glassVariant ?? "solid";
+  root.style.setProperty("--fintheon-primary", theme.primary ?? theme.accent);
+  root.style.setProperty("--fintheon-secondary", theme.secondary ?? theme.muted);
   root.style.setProperty("--fintheon-accent", theme.accent);
   root.style.setProperty("--fintheon-bg", bg);
   root.style.setProperty("--fintheon-text", text);
@@ -226,7 +231,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const data = res.ok ? await res.json() : null;
         const remote = data?.settings;
         if (remote?.appearance) {
-          const { colorTheme, fontThemeId, pompaMode } = remote.appearance;
+          const { colorTheme, fontThemeId, pompaMode, themeMode } = remote.appearance;
+          const remoteMode = themeMode === "light" ? "light" : mode;
+          if (themeMode === "light" || themeMode === "dark") {
+            setModeState(themeMode);
+            saveMode(themeMode);
+          }
           let nextTheme = theme;
           if (
             colorTheme &&
@@ -235,7 +245,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           ) {
             nextTheme = colorTheme as ThemeConfig;
             setThemeState(nextTheme);
-            applyThemeToDOM(nextTheme, mode);
+            applyThemeToDOM(nextTheme, remoteMode);
             saveTheme(nextTheme);
           }
           if (fontThemeId && FONT_THEMES[fontThemeId as FontThemeId]) {
