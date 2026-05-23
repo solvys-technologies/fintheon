@@ -42,6 +42,7 @@ import { createBlindspotsRoutes } from "./blindspots.js";
 import { createBlindspotsUserRoutes } from "./blindspots-user.js";
 import { systemic as systemicRoutes } from "./systemic/index.js";
 import { createContextBankRoutes } from "./context-bank/index.js";
+import { createContextMentionRoutes } from "./context-mentions/index.js";
 import { createAutopilotRoutes } from "./autopilot/index.js";
 import { createProposalRoutes } from "./proposals/index.js";
 import cloudRoutes from "./cloud/index.js";
@@ -269,6 +270,11 @@ export function registerRoutes(app: Hono): void {
 
   // Theme tracker — replaces regime tracker (S68-T1). Public read/write, in-memory.
   app.route("/api/themes", createThemeRoutes());
+
+  // Safe mention inventory for chat drawers and NarrativeFlow source citation.
+  app.use("/api/context", authMiddleware);
+  app.use("/api/context/*", authMiddleware);
+  app.route("/api/context", createContextMentionRoutes());
 
   // Coliseum — closed-beta desk profiles, desk style, and forecast lifecycle.
   app.use("/api/coliseum", authMiddleware);

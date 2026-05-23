@@ -9,6 +9,54 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-23T17:45:00-04:00",
+    agent: "codex",
+    summary:
+      "S82-T4: renamed NarrativeFlow map code to DeskMap, restored old canvas chrome for NF-DeskMap, added desk-wide faint image identity, added NF-Workspace cover upload/CAO generation, and moved Proposals/Research into a NarrativeFlow Analysis dropdown while keeping the workspace research rail resizable.",
+    files: [
+      "frontend/components/narrative/DeskMap.tsx",
+      "frontend/components/narrative/NarrativeCanvas.tsx",
+      "frontend/components/narrative/NarrativeSessionWorkspace.tsx",
+      "frontend/components/narrative/NarrativeCoverHeader.tsx",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/lib/desk-map-api.ts",
+      "frontend/lib/narrative-session-api.ts",
+      "backend-hono/src/routes/narrative/desk-map.ts",
+      "backend-hono/src/routes/narrative/index.ts",
+      "backend-hono/src/routes/narrative/sessions/validation.ts",
+      "backend-hono/src/services/narrative-sessions/default-desk.ts",
+      "backend-hono/src/services/narrative-sessions/session-store.ts",
+      "backend-hono/src/services/narrative-sessions/types.ts",
+      "supabase/migrations/20260523173000_narrative_session_cover_images.sql",
+      "sprint-md/S82-T4-deskmap-workspace-identity.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-23T16:20:00-04:00",
+    agent: "codex",
+    summary:
+      "S82 kickoff: bounded the shared chat drawer and overlay material contract, attached NarrativeFlow RiskFlow picking to the composer, restored Econ Calendar iframe header padding, and added a safe cross-source @ mention inventory with main chat/NarrativeFlow drawers.",
+    files: [
+      "frontend/index.css",
+      "frontend/components/ChatInterface.tsx",
+      "frontend/components/ui/chatgpt-prompt-input.tsx",
+      "frontend/components/chat/ContextMentionDrawer.tsx",
+      "frontend/components/narrative/NarrativeInputBar.tsx",
+      "frontend/components/narrative/NarrativeFlowLanding.tsx",
+      "frontend/components/econ/TradingViewCalendar.tsx",
+      "frontend/lib/context-mentions.ts",
+      "backend-hono/src/routes/context-mentions/index.ts",
+      "backend-hono/src/services/context-mentions/mention-sources.ts",
+      "backend-hono/src/routes/index.ts",
+      "sprint-md/S82-ORCH-unified-chat-drawers-vault-mentions.md",
+      "sprint-md/S82-T1-composer-drawer-contract.md",
+      "sprint-md/S82-T2-econ-calendar-header-fade.md",
+      "sprint-md/S82-T3-vault-mention-inventory.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-23T15:32:00-04:00",
     agent: "codex",
     summary:

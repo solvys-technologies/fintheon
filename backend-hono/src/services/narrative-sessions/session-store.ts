@@ -133,7 +133,7 @@ export async function getNarrativeSessionDetail(
   await sb.from("narrative_sessions").update({ last_opened_at: new Date().toISOString() }).eq("id", sessionId);
   const { data: sessionRow, error } = await sb
     .from("narrative_sessions")
-    .select(`${sessionFields}, narrative_desks(id, name, slug, color, created_by, created_at, updated_at)`)
+    .select(`${sessionFields}, narrative_desks(id, name, slug, color, map_image_url, map_image_prompt, map_image_updated_at, created_by, created_at, updated_at)`)
     .eq("id", sessionId)
     .single();
 
@@ -161,6 +161,8 @@ export async function updateNarrativeSession(params: {
   title?: string;
   color?: string;
   status?: string;
+  coverImageUrl?: string | null;
+  coverImagePrompt?: string | null;
   actorId: string | null;
 }): Promise<NarrativeSessionDetail> {
   const sb = getSupabaseClient();
@@ -170,6 +172,11 @@ export async function updateNarrativeSession(params: {
   if (params.title) patch.title = params.title;
   if (params.color) patch.color = params.color;
   if (params.status) patch.status = params.status;
+  if (params.coverImageUrl !== undefined) patch.cover_image_url = params.coverImageUrl;
+  if (params.coverImagePrompt !== undefined) patch.cover_image_prompt = params.coverImagePrompt;
+  if (params.coverImageUrl !== undefined || params.coverImagePrompt !== undefined) {
+    patch.cover_image_updated_at = new Date().toISOString();
+  }
 
   const { error } = await sb.from("narrative_sessions").update(patch).eq("id", params.sessionId);
   if (error) throw new Error(`Session update failed: ${error.message}`);
@@ -275,7 +282,7 @@ function toJoinedDesk(value: unknown) {
 }
 
 const sessionFields =
-  "id, desk_id, title, color, status, created_by, updated_by, last_opened_at, generated_at, created_at, updated_at";
+  "id, desk_id, title, color, status, created_by, updated_by, last_opened_at, generated_at, cover_image_url, cover_image_prompt, cover_image_updated_at, created_at, updated_at";
 
 function toSession(row: Record<string, unknown>): NarrativeSession {
   return {
@@ -288,6 +295,9 @@ function toSession(row: Record<string, unknown>): NarrativeSession {
     updatedBy: row.updated_by ? String(row.updated_by) : null,
     lastOpenedAt: row.last_opened_at ? String(row.last_opened_at) : null,
     generatedAt: row.generated_at ? String(row.generated_at) : null,
+    coverImageUrl: row.cover_image_url ? String(row.cover_image_url) : null,
+    coverImagePrompt: row.cover_image_prompt ? String(row.cover_image_prompt) : null,
+    coverImageUpdatedAt: row.cover_image_updated_at ? String(row.cover_image_updated_at) : null,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };

@@ -34,6 +34,8 @@ export const updateSessionSchema = z.object({
   title: z.string().trim().min(1).max(160).optional(),
   color: colorSchema,
   status: z.string().trim().min(1).max(40).optional(),
+  coverImageUrl: z.string().trim().max(8_000_000).nullable().optional(),
+  coverImagePrompt: z.string().trim().max(1200).nullable().optional(),
 });
 
 const catalystSchema = z.object({

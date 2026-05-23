@@ -166,6 +166,29 @@ export function NarrativeFlowLanding({
         </p>
       </div>
 
+      <div
+        className={`relative z-20 mx-auto w-full max-w-3xl px-4 transition duration-300 ${
+          isPickerOpen
+            ? "mb-0 max-h-80 translate-y-0 opacity-100"
+            : "pointer-events-none mb-0 max-h-0 translate-y-4 opacity-0"
+        }`}
+        aria-hidden={!isPickerOpen}
+      >
+        <div
+          className="fintheon-chat-input-drawer overflow-hidden"
+          style={{ maxHeight: isPickerOpen ? "320px" : "0px" }}
+        >
+          <NarrativeRiskFlowPicker
+            headlines={headlines}
+            selectedIds={selectedIds}
+            isLoading={isLoading}
+            error={error}
+            minSelected={MIN_CATALYSTS}
+            onToggle={toggleHeadline}
+          />
+        </div>
+      </div>
+
       <NarrativeSensemakingComposer
         mode="opener"
         query={query}
@@ -261,23 +284,6 @@ export function NarrativeFlowLanding({
         </div>
       </div>
 
-      <div
-        className={`overflow-hidden transition duration-300 ${
-          isPickerOpen
-            ? "mt-8 max-h-80 translate-y-0 opacity-100"
-            : "pointer-events-none mt-0 max-h-0 translate-y-6 opacity-0"
-        }`}
-        aria-hidden={!isPickerOpen}
-      >
-        <NarrativeRiskFlowPicker
-          headlines={headlines}
-          selectedIds={selectedIds}
-          isLoading={isLoading}
-          error={error}
-          minSelected={MIN_CATALYSTS}
-          onToggle={toggleHeadline}
-        />
-      </div>
     </div>
   );
 }

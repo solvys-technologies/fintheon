@@ -12,6 +12,9 @@ export interface NarrativeDesk {
   name: string;
   slug: string;
   color: string;
+  mapImageUrl: string | null;
+  mapImagePrompt: string | null;
+  mapImageUpdatedAt: string | null;
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;
@@ -27,6 +30,9 @@ export interface NarrativeSession {
   updatedBy: string | null;
   lastOpenedAt: string | null;
   generatedAt: string | null;
+  coverImageUrl: string | null;
+  coverImagePrompt: string | null;
+  coverImageUpdatedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

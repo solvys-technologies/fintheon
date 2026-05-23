@@ -32,7 +32,7 @@ import {
 } from "../../lib/narrative-session-api";
 import { NarrativeFlowLanding } from "./NarrativeFlowLanding";
 import { BetaState, DeskForecastsView } from "./DeskForecastsView";
-import { NarrativeMap } from "./NarrativeMap";
+import { DeskMap } from "./DeskMap";
 import { NarrativeMermaidView } from "./NarrativeMermaidView";
 import { NarrativeSensemakingComposer } from "./NarrativeSensemakingComposer";
 import { NarrativeSessionWorkspace, type NarrativeWorkspaceSession } from "./NarrativeSessionWorkspace";
@@ -58,6 +58,7 @@ interface NarrativeCanvasProps {
 
 type NarrativeSurfaceMode = "workspace" | "forecasts" | "coliseum" | "resolved" | "map";
 const NARRATIVE_SWATCHES = ["#c79f4a", "#34D399", "#FBBF24", "#A78BFA", "#14B8A6", "#F97316"];
+const researchRailKey = "narrativeflow:research-rail-open";
 
 export function NarrativeCanvas({
   themes,
@@ -76,6 +77,13 @@ export function NarrativeCanvas({
   const [workspaceQuery, setWorkspaceQuery] = useState("");
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const [headerActionsHost, setHeaderActionsHost] = useState<HTMLElement | null>(null);
+  const [isResearchRailOpen, setIsResearchRailOpen] = useState(() => {
+    try {
+      return localStorage.getItem(researchRailKey) !== "false";
+    } catch {
+      return true;
+    }
+  });
   const [reasoningLevel, setReasoningLevel] = useState<ReasoningLevel>(() => {
     try {
       return normalizeReasoningLevel(
@@ -121,6 +129,32 @@ export function NarrativeCanvas({
     const frame = requestAnimationFrame(syncHeaderHost);
     return () => cancelAnimationFrame(frame);
   }, [surfaceMode, activeSession?.id]);
+
+  useEffect(() => {
+    const toggleResearchRail = () => {
+      setIsResearchRailOpen((value) => !value);
+    };
+    window.addEventListener("fintheon:narrative-research-rail-toggle", toggleResearchRail);
+    return () => {
+      window.removeEventListener("fintheon:narrative-research-rail-toggle", toggleResearchRail);
+    };
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(researchRailKey, String(isResearchRailOpen));
+    } catch {
+      /* ignore */
+    }
+    window.dispatchEvent(
+      new CustomEvent("fintheon:narrative-research-rail-state", {
+        detail: {
+          open: isResearchRailOpen,
+          available: Boolean(activeSession && surfaceMode === "workspace"),
+        },
+      }),
+    );
+  }, [activeSession, isResearchRailOpen, surfaceMode]);
 
   const handleCreateSession = useCallback(async (payload: CreateNarrativeSessionPayload) => {
     if (payload.catalystIds.length < 3) {
@@ -173,6 +207,39 @@ export function NarrativeCanvas({
       setResponse(bundle.response);
     } catch (err) {
       setValidationMessage(err instanceof Error ? err.message : "Narrative rename failed.");
+    }
+  }, [activeSession?.id]);
+
+  const handleCoverChange = useCallback(async (cover: {
+    coverImageUrl: string | null;
+    coverImagePrompt: string | null;
+  }) => {
+    const id = activeSession?.id;
+    if (!id) {
+      setValidationMessage("Open a saved narrative session before changing the cover.");
+      return;
+    }
+    setActiveSession((session) =>
+      session
+        ? {
+            ...session,
+            coverImageUrl: cover.coverImageUrl,
+            coverImagePrompt: cover.coverImagePrompt,
+            coverImageUpdatedAt: new Date().toISOString(),
+          }
+        : session,
+    );
+    try {
+      const bundle = await updateNarrativeSession({
+        id,
+        coverImageUrl: cover.coverImageUrl,
+        coverImagePrompt: cover.coverImagePrompt,
+      });
+      setActiveSession(bundle.session);
+      setResponse(bundle.response);
+    } catch (err) {
+      setValidationMessage(err instanceof Error ? err.message : "Narrative cover failed.");
+      throw err;
     }
   }, [activeSession?.id]);
 
@@ -346,7 +413,7 @@ export function NarrativeCanvas({
       ) : surfaceMode === "resolved" ? (
         <BetaState label="Resolved forecasts will unlock after monitor history accrues." />
       ) : surfaceMode === "map" ? (
-        <NarrativeMap
+        <DeskMap
           sessions={sessions}
           activeSessionId={activeSession?.id ?? null}
           onOpenSession={handleOpenSession}
@@ -368,10 +435,12 @@ export function NarrativeCanvas({
             response={response}
             selectedNodeId={selectedNodeId}
             themeCount={themes.length}
+            isResearchRailOpen={isResearchRailOpen}
             onSelectNode={setSelectedNodeId}
             onRename={(title) =>
               activeSession.id && handleRenameSession(activeSession.id, title, activeSession.color ?? "#c79f4a")
             }
+            onCoverChange={handleCoverChange}
             onQuickAction={handleQuickAction}
           >
             <NarrativeWorkspaceTopBar

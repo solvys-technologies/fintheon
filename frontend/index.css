@@ -63,6 +63,17 @@ html *::-webkit-scrollbar {
     var(--fintheon-accent) 6%,
     transparent
   );
+  --fintheon-overlay-surface: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--fintheon-accent) 7%, rgba(17, 16, 14, 0.58))
+      90%,
+    black 10%
+  );
+  --fintheon-overlay-border: color-mix(
+    in srgb,
+    var(--fintheon-accent) 14%,
+    transparent
+  );
   --fintheon-glass-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 color-mix(in srgb, white 6%, transparent),
@@ -1560,14 +1571,11 @@ html *::-webkit-scrollbar {
 .fintheon-liquid-surface {
   position: relative;
   isolation: isolate;
-  border: 1px solid var(--fintheon-glass-border);
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.08), transparent 30%),
-    linear-gradient(180deg, rgba(199, 159, 74, 0.08), transparent 42%),
-    var(--fintheon-glass-bg);
+  border: 1px solid var(--fintheon-overlay-border);
+  background: var(--fintheon-overlay-surface);
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  box-shadow: var(--fintheon-glass-shadow);
+  box-shadow: none;
 }
 
 .fintheon-toast-surface::before,
@@ -1580,10 +1588,12 @@ html *::-webkit-scrollbar {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background:
-    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 18%);
-  opacity: 0.68;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, white 5%, transparent),
+    transparent 22%
+  );
+  opacity: 0.42;
 }
 
 .fintheon-toast-surface {
@@ -1912,16 +1922,14 @@ html *::-webkit-scrollbar {
    Drawers live inside the composer wrapper so attachment, skills, and queue
    panels share one width and one visual anchor. */
 .fintheon-chat-input-drawer {
-  width: min(38rem, calc(100% - 3rem));
-  margin-inline: auto;
+  position: relative;
+  left: 50%;
+  width: min(calc(100% + clamp(24px, 7vw, 56px)), calc(100vw - 24px));
+  transform: translateX(-50%);
   margin-bottom: -1px;
   overflow: hidden;
   border-radius: 14px 14px 0 0;
-  background: color-mix(
-    in srgb,
-    var(--fintheon-accent) 7%,
-    rgba(17, 16, 14, 0.46)
-  );
+  background: var(--fintheon-overlay-surface);
   border: 0;
   backdrop-filter: blur(20px) saturate(1.25);
   -webkit-backdrop-filter: blur(20px) saturate(1.25);
@@ -1947,6 +1955,36 @@ html *::-webkit-scrollbar {
     var(--fintheon-accent) 4%,
     rgba(5, 4, 2, 0.38)
   ) !important;
+}
+
+.fintheon-content-bottom-fade {
+  pointer-events: none;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  z-index: 10;
+  height: 72px;
+  width: min(56rem, calc(100% - 2rem));
+  transform: translateX(-50%);
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--fintheon-bg) 82%, transparent) 100%
+  );
+}
+
+.fintheon-content-top-fade {
+  pointer-events: none;
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  z-index: 10;
+  height: 64px;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--fintheon-bg) 88%, transparent) 0%,
+    transparent 100%
+  );
 }
 
 .fintheon-composer-input--drawer-open {

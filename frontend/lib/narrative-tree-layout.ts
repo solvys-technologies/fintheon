@@ -1,5 +1,5 @@
 // [claude-code 2026-03-28] S5-T1: Tree layout engine for structured mind-map canvas
-// Replaces grid-layout for the new NarrativeMapView (grid-layout stays for backward compat)
+// Replaces grid-layout for the new DeskMap view (grid-layout stays for backward compat)
 
 import type { ZoomLevel, NarrativeCategory } from "./narrative-types";
 import {

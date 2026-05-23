@@ -1,5 +1,5 @@
 // [codex 2026-05-23] NarrativeFlow domain composer with queue, intelligence, and context stats.
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   ArrowUp,
   GitBranch,
@@ -13,9 +13,14 @@ import { MessageQueue, type QueuedMessage } from "../chat/MessageQueue";
 import { ReasoningLevelSelector } from "../chat/ReasoningLevelSelector";
 import { UsageRing } from "../chat/UsageRing";
 import { FintheonToolboxModal } from "../chat/FintheonToolboxModal";
+import { ContextMentionDrawer } from "../chat/ContextMentionDrawer";
 import type { ReasoningLevel } from "../chat/reasoning";
 import { useMcpConnectors } from "../../hooks/useMcpConnectors";
 import { SKILLS } from "../../lib/skills";
+import {
+  mentionToken,
+  type ContextMention,
+} from "../../lib/context-mentions";
 import type { NarrativeHeadlineOption } from "./sensemaking-types";
 
 interface NarrativeChip {
@@ -59,24 +64,17 @@ interface NarrativeInputBarProps {
   onPaste?: (event: React.ClipboardEvent<HTMLTextAreaElement>) => void;
 }
 
-function normalizeKey(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+function getMentionQuery(value: string): string | null {
+  const match = value.match(/(^|\s)@([a-zA-Z0-9_.-]{0,48})$/);
+  return match ? match[2] : null;
 }
 
-function keepNarrativeMentionsOnly(
-  value: string,
-  chips: NarrativeChip[],
-): string {
-  if (chips.length === 0) return value.replace(/@(?=[a-z0-9_-])/gi, "");
-  const allowed = new Set(
-    chips.flatMap((chip) => [
-      normalizeKey(chip.slug),
-      normalizeKey(chip.label),
-    ]),
-  );
-  return value.replace(/@([a-z0-9][a-z0-9_-]*)/gi, (match, raw) =>
-    allowed.has(normalizeKey(raw)) ? match : raw,
-  );
+function replaceMentionQuery(value: string, item: ContextMention): string {
+  const token = mentionToken(item);
+  if (/(^|\s)@[a-zA-Z0-9_.-]{0,48}$/.test(value)) {
+    return value.replace(/(^|\s)@[a-zA-Z0-9_.-]{0,48}$/, `$1${token} `);
+  }
+  return `${value}${value.endsWith(" ") || value.length === 0 ? "" : " "}${token} `;
 }
 
 export function NarrativeInputBar({
@@ -109,6 +107,8 @@ export function NarrativeInputBar({
 }: NarrativeInputBarProps) {
   const [focused, setFocused] = useState(false);
   const [showToolboxModal, setShowToolboxModal] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [selectedMentions, setSelectedMentions] = useState<ContextMention[]>([]);
   const { servers, activeIds, toggle: toggleConnector } = useMcpConnectors();
   const isOpener = mode === "opener";
   const isOverlay = mode === "overlay";
@@ -133,13 +133,6 @@ export function NarrativeInputBar({
     : isOverlay
       ? "Add a catalyst or instruction..."
       : "Ask how these catalysts connect...";
-
-  const statusText = useMemo(() => {
-    if (queue.length > 0) return `[${queue.length} QUEUED]`;
-    if (isSubmitting) return "[WORKING]";
-    if (minHeadlines <= 0) return "[READY]";
-    return `[${catalystCount}/${minHeadlines} CATALYSTS]`;
-  }, [catalystCount, catalystReady, draftReady, isSubmitting, minHeadlines, queue.length, validationMessage]);
 
   function handleAction() {
     if (canQueue) {
@@ -191,8 +184,26 @@ export function NarrativeInputBar({
           onToggleConnector={toggleConnector}
         />
 
+        <ContextMentionDrawer
+          open={mentionQuery !== null}
+          query={mentionQuery ?? ""}
+          selected={selectedMentions}
+          onClose={() => setMentionQuery(null)}
+          onSelect={(item) => {
+            setSelectedMentions((current) =>
+              current.some((mention) => mention.id === item.id)
+                ? current
+                : [...current, item],
+            );
+            onQueryChange(replaceMentionQuery(query, item));
+            setMentionQuery(null);
+          }}
+        />
+
         <div
-          className={`relative flex flex-col rounded-2xl border backdrop-blur-xl transition ${
+          className={`fintheon-composer-input relative flex flex-col rounded-2xl border backdrop-blur-xl transition ${
+            showToolboxModal ? "fintheon-composer-input--drawer-open" : ""
+          } ${
             focused
               ? "border-[var(--fintheon-accent)]/55"
               : query
@@ -233,9 +244,8 @@ export function NarrativeInputBar({
             value={query}
             onChange={(event) => {
               if (showToolboxModal) setShowToolboxModal(false);
-              onQueryChange(
-                keepNarrativeMentionsOnly(event.target.value, narrativeChips),
-              );
+              setMentionQuery(getMentionQuery(event.target.value));
+              onQueryChange(event.target.value);
             }}
             onPaste={onPaste}
             onFocus={() => setFocused(true)}
@@ -286,11 +296,6 @@ export function NarrativeInputBar({
                 onChange={onReasoningLevelChange}
                 compact={isOverlay}
               />
-              {statusText ? (
-                <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--fintheon-muted)]">
-                  {statusText}
-                </span>
-              ) : null}
               <UsageRing
                 stats={contextStats}
                 draftText={query}

@@ -158,6 +158,8 @@ export function ConsiliumHub() {
   const [sanctumDropdownOpen, setSanctumDropdownOpen] = useState(false);
   const [boardroomDropdownOpen, setBoardroomDropdownOpen] = useState(false);
   const [apparatusDropdownOpen, setApparatusDropdownOpen] = useState(false);
+  const [analysisDropdownOpen, setAnalysisDropdownOpen] = useState(false);
+  const [analysisResearchOpen, setAnalysisResearchOpen] = useState(true);
   const [transitioning, setTransitioning] = useState(false);
   const [agentDeskData, setAgentDeskData] = useState<SanctumData | null>(null);
   const [riskflowItems, setRiskflowItems] = useState<RiskFlowCatalyst[]>([]);
@@ -199,6 +201,7 @@ export function ConsiliumHub() {
   const sanctumDropdownRef = useRef<HTMLDivElement>(null);
   const boardroomDropdownRef = useRef<HTMLDivElement>(null);
   const apparatusDropdownRef = useRef<HTMLDivElement>(null);
+  const analysisDropdownRef = useRef<HTMLDivElement>(null);
 
   // [S23-T3] Persist current Consilium surface so useHermesChat can auto-inject ArbitrumChamber/surface
   // context into Harper + Hermes prompts without threading props through every chat widget.
@@ -222,7 +225,10 @@ export function ConsiliumHub() {
 
   useEffect(() => {
     const anyOpen =
-      sanctumDropdownOpen || boardroomDropdownOpen || apparatusDropdownOpen;
+      sanctumDropdownOpen ||
+      boardroomDropdownOpen ||
+      apparatusDropdownOpen ||
+      analysisDropdownOpen;
     if (!anyOpen) return;
     const handler = (e: MouseEvent) => {
       const target = e.target as Node;
@@ -247,10 +253,32 @@ export function ConsiliumHub() {
       ) {
         setApparatusDropdownOpen(false);
       }
+      if (
+        analysisDropdownOpen &&
+        analysisDropdownRef.current &&
+        !analysisDropdownRef.current.contains(target)
+      ) {
+        setAnalysisDropdownOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [sanctumDropdownOpen, boardroomDropdownOpen, apparatusDropdownOpen]);
+  }, [
+    analysisDropdownOpen,
+    apparatusDropdownOpen,
+    boardroomDropdownOpen,
+    sanctumDropdownOpen,
+  ]);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ open?: boolean }>).detail;
+      if (typeof detail?.open === "boolean") setAnalysisResearchOpen(detail.open);
+    };
+    window.addEventListener("fintheon:narrative-research-rail-state", handler);
+    return () =>
+      window.removeEventListener("fintheon:narrative-research-rail-state", handler);
+  }, []);
 
   // Consume pending tab requests from external navigation (e.g. ChatPanel sidebar icons)
   const { pendingTab, clearPending } = useConsiliumNav();
@@ -909,22 +937,87 @@ export function ConsiliumHub() {
           </button>
         )}
 
-        <button
-          onClick={toggleProposals}
-          className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
-            showProposals
-              ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
-              : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
-          }`}
-          title={showProposals ? "Hide Proposals" : "Show Proposals"}
-        >
-          {showProposals ? (
-            <PanelRightClose size={14} />
-          ) : (
-            <PanelRightOpen size={14} />
-          )}
-          Proposals
-        </button>
+        {activeTab === "sanctum" && sanctumSubView === "narratives" ? (
+          <div ref={analysisDropdownRef} className="relative">
+            <button
+              onClick={() => setAnalysisDropdownOpen((value) => !value)}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+                analysisDropdownOpen || showProposals || analysisResearchOpen
+                  ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
+                  : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
+              }`}
+              title="Analysis"
+            >
+              {showProposals || analysisResearchOpen ? (
+                <PanelRightClose size={14} />
+              ) : (
+                <PanelRightOpen size={14} />
+              )}
+              Analysis
+              <ChevronDown size={12} />
+            </button>
+            {analysisDropdownOpen ? (
+              <div className="absolute right-0 top-[calc(100%+6px)] z-50 w-40 overflow-hidden rounded-md border border-[var(--fintheon-overlay-border,var(--fintheon-accent))]/70 bg-[var(--fintheon-overlay-surface,var(--fintheon-bg))] p-1 shadow-2xl shadow-black/40">
+                <button
+                  type="button"
+                  onClick={() => {
+                    toggleProposals();
+                    setAnalysisDropdownOpen(false);
+                  }}
+                  className={`flex h-8 w-full items-center justify-between rounded-[4px] px-2 text-left text-[11px] transition-colors ${
+                    showProposals
+                      ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+                      : "text-[var(--fintheon-muted)] hover:bg-[var(--fintheon-accent)]/8 hover:text-[var(--fintheon-text)]"
+                  }`}
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    {showProposals ? <PanelRightClose size={13} /> : <PanelRightOpen size={13} />}
+                    Proposals
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.dispatchEvent(new Event("fintheon:narrative-research-rail-toggle"));
+                    setAnalysisResearchOpen((value) => !value);
+                    setAnalysisDropdownOpen(false);
+                  }}
+                  className={`flex h-8 w-full items-center justify-between rounded-[4px] px-2 text-left text-[11px] transition-colors ${
+                    analysisResearchOpen
+                      ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+                      : "text-[var(--fintheon-muted)] hover:bg-[var(--fintheon-accent)]/8 hover:text-[var(--fintheon-text)]"
+                  }`}
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    {analysisResearchOpen ? (
+                      <PanelRightClose size={13} />
+                    ) : (
+                      <PanelRightOpen size={13} />
+                    )}
+                    Research
+                  </span>
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <button
+            onClick={toggleProposals}
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+              showProposals
+                ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
+                : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
+            }`}
+            title={showProposals ? "Hide Proposals" : "Show Proposals"}
+          >
+            {showProposals ? (
+              <PanelRightClose size={14} />
+            ) : (
+              <PanelRightOpen size={14} />
+            )}
+            Proposals
+          </button>
+        )}
       </div>
 
       {/* Tab content + Proposals panel */}

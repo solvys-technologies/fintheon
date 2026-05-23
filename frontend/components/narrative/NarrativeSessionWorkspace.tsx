@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { NarrativeCoverHeader } from "./NarrativeCoverHeader";
 import { NarrativeWorkDrawer } from "./NarrativeWorkDrawer";
 import type { SensemakingResponse } from "./sensemaking-types";
 
@@ -29,6 +30,9 @@ export interface NarrativeWorkspaceSession {
   status?: string;
   color?: string;
   generatedAt?: string;
+  coverImageUrl?: string | null;
+  coverImagePrompt?: string | null;
+  coverImageUpdatedAt?: string | null;
   catalystIds?: string[];
   report?: string;
   synthesis?: string;
@@ -42,8 +46,13 @@ interface NarrativeSessionWorkspaceProps {
   response: SensemakingResponse | null;
   selectedNodeId: string | null;
   themeCount?: number;
+  isResearchRailOpen?: boolean;
   onSelectNode: (id: string) => void;
   onRename: (title: string) => void;
+  onCoverChange?: (cover: {
+    coverImageUrl: string | null;
+    coverImagePrompt: string | null;
+  }) => void | Promise<void>;
   onQuickAction?: (action: string, catalystId: string | null) => void;
   children: ReactNode;
 }
@@ -53,8 +62,10 @@ export function NarrativeSessionWorkspace({
   response,
   selectedNodeId,
   themeCount = 0,
+  isResearchRailOpen = true,
   onSelectNode,
   onRename,
+  onCoverChange,
   onQuickAction,
   children,
 }: NarrativeSessionWorkspaceProps) {
@@ -74,6 +85,11 @@ export function NarrativeSessionWorkspace({
   return (
     <section className="flex h-full min-h-0 overflow-hidden bg-[var(--fintheon-bg)]">
       <main className="relative min-w-0 flex-1 overflow-hidden">
+        <NarrativeCoverHeader
+          session={session}
+          response={response}
+          onCoverChange={onCoverChange}
+        />
         <div className="absolute left-3 top-3 z-20 flex max-w-[calc(100%-280px)] items-center gap-2 px-2 py-1">
           <span
             className="h-2 w-2 shrink-0 rounded-full"
@@ -97,14 +113,16 @@ export function NarrativeSessionWorkspace({
 
       </main>
 
-      <NarrativeWorkDrawer
-        session={session}
-        response={response}
-        selectedNodeId={selectedNodeId}
-        themeCount={themeCount}
-        onSelectNode={onSelectNode}
-        onQuickAction={onQuickAction}
-      />
+      {isResearchRailOpen ? (
+        <NarrativeWorkDrawer
+          session={session}
+          response={response}
+          selectedNodeId={selectedNodeId}
+          themeCount={themeCount}
+          onSelectNode={onSelectNode}
+          onQuickAction={onQuickAction}
+        />
+      ) : null}
     </section>
   );
 }

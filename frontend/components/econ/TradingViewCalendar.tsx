@@ -204,7 +204,7 @@ export function TradingViewCalendar() {
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-black">
-      <div className="absolute inset-0">
+      <div className="absolute inset-x-0 bottom-0 top-12">
         <EmbeddedBrowserFrame
           key={weekKey}
           title="TradingView Economic Calendar"
@@ -212,7 +212,7 @@ export function TradingViewCalendar() {
           className="h-full w-full bg-black"
         />
       </div>
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-28 bg-gradient-to-b from-black via-black/82 to-transparent" />
+      <div className="fintheon-content-top-fade z-20" />
       <div className="pointer-events-none absolute inset-x-0 top-0 z-30 px-4 pt-3">
         <div className="flex items-start justify-between gap-3">
           <div className="pointer-events-auto flex min-w-0 items-center gap-2">

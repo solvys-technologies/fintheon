@@ -64,15 +64,24 @@ export async function fetchNarrativeSession(id: string): Promise<NarrativeSessio
 
 export async function updateNarrativeSession(input: {
   id: string;
-  title: string;
-  color: string;
+  title?: string;
+  color?: string;
+  status?: string;
+  coverImageUrl?: string | null;
+  coverImagePrompt?: string | null;
 }): Promise<NarrativeSessionBundle> {
+  const body: Record<string, unknown> = {};
+  if (input.title !== undefined) body.title = input.title;
+  if (input.color !== undefined) body.color = input.color;
+  if (input.status !== undefined) body.status = input.status;
+  if (input.coverImageUrl !== undefined) body.coverImageUrl = input.coverImageUrl;
+  if (input.coverImagePrompt !== undefined) body.coverImagePrompt = input.coverImagePrompt;
   const data = await requestJson<{ session?: RawSessionDetail }>(
     `/api/narrative/sessions/${encodeURIComponent(input.id)}`,
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: input.title, color: input.color }),
+      body: JSON.stringify(body),
     },
   );
   return toSessionBundle(requireSession(data.session));
@@ -187,6 +196,11 @@ function toSessionBundle(detail: RawSessionDetail): NarrativeSessionBundle {
       generatedAt: String(
         detail.generatedAt ?? detail.generated_at ?? response?.generatedAt ?? new Date().toISOString(),
       ),
+      coverImageUrl: toOptionalString(detail.coverImageUrl ?? detail.cover_image_url),
+      coverImagePrompt: toOptionalString(detail.coverImagePrompt ?? detail.cover_image_prompt),
+      coverImageUpdatedAt: toOptionalString(
+        detail.coverImageUpdatedAt ?? detail.cover_image_updated_at,
+      ),
       catalystIds: toCatalystIds(detail.catalysts),
       report: readText(detail.artifacts?.docs?.payload, ["report", "summary", "title"]),
       synthesis: response?.synthesisSummary ?? readText(detail.artifacts?.docs?.payload, ["summary"]),
@@ -283,6 +297,10 @@ function toNumber(value: unknown): number {
     if (Number.isFinite(parsed)) return parsed;
   }
   return 0;
+}
+
+function toOptionalString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value : null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

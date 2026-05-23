@@ -1,13 +1,30 @@
+// [codex 2026-05-23] DeskMap is the desk-wide NarrativeFlow canvas; NF-Workspace sessions build onto it.
 // [claude-code 2026-05-16] S68-T4: Camera pan/zoom persistence, Reset View button, layout save/restore includes viewport
 // [claude-code 2026-03-30] Added narrative visibility filter dropdown in top-right of canvas
 // [claude-code 2026-03-30] Unified data: seed events + RiskFlow alerts both load into NarrativeContext
 // [claude-code 2026-03-29] Catalysts sourced from DB via RiskFlowContext — seed JSON and localStorage import removed
 // [claude-code 2026-03-28] S7: Force-directed canvas, removed Sanctum overlay (now separate view)
 // [claude-code 2026-03-28] S5-T3: CatalystModal + auto-seed pipeline wired in
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { useHarperOps } from "../../hooks/useHarperOps";
-import { Eye, EyeOff, ChevronDown, Calendar } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  ChevronDown,
+  Calendar,
+  ImagePlus,
+  RefreshCw,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 import { useNarrative } from "../../contexts/NarrativeContext";
 import NarrativeForceCanvas from "./NarrativeForceCanvas";
 import { NarrativeSaveModal } from "./NarrativeSaveModal";
@@ -24,6 +41,11 @@ import { NarrativeColorKey } from "./NarrativeColorKey";
 import type { NarrativeSessionSummary } from "./NarrativeSessionHistory";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import {
+  fetchDeskMap,
+  updateDeskMapImage,
+  type DeskMapDesk,
+} from "../../lib/desk-map-api";
+import {
   loadSeedEvents,
   alertToCatalyst,
 } from "../../lib/narrative-seed-loader";
@@ -39,8 +61,9 @@ const SESSION_MAP_POSITIONS = [
   { x: 48, y: 42 },
   { x: 22, y: 76 },
 ];
+const maxDeskMapUploadBytes = 8 * 1024 * 1024;
 
-export function NarrativeMap({
+export function DeskMap({
   sessions,
   activeSessionId,
   onOpenSession,
@@ -78,6 +101,8 @@ export function NarrativeMap({
   const [canvasTool, setCanvasTool] = useState<CanvasTool>("select");
   const [canvasScale, setCanvasScale] = useState(1.0);
   const [timeframeFilter, setTimeframeFilter] = useState<string>("all");
+  const [desk, setDesk] = useState<DeskMapDesk | null>(null);
+  const [mapImageError, setMapImageError] = useState<string | null>(null);
   const [headerMapControlsHost, setHeaderMapControlsHost] =
     useState<HTMLElement | null>(null);
   const [zoomFns, setZoomFns] = useState<{
@@ -93,6 +118,23 @@ export function NarrativeMap({
     [sessions],
   );
   const isWorkspaceScoped = Array.isArray(sessions);
+
+  useEffect(() => {
+    if (!isWorkspaceScoped) return;
+    let cancelled = false;
+    fetchDeskMap()
+      .then((nextDesk) => {
+        if (!cancelled) setDesk(nextDesk);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setMapImageError(err instanceof Error ? err.message : "DeskMap unavailable.");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isWorkspaceScoped]);
 
   useEffect(() => {
     const syncHeaderHost = () => {
@@ -237,6 +279,19 @@ export function NarrativeMap({
     setEditingCard(card);
     setCatalystModalOpen(true);
   }, []);
+  const handleDeskMapImageChange = useCallback(async (input: {
+    mapImageUrl: string | null;
+    mapImagePrompt: string | null;
+  }) => {
+    setMapImageError(null);
+    try {
+      const nextDesk = await updateDeskMapImage(input);
+      setDesk(nextDesk);
+    } catch (err) {
+      setMapImageError(err instanceof Error ? err.message : "DeskMap image failed.");
+      throw err;
+    }
+  }, []);
   const mapFilterControls = !isWorkspaceScoped ? (
     <>
       <TimeframeFilterDropdown
@@ -251,7 +306,14 @@ export function NarrativeMap({
         catalysts={state.catalysts}
       />
     </>
-  ) : null;
+  ) : (
+    <DeskMapImageControls
+      desk={desk}
+      sessions={workspaceSessions}
+      error={mapImageError}
+      onImageChange={handleDeskMapImageChange}
+    />
+  );
 
   return (
     <NarrativeHighlightProvider>
@@ -268,6 +330,9 @@ export function NarrativeMap({
             <WorkspaceNarrativesMap
               sessions={workspaceSessions}
               activeSessionId={activeSessionId ?? null}
+              desk={desk}
+              canvasTool={canvasTool}
+              scale={canvasScale}
               onOpenSession={onOpenSession}
             />
           ) : (
@@ -309,7 +374,32 @@ export function NarrativeMap({
           {!isWorkspaceScoped ? <NarrativeCanvasChat /> : null}
 
           {/* Figma-style floating toolbar — bottom center */}
-          {!isWorkspaceScoped ? (
+          {isWorkspaceScoped ? (
+            <NarrativeFloatingToolbar
+              activeTool={canvasTool}
+              onToolChange={setCanvasTool}
+              onAddCatalyst={() => window.dispatchEvent(new Event("fintheon:narrative-new-session"))}
+              onImport={() => setImportModalOpen(true)}
+              onToggleSanctum={() => {}}
+              onToggleHeatmap={() => dispatch({ type: "TOGGLE_HEATMAP" })}
+              onToggleFilter={() => {
+                const next =
+                  state.filterSentiment === "all"
+                    ? "bearish"
+                    : state.filterSentiment === "bearish"
+                      ? "bullish"
+                      : "all";
+                dispatch({ type: "SET_FILTER", sentiment: next });
+              }}
+              sanctumActive={false}
+              heatmapActive={state.heatmapEnabled}
+              filterActive={state.filterSentiment !== "all"}
+              scale={canvasScale}
+              onZoomTo={setCanvasScale}
+              onFitView={() => setCanvasScale(1)}
+              onResetView={() => setCanvasScale(1)}
+            />
+          ) : (
             <NarrativeFloatingToolbar
               activeTool={canvasTool}
               onToolChange={setCanvasTool}
@@ -339,7 +429,7 @@ export function NarrativeMap({
               onFitView={zoomFns?.fitView}
               onResetView={handleResetView}
             />
-          ) : null}
+          )}
         </div>
 
         <NarrativeSaveModal
@@ -376,28 +466,18 @@ export function NarrativeMap({
 function WorkspaceNarrativesMap({
   sessions,
   activeSessionId,
+  desk,
+  canvasTool,
+  scale,
   onOpenSession,
 }: {
   sessions: NarrativeSessionSummary[];
   activeSessionId: string | null;
+  desk: DeskMapDesk | null;
+  canvasTool: CanvasTool;
+  scale: number;
   onOpenSession?: (id: string) => void;
 }) {
-  if (sessions.length === 0) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--fintheon-accent)]">
-            No narratives built
-          </p>
-          <p className="mt-2 max-w-sm text-xs leading-5 text-[var(--fintheon-muted)]">
-            Build a NarrativeFlow workspace and it will appear here as a bounded
-            narrative territory.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   const links = sessions.flatMap((session, index) =>
     sessions.slice(index + 1).map((next, offset) => ({
       id: `${session.id}-${next.id}`,
@@ -407,7 +487,52 @@ function WorkspaceNarrativesMap({
   );
 
   return (
-    <div className="relative h-full overflow-hidden">
+    <div
+      className={`relative h-full overflow-hidden ${
+        canvasTool === "hand" ? "cursor-grab" : "cursor-default"
+      }`}
+    >
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 opacity-45"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at center, rgba(199,159,74,0.08), transparent 32%), linear-gradient(rgba(199,159,74,0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(199,159,74,0.055) 1px, transparent 1px)",
+          backgroundSize: "100% 100%, 56px 56px, 56px 56px",
+        }}
+      />
+      {desk?.mapImageUrl ? (
+        <img
+          src={desk.mapImageUrl}
+          alt=""
+          draggable={false}
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.16] saturate-[0.85]"
+        />
+      ) : null}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(circle at 50% 46%, transparent 0%, rgba(0,0,0,0.24) 68%, rgba(0,0,0,0.52) 100%)",
+        }}
+      />
+      <div
+        className="absolute inset-0 origin-center transition-transform duration-200"
+        style={{ transform: `scale(${scale})` }}
+      >
+        {sessions.length === 0 ? (
+          <div className="flex h-full items-center justify-center">
+            <div className="text-center">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--fintheon-accent)]">
+                Fresh DeskMap
+              </p>
+              <p className="mt-2 max-w-sm text-xs leading-5 text-[var(--fintheon-muted)]">
+                NF-Workspace sessions will appear here as the desk builds its map.
+              </p>
+            </div>
+          </div>
+        ) : null}
       <svg
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 h-full w-full opacity-35"
@@ -466,11 +591,165 @@ function WorkspaceNarrativesMap({
           </button>
         );
       })}
+      </div>
+      <div className="absolute left-3 top-3 z-30 pointer-events-none">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--fintheon-accent)]/70">
+          DeskMap
+        </p>
+        <p className="mt-1 text-xs text-[var(--fintheon-muted)]/70">
+          {desk?.name ?? "Priced In Capital"}
+        </p>
+      </div>
       <div className="absolute bottom-3 left-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]/55">
-        {sessions.length} built narratives
+        {sessions.length} NF-Workspaces
       </div>
     </div>
   );
+}
+
+function DeskMapImageControls({
+  desk,
+  sessions,
+  error,
+  onImageChange,
+}: {
+  desk: DeskMapDesk | null;
+  sessions: NarrativeSessionSummary[];
+  error: string | null;
+  onImageChange: (input: {
+    mapImageUrl: string | null;
+    mapImagePrompt: string | null;
+  }) => void | Promise<void>;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const hasImage = Boolean(desk?.mapImageUrl);
+
+  async function apply(input: { mapImageUrl: string | null; mapImagePrompt: string | null }) {
+    setLocalError(null);
+    try {
+      await onImageChange(input);
+    } catch (err) {
+      setLocalError(err instanceof Error ? err.message : "DeskMap image failed.");
+    }
+  }
+
+  function handleUpload(file: File | undefined) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setLocalError("Choose an image, meme, or GIF.");
+      return;
+    }
+    if (file.size > maxDeskMapUploadBytes) {
+      setLocalError("Use an image under 8 MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () =>
+      apply({
+        mapImageUrl: String(reader.result ?? ""),
+        mapImagePrompt: file.name,
+      });
+    reader.onerror = () => setLocalError("Image upload failed.");
+    reader.readAsDataURL(file);
+  }
+
+  function generateImage() {
+    const prompt = buildDeskMapPrompt(desk, sessions);
+    const seed = `${desk?.id ?? "desk"}:${sessions.length}:${Date.now()}`;
+    apply({
+      mapImageUrl: buildGeneratedDeskMapImage(prompt, desk?.color ?? "#c79f4a", seed),
+      mapImagePrompt: prompt,
+    });
+  }
+
+  return (
+    <div className="relative flex items-center gap-1.5">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*,.gif"
+        className="hidden"
+        onChange={(event) => handleUpload(event.target.files?.[0])}
+      />
+      <IconControl title="Upload DeskMap image" onClick={() => inputRef.current?.click()}>
+        <ImagePlus size={14} />
+      </IconControl>
+      <IconControl
+        title={hasImage ? "Regenerate DeskMap image with CAO" : "Generate DeskMap image with CAO"}
+        onClick={generateImage}
+      >
+        {hasImage ? <RefreshCw size={14} /> : <Sparkles size={14} />}
+      </IconControl>
+      {hasImage ? (
+        <IconControl title="Remove DeskMap image" onClick={() => apply({ mapImageUrl: null, mapImagePrompt: null })}>
+          <Trash2 size={14} />
+        </IconControl>
+      ) : null}
+      {localError || error ? (
+        <div className="absolute right-0 top-[calc(100%+6px)] w-56 rounded bg-[var(--fintheon-overlay-surface,var(--fintheon-bg))] px-2 py-1 text-[10px] text-red-300 shadow-xl">
+          {localError ?? error}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function IconControl({
+  title,
+  onClick,
+  children,
+}: {
+  title: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      onClick={onClick}
+      className="grid h-8 w-8 place-items-center rounded-[4px] border border-transparent text-[var(--fintheon-accent)]/55 transition-colors hover:bg-[var(--fintheon-accent)]/8 hover:text-[var(--fintheon-accent)]"
+    >
+      {children}
+    </button>
+  );
+}
+
+function buildDeskMapPrompt(
+  desk: DeskMapDesk | null,
+  sessions: NarrativeSessionSummary[],
+): string {
+  const titles = sessions.slice(0, 6).map((session) => session.title).join(" / ");
+  return `${desk?.name ?? "Trading Desk"} DeskMap visual identity${titles ? ` | ${titles}` : ""}`.slice(0, 900);
+}
+
+function buildGeneratedDeskMapImage(prompt: string, color: string, seed: string): string {
+  const hash = Array.from(prompt + seed).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const hue = hash % 360;
+  const accent = hexToRgba(color, 0.5);
+  const title = escapeXml(prompt.split("|")[0]?.trim() || "DeskMap");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900"><defs><linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="hsl(${hue} 42% 18%)"/><stop offset=".52" stop-color="#10161a"/><stop offset="1" stop-color="#030608"/></linearGradient><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency=".62" numOctaves="4"/></filter></defs><rect width="1600" height="900" fill="url(#bg)"/><rect width="1600" height="900" opacity=".14" filter="url(#noise)"/><g opacity=".34" stroke="${accent}" fill="none"><path d="M140 520 C360 260 620 650 850 370 S1250 260 1460 520"/><path d="M120 390 C420 510 560 210 830 315 S1120 620 1490 340"/></g><circle cx="${250 + (hash % 420)}" cy="${180 + (hash % 260)}" r="260" fill="${accent}" opacity=".42"/><circle cx="${980 + (hash % 360)}" cy="${320 + (hash % 300)}" r="330" fill="rgba(255,255,255,.07)"/><text x="86" y="132" fill="rgba(255,255,255,.82)" font-family="Inter, system-ui, sans-serif" font-size="52" font-weight="650">${title}</text><text x="88" y="184" fill="rgba(199,159,74,.78)" font-family="Inter, system-ui, sans-serif" font-size="18" letter-spacing="5">CAO GENERATED DESKMAP IDENTITY</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function hexToRgba(value: string, alpha: number): string {
+  const hex = value.replace("#", "");
+  if (hex.length !== 6) return `rgba(199,159,74,${alpha})`;
+  const parsed = Number.parseInt(hex, 16);
+  const red = (parsed >> 16) & 255;
+  const green = (parsed >> 8) & 255;
+  const blue = parsed & 255;
+  return `rgba(${red},${green},${blue},${alpha})`;
+}
+
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 // ── Timeframe Filter Dropdown ────────────────────────────────────

@@ -42,7 +42,13 @@ import {
   HeadlineChips,
   type HeadlineChip,
 } from "../chat/HeadlinePickerPopover";
+import { ContextMentionDrawer } from "../chat/ContextMentionDrawer";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
+import {
+  formatMentionContext,
+  mentionToken,
+  type ContextMention,
+} from "../../lib/context-mentions";
 
 /* ------------------------------------------------------------------ */
 /*  RiskFlow preview builder                                          */
@@ -75,6 +81,19 @@ function buildRiskFlowPreview(data: {
     parts.push(`Summary: ${data.summary}`);
   }
   return parts.join("\n");
+}
+
+function getMentionQuery(value: string): string | null {
+  const match = value.match(/(^|\s)@([a-zA-Z0-9_.-]{0,48})$/);
+  return match ? match[2] : null;
+}
+
+function replaceMentionQuery(value: string, item: ContextMention): string {
+  const token = mentionToken(item);
+  if (/(^|\s)@[a-zA-Z0-9_.-]{0,48}$/.test(value)) {
+    return value.replace(/(^|\s)@[a-zA-Z0-9_.-]{0,48}$/, `$1${token} `);
+  }
+  return `${value}${value.endsWith(" ") || value.length === 0 ? "" : " "}${token} `;
 }
 
 /* ------------------------------------------------------------------ */
@@ -204,6 +223,8 @@ export function PromptBox({
   const [vanishing, setVanishing] = useState(false);
   const [showAttach, setShowAttach] = useState(false);
   const [slashQuery, setSlashQuery] = useState<string | null>(null);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [selectedMentions, setSelectedMentions] = useState<ContextMention[]>([]);
   const [fullSizeImage, setFullSizeImage] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
   const hasInlineDrawer = showAttach || toolboxOpen;
@@ -263,16 +284,21 @@ export function PromptBox({
     // Trigger vanish animation
     setVanishing(true);
     setTimeout(() => {
-      onSend(msg, images.length > 0 ? images : undefined);
+      onSend(
+        `${msg}${formatMentionContext(selectedMentions)}`,
+        images.length > 0 ? images : undefined,
+      );
       setText("");
       setImages([]);
+      setMentionQuery(null);
+      setSelectedMentions([]);
       localStorage.removeItem(draftKey);
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
       }
       setVanishing(false);
     }, 300);
-  }, [text, images, onSend, draftKey]);
+  }, [text, images, onSend, draftKey, selectedMentions]);
 
   /* Keyboard shortcuts */
   const lastSpaceRef = useRef(0);
@@ -475,6 +501,22 @@ export function PromptBox({
           }}
         />
 
+        <ContextMentionDrawer
+          open={mentionQuery !== null}
+          query={mentionQuery ?? ""}
+          selected={selectedMentions}
+          onClose={() => setMentionQuery(null)}
+          onSelect={(item) => {
+            setSelectedMentions((current) =>
+              current.some((mention) => mention.id === item.id)
+                ? current
+                : [...current, item],
+            );
+            setText((current) => replaceMentionQuery(current, item));
+            setMentionQuery(null);
+          }}
+        />
+
         {/* Image preview strip */}
         {images.length > 0 && (
           <div className="flex gap-2 mb-2 px-2 overflow-x-auto">
@@ -590,6 +632,7 @@ export function PromptBox({
             onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
               const val = e.target.value;
               setText(val);
+              setMentionQuery(getMentionQuery(val));
               // Auto-dismiss the attach popup once the user starts composing a message —
               // otherwise the popup hangs over the input and blocks the first word or two.
               if (val.length > 0) {

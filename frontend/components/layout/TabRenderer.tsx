@@ -13,7 +13,7 @@ import { MainDashboard } from "../executive/MainDashboard";
 import { EconCalendarProvider } from "../../contexts/EconCalendarContext";
 import { TradingViewCalendar } from "../econ/TradingViewCalendar";
 import { NarrativeProvider } from "../../contexts/NarrativeContext";
-import { NarrativeMap } from "../narrative/NarrativeMap";
+import { DeskMap } from "../narrative/DeskMap";
 import { PerformanceJournal } from "../journal/PerformanceJournal";
 import { ProposalWidget } from "../proposals/ProposalWidget";
 import { ApparatusMap } from "../apparatus/ApparatusMap";
@@ -117,7 +117,7 @@ export function TabRenderer({
           className={`h-full w-full ${animClass}`}
         >
           <NarrativeProvider>
-            <NarrativeMap />
+            <DeskMap />
           </NarrativeProvider>
         </div>
       )}

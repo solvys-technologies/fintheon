@@ -295,15 +295,8 @@ function ChatInterfaceInner({
             />
           </div>
 
-          {/* Subtle fade above composer — matches Boardroom style */}
-          <div
-            className="pointer-events-none absolute bottom-0 left-0 right-0 z-10"
-            style={{
-              height: "80px",
-              background:
-                "linear-gradient(to bottom, transparent 0%, var(--fintheon-bg) 100%)",
-            }}
-          />
+          {/* Subtle bounded fade above composer — keeps drawer chrome from blanketing content. */}
+          <div className="fintheon-content-bottom-fade" />
           <div className="relative z-20 shrink-0">
             <FintheonComposer
               thinkHarder={thinkHarder}
