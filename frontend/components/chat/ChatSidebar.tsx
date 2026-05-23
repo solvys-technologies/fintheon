@@ -45,8 +45,17 @@ const HERMES_TO_AGENT_ID: Record<string, string> = {
 };
 
 const PLAN_DRAFT_KEY = "fintheon:plan-markdown-v1";
-const COMPOSER_MODE_KEY = "fintheon:composer-mode-v1";
 const PLAN_DRAFT_TEMPLATE = `# Plan\n\n## Objectives\n- [ ] \n\n## Steps\n1. \n\n## Notes\n`;
+
+type AgentRailSurface = "plan" | "canvas" | "browser";
+
+interface AgentRailEventDetail {
+  open?: boolean;
+  markdown?: string;
+  append?: boolean;
+  title?: string;
+  surface?: AgentRailSurface;
+}
 
 interface SidebarToast {
   id: string;
@@ -69,7 +78,8 @@ function ChatSidebarInner({
   mode,
   onModeChange,
   planMarkdown,
-  onPlanMarkdownChange,
+  railTitle,
+  railSurface,
 }: {
   lastError: string | null;
   lastRequestId: string | null;
@@ -84,7 +94,8 @@ function ChatSidebarInner({
   mode: "work" | "plan";
   onModeChange: (mode: "work" | "plan") => void;
   planMarkdown: string;
-  onPlanMarkdownChange: (value: string) => void;
+  railTitle: string;
+  railSurface: AgentRailSurface;
 }) {
   const { activeAgent, agents } = useFintheonAgents();
   const runtime = useThreadRuntime();
@@ -100,6 +111,7 @@ function ChatSidebarInner({
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
   const [showSkills, setShowSkills] = useState(false);
   const [showWorkDrawer, setShowWorkDrawer] = useState(false);
+  const previousWorkItemCountRef = useRef(0);
   const [hasChatStarted, setHasChatStarted] = useState(false);
   const [toasts, setToasts] = useState<SidebarToast[]>([]);
   const toastTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
@@ -172,7 +184,8 @@ function ChatSidebarInner({
   } = useMessageQueue({ isRunning, sendNow });
 
   const { todos, toggleTodo, removeTodo } = useTodoList();
-  const hasWorkDrawerContent = todos.length > 0 || queue.length > 0;
+  const workItemCount = todos.length + queue.length;
+  const hasWorkDrawerContent = workItemCount > 0;
 
   const handleSend = useCallback(
     (msg: string) => {
@@ -191,8 +204,16 @@ function ChatSidebarInner({
   }, [threadMessages.length]);
 
   useEffect(() => {
-    setShowWorkDrawer(hasWorkDrawerContent);
-  }, [hasWorkDrawerContent, queue.length, todos.length]);
+    const previousCount = previousWorkItemCountRef.current;
+    previousWorkItemCountRef.current = workItemCount;
+    if (workItemCount === 0) {
+      setShowWorkDrawer(false);
+      return;
+    }
+    if (previousCount === 0 || workItemCount > previousCount) {
+      setShowWorkDrawer(true);
+    }
+  }, [workItemCount]);
 
   // Listen for toolbar events dispatched from ConsiliumHub icons
   useEffect(() => {
@@ -314,8 +335,6 @@ function ChatSidebarInner({
         onToggleSkills={() => setShowSkills((v) => !v)}
         conversationId={conversationId}
         onConversationGone={clearConversationId}
-        mode={mode}
-        onModeChange={onModeChange}
         onQueueMessage={addQueue}
         queueCount={queue.length}
         onMessageSubmitted={() => setHasChatStarted(true)}
@@ -325,33 +344,40 @@ function ChatSidebarInner({
         className={`absolute right-0 top-0 z-40 h-full border-l border-[var(--fintheon-accent)]/20 bg-[#090704] shadow-2xl transition-transform duration-300 ease-out ${
           mode === "plan" ? "translate-x-0" : "translate-x-full"
         } w-full md:w-[40%]`}
-        aria-label="Plan mode drawer"
+        aria-label="Agent workspace rail"
       >
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between border-b border-[var(--fintheon-accent)]/20 px-4 py-3">
             <div className="min-w-0">
               <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">
-                Plan Mode
+                Agent Workspace
               </p>
               <p className="truncate text-[12px] font-semibold text-[var(--fintheon-accent)]">
-                plan.md
+                {railTitle}
               </p>
             </div>
             <button
               onClick={() => onModeChange("work")}
               className="rounded border border-[var(--fintheon-accent)]/30 px-2 py-1 text-[10px] text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
             >
-              Work Mode
+              Dismiss
             </button>
           </div>
-          <div className="flex-1 p-3">
-            <textarea
-              value={planMarkdown}
-              onChange={(e) => onPlanMarkdownChange(e.target.value)}
-              spellCheck={false}
-              className="h-full w-full resize-none rounded-md border border-[var(--fintheon-accent)]/15 bg-[#0d0a06] p-3 font-mono text-[12px] leading-5 text-[#f0ead6] outline-none focus:border-[var(--fintheon-accent)]/45"
-              aria-label="Plan markdown editor"
-            />
+          <div className="flex min-h-0 flex-1 flex-col gap-2 p-3">
+            <div className="flex items-center justify-between rounded-md border border-white/[0.06] bg-white/[0.025] px-2 py-1">
+              <span className="text-[9px] uppercase tracking-[0.14em] text-[#f0ead6]/42">
+                {railSurface}
+              </span>
+              <span className="text-[9px] uppercase tracking-[0.14em] text-[#f0ead6]/28">
+                agent-controlled
+              </span>
+            </div>
+            <pre
+              className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap rounded-md border border-[var(--fintheon-accent)]/15 bg-[#0d0a06] p-3 font-mono text-[12px] leading-5 text-[#f0ead6] outline-none"
+              aria-label="Agent workspace content"
+            >
+              {planMarkdown}
+            </pre>
           </div>
         </div>
       </aside>
@@ -384,14 +410,9 @@ export function ChatSidebar({ compact = true }: { compact?: boolean } = {}) {
     "chat",
     reasoningLevel,
   );
-  const [mode, setMode] = useState<"work" | "plan">(() => {
-    try {
-      const saved = localStorage.getItem(COMPOSER_MODE_KEY);
-      return saved === "plan" ? "plan" : "work";
-    } catch {
-      return "work";
-    }
-  });
+  const [mode, setMode] = useState<"work" | "plan">("work");
+  const [railTitle, setRailTitle] = useState("plan.md");
+  const [railSurface, setRailSurface] = useState<AgentRailSurface>("plan");
   const [planMarkdown, setPlanMarkdown] = useState<string>(() => {
     try {
       return localStorage.getItem(PLAN_DRAFT_KEY) ?? PLAN_DRAFT_TEMPLATE;
@@ -401,12 +422,45 @@ export function ChatSidebar({ compact = true }: { compact?: boolean } = {}) {
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem(COMPOSER_MODE_KEY, mode);
-    } catch {
-      // no-op
-    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab" && event.shiftKey && mode === "plan") {
+        event.preventDefault();
+        setMode("work");
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, [mode]);
+
+  useEffect(() => {
+    const surfaceTitles: Record<AgentRailSurface, string> = {
+      plan: "plan.md",
+      canvas: "canvas.md",
+      browser: "browser.md",
+    };
+    const onAgentRail = (event: Event) => {
+      const detail =
+        (event as CustomEvent<AgentRailEventDetail>).detail ?? {};
+      if (detail.open === false) {
+        setMode("work");
+        return;
+      }
+      const nextSurface = detail.surface ?? "plan";
+      setRailSurface(nextSurface);
+      setRailTitle(detail.title ?? surfaceTitles[nextSurface]);
+      const nextMarkdown = detail.markdown;
+      if (typeof nextMarkdown === "string") {
+        setPlanMarkdown((prev) =>
+          detail.append ? `${prev}${nextMarkdown}` : nextMarkdown,
+        );
+      }
+      setMode("plan");
+    };
+
+    window.addEventListener("fintheon:agent-plan-rail", onAgentRail);
+    return () =>
+      window.removeEventListener("fintheon:agent-plan-rail", onAgentRail);
+  }, []);
 
   useEffect(() => {
     try {
@@ -440,7 +494,8 @@ export function ChatSidebar({ compact = true }: { compact?: boolean } = {}) {
         mode={mode}
         onModeChange={setMode}
         planMarkdown={planMarkdown}
-        onPlanMarkdownChange={setPlanMarkdown}
+        railTitle={railTitle}
+        railSurface={railSurface}
       />
     </AssistantRuntimeProvider>
   );

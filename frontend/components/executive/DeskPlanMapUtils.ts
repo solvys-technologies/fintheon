@@ -100,3 +100,45 @@ export function sprintOverlap(
     width: Math.max(10, ((overlapEnd - overlapStart) / span) * 100),
   };
 }
+
+export function segmentHasWindows(segment: SprintSegment): boolean {
+  return segment.plans.some((plan) =>
+    plan.windows?.some((window) =>
+      sprintOverlap(window.startTime, window.endTime, segment),
+    ),
+  );
+}
+
+export function findNextDeskPlanSegmentIndex(
+  segments: SprintSegment[],
+  now = new Date(),
+): number {
+  if (segments.length === 0) return 0;
+  const current = currentEtKey(now);
+  const futureIndex = segments.findIndex(
+    (segment) => segmentHasWindows(segment) && segmentKey(segment) >= current,
+  );
+  if (futureIndex >= 0) return futureIndex;
+  const firstPopulated = segments.findIndex(segmentHasWindows);
+  return firstPopulated >= 0 ? firstPopulated : 0;
+}
+
+function segmentKey(segment: SprintSegment): string {
+  return `${segment.date}:${String(segment.endMinute).padStart(4, "0")}`;
+}
+
+function currentEtKey(date: Date): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const get = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? "00";
+  const minutes = Number(get("hour")) * 60 + Number(get("minute"));
+  return `${get("year")}-${get("month")}-${get("day")}:${String(minutes).padStart(4, "0")}`;
+}

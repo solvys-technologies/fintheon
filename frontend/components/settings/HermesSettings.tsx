@@ -2,14 +2,10 @@
 // [claude-code 2026-03-20] Added startup config section — backend autostart + launch-on-login toggles
 // [claude-code 2026-03-22] Show per-service diagnostics from SystemStatusContext + Hermes verification status
 import { useState, useCallback, useEffect } from "react";
+import type { ReactNode } from "react";
 import {
   RefreshCw,
-  Eye,
-  EyeOff,
-  CheckCircle2,
-  XCircle,
   Power,
-  Monitor,
   Loader2,
 } from "lucide-react";
 import { useGateway } from "../../contexts/GatewayContext";
@@ -19,6 +15,7 @@ import { useSystemStatus } from "../../hooks/useSystemStatus";
 import { HermesAgentCards } from "../hermes/HermesAgentCards";
 import { HermesActivityLog, useActivityLog } from "../hermes/HermesActivityLog";
 import { isElectron } from "../../lib/platform";
+import { SettingsActionStatus } from "./SettingsActionStatus";
 
 /* ------------------------------------------------------------------ */
 /*  Section header                                                      */
@@ -26,11 +23,42 @@ import { isElectron } from "../../lib/platform";
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <div className="flex items-center gap-2 mb-3">
-      <h3 className="text-[11px] font-semibold tracking-[0.2em] uppercase text-[var(--fintheon-accent)]">
+    <div className="mb-3 flex items-center gap-2 text-right">
+      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[var(--fintheon-accent)]/15 to-transparent" />
+      <h3 className="text-right text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--fintheon-accent)]">
         {title}
       </h3>
-      <div className="flex-1 border-t border-[var(--fintheon-accent)]/15" />
+    </div>
+  );
+}
+
+function SettingsStatusRow({
+  label,
+  detail,
+  status,
+  tone = "muted",
+  children,
+}: {
+  label: string;
+  detail?: string | null;
+  status?: string | null;
+  tone?: "muted" | "success" | "error" | "warning";
+  children?: ReactNode;
+}) {
+  return (
+    <div className="fintheon-fade-divider flex items-start justify-between gap-4 py-3 text-right">
+      <div className="min-w-0 text-right">
+        <p className="text-[11px] font-medium text-zinc-300">{label}</p>
+        {detail && (
+          <p className="mt-0.5 text-[10px] leading-snug text-zinc-600">
+            {detail}
+          </p>
+        )}
+      </div>
+      <div className="flex min-w-[136px] shrink-0 flex-col items-end gap-1 text-right">
+        {children}
+        {status && <SettingsActionStatus label={status} tone={tone} />}
+      </div>
     </div>
   );
 }
@@ -52,8 +80,6 @@ export function HermesSettings() {
   const { services, overall: systemOverall, refreshNow } = useSystemStatus();
   const { agents } = useFintheonAgents();
   const { entries } = useActivityLog();
-  const [showKey, setShowKey] = useState(false);
-  const [testResult, setTestResult] = useState<"success" | "fail" | null>(null);
 
   // Startup config (Electron only)
   const [backendAutostart, setBackendAutostart] = useState(true);
@@ -101,30 +127,6 @@ export function HermesSettings() {
     }, 1000);
   }, []);
 
-  const apiKey = import.meta.env.VITE_HERMES_API_KEY || "";
-  const maskedKey = apiKey
-    ? apiKey.slice(0, 8) + "..." + apiKey.slice(-4)
-    : "(not set)";
-
-  const handleTestKey = useCallback(async () => {
-    setTestResult(null);
-    try {
-      const res = await fetch(`${gatewayUrl}/health`, {
-        headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined,
-        signal: AbortSignal.timeout(5000),
-      });
-      setTestResult(res.ok ? "success" : "fail");
-    } catch {
-      setTestResult("fail");
-    }
-  }, [apiKey, gatewayUrl]);
-
-  const statusColor =
-    status === "connected"
-      ? "text-emerald-400"
-      : status === "connecting"
-        ? "text-yellow-400"
-        : "text-red-400";
   const statusLabel =
     status === "connected"
       ? "Connected"
@@ -138,24 +140,19 @@ export function HermesSettings() {
       {isElectron() && (
         <section>
           <SectionHeader title="Startup & Backend" />
-          <div className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg p-4 space-y-4">
-            {/* Backend process status + manual control */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div
-                  className={`w-2 h-2 rounded-full ${backendAlive ? "bg-emerald-500" : "bg-red-500"}`}
-                />
-                <span className="text-[11px] text-zinc-300">
-                  Backend Process {backendAlive ? "(Running)" : "(Stopped)"}
-                </span>
-              </div>
+          <div className="space-y-0">
+            <SettingsStatusRow
+              label="Backend Process"
+              status={backendAlive ? "Running" : "Stopped"}
+              tone={backendAlive ? "success" : "error"}
+            >
               <button
                 onClick={backendAlive ? handleStopBackend : handleStartBackend}
                 disabled={backendToggling}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium border transition-colors disabled:opacity-40 ${
+                className={`flex items-center gap-1.5 text-[10px] font-medium transition-colors disabled:opacity-40 ${
                   backendAlive
-                    ? "text-red-400 border-red-500/30 hover:bg-red-500/10"
-                    : "text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                    ? "text-red-400 hover:text-red-300"
+                    : "text-emerald-400 hover:text-emerald-300"
                 }`}
               >
                 <Power
@@ -163,18 +160,14 @@ export function HermesSettings() {
                 />
                 {backendAlive ? "Stop" : "Start"}
               </button>
-            </div>
+            </SettingsStatusRow>
 
-            {/* Auto-start backend toggle */}
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-[11px] text-zinc-300">
-                  Auto-start backend on app launch
-                </div>
-                <div className="text-[10px] text-zinc-600">
-                  Spawns the Hono backend when Fintheon opens
-                </div>
-              </div>
+            <SettingsStatusRow
+              label="Auto-start backend on app launch"
+              detail="Spawns the Hono backend when Fintheon opens"
+              status={backendAutostart ? "Enabled" : "Off"}
+              tone={backendAutostart ? "success" : "muted"}
+            >
               <button
                 onClick={() => handleToggleAutostart(!backendAutostart)}
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
@@ -191,19 +184,14 @@ export function HermesSettings() {
                   }`}
                 />
               </button>
-            </div>
+            </SettingsStatusRow>
 
-            {/* Launch on login toggle */}
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-[11px] text-zinc-300 flex items-center gap-1.5">
-                  <Monitor className="w-3 h-3 text-zinc-500" />
-                  Launch Fintheon on login
-                </div>
-                <div className="text-[10px] text-zinc-600">
-                  Opens the app automatically when you sign into your Mac
-                </div>
-              </div>
+            <SettingsStatusRow
+              label="Launch Fintheon on login"
+              detail="Opens the app automatically when you sign into your Mac"
+              status={launchOnLogin ? "Enabled" : "Off"}
+              tone={launchOnLogin ? "success" : "muted"}
+            >
               <button
                 onClick={() => handleToggleLaunchOnLogin(!launchOnLogin)}
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
@@ -216,7 +204,7 @@ export function HermesSettings() {
                   }`}
                 />
               </button>
-            </div>
+            </SettingsStatusRow>
           </div>
         </section>
       )}
@@ -224,37 +212,25 @@ export function HermesSettings() {
       {/* 1. Gateway Status Card */}
       <section>
         <SectionHeader title="Gateway Status" />
-        <div className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg p-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] text-zinc-400">Gateway Status</span>
-            <div className="flex items-center gap-1.5">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  status === "connected"
-                    ? "bg-emerald-500"
-                    : status === "connecting"
-                      ? "bg-yellow-500 animate-pulse"
-                      : "bg-red-500"
-                }`}
-              />
-              <span className={`text-[11px] font-medium ${statusColor}`}>
-                {statusLabel}
-              </span>
-            </div>
-          </div>
-          <div className="text-[10px] text-zinc-600 font-mono">
-            {gatewayUrl}
-          </div>
-          <div className="text-[10px] text-zinc-600">Port: {gatewayPort}</div>
-          {lastHealthCheck && (
-            <div className="text-[10px] text-zinc-600">
-              Last check: {new Date(lastHealthCheck).toLocaleTimeString()}
-            </div>
-          )}
-          {/* Hermes AI verification status */}
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] text-zinc-400">Hermes AI</span>
-            <div className="flex items-center gap-1.5">
+        <div className="space-y-0">
+          <SettingsStatusRow
+            label="Gateway Status"
+            detail={`${gatewayUrl} · Port ${gatewayPort}${
+              lastHealthCheck
+                ? ` · Last check ${new Date(lastHealthCheck).toLocaleTimeString()}`
+                : ""
+            }`}
+            status={statusLabel}
+            tone={
+              status === "connected"
+                ? "success"
+                : status === "connecting"
+                  ? "warning"
+                  : "error"
+            }
+          />
+          <SettingsStatusRow label="Hermes AI">
+            <div className="flex flex-col items-end gap-1 text-right">
               {isVerifyingHermes ? (
                 <>
                   <Loader2 className="w-3 h-3 text-yellow-400 animate-spin" />
@@ -297,12 +273,12 @@ export function HermesSettings() {
                 </>
               )}
             </div>
-          </div>
+          </SettingsStatusRow>
 
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center justify-end gap-3 pt-2">
             <button
               onClick={reconnect}
-              className="flex items-center gap-1.5 text-[10px] text-[var(--fintheon-accent)] hover:text-[var(--fintheon-accent)]/80 transition-colors"
+              className="fintheon-action-link flex items-center gap-1.5 text-[10px] uppercase tracking-[0.14em]"
             >
               <RefreshCw className="w-3 h-3" /> Reconnect
             </button>
@@ -320,99 +296,42 @@ export function HermesSettings() {
       {services.length > 0 && (
         <section>
           <SectionHeader title="Service Diagnostics" />
-          <div className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg p-4 space-y-2">
+          <div className="space-y-0">
             {services.map((svc) => (
-              <div key={svc.key} className="flex items-center justify-between">
-                <span className="text-[11px] text-zinc-400">{svc.name}</span>
-                <div className="flex items-center gap-2">
-                  {svc.detail && (
-                    <span className="text-[10px] text-zinc-600 font-mono">
-                      {svc.detail}
-                    </span>
-                  )}
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      svc.status === "ok"
-                        ? "bg-emerald-500"
-                        : svc.status === "degraded"
-                          ? "bg-yellow-500"
-                          : svc.status === "error"
-                            ? "bg-red-500"
-                            : "bg-zinc-600"
-                    }`}
-                  />
-                </div>
-              </div>
-            ))}
-            <div className="text-[9px] text-zinc-600 pt-1 border-t border-zinc-800">
-              Overall:{" "}
-              <span
-                className={
-                  systemOverall === "ok"
-                    ? "text-emerald-400"
-                    : systemOverall === "degraded"
-                      ? "text-yellow-400"
-                      : systemOverall === "error"
-                        ? "text-red-400"
-                        : "text-zinc-500"
+              <SettingsStatusRow
+                key={svc.key}
+                label={svc.name}
+                detail={svc.detail}
+                status={svc.status}
+                tone={
+                  svc.status === "ok"
+                    ? "success"
+                    : svc.status === "degraded"
+                      ? "warning"
+                      : svc.status === "error"
+                        ? "error"
+                        : "muted"
                 }
-              >
-                {systemOverall}
-              </span>
+              />
+            ))}
+            <div className="pt-2 text-right">
+              <SettingsActionStatus
+                label={systemOverall}
+                detail="Overall service state"
+                tone={
+                  systemOverall === "ok"
+                    ? "success"
+                    : systemOverall === "degraded"
+                      ? "warning"
+                      : systemOverall === "error"
+                        ? "error"
+                        : "muted"
+                }
+              />
             </div>
           </div>
         </section>
       )}
-
-      {/* 2. Hermes Gateway API Key */}
-      <section>
-        <SectionHeader title="Hermes Gateway API Key" />
-        <div className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg p-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] text-zinc-400">API Key</span>
-            <button
-              onClick={() => setShowKey(!showKey)}
-              className="text-zinc-500 hover:text-zinc-300 transition-colors"
-            >
-              {showKey ? (
-                <EyeOff className="w-3.5 h-3.5" />
-              ) : (
-                <Eye className="w-3.5 h-3.5" />
-              )}
-            </button>
-          </div>
-          <div className="text-[11px] text-zinc-300 font-mono">
-            {showKey ? apiKey || "(not set)" : maskedKey}
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleTestKey}
-              disabled={!apiKey}
-              className="text-[10px] px-2 py-0.5 rounded border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Test Key
-            </button>
-            {testResult === "success" && (
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            )}
-            {testResult === "fail" && (
-              <XCircle className="w-3.5 h-3.5 text-red-400" />
-            )}
-          </div>
-          <div className="text-[10px] text-zinc-600 mt-1">
-            Default Model:{" "}
-            <span className="text-zinc-400 font-mono">
-              deepseek-reasoner via Hermes
-            </span>
-          </div>
-          <p className="text-[10px] text-zinc-600">
-            To change the API key, update{" "}
-            <code className="text-zinc-400">VITE_HERMES_API_KEY</code> in
-            your <code className="text-zinc-400">.env</code> file and restart
-            the dev server.
-          </p>
-        </div>
-      </section>
 
       {/* 3. Agent Status Cards */}
       <section>

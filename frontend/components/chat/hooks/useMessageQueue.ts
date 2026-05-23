@@ -69,7 +69,6 @@ export function useMessageQueue({
   const addQueue = useCallback((text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
-    shouldDrainRef.current = true;
     setQueue((prev) => [...prev, createQueueItem(trimmed)]);
   }, []);
 

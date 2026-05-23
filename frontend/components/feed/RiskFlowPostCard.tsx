@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ExternalLink,
-  MessageSquare,
+  Share2,
   ThumbsDown,
   Video,
   Volume2,
@@ -231,10 +231,10 @@ export function RiskFlowPostCard({
                 e.stopPropagation();
                 onAskAI(alert);
               }}
-              className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-[4px] bg-transparent p-1 text-[var(--fintheon-text)]/55 transition-colors hover:text-[var(--fintheon-accent)] focus:outline-none focus:text-[var(--fintheon-accent)]"
-              aria-label={`Ask AI about ${alert.headline}`}
+              className="fintheon-share-icon-button inline-flex min-h-8 min-w-8 items-center justify-center bg-transparent p-1 text-[var(--fintheon-text)]/55 transition-colors hover:text-[var(--fintheon-accent)] focus:outline-none focus:text-[var(--fintheon-accent)]"
+              aria-label={`Share ${alert.headline} to chat`}
             >
-              <MessageSquare className="h-[13px] w-[13px]" />
+              <Share2 className="h-[13px] w-[13px]" />
             </button>
           )}
         </footer>

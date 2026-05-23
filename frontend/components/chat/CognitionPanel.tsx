@@ -6,7 +6,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { API_BASE_URL } from "./constants.js";
-import { RichTextRenderer } from "../shared/RichTextRenderer";
 
 export type CognitionStepKind =
   | "agent-route"
@@ -40,7 +39,7 @@ const KIND_PHRASE: Record<CognitionStepKind, string> = {
   "tool-dispatch": "Calling tool",
   "tool-approval-needed": "Awaiting approval",
   "tool-approval-resolved": "Approval resolved",
-  "gateway-call": "Gateway call",
+  "gateway-call": "Calling Tools...",
   "gateway-fallback": "Gateway fallback",
   "response-ready": "Response ready",
   error: "Error",
@@ -51,15 +50,36 @@ function formatElapsed(ms: number): string {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
-function stepToText(s: CognitionStep): string {
-  const prefix = KIND_PHRASE[s.kind] ?? s.kind;
-  const detail = s.detail
-    ? s.kind === "tool-dispatch" || s.kind === "gateway-call"
-      ? ` \`${s.detail}\``
-      : ` — ${s.detail}`
-    : "";
-  const dur = s.durationMs !== undefined ? ` (${s.durationMs}ms)` : "";
-  return `${prefix}${detail ? ":" : ""}${detail}${dur}`;
+function parseDetail(detail: string | undefined): string {
+  if (!detail) return "";
+  const trimmed = detail.trim();
+  if (!trimmed.startsWith("{")) return trimmed;
+  try {
+    const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+    const command = typeof parsed.command === "string" ? parsed.command : null;
+    const path = typeof parsed.path === "string" ? parsed.path : null;
+    const query = typeof parsed.query === "string" ? parsed.query : null;
+    const label = command ?? path ?? query;
+    return label ? label : trimmed;
+  } catch {
+    return trimmed;
+  }
+}
+
+function stepLabel(step: CognitionStep): string {
+  if (step.kind === "tool-dispatch") return "Tool call";
+  if (step.kind === "gateway-call") return "Calling Tools...";
+  return KIND_PHRASE[step.kind] ?? step.kind;
+}
+
+function isToolStep(step: CognitionStep): boolean {
+  return (
+    step.kind === "tool-dispatch" ||
+    step.kind === "gateway-call" ||
+    step.kind === "gateway-fallback" ||
+    step.kind === "tool-approval-needed" ||
+    step.kind === "tool-approval-resolved"
+  );
 }
 
 export function useCognitionStream(requestId: string | null) {
@@ -140,58 +160,67 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
   }, [requestId]);
 
   const stillThinking = isStreaming && !done;
-  const latestStep = steps[steps.length - 1];
+  const visibleSteps = steps.filter((step) => step.kind !== "response-ready");
+  const toolCount = visibleSteps.filter(isToolStep).length;
 
-  if (!requestId || steps.length === 0) return null;
+  if (!requestId || visibleSteps.length === 0) return null;
 
   return (
-    <div className="rounded-2xl bg-[var(--fintheon-bg)]/90 overflow-hidden transition-all">
+    <div className="overflow-hidden rounded-xl border border-white/[0.055] bg-[#0b0b09] shadow-[0_18px_48px_rgba(0,0,0,0.24)] transition-colors duration-300">
       <button
         onClick={() => setCollapsed((c) => !c)}
-        className="w-full flex items-center justify-between px-3 py-2 hover:bg-white/3 transition-colors"
+        className="flex w-full items-center justify-between px-3 py-2 text-left transition-colors duration-200 hover:bg-white/[0.025]"
+        aria-expanded={!collapsed}
       >
-        <div className="flex items-center gap-1.5">
+        <div className="flex min-w-0 items-center gap-2">
           <span
             className={
-              "text-[10px] font-medium tracking-wider lowercase text-[var(--fintheon-accent)]/70" +
+              "text-[10px] font-medium tracking-[0.14em] uppercase text-[var(--fintheon-accent)]/72" +
               (stillThinking ? " cognition-thought-shimmer" : "")
             }
           >
-            {stillThinking ? "working" : "ready"}
+            Calling Tools...
           </span>
-          <span className="max-w-[220px] truncate text-[10px] text-[var(--fintheon-text)]/45">
-            {latestStep ? stepToText(latestStep) : "starting"}
+          <span className="truncate text-[10px] text-[var(--fintheon-text)]/42">
+            {toolCount || visibleSteps.length} {toolCount === 1 ? "call" : "calls"}
           </span>
           <span className="text-[10px] text-[var(--fintheon-text)]/55 tabular-nums">
             {formatElapsed(elapsedMs)}
           </span>
         </div>
-        <span
-          className="text-[var(--fintheon-text)]/25 text-[10px]"
-          style={{
-            display: "inline-block",
-            transform: collapsed ? "rotate(-90deg)" : "rotate(0)",
-            transition: "transform var(--t-icon-swap-dur) var(--t-icon-swap-ease)",
-          }}
-        >
-          ▾
-        </span>
       </button>
 
-      {!collapsed && (
-        <div className="px-3 pb-2.5">
-          <div
-            className={
-              "text-[11px] leading-relaxed text-[var(--fintheon-text)]/75 space-y-1" +
-              (stillThinking ? " cognition-thought-shimmer" : "")
-            }
-          >
-            {steps.map((s, i) => (
-              <RichTextRenderer key={i} text={stepToText(s)} />
-            ))}
+      <div
+        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
+          collapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
+        }`}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="space-y-1.5 px-3 pb-2.5">
+            {visibleSteps.map((step, i) => {
+              const detail = parseDetail(step.detail);
+              return (
+                <div
+                  key={`${step.ts}-${i}`}
+                  className="grid grid-cols-[7.5rem_1fr_auto] items-start gap-2 rounded-md bg-black/20 px-2.5 py-2 text-[10.5px] leading-4 text-[var(--fintheon-text)]/68 transition-colors duration-200 hover:bg-black/30"
+                >
+                  <span className="font-mono uppercase tracking-[0.12em] text-[var(--fintheon-accent)]/68">
+                    {stepLabel(step)}
+                  </span>
+                  <span className="min-w-0 break-words font-mono text-[var(--fintheon-text)]/56">
+                    {detail || "queued"}
+                  </span>
+                  <span className="font-mono tabular-nums text-[var(--fintheon-text)]/34">
+                    {step.durationMs !== undefined
+                      ? formatElapsed(step.durationMs)
+                      : ""}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

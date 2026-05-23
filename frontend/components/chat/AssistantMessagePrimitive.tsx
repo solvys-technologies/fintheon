@@ -1,5 +1,6 @@
 import { AgentActivityRail, type ActivityEntry } from "./AgentActivityRail";
 import { CitationChip, type Citation } from "./CitationChip";
+import { StreamdownChat } from "./slots";
 
 interface AssistantMessagePrimitiveProps {
   rawContent: unknown;
@@ -55,14 +56,12 @@ export function AssistantMessagePrimitive({
             {agentName}
           </div>
         ) : null}
-        <div
-          style={{
-            whiteSpace: "pre-wrap",
-            fontSize: 13,
-            color: "var(--fintheon-text)",
-          }}
-        >
-          {text || (isStreaming ? "…" : "")}
+        <div className="fintheon-chat-markdown text-[13px] text-[var(--fintheon-text)]">
+          {text ? (
+            <StreamdownChat content={text} streaming={isStreaming} />
+          ) : isStreaming ? (
+            "…"
+          ) : null}
         </div>
         {citations.length > 0 ? (
           <div

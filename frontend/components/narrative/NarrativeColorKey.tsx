@@ -128,7 +128,7 @@ export function NarrativeColorKey() {
 
       {/* Popover */}
       <div
-        className="absolute right-0 top-full mt-2 w-[260px] overflow-hidden rounded-md bg-[var(--fintheon-bg)]/95 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-[opacity,transform] duration-200 ease-out"
+        className="fintheon-popover-surface absolute right-0 top-full mt-2 w-[260px] transition-[opacity,transform] duration-200 ease-out"
         style={{
           opacity: open ? 1 : 0,
           transform: open

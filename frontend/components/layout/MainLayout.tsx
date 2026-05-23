@@ -396,6 +396,15 @@ function MainLayoutInner() {
     setActiveTab(tab);
   };
 
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const tab = (event as CustomEvent<{ tab?: NavTab }>).detail?.tab;
+      if (tab) navigateTab(tab);
+    };
+    window.addEventListener("fintheon:navigate-tab", handler);
+    return () => window.removeEventListener("fintheon:navigate-tab", handler);
+  }, [tabHistory, historyIndex]);
+
   const goBack = () => {
     if (historyIndex > 0) {
       const newIdx = historyIndex - 1;

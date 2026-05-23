@@ -207,12 +207,16 @@ export function GeneralTab({
                 >
                   <div>
                     <p className="text-sm text-[var(--fintheon-text)]">{invoice.date}</p>
-                    <p className="text-xs text-gray-500">{invoice.status}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <p className="text-sm font-semibold text-[var(--fintheon-text)]">
-                      {invoice.amount}
-                    </p>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-[var(--fintheon-text)]">
+                        {invoice.amount}
+                      </p>
+                      <p className="text-[10px] uppercase tracking-[0.14em] text-gray-500">
+                        {invoice.status}
+                      </p>
+                    </div>
                     <button
                       className="fintheon-action-link inline-flex h-7 w-7 items-center justify-center rounded text-right"
                       title="Download invoice"

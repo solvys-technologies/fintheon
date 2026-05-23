@@ -49,6 +49,7 @@ import {
   detectVerbalFlush,
   verbalFlushMemory,
 } from "../../../services/cao-memory-flush.js";
+import { buildMacroWatchlistContext } from "../../../services/market-data/macro-watchlist.js";
 
 // File attachment content part types
 type FileContentPart =
@@ -361,6 +362,11 @@ export async function handleChat(c: Context) {
     const feedContext = await buildFeedContext();
     if (feedContext) {
       prompt = `${feedContext}\n\n${prompt}`;
+    }
+
+    const macroContext = await buildMacroWatchlistContext();
+    if (macroContext) {
+      prompt = `${macroContext}\n\n${prompt}`;
     }
 
     // [S23-T3] ArbitrumChamber awareness: Hermes CAOs (Oracle, Feucht, Consul, Herald) should also

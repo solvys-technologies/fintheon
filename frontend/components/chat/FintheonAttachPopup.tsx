@@ -239,20 +239,15 @@ export function FintheonAttachPopup({
 
   return (
     <div
-      className="mx-auto w-[calc(100%-24px)] max-w-[44rem] overflow-hidden rounded-t-2xl transition-all duration-300"
+      className="fintheon-chat-input-drawer transition-all duration-300"
       style={{
         maxHeight: open ? "280px" : "0px",
         opacity: open ? 1 : 0,
         marginBottom: open ? "0px" : "0px",
-        background:
-          "color-mix(in srgb, var(--fintheon-accent) 10%, rgba(5,4,2,0.78))",
-        border: open
-          ? "1px solid color-mix(in srgb, var(--fintheon-accent) 18%, transparent)"
-          : "1px solid transparent",
-        borderBottom: "none",
-        backdropFilter: "blur(24px) saturate(1.4)",
-        WebkitBackdropFilter: "blur(24px) saturate(1.4)",
-        boxShadow: open ? "0 -18px 48px rgba(0,0,0,0.28)" : "none",
+        borderColor: open
+          ? "color-mix(in srgb, var(--fintheon-accent) 18%, transparent)"
+          : "transparent",
+        boxShadow: open ? undefined : "none",
       }}
     >
       {/* Header */}

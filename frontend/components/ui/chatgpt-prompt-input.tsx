@@ -120,6 +120,8 @@ export interface PromptBoxProps {
   // S60-T3: Modal-aware toolbox triggers (composer toolbar)
   pluginSlot?: React.ReactNode;
   mcpSlot?: React.ReactNode;
+  toolboxOpen?: boolean;
+  onInputActivity?: () => void;
   // Relay dispatch button (leftmost in action cluster). Renders either relay or disconnect.
   relaySlot?: React.ReactNode;
   // Optional banner shown above the input while dispatched (e.g. "Chatting on iPhone").
@@ -177,6 +179,8 @@ export function PromptBox({
   providerSlot,
   pluginSlot,
   mcpSlot,
+  toolboxOpen = false,
+  onInputActivity,
   relaySlot,
   dispatchBanner,
   onRiskFlowPick,
@@ -203,6 +207,10 @@ export function PromptBox({
   const isComposingRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    if (toolboxOpen) setShowAttach(false);
+  }, [toolboxOpen]);
 
   /* Draft persistence — load on mount */
   useEffect(() => {
@@ -577,7 +585,10 @@ export function PromptBox({
               setText(val);
               // Auto-dismiss the attach popup once the user starts composing a message —
               // otherwise the popup hangs over the input and blocks the first word or two.
-              if (val.length > 0 && showAttach) setShowAttach(false);
+              if (val.length > 0) {
+                if (showAttach) setShowAttach(false);
+                onInputActivity?.();
+              }
               // Slash-command detection
               if (
                 val.startsWith("/") &&
@@ -622,7 +633,10 @@ export function PromptBox({
 
               {/* Attach */}
               <button
-                onClick={() => setShowAttach((v) => !v)}
+                onClick={() => {
+                  onInputActivity?.();
+                  setShowAttach((v) => !v);
+                }}
                 className="flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
                 style={{ width: "32px", height: "32px" }}
                 title="Attach"
@@ -669,17 +683,10 @@ export function PromptBox({
                     : handleSend
                 }
                 disabled={!text.trim() && images.length === 0 && !isProcessing}
-                className={`flex items-center justify-center rounded-full ${
-                  isProcessing && !text.trim() && images.length === 0
-                    ? "bg-[var(--fintheon-accent)]/80 hover:bg-[var(--fintheon-accent)] text-black"
-                    : text.trim() || focused
-                      ? "bg-[var(--fintheon-accent)] hover:bg-[#C5A030] text-black"
-                      : "bg-[var(--fintheon-accent)]/30 text-black/50 disabled:opacity-20"
-                }`}
+                className="fintheon-send-button flex items-center justify-center rounded-full"
                 style={{
                   width: "34px",
                   height: "34px",
-                  transition: "all 1.3s ease",
                 }}
                 title={
                   isProcessing && (text.trim() || images.length > 0)

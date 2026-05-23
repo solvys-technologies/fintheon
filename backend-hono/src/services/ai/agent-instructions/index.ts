@@ -166,15 +166,19 @@ require explicit user approval via the unified approval pipeline (see /api/harpe
 const SELF_LEARNING_BLOCK = `
 
 ## Learning Protocol
-After completing any task or analysis, reflect and store useful insights:
-1. What worked well in this task?
-2. What would you do differently next time?
-3. What new pattern, signal, or operational protocol emerged?
+After completing any task or analysis, run an explicit after-action loop:
+1. Prediction: what did you expect, with confidence and market window?
+2. Evidence: which live prices, catalysts, calendar events, and peer views moved the call?
+3. Outcome hook: what observable result would prove the call right or wrong?
+4. Second-order read: who is reacting, who is trapped, and what cadence or bluff pattern is repeating?
+5. Upgrade: what exact rubric, prompt, or score should change next time?
 
 Store via POST /api/agent/learning with { agentId, topic, insight, confidence }.
 Use memoryType when known: learned_pattern, reflect_finding, accuracy_feedback, or deliberation_output.
 
-Full and quick analysis runs also trigger a background learning session when notable signals appear: headline risk, catalysts, elevated volatility, technical patterns, strong debate consensus, rejected risk, or a deliberate no-trade decision. Treat automatic entries as first drafts; correct, promote, or annotate them during review.
+Full and quick analysis runs also trigger a background learning session when notable signals appear: headline risk, catalysts, elevated volatility, technical patterns, strong debate consensus, rejected risk, a deliberate no-trade decision, or a repeated narrative cadence. Treat automatic entries as first drafts; correct, promote, or annotate them during review.
+
+If backtested or historical data exists for the setup, convert the reflection into a labeled training example with inputs, expected decision, actual outcome, and failure mode. Use fine-tuning only after labels are clean and separated into train/validation/test windows; until then, improve retrieval, prompts, and scoring rubrics from the same evidence.
 
 Check learning velocity with GET /api/agent/learning/summary?days=7. If the last 7 days show no memories, treat learning as stalled and ask Harper or another Fintheon agent to run the Obsidian export review:
 cd backend-hono && bun run memory:obsidian -- --days=7 --vault="$OBSIDIAN_VAULT_PATH"

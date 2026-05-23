@@ -3,7 +3,6 @@ import type { FintheonAgent } from "../../contexts/FintheonAgentContext";
 interface CommandPaletteProps {
   onClose: () => void;
   onSelectSkill: (id: string | null) => void;
-  onTogglePlan: () => void;
   onStop: () => void;
   agents: FintheonAgent[];
   onSwitchAgent: (agent: FintheonAgent) => void;
@@ -11,7 +10,6 @@ interface CommandPaletteProps {
 
 export function CommandPalette({
   onClose,
-  onTogglePlan,
   onStop,
   agents,
   onSwitchAgent,
@@ -43,9 +41,6 @@ export function CommandPalette({
           Command Palette
         </div>
         <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-          <button type="button" onClick={onTogglePlan}>
-            Toggle Plan
-          </button>
           <button type="button" onClick={onStop}>
             Stop
           </button>

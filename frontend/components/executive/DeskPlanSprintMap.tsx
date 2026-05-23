@@ -5,7 +5,13 @@ import { useEffect, useMemo, useState } from "react";
 import { DAY_PLAN_REFETCH_EVENT } from "../../hooks/useDayPlan";
 import { useDayPlanMultiWeek } from "../../hooks/useDayPlanWeek";
 import type { DayPlan } from "../../types/day-plan";
-import { buildCalendarDays, buildSprintSegments, formatDate, sortPlans } from "./DeskPlanMapUtils";
+import {
+  buildCalendarDays,
+  buildSprintSegments,
+  findNextDeskPlanSegmentIndex,
+  formatDate,
+  sortPlans,
+} from "./DeskPlanMapUtils";
 import { DeskPlanCalendarBoard } from "./DeskPlanCalendarBoard";
 import { DeskPlanRelativeScrubber } from "./DeskPlanRelativeScrubber";
 import { DeskPlanSprintTimeline } from "./DeskPlanSprintTimeline";
@@ -30,10 +36,8 @@ export function DeskPlanSprintMap() {
   );
 
   useEffect(() => {
-    setSegmentIndex((current) =>
-      segments.length === 0 ? 0 : Math.min(current, segments.length - 1),
-    );
-  }, [segments.length]);
+    setSegmentIndex(findNextDeskPlanSegmentIndex(segments));
+  }, [segments]);
   const handleDelete = async (plan: DayPlan) => {
     if (plan.id.startsWith("plan-") || plan.id.startsWith("mem-")) return;
     setDeletingId(plan.id);

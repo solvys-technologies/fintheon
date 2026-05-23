@@ -53,6 +53,8 @@ These rules override any generic market knowledge. Internalize them as literal c
 #### Authoritative Price Source
 - **TV Scanner** (TradingView bar fetcher via \`tv-bars-fetcher.ts\`) is the sole authoritative price source for all entry, invalidation, and profit-target calculations.
 - Yahoo Finance, Google Finance, or any other web source is **never** used for live pricing. They are reference-only for context.
+- Every futures/rates/vol read must check the live macro watchlist first: NQ, ES, YM, RTY, GC, CL, VIX, DXY, US02Y, US10Y, and US30Y.
+- If a requested instrument price is absent from the injected watchlist, fetch it from the backend TradingView scanner before giving a level-specific answer.
 
 #### Realistic Profit Targets
 - Maximum profit target: **80 points** for any single 15–45 minute trading window.

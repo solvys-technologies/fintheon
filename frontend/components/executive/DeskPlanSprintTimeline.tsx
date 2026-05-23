@@ -12,7 +12,7 @@ import {
 import { DeletePlanButton } from "./DeskPlanDeleteButton";
 
 const POP_OUT_CARD =
-  "rounded-md border border-[var(--fintheon-accent)]/10 bg-[var(--fintheon-surface)]/75 transition-[transform,border-color,background-color,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform hover:-translate-y-1 hover:scale-[1.01] hover:border-[var(--fintheon-accent)]/25 hover:bg-[var(--fintheon-accent)]/[0.035] active:translate-y-0 active:scale-[0.995]";
+  "fintheon-liquid-surface transition-[transform,border-color,background-color,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform hover:-translate-y-1 hover:scale-[1.01] hover:border-[var(--fintheon-accent)]/25 active:translate-y-0 active:scale-[0.995]";
 
 export function DeskPlanSprintTimeline({
   plans,
@@ -113,9 +113,13 @@ function SprintBlock({
         </p>
       </div>
       <div className="relative min-h-[82px] rounded border border-[var(--fintheon-accent)]/[0.06] bg-[var(--fintheon-bg)]/[0.28]">
-        <button
-          type="button"
+        <div
+          role="button"
+          tabIndex={0}
           onClick={onToggle}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") onToggle();
+          }}
           className={cn(POP_OUT_CARD, "absolute top-2 min-w-[170px] p-3 text-left")}
           style={{ left: `${overlap.left}%`, width: `${Math.min(overlap.width, 92)}%` }}
         >
@@ -138,7 +142,7 @@ function SprintBlock({
               {window.econForecast?.aiPrediction ?? plan.deskTheme ?? "Awaiting agent forecast."}
             </p>
           ) : null}
-        </button>
+        </div>
       </div>
     </div>
   );

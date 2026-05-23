@@ -48,23 +48,18 @@ export function TodoDrawer({
 
   return (
     <div
-      className="mx-auto w-[calc(100%-32px)] max-w-[44rem] overflow-hidden"
+      className="fintheon-chat-input-drawer"
       style={{
         maxHeight: isOpen ? "340px" : "0",
         transition: "max-height 220ms cubic-bezier(0.4, 0, 0.2, 1)",
+        borderColor: isOpen
+          ? "color-mix(in srgb, var(--fintheon-accent) 18%, transparent)"
+          : "transparent",
+        boxShadow: isOpen ? undefined : "none",
       }}
     >
       <div
-        className="overflow-hidden rounded-t-2xl"
-        style={{
-          background:
-            "color-mix(in srgb, var(--fintheon-accent) 10%, rgba(5,4,2,0.76))",
-          border: "1px solid color-mix(in srgb, var(--fintheon-accent) 18%, transparent)",
-          borderBottom: "none",
-          backdropFilter: "blur(24px) saturate(1.25)",
-          WebkitBackdropFilter: "blur(24px) saturate(1.25)",
-          boxShadow: "0 -18px 48px rgba(0,0,0,0.28)",
-        }}
+        className="overflow-hidden"
       >
         {/* Drawer header */}
         <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--fintheon-accent)]/10">

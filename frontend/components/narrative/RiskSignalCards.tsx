@@ -150,9 +150,11 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
 
   const driftData = useRiskSignalDrift(signals);
 
-  const textSize = compact ? "text-[9px]" : "text-[10px]";
-  const titleSize = compact ? "text-[10px]" : "text-[11px]";
-  const padding = compact ? "px-1 py-2" : "px-2 py-3";
+  const textSize = compact ? "text-[10.5px]" : "text-[11.5px]";
+  const titleSize = compact ? "text-[11.5px]" : "text-[12.5px]";
+  const metaSize = compact ? "text-[9px]" : "text-[9.5px]";
+  const microSize = compact ? "text-[8px]" : "text-[8.5px]";
+  const padding = compact ? "px-1.5 py-2.5" : "px-2.5 py-3";
 
   if (loading) {
     return (
@@ -230,8 +232,8 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
                             : "rotate(0deg)",
                     }}
                   />
-                  <span className="w-16">
-                    <span className="mb-1 flex items-center justify-between gap-1 text-[8px] text-[var(--fintheon-muted)]/50">
+                    <span className="w-[4.35rem]">
+                    <span className={`mb-1 flex items-center justify-between gap-1 ${metaSize} text-[var(--fintheon-muted)]/50`}>
                       <span>{driftLabel}</span>
                       <span>{signal.score.toFixed(1)}</span>
                     </span>
@@ -256,19 +258,19 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
                 </p>
 
                 {isPendingRefinement(signal) && (
-                  <div className="text-[8px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/55">
+                  <div className={`${microSize} uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/55`}>
                     Pending Agentic Desk refinement
                   </div>
                 )}
 
                 <div className="flex items-center gap-2">
-                  <span className="text-[7px] text-[var(--fintheon-muted)]/30 uppercase tracking-wider">
+                  <span className={`${microSize} text-[var(--fintheon-muted)]/30 uppercase tracking-wider`}>
                     Estimated Drift
                   </span>
                   {driftData[signal.id]?.loading ? (
                     <span className="h-3 w-20 rounded-sm bg-[var(--fintheon-accent)]/10 animate-pulse" />
                   ) : (
-                    <span className="text-[9px] text-[var(--fintheon-accent)] font-mono font-medium">
+                    <span className={`${metaSize} text-[var(--fintheon-accent)] font-mono font-medium`}>
                       {driftData[signal.id]?.label ?? "—"}
                     </span>
                   )}
@@ -277,10 +279,10 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
                 {signal.relatedHeadlines.length > 0 && (
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[7px] text-[var(--fintheon-muted)]/30 uppercase tracking-wider">
+                      <span className={`${microSize} text-[var(--fintheon-muted)]/30 uppercase tracking-wider`}>
                         Related Headlines
                       </span>
-                      <span className="text-[7px] text-[var(--fintheon-muted)]/30">
+                      <span className={`${microSize} text-[var(--fintheon-muted)]/30`}>
                         {formatAge(signal.generatedAt)}
                       </span>
                     </div>
@@ -300,7 +302,7 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
                     {signal.narrativeThreads.map((t) => (
                       <span
                         key={t}
-                        className="text-[7px] text-[var(--fintheon-accent)]/70"
+                        className={`${microSize} text-[var(--fintheon-accent)]/70`}
                       >
                         {t}
                       </span>

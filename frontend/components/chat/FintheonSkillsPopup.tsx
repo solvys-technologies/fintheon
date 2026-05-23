@@ -61,17 +61,12 @@ export function FintheonSkillsPopup({
 
   return (
     <div
-      className="w-full overflow-hidden rounded-2xl border transition-all duration-300 ease-in-out"
+      className="fintheon-popover-surface w-full overflow-hidden transition-all duration-300 ease-in-out"
       style={{
         maxHeight: open ? "440px" : "0px",
         opacity: open ? 1 : 0,
         transform: open ? "translateY(0)" : "translateY(4px)",
         marginBottom: open ? "8px" : "0px",
-        background: "var(--fintheon-glass-bg)",
-        borderColor: "var(--fintheon-glass-border)",
-        backdropFilter: "blur(20px) saturate(1.3)",
-        WebkitBackdropFilter: "blur(20px) saturate(1.3)",
-        boxShadow: "var(--fintheon-glass-shadow)",
       }}
     >
       {/* Header */}

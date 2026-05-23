@@ -28,6 +28,7 @@ import { ToastContainer } from "./components/ui/Toast";
 import { PreMarketReminder } from "./components/PreMarketReminder";
 import { ApiErrorToastBridge } from "./components/ApiErrorToastBridge";
 import { AiCreditToastBridge } from "./components/AiCreditToastBridge";
+import { DeskPlanPlannerToastBridge } from "./components/DeskPlanPlannerToastBridge";
 import { VersionChecker } from "./components/VersionChecker";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { SystemStatusProvider } from "./contexts/SystemStatusContext";
@@ -217,6 +218,7 @@ function AuthGate() {
                                 `}</style>
                                 <ApiErrorToastBridge />
                                 <AiCreditToastBridge />
+                                <DeskPlanPlannerToastBridge />
                                 <VersionChecker />
                                 <MainLayout />
                                 <ConsulControlLayer />

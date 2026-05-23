@@ -55,16 +55,7 @@ function CatalystDetailModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-[#050402]/60" />
-      <div
-        ref={ref}
-        className="relative max-w-lg w-full rounded-xl overflow-hidden"
-        style={{
-          backdropFilter: "blur(32px)",
-          WebkitBackdropFilter: "blur(32px)",
-          backgroundColor: "rgba(10,9,5,0.85)",
-          border: "1px solid rgba(199,159,74,0.2)",
-        }}
-      >
+      <div ref={ref} className="fintheon-modal-surface relative max-w-lg w-full">
         <div className="px-5 pt-4 pb-3">
           <div className="flex items-start justify-between gap-3 mb-3">
             <h3 className="text-sm font-semibold text-[var(--fintheon-text)] leading-snug">

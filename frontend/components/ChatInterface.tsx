@@ -23,6 +23,7 @@ import type { ReasoningLevel } from "./chat/reasoning";
 import { SKILL_PREFIXES } from "../lib/skillPrefixes";
 import QuickFintheonModal from "./analysis/QuickFintheonModal";
 import { useFeatureFlags } from "../hooks/useFeatureFlags";
+import { consumePendingChatPrompt } from "../lib/desk-week-plan";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -87,6 +88,7 @@ function ChatInterfaceInner({
   >(undefined);
 
   const [showTodoDrawer, setShowTodoDrawer] = useState(false);
+  const previousWorkItemCountRef = useRef(0);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Todo list state — persisted to localStorage
@@ -112,7 +114,8 @@ function ChatInterfaceInner({
     isRunning,
     sendNow,
   });
-  const hasWorkDrawerContent = todos.length > 0 || queue.length > 0;
+  const workItemCount = todos.length + queue.length;
+  const hasWorkDrawerContent = workItemCount > 0;
 
   const handleSend = useCallback(
     (msg: string) => {
@@ -146,8 +149,16 @@ function ChatInterfaceInner({
   }, [threadMessages.length]);
 
   useEffect(() => {
-    setShowTodoDrawer(hasWorkDrawerContent);
-  }, [hasWorkDrawerContent, queue.length, todos.length]);
+    const previousCount = previousWorkItemCountRef.current;
+    previousWorkItemCountRef.current = workItemCount;
+    if (workItemCount === 0) {
+      setShowTodoDrawer(false);
+      return;
+    }
+    if (previousCount === 0 || workItemCount > previousCount) {
+      setShowTodoDrawer(true);
+    }
+  }, [workItemCount]);
 
   useEffect(() => {
     try {
@@ -175,11 +186,17 @@ function ChatInterfaceInner({
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail?.text) {
+        consumePendingChatPrompt();
         handleSend(detail.text);
       }
     };
     window.addEventListener("fintheon:send-chat-text", handler);
     return () => window.removeEventListener("fintheon:send-chat-text", handler);
+  }, [handleSend]);
+
+  useEffect(() => {
+    const pending = consumePendingChatPrompt();
+    if (pending) handleSend(pending);
   }, [handleSend]);
 
   /* S38-T2: Pin a citation → opens artifact pane with type="citation" */

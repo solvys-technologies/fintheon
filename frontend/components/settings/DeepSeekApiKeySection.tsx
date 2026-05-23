@@ -1,6 +1,7 @@
 // [claude-code 2026-05-03] S58-T2: DeepSeek API-key settings section for personal CAO chat.
 import { useCallback, useEffect, useState } from "react";
 import { getAccessToken } from "../../lib/supabase";
+import { SettingsActionStatus } from "./SettingsActionStatus";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const DEEPSEEK_KEY_STATUS = "fintheon:deepseek-key-status";
@@ -152,36 +153,35 @@ export function DeepSeekApiKeySection() {
   };
 
   return (
-    <section>
-      <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-1">
+    <section className="text-right">
+      <h3 className="mb-1 text-right text-sm font-semibold text-[var(--fintheon-accent)]">
         AI Provider API Keys
       </h3>
-      <p className="text-xs text-gray-500 mb-4">
+      <p className="mb-4 text-right text-xs text-gray-500">
         Save personal provider keys to backend and local Hermes so agent routing
         works across desktop/local tasks while preserving server-backed sync.
       </p>
 
-      <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-3 mb-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
+      <div className="fintheon-fade-divider mb-4 pb-3">
+        <div className="flex items-start justify-between gap-4 text-right">
+          <div className="min-w-0 text-right">
             <p className="text-xs font-medium text-gray-300">DeepSeek</p>
-            <p className="text-[11px] text-gray-500">
-              {deepSeekMaskedKey ? "Key set" : "No key configured"}
-            </p>
           </div>
-          {deepSeekMaskedKey && (
-            <div className="flex items-center gap-3">
-              <code className="text-xs text-gray-300 font-mono">
-                {deepSeekMaskedKey}
-              </code>
+          <div className="flex min-w-[180px] flex-col items-end gap-1 text-right">
+            <SettingsActionStatus
+              label={deepSeekMaskedKey ? "Key Set" : "No Key"}
+              detail={deepSeekMaskedKey ?? "No key configured"}
+              tone={deepSeekMaskedKey ? "success" : "muted"}
+            />
+            {deepSeekMaskedKey && (
               <button
                 onClick={() => removeKey("deepseek")}
-                className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                className="text-[10px] uppercase tracking-[0.14em] text-red-400 transition-colors hover:text-red-300"
               >
                 Remove
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -205,7 +205,7 @@ export function DeepSeekApiKeySection() {
           {isSavingProvider === "deepseek" ? "..." : "Add Key"}
         </button>
       </div>
-      <p className="text-xs text-gray-500 mt-2">
+      <p className="mt-2 text-right text-xs text-gray-500">
         Create a key at{" "}
         <a
           href="https://platform.deepseek.com/api_keys"
@@ -218,32 +218,26 @@ export function DeepSeekApiKeySection() {
         . Keys typically start with <code>sk-</code>.
       </p>
 
-      <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-3 mt-5 mb-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
+      <div className="fintheon-fade-divider mb-4 mt-5 pb-3">
+        <div className="flex items-start justify-between gap-4 text-right">
+          <div className="min-w-0 text-right">
             <p className="text-xs font-medium text-gray-300">OpenCode Go</p>
-            <p className="text-[11px] text-gray-500">
-              {openCodeGoMaskedKey ? "Key set" : "No key configured"}
-            </p>
-            {openCodeGoBaseUrl && (
-              <p className="text-[10px] text-gray-600 mt-1">
-                URL: {openCodeGoBaseUrl}
-              </p>
-            )}
           </div>
-          {openCodeGoMaskedKey && (
-            <div className="flex items-center gap-3">
-              <code className="text-xs text-gray-300 font-mono">
-                {openCodeGoMaskedKey}
-              </code>
+          <div className="flex min-w-[180px] flex-col items-end gap-1 text-right">
+            <SettingsActionStatus
+              label={openCodeGoMaskedKey ? "Key Set" : "No Key"}
+              detail={openCodeGoBaseUrl || openCodeGoMaskedKey || "No key configured"}
+              tone={openCodeGoMaskedKey ? "success" : "muted"}
+            />
+            {openCodeGoMaskedKey && (
               <button
                 onClick={() => removeKey("opencode-go")}
-                className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                className="text-[10px] uppercase tracking-[0.14em] text-red-400 transition-colors hover:text-red-300"
               >
                 Remove
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -268,8 +262,12 @@ export function DeepSeekApiKeySection() {
         </button>
       </div>
 
-      {error && <p className="text-xs text-red-400 mt-2">{error}</p>}
-      {success && <p className="text-xs text-green-400 mt-2">{success}</p>}
+      <div className="mt-2 flex justify-end">
+        {error && <SettingsActionStatus label="Key Error" detail={error} tone="error" />}
+        {success && (
+          <SettingsActionStatus label="Key Saved" detail={success} tone="success" />
+        )}
+      </div>
     </section>
   );
 }

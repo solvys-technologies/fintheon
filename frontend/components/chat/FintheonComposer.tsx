@@ -5,7 +5,7 @@
 // [claude-code 2026-04-11] S14-T5: Headline attachment via HeadlinePickerPopover + context injection
 // [claude-code 2026-03-22] Track 4: persona pills and split tools replaced by the composer toolbox
 // [claude-code 2026-04-21] Post-S35: removed relay dispatch; added Cmd+K palette, ↑↓ history,
-//   persona slash commands, plan mode toggle
+//   persona slash commands
 // [claude-code 2026-05-06] S60-T3: provider modal and toolbox wired to composer toolbar
 import { useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import { useThread, useThreadRuntime } from "@assistant-ui/react";
@@ -63,8 +63,6 @@ interface FintheonComposerProps {
   conversationId?: string;
   /** @deprecated S38-T1: Dispatch removed — kept for backwards compat */
   onConversationGone?: () => void;
-  mode?: "work" | "plan";
-  onModeChange?: (mode: "work" | "plan") => void;
   todoSlot?: ReactNode;
   reasoningLevel?: ReasoningLevel;
   onReasoningLevelChange?: (level: ReasoningLevel) => void;
@@ -85,8 +83,6 @@ export function FintheonComposer({
   compact,
   conversationId: _conversationId,
   onConversationGone: _onConversationGone,
-  mode,
-  onModeChange,
   todoSlot,
   reasoningLevel,
   onReasoningLevelChange,
@@ -113,15 +109,6 @@ export function FintheonComposer({
 
   // ── Command palette (Cmd+K) ────────────────────────────────────────────
   const [showCommandPalette, setShowCommandPalette] = useState(false);
-  const [localMode, setLocalMode] = useState<"work" | "plan">("work");
-  const composerMode = mode ?? localMode;
-  const setComposerMode = useCallback(
-    (nextMode: "work" | "plan") => {
-      onModeChange?.(nextMode);
-      if (!onModeChange) setLocalMode(nextMode);
-    },
-    [onModeChange],
-  );
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -255,13 +242,6 @@ export function FintheonComposer({
         }
       }
 
-      // Detect /plan toggle
-      if (msg.trim() === "/plan") {
-        setComposerMode(composerMode === "plan" ? "work" : "plan");
-        onSelectSkill(null);
-        return;
-      }
-
       // Detect /stop
       if (msg.trim() === "/stop") {
         runtime.cancelRun();
@@ -325,8 +305,6 @@ export function FintheonComposer({
       headlineChips,
       agents,
       setActiveAgent,
-      composerMode,
-      setComposerMode,
       isRunning,
       onQueueMessage,
       onMessageSubmitted,
@@ -371,7 +349,7 @@ export function FintheonComposer({
   const activeMcpCount = activeIds.length;
   const toolboxEl = compact ? undefined : (
     <button
-      onClick={() => setShowToolboxModal(true)}
+      onClick={() => setShowToolboxModal((open) => !open)}
       className="relative flex items-center justify-center rounded-lg transition-colors text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
       style={{ width: "32px", height: "32px" }}
       title="Skills and connectors"
@@ -406,14 +384,23 @@ export function FintheonComposer({
         <CommandPalette
           onClose={() => setShowCommandPalette(false)}
           onSelectSkill={onSelectSkill}
-          onTogglePlan={() =>
-            setComposerMode(composerMode === "plan" ? "work" : "plan")
-          }
           onStop={handleStop}
           agents={agents}
           onSwitchAgent={(agent) => setActiveAgent(agent)}
         />
       )}
+
+      <FintheonToolboxModal
+        open={showToolboxModal}
+        onClose={() => setShowToolboxModal(false)}
+        skills={SKILLS}
+        activeSkill={activeSkill}
+        onSelectSkill={onSelectSkill}
+        disabledSkills={mergedDisabledSkills}
+        servers={servers}
+        activeIds={activeIds}
+        onToggleConnector={toggleConnector}
+      />
 
       <PromptBox
         onSend={handleSend}
@@ -436,6 +423,8 @@ export function FintheonComposer({
         providerSlot={providerEl}
         personaSlot={personaEl}
         mcpSlot={toolboxEl}
+        toolboxOpen={showToolboxModal}
+        onInputActivity={() => setShowToolboxModal(false)}
         todoSlot={todoSlot}
         queueCount={queueCount}
         contextStats={{
@@ -461,19 +450,6 @@ export function FintheonComposer({
         onClose={() => setShowProviderModal(false)}
         provider={provider}
         onChange={setProvider}
-      />
-      <FintheonToolboxModal
-        open={showToolboxModal}
-        onClose={() => setShowToolboxModal(false)}
-        skills={SKILLS}
-        activeSkill={activeSkill}
-        onSelectSkill={onSelectSkill}
-        disabledSkills={mergedDisabledSkills}
-        servers={servers}
-        activeIds={activeIds}
-        onToggleConnector={toggleConnector}
-        mode={composerMode}
-        onModeChange={setComposerMode}
       />
     </>
   );

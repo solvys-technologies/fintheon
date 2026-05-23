@@ -19,16 +19,25 @@ export function ReasoningLevelSelector({
   compact,
 }: ReasoningLevelSelectorProps) {
   const [open, setOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const active = REASONING_LEVELS.find((l) => l.id === value);
+
+  const close = () => {
+    setIsClosing(true);
+    window.setTimeout(() => {
+      setOpen(false);
+      setIsClosing(false);
+    }, 140);
+  };
 
   useEffect(() => {
     if (!open) return;
     const onMouseDown = (event: MouseEvent) => {
-      if (!ref.current?.contains(event.target as Node)) setOpen(false);
+      if (!ref.current?.contains(event.target as Node)) close();
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") close();
     };
     document.addEventListener("mousedown", onMouseDown);
     window.addEventListener("keydown", onKeyDown);
@@ -42,9 +51,9 @@ export function ReasoningLevelSelector({
     <div ref={ref} className="relative">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => (open ? close() : setOpen(true))}
         className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-zinc-500 transition-colors hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
-        title={`Intelligence: ${active?.label ?? "Standard"}`}
+        title={`Reasoning: ${active?.label ?? "Standard"}`}
       >
         {!compact && (
           <span className="text-[10px] font-medium">
@@ -56,12 +65,14 @@ export function ReasoningLevelSelector({
 
       {open && (
         <div
-          className="absolute bottom-full left-0 z-50 mb-2 w-[230px] overflow-hidden rounded-lg border border-[var(--fintheon-accent)]/15 bg-[#0a0905]"
+          className={`fintheon-popover-motion absolute bottom-full left-0 z-50 mb-2 w-[230px] overflow-hidden rounded-lg border border-[var(--fintheon-accent)]/15 bg-[#0a0905] ${
+            isClosing ? "is-closing" : ""
+          }`}
           style={{ boxShadow: "none" }}
         >
           <div className="border-b border-[var(--fintheon-accent)]/10 px-3 py-2">
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--fintheon-accent)]">
-              Intelligence Level
+              reasoning
             </p>
           </div>
           {REASONING_LEVELS.map((level) => {
@@ -72,26 +83,20 @@ export function ReasoningLevelSelector({
                 type="button"
                 onClick={() => {
                   onChange(level.id);
-                  setOpen(false);
+                  close();
                 }}
-                className="flex w-full items-start gap-2 px-3 py-2 text-left transition-colors hover:bg-[var(--fintheon-accent)]/6"
+                className="flex w-full items-start px-3 py-2 text-left transition-colors hover:bg-[var(--fintheon-accent)]/6"
               >
-                <span
-                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[9px] ${
-                    isActive
-                      ? "border-[var(--fintheon-accent)] text-[var(--fintheon-accent)]"
-                      : "border-[var(--fintheon-accent)]/15 text-[var(--fintheon-text)]/35"
-                  }`}
-                >
-                  {isActive ? <Check size={11} /> : level.shortLabel}
-                </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center justify-between gap-2">
                     <span className="text-[11px] font-medium text-[var(--fintheon-text)]/80">
                       {level.label}
                     </span>
-                    <span className="text-[9px] text-[var(--fintheon-text)]/30">
+                    <span className="inline-flex items-center gap-1.5 text-[9px] text-[var(--fintheon-text)]/30">
                       {level.budget}
+                      {isActive ? (
+                        <Check size={10} className="text-[var(--fintheon-accent)]" />
+                      ) : null}
                     </span>
                   </span>
                   <span className="mt-0.5 block text-[10px] leading-4 text-[var(--fintheon-text)]/35">

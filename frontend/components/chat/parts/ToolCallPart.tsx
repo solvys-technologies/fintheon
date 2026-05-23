@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import {
   ChevronDown,
-  ChevronRight,
   Check,
   AlertCircle,
 } from "lucide-react";
@@ -95,14 +94,14 @@ function ToolCallCard({ part, result }: ToolCallPartProps) {
   }, [state]);
 
   const headerLabel = isRunning
-    ? phrase
+    ? "Calling Tools..."
     : isError
       ? "Error"
       : toolName.charAt(0).toUpperCase() + toolName.slice(1).toLowerCase();
 
   return (
     <div
-      className="rounded-xl bg-[rgba(5,4,2,0.45)] overflow-hidden mb-1.5"
+      className="mb-1.5 overflow-hidden rounded-xl bg-[#0b0b09] transition-colors duration-300"
       style={{
         border: "1px solid rgba(199,159,74,0.15)",
         borderLeft: `2px solid ${color}`,
@@ -119,18 +118,20 @@ function ToolCallCard({ part, result }: ToolCallPartProps) {
         {isError && (
           <AlertCircle size={13} className="text-red-500 flex-shrink-0" />
         )}
-        <span className="text-xs text-zinc-400 flex-1">{headerLabel}</span>
-        {expanded ? (
-          <ChevronDown size={13} className="text-gray-500 flex-shrink-0" />
-        ) : (
-          <ChevronRight size={13} className="text-gray-500 flex-shrink-0" />
-        )}
+        <span className="flex-1 text-xs text-zinc-400">{headerLabel}</span>
+        {expanded ? <ChevronDown size={13} className="text-gray-500 flex-shrink-0" /> : null}
       </button>
-      {expanded && output && (
-        <div className="border-t border-[var(--fintheon-accent)]/10 px-3 py-2.5 text-[11px] text-zinc-400 font-mono whitespace-pre-wrap overflow-x-auto max-h-[200px] overflow-y-auto">
-          <RichTextRenderer text={output} />
+      <div
+        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
+          expanded && output ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="max-h-[200px] overflow-x-auto overflow-y-auto border-t border-[var(--fintheon-accent)]/10 px-3 py-2.5 font-mono text-[11px] whitespace-pre-wrap text-zinc-400">
+            <RichTextRenderer text={output} />
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

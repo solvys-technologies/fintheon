@@ -12,19 +12,21 @@ interface ApiTabProps {
 
 export function ApiTab({ apiKeys, setAPIKeys }: ApiTabProps) {
   return (
-    <>
+    <div className="text-right">
       <DeepSeekApiKeySection />
 
-      <div className="border-t border-zinc-800 my-6" />
+      <div className="fintheon-fade-divider my-6" />
 
       {/* ── TopstepX Credentials ─────────────────────────────────────── */}
       <section>
-        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-4">
+        <h3 className="mb-4 text-right text-sm font-semibold text-[var(--fintheon-accent)]">
           TopstepX Credentials
         </h3>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm text-gray-300 mb-2">Username</label>
+            <label className="mb-2 block text-right text-sm text-gray-300">
+              Username
+            </label>
             <input
               type="text"
               value={apiKeys.topstepxUsername || ""}
@@ -36,7 +38,9 @@ export function ApiTab({ apiKeys, setAPIKeys }: ApiTabProps) {
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-300 mb-2">API Key</label>
+            <label className="mb-2 block text-right text-sm text-gray-300">
+              API Key
+            </label>
             <input
               type="password"
               value={apiKeys.topstepxApiKey || ""}
@@ -47,7 +51,7 @@ export function ApiTab({ apiKeys, setAPIKeys }: ApiTabProps) {
               className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/30"
             />
           </div>
-          <p className="text-xs text-gray-500">
+          <p className="text-right text-xs text-gray-500">
             Sign up at{" "}
             <a
               href="https://topstepx.com"
@@ -62,12 +66,12 @@ export function ApiTab({ apiKeys, setAPIKeys }: ApiTabProps) {
         </div>
       </section>
 
-      <p className="text-xs text-gray-500 mt-4">
+      <p className="mt-4 text-right text-xs text-gray-500">
         Agent inference uses Hermes gateway credentials (set HERMES_API_KEY in{" "}
         <code className="bg-zinc-800 px-1 rounded">backend-hono/.env</code>).
         Voice Engine uses OpenAI (set OPENAI_API_KEY in backend). See SETUP.md
         for details.
       </p>
-    </>
+    </div>
   );
 }

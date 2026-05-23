@@ -13,6 +13,7 @@ import {
   presetRateFutures,
   type ScannerMarket,
 } from "../../services/tradingview/scanner.js";
+import { fetchMacroWatchlist } from "../../services/market-data/macro-watchlist.js";
 
 export function createMarketScanRoutes() {
   const app = new Hono();
@@ -86,6 +87,18 @@ export function createMarketScanRoutes() {
   app.get("/metals", async (c) => {
     try {
       const data = await presetGoldSilverOil();
+      return c.json({ ok: true, asOf: new Date().toISOString(), data });
+    } catch (err) {
+      return c.json(
+        { ok: false, error: (err as Error).message ?? "scanner_error" },
+        502,
+      );
+    }
+  });
+
+  app.get("/macro-watchlist", async (c) => {
+    try {
+      const data = await fetchMacroWatchlist();
       return c.json({ ok: true, asOf: new Date().toISOString(), data });
     } catch (err) {
       return c.json(

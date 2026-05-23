@@ -133,6 +133,7 @@ import { createLockoutRoutes } from "./lockout/index.js";
 // [claude-code 2026-05-16] S68-T1: Theme route — replaces regime tracker
 import { createThemeRoutes } from "./themes/index.js";
 import { createAgentLearningRoutes } from "./agent-learning/index.js";
+import { createColiseumRoutes } from "./coliseum/index.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -268,6 +269,11 @@ export function registerRoutes(app: Hono): void {
 
   // Theme tracker — replaces regime tracker (S68-T1). Public read/write, in-memory.
   app.route("/api/themes", createThemeRoutes());
+
+  // Coliseum — closed-beta desk profiles, desk style, and forecast lifecycle.
+  app.use("/api/coliseum", authMiddleware);
+  app.use("/api/coliseum/*", authMiddleware);
+  app.route("/api/coliseum", createColiseumRoutes());
 
   // [S26-P2 T9] Maintenance — super-admin commit/deploy/deny for agent-proposed fixes.
   // GET /api/maintenance/request/:id is public (modal renders for anyone), POST

@@ -123,7 +123,6 @@ export function DayCard({
   className,
   bare,
   hideStreak,
-  showStreakInHeader,
 }: DayCardProps) {
   const { data: todayData, isLoading: todayLoading } = useDayPlan();
   const {
@@ -158,7 +157,15 @@ export function DayCard({
   const plan = multiWeekPlan ?? todayData;
   const isLoading = multiWeekLoading && todayLoading;
   const allWindows = useMemo(
-    () => [...(plan?.windows ?? [])].sort((a, b) => a.startTime.localeCompare(b.startTime)),
+    () =>
+      [...(plan?.windows ?? [])].sort((a, b) => {
+        const aStart = minutesFromClock(a.startTime) ?? Number.MAX_SAFE_INTEGER;
+        const bStart = minutesFromClock(b.startTime) ?? Number.MAX_SAFE_INTEGER;
+        if (aStart !== bStart) return aStart - bStart;
+        const aEnd = minutesFromClock(a.endTime) ?? Number.MAX_SAFE_INTEGER;
+        const bEnd = minutesFromClock(b.endTime) ?? Number.MAX_SAFE_INTEGER;
+        return aEnd - bEnd;
+      }),
     [plan?.windows],
   );
   const countries = useMemo(
@@ -264,10 +271,10 @@ export function DayCard({
       aria-label="Day card"
       data-tour-target="day-card"
     >
-      {!showStreakInHeader && !hideStreak && plan?.date && (
-        <div className="flex items-center justify-between mb-1">
+      {!hideStreak && plan?.date && (
+        <div className="mb-1 flex items-center justify-end">
           <span
-            className="text-[10px] ml-[2px]"
+            className="ml-auto text-right text-[11.5px]"
             style={{
               color: "var(--fintheon-muted, #908774)",
               fontFamily: "var(--font-data, monospace)",
@@ -275,45 +282,12 @@ export function DayCard({
           >
             {dayOfWeekLabel}
           </span>
-          <span
-            className="relative inline-flex items-center gap-1.5"
-            onMouseEnter={() => setShowStreakPopup(true)}
-            onMouseLeave={() => setShowStreakPopup(false)}
-          >
-            <DayPlanChevronNav
-              currentIndex={currentPlanIndex}
-              totalPlans={totalPlans}
-              onPrev={goPrevPlan}
-              onNext={goNextPlan}
-            />
-            <DeskPlanCustomForm
-              countries={countries}
-              selectedCountry={countryFilter}
-              onCountryChange={setCountryFilter}
-            />
-            <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={14} />
-            {showStreakPopup && (
-              <div className="absolute top-full right-0 mt-2 p-3 bg-[#1a1915] border border-white/8 rounded-lg shadow-lg z-50">
-                <div className="flex gap-1">
-                  {Array.from({ length: 14 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="w-3.5 h-3.5 rounded"
-                      style={{
-                        background: i < 10 ? '#4ade80' : '#ef4444'
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </span>
         </div>
       )}
       <header className="flex items-center justify-between gap-3 mb-1">
         <div className="flex items-baseline gap-2">
           <span
-            className="text-[10px] font-semibold uppercase tracking-[0.2em]"
+            className="text-[11.5px] font-semibold uppercase tracking-[0.2em]"
             style={{
               color: "var(--fintheon-accent)",
               fontFamily: "var(--font-heading)",
@@ -323,7 +297,7 @@ export function DayCard({
           </span>
           {plan?.sourceBriefId && (
             <span
-              className="text-[8px] uppercase tracking-widest"
+              className="text-[9px] uppercase tracking-widest"
               style={{ color: "var(--fintheon-muted, #908774)" }}
             >
               brief
@@ -331,21 +305,20 @@ export function DayCard({
           )}
         </div>
         <div className="flex items-center gap-2">
-          {showStreakInHeader && !hideStreak && (
-            <span className="inline-flex items-center gap-1.5">
+          {!hideStreak && (
+            <>
+              <DeskPlanCustomForm
+                countries={countries}
+                selectedCountry={countryFilter}
+                onCountryChange={setCountryFilter}
+              />
               <DayPlanChevronNav
                 currentIndex={currentPlanIndex}
                 totalPlans={totalPlans}
                 onPrev={goPrevPlan}
                 onNext={goNextPlan}
               />
-              <DeskPlanCustomForm
-                countries={countries}
-                selectedCountry={countryFilter}
-                onCountryChange={setCountryFilter}
-              />
-              <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={14} />
-            </span>
+            </>
           )}
           <button
             onClick={() => {
@@ -357,7 +330,7 @@ export function DayCard({
               return action;
             }}
             title={lockoutButtonTitle}
-            className={`desk-plan-lock-btn inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] uppercase tracking-[0.12em] cursor-pointer transition-colors ${shimmering ? "shimmering" : ""}`}
+            className={`desk-plan-lock-btn inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] uppercase tracking-[0.12em] cursor-pointer transition-colors ${shimmering ? "shimmering" : ""}`}
             style={{
               fontFamily: "var(--font-data, monospace)",
               color: lockoutState.locked
@@ -396,8 +369,47 @@ export function DayCard({
         </div>
       </header>
 
+      {!hideStreak && (
+        <div className="mb-2 flex justify-end">
+          <span
+            className="relative inline-flex items-center gap-1.5"
+            onMouseEnter={() => setShowStreakPopup(true)}
+            onMouseLeave={() => setShowStreakPopup(false)}
+          >
+            <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={14} />
+            {totalPlans > 1 ? (
+              <button
+                type="button"
+                onClick={goNextPlan}
+                disabled={currentPlanIndex >= totalPlans - 1}
+                className="inline-flex h-5 w-5 items-center justify-center rounded text-[var(--fintheon-accent)]/65 transition-colors hover:bg-[var(--fintheon-accent)]/8 hover:text-[var(--fintheon-accent)] disabled:cursor-default disabled:text-gray-700"
+                title="Next scored desk plan"
+                aria-label="Next scored desk plan"
+              >
+                <ChevronRight className="h-3 w-3" />
+              </button>
+            ) : null}
+            {showStreakPopup && (
+              <div className="absolute top-full right-0 z-50 mt-2 rounded-lg border border-white/8 bg-[#1a1915] p-3 shadow-lg">
+                <div className="flex gap-1">
+                  {Array.from({ length: 14 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-3.5 w-3.5 rounded"
+                      style={{
+                        background: i < 10 ? "#4ade80" : "#ef4444",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </span>
+        </div>
+      )}
+
       <p
-        className="text-[12px] leading-relaxed mb-3"
+        className="text-[13.5px] leading-relaxed mb-3"
         style={{
           color: "var(--fintheon-text)",
           fontFamily: "var(--font-body)",
@@ -411,7 +423,7 @@ export function DayCard({
 
       <FadingRuler />
 
-      <dl className="font-mono text-[12px] py-3 space-y-1.5">
+      <dl className="font-mono text-[13.5px] py-3 space-y-1.5">
         <Row
           label="Event"
           value={plan?.eventName ?? "\u2014"}
@@ -490,7 +502,7 @@ export function DayCard({
                 aria-label={`Drift ${DRIFT_LABELS[driftVisual]}${drift.message ? ` \u2014 ${drift.message}` : ""}`}
               >
                 <span
-                  className="text-[9px] uppercase tracking-[0.16em]"
+        className="text-[10.5px] uppercase tracking-[0.16em]"
                   style={{
                     color: "var(--fintheon-muted, #908774)",
                     fontFamily: "var(--font-data, monospace)",
@@ -509,7 +521,7 @@ export function DayCard({
                   }}
                 />
                 <span
-                  className="text-[10px]"
+        className="text-[11.5px]"
                   style={{ color: "var(--fintheon-text)" }}
                 >
                   {DRIFT_LABELS[driftVisual]}
@@ -548,7 +560,7 @@ function WindowControlRow({
   return (
     <div className="flex items-baseline gap-3">
       <dt
-        className="text-[11px]"
+        className="text-[12.5px]"
         style={{
           color: "var(--fintheon-muted, #908774)",
           fontFamily: "var(--font-body)",
@@ -580,7 +592,7 @@ function WindowControlRow({
               <ChevronLeft className="w-3 h-3" />
             </button>
             <span
-              className="text-[10px] tabular-nums"
+              className="text-[11.5px] tabular-nums"
               style={{ color: "var(--fintheon-muted, #908774)" }}
             >
               {currentIndex + 1}/{totalWindows}
@@ -652,7 +664,7 @@ function GatedForecastRow({
   const rowContent = (
     <div className="flex items-baseline gap-3">
       <dt
-        className="flex items-center gap-1 text-[11px]"
+        className="flex items-center gap-1 text-[12.5px]"
         style={{
           color: "var(--fintheon-muted, #908774)",
           fontFamily: "var(--font-body)",
@@ -733,7 +745,7 @@ function GatedForecastRow({
       </button>
       {expanded && window.econForecast && (
         <div
-          className="ml-4 mt-1 rounded-sm px-3 py-2 text-[11px] leading-relaxed"
+          className="ml-4 mt-1 rounded-sm px-3 py-2 text-[12.5px] leading-relaxed"
           style={{
             color:
               tone === "bullish"
@@ -801,7 +813,7 @@ function Row({
   return (
     <div className="flex items-baseline gap-3">
       <dt
-        className="text-[11px]"
+        className="text-[12.5px]"
         style={{
           color: "var(--fintheon-muted, #908774)",
           fontFamily: "var(--font-body)",

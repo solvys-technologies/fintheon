@@ -21,6 +21,12 @@ import { PriceLevelSlot } from "./PriceLevelSlot";
 import { ProbabilityTableSlot } from "./ProbabilityTableSlot";
 import { AgentHandoffSlot } from "./AgentHandoffSlot";
 import { BacktestResultSlot } from "./BacktestResultSlot";
+import { WeeklyDeskPlanSlot } from "./WeeklyDeskPlanSlot";
+import { MarketTickerStripSlot } from "./MarketTickerStripSlot";
+import {
+  enhanceTickerMentions,
+  MarketTickerMention,
+} from "./MarketTickerMention";
 
 export const SLOT_RENDERERS: Record<
   string,
@@ -36,6 +42,9 @@ export const SLOT_RENDERERS: Record<
   "probability-table": ProbabilityTableSlot,
   "agent-handoff": AgentHandoffSlot,
   "backtest-result": BacktestResultSlot,
+  "weekly-desk-plan": WeeklyDeskPlanSlot,
+  "market-ticker-strip": MarketTickerStripSlot,
+  "ticker-badges": MarketTickerStripSlot,
 };
 
 export const SLOT_LANGUAGES = Object.keys(SLOT_RENDERERS);
@@ -56,14 +65,20 @@ export function StreamdownChat({
   streaming = false,
   className,
 }: StreamdownChatProps) {
+  const enhancedContent = enhanceTickerMentions(content);
   return (
     <Streamdown
       className={className}
       mode={streaming ? "streaming" : "static"}
       parseIncompleteMarkdown={streaming}
+      allowedTags={{ "market-ticker": ["symbol"] }}
+      components={{
+        "market-ticker": MarketTickerMention as ComponentType<Record<string, unknown>>,
+      }}
+      literalTagContent={["market-ticker"]}
       plugins={{ renderers: RENDERERS }}
     >
-      {content}
+      {enhancedContent}
     </Streamdown>
   );
 }

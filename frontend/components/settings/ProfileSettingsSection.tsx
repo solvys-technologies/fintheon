@@ -3,6 +3,7 @@ import { Mail, Upload } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useBackend } from "../../lib/backend";
 import type { ProxVoiceSocialLinks } from "../../lib/services";
+import { SettingsActionStatus } from "./SettingsActionStatus";
 
 interface ProfileSettingsSectionProps {
   traderName: string;
@@ -144,12 +145,7 @@ export function ProfileSettingsSection({
             </p>
           </div>
         </div>
-        <div className="ml-auto flex shrink-0 items-center gap-3 text-right">
-          {status && (
-            <span className="font-mono text-[10px] text-[var(--fintheon-text)]/40">
-              {status}
-            </span>
-          )}
+        <div className="ml-auto flex shrink-0 flex-col items-end gap-1 text-right">
           <input
             ref={fileRef}
             type="file"
@@ -165,6 +161,7 @@ export function ProfileSettingsSection({
             <Upload className="h-3.5 w-3.5" />
             Upload
           </button>
+          <SettingsActionStatus label={status} />
         </div>
       </div>
 

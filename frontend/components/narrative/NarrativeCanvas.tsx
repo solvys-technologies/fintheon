@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
   BriefcaseBusiness,
+  Check as CheckIcon,
   Clock,
   Edit3,
   type LucideIcon,
@@ -9,6 +10,8 @@ import {
   MessageSquareText,
   PanelLeftOpen,
   Plus,
+  RadioTower as RadioTowerIcon,
+  Trophy,
   X,
 } from "lucide-react";
 import { useMessageQueue } from "../chat/hooks/useMessageQueue";
@@ -18,6 +21,7 @@ import {
 } from "../chat/reasoning";
 import type { ZoomLevel } from "../../lib/narrative-types";
 import type { Theme } from "../../hooks/useThemes";
+import { DEFAULT_NARRATIVE_SESSION_CHIPS } from "../../hooks/useNarrativeSituationMap";
 import {
   createNarrativeSession,
   fetchNarrativeSession,
@@ -27,6 +31,7 @@ import {
   type CreateNarrativeSessionPayload,
 } from "../../lib/narrative-session-api";
 import { NarrativeFlowLanding } from "./NarrativeFlowLanding";
+import { BetaState, DeskForecastsView } from "./DeskForecastsView";
 import { NarrativeMap } from "./NarrativeMap";
 import { NarrativeMermaidView } from "./NarrativeMermaidView";
 import { NarrativeSensemakingComposer } from "./NarrativeSensemakingComposer";
@@ -51,7 +56,7 @@ interface NarrativeCanvasProps {
   chartMode?: boolean;
 }
 
-type NarrativeSurfaceMode = "workspace" | "map";
+type NarrativeSurfaceMode = "workspace" | "forecasts" | "coliseum" | "resolved" | "map";
 const NARRATIVE_SWATCHES = ["#c79f4a", "#34D399", "#FBBF24", "#A78BFA", "#14B8A6", "#F97316"];
 
 export function NarrativeCanvas({
@@ -334,7 +339,13 @@ export function NarrativeCanvas({
         onRenameSession={handleRenameSession}
       />
 
-      {surfaceMode === "map" ? (
+      {surfaceMode === "forecasts" ? (
+        <DeskForecastsView />
+      ) : surfaceMode === "coliseum" ? (
+        <BetaState label="Coliseum feed is closed-beta gated." />
+      ) : surfaceMode === "resolved" ? (
+        <BetaState label="Resolved forecasts will unlock after monitor history accrues." />
+      ) : surfaceMode === "map" ? (
         <NarrativeMap
           sessions={sessions}
           activeSessionId={activeSession?.id ?? null}
@@ -389,6 +400,10 @@ export function NarrativeCanvas({
               validationMessage={validationMessage}
               submitLabel="Ask"
               attachLabel="Catalysts"
+              narrativeChips={DEFAULT_NARRATIVE_SESSION_CHIPS}
+              selectedNarrativeSlugs={
+                new Set(DEFAULT_NARRATIVE_SESSION_CHIPS.map((item) => item.slug))
+              }
               reasoningLevel={reasoningLevel}
               queue={workspaceQueue}
               contextStats={{
@@ -463,7 +478,10 @@ function NarrativeChromeActions({
   onChangeMode: (mode: NarrativeSurfaceMode) => void;
 }) {
   const options: { id: NarrativeSurfaceMode; label: string; icon: LucideIcon }[] = [
-    { id: "workspace", label: "Workspace", icon: BriefcaseBusiness },
+    { id: "workspace", label: "Catalysts", icon: BriefcaseBusiness },
+    { id: "forecasts", label: "Desk Forecasts", icon: RadioTowerIcon },
+    { id: "coliseum", label: "Coliseum", icon: Trophy },
+    { id: "resolved", label: "Resolved", icon: CheckIcon },
     { id: "map", label: "Map", icon: MapIcon },
   ];
 

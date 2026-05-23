@@ -106,12 +106,11 @@ export function McpConnectorPopup({
 
   return (
     <div
-      className="w-full overflow-hidden rounded-xl border border-[var(--fintheon-accent)]/20 transition-all duration-200"
+      className="fintheon-popover-surface w-full overflow-hidden transition-all duration-200"
       style={{
         maxHeight: open ? "440px" : "0px",
         opacity: open ? 1 : 0,
         marginBottom: open ? "8px" : "0px",
-        backgroundColor: "#0a0805",
       }}
     >
       {/* Header */}

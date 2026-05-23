@@ -5,6 +5,11 @@ set -e
 VERSION=$(node -p "require('./package.json').version")
 echo "=== Building Fintheon v$VERSION ==="
 
+echo "[0/3] Stopping running Fintheon app..."
+pkill -f "Fintheon.app/Contents/MacOS/Fintheon" 2>/dev/null || true
+pkill -f "Fintheon Helper" 2>/dev/null || true
+sleep 1
+
 # 1. Build frontend
 echo "[1/3] Building frontend..."
 bun run frontend:build

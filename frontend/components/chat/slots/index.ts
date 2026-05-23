@@ -12,4 +12,6 @@ export { PriceLevelSlot } from "./PriceLevelSlot";
 export { ProbabilityTableSlot } from "./ProbabilityTableSlot";
 export { AgentHandoffSlot } from "./AgentHandoffSlot";
 export { BacktestResultSlot } from "./BacktestResultSlot";
+export { WeeklyDeskPlanSlot } from "./WeeklyDeskPlanSlot";
+export { MarketTickerStripSlot } from "./MarketTickerStripSlot";
 export { SLOT_LANGUAGES, SLOT_RENDERERS } from "./StreamdownChat";

@@ -445,15 +445,20 @@ export function MainDashboard({
                 <div className="grid flex-1 min-w-0 min-h-0 grid-rows-2 gap-4 overflow-hidden p-4">
                   <div className="flex min-h-0 flex-col overflow-hidden">
                     <KanbanTitle
-                      title={new Date().toLocaleDateString("en-US", {
-                        weekday: "long",
-                      })}
+                      title=""
                       tone="gold"
                       headerRight={
-                        <DeskPlanAdvanceButton
-                          isLoading={deskPlanAdvancing}
-                          onClick={advanceDeskPlan}
-                        />
+                        <div className="ml-auto flex items-center gap-2 text-right">
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--fintheon-accent)]">
+                            {new Date().toLocaleDateString("en-US", {
+                              weekday: "long",
+                            })}
+                          </span>
+                          <DeskPlanAdvanceButton
+                            isLoading={deskPlanAdvancing}
+                            onClick={advanceDeskPlan}
+                          />
+                        </div>
                       }
                     />
                     <div className="mt-2 min-h-0 flex-1 overflow-y-auto pr-1 relative">

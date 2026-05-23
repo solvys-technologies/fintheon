@@ -1,17 +1,21 @@
 // [codex 2026-05-23] NarrativeFlow domain composer with queue, intelligence, and context stats.
 import { useMemo, useState } from "react";
 import {
+  ArrowUp,
   GitBranch,
   Loader2,
   Paperclip,
   Plus,
-  Send,
+  Plug,
   X,
 } from "lucide-react";
 import { MessageQueue, type QueuedMessage } from "../chat/MessageQueue";
 import { ReasoningLevelSelector } from "../chat/ReasoningLevelSelector";
 import { UsageRing } from "../chat/UsageRing";
+import { FintheonToolboxModal } from "../chat/FintheonToolboxModal";
 import type { ReasoningLevel } from "../chat/reasoning";
+import { useMcpConnectors } from "../../hooks/useMcpConnectors";
+import { SKILLS } from "../../lib/skills";
 import type { NarrativeHeadlineOption } from "./sensemaking-types";
 
 interface NarrativeChip {
@@ -55,6 +59,26 @@ interface NarrativeInputBarProps {
   onPaste?: (event: React.ClipboardEvent<HTMLTextAreaElement>) => void;
 }
 
+function normalizeKey(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function keepNarrativeMentionsOnly(
+  value: string,
+  chips: NarrativeChip[],
+): string {
+  if (chips.length === 0) return value.replace(/@(?=[a-z0-9_-])/gi, "");
+  const allowed = new Set(
+    chips.flatMap((chip) => [
+      normalizeKey(chip.slug),
+      normalizeKey(chip.label),
+    ]),
+  );
+  return value.replace(/@([a-z0-9][a-z0-9_-]*)/gi, (match, raw) =>
+    allowed.has(normalizeKey(raw)) ? match : raw,
+  );
+}
+
 export function NarrativeInputBar({
   query,
   attachedHeadlines,
@@ -84,6 +108,8 @@ export function NarrativeInputBar({
   onPaste,
 }: NarrativeInputBarProps) {
   const [focused, setFocused] = useState(false);
+  const [showToolboxModal, setShowToolboxModal] = useState(false);
+  const { servers, activeIds, toggle: toggleConnector } = useMcpConnectors();
   const isOpener = mode === "opener";
   const isOverlay = mode === "overlay";
   const catalystCount = attachedHeadlines.length;
@@ -109,12 +135,9 @@ export function NarrativeInputBar({
       : "Ask how these catalysts connect...";
 
   const statusText = useMemo(() => {
-    if (validationMessage) return validationMessage;
     if (queue.length > 0) return `[${queue.length} QUEUED]`;
     if (isSubmitting) return "[WORKING]";
-    if (!draftReady) return "[ENTER REQUEST]";
     if (minHeadlines <= 0) return "[READY]";
-    if (!catalystReady) return `[SELECT ${minHeadlines} CATALYSTS]`;
     return `[${catalystCount}/${minHeadlines} CATALYSTS]`;
   }, [catalystCount, catalystReady, draftReady, isSubmitting, minHeadlines, queue.length, validationMessage]);
 
@@ -128,20 +151,14 @@ export function NarrativeInputBar({
   }
 
   return (
+    <>
     <div className={wrapperClass}>
       <div className={shellClass}>
         {queue.length > 0 ? (
           <div
-            className="pointer-events-auto mx-auto w-[calc(100%-24px)] max-w-[44rem] overflow-hidden rounded-t-2xl px-3 py-2"
+            className="fintheon-chat-input-drawer pointer-events-auto px-3 py-2"
             style={{
-              background:
-                "color-mix(in srgb, var(--fintheon-accent) 10%, rgba(5,4,2,0.78))",
-              border:
-                "1px solid color-mix(in srgb, var(--fintheon-accent) 18%, transparent)",
-              borderBottom: "none",
-              backdropFilter: "blur(24px) saturate(1.25)",
-              WebkitBackdropFilter: "blur(24px) saturate(1.25)",
-              boxShadow: "0 -18px 48px rgba(0,0,0,0.28)",
+              maxHeight: "340px",
             }}
           >
             <MessageQueue
@@ -162,8 +179,20 @@ export function NarrativeInputBar({
           </div>
         ) : null}
 
+        <FintheonToolboxModal
+          open={showToolboxModal}
+          onClose={() => setShowToolboxModal(false)}
+          skills={SKILLS}
+          activeSkill={null}
+          onSelectSkill={() => undefined}
+          disabledSkills={{}}
+          servers={servers}
+          activeIds={activeIds}
+          onToggleConnector={toggleConnector}
+        />
+
         <div
-          className={`rounded-2xl border backdrop-blur-xl transition ${
+          className={`relative flex flex-col rounded-2xl border backdrop-blur-xl transition ${
             focused
               ? "border-[var(--fintheon-accent)]/55"
               : query
@@ -173,8 +202,9 @@ export function NarrativeInputBar({
           style={{
             background:
               focused || query
-                ? "rgba(13,12,9,0.92)"
-                : "rgba(5,4,2,0.18)",
+                ? "rgba(13,12,9,0.98)"
+                : "transparent",
+            transition: "border-color 0.2s ease, background 0.2s ease",
           }}
         >
           {attachedHeadlines.length > 0 ? (
@@ -199,31 +229,14 @@ export function NarrativeInputBar({
             </div>
           ) : null}
 
-          {narrativeChips.length > 0 ? (
-            <div className="flex flex-wrap gap-2 px-3 pt-3">
-              {narrativeChips.map((chip) => {
-                const isSelected = selectedNarrativeSlugs?.has(chip.slug) ?? false;
-                return (
-                  <button
-                    key={chip.slug}
-                    type="button"
-                    onClick={() => onToggleNarrative?.(chip.slug)}
-                    className={`rounded border px-2 py-1 text-[10px] uppercase tracking-[0.12em] transition ${
-                      isSelected
-                        ? "border-[var(--fintheon-accent)]/40 text-[var(--fintheon-accent)]"
-                        : "border-[var(--fintheon-accent)]/12 text-[var(--fintheon-muted)]"
-                    }`}
-                  >
-                    {chip.label}
-                  </button>
-                );
-              })}
-            </div>
-          ) : null}
-
           <textarea
             value={query}
-            onChange={(event) => onQueryChange(event.target.value)}
+            onChange={(event) => {
+              if (showToolboxModal) setShowToolboxModal(false);
+              onQueryChange(
+                keepNarrativeMentionsOnly(event.target.value, narrativeChips),
+              );
+            }}
             onPaste={onPaste}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
@@ -242,16 +255,29 @@ export function NarrativeInputBar({
             <div className="flex min-w-0 items-center gap-1">
               <button
                 type="button"
-                onClick={onOpenDrawer}
+                onClick={() => {
+                  if (showToolboxModal) setShowToolboxModal(false);
+                  onOpenDrawer();
+                }}
                 className="inline-flex h-8 items-center gap-2 rounded-lg px-2 text-xs text-[var(--fintheon-muted)] transition hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
                 title="Attach RiskFlow headlines"
               >
                 {isOpener ? <Paperclip size={15} /> : <Plus size={15} />}
                 {!isOverlay ? attachLabel : null}
               </button>
-              <span className="hidden font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]/50 sm:inline">
-                NarrativeFlow
-              </span>
+              {!isOverlay ? (
+                <button
+                  type="button"
+                  onClick={() => setShowToolboxModal((open) => !open)}
+                  className="relative flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
+                  title="Skills and connectors"
+                >
+                  <Plug size={14} />
+                  {(activeIds.length > 0 || selectedNarrativeSlugs?.size) ? (
+                    <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[var(--fintheon-accent)]" />
+                  ) : null}
+                </button>
+              ) : null}
             </div>
 
             <div className="flex min-w-0 items-center gap-2">
@@ -260,9 +286,11 @@ export function NarrativeInputBar({
                 onChange={onReasoningLevelChange}
                 compact={isOverlay}
               />
-              <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--fintheon-muted)]">
-                {statusText}
-              </span>
+              {statusText ? (
+                <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--fintheon-muted)]">
+                  {statusText}
+                </span>
+              ) : null}
               <UsageRing
                 stats={contextStats}
                 draftText={query}
@@ -272,23 +300,13 @@ export function NarrativeInputBar({
                 type="button"
                 onClick={handleAction}
                 disabled={!canSubmit && !canQueue}
-                className={`inline-flex h-9 items-center justify-center transition ${
-                  submitLabel
-                    ? "rounded-md px-3 text-[11px] uppercase tracking-[0.12em]"
-                    : "w-9 rounded-full"
-                } ${
-                  canSubmit || canQueue
-                    ? "bg-[var(--fintheon-accent)] text-black hover:brightness-110"
-                    : "bg-[var(--fintheon-accent)]/25 text-black/40"
-                }`}
-                title={canQueue ? "Queue narrative request" : "Run narrative request"}
+                className="fintheon-send-button inline-flex h-9 w-9 items-center justify-center rounded-full"
+                title={canQueue ? "Queue narrative request" : (submitLabel ?? "Run narrative request")}
               >
                 {isSubmitting && !canQueue ? (
                   <Loader2 size={16} className="animate-spin" />
-                ) : submitLabel ? (
-                  submitLabel
                 ) : (
-                  <Send size={16} />
+                  <ArrowUp size={16} strokeWidth={2.5} />
                 )}
               </button>
             </div>
@@ -296,5 +314,6 @@ export function NarrativeInputBar({
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -56,7 +56,7 @@ export function ChamberAgentSummaryPopup({
 
   return (
     <section
-      className="fixed max-w-[calc(100vw-24px)] rounded-md border border-[var(--fintheon-accent)]/24 bg-[var(--fintheon-bg)]/95 p-3 text-[var(--fintheon-text)] shadow-none"
+      className="fintheon-popover-surface fixed max-w-[calc(100vw-24px)] p-3 text-[var(--fintheon-text)]"
       style={{
         left: position.x,
         top: position.y,

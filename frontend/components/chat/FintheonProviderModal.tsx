@@ -1,13 +1,11 @@
-import { useEffect, useRef } from "react";
-import { Cpu, Cloud, X, Check, Settings } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, X } from "lucide-react";
 import type { HarperProvider } from "./ProviderDropdown";
 
 interface ProviderDef {
   id: HarperProvider;
   label: string;
   model: string;
-  sub: string;
-  icon: typeof Cloud;
   managed: boolean;
 }
 
@@ -16,16 +14,12 @@ const PROVIDERS: ProviderDef[] = [
     id: "deepseek-direct",
     label: "DeepSeek v4 Pro",
     model: "Direct API",
-    sub: "Bring your own key",
-    icon: Cloud,
     managed: false,
   },
   {
     id: "opencode-go",
     label: "OpenCode Go",
     model: "Self-hosted proxy",
-    sub: "Bring your own key + endpoint",
-    icon: Cpu,
     managed: false,
   },
 ];
@@ -63,32 +57,54 @@ export function FintheonProviderModal({
   onChange,
 }: FintheonProviderModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const [shouldRender, setShouldRender] = useState(open);
+  const [isClosing, setIsClosing] = useState(false);
+
+  const requestClose = () => {
+    if (isClosing) return;
+    setIsClosing(true);
+    window.setTimeout(() => {
+      onClose();
+      setShouldRender(false);
+      setIsClosing(false);
+    }, 140);
+  };
 
   useEffect(() => {
-    if (!open) return;
+    if (open) {
+      setShouldRender(true);
+      setIsClosing(false);
+      return;
+    }
+    if (!shouldRender) return;
+    setIsClosing(true);
+    const id = window.setTimeout(() => {
+      setShouldRender(false);
+      setIsClosing(false);
+    }, 140);
+    return () => window.clearTimeout(id);
+  }, [open, shouldRender]);
+
+  useEffect(() => {
+    if (!shouldRender) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") requestClose();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
+  }, [requestClose, shouldRender]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!shouldRender) return;
     const handler = (e: MouseEvent) => {
       if (dialogRef.current && !dialogRef.current.contains(e.target as Node))
-        onClose();
+        requestClose();
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [open, onClose]);
+  }, [requestClose, shouldRender]);
 
-  const openSettings = () => {
-    onClose();
-    window.dispatchEvent(new CustomEvent("fintheon:open-settings-api"));
-  };
-
-  if (!open) return null;
+  if (!shouldRender) return null;
 
   return (
     <div
@@ -108,9 +124,11 @@ export function FintheonProviderModal({
     >
       <div
         ref={dialogRef}
-        className="pointer-events-auto rounded-lg bg-[#0a0905]/90 backdrop-blur-xl"
+        className={`fintheon-popover-motion pointer-events-auto rounded-lg border border-[var(--fintheon-accent)]/15 bg-[#0a0905]/92 backdrop-blur-xl ${
+          isClosing ? "is-closing" : ""
+        }`}
         style={{
-          width: 380,
+          width: 230,
           maxWidth: "calc(100vw - 40px)",
           display: "flex",
           flexDirection: "column",
@@ -122,17 +140,16 @@ export function FintheonProviderModal({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "14px 16px",
+            padding: "9px 11px",
             borderBottom:
               "1px solid color-mix(in srgb, var(--fintheon-accent) 10%, transparent)",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Cpu size={14} strokeWidth={2.2} color="var(--fintheon-accent)" />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span
               style={{
                 fontFamily: "var(--font-heading)",
-                fontSize: 12,
+                fontSize: 10,
                 fontWeight: 700,
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
@@ -143,7 +160,7 @@ export function FintheonProviderModal({
             </span>
           </div>
           <button
-            onClick={onClose}
+            onClick={requestClose}
             style={{
               background: "transparent",
               border: "none",
@@ -159,32 +176,24 @@ export function FintheonProviderModal({
         </div>
 
         {/* Provider list */}
-        <div style={{ padding: "6px" }}>
-          {PROVIDERS.map((p, i) => {
-            const PIcon = p.icon;
+        <div style={{ padding: "4px" }}>
+          {PROVIDERS.map((p) => {
             const active = p.id === provider;
             const pDotColor = getDotColor(p.id);
-            const keyMissing =
-              !p.managed &&
-              !hasCachedKey(
-                p.id === "deepseek-direct"
-                  ? DEEPSEEK_KEY_STATUS
-                  : OC_API_KEY_STATUS,
-              );
 
             return (
               <button
                 key={p.id}
                 onClick={() => {
                   onChange(p.id);
-                  onClose();
+                  requestClose();
                 }}
                 style={{
                   width: "100%",
                   display: "flex",
                   alignItems: "center",
-                  gap: 10,
-                  padding: "10px 12px",
+                  gap: 8,
+                  padding: "8px 9px",
                   background: active
                     ? "color-mix(in srgb, var(--fintheon-accent) 8%, transparent)"
                     : "transparent",
@@ -194,14 +203,6 @@ export function FintheonProviderModal({
                   transition: "background 0.15s",
                 }}
               >
-                <PIcon
-                  className="w-4 h-4 shrink-0"
-                  style={{
-                    color: active
-                      ? "var(--fintheon-accent)"
-                      : "rgba(240,234,214,0.5)",
-                  }}
-                />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     style={{
@@ -221,13 +222,6 @@ export function FintheonProviderModal({
                     >
                       {p.label}
                     </span>
-                    {active && (
-                      <Check
-                        size={12}
-                        strokeWidth={2.5}
-                        color="var(--fintheon-accent)"
-                      />
-                    )}
                   </div>
                   <div
                     style={{
@@ -242,6 +236,13 @@ export function FintheonProviderModal({
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {active ? (
+                    <Check
+                      size={11}
+                      strokeWidth={2.5}
+                      color="var(--fintheon-accent)"
+                    />
+                  ) : null}
                   <span
                     style={{
                       display: "inline-block",
@@ -255,48 +256,6 @@ export function FintheonProviderModal({
               </button>
             );
           })}
-        </div>
-
-        {/* API Key hint footer */}
-        <div
-          style={{
-            padding: "10px 16px",
-            borderTop:
-              "1px solid color-mix(in srgb, var(--fintheon-accent) 10%, transparent)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <span
-            style={{
-              fontSize: 10,
-              color: "rgba(240,234,214,0.35)",
-            }}
-          >
-            API keys managed in Settings
-          </span>
-          <button
-            onClick={openSettings}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              padding: "4px 10px",
-              background:
-                "color-mix(in srgb, var(--fintheon-accent) 12%, transparent)",
-              border: "none",
-              color: "var(--fintheon-accent)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              cursor: "pointer",
-              transition: "background 0.15s",
-            }}
-          >
-            <Settings size={10} />
-          </button>
         </div>
       </div>
     </div>

@@ -34,24 +34,24 @@ export function HermesActivityLog({ entries }: HermesActivityLogProps) {
 
   if (entries.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-zinc-600 text-[11px]">
+      <div className="flex h-full items-center justify-end text-right text-[11px] text-zinc-600">
         No activity yet. Send a message to begin.
       </div>
     );
   }
 
   return (
-    <div ref={listRef} className="overflow-y-auto h-full space-y-1 pr-1">
+    <div ref={listRef} className="overflow-y-auto h-full space-y-1 pr-1 text-right">
       {entries.map((entry) => (
         <div
           key={entry.id}
-          className="flex items-start gap-3 px-3 py-2 rounded border border-[var(--fintheon-accent)]/10 bg-[var(--fintheon-surface)]"
+          className="flex items-start justify-between gap-3 px-3 py-2"
         >
           <span className="text-[10px] text-zinc-500 font-mono whitespace-nowrap mt-0.5">
             {formatTime(entry.timestamp)}
           </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1 text-right">
+            <div className="flex items-center justify-end gap-2">
               <span className="text-[11px] font-semibold text-[var(--fintheon-accent)]">
                 {entry.agentRouted}
               </span>
@@ -59,7 +59,7 @@ export function HermesActivityLog({ entries }: HermesActivityLogProps) {
                 {entry.intentDetected}
               </span>
             </div>
-            <p className="text-[10px] text-zinc-500 truncate">
+            <p className="truncate text-right text-[10px] text-zinc-500">
               {entry.preview}
             </p>
           </div>

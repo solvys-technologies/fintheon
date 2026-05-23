@@ -4,10 +4,16 @@
 // current trading week so stale prior-week sessions snap back on week rollover,
 // while TabRenderer keeps the frame mounted during same-session tab switches.
 import { useEffect, useState } from "react";
-import { CalendarDays, CheckCircle2, Inbox } from "lucide-react";
+import { CalendarDays, CheckCircle2, Inbox, Share2 } from "lucide-react";
 import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
 import { BrailleSpinner } from "../chat/primitive/BrailleSpinner";
 import { useToast } from "../../contexts/ToastContext";
+import {
+  buildWeeklyDeskPlanPrompt,
+  storePendingChatPrompt,
+  toDeskWeekPlanEvents,
+  type DeskCalendarQueueEvent,
+} from "../../lib/desk-week-plan";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const TRADINGVIEW_CALENDAR_URL =
@@ -84,6 +90,7 @@ export function TradingViewCalendar() {
   });
   const [saveState, setSaveState] = useState<SaveState>({ phase: "idle" });
   const [weekKey, setWeekKey] = useState<string>(() => tradingWeekKey());
+  const [isPlanning, setIsPlanning] = useState(false);
 
   const refreshQueue = async () => {
     try {
@@ -115,6 +122,35 @@ export function TradingViewCalendar() {
       window.clearInterval(id);
     };
   }, []);
+
+  const buildPlanInChat = async () => {
+    if (queue.count === 0 || isPlanning) return;
+    setIsPlanning(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/desk/calendar/queue?days=7`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = (await res.json()) as { events?: DeskCalendarQueueEvent[] };
+      const events = json.events ?? [];
+      if (events.length === 0) {
+        addToast("No queued events", "info", "Add TradingView catalysts first.");
+        return;
+      }
+      const prompt = buildWeeklyDeskPlanPrompt(toDeskWeekPlanEvents(events));
+      storePendingChatPrompt(prompt);
+      window.dispatchEvent(
+        new CustomEvent("fintheon:navigate-tab", { detail: { tab: "analysis" } }),
+      );
+      window.dispatchEvent(
+        new CustomEvent("fintheon:send-chat-text", { detail: { text: prompt } }),
+      );
+      addToast("Week plan sent to CAO chat", "success");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "queue unavailable";
+      addToast("Week plan failed", "error", message);
+    } finally {
+      setIsPlanning(false);
+    }
+  };
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -167,11 +203,20 @@ export function TradingViewCalendar() {
   }, []);
 
   return (
-    <div className="h-full w-full flex flex-col bg-black">
-      <div className="flex-shrink-0 px-4 py-3 bg-black">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <CalendarDays className="w-4 h-4 text-[var(--fintheon-accent)]" />
+    <div className="relative h-full w-full overflow-hidden bg-black">
+      <div className="absolute inset-0">
+        <EmbeddedBrowserFrame
+          key={weekKey}
+          title="TradingView Economic Calendar"
+          src={TRADINGVIEW_CALENDAR_URL}
+          className="h-full w-full bg-black"
+        />
+      </div>
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-28 bg-gradient-to-b from-black via-black/82 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 px-4 pt-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="pointer-events-auto flex min-w-0 items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-[var(--fintheon-accent)]" />
             <h2 className="text-sm font-semibold text-[var(--fintheon-accent)]">
               Econ Calendar
             </h2>
@@ -194,29 +239,37 @@ export function TradingViewCalendar() {
               </span>
             )}
           </div>
-          <div
-            className="flex items-center gap-1.5 text-[9px] uppercase tracking-wider text-zinc-500 px-2 py-0.5 rounded border border-zinc-800/60"
-            title={`Desk Queue · ${formatRelative(queue.last_ingest_at)}`}
-          >
-            <Inbox className="w-3 h-3" />
-            <span className="text-[var(--fintheon-accent)] tabular-nums">
-              {queue.count}
-            </span>
-            <span>queued</span>
-            <span className="text-zinc-600">·</span>
-            <span className="text-zinc-500 normal-case tracking-normal">
-              {formatRelative(queue.last_ingest_at)}
-            </span>
+          <div className="pointer-events-auto flex items-center gap-2 pr-1">
+            <div
+              className="flex h-7 items-center gap-1.5 text-[9px] uppercase tracking-wider text-zinc-500"
+              title={`Desk Queue · ${formatRelative(queue.last_ingest_at)}`}
+            >
+              <Inbox className="h-3 w-3" />
+              <span className="text-[var(--fintheon-accent)] tabular-nums">
+                {queue.count}
+              </span>
+              <span>queued</span>
+              <span className="text-zinc-600">·</span>
+              <span className="text-zinc-500 normal-case tracking-normal">
+                {formatRelative(queue.last_ingest_at)}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={buildPlanInChat}
+              disabled={queue.count === 0 || isPlanning}
+              className="inline-flex h-7 w-7 items-center justify-center text-zinc-500 transition-colors hover:text-[var(--fintheon-accent)] disabled:opacity-35"
+              aria-label="Build weekly plan in CAO chat"
+              title="Build weekly plan in CAO chat"
+            >
+              {isPlanning ? (
+                <BrailleSpinner size={10} color="var(--fintheon-accent)" />
+              ) : (
+                <Share2 className="h-3.5 w-3.5" />
+              )}
+            </button>
           </div>
         </div>
-      </div>
-      <div className="flex-1 min-h-0">
-        <EmbeddedBrowserFrame
-          key={weekKey}
-          title="TradingView Economic Calendar"
-          src={TRADINGVIEW_CALENDAR_URL}
-          className="w-full h-full"
-        />
       </div>
     </div>
   );

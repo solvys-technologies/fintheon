@@ -10,7 +10,6 @@ import {
   Link2,
   Plus,
   Trash2,
-  AlertTriangle,
 } from "lucide-react";
 import Toggle from "../Toggle";
 import { useSettings } from "../../contexts/SettingsContext";
@@ -22,6 +21,7 @@ import {
   saveBlockerQuickTarget,
   type BlockerQuickTarget,
 } from "../../lib/platform-blocker";
+import { SettingsActionStatus } from "./SettingsActionStatus";
 
 interface LockoutElectron {
   checkAccessibility: () => Promise<{ granted: boolean }>;
@@ -354,13 +354,19 @@ export function BlockerTab() {
           />
         )}
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="text-[10px] text-gray-500 font-mono">
-            {quickTargetDomains.length > 0
-              ? quickTargetDomains.join(", ")
-              : "No valid domains detected"}
+        <div className="flex flex-wrap items-start justify-end gap-3 text-right">
+          <div className="flex min-w-0 flex-1 flex-col items-end">
+            <SettingsActionStatus
+              label={quickTargetDomains.length > 0 ? "Target Ready" : "No Target"}
+              detail={
+                quickTargetDomains.length > 0
+                  ? quickTargetDomains.join(", ")
+                  : "No valid domains detected"
+              }
+              tone={quickTargetDomains.length > 0 ? "success" : "muted"}
+            />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <button
               onClick={handleSaveQuickTarget}
               className="px-3 py-1.5 rounded-md text-[11px] font-semibold bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/20 border border-[var(--fintheon-accent)]/15 transition-all"
@@ -377,10 +383,13 @@ export function BlockerTab() {
           </div>
         </div>
         {quickTargetError && (
-          <p className="text-[10px] text-red-400 flex items-center gap-1">
-            <AlertTriangle className="w-3 h-3" />
-            {quickTargetError}
-          </p>
+          <div className="flex justify-end">
+            <SettingsActionStatus
+              label="Target Error"
+              detail={quickTargetError}
+              tone="error"
+            />
+          </div>
         )}
       </div>
 
@@ -395,22 +404,7 @@ export function BlockerTab() {
               Pre-authorizes Fintheon so locking works without a password prompt.
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span
-              className={`text-[10px] font-medium ${
-                lockoutPermission === "granted"
-                  ? "text-green-400"
-                  : lockoutPermission === "denied"
-                    ? "text-red-400"
-                    : "text-[var(--fintheon-accent)]"
-              }`}
-            >
-              {lockoutPermission === "granted"
-                ? "Granted"
-                : lockoutPermission === "denied"
-                  ? "Not Granted"
-                  : "Not required"}
-            </span>
+          <div className="flex shrink-0 flex-col items-end gap-1 text-right">
             <button
               onClick={async () => {
                 setAccessibilityCheckLoading(true);
@@ -434,6 +428,23 @@ export function BlockerTab() {
             >
               {accessibilityCheckLoading ? "Checking..." : "Grant Permission"}
             </button>
+            <SettingsActionStatus
+              label={
+                lockoutPermission === "granted"
+                  ? "Granted"
+                  : lockoutPermission === "denied"
+                    ? "Not Granted"
+                    : "Not Required"
+              }
+              detail="Accessibility status"
+              tone={
+                lockoutPermission === "granted"
+                  ? "success"
+                  : lockoutPermission === "denied"
+                    ? "error"
+                    : "muted"
+              }
+            />
           </div>
         </div>
       </div>
@@ -473,26 +484,39 @@ export function BlockerTab() {
               )}
             </div>
           </div>
-          <button
-            onClick={handleToggle}
-            disabled={toggling || state.isLoading || domains.length === 0}
-            className={`shrink-0 px-4 py-2 rounded-md text-[12px] font-semibold transition-all ${
-              state.blocked
-                ? "bg-red-500/15 text-red-400 hover:bg-red-500/25 border border-red-500/20"
-                : "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/25 border border-[var(--fintheon-accent)]/20"
-            } disabled:opacity-40 disabled:cursor-not-allowed`}
-          >
-            {toggling ? (
-              <span className="flex items-center gap-1.5">
-                <RefreshCw className="w-3 h-3 animate-spin" />
-                {state.blocked ? "Unblocking..." : "Blocking..."}
-              </span>
-            ) : state.blocked ? (
-              "Unblock"
-            ) : (
-              "Block Now"
-            )}
-          </button>
+          <div className="flex shrink-0 flex-col items-end gap-1 text-right">
+            <button
+              onClick={handleToggle}
+              disabled={toggling || state.isLoading || domains.length === 0}
+              className={`shrink-0 px-4 py-2 rounded-md text-[12px] font-semibold transition-all ${
+                state.blocked
+                  ? "bg-red-500/15 text-red-400 hover:bg-red-500/25 border border-red-500/20"
+                  : "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/25 border border-[var(--fintheon-accent)]/20"
+              } disabled:opacity-40 disabled:cursor-not-allowed`}
+            >
+              {toggling ? (
+                <span className="flex items-center gap-1.5">
+                  <RefreshCw className="w-3 h-3 animate-spin" />
+                  {state.blocked ? "Unblocking..." : "Blocking..."}
+                </span>
+              ) : state.blocked ? (
+                "Unblock"
+              ) : (
+                "Block Now"
+              )}
+            </button>
+            <SettingsActionStatus
+              label={
+                state.isLoading
+                  ? "Checking"
+                  : state.blocked
+                    ? "Blocked"
+                    : "Not Blocking"
+              }
+              detail={`${layerCount}/3 layers active`}
+              tone={state.blocked ? "error" : "muted"}
+            />
+          </div>
         </div>
       </div>
 
@@ -584,10 +608,13 @@ export function BlockerTab() {
           </button>
         </div>
         {domainError && (
-          <p className="text-[10px] text-red-400 flex items-center gap-1">
-            <AlertTriangle className="w-3 h-3" />
-            {domainError}
-          </p>
+          <div className="flex justify-end">
+            <SettingsActionStatus
+              label="Domain Error"
+              detail={domainError}
+              tone="error"
+            />
+          </div>
         )}
 
         {/* Domain list */}
@@ -612,13 +639,16 @@ export function BlockerTab() {
             ))}
           </div>
         )) || (
-          <p className="text-[11px] text-gray-500 italic">
-            No domains configured. Add at least one domain above, then save.
-          </p>
+          <div className="flex justify-end">
+            <SettingsActionStatus
+              label="No Domains"
+              detail="Add at least one domain above, then save."
+            />
+          </div>
         )}
 
         {/* Save button */}
-        <div className="flex justify-end gap-2 pt-1 border-t border-[var(--fintheon-accent)]/5">
+        <div className="flex flex-col items-end justify-end gap-1 pt-1 text-right">
           <button
             onClick={handleSaveDomains}
             disabled={saving}
@@ -633,6 +663,13 @@ export function BlockerTab() {
               "Save List"
             )}
           </button>
+          {saving && (
+            <SettingsActionStatus
+              label="Saving"
+              detail="Updating blocker domain list."
+              tone="warning"
+            />
+          )}
         </div>
       </div>
 

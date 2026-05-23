@@ -17,8 +17,6 @@ import {
   Users,
   AlertTriangle,
   ArrowLeft,
-  ArrowDown,
-  ArrowUp,
   Globe,
 } from "lucide-react";
 import { useSettings, type APIKeys } from "../contexts/SettingsContext";
@@ -40,10 +38,12 @@ import { ApiTab } from "./settings/ApiTab";
 import { IframesTab } from "./settings/IframesTab";
 import { DangerTab } from "./settings/DangerTab";
 import { DeveloperTab } from "./settings/DeveloperTab";
+import { DevPasswordGate } from "./settings/DevPasswordGate";
+import { SettingsActionStatus } from "./settings/SettingsActionStatus";
 
 type SettingsTab =
   | "general"
-  | "hermes-admin"
+  | "admin"
   | "appearance"
   | "desk"
   | "notifications"
@@ -81,7 +81,7 @@ const AVAILABLE_SYMBOLS = [
   },
 ];
 
-const REORDERABLE_TABS = [
+const TABS = [
   {
     id: "general" as const,
     label: "Profile",
@@ -89,28 +89,28 @@ const REORDERABLE_TABS = [
     description: "Trading symbol, billing, and account preferences",
   },
   {
-    id: "hermes-admin" as const,
-    label: "Hermes:Admin",
-    icon: Cpu,
-    description: "Gateway, agent status, backend dependencies, and diagnostics",
-  },
-  {
-    id: "appearance" as const,
-    label: "Appearance",
-    icon: Palette,
-    description: "Theme and visual customization options",
-  },
-  {
     id: "desk" as const,
     label: "Agentic Desk",
     icon: Users,
-    description: "Agent persona configuration and CAO naming",
+    description: "Hermes routing, agent personas, and CAO naming",
+  },
+  {
+    id: "admin" as const,
+    label: "Hermes Settings",
+    icon: Cpu,
+    description: "Gateway, agent status, backend dependencies, and diagnostics",
   },
   {
     id: "trading" as const,
     label: "Trading",
     icon: CreditCard,
     description: "Risk management, autopilot, and strategy toggles",
+  },
+  {
+    id: "iframes" as const,
+    label: "iFrames",
+    icon: Globe,
+    description: "Embed URLs for Boardroom, Research, and more",
   },
   {
     id: "notifications" as const,
@@ -125,10 +125,10 @@ const REORDERABLE_TABS = [
     description: "API keys and external service credentials",
   },
   {
-    id: "iframes" as const,
-    label: "iFrames",
-    icon: Globe,
-    description: "Embed URLs for Boardroom, Research, and more",
+    id: "appearance" as const,
+    label: "Appearance",
+    icon: Palette,
+    description: "Theme and visual customization options",
   },
   {
     id: "developer" as const,
@@ -144,22 +144,7 @@ const DANGER_TAB = {
   icon: AlertTriangle,
   description: "Reset analysts, clear data, and export config",
 };
-const TABS = [...REORDERABLE_TABS, DANGER_TAB];
-const TAB_ORDER_KEY = "fintheon:settings-tab-order:v1";
-
-function loadTabOrder(): SettingsTab[] {
-  const fallback = REORDERABLE_TABS.map((tab) => tab.id);
-  try {
-    const parsed = JSON.parse(localStorage.getItem(TAB_ORDER_KEY) ?? "[]");
-    if (!Array.isArray(parsed)) return fallback;
-    const valid = parsed.filter((id) =>
-      REORDERABLE_TABS.some((tab) => tab.id === id),
-    ) as SettingsTab[];
-    return [...valid, ...fallback.filter((id) => !valid.includes(id))];
-  } catch {
-    return fallback;
-  }
-}
+const ORDERED_TABS = [...TABS, DANGER_TAB];
 
 // Per-tab wrapper that drives t-panel-slide entry on mount via a one-frame rAF so
 // the new tab content tweens in from the closed (translate-Y + blur + opacity:0)
@@ -245,31 +230,14 @@ export function SettingsPage() {
   const [tabTransitioning, setTabTransitioning] = useState(false);
   const [sidebarHovered, setSidebarHovered] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [tabOrder, setTabOrder] = useState<SettingsTab[]>(() => loadTabOrder());
-  const [isReorderingTabs, setIsReorderingTabs] = useState(false);
   const { addToast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const orderedTabs = [
-    ...tabOrder
-      .map((id) => REORDERABLE_TABS.find((tab) => tab.id === id))
-      .filter(Boolean),
-    DANGER_TAB,
-  ] as typeof TABS;
-
-  const moveTab = (id: SettingsTab, direction: -1 | 1) => {
-    setTabOrder((current) => {
-      const index = current.indexOf(id);
-      const nextIndex = index + direction;
-      if (index < 0 || nextIndex < 0 || nextIndex >= current.length)
-        return current;
-      const next = [...current];
-      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
-      try {
-        localStorage.setItem(TAB_ORDER_KEY, JSON.stringify(next));
-      } catch {}
-      return next;
-    });
-  };
+  const [saveStatus, setSaveStatus] = useState<{
+    label: string;
+    detail?: string;
+    tone?: "muted" | "success" | "error" | "warning";
+  } | null>(null);
+  const orderedTabs = ORDERED_TABS;
 
   const handleTabChange = (tab: SettingsTab) => {
     if (!showLanding && tab === activeTab && !tabTransitioning) return;
@@ -304,6 +272,11 @@ export function SettingsPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
+    setSaveStatus({
+      label: "Saving",
+      detail: "Syncing local settings and account preferences.",
+      tone: "warning",
+    });
     const startTime = Date.now();
     try {
       if (isAuthenticated) {
@@ -337,6 +310,11 @@ export function SettingsPage() {
                 "Settings saved. ProjectX credentials failed — check API key.",
                 "info",
               );
+              setSaveStatus({
+                label: "Saved Locally",
+                detail: "ProjectX credential sync needs attention.",
+                tone: "warning",
+              });
               setIsSaving(false);
             }, remaining);
             return;
@@ -347,6 +325,11 @@ export function SettingsPage() {
       const remaining = Math.max(0, 1200 - elapsed);
       setTimeout(() => {
         addToast("Settings saved successfully", "success");
+        setSaveStatus({
+          label: "Saved",
+          detail: "Settings are current on this surface.",
+          tone: "success",
+        });
         setIsSaving(false);
       }, remaining);
     } catch (error) {
@@ -355,6 +338,11 @@ export function SettingsPage() {
       const remaining = Math.max(0, 1200 - elapsed);
       setTimeout(() => {
         addToast("Settings saved locally. Backend sync unavailable.", "info");
+        setSaveStatus({
+          label: "Saved Locally",
+          detail: "Backend sync was unavailable.",
+          tone: "warning",
+        });
         setIsSaving(false);
       }, remaining);
     }
@@ -456,8 +444,15 @@ export function SettingsPage() {
             setProposerDefaultIframe={setProposerDefaultIframe}
           />,
         );
-      case "hermes-admin":
-        return wrap("hermes-admin", <HermesAdminTab />);
+      case "admin":
+        return wrap(
+          "admin",
+          devAuthenticated ? (
+            <HermesAdminTab />
+          ) : (
+            <DevPasswordGate onAuthenticated={() => setDevAuthenticated(true)} />
+          ),
+        );
       case "appearance":
         return wrap("appearance", <ThemeSettings />);
       case "desk":
@@ -498,13 +493,6 @@ export function SettingsPage() {
                 <p className="text-[13px] text-gray-500">
                   Configure your Fintheon environment
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setIsReorderingTabs((value) => !value)}
-                  className="fintheon-action-link mt-3 text-[10px] font-semibold uppercase tracking-[0.16em]"
-                >
-                  {isReorderingTabs ? "Done" : "Reorder"}
-                </button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {orderedTabs.map((tab) => {
@@ -516,32 +504,6 @@ export function SettingsPage() {
                       <div
                         className={`group relative text-right p-4 rounded-md transition-all duration-200 hover:opacity-80 ${isDanger ? "text-red-400" : "text-[var(--fintheon-text)]"}`}
                       >
-                        {isReorderingTabs && !isDanger && (
-                          <span className="absolute left-3 top-3 flex gap-1">
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                moveTab(tab.id, -1);
-                              }}
-                              className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]/70"
-                              title="Move up"
-                            >
-                              <ArrowUp className="h-3 w-3" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                moveTab(tab.id, 1);
-                              }}
-                              className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]/70"
-                              title="Move down"
-                            >
-                              <ArrowDown className="h-3 w-3" />
-                            </button>
-                          </span>
-                        )}
                         <button
                           type="button"
                           onClick={() => handleTabChange(tab.id)}
@@ -599,7 +561,7 @@ export function SettingsPage() {
               {renderTabContent()}
             </div>
             <div className="sticky bottom-0 bg-[var(--fintheon-bg)] px-8 pb-7 pt-3">
-              <div className="flex items-center justify-end gap-3">
+              <div className="flex flex-col items-end justify-end gap-1 text-right">
                 <button
                   onClick={handleSave}
                   className="fintheon-action-link text-right text-[11px] font-semibold uppercase tracking-[0.14em]"
@@ -607,6 +569,13 @@ export function SettingsPage() {
                 >
                   {isSaving ? "Saving..." : "Save Changes"}
                 </button>
+                {saveStatus && (
+                  <SettingsActionStatus
+                    label={saveStatus.label}
+                    detail={saveStatus.detail}
+                    tone={saveStatus.tone}
+                  />
+                )}
               </div>
             </div>
           </div>

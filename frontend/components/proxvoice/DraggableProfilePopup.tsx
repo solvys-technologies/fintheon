@@ -18,7 +18,7 @@ export function DraggableProfilePopup({
 
   return (
     <div
-      className="fixed z-[10000] fintheon-fade-in"
+      className="fintheon-popover-surface fixed z-[10000] fintheon-fade-in"
       style={{ left: position.x, top: position.y }}
       onMouseMove={(event) => {
         if (!drag) return;
@@ -28,7 +28,7 @@ export function DraggableProfilePopup({
       onMouseLeave={() => setDrag(null)}
     >
       <div
-        className="cursor-move bg-[var(--fintheon-surface)] px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)] fintheon-fade-divider"
+        className="cursor-move px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)] fintheon-fade-divider"
         onMouseDown={(event) =>
           setDrag({
             dx: event.clientX - position.x,

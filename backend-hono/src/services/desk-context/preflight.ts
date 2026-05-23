@@ -9,6 +9,7 @@ import { buildFeedContext } from "../ai/agent-instructions/index.js";
 import { generateDayPlan } from "../day-plan/day-plan-service.js";
 import { getRecentOutputs } from "./agent-outputs.js";
 import { getLockoutSummary } from "../lockout.js";
+import { buildDeskStyleContext } from "../coliseum/agent-style.js";
 
 const log = createLogger("desk-context");
 
@@ -95,6 +96,10 @@ export async function preflight(
   await pushSection(sections, "Lockout Status", async () => {
     return [getLockoutSummary(options.userId)];
   });
+
+  if (normalized === "harper" || normalized === "oracle") {
+    await pushSection(sections, "Desk Style", buildDeskStyleContext);
+  }
 
   if (normalized === "harper") {
     await pushRaw(sections, async () => {
