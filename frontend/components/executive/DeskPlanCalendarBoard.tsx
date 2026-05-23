@@ -13,11 +13,13 @@ const POP_OUT_CARD =
 export function DeskPlanCalendarBoard({
   days,
   hasPlans,
+  focusedDate,
   deletingId,
   onDelete,
 }: {
   days: Array<{ date: string; plans: DayPlan[] }>;
   hasPlans: boolean;
+  focusedDate: string | null;
   deletingId: string | null;
   onDelete: (plan: DayPlan) => void;
 }) {
@@ -29,9 +31,20 @@ export function DeskPlanCalendarBoard({
       {days.map((day) => (
         <section
           key={day.date}
-          className="min-h-[260px] rounded border border-[var(--fintheon-accent)]/10 bg-[var(--fintheon-bg)]/[0.22] p-3"
+          className={`min-h-[260px] rounded bg-[var(--fintheon-bg)]/[0.22] p-3 transition ${
+            focusedDate === day.date ? "bg-[var(--fintheon-accent)]/[0.055]" : ""
+          }`}
         >
-          <div className="flex items-center gap-2 border-b border-[var(--fintheon-accent)]/10 pb-2">
+          <div
+            className="flex items-center gap-2 pb-2"
+            style={{
+              backgroundImage:
+                "linear-gradient(to right, transparent, rgba(199,159,74,0.12), transparent)",
+              backgroundPosition: "left bottom",
+              backgroundRepeat: "no-repeat",
+              backgroundSize: "100% 1px",
+            }}
+          >
             <CalendarDays className="h-3 w-3 text-[var(--fintheon-accent)]/65" />
             <h3 className="font-mono text-[10px] text-[var(--fintheon-accent)]">
               {formatDate(day.date)}
@@ -39,7 +52,7 @@ export function DeskPlanCalendarBoard({
           </div>
           <div className="mt-3 space-y-2">
             {day.plans.length === 0 ? (
-              <div className="rounded border border-dashed border-[var(--fintheon-accent)]/10 px-3 py-4">
+              <div className="px-3 py-4">
                 <p className="font-mono text-[8px] uppercase tracking-[0.16em] text-[var(--fintheon-muted)]/35">
                   [OPEN]
                 </p>

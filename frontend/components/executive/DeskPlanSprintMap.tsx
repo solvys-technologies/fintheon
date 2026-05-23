@@ -1,12 +1,13 @@
 // [claude-code 2026-05-18] Dashboard desk-plan sprint map with timeline/calendar toggle.
 // [codex 2026-05-22] Rebuilt as a scrub-able four-hour Sprint Map plus calendar board.
 import { Route } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DAY_PLAN_REFETCH_EVENT } from "../../hooks/useDayPlan";
 import { useDayPlanMultiWeek } from "../../hooks/useDayPlanWeek";
 import type { DayPlan } from "../../types/day-plan";
-import { buildCalendarDays, formatDate, sortPlans } from "./DeskPlanMapUtils";
+import { buildCalendarDays, buildSprintSegments, formatDate, sortPlans } from "./DeskPlanMapUtils";
 import { DeskPlanCalendarBoard } from "./DeskPlanCalendarBoard";
+import { DeskPlanRelativeScrubber } from "./DeskPlanRelativeScrubber";
 import { DeskPlanSprintTimeline } from "./DeskPlanSprintTimeline";
 
 type MapView = "map" | "calendar";
@@ -20,10 +21,19 @@ export function DeskPlanSprintMap() {
   const [status, setStatus] = useState<string | null>(null);
   const sortedPlans = useMemo(() => sortPlans(allPlans), [allPlans]);
   const calendarDays = useMemo(() => buildCalendarDays(sortedPlans), [sortedPlans]);
+  const segments = useMemo(() => buildSprintSegments(sortedPlans), [sortedPlans]);
+  const [segmentIndex, setSegmentIndex] = useState(0);
+  const focusedDate = segments[segmentIndex]?.date ?? null;
   const windowCount = sortedPlans.reduce(
     (count, plan) => count + (plan.windows?.length ?? 0),
     0,
   );
+
+  useEffect(() => {
+    setSegmentIndex((current) =>
+      segments.length === 0 ? 0 : Math.min(current, segments.length - 1),
+    );
+  }, [segments.length]);
   const handleDelete = async (plan: DayPlan) => {
     if (plan.id.startsWith("plan-") || plan.id.startsWith("mem-")) return;
     setDeletingId(plan.id);
@@ -92,6 +102,8 @@ export function DeskPlanSprintMap() {
         ) : view === "map" ? (
           <DeskPlanSprintTimeline
             plans={sortedPlans}
+            segments={segments}
+            segmentIndex={segmentIndex}
             deletingId={deletingId}
             onDelete={handleDelete}
           />
@@ -99,11 +111,17 @@ export function DeskPlanSprintMap() {
           <DeskPlanCalendarBoard
             days={calendarDays}
             hasPlans={sortedPlans.length > 0}
+            focusedDate={focusedDate}
             deletingId={deletingId}
             onDelete={handleDelete}
           />
         )}
       </div>
+      <DeskPlanRelativeScrubber
+        segments={segments}
+        segmentIndex={segmentIndex}
+        onSegmentIndexChange={setSegmentIndex}
+      />
     </section>
   );
 }

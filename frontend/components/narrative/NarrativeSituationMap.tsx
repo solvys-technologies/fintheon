@@ -1,6 +1,5 @@
 import {
   Background,
-  Controls,
   Handle,
   MarkerType,
   Position,
@@ -86,7 +85,6 @@ function NarrativeSituationMapInner({
         style={{ background: "var(--fintheon-bg)" }}
       >
         <Background color="#c79f4a08" gap={44} size={1} />
-        <Controls showInteractive={false} />
       </ReactFlow>
     </section>
   );

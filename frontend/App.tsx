@@ -18,6 +18,7 @@ import { RiskFlowProvider } from "./contexts/RiskFlowContext";
 import { ContextBankProvider } from "./contexts/ContextBankContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { VoiceProvider } from "./contexts/VoiceContext";
+import { ProxVoiceProvider } from "./contexts/ProxVoiceContext";
 import { VoiceRimFrame } from "./components/voice/VoiceRimFrame";
 import { ERProvider } from "./contexts/ERContext";
 import { MainLayout } from "./components/layout/MainLayout";
@@ -173,8 +174,9 @@ function AuthGate() {
                       <ContextBankProvider>
                         <ThreadProvider>
                           <VoiceProvider>
-                            <ERProvider>
-                              <div className="dark">
+                            <ProxVoiceProvider>
+                              <ERProvider>
+                                <div className="dark">
                                 <VoiceRimFrame />
                                 <style>{`
                   * {
@@ -219,8 +221,9 @@ function AuthGate() {
                                 <NotificationContainer />
                                 <ToastContainer />
                                 <PreMarketReminder />
-                              </div>
-                            </ERProvider>
+                                </div>
+                              </ERProvider>
+                            </ProxVoiceProvider>
                           </VoiceProvider>
                         </ThreadProvider>
                       </ContextBankProvider>

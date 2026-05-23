@@ -7,6 +7,7 @@ export interface SensemakingRequest {
   attachedHeadlineIds: string[];
   orientation: SensemakingOrientation;
   renderMode: SensemakingRenderMode;
+  reasoningLevel?: "quick" | "standard" | "deep" | "max";
 }
 
 export interface SensemakingCatalyst {

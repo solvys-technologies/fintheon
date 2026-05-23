@@ -100,16 +100,10 @@ Treat Linear, sprint briefs, changelog entries, git history, and release tags as
 4. Check Linear live state before declaring a ticket stale or complete.
 5. Reconcile Linear only when repo evidence shows the work shipped or TP explicitly confirms validator acceptance.
 
-Current reconciled state as of 2026-05-17:
-
-- Latest GitHub release is `v6.7.0`.
-- S51 is complete and was reconciled in Linear: `SOL-89`, `SOL-39`, `SOL-36`, `SOL-35` are `Done`.
-- S61 governance work is published in later releases; core tickets `SOL-88`, `SOL-32`, `SOL-33`, `SOL-34` are `Done`. `SOL-129` is a separate S61-T1 review follow-up and should remain open until fixed.
-- S63 implementation tickets `SOL-78` through `SOL-86` are `Done`; S63 developer-context ORCH tickets `SOL-102` through `SOL-104` are separate planning/context items and should not be treated as shipped implementation.
-- S65 tickets `SOL-105` through `SOL-111` are `Done`.
-- S68 shipped in `v6.5.0` and was reconciled in Linear: `SOL-115` through `SOL-120` are `Done`.
-- S69 `SOL-121` through `SOL-128` are planned/backlog only. Brief files exist in `sprint-md/`, but the implementation files are not present yet, so do not mark them complete.
-- S62 has many planned/open tickets. Only mark a specific S62 ticket complete when the corresponding repo work and validation evidence exist; `SOL-37` is already `Done`.
+Do not memorize a static "latest release" from this file. The chat route injects
+current package/changelog context for release/update questions. If that injected
+block is missing, read `package.json`, `src/lib/changelog.ts`, git tags, and
+GitHub release state before claiming what shipped.
 
 When updating Linear:
 

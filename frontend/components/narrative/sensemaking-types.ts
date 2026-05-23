@@ -29,7 +29,7 @@ export interface SensemakingCatalyst {
   symbols: string[];
   tags: string[];
   narrativeThreads: string[];
-  marketImpact: string | null;
+  marketImpact: string | Record<string, unknown> | null;
   agentNote: string | null;
   role: SensemakingCatalystRole;
   relationScore: number;

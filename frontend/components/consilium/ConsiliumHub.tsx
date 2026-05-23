@@ -36,7 +36,7 @@ import {
   useNarrative,
 } from "../../contexts/NarrativeContext";
 import { ApparatusFlowMap } from "../apparatus/ApparatusFlowMap";
-import { FluxerEmbed } from "./FluxerEmbed";
+import { ProxVoiceForum } from "../proxvoice/ProxVoiceForum";
 import { AgentLounge } from "./AgentLounge";
 import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
 import { SoulFileroomPanel } from "../memory/SoulFileroomPanel";
@@ -877,6 +877,24 @@ export function ConsiliumHub() {
         )}
 
         {activeTab === "sanctum" && (
+          <div
+            id="narrativeflow-header-actions"
+            className={`flex items-center gap-1.5 ${
+              sanctumSubView === "narratives" ? "" : "hidden"
+            }`}
+          />
+        )}
+
+        {activeTab === "sanctum" && (
+          <div
+            id="narrativeflow-map-controls"
+            className={`flex items-center gap-1.5 ${
+              sanctumSubView === "narratives" ? "" : "hidden"
+            }`}
+          />
+        )}
+
+        {activeTab === "sanctum" && (
           <button
             onClick={toggleChart}
             className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
@@ -927,6 +945,7 @@ export function ConsiliumHub() {
                 <NarrativeCanvas
                   themes={flowThemes}
                   isLoading={flowThemesLoading}
+                  chartMode={showChart}
                 />
               )}
               {displayedSubView === "arbitrumChamber" && (
@@ -957,7 +976,7 @@ export function ConsiliumHub() {
           {/* Imperium sub-views */}
           {displayedTab === "boardroom" && (
             <>
-              {displayedBoardroomSub === "forum" && <FluxerEmbed />}
+              {displayedBoardroomSub === "forum" && <ProxVoiceForum />}
               {displayedBoardroomSub === "agentic-chat" && (
                 <div className="flex h-full">
                   <div className="flex-1 min-w-0">

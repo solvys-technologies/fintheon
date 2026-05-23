@@ -21,7 +21,7 @@ export function getDefaultModelName(): string {
 
 /**
  * Extended thinking configuration.
- * When "Think Harder" is toggled on, we pass these params to the API.
+ * Deep intelligence levels pass these params to the API.
  */
 export const THINK_HARDER_CONFIG = {
   max_thinking_tokens: 32000,

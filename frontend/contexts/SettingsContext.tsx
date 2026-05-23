@@ -415,7 +415,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   );
   const [iframeUrls, setIframeUrls] = useState<IframeUrls>(() =>
     loadFromStorage("iframeUrls", {
-      boardroom: "https://web.fluxer.app/channels/1492795127439495222",
+      boardroom: "",
       research:
         "https://www.notion.so/solvys/344141b0da7d809ab3dff394c5c0aecc?v=344141b0da7d80ba935d000c9bda216f",
     }),

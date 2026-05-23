@@ -25,6 +25,8 @@ const {
   dialog,
   Menu,
   Notification,
+  Tray,
+  nativeImage,
 } = require("electron");
 const { installVoiceChromeHook } = require("./window-chrome-voice.cjs");
 const { createUpdateManager } = require("./update-manager.cjs");
@@ -104,6 +106,7 @@ if (IS_MAC) {
 
 let mainWindow = null;
 let backendProcess = null;
+let backendTray = null;
 let pendingAuthUrl = null;
 let backendStopInFlight = null;
 let deferredUpdateOnClose = false;
@@ -117,6 +120,15 @@ let riskflowPollInterval = null;
 
 // [claude-code 2026-04-16] Track whether WE spawned the backend or found it already running
 let backendOwnedByApp = false;
+const BACKEND_LABEL = "io.solvys.fintheon-backend";
+const BACKEND_HEALTH_URL = "http://localhost:8080/health";
+const BACKEND_LOGS_PATH = "/tmp/fintheon-backend.log";
+const BACKEND_PLIST_PATH = path.join(
+  require("os").homedir(),
+  "Library",
+  "LaunchAgents",
+  `${BACKEND_LABEL}.plist`,
+);
 
 /* ------------------------------------------------------------------ */
 /*  [claude-code 2026-04-25] S35: Crash diagnostics                     */
@@ -229,7 +241,7 @@ async function isBackendAlive() {
   try {
     const http = require("http");
     return new Promise((resolve) => {
-      const req = http.get("http://localhost:8080/health", (res) => {
+      const req = http.get(BACKEND_HEALTH_URL, (res) => {
         resolve(res.statusCode < 500);
       });
       req.on("error", () => resolve(false));
@@ -245,6 +257,101 @@ async function isBackendAlive() {
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function notifyBackendEngineStatus() {
+  backendEngineStatus().then((status) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("backend-engine:status", status);
+    }
+    updateBackendTray(status);
+  });
+}
+
+function runLaunchctl(args) {
+  if (!IS_MAC) return { ok: false, detail: "launchd unavailable" };
+  try {
+    execFileSync("/bin/launchctl", args, { stdio: "pipe" });
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      detail:
+        err?.stderr?.toString()?.trim() ||
+        err?.stdout?.toString()?.trim() ||
+        err?.message ||
+        "launchctl failed",
+    };
+  }
+}
+
+function ensureBackendLaunchAgent() {
+  if (!IS_MAC || !fs.existsSync(BACKEND_PLIST_PATH)) {
+    return { ok: false, detail: "backend LaunchAgent not installed" };
+  }
+  const uid = process.getuid ? process.getuid() : null;
+  if (uid == null) return { ok: false, detail: "missing uid" };
+  const target = `gui/${uid}`;
+  const bootstrap = runLaunchctl(["bootstrap", target, BACKEND_PLIST_PATH]);
+  if (bootstrap.ok || bootstrap.detail?.includes("service already loaded")) {
+    return { ok: true };
+  }
+  const load = runLaunchctl(["load", "-w", BACKEND_PLIST_PATH]);
+  return load.ok ? { ok: true } : bootstrap;
+}
+
+function kickstartBackendLaunchAgent() {
+  if (!IS_MAC) return { ok: false, detail: "launchd unavailable" };
+  const ensured = ensureBackendLaunchAgent();
+  if (!ensured.ok) return ensured;
+  const uid = process.getuid ? process.getuid() : null;
+  if (uid == null) return { ok: false, detail: "missing uid" };
+  const kicked = runLaunchctl([
+    "kickstart",
+    "-k",
+    `gui/${uid}/${BACKEND_LABEL}`,
+  ]);
+  return kicked.ok ? { ok: true } : kicked;
+}
+
+async function backendEngineStatus() {
+  const alive = await isBackendAlive();
+  const healthCheckedAt = new Date().toISOString();
+  return {
+    state: alive ? "connected" : backendProcess ? "starting" : "offline",
+    alive,
+    url: BACKEND_HEALTH_URL,
+    logsPath: BACKEND_LOGS_PATH,
+    checkedAt: healthCheckedAt,
+    detail: alive
+      ? "Backend health check passed"
+      : backendProcess
+        ? "Backend process is starting"
+        : "Backend health check failed",
+  };
+}
+
+async function restartBackendEngine() {
+  let detail = "";
+  if (IS_MAC) {
+    const result = kickstartBackendLaunchAgent();
+    detail = result.detail ?? "launchd restart requested";
+  } else if (backendProcess) {
+    await stopBackend();
+    detail = "app-owned backend restarted";
+  }
+  if (!(await isBackendAlive())) {
+    const started = await startBackend();
+    detail = started.detail ?? detail;
+  }
+  const healthy = await waitForBackendHealthy(15000);
+  if (healthy) await onBackendReady();
+  const status = await backendEngineStatus();
+  updateBackendTray(status);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send("backend-engine:status", status);
+  }
+  return { ok: healthy, detail, status };
 }
 
 /* ------------------------------------------------------------------ */
@@ -384,6 +491,67 @@ function updateDockMenu(lockStatus) {
   }
 }
 
+function statusLabel(state) {
+  if (state === "connected") return "Connected";
+  if (state === "starting") return "Starting";
+  if (state === "degraded") return "Degraded";
+  return "Offline";
+}
+
+function updateBackendTray(status) {
+  if (!IS_MAC || !backendTray) return;
+  backendTray.setToolTip(`Fintheon Backend: ${statusLabel(status.state)}`);
+  backendTray.setContextMenu(
+    Menu.buildFromTemplate([
+      { label: `Backend: ${statusLabel(status.state)}`, enabled: false },
+      { label: `URL: ${status.url}`, enabled: false },
+      { label: `Last check: ${status.checkedAt}`, enabled: false },
+      { label: `Logs: ${status.logsPath}`, enabled: false },
+      { type: "separator" },
+      {
+        label: "Restart Backend",
+        click: () => {
+          updateBackendTray({
+            ...status,
+            state: "starting",
+            detail: "Restart requested",
+            checkedAt: new Date().toISOString(),
+          });
+          restartBackendEngine().catch((err) => {
+            console.error("[BackendEngine] Restart failed:", err?.message);
+            notifyBackendEngineStatus();
+          });
+        },
+      },
+      {
+        label: "Open Logs",
+        click: () => shell.openPath(status.logsPath).catch(() => {}),
+      },
+      {
+        label: "Open Fintheon",
+        click: () => {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.show();
+            mainWindow.focus();
+          } else {
+            createWindow(currentApiBase);
+          }
+        },
+      },
+    ]),
+  );
+}
+
+function installBackendTray() {
+  if (!IS_MAC || backendTray) return;
+  backendTray = new Tray(nativeImage.createEmpty());
+  backendTray.setTitle("FT");
+  backendTray.on("click", () => notifyBackendEngineStatus());
+  notifyBackendEngineStatus();
+  setInterval(() => notifyBackendEngineStatus(), 15000);
+}
+
 /** Poll lockout + RiskFlow and update dock menu / fire notifications */
 function startPolling() {
   if (dockMenuPollInterval) clearInterval(dockMenuPollInterval);
@@ -493,6 +661,20 @@ async function startBackend() {
     // Disarm any idle shutdown from a previous routine session
     postToBackend("/api/lifecycle/disarm-idle-shutdown").catch(() => {});
     return { ok: true, detail: "already running" };
+  }
+
+  if (IS_MAC) {
+    const launched = ensureBackendLaunchAgent();
+    if (launched.ok) {
+      console.log("[Electron] Backend LaunchAgent loaded");
+      if (await waitForBackendHealthy(12000)) {
+        backendOwnedByApp = false;
+        return { ok: true, detail: "launchd" };
+      }
+      console.warn("[Electron] LaunchAgent loaded but backend is not healthy");
+    } else {
+      console.warn("[Electron] Backend LaunchAgent unavailable:", launched.detail);
+    }
   }
 
   const repoRoot = app.isPackaged
@@ -803,13 +985,12 @@ function createWindow(apiBase) {
     },
   });
 
-  // [claude-code 2026-04-17] Auto-grant mic/speaker + related media permissions
-  // to the persist:fintheon partition so the hidden Fluxer webview can wire
-  // system audio without a permission prompt.
+  // Auto-grant mic/speaker + related media permissions to the shared Fintheon
+  // partition so app-native voice can start without repeated prompts.
   try {
     const { session: electronSession } = require("electron");
-    const fluxerSession = electronSession.fromPartition("persist:fintheon");
-    fluxerSession.setPermissionRequestHandler((_wc, permission, cb) => {
+    const voiceSession = electronSession.fromPartition("persist:fintheon");
+    voiceSession.setPermissionRequestHandler((_wc, permission, cb) => {
       const allowed = new Set([
         "media",
         "audioCapture",
@@ -819,7 +1000,7 @@ function createWindow(apiBase) {
       ]);
       cb(allowed.has(permission));
     });
-    fluxerSession.setPermissionCheckHandler((_wc, permission) => {
+    voiceSession.setPermissionCheckHandler((_wc, permission) => {
       const allowed = new Set([
         "media",
         "audioCapture",
@@ -1093,6 +1274,7 @@ app.whenReady().then(async () => {
     `[Electron] Renderer api-base resolved to ${apiBase} (local healthy: ${localBackendHealthy})`,
   );
   createWindow(apiBase);
+  installBackendTray();
 
   // [claude-code 2026-05-13] S63 T3: Start dock menu + notification polling
   if (IS_MAC && localBackendHealthy) {
@@ -1273,12 +1455,12 @@ app.whenReady().then(async () => {
 // [claude-code 2026-04-16] Smart shutdown: kill if app-owned, arm idle timeout if routine-owned
 app.on("window-all-closed", () => {
   stopPolling();
-  void smartShutdownBackend();
+  console.log("[Electron] All windows closed; backend engine remains running");
   if (process.platform !== "darwin") app.quit();
 });
 
 app.on("before-quit", () => {
-  void smartShutdownBackend();
+  console.log("[Electron] App quitting; backend engine remains managed by launchd");
 });
 
 ipcMain.handle("toggle-mini-widget", () => {
@@ -1359,11 +1541,20 @@ ipcMain.handle("start-backend", async () => {
 });
 
 ipcMain.handle("stop-backend", async () => {
-  return await stopBackend();
+  if (backendOwnedByApp) return await stopBackend();
+  return { ok: true, detail: "persistent backend engine left running" };
 });
 
 ipcMain.handle("is-backend-alive", async () => {
   return { alive: await isBackendAlive() };
+});
+
+ipcMain.handle("backend-engine:status", async () => {
+  return await backendEngineStatus();
+});
+
+ipcMain.handle("backend-engine:restart", async () => {
+  return await restartBackendEngine();
 });
 
 // Fintheon CLI: run shell command from project root and stream output to renderer

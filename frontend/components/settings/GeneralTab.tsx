@@ -1,9 +1,11 @@
 // [claude-code 2026-04-16] Added linked Google account display + switch account
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — general/profile tab
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CreditCard, Mail, RefreshCw } from "lucide-react";
 import { Button } from "../ui/Button";
 import { useAuth } from "../../contexts/AuthContext";
+import { useBackend } from "../../lib/backend";
+import type { ProxVoiceSocialLinks } from "../../lib/services";
 
 interface AvailableSymbol {
   symbol: string;
@@ -32,7 +34,15 @@ export function GeneralTab({
 }: GeneralTabProps) {
   const [showSymbolDropdown, setShowSymbolDropdown] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
+  const [socialLinks, setSocialLinks] = useState<ProxVoiceSocialLinks>({
+    x: "",
+    substack: "",
+    telegram: "",
+    discord: "",
+  });
+  const [savingSocials, setSavingSocials] = useState(false);
   const { user, signOut, signIn } = useAuth();
+  const backend = useBackend();
 
   const linkedEmail = user?.email || user?.user_metadata?.email || null;
   const avatarUrl = user?.user_metadata?.avatar_url || null;
@@ -44,6 +54,29 @@ export function GeneralTab({
       await signIn();
     } catch {
       setIsSwitching(false);
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    backend.proxVoice
+      .getSocialLinks()
+      .then((res) => {
+        if (!cancelled) setSocialLinks(res.socialLinks);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [backend.proxVoice]);
+
+  const saveSocialLinks = async () => {
+    setSavingSocials(true);
+    try {
+      const res = await backend.proxVoice.updateSocialLinks(socialLinks);
+      setSocialLinks(res.socialLinks);
+    } finally {
+      setSavingSocials(false);
     }
   };
 
@@ -111,6 +144,41 @@ export function GeneralTab({
             </Button>
           </div>
         </div>
+      </section>
+
+      <section className="mb-6">
+        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
+          Social Handles
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {(["x", "substack", "telegram", "discord"] as const).map((key) => (
+            <label key={key} className="block">
+              <span className="block text-xs text-gray-400 mb-1.5 uppercase">
+                {key}
+              </span>
+              <input
+                type="text"
+                value={socialLinks[key] ?? ""}
+                onChange={(event) =>
+                  setSocialLinks((current) => ({
+                    ...current,
+                    [key]: event.target.value,
+                  }))
+                }
+                placeholder={`@${key}`}
+                className="proxvoice-pill-shimmer w-full rounded-full border border-[var(--fintheon-accent)]/18 bg-transparent px-4 py-2 text-sm text-white outline-none transition-colors focus:border-[var(--fintheon-accent)]/45"
+              />
+            </label>
+          ))}
+        </div>
+        <Button
+          variant="secondary"
+          className="mt-3 text-xs"
+          onClick={saveSocialLinks}
+          disabled={savingSocials}
+        >
+          {savingSocials ? "Saving..." : "Save Handles"}
+        </Button>
       </section>
 
       <section>

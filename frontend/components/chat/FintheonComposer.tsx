@@ -3,13 +3,13 @@
 // [claude-code 2026-03-11] T5: steer strip removed, queue chips added, always full PromptBox
 // [claude-code 2026-03-12] Switched from independent useVoiceAssistant() to shared VoiceContext
 // [claude-code 2026-04-11] S14-T5: Headline attachment via HeadlinePickerPopover + context injection
-// [claude-code 2026-03-22] Track 4: persona pills → PersonaDropdown, Plug2+Wrench → ToolsDropdown
+// [claude-code 2026-03-22] Track 4: persona pills and split tools replaced by the composer toolbox
 // [claude-code 2026-04-21] Post-S35: removed relay dispatch; added Cmd+K palette, ↑↓ history,
 //   persona slash commands, plan mode toggle
-// [claude-code 2026-05-06] S60-T3: provider/MCP/plugin modals wired to composer toolbar
+// [claude-code 2026-05-06] S60-T3: provider modal and toolbox wired to composer toolbar
 import { useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import { useThread, useThreadRuntime } from "@assistant-ui/react";
-import { Cpu, Plug, Puzzle } from "lucide-react";
+import { Plug } from "lucide-react";
 import { PromptBox } from "../ui/chatgpt-prompt-input";
 import { SKILL_PREFIXES } from "../../lib/skillPrefixes";
 import { SKILLS } from "../../lib/skills";
@@ -17,14 +17,12 @@ import { useVoice } from "../../contexts/VoiceContext";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import { useMcpConnectors } from "../../hooks/useMcpConnectors";
-import { PersonaDropdown } from "./PersonaDropdown";
-import { ToolsDropdown } from "./ToolsDropdown";
 import { useHarperProvider } from "./ProviderDropdown";
 import { FintheonProviderModal } from "./FintheonProviderModal";
-import { FintheonMcpModal } from "./FintheonMcpModal";
-import { FintheonPluginModal } from "./FintheonPluginModal";
+import { FintheonToolboxModal } from "./FintheonToolboxModal";
 import { CommandPalette } from "./CommandPalette";
 import { API_BASE_URL } from "./constants";
+import type { ReasoningLevel } from "./reasoning";
 import {
   formatHeadlineContext,
   type HeadlineChip,
@@ -68,6 +66,11 @@ interface FintheonComposerProps {
   mode?: "work" | "plan";
   onModeChange?: (mode: "work" | "plan") => void;
   todoSlot?: ReactNode;
+  reasoningLevel?: ReasoningLevel;
+  onReasoningLevelChange?: (level: ReasoningLevel) => void;
+  onQueueMessage?: (text: string) => void;
+  queueCount?: number;
+  onMessageSubmitted?: () => void;
 }
 
 export function FintheonComposer({
@@ -85,6 +88,11 @@ export function FintheonComposer({
   mode,
   onModeChange,
   todoSlot,
+  reasoningLevel,
+  onReasoningLevelChange,
+  onQueueMessage,
+  queueCount = 0,
+  onMessageSubmitted,
 }: FintheonComposerProps) {
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
@@ -101,8 +109,7 @@ export function FintheonComposer({
 
   // ── Modal state (S60-T3) ──────────────────────────────────────────────
   const [showProviderModal, setShowProviderModal] = useState(false);
-  const [showMcpModal, setShowMcpModal] = useState(false);
-  const [showPluginModal, setShowPluginModal] = useState(false);
+  const [showToolboxModal, setShowToolboxModal] = useState(false);
 
   // ── Command palette (Cmd+K) ────────────────────────────────────────────
   const [showCommandPalette, setShowCommandPalette] = useState(false);
@@ -270,12 +277,6 @@ export function FintheonComposer({
         finalText += formatHeadlineContext(headlineChips);
         setHeadlineChips([]);
       }
-      const content: Array<{ type: string; text?: string; image?: string }> = [
-        { type: "text", text: finalText },
-      ];
-      if (images?.length) {
-        images.forEach((img) => content.push({ type: "image", image: img }));
-      }
       // Auto-activate MCP servers required by the active skill
       if (activeSkill) {
         const skillDef = SKILLS.find((s) => s.id === activeSkill);
@@ -295,7 +296,22 @@ export function FintheonComposer({
         }
       }
 
+      if (isRunning && onQueueMessage) {
+        onQueueMessage(finalText);
+        onMessageSubmitted?.();
+        onSelectSkill(null);
+        return;
+      }
+
+      const content: Array<{ type: string; text?: string; image?: string }> = [
+        { type: "text", text: finalText },
+      ];
+      if (images?.length) {
+        images.forEach((img) => content.push({ type: "image", image: img }));
+      }
+
       try {
+        onMessageSubmitted?.();
         runtime.append({ role: "user", content: content as any });
         onSelectSkill(null);
       } catch (err) {
@@ -311,6 +327,9 @@ export function FintheonComposer({
       setActiveAgent,
       composerMode,
       setComposerMode,
+      isRunning,
+      onQueueMessage,
+      onMessageSubmitted,
     ],
   );
 
@@ -333,7 +352,6 @@ export function FintheonComposer({
       }}
       title={`Provider: ${currentProvider}`}
     >
-      <Cpu size={11} className="text-[var(--fintheon-accent)]/60" />
       {!compact && (
         <span
           style={{
@@ -346,54 +364,40 @@ export function FintheonComposer({
       )}
     </button>
   );
-  // Sidebar (compact) routes through CAO only — no persona selector
-  const personaEl = compact ? undefined : (
-    <PersonaDropdown mode={composerMode} onModeChange={setComposerMode} />
-  );
+  // Persona selector removed from the composer; slash commands still work.
+  const personaEl = undefined;
 
-  // Plugin trigger button
-  const pluginEl = compact ? undefined : (
-    <button
-      onClick={() => setShowPluginModal(true)}
-      className="relative flex items-center justify-center rounded-lg transition-colors text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
-      style={{ width: "32px", height: "32px" }}
-      title="Plugins"
-    >
-      <Puzzle size={14} />
-      {activeSkill && (
-        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--fintheon-accent)]" />
-      )}
-    </button>
-  );
-
-  // MCP trigger button
+  // Unified Skills + Connectors trigger
   const activeMcpCount = activeIds.length;
-  const mcpEl = compact ? undefined : (
+  const toolboxEl = compact ? undefined : (
     <button
-      onClick={() => setShowMcpModal(true)}
+      onClick={() => setShowToolboxModal(true)}
       className="relative flex items-center justify-center rounded-lg transition-colors text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
       style={{ width: "32px", height: "32px" }}
-      title="MCP Connectors"
+      title="Skills and connectors"
     >
       <Plug size={14} />
-      {activeMcpCount > 0 && (
+      {(activeMcpCount > 0 || activeSkill) && (
         <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--fintheon-accent)]" />
       )}
     </button>
   );
 
-  // Legacy tools dropdown (kept for backward compat in non-modal surfaces)
-  const toolsEl = compact ? undefined : (
-    <ToolsDropdown
-      skills={SKILLS}
-      activeSkill={activeSkill}
-      onSelectSkill={onSelectSkill}
-      disabledSkills={mergedDisabledSkills}
-      servers={servers}
-      activeConnectorIds={activeIds}
-      onToggleConnector={toggleConnector}
-    />
+  const estimatedTokens = Math.ceil(
+    messages
+      .map((m: any) => {
+        const parts = m.parts ?? m.content ?? [];
+        if (typeof parts === "string") return parts;
+        if (!Array.isArray(parts)) return "";
+        return parts
+          .filter((part: any) => part.type === "text" && part.text)
+          .map((part: any) => part.text)
+          .join("\n");
+      })
+      .join("\n").length / 4,
   );
+  const activeSkillLabel =
+    SKILLS.find((skill) => skill.id === activeSkill)?.label ?? null;
 
   return (
     <>
@@ -417,6 +421,8 @@ export function FintheonComposer({
         isProcessing={isRunning}
         thinkHarder={thinkHarder}
         setThinkHarder={setThinkHarder}
+        reasoningLevel={reasoningLevel}
+        onReasoningLevelChange={onReasoningLevelChange}
         lastError={lastError}
         activeSkill={activeSkill}
         onSelectSkill={onSelectSkill}
@@ -429,10 +435,15 @@ export function FintheonComposer({
         onToggleVoice={voice.toggleEnabled}
         providerSlot={providerEl}
         personaSlot={personaEl}
-        pluginSlot={pluginEl}
-        mcpSlot={mcpEl}
-        toolsSlot={toolsEl}
+        mcpSlot={toolboxEl}
         todoSlot={todoSlot}
+        queueCount={queueCount}
+        contextStats={{
+          messageCount: messages.length,
+          estimatedTokens,
+          connectorCount: activeIds.length,
+          activeSkillLabel,
+        }}
         recallText={recallText}
         onRecallConsumed={() => setRecallText(null)}
         onHistoryUp={handleHistoryUp}
@@ -451,20 +462,16 @@ export function FintheonComposer({
         provider={provider}
         onChange={setProvider}
       />
-      <FintheonMcpModal
-        open={showMcpModal}
-        onClose={() => setShowMcpModal(false)}
-        servers={servers}
-        activeIds={activeIds}
-        onToggle={toggleConnector}
-      />
-      <FintheonPluginModal
-        open={showPluginModal}
-        onClose={() => setShowPluginModal(false)}
+      <FintheonToolboxModal
+        open={showToolboxModal}
+        onClose={() => setShowToolboxModal(false)}
         skills={SKILLS}
         activeSkill={activeSkill}
         onSelectSkill={onSelectSkill}
         disabledSkills={mergedDisabledSkills}
+        servers={servers}
+        activeIds={activeIds}
+        onToggleConnector={toggleConnector}
       />
     </>
   );

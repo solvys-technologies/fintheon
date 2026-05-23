@@ -23,6 +23,7 @@ import {
   AI_CREDITS_EXHAUSTED,
   isAiCreditsExhausted,
 } from "../../../lib/aiCreditErrors";
+import type { ReasoningLevel } from "../reasoning";
 
 /** Convert backend ChatMessage -> UIMessage for useChat hydration */
 function backendToUIMessage(msg: {
@@ -65,6 +66,7 @@ export function useHermesChat(
   agentOverride?: string,
   thinkHarder?: boolean,
   clearConversationId?: () => void,
+  reasoningLevel?: ReasoningLevel,
 ) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -75,9 +77,11 @@ export function useHermesChat(
   const abortRef = useRef<AbortController | null>(null);
   // [claude-code 2026-03-13] Ref to avoid stale closure in DefaultChatTransport's prepareSendMessagesRequest
   const thinkHarderRef = useRef(thinkHarder);
+  const reasoningLevelRef = useRef<ReasoningLevel | undefined>(reasoningLevel);
   useEffect(() => {
     thinkHarderRef.current = thinkHarder;
-  }, [thinkHarder]);
+    reasoningLevelRef.current = reasoningLevel;
+  }, [thinkHarder, reasoningLevel]);
 
   // [claude-code 2026-04-06] Ref for conversationId to avoid stale closures in transport callbacks
   const conversationIdRef = useRef(conversationId);
@@ -260,6 +264,9 @@ export function useHermesChat(
                 conversationId: conversationIdRef.current,
               }),
               ...(thinkHarderRef.current && { thinkHarder: true }),
+              ...(reasoningLevelRef.current && {
+                reasoningLevel: reasoningLevelRef.current,
+              }),
               userContext: (() => {
                 try {
                   const get = (k: string) => {
@@ -352,6 +359,9 @@ export function useHermesChat(
             ...(conversationId && { conversationId }),
             ...(agentOverride && { agentOverride }),
             ...(thinkHarderRef.current && { thinkHarder: true }),
+            ...(reasoningLevelRef.current && {
+              reasoningLevel: reasoningLevelRef.current,
+            }),
             mcpServers: (() => {
               try {
                 return JSON.parse(

@@ -41,7 +41,7 @@ import { WhatsNewButton } from "../onboarding/FirstTimeTour";
 import { StickyBulletin } from "../StickyBulletin";
 import { TraderNametag } from "../TraderNametag";
 import { FadingRuler } from "../shared/FadingRuler";
-import { FluxerCallWidget } from "../consilium/FluxerCallWidget";
+import { ProxVoiceHeaderControl } from "../proxvoice/ProxVoiceHeaderControl";
 import type { IVScoreResponse } from "../../types/market-data";
 import type { TradingPlatform } from "../TradingBrowser";
 import { useDND } from "../../contexts/DNDContext";
@@ -532,7 +532,7 @@ export function TopHeader({
           )}
           {(compactLevel < 2 || topStepXEnabled) && (
             <div className={TOOLBAR_PILL_CLASS}>
-              {compactLevel < 1 && <FluxerCallWidget />}
+              {compactLevel < 1 && <ProxVoiceHeaderControl />}
               {compactLevel < 1 && topStepXEnabled && <FadingRuler orientation="vertical" className="mx-0.5" />}
               {topStepXEnabled && (
                 <button

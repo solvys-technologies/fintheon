@@ -1,36 +1,47 @@
-import { SlidersHorizontal } from "lucide-react";
+import { ChevronDown, SlidersHorizontal, Sparkles } from "lucide-react";
+import { useState } from "react";
 import type { NarrativeWorkspaceSession } from "./NarrativeSessionWorkspace";
 import type {
   SensemakingCatalyst,
   SensemakingResponse,
   SensemakingTimelineNode,
 } from "./sensemaking-types";
+import { safeNarrativeText } from "../../lib/market-impact-format";
 
 interface NarrativeFlowTabProps {
   session: NarrativeWorkspaceSession | null;
   response: SensemakingResponse | null;
   selectedNodeId: string | null;
+  themeCount?: number;
   onOrganize?: () => void;
   onShowAll?: () => void;
   onQuickAction?: (action: string, catalystId: string | null) => void;
 }
 
-const quickActions = ["Compare", "Challenge", "Promote", "Link"];
+const quickActions = ["Regenerate text", "Regenerate synthesis", "Find catalysts", "Re-score IV"];
 
 export function NarrativeFlowTab({
   session,
   response,
   selectedNodeId,
+  themeCount = 0,
   onOrganize,
   onShowAll,
   onQuickAction,
 }: NarrativeFlowTabProps) {
   const selectedNode = getSelectedNode(response, selectedNodeId);
   const selectedCatalyst = getCatalyst(response, selectedNode?.catalystId ?? null);
+  const [synthesisOpen, setSynthesisOpen] = useState(false);
   const anchorCount = response?.anchorCatalysts.length ?? 0;
   const relatedCount = response?.relatedCatalysts.length ?? 0;
   const generatedAt = response?.generatedAt ?? session?.generatedAt ?? null;
   const workEvents = session?.workEvents ?? [];
+  const notableCatalysts = response
+    ? [...response.anchorCatalysts, ...response.relatedCatalysts]
+        .filter((item) => item.id !== selectedCatalyst?.id)
+        .sort((a, b) => b.ivScore - a.ivScore)
+        .slice(0, 4)
+    : [];
 
   return (
     <div className="space-y-3">
@@ -51,10 +62,11 @@ export function NarrativeFlowTab({
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           <Metric label="Anchors" value={anchorCount} />
           <Metric label="Related" value={relatedCount} />
           <Metric label="Nodes" value={response?.timelineNodes.length ?? 0} />
+          <Metric label="Themes" value={themeCount} />
         </div>
 
         <div className="mt-3 flex items-center gap-2">
@@ -78,29 +90,71 @@ export function NarrativeFlowTab({
 
       <section className="rounded-md border border-[var(--fintheon-accent)]/12 p-3">
         <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/70">
-          Selected Catalyst
+          Major Development
         </p>
         {selectedCatalyst ? (
           <div className="mt-2">
             <div className="mb-2 flex flex-wrap items-center gap-1.5">
-              <Chip>{selectedCatalyst.role === "anchor" ? "MAIN" : "CATALYST"}</Chip>
+              <Chip>{selectedCatalyst.role === "anchor" ? "MAJOR" : "DEVELOPMENT"}</Chip>
               <Chip>{selectedCatalyst.category}</Chip>
               <Chip>{selectedCatalyst.sentiment}</Chip>
             </div>
             <h4 className="text-sm font-medium leading-5 text-[var(--fintheon-text)]">
               {selectedCatalyst.headline}
             </h4>
-            <p className="mt-2 text-xs leading-5 text-[var(--fintheon-muted)]">
-              {selectedCatalyst.agentNote ?? selectedCatalyst.summary}
-            </p>
+            <button
+              type="button"
+              onClick={() => setSynthesisOpen((value) => !value)}
+              className="mt-2 flex w-full items-center justify-between gap-2 text-left text-xs leading-5 text-[var(--fintheon-muted)] transition hover:text-[var(--fintheon-text)]"
+            >
+              <span className="line-clamp-2">
+                {safeNarrativeText(selectedCatalyst.agentNote, selectedCatalyst.summary) ?? "No synthesis yet."}
+              </span>
+              <ChevronDown
+                size={13}
+                className={`shrink-0 transition ${synthesisOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+            {synthesisOpen ? (
+              <p className="mt-2 text-xs leading-5 text-[var(--fintheon-muted)]/80">
+                {response?.synthesisSummary ?? selectedCatalyst.summary}
+              </p>
+            ) : null}
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Metric label="IV Fuse" value={Math.round(selectedCatalyst.ivScore)} />
+              <div className="rounded-md border border-[var(--fintheon-accent)]/10 px-2 py-2">
+                <p className="truncate font-mono text-[11px] text-[var(--fintheon-text)]">
+                  {formatDateTime(selectedCatalyst.publishedAt)}
+                </p>
+                <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]">
+                  Last Released
+                </p>
+              </div>
+            </div>
+            <div className="mt-3">
+              <p className="mb-2 text-[10px] uppercase tracking-[0.14em] text-[var(--fintheon-accent)]/65">
+                Notable Catalysts
+              </p>
+              <div className="space-y-2">
+                {notableCatalysts.map((catalyst) => (
+                  <article key={catalyst.id} className="text-xs leading-4 text-[var(--fintheon-muted)]">
+                    <span className="text-[var(--fintheon-text)]/80">{catalyst.headline}</span>
+                    <span className="ml-2 font-mono text-[9px] uppercase text-[var(--fintheon-accent)]/70">
+                      IV {Math.round(catalyst.ivScore)}
+                    </span>
+                  </article>
+                ))}
+              </div>
+            </div>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {quickActions.map((action) => (
                 <button
                   key={action}
                   type="button"
                   onClick={() => onQuickAction?.(action, selectedCatalyst.id)}
-                  className="rounded border border-[var(--fintheon-accent)]/16 px-2 py-1 text-[10px] uppercase tracking-[0.1em] text-[var(--fintheon-muted)] transition hover:border-[var(--fintheon-accent)]/45 hover:text-[var(--fintheon-accent)]"
+                  className="inline-flex items-center gap-1 rounded border border-[var(--fintheon-accent)]/16 px-2 py-1 text-[10px] uppercase tracking-[0.1em] text-[var(--fintheon-muted)] transition hover:border-[var(--fintheon-accent)]/45 hover:text-[var(--fintheon-accent)]"
                 >
+                  <Sparkles size={10} />
                   {action}
                 </button>
               ))}

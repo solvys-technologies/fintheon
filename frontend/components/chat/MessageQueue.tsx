@@ -19,6 +19,7 @@ interface MessageQueueProps {
   onReorder?: (fromIdx: number, toIdx: number) => void;
   onSendAll?: () => void;
   onSendOne?: () => void;
+  storageKey?: string;
 }
 
 const STORAGE_KEY = "fintheon:message-queue";
@@ -27,18 +28,18 @@ const STORAGE_KEY = "fintheon:message-queue";
 /*  Helpers                                                             */
 /* ------------------------------------------------------------------ */
 
-function loadQueue(): QueuedMessage[] {
+export function loadQueue(storageKey = STORAGE_KEY): QueuedMessage[] {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
+    const raw = sessionStorage.getItem(storageKey);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
 }
 
-export function saveQueue(queue: QueuedMessage[]): void {
+export function saveQueue(queue: QueuedMessage[], storageKey = STORAGE_KEY): void {
   try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
+    sessionStorage.setItem(storageKey, JSON.stringify(queue));
   } catch {
     // Storage full or unavailable — silently degrade
   }
@@ -55,6 +56,7 @@ export function MessageQueue({
   onReorder,
   onSendAll,
   onSendOne,
+  storageKey,
 }: MessageQueueProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
@@ -62,8 +64,8 @@ export function MessageQueue({
 
   // Persist to session storage on queue change
   useEffect(() => {
-    saveQueue(queue);
-  }, [queue]);
+    saveQueue(queue, storageKey);
+  }, [queue, storageKey]);
 
   // Drag-and-drop reorder
   const handleDragStart = useCallback((idx: number) => {
@@ -153,14 +155,14 @@ export function MessageQueue({
                     }
                     if (e.key === "Escape") setEditingId(null);
                   }}
-                  className="flex-1 bg-transparent text-[12px] text-white border-b border-[var(--fintheon-accent)]/30 focus:outline-none pb-0.5"
+                  className="flex-1 bg-transparent text-[12px] text-[#f0ead6] border-b border-[var(--fintheon-accent)]/30 focus:outline-none pb-0.5"
                 />
                 <button
                   onClick={() => {
                     onEdit(msg.id, editText);
                     setEditingId(null);
                   }}
-                  className="text-[var(--fintheon-accent)] hover:text-white transition-colors"
+                  className="text-[var(--fintheon-accent)] hover:text-[#f0ead6] transition-colors"
                 >
                   <Check size={13} />
                 </button>

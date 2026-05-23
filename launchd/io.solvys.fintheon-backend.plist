@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>io.solvys.fintheon-backend</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-lc</string>
+    <string>BUN_BIN="${BUN_BIN:-$HOME/.bun/bin/bun}"; [ -x "$BUN_BIN" ] || BUN_BIN="$(command -v bun)"; cd "${FINTHEON_ROOT:-$HOME/Documents/Codebases/fintheon}/backend-hono" &amp;&amp; "$BUN_BIN" run src/index.ts</string>
+  </array>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>FINTHEON_DESKTOP</key>
+    <string>true</string>
+    <key>NODE_ENV</key>
+    <string>production</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/tmp/fintheon-backend.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/fintheon-backend.err.log</string>
+  <key>WorkingDirectory</key>
+  <string>/Users/tifos/Documents/Codebases/fintheon/backend-hono</string>
+</dict>
+</plist>

@@ -179,7 +179,7 @@ export function NarrativeFloatingToolbar({
       />
 
       {/* Toolbar section — static, always visible */}
-      <div className="flex items-center gap-0.5 px-1.5 py-1 rounded-xl bg-[var(--fintheon-surface)]/90 backdrop-blur-xl border border-[var(--fintheon-border)]/20 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+      <div className="flex items-center gap-0.5 rounded-lg border border-[var(--fintheon-border)]/20 bg-[var(--fintheon-surface)]/90 px-1 py-0.5 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl">
         {/* Tool group */}
         {TOOLS.map((t) => {
           const Icon = t.icon;
@@ -193,13 +193,13 @@ export function NarrativeFloatingToolbar({
             >
               <button
                 onClick={() => onToolChange(t.tool)}
-                className={`p-2 rounded-lg transition-all duration-150 ${
+                className={`rounded-md p-1.5 transition-all duration-150 ${
                   active
                     ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]"
                     : "text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)] hover:bg-[var(--fintheon-surface)]/60"
                 }`}
               >
-                <Icon className="w-4 h-4" strokeWidth={active ? 2.5 : 1.5} />
+                <Icon className="h-3.5 w-3.5" strokeWidth={active ? 2.5 : 1.5} />
               </button>
               {hoveredId === t.id && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none">
@@ -220,7 +220,7 @@ export function NarrativeFloatingToolbar({
         })}
 
         {/* Divider */}
-        <div className="w-px h-6 bg-[var(--fintheon-border)]/20 mx-0.5" />
+        <div className="mx-0.5 h-5 w-px bg-[var(--fintheon-border)]/20" />
 
         {/* Action group */}
         {ACTIONS.map((a) => {
@@ -235,7 +235,7 @@ export function NarrativeFloatingToolbar({
             >
               <button
                 onClick={() => handleAction(a.onClick)}
-                className={`p-2 rounded-lg transition-all duration-150 ${
+                className={`rounded-md p-1.5 transition-all duration-150 ${
                   active ||
                   (a.id === "sanctum" && sanctumOpen) ||
                   (a.id === "chat" && chatOpen)
@@ -243,7 +243,7 @@ export function NarrativeFloatingToolbar({
                     : "text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)] hover:bg-[var(--fintheon-surface)]/60"
                 }`}
               >
-                <Icon className="w-4 h-4" strokeWidth={active ? 2.5 : 1.5} />
+                <Icon className="h-3.5 w-3.5" strokeWidth={active ? 2.5 : 1.5} />
               </button>
               {/* Sanctum dropdown */}
               {a.id === "sanctum" && sanctumOpen && (
@@ -286,13 +286,13 @@ export function NarrativeFloatingToolbar({
         })}
 
         {/* Divider */}
-        <div className="w-px h-6 bg-[var(--fintheon-border)]/20 mx-0.5" />
+        <div className="mx-0.5 h-5 w-px bg-[var(--fintheon-border)]/20" />
 
         {/* Zoom dropdown */}
         <div className="relative">
           <button
             onClick={() => setZoomOpen((v) => !v)}
-            className="px-2 py-1 rounded-lg text-[10px] text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)] hover:bg-[var(--fintheon-surface)]/60 transition-colors"
+            className="rounded-md px-1.5 py-1 text-[9px] text-[var(--fintheon-muted)]/50 transition-colors hover:bg-[var(--fintheon-surface)]/60 hover:text-[var(--fintheon-text)]"
             style={{ fontFamily: "var(--font-mono)" }}
           >
             {Math.round(scale * 100)}%

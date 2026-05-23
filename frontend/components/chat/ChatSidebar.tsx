@@ -10,11 +10,17 @@ import {
   useThreadRuntime,
 } from "@assistant-ui/react";
 import { X } from "lucide-react";
+import { ListTodo } from "lucide-react";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 import { useHermesRuntime } from "./useHermesRuntime";
 import { FintheonThread } from "./FintheonThread";
 import { FintheonComposer } from "./FintheonComposer";
 import { CognitionPanel } from "./CognitionPanel";
+import { TodoDrawer } from "./TodoDrawer";
+import { useTodoList } from "./hooks/useTodoList";
+import { useMessageQueue } from "./hooks/useMessageQueue";
+import { normalizeReasoningLevel, shouldThinkHarder } from "./reasoning";
+import type { ReasoningLevel } from "./reasoning";
 import { useAgentBusSSE } from "../../hooks/useAgentBusSSE";
 import { withViewTransition } from "../../lib/view-transition";
 import type { SidebarNotifyEvent } from "../../../backend-hono/src/services/agent-bus/types";
@@ -55,6 +61,8 @@ function ChatSidebarInner({
   lastRequestId,
   thinkHarder,
   setThinkHarder,
+  reasoningLevel,
+  setReasoningLevel,
   conversationId,
   setConversationId,
   clearConversationId,
@@ -68,6 +76,8 @@ function ChatSidebarInner({
   lastRequestId: string | null;
   thinkHarder: boolean;
   setThinkHarder: (v: boolean) => void;
+  reasoningLevel: ReasoningLevel;
+  setReasoningLevel: (level: ReasoningLevel) => void;
   conversationId: string | undefined;
   setConversationId: (id: string) => void;
   clearConversationId: () => void;
@@ -80,6 +90,7 @@ function ChatSidebarInner({
   const { activeAgent, agents } = useFintheonAgents();
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
+  const threadMessages = useThread((t) => t.messages);
 
   // Build dynamic display names — CAO name comes from agent context
   const hermesNames: Record<string, string> = useMemo(() => {
@@ -89,6 +100,8 @@ function ChatSidebarInner({
 
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
   const [showSkills, setShowSkills] = useState(false);
+  const [showTodoDrawer, setShowTodoDrawer] = useState(false);
+  const [hasChatStarted, setHasChatStarted] = useState(false);
   const [toasts, setToasts] = useState<SidebarToast[]>([]);
   const toastTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
@@ -142,16 +155,48 @@ function ChatSidebarInner({
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const handleSend = useCallback(
+  const sendNow = useCallback(
     (msg: string) => {
+      setHasChatStarted(true);
       runtime.append({ role: "user", content: [{ type: "text", text: msg }] });
     },
     [runtime],
   );
+  const {
+    queue,
+    addQueue,
+    editQueue,
+    removeQueue,
+    reorderQueue,
+    sendOne,
+    sendAll,
+  } = useMessageQueue({ isRunning, sendNow });
+
+  const { todos, addTodo, toggleTodo, removeTodo } = useTodoList();
+
+  const handleSend = useCallback(
+    (msg: string) => {
+      if (isRunning) {
+        addQueue(msg);
+        setHasChatStarted(true);
+        return;
+      }
+      sendNow(msg);
+    },
+    [addQueue, isRunning, sendNow],
+  );
+
+  useEffect(() => {
+    if (threadMessages.length > 0) setHasChatStarted(true);
+  }, [threadMessages.length]);
 
   // Listen for toolbar events dispatched from ConsiliumHub icons
   useEffect(() => {
-    const onNewChat = () => withViewTransition(() => clearConversationId());
+    const onNewChat = () =>
+      withViewTransition(() => {
+        setHasChatStarted(false);
+        clearConversationId();
+      });
     const onRunReport = () => {
       if (!isRunning)
         withViewTransition(() => handleSend("Run the MDB report"));
@@ -226,6 +271,7 @@ function ChatSidebarInner({
         lastError={lastError}
         lastRequestId={lastRequestId}
         compact={compact}
+        hasSubmittedMessage={hasChatStarted}
       />
       {/* Agent cognition — only in compact/sidebar mode (FintheonThread handles it in full chat) */}
       {compact && lastRequestId && isRunning && (
@@ -233,9 +279,30 @@ function ChatSidebarInner({
           <CognitionPanel requestId={lastRequestId} isStreaming={isRunning} />
         </div>
       )}
+      <div className="relative z-20 shrink-0">
+        <TodoDrawer
+          isOpen={showTodoDrawer}
+          onClose={() => setShowTodoDrawer(false)}
+          todos={todos}
+          onAddTodo={addTodo}
+          onToggleTodo={toggleTodo}
+          onRemoveTodo={removeTodo}
+          queue={queue}
+          onEditQueue={editQueue}
+          onRemoveQueue={removeQueue}
+          onReorderQueue={reorderQueue}
+          onSendQueueOne={sendOne}
+          onSendQueueAll={sendAll}
+        />
+      </div>
       <FintheonComposer
         thinkHarder={thinkHarder}
         setThinkHarder={setThinkHarder}
+        reasoningLevel={reasoningLevel}
+        onReasoningLevelChange={(level) => {
+          setReasoningLevel(level);
+          setThinkHarder(shouldThinkHarder(level));
+        }}
         lastError={lastError}
         activeSkill={activeSkill}
         onSelectSkill={setActiveSkill}
@@ -245,6 +312,23 @@ function ChatSidebarInner({
         onConversationGone={clearConversationId}
         mode={mode}
         onModeChange={onModeChange}
+        onQueueMessage={addQueue}
+        queueCount={queue.length}
+        onMessageSubmitted={() => setHasChatStarted(true)}
+        todoSlot={
+          <button
+            onClick={() => setShowTodoDrawer((v) => !v)}
+            className={`flex items-center justify-center rounded-lg transition-colors ${
+              showTodoDrawer
+                ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
+                : "text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
+            }`}
+            style={{ width: "32px", height: "32px" }}
+            title={showTodoDrawer ? "Close workspace" : "To-Do & Queue"}
+          >
+            <ListTodo size={15} />
+          </button>
+        }
       />
 
       <aside
@@ -288,6 +372,15 @@ function ChatSidebarInner({
 export function ChatSidebar({ compact = true }: { compact?: boolean } = {}) {
   const { activeAgent } = useFintheonAgents();
   const [thinkHarder, setThinkHarder] = useState(false);
+  const [reasoningLevel, setReasoningLevel] = useState<ReasoningLevel>(() => {
+    try {
+      return normalizeReasoningLevel(
+        localStorage.getItem("fintheon:reasoning-level"),
+      );
+    } catch {
+      return "standard";
+    }
+  });
   const {
     runtime,
     conversationId,
@@ -295,7 +388,12 @@ export function ChatSidebar({ compact = true }: { compact?: boolean } = {}) {
     clearConversationId,
     lastError,
     lastRequestId,
-  } = useHermesRuntime(activeAgent?.id ?? "default", thinkHarder, "chat");
+  } = useHermesRuntime(
+    activeAgent?.id ?? "default",
+    thinkHarder,
+    "chat",
+    reasoningLevel,
+  );
   const [mode, setMode] = useState<"work" | "plan">(() => {
     try {
       const saved = localStorage.getItem(COMPOSER_MODE_KEY);
@@ -322,6 +420,14 @@ export function ChatSidebar({ compact = true }: { compact?: boolean } = {}) {
 
   useEffect(() => {
     try {
+      localStorage.setItem("fintheon:reasoning-level", reasoningLevel);
+    } catch {
+      // no-op
+    }
+  }, [reasoningLevel]);
+
+  useEffect(() => {
+    try {
       localStorage.setItem(PLAN_DRAFT_KEY, planMarkdown);
     } catch {
       // no-op
@@ -335,6 +441,8 @@ export function ChatSidebar({ compact = true }: { compact?: boolean } = {}) {
         lastRequestId={lastRequestId ?? null}
         thinkHarder={thinkHarder}
         setThinkHarder={setThinkHarder}
+        reasoningLevel={reasoningLevel}
+        setReasoningLevel={setReasoningLevel}
         conversationId={conversationId}
         setConversationId={setConversationId}
         clearConversationId={clearConversationId}

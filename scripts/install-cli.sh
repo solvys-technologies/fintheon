@@ -69,14 +69,21 @@ case "$1" in
       # Backend-only restart — no app relaunch
       echo ""
       echo "  Restarting backend..."
-      cd "$FINTHEON_ROOT/backend-hono" || exit 1
-      lsof -ti:8080 | xargs kill -9 2>/dev/null || true
-      sleep 1
-      nohup bun run src/index.ts > /tmp/fintheon-backend.log 2>&1 &
-      BACKEND_PID=$!
+      PLIST="$HOME/Library/LaunchAgents/io.solvys.fintheon-backend.plist"
+      SRC="$FINTHEON_ROOT/launchd/io.solvys.fintheon-backend.plist"
+      if [[ -f "$SRC" && ! -e "$PLIST" ]]; then
+        ln -s "$SRC" "$PLIST" 2>/dev/null || true
+      fi
+      if [[ -f "$PLIST" ]]; then
+        launchctl bootstrap "gui/$(id -u)" "$PLIST" 2>/dev/null || launchctl load -w "$PLIST" 2>/dev/null || true
+        launchctl kickstart -k "gui/$(id -u)/io.solvys.fintheon-backend" 2>/dev/null || true
+      else
+        cd "$FINTHEON_ROOT/backend-hono" || exit 1
+        nohup bun run src/index.ts > /tmp/fintheon-backend.log 2>&1 &
+      fi
       for i in {1..10}; do
         if curl -s localhost:8080/health > /dev/null 2>&1; then
-          echo "  ✓ Backend live (PID: $BACKEND_PID)"
+          echo "  ✓ Backend live"
           break
         fi
         sleep 2
@@ -91,12 +98,18 @@ case "$1" in
       echo ""
 
       # Start backend
-      cd "$FINTHEON_ROOT/backend-hono" || exit 1
-      lsof -ti:8080 | xargs kill -9 2>/dev/null || true
-      sleep 1
-      nohup bun run src/index.ts > /tmp/fintheon-backend.log 2>&1 &
-      BACKEND_PID=$!
-      echo "  Backend PID: $BACKEND_PID"
+      PLIST="$HOME/Library/LaunchAgents/io.solvys.fintheon-backend.plist"
+      SRC="$FINTHEON_ROOT/launchd/io.solvys.fintheon-backend.plist"
+      if [[ -f "$SRC" && ! -e "$PLIST" ]]; then
+        ln -s "$SRC" "$PLIST" 2>/dev/null || true
+      fi
+      if [[ -f "$PLIST" ]]; then
+        launchctl bootstrap "gui/$(id -u)" "$PLIST" 2>/dev/null || launchctl load -w "$PLIST" 2>/dev/null || true
+        launchctl kickstart -k "gui/$(id -u)/io.solvys.fintheon-backend" 2>/dev/null || true
+      else
+        cd "$FINTHEON_ROOT/backend-hono" || exit 1
+        nohup bun run src/index.ts > /tmp/fintheon-backend.log 2>&1 &
+      fi
 
       # Wait for health
       for i in {1..10}; do
@@ -126,8 +139,7 @@ case "$1" in
     echo "  Stopping Fintheon..."
     pkill -f "Fintheon" 2>/dev/null || true
     pkill -f "electron.*fintheon" 2>/dev/null || true
-    lsof -ti:8080 | xargs kill -9 2>/dev/null || true
-    echo "  ✓ Stopped"
+    echo "  ✓ App stopped; backend engine remains running"
     echo ""
     ;;
   logs)

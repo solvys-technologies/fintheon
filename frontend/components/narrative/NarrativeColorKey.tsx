@@ -100,12 +100,12 @@ export function NarrativeColorKey() {
   };
 
   return (
-    <div ref={rootRef} className="absolute bottom-3 right-3 z-40">
+    <div ref={rootRef} className="absolute right-3 top-[112px] z-40">
       {/* Collapsed swatch strip — click to open */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 rounded-full border border-[var(--fintheon-accent)]/20 bg-[#050402]/85 backdrop-blur-sm px-2.5 py-1 hover:border-[var(--fintheon-accent)]/40 transition-colors"
+        className="flex items-center gap-1.5 rounded-full bg-[#050402]/75 px-2.5 py-1 backdrop-blur-sm transition hover:-translate-y-px hover:bg-[var(--fintheon-accent)]/8"
         title="Narrative color key"
       >
         <Palette size={10} className="text-[var(--fintheon-accent)]/70" />
@@ -128,7 +128,7 @@ export function NarrativeColorKey() {
 
       {/* Popover */}
       <div
-        className="absolute bottom-full right-0 mb-2 w-[260px] rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)]/95 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden transition-[opacity,transform] duration-200 ease-out"
+        className="absolute right-0 top-full mt-2 w-[260px] overflow-hidden rounded-md bg-[var(--fintheon-bg)]/95 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-[opacity,transform] duration-200 ease-out"
         style={{
           opacity: open ? 1 : 0,
           transform: open
@@ -137,7 +137,7 @@ export function NarrativeColorKey() {
           pointerEvents: open ? "auto" : "none",
         }}
       >
-        <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--fintheon-accent)]/10">
+        <div className="flex items-center justify-between px-3 py-2">
           <span
             className="text-[9px] tracking-[0.22em] uppercase text-[var(--fintheon-accent)]/80"
             style={{ fontFamily: "var(--font-heading)" }}
@@ -208,7 +208,7 @@ export function NarrativeColorKey() {
           })}
         </div>
 
-        <div className="px-3 py-2 border-t border-[var(--fintheon-accent)]/10 text-[9px] text-[var(--fintheon-muted)]/35">
+        <div className="px-3 py-2 text-[9px] text-[var(--fintheon-muted)]/35">
           Tip — open Personalization Settings for named themes +
           severity/priority keys.
         </div>

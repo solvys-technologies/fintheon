@@ -10,6 +10,7 @@ import type {
   SensemakingTimelineEdge,
   SensemakingTimelineNode,
 } from "../components/narrative/sensemaking-types";
+import type { ReasoningLevel } from "../components/chat/reasoning";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -19,6 +20,7 @@ export interface CreateNarrativeSessionPayload {
   narrativeSlugs: string[];
   title: string;
   color: string;
+  reasoningLevel?: ReasoningLevel;
 }
 
 export interface NarrativeSessionBundle {
@@ -42,6 +44,7 @@ export async function createNarrativeSession(
       catalystIds: payload.catalystIds,
       title: payload.title,
       color: payload.color,
+      reasoningLevel: payload.reasoningLevel,
       tags: payload.narrativeSlugs.map((tag) => ({
         tag,
         confidence: 1,
@@ -81,7 +84,8 @@ export async function refineNarrativeSession(input: {
   catalystIds: string[];
   orientation: string;
   renderMode: string;
-}): Promise<SensemakingResponse> {
+  reasoningLevel?: ReasoningLevel;
+}): Promise<NarrativeSessionBundle> {
   const response = await requestJson<SensemakingResponse>("/api/narrative/sensemaking", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -90,6 +94,7 @@ export async function refineNarrativeSession(input: {
       attachedHeadlineIds: input.catalystIds,
       orientation: input.orientation,
       renderMode: input.renderMode,
+      reasoningLevel: input.reasoningLevel,
     }),
   });
 
@@ -118,7 +123,7 @@ export async function refineNarrativeSession(input: {
     }),
   ]);
 
-  return response;
+  return fetchNarrativeSession(input.sessionId);
 }
 
 async function addNarrativeSessionMessage(sessionId: string, content: string): Promise<void> {

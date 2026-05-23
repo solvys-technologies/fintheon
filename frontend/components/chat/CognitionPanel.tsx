@@ -1,4 +1,4 @@
-// [claude-code 2026-04-24] "thought for" redesign — label change, dot removal,
+// [claude-code 2026-04-24] cognition label redesign — label change, dot removal,
 //   Streamdown-rendered thinking stream, slow semi-unsteady shimmer on phrases.
 // [claude-code 2026-03-10] Agent cognition visualization — real-time step-by-step process panel
 // Connects to /api/ai/cognition/stream SSE and renders agent pipeline steps as they arrive.
@@ -140,6 +140,7 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
   }, [requestId]);
 
   const stillThinking = isStreaming && !done;
+  const latestStep = steps[steps.length - 1];
 
   if (!requestId || steps.length === 0) return null;
 
@@ -156,7 +157,10 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
               (stillThinking ? " cognition-thought-shimmer" : "")
             }
           >
-            thought for
+            {stillThinking ? "working" : "ready"}
+          </span>
+          <span className="max-w-[220px] truncate text-[10px] text-[var(--fintheon-text)]/45">
+            {latestStep ? stepToText(latestStep) : "starting"}
           </span>
           <span className="text-[10px] text-[var(--fintheon-text)]/55 tabular-nums">
             {formatElapsed(elapsedMs)}

@@ -261,7 +261,7 @@ html *::-webkit-scrollbar {
   animation: severe-shimmer 3s ease-in-out infinite;
 }
 
-/* [claude-code 2026-04-24] Cognition "thought for…" stream shimmer — slow,
+/* [claude-code 2026-04-24] Cognition working-state stream shimmer — slow,
  *   semi-unsteady breath on thinking phrases. Uneven keyframe stops give it an
  *   organic cadence (not the regular 50% oscillation used on fuses). */
 @keyframes cognition-thought-shimmer {
@@ -1063,7 +1063,7 @@ html *::-webkit-scrollbar {
   }
 }
 
-// [claude-code 2026-05-16] S68-T2: Catalyst drift bubble pulse — opacity-based (no box-shadow per Solvys rules)
+/* [claude-code 2026-05-16] S68-T2: Catalyst drift bubble pulse — opacity-based (no box-shadow per Solvys rules) */
 @keyframes drift-pulse {
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
@@ -1163,7 +1163,7 @@ html *::-webkit-scrollbar {
   }
 }
 
-/* Think Harder toggle — accent opacity pulse */
+/* Intelligence selector — accent opacity pulse */
 @keyframes thinkPulse {
   0%,
   100% {
@@ -1593,4 +1593,30 @@ html *::-webkit-scrollbar {
   color: var(--fintheon-accent);
   background: color-mix(in srgb, var(--fintheon-accent) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--fintheon-accent) 20%, transparent);
+}
+
+.proxvoice-pill-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+}
+
+.proxvoice-pill-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%);
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    color-mix(in srgb, var(--fintheon-accent) 18%, transparent) 48%,
+    transparent 72%
+  );
+  pointer-events: none;
+}
+
+.proxvoice-pill-shimmer:hover::after,
+.proxvoice-pill-shimmer:focus-visible::after {
+  transform: translateX(120%);
+  transition: transform 0.7s ease;
 }

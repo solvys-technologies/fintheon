@@ -64,7 +64,7 @@ export const BOARDROOM_SUB_VIEWS: {
   {
     id: "forum",
     label: "Forum",
-    subtitle: "Community hub & voice",
+    subtitle: "ProxVoice floor",
     icon: MessageSquare,
   },
   {

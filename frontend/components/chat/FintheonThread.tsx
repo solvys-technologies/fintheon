@@ -123,6 +123,7 @@ interface FintheonThreadProps {
   lastError?: string | null;
   lastRequestId?: string | null;
   compact?: boolean;
+  hasSubmittedMessage?: boolean;
   /** S38-T2: Activity entries for the agent rail */
   activityEntries?: ActivityEntry[];
   /** S38-T2: Citations from the message */
@@ -139,6 +140,7 @@ export function FintheonThread({
   lastError,
   lastRequestId,
   compact,
+  hasSubmittedMessage,
   activityEntries = [],
   citations = [],
   onPinCitation,
@@ -159,10 +161,10 @@ export function FintheonThread({
       >
         <div className="max-w-full mx-auto space-y-4 mb-8">
           {/* Greeting screen */}
-          {!compact && messages.length === 0 && !isLoading && (
+          {!compact && messages.length === 0 && !isLoading && !hasSubmittedMessage && (
             <ChatGreeting onSend={onSend} isLoading={isLoading} />
           )}
-          {compact && messages.length === 0 && (
+          {compact && messages.length === 0 && !hasSubmittedMessage && (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
               <p className="text-sm text-[var(--fintheon-accent)]/60 font-medium">
                 Ave, Trader.

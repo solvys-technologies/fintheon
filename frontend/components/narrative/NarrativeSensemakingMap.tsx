@@ -1,6 +1,5 @@
 import {
   Background,
-  Controls,
   Handle,
   MarkerType,
   Position,
@@ -101,7 +100,6 @@ function NarrativeSensemakingMapInner({
       style={{ background: "var(--fintheon-bg)" }}
     >
       <Background color="#c79f4a08" gap={42} size={1} />
-      <Controls showInteractive={false} />
     </ReactFlow>
   );
 }
@@ -158,6 +156,9 @@ function buildFlow(
     markerEnd: { type: MarkerType.ArrowClosed, color: "#c79f4a" },
     style: { stroke: "rgba(199,159,74,0.35)", strokeWidth: 1.2 },
     labelStyle: { fill: "#c79f4a", fontSize: 10 },
+    labelBgStyle: { fill: "rgba(6,5,4,0.92)", fillOpacity: 1 },
+    labelBgPadding: [4, 2] as [number, number],
+    labelBgBorderRadius: 2,
   }));
   const membershipEdges = response.timelineNodes.flatMap((node) =>
     node.narrativeIds.slice(0, 3).map((narrativeId) => ({

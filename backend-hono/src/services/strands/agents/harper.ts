@@ -12,6 +12,7 @@ import { checkDeepSeekDirectHealth } from "../provider.js";
 import { getAgentSystemPrompt } from "../../ai/agent-instructions/index.js";
 import { getUserApiKey } from "../../ai/api-key-crypto.js";
 import { createLogger } from "../../../lib/logger.js";
+import { buildReleaseContext } from "../release-context.js";
 
 const log = createLogger("HarperAgent");
 
@@ -32,6 +33,7 @@ export interface HarperChatOptions {
   userId?: string;
   history?: Array<{ role: "user" | "assistant"; content: string }>;
   thinkHarder?: boolean;
+  reasoningLevel?: "quick" | "standard" | "deep" | "max";
   persona?: string;
   riskFlowContext?: string;
   activeConnectors?: string[];
@@ -147,6 +149,19 @@ export async function streamHarperChat(
   if (options.riskFlowContext) {
     prompt = `[RiskFlow Context]\n${options.riskFlowContext}\n\n${prompt}`;
   }
+
+  const level = options.reasoningLevel ?? (options.thinkHarder ? "deep" : "standard");
+  prompt = `[Intelligence Level: ${level}]
+Use the selected level to choose inspection depth, tool aggression, and verification:
+- quick: answer directly unless a tool is required.
+- standard: inspect the most relevant live source before making product claims.
+- deep: verify across code/runtime context and use tools when product state is disputed.
+- max: exhaustive inspection; prefer demonstration or artifact proof over prose.
+
+${prompt}`;
+
+  const releaseContext = await buildReleaseContext(message);
+  if (releaseContext) prompt = `${releaseContext}\n\n${prompt}`;
 
   // [S23-T3] ArbitrumChamber awareness: when the user is on the ArbitrumChamber surface (or the connector is
   // explicitly active), inject the latest AgentDesk simulation with interpretation scaffolding so

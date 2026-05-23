@@ -95,19 +95,20 @@ export function FintheonProviderModal({
       role="dialog"
       aria-modal="true"
       aria-label="Provider Selection"
-      className="fintheon-modal-backdrop"
+      className="pointer-events-none"
       style={{
         position: "fixed",
         inset: 0,
         zIndex: 80,
         display: "flex",
-        alignItems: "center",
+        alignItems: "flex-end",
         justifyContent: "center",
+        paddingBottom: 116,
       }}
     >
       <div
         ref={dialogRef}
-        className="fintheon-modal-surface"
+        className="pointer-events-auto rounded-lg border border-[var(--fintheon-accent)]/15 bg-[#0a0905]"
         style={{
           width: 380,
           maxWidth: "calc(100vw - 40px)",

@@ -17,6 +17,7 @@ export * from "./data";
 export * from "./journal";
 export * from "./memory";
 export * from "./editor";
+export * from "./proxvoice";
 
 export * from "./soul";
 
@@ -64,6 +65,7 @@ import {
   StickyBulletinService,
 } from "./editor";
 import { SoulService } from "./soul";
+import { ProxVoiceService } from "./proxvoice";
 
 // Main Backend Client Interface
 export interface BackendClient {
@@ -102,6 +104,7 @@ export interface BackendClient {
   editorSidebar: EditorSidebarService;
   stickyBulletin: StickyBulletinService;
   soul: SoulService;
+  proxVoice: ProxVoiceService;
 }
 
 // Create backend client from API client
@@ -142,5 +145,6 @@ export function createBackendClient(client: ApiClient): BackendClient {
     editorSidebar: new EditorSidebarService(client),
     stickyBulletin: new StickyBulletinService(client),
     soul: new SoulService(client),
+    proxVoice: new ProxVoiceService(client),
   };
 }

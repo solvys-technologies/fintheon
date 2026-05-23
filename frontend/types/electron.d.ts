@@ -31,6 +31,21 @@ export interface StartupConfig {
   launchOnLogin: boolean;
 }
 
+export type BackendEngineState =
+  | "connected"
+  | "starting"
+  | "degraded"
+  | "offline";
+
+export interface BackendEngineStatus {
+  state: BackendEngineState;
+  alive: boolean;
+  url: string;
+  logsPath: string;
+  checkedAt: string;
+  detail?: string;
+}
+
 export interface ElectronAPI {
   platform: "electron";
   isElectron: true;
@@ -50,8 +65,19 @@ export interface ElectronAPI {
   getStartupConfig: () => Promise<StartupConfig>;
   setStartupConfig: (patch: Partial<StartupConfig>) => Promise<StartupConfig>;
   startBackend: () => Promise<{ ok: boolean; detail?: string }>;
-  stopBackend: () => Promise<{ ok: boolean }>;
+  stopBackend: () => Promise<{ ok: boolean; detail?: string }>;
   isBackendAlive: () => Promise<{ alive: boolean }>;
+  backendEngine: {
+    getStatus: () => Promise<BackendEngineStatus>;
+    restart: () => Promise<{
+      ok: boolean;
+      detail?: string;
+      status: BackendEngineStatus;
+    }>;
+    onStatusChange: (
+      cb: ((status: BackendEngineStatus) => void) | null,
+    ) => () => void;
+  };
 
   // SOTA desktop updater (manual check + manual download handoff)
   checkForUpdate: () => Promise<DesktopUpdateStatus>;

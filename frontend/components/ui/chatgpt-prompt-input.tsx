@@ -4,9 +4,9 @@
 //   are active (was silent truncation); (4) Compact mode bottom-bar padding bumped to match the
 //   main composer so the send button no longer crowds the Harper pill; (5) Paste handler logs
 //   a one-time note when non-image clipboard items are dropped (was silent).
-// [claude-code 2026-03-28] S8-T7: Pulsing icon (replaces Think Harder), no bg/border when active
+// [claude-code 2026-03-28] S8-T7: reasoning affordance, no bg/border when active
 // [claude-code 2026-03-11] T5: steer strip removed, queue chips added, RiskFlow drag-drop
-// [claude-code 2026-03-22] Track 4: persona/tools slots, icon-only Think, removed Plug2+Wrench
+// [claude-code 2026-03-22] Track 4: compact toolbox slots and reasoning selector
 // Based on 21st.dev ChatGPT prompt input, rewritten without Radix
 import {
   useState,
@@ -16,7 +16,6 @@ import {
   type KeyboardEvent,
   type ChangeEvent,
   type ClipboardEvent,
-  type FC,
 } from "react";
 import {
   ArrowUp,
@@ -36,6 +35,8 @@ import {
 } from "../chat/FintheonAttachPopup";
 import { SkillBadge } from "../chat/SkillBadge";
 import { UsageRing } from "../chat/UsageRing";
+import { ReasoningLevelSelector } from "../chat/ReasoningLevelSelector";
+import type { ReasoningLevel } from "../chat/reasoning";
 import {
   HeadlineChips,
   type HeadlineChip,
@@ -76,30 +77,6 @@ function buildRiskFlowPreview(data: {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Deep Research icon                                                */
-/* ------------------------------------------------------------------ */
-
-const ThinkHarderIcon: FC<{ active: boolean }> = ({ active }) => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 16 16"
-    fill="none"
-    stroke={active ? "var(--fintheon-accent)" : "currentColor"}
-    strokeWidth="1.4"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={
-      active ? "animate-[pulse-icon_1.5s_ease-in-out_infinite]" : "opacity-50"
-    }
-  >
-    <circle cx="8" cy="8" r="4.5" />
-    <circle cx="8" cy="8" r="2.2" />
-    <path d="M8 1.5v1.6M8 12.9v1.6M1.5 8h1.6M12.9 8h1.6" />
-  </svg>
-);
-
-/* ------------------------------------------------------------------ */
 /*  Props                                                             */
 /* ------------------------------------------------------------------ */
 
@@ -110,6 +87,8 @@ export interface PromptBoxProps {
   placeholder?: string;
   thinkHarder: boolean;
   setThinkHarder: (v: boolean) => void;
+  reasoningLevel?: ReasoningLevel;
+  onReasoningLevelChange?: (value: ReasoningLevel) => void;
   activeSkill: string | null;
   onSelectSkill: (id: string | null) => void;
   showSkills: boolean;
@@ -127,11 +106,18 @@ export interface PromptBoxProps {
   // Queue chips
   queueJobs?: Array<{ jobId: string; status: string; position: number }>;
   onCancelJob?: (jobId: string) => void;
-  // Slots for persona + tools + provider dropdowns
+  queueCount?: number;
+  contextStats?: {
+    messageCount: number;
+    estimatedTokens: number;
+    connectorCount: number;
+    activeSkillLabel?: string | null;
+  };
+  // Slots for compact toolbar controls
   personaSlot?: React.ReactNode;
   toolsSlot?: React.ReactNode;
   providerSlot?: React.ReactNode;
-  // S60-T3: Modal-aware slots for plugin + MCP triggers (composer toolbar)
+  // S60-T3: Modal-aware toolbox triggers (composer toolbar)
   pluginSlot?: React.ReactNode;
   mcpSlot?: React.ReactNode;
   // Relay dispatch button (leftmost in action cluster). Renders either relay or disconnect.
@@ -142,7 +128,7 @@ export interface PromptBoxProps {
   todoSlot?: React.ReactNode;
   // Boardroom: swap pulsing icon for newspaper RiskFlow picker
   onRiskFlowPick?: () => void;
-  // Hide the Think Harder toggle (used in Agentic Forum where deep-research is always on)
+  // Hide the reasoning selector (used in Agentic Forum where deep research is always on)
   hideThinkHarder?: boolean;
   // Headline attachment (multi-select from scored feed items)
   headlineAlerts?: RiskFlowAlert[];
@@ -168,6 +154,8 @@ export function PromptBox({
   placeholder = "Message your analysts...",
   thinkHarder,
   setThinkHarder,
+  reasoningLevel = thinkHarder ? "deep" : "standard",
+  onReasoningLevelChange,
   activeSkill,
   onSelectSkill,
   showSkills,
@@ -182,6 +170,8 @@ export function PromptBox({
   onToggleVoice,
   queueJobs,
   onCancelJob,
+  queueCount = 0,
+  contextStats,
   personaSlot,
   toolsSlot,
   providerSlot,
@@ -281,7 +271,7 @@ export function PromptBox({
       // (Chromium also sets e.keyCode === 229 during composition; we keep a ref for safety.)
       if (isComposingRef.current || e.nativeEvent.isComposing) return;
       e.preventDefault();
-      if (isProcessing && onStop) {
+      if (isProcessing && !text.trim() && images.length === 0 && onStop) {
         onStop();
       } else {
         handleSend();
@@ -640,41 +630,47 @@ export function PromptBox({
                 <Plus size={16} />
               </button>
 
-              {/* Plugins (S60-T3: modal trigger) */}
+              {/* Toolbox trigger */}
               {pluginSlot}
 
-              {/* MCP Connectors (S60-T3: modal trigger) */}
+              {/* Secondary toolbox trigger */}
               {mcpSlot}
 
-              {/* Tools (combined Skills + Connectors — legacy, used when pluginSlot/mcpSlot not provided) */}
+              {/* Combined Skills + Connectors fallback */}
               {toolsSlot}
-
-              {/* Think Harder toggle */}
-              {!hideThinkHarder && (
-                <button
-                  onClick={() => setThinkHarder(!thinkHarder)}
-                  title={thinkHarder ? "Deep Research ON" : "Deep Research OFF"}
-                  className="flex items-center justify-center rounded-lg transition-all text-zinc-500 hover:text-[var(--fintheon-accent)]"
-                  style={{ width: "32px", height: "32px" }}
-                >
-                  <ThinkHarderIcon active={thinkHarder} />
-                </button>
-              )}
 
               {/* Todo + Queue drawer toggle */}
               {todoSlot}
             </div>
 
-            {/* Right: Persona + Usage + Send/Stop */}
+            {/* Right: provider, intelligence, usage, send/stop */}
             <div className="flex items-center gap-2">
               {providerSlot}
+              {!hideThinkHarder && (
+                <ReasoningLevelSelector
+                  value={reasoningLevel}
+                  onChange={(next) => {
+                    onReasoningLevelChange?.(next);
+                    setThinkHarder(next === "deep" || next === "max");
+                  }}
+                  compact={compact}
+                />
+              )}
               {personaSlot}
-              <UsageRing />
+              <UsageRing
+                stats={contextStats}
+                draftText={text}
+                queuedCount={queueCount}
+              />
               <button
-                onClick={isProcessing && onStop ? onStop : handleSend}
+                onClick={
+                  isProcessing && !text.trim() && images.length === 0 && onStop
+                    ? onStop
+                    : handleSend
+                }
                 disabled={!text.trim() && images.length === 0 && !isProcessing}
                 className={`flex items-center justify-center rounded-full ${
-                  isProcessing
+                  isProcessing && !text.trim() && images.length === 0
                     ? "bg-[var(--fintheon-accent)]/80 hover:bg-[var(--fintheon-accent)] text-black"
                     : text.trim() || focused
                       ? "bg-[var(--fintheon-accent)] hover:bg-[#C5A030] text-black"
@@ -685,9 +681,15 @@ export function PromptBox({
                   height: "34px",
                   transition: "all 1.3s ease",
                 }}
-                title={isProcessing ? "Stop" : "Send"}
+                title={
+                  isProcessing && (text.trim() || images.length > 0)
+                    ? "Queue message"
+                    : isProcessing
+                      ? "Stop"
+                      : "Send"
+                }
               >
-                {isProcessing ? (
+                {isProcessing && !text.trim() && images.length === 0 ? (
                   <Square size={12} fill="currentColor" />
                 ) : (
                   <ArrowUp size={16} strokeWidth={2.5} />

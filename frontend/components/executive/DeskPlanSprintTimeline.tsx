@@ -1,11 +1,10 @@
-import { ChevronDown, ChevronUp, GripHorizontal } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { useState } from "react";
 import { formatEasternClockRange } from "../../lib/eastern-time-format";
 import { cn } from "../../lib/utils";
 import type { DayPlan, DayPlanWindow } from "../../types/day-plan";
 import { EmptyTimeline } from "./DeskPlanMapEmptyStates";
 import {
-  buildSprintSegments,
   formatClock,
   sprintOverlap,
   type SprintSegment,
@@ -17,23 +16,19 @@ const POP_OUT_CARD =
 
 export function DeskPlanSprintTimeline({
   plans,
+  segments,
+  segmentIndex,
   deletingId,
   onDelete,
 }: {
   plans: DayPlan[];
+  segments: SprintSegment[];
+  segmentIndex: number;
   deletingId: string | null;
   onDelete: (plan: DayPlan) => void;
 }) {
-  const segments = useMemo(() => buildSprintSegments(plans), [plans]);
-  const [segmentIndex, setSegmentIndex] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const segment = segments[segmentIndex] ?? segments[0];
-
-  useEffect(() => {
-    setSegmentIndex((current) =>
-      segments.length === 0 ? 0 : Math.min(current, segments.length - 1),
-    );
-  }, [segments.length]);
 
   if (plans.length === 0 || !segment) return <EmptyTimeline />;
 
@@ -86,28 +81,6 @@ export function DeskPlanSprintTimeline({
         )}
       </div>
 
-      <div className="mt-3 shrink-0 border-t border-[var(--fintheon-accent)]/10 pt-3">
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <span className="font-mono text-[8px] uppercase tracking-[0.16em] text-[var(--fintheon-muted)]/45">
-            {segment.dateLabel}
-          </span>
-          <span className="font-mono text-[8px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/65">
-            {segmentIndex + 1}/{segments.length}
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <GripHorizontal className="h-3.5 w-3.5 shrink-0 text-[var(--fintheon-muted)]/45" />
-          <input
-            type="range"
-            min={0}
-            max={Math.max(0, segments.length - 1)}
-            value={segmentIndex}
-            onChange={(event) => setSegmentIndex(Number(event.target.value))}
-            className="h-1 w-full accent-[var(--fintheon-accent)]"
-            aria-label="Scrub Desk Plan Sprint Map"
-          />
-        </div>
-      </div>
     </div>
   );
 }

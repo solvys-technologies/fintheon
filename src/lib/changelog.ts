@@ -9,6 +9,87 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-22T22:05:00-04:00",
+    agent: "codex",
+    summary:
+      "NarrativeFlow reliability and surface-mode patch: renamed Transcript to Narratives inside the resizable work drawer, added an internal Codex-style session-history drawer, made NarrativeFlow toggle between the IDE workspace and the legacy desk narrative map, removed default React Flow white controls, required a real request before ASK/START can run, refreshed persisted session artifacts after refinements, and made the workspace composer show only actual attached catalysts instead of all related generated nodes.",
+    files: [
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/components/narrative/NarrativeInputBar.tsx",
+      "frontend/components/narrative/NarrativeFlowLanding.tsx",
+      "frontend/components/narrative/NarrativeSessionWorkspace.tsx",
+      "frontend/components/narrative/NarrativeWorkspaceChrome.tsx",
+      "frontend/components/narrative/NarrativeWorkDrawer.tsx",
+      "frontend/components/narrative/NarrativeCanvas.tsx",
+      "frontend/components/narrative/NarrativeMap.tsx",
+      "frontend/components/narrative/NarrativeSensemakingMap.tsx",
+      "frontend/components/narrative/NarrativeSituationMap.tsx",
+      "frontend/lib/narrative-session-api.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-22T21:45:00-04:00",
+    agent: "codex",
+    summary:
+      "Desktop React #31 hotfix: formatted structured RiskFlow/NarrativeFlow market-impact payloads before rendering, guarded narrative text fields from raw object children, and aligned catalyst detail output with the compact market-impact readout.",
+    files: [
+      "frontend/lib/market-impact-format.ts",
+      "frontend/components/narrative/NarrativeTimelineTab.tsx",
+      "frontend/components/narrative/CatalystCard.tsx",
+      "frontend/components/narrative/NarrativeDocsTab.tsx",
+      "frontend/components/narrative/NarrativeFlowTab.tsx",
+      "frontend/components/narrative/sensemaking-types.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-22T21:15:35-04:00",
+    agent: "codex",
+    summary:
+      "NarrativeFlow chat input SOTA pass: introduced a shared domain composer with Intelligence Level, context stats, queued requests, catalyst-aware status, and flat Solvys input states across the opener, loaded session workspace, and canvas overlay while forwarding reasoning level through narrative sensemaking APIs.",
+    files: [
+      "frontend/components/narrative/NarrativeInputBar.tsx",
+      "frontend/components/narrative/NarrativeSensemakingComposer.tsx",
+      "frontend/components/narrative/NarrativeFlowLanding.tsx",
+      "frontend/components/narrative/NarrativeCanvas.tsx",
+      "frontend/components/narrative/NarrativeCanvasChat.tsx",
+      "frontend/lib/narrative-session-api.ts",
+      "backend-hono/src/routes/narrative/sensemaking.ts",
+      "backend-hono/src/routes/narrative/sessions/validation.ts",
+      "backend-hono/src/services/narrative-sensemaking/types.ts",
+      "backend-hono/src/services/narrative-sensemaking/sensemaker.ts",
+      "frontend/components/chat/MessageQueue.tsx",
+      "frontend/components/chat/hooks/useMessageQueue.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-22T20:50:50-04:00",
+    agent: "codex",
+    summary:
+      "Chat interface repair: stopped first-send greeting snapback, replaced split plugin/MCP/persona controls with one compact toolbox and an Intelligence Level selector, wired visible queue/to-do drawers into main and sidebar chat, added a resizable Preview/Diff/Artifacts workbench, upgraded context stats in the composer, softened cognition runtime labels, and injected current release context into Harper before update claims.",
+    files: [
+      "frontend/components/ChatInterface.tsx",
+      "frontend/components/chat/ChatSidebar.tsx",
+      "frontend/components/chat/FintheonComposer.tsx",
+      "frontend/components/ui/chatgpt-prompt-input.tsx",
+      "frontend/components/chat/FintheonToolboxModal.tsx",
+      "frontend/components/chat/ReasoningLevelSelector.tsx",
+      "frontend/components/chat/hooks/useMessageQueue.ts",
+      "frontend/components/chat/ArtifactPane.tsx",
+      "frontend/components/chat/TodoDrawer.tsx",
+      "frontend/components/chat/MessageQueue.tsx",
+      "frontend/components/chat/UsageRing.tsx",
+      "frontend/components/chat/CognitionPanel.tsx",
+      "backend-hono/src/services/strands/release-context.ts",
+      "backend-hono/src/services/strands/agents/harper.ts",
+      "backend-hono/src/routes/harper/index.ts",
+      "backend-hono/src/services/ai/agent-instructions/harper-extra.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-22T20:09:00-04:00",
     agent: "codex",
     summary:

@@ -2,6 +2,7 @@ import type {
   SensemakingCatalyst,
   SensemakingResponse,
 } from "./sensemaking-types";
+import { safeNarrativeText } from "../../lib/market-impact-format";
 
 interface NarrativeTimelineTabProps {
   response: SensemakingResponse | null;
@@ -65,7 +66,7 @@ export function NarrativeTimelineTab({
                 </span>
               </div>
               <p className="line-clamp-3 text-[11px] leading-4 text-[var(--fintheon-muted)]">
-                {row.catalyst.marketImpact ?? row.catalyst.summary}
+                {safeNarrativeText(row.catalyst.marketImpact, row.catalyst.summary) ?? "No narrative summary yet."}
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <MiniChip>{row.catalyst.role === "anchor" ? "MAIN" : "CATALYST"}</MiniChip>

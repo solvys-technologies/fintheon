@@ -22,6 +22,9 @@ interface TodoDrawerProps {
   queue: QueuedMessage[];
   onEditQueue: (id: string, text: string) => void;
   onRemoveQueue: (id: string) => void;
+  onReorderQueue?: (fromIdx: number, toIdx: number) => void;
+  onSendQueueOne?: () => void;
+  onSendQueueAll?: () => void;
 }
 
 export function TodoDrawer({
@@ -34,6 +37,9 @@ export function TodoDrawer({
   queue,
   onEditQueue,
   onRemoveQueue,
+  onReorderQueue,
+  onSendQueueOne,
+  onSendQueueAll,
 }: TodoDrawerProps) {
   const [todoOpen, setTodoOpen] = useState(true);
   const [queueOpen, setQueueOpen] = useState(true);
@@ -214,6 +220,9 @@ export function TodoDrawer({
                     queue={queue}
                     onEdit={onEditQueue}
                     onRemove={onRemoveQueue}
+                    onReorder={onReorderQueue}
+                    onSendOne={onSendQueueOne}
+                    onSendAll={onSendQueueAll}
                   />
                 )}
               </div>

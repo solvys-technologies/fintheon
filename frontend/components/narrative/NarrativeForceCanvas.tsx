@@ -1,4 +1,4 @@
-// [claude-code 2026-05-16] S68-T4: Camera pan/zoom persistence (localStorage save/restore), onCameraChange prop, Reset View callback
+// [claude-code 2026-05-16] S68-T4: Reset View callback and persisted node positions.
 // [claude-code 2026-04-24] S36 ClusterBeam — wrapped canvas with ClusterBeamProvider, mounted
 // ClusterBeamPanel + ShockLayer, replaced local expandedGroups state with the panel context,
 // added narrative:echo listener for cross-surface hover pulse, wired shock-on-arrival for new
@@ -58,7 +58,6 @@ import { ShockLayer } from "./ShockLayer";
 
 // ── Persistent node positions (localStorage) ──────────────────
 const POSITIONS_KEY = "fintheon-narrative-positions";
-const CAMERA_KEY = "narrativeflow:force-camera";
 
 function loadSavedPositions(): Map<string, { x: number; y: number }> {
   try {
@@ -550,7 +549,6 @@ function NarrativeFlowCanvas({
   const [loadingPhase, setLoadingPhase] = useState<
     "loading" | "settling" | "ready"
   >(hasSavedPositions() ? "ready" : "loading");
-  const [transitioning, setTransitioning] = useState(false);
   const [saveFlash, setSaveFlash] = useState(false);
 
   const zoomViewRef = useRef<SemanticNarrativeView>("narratives");
@@ -563,15 +561,7 @@ function NarrativeFlowCanvas({
       zoomTo: (level: number) => reactFlow.zoomTo(level, { duration: 200 }),
       fitView: () => reactFlow.fitView({ padding: 0.1, duration: 300 }),
       resetView: () => {
-        reactFlow.setViewport(
-          { x: 0, y: 0, zoom: 0.15 },
-          { duration: 400 },
-        );
-        try {
-          localStorage.removeItem(CAMERA_KEY);
-        } catch {
-          // silent
-        }
+        reactFlow.fitView({ padding: 0.1, duration: 400 });
       },
       setViewport: (vp: { x: number; y: number; zoom: number }) => {
         reactFlow.setViewport(vp, { duration: 200 });
@@ -786,20 +776,8 @@ function NarrativeFlowCanvas({
     (_event: unknown, viewport: { x: number; y: number; zoom: number }) => {
       onScaleChange?.(viewport.zoom);
       onCameraChange?.(viewport);
-      if (forcedView || transitioning) return;
-
-      const semanticView = getSemanticZoom(viewport.zoom);
-      if (semanticView === zoomViewRef.current) return;
-
-      zoomViewRef.current = semanticView;
-      setTransitioning(true);
-      setCurrentView(semanticView);
-      setTimeout(() => {
-        rebuildView(semanticView);
-        setTransitioning(false);
-      }, 150);
     },
-    [forcedView, onScaleChange, onCameraChange, rebuildView, transitioning],
+    [onScaleChange, onCameraChange],
   );
 
   const handleForceView = useCallback(
@@ -884,59 +862,6 @@ function NarrativeFlowCanvas({
     [],
   );
 
-  // Restore camera from localStorage after nodes settle
-  useEffect(() => {
-    if (nodes.length === 0 || loadingPhase !== "ready") return;
-    try {
-      const raw = localStorage.getItem(CAMERA_KEY);
-      if (raw) {
-        const saved = JSON.parse(raw) as {
-          x: number;
-          y: number;
-          zoom: number;
-        };
-        reactFlow.setViewport(saved, { duration: 0 });
-      }
-    } catch {
-      // silent
-    }
-  }, [nodes.length, loadingPhase, reactFlow]);
-
-  // Save camera on unmount
-  useEffect(() => {
-    return () => {
-      try {
-        const vp = reactFlow.getViewport();
-        localStorage.setItem(
-          CAMERA_KEY,
-          JSON.stringify({ x: vp.x, y: vp.y, zoom: vp.zoom }),
-        );
-      } catch {
-        // silent
-      }
-    };
-  }, [reactFlow]);
-
-  // Save camera on page hide (navigate away / tab switch)
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState === "hidden") {
-        try {
-          const vp = reactFlow.getViewport();
-          localStorage.setItem(
-            CAMERA_KEY,
-            JSON.stringify({ x: vp.x, y: vp.y, zoom: vp.zoom }),
-          );
-        } catch {
-          // silent
-        }
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibility);
-  }, [reactFlow]);
-
   const activeView = forcedView ?? currentView;
 
   return (
@@ -993,15 +918,14 @@ function NarrativeFlowCanvas({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
-        defaultViewport={{ x: 0, y: 0, zoom: 0.15 }}
-        minZoom={0.04}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.22 }}
+        minZoom={0.1}
         maxZoom={1.8}
         panOnDrag={activeTool === "hand" || activeTool === "select"}
         selectionOnDrag={activeTool === "multi-select"}
         proOptions={{ hideAttribution: true }}
         style={{
           backgroundColor: "var(--fintheon-bg)",
-          opacity: transitioning ? 0.4 : 1,
           transition: "opacity 300ms ease",
         }}
         onMove={handleViewportMove}
@@ -1012,118 +936,109 @@ function NarrativeFlowCanvas({
         {/* Narrative/Theme toggle moved to NarrativeFilterDropdown */}
 
         <Panel position="bottom-left">
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <div
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              alignItems: "center",
+              padding: "2px 0",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <span
               style={{
-                display: "flex",
-                gap: 12,
-                alignItems: "center",
-                padding: "6px 12px",
-                background: "color-mix(in srgb, #0a0a00 85%, transparent)",
-                backdropFilter: "blur(16px)",
-                border: "1px solid #D4AF3712",
-                borderRadius: 8,
+                fontSize: 10,
+                color: "var(--fintheon-accent)",
+                fontFamily: "var(--font-mono)",
+                fontWeight: 600,
               }}
             >
+              {filteredCatalysts.length} catalysts
+            </span>
+            <span
+              style={{
+                fontSize: 10,
+                color: "var(--fintheon-muted)",
+                fontFamily: "var(--font-mono)",
+                opacity: 0.5,
+              }}
+            >
+              {NARRATIVE_THREADS.length} narratives
+            </span>
+            <span
+              style={{
+                fontSize: 10,
+                fontFamily: "var(--font-mono)",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                color:
+                  activeView === "macro"
+                    ? "#c79f4a"
+                    : activeView === "narratives"
+                      ? "#F59E0B"
+                      : "#8B5CF6",
+              }}
+            >
+              {activeView} view
+            </span>
+            {forcedView && (
               <span
                 style={{
-                  fontSize: 10,
+                  fontSize: 8,
                   color: "var(--fintheon-accent)",
                   fontFamily: "var(--font-mono)",
-                  fontWeight: 600,
-                }}
-              >
-                {filteredCatalysts.length} catalysts
-              </span>
-              <span
-                style={{
-                  fontSize: 10,
-                  color: "var(--fintheon-muted)",
-                  fontFamily: "var(--font-mono)",
                   opacity: 0.5,
-                }}
-              >
-                {NARRATIVE_THREADS.length} narratives
-              </span>
-              <span
-                style={{
-                  fontSize: 10,
-                  fontFamily: "var(--font-mono)",
-                  fontWeight: 600,
                   textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  color:
-                    activeView === "macro"
-                      ? "#c79f4a"
-                      : activeView === "narratives"
-                        ? "#F59E0B"
-                        : "#8B5CF6",
                 }}
               >
-                {activeView} view
+                locked
               </span>
-              {forcedView && (
-                <span
-                  style={{
-                    fontSize: 8,
-                    color: "var(--fintheon-accent)",
-                    fontFamily: "var(--font-mono)",
-                    opacity: 0.5,
-                    textTransform: "uppercase",
-                  }}
-                >
-                  locked
-                </span>
-              )}
-            </div>
-            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <button
-                onClick={handleSaveLayout}
-                style={{
-                  padding: "4px 10px",
-                  fontSize: 9,
-                  fontFamily: "var(--font-mono)",
-                  color: saveFlash ? "#c79f4a" : "var(--fintheon-muted)",
-                  background: "color-mix(in srgb, #0a0a00 70%, transparent)",
-                  border: `1px solid ${saveFlash ? "#c79f4a30" : "#D4AF3710"}`,
-                  borderRadius: 6,
-                  cursor: "pointer",
-                  opacity: saveFlash ? 1 : 0.6,
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.opacity = "1";
-                }}
-                onMouseLeave={(e) => {
-                  if (!saveFlash) e.currentTarget.style.opacity = "0.6";
-                }}
-              >
-                {saveFlash ? "Saved" : "Save Layout"}
-              </button>
-              <button
-                onClick={handleResetLayout}
-                style={{
-                  padding: "4px 10px",
-                  fontSize: 9,
-                  fontFamily: "var(--font-mono)",
-                  color: "var(--fintheon-muted)",
-                  background: "color-mix(in srgb, #0a0a00 70%, transparent)",
-                  border: "1px solid #D4AF3710",
-                  borderRadius: 6,
-                  cursor: "pointer",
-                  opacity: 0.6,
-                  transition: "opacity 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.opacity = "1";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.opacity = "0.6";
-                }}
-              >
-                Reset Layout
-              </button>
-            </div>
+            )}
+            <button
+              onClick={handleSaveLayout}
+              style={{
+                padding: "4px 0",
+                fontSize: 9,
+                fontFamily: "var(--font-mono)",
+                color: saveFlash ? "#c79f4a" : "var(--fintheon-muted)",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                opacity: saveFlash ? 1 : 0.6,
+                transition: "opacity 0.15s, color 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = "1";
+              }}
+              onMouseLeave={(e) => {
+                if (!saveFlash) e.currentTarget.style.opacity = "0.6";
+              }}
+            >
+              {saveFlash ? "Saved" : "Save Layout"}
+            </button>
+            <button
+              onClick={handleResetLayout}
+              style={{
+                padding: "4px 0",
+                fontSize: 9,
+                fontFamily: "var(--font-mono)",
+                color: "var(--fintheon-muted)",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                opacity: 0.6,
+                transition: "opacity 0.15s, color 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = "1";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = "0.6";
+              }}
+            >
+              Reset Layout
+            </button>
           </div>
         </Panel>
 

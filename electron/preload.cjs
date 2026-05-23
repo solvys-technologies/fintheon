@@ -67,6 +67,12 @@ ipcRenderer.on("desk-calendar:failed", (_event, payload) => {
     deskCalendarFailedCallback(payload);
 });
 
+let backendEngineStatusCallback = null;
+ipcRenderer.on("backend-engine:status", (_event, payload) => {
+  if (typeof backendEngineStatusCallback === "function")
+    backendEngineStatusCallback(payload);
+});
+
 contextBridge.exposeInMainWorld("electron", {
   // [claude-code 2026-04-23] Platform info for renderer chrome branching + remote-backend detection
   platform: PLATFORM,
@@ -93,6 +99,16 @@ contextBridge.exposeInMainWorld("electron", {
   startBackend: () => ipcRenderer.invoke("start-backend"),
   stopBackend: () => ipcRenderer.invoke("stop-backend"),
   isBackendAlive: () => ipcRenderer.invoke("is-backend-alive"),
+  backendEngine: {
+    getStatus: () => ipcRenderer.invoke("backend-engine:status"),
+    restart: () => ipcRenderer.invoke("backend-engine:restart"),
+    onStatusChange: (cb) => {
+      backendEngineStatusCallback = typeof cb === "function" ? cb : null;
+      return () => {
+        backendEngineStatusCallback = null;
+      };
+    },
+  },
 
   // SOTA updater API (manual flow)
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),

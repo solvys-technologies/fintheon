@@ -9,12 +9,14 @@ import { useHermesChat } from "./hooks/useHermesChat";
 import { useOpenAgentsRuntime } from "./hooks/useOpenAgentsRuntime";
 import { usePersistentHermesConversation } from "../../hooks/usePersistentHermesConversation";
 import { toHermesAgentOverride } from "../../lib/hermesAgentRouting";
+import type { ReasoningLevel } from "./reasoning";
 
 // [claude-code 2026-03-09] Added surfaceId for per-surface session isolation
 export function useHermesRuntime(
   agentId: string,
   thinkHarder?: boolean,
   surfaceId?: string,
+  reasoningLevel?: ReasoningLevel,
 ) {
   const { conversationId, setConversationId, clearConversationId } =
     usePersistentHermesConversation(agentId, surfaceId);
@@ -26,6 +28,7 @@ export function useHermesRuntime(
     agentOverride,
     thinkHarder,
     clearConversationId,
+    reasoningLevel,
   );
 
   // Build chatHelpers compatible with UseChatHelpers from @ai-sdk/react

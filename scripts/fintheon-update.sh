@@ -115,14 +115,13 @@ info "Branch: ${CURRENT_BRANCH:-(detached)}"
 info "Current: $(git describe --tags --abbrev=0 2>/dev/null || git log --oneline -1 | cut -c1-7)"
 echo ""
 
-# ── Step 1: Stop Fintheon + kill backend ─────────────────────────────────────
+# ── Step 1: Stop Fintheon app ────────────────────────────────────────────────
 
 step "1/12" "Stopping Fintheon..."
 pkill -f "Fintheon" 2>/dev/null || true
 pkill -f "electron.*fintheon" 2>/dev/null || true
-lsof -ti:8080 | xargs kill -9 2>/dev/null || true
 sleep 1
-ok "Stopped"
+ok "App stopped; backend engine left under launchd"
 
 # ── Step 2: Stash local changes ─────────────────────────────────────────────
 
@@ -260,6 +259,9 @@ if [[ -f "$BACKEND_ENV" ]]; then
   grep -q "^ARBITRUM_EVENT_TOP_N=" "$BACKEND_ENV" 2>/dev/null || echo "ARBITRUM_EVENT_TOP_N=10" >> "$BACKEND_ENV"
   grep -q "^ECON_CALENDAR_ENABLED=" "$BACKEND_ENV" 2>/dev/null || echo "ECON_CALENDAR_ENABLED=true" >> "$BACKEND_ENV"
   grep -q "^COMMENTARY_WATCH_ENABLED=" "$BACKEND_ENV" 2>/dev/null || echo "COMMENTARY_WATCH_ENABLED=true" >> "$BACKEND_ENV"
+  grep -q "^LIVEKIT_API_KEY=" "$BACKEND_ENV" 2>/dev/null || echo "LIVEKIT_API_KEY=" >> "$BACKEND_ENV"
+  grep -q "^LIVEKIT_API_SECRET=" "$BACKEND_ENV" 2>/dev/null || echo "LIVEKIT_API_SECRET=" >> "$BACKEND_ENV"
+  grep -q "^LIVEKIT_URL=" "$BACKEND_ENV" 2>/dev/null || echo "LIVEKIT_URL=wss://fintheon-livekit.fly.dev" >> "$BACKEND_ENV"
 
   ok "Environment verified (vault fills secrets on boot)"
 else
@@ -267,7 +269,7 @@ else
   bash "$FINTHEON_ROOT/scripts/fintheon-setup.sh" 2>/dev/null || true
 fi
 
-# ── Step 5.5: Install launchd units (Solvys Agent watcher, news-worker, gepa) ──
+# ── Step 5.5: Install launchd units (backend, Solvys Agent watcher, workers) ──
 # [claude-code 2026-05-05] S59-T1: Hermes sidecar removed, plist dropped.
 # Symlink plists from the repo into ~/Library/LaunchAgents so launchctl can load them.
 # Loading is opt-in per service — news-worker/gepa need their Fly counterparts live first.
@@ -278,6 +280,18 @@ mkdir -p "$HOME/.hermes/logs" 2>/dev/null || true
 
 CODEX_WATCHER_SRC="$FINTHEON_ROOT/launchd/io.solvys.fintheon-linear-watcher.plist"
 CODEX_WATCHER_DEST="$LAUNCH_AGENTS_DIR/io.solvys.fintheon-linear-watcher.plist"
+BACKEND_PLIST_SRC="$FINTHEON_ROOT/launchd/io.solvys.fintheon-backend.plist"
+BACKEND_PLIST_DEST="$LAUNCH_AGENTS_DIR/io.solvys.fintheon-backend.plist"
+if [[ -f "$BACKEND_PLIST_SRC" ]]; then
+  if [[ ! -L "$BACKEND_PLIST_DEST" && ! -f "$BACKEND_PLIST_DEST" ]]; then
+    ln -s "$BACKEND_PLIST_SRC" "$BACKEND_PLIST_DEST" 2>/dev/null && ok "Linked launchd plist: io.solvys.fintheon-backend.plist"
+  fi
+  if launchctl bootstrap "gui/$(id -u)" "$BACKEND_PLIST_DEST" 2>/dev/null || launchctl load -w "$BACKEND_PLIST_DEST" 2>/dev/null || launchctl list 2>/dev/null | awk '{print $3}' | grep -qx "io.solvys.fintheon-backend"; then
+    ok "Backend engine registered with launchd"
+  else
+    warn "Backend plist linked but not loaded — run: launchctl load -w ~/Library/LaunchAgents/io.solvys.fintheon-backend.plist"
+  fi
+fi
 if [[ -f "$FINTHEON_ROOT/scripts/linear-watcher.sh" && -f "$CODEX_WATCHER_SRC" ]]; then
   chmod +x "$FINTHEON_ROOT/scripts/linear-watcher.sh" 2>/dev/null || true
   if [[ ! -L "$CODEX_WATCHER_DEST" && ! -f "$CODEX_WATCHER_DEST" ]]; then
@@ -482,16 +496,17 @@ fi
 step "9/12" "Starting backend..."
 cd "$FINTHEON_ROOT/backend-hono"
 
-lsof -ti:8080 | xargs kill -9 2>/dev/null || true
-sleep 1
-
-nohup bun run src/index.ts > /tmp/fintheon-backend.log 2>&1 &
-BACKEND_PID=$!
+if [[ -f "$HOME/Library/LaunchAgents/io.solvys.fintheon-backend.plist" ]]; then
+  launchctl kickstart -k "gui/$(id -u)/io.solvys.fintheon-backend" 2>/dev/null || launchctl load -w "$HOME/Library/LaunchAgents/io.solvys.fintheon-backend.plist" 2>/dev/null || true
+else
+  warn "Backend LaunchAgent missing — starting one-shot fallback"
+  nohup bun run src/index.ts > /tmp/fintheon-backend.log 2>&1 &
+fi
 
 # Wait for ready
 for i in {1..15}; do
   if curl -s localhost:8080/health > /dev/null 2>&1; then
-    ok "Backend live (PID: $BACKEND_PID)"
+    ok "Backend engine live"
     break
   fi
   sleep 2

@@ -4,6 +4,7 @@ import type {
   NarrativeWorkspaceSession,
 } from "./NarrativeSessionWorkspace";
 import type { SensemakingCatalyst, SensemakingResponse } from "./sensemaking-types";
+import { safeNarrativeText } from "../../lib/market-impact-format";
 
 interface NarrativeDocsTabProps {
   session: NarrativeWorkspaceSession | null;
@@ -141,7 +142,7 @@ function CatalystLine({ catalyst }: { catalyst: SensemakingCatalyst }) {
         {catalyst.headline}
       </p>
       <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-[var(--fintheon-muted)]">
-        {catalyst.summary}
+        {safeNarrativeText(catalyst.summary, "No catalyst summary yet.")}
       </p>
     </div>
   );
@@ -185,7 +186,7 @@ function buildPrintableDoc({
     .slice(0, 12)
     .map(
       (item) =>
-        `<li><strong>${escapeHtml(item.headline)}</strong><span>${item.role} | IV ${item.ivScore.toFixed(1)} | ${escapeHtml(item.source)}</span><p>${escapeHtml(item.summary)}</p></li>`,
+        `<li><strong>${escapeHtml(item.headline)}</strong><span>${item.role} | IV ${item.ivScore.toFixed(1)} | ${escapeHtml(item.source)}</span><p>${escapeHtml(safeNarrativeText(item.summary, "No catalyst summary yet.") ?? "")}</p></li>`,
     )
     .join("");
   const linkRows = links

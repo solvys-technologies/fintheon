@@ -1,10 +1,9 @@
 import { useMemo, useState } from "react";
+import { useMessageQueue } from "../chat/hooks/useMessageQueue";
+import type { ReasoningLevel } from "../chat/reasoning";
 import { NarrativeRiskFlowPicker } from "./NarrativeRiskFlowPicker";
 import { NarrativeSensemakingComposer } from "./NarrativeSensemakingComposer";
-import {
-  NarrativeSessionHistory,
-  type NarrativeSessionSummary,
-} from "./NarrativeSessionHistory";
+import type { NarrativeSessionSummary } from "./NarrativeSessionHistory";
 import type { NarrativeHeadlineOption } from "./sensemaking-types";
 import { DEFAULT_NARRATIVE_SESSION_CHIPS } from "../../hooks/useNarrativeSituationMap";
 import { useNarrativeRiskFlowHeadlines } from "../../hooks/useNarrativeRiskFlowHeadlines";
@@ -15,15 +14,18 @@ export interface NarrativeCreateSessionInput {
   narrativeSlugs: string[];
   title: string;
   color: string;
+  reasoningLevel?: ReasoningLevel;
 }
 
 interface NarrativeFlowLandingProps {
   sessions?: NarrativeSessionSummary[];
   isSubmitting?: boolean;
   statusMessage?: string | null;
+  reasoningLevel: ReasoningLevel;
   onCreateSession: (input: NarrativeCreateSessionInput) => void;
   onOpenSession: (id: string) => void;
   onRenameSession: (id: string, title: string, color: string) => void;
+  onReasoningLevelChange: (level: ReasoningLevel) => void;
 }
 
 const MIN_CATALYSTS = 3;
@@ -59,9 +61,11 @@ export function NarrativeFlowLanding({
   sessions = DEFAULT_SESSIONS,
   isSubmitting = false,
   statusMessage = null,
+  reasoningLevel,
   onCreateSession,
   onOpenSession,
   onRenameSession,
+  onReasoningLevelChange,
 }: NarrativeFlowLandingProps) {
   const { headlines, isLoading, error } = useNarrativeRiskFlowHeadlines();
   const [query, setQuery] = useState("");
@@ -104,7 +108,7 @@ export function NarrativeFlowLanding({
     });
   }
 
-  function handleCreateSession() {
+  function submitSessionWithQuery(nextQuery: string) {
     if (selectedIds.size < MIN_CATALYSTS) {
       setValidationMessage("[SELECT 3 CATALYSTS]");
       setIsPickerOpen(true);
@@ -112,26 +116,48 @@ export function NarrativeFlowLanding({
     }
 
     onCreateSession({
-      query,
+      query: nextQuery,
       catalystIds: Array.from(selectedIds),
       narrativeSlugs: Array.from(selectedNarratives),
-      title: deriveTitle(query, attachedHeadlines),
+      title: deriveTitle(nextQuery, attachedHeadlines),
       color: DEFAULT_COLOR,
+      reasoningLevel,
     });
+    setQuery("");
+  }
+
+  const {
+    queue,
+    addQueue,
+    editQueue,
+    removeQueue,
+    reorderQueue,
+    sendOne,
+    sendAll,
+  } = useMessageQueue({
+    isRunning: isSubmitting,
+    sendNow: submitSessionWithQuery,
+    storageKey: "fintheon:narrative-opener-queue",
+  });
+
+  function handleCreateSession() {
+    submitSessionWithQuery(query);
   }
 
   return (
     <div className="relative flex h-full min-h-[620px] flex-col justify-center overflow-hidden bg-[var(--fintheon-bg)] px-4 py-10">
-      <div
-        className={`mb-8 transition duration-300 ${
-          isPickerOpen ? "-translate-y-6 opacity-0" : "translate-y-0 opacity-100"
-        }`}
-      >
-        <NarrativeSessionHistory
-          sessions={sessions}
-          onOpenSession={onOpenSession}
-          onRenameSession={onRenameSession}
-        />
+      <div className="pointer-events-none mx-auto mb-8 w-full max-w-3xl text-center">
+        <p
+          className="text-[26px] leading-tight text-[var(--fintheon-text)]/86"
+          style={{ fontFamily: "var(--font-display, var(--font-heading))" }}
+        >
+          Build the narrative before the market names it.
+        </p>
+        <p className="mx-auto mt-3 max-w-2xl text-[12px] leading-5 text-[var(--fintheon-muted)]/70">
+          Attach at least three RiskFlow catalysts, choose the desk narratives
+          that matter, then ask NarrativeFlow to organize the session into a
+          workspace and map.
+        </p>
       </div>
 
       <NarrativeSensemakingComposer
@@ -145,10 +171,25 @@ export function NarrativeFlowLanding({
         attachLabel="RiskFlow"
         narrativeChips={DEFAULT_NARRATIVE_SESSION_CHIPS}
         selectedNarrativeSlugs={selectedNarratives}
+        reasoningLevel={reasoningLevel}
+        queue={queue}
+        contextStats={{
+          messageCount: sessions.length,
+          estimatedTokens: estimateLandingTokens(query, attachedHeadlines),
+          connectorCount: attachedHeadlines.length,
+          activeSkillLabel: "NarrativeFlow",
+        }}
         onQueryChange={setQuery}
         onOpenDrawer={() => setIsPickerOpen(true)}
         onRemoveHeadline={removeHeadline}
         onSubmit={handleCreateSession}
+        onQueueMessage={addQueue}
+        onEditQueue={editQueue}
+        onRemoveQueue={removeQueue}
+        onReorderQueue={reorderQueue}
+        onSendQueueOne={sendOne}
+        onSendQueueAll={sendAll}
+        onReasoningLevelChange={onReasoningLevelChange}
         onToggleNarrative={toggleNarrative}
       />
 
@@ -177,4 +218,13 @@ function deriveTitle(query: string, headlines: NarrativeHeadlineOption[]) {
   const trimmed = query.trim();
   if (trimmed.length > 0) return trimmed.slice(0, 96);
   return headlines[0]?.headline.slice(0, 96) ?? "Untitled narrative";
+}
+
+function estimateLandingTokens(
+  query: string,
+  headlines: NarrativeHeadlineOption[],
+): number {
+  return Math.ceil(
+    `${query}\n${headlines.map((item) => item.headline).join("\n")}`.length / 4,
+  );
 }

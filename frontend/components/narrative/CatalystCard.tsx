@@ -10,6 +10,7 @@ import {
   catalystSeverityToFuse,
   catalystSourceLabel,
 } from "../../lib/catalyst-riskflow-utils";
+import { formatMarketImpact } from "../../lib/market-impact-format";
 import DriftBubble from "./DriftBubble";
 import type { DriftBubbleData } from "./DriftBubble";
 
@@ -33,6 +34,7 @@ function CatalystDetailModal({
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const impactText = formatMarketImpact(catalyst.marketImpact);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -124,22 +126,13 @@ function CatalystDetailModal({
             </div>
           )}
 
-          {catalyst.marketImpact && (
+          {impactText && (
             <div className="mt-3 pt-3 border-t border-[var(--fintheon-accent)]/10">
               <span className="text-[9px] uppercase tracking-wider text-[var(--fintheon-muted)]/40 mb-1.5 block">
                 Market Impact
               </span>
-              <div className="flex gap-3 text-[10px]">
-                {catalyst.marketImpact.nq && (
-                  <span className="text-[var(--fintheon-text)]/60">
-                    NQ: {catalyst.marketImpact.nq.points > 0 ? "+" : ""}{catalyst.marketImpact.nq.points}pts
-                  </span>
-                )}
-                {catalyst.marketImpact.es && (
-                  <span className="text-[var(--fintheon-text)]/60">
-                    ES: {catalyst.marketImpact.es.points > 0 ? "+" : ""}{catalyst.marketImpact.es.points}pts
-                  </span>
-                )}
+              <div className="text-[10px] leading-4 text-[var(--fintheon-text)]/60">
+                {impactText}
               </div>
             </div>
           )}

@@ -91,6 +91,7 @@ export function createHarperRoutes() {
         conversationId?: string;
         history?: Array<{ role: "user" | "assistant"; content: string }>;
         thinkHarder?: boolean;
+        reasoningLevel?: "quick" | "standard" | "deep" | "max";
         persona?: string;
         riskFlowContext?: string;
         activeConnectors?: string[];
@@ -457,6 +458,7 @@ export function createHarperRoutes() {
           userId,
           history: body.history,
           thinkHarder: body.thinkHarder,
+          reasoningLevel: body.reasoningLevel,
           persona: body.persona,
           riskFlowContext: body.riskFlowContext,
           activeConnectors: body.activeConnectors,

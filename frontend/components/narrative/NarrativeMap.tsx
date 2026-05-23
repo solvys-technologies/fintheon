@@ -4,12 +4,12 @@
 // [claude-code 2026-03-29] Catalysts sourced from DB via RiskFlowContext — seed JSON and localStorage import removed
 // [claude-code 2026-03-28] S7: Force-directed canvas, removed Sanctum overlay (now separate view)
 // [claude-code 2026-03-28] S5-T3: CatalystModal + auto-seed pipeline wired in
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useHarperOps } from "../../hooks/useHarperOps";
 import { Eye, EyeOff, ChevronDown, Calendar } from "lucide-react";
 import { useNarrative } from "../../contexts/NarrativeContext";
 import NarrativeForceCanvas from "./NarrativeForceCanvas";
-import { TimelineScrubber } from "./TimelineScrubber";
 import { NarrativeSaveModal } from "./NarrativeSaveModal";
 import { RiskFlowImportModal } from "./RiskFlowImportModal";
 import { NarrativeTimelineModal } from "./NarrativeManageModal";
@@ -21,6 +21,7 @@ import {
 } from "./NarrativeFloatingToolbar";
 import { NarrativeCanvasChat } from "./NarrativeCanvasChat";
 import { NarrativeColorKey } from "./NarrativeColorKey";
+import type { NarrativeSessionSummary } from "./NarrativeSessionHistory";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import {
   loadSeedEvents,
@@ -28,7 +29,26 @@ import {
 } from "../../lib/narrative-seed-loader";
 import type { CatalystCard } from "../../lib/narrative-types";
 
-export function NarrativeMap() {
+const SESSION_MAP_POSITIONS = [
+  { x: 18, y: 28 },
+  { x: 42, y: 18 },
+  { x: 66, y: 30 },
+  { x: 30, y: 58 },
+  { x: 56, y: 62 },
+  { x: 78, y: 54 },
+  { x: 48, y: 42 },
+  { x: 22, y: 76 },
+];
+
+export function NarrativeMap({
+  sessions,
+  activeSessionId,
+  onOpenSession,
+}: {
+  sessions?: NarrativeSessionSummary[];
+  activeSessionId?: string | null;
+  onOpenSession?: (id: string) => void;
+}) {
   const { state, snapshot, dispatch } = useNarrative();
   // [claude-code 2026-04-05] Harper presence overlay
   const { status: harperStatus, feed: harperFeed } = useHarperOps();
@@ -57,12 +77,9 @@ export function NarrativeMap() {
   const [editingCard, setEditingCard] = useState<CatalystCard | null>(null);
   const [canvasTool, setCanvasTool] = useState<CanvasTool>("select");
   const [canvasScale, setCanvasScale] = useState(1.0);
-  const [canvasCamera, setCanvasCamera] = useState({
-    x: 0,
-    y: 0,
-    zoom: 0.15,
-  });
   const [timeframeFilter, setTimeframeFilter] = useState<string>("all");
+  const [headerMapControlsHost, setHeaderMapControlsHost] =
+    useState<HTMLElement | null>(null);
   const [zoomFns, setZoomFns] = useState<{
     zoomTo: (level: number) => void;
     fitView: () => void;
@@ -71,19 +88,35 @@ export function NarrativeMap() {
   } | null>(null);
   const { alerts } = useRiskFlow();
   const seedLoadedRef = useRef(false);
+  const workspaceSessions = useMemo(
+    () => (sessions ?? []).filter((session) => session.id && session.title),
+    [sessions],
+  );
+  const isWorkspaceScoped = Array.isArray(sessions);
+
+  useEffect(() => {
+    const syncHeaderHost = () => {
+      setHeaderMapControlsHost(document.getElementById("narrativeflow-map-controls"));
+    };
+    syncHeaderHost();
+    const frame = requestAnimationFrame(syncHeaderHost);
+    return () => cancelAnimationFrame(frame);
+  }, [isWorkspaceScoped]);
 
   // Load historical seed events on first boot (513 pre-classified catalysts)
   useEffect(() => {
+    if (isWorkspaceScoped) return;
     if (seedLoadedRef.current) return;
     seedLoadedRef.current = true;
     const seedCards = loadSeedEvents();
     if (seedCards.length > 0) {
       dispatch({ type: "BULK_ADD_CATALYSTS", catalysts: seedCards });
     }
-  }, [dispatch]);
+  }, [dispatch, isWorkspaceScoped]);
 
   // Sync promoted RiskFlow items as catalyst cards (DB-backed, not localStorage seeds)
   useEffect(() => {
+    if (isWorkspaceScoped) return;
     if (alerts.length === 0) return;
     const existingRfIds = new Set(
       state.catalysts
@@ -100,7 +133,7 @@ export function NarrativeMap() {
     if (promoted.length > 0) {
       dispatch({ type: "BULK_ADD_CATALYSTS", catalysts: promoted });
     }
-  }, [alerts, state.catalysts, dispatch]);
+  }, [alerts, state.catalysts, dispatch, isWorkspaceScoped]);
 
   const handleSave = useCallback(() => {
     setSaveModalOpen(true);
@@ -155,14 +188,13 @@ export function NarrativeMap() {
       visibleLaneIds: Array.from(visibleLaneIds),
       activeTags: Array.from(activeTags),
       canvasScale,
-      viewport: canvasCamera,
     };
     try {
       localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
     } catch {
       // silent
     }
-  }, [visibleLaneIds, activeTags, canvasScale, canvasCamera]);
+  }, [visibleLaneIds, activeTags, canvasScale]);
 
   const handleResetLayout = useCallback(() => {
     try {
@@ -173,13 +205,10 @@ export function NarrativeMap() {
         setVisibleLaneIds(new Set(layout.visibleLaneIds));
       if (layout.activeTags) setActiveTags(new Set(layout.activeTags));
       if (layout.canvasScale != null) setCanvasScale(layout.canvasScale);
-      if (layout.viewport && zoomFns?.setViewport) {
-        zoomFns.setViewport(layout.viewport);
-      }
     } catch {
       // silent
     }
-  }, [zoomFns]);
+  }, []);
 
   const handleResetView = useCallback(() => {
     zoomFns?.resetView();
@@ -208,6 +237,21 @@ export function NarrativeMap() {
     setEditingCard(card);
     setCatalystModalOpen(true);
   }, []);
+  const mapFilterControls = !isWorkspaceScoped ? (
+    <>
+      <TimeframeFilterDropdown
+        selected={timeframeFilter}
+        onSelect={setTimeframeFilter}
+      />
+      <NarrativeFilterDropdown
+        visibleLaneIds={visibleLaneIds}
+        onToggleLane={handleToggleLane}
+        onSelectAll={handleSelectAll}
+        onClearAll={handleClearAll}
+        catalysts={state.catalysts}
+      />
+    </>
+  ) : null;
 
   return (
     <NarrativeHighlightProvider>
@@ -215,26 +259,36 @@ export function NarrativeMap() {
         className="h-full flex flex-col"
         style={{ backgroundColor: "var(--fintheon-bg)" }}
       >
+        {headerMapControlsHost && mapFilterControls
+          ? createPortal(mapFilterControls, headerMapControlsHost)
+          : null}
         <div className="flex-1 min-h-0 relative overflow-hidden">
           {/* Force-directed mind map canvas */}
-          <NarrativeForceCanvas
-            visibleLaneIds={visibleLaneIds}
-            activeTags={activeTags}
-            activeTool={canvasTool}
-            timeframeFilter={timeframeFilter}
-            onScaleChange={setCanvasScale}
-            onCameraChange={setCanvasCamera}
-            onSelectCard={handleSelectCard}
-            onEditCard={handleEditCard}
-            onZoomFnsReady={setZoomFns}
-          />
+          {isWorkspaceScoped ? (
+            <WorkspaceNarrativesMap
+              sessions={workspaceSessions}
+              activeSessionId={activeSessionId ?? null}
+              onOpenSession={onOpenSession}
+            />
+          ) : (
+            <NarrativeForceCanvas
+              visibleLaneIds={visibleLaneIds}
+              activeTags={activeTags}
+              activeTool={canvasTool}
+              timeframeFilter={timeframeFilter}
+              onScaleChange={setCanvasScale}
+              onSelectCard={handleSelectCard}
+              onEditCard={handleEditCard}
+              onZoomFnsReady={setZoomFns}
+            />
+          )}
 
           {/* Narrative color key — bottom-right */}
-          <NarrativeColorKey />
+          {!isWorkspaceScoped ? <NarrativeColorKey /> : null}
 
           {/* Harper watching overlay — bottom-left */}
           {harperStatus?.loop?.alive && (
-            <div className="absolute bottom-3 left-3 z-40 pointer-events-none flex items-center gap-1.5 rounded-full border border-[var(--fintheon-accent)]/20 bg-[#050402]/80 backdrop-blur-sm px-2.5 py-1">
+            <div className="absolute bottom-3 left-3 z-40 pointer-events-none flex items-center gap-1.5 px-2.5 py-1">
               <span
                 className={`h-1.5 w-1.5 rounded-full ${goldFlash ? "bg-[#D4AF37]" : "bg-emerald-400"} animate-pulse`}
               />
@@ -244,61 +298,49 @@ export function NarrativeMap() {
             </div>
           )}
 
-          {/* Narrative filters — right-justified */}
-          <div className="absolute top-3 right-3 z-40 flex items-center gap-1.5">
-            <TimeframeFilterDropdown
-              selected={timeframeFilter}
-              onSelect={setTimeframeFilter}
-            />
-            <NarrativeFilterDropdown
-              visibleLaneIds={visibleLaneIds}
-              onToggleLane={handleToggleLane}
-              onSelectAll={handleSelectAll}
-              onClearAll={handleClearAll}
-              catalysts={state.catalysts}
-            />
-          </div>
+          {/* Map controls — one top-right row */}
+          {!headerMapControlsHost && mapFilterControls ? (
+            <div className="absolute right-3 top-3 z-40 flex items-center gap-1.5">
+              {mapFilterControls}
+            </div>
+          ) : null}
 
           {/* Canvas command palette — ephemeral chat above toolbar */}
-          <NarrativeCanvasChat />
+          {!isWorkspaceScoped ? <NarrativeCanvasChat /> : null}
 
           {/* Figma-style floating toolbar — bottom center */}
-          <NarrativeFloatingToolbar
-            activeTool={canvasTool}
-            onToolChange={setCanvasTool}
-            onAddCatalyst={() => {
-              setCatalystModalOpen(true);
-              setEditingCard(null);
-            }}
-            onImport={() => setImportModalOpen(true)}
-            onToggleSanctum={(_page?: number) => {
-              /* TODO: wire to Sanctum sub-view navigation — requires props from MainLayout */
-            }}
-            onToggleHeatmap={() => dispatch({ type: "TOGGLE_HEATMAP" })}
-            onToggleFilter={() => {
-              const next =
-                state.filterSentiment === "all"
-                  ? "bearish"
-                  : state.filterSentiment === "bearish"
-                    ? "bullish"
-                    : "all";
-              dispatch({ type: "SET_FILTER", sentiment: next });
-            }}
-            sanctumActive={false}
-            heatmapActive={state.heatmapEnabled}
-            filterActive={state.filterSentiment !== "all"}
-            scale={canvasScale}
-            onZoomTo={zoomFns?.zoomTo}
-            onFitView={zoomFns?.fitView}
-            onResetView={handleResetView}
-          />
+          {!isWorkspaceScoped ? (
+            <NarrativeFloatingToolbar
+              activeTool={canvasTool}
+              onToolChange={setCanvasTool}
+              onAddCatalyst={() => {
+                setCatalystModalOpen(true);
+                setEditingCard(null);
+              }}
+              onImport={() => setImportModalOpen(true)}
+              onToggleSanctum={(_page?: number) => {
+                /* TODO: wire to Sanctum sub-view navigation — requires props from MainLayout */
+              }}
+              onToggleHeatmap={() => dispatch({ type: "TOGGLE_HEATMAP" })}
+              onToggleFilter={() => {
+                const next =
+                  state.filterSentiment === "all"
+                    ? "bearish"
+                    : state.filterSentiment === "bearish"
+                      ? "bullish"
+                      : "all";
+                dispatch({ type: "SET_FILTER", sentiment: next });
+              }}
+              sanctumActive={false}
+              heatmapActive={state.heatmapEnabled}
+              filterActive={state.filterSentiment !== "all"}
+              scale={canvasScale}
+              onZoomTo={zoomFns?.zoomTo}
+              onFitView={zoomFns?.fitView}
+              onResetView={handleResetView}
+            />
+          ) : null}
         </div>
-
-        <TimelineScrubber
-          state={state}
-          catalysts={state.catalysts}
-          dispatch={dispatch}
-        />
 
         <NarrativeSaveModal
           open={saveModalOpen}
@@ -328,6 +370,106 @@ export function NarrativeMap() {
         />
       </div>
     </NarrativeHighlightProvider>
+  );
+}
+
+function WorkspaceNarrativesMap({
+  sessions,
+  activeSessionId,
+  onOpenSession,
+}: {
+  sessions: NarrativeSessionSummary[];
+  activeSessionId: string | null;
+  onOpenSession?: (id: string) => void;
+}) {
+  if (sessions.length === 0) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--fintheon-accent)]">
+            No narratives built
+          </p>
+          <p className="mt-2 max-w-sm text-xs leading-5 text-[var(--fintheon-muted)]">
+            Build a NarrativeFlow workspace and it will appear here as a bounded
+            narrative territory.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const links = sessions.flatMap((session, index) =>
+    sessions.slice(index + 1).map((next, offset) => ({
+      id: `${session.id}-${next.id}`,
+      from: SESSION_MAP_POSITIONS[index % SESSION_MAP_POSITIONS.length],
+      to: SESSION_MAP_POSITIONS[(index + offset + 1) % SESSION_MAP_POSITIONS.length],
+    })),
+  );
+
+  return (
+    <div className="relative h-full overflow-hidden">
+      <svg
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-35"
+        preserveAspectRatio="none"
+      >
+        {links.map((link) => (
+          <line
+            key={link.id}
+            x1={`${link.from.x}%`}
+            y1={`${link.from.y}%`}
+            x2={`${link.to.x}%`}
+            y2={`${link.to.y}%`}
+            stroke="rgba(20,184,166,0.28)"
+            strokeDasharray="3 6"
+            strokeWidth="1"
+          />
+        ))}
+      </svg>
+      {sessions.map((session, index) => {
+        const point = SESSION_MAP_POSITIONS[index % SESSION_MAP_POSITIONS.length];
+        const isActive = session.id === activeSessionId;
+        const size = Math.max(120, Math.min(230, 116 + session.catalystCount * 2));
+        return (
+          <button
+            key={session.id}
+            type="button"
+            onClick={() => onOpenSession?.(session.id)}
+            className="group absolute -translate-x-1/2 -translate-y-1/2 text-left transition duration-200 hover:scale-[1.02]"
+            style={{ left: `${point.x}%`, top: `${point.y}%`, width: size }}
+          >
+            <span
+              aria-hidden="true"
+              className={`absolute left-1/2 top-1/2 rounded-full transition duration-200 ${
+                isActive ? "opacity-30" : "opacity-12 group-hover:opacity-20"
+              }`}
+              style={{
+                width: size,
+                height: size,
+                transform: "translate(-50%, -50%)",
+                background: `radial-gradient(circle, ${session.color}26 0%, ${session.color}0d 58%, transparent 70%)`,
+              }}
+            />
+            <span
+              className={`relative block max-w-[220px] text-[12px] font-semibold leading-4 ${
+                isActive
+                  ? "text-[var(--fintheon-accent)]"
+                  : "text-[var(--fintheon-text)]/80 group-hover:text-[var(--fintheon-accent)]"
+              }`}
+              style={{ textShadow: "0 0 16px rgba(0,0,0,0.9)" }}
+            >
+              {session.title}
+            </span>
+            <span className="relative mt-1 block font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]/55">
+              {session.catalystCount} catalysts · {session.deskLabel ?? "Workspace"}
+            </span>
+          </button>
+        );
+      })}
+      <div className="absolute bottom-3 left-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]/55">
+        {sessions.length} built narratives
+      </div>
+    </div>
   );
 }
 

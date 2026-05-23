@@ -254,7 +254,7 @@ export function IframesTab({
         <div className="space-y-4">
           <div>
             <label className="block text-sm text-gray-300 mb-2">
-              Forum URL (Full)
+              Legacy Forum URL
             </label>
             <input
               type="url"
@@ -262,25 +262,21 @@ export function IframesTab({
               onChange={(e) =>
                 setIframeUrls({ ...iframeUrls, boardroom: e.target.value })
               }
-              placeholder="https://web.fluxer.app/channels/..."
+              placeholder="Not used by ProxVoice"
               className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/30 placeholder:text-zinc-600"
             />
             <div className="flex items-center justify-between mt-1">
               <p className="text-[10px] text-gray-600">
-                Embedded in the Board Room tab
+                ProxVoice now owns the Forum surface
               </p>
               <button
                 onClick={() =>
-                  window.open(
-                    iframeUrls.boardroom ||
-                      import.meta.env.VITE_NOTION_BOARDROOM_URL ||
-                      "",
-                    "_blank",
-                  )
+                  iframeUrls.boardroom && window.open(iframeUrls.boardroom, "_blank")
                 }
+                disabled={!iframeUrls.boardroom}
                 className="text-[11px] font-medium text-[var(--fintheon-accent)] hover:underline"
               >
-                Login with Google
+                Open Legacy URL
               </button>
             </div>
           </div>

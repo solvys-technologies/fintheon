@@ -18,7 +18,9 @@ import type { Citation } from "./chat/CitationChip";
 import type { ActivityEntry } from "./chat/AgentActivityRail";
 import { TodoDrawer } from "./chat/TodoDrawer";
 import { useTodoList } from "./chat/hooks/useTodoList";
-import type { QueuedMessage } from "./chat/MessageQueue";
+import { useMessageQueue } from "./chat/hooks/useMessageQueue";
+import { normalizeReasoningLevel, shouldThinkHarder } from "./chat/reasoning";
+import type { ReasoningLevel } from "./chat/reasoning";
 import { SKILL_PREFIXES } from "../lib/skillPrefixes";
 import QuickFintheonModal from "./analysis/QuickFintheonModal";
 import { useFeatureFlags } from "../hooks/useFeatureFlags";
@@ -32,6 +34,8 @@ function ChatInterfaceInner({
   lastError,
   thinkHarder,
   setThinkHarder,
+  reasoningLevel,
+  setReasoningLevel,
   lastRequestId,
   dualPane = false,
 }: {
@@ -41,18 +45,29 @@ function ChatInterfaceInner({
   lastError: string | null;
   thinkHarder: boolean;
   setThinkHarder: (v: boolean) => void;
+  reasoningLevel: ReasoningLevel;
+  setReasoningLevel: (level: ReasoningLevel) => void;
   lastRequestId: string | null;
   dualPane?: boolean;
 }) {
   const { activeAgent } = useFintheonAgents();
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
+  const threadMessages = useThread((t) => t.messages);
 
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
   const [showSkills, setShowSkills] = useState(false);
   const { disabledSkills } = useFeatureFlags();
   const [showQuickFintheonModal] = useState(false);
-  const [showArtifacts, setShowArtifacts] = useState(false);
+  const [showArtifacts, setShowArtifacts] = useState(true);
+  const [hasChatStarted, setHasChatStarted] = useState(false);
+  const [artifactWidth, setArtifactWidth] = useState(() => {
+    try {
+      return Number(localStorage.getItem("fintheon:chat-artifact-width")) || 390;
+    } catch {
+      return 390;
+    }
+  });
 
   /* S38-T2: Artifact pane config — routes to correct sub-pane type */
   const [artifactConfig, setArtifactConfig] = useState<{
@@ -78,24 +93,37 @@ function ChatInterfaceInner({
   // Todo list state — persisted to localStorage
   const { todos, addTodo, toggleTodo, removeTodo } = useTodoList();
 
-  // Message queue state — sequential pending messages
-  const [queue, setQueue] = useState<QueuedMessage[]>([]);
-
-  const handleEditQueue = useCallback((id: string, text: string) => {
-    setQueue((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, text } : q)),
-    );
-  }, []);
-
-  const handleRemoveQueue = useCallback((id: string) => {
-    setQueue((prev) => prev.filter((q) => q.id !== id));
-  }, []);
-
-  const handleSend = useCallback(
+  const sendNow = useCallback(
     (msg: string) => {
+      setHasChatStarted(true);
       runtime.append({ role: "user", content: [{ type: "text", text: msg }] });
     },
     [runtime],
+  );
+
+  const {
+    queue,
+    addQueue,
+    editQueue,
+    removeQueue,
+    reorderQueue,
+    sendOne,
+    sendAll,
+  } = useMessageQueue({
+    isRunning,
+    sendNow,
+  });
+
+  const handleSend = useCallback(
+    (msg: string) => {
+      if (isRunning) {
+        addQueue(msg);
+        setHasChatStarted(true);
+        return;
+      }
+      sendNow(msg);
+    },
+    [addQueue, isRunning, sendNow],
   );
 
   // Skill-aware send — activates skill and prepends prefix before sending
@@ -108,9 +136,22 @@ function ChatInterfaceInner({
         role: "user",
         content: [{ type: "text", text: finalText }],
       });
+      setHasChatStarted(true);
     },
     [runtime],
   );
+
+  useEffect(() => {
+    if (threadMessages.length > 0) setHasChatStarted(true);
+  }, [threadMessages.length]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("fintheon:chat-artifact-width", String(artifactWidth));
+    } catch {
+      /* ignore */
+    }
+  }, [artifactWidth]);
 
   // Listen for external open-chat-skill events (e.g. from Regime Tracker AI Generate)
   useEffect(() => {
@@ -159,6 +200,7 @@ function ChatInterfaceInner({
   }, []);
 
   const handleNewChat = useCallback(() => {
+    setHasChatStarted(false);
     clearConversationId();
   }, [clearConversationId]);
 
@@ -208,6 +250,7 @@ function ChatInterfaceInner({
             messageRefs={messageRefs}
             lastError={lastError}
             lastRequestId={lastRequestId}
+            hasSubmittedMessage={hasChatStarted}
             activityEntries={activityEntries}
             citations={citations}
             onPinCitation={handlePinCitation}
@@ -223,8 +266,11 @@ function ChatInterfaceInner({
               onToggleTodo={toggleTodo}
               onRemoveTodo={removeTodo}
               queue={queue}
-              onEditQueue={handleEditQueue}
-              onRemoveQueue={handleRemoveQueue}
+              onEditQueue={editQueue}
+              onRemoveQueue={removeQueue}
+              onReorderQueue={reorderQueue}
+              onSendQueueOne={sendOne}
+              onSendQueueAll={sendAll}
             />
           </div>
 
@@ -241,6 +287,11 @@ function ChatInterfaceInner({
             <FintheonComposer
               thinkHarder={thinkHarder}
               setThinkHarder={setThinkHarder}
+              reasoningLevel={reasoningLevel}
+              onReasoningLevelChange={(level) => {
+                setReasoningLevel(level);
+                setThinkHarder(shouldThinkHarder(level));
+              }}
               lastError={lastError}
               activeSkill={activeSkill}
               onSelectSkill={setActiveSkill}
@@ -249,6 +300,9 @@ function ChatInterfaceInner({
               disabledSkills={disabledSkills}
               conversationId={conversationId}
               onConversationGone={clearConversationId}
+              onQueueMessage={addQueue}
+              queueCount={queue.length}
+              onMessageSubmitted={() => setHasChatStarted(true)}
               todoSlot={
                 <button
                   onClick={() => setShowTodoDrawer((v) => !v)}
@@ -267,17 +321,19 @@ function ChatInterfaceInner({
           </div>
         </div>
 
-        {/* S38-T2: Artifact pane — right side, only in dual-pane mode (Chat main) */}
-        {dualPane && showArtifacts && artifactConfig && (
+        {/* Codex-style artifact / diff / preview workbench */}
+        {dualPane && showArtifacts && (
           <ArtifactPane
-            artifactType={artifactConfig.artifactType}
-            tradingViewConfig={artifactConfig.tradingViewConfig}
-            browserSessionId={artifactConfig.browserSessionId}
-            browserStatus={artifactConfig.browserStatus}
-            reportHtml={artifactConfig.reportHtml}
-            citationSource={artifactConfig.citationSource}
-            narrativeCanvasId={artifactConfig.narrativeCanvasId}
+            artifactType={artifactConfig?.artifactType}
+            tradingViewConfig={artifactConfig?.tradingViewConfig}
+            browserSessionId={artifactConfig?.browserSessionId}
+            browserStatus={artifactConfig?.browserStatus}
+            reportHtml={artifactConfig?.reportHtml}
+            citationSource={artifactConfig?.citationSource}
+            narrativeCanvasId={artifactConfig?.narrativeCanvasId}
             onClose={handleCloseArtifact}
+            width={artifactWidth}
+            onWidthChange={setArtifactWidth}
             variant="pane"
           />
         )}
@@ -299,6 +355,15 @@ export default function ChatInterface({
 }) {
   const { activeAgent } = useFintheonAgents();
   const [thinkHarderState, setThinkHarderState] = useState(false);
+  const [reasoningLevel, setReasoningLevel] = useState<ReasoningLevel>(() => {
+    try {
+      return normalizeReasoningLevel(
+        localStorage.getItem("fintheon:reasoning-level"),
+      );
+    } catch {
+      return "standard";
+    }
+  });
   const {
     runtime,
     conversationId,
@@ -310,6 +375,7 @@ export default function ChatInterface({
     activeAgent?.id ?? "default",
     thinkHarderState,
     surfaceId,
+    reasoningLevel,
   );
 
   // Chat main surface gets dual-pane layout (conversation + artifacts)
@@ -324,6 +390,16 @@ export default function ChatInterface({
         lastError={lastError}
         thinkHarder={thinkHarderState}
         setThinkHarder={setThinkHarderState}
+        reasoningLevel={reasoningLevel}
+        setReasoningLevel={(level) => {
+          setReasoningLevel(level);
+          setThinkHarderState(shouldThinkHarder(level));
+          try {
+            localStorage.setItem("fintheon:reasoning-level", level);
+          } catch {
+            /* ignore */
+          }
+        }}
         lastRequestId={lastRequestId}
         dualPane={isDualPane}
       />

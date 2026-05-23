@@ -64,7 +64,7 @@ import { ChatPanel } from "./ChatPanel";
 import { YouTubeMiniplayer } from "./YouTubeMiniplayer";
 // [claude-code 2026-04-03] S14-T6: Removed PeerCarousel + PeerOnboarding — team status now in footer panel
 // TeamOnboarding re-wired into TeamPanel behind auth gate (2026-04-11)
-// [claude-code 2026-04-12] VoiceWidget removed — voice now lives inside Fluxer embed in Consilium
+// Voice lives in the app-native ProxVoice surface.
 import {
   DEFAULT_MISSION_WIDGET_ORDER,
   getMissionWidgetOrder,

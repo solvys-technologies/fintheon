@@ -27,7 +27,7 @@ import { createArbitrumRoutes } from "./arbitrum/index.js";
 import { createConsulControlRoutes } from "./consul-control/index.js";
 import { createERRoutes } from "./er/index.js";
 import { createVoiceRoutes } from "./voice/index.js";
-import { livekit } from "./livekit/index.js";
+import { createProxVoiceRoutes } from "./proxvoice/index.js";
 import { createRegimeRoutes } from "./regimes/index.js";
 import { createMarketRegimeRoutes } from "./regime/index.js";
 import { createLexiconRoutes } from "./lexicon/index.js";
@@ -351,6 +351,8 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/settings/*", authMiddleware, requireAuth);
   app.use("/api/profile", authMiddleware, requireAuth);
   app.use("/api/profile/*", authMiddleware, requireAuth);
+  app.use("/api/proxvoice", authMiddleware, requireAuth);
+  app.use("/api/proxvoice/*", authMiddleware, requireAuth);
   // [claude-code 2026-04-19] v5.22 S1: shared cross-platform preferences — theme,
   //   traderName, notifications, fuse palette overrides (reusable by mobile).
   app.use("/api/preferences", authMiddleware, requireAuth);
@@ -409,8 +411,8 @@ export function registerRoutes(app: Hono): void {
   // Voice assistant routes
   app.route("/api/voice", createVoiceRoutes());
 
-  // LiveKit group voice call token generation
-  app.route("/api/livekit", livekit);
+  // ProxVoice: LiveKit-backed always-on floor audio
+  app.route("/api/proxvoice", createProxVoiceRoutes());
 
   // User settings persistence
   app.route("/api/settings", createSettingsRoutes());

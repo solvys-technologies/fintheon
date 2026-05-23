@@ -36,7 +36,13 @@ export async function buildSensemakingMap(
     narrativeGroups,
     timelineNodes,
     timelineEdges,
-    synthesisSummary: buildSummary(request.query, anchors, related, narrativeGroups),
+    synthesisSummary: buildSummary(
+      request.query,
+      anchors,
+      related,
+      narrativeGroups,
+      request.reasoningLevel ?? "standard",
+    ),
     forecast: buildForecast(anchors, related),
     mermaidSource: buildMermaid(timelineNodes, timelineEdges, request.orientation),
     generatedAt: new Date().toISOString(),
@@ -133,10 +139,11 @@ function buildSummary(
   anchors: SensemakingCatalyst[],
   related: SensemakingCatalyst[],
   groups: SensemakingNarrativeGroup[],
+  reasoningLevel: SensemakingRequest["reasoningLevel"],
 ): string {
   if (anchors.length === 0) return "Attach at least one RiskFlow headline to build a narrative map.";
   const groupNames = groups.slice(0, 4).map((group) => group.title).join(", ");
-  return `${anchors.length} attached headline${anchors.length === 1 ? "" : "s"} connect to ${related.length} related catalyst${related.length === 1 ? "" : "s"} across ${groupNames || "the same RiskFlow window"}. The query focus is "${query || "market outcome"}", so the map orders evidence by time and separates anchors from surrounding notable events.`;
+  return `${anchors.length} attached headline${anchors.length === 1 ? "" : "s"} connect to ${related.length} related catalyst${related.length === 1 ? "" : "s"} across ${groupNames || "the same RiskFlow window"}. Intelligence level is ${reasoningLevel ?? "standard"}; the query focus is "${query || "market outcome"}", so the map orders evidence by time and separates anchors from surrounding notable events.`;
 }
 
 function buildForecast(
