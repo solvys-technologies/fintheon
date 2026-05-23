@@ -11,6 +11,9 @@ export interface ProxVoiceProfile {
   userId: string;
   displayName: string;
   avatarUrl: string | null;
+  bio: string | null;
+  position: string | null;
+  broker: string | null;
   socialLinks: ProxVoiceSocialLinks;
 }
 
@@ -54,5 +57,20 @@ export class ProxVoiceService {
     socialLinks: ProxVoiceSocialLinks,
   ): Promise<{ socialLinks: ProxVoiceSocialLinks }> {
     return this.client.put("/api/profile/social-links", { socialLinks });
+  }
+
+  async getProfile(): Promise<{ profile: ProxVoiceProfile }> {
+    return this.client.get("/api/profile/voice-profile");
+  }
+
+  async updateProfile(data: {
+    displayName?: string;
+    avatarUrl?: string | null;
+    bio?: string | null;
+    position?: string | null;
+    broker?: string | null;
+    socialLinks?: ProxVoiceSocialLinks;
+  }): Promise<{ profile: ProxVoiceProfile }> {
+    return this.client.put("/api/profile/voice-profile", data);
   }
 }

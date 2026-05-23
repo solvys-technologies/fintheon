@@ -1,11 +1,8 @@
 // [claude-code 2026-04-16] Added linked Google account display + switch account
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — general/profile tab
-import React, { useEffect, useState } from "react";
-import { CreditCard, Mail, RefreshCw } from "lucide-react";
-import { Button } from "../ui/Button";
-import { useAuth } from "../../contexts/AuthContext";
-import { useBackend } from "../../lib/backend";
-import type { ProxVoiceSocialLinks } from "../../lib/services";
+import React, { useState } from "react";
+import { CreditCard } from "lucide-react";
+import { ProfileSettingsSection } from "./ProfileSettingsSection";
 
 interface AvailableSymbol {
   symbol: string;
@@ -33,155 +30,15 @@ export function GeneralTab({
   onShowUpgradeModal,
 }: GeneralTabProps) {
   const [showSymbolDropdown, setShowSymbolDropdown] = useState(false);
-  const [isSwitching, setIsSwitching] = useState(false);
-  const [socialLinks, setSocialLinks] = useState<ProxVoiceSocialLinks>({
-    x: "",
-    substack: "",
-    telegram: "",
-    discord: "",
-  });
-  const [savingSocials, setSavingSocials] = useState(false);
-  const { user, signOut, signIn } = useAuth();
-  const backend = useBackend();
-
-  const linkedEmail = user?.email || user?.user_metadata?.email || null;
-  const avatarUrl = user?.user_metadata?.avatar_url || null;
-
-  const handleSwitchAccount = async () => {
-    setIsSwitching(true);
-    try {
-      await signOut();
-      await signIn();
-    } catch {
-      setIsSwitching(false);
-    }
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-    backend.proxVoice
-      .getSocialLinks()
-      .then((res) => {
-        if (!cancelled) setSocialLinks(res.socialLinks);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [backend.proxVoice]);
-
-  const saveSocialLinks = async () => {
-    setSavingSocials(true);
-    try {
-      const res = await backend.proxVoice.updateSocialLinks(socialLinks);
-      setSocialLinks(res.socialLinks);
-    } finally {
-      setSavingSocials(false);
-    }
-  };
 
   return (
     <>
-      <section className="mb-6">
-        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
-          Trader Identity
-        </h3>
-        <div>
-          <label className="block text-xs text-gray-400 mb-1.5">
-            Trader Name
-          </label>
-          <input
-            type="text"
-            value={traderName}
-            onChange={(e) => setTraderName(e.target.value.slice(0, 24))}
-            maxLength={24}
-            placeholder="Enter your name"
-            className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-[var(--fintheon-accent)]/30 transition-colors"
-          />
-          <p className="text-[10px] text-gray-500 mt-1.5">
-            Displayed in the toolbar next to your tier badge
-          </p>
-        </div>
-      </section>
+      <ProfileSettingsSection
+        traderName={traderName}
+        setTraderName={setTraderName}
+      />
 
-      <section className="mb-6">
-        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
-          Linked Google Account
-        </h3>
-        <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt=""
-                  className="w-9 h-9 rounded-full border border-zinc-700"
-                />
-              ) : (
-                <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center">
-                  <Mail className="w-4 h-4 text-gray-400" />
-                </div>
-              )}
-              <div>
-                <p className="text-sm text-white">
-                  {linkedEmail || "No account linked"}
-                </p>
-                <p className="text-[10px] text-gray-500">
-                  Google OAuth via Supabase
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="secondary"
-              className="text-xs flex items-center gap-1.5"
-              onClick={handleSwitchAccount}
-              disabled={isSwitching}
-            >
-              <RefreshCw
-                className={`w-3 h-3 ${isSwitching ? "animate-spin" : ""}`}
-              />
-              Switch Account
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      <section className="mb-6">
-        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
-          Social Handles
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {(["x", "substack", "telegram", "discord"] as const).map((key) => (
-            <label key={key} className="block">
-              <span className="block text-xs text-gray-400 mb-1.5 uppercase">
-                {key}
-              </span>
-              <input
-                type="text"
-                value={socialLinks[key] ?? ""}
-                onChange={(event) =>
-                  setSocialLinks((current) => ({
-                    ...current,
-                    [key]: event.target.value,
-                  }))
-                }
-                placeholder={`@${key}`}
-                className="proxvoice-pill-shimmer w-full rounded-full border border-[var(--fintheon-accent)]/18 bg-transparent px-4 py-2 text-sm text-white outline-none transition-colors focus:border-[var(--fintheon-accent)]/45"
-              />
-            </label>
-          ))}
-        </div>
-        <Button
-          variant="secondary"
-          className="mt-3 text-xs"
-          onClick={saveSocialLinks}
-          disabled={savingSocials}
-        >
-          {savingSocials ? "Saving..." : "Save Handles"}
-        </Button>
-      </section>
-
-      <section>
+      <section className="fintheon-fade-divider mt-6 pb-1">
         <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
           Trading Symbol
         </h3>
@@ -195,7 +52,7 @@ export function GeneralTab({
               <>
                 <button
                   onClick={() => setShowSymbolDropdown(!showSymbolDropdown)}
-                  className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded-lg px-4 py-3 text-left hover:border-[var(--fintheon-accent)]/30 focus:outline-none focus:border-[var(--fintheon-accent)]/30 transition-colors"
+                  className="w-full rounded-md bg-[var(--fintheon-surface)] px-4 py-3 text-left transition-opacity duration-200 hover:opacity-85 focus:outline-none"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -230,7 +87,7 @@ export function GeneralTab({
                       className="fixed inset-0 z-10"
                       onClick={() => setShowSymbolDropdown(false)}
                     />
-                    <div className="absolute left-0 right-0 top-full mt-1 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-lg shadow-xl z-20 max-h-64 overflow-y-auto">
+                    <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-md bg-[var(--fintheon-surface)] fintheon-fade-in">
                       {availableSymbols.map((sym) => {
                         const isSelected = sym.symbol === symbolKey;
                         return (
@@ -243,8 +100,8 @@ export function GeneralTab({
                               });
                               setShowSymbolDropdown(false);
                             }}
-                            className={`w-full text-left px-4 py-3 hover:bg-[var(--fintheon-accent)]/10 transition-colors border-b border-zinc-800 last:border-b-0 ${
-                              isSelected ? "bg-[var(--fintheon-accent)]/20" : ""
+                            className={`fintheon-fade-divider w-full text-left px-4 py-3 transition-colors hover:bg-[var(--fintheon-accent)]/8 ${
+                              isSelected ? "bg-[var(--fintheon-accent)]/10" : ""
                             }`}
                           >
                             <div className="text-sm font-bold text-white">
@@ -268,7 +125,7 @@ export function GeneralTab({
         </div>
       </section>
 
-      <section className="pt-6 border-t border-zinc-800">
+      <section className="fintheon-fade-divider mt-6 pt-2">
         <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
           Billing
         </h3>
@@ -277,7 +134,7 @@ export function GeneralTab({
             <h4 className="text-sm font-medium text-gray-300 mb-3">
               Current Plan
             </h4>
-            <div className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/30 rounded-lg p-4">
+            <div className="rounded-md bg-[var(--fintheon-surface)] p-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <p className="text-lg font-bold text-[var(--fintheon-accent)]">
@@ -285,21 +142,21 @@ export function GeneralTab({
                   </p>
                   <p className="text-xs text-gray-500">Active subscription</p>
                 </div>
-                <Button
-                  variant="secondary"
-                  className="text-xs"
+                <button
+                  type="button"
+                  className="fintheon-action-link text-right text-[11px] font-semibold uppercase tracking-[0.12em]"
                   onClick={onShowUpgradeModal}
                 >
                   Change Plan
-                </Button>
+                </button>
               </div>
               <div className="text-sm text-gray-400">
                 <p>
                   Next billing date:{" "}
-                  <span className="text-white">Jan 4, 2026</span>
+                  <span className="text-[var(--fintheon-text)]">Jan 4, 2026</span>
                 </p>
                 <p className="mt-1">
-                  Amount: <span className="text-white">$149.00</span>
+                  Amount: <span className="text-[var(--fintheon-text)]">$149.00</span>
                 </p>
               </div>
             </div>
@@ -309,20 +166,20 @@ export function GeneralTab({
             <h4 className="text-sm font-medium text-gray-300 mb-3">
               Payment Method
             </h4>
-            <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg p-4">
+            <div className="rounded-md bg-[var(--fintheon-surface)] p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded flex items-center justify-center">
-                    <CreditCard className="w-5 h-5 text-white" />
+                  <div className="flex h-8 w-12 items-center justify-center rounded bg-[var(--fintheon-bg)]">
+                    <CreditCard className="h-5 w-5 text-[var(--fintheon-accent)]/70" />
                   </div>
                   <div>
-                    <p className="text-sm text-white">.... .... .... 4242</p>
+                    <p className="text-sm text-[var(--fintheon-text)]">.... .... .... 4242</p>
                     <p className="text-xs text-gray-500">Expires 12/2027</p>
                   </div>
                 </div>
-                <Button variant="secondary" className="text-xs">
+                <button type="button" className="fintheon-action-link text-right text-[11px] font-semibold uppercase tracking-[0.12em]">
                   Update
-                </Button>
+                </button>
               </div>
             </div>
           </div>
@@ -331,7 +188,7 @@ export function GeneralTab({
             <h4 className="text-sm font-medium text-gray-300 mb-3">
               Billing History
             </h4>
-            <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg overflow-hidden">
+            <div className="rounded-md bg-[var(--fintheon-surface)]">
               {[
                 { date: "Dec 4, 2025", amount: "$149.00", status: "Paid" },
                 { date: "Nov 4, 2025", amount: "$149.00", status: "Paid" },
@@ -339,17 +196,17 @@ export function GeneralTab({
               ].map((invoice, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 last:border-b-0 hover:bg-[var(--fintheon-accent)]/5 transition-colors"
+                  className="fintheon-fade-divider flex items-center justify-between px-4 py-3 transition-opacity duration-200 hover:opacity-80"
                 >
                   <div>
-                    <p className="text-sm text-white">{invoice.date}</p>
+                    <p className="text-sm text-[var(--fintheon-text)]">{invoice.date}</p>
                     <p className="text-xs text-gray-500">{invoice.status}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <p className="text-sm font-semibold text-white">
+                    <p className="text-sm font-semibold text-[var(--fintheon-text)]">
                       {invoice.amount}
                     </p>
-                    <button className="text-xs text-[var(--fintheon-accent)] hover:underline">
+                    <button className="fintheon-action-link text-right text-[11px] font-semibold uppercase tracking-[0.12em]">
                       Download
                     </button>
                   </div>
@@ -362,17 +219,16 @@ export function GeneralTab({
             <h4 className="text-sm font-medium text-red-500 mb-3">
               Danger Zone
             </h4>
-            <div className="bg-[var(--fintheon-bg)] border border-red-500/30 rounded-lg p-4">
+            <div className="rounded-md bg-[var(--fintheon-surface)] p-4">
               <p className="text-sm text-gray-400 mb-3">
                 Cancel your subscription. You will retain access until the end
                 of your billing period.
               </p>
-              <Button
-                variant="secondary"
-                className="text-xs text-red-500 border-red-500/30 hover:bg-red-500/10"
-              >
-                Cancel Subscription
-              </Button>
+              <div className="flex justify-end">
+                <button className="fintheon-action-link text-right text-[11px] font-semibold uppercase tracking-[0.12em] text-red-400">
+                  Cancel Subscription
+                </button>
+              </div>
             </div>
           </div>
         </div>

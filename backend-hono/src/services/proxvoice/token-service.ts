@@ -23,11 +23,22 @@ export async function getPublicVoiceProfile(req: {
   const profile = await getOrCreateProfile(req.userId, req.email);
   const appState = (await getAppState(req.userId)) ?? {};
   const socialLinks = normalizeSocialLinks(appState.socialLinks);
+  const bio = typeof appState.bio === "string" ? appState.bio.slice(0, 180) : null;
+  const position =
+    typeof appState.position === "string" ? appState.position.slice(0, 48) : null;
+  const broker =
+    typeof appState.broker === "string" ? appState.broker.slice(0, 48) : null;
   return {
     userId: req.userId,
     displayName:
       profile?.display_name || req.email?.split("@")[0] || "Fintheon User",
-    avatarUrl: profile?.avatar_url ?? null,
+    avatarUrl:
+      (typeof appState.avatarUrl === "string" ? appState.avatarUrl : null) ??
+      profile?.avatar_url ??
+      null,
+    bio,
+    position,
+    broker,
     socialLinks,
   };
 }

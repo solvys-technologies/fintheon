@@ -40,7 +40,7 @@ export function ProxVoiceHeaderControl({
         ref={triggerRef}
         onClick={() => setExpanded((v) => !v)}
         className={`relative toolbar-icon-btn ${connected ? "toolbar-active" : ""}`}
-        title={connected ? "ProxVoice live" : "ProxVoice"}
+        title={connected ? "Forum live" : "Forum"}
       >
         <Phone
           className={`h-3 w-3 ${connected ? "toolbar-icon-active" : ""}`}
@@ -51,7 +51,7 @@ export function ProxVoiceHeaderControl({
           }
         />
         {connected && (
-          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-400" />
+          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[var(--fintheon-accent)] transition-opacity duration-200" />
         )}
       </button>
 
@@ -66,8 +66,8 @@ export function ProxVoiceHeaderControl({
         <div className="flex items-center gap-0.5 pl-1">
           <button
             onClick={() => void handleConnect()}
-            className={`rounded-md p-1.5 transition-colors ${
-              connected ? "text-red-300 hover:bg-red-500/10" : "text-emerald-300 hover:bg-emerald-500/10"
+            className={`fintheon-action-link rounded-md p-1.5 ${
+              connected ? "text-red-300" : "text-[var(--fintheon-accent)]"
             }`}
             title={connected ? "Disconnect" : "Connect"}
           >
@@ -76,7 +76,7 @@ export function ProxVoiceHeaderControl({
           <button
             onClick={() => void voice.toggleMute()}
             disabled={!connected}
-            className="rounded-md p-1.5 text-[var(--fintheon-text)]/55 disabled:text-zinc-700"
+            className="fintheon-action-link rounded-md p-1.5 text-[var(--fintheon-text)]/55 disabled:text-zinc-700"
             title={voice.muted ? "Unmute" : "Mute"}
           >
             {voice.muted ? <MicOff className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
@@ -84,15 +84,15 @@ export function ProxVoiceHeaderControl({
           <button
             onClick={voice.toggleDeafen}
             disabled={!connected}
-            className="rounded-md p-1.5 text-[var(--fintheon-text)]/55 disabled:text-zinc-700"
+            className="fintheon-action-link rounded-md p-1.5 text-[var(--fintheon-text)]/55 disabled:text-zinc-700"
             title={voice.deafened ? "Undeafen" : "Deafen"}
           >
             {voice.deafened ? <VolumeOff className="h-3 w-3" /> : <Volume2 className="h-3 w-3" />}
           </button>
           <button
             onClick={() => setPanelOpen((v) => !v)}
-            className="rounded-md p-1.5 text-[var(--fintheon-text)]/55"
-            title="Show ProxVoice"
+            className="fintheon-action-link rounded-md p-1.5 text-[var(--fintheon-text)]/55"
+            title="Show Forum"
           >
             <PictureInPicture2 className="h-3 w-3" />
           </button>

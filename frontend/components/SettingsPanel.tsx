@@ -23,7 +23,6 @@ import {
 import { useSettings, type APIKeys } from "../contexts/SettingsContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
-import { Button } from "./ui/Button";
 import { useState, useEffect } from "react";
 import { useBackend } from "../lib/backend";
 import { useVoiceMemory } from "../hooks/useVoiceMemory";
@@ -479,12 +478,11 @@ export function SettingsPage() {
                       {isDanger && <div className="hidden lg:block" />}
                       <button
                         onClick={() => handleTabChange(tab.id)}
-                        className={`group text-left p-4 rounded-lg border transition-all hover:scale-[1.01] ${isDanger ? "border-red-500/15 hover:border-red-500/30 hover:bg-red-500/5" : "fintheon-accent-border fintheon-accent-border-hover"}`}
-                        style={{ backgroundColor: "rgba(10,10,0,0.4)" }}
+                        className={`group text-right p-4 rounded-md transition-all duration-200 hover:opacity-80 ${isDanger ? "text-red-400" : "text-[var(--fintheon-text)]"}`}
                       >
-                        <div className="flex items-start gap-3">
+                        <div className="flex items-start justify-end gap-3">
                           <div
-                            className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isDanger ? "bg-red-500/10 text-red-400 group-hover:bg-red-500/20" : "fintheon-settings-icon"} transition-colors`}
+                            className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${isDanger ? "text-red-400" : "text-[var(--fintheon-accent)]/70"} transition-opacity duration-200`}
                           >
                             <Icon className="w-4 h-4" />
                           </div>
@@ -534,16 +532,15 @@ export function SettingsPage() {
             <div className="flex-1 overflow-y-auto px-8 py-4 pb-20 space-y-6 relative">
               {renderTabContent()}
             </div>
-            <div className="sticky bottom-0 bg-[var(--fintheon-bg)] backdrop-blur-sm border-t border-[var(--fintheon-accent)]/10 px-8 py-3">
+            <div className="sticky bottom-0 bg-[var(--fintheon-bg)] px-8 py-3">
               <div className="flex items-center justify-end gap-3">
-                <Button
-                  variant="primary"
+                <button
                   onClick={handleSave}
-                  className="px-6 py-2"
+                  className="fintheon-action-link text-right text-[11px] font-semibold uppercase tracking-[0.14em]"
                   disabled={isSaving}
                 >
                   {isSaving ? "Saving..." : "Save Changes"}
-                </Button>
+                </button>
               </div>
             </div>
           </div>
@@ -569,7 +566,7 @@ export function SettingsPage() {
             </div>
           )}
           <div
-            className={`h-full bg-[var(--fintheon-bg)] border-l border-[var(--fintheon-accent)]/15 flex flex-col py-5 transition-all duration-200 ease-out overflow-hidden ${sidebarHovered ? "w-52 opacity-100" : "w-0 opacity-0"}`}
+            className={`h-full bg-[var(--fintheon-bg)] flex flex-col py-5 transition-all duration-200 ease-out overflow-hidden ${sidebarHovered ? "w-52 opacity-100" : "w-0 opacity-0"}`}
           >
             <div className="px-4 mb-4">
               <span className="text-[10px] tracking-[0.2em] uppercase text-gray-500 font-semibold">
@@ -584,7 +581,7 @@ export function SettingsPage() {
                   <button
                     key={tab.id}
                     onClick={() => handleTabChange(tab.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${isActive ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]" : "text-gray-400 hover:bg-[var(--fintheon-accent)]/8 hover:text-gray-200"}`}
+                    className={`w-full flex items-center justify-end gap-3 px-3 py-2.5 rounded-md text-right transition-opacity duration-200 hover:opacity-80 ${isActive ? "text-[var(--fintheon-accent)]" : "text-gray-400"}`}
                   >
                     <Icon className="w-4 h-4 shrink-0" />
                     <span

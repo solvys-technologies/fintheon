@@ -7,6 +7,7 @@ interface ProfileCardProps {
   profile: ProxVoiceProfile;
   mobile?: boolean;
   onClose?: () => void;
+  compact?: boolean;
 }
 
 const SOCIALS: Array<{
@@ -38,12 +39,12 @@ function socialHref(key: keyof ProxVoiceSocialLinks, handle: string) {
   return undefined;
 }
 
-export function ProfileCard({ profile, mobile = false, onClose }: ProfileCardProps) {
+export function ProfileCard({ profile, mobile = false, onClose, compact = false }: ProfileCardProps) {
   const socials = SOCIALS.filter(({ key }) => profile.socialLinks[key]);
   return (
     <section
-      className={`border border-[var(--fintheon-accent)]/18 bg-[var(--fintheon-bg)]/95 p-4 text-[var(--fintheon-text)] shadow-2xl backdrop-blur-xl ${
-        mobile ? "min-h-screen w-full" : "w-[300px] rounded-xl"
+      className={`fintheon-fade-in bg-[var(--fintheon-surface)] p-4 text-[var(--fintheon-text)] ${
+        mobile ? "min-h-screen w-full" : "w-[300px] rounded-md"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -52,10 +53,10 @@ export function ProfileCard({ profile, mobile = false, onClose }: ProfileCardPro
             <img
               src={profile.avatarUrl}
               alt=""
-              className="h-12 w-12 rounded-full border border-[var(--fintheon-accent)]/25 object-cover"
+              className="h-12 w-12 rounded-full object-cover"
             />
           ) : (
-            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--fintheon-accent)]/25 text-sm text-[var(--fintheon-accent)]">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--fintheon-bg)] text-sm text-[var(--fintheon-accent)]">
               {initials(profile.displayName) || "FT"}
             </div>
           )}
@@ -64,19 +65,29 @@ export function ProfileCard({ profile, mobile = false, onClose }: ProfileCardPro
               {profile.displayName}
             </h3>
             <p className="truncate text-[10px] text-[var(--fintheon-text)]/45">
-              Fintheon desk voice
+              {profile.position || "Desk Team"}
             </p>
           </div>
         </div>
         {onClose && (
           <button
             onClick={onClose}
-            className="rounded-full border border-[var(--fintheon-accent)]/18 px-2 py-0.5 text-[10px] text-[var(--fintheon-text)]/55"
+            className="fintheon-action-link px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-text)]/55"
           >
             Close
           </button>
         )}
       </div>
+      {profile.bio && !compact && (
+        <p className="fintheon-fade-divider mt-4 pb-1 text-xs leading-relaxed text-[var(--fintheon-text)]/62">
+          {profile.bio}
+        </p>
+      )}
+      {profile.broker && (
+        <div className="mt-3 inline-flex rounded-md bg-[var(--fintheon-bg)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-accent)]/78">
+          {profile.broker}
+        </div>
+      )}
       <div className="mt-4 space-y-2">
         {socials.length === 0 && (
           <p className="text-xs text-[var(--fintheon-text)]/45">
@@ -87,7 +98,7 @@ export function ProfileCard({ profile, mobile = false, onClose }: ProfileCardPro
           const handle = profile.socialLinks[key]!;
           const href = socialHref(key, handle);
           const content = (
-            <span className="proxvoice-pill-shimmer flex w-full items-center justify-between rounded-full border border-[var(--fintheon-accent)]/20 px-3 py-2 text-xs text-[var(--fintheon-text)]/75">
+            <span className="proxvoice-pill-shimmer flex w-full items-center justify-between rounded-md bg-[var(--fintheon-bg)] px-3 py-2 text-xs text-[var(--fintheon-text)]/75 transition-opacity duration-200 hover:opacity-80">
               <span className="flex items-center gap-2">
                 <Icon className="h-3.5 w-3.5 text-[var(--fintheon-accent)]/75" />
                 {label}

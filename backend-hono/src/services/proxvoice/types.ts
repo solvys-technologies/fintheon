@@ -9,6 +9,9 @@ export interface ProxVoiceProfile {
   userId: string;
   displayName: string;
   avatarUrl: string | null;
+  bio: string | null;
+  position: string | null;
+  broker: string | null;
   socialLinks: ProxVoiceSocialLinks;
 }
 

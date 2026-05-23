@@ -9,6 +9,24 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-23T00:00:00-04:00",
+    agent: "codex",
+    summary:
+      "v6.7.15 deploy prep: unified NarrativeFlow workspace polish with ProxVoice profile controls, refreshed installer pointers, and kept desktop update assets aligned for the release.",
+    files: [
+      "package.json",
+      "mobile/package.json",
+      "scripts/fintheon-update.sh",
+      "scripts/fintheon-setup.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "frontend/components/narrative/NarrativeCanvas.tsx",
+      "frontend/components/proxvoice/ProfileCard.tsx",
+      "frontend/components/settings/ProfileSettingsSection.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-22T22:05:00-04:00",
     agent: "codex",
     summary:

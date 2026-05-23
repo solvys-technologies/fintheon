@@ -28,6 +28,8 @@ interface ProxVoiceParticipant {
   isLocal: boolean;
   isSpeaking: boolean;
   isMuted: boolean;
+  outputMuted: boolean;
+  leaving?: boolean;
   profile: ProxVoiceProfile | null;
 }
 
@@ -42,6 +44,7 @@ interface ProxVoiceContextValue {
   disconnect: () => void;
   toggleMute: () => Promise<void>;
   toggleDeafen: () => void;
+  toggleParticipantOutput: (identity: string) => void;
   refreshPresence: () => Promise<void>;
 }
 
@@ -64,17 +67,26 @@ export function ProxVoiceProvider({ children }: { children: React.ReactNode }) {
   const roomRef = useRef<Room | null>(null);
   const trackRef = useRef<LocalAudioTrack | null>(null);
   const audioEls = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const audioIdentity = useRef<Map<string, string>>(new Map());
+  const disconnectRef = useRef<() => void>(() => {});
   const [state, setState] = useState<ProxVoiceState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
   const [deafened, setDeafened] = useState(false);
+  const [outputMuted, setOutputMuted] = useState<Set<string>>(new Set());
   const [participants, setParticipants] = useState<ProxVoiceParticipant[]>([]);
   const [presence, setPresence] = useState<ProxVoicePresence[]>([]);
+  const previousParticipants = useRef<Map<string, ProxVoiceParticipant>>(new Map());
 
   const refreshParticipants = useCallback(() => {
     const room = roomRef.current;
     if (!room) {
-      setParticipants([]);
+      const leaving = Array.from(previousParticipants.current.values()).map((participant) => ({
+        ...participant,
+        leaving: true,
+      }));
+      setParticipants(leaving);
+      window.setTimeout(() => setParticipants([]), 260);
       return;
     }
     const active = new Set(room.activeSpeakers.map((p) => p.identity));
@@ -88,10 +100,25 @@ export function ProxVoiceProvider({ children }: { children: React.ReactNode }) {
         isLocal: participant.identity === room.localParticipant.identity,
         isSpeaking: active.has(participant.identity),
         isMuted: !participant.isMicrophoneEnabled,
+        outputMuted: outputMuted.has(participant.identity),
+        leaving: false,
         profile: parseProfile(participant),
       }));
-    setParticipants(mapped);
-  }, []);
+    const nextIds = new Set(mapped.map((participant) => participant.identity));
+    const leaving = Array.from(previousParticipants.current.values())
+      .filter((participant) => !nextIds.has(participant.identity))
+      .map((participant) => ({ ...participant, leaving: true }));
+    const merged = [...mapped, ...leaving];
+    previousParticipants.current = new Map(
+      mapped.map((participant) => [participant.identity, participant]),
+    );
+    setParticipants(merged);
+    if (leaving.length > 0) {
+      window.setTimeout(() => {
+        setParticipants((current) => current.filter((participant) => !participant.leaving));
+      }, 260);
+    }
+  }, [outputMuted]);
 
   const refreshPresence = useCallback(async () => {
     const res = await backend.proxVoice.participants();
@@ -118,9 +145,10 @@ export function ProxVoiceProvider({ children }: { children: React.ReactNode }) {
     roomRef.current = null;
     for (const el of audioEls.current.values()) el.remove();
     audioEls.current.clear();
+    audioIdentity.current.clear();
     setState("idle");
-    setParticipants([]);
-  }, []);
+    refreshParticipants();
+  }, [refreshParticipants]);
 
   const connect = useCallback(async () => {
     if (roomRef.current?.state === "connected") return;
@@ -130,18 +158,22 @@ export function ProxVoiceProvider({ children }: { children: React.ReactNode }) {
       const credentials = await backend.proxVoice.token();
       const room = new Room({ adaptiveStream: true, dynacast: true });
       roomRef.current = room;
-      room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
+      room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, _pub, participant) => {
         if (track.source !== Track.Source.Microphone) return;
         const el = track.attach() as HTMLAudioElement;
         el.autoplay = true;
-        el.muted = deafened;
+        el.muted = deafened || outputMuted.has(participant.identity);
         const trackId = track.sid ?? `${Date.now()}-${audioEls.current.size}`;
         audioEls.current.set(trackId, el);
+        audioIdentity.current.set(trackId, participant.identity);
         document.body.appendChild(el);
       });
       room.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
         track.detach().forEach((el) => el.remove());
-        if (track.sid) audioEls.current.delete(track.sid);
+        if (track.sid) {
+          audioEls.current.delete(track.sid);
+          audioIdentity.current.delete(track.sid);
+        }
       });
       room.on(RoomEvent.ParticipantConnected, refreshParticipants);
       room.on(RoomEvent.ParticipantDisconnected, refreshParticipants);
@@ -150,17 +182,22 @@ export function ProxVoiceProvider({ children }: { children: React.ReactNode }) {
       room.on(RoomEvent.TrackUnmuted, refreshParticipants);
       room.on(RoomEvent.Disconnected, disconnect);
       await room.connect(credentials.url, credentials.token);
-      const localTrack = await createLocalAudioTrack({
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-      });
-      trackRef.current = localTrack;
-      await room.localParticipant.publishTrack(localTrack);
+      let localTrack: LocalAudioTrack | null = null;
+      try {
+        localTrack = await createLocalAudioTrack({
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        });
+        trackRef.current = localTrack;
+        await room.localParticipant.publishTrack(localTrack);
+      } catch {
+        setError("Mic unavailable. Connected listen-only.");
+      }
       setState("connected");
-      setMuted(false);
+      setMuted(!localTrack);
       refreshParticipants();
-      await syncPresence({ muted: false });
+      await syncPresence({ muted: !localTrack });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Voice failed";
       setError(message);
@@ -184,7 +221,23 @@ export function ProxVoiceProvider({ children }: { children: React.ReactNode }) {
     void syncPresence({ deafened: next });
   }, [deafened, syncPresence]);
 
-  useEffect(() => () => disconnect(), [disconnect]);
+  const toggleParticipantOutput = useCallback((identity: string) => {
+    setOutputMuted((current) => {
+      const next = new Set(current);
+      if (next.has(identity)) next.delete(identity);
+      else next.add(identity);
+      for (const [trackId, el] of audioEls.current.entries()) {
+        if (audioIdentity.current.get(trackId) === identity) el.muted = next.has(identity);
+      }
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    disconnectRef.current = disconnect;
+  }, [disconnect]);
+
+  useEffect(() => () => disconnectRef.current(), []);
 
   useEffect(() => {
     if (state !== "connected") return;
@@ -204,6 +257,7 @@ export function ProxVoiceProvider({ children }: { children: React.ReactNode }) {
       disconnect,
       toggleMute,
       toggleDeafen,
+      toggleParticipantOutput,
       refreshPresence,
     }),
     [
@@ -217,6 +271,7 @@ export function ProxVoiceProvider({ children }: { children: React.ReactNode }) {
       refreshPresence,
       state,
       toggleDeafen,
+      toggleParticipantOutput,
       toggleMute,
     ],
   );
