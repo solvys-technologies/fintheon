@@ -8,6 +8,10 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname),
       "@frontend": path.resolve(__dirname, "../frontend"),
+      "lucide-react": path.resolve(
+        __dirname,
+        "../frontend/components/icon-bank/AnimatedIcons.tsx",
+      ),
     },
   },
   plugins: [tailwindcss(), react()],

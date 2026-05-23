@@ -13,6 +13,7 @@ import {
 import { clusterSummary } from "./cluster-summary.js";
 import { createNarrativeSensemaking } from "./sensemaking.js";
 import { createNarrativeClassificationRoutes } from "./classification.js";
+import { handleSearchCatalystBank } from "./catalyst-bank.js";
 import { createDeskMapRoutes } from "./desk-map.js";
 import { createNarrativeSessionRoutes } from "./sessions/index.js";
 import {
@@ -31,6 +32,7 @@ export function createNarrativeRoutes(): Hono {
   app.route("/sessions", createNarrativeSessionRoutes());
   app.route("/desk-map", createDeskMapRoutes());
   app.route("/classification", createNarrativeClassificationRoutes());
+  app.get("/catalyst-bank", handleSearchCatalystBank);
   app.get("/orchestra", getNarrativeOrchestra);
   app.post("/sensemaking", createNarrativeSensemaking);
   app.post("/orchestra/:hypothesisId/accept", acceptNarrativeHypothesis);

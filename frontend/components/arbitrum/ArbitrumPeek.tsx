@@ -5,6 +5,7 @@
 // [claude-code 2026-04-24] S35-T3: compact peek for IV hover portal — consensus + dissent + digest line
 import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
 import { DigitGroup } from "../shared/DigitGroup";
+import { DotMatrixLoader } from "../icon-bank/DotMatrixLoader";
 import { DissentBadge } from "./DissentBadge";
 
 const EMPTY_COPY =
@@ -15,8 +16,8 @@ export function ArbitrumPeek() {
 
   if (isLoading) {
     return (
-      <div className="border-t border-[var(--fintheon-accent)]/20 pt-2 mt-3 text-xs text-[var(--fintheon-text)]/50">
-        Loading chamber read…
+      <div className="border-t border-[var(--fintheon-accent)]/20 pt-2 mt-3">
+        <DotMatrixLoader variant="pyramid" size={22} label="Chamber read" />
       </div>
     );
   }

@@ -5,8 +5,9 @@ import {
   RefreshCw,
   Loader2,
   Brain,
-  Zap,
-  Compass,
+  BarChart3,
+  Megaphone,
+  Search,
   Eye,
   Circle,
   Sparkles,
@@ -19,9 +20,9 @@ const AGENT_META: Record<
   { label: string; color: string; icon: typeof Brain }
 > = {
   oracle: { label: "Oracle", color: "#a78bfa", icon: Eye },
-  feucht: { label: "Feucht", color: "#f87171", icon: Zap },
-  consul: { label: "Consul", color: "#c79f4a", icon: Compass },
-  herald: { label: "Herald", color: "#38bdf8", icon: Zap },
+  feucht: { label: "Feucht", color: "#f87171", icon: BarChart3 },
+  consul: { label: "Consul", color: "#c79f4a", icon: Search },
+  herald: { label: "Herald", color: "#38bdf8", icon: Megaphone },
   harper: { label: "Harper", color: "#34d399", icon: Brain },
 };
 

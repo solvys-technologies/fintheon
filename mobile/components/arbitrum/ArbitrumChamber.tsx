@@ -4,6 +4,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { DotMatrixLoader } from "@frontend/components/icon-bank/DotMatrixLoader";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
 import { DigitGroup } from "../shared/DigitGroup";
@@ -433,11 +434,13 @@ export function ArbitrumChamber() {
             color: "var(--text-disabled)",
             padding: 12,
           }}>
-            {isLoading
-              ? "Loading chamber read\u2026"
-              : error
-                ? `Chamber unreachable (${error})`
-                : EMPTY_COPY}
+            {isLoading ? (
+              <DotMatrixLoader variant="pyramid" size={24} label="Loading chamber read" />
+            ) : error ? (
+              `Chamber unreachable (${error})`
+            ) : (
+              EMPTY_COPY
+            )}
           </div>
         </div>
       )}

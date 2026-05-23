@@ -21,8 +21,10 @@ import { ToolApprovalCard } from "./ToolApprovalCard";
 import { useToolApprovals } from "./hooks/useToolApprovals";
 import { AssistantMessagePrimitive } from "./AssistantMessagePrimitive";
 import { UserMessagePrimitive } from "./UserMessagePrimitive";
+import { ChatAnswerStreamWidgets } from "./ChatAnswerStreamWidget";
 import type { Citation } from "./CitationChip";
 import type { ActivityEntry } from "./AgentActivityRail";
+import type { ChatAnswerWidget } from "./hooks/useChatUiActions";
 
 /* ------------------------------------------------------------------ */
 /*  Parts helpers (kept here to avoid prop-drilling rawContent)         */
@@ -137,6 +139,8 @@ interface FintheonThreadProps {
   onPinCitation?: (citation: Citation) => void;
   pinnedCitationIndex?: number;
   scrollButtonOffset?: number;
+  composerBottomInset?: number;
+  answerWidgets?: ChatAnswerWidget[];
 }
 
 export function FintheonThread({
@@ -153,6 +157,8 @@ export function FintheonThread({
   onPinCitation,
   pinnedCitationIndex,
   scrollButtonOffset,
+  composerBottomInset = 136,
+  answerWidgets = [],
 }: FintheonThreadProps) {
   const { activeAgent } = useFintheonAgents();
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -166,6 +172,7 @@ export function FintheonThread({
       <ThreadPrimitive.Viewport
         ref={viewportRef as any}
         className="flex-1 overflow-y-auto p-6 pb-8"
+        style={{ paddingBottom: composerBottomInset }}
       >
         <div className="max-w-full mx-auto space-y-4 mb-8">
           {/* Greeting screen */}
@@ -235,6 +242,8 @@ export function FintheonThread({
               onDeny={(id) => sendDecision(id, "denied")}
             />
           ))}
+
+          <ChatAnswerStreamWidgets widgets={answerWidgets} />
 
           {/* Error banner */}
           {lastError && !isLoading && (

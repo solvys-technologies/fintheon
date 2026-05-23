@@ -9,6 +9,7 @@ import {
 import { X, FileText, Image, Activity, Check, Search } from "lucide-react";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import { useToast } from "../../contexts/ToastContext";
+import { RepoChatComposerSurface } from "./composer/RepoChatComposer";
 
 type AttachTab = "docs" | "media" | "riskflow";
 
@@ -22,6 +23,7 @@ export interface HeadlineAttachment {
 interface FintheonAttachPopupProps {
   open: boolean;
   onClose: () => void;
+  initialTab?: AttachTab;
   onAttachImage?: (dataUrl: string) => void;
   onAttachDocument?: (payload: { filename: string; text: string }) => void;
   /** Scored RiskFlow alerts available for attachment */
@@ -68,17 +70,18 @@ function compressImage(
 export function FintheonAttachPopup({
   open,
   onClose,
+  initialTab = "media",
   onAttachImage,
   onAttachDocument,
   riskflowAlerts = [],
   onAttachHeadlines,
 }: FintheonAttachPopupProps) {
   const { addToast } = useToast();
-  const [tab, setTab] = useState<AttachTab>("media");
+  const [tab, setTab] = useState<AttachTab>(initialTab);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tabAnimating, setTabAnimating] = useState(false);
-  const [visibleTab, setVisibleTab] = useState<AttachTab>("media");
+  const [visibleTab, setVisibleTab] = useState<AttachTab>(initialTab);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const docsInputRef = useRef<HTMLInputElement>(null);
 
@@ -109,8 +112,12 @@ export function FintheonAttachPopup({
     if (!open) {
       setRfQuery("");
       setRfSelected(new Set());
+      return;
     }
-  }, [open]);
+    setTab(initialTab);
+    setVisibleTab(initialTab);
+    setTabAnimating(false);
+  }, [initialTab, open]);
 
   // Focus search when switching to riskflow tab
   useEffect(() => {
@@ -238,17 +245,7 @@ export function FintheonAttachPopup({
   ];
 
   return (
-    <div
-      aria-hidden={!open}
-      className={`fintheon-chat-input-drawer transition-all duration-300 ${
-        open ? "pointer-events-auto" : "pointer-events-none"
-      }`}
-      style={{
-        maxHeight: open ? "280px" : "0px",
-        opacity: open ? 1 : 0,
-        boxShadow: open ? undefined : "none",
-      }}
-    >
+    <RepoChatComposerSurface open={open} kind="drawer">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2">
         <span className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider">
@@ -438,6 +435,6 @@ export function FintheonAttachPopup({
           </div>
         )}
       </div>
-    </div>
+    </RepoChatComposerSurface>
   );
 }

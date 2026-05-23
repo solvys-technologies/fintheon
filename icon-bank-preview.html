@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fintheon Icon Bank Preview</title>
+    <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #050402;
+        --surface: #0a0905;
+        --surface-2: #110f0a;
+        --primary: #c79f4a;
+        --text: #f0ead6;
+        --muted: rgba(240, 234, 214, 0.56);
+        --line: rgba(199, 159, 74, 0.16);
+        --green: #34d399;
+        --red: #ef4444;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+      a { color: inherit; }
+      button { font: inherit; }
+      .board {
+        width: min(1320px, calc(100vw - 40px));
+        margin: 0 auto;
+        padding: 28px 0 48px;
+      }
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        gap: 22px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid var(--line);
+      }
+      h1, h2, h3, p { margin: 0; }
+      h1 {
+        color: var(--primary);
+        font-size: 19px;
+        letter-spacing: 0;
+      }
+      .subtitle {
+        max-width: 860px;
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.6;
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+      .pill, .tag {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .pill { padding: 5px 9px; font-size: 10px; }
+      .tag { padding: 3px 6px; font-size: 9px; line-height: 1; }
+      .section { margin-top: 26px; }
+      .section-head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 10px;
+      }
+      h2 {
+        color: var(--primary);
+        font-size: 12px;
+        line-height: 1;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+      .section-note { color: var(--muted); font-size: 10px; }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+        gap: 10px;
+      }
+      .card {
+        min-height: 124px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--primary) 4%, var(--surface));
+        padding: 12px;
+      }
+      .card.keep {
+        border-color: color-mix(in srgb, var(--green) 36%, transparent);
+        background: color-mix(in srgb, var(--green) 5%, var(--surface));
+      }
+      .card.changed {
+        border-color: color-mix(in srgb, var(--primary) 32%, transparent);
+        background: var(--surface);
+      }
+      .card-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      iconify-icon, .svg-icon {
+        width: 31px;
+        height: 31px;
+        color: var(--primary);
+      }
+      .keep iconify-icon, .keep .svg-icon { color: var(--green); }
+      .card h3 {
+        margin-top: 12px;
+        color: var(--text);
+        font-size: 11px;
+        line-height: 1.25;
+      }
+      .note {
+        margin-top: 7px;
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.45;
+      }
+      .matrix {
+        display: grid;
+        grid-template-columns: 0.9fr 1.1fr 1.15fr 1.45fr;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .matrix > div {
+        min-height: 44px;
+        padding: 10px;
+        border-right: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.45;
+      }
+      .matrix > div:nth-child(4n) { border-right: 0; }
+      .matrix > div:nth-last-child(-n + 4) { border-bottom: 0; }
+      .matrix .head {
+        color: var(--primary);
+        background: var(--surface-2);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .matrix strong { color: var(--text); font-weight: 600; }
+      .mapping-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(236px, 1fr));
+        gap: 8px;
+      }
+      .mapping-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px;
+        background: var(--surface);
+      }
+      .mapping-card .row {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+      }
+      .mapping-card iconify-icon, .mapping-card .svg-icon {
+        width: 24px;
+        height: 24px;
+        flex: 0 0 auto;
+      }
+      .mapping-card h3 {
+        margin: 0;
+        font-size: 10px;
+        color: var(--text);
+      }
+      .exports {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 9px;
+        line-height: 1.45;
+      }
+      .spinner-demo {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 10px;
+      }
+      .spinner-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+        background: var(--surface);
+      }
+      .spinner-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-height: 48px;
+      }
+      .braille {
+        display: grid;
+        grid-template-columns: repeat(2, 8px);
+        grid-template-rows: repeat(3, 8px);
+        gap: 4px;
+        width: 26px;
+        height: 38px;
+      }
+      .braille span {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--primary);
+        opacity: 0.16;
+        animation: braille-pulse 1125ms ease-in-out infinite;
+      }
+      .braille span:nth-child(2) { animation-delay: 138ms; }
+      .braille span:nth-child(3) { animation-delay: 275ms; }
+      .braille span:nth-child(4) { animation-delay: 413ms; }
+      .braille span:nth-child(5) { animation-delay: 550ms; }
+      .braille span:nth-child(6) { animation-delay: 688ms; }
+      .mini-loader {
+        display: inline-grid;
+        grid-template-columns: repeat(3, 5px);
+        gap: 4px;
+        width: 31px;
+        height: 31px;
+        align-content: center;
+        justify-content: center;
+        color: var(--primary);
+      }
+      .mini-loader span {
+        width: 5px;
+        height: 5px;
+        border-radius: 999px;
+        background: currentColor;
+        animation: braille-pulse 1125ms ease-in-out infinite;
+      }
+      .mini-loader span:nth-child(2) { animation-delay: 138ms; }
+      .mini-loader span:nth-child(3) { animation-delay: 275ms; }
+      .scan {
+        position: relative;
+        width: 42px;
+        height: 42px;
+        border-radius: 999px;
+        overflow: hidden;
+        border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+      }
+      .scan::before {
+        content: "";
+        position: absolute;
+        inset: 7px;
+        border-radius: 999px;
+        background:
+          radial-gradient(circle at 14px 14px, var(--primary) 0 2px, transparent 3px),
+          radial-gradient(circle at 22px 22px, var(--primary) 0 2px, transparent 3px),
+          radial-gradient(circle at 30px 30px, var(--primary) 0 2px, transparent 3px);
+        animation: scan-slide 1100ms ease-in-out infinite;
+      }
+      .checkmark {
+        width: 42px;
+        height: 42px;
+        color: var(--primary);
+        animation: check-fade 1225ms ease both infinite;
+      }
+      .theme-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .theme-buttons button {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--muted);
+        padding: 6px 9px;
+        cursor: pointer;
+      }
+      .zen-demo {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 10px;
+      }
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+      }
+      .zen-button {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 31px;
+        border: 1px solid transparent;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--muted);
+        padding: 6px 9px;
+      }
+      .zen-button.is-active {
+        border-color: var(--line);
+        color: var(--primary);
+      }
+      .toolbar[data-zen="true"] .zen-button {
+        width: 34px;
+        justify-content: center;
+        padding: 6px;
+      }
+      .toolbar[data-zen="true"] .zen-label { display: none; }
+      .zen-button::after {
+        content: attr(aria-label);
+        position: absolute;
+        left: 50%;
+        top: calc(100% + 8px);
+        translate: -50% 0;
+        opacity: 0;
+        pointer-events: none;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--surface-2);
+        color: var(--text);
+        padding: 5px 7px;
+        white-space: nowrap;
+        font-size: 9px;
+        transition: opacity 150ms ease;
+        z-index: 3;
+      }
+      .zen-button:hover::after { opacity: 1; }
+      .sources {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .source {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 7px 10px;
+        color: var(--muted);
+        font-size: 10px;
+        text-decoration: none;
+      }
+      .source iconify-icon { width: 16px; height: 16px; }
+      @keyframes braille-pulse {
+        0%, 100% { opacity: 0.12; transform: scale(0.82); }
+        42% { opacity: 1; transform: scale(1); }
+      }
+      @keyframes scan-slide {
+        0% { opacity: 0.15; transform: translate(-10px, -10px); }
+        42% { opacity: 1; }
+        100% { opacity: 0.15; transform: translate(10px, 10px); }
+      }
+      @keyframes check-fade {
+        0% { opacity: 0; transform: scale(0.72); }
+        34% { opacity: 1; transform: scale(1.04); }
+        100% { opacity: 0.82; transform: scale(1); }
+      }
+      @media (max-width: 760px) {
+        .board { width: min(100vw - 24px, 1320px); padding-top: 18px; }
+        .topbar { display: block; }
+        .meta { justify-content: flex-start; margin-top: 14px; }
+        .matrix { grid-template-columns: 1fr; }
+        .matrix > div, .matrix > div:nth-child(4n), .matrix > div:nth-last-child(-n + 4) {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="board">
+      <header class="topbar">
+        <div>
+          <h1>Fintheon Icon Bank Preview: Full App Pass</h1>
+          <p class="subtitle">
+            Updated from your latest pushback. This is still preview-only. Consilium now shares Arbitrum's bank/courthouse icon. Forum uses Coliseum icons, except the header widget uses Phone. Desk becomes three people. Desk Plan uses an open book. Consul uses a magnifying glass.
+          </p>
+        </div>
+        <div class="meta">
+          <span class="pill">Preview only</span>
+          <span class="pill">Primary color loaders</span>
+          <span class="pill">Zen mode plan included</span>
+        </div>
+      </header>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Requested Changes For Quick Review</h2>
+          <p class="section-note">Your requested changes are pinned here before the full matrix.</p>
+        </div>
+        <div id="quick-review-grid" class="grid"></div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Locked And Revised Decisions</h2>
+          <p class="section-note">Green stays. Gold changed from the prior board.</p>
+        </div>
+        <div id="decision-grid" class="grid"></div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Consilium Deep Pass</h2>
+          <p class="section-note">Specific replacements for ConsiliumHub, tabs, badges, lounge, rail, filters, and messages.</p>
+        </div>
+        <div id="consilium-grid" class="grid"></div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Section Audit</h2>
+          <p class="section-note">Provisionary icon updates by app section and surface.</p>
+        </div>
+        <div id="section-audit-grid" class="mapping-grid"></div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>App Wide Replacement Matrix</h2>
+          <p class="section-note">Covers all current lucide exports through replacement buckets.</p>
+        </div>
+        <div id="mapping-grid" class="mapping-grid"></div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Zen Mode Architecture</h2>
+          <p class="section-note">Appearance setting: icon-only buttons with hover tooltips.</p>
+        </div>
+        <div class="zen-demo">
+          <div>
+            <p class="note">Normal mode</p>
+            <div class="toolbar" data-zen="false">
+              <button class="zen-button is-active" aria-label="Refresh desk"><iconify-icon icon="lucide:radio"></iconify-icon><span class="zen-label">Refresh desk</span></button>
+              <button class="zen-button" aria-label="Filter feed"><iconify-icon icon="tabler:chart-candle"></iconify-icon><span class="zen-label">Filter feed</span></button>
+              <button class="zen-button" aria-label="Open Zen"><iconify-icon icon="lucide:tv"></iconify-icon><span class="zen-label">Zen</span></button>
+            </div>
+          </div>
+          <div>
+            <p class="note">Zen mode on</p>
+            <div class="toolbar" data-zen="true">
+              <button class="zen-button is-active" aria-label="Refresh desk"><iconify-icon icon="lucide:radio"></iconify-icon><span class="zen-label">Refresh desk</span></button>
+              <button class="zen-button" aria-label="Filter feed"><iconify-icon icon="tabler:chart-candle"></iconify-icon><span class="zen-label">Filter feed</span></button>
+              <button class="zen-button" aria-label="Open Zen"><iconify-icon icon="lucide:tv"></iconify-icon><span class="zen-label">Zen</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="matrix" style="margin-top:10px">
+          <div class="head">Layer</div><div class="head">Change</div><div class="head">Storage</div><div class="head">Implementation note</div>
+          <div><strong>ThemeContext</strong></div><div>Add zenModeEnabled and setter</div><div>localStorage + backend settings.appearance.zenMode</div><div>Root gets data-zen-mode so CSS can hide labels globally.</div>
+          <div><strong>Shared buttons</strong></div><div>Require icon, aria-label, title/tooltip, optional label span</div><div>No new user data</div><div>Text-only buttons get icons during the icon migration, then labels become hideable.</div>
+          <div><strong>Appearance settings</strong></div><div>Add a compact toggle under Theme Variables</div><div>Same Appearance save path as custom themes</div><div>Toggle does not mutate theme colors; it only changes button presentation.</div>
+          <div><strong>Main-content tabs</strong></div><div>No illuminated active backgrounds</div><div>CSS guideline</div><div>Selected states highlight text + icon only, with a thin border around the selected button. Normal and Zen examples have no container border.</div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Primary Theme Loader Examples</h2>
+          <p class="section-note">Spinners inherit --fintheon-primary, not arbitrary theme colors.</p>
+        </div>
+        <div class="spinner-demo">
+          <article class="spinner-card">
+            <div class="spinner-row">
+              <div class="braille" aria-label="Braille spinner"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+              <div><h3>Generic braille loader</h3><p class="note">25% slower than prior preview; active dots use var(--fintheon-primary).</p></div>
+            </div>
+          </article>
+          <article class="spinner-card">
+            <div class="spinner-row">
+              <div class="scan" aria-label="Diagonal scan preview"></div>
+              <div><h3>Diagonal scan colorized</h3><p class="note">Chat loaders keep the pattern, run 25% slower, and follow primary.</p></div>
+            </div>
+          </article>
+          <article class="spinner-card">
+            <div class="spinner-row">
+              <svg class="checkmark" viewBox="0 0 24 24" fill="none">
+                <path d="M5 12.5l4.1 4.1L19 6.7" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <div><h3>Success fade</h3><p class="note">Success fade runs 25% slower and can inherit primary when theme-owned success is desired.</p></div>
+            </div>
+          </article>
+        </div>
+        <div class="theme-buttons">
+          <button type="button" data-primary="#c79f4a">Primary #c79f4a</button>
+          <button type="button" data-primary="#e0e0e0">Primary #e0e0e0</button>
+          <button type="button" data-primary="#5eead4">Primary #5eead4</button>
+          <button type="button" data-primary="#f2c94c">Primary #f2c94c</button>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Source Banks</h2>
+          <p class="section-note">Open-source or cheap-friendly candidates.</p>
+        </div>
+        <div class="sources">
+          <a class="source" href="https://iconoir.com/" target="_blank" rel="noreferrer"><iconify-icon icon="iconoir:check-circle"></iconify-icon>Iconoir primary</a>
+          <a class="source" href="https://phosphoricons.com/" target="_blank" rel="noreferrer"><iconify-icon icon="ph:cube-focus-light"></iconify-icon>Phosphor detail set</a>
+          <a class="source" href="https://tabler.io/icons" target="_blank" rel="noreferrer"><iconify-icon icon="tabler:chart-candle"></iconify-icon>Tabler market set</a>
+          <a class="source" href="https://www.radix-ui.com/icons" target="_blank" rel="noreferrer"><iconify-icon icon="radix-icons:component-1"></iconify-icon>Radix controls</a>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const clock705 = `
+        <svg class="svg-icon" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <circle cx="16" cy="16" r="12" stroke="currentColor" stroke-width="1.7"/>
+          <path d="M16 16 10.7 20.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M16 16 19.9 7.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M16 5.5v2.1M26.5 16h-2.1M16 26.5v-2.1M5.5 16h2.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>`;
+      const loaderGlyph = `
+        <span class="mini-loader" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </span>`;
+      const plusMinusStack = `
+        <svg class="svg-icon" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <path d="M16 6.5v10M11 11.5h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M11 23h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>`;
+      const icon = (name) => name === "custom:clock-705"
+        ? clock705
+        : name === "custom:loader"
+          ? loaderGlyph
+        : name === "custom:plus-minus-stack"
+          ? plusMinusStack
+        : `<iconify-icon icon="${name}"></iconify-icon>`;
+
+      const quickReview = [
+        ["changed", "Consilium + Arbitrum", "tabler:building-bank", "Consilium uses the same bank/courthouse icon as Arbitrum."],
+        ["changed", "Forum", "tabler:building-stadium", "Forum uses Coliseum icons across app surfaces."],
+        ["changed", "Header Forum Widget", "lucide:phone", "Forum widget in the header uses a phone."],
+        ["changed", "Arbitrum", "tabler:building-bank", "Use a bank/courthouse icon with Roman pillars."],
+        ["changed", "Agent Lounge", "lucide:moon", "Keep the crescent moon for lounge and agent after-hours."],
+        ["changed", "Oracle", "iconoir:eye", "Oracle stays the eye."],
+        ["changed", "Consul", "ph:magnifying-glass-light", "Consul becomes a magnifying glass."],
+        ["changed", "Feucht", "tabler:chart-line", "Feucht uses a stock/chart icon."],
+        ["keep", "IV widget point value", "custom:plus-minus-stack", "Keep the plus/minus signs stacked on top of each other."],
+        ["changed", "Desk", "ph:users-three-light", "Desk becomes three people standing beside each other."],
+        ["changed", "Agentic Desk", "ph:atom-light", "Agentic Desk can keep the atom-like signal."],
+        ["changed", "Desk Plan", "ph:book-open-light", "Desk Plan uses an open book."],
+        ["changed", "Zen", "lucide:tv", "Zen layout can use a TV icon."],
+        ["keep", "Castra", "iconoir:layers", "Castra stays with the existing layered-panel concept."],
+        ["changed", "Regime Tracker", "radix-icons:component-none", "Treat as retired/no icon assignment for implementation."],
+        ["changed", "Loader timing", "custom:loader", "Loaders and success fade run 25% slower and use primary color."],
+        ["changed", "Active main-content tabs", "radix-icons:border-style", "No illuminated background. Highlight text + icon and add only a thin selected border."],
+        ["changed", "Normal / Zen examples", "radix-icons:component-none", "No container border around either example toolbar."]
+      ];
+
+      const decisions = [
+        ["keep", "Power", "lucide:power", "Preserve current power/toggle glyph and call sites."],
+        ["keep", "Mic / MicOff", "lucide:mic", "Preserve voice controls across header, chat, ProxVoice, and ER."],
+        ["keep", "Signal", "lucide:radio-tower", "Preserve Radio and RadioTower for signal, feed, forecasts, rails."],
+        ["changed", "Rail chat bubble", "lucide:message-circle", "Use a circular chat bubble instead of the square message mark."],
+        ["changed", "Desk / Dash", "ph:users-three-light", "Use three people for Desk and Dash unless the surface is explicitly agentic."],
+        ["changed", "Agentic atom", "ph:atom-light", "Use atom only for Agentic Desk and agentic/system intelligence surfaces."],
+        ["changed", "Desk Plan", "ph:book-open-light", "Use an open book for Desk Plan references."],
+        ["changed", "Antilag 7:05", "custom:clock-705", "Custom local line icon because the exact 7:05 time matters."],
+        ["changed", "Refinement Engine", "ph:cube-focus-light", "Use the Phosphor card icon exactly as requested."],
+        ["changed", "Filters / Sorting", "tabler:chart-candle", "Use the Tabler card icon for market filters and sorting."],
+        ["changed", "Security", "ph:fingerprint-light", "Replace shield language with a fingerprint/access-control symbol."],
+        ["changed", "Approval", "radix-icons:check-circled", "Approval modal icon becomes crisp confirmation, not shield/security."],
+        ["changed", "Arbitrum", "tabler:building-bank", "Use a bank/courthouse structure for Arbitrum."],
+        ["changed", "Zen", "lucide:tv", "Zen layout uses TV."],
+        ["keep", "Castra", "iconoir:layers", "Castra keeps the layered-panel icon."],
+        ["changed", "Regime Tracker", "radix-icons:component-none", "Retired/no icon assignment."],
+        ["changed", "Coliseum", "tabler:building-stadium", "Arena/stadium mark for Coliseum surfaces and APIs."],
+        ["changed", "Settings Gear", "radix-icons:gear", "Acceptable atom-like alternate when a real atom is too domain-heavy."]
+      ];
+
+      const consilium = [
+        ["Consilium title", "tabler:building-bank", "Shares the same icon as Arbitrum."],
+        ["Chat tab", "lucide:message-circle", "Circular chat bubble for chat surfaces."],
+        ["Sanctum", "ph:atom-light", "Core agentic chamber can keep atom language."],
+        ["Timeline", "iconoir:clock", "Catalyst chronology."],
+        ["NarrativeFlow", "iconoir:git-branch", "Narrative graph and causal branches."],
+        ["Arbitrum", "tabler:building-bank", "Bank/courthouse icon for deliberation and judgment."],
+        ["Forum", "tabler:building-stadium", "Forum uses Coliseum iconography."],
+        ["Forum header widget", "lucide:phone", "Header Forum widget uses a phone."],
+        ["Agentic Forum", "iconoir:cpu", "Compute/runtime forum, not a generic bot."],
+        ["Research", "ph:book-open-light", "Knowledge base and research room."],
+        ["Apparatus Desk", "ph:atom-light", "Agentic apparatus desk keeps atom-like signal."],
+        ["Fileroom", "iconoir:database-script", "Agent files, soul cards, editable records."],
+        ["Agent Lounge", "lucide:moon", "Keep the crescent moon."],
+        ["Harper", "iconoir:brain-electricity", "CAO synthesis."],
+        ["Oracle", "iconoir:eye", "Forecasting and all-seeing analysis."],
+        ["Feucht", "tabler:chart-line", "Stock/chart icon for Feucht."],
+        ["Consul", "ph:magnifying-glass-light", "Magnifying glass for investigation and counsel."],
+        ["Herald", "iconoir:megaphone", "Sentiment and alerting."],
+        ["Harper Activity", "lucide:activity", "Preserve live activity telemetry mark."],
+        ["Search", "iconoir:search", "Consilium filter bar."],
+        ["Agent filter", "tabler:chart-candle", "Filters and sorting use the Tabler candle icon."]
+      ];
+
+      const sectionAudit = [
+        ["Desktop nav: Desk", "ph:users-three-light", "NavSidebar, MainLayout dashboard tab", "Desk/Dash uses three people, not atom."],
+        ["Desktop nav: Consilium", "tabler:building-bank", "NavSidebar analysis tab", "Consilium shares Arbitrum's bank/courthouse icon."],
+        ["Desktop nav: RiskFlow", "lucide:radio-tower", "NavSidebar riskflow tab, RiskFlowMini, feed entries", "Use signal language instead of newspaper for live market intelligence."],
+        ["Desktop nav: Econ Calendar", "iconoir:calendar", "NavSidebar econ tab, EconCalendar, TradingViewCalendar", "Calendar remains calendar, but uses sharper Iconoir line style."],
+        ["Desktop nav: Refinement", "ph:cube-focus-light", "Refinement click entry, RiskFlow settings toggle, RefinementEngine", "The full Refinement surface inherits cube-focus."],
+        ["Desktop nav: Settings", "radix-icons:gear", "NavSidebar settings, SettingsPanel, Settings tab buttons", "Gear family for settings unless the label is Desk/Team Desk."],
+        ["Strategium: Emotional Resonance", "lucide:mic", "MissionControl ER widget, ER monitors", "Mic remains protected where voice/resonance is the signal."],
+        ["Strategium: Autopilot", "lucide:power", "AutopilotControls, AutopilotDashboard", "Power stays for enablement; targeting sub-actions use crosshair."],
+        ["Strategium: Regime Tracker", "radix-icons:component-none", "RegimeMini, RegimeCard, regime modals", "Retired/no icon assignment for implementation."],
+        ["Strategium: Account Tracker", "iconoir:profile-circle", "AccountTrackerWidget, account status", "Identity/account, not desk-team."],
+        ["Strategium: Weekly Performance", "iconoir:graph-up", "WeeklyPerformanceWidget, journal performance", "Performance, PnL, and history charts."],
+        ["Strategium: Session Calendar", "iconoir:calendar", "SessionCalendarMini", "Session timing and schedule."],
+        ["Strategium: Desk Plan", "ph:book-open-light", "DeskThemeWidget, DeskPlan widgets, DayCard", "Desk Plan uses an open book."],
+        ["Consilium: Sanctum", "ph:atom-light", "Sanctum dropdown, Narrative workspace chrome", "Core chamber icon."],
+        ["Consilium: NarrativeFlow", "iconoir:git-branch", "NarrativeCanvas, NarrativeGrid, NarrativeFlow", "Branching catalyst graph."],
+        ["Consilium: Arbitrum", "tabler:building-bank", "ArbitrumGlyph, ArbitrumChamber, verdict cards", "Bank/courthouse icon for judgment surface."],
+        ["Consilium: Forum", "tabler:building-stadium", "ProxVoiceForum, forum tab", "Forum uses Coliseum iconography."],
+        ["Header Forum widget", "lucide:phone", "ProxVoiceHeaderControl", "The header widget remains a phone."],
+        ["Consilium: Agentic Forum", "iconoir:cpu", "AgentChattr, boardroom runtime", "Runtime/agent compute surface."],
+        ["Consilium: Research", "ph:book-open-light", "ResearchBoard, research room", "Knowledge base and source work."],
+        ["Apparatus: Desk", "ph:atom-light", "Apparatus desk subview, MemoryCard agentDesk", "Agent dossiers and desk monitoring use atom-like."],
+        ["Apparatus: Fileroom", "iconoir:database-script", "Agent soul card editor, files, memory cards", "Records and memory storage."],
+        ["Apparatus: Agent Lounge", "lucide:moon", "AgentLounge dreams/thoughts", "Keep the crescent moon."],
+        ["Agent badges: Harper", "iconoir:brain-electricity", "AgentBadge Harper, Harper ops", "CAO synthesis."],
+        ["Agent badges: Oracle", "iconoir:eye", "AgentBadge Oracle", "Forecast and all-seeing analysis."],
+        ["Agent badges: Feucht", "tabler:chart-line", "AgentBadge Feucht", "Stock/chart icon."],
+        ["Agent badges: Consul", "ph:magnifying-glass-light", "AgentBadge Consul", "Magnifying glass for investigation and counsel."],
+        ["Agent badges: Herald", "iconoir:megaphone", "AgentBadge Herald", "Comms, sentiment, alerts."],
+        ["Settings: Profile", "iconoir:profile-circle", "GeneralTab, ProfileSettingsSection", "Profile and account identity."],
+        ["Settings: Agentic Desk", "ph:atom-light", "AgenticDesk settings", "Agentic Desk can use atom-like."],
+        ["Settings: Hermes", "iconoir:cpu", "HermesSettings, HermesAdminTab", "Gateway and agent runtime."],
+        ["Settings: Trading", "tabler:chart-candle", "TradingTab, broker/autopilot/risk models", "Trading config and market filters use candle language."],
+        ["Settings: iFrames", "iconoir:internet", "IframesTab, external platforms", "External web embeds."],
+        ["Settings: Notifications", "ph:bell-light", "NotificationsTab, notification center", "Notification delivery."],
+        ["Settings: API", "iconoir:terminal", "ApiTab, key sections", "Credentials and service integration."],
+        ["Settings: Appearance", "radix-icons:gear", "ThemeSettings, font/theme controls, zen toggle", "Appearance is gear/settings, not palette sparkle."],
+        ["Settings: Developer", "iconoir:terminal", "DeveloperTab, diagnostics, mock/test tools", "Developer controls and CLI-like behavior."],
+        ["Settings: Danger Zone", "radix-icons:exclamation-triangle", "DangerTab, destructive actions", "Warning icon, not shield."],
+        ["Chat: composer", "lucide:message-circle", "ChatSidebar, FintheonThread, prompt input", "Circular chat bubble for chat surfaces."],
+        ["Chat: skill mention", "ph:at-light", "ChatCitationIcon skill kind, @ mentions", "Distinct @ mention citation icon."],
+        ["Chat: internal tool", "iconoir:terminal", "ChatCitationIcon internal-tool, shell, command", "Internal execution/runtime calls."],
+        ["Chat: external tool", "iconoir:internet", "ChatCitationIcon external-tool, web, browser", "External web/network calls."],
+        ["Chat: approval", "radix-icons:check-circled", "ToolApprovalCard, InlineApprovalCard, approval detail", "Approval is confirmation, not security."],
+        ["Chat: files and MCP", "iconoir:database-script", "file, mcp, connector citations, attach popup", "Records, connectors, documents."],
+        ["RiskFlow feed", "lucide:radio-tower", "NewsFeed, FeedItem, RiskFlowMini, NotificationToast", "News/event feed becomes signal feed."],
+        ["RiskFlow scoring", "iconoir:graph-up", "scored item metrics, performance deltas", "Scores and deltas use chart line language."],
+        ["IV widget point value", "custom:plus-minus-stack", "IVScoreCard point-value marker, Diff icon only", "Protected stacked plus/minus mark. Do not replace with chart language."],
+        ["Econ add to Desk", "ph:book-open-light", "TradingViewCalendar add-to-desk, Desk Queue", "Adding events to Desk Plan uses the open book."],
+        ["Bulletin", "ph:note-pencil-light", "StickyBulletin, MobileBulletin, BulletinPost", "Notes, watchlist, desk bulletin."],
+        ["Approvals mobile", "radix-icons:check-circled", "RoutineApprovalCard, ToolApprovalDetail, notification approval swipe", "Same approval language across desktop and mobile."],
+        ["Mobile nav: Desk", "ph:users-three-light", "BottomTabBar HOME, MainMenuDrawer Desk", "Mobile Desk/Dash uses three people."],
+        ["Layout selector: Zen", "lucide:tv", "TopHeader layoutOptions tickers-only", "Zen uses TV."],
+        ["Layout selector: Castra", "iconoir:layers", "TopHeader layoutOptions combined", "Castra stays the same."],
+        ["Mobile nav: Sanctum", "ph:atom-light", "MainMenuDrawer Sanctum dropdown", "Core chamber uses atom."],
+        ["Mobile nav: RiskFlow", "lucide:radio-tower", "BottomTabBar RiskFlow, drawer RiskFlow", "Signal feed."],
+        ["Mobile nav: Econ", "iconoir:calendar", "Drawer Econ calendar", "Calendar/schedule."],
+        ["Mobile nav: Chat", "lucide:message-circle", "BottomTabBar Chat, mobile chat", "Circular chat bubble."],
+        ["Mobile nav: Settings", "radix-icons:gear", "BottomTabBar settings, drawer settings/privacy", "Settings gear."],
+        ["Mobile nav: Help", "radix-icons:question-mark-circled", "MainMenuDrawer Help Center", "Help and docs."],
+        ["Journal and performance", "iconoir:graph-up", "Journal charts, PnL, hybrid chart, performance heatmap", "Metrics, trading history, and charts."],
+        ["Proposals and trades", "ph:crosshair-light", "ProposalModal, TradeIdeaModal, proposal widgets", "Targeting and trade intent."],
+        ["Governance and lockout", "ph:fingerprint-light", "BlockerTab, LockScreen, governance, PsychAssist lock", "Security/access control without shield."],
+        ["Coliseum", "tabler:building-stadium", "coliseum-api, AgenticDesk style, arena references", "Use an arena/stadium mark."],
+        ["Loaders and save states", "custom:loader", "Loader2, DotMatrixLoader, BrailleSpinner, save buttons", "No symbolic icon. Use loader primitives directly; 25% slower; color from primary theme token."],
+      ];
+
+      const mappings = [
+        ["Desk and Dash", "ph:users-three-light", "LayoutDashboard, Layout, dashboard HOME, non-agentic desk labels", "Use three people. Do not use atom unless the surface is agentic."],
+        ["Agentic Desk", "ph:atom-light", "AgentDesk, AgenticDesk, Apparatus desk, agentic desk references", "Agentic desk can keep the atom-like intelligence signal."],
+        ["Desk Plan", "ph:book-open-light", "DeskThemeWidget, DeskPlan widgets, DayCard, Desk Queue", "Use an open book for Desk Plan."],
+        ["Antilag", "custom:clock-705", "Activity, Clock, Radio, Zap when label or surface says Antilag", "Explicit 7:05 clock replaces generic activity for antilag."],
+        ["Refinement", "ph:cube-focus-light", "RefinementEngine, RegimeControl, LexiconEditor, SourceAccounts, CommentatorManager", "Use cube-focus mark for the engine and its child controls."],
+        ["Filters and sorting", "tabler:chart-candle", "Filter, SlidersHorizontal, ListOrdered, Search filter controls", "Market candle becomes the filtering/sorting signal."],
+        ["Security", "ph:fingerprint-light", "Lock, LockOpen, Shield, ShieldAlert, ShieldCheck, ShieldOff, ShieldX", "Access-control language, not shield badges."],
+        ["Approval", "radix-icons:check-circled", "CheckCircle, CheckCircle2, CheckSquare, tool approval cards, modals", "Confirmation mark separate from security."],
+        ["Navigation", "radix-icons:chevron-right", "ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Arrow*, Move*", "Radix for dense chrome and predictable controls."],
+        ["Close and destructive", "radix-icons:cross-2", "X, XCircle, CircleX, Trash2", "Crisp utility close/delete language."],
+        ["AI and agents", "iconoir:brain-electricity", "Bot, Brain, Sparkles, Award, Crown, Sprout", "No sparkle-first AI styling."],
+        ["Consilium + Arbitrum", "tabler:building-bank", "Consilium title, Consilium nav, Arbitrum", "Shared icon as requested."],
+        ["Forum", "tabler:building-stadium", "Forum tab, ProxVoiceForum, forum surfaces", "Forum uses Coliseum icons."],
+        ["Forum header widget", "lucide:phone", "ProxVoiceHeaderControl", "Header widget uses Phone."],
+        ["Arbitrum", "tabler:building-bank", "ArbitrumChamber, Arbitrum dropdown, verdict cards", "Bank/courthouse with pillars."],
+        ["Consilium agents", "ph:magnifying-glass-light", "Crown, Eye, Scroll, Megaphone, Bot in AgentBadge", "Agent-specific mapping listed in Consilium deep pass; Consul uses magnifying glass, Oracle remains eye."],
+        ["Data and files", "iconoir:database-script", "FileText, FileCode2, FileDown, FileBarChart, ClipboardList, ClipboardPlus, Database, Layers, Scroll, StickyNote", "Artifacts, MCP docs, and data records."],
+        ["Charts and finance", "iconoir:graph-up", "BarChart3, LineChart, TrendingUp, TrendingDown, DollarSign, CreditCard", "Finance and performance language. Diff is reserved for the IV point-value stack."],
+        ["IV point value", "custom:plus-minus-stack", "Diff in IVScoreCard point ranges", "Keep plus/minus signs stacked vertically for the IV widget point value."],
+        ["Market targeting", "ph:crosshair-light", "Target, Crosshair, Compass, MousePointer2, Pin", "Precision and targeting."],
+        ["Regime tracker", "radix-icons:component-none", "RegimeMini, RegimeCard, regime modals", "Retired/no icon assignment."],
+        ["Time and calendar", "iconoir:calendar", "Calendar, CalendarCheck, CalendarClock, CalendarDays, Clock, History", "Use normal calendar/clock except Antilag 7:05 and Regime stopwatch."],
+        ["Chat and messages", "lucide:message-circle", "MessageSquare, MessageCircle, MessageSquareText", "Use circular chat bubble for chat/rail oriented surfaces."],
+        ["Voice and calls", "lucide:mic", "Mic, MicOff, Phone, PhoneOff, Volume2, VolumeOff, VolumeX", "Mic remains protected; phone/audio gets same restrained line family."],
+        ["Media", "ph:image-light", "Image, ImagePlus, Camera, Video, Youtube, Monitor, Tv", "Media and preview panes."],
+        ["Web and links", "iconoir:internet", "Globe, Globe2, Twitter, Link, Link2, ExternalLink, Paperclip, Rss, Share2", "External references and web citations."],
+        ["Tools and runtime", "iconoir:terminal", "Terminal, Code, Server, ServerCog, HardDrive, Cpu, Plug, Plug2, GitBranch, GitMerge, GitPullRequest, Merge, Route, Network", "Developer/runtime calls, except atom contexts."],
+        ["User and people", "iconoir:profile-circle", "User, UserPlus, Users, Hand", "Generic identity. Desk/team contexts override to atom."],
+        ["Settings and appearance", "radix-icons:gear", "Settings, Settings2, Palette, Sun, ToggleLeft, ToggleRight", "Use gear family. Moon remains available for Agent Lounge and theme mode. Zen uses TV."],
+        ["Zen layout", "lucide:tv", "TopHeader layout option, Appearance zen toggle", "TV icon."],
+        ["Castra layout", "iconoir:layers", "TopHeader layout option", "Keep current layered-panel concept."],
+        ["Status and info", "radix-icons:info-circled", "AlertCircle, AlertTriangle, CircleAlert, Info, HelpCircle, Circle, CircleDot, CircleOff, StopCircle", "State indicators stay compact and legible."],
+        ["Actions", "radix-icons:plus", "Plus, PlusCircle, Minus, Save, Download, Upload, Copy, Edit3, Pencil, Highlighter", "Dense control grammar for zen mode."],
+        ["Coliseum", "tabler:building-stadium", "Coliseum, Arena, AgenticDesk style/coliseum API references", "Arena mark for this product concept."],
+        ["Loaders", "custom:loader", "Loader2 and DotMatrixLoader variants", "No symbolic icon needed. Visuals stay, 25% slower, color follows --fintheon-primary."],
+      ];
+
+      function renderCards(target, rows) {
+        document.getElementById(target).innerHTML = rows.map(([state, title, iconName, text]) => `
+          <article class="card ${state}">
+            <div class="card-title">${icon(iconName)}<span class="tag">${state}</span></div>
+            <h3>${title}</h3>
+            <p class="note">${text}</p>
+          </article>
+        `).join("");
+      }
+
+      function renderConsilium() {
+        document.getElementById("consilium-grid").innerHTML = consilium.map(([title, iconName, text]) => `
+          <article class="card changed">
+            <div class="card-title">${icon(iconName)}<span class="tag">Consilium</span></div>
+            <h3>${title}</h3>
+            <p class="note">${text}</p>
+          </article>
+        `).join("");
+      }
+
+      function renderSectionAudit() {
+        document.getElementById("section-audit-grid").innerHTML = sectionAudit.map(([title, iconName, files, note]) => `
+          <article class="mapping-card">
+            <div class="row">${icon(iconName)}<h3>${title}</h3></div>
+            <div class="exports"><strong>Reviewed:</strong> ${files}</div>
+            <p class="note">${note}</p>
+          </article>
+        `).join("");
+      }
+
+      function renderMappings() {
+        document.getElementById("mapping-grid").innerHTML = mappings.map(([title, iconName, exports, note]) => `
+          <article class="mapping-card">
+            <div class="row">${icon(iconName)}<h3>${title}</h3></div>
+            <div class="exports"><strong>Current exports:</strong> ${exports}</div>
+            <p class="note">${note}</p>
+          </article>
+        `).join("");
+      }
+
+      renderCards("decision-grid", decisions);
+      renderCards("quick-review-grid", quickReview);
+      renderConsilium();
+      renderSectionAudit();
+      renderMappings();
+
+      document.querySelectorAll("[data-primary]").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.documentElement.style.setProperty("--primary", button.dataset.primary);
+        });
+      });
+    </script>
+  </body>
+</html>

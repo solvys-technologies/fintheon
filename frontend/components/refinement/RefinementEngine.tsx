@@ -15,7 +15,7 @@
 // [claude-code 2026-04-18] S24-T4: Rebuilt scoring calibration workbench.
 // [claude-code 2026-03-27] S2-T7: Refinement Engine
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { RefreshCw, Wrench, AlertTriangle, X, Tv } from "lucide-react";
+import { RefreshCw, CubeFocus, AlertTriangle, X, Tv } from "lucide-react";
 import { isRefinementEditUnlocked } from "../../lib/dev-settings-auth";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import type { CalibrationEntry } from "../../../backend-hono/src/types/calibration";
@@ -581,7 +581,7 @@ export function RefinementEngine() {
               onClick={() => setViewMode("scoring")}
               className="flex items-center gap-1.5 text-xs font-medium text-[var(--fintheon-accent)]/70 hover:text-[var(--fintheon-accent)] transition-colors"
             >
-              <Wrench className="w-3.5 h-3.5" />
+              <CubeFocus className="w-3.5 h-3.5" />
               Scoring
             </button>
           ) : (

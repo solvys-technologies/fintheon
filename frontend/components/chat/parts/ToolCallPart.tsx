@@ -7,6 +7,10 @@ import {
 } from "lucide-react";
 import { BrailleSpinner } from "../primitive/BrailleSpinner";
 import { RichTextRenderer } from "../../shared/RichTextRenderer";
+import {
+  ChatCitationIcon,
+  citationKindForTool,
+} from "../../icon-bank/ChatCitationIcon";
 import type { ToolInvocationPart, ToolResultPart } from "../types";
 
 interface ToolCallPartProps {
@@ -102,15 +106,19 @@ function ToolCallCard({ part, result }: ToolCallPartProps) {
   return (
     <div
       className="mb-1.5 overflow-hidden rounded-xl bg-[#0b0b09] transition-colors duration-300"
-      style={{
+        style={{
         border: "1px solid rgba(199,159,74,0.15)",
-        borderLeft: `2px solid ${color}`,
       }}
     >
       <button
         onClick={toggle}
         className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-[var(--fintheon-accent)]/5 transition-colors w-full text-left"
       >
+        <ChatCitationIcon
+          kind={citationKindForTool(toolName)}
+          size={24}
+          title={toolName}
+        />
         {isRunning && <BrailleSpinner size={8} gap={2} />}
         {isDone && (
           <Check size={13} className="text-green-500 flex-shrink-0" />

@@ -57,7 +57,7 @@ export function FintheonThinkingIndicator({
       <div className="flex items-center gap-3 flex-nowrap">
         {/* Braille spinner (replaces pulse dot while thinking) */}
         <div className="h-6 w-6 flex-shrink-0 flex items-center justify-center">
-          <BrailleSpinner size={10} color="#c79f4a" />
+          <BrailleSpinner size={10} />
         </div>
 
         <div className="min-w-0 flex-1">

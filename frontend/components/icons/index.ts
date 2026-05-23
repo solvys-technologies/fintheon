@@ -4,3 +4,4 @@ export { OfficialIcon } from "./OfficialIcon";
 export { NetworkIcon } from "./NetworkIcon";
 export { ChartSourceIcon } from "./ChartSourceIcon";
 export { TradeIdeaIcon } from "./TradeIdeaIcon";
+export { DeepSeekWhaleIcon } from "./DeepSeekWhaleIcon";

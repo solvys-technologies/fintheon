@@ -4,6 +4,7 @@
 
 import { useSettings } from "../../contexts/SettingsContext";
 import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
+import { DotMatrixLoader } from "@frontend/components/icon-bank/DotMatrixLoader";
 import { DigitGroup } from "../shared/DigitGroup";
 import { FadingRuler } from "../shared/FadingRuler";
 import { SegmentedBar } from "../shared/SegmentedBar";
@@ -141,11 +142,13 @@ export function ArbitrumVerdictCard() {
 
       {!verdict && (
         <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: "var(--text-secondary)", border: "1px solid var(--border)", borderRadius: 8, padding: 12, background: "var(--surface)" }}>
-          {isLoading
-            ? "Loading chamber read\u2026"
-            : error
-              ? `Chamber unreachable (${error})`
-              : "No fresh chamber read \u2014 convenes 17:00 ET or on IV \u2265 8.5."}
+          {isLoading ? (
+            <DotMatrixLoader variant="pyramid" size={24} label="Loading chamber read" />
+          ) : error ? (
+            `Chamber unreachable (${error})`
+          ) : (
+            "No fresh chamber read \u2014 convenes 17:00 ET or on IV \u2265 8.5."
+          )}
         </div>
       )}
 

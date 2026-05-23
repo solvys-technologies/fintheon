@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mic, MicOff, PhoneOff, Radio, Users, Volume2, VolumeOff, Zap } from "lucide-react";
+import { Mic, MicOff, PhoneOff, Stadium, Users, Volume2, VolumeOff, Zap } from "lucide-react";
 import { useProxVoice } from "../../contexts/ProxVoiceContext";
 import { DraggableProfilePopup } from "./DraggableProfilePopup";
 import { RiskSignalCards } from "../narrative/RiskSignalCards";
@@ -15,7 +15,7 @@ export function ProxVoiceForum() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-[var(--fintheon-accent)]">
-              <Radio className="h-4 w-4" />
+              <Stadium className="h-4 w-4" />
               <h2 className="rounded-sm bg-black/20 px-1 text-sm font-semibold tracking-[0.18em] uppercase">
                 Forum
               </h2>

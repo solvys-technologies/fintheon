@@ -8,7 +8,7 @@
 //   with MARKET HEAT, dropped Drivers section + data-point footer
 import { useState, useEffect, useRef } from "react";
 import { Diff, TrendingDown, Minus } from "lucide-react";
-import { FishSwimmer } from "../icon-bank/UnicodeSpinners";
+import { DotMatrixLoader } from "../icon-bank/DotMatrixLoader";
 import { NothingFuse } from "../shared/NothingFuse";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -115,7 +115,7 @@ export function ArbitrumChamberPredictionCards() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-4">
-        <FishSwimmer size={13} streamWidth={8} />
+        <DotMatrixLoader variant="pyramid" size={24} label="Arbitrum" />
       </div>
     );
   }

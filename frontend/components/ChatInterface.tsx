@@ -18,6 +18,13 @@ import type { ActivityEntry } from "./chat/AgentActivityRail";
 import { TodoDrawer } from "./chat/TodoDrawer";
 import { useTodoList } from "./chat/hooks/useTodoList";
 import { useMessageQueue } from "./chat/hooks/useMessageQueue";
+import {
+  useChatUiActions,
+  type ChatUiTodoItem,
+} from "./chat/hooks/useChatUiActions";
+import { useAutoCollapseDrawer } from "./chat/hooks/useAutoCollapseDrawer";
+import { ChatQuestionApprovalDrawer } from "./chat/ChatQuestionApprovalDrawer";
+import { ChatDrawerPeek } from "./chat/ChatDrawerPeek";
 import { normalizeReasoningLevel, shouldThinkHarder } from "./chat/reasoning";
 import type { ReasoningLevel } from "./chat/reasoning";
 import { SKILL_PREFIXES } from "../lib/skillPrefixes";
@@ -76,6 +83,7 @@ function ChatInterfaceInner({
     browserSessionId?: string;
     browserStatus?: "starting" | "active" | "closed";
     reportHtml?: string;
+    reportMarkdown?: string;
     citationSource?: { title: string; url?: string; content?: string };
     narrativeCanvasId?: string;
   } | null>(null);
@@ -88,11 +96,13 @@ function ChatInterfaceInner({
   >(undefined);
 
   const [showTodoDrawer, setShowTodoDrawer] = useState(false);
+  const [approvalDrawerCollapsed, setApprovalDrawerCollapsed] = useState(false);
   const previousWorkItemCountRef = useRef(0);
+  const hasMountedWorkDrawerRef = useRef(false);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Todo list state — persisted to localStorage
-  const { todos, toggleTodo, removeTodo } = useTodoList();
+  const { todos, addTodo, toggleTodo, removeTodo } = useTodoList();
 
   const sendNow = useCallback(
     (msg: string) => {
@@ -150,6 +160,12 @@ function ChatInterfaceInner({
 
   useEffect(() => {
     const previousCount = previousWorkItemCountRef.current;
+    if (!hasMountedWorkDrawerRef.current) {
+      hasMountedWorkDrawerRef.current = true;
+      previousWorkItemCountRef.current = workItemCount;
+      if (workItemCount === 0) setShowTodoDrawer(false);
+      return;
+    }
     previousWorkItemCountRef.current = workItemCount;
     if (workItemCount === 0) {
       setShowTodoDrawer(false);
@@ -220,6 +236,100 @@ function ChatInterfaceInner({
     setPinnedCitationIndex(undefined);
   }, []);
 
+  const handleTodoUiAction = useCallback(
+    (payload: { items: ChatUiTodoItem[] }) => {
+      for (const item of payload.items) {
+        addTodo(item.text, {
+          issueTrackingType: item.issueType,
+          source: "harper-ui-tool",
+        });
+      }
+      setShowTodoDrawer(true);
+    },
+    [addTodo],
+  );
+
+  const handleRightRailUiAction = useCallback(
+    (payload: { title: string; markdown: string }) => {
+      setArtifactConfig({
+        artifactType: "report",
+        reportMarkdown: `# ${payload.title}\n\n${payload.markdown}`,
+      });
+      setShowArtifacts(true);
+    },
+    [],
+  );
+
+  const {
+    questionnaire,
+    answerWidgets,
+    isSubmittingAnswers,
+    submitAnswers,
+  } = useChatUiActions(lastRequestId, {
+    onTodoDrawer: handleTodoUiAction,
+    onRightRail: handleRightRailUiAction,
+  });
+
+  useEffect(() => {
+    setApprovalDrawerCollapsed(false);
+  }, [questionnaire?.actionId]);
+
+  const approvalDrawerOpen = !!questionnaire && !approvalDrawerCollapsed;
+  const workDrawerOpen =
+    showTodoDrawer && hasWorkDrawerContent && !questionnaire;
+  const collapseTodoDrawer = useCallback(() => setShowTodoDrawer(false), []);
+  useAutoCollapseDrawer({
+    isOpen: workDrawerOpen,
+    isAgentActive: isRunning,
+    onCollapse: collapseTodoDrawer,
+  });
+  const pendingTodoCount = todos.filter((todo) => !todo.done).length;
+  const doneTodoCount = todos.length - pendingTodoCount;
+  const workPeekDetail = [
+    pendingTodoCount > 0
+      ? `${pendingTodoCount} open to-do${pendingTodoCount === 1 ? "" : "s"}`
+      : null,
+    doneTodoCount > 0
+      ? `${doneTodoCount} complete`
+      : null,
+    queue.length > 0
+      ? `${queue.length} queued message${queue.length === 1 ? "" : "s"}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const drawerPeekSlot =
+    questionnaire && approvalDrawerCollapsed ? (
+      <ChatDrawerPeek
+        tone="action"
+        title="Action needed"
+        detail={`${questionnaire.questions.length} question${
+          questionnaire.questions.length === 1 ? "" : "s"
+        } waiting for your answer`}
+        onOpen={() => setApprovalDrawerCollapsed(false)}
+      />
+    ) : hasWorkDrawerContent && !showTodoDrawer && !questionnaire ? (
+      <ChatDrawerPeek
+        tone="status"
+        title="Status"
+        detail={workPeekDetail || "Active work is waiting"}
+        onOpen={() => setShowTodoDrawer(true)}
+      />
+    ) : null;
+  const hasDrawerPeek = !!drawerPeekSlot;
+  const composerBottomInset = approvalDrawerOpen
+    ? 310
+    : workDrawerOpen
+      ? 250
+      : hasDrawerPeek
+        ? 164
+        : 150;
+  const scrollButtonOffset = approvalDrawerOpen
+    ? 300
+    : workDrawerOpen
+      ? 230
+      : 116;
+
   const handleNewChat = useCallback(() => {
     setHasChatStarted(false);
     clearConversationId();
@@ -276,28 +386,11 @@ function ChatInterfaceInner({
             citations={citations}
             onPinCitation={handlePinCitation}
             pinnedCitationIndex={pinnedCitationIndex}
-            scrollButtonOffset={showTodoDrawer && hasWorkDrawerContent ? 430 : 116}
+            scrollButtonOffset={scrollButtonOffset}
+            composerBottomInset={composerBottomInset}
+            answerWidgets={answerWidgets}
           />
-          {/* Todo + Queue drawer — slides up from above composer */}
-          <div className="relative z-20 shrink-0">
-            <TodoDrawer
-              isOpen={showTodoDrawer && hasWorkDrawerContent}
-              onClose={() => setShowTodoDrawer(false)}
-              todos={todos}
-              onToggleTodo={toggleTodo}
-              onRemoveTodo={removeTodo}
-              queue={queue}
-              onEditQueue={editQueue}
-              onRemoveQueue={removeQueue}
-              onReorderQueue={reorderQueue}
-              onSendQueueOne={sendOne}
-              onSendQueueAll={sendAll}
-            />
-          </div>
-
-          {/* Subtle bounded fade above composer — keeps drawer chrome from blanketing content. */}
-          <div className="fintheon-content-bottom-fade" />
-          <div className="relative z-20 shrink-0">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30">
             <FintheonComposer
               thinkHarder={thinkHarder}
               setThinkHarder={setThinkHarder}
@@ -315,6 +408,34 @@ function ChatInterfaceInner({
               conversationId={conversationId}
               onConversationGone={clearConversationId}
               onQueueMessage={addQueue}
+              approvalDrawerOpen={approvalDrawerOpen}
+              approvalDrawerSlot={
+                <ChatQuestionApprovalDrawer
+                  questionnaire={questionnaire}
+                  isSubmitting={isSubmittingAnswers}
+                  onSubmit={submitAnswers}
+                  onCancel={() => setApprovalDrawerCollapsed(true)}
+                />
+              }
+              workDrawerOpen={workDrawerOpen}
+              workDrawerSlot={
+                <TodoDrawer
+                  isOpen={workDrawerOpen}
+                  onClose={() => setShowTodoDrawer(false)}
+                  todos={todos}
+                  onToggleTodo={toggleTodo}
+                  onRemoveTodo={removeTodo}
+                  queue={queue}
+                  onEditQueue={editQueue}
+                  onRemoveQueue={removeQueue}
+                  onReorderQueue={reorderQueue}
+                  onSendQueueOne={sendOne}
+                  onSendQueueAll={sendAll}
+                  approvalPending={!!questionnaire}
+                  agentActive={isRunning}
+                />
+              }
+              drawerPeekSlot={drawerPeekSlot}
               queueCount={queue.length}
               onMessageSubmitted={() => setHasChatStarted(true)}
             />
@@ -322,15 +443,24 @@ function ChatInterfaceInner({
         </div>
 
         {/* Codex-style artifact / diff / preview workbench */}
-        {dualPane && showArtifacts && (
+        {(dualPane || artifactConfig) && showArtifacts && (
           <ArtifactPane
             artifactType={artifactConfig?.artifactType}
             tradingViewConfig={artifactConfig?.tradingViewConfig}
             browserSessionId={artifactConfig?.browserSessionId}
             browserStatus={artifactConfig?.browserStatus}
             reportHtml={artifactConfig?.reportHtml}
+            reportMarkdown={artifactConfig?.reportMarkdown}
             citationSource={artifactConfig?.citationSource}
             narrativeCanvasId={artifactConfig?.narrativeCanvasId}
+            onBegin={
+              artifactConfig?.reportMarkdown
+                ? () =>
+                    handleSend(
+                      `Begin this plan:\n\n${artifactConfig.reportMarkdown}`,
+                    )
+                : undefined
+            }
             onClose={handleCloseArtifact}
             width={artifactWidth}
             onWidthChange={setArtifactWidth}

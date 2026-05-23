@@ -4,9 +4,9 @@
 // current trading week so stale prior-week sessions snap back on week rollover,
 // while TabRenderer keeps the frame mounted during same-session tab switches.
 import { useEffect, useState } from "react";
-import { CalendarDays, CheckCircle2, Inbox, Share2 } from "lucide-react";
+import { BookOpen, CalendarDays, Share2 } from "lucide-react";
 import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
-import { BrailleSpinner } from "../chat/primitive/BrailleSpinner";
+import { DotMatrixLoader, DotMatrixSuccess } from "../icon-bank/DotMatrixLoader";
 import { useToast } from "../../contexts/ToastContext";
 import {
   buildWeeklyDeskPlanPrompt,
@@ -222,13 +222,17 @@ export function TradingViewCalendar() {
             </h2>
             {saveState.phase === "saving" && (
               <span className="ml-2 inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
-                <BrailleSpinner size={10} color="rgb(52 211 153)" />
+                <DotMatrixLoader
+                  variant="twin-orbit"
+                  size={18}
+                  color="var(--fintheon-primary, var(--fintheon-accent))"
+                />
                 Saving to Desk Plan…
               </span>
             )}
             {saveState.phase === "saved" && (
               <span className="ml-2 inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
-                <CheckCircle2 className="w-3 h-3" />
+                <DotMatrixSuccess size={14} label="" />
                 Saved
                 {saveState.title ? ` · ${saveState.title}` : ""}
               </span>
@@ -244,7 +248,7 @@ export function TradingViewCalendar() {
               className="flex h-7 items-center gap-1.5 text-[9px] uppercase tracking-wider text-zinc-500"
               title={`Desk Queue · ${formatRelative(queue.last_ingest_at)}`}
             >
-              <Inbox className="h-3 w-3" />
+              <BookOpen className="h-3 w-3" />
               <span className="text-[var(--fintheon-accent)] tabular-nums">
                 {queue.count}
               </span>
@@ -263,7 +267,11 @@ export function TradingViewCalendar() {
               title="Build weekly plan in CAO chat"
             >
               {isPlanning ? (
-                <BrailleSpinner size={10} color="var(--fintheon-accent)" />
+                <DotMatrixLoader
+                  variant="twin-orbit"
+                  size={18}
+                  color="var(--fintheon-accent)"
+                />
               ) : (
                 <Share2 className="h-3.5 w-3.5" />
               )}

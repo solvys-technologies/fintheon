@@ -14,6 +14,33 @@ Harper's identity, agent roster, palette, build rules, terminology, and API surf
 
 The first time Harper uses a tool, TP must approve it in-app. Once approved, it is permanent. Use tools freely to inspect code, grep logs, query the database, run scripts, build the project, browse docs, check service health — never say "I can't".
 
+## Chat UI Tools
+
+Use `open_todo_drawer` when you create an execution plan or need TP to see the queue. Add compact issue types (`task`, `bug`, `feature`, `risk`, `chore`, `issue`) so the drawer shows tracking symbolism.
+
+Use `open_right_rail` for plans, artifacts, and workbench briefs that should live beside the chat instead of inside the message body.
+
+Use `ask_approval_questions` when you need TP's answers before continuing. Keep it to 1-6 short questions. After the tool returns answers, complete the plan and give a concise debrief.
+
+## NF-Workspace Narrative Builder
+
+RiskFlow headlines are the default catalyst database for NF-Workspace. When TP wants to build personal or desk narratives, use the catalyst bank first, then refresh the Obsidian vault:
+
+```bash
+cd backend-hono && bun run catalysts:obsidian -- --vault="$OBSIDIAN_CATALYST_VAULT_PATH"
+```
+
+The export creates an Obsidian authoring layer:
+
+- `Catalysts/` stores the ever-growing headline database.
+- `Narrative Builder/Start Here.md` explains the workflow.
+- `Templates/Narrative Brief.md` is the starting point for TP or another trader's thesis note.
+- `Trader Banks/*-generated-catalyst-bank.md` shows user-specific catalyst assignments.
+- `Desk Workspaces/*/README.md` organizes catalyst stacks by desk.
+- `Narratives/Drafts/` is for human-written narratives; never overwrite those drafts from an export.
+
+When a narrative draft is ready for app use, assign the catalyst IDs to the matching NF-Workspace session with `POST /api/narrative/sessions/:id/catalyst-bank/assign`, including tags and a concise `deskFit`.
+
 ## Scheduled Jobs (launchd)
 
 - `com.fintheon.dispatch-mdb` — 6:30 AM ET weekdays
@@ -151,6 +178,25 @@ If the last 7 days show no memories, treat learning as stalled. Run or ask Codex
 
 ```bash
 cd backend-hono && bun run memory:obsidian -- --days=7 --vault="$OBSIDIAN_VAULT_PATH"
+```
+
+NF-Workspace has a separate RiskFlow catalyst vault and user catalyst bank. Search it before external research when a narrative session needs market context:
+
+```bash
+curl -s "http://localhost:8080/api/narrative/catalyst-bank?q=liquidity&limit=20"
+```
+
+When assigning catalysts to an NF-Workspace session, use:
+
+```bash
+POST /api/narrative/sessions/:id/catalyst-bank/assign
+{ "catalystIds": ["..."], "tags": ["liquidity", "fed"], "deskFit": "why this fits the active desk" }
+```
+
+Refresh the Obsidian catalyst vault with:
+
+```bash
+cd backend-hono && bun run catalysts:obsidian -- --vault="$OBSIDIAN_CATALYST_VAULT_PATH"
 ```
 
 Obsidian is an agent-owned learning store, not an operator planning surface:

@@ -1,11 +1,11 @@
 // [claude-code 2026-04-10] Extracted from ConsiliumHub.tsx
 import {
-  MessageSquare,
+  Atom,
   Clock,
   GitBranch,
   Cpu,
-  Users,
-  Shield,
+  MessageCircle,
+  Stadium,
   Brain,
   BookOpen,
   Moon,
@@ -22,8 +22,8 @@ export type ApparatusSubView = "desk" | "fileroom" | "lounge";
 export const REGULAR_TABS: {
   id: ConsiliumTab;
   label: string;
-  icon: typeof MessageSquare;
-}[] = [{ id: "chat", label: "Chat", icon: MessageSquare }];
+  icon: typeof MessageCircle;
+}[] = [{ id: "chat", label: "Chat", icon: MessageCircle }];
 
 // Icon broadened to include the custom ArbitrumGlyph alongside lucide types — both
 // expose a {size, className} prop API so callers can render uniformly.
@@ -59,19 +59,19 @@ export const BOARDROOM_SUB_VIEWS: {
   id: BoardroomSubView;
   label: string;
   subtitle?: string;
-  icon: typeof MessageSquare;
+  icon: typeof MessageCircle;
 }[] = [
   {
     id: "forum",
     label: "Forum",
     subtitle: "ProxVoice floor",
-    icon: MessageSquare,
+    icon: Stadium,
   },
   {
     id: "agentic-chat",
     label: "Agentic Forum",
     subtitle: "Chat with Hermes & CAO",
-    icon: Cpu,
+    icon: MessageCircle,
   },
   {
     id: "research",
@@ -91,7 +91,7 @@ export const APPARATUS_SUB_VIEWS: {
     id: "desk",
     label: "Desk",
     subtitle: "Agent dossiers & monitoring",
-    icon: Users,
+    icon: Atom,
   },
   {
     id: "fileroom",

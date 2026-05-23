@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, X } from "lucide-react";
+import { Check, Cpu, X } from "lucide-react";
+import { DeepSeekWhaleIcon } from "../icons";
 import type { HarperProvider } from "./ProviderDropdown";
 
 interface ProviderDef {
@@ -7,6 +8,7 @@ interface ProviderDef {
   label: string;
   model: string;
   managed: boolean;
+  icon: "deepseek" | "opencode";
 }
 
 const PROVIDERS: ProviderDef[] = [
@@ -15,12 +17,14 @@ const PROVIDERS: ProviderDef[] = [
     label: "DeepSeek v4 Pro",
     model: "Direct API",
     managed: false,
+    icon: "deepseek",
   },
   {
     id: "opencode-go",
     label: "OpenCode Go",
     model: "Self-hosted proxy",
     managed: false,
+    icon: "opencode",
   },
 ];
 
@@ -48,6 +52,7 @@ interface FintheonProviderModalProps {
   onClose: () => void;
   provider: HarperProvider;
   onChange: (p: HarperProvider) => void;
+  anchorRect?: DOMRect | null;
 }
 
 export function FintheonProviderModal({
@@ -55,10 +60,28 @@ export function FintheonProviderModal({
   onClose,
   provider,
   onChange,
+  anchorRect,
 }: FintheonProviderModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const [shouldRender, setShouldRender] = useState(open);
   const [isClosing, setIsClosing] = useState(false);
+  const panelWidth = 230;
+  const panelHeight = 150;
+  const viewportWidth =
+    typeof window === "undefined" ? panelWidth + 24 : window.innerWidth;
+  const viewportHeight =
+    typeof window === "undefined" ? panelHeight + 24 : window.innerHeight;
+  const anchoredRight = anchorRect
+    ? Math.min(
+        Math.max(12, viewportWidth - anchorRect.right),
+        Math.max(12, viewportWidth - panelWidth - 12),
+      )
+    : undefined;
+  const anchoredVertical = anchorRect
+    ? anchorRect.top >= panelHeight + 16
+      ? { bottom: viewportHeight - anchorRect.top + 8 }
+      : { top: anchorRect.bottom + 8 }
+    : {};
 
   const requestClose = () => {
     if (isClosing) return;
@@ -109,26 +132,26 @@ export function FintheonProviderModal({
   return (
     <div
       role="dialog"
-      aria-modal="true"
       aria-label="Provider Selection"
       className="pointer-events-none"
       style={{
         position: "fixed",
         inset: 0,
         zIndex: 80,
-        display: "flex",
-        alignItems: "flex-end",
-        justifyContent: "center",
-        paddingBottom: 116,
       }}
     >
       <div
         ref={dialogRef}
-        className={`fintheon-popover-motion pointer-events-auto rounded-lg border border-[var(--fintheon-accent)]/15 bg-[#0a0905]/92 backdrop-blur-xl ${
+        className={`fintheon-popover-surface fintheon-popover-motion pointer-events-auto ${
           isClosing ? "is-closing" : ""
         }`}
         style={{
-          width: 230,
+          position: anchorRect ? "fixed" : "absolute",
+          right: anchoredRight ?? "50%",
+          bottom: anchorRect ? undefined : 116,
+          transform: anchorRect ? undefined : "translateX(50%)",
+          ...anchoredVertical,
+          width: panelWidth,
           maxWidth: "calc(100vw - 40px)",
           display: "flex",
           flexDirection: "column",
@@ -180,6 +203,9 @@ export function FintheonProviderModal({
           {PROVIDERS.map((p) => {
             const active = p.id === provider;
             const pDotColor = getDotColor(p.id);
+            const iconColor = active
+              ? "var(--fintheon-accent)"
+              : "color-mix(in srgb, var(--fintheon-accent) 62%, transparent)";
 
             return (
               <button
@@ -203,6 +229,23 @@ export function FintheonProviderModal({
                   transition: "background 0.15s",
                 }}
               >
+                <span
+                  style={{
+                    width: 18,
+                    height: 18,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: iconColor,
+                    flexShrink: 0,
+                  }}
+                >
+                  {p.icon === "deepseek" ? (
+                    <DeepSeekWhaleIcon className="h-[10.88px] w-[13.6px]" />
+                  ) : (
+                    <Cpu size={14} />
+                  )}
+                </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     style={{

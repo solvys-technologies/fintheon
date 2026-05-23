@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronDown, Pencil, Save, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Check, ChevronDown, Pencil, Save, Trash2, Tv } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { DEFAULT_THEME, type ThemeConfig } from "../../lib/theme";
 import { DEFAULT_FONT_THEME } from "../../lib/font-theme";
 import type { FontTheme } from "../../lib/font-theme";
 import { getAccessToken } from "../../lib/supabase";
-import { BrailleSpinner } from "../chat/primitive/BrailleSpinner";
+import { DotMatrixLoader, DotMatrixSuccess } from "../icon-bank/DotMatrixLoader";
 import { SettingsActionStatus } from "./SettingsActionStatus";
 
 interface ThemeProfile {
@@ -84,6 +84,8 @@ export function ThemeSettings() {
     fontThemes,
     pompaEnabled,
     setPompaEnabled,
+    zenModeEnabled,
+    setZenModeEnabled,
     mode,
     setMode,
   } = useTheme();
@@ -277,14 +279,13 @@ export function ThemeSettings() {
             <button
               onClick={handleSaveProfile}
               className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center text-[var(--fintheon-accent)] transition hover:opacity-80"
+              aria-label="Save theme"
               title="Save theme"
             >
               {savePhase === "saving" ? (
-                <BrailleSpinner size={4} gap={2} />
+                <DotMatrixLoader size={16} />
               ) : savePhase === "saved" ? (
-                <svg className="theme-save-check h-4 w-4" viewBox="0 0 20 20">
-                  <path d="M4 10.5 8.2 14 16 6" />
-                </svg>
+                <DotMatrixSuccess size={16} />
               ) : (
                 <Save className="h-4 w-4" />
               )}
@@ -324,6 +325,12 @@ export function ThemeSettings() {
               onToggle={() => setPompaEnabled(!pompaEnabled)}
             />
             <EffectToggle
+              label={zenModeEnabled ? "Zen On" : "Zen Off"}
+              enabled={zenModeEnabled}
+              icon={<Tv className="h-3.5 w-3.5" />}
+              onToggle={() => setZenModeEnabled(!zenModeEnabled)}
+            />
+            <EffectToggle
               label="Frosted Glass"
               enabled={theme.glassVariant === "frosted"}
               onToggle={() =>
@@ -343,6 +350,7 @@ export function ThemeSettings() {
               setTheme(DEFAULT_THEME);
               setFontTheme(DEFAULT_FONT_THEME);
               setMode("dark");
+              setZenModeEnabled(false);
             }}
             className="fintheon-action-link text-[11px] font-semibold uppercase"
           >
@@ -552,19 +560,26 @@ function FontDropdown({
 function EffectToggle({
   label,
   enabled,
+  icon,
   onToggle,
 }: {
   label: string;
   enabled: boolean;
+  icon?: ReactNode;
   onToggle: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onToggle}
+      aria-label={label}
+      title={label}
       className="flex items-center justify-between gap-3 py-2 text-right"
     >
-      <span className="text-[12px] text-[var(--fintheon-text)]">{label}</span>
+      <span className="flex min-w-0 items-center gap-1.5 text-[12px] text-[var(--fintheon-text)]">
+        {icon ? <span className="shrink-0 text-[var(--fintheon-accent)]">{icon}</span> : null}
+        <span className="truncate">{label}</span>
+      </span>
       <span
         className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
           enabled ? "bg-[var(--fintheon-accent)]" : "bg-zinc-700"

@@ -22,7 +22,6 @@ import {
 import { HeaderVoiceControl } from "../voice/HeaderVoiceControl";
 import { PanelToggleButton } from "./PanelToggleGroup";
 import {
-  GripVertical,
   Layers,
   ChevronDown,
   ChevronLeft,
@@ -34,7 +33,7 @@ import {
   Bell,
   BellOff,
   ClipboardList,
-  Zap,
+  Clock705,
   Lock,
 } from "lucide-react";
 import { WhatsNewButton } from "../onboarding/FirstTimeTour";
@@ -302,7 +301,7 @@ export function TopHeader({
       value: "tickers-only",
       label: "Zen",
       description: "Supports split-frame browser view",
-      icon: <GripVertical className="w-4 h-4" />,
+      icon: <Tv className="w-4 h-4" />,
     },
   ];
 
@@ -559,7 +558,7 @@ export function TopHeader({
                   className={`toolbar-icon-btn ${quickClockPulse ? "toolbar-active" : ""}`}
                   title="Quick clock antilag"
                 >
-                  <Zap
+                  <Clock705
                     className={`w-3 h-3 ${quickClockPulse ? "toolbar-icon-active" : ""}`}
                   />
                 </button>
@@ -613,11 +612,12 @@ export function TopHeader({
               <button
                 onClick={() => setShowLayoutDropdown(!showLayoutDropdown)}
                 className="px-2.5 h-7 rounded-lg text-xs font-medium text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
+                aria-label="Layout Options"
                 title="Layout Options"
               >
                 {layoutOptions.find((opt) => opt.value === layoutOption)?.icon}
                 {compactLevel < 1 && (
-                  <span>
+                  <span className="fintheon-zen-label">
                     {
                       layoutOptions.find((opt) => opt.value === layoutOption)
                         ?.label
@@ -648,9 +648,9 @@ export function TopHeader({
                           onLayoutOptionChange(option.value);
                           setShowLayoutDropdown(false);
                         }}
-                        className={`w-full px-4 py-3 text-left hover:bg-[var(--fintheon-accent)]/10 transition-colors flex items-start gap-3 ${
+                        className={`w-full border border-transparent px-4 py-3 text-left hover:bg-[var(--fintheon-accent)]/10 transition-colors flex items-start gap-3 ${
                           layoutOption === option.value
-                            ? "bg-[var(--fintheon-accent)]/20"
+                            ? "border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
                             : ""
                         }`}
                       >
@@ -678,6 +678,7 @@ export function TopHeader({
               <button
                 onClick={() => setShowPlatformDropdown(!showPlatformDropdown)}
                 className="px-2.5 h-7 rounded-lg text-xs font-medium text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
+                aria-label="Select trading platform"
                 title="Select trading platform"
               >
                 {selectedPlatformLabel.toLowerCase().includes("tradingview") ? (
@@ -685,7 +686,7 @@ export function TopHeader({
                 ) : (
                   <Monitor className="w-3 h-3" />
                 )}
-                {compactLevel < 1 && <span>{selectedPlatformLabel}</span>}
+                {compactLevel < 1 && <span className="fintheon-zen-label">{selectedPlatformLabel}</span>}
                 <ChevronDown
                   className={`w-3 h-3 transition-transform ${showPlatformDropdown ? "rotate-180" : ""}`}
                 />

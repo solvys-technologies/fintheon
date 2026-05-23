@@ -16,7 +16,8 @@
     "ignoreDeprecations": "5.0",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "lucide-react": ["./components/icon-bank/AnimatedIcons.tsx"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],

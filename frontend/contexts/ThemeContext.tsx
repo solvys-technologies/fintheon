@@ -29,6 +29,7 @@ const API_BASE =
   (import.meta as any).env?.VITE_API_URL || "http://localhost:8080";
 const BACKEND_SETTINGS_URL = `${API_BASE}/api/settings`;
 const MODE_STORAGE_KEY = "fintheon:theme-mode:desktop";
+const ZEN_STORAGE_KEY = "fintheon:zen-mode:desktop";
 
 export type ThemeMode = "dark" | "light";
 
@@ -41,6 +42,8 @@ interface ThemeContextValue {
   fontThemes: Record<string, FontTheme>;
   pompaEnabled: boolean;
   setPompaEnabled: (v: boolean) => void;
+  zenModeEnabled: boolean;
+  setZenModeEnabled: (v: boolean) => void;
   mode: ThemeMode;
   setMode: (mode: ThemeMode) => void;
 }
@@ -68,6 +71,24 @@ function saveMode(mode: ThemeMode) {
   try {
     localStorage.setItem(MODE_STORAGE_KEY, mode);
   } catch {}
+}
+
+function loadStoredZenMode(): boolean {
+  try {
+    return localStorage.getItem(ZEN_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function saveZenMode(enabled: boolean) {
+  try {
+    localStorage.setItem(ZEN_STORAGE_KEY, String(enabled));
+  } catch {}
+}
+
+function applyZenModeToDOM(enabled: boolean) {
+  document.documentElement.dataset.zenMode = enabled ? "true" : "false";
 }
 
 function applyThemeToDOM(theme: ThemeConfig, mode?: ThemeMode) {
@@ -178,10 +199,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem("fintheon:pompa-mode");
     return stored !== null ? stored === "true" : true;
   });
+  const [zenModeEnabled, setZenModeState] = useState<boolean>(() => {
+    const stored = loadStoredZenMode();
+    if (typeof document !== "undefined") applyZenModeToDOM(stored);
+    return stored;
+  });
 
   useEffect(() => {
     localStorage.setItem("fintheon:pompa-mode", String(pompaEnabled));
   }, [pompaEnabled]);
+
+  const setZenModeEnabled = useCallback((next: boolean) => {
+    setZenModeState(next);
+    applyZenModeToDOM(next);
+    saveZenMode(next);
+  }, []);
 
   const backendSynced = useRef(false);
 
@@ -231,7 +263,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const data = res.ok ? await res.json() : null;
         const remote = data?.settings;
         if (remote?.appearance) {
-          const { colorTheme, fontThemeId, pompaMode, themeMode } = remote.appearance;
+          const { colorTheme, fontThemeId, pompaMode, themeMode, zenModeEnabled: remoteZenMode, zenMode } = remote.appearance;
           const remoteMode = themeMode === "light" ? "light" : mode;
           if (themeMode === "light" || themeMode === "dark") {
             setModeState(themeMode);
@@ -257,6 +289,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           if (pompaMode !== undefined) {
             setPompaEnabled(pompaMode as boolean);
           }
+          if (remoteZenMode !== undefined || zenMode !== undefined) {
+            const nextZen = Boolean(remoteZenMode ?? zenMode);
+            setZenModeState(nextZen);
+            applyZenModeToDOM(nextZen);
+            saveZenMode(nextZen);
+          }
         }
       } finally {
         backendSynced.current = true;
@@ -271,6 +309,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       fontThemeId: fontTheme.id,
       pompaMode: pompaEnabled,
       themeMode: mode,
+      zenModeEnabled,
     };
     (async () => {
       const token = await getAccessToken();
@@ -285,7 +324,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ settings: { appearance } }),
       }).catch(() => {});
     })();
-  }, [theme, fontTheme, pompaEnabled, mode]);
+  }, [theme, fontTheme, pompaEnabled, mode, zenModeEnabled]);
 
   return (
     <ThemeContext.Provider
@@ -298,6 +337,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         fontThemes: FONT_THEMES,
         pompaEnabled,
         setPompaEnabled,
+        zenModeEnabled,
+        setZenModeEnabled,
         mode,
         setMode,
       }}

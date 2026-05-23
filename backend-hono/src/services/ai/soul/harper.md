@@ -44,6 +44,9 @@ tools:
     - web_fetch
     - read_mcp_config
     - get_fintheon_paths
+    - open_todo_drawer
+    - open_right_rail
+    - ask_approval_questions
   optional:
   prohibited:
 handoff_rules:

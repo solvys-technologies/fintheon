@@ -1,6 +1,8 @@
 import { NarrativeInputBar } from "./NarrativeInputBar";
+import type { HeadlineAttachment } from "../chat/FintheonAttachPopup";
 import type { QueuedMessage } from "../chat/MessageQueue";
 import type { ReasoningLevel } from "../chat/reasoning";
+import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import type { NarrativeHeadlineOption } from "./sensemaking-types";
 
 interface NarrativeSensemakingComposerProps {
@@ -24,6 +26,7 @@ interface NarrativeSensemakingComposerProps {
   };
   onQueryChange: (value: string) => void;
   onOpenDrawer: () => void;
+  onCloseDrawer?: () => void;
   onRemoveHeadline: (id: string) => void;
   onSubmit: () => void;
   onQueueMessage: (text: string) => void;
@@ -35,6 +38,9 @@ interface NarrativeSensemakingComposerProps {
   onReasoningLevelChange: (level: ReasoningLevel) => void;
   onToggleNarrative?: (slug: string) => void;
   onPaste?: (event: React.ClipboardEvent<HTMLTextAreaElement>) => void;
+  riskflowAlerts?: RiskFlowAlert[];
+  onAttachHeadlines?: (items: HeadlineAttachment[]) => void;
+  riskFlowDrawerOpen?: boolean;
 }
 
 export function NarrativeSensemakingComposer({

@@ -9,7 +9,7 @@
 // [claude-code 2026-05-06] S60-T3: provider modal and toolbox wired to composer toolbar
 import { useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import { useThread, useThreadRuntime } from "@assistant-ui/react";
-import { Plug, ServerCog } from "lucide-react";
+import { Plug } from "lucide-react";
 import { PromptBox } from "../ui/chatgpt-prompt-input";
 import { SKILL_PREFIXES } from "../../lib/skillPrefixes";
 import { SKILLS } from "../../lib/skills";
@@ -18,6 +18,7 @@ import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import { useMcpConnectors } from "../../hooks/useMcpConnectors";
 import { useHarperProvider } from "./ProviderDropdown";
+import { FintheonProviderTrigger } from "./FintheonProviderTrigger";
 import { FintheonProviderModal } from "./FintheonProviderModal";
 import { FintheonToolboxModal } from "./FintheonToolboxModal";
 import { CommandPalette } from "./CommandPalette";
@@ -40,11 +41,6 @@ const PERSONA_COMMANDS: Record<string, string> = {
   harper: "harper",
 };
 
-const PROVIDER_LABELS: Record<string, string> = {
-  "deepseek-direct": "DeepSeek",
-  "opencode-go": "OpenCode",
-};
-
 /* ------------------------------------------------------------------ */
 /*  FintheonComposer                                                   */
 /* ------------------------------------------------------------------ */
@@ -64,6 +60,11 @@ interface FintheonComposerProps {
   /** @deprecated S38-T1: Dispatch removed — kept for backwards compat */
   onConversationGone?: () => void;
   todoSlot?: ReactNode;
+  approvalDrawerSlot?: ReactNode;
+  approvalDrawerOpen?: boolean;
+  workDrawerSlot?: ReactNode;
+  workDrawerOpen?: boolean;
+  drawerPeekSlot?: ReactNode;
   reasoningLevel?: ReasoningLevel;
   onReasoningLevelChange?: (level: ReasoningLevel) => void;
   onQueueMessage?: (text: string) => void;
@@ -84,6 +85,11 @@ export function FintheonComposer({
   conversationId: _conversationId,
   onConversationGone: _onConversationGone,
   todoSlot,
+  approvalDrawerSlot,
+  approvalDrawerOpen,
+  workDrawerSlot,
+  workDrawerOpen,
+  drawerPeekSlot,
   reasoningLevel,
   onReasoningLevelChange,
   onQueueMessage,
@@ -105,7 +111,14 @@ export function FintheonComposer({
 
   // ── Modal state (S60-T3) ──────────────────────────────────────────────
   const [showProviderModal, setShowProviderModal] = useState(false);
+  const [providerAnchorRect, setProviderAnchorRect] = useState<DOMRect | null>(
+    null,
+  );
   const [showToolboxModal, setShowToolboxModal] = useState(false);
+
+  useEffect(() => {
+    if (approvalDrawerOpen) setShowToolboxModal(false);
+  }, [approvalDrawerOpen]);
 
   // ── Command palette (Cmd+K) ────────────────────────────────────────────
   const [showCommandPalette, setShowCommandPalette] = useState(false);
@@ -316,41 +329,30 @@ export function FintheonComposer({
   }, [runtime]);
 
   // ── Toolbar slots (S60-T3: modal triggers) ──────────────────────────────
-  const currentProvider = PROVIDER_LABELS[provider] ?? "Provider";
   const providerEl = (
-    <button
-      onClick={() => setShowProviderModal(true)}
-      className={`flex items-center gap-1.5 rounded-lg transition-colors hover:bg-[var(--fintheon-accent)]/10 ${
-        compact ? "px-1.5" : "px-2"
-      }`}
-      style={{
-        color: "#f0ead6",
-        height: "28px",
+    <FintheonProviderTrigger
+      provider={provider}
+      compact={compact}
+      onClick={(event) => {
+        setProviderAnchorRect(event.currentTarget.getBoundingClientRect());
+        setShowProviderModal(true);
       }}
-      title={`Provider: ${currentProvider}`}
-    >
-      <ServerCog size={14} className="text-[var(--fintheon-accent)]/70" />
-      {!compact && (
-        <span
-          style={{
-            fontSize: "11px",
-            color: "rgba(240, 234, 214, 0.8)",
-          }}
-        >
-          {currentProvider}
-        </span>
-      )}
-    </button>
+    />
   );
   // Persona selector removed from the composer; slash commands still work.
   const personaEl = undefined;
 
   // Unified Skills + Connectors trigger
   const activeMcpCount = activeIds.length;
-  const toolboxEl = compact ? undefined : (
+  const toolboxEl = (
     <button
       onClick={() => setShowToolboxModal((open) => !open)}
-      className="relative flex items-center justify-center rounded-lg transition-colors text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
+      aria-pressed={showToolboxModal}
+      className={`relative flex items-center justify-center rounded-lg transition-colors ${
+        showToolboxModal
+          ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+          : "text-zinc-500 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
+      }`}
       style={{ width: "32px", height: "32px" }}
       title="Skills and connectors"
     >
@@ -427,6 +429,11 @@ export function FintheonComposer({
         toolboxOpen={showToolboxModal}
         onInputActivity={() => setShowToolboxModal(false)}
         todoSlot={todoSlot}
+        approvalDrawerSlot={approvalDrawerSlot}
+        approvalDrawerOpen={approvalDrawerOpen}
+        workDrawerSlot={workDrawerSlot}
+        workDrawerOpen={workDrawerOpen}
+        drawerPeekSlot={drawerPeekSlot}
         queueCount={queueCount}
         contextStats={{
           messageCount: messages.length,
@@ -451,6 +458,7 @@ export function FintheonComposer({
         onClose={() => setShowProviderModal(false)}
         provider={provider}
         onChange={setProvider}
+        anchorRect={providerAnchorRect}
       />
     </>
   );

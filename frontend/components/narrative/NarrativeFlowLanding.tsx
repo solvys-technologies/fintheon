@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
 import { Clock, MessageSquareText, Plus } from "lucide-react";
+import type { HeadlineAttachment } from "../chat/FintheonAttachPopup";
 import { useMessageQueue } from "../chat/hooks/useMessageQueue";
 import type { ReasoningLevel } from "../chat/reasoning";
-import { NarrativeRiskFlowPicker } from "./NarrativeRiskFlowPicker";
 import { NarrativeSensemakingComposer } from "./NarrativeSensemakingComposer";
 import type { NarrativeSessionSummary } from "./NarrativeSessionHistory";
 import type { NarrativeHeadlineOption } from "./sensemaking-types";
 import { DEFAULT_NARRATIVE_SESSION_CHIPS } from "../../hooks/useNarrativeSituationMap";
 import { useNarrativeRiskFlowHeadlines } from "../../hooks/useNarrativeRiskFlowHeadlines";
+import type { AlertSeverity, RiskFlowAlert } from "../../lib/riskflow-feed";
 
 export interface NarrativeCreateSessionInput {
   query: string;
@@ -72,7 +73,7 @@ export function NarrativeFlowLanding({
   onRenameSession,
   onReasoningLevelChange,
 }: NarrativeFlowLandingProps) {
-  const { headlines, isLoading, error } = useNarrativeRiskFlowHeadlines();
+  const { headlines } = useNarrativeRiskFlowHeadlines();
   const [query, setQuery] = useState("");
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -86,13 +87,28 @@ export function NarrativeFlowLanding({
     [headlines, selectedIds],
   );
 
-  function toggleHeadline(headline: NarrativeHeadlineOption) {
+  const riskflowAlerts = useMemo<RiskFlowAlert[]>(
+    () =>
+      headlines.map((headline) => ({
+        id: headline.id,
+        headline: headline.headline,
+        summary: headline.summary,
+        publishedAt: headline.publishedAt,
+        source: "backend",
+        severity: normalizeSeverity(headline.severity),
+        tags: headline.tags,
+        symbols: headline.symbols,
+      })),
+    [headlines],
+  );
+
+  function attachHeadlines(items: HeadlineAttachment[]) {
     setSelectedIds((current) => {
       const next = new Set(current);
-      if (next.has(headline.id)) next.delete(headline.id);
-      else next.add(headline.id);
+      items.forEach((item) => next.add(item.id));
       return next;
     });
+    setIsPickerOpen(false);
     setValidationMessage(null);
   }
 
@@ -166,29 +182,6 @@ export function NarrativeFlowLanding({
         </p>
       </div>
 
-      <div
-        className={`relative z-20 mx-auto w-full max-w-3xl px-4 transition duration-300 ${
-          isPickerOpen
-            ? "mb-0 max-h-80 translate-y-0 opacity-100"
-            : "pointer-events-none mb-0 max-h-0 translate-y-4 opacity-0"
-        }`}
-        aria-hidden={!isPickerOpen}
-      >
-        <div
-          className="fintheon-chat-input-drawer overflow-hidden"
-          style={{ maxHeight: isPickerOpen ? "320px" : "0px" }}
-        >
-          <NarrativeRiskFlowPicker
-            headlines={headlines}
-            selectedIds={selectedIds}
-            isLoading={isLoading}
-            error={error}
-            minSelected={MIN_CATALYSTS}
-            onToggle={toggleHeadline}
-          />
-        </div>
-      </div>
-
       <NarrativeSensemakingComposer
         mode="opener"
         query={query}
@@ -202,6 +195,9 @@ export function NarrativeFlowLanding({
         selectedNarrativeSlugs={selectedNarratives}
         reasoningLevel={reasoningLevel}
         queue={queue}
+        riskflowAlerts={riskflowAlerts}
+        riskFlowDrawerOpen={isPickerOpen}
+        onAttachHeadlines={attachHeadlines}
         contextStats={{
           messageCount: sessions.length,
           estimatedTokens: estimateLandingTokens(query, attachedHeadlines),
@@ -209,7 +205,8 @@ export function NarrativeFlowLanding({
           activeSkillLabel: "NarrativeFlow",
         }}
         onQueryChange={setQuery}
-        onOpenDrawer={() => setIsPickerOpen(true)}
+        onOpenDrawer={() => setIsPickerOpen((open) => !open)}
+        onCloseDrawer={() => setIsPickerOpen(false)}
         onRemoveHeadline={removeHeadline}
         onSubmit={handleCreateSession}
         onQueueMessage={addQueue}
@@ -286,6 +283,18 @@ export function NarrativeFlowLanding({
 
     </div>
   );
+}
+
+function normalizeSeverity(value: string): AlertSeverity {
+  if (
+    value === "low" ||
+    value === "medium" ||
+    value === "high" ||
+    value === "critical"
+  ) {
+    return value;
+  }
+  return "medium";
 }
 
 function deriveTitle(query: string, headlines: NarrativeHeadlineOption[]) {

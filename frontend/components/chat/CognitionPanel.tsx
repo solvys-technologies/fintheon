@@ -6,6 +6,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { API_BASE_URL } from "./constants.js";
+import { BrailleSpinner } from "./primitive/BrailleSpinner";
 
 export type CognitionStepKind =
   | "agent-route"
@@ -45,10 +46,23 @@ const KIND_PHRASE: Record<CognitionStepKind, string> = {
   error: "Error",
 };
 
-function formatElapsed(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
-}
+const THINKING_PHRASES = [
+  "Surveying the arena...",
+  "Running risk models...",
+  "Reviewing the legion's positions...",
+  "Consulting the Consilium...",
+  "Analyzing macro data...",
+  "Checking volatility surface...",
+  "Evaluating sentiment...",
+  "Processing market signals...",
+  "Cross-referencing events...",
+  "Calculating exposure...",
+  "Mapping liquidity pockets...",
+  "Tracking implied vol drift...",
+  "Pricing catalyst risk...",
+  "Calibrating entry zones...",
+  "Stress-testing conviction...",
+];
 
 function parseDetail(detail: string | undefined): string {
   if (!detail) return "";
@@ -107,6 +121,11 @@ export function useCognitionStream(requestId: string | null) {
       try {
         const step = JSON.parse(e.data) as CognitionStep;
         setSteps((s) => [...s, step]);
+        window.dispatchEvent(
+          new CustomEvent("fintheon:cognition-step", {
+            detail: { requestId, step },
+          }),
+        );
       } catch {
         /* ignore malformed */
       }
@@ -132,62 +151,65 @@ export function useCognitionStream(requestId: string | null) {
 
 export function CognitionPanel({ requestId, isStreaming }: Props) {
   const { steps, done } = useCognitionStream(requestId);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const toolLogRef = useRef<HTMLDivElement>(null);
 
-  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    if (done || !isStreaming) return;
-    const t = setInterval(() => setNow(Date.now()), 120);
-    return () => clearInterval(t);
+    if (!isStreaming || done) return;
+    const interval = setInterval(() => {
+      setPhraseIndex((i) => (i + 1) % THINKING_PHRASES.length);
+    }, 2000);
+    return () => clearInterval(interval);
   }, [done, isStreaming]);
 
-  const elapsedMs = useMemo(() => {
-    if (steps.length === 0) return 0;
-    const start = steps[0].ts;
-    const end = done ? steps[steps.length - 1].ts : now;
-    return Math.max(0, end - start);
-  }, [steps, done, now]);
-
   useEffect(() => {
-    if (done && steps.length > 0 && !steps.some((s) => s.kind === "error")) {
-      const t = setTimeout(() => setCollapsed(true), 4_000);
-      return () => clearTimeout(t);
+    if (requestId) {
+      setCollapsed(true);
+      setPhraseIndex(0);
     }
-  }, [done, steps]);
-
-  useEffect(() => {
-    if (requestId) setCollapsed(false);
   }, [requestId]);
 
-  const stillThinking = isStreaming && !done;
-  const visibleSteps = steps.filter((step) => step.kind !== "response-ready");
-  const toolCount = visibleSteps.filter(isToolStep).length;
+  const toolSteps = useMemo(
+    () =>
+      steps.filter(
+        (step) => isToolStep(step) && step.kind !== "gateway-call",
+      ),
+    [steps],
+  );
 
-  if (!requestId || visibleSteps.length === 0) return null;
+  useEffect(() => {
+    const node = toolLogRef.current;
+    if (!node || collapsed) return;
+    node.scrollTop = node.scrollHeight;
+  }, [collapsed, toolSteps.length]);
+
+  if (!requestId || steps.length === 0) return null;
+
+  const currentPhrase =
+    isStreaming && !done ? THINKING_PHRASES[phraseIndex] : "Thought trail";
 
   return (
-    <div className="overflow-hidden rounded-xl border border-white/[0.055] bg-[#0b0b09] shadow-[0_18px_48px_rgba(0,0,0,0.24)] transition-colors duration-300">
+    <div className="overflow-hidden bg-transparent">
       <button
         onClick={() => setCollapsed((c) => !c)}
-        className="flex w-full items-center justify-between px-3 py-2 text-left transition-colors duration-200 hover:bg-white/[0.025]"
+        className="flex w-full items-center gap-2 px-1 py-1 text-left transition-colors duration-200 hover:text-[var(--fintheon-accent)]"
         aria-expanded={!collapsed}
+        title={collapsed ? "Show tool calls" : "Hide tool calls"}
       >
-        <div className="flex min-w-0 items-center gap-2">
+        <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+          <BrailleSpinner size={9} />
+        </span>
+        <span className="min-w-0">
           <span
             className={
-              "text-[10px] font-medium tracking-[0.14em] uppercase text-[var(--fintheon-accent)]/72" +
-              (stillThinking ? " cognition-thought-shimmer" : "")
+              "block truncate text-[12px] font-medium text-[var(--fintheon-accent)]/78" +
+              (isStreaming && !done ? " cognition-thought-shimmer" : "")
             }
           >
-            Calling Tools...
+            {currentPhrase}
           </span>
-          <span className="truncate text-[10px] text-[var(--fintheon-text)]/42">
-            {toolCount || visibleSteps.length} {toolCount === 1 ? "call" : "calls"}
-          </span>
-          <span className="text-[10px] text-[var(--fintheon-text)]/55 tabular-nums">
-            {formatElapsed(elapsedMs)}
-          </span>
-        </div>
+        </span>
       </button>
 
       <div
@@ -196,13 +218,16 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
         }`}
       >
         <div className="min-h-0 overflow-hidden">
-          <div className="space-y-1.5 px-3 pb-2.5">
-            {visibleSteps.map((step, i) => {
+          <div
+            ref={toolLogRef}
+            className="max-h-[30vh] space-y-1.5 overflow-y-auto px-7 pb-2 pr-2"
+          >
+            {toolSteps.map((step, i) => {
               const detail = parseDetail(step.detail);
               return (
                 <div
                   key={`${step.ts}-${i}`}
-                  className="grid grid-cols-[7.5rem_1fr_auto] items-start gap-2 rounded-md bg-black/20 px-2.5 py-2 text-[10.5px] leading-4 text-[var(--fintheon-text)]/68 transition-colors duration-200 hover:bg-black/30"
+                  className="grid grid-cols-[7.5rem_1fr] items-start gap-2 rounded-md bg-black/18 px-2.5 py-2 text-[10.5px] leading-4 text-[var(--fintheon-text)]/68 transition-colors duration-200 hover:bg-black/28"
                 >
                   <span className="font-mono uppercase tracking-[0.12em] text-[var(--fintheon-accent)]/68">
                     {stepLabel(step)}
@@ -210,14 +235,14 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
                   <span className="min-w-0 break-words font-mono text-[var(--fintheon-text)]/56">
                     {detail || "queued"}
                   </span>
-                  <span className="font-mono tabular-nums text-[var(--fintheon-text)]/34">
-                    {step.durationMs !== undefined
-                      ? formatElapsed(step.durationMs)
-                      : ""}
-                  </span>
                 </div>
               );
             })}
+            {toolSteps.length === 0 && (
+              <div className="rounded-md bg-black/18 px-2.5 py-2 text-[10.5px] leading-4 text-[var(--fintheon-text)]/48">
+                Waiting for tool calls.
+              </div>
+            )}
           </div>
         </div>
       </div>

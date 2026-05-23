@@ -1,5 +1,5 @@
 // [codex 2026-05-23] NarrativeFlow domain composer with queue, intelligence, and context stats.
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import {
   ArrowUp,
   GitBranch,
@@ -10,13 +10,25 @@ import {
   X,
 } from "lucide-react";
 import { MessageQueue, type QueuedMessage } from "../chat/MessageQueue";
+import {
+  FintheonAttachPopup,
+  type HeadlineAttachment,
+} from "../chat/FintheonAttachPopup";
 import { ReasoningLevelSelector } from "../chat/ReasoningLevelSelector";
 import { UsageRing } from "../chat/UsageRing";
 import { FintheonToolboxModal } from "../chat/FintheonToolboxModal";
+import { FintheonProviderModal } from "../chat/FintheonProviderModal";
+import { FintheonProviderTrigger } from "../chat/FintheonProviderTrigger";
 import { ContextMentionDrawer } from "../chat/ContextMentionDrawer";
+import {
+  RepoChatComposer,
+  RepoChatComposerSurface,
+} from "../chat/composer/RepoChatComposer";
 import type { ReasoningLevel } from "../chat/reasoning";
+import { useHarperProvider } from "../chat/ProviderDropdown";
 import { useMcpConnectors } from "../../hooks/useMcpConnectors";
 import { SKILLS } from "../../lib/skills";
+import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import {
   mentionToken,
   type ContextMention,
@@ -51,6 +63,7 @@ interface NarrativeInputBarProps {
   contextStats: NarrativeContextStats;
   onQueryChange: (value: string) => void;
   onOpenDrawer: () => void;
+  onCloseDrawer?: () => void;
   onRemoveHeadline: (id: string) => void;
   onSubmit: () => void;
   onQueueMessage: (text: string) => void;
@@ -62,6 +75,9 @@ interface NarrativeInputBarProps {
   onReasoningLevelChange: (level: ReasoningLevel) => void;
   onToggleNarrative?: (slug: string) => void;
   onPaste?: (event: React.ClipboardEvent<HTMLTextAreaElement>) => void;
+  riskflowAlerts?: RiskFlowAlert[];
+  onAttachHeadlines?: (items: HeadlineAttachment[]) => void;
+  riskFlowDrawerOpen?: boolean;
 }
 
 function getMentionQuery(value: string): string | null {
@@ -93,6 +109,7 @@ export function NarrativeInputBar({
   contextStats,
   onQueryChange,
   onOpenDrawer,
+  onCloseDrawer,
   onRemoveHeadline,
   onSubmit,
   onQueueMessage,
@@ -104,12 +121,20 @@ export function NarrativeInputBar({
   onReasoningLevelChange,
   onToggleNarrative,
   onPaste,
+  riskflowAlerts = [],
+  onAttachHeadlines,
+  riskFlowDrawerOpen = false,
 }: NarrativeInputBarProps) {
   const [focused, setFocused] = useState(false);
   const [showToolboxModal, setShowToolboxModal] = useState(false);
+  const [showProviderModal, setShowProviderModal] = useState(false);
+  const [providerAnchorRect, setProviderAnchorRect] = useState<DOMRect | null>(
+    null,
+  );
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [selectedMentions, setSelectedMentions] = useState<ContextMention[]>([]);
   const { servers, activeIds, toggle: toggleConnector } = useMcpConnectors();
+  const { provider, setProvider } = useHarperProvider();
   const isOpener = mode === "opener";
   const isOverlay = mode === "overlay";
   const catalystCount = attachedHeadlines.length;
@@ -117,16 +142,12 @@ export function NarrativeInputBar({
   const draftReady = query.trim().length > 0;
   const canSubmit = catalystReady && draftReady && !isSubmitting;
   const canQueue = catalystReady && isSubmitting && draftReady;
-  const shellClass = isOpener
-    ? "pointer-events-auto mx-auto w-full max-w-3xl"
-    : isOverlay
-      ? "pointer-events-auto mx-auto w-full max-w-[520px]"
-      : "pointer-events-auto mx-auto w-full max-w-4xl";
   const wrapperClass = isOpener
     ? "relative z-20 px-4"
     : isOverlay
       ? "relative z-20 px-2"
       : "pointer-events-none absolute inset-x-0 bottom-0 z-20 px-4 pb-4";
+  const composerMaxWidth = isOverlay ? "32rem" : "56rem";
   const rows = isOpener ? 2 : 1;
   const placeholder = isOpener
     ? "What desk narrative are we opening?"
@@ -143,16 +164,40 @@ export function NarrativeInputBar({
     if (canSubmit) onSubmit();
   }
 
+  function openProviderModal(event: MouseEvent<HTMLButtonElement>) {
+    if (showToolboxModal) setShowToolboxModal(false);
+    if (mentionQuery !== null) setMentionQuery(null);
+    if (riskFlowDrawerOpen) (onCloseDrawer ?? onOpenDrawer)();
+    setProviderAnchorRect(event.currentTarget.getBoundingClientRect());
+    setShowProviderModal(true);
+  }
+
   return (
     <>
     <div className={wrapperClass}>
-      <div className={shellClass}>
+      <RepoChatComposer
+        format={isOverlay ? "compact" : "full"}
+        maxWidth={composerMaxWidth}
+        className="pointer-events-auto"
+      >
+        <FintheonAttachPopup
+          open={
+            riskFlowDrawerOpen &&
+            !showToolboxModal &&
+            mentionQuery === null &&
+            queue.length === 0
+          }
+          initialTab="riskflow"
+          onClose={onCloseDrawer ?? onOpenDrawer}
+          riskflowAlerts={riskflowAlerts}
+          onAttachHeadlines={onAttachHeadlines}
+        />
+
         {queue.length > 0 ? (
-          <div
-            className="fintheon-chat-input-drawer pointer-events-auto px-3 py-2"
-            style={{
-              maxHeight: "340px",
-            }}
+          <RepoChatComposerSurface
+            open
+            maxHeight="340px"
+            className="px-3 py-2"
           >
             <MessageQueue
               queue={queue}
@@ -163,7 +208,7 @@ export function NarrativeInputBar({
               onSendAll={onSendQueueAll}
               storageKey="fintheon:narrative-message-queue"
             />
-          </div>
+          </RepoChatComposerSurface>
         ) : null}
 
         {validationMessage ? (
@@ -202,7 +247,12 @@ export function NarrativeInputBar({
 
         <div
           className={`fintheon-composer-input relative flex flex-col rounded-2xl border backdrop-blur-xl transition ${
-            showToolboxModal ? "fintheon-composer-input--drawer-open" : ""
+            showToolboxModal ||
+            mentionQuery !== null ||
+            queue.length > 0 ||
+            riskFlowDrawerOpen
+              ? "fintheon-composer-input--drawer-open"
+              : ""
           } ${
             focused
               ? "border-[var(--fintheon-accent)]/55"
@@ -269,17 +319,31 @@ export function NarrativeInputBar({
                   if (showToolboxModal) setShowToolboxModal(false);
                   onOpenDrawer();
                 }}
-                className="inline-flex h-8 items-center gap-2 rounded-lg px-2 text-xs text-[var(--fintheon-muted)] transition hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
-                title="Attach RiskFlow headlines"
+                aria-pressed={riskFlowDrawerOpen}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                  riskFlowDrawerOpen
+                    ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+                    : "text-zinc-500 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
+                }`}
+                title={attachLabel}
               >
                 {isOpener ? <Paperclip size={15} /> : <Plus size={15} />}
-                {!isOverlay ? attachLabel : null}
               </button>
               {!isOverlay ? (
                 <button
                   type="button"
-                  onClick={() => setShowToolboxModal((open) => !open)}
-                  className="relative flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
+                  onClick={() => {
+                    if (!showToolboxModal && riskFlowDrawerOpen) {
+                      (onCloseDrawer ?? onOpenDrawer)();
+                    }
+                    setShowToolboxModal((open) => !open);
+                  }}
+                  aria-pressed={showToolboxModal}
+                  className={`relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                    showToolboxModal
+                      ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+                      : "text-zinc-500 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
+                  }`}
                   title="Skills and connectors"
                 >
                   <Plug size={14} />
@@ -290,7 +354,12 @@ export function NarrativeInputBar({
               ) : null}
             </div>
 
-            <div className="flex min-w-0 items-center gap-2">
+            <div className="flex min-w-0 items-center gap-1">
+              <FintheonProviderTrigger
+                provider={provider}
+                compact={isOverlay}
+                onClick={openProviderModal}
+              />
               <ReasoningLevelSelector
                 value={reasoningLevel}
                 onChange={onReasoningLevelChange}
@@ -317,8 +386,15 @@ export function NarrativeInputBar({
             </div>
           </div>
         </div>
-      </div>
+      </RepoChatComposer>
     </div>
+    <FintheonProviderModal
+      open={showProviderModal}
+      onClose={() => setShowProviderModal(false)}
+      provider={provider}
+      onChange={setProvider}
+      anchorRect={providerAnchorRect}
+    />
     </>
   );
 }

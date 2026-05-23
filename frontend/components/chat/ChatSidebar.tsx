@@ -9,7 +9,7 @@ import {
   useThread,
   useThreadRuntime,
 } from "@assistant-ui/react";
-import { X } from "lucide-react";
+import { Play, X } from "lucide-react";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 import { useHermesRuntime } from "./useHermesRuntime";
 import { FintheonThread } from "./FintheonThread";
@@ -18,6 +18,14 @@ import { CognitionPanel } from "./CognitionPanel";
 import { TodoDrawer } from "./TodoDrawer";
 import { useTodoList } from "./hooks/useTodoList";
 import { useMessageQueue } from "./hooks/useMessageQueue";
+import {
+  useChatUiActions,
+  type ChatUiRightRailPayload,
+  type ChatUiTodoItem,
+} from "./hooks/useChatUiActions";
+import { useAutoCollapseDrawer } from "./hooks/useAutoCollapseDrawer";
+import { ChatQuestionApprovalDrawer } from "./ChatQuestionApprovalDrawer";
+import { ChatDrawerPeek } from "./ChatDrawerPeek";
 import { normalizeReasoningLevel, shouldThinkHarder } from "./reasoning";
 import type { ReasoningLevel } from "./reasoning";
 import { useAgentBusSSE } from "../../hooks/useAgentBusSSE";
@@ -111,7 +119,9 @@ function ChatSidebarInner({
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
   const [showSkills, setShowSkills] = useState(false);
   const [showWorkDrawer, setShowWorkDrawer] = useState(false);
+  const [approvalDrawerCollapsed, setApprovalDrawerCollapsed] = useState(false);
   const previousWorkItemCountRef = useRef(0);
+  const hasMountedWorkDrawerRef = useRef(false);
   const [hasChatStarted, setHasChatStarted] = useState(false);
   const [toasts, setToasts] = useState<SidebarToast[]>([]);
   const toastTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
@@ -183,9 +193,107 @@ function ChatSidebarInner({
     sendAll,
   } = useMessageQueue({ isRunning, sendNow });
 
-  const { todos, toggleTodo, removeTodo } = useTodoList();
+  const { todos, addTodo, toggleTodo, removeTodo } = useTodoList();
   const workItemCount = todos.length + queue.length;
   const hasWorkDrawerContent = workItemCount > 0;
+
+  const handleTodoUiAction = useCallback(
+    (payload: { items: ChatUiTodoItem[] }) => {
+      for (const item of payload.items) {
+        addTodo(item.text, {
+          issueTrackingType: item.issueType,
+          source: "harper-ui-tool",
+        });
+      }
+      setShowWorkDrawer(true);
+    },
+    [addTodo],
+  );
+
+  const handleRightRailUiAction = useCallback(
+    (payload: ChatUiRightRailPayload) => {
+      window.dispatchEvent(
+        new CustomEvent("fintheon:agent-plan-rail", {
+          detail: {
+            open: true,
+            title: payload.title,
+            surface: payload.surface === "report" ? "plan" : payload.surface,
+            markdown: payload.markdown,
+            append: payload.append,
+          },
+        }),
+      );
+    },
+    [],
+  );
+
+  const {
+    questionnaire,
+    answerWidgets,
+    isSubmittingAnswers,
+    submitAnswers,
+  } = useChatUiActions(lastRequestId, {
+    onTodoDrawer: handleTodoUiAction,
+    onRightRail: handleRightRailUiAction,
+  });
+
+  useEffect(() => {
+    setApprovalDrawerCollapsed(false);
+  }, [questionnaire?.actionId]);
+
+  const approvalDrawerOpen = !!questionnaire && !approvalDrawerCollapsed;
+  const workDrawerOpen =
+    showWorkDrawer && hasWorkDrawerContent && !questionnaire;
+  const collapseWorkDrawer = useCallback(() => setShowWorkDrawer(false), []);
+  useAutoCollapseDrawer({
+    isOpen: workDrawerOpen,
+    isAgentActive: isRunning,
+    onCollapse: collapseWorkDrawer,
+  });
+  const pendingTodoCount = todos.filter((todo) => !todo.done).length;
+  const doneTodoCount = todos.length - pendingTodoCount;
+  const workPeekDetail = [
+    pendingTodoCount > 0
+      ? `${pendingTodoCount} open to-do${pendingTodoCount === 1 ? "" : "s"}`
+      : null,
+    doneTodoCount > 0 ? `${doneTodoCount} complete` : null,
+    queue.length > 0
+      ? `${queue.length} queued message${queue.length === 1 ? "" : "s"}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const drawerPeekSlot =
+    questionnaire && approvalDrawerCollapsed ? (
+      <ChatDrawerPeek
+        tone="action"
+        title="Action needed"
+        detail={`${questionnaire.questions.length} question${
+          questionnaire.questions.length === 1 ? "" : "s"
+        } waiting for your answer`}
+        onOpen={() => setApprovalDrawerCollapsed(false)}
+      />
+    ) : hasWorkDrawerContent && !showWorkDrawer && !questionnaire ? (
+      <ChatDrawerPeek
+        tone="status"
+        title="Status"
+        detail={workPeekDetail || "Active work is waiting"}
+        onOpen={() => setShowWorkDrawer(true)}
+      />
+    ) : null;
+  const hasDrawerPeek = !!drawerPeekSlot;
+  const composerBottomInset = approvalDrawerOpen
+    ? 300
+    : workDrawerOpen
+      ? 240
+      : hasDrawerPeek
+        ? 150
+        : 136;
+  const scrollButtonOffset = approvalDrawerOpen
+    ? 290
+    : workDrawerOpen
+      ? 220
+      : 116;
 
   const handleSend = useCallback(
     (msg: string) => {
@@ -205,6 +313,12 @@ function ChatSidebarInner({
 
   useEffect(() => {
     const previousCount = previousWorkItemCountRef.current;
+    if (!hasMountedWorkDrawerRef.current) {
+      hasMountedWorkDrawerRef.current = true;
+      previousWorkItemCountRef.current = workItemCount;
+      if (workItemCount === 0) setShowWorkDrawer(false);
+      return;
+    }
     previousWorkItemCountRef.current = workItemCount;
     if (workItemCount === 0) {
       setShowWorkDrawer(false);
@@ -297,7 +411,9 @@ function ChatSidebarInner({
         lastRequestId={lastRequestId}
         compact={compact}
         hasSubmittedMessage={hasChatStarted}
-        scrollButtonOffset={showWorkDrawer && hasWorkDrawerContent ? 430 : 116}
+        scrollButtonOffset={scrollButtonOffset}
+        composerBottomInset={composerBottomInset}
+        answerWidgets={answerWidgets}
       />
       {/* Agent cognition — only in compact/sidebar mode (FintheonThread handles it in full chat) */}
       {compact && lastRequestId && isRunning && (
@@ -305,40 +421,56 @@ function ChatSidebarInner({
           <CognitionPanel requestId={lastRequestId} isStreaming={isRunning} />
         </div>
       )}
-      <div className="relative z-20 shrink-0">
-        <TodoDrawer
-          isOpen={showWorkDrawer && hasWorkDrawerContent}
-          onClose={() => setShowWorkDrawer(false)}
-          todos={todos}
-          onToggleTodo={toggleTodo}
-          onRemoveTodo={removeTodo}
-          queue={queue}
-          onEditQueue={editQueue}
-          onRemoveQueue={removeQueue}
-          onReorderQueue={reorderQueue}
-          onSendQueueOne={sendOne}
-          onSendQueueAll={sendAll}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30">
+        <FintheonComposer
+          compact={compact}
+          thinkHarder={thinkHarder}
+          setThinkHarder={setThinkHarder}
+          reasoningLevel={reasoningLevel}
+          onReasoningLevelChange={(level) => {
+            setReasoningLevel(level);
+            setThinkHarder(shouldThinkHarder(level));
+          }}
+          lastError={lastError}
+          activeSkill={activeSkill}
+          onSelectSkill={setActiveSkill}
+          showSkills={showSkills}
+          onToggleSkills={() => setShowSkills((v) => !v)}
+          conversationId={conversationId}
+          onConversationGone={clearConversationId}
+          onQueueMessage={addQueue}
+          approvalDrawerOpen={approvalDrawerOpen}
+          approvalDrawerSlot={
+            <ChatQuestionApprovalDrawer
+              questionnaire={questionnaire}
+              isSubmitting={isSubmittingAnswers}
+              onSubmit={submitAnswers}
+              onCancel={() => setApprovalDrawerCollapsed(true)}
+            />
+          }
+          workDrawerOpen={workDrawerOpen}
+          workDrawerSlot={
+            <TodoDrawer
+              isOpen={workDrawerOpen}
+              onClose={() => setShowWorkDrawer(false)}
+              todos={todos}
+              onToggleTodo={toggleTodo}
+              onRemoveTodo={removeTodo}
+              queue={queue}
+              onEditQueue={editQueue}
+              onRemoveQueue={removeQueue}
+              onReorderQueue={reorderQueue}
+              onSendQueueOne={sendOne}
+              onSendQueueAll={sendAll}
+              approvalPending={!!questionnaire}
+              agentActive={isRunning}
+            />
+          }
+          drawerPeekSlot={drawerPeekSlot}
+          queueCount={queue.length}
+          onMessageSubmitted={() => setHasChatStarted(true)}
         />
       </div>
-      <FintheonComposer
-        thinkHarder={thinkHarder}
-        setThinkHarder={setThinkHarder}
-        reasoningLevel={reasoningLevel}
-        onReasoningLevelChange={(level) => {
-          setReasoningLevel(level);
-          setThinkHarder(shouldThinkHarder(level));
-        }}
-        lastError={lastError}
-        activeSkill={activeSkill}
-        onSelectSkill={setActiveSkill}
-        showSkills={showSkills}
-        onToggleSkills={() => setShowSkills((v) => !v)}
-        conversationId={conversationId}
-        onConversationGone={clearConversationId}
-        onQueueMessage={addQueue}
-        queueCount={queue.length}
-        onMessageSubmitted={() => setHasChatStarted(true)}
-      />
 
       <aside
         className={`absolute right-0 top-0 z-40 h-full border-l border-[var(--fintheon-accent)]/20 bg-[#090704] shadow-2xl transition-transform duration-300 ease-out ${
@@ -356,12 +488,24 @@ function ChatSidebarInner({
                 {railTitle}
               </p>
             </div>
-            <button
-              onClick={() => onModeChange("work")}
-              className="rounded border border-[var(--fintheon-accent)]/30 px-2 py-1 text-[10px] text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
-            >
-              Dismiss
-            </button>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                onClick={() => handleSend(`Begin this plan:\n\n${planMarkdown}`)}
+                className="rounded border border-[var(--fintheon-accent)]/25 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--fintheon-accent)] transition-colors hover:bg-[var(--fintheon-accent)]/10"
+                title="Begin this plan"
+              >
+                <span className="inline-flex items-center gap-1">
+                  <Play size={10} />
+                  Begin
+                </span>
+              </button>
+              <button
+                onClick={() => onModeChange("work")}
+                className="rounded border border-[var(--fintheon-accent)]/30 px-2 py-1 text-[10px] text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
+              >
+                Dismiss
+              </button>
+            </div>
           </div>
           <div className="flex min-h-0 flex-1 flex-col gap-2 p-3">
             <div className="flex items-center justify-between rounded-md border border-white/[0.06] bg-white/[0.025] px-2 py-1">

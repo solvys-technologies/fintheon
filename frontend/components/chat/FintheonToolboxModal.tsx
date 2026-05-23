@@ -1,6 +1,7 @@
 // [codex 2026-05-23] Canonical inline drawer for chat input skills + connectors.
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Check, Plug, Search, Sparkles, X } from "lucide-react";
+import { AlertTriangle, Check, Code, Plug, Search, X } from "lucide-react";
+import { RepoChatComposerSurface } from "./composer/RepoChatComposer";
 import type { SkillDef } from "../../lib/skills";
 import type { McpServerConfig, McpServerId } from "../../types/mcp";
 
@@ -105,18 +106,11 @@ export function FintheonToolboxModal({
   }, [query, servers]);
 
   return (
-    <div
+    <RepoChatComposerSurface
       role="region"
       aria-label="Skills and connectors drawer"
-      aria-hidden={!open}
-      className={`fintheon-chat-input-drawer transition-all duration-300 ${
-        open ? "pointer-events-auto" : "pointer-events-none"
-      }`}
-      style={{
-        maxHeight: open ? "280px" : "0px",
-        opacity: open ? 1 : 0,
-        boxShadow: open ? undefined : "none",
-      }}
+      open={open}
+      kind="drawer"
     >
       <div className="flex max-h-[280px] min-h-0 flex-col overflow-hidden">
         <div className="flex items-center justify-between px-3 py-2.5">
@@ -148,7 +142,7 @@ export function FintheonToolboxModal({
                 : "text-gray-500 hover:text-gray-300"
             }`}
           >
-            <Sparkles size={12} />
+            <Code size={12} />
             Skills
           </button>
           <button
@@ -268,6 +262,6 @@ export function FintheonToolboxModal({
           </div>
         </div>
       </div>
-    </div>
+    </RepoChatComposerSurface>
   );
 }

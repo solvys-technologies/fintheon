@@ -6,7 +6,7 @@ import { useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   ClipboardList,
-  Clock,
+  Clock705,
   CalendarDays,
   StickyNote,
   Plus,
@@ -15,7 +15,6 @@ import {
   Flame,
   ChevronDown,
   ChevronUp,
-  Zap,
   GripVertical,
   TrendingUp,
 } from "lucide-react";
@@ -32,7 +31,7 @@ interface StickyBulletinProps {
 
 const SECTIONS = [
   { id: "idea" as const, icon: Crosshair, label: "Catalyst" },
-  { id: "antilag" as const, icon: Clock, label: "Antilag" },
+  { id: "antilag" as const, icon: Clock705, label: "Antilag" },
   { id: "event" as const, icon: CalendarDays, label: "Event" },
   { id: "notes" as const, icon: StickyNote, label: "Notes" },
   { id: "daycard" as const, icon: TrendingUp, label: "Day Card" },
@@ -130,7 +129,7 @@ export function StickyBulletin({
                 }}
                 title="Quick clock antilag"
               >
-                <Zap
+                <Clock705
                   className="w-3.5 h-3.5"
                   style={{
                     transform: b.quickClockPulse ? "scale(1.2)" : "scale(1)",
@@ -228,7 +227,7 @@ export function StickyBulletin({
                     transition: "all 0.3s ease",
                   }}
                 >
-                  <Clock
+                  <Clock705
                     className="w-5 h-5"
                     style={{
                       color: "var(--fintheon-accent)",
@@ -251,7 +250,7 @@ export function StickyBulletin({
                       {DAY_LABELS[new Date().getDay()]} · auto-time
                     </span>
                   </div>
-                  <Zap
+                  <Clock705
                     className="w-3.5 h-3.5"
                     style={{ color: "var(--fintheon-accent)", opacity: 0.4 }}
                   />
@@ -513,7 +512,7 @@ export function StickyBulletin({
                           "color-mix(in srgb, var(--fintheon-bg) 40%, transparent)",
                       }}
                     >
-                      <Clock
+                      <Clock705
                         className="w-3 h-3 shrink-0"
                         style={{
                           color: "var(--fintheon-accent)",

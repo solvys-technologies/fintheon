@@ -36,7 +36,7 @@ export function EmptyTimeline() {
         </div>
       ))}
       <p className="text-[11px] text-[var(--fintheon-muted)]/45">
-        No Desk Plans scheduled. Add one from TradingView or the Desk Plan plus control.
+        No Desk Plans scheduled. Add one from TradingView or the Desk Plan add control.
       </p>
     </div>
   );

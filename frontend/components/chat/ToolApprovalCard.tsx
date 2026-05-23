@@ -3,29 +3,29 @@ import { useState, useEffect, useRef } from "react";
 import {
   ShieldCheck,
   ShieldX,
-  Terminal,
-  FileText,
-  Globe,
-  FolderCog,
-  PenLine,
 } from "lucide-react";
+import {
+  ChatCitationIcon,
+  citationKindForTool,
+  type ChatCitationKind,
+} from "../icon-bank/ChatCitationIcon";
 import type { ToolApprovalRequest } from "./hooks/useToolApprovals";
 
 const TOOL_META: Record<
   string,
-  { icon: typeof Terminal; label: string; color: string }
+  { kind: ChatCitationKind; label: string; color: string }
 > = {
-  run_command: { icon: Terminal, label: "Shell Command", color: "#c79f4a" },
-  read_file: { icon: FileText, label: "Read File", color: "#60A5FA" },
-  write_file: { icon: PenLine, label: "Write File", color: "#F59E0B" },
-  web_fetch: { icon: Globe, label: "Web Fetch", color: "#34D399" },
-  read_mcp_config: { icon: FolderCog, label: "MCP Config", color: "#A78BFA" },
+  run_command: { kind: "shell", label: "Shell Command", color: "#c79f4a" },
+  read_file: { kind: "file", label: "Read File", color: "#60A5FA" },
+  write_file: { kind: "file", label: "Write File", color: "#F59E0B" },
+  web_fetch: { kind: "web", label: "Web Fetch", color: "#34D399" },
+  read_mcp_config: { kind: "mcp", label: "MCP Config", color: "#A78BFA" },
 };
 
 function getToolMeta(toolName: string) {
   return (
     TOOL_META[toolName] ?? {
-      icon: ShieldCheck,
+      kind: citationKindForTool(toolName),
       label: toolName,
       color: "#9CA3AF",
     }
@@ -63,7 +63,6 @@ interface Props {
 export function ToolApprovalCard({ approval, onApprove, onDeny }: Props) {
   const { approvalId, toolName, toolInput, status, decidedAt } = approval;
   const meta = getToolMeta(toolName);
-  const Icon = meta.icon;
 
   // Animation states
   const [mounted, setMounted] = useState(false);
@@ -116,7 +115,7 @@ export function ToolApprovalCard({ approval, onApprove, onDeny }: Props) {
           : "opacity 350ms cubic-bezier(0.16, 1, 0.3, 1), transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1)",
         overflow: "hidden",
       }}
-      className="max-w-[82%] rounded-lg border overflow-hidden"
+      className="fintheon-popover-surface max-w-[82%] overflow-hidden"
       data-approval-id={approvalId}
     >
       <div>
@@ -149,7 +148,7 @@ export function ToolApprovalCard({ approval, onApprove, onDeny }: Props) {
               className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded"
               style={{ backgroundColor: `${meta.color}15`, color: meta.color }}
             >
-              <Icon size={10} />
+              <ChatCitationIcon kind={meta.kind} size={22} title={meta.label} />
               {meta.label}
             </span>
           </div>

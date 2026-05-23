@@ -2,6 +2,7 @@
 // [claude-code 2026-04-05] Harper agent — Strands-based CAO with tools + streaming + cognition telemetry
 import { createAgent, type HarperProvider } from "../agent-factory.js";
 import { createHarperTools } from "../harper-tools.js";
+import { createChatUiTools } from "../chat-ui-tools.js";
 import { getAllSolvysTools } from "../skills/index.js";
 import { strandsToUIStream, uiStreamToSSEResponse } from "../stream-adapter.js";
 import { TextBlock, ImageBlock } from "@strands-agents/sdk";
@@ -67,6 +68,7 @@ export async function createHarperAgent(
     noTimeout: opts?.relayOriginated,
     userId: opts?.userId,
   });
+  const chatUiTools = createChatUiTools(requestId);
   const solvysTools = getAllSolvysTools();
   const systemPrompt = await getAgentSystemPrompt("harper-cao", {});
 
@@ -94,7 +96,7 @@ export async function createHarperAgent(
     description:
       "Chief Agentic Officer — coordinates PIC agent network, runs tools, manages the Fintheon platform",
     systemPrompt,
-    tools: [...coreTools, ...solvysTools],
+    tools: [...coreTools, ...chatUiTools, ...solvysTools],
     model: {
       model: opts?.model || "deepseek-reasoner",
       temperature: 0.3,

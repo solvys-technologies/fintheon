@@ -1,13 +1,9 @@
-// [claude-code 2026-04-05] Login screen — shuffled hero backgrounds, top-aligned layout, frosted branding window
-import React, { useMemo } from "react";
+// [codex 2026-05-23] Globe login motion: accelerated sign-in state and
+// compact fuse/message container, replacing the old card/rectangle layout.
+import React, { useEffect, useRef, useState } from "react";
+import { DotMatrixLoader } from "../icon-bank/DotMatrixLoader";
 import { TimeQuote } from "./TimeQuote";
 import { GoogleSignInButton } from "./GoogleSignInButton";
-
-const HERO_BACKGROUNDS = [
-  "./halftone-heroes/hero-bg-1.png",
-  "./halftone-heroes/hero-bg-2.png",
-  "./halftone-heroes/hero-bg-3.png",
-];
 
 type AuthShellProps = {
   onSignIn: () => void;
@@ -17,89 +13,111 @@ type AuthShellProps = {
 
 export const AuthShell: React.FC<AuthShellProps> = ({
   onSignIn,
-  onSkipAuth,
   isLoading = false,
 }) => {
-  const bg = useMemo(
-    () => HERO_BACKGROUNDS[Math.floor(Math.random() * HERO_BACKGROUNDS.length)],
-    [],
-  );
+  const [submitted, setSubmitted] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
+  const signInTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (signInTimerRef.current) window.clearTimeout(signInTimerRef.current);
+    };
+  }, []);
+
+  function handleSignIn() {
+    if (submitted) return;
+    setSubmitted(true);
+    signInTimerRef.current = window.setTimeout(() => {
+      setShowLoader(true);
+      void onSignIn();
+    }, 3000);
+  }
+
+  const busy = isLoading || submitted;
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-[#050402] text-white selection:bg-yellow-500/30">
-      {/* Hero background — shuffled halftone (relative path for Electron) */}
-      <div
-        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-[0.18]"
-        style={{ backgroundImage: `url('${bg}')` }}
-      />
-      {/* Gradient overlay — darkens left for text readability */}
-      <div className="absolute inset-0 z-[1] bg-gradient-to-r from-[#050402]/95 via-[#050402]/70 to-[#050402]/40" />
-
-      {/* Both columns use items-start with same top padding so boxes are horizontally aligned */}
-      <main className="relative z-10 flex min-h-screen flex-col items-center px-6 pt-[38vh] md:flex-row md:items-start md:px-0">
-        {/* Left — Branding (55%) */}
-        <div className="flex w-full flex-col items-center md:w-[55%] md:items-start md:pl-[10%]">
-          {/* Frosted glass window */}
-          <div className="rounded-xl border border-[#c79f4a]/10 bg-[#050402]/60 px-8 py-8 backdrop-blur-sm">
-            {/* Logo + Title inline */}
-            <div className="flex items-center gap-5">
-              <img
-                src="./logo.png"
-                alt="Fintheon"
-                className="h-14 w-14 object-contain opacity-90 drop-shadow-[0_0_10px_rgba(199,159,74,0.3)]"
-              />
-              <h1
-                className="text-3xl font-light tracking-[0.18em] text-[#c79f4a] drop-shadow-[0_0_12px_rgba(199,159,74,0.4)]"
-                style={{ fontFamily: "'Cinzel', 'Georgia', serif" }}
-              >
-                FINTHEON
-              </h1>
-            </div>
-            {/* Subtitle — aligned with title (offset by logo + gap = 56px ≈ pl-14) */}
-            <p
-              className="mt-3 pl-14 text-xs tracking-[0.3em] text-[#f0ead6]/60"
+    <div className="relative min-h-screen w-full overflow-hidden bg-[#050402] text-[#f0ead6] selection:bg-[#c79f4a]/25">
+      <div className="absolute inset-0 opacity-[0.22]">
+        <div className="absolute left-1/2 top-1/2 h-[82vmin] w-[82vmin] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#c79f4a]/8" />
+      </div>
+      <main className="relative z-10 flex min-h-screen flex-col items-center justify-center gap-8 px-6">
+        <div className="flex flex-col items-center gap-5">
+          <GlobeMark accelerated={submitted} />
+          <div className="text-center">
+            <h1
+              className="text-3xl font-light tracking-[0.24em] text-[#c79f4a]"
               style={{ fontFamily: "'Cinzel', 'Georgia', serif" }}
             >
+              FINTHEON
+            </h1>
+            <p className="mt-2 text-[10px] uppercase tracking-[0.28em] text-[#f0ead6]/52">
               Integrated Trading Environment
             </p>
-
-            <div className="mt-6 pl-14">
-              <TimeQuote />
-            </div>
           </div>
         </div>
 
-        {/* Right — Login card (45%), top-aligned with branding box */}
-        <div className="flex w-full flex-col items-center py-12 md:w-[45%] md:py-0 md:pr-[8%]">
-          <div className="w-full max-w-sm rounded-2xl border border-[#c79f4a]/15 bg-[#0a0906]/90 px-8 py-10 shadow-[0_25px_55px_rgba(0,0,0,0.65)] backdrop-blur-lg">
-            <p
-              className="mb-8 text-center text-xs font-semibold uppercase tracking-[0.4em] text-[#c79f4a]/70"
-              style={{ fontVariant: "small-caps" }}
-            >
-              Access Terminal
-            </p>
-
-            <GoogleSignInButton onClick={onSignIn} isLoading={isLoading} />
+        <div className="w-full max-w-[360px] rounded-[22px] border border-[#c79f4a]/18 bg-[#0a0905]/92 px-5 py-5">
+          <div className="mb-4 flex items-center justify-center gap-3">
+            <span className="h-[2px] w-12 overflow-hidden rounded-[2px] bg-[#c79f4a]/15">
+              <span
+                className="block h-full w-1/2 bg-[#c79f4a]/55"
+                style={{ animation: "authFuse 1800ms ease-in-out infinite" }}
+              />
+            </span>
+            <span className="text-[10px] uppercase tracking-[0.22em] text-[#c79f4a]/70">
+              {showLoader ? "Opening terminal" : "Access terminal"}
+            </span>
           </div>
-
-          {/* Footer links */}
-          <footer className="mt-6 flex gap-6 text-[11px] font-medium uppercase tracking-[0.25em] text-yellow-600/90">
-            <a
-              href="#"
-              className="transition-all duration-300 hover:text-yellow-400"
-            >
-              Terms of Use
-            </a>
-            <span className="text-yellow-800">&bull;</span>
-            <a
-              href="#"
-              className="transition-all duration-300 hover:text-yellow-400"
-            >
-              Privacy Policy
-            </a>
-          </footer>
+          {showLoader ? (
+            <div className="mb-4 flex justify-center">
+              <DotMatrixLoader
+                variant="diagonal-scan"
+                size={34}
+                label="Authenticating"
+              />
+            </div>
+          ) : null}
+          <GoogleSignInButton
+            onClick={handleSignIn}
+            isLoading={isLoading || showLoader}
+            disabled={busy}
+          />
+          <div className="mt-5 text-center">
+            <TimeQuote />
+          </div>
         </div>
       </main>
+      <style>{`
+        @keyframes authFuse {
+          0%, 100% { transform: translateX(-85%); opacity: 0.35; }
+          50% { transform: translateX(170%); opacity: 0.95; }
+        }
+      `}</style>
     </div>
   );
 };
+
+function GlobeMark({ accelerated }: { accelerated: boolean }) {
+  const duration = accelerated ? "6s" : "18s";
+  return (
+    <div className="relative h-48 w-48" aria-hidden="true">
+      <svg viewBox="0 0 160 160" className="h-full w-full text-[#c79f4a]">
+        <circle cx="80" cy="80" r="58" fill="none" stroke="currentColor" strokeOpacity=".42" />
+        <g style={{ transformOrigin: "80px 80px", animation: `authGlobe ${duration} linear infinite` }}>
+          <ellipse cx="80" cy="80" rx="58" ry="18" fill="none" stroke="currentColor" strokeOpacity=".28" />
+          <ellipse cx="80" cy="80" rx="58" ry="34" fill="none" stroke="currentColor" strokeOpacity=".22" />
+          <path d="M80 22c-22 20-22 96 0 116M80 22c22 20 22 96 0 116" fill="none" stroke="currentColor" strokeOpacity=".32" />
+          <path d="M28 58h104M28 102h104" fill="none" stroke="currentColor" strokeOpacity=".2" />
+        </g>
+        <circle cx="80" cy="80" r="4" fill="currentColor" opacity=".75" />
+      </svg>
+      <style>{`
+        @keyframes authGlobe {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  );
+}

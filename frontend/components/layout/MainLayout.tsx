@@ -161,7 +161,7 @@ const COMPACT_SEVERE_BP = 1060;
 function MainLayoutInner() {
   const { iframeUrls, defaultLayout, defaultPlatform, developerSettings } =
     useSettings();
-  const { theme } = useTheme();
+  const { theme, zenModeEnabled } = useTheme();
   const isStone = theme.name === "solvys-stone";
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
   const [activeTab, setActiveTab] = useState<NavTab>(() => readLastRoute());
@@ -517,9 +517,11 @@ function MainLayoutInner() {
   const showTape = topStepXEnabled && tapePosition !== "floating";
   const showFloatingWidget = topStepXEnabled && layoutOption === "tickers-only";
   const showCombinedPanel = topStepXEnabled && layoutOption === "combined";
-  const zenModeActive = topStepXEnabled && layoutOption === "tickers-only";
+  const zenModeActive =
+    zenModeEnabled || (topStepXEnabled && layoutOption === "tickers-only");
 
   useEffect(() => {
+    document.documentElement.dataset.zenMode = zenModeActive ? "true" : "false";
     document.body.dataset.fintheonZenMode = zenModeActive ? "true" : "false";
     document.body.classList.toggle("fintheon-zen-mode", zenModeActive);
     window.dispatchEvent(
@@ -529,6 +531,7 @@ function MainLayoutInner() {
     );
 
     return () => {
+      document.documentElement.dataset.zenMode = zenModeEnabled ? "true" : "false";
       document.body.dataset.fintheonZenMode = "false";
       document.body.classList.remove("fintheon-zen-mode");
       window.dispatchEvent(
@@ -537,7 +540,7 @@ function MainLayoutInner() {
         }),
       );
     };
-  }, [zenModeActive]);
+  }, [zenModeActive, zenModeEnabled]);
 
   // Determine panel order based on position and layout option
   const leftPanels: React.ReactNode[] = [];

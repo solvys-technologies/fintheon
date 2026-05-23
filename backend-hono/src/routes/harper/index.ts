@@ -26,6 +26,7 @@ import {
 } from "../../services/tool-approval-store.js";
 import { createApprovalDetailRoutes } from "./approvals.js";
 import { createDispatchRoute } from "./dispatch.js";
+import { createHarperUiActionRoutes } from "./ui-actions.js";
 import {
   browseTask,
   BrowseTaskInputSchema,
@@ -481,7 +482,6 @@ export function createHarperRoutes() {
         "Stream initiated",
         `${duration}ms to first byte`,
       );
-      cognition.done();
 
       return response;
     } catch (error) {
@@ -579,6 +579,8 @@ export function createHarperRoutes() {
 
   // [S25] Ask CAO dispatch — seeded conversation from catalyst/riskflow/brief context.
   app.route("/dispatch", createDispatchRoute());
+
+  app.route("/ui-actions", createHarperUiActionRoutes());
 
   return app;
 }

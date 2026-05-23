@@ -20,7 +20,7 @@ import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
 import { useSettings } from "../../contexts/SettingsContext";
 import { FadingRuler } from "../shared/FadingRuler";
 import { NothingFuse } from "../shared/NothingFuse";
-import { SolvysLoader } from "../shared/SolvysLoader";
+import { DotMatrixLoader } from "../icon-bank/DotMatrixLoader";
 import { VerdictCard } from "./VerdictCard";
 import { SeatCard, EmptySeat } from "./ChamberSeats";
 import { ArbitrumSettingsPanel } from "./ArbitrumSettingsPanel";
@@ -308,7 +308,7 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
         <div className="bg-transparent p-3 text-xs text-[var(--fintheon-text)]/55">
           <FadingRuler className="mb-3" />
           {isLoading ? (
-            <SolvysLoader text="Loading chamber read" size={12} />
+            <DotMatrixLoader variant="pyramid" size={24} label="Loading chamber read" />
           ) : error ? (
             <div className="flex flex-col gap-1.5">
               <span>Chamber unreachable ({error})</span>

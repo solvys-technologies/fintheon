@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Filter, Plus, Save, X } from "lucide-react";
+import { BookOpen, Filter, Save, X } from "lucide-react";
 import { DAY_PLAN_REFETCH_EVENT } from "../../hooks/useDayPlan";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -93,7 +93,7 @@ export function DeskPlanCustomForm({
         aria-label="Add desk plan"
         title="Add desk plan"
       >
-        <Plus className="w-3 h-3" />
+        <BookOpen className="w-3 h-3" />
       </button>
       <div
         className={`absolute right-0 top-7 z-[80] w-[340px] origin-top-right rounded border border-[var(--fintheon-accent)]/20 bg-[#080705]/95 p-3 shadow-2xl backdrop-blur transition-all duration-200 ${

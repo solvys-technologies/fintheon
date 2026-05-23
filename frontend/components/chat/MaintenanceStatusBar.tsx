@@ -47,7 +47,7 @@ export function MaintenanceStatusBar({
   return (
     <div className="border-l border-[#c79f4a] rounded-r px-4 py-2 bg-[var(--fintheon-surface)] flex items-center gap-3">
       {isUpdating ? (
-        <BrailleSpinner size={16} color="var(--fintheon-accent)" />
+        <BrailleSpinner size={16} />
       ) : (
         <Check size={16} style={{ color: "#22C55E", flexShrink: 0 }} />
       )}

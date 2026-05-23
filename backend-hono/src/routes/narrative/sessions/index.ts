@@ -12,11 +12,13 @@ import {
   handleReplaceCatalysts,
   handleUpdateSession,
 } from "./handlers.js";
+import { handleAssignCatalystBank } from "../catalyst-bank.js";
 
 export function createNarrativeSessionRoutes(): Hono {
   const app = new Hono();
   app.get("/", handleListSessions);
   app.post("/", handleCreateSession);
+  app.post("/:id/catalyst-bank/assign", handleAssignCatalystBank);
   app.get("/:id", handleGetSession);
   app.patch("/:id", handleUpdateSession);
   app.delete("/:id", handleDeleteSession);

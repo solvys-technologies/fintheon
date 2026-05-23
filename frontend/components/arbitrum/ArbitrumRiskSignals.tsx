@@ -1,5 +1,6 @@
 import { AlertTriangle } from "lucide-react";
 import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
+import { DotMatrixLoader } from "../icon-bank/DotMatrixLoader";
 import { NothingFuse } from "../shared/NothingFuse";
 import { ROLE_DISPLAY_NAMES } from "./ChamberSeats";
 
@@ -17,8 +18,8 @@ export function ArbitrumRiskSignals() {
 
   if (isLoading) {
     return (
-      <div className="py-4 text-[9px] uppercase tracking-[0.18em] text-[var(--fintheon-muted)]/35">
-        Loading risk signals...
+      <div className="py-4">
+        <DotMatrixLoader variant="pyramid" size={22} label="Risk signals" />
       </div>
     );
   }

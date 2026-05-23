@@ -1,6 +1,7 @@
 // [claude-code 2026-05-03] S38-T5: Provider Dropdown v2 — 3 providers, RECOMMENDED badge, flat palette, API key hints.
 import { useState, useRef, useEffect } from "react";
-import { Cpu, Cloud } from "lucide-react";
+import { Cpu } from "lucide-react";
+import { DeepSeekWhaleIcon } from "../icons";
 import { useSettings } from "../../contexts/SettingsContext";
 
 /* ─────────────────────────────────────────────────────── HarperProvider ── */
@@ -12,7 +13,7 @@ interface ProviderDef {
   label: string;
   model: string;
   sub: string;
-  icon: typeof Cloud;
+  icon: "deepseek" | "opencode";
   managed: boolean;
 }
 
@@ -22,7 +23,7 @@ const PROVIDERS: ProviderDef[] = [
     label: "DeepSeek v4 Pro",
     model: "Direct API",
     sub: "Bring your own key",
-    icon: Cloud,
+    icon: "deepseek",
     managed: false,
   },
   {
@@ -30,7 +31,7 @@ const PROVIDERS: ProviderDef[] = [
     label: "OpenCode Go",
     model: "Self-hosted proxy",
     sub: "Bring your own key + endpoint",
-    icon: Cpu,
+    icon: "opencode",
     managed: false,
   },
 ];
@@ -141,7 +142,6 @@ export function ProviderDropdown({
   }, [open]);
 
   const current = PROVIDERS.find((p) => p.id === provider) ?? PROVIDERS[1];
-  const Icon = current.icon;
   const dotColor = getDotColor(provider);
 
   const keyMissingHint =
@@ -166,7 +166,7 @@ export function ProviderDropdown({
           }`}
           style={{
             borderColor: "rgba(199, 159, 74, 0.2)",
-            color: "#f0ead6",
+            color: "var(--fintheon-accent)",
             height: "28px",
           }}
           title={`Provider: ${current.label} (${current.model})`}
@@ -176,6 +176,7 @@ export function ProviderDropdown({
             className="inline-block w-2 h-2 rounded-full shrink-0"
             style={{ backgroundColor: dotColor }}
           />
+          <DeepSeekWhaleIcon className="h-[10.88px] w-[13.6px] shrink-0" />
 
           {!compact && (
             <>
@@ -219,7 +220,7 @@ export function ProviderDropdown({
       {/* ── Expanded dropdown ── */}
       {open && (
         <div
-          className="absolute bottom-full mb-1 left-0 min-w-[220px] rounded-2xl border overflow-hidden z-50"
+          className="absolute bottom-full right-0 mb-1 min-w-[220px] rounded-2xl border overflow-hidden z-50"
           style={{
             backgroundColor: "#050402",
             borderColor: "rgba(199, 159, 74, 0.3)",
@@ -227,7 +228,6 @@ export function ProviderDropdown({
           }}
         >
           {PROVIDERS.map((p, i) => {
-            const PIcon = p.icon;
             const active = p.id === provider;
             const pDotColor = getDotColor(p.id);
             const pKeyMissing =
@@ -255,7 +255,11 @@ export function ProviderDropdown({
                     : "text-[rgba(240,234,214,0.6)] hover:bg-[rgba(199,159,74,0.05)] hover:text-[rgba(240,234,214,0.8)]"
                 }`}
               >
-                <PIcon className="w-3.5 h-3.5 shrink-0" />
+                {p.icon === "deepseek" ? (
+                  <DeepSeekWhaleIcon className="h-[10.88px] w-[13.6px] shrink-0 text-[var(--fintheon-accent)]" />
+                ) : (
+                  <Cpu className="h-3.5 w-3.5 shrink-0" />
+                )}
 
                 <div className="flex flex-col flex-1 min-w-0">
                   {/* label row */}

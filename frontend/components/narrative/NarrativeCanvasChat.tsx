@@ -196,9 +196,9 @@ export function NarrativeCanvasChat({
   if (!isOpen) return null;
 
   return (
-    <div className="relative flex flex-col items-center">
+    <div className="narrative-canvas-chat relative flex flex-col items-center">
       {responseVisible && response ? (
-        <div className="absolute bottom-full mb-2 flex w-[420px] items-center gap-2 rounded-lg border border-[var(--fintheon-accent)]/15 bg-[#070604] px-3 py-2">
+        <div className="narrative-canvas-chat__response absolute bottom-full mb-2 flex w-[420px] items-center gap-2 rounded-lg border border-[var(--fintheon-accent)]/15 px-3 py-2">
           <p className="flex-1 text-[11px] leading-relaxed text-[var(--fintheon-text)]">
             {response}
           </p>

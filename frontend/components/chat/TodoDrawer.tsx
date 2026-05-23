@@ -4,12 +4,12 @@ import {
   X,
   ChevronDown,
   ChevronRight,
-  CheckSquare,
-  Square,
-  ListTodo,
+  Circle,
+  CheckCircle2,
 } from "lucide-react";
-import type { TodoItem } from "./hooks/useTodoList";
+import type { IssueTrackingType, TodoItem } from "./hooks/useTodoList";
 import { MessageQueue, type QueuedMessage } from "./MessageQueue";
+import { BrailleSpinner } from "./primitive/BrailleSpinner";
 
 interface TodoDrawerProps {
   isOpen: boolean;
@@ -23,6 +23,90 @@ interface TodoDrawerProps {
   onReorderQueue?: (fromIdx: number, toIdx: number) => void;
   onSendQueueOne?: () => void;
   onSendQueueAll?: () => void;
+  approvalPending?: boolean;
+  agentActive?: boolean;
+}
+
+type TodoStage = "todo" | "in_progress" | "awaiting_review" | "complete";
+
+const ISSUE_TYPE_META: Record<IssueTrackingType, { label: string }> = {
+  task: { label: "Task" },
+  bug: { label: "Bug" },
+  feature: { label: "Feature" },
+  risk: { label: "Risk" },
+  chore: { label: "Chore" },
+  issue: { label: "Issue" },
+};
+
+function issueTypeLabel(type?: IssueTrackingType): string {
+  return ISSUE_TYPE_META[type ?? "task"].label;
+}
+
+const TODO_STATUS_COLOR = "var(--fintheon-secondary, var(--fintheon-muted))";
+
+function TodoHeaderGlyph() {
+  return (
+    <span
+      className="fintheon-todo-header-glyph"
+      aria-hidden="true"
+    >
+      <CheckCircle2 size={13} strokeWidth={2.3} />
+      <span />
+      <Circle size={8} strokeWidth={2.2} />
+      <span />
+    </span>
+  );
+}
+
+function getTodoStage(
+  todo: TodoItem,
+  approvalPending?: boolean,
+  agentActive?: boolean,
+): TodoStage {
+  if (todo.done) return "complete";
+  if (approvalPending && todo.source === "harper-ui-tool") {
+    return "awaiting_review";
+  }
+  if (agentActive && todo.source === "harper-ui-tool") {
+    return "in_progress";
+  }
+  return "todo";
+}
+
+function StageIcon({ stage }: { stage: TodoStage }) {
+  if (stage === "complete") {
+    return (
+      <CheckCircle2
+        size={16}
+        strokeWidth={2.2}
+        color={TODO_STATUS_COLOR}
+        aria-hidden="true"
+      />
+    );
+  }
+  if (stage === "awaiting_review" || stage === "in_progress") {
+    return (
+      <BrailleSpinner
+        size={8}
+        color={TODO_STATUS_COLOR}
+      />
+    );
+  }
+  return (
+    <Circle
+      size={16}
+      strokeWidth={2.1}
+      color={TODO_STATUS_COLOR}
+      aria-hidden="true"
+    />
+  );
+}
+
+function stageLabel(stage: TodoStage): string {
+  if (stage === "complete") return "Complete";
+  if (stage === "in_progress") return "In progress";
+  if (stage === "awaiting_review") return "Awaiting review";
+  return "To-do";
 }
 
 export function TodoDrawer({
@@ -37,20 +121,23 @@ export function TodoDrawer({
   onReorderQueue,
   onSendQueueOne,
   onSendQueueAll,
+  approvalPending,
+  agentActive,
 }: TodoDrawerProps) {
-  const [todoOpen, setTodoOpen] = useState(true);
   const [queueOpen, setQueueOpen] = useState(true);
   const hasTodos = todos.length > 0;
   const hasQueue = queue.length > 0;
 
   const pendingTodos = todos.filter((t) => !t.done);
-  const doneTodos = todos.filter((t) => t.done);
+  const doneCount = todos.length - pendingTodos.length;
 
   return (
     <div
+      aria-hidden={!isOpen}
       className="fintheon-chat-input-drawer"
       style={{
-        maxHeight: isOpen ? "340px" : "0",
+        maxHeight: isOpen ? "196px" : "0",
+        opacity: isOpen ? 1 : 0,
         transition: "max-height 220ms cubic-bezier(0.4, 0, 0.2, 1)",
         borderColor: isOpen
           ? "color-mix(in srgb, var(--fintheon-accent) 18%, transparent)"
@@ -61,97 +148,73 @@ export function TodoDrawer({
       <div
         className="overflow-hidden"
       >
-        {/* Drawer header */}
-        <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--fintheon-accent)]/10">
-          <div className="flex items-center gap-2">
-            <ListTodo size={13} className="text-[var(--fintheon-accent)]" />
-            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--fintheon-accent)]">
-              Active Work
+        <div className="flex items-center justify-between border-b border-[var(--fintheon-accent)]/10 px-3 py-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <TodoHeaderGlyph />
+            <span className="truncate text-[13px] font-semibold leading-none text-[var(--fintheon-text)]/88">
+              {doneCount} of {todos.length} task{todos.length === 1 ? "" : "s"}{" "}
+              completed
             </span>
           </div>
           <button
             onClick={onClose}
-            className="text-[var(--fintheon-text)]/30 hover:text-[var(--fintheon-text)]/70 transition-colors"
+            className="shrink-0 text-[var(--fintheon-text)]/45 transition-colors hover:text-[var(--fintheon-text)]/80"
             title="Close"
           >
-            <X size={13} />
+            <ChevronDown size={16} />
           </button>
         </div>
 
-        {/* Scrollable body */}
-        <div className="overflow-y-auto" style={{ maxHeight: "286px" }}>
-          {/* ── To-Do section ─────────────────────────────────────────── */}
+        <div className="overflow-y-auto" style={{ maxHeight: "155px" }}>
           {hasTodos && (
-          <div className="border-b border-[var(--fintheon-accent)]/8">
-            <button
-              onClick={() => setTodoOpen((v) => !v)}
-              className="w-full flex items-center gap-1.5 px-3 py-2 hover:bg-[var(--fintheon-accent)]/5 transition-colors"
-            >
-              {todoOpen ? (
-                <ChevronDown size={11} className="text-[var(--fintheon-accent)]/50" />
-              ) : (
-                <ChevronRight size={11} className="text-[var(--fintheon-accent)]/50" />
-              )}
-              <span className="text-[10px] font-medium uppercase tracking-widest text-[var(--fintheon-text)]/40">
-                To-Do
-              </span>
-              {pendingTodos.length > 0 && (
-                <span className="ml-1 text-[9px] text-[var(--fintheon-accent)]/60 bg-[var(--fintheon-accent)]/10 px-1.5 py-0.5 rounded-full">
-                  {pendingTodos.length}
-                </span>
-              )}
-            </button>
-
-            {todoOpen && (
-              <div className="pb-2">
-                {pendingTodos.map((todo) => (
+          <div className="border-b border-[var(--fintheon-accent)]/8 py-1.5">
+            <div className="pb-0.5">
+                {todos.map((todo, index) => {
+                  const stage = getTodoStage(todo, approvalPending, agentActive);
+                  const typeLabel = issueTypeLabel(todo.issueTrackingType);
+                  return (
                   <div
                     key={todo.id}
-                    className="flex items-center gap-2 px-3 py-1.5 group hover:bg-[var(--fintheon-accent)]/5 transition-colors"
+                    className="fintheon-todo-stage-row group grid grid-cols-[18px_1.45rem_minmax(0,1fr)_16px] items-start gap-2 px-3 py-1.5 transition-colors hover:bg-[var(--fintheon-accent)]/5"
+                    data-issue-type={todo.issueTrackingType ?? "task"}
+                    data-stage={stage}
                   >
                     <button
+                      key={`${todo.id}-${stage}`}
                       onClick={() => onToggleTodo(todo.id)}
-                      className="shrink-0 text-[var(--fintheon-text)]/30 hover:text-[var(--fintheon-accent)] transition-colors"
+                      className="fintheon-todo-stage-icon mt-0.5 shrink-0 transition-[color,transform,opacity] duration-200 hover:scale-110"
+                      title={`${typeLabel} ${stageLabel(stage)}`}
+                      aria-label={`${typeLabel} ${stageLabel(stage)}: ${todo.text}`}
                     >
-                      <Square size={12} />
+                      <StageIcon stage={stage} />
                     </button>
-                    <span className="flex-1 text-[12px] text-[var(--fintheon-text)]/70 truncate">
-                      {todo.text}
+                    <span className="text-right text-[13px] leading-5 text-[var(--fintheon-text)]/42">
+                      {index + 1}.
+                    </span>
+                    <span
+                      className={`min-w-0 text-[13px] leading-5 ${
+                        stage === "complete"
+                          ? "text-[var(--fintheon-text)]/48"
+                          : "text-[var(--fintheon-text)]/82"
+                      }`}
+                    >
+                      <span
+                        className={stage === "complete" ? "line-through" : ""}
+                      >
+                        {todo.text}
+                      </span>
                     </span>
                     <button
                       onClick={() => onRemoveTodo(todo.id)}
-                      className="opacity-0 group-hover:opacity-100 text-[var(--fintheon-text)]/30 hover:text-[var(--fintheon-accent)]/60 transition-all"
+                      className="mt-0.5 opacity-0 text-[var(--fintheon-text)]/30 transition-all hover:text-[var(--fintheon-accent)]/60 group-hover:opacity-100"
+                      title="Remove task"
                     >
                       <X size={11} />
                     </button>
                   </div>
-                ))}
-
-                {doneTodos.map((todo) => (
-                  <div
-                    key={todo.id}
-                    className="flex items-center gap-2 px-3 py-1.5 group hover:bg-[var(--fintheon-accent)]/5 transition-colors opacity-35"
-                  >
-                    <button
-                      onClick={() => onToggleTodo(todo.id)}
-                      className="shrink-0 text-[var(--fintheon-accent)] transition-colors"
-                    >
-                      <CheckSquare size={12} />
-                    </button>
-                    <span className="flex-1 text-[12px] text-[var(--fintheon-text)]/50 truncate line-through">
-                      {todo.text}
-                    </span>
-                    <button
-                      onClick={() => onRemoveTodo(todo.id)}
-                      className="opacity-0 group-hover:opacity-100 text-[var(--fintheon-text)]/30 hover:text-[var(--fintheon-accent)]/60 transition-all"
-                    >
-                      <X size={11} />
-                    </button>
-                  </div>
-                ))}
-
-              </div>
-            )}
+                  );
+                })}
+            </div>
           </div>
           )}
 

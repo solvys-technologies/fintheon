@@ -1,6 +1,6 @@
 {
   "name": "fintheon-mobile",
-  "version": "6.7.20",
+  "version": "6.7.21",
   "type": "module",
   "packageManager": "bun",
   "dependencies": {

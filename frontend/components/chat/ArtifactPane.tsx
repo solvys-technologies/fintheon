@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
-import { Columns3, FileCode2, PanelRightClose, ScanEye } from "lucide-react";
+import { Columns3, FileCode2, PanelRightClose, Play, ScanEye } from "lucide-react";
 import type { Citation } from "./CitationChip";
+import { StreamdownChat } from "./slots";
 
 export interface ArtifactPaneProps {
   artifactType?: "citation" | "browser" | "tradingview" | "report" | "narrative";
@@ -9,11 +10,13 @@ export interface ArtifactPaneProps {
   browserSessionId?: string;
   browserStatus?: "starting" | "active" | "closed";
   reportHtml?: string;
+  reportMarkdown?: string;
   citationSource?: { title: string; url?: string; content?: string };
   narrativeCanvasId?: string;
   isBrowserUserControlling?: boolean;
   onBrowserTakeControl?: () => void;
   onBrowserResumeAgent?: () => void;
+  onBegin?: () => void;
   onPinCitation?: (citation: Citation) => void;
   onClose: () => void;
   width?: number;
@@ -24,6 +27,8 @@ export function ArtifactPane({
   artifactType,
   citationSource,
   reportHtml,
+  reportMarkdown,
+  onBegin,
   onClose,
   width = 390,
   onWidthChange,
@@ -71,14 +76,27 @@ export function ArtifactPane({
             Workbench
           </span>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-[var(--fintheon-text)]/30 transition-colors hover:text-[var(--fintheon-text)]/70"
-          title="Close workbench"
-        >
-          <PanelRightClose size={14} />
-        </button>
+        <div className="flex items-center gap-2">
+          {onBegin && reportMarkdown && (
+            <button
+              type="button"
+              onClick={onBegin}
+              className="flex items-center gap-1 rounded border border-[var(--fintheon-accent)]/25 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--fintheon-accent)] transition-colors hover:bg-[var(--fintheon-accent)]/10"
+              title="Begin this plan"
+            >
+              <Play size={11} />
+              Begin
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-[var(--fintheon-text)]/30 transition-colors hover:text-[var(--fintheon-text)]/70"
+            title="Close workbench"
+          >
+            <PanelRightClose size={14} />
+          </button>
+        </div>
       </div>
       <div className="flex border-b border-[var(--fintheon-accent)]/10">
         {tabs.map(({ id, Icon, label }) => (
@@ -135,6 +153,11 @@ export function ArtifactPane({
                 className="rounded-md border border-[var(--fintheon-accent)]/10 bg-[#0a0905] p-3 text-[12px] text-[var(--fintheon-text)]/70"
                 dangerouslySetInnerHTML={{ __html: reportHtml }}
               />
+            )}
+            {reportMarkdown && (
+              <div className="fintheon-chat-markdown rounded-md border border-[var(--fintheon-accent)]/10 bg-[#0a0905] p-3 text-[12px] text-[var(--fintheon-text)]/76">
+                <StreamdownChat content={reportMarkdown} />
+              </div>
             )}
           </div>
         )}

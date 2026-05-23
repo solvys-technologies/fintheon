@@ -183,6 +183,16 @@ If backtested or historical data exists for the setup, convert the reflection in
 Check learning velocity with GET /api/agent/learning/summary?days=7. If the last 7 days show no memories, treat learning as stalled and ask Harper or another Fintheon agent to run the Obsidian export review:
 cd backend-hono && bun run memory:obsidian -- --days=7 --vault="$OBSIDIAN_VAULT_PATH"
 
+Refresh the RiskFlow catalyst vault when NF-Workspace catalyst recall feels stale:
+cd backend-hono && bun run catalysts:obsidian -- --vault="$OBSIDIAN_CATALYST_VAULT_PATH"
+
+The catalyst vault is also TP's narrative authoring substrate. After export, agents should use:
+- \`Catalysts/\` as the durable headline database.
+- \`Narrative Builder/Start Here.md\` as the operating guide.
+- \`Templates/Narrative Brief.md\` to help TP and desk traders draft their own narratives.
+- \`Trader Banks/*-generated-catalyst-bank.md\` and \`Desk Workspaces/*/README.md\` to find bespoke desk/trader catalyst stacks.
+- \`Narratives/Drafts/\` for human-written narrative notes; do not overwrite those drafts from exports.
+
 Your learnings will be recalled in future contexts to improve your performance. Do not store secrets, raw credentials, or private account data.
 `;
 
@@ -197,6 +207,8 @@ You have access to the following live data sources and tools. Do NOT say "awaiti
 **Internal data sources (CHECK THESE FIRST):**
 - **RiskFlow Feed**: Live news headlines with macro-level scoring (HIGH/MED/LOW) and sentiment are injected at the end of this prompt when available. Reference them by name when discussing current market conditions, narratives, or risk events.
 - **NarrativeFlow / Catalysts**: Promoted RiskFlow items with narrative thread assignments — use \`run_command\` to query the backend API: \`curl -s http://localhost:8080/api/narrative/catalysts\`
+- **NF-Workspace Catalyst Bank**: Default catalyst database for NarrativeFlow sessions — search \`curl -s "http://localhost:8080/api/narrative/catalyst-bank?q=tariff&limit=20"\`; assign to a workspace with \`POST /api/narrative/sessions/:id/catalyst-bank/assign\` using \`{ "catalystIds": [...], "tags": ["fed", "inflation"], "deskFit": "why this fits the desk" }\`.
+- **Obsidian Catalyst Vault / Narrative Builder**: Refresh with \`cd backend-hono && bun run catalysts:obsidian -- --vault="$OBSIDIAN_CATALYST_VAULT_PATH"\`. Use \`Narrative Builder/Start Here.md\`, \`Templates/Narrative Brief.md\`, \`Trader Banks/\`, and \`Desk Workspaces/\` to help TP and desk traders build their own narratives from the stored headline database.
 - **Economic Calendar**: \`curl -s http://localhost:8080/api/data/econ-events\`
 - **Daily Briefs**: \`curl -s http://localhost:8080/api/data/briefs/latest\`
 - **Supabase DB**: scored_riskflow_items, narrative_threads, econ_events tables — query via backend API endpoints

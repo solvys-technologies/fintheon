@@ -14,7 +14,7 @@ import {
   Code,
   Terminal,
   Palette,
-  Users,
+  Atom,
   AlertTriangle,
   ArrowLeft,
   Globe,
@@ -91,7 +91,7 @@ const TABS = [
   {
     id: "desk" as const,
     label: "Agentic Desk",
-    icon: Users,
+    icon: Atom,
     description: "Hermes routing, agent personas, and CAO naming",
   },
   {

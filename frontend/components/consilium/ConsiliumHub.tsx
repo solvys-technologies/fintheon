@@ -16,6 +16,7 @@ import {
   Users,
   Clock,
   Cpu,
+  Landmark,
   PanelRightOpen,
   PanelRightClose,
   ChevronDown,
@@ -629,10 +630,11 @@ export function ConsiliumHub() {
       {/* Tab bar: Sanctum dropdown + regular tabs + Proposals toggle */}
       <div className="flex items-center gap-0.5 px-4 pt-3 pb-1.5">
         <h2
-          className="mr-3 text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
+          className="mr-3 flex items-center gap-1.5 text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
           style={{ fontFamily: "var(--font-heading, Roboto, sans-serif)" }}
         >
-          Consilium
+          <Landmark size={14} />
+          <span>Consilium</span>
         </h2>
 
         {/* Chat button (direct) */}
@@ -642,13 +644,15 @@ export function ConsiliumHub() {
             onClick={() => handleTabChange(id)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === id
-                ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
+                ? "border border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
                 : "border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70"
             }`}
             style={{ fontFamily: "var(--font-body, Roboto, sans-serif)" }}
+            aria-label={label}
+            title={label}
           >
             <Icon size={13} />
-            {label}
+            <span className="fintheon-zen-label">{label}</span>
           </button>
         ))}
 
@@ -658,13 +662,15 @@ export function ConsiliumHub() {
             onClick={() => setSanctumDropdownOpen((v) => !v)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === "sanctum"
-                ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
+                ? "border border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
                 : "border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70"
             }`}
             style={{ fontFamily: "var(--font-body, Roboto, sans-serif)" }}
+            aria-label="Sanctum"
+            title="Sanctum"
           >
             <Zap size={13} />
-            Sanctum
+            <span className="fintheon-zen-label">Sanctum</span>
             <ChevronDown
               size={10}
               className={`opacity-50 transition-transform ${sanctumDropdownOpen ? "rotate-180" : ""}`}
@@ -688,9 +694,9 @@ export function ConsiliumHub() {
                 <button
                   key={id}
                   onClick={() => handleSanctumSubChange(id)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
+                  className={`w-full flex items-center gap-2.5 border border-transparent px-3 py-2 text-xs transition-colors ${
                     sanctumSubView === id && activeTab === "sanctum"
-                      ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
+                      ? "border border-[var(--fintheon-accent)]/22 text-[var(--fintheon-accent)]"
                       : "text-[var(--fintheon-text)]/50 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/5"
                   }`}
                   style={{
@@ -722,13 +728,15 @@ export function ConsiliumHub() {
             onClick={() => setBoardroomDropdownOpen((v) => !v)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === "boardroom"
-                ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
+                ? "border border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
                 : "border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70"
             }`}
             style={{ fontFamily: "var(--font-body, Roboto, sans-serif)" }}
+            aria-label="Imperium"
+            title="Imperium"
           >
             <Users size={13} />
-            Imperium
+            <span className="fintheon-zen-label">Imperium</span>
             {harperStatus?.loop?.alive && (
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
             )}
@@ -761,9 +769,9 @@ export function ConsiliumHub() {
                 <button
                   key={id}
                   onClick={() => handleBoardroomSubChange(id)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
+                  className={`w-full flex items-center gap-2.5 border border-transparent px-3 py-2 text-xs transition-colors ${
                     boardroomSubView === id && activeTab === "boardroom"
-                      ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
+                      ? "border border-[var(--fintheon-accent)]/22 text-[var(--fintheon-accent)]"
                       : "text-[var(--fintheon-text)]/50 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/5"
                   }`}
                   style={{
@@ -795,13 +803,15 @@ export function ConsiliumHub() {
             onClick={() => setApparatusDropdownOpen((v) => !v)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === "apparatus"
-                ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
+                ? "border border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
                 : "border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70"
             }`}
             style={{ fontFamily: "var(--font-body, Roboto, sans-serif)" }}
+            aria-label="Apparatus"
+            title="Apparatus"
           >
             <Cpu size={13} />
-            Apparatus
+            <span className="fintheon-zen-label">Apparatus</span>
             <ChevronDown
               size={10}
               className={`opacity-50 transition-transform ${apparatusDropdownOpen ? "rotate-180" : ""}`}
@@ -825,9 +835,9 @@ export function ConsiliumHub() {
                 <button
                   key={id}
                   onClick={() => handleApparatusSubChange(id)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
+                  className={`w-full flex items-center gap-2.5 border border-transparent px-3 py-2 text-xs transition-colors ${
                     apparatusSubView === id && activeTab === "apparatus"
-                      ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
+                      ? "border border-[var(--fintheon-accent)]/22 text-[var(--fintheon-accent)]"
                       : "text-[var(--fintheon-text)]/50 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/5"
                   }`}
                   style={{
@@ -927,13 +937,14 @@ export function ConsiliumHub() {
             onClick={toggleChart}
             className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
               showChart
-                ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
+                ? "border border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
                 : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
             }`}
             title={showChart ? "Hide Chart" : "Show Chart"}
+            aria-label={showChart ? "Hide Chart" : "Show Chart"}
           >
             <LineChart size={14} />
-            Chart
+            <span className="fintheon-zen-label">Chart</span>
           </button>
         )}
 
@@ -943,17 +954,18 @@ export function ConsiliumHub() {
               onClick={() => setAnalysisDropdownOpen((value) => !value)}
               className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
                 analysisDropdownOpen || showProposals || analysisResearchOpen
-                  ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
+                  ? "border border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
                   : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
               }`}
               title="Analysis"
+              aria-label="Analysis"
             >
               {showProposals || analysisResearchOpen ? (
                 <PanelRightClose size={14} />
               ) : (
                 <PanelRightOpen size={14} />
               )}
-              Analysis
+              <span className="fintheon-zen-label">Analysis</span>
               <ChevronDown size={12} />
             </button>
             {analysisDropdownOpen ? (
@@ -964,9 +976,9 @@ export function ConsiliumHub() {
                     toggleProposals();
                     setAnalysisDropdownOpen(false);
                   }}
-                  className={`flex h-8 w-full items-center justify-between rounded-[4px] px-2 text-left text-[11px] transition-colors ${
+                  className={`flex h-8 w-full items-center justify-between rounded-[4px] border border-transparent px-2 text-left text-[11px] transition-colors ${
                     showProposals
-                      ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+                      ? "border border-[var(--fintheon-accent)]/22 text-[var(--fintheon-accent)]"
                       : "text-[var(--fintheon-muted)] hover:bg-[var(--fintheon-accent)]/8 hover:text-[var(--fintheon-text)]"
                   }`}
                 >
@@ -982,9 +994,9 @@ export function ConsiliumHub() {
                     setAnalysisResearchOpen((value) => !value);
                     setAnalysisDropdownOpen(false);
                   }}
-                  className={`flex h-8 w-full items-center justify-between rounded-[4px] px-2 text-left text-[11px] transition-colors ${
+                  className={`flex h-8 w-full items-center justify-between rounded-[4px] border border-transparent px-2 text-left text-[11px] transition-colors ${
                     analysisResearchOpen
-                      ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+                      ? "border border-[var(--fintheon-accent)]/22 text-[var(--fintheon-accent)]"
                       : "text-[var(--fintheon-muted)] hover:bg-[var(--fintheon-accent)]/8 hover:text-[var(--fintheon-text)]"
                   }`}
                 >
@@ -1005,17 +1017,18 @@ export function ConsiliumHub() {
             onClick={toggleProposals}
             className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
               showProposals
-                ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
+                ? "border border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
                 : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
             }`}
             title={showProposals ? "Hide Proposals" : "Show Proposals"}
+            aria-label={showProposals ? "Hide Proposals" : "Show Proposals"}
           >
             {showProposals ? (
               <PanelRightClose size={14} />
             ) : (
               <PanelRightOpen size={14} />
             )}
-            Proposals
+            <span className="fintheon-zen-label">Proposals</span>
           </button>
         )}
       </div>

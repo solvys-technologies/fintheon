@@ -4,13 +4,13 @@ import {
   Settings,
   LogOut,
   Landmark,
-  LayoutDashboard,
+  Users,
   CalendarDays,
   GripVertical,
   BookOpenCheck,
   Bell,
   BellOff,
-  Wrench,
+  CubeFocus,
   Radio,
 } from "lucide-react";
 import { useDND } from "../../contexts/DNDContext";
@@ -62,14 +62,14 @@ const NAV_ITEMS_MAP: Record<
   >,
   {
     id: NavTab;
-    icon: typeof LayoutDashboard;
+    icon: typeof Users;
     label: string;
     description: string;
   }
 > = {
   dashboard: {
     id: "dashboard",
-    icon: LayoutDashboard,
+    icon: Users,
     label: "Desk",
     description: "KPIs, calendar, RiskFlow",
   },
@@ -334,7 +334,7 @@ export function NavSidebar({
             }`}
             title={expanded ? undefined : "Refinement Engine"}
           >
-            <Wrench className="w-4 h-4 shrink-0" />
+            <CubeFocus className="w-4 h-4 shrink-0" />
             {expanded && (
               <div className="min-w-0 text-left">
                 <div

@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+// [codex 2026-05-23] Compatibility wrapper: all legacy Braille spinners now
+// render circular dot/matrix loaders while preserving call-site props.
+import { DotMatrixLoader } from "../../icon-bank/DotMatrixLoader";
 
 interface BrailleSpinnerProps {
   size?: number;
@@ -8,72 +10,31 @@ interface BrailleSpinnerProps {
   className?: string;
 }
 
-const CLOCKWISE = [0, 1, 3, 2];
-
 export function BrailleSpinner({
-  size = 8,
-  gap = 2,
+  size = 12,
+  color = "var(--fintheon-primary, var(--fintheon-accent))",
   label,
   className,
 }: BrailleSpinnerProps) {
-  const [step, setStep] = useState(0);
-
-  useEffect(() => {
-    const id = setInterval(() => setStep((s) => (s + 1) % 4), 150);
-    return () => clearInterval(id);
-  }, []);
-
-  const active = CLOCKWISE[step];
-
   return (
-    <span
+    <DotMatrixLoader
+      variant="diagonal-scan"
+      size={Math.max(size * 1.8, 14)}
+      color={color}
+      label={label}
       className={className}
-      style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-      aria-label={label ?? "Loading"}
-    >
-      <div
-        role="status"
-        style={{
-          display: "grid",
-          gridTemplateColumns: `${size}px ${size}px`,
-          gap,
-        }}
-      >
-        {[0, 1, 2, 3].map((i) => (
-          <div
-            key={i}
-            style={{
-              width: size,
-              height: size,
-              background:
-                i === active
-                  ? "var(--fintheon-accent)"
-                  : "rgba(199,159,74,0.15)",
-            }}
-          />
-        ))}
-      </div>
-      {label ? <span style={{ fontSize: 11 }}>{label}</span> : null}
-    </span>
+    />
   );
 }
 
 export function BrailleSpinnerCentered({
-  size = 8,
-  gap = 2,
+  size = 12,
   color,
   label,
 }: BrailleSpinnerProps) {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "12px 0",
-      }}
-    >
-      <BrailleSpinner size={size} gap={gap} color={color} label={label} />
+    <div className="flex items-center justify-center py-3">
+      <BrailleSpinner size={size} color={color} label={label} />
     </div>
   );
 }

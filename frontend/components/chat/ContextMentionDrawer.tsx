@@ -5,6 +5,7 @@ import {
   fetchContextMentions,
   type ContextMention,
 } from "../../lib/context-mentions";
+import { RepoChatComposerSurface } from "./composer/RepoChatComposer";
 
 interface ContextMentionDrawerProps {
   open: boolean;
@@ -61,16 +62,7 @@ export function ContextMentionDrawer({
   }, [open, query]);
 
   return (
-    <div
-      aria-hidden={!open}
-      className={`fintheon-chat-input-drawer transition-all duration-200 ${
-        open ? "pointer-events-auto" : "pointer-events-none"
-      }`}
-      style={{
-        maxHeight: open ? "280px" : "0px",
-        opacity: open ? 1 : 0,
-      }}
-    >
+    <RepoChatComposerSurface open={open} kind="drawer">
       <div className="flex max-h-[280px] min-h-0 flex-col overflow-hidden">
         <div className="flex items-center justify-between px-3 py-2.5">
           <div className="flex items-center gap-2">
@@ -129,7 +121,7 @@ export function ContextMentionDrawer({
           ))}
         </div>
       </div>
-    </div>
+    </RepoChatComposerSurface>
   );
 }
 
