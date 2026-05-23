@@ -239,19 +239,18 @@ export function FintheonAttachPopup({
 
   return (
     <div
-      className="fintheon-chat-input-drawer transition-all duration-300"
+      aria-hidden={!open}
+      className={`fintheon-chat-input-drawer transition-all duration-300 ${
+        open ? "pointer-events-auto" : "pointer-events-none"
+      }`}
       style={{
         maxHeight: open ? "280px" : "0px",
         opacity: open ? 1 : 0,
-        marginBottom: open ? "0px" : "0px",
-        borderColor: open
-          ? "color-mix(in srgb, var(--fintheon-accent) 18%, transparent)"
-          : "transparent",
         boxShadow: open ? undefined : "none",
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--fintheon-accent)]/10">
+      <div className="flex items-center justify-between px-3 py-2">
         <span className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider">
           Attach
         </span>
@@ -264,7 +263,7 @@ export function FintheonAttachPopup({
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-[var(--fintheon-accent)]/10">
+      <div className="flex">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}

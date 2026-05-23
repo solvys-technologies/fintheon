@@ -597,7 +597,7 @@ export function ConsiliumHub() {
   const SanctumIcon = activeSanctumSub.icon;
 
   return (
-    <div className="flex h-full flex-col bg-[var(--fintheon-bg)]">
+    <div className="flex h-full flex-col bg-transparent">
       {/* Tab bar: Sanctum dropdown + regular tabs + Proposals toggle */}
       <div className="flex items-center gap-0.5 px-4 pt-3 pb-1.5">
         <h2

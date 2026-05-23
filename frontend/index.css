@@ -1903,24 +1903,56 @@ html *::-webkit-scrollbar {
   animation: fintheon-fade-in 240ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
+.fintheon-chat-composer-wrap {
+  background: transparent;
+  isolation: isolate;
+}
+
 /* Canonical chat-input drawer geometry.
-   Keep composer drawers as centered islands with visible conversation gutters;
-   do not add full-width backdrops or opaque slabs around chat input tools. */
+   Drawers live inside the composer wrapper so attachment, skills, and queue
+   panels share one width and one visual anchor. */
 .fintheon-chat-input-drawer {
-  width: min(44rem, calc(100% - clamp(8rem, 24vw, 28rem)));
+  width: min(38rem, calc(100% - 3rem));
   margin-inline: auto;
+  margin-bottom: -1px;
   overflow: hidden;
-  border-radius: 16px 16px 0 0;
+  border-radius: 14px 14px 0 0;
   background: color-mix(
     in srgb,
-    var(--fintheon-accent) 10%,
-    rgba(5, 4, 2, 0.78)
+    var(--fintheon-accent) 7%,
+    rgba(17, 16, 14, 0.46)
   );
-  border: 1px solid color-mix(in srgb, var(--fintheon-accent) 18%, transparent);
-  border-bottom: 0;
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  box-shadow: 0 -18px 48px rgba(0, 0, 0, 0.28);
+  border: 0;
+  backdrop-filter: blur(20px) saturate(1.25);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  box-shadow: none;
+}
+
+.fintheon-chat-input-drawer::before {
+  content: "";
+  display: block;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--fintheon-accent) 18%, transparent) 22%,
+    color-mix(in srgb, var(--fintheon-accent) 12%, transparent) 78%,
+    transparent
+  );
+}
+
+.fintheon-composer-input {
+  background: color-mix(
+    in srgb,
+    var(--fintheon-accent) 4%,
+    rgba(5, 4, 2, 0.38)
+  ) !important;
+}
+
+.fintheon-composer-input--drawer-open {
+  border-top-color: transparent !important;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 
 @media (max-width: 900px) {
@@ -2047,6 +2079,14 @@ html *::-webkit-scrollbar {
 .settings-pass-through textarea:focus,
 .settings-pass-through select:focus {
   border-color: color-mix(in srgb, var(--fintheon-accent) 34%, transparent) !important;
+}
+
+.fintheon-footer-surface {
+  background: color-mix(
+    in srgb,
+    var(--fintheon-surface) 22%,
+    transparent
+  ) !important;
 }
 
 [data-fintheon-surface-theme="frosted"] .fintheon-side-surface,

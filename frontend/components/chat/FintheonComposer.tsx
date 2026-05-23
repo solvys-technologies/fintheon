@@ -390,18 +390,6 @@ export function FintheonComposer({
         />
       )}
 
-      <FintheonToolboxModal
-        open={showToolboxModal}
-        onClose={() => setShowToolboxModal(false)}
-        skills={SKILLS}
-        activeSkill={activeSkill}
-        onSelectSkill={onSelectSkill}
-        disabledSkills={mergedDisabledSkills}
-        servers={servers}
-        activeIds={activeIds}
-        onToggleConnector={toggleConnector}
-      />
-
       <PromptBox
         onSend={handleSend}
         onStop={handleStop}
@@ -423,6 +411,19 @@ export function FintheonComposer({
         providerSlot={providerEl}
         personaSlot={personaEl}
         mcpSlot={toolboxEl}
+        toolboxDrawerSlot={
+          <FintheonToolboxModal
+            open={showToolboxModal}
+            onClose={() => setShowToolboxModal(false)}
+            skills={SKILLS}
+            activeSkill={activeSkill}
+            onSelectSkill={onSelectSkill}
+            disabledSkills={mergedDisabledSkills}
+            servers={servers}
+            activeIds={activeIds}
+            onToggleConnector={toggleConnector}
+          />
+        }
         toolboxOpen={showToolboxModal}
         onInputActivity={() => setShowToolboxModal(false)}
         todoSlot={todoSlot}

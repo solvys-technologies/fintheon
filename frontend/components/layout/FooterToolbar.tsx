@@ -549,7 +549,7 @@ export function FooterToolbar({
       >
         <div className="h-[280px] flex flex-col border-b border-[var(--fintheon-accent)]/10">
           {/* Panel tab bar */}
-          <div className="flex items-center gap-0 border-b border-[var(--fintheon-accent)]/10 bg-[var(--fintheon-surface)] shrink-0">
+          <div className="flex items-center gap-0 border-b border-[var(--fintheon-accent)]/10 bg-transparent shrink-0">
             <button
               onClick={() => setActiveTab("terminal")}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-colors border-b-2 ${

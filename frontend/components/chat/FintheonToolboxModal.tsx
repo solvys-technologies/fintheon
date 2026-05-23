@@ -115,14 +115,11 @@ export function FintheonToolboxModal({
       style={{
         maxHeight: open ? "280px" : "0px",
         opacity: open ? 1 : 0,
-        borderColor: open
-          ? "color-mix(in srgb, var(--fintheon-accent) 18%, transparent)"
-          : "transparent",
         boxShadow: open ? undefined : "none",
       }}
     >
       <div className="flex max-h-[280px] min-h-0 flex-col overflow-hidden">
-        <div className="flex items-center justify-between border-b border-white/[0.055] px-3 py-2.5">
+        <div className="flex items-center justify-between px-3 py-2.5">
           <div className="flex items-center gap-2">
             <Plug size={13} className="text-[#f0ead6]/48" />
             <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#f0ead6]/62">
@@ -141,7 +138,7 @@ export function FintheonToolboxModal({
           </button>
         </div>
 
-        <div className="flex border-b border-white/[0.055]">
+        <div className="flex">
           <button
             type="button"
             onClick={() => switchTab("skills")}

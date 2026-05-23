@@ -244,7 +244,7 @@ function ChatSidebarInner({
 
   return (
     <div
-      className={`relative flex h-full flex-col overflow-hidden bg-[var(--fintheon-bg)] transition-[padding-right] duration-300 ${
+      className={`relative flex h-full flex-col overflow-hidden bg-transparent transition-[padding-right] duration-300 ${
         !compact && mode === "plan" ? "md:pr-[40%]" : "md:pr-0"
       }`}
     >

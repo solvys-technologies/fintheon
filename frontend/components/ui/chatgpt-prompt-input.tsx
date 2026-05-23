@@ -16,6 +16,7 @@ import {
   type KeyboardEvent,
   type ChangeEvent,
   type ClipboardEvent,
+  type ReactNode,
 } from "react";
 import {
   ArrowUp,
@@ -114,20 +115,21 @@ export interface PromptBoxProps {
     activeSkillLabel?: string | null;
   };
   // Slots for compact toolbar controls
-  personaSlot?: React.ReactNode;
-  toolsSlot?: React.ReactNode;
-  providerSlot?: React.ReactNode;
+  personaSlot?: ReactNode;
+  toolsSlot?: ReactNode;
+  providerSlot?: ReactNode;
   // S60-T3: Modal-aware toolbox triggers (composer toolbar)
-  pluginSlot?: React.ReactNode;
-  mcpSlot?: React.ReactNode;
+  pluginSlot?: ReactNode;
+  mcpSlot?: ReactNode;
+  toolboxDrawerSlot?: ReactNode;
   toolboxOpen?: boolean;
   onInputActivity?: () => void;
   // Relay dispatch button (leftmost in action cluster). Renders either relay or disconnect.
-  relaySlot?: React.ReactNode;
+  relaySlot?: ReactNode;
   // Optional banner shown above the input while dispatched (e.g. "Chatting on iPhone").
-  dispatchBanner?: React.ReactNode;
+  dispatchBanner?: ReactNode;
   // Todo + Queue drawer toggle button
-  todoSlot?: React.ReactNode;
+  todoSlot?: ReactNode;
   // Boardroom: swap pulsing icon for newspaper RiskFlow picker
   onRiskFlowPick?: () => void;
   // Hide the reasoning selector (used in Agentic Forum where deep research is always on)
@@ -179,6 +181,7 @@ export function PromptBox({
   providerSlot,
   pluginSlot,
   mcpSlot,
+  toolboxDrawerSlot,
   toolboxOpen = false,
   onInputActivity,
   relaySlot,
@@ -203,6 +206,7 @@ export function PromptBox({
   const [slashQuery, setSlashQuery] = useState<string | null>(null);
   const [fullSizeImage, setFullSizeImage] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
+  const hasInlineDrawer = showAttach || toolboxOpen;
   // IME composition state — blocks Enter-to-send while a candidate is being composed.
   const isComposingRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -410,7 +414,7 @@ export function PromptBox({
 
   return (
     <div
-      className="pt-4 pb-4 px-4"
+      className="fintheon-chat-composer-wrap px-4 pb-4 pt-3"
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -443,6 +447,8 @@ export function PromptBox({
             {lastError}
           </div>
         )}
+
+        {toolboxDrawerSlot}
 
         {/* Attach panel */}
         <FintheonAttachPopup
@@ -550,8 +556,9 @@ export function PromptBox({
         {/* Main input container */}
         <div
           className={[
-            "relative flex flex-col rounded-2xl border",
+            "fintheon-composer-input relative flex flex-col rounded-2xl border",
             "backdrop-blur-xl",
+            hasInlineDrawer ? "fintheon-composer-input--drawer-open" : "",
             focused
               ? "border-[var(--fintheon-accent)]/55"
               : text

@@ -9,6 +9,29 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-23T15:32:00-04:00",
+    agent: "codex",
+    summary:
+      "v6.7.19 composer drawer hotfix: unified skills and attachment drawers on one anchored composer contract, removed hard black chat footer/header slabs, and softened drawer surfaces.",
+    files: [
+      "frontend/index.css",
+      "frontend/components/ui/chatgpt-prompt-input.tsx",
+      "frontend/components/chat/FintheonComposer.tsx",
+      "frontend/components/chat/FintheonToolboxModal.tsx",
+      "frontend/components/chat/FintheonAttachPopup.tsx",
+      "frontend/components/chat/ChatSidebar.tsx",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/components/layout/FooterToolbar.tsx",
+      "scripts/fintheon-update.sh",
+      "scripts/fintheon-setup.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "package.json",
+      "mobile/package.json",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-23T14:57:02-04:00",
     agent: "codex",
     summary:
