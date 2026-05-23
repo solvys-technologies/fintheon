@@ -108,7 +108,7 @@ export function FintheonProviderModal({
     >
       <div
         ref={dialogRef}
-        className="pointer-events-auto rounded-lg border border-[var(--fintheon-accent)]/15 bg-[#0a0905]"
+        className="pointer-events-auto rounded-lg bg-[#0a0905]/90 backdrop-blur-xl"
         style={{
           width: 380,
           maxWidth: "calc(100vw - 40px)",
@@ -285,8 +285,7 @@ export function FintheonProviderModal({
               padding: "4px 10px",
               background:
                 "color-mix(in srgb, var(--fintheon-accent) 12%, transparent)",
-              border:
-                "1px solid color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
+              border: "none",
               color: "var(--fintheon-accent)",
               fontFamily: "var(--font-mono)",
               fontSize: 10,
@@ -297,7 +296,6 @@ export function FintheonProviderModal({
             }}
           >
             <Settings size={10} />
-            API Settings
           </button>
         </div>
       </div>

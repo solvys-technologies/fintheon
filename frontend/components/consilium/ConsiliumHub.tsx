@@ -614,7 +614,7 @@ export function ConsiliumHub() {
             onClick={() => handleTabChange(id)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === id
-                ? "text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
+                ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
                 : "border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70"
             }`}
             style={{ fontFamily: "var(--font-body, Roboto, sans-serif)" }}
@@ -630,7 +630,7 @@ export function ConsiliumHub() {
             onClick={() => setSanctumDropdownOpen((v) => !v)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === "sanctum"
-                ? "text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
+                ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
                 : "border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70"
             }`}
             style={{ fontFamily: "var(--font-body, Roboto, sans-serif)" }}
@@ -694,7 +694,7 @@ export function ConsiliumHub() {
             onClick={() => setBoardroomDropdownOpen((v) => !v)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === "boardroom"
-                ? "text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
+                ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
                 : "border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70"
             }`}
             style={{ fontFamily: "var(--font-body, Roboto, sans-serif)" }}
@@ -767,7 +767,7 @@ export function ConsiliumHub() {
             onClick={() => setApparatusDropdownOpen((v) => !v)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === "apparatus"
-                ? "text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
+                ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
                 : "border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70"
             }`}
             style={{ fontFamily: "var(--font-body, Roboto, sans-serif)" }}
@@ -899,7 +899,7 @@ export function ConsiliumHub() {
             onClick={toggleChart}
             className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
               showChart
-                ? "text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
+                ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
                 : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
             }`}
             title={showChart ? "Hide Chart" : "Show Chart"}
@@ -913,7 +913,7 @@ export function ConsiliumHub() {
           onClick={toggleProposals}
           className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
             showProposals
-              ? "text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
+              ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
               : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
           }`}
           title={showProposals ? "Hide Proposals" : "Show Proposals"}

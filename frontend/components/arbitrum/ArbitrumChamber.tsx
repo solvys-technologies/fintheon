@@ -52,43 +52,6 @@ const AGENT_ROW_ROLES: ReadonlyArray<ArbitrumSeat["role"]> = [
 const EMPTY_COPY =
   "No fresh read — chamber convenes at 17:00 ET or on IV ≥ 8.5.";
 
-function cleanDigestText(text: string): string {
-  return text
-    .replace(
-      /\s*,?\s*conf\s+\d+(?:\.\d+)?%?(?:\s*(?:\/|out of)\s*\d+(?:\.\d+)?%?)?/gi,
-      "",
-    )
-    .replace(/\s{2,}/g, " ")
-    .trim();
-}
-
-function renderRichDigest(text: string) {
-  const cleaned = cleanDigestText(text);
-  const parts = cleaned.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
-
-  return parts.map((part, i) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      const inner = part.slice(2, -2);
-      return (
-        <strong key={i} className="font-semibold text-[var(--fintheon-accent)]">
-          {inner}
-        </strong>
-      );
-    }
-    const lines = part.split(/\n+/).filter(Boolean);
-    return (
-      <span key={i}>
-        {lines.map((line, j) => (
-          <span key={j}>
-            {j > 0 && <br />}
-            {line}
-          </span>
-        ))}
-      </span>
-    );
-  });
-}
-
 function prefersReducedMotion(): boolean {
   if (typeof window === "undefined") return false;
   return (
@@ -254,10 +217,6 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
 
   const hasVerdict = Boolean(verdict);
   const hasRealSeats = (verdict?.seats?.length ?? 0) > 0;
-  const chamberSummary = verdict?.digest_text
-    ? cleanDigestText(verdict.digest_text)
-    : "";
-
   return (
     <div className="relative flex flex-col min-h-0 min-w-0 gap-2.5">
       {/* Header: title + instrument dropdown + phase badge only */}
@@ -293,38 +252,30 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
           </span>
         </div>
       </div>
-      <div className="flex flex-col md:flex-row md:items-stretch md:overflow-x-auto">
+      <div className="grid grid-cols-1 gap-0 md:grid-cols-4">
         {agentRowSeats.map((seat, i) => (
           <div
             key={`${verdict?.id ?? "empty"}-${seat.role}-${i}`}
-            className="contents"
+            className="min-w-0"
           >
             {i > 0 && (
-              <>
-                <FadingRuler className="my-1 md:hidden" />
-                <FadingRuler
-                  orientation="vertical"
-                  className="mx-1 hidden md:block"
-                />
-              </>
+              <FadingRuler className="my-1 md:hidden" />
             )}
-            <div className="flex-1 min-w-0">
-              {hasRealSeats ? (
-                <SeatCard
-                  seat={seat}
-                  index={i}
-                  visible={revealed[i] ?? false}
-                  isSummaryOpen={openSummaryRoles.includes(seat.role)}
-                  onOpenSummary={() => openAgentSummary(seat.role)}
-                />
-              ) : (
-                <EmptySeat
-                  role={seat.role}
-                  index={i}
-                  visible={revealed[i] ?? false}
-                />
-              )}
-            </div>
+            {hasRealSeats ? (
+              <SeatCard
+                seat={seat}
+                index={i}
+                visible={revealed[i] ?? false}
+                isSummaryOpen={openSummaryRoles.includes(seat.role)}
+                onOpenSummary={() => openAgentSummary(seat.role)}
+              />
+            ) : (
+              <EmptySeat
+                role={seat.role}
+                index={i}
+                visible={revealed[i] ?? false}
+              />
+            )}
           </div>
         ))}
       </div>
@@ -339,12 +290,6 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
       {/* Consensus sits directly under the seat row; digest follows it. */}
       {hasVerdict && (
         <VerdictCard verdict={verdict as ArbitrumVerdict} compact embedded />
-      )}
-
-      {chamberSummary && (
-        <div className="text-[11px] text-[var(--fintheon-text)]/62 leading-relaxed px-1">
-          {renderRichDigest(verdict!.digest_text)}
-        </div>
       )}
 
       {!hasVerdict && (

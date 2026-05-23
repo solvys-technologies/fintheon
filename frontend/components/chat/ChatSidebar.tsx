@@ -10,7 +10,6 @@ import {
   useThreadRuntime,
 } from "@assistant-ui/react";
 import { X } from "lucide-react";
-import { ListTodo } from "lucide-react";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 import { useHermesRuntime } from "./useHermesRuntime";
 import { FintheonThread } from "./FintheonThread";
@@ -100,7 +99,7 @@ function ChatSidebarInner({
 
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
   const [showSkills, setShowSkills] = useState(false);
-  const [showTodoDrawer, setShowTodoDrawer] = useState(false);
+  const [showWorkDrawer, setShowWorkDrawer] = useState(false);
   const [hasChatStarted, setHasChatStarted] = useState(false);
   const [toasts, setToasts] = useState<SidebarToast[]>([]);
   const toastTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
@@ -172,7 +171,8 @@ function ChatSidebarInner({
     sendAll,
   } = useMessageQueue({ isRunning, sendNow });
 
-  const { todos, addTodo, toggleTodo, removeTodo } = useTodoList();
+  const { todos, toggleTodo, removeTodo } = useTodoList();
+  const hasWorkDrawerContent = todos.length > 0 || queue.length > 0;
 
   const handleSend = useCallback(
     (msg: string) => {
@@ -189,6 +189,10 @@ function ChatSidebarInner({
   useEffect(() => {
     if (threadMessages.length > 0) setHasChatStarted(true);
   }, [threadMessages.length]);
+
+  useEffect(() => {
+    setShowWorkDrawer(hasWorkDrawerContent);
+  }, [hasWorkDrawerContent, queue.length, todos.length]);
 
   // Listen for toolbar events dispatched from ConsiliumHub icons
   useEffect(() => {
@@ -272,6 +276,7 @@ function ChatSidebarInner({
         lastRequestId={lastRequestId}
         compact={compact}
         hasSubmittedMessage={hasChatStarted}
+        scrollButtonOffset={showWorkDrawer && hasWorkDrawerContent ? 430 : 116}
       />
       {/* Agent cognition — only in compact/sidebar mode (FintheonThread handles it in full chat) */}
       {compact && lastRequestId && isRunning && (
@@ -281,10 +286,9 @@ function ChatSidebarInner({
       )}
       <div className="relative z-20 shrink-0">
         <TodoDrawer
-          isOpen={showTodoDrawer}
-          onClose={() => setShowTodoDrawer(false)}
+          isOpen={showWorkDrawer && hasWorkDrawerContent}
+          onClose={() => setShowWorkDrawer(false)}
           todos={todos}
-          onAddTodo={addTodo}
           onToggleTodo={toggleTodo}
           onRemoveTodo={removeTodo}
           queue={queue}
@@ -315,20 +319,6 @@ function ChatSidebarInner({
         onQueueMessage={addQueue}
         queueCount={queue.length}
         onMessageSubmitted={() => setHasChatStarted(true)}
-        todoSlot={
-          <button
-            onClick={() => setShowTodoDrawer((v) => !v)}
-            className={`flex items-center justify-center rounded-lg transition-colors ${
-              showTodoDrawer
-                ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
-                : "text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
-            }`}
-            style={{ width: "32px", height: "32px" }}
-            title={showTodoDrawer ? "Close workspace" : "To-Do & Queue"}
-          >
-            <ListTodo size={15} />
-          </button>
-        }
       />
 
       <aside

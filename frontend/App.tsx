@@ -127,13 +127,15 @@ function AuthGate() {
   const { isAuthenticated, isLoading, signIn } = useAuth();
   const [initComplete, setInitComplete] = useState(false);
   const [showSplash] = useState(() => isColdStart());
+  const authBypass = import.meta.env.VITE_BYPASS_AUTH === "true";
+  const canEnterApp = isAuthenticated || authBypass;
 
   const handleInitReady = useCallback(() => {
     setInitComplete(true);
   }, []);
 
   // Run headless init once authenticated
-  useAppInit(isAuthenticated, handleInitReady);
+  useAppInit(canEnterApp, handleInitReady);
 
   if (isLoading) {
     return (
@@ -155,7 +157,7 @@ function AuthGate() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!canEnterApp) {
     return <AuthShell onSignIn={signIn} isLoading={isLoading} />;
   }
 

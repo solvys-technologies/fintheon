@@ -1,6 +1,6 @@
 // [codex 2026-05-23] Unified skills + connectors popup for the composer toolbox.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Check, Plug, Search, X } from "lucide-react";
+import { AlertTriangle, Check, FileText, Plug, Search, X } from "lucide-react";
 import type { SkillDef } from "../../lib/skills";
 import type { McpServerConfig, McpServerId } from "../../types/mcp";
 
@@ -14,6 +14,8 @@ interface FintheonToolboxModalProps {
   servers: McpServerConfig[];
   activeIds: McpServerId[];
   onToggleConnector: (id: McpServerId, enabled: boolean) => void;
+  mode?: "work" | "plan";
+  onModeChange?: (mode: "work" | "plan") => void;
 }
 
 function ConnectorToggle({
@@ -58,6 +60,8 @@ export function FintheonToolboxModal({
   servers,
   activeIds,
   onToggleConnector,
+  mode = "work",
+  onModeChange,
 }: FintheonToolboxModalProps) {
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -109,6 +113,9 @@ export function FintheonToolboxModal({
     );
   }, [query, servers]);
 
+  const activeConnectors = servers.filter((server) => activeIds.includes(server.id));
+  const activeSkillDef = skills.find((skill) => skill.id === activeSkill);
+
   if (!open) return null;
 
   return (
@@ -116,11 +123,19 @@ export function FintheonToolboxModal({
       role="dialog"
       aria-modal="true"
       aria-label="Skills and connectors"
-      className="fixed inset-0 z-[80] flex items-end justify-center p-4 pointer-events-none"
+      className="fixed inset-0 z-[80] flex items-start justify-center px-4 pt-16 pointer-events-none"
     >
       <div
         ref={dialogRef}
-        className="pointer-events-auto flex max-h-[66vh] w-[560px] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-lg border border-[var(--fintheon-accent)]/15 bg-[#0a0905]"
+        className="pointer-events-auto flex max-h-[72vh] w-[680px] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-b-2xl rounded-t-md"
+        style={{
+          background:
+            "color-mix(in srgb, var(--fintheon-accent) 9%, rgba(5,4,2,0.82))",
+          border: "1px solid color-mix(in srgb, var(--fintheon-accent) 18%, transparent)",
+          backdropFilter: "blur(24px) saturate(1.25)",
+          WebkitBackdropFilter: "blur(24px) saturate(1.25)",
+          boxShadow: "0 24px 70px rgba(0,0,0,0.36)",
+        }}
       >
         <div className="flex items-center justify-between border-b border-[var(--fintheon-accent)]/10 px-3 py-2">
           <div className="flex items-center gap-2">
@@ -142,7 +157,7 @@ export function FintheonToolboxModal({
         </div>
 
         <div className="border-b border-[var(--fintheon-accent)]/10 p-2">
-          <div className="flex items-center gap-2 border border-[var(--fintheon-accent)]/10 bg-[#050402] px-2 py-1.5">
+          <div className="flex items-center gap-2 bg-[#050402]/55 px-2 py-1.5">
             <Search size={11} className="text-[var(--fintheon-text)]/30" />
             <input
               ref={inputRef}
@@ -152,11 +167,36 @@ export function FintheonToolboxModal({
               className="flex-1 bg-transparent text-[11px] text-[var(--fintheon-text)] outline-none placeholder:text-[var(--fintheon-text)]/25"
             />
           </div>
+          {onModeChange && (
+            <div className="mt-2 flex items-center justify-between gap-3 px-1">
+              <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-[var(--fintheon-text)]/42">
+                <FileText size={11} className="text-[var(--fintheon-accent)]/65" />
+                Plan Mode
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={mode === "plan"}
+                onClick={() => onModeChange(mode === "plan" ? "work" : "plan")}
+                className={`relative h-5 w-9 rounded-full transition-colors ${
+                  mode === "plan"
+                    ? "bg-[var(--fintheon-accent)]"
+                    : "bg-[var(--fintheon-text)]/12"
+                }`}
+              >
+                <span
+                  className={`absolute top-1 h-3 w-3 rounded-full bg-[#050402] transition-transform ${
+                    mode === "plan" ? "translate-x-5" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto md:grid-cols-2">
           <section className="border-b border-[var(--fintheon-accent)]/10 md:border-b-0 md:border-r md:border-[var(--fintheon-accent)]/10">
-            <div className="sticky top-0 bg-[#0a0905] px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--fintheon-text)]/30">
+            <div className="sticky top-0 bg-[#0a0905]/80 backdrop-blur px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--fintheon-text)]/30">
               Skills
             </div>
             {filteredSkills.map((skill) => {
@@ -206,7 +246,7 @@ export function FintheonToolboxModal({
           </section>
 
           <section>
-            <div className="sticky top-0 bg-[#0a0905] px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--fintheon-text)]/30">
+            <div className="sticky top-0 bg-[#0a0905]/80 backdrop-blur px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--fintheon-text)]/30">
               Connectors
             </div>
             {filteredServers.map((server) => {
@@ -245,6 +285,28 @@ export function FintheonToolboxModal({
             })}
           </section>
         </div>
+        {(activeSkillDef || activeConnectors.length > 0 || mode === "plan") && (
+          <footer className="flex min-h-10 flex-wrap items-center gap-1.5 border-t border-[var(--fintheon-accent)]/10 px-3 py-2">
+            {mode === "plan" && (
+              <span className="rounded-sm bg-[var(--fintheon-accent)]/10 px-2 py-1 text-[9px] uppercase tracking-[0.12em] text-[var(--fintheon-accent)]">
+                Plan mode
+              </span>
+            )}
+            {activeSkillDef && (
+              <span className="rounded-sm bg-[var(--fintheon-accent)]/10 px-2 py-1 text-[9px] uppercase tracking-[0.12em] text-[var(--fintheon-accent)]">
+                {activeSkillDef.label}
+              </span>
+            )}
+            {activeConnectors.map((server) => (
+              <span
+                key={server.id}
+                className="rounded-sm bg-[var(--fintheon-text)]/8 px-2 py-1 text-[9px] uppercase tracking-[0.12em] text-[var(--fintheon-text)]/55"
+              >
+                {server.name}
+              </span>
+            ))}
+          </footer>
+        )}
       </div>
     </div>
   );

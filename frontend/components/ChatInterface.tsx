@@ -1,7 +1,6 @@
 // [claude-code 2026-03-29] S9-T5: Replace checkpoint sidebar with real conversation history, Take Note button
 // [claude-code 2026-03-28] S8-T7: Dual-pane layout (left=conversation, right=artifacts) for Chat
 import { useState, useRef, useCallback, useEffect } from "react";
-import { ListTodo } from "lucide-react";
 import {
   AssistantRuntimeProvider,
   useThread,
@@ -91,7 +90,7 @@ function ChatInterfaceInner({
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Todo list state — persisted to localStorage
-  const { todos, addTodo, toggleTodo, removeTodo } = useTodoList();
+  const { todos, toggleTodo, removeTodo } = useTodoList();
 
   const sendNow = useCallback(
     (msg: string) => {
@@ -113,6 +112,7 @@ function ChatInterfaceInner({
     isRunning,
     sendNow,
   });
+  const hasWorkDrawerContent = todos.length > 0 || queue.length > 0;
 
   const handleSend = useCallback(
     (msg: string) => {
@@ -144,6 +144,10 @@ function ChatInterfaceInner({
   useEffect(() => {
     if (threadMessages.length > 0) setHasChatStarted(true);
   }, [threadMessages.length]);
+
+  useEffect(() => {
+    setShowTodoDrawer(hasWorkDrawerContent);
+  }, [hasWorkDrawerContent, queue.length, todos.length]);
 
   useEffect(() => {
     try {
@@ -255,14 +259,14 @@ function ChatInterfaceInner({
             citations={citations}
             onPinCitation={handlePinCitation}
             pinnedCitationIndex={pinnedCitationIndex}
+            scrollButtonOffset={showTodoDrawer && hasWorkDrawerContent ? 430 : 116}
           />
           {/* Todo + Queue drawer — slides up from above composer */}
           <div className="relative z-20 shrink-0">
             <TodoDrawer
-              isOpen={showTodoDrawer}
+              isOpen={showTodoDrawer && hasWorkDrawerContent}
               onClose={() => setShowTodoDrawer(false)}
               todos={todos}
-              onAddTodo={addTodo}
               onToggleTodo={toggleTodo}
               onRemoveTodo={removeTodo}
               queue={queue}
@@ -303,20 +307,6 @@ function ChatInterfaceInner({
               onQueueMessage={addQueue}
               queueCount={queue.length}
               onMessageSubmitted={() => setHasChatStarted(true)}
-              todoSlot={
-                <button
-                  onClick={() => setShowTodoDrawer((v) => !v)}
-                  className={`flex items-center justify-center rounded-lg transition-colors ${
-                    showTodoDrawer
-                      ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
-                      : "text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
-                  }`}
-                  style={{ width: "32px", height: "32px" }}
-                  title={showTodoDrawer ? "Close workspace" : "To-Do & Queue"}
-                >
-                  <ListTodo size={15} />
-                </button>
-              }
             />
           </div>
         </div>

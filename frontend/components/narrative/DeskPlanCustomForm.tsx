@@ -67,7 +67,7 @@ export function DeskPlanCustomForm({
 
   return (
     <span className="relative inline-flex items-center gap-1">
-      <span className="inline-flex items-center gap-1 rounded border border-white/8 px-1 py-0.5">
+      <span className="inline-flex items-center gap-1 rounded px-1 py-0.5">
         <Filter className="w-3 h-3 text-[var(--fintheon-accent)]/70" />
         <select
           value={selectedCountry}
@@ -89,7 +89,7 @@ export function DeskPlanCustomForm({
       <button
         type="button"
         onClick={() => setIsOpen((value) => !value)}
-        className="inline-flex h-5 w-5 items-center justify-center rounded border border-white/10 text-[var(--fintheon-accent)]/80 transition-colors hover:text-[var(--fintheon-accent)]"
+        className="inline-flex h-5 w-5 items-center justify-center rounded text-[var(--fintheon-accent)]/80 transition-colors hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
         aria-label="Add desk plan"
         title="Add desk plan"
       >

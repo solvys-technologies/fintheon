@@ -9,7 +9,7 @@
 // [claude-code 2026-05-06] S60-T3: provider modal and toolbox wired to composer toolbar
 import { useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import { useThread, useThreadRuntime } from "@assistant-ui/react";
-import { Plug } from "lucide-react";
+import { Plug, ServerCog } from "lucide-react";
 import { PromptBox } from "../ui/chatgpt-prompt-input";
 import { SKILL_PREFIXES } from "../../lib/skillPrefixes";
 import { SKILLS } from "../../lib/skills";
@@ -342,16 +342,16 @@ export function FintheonComposer({
   const providerEl = (
     <button
       onClick={() => setShowProviderModal(true)}
-      className={`flex items-center gap-1.5 rounded-lg border transition-colors ${
+      className={`flex items-center gap-1.5 rounded-lg transition-colors hover:bg-[var(--fintheon-accent)]/10 ${
         compact ? "px-1.5" : "px-2"
       }`}
       style={{
-        borderColor: "rgba(199, 159, 74, 0.2)",
         color: "#f0ead6",
         height: "28px",
       }}
       title={`Provider: ${currentProvider}`}
     >
+      <ServerCog size={14} className="text-[var(--fintheon-accent)]/70" />
       {!compact && (
         <span
           style={{
@@ -472,6 +472,8 @@ export function FintheonComposer({
         servers={servers}
         activeIds={activeIds}
         onToggleConnector={toggleConnector}
+        mode={composerMode}
+        onModeChange={setComposerMode}
       />
     </>
   );

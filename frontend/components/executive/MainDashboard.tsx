@@ -442,24 +442,26 @@ export function MainDashboard({
                 </div>
 
                 {/* Right: Day Plan (50%) — bare DayCard, day-of-week header, Risk Signals */}
-                <div className="flex-1 min-w-0 min-h-0 p-4 flex flex-col overflow-hidden">
-                  <KanbanTitle
-                    title={new Date().toLocaleDateString("en-US", {
-                      weekday: "long",
-                    })}
-                    tone="gold"
-                    headerRight={
-                      <DeskPlanAdvanceButton
-                        isLoading={deskPlanAdvancing}
-                        onClick={advanceDeskPlan}
-                      />
-                    }
-                  />
-                  <div className="mt-2 shrink-0 pr-1 relative">
-                    <DayCard bare showStreakInHeader />
+                <div className="grid flex-1 min-w-0 min-h-0 grid-rows-2 gap-4 overflow-hidden p-4">
+                  <div className="flex min-h-0 flex-col overflow-hidden">
+                    <KanbanTitle
+                      title={new Date().toLocaleDateString("en-US", {
+                        weekday: "long",
+                      })}
+                      tone="gold"
+                      headerRight={
+                        <DeskPlanAdvanceButton
+                          isLoading={deskPlanAdvancing}
+                          onClick={advanceDeskPlan}
+                        />
+                      }
+                    />
+                    <div className="mt-2 min-h-0 flex-1 overflow-y-auto pr-1 relative">
+                      <DayCard bare showStreakInHeader />
+                    </div>
                   </div>
 
-                  <div className="mt-4 flex-1 min-h-0 flex flex-col">
+                  <div className="flex min-h-0 flex-col overflow-hidden">
                     <KanbanTitle
                       title="Risk Signals"
                       tone="gold"

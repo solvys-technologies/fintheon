@@ -12,7 +12,7 @@ import { useStreak } from "../../hooks/useStreak";
 import { useDriftStatus } from "../../hooks/useDriftStatus";
 import { useLockout } from "../../hooks/useLockout";
 import { useSettings } from "../../contexts/SettingsContext";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { FadingRuler } from "../shared/FadingRuler";
 import { AgenticFeedbackControls } from "../shared/AgenticFeedbackControls";
 import { StreakBadge } from "../streak/StreakBadge";
@@ -152,6 +152,7 @@ export function DayCard({
   const [shimmering, setShimmering] = useState(false);
   const [showStreakPopup, setShowStreakPopup] = useState(false);
   const [countryFilter, setCountryFilter] = useState("ALL");
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
   const autoLockKeyRef = useRef<string | null>(null);
 
   const plan = multiWeekPlan ?? todayData;
@@ -213,6 +214,14 @@ export function DayCard({
     lockoutState.locked && lockoutState.remaining
       ? `${Math.round(lockoutState.remaining / 60)}m left`
       : undefined;
+  const toggleExpandedRow = (key: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!lockoutAutoBlockOutsideTradingWindow) {
@@ -355,6 +364,7 @@ export function DayCard({
                 ? "rgba(199, 159, 74, 0.9)"
                 : "var(--fintheon-muted, #908774)",
               border: `1px solid ${lockoutState.locked ? "rgba(199, 159, 74, 0.3)" : "rgba(255, 255, 255, 0.08)"}`,
+              borderColor: "transparent",
               background: "transparent",
             }}
           >
@@ -432,16 +442,22 @@ export function DayCard({
           planDate={plan?.date}
           window={currentWindow}
           loading={isLoading}
-          renderValue={(f) => `${f.miss.description} (${f.miss.probability}%)`}
+          renderValue={(f) => `${f.miss.probability}%`}
           scenario={currentWindow?.econForecast?.miss}
+          expanded={expandedRows.has("miss")}
+          onToggle={() => toggleExpandedRow("miss")}
+          detail={(f) => f.miss.description}
         />
         <GatedForecastRow
           label="Beat"
           planDate={plan?.date}
           window={currentWindow}
           loading={isLoading}
-          renderValue={(f) => `${f.beat.description} (${f.beat.probability}%)`}
+          renderValue={(f) => `${f.beat.probability}%`}
           scenario={currentWindow?.econForecast?.beat}
+          expanded={expandedRows.has("beat")}
+          onToggle={() => toggleExpandedRow("beat")}
+          detail={(f) => f.beat.description}
         />
         {currentWindow?.econForecast?.otherNotableEvents &&
           currentWindow.econForecast.otherNotableEvents.length > 0 && (
@@ -452,12 +468,14 @@ export function DayCard({
           />
         )}
         <GatedForecastRow
-          label="AI Prediction"
+          label="Thesis"
           planDate={plan?.date}
           window={currentWindow}
           loading={isLoading}
-          renderValue={(f) => f.aiPrediction}
-          textLine
+          renderValue={() => "View thesis"}
+          expanded={expandedRows.has("thesis")}
+          onToggle={() => toggleExpandedRow("thesis")}
+          detail={(f) => f.aiPrediction}
         />
       </dl>
 
@@ -604,7 +622,9 @@ function GatedForecastRow({
   loading,
   renderValue,
   scenario,
-  textLine,
+  expanded,
+  onToggle,
+  detail,
 }: {
   label: string;
   planDate?: string | null;
@@ -612,7 +632,9 @@ function GatedForecastRow({
   loading: boolean;
   renderValue: (f: NonNullable<DayPlanWindow["econForecast"]>) => string;
   scenario?: { isBullishForEquities: boolean } | null;
-  textLine?: boolean;
+  expanded?: boolean;
+  onToggle?: () => void;
+  detail?: (f: NonNullable<DayPlanWindow["econForecast"]>) => string;
 }) {
   if (loading || !window) {
     return (
@@ -626,16 +648,30 @@ function GatedForecastRow({
       : "bearish"
     : "neutral";
 
-  return (
+  const hasDetail = Boolean(detail && window.econForecast);
+  const rowContent = (
     <div className="flex items-baseline gap-3">
       <dt
-        className="text-[11px]"
+        className="flex items-center gap-1 text-[11px]"
         style={{
           color: "var(--fintheon-muted, #908774)",
           fontFamily: "var(--font-body)",
           letterSpacing: "0.02em",
         }}
       >
+        {hasDetail && (
+          <ChevronDown
+            className={`h-3 w-3 transition-transform ${expanded ? "" : "-rotate-90"}`}
+            style={{
+              color:
+                tone === "bullish"
+                  ? "var(--fintheon-bullish)"
+                  : tone === "bearish"
+                    ? "var(--fintheon-bearish)"
+                    : "var(--fintheon-accent)",
+            }}
+          />
+        )}
         {label}
       </dt>
       <span
@@ -653,7 +689,6 @@ function GatedForecastRow({
         style={{
           fontFamily: "var(--font-data, monospace)",
           letterSpacing: "0.01em",
-          maxWidth: textLine ? "280px" : undefined,
         }}
       >
         <PriceRevealTag planDate={planDate} windowStartTime={window.startTime}>
@@ -674,9 +709,7 @@ function GatedForecastRow({
                     bullish={tone === "bullish"}
                   />
                 )}
-                <span className={textLine ? "text-[11px] leading-snug inline-block" : ""}>
-                  {renderValue(window.econForecast)}
-                </span>
+                <span>{renderValue(window.econForecast)}</span>
               </span>
             ) : (
               "\u2014"
@@ -684,6 +717,38 @@ function GatedForecastRow({
           </span>
         </PriceRevealTag>
       </dd>
+    </div>
+  );
+
+  if (!hasDetail) return rowContent;
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full text-left transition-colors hover:bg-[var(--fintheon-accent)]/[0.035]"
+      >
+        {rowContent}
+      </button>
+      {expanded && window.econForecast && (
+        <div
+          className="ml-4 mt-1 rounded-sm px-3 py-2 text-[11px] leading-relaxed"
+          style={{
+            color:
+              tone === "bullish"
+                ? "var(--fintheon-bullish)"
+                : tone === "bearish"
+                  ? "var(--fintheon-bearish)"
+                  : "var(--fintheon-text)",
+            background:
+              "color-mix(in srgb, var(--fintheon-accent) 5%, transparent)",
+            fontFamily: "var(--font-body)",
+          }}
+        >
+          {detail?.(window.econForecast)}
+        </div>
+      )}
     </div>
   );
 }

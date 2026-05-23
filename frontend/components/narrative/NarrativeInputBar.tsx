@@ -131,7 +131,19 @@ export function NarrativeInputBar({
     <div className={wrapperClass}>
       <div className={shellClass}>
         {queue.length > 0 ? (
-          <div className="pointer-events-auto mb-2 rounded-lg border border-[var(--fintheon-accent)]/12 bg-[#070604] px-3 py-2">
+          <div
+            className="pointer-events-auto mx-auto w-[calc(100%-24px)] max-w-[44rem] overflow-hidden rounded-t-2xl px-3 py-2"
+            style={{
+              background:
+                "color-mix(in srgb, var(--fintheon-accent) 10%, rgba(5,4,2,0.78))",
+              border:
+                "1px solid color-mix(in srgb, var(--fintheon-accent) 18%, transparent)",
+              borderBottom: "none",
+              backdropFilter: "blur(24px) saturate(1.25)",
+              WebkitBackdropFilter: "blur(24px) saturate(1.25)",
+              boxShadow: "0 -18px 48px rgba(0,0,0,0.28)",
+            }}
+          >
             <MessageQueue
               queue={queue}
               onEdit={onEditQueue}
@@ -160,7 +172,9 @@ export function NarrativeInputBar({
           }`}
           style={{
             background:
-              focused || query ? "rgba(13,12,9,0.98)" : "transparent",
+              focused || query
+                ? "rgba(13,12,9,0.92)"
+                : "rgba(5,4,2,0.18)",
           }}
         >
           {attachedHeadlines.length > 0 ? (

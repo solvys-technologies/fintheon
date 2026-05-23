@@ -51,7 +51,8 @@ function hasVisibleAssistantText(msg: any): boolean {
 
 const ScrollToBottomButton: FC<{
   containerRef: RefObject<HTMLElement | null>;
-}> = ({ containerRef }) => {
+  bottomOffset?: number;
+}> = ({ containerRef, bottomOffset = 116 }) => {
   const [showButton, setShowButton] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -86,12 +87,17 @@ const ScrollToBottomButton: FC<{
       {showButton && (
         <button
           onClick={scrollToBottom}
-          className="scroll-to-bottom-btn fixed z-30 flex items-center justify-center rounded-full border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-surface)] text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
+          className="scroll-to-bottom-btn fixed left-1/2 z-30 flex -translate-x-1/2 items-center justify-center rounded-full text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
           style={{
             width: "36px",
             height: "36px",
-            bottom: "96px",
-            right: "24px",
+            bottom: `${bottomOffset}px`,
+            background:
+              "color-mix(in srgb, var(--fintheon-accent) 9%, rgba(5,4,2,0.78))",
+            border:
+              "1px solid color-mix(in srgb, var(--fintheon-accent) 22%, transparent)",
+            backdropFilter: "blur(18px)",
+            WebkitBackdropFilter: "blur(18px)",
           }}
           title="Scroll to bottom"
         >
@@ -130,6 +136,7 @@ interface FintheonThreadProps {
   citations?: Citation[];
   onPinCitation?: (citation: Citation) => void;
   pinnedCitationIndex?: number;
+  scrollButtonOffset?: number;
 }
 
 export function FintheonThread({
@@ -145,6 +152,7 @@ export function FintheonThread({
   citations = [],
   onPinCitation,
   pinnedCitationIndex,
+  scrollButtonOffset,
 }: FintheonThreadProps) {
   const { activeAgent } = useFintheonAgents();
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -240,7 +248,10 @@ export function FintheonThread({
             </div>
           )}
 
-          <ScrollToBottomButton containerRef={viewportRef} />
+          <ScrollToBottomButton
+            containerRef={viewportRef}
+            bottomOffset={scrollButtonOffset}
+          />
         </div>
       </ThreadPrimitive.Viewport>
     </ThreadPrimitive.Root>

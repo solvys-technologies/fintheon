@@ -1,18 +1,13 @@
 import { useState } from "react";
 import { Mic, MicOff, PhoneOff, Radio, Users, Volume2, VolumeOff, Zap } from "lucide-react";
 import { useProxVoice } from "../../contexts/ProxVoiceContext";
-import { useRiskFlow } from "../../contexts/RiskFlowContext";
-import { timeAgo } from "../../lib/time-utils";
 import { DraggableProfilePopup } from "./DraggableProfilePopup";
+import { RiskSignalCards } from "../narrative/RiskSignalCards";
 import type { ProxVoiceProfile } from "../../lib/services";
 
 export function ProxVoiceForum() {
   const voice = useProxVoice();
-  const { alerts } = useRiskFlow();
   const [profile, setProfile] = useState<ProxVoiceProfile | null>(null);
-  const signals = alerts
-    .filter((alert) => (alert.ivScore ?? 0) >= 7 || alert.isBreaking)
-    .slice(0, 12);
 
   return (
     <div className="flex h-full flex-col bg-[var(--fintheon-bg)] text-[var(--fintheon-text)] fintheon-fade-in">
@@ -42,15 +37,12 @@ export function ProxVoiceForum() {
         </div>
       </header>
       <main className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden p-4 lg:grid-cols-[1fr_320px]">
-        <section className="relative min-h-0 overflow-y-auto rounded-md bg-[var(--fintheon-surface)] p-4 pb-24">
+        <section className="relative min-h-0 overflow-y-auto rounded-md p-4 pb-24">
           <div className="fintheon-fade-divider mb-4 flex items-center justify-between gap-2 pb-1 text-xs text-[var(--fintheon-text)]/55">
             <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-[var(--fintheon-accent)]" />
               <span>Floor Audience</span>
             </div>
-            <span className="font-mono text-[var(--fintheon-accent)]">
-              {voice.participants.length} Traders Listening
-            </span>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {voice.participants.map((participant) => (
@@ -145,33 +137,15 @@ export function ProxVoiceForum() {
             </button>
           </div>
         </section>
-        <aside className="min-h-0 overflow-hidden rounded-md bg-[var(--fintheon-surface)]">
+        <aside className="min-h-0 overflow-hidden rounded-md">
           <div className="fintheon-fade-divider flex items-center gap-2 px-3 py-2 text-[var(--fintheon-accent)]">
             <Zap className="h-3.5 w-3.5" />
             <span className="text-[10px] font-semibold uppercase tracking-[0.18em]">
               Risk Signals
             </span>
           </div>
-          <div className="flex snap-x gap-3 overflow-x-auto p-3 lg:block lg:space-y-2 lg:overflow-y-auto">
-            {signals.map((alert) => (
-              <article
-                key={alert.id}
-                className="fintheon-fade-in min-w-[260px] snap-start rounded-md bg-[var(--fintheon-bg)] p-3 transition-opacity duration-200 hover:opacity-85 lg:min-w-0"
-              >
-                <div className="flex items-center justify-between text-[10px] text-[var(--fintheon-accent)]/70">
-                  <span className="inline-flex items-center gap-2">
-                    <span className="iv-fuse"><span style={{ height: 3 }} /><span style={{ height: 6 }} /><span style={{ height: 8 }} /></span>
-                    IV {(alert.ivScore ?? 0).toFixed(1)}
-                  </span>
-                  <span className="text-[var(--fintheon-text)]/35">
-                    {timeAgo(alert.publishedAt)}
-                  </span>
-                </div>
-                <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-[var(--fintheon-text)]/75">
-                  {alert.headline}
-                </p>
-              </article>
-            ))}
+          <div className="h-[calc(100%-2.5rem)] overflow-y-auto p-3">
+            <RiskSignalCards compact />
           </div>
         </aside>
       </main>

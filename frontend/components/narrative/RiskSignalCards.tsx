@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronDown, ChevronRight, Loader2, ShieldAlert } from "lucide-react";
 import { FadingRuler } from "../shared/FadingRuler";
 import { AgenticFeedbackControls } from "../shared/AgenticFeedbackControls";
+import { NothingFuse } from "../shared/NothingFuse";
 import {
   emptyCachedSignals,
   formatAge,
@@ -216,15 +217,30 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
                 >
                   {signal.title}
                 </span>
-                <span className="shrink-0 text-right font-mono leading-tight">
-                  <span
-                    className="block text-[9px]"
-                    style={{ color: directionColor }}
-                  >
-                    [{direction}] {driftLabel}
-                  </span>
-                  <span className="block text-[8px] text-[var(--fintheon-muted)]/50">
-                    Confidence: {signal.score.toFixed(1)}
+                <span className="flex shrink-0 items-center gap-2 text-right font-mono leading-tight">
+                  <ChevronRight
+                    className="h-3 w-3"
+                    style={{
+                      color: directionColor,
+                      transform:
+                        direction === "BULLISH"
+                          ? "rotate(-90deg)"
+                          : direction === "BEARISH"
+                            ? "rotate(90deg)"
+                            : "rotate(0deg)",
+                    }}
+                  />
+                  <span className="w-16">
+                    <span className="mb-1 flex items-center justify-between gap-1 text-[8px] text-[var(--fintheon-muted)]/50">
+                      <span>{driftLabel}</span>
+                      <span>{signal.score.toFixed(1)}</span>
+                    </span>
+                    <NothingFuse
+                      value={Math.max(0, Math.min(1, signal.score / 10))}
+                      score={signal.score}
+                      thickness={2}
+                      segments={5}
+                    />
                   </span>
                 </span>
               </div>

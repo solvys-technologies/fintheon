@@ -1,10 +1,9 @@
 // [claude-code 2026-05-20] SOL-62: Todo + Queue drawer sliding up from composer
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import {
   X,
   ChevronDown,
   ChevronRight,
-  Plus,
   CheckSquare,
   Square,
   ListTodo,
@@ -16,7 +15,6 @@ interface TodoDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   todos: TodoItem[];
-  onAddTodo: (text: string) => void;
   onToggleTodo: (id: string) => void;
   onRemoveTodo: (id: string) => void;
   queue: QueuedMessage[];
@@ -31,7 +29,6 @@ export function TodoDrawer({
   isOpen,
   onClose,
   todos,
-  onAddTodo,
   onToggleTodo,
   onRemoveTodo,
   queue,
@@ -43,41 +40,38 @@ export function TodoDrawer({
 }: TodoDrawerProps) {
   const [todoOpen, setTodoOpen] = useState(true);
   const [queueOpen, setQueueOpen] = useState(true);
-  const [newTodoText, setNewTodoText] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      const t = setTimeout(() => inputRef.current?.focus(), 230);
-      return () => clearTimeout(t);
-    }
-  }, [isOpen]);
-
-  const handleAddTodo = () => {
-    const text = newTodoText.trim();
-    if (!text) return;
-    onAddTodo(text);
-    setNewTodoText("");
-  };
+  const hasTodos = todos.length > 0;
+  const hasQueue = queue.length > 0;
 
   const pendingTodos = todos.filter((t) => !t.done);
   const doneTodos = todos.filter((t) => t.done);
 
   return (
     <div
-      className="w-4/5 mx-auto overflow-hidden"
+      className="mx-auto w-[calc(100%-32px)] max-w-[44rem] overflow-hidden"
       style={{
-        maxHeight: isOpen ? "400px" : "0",
+        maxHeight: isOpen ? "340px" : "0",
         transition: "max-height 220ms cubic-bezier(0.4, 0, 0.2, 1)",
       }}
     >
-      <div className="border border-[var(--fintheon-accent)]/15 rounded-t-xl bg-[var(--fintheon-bg)] overflow-hidden">
+      <div
+        className="overflow-hidden rounded-t-2xl"
+        style={{
+          background:
+            "color-mix(in srgb, var(--fintheon-accent) 10%, rgba(5,4,2,0.76))",
+          border: "1px solid color-mix(in srgb, var(--fintheon-accent) 18%, transparent)",
+          borderBottom: "none",
+          backdropFilter: "blur(24px) saturate(1.25)",
+          WebkitBackdropFilter: "blur(24px) saturate(1.25)",
+          boxShadow: "0 -18px 48px rgba(0,0,0,0.28)",
+        }}
+      >
         {/* Drawer header */}
         <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--fintheon-accent)]/10">
           <div className="flex items-center gap-2">
             <ListTodo size={13} className="text-[var(--fintheon-accent)]" />
             <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--fintheon-accent)]">
-              Workspace
+              Active Work
             </span>
           </div>
           <button
@@ -90,8 +84,9 @@ export function TodoDrawer({
         </div>
 
         {/* Scrollable body */}
-        <div className="overflow-y-auto" style={{ maxHeight: "340px" }}>
+        <div className="overflow-y-auto" style={{ maxHeight: "286px" }}>
           {/* ── To-Do section ─────────────────────────────────────────── */}
+          {hasTodos && (
           <div className="border-b border-[var(--fintheon-accent)]/8">
             <button
               onClick={() => setTodoOpen((v) => !v)}
@@ -160,35 +155,13 @@ export function TodoDrawer({
                   </div>
                 ))}
 
-                {/* Add new todo */}
-                <div className="flex items-center gap-2 px-3 pt-1">
-                  <Plus size={11} className="shrink-0 text-[var(--fintheon-accent)]/35" />
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={newTodoText}
-                    onChange={(e) => setNewTodoText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleAddTodo();
-                      if (e.key === "Escape") setNewTodoText("");
-                    }}
-                    placeholder="Add item..."
-                    className="flex-1 text-[12px] bg-transparent text-[var(--fintheon-text)]/60 placeholder:text-[var(--fintheon-text)]/20 focus:outline-none"
-                  />
-                  {newTodoText.trim() && (
-                    <button
-                      onClick={handleAddTodo}
-                      className="text-[10px] text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] transition-colors"
-                    >
-                      Add
-                    </button>
-                  )}
-                </div>
               </div>
             )}
           </div>
+          )}
 
           {/* ── Queue section ─────────────────────────────────────────── */}
+          {hasQueue && (
           <div>
             <button
               onClick={() => setQueueOpen((v) => !v)}
@@ -211,23 +184,18 @@ export function TodoDrawer({
 
             {queueOpen && (
               <div className="px-3 pb-3">
-                {queue.length === 0 ? (
-                  <p className="text-[11px] text-[var(--fintheon-text)]/20 py-1 pl-4">
-                    No queued messages
-                  </p>
-                ) : (
-                  <MessageQueue
-                    queue={queue}
-                    onEdit={onEditQueue}
-                    onRemove={onRemoveQueue}
-                    onReorder={onReorderQueue}
-                    onSendOne={onSendQueueOne}
-                    onSendAll={onSendQueueAll}
-                  />
-                )}
+                <MessageQueue
+                  queue={queue}
+                  onEdit={onEditQueue}
+                  onRemove={onRemoveQueue}
+                  onReorder={onReorderQueue}
+                  onSendOne={onSendQueueOne}
+                  onSendAll={onSendQueueAll}
+                />
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
     </div>

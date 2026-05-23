@@ -9,6 +9,56 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-23T06:35:00-04:00",
+    agent: "codex",
+    summary:
+      "Settings pass-through polish: flattened settings cards into fading-divider rows, moved Blocker controls into Trading, added reorderable settings tiles with fixed Danger Zone placement, restored variable color controls and named saved themes with frosted/liquid glass presets, compressed large profile avatars client-side, and hardened backend settings merge persistence for cross-surface theme sync.",
+    files: [
+      "frontend/components/SettingsPanel.tsx",
+      "frontend/components/settings/ProfileSettingsSection.tsx",
+      "frontend/components/settings/GeneralTab.tsx",
+      "frontend/components/settings/TradingTab.tsx",
+      "frontend/components/settings/ThemeSettings.tsx",
+      "frontend/contexts/ThemeContext.tsx",
+      "frontend/lib/theme.ts",
+      "frontend/index.css",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/layout/NavSidebar.tsx",
+      "frontend/components/layout/FooterToolbar.tsx",
+      "backend-hono/src/services/settings-store.ts",
+      "backend-hono/migrations/046_user_theme_settings.sql",
+      "supabase/migrations/20260523103000_user_theme_settings.sql",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-23T02:20:00-04:00",
+    agent: "codex",
+    summary:
+      "Consilium surface polish: narrowed the chat work drawers into frosted composer-attached panels, removed manual to-do and queue toggles, moved the jump-to-bottom affordance above active drawers, converted the toolbox/provider/attachment popups to cleaner drawer styling, made desk plan miss/beat/thesis rows expandable across surfaces, tightened Arbitrum's single-synthesis chamber layout, and brought Forum risk signals back onto the shared Risk Signals card system.",
+    files: [
+      "frontend/App.tsx",
+      "frontend/components/ChatInterface.tsx",
+      "frontend/components/chat/ChatSidebar.tsx",
+      "frontend/components/chat/FintheonAttachPopup.tsx",
+      "frontend/components/chat/FintheonComposer.tsx",
+      "frontend/components/chat/FintheonProviderModal.tsx",
+      "frontend/components/chat/FintheonThread.tsx",
+      "frontend/components/chat/FintheonToolboxModal.tsx",
+      "frontend/components/chat/TodoDrawer.tsx",
+      "frontend/components/chat/hooks/useTodoList.ts",
+      "frontend/components/arbitrum/ArbitrumChamber.tsx",
+      "frontend/components/arbitrum/ChamberSeats.tsx",
+      "frontend/components/executive/MainDashboard.tsx",
+      "frontend/components/narrative/DayCard.tsx",
+      "frontend/components/narrative/DeskPlanCustomForm.tsx",
+      "frontend/components/narrative/RiskSignalCards.tsx",
+      "frontend/components/proxvoice/ProxVoiceForum.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-23T01:15:00-04:00",
     agent: "codex",
     summary:
