@@ -9,6 +9,8 @@ export interface NarrativeHeadlineOption {
   source: string;
   severity: string;
   publishedAt: string;
+  ivScore?: number;
+  macroLevel?: number;
   symbols: string[];
   tags: string[];
   narrativeThreads: string[];

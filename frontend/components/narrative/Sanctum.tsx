@@ -40,8 +40,6 @@ import { BlendedIVForecastCard } from "./BlendedIVForecastCard";
 import { DayCard } from "./DayCard";
 import { RiskSignalCards } from "./RiskSignalCards";
 import { useIVScoreData } from "./useIVScoreData";
-import { useThemes } from "../../hooks/useThemes";
-import { NarrativeCanvas } from "./NarrativeCanvas";
 // [claude-code 2026-04-24] S35-T3: swap AgentDeskDebatePanel -> ArbitrumChamber
 // [claude-code 2026-05-01] S56 Track B: removed ArbitrumRiskSignals from Sanctum
 //   (moved to Dashboard right rail, bottom slot now shows SanctumBriefing)
@@ -89,8 +87,6 @@ export function Sanctum({
   revisionChecking,
 }: SanctumProps) {
   const { data: ivData, isLoading: ivLoading } = useIVScoreData();
-  const { themes: flowThemes, isLoading: flowThemesLoading } = useThemes();
-
   // Guardrailed 5-day rolling window — no user toggle
   const rollingDays = 5 as const;
   const [running, setRunning] = useState(false);
@@ -199,7 +195,7 @@ export function Sanctum({
   // All pages always render — preset controls which page scrolls into focus
   const showPage = useCallback((_pageIdx: number) => true, []);
 
-  const visiblePages = [0, 1, 2, 3].filter(showPage);
+  const visiblePages = [0, 1, 2].filter(showPage);
 
   const displayContext = data?.contextSnapshot ?? macroContext ?? null;
 
@@ -427,16 +423,6 @@ export function Sanctum({
             </div>
           )}
 
-          {/* ── Page 3: Narrative Flow ── */}
-          {showPage(3) && (
-            <div
-              data-aud-page="3"
-              className="min-h-full snap-start flex flex-col"
-              style={{ animation: "sanctum-fade-in 0.35s ease-out" }}
-            >
-              <NarrativeCanvas themes={flowThemes} isLoading={flowThemesLoading} />
-            </div>
-          )}
         </div>
 
         {/* [claude-code 2026-04-25] S38: Persistent right-half chart panel — pinned across

@@ -36,11 +36,6 @@ import {
   ClipboardList,
   Zap,
   Lock,
-  LockOpen,
-  Sun,
-  Sunset,
-  Moon,
-  ArrowRight,
 } from "lucide-react";
 import { WhatsNewButton } from "../onboarding/FirstTimeTour";
 import { StickyBulletin } from "../StickyBulletin";
@@ -51,7 +46,7 @@ import type { IVScoreResponse } from "../../types/market-data";
 import type { TradingPlatform } from "../TradingBrowser";
 import { useDND } from "../../contexts/DNDContext";
 import { useServerNotifications } from "../../contexts/NotificationsContext";
-import { useLockout } from "../../hooks/useLockout";
+import { usePlatformBlocker } from "../../hooks/usePlatformBlocker";
 import { ToolbarDnD } from "./ToolbarDnD";
 
 type NavTab =
@@ -142,7 +137,6 @@ export function TopHeader({
     traderName,
     alertConfig,
     proposerIframeSources,
-    lockoutDefaultDuration,
   } = useSettings();
   const { addToast } = useToast();
   const instanceName =
@@ -175,8 +169,6 @@ export function TopHeader({
   // [claude-code 2026-04-29] S53-T3: Econ watch health moved to FooterToolbar (S55)
   const totalBadgeCount = queueCount + serverUnread;
   const [quickClockPulse, setQuickClockPulse] = useState(false);
-  const [customLockoutMin, setCustomLockoutMin] = useState("");
-  const customLockoutRef = useRef<HTMLInputElement>(null);
   const shouldShowLeftPanelToggle = !topStepXEnabled && compactLevel < 2;
   const shouldShowRightPanelToggle = !(
     topStepXEnabled && layoutOption === "tickers-only"
@@ -199,11 +191,31 @@ export function TopHeader({
     } catch {}
   }, []);
   const {
-    state: lockoutState,
-    lock: lockoutLock,
-    unlock: lockoutUnlock,
-    lockUntilDeskSession: lockoutDeskSession,
-  } = useLockout();
+    state: platformBlockerState,
+    blockTargetInApp,
+    unblockInApp,
+  } = usePlatformBlocker(selectedPlatform);
+  const handleQuickPlatformBlock = useCallback(async () => {
+    const result = platformBlockerState.activeForTarget
+      ? await unblockInApp()
+      : await blockTargetInApp();
+    if (result.ok) {
+      addToast(
+        platformBlockerState.activeForTarget
+          ? "In-app blocker cleared"
+          : `Blocked ${platformBlockerState.target?.label ?? "platform"} in-app`,
+        "success",
+      );
+      return;
+    }
+    addToast(result.reason ?? "Blocker update failed", "error");
+  }, [
+    addToast,
+    blockTargetInApp,
+    platformBlockerState.activeForTarget,
+    platformBlockerState.target?.label,
+    unblockInApp,
+  ]);
   useEffect(() => {
     setToolbarOrderState(getToolbarOrder());
   }, []);
@@ -554,33 +566,31 @@ export function TopHeader({
               )}
               {compactLevel < 2 && <FadingRuler orientation="vertical" className="mx-0.5" />}
               {compactLevel < 2 && (
-                <LockDropdown
-                  locked={lockoutState.locked}
-                  remaining={lockoutState.remaining}
-                  onLock={(minutes, anchor) => {
-                    if (anchor) {
-                      // Lock via briefing anchor
-                      fetch(`${(import.meta.env.VITE_API_URL || "http://localhost:8080").replace(/\/$/, "")}/api/lockout/toggle`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ locked: true, briefingAnchor: anchor }),
-                      }).catch(() => {});
-                    } else if (minutes) {
-                      lockoutLock(minutes);
-                    } else {
-                      lockoutLock(lockoutDefaultDuration);
+                <button
+                  onClick={handleQuickPlatformBlock}
+                  disabled={platformBlockerState.loading || !platformBlockerState.target}
+                  className={`toolbar-icon-btn ${
+                    platformBlockerState.activeForTarget ? "toolbar-active" : ""
+                  }`}
+                  title={
+                    platformBlockerState.activeForTarget
+                      ? `Unblock ${platformBlockerState.target?.label ?? "platform"} in-app`
+                      : `Block ${platformBlockerState.target?.label ?? "selected platform"} in-app`
+                  }
+                >
+                  <Lock
+                    className={`w-3 h-3 ${
+                      platformBlockerState.activeForTarget
+                        ? "toolbar-icon-active"
+                        : ""
+                    }`}
+                    style={
+                      platformBlockerState.activeForTarget
+                        ? activeIconStyle("#ef4444")
+                        : undefined
                     }
-                  }}
-                  onLockNextDeskPlan={() => {
-                    void lockoutDeskSession();
-                  }}
-                  onUnlock={lockoutUnlock}
-                />
-              )}
-              {compactLevel < 2 && lockoutState.locked && lockoutState.remaining != null && (
-                <span className="text-[9px] text-gray-500 tracking-[0.07em] tabular-nums">
-                  {formatLockoutRemaining(lockoutState.remaining)}
-                </span>
+                  />
+                </button>
               )}
             </div>
           )}
@@ -819,154 +829,5 @@ export function TopHeader({
       </div>
       {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
     </div>
-  );
-}
-
-function formatLockoutRemaining(seconds: number | null): string {
-  if (seconds == null || seconds <= 0) return "0m left";
-  const d = Math.floor(seconds / 86400);
-  const h = Math.floor((seconds % 86400) / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const parts: string[] = [];
-  if (d > 0) parts.push(`${d}d`);
-  if (h > 0) parts.push(`${h}h`);
-  parts.push(`${m}m left`);
-  return parts.join(" ");
-}
-
-const LOCK_OPTIONS: Array<{
-  anchor?: "mdb" | "adb" | "pmdb";
-  nextDeskPlan?: boolean;
-  label: string;
-  description: string;
-  icon: React.ReactNode;
-}> = [
-  { anchor: "mdb", label: "Morning", description: "Until MDB briefing (6:30 AM ET)", icon: <Sun className="w-3 h-3" /> },
-  { anchor: "adb", label: "Afternoon", description: "Until ADB briefing (10:45 AM ET)", icon: <Sunset className="w-3 h-3" /> },
-  { anchor: "pmdb", label: "Afterhours", description: "Until PMDB briefing (5:15 PM ET)", icon: <Moon className="w-3 h-3" /> },
-  { nextDeskPlan: true, label: "Next Desk Plan", description: "Until next scheduled desk plan window", icon: <ArrowRight className="w-3 h-3" /> },
-];
-
-function LockDropdown({
-  locked,
-  remaining,
-  onLock,
-  onLockNextDeskPlan,
-  onUnlock,
-}: {
-  locked: boolean;
-  remaining: number | null;
-  onLock: (minutes?: number, anchor?: string) => void;
-  onLockNextDeskPlan: () => void;
-  onUnlock: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (
-        open &&
-        !triggerRef.current?.contains(e.target as Node) &&
-        !dropdownRef.current?.contains(e.target as Node)
-      ) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
-
-  useEffect(() => {
-    if (!open || !triggerRef.current) {
-      setPos(null);
-      return;
-    }
-    const rect = triggerRef.current.getBoundingClientRect();
-    const dropdownW = 240;
-    let left = rect.right - dropdownW;
-    if (left < 8) left = 8;
-    setPos({ top: rect.bottom + 6, left });
-  }, [open]);
-
-  const handleUnlock = () => {
-    onUnlock();
-    setOpen(false);
-  };
-
-  const handleLockOption = (option: (typeof LOCK_OPTIONS)[number]) => {
-    if (option.anchor) {
-      onLock(undefined, option.anchor);
-    } else if (option.nextDeskPlan) {
-      onLockNextDeskPlan();
-    } else {
-      onLock(undefined, undefined);
-    }
-    setOpen(false);
-  };
-
-  if (locked) {
-    return (
-      <button
-        ref={triggerRef}
-        onClick={handleUnlock}
-        className={`toolbar-icon-btn toolbar-active`}
-        title="Unlock"
-      >
-        <Lock className="w-3 h-3 toolbar-icon-active" />
-      </button>
-    );
-  }
-
-  return (
-    <>
-      <button
-        ref={triggerRef}
-        onClick={() => setOpen(!open)}
-        className="toolbar-icon-btn"
-        title="Lock options"
-      >
-        <LockOpen className="w-3 h-3" />
-      </button>
-      {open &&
-        pos &&
-        createPortal(
-          <div
-            ref={dropdownRef}
-            style={{
-              position: "fixed",
-              top: pos.top,
-              left: pos.left,
-              zIndex: 9999,
-            }}
-            className="w-[240px] bg-[rgba(10,9,5,0.72)] backdrop-blur-[18px] saturate-[1.08] border border-[rgba(199,159,74,0.14)] rounded-lg overflow-hidden animate-dropdown-enter"
-          >
-            {LOCK_OPTIONS.map((opt, i) => (
-              <div key={opt.label}>
-                {i > 0 && <FadingRuler />}
-                <button
-                  onClick={() => handleLockOption(opt)}
-                  className="w-full px-4 py-3 text-left hover:bg-[rgba(199,159,74,0.05)] transition-colors flex items-start gap-3"
-                >
-                  <div className="mt-0.5 text-[var(--fintheon-accent)]/60">
-                    {opt.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium text-[var(--fintheon-accent)]">
-                      {opt.label}
-                    </div>
-                    <div className="text-[10px] text-gray-500 mt-0.5">
-                      {opt.description}
-                    </div>
-                  </div>
-                </button>
-              </div>
-            ))}
-          </div>,
-          document.body,
-        )}
-    </>
   );
 }

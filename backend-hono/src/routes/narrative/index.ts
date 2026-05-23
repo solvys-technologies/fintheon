@@ -12,6 +12,8 @@ import {
 } from "./handlers.js";
 import { clusterSummary } from "./cluster-summary.js";
 import { createNarrativeSensemaking } from "./sensemaking.js";
+import { createNarrativeClassificationRoutes } from "./classification.js";
+import { createNarrativeSessionRoutes } from "./sessions/index.js";
 import {
   acceptNarrativeHypothesis,
   createNarrativeResearchTask,
@@ -25,6 +27,8 @@ export function createNarrativeRoutes(): Hono {
   const app = new Hono();
   app.get("/threads", getThreads);
   app.get("/card-links", getCardLinks);
+  app.route("/sessions", createNarrativeSessionRoutes());
+  app.route("/classification", createNarrativeClassificationRoutes());
   app.get("/orchestra", getNarrativeOrchestra);
   app.post("/sensemaking", createNarrativeSensemaking);
   app.post("/orchestra/:hypothesisId/accept", acceptNarrativeHypothesis);

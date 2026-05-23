@@ -139,6 +139,7 @@ contextBridge.exposeInMainWorld("electron", {
   blocker: {
     enable: () => ipcRenderer.invoke("blocker:enable"),
     enableFast: () => ipcRenderer.invoke("blocker:enable-fast"),
+    disableFast: () => ipcRenderer.invoke("blocker:disable-fast"),
     disable: () => ipcRenderer.invoke("blocker:disable"),
     getStatus: () => ipcRenderer.invoke("blocker:status"),
     getDomains: () => ipcRenderer.invoke("blocker:get-domains"),

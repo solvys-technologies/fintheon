@@ -1,21 +1,30 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
-import { GitBranch, LayoutDashboard, PanelLeftOpen } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import type { ZoomLevel } from "../../lib/narrative-types";
 import type { Theme } from "../../hooks/useThemes";
-import { NarrativeCatalystDrawer } from "./NarrativeCatalystDrawer";
+import {
+  createNarrativeSession,
+  fetchNarrativeSession,
+  fetchNarrativeSessions,
+  refineNarrativeSession,
+  updateNarrativeSession,
+  type CreateNarrativeSessionPayload,
+} from "../../lib/narrative-session-api";
+import { useNarrativeSituationMap } from "../../hooks/useNarrativeSituationMap";
+import { NarrativeFlowLanding } from "./NarrativeFlowLanding";
 import { NarrativeMermaidView } from "./NarrativeMermaidView";
 import { NarrativeSensemakingComposer } from "./NarrativeSensemakingComposer";
-import { NarrativeSensemakingDetail } from "./NarrativeSensemakingDetail";
+import { NarrativeSessionWorkspace, type NarrativeWorkspaceSession } from "./NarrativeSessionWorkspace";
 import { NarrativeSensemakingMap } from "./NarrativeSensemakingMap";
+import type { NarrativeSessionSummary } from "./NarrativeSessionHistory";
+import {
+  NarrativeSituationOverlay,
+  NarrativeWorkspaceTopBar,
+} from "./NarrativeWorkspaceChrome";
 import type {
-  NarrativeHeadlineOption,
   SensemakingOrientation,
   SensemakingRenderMode,
   SensemakingResponse,
 } from "./sensemaking-types";
-
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 interface NarrativeCanvasProps {
   zoomLevel?: ZoomLevel;
@@ -25,31 +34,32 @@ interface NarrativeCanvasProps {
 }
 
 export function NarrativeCanvas({ themes, isLoading = false }: NarrativeCanvasProps) {
-  const [headlines, setHeadlines] = useState<NarrativeHeadlineOption[]>([]);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [query, setQuery] = useState("");
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sessions, setSessions] = useState<NarrativeSessionSummary[]>([]);
+  const [activeSession, setActiveSession] = useState<NarrativeWorkspaceSession | null>(null);
   const [orientation, setOrientation] = useState<SensemakingOrientation>("horizontal");
   const [renderMode, setRenderMode] = useState<SensemakingRenderMode>("flow");
   const [response, setResponse] = useState<SensemakingResponse | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [feedLoading, setFeedLoading] = useState(true);
+  const [workspaceQuery, setWorkspaceQuery] = useState("");
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
+  const [isSituationOpen, setIsSituationOpen] = useState(false);
+  const situation = useNarrativeSituationMap(isSituationOpen ? undefined : null);
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_BASE}/api/riskflow/feed?limit=120&minMacroLevel=1`)
-      .then((res) => (res.ok ? res.json() : { items: [] }))
-      .then((data) => {
+    fetchNarrativeSessions()
+      .then((items) => {
         if (cancelled) return;
-        setHeadlines(mapRiskFlowItems(data.items ?? []));
+        setSessions(items);
       })
-      .catch(() => {
-        if (!cancelled) setHeadlines([]);
-      })
-      .finally(() => {
-        if (!cancelled) setFeedLoading(false);
+      .catch((err) => {
+        if (!cancelled) {
+          setSessions([]);
+          setValidationMessage(
+            err instanceof Error ? err.message : "Narrative sessions failed to load.",
+          );
+        }
       });
     return () => {
       cancelled = true;
@@ -60,84 +70,145 @@ export function NarrativeCanvas({ themes, isLoading = false }: NarrativeCanvasPr
     setSelectedNodeId(response?.timelineNodes[0]?.id ?? null);
   }, [response]);
 
-  const attachedHeadlines = useMemo(
-    () => headlines.filter((item) => selectedIds.has(item.id)),
-    [headlines, selectedIds],
-  );
-
-  const toggleHeadline = useCallback((headline: NarrativeHeadlineOption) => {
-    setSelectedIds((current) => {
-      const next = new Set(current);
-      if (next.has(headline.id)) next.delete(headline.id);
-      else next.add(headline.id);
-      return next;
-    });
-    setValidationMessage(null);
-  }, []);
-
-  const removeHeadline = useCallback((id: string) => {
-    setSelectedIds((current) => {
-      const next = new Set(current);
-      next.delete(id);
-      return next;
-    });
-  }, []);
-
-  const submitSensemaking = useCallback(async () => {
-    if (selectedIds.size === 0) {
-      setValidationMessage("Attach at least one RiskFlow headline before building a narrative.");
-      setDrawerOpen(true);
+  const handleCreateSession = useCallback(async (payload: CreateNarrativeSessionPayload) => {
+    if (payload.catalystIds.length < 3) {
+      setValidationMessage("[SELECT 3 CATALYSTS]");
       return;
     }
 
     setIsSubmitting(true);
     setValidationMessage(null);
     try {
-      const res = await fetch(`${API_BASE}/api/narrative/sensemaking`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query,
-          attachedHeadlineIds: Array.from(selectedIds),
-          orientation,
-          renderMode,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? `Sensemaking ${res.status}`);
-      setResponse(data as SensemakingResponse);
+      const bundle = await createNarrativeSession(payload);
+      setActiveSession(bundle.session);
+      setResponse(bundle.response);
+      setSessions((current) => [toSummary(bundle.session, payload.catalystIds.length), ...current]);
     } catch (err) {
       setValidationMessage(
-        err instanceof Error ? err.message : "Narrative sensemaking failed.",
+        err instanceof Error ? err.message : "Narrative session failed.",
       );
     } finally {
       setIsSubmitting(false);
     }
-  }, [orientation, query, renderMode, selectedIds]);
+  }, []);
+
+  const handleOpenSession = useCallback(async (id: string) => {
+    setIsSubmitting(true);
+    setValidationMessage(null);
+    try {
+      const bundle = await fetchNarrativeSession(id);
+      setActiveSession(bundle.session);
+      setResponse(bundle.response);
+    } catch (err) {
+      setValidationMessage(err instanceof Error ? err.message : "Narrative session failed.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, []);
+
+  const handleRenameSession = useCallback(async (id: string, title: string, color: string) => {
+    setSessions((current) =>
+      current.map((session) => (session.id === id ? { ...session, title, color } : session)),
+    );
+    if (activeSession?.id === id) {
+      setActiveSession((session) => (session ? { ...session, title, color } : session));
+    }
+    try {
+      const bundle = await updateNarrativeSession({ id, title, color });
+      setActiveSession(bundle.session);
+      setResponse(bundle.response);
+    } catch (err) {
+      setValidationMessage(err instanceof Error ? err.message : "Narrative rename failed.");
+    }
+  }, [activeSession?.id]);
+
+  const handleWorkspaceRequest = useCallback(async () => {
+    const sessionId = activeSession?.id;
+    const catalystIds = activeSession?.catalystIds ?? [];
+    if (!sessionId || catalystIds.length === 0) {
+      setValidationMessage("This narrative does not have persisted catalysts yet.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setValidationMessage(null);
+    try {
+      const nextResponse = await refineNarrativeSession({
+        sessionId,
+        query: workspaceQuery,
+        catalystIds,
+        orientation,
+        renderMode,
+      });
+      setResponse(nextResponse);
+      setActiveSession((session) =>
+        session
+          ? {
+              ...session,
+              synthesis: nextResponse.synthesisSummary,
+              report: nextResponse.forecast?.rationale ?? nextResponse.synthesisSummary,
+              generatedAt: nextResponse.generatedAt,
+            }
+          : session,
+      );
+      setWorkspaceQuery("");
+    } catch (err) {
+      setValidationMessage(err instanceof Error ? err.message : "Narrative request failed.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [activeSession?.catalystIds, activeSession?.id, orientation, renderMode, workspaceQuery]);
+
+  const workspaceHeadlines = response
+    ? [...response.anchorCatalysts, ...response.relatedCatalysts].map((item) => ({
+        id: item.id,
+        headline: item.headline,
+        summary: item.summary,
+        source: item.source,
+        severity: item.category,
+        publishedAt: item.publishedAt,
+        ivScore: item.ivScore,
+        symbols: item.symbols,
+        tags: item.tags,
+        narrativeThreads: item.narrativeThreads,
+      }))
+    : [];
 
   return (
     <div className="relative h-full min-h-0 flex-1 overflow-hidden bg-[var(--fintheon-bg)]">
-      <NarrativeCatalystDrawer
-        open={drawerOpen}
-        headlines={headlines}
-        relatedCatalysts={response?.relatedCatalysts ?? []}
-        selectedIds={selectedIds}
-        isLoading={feedLoading || isLoading}
-        onClose={() => setDrawerOpen(false)}
-        onToggle={toggleHeadline}
-      />
-
-      <div className="flex h-full min-h-0">
-        <main className="relative min-w-0 flex-1">
-          <TopBar
+      {!activeSession ? (
+        <NarrativeFlowLanding
+          sessions={sessions}
+          isSubmitting={isSubmitting || isLoading}
+          statusMessage={validationMessage}
+          onCreateSession={handleCreateSession}
+          onOpenSession={handleOpenSession}
+          onRenameSession={handleRenameSession}
+        />
+      ) : (
+        <NarrativeSessionWorkspace
+          session={activeSession}
+          response={response}
+          selectedNodeId={selectedNodeId}
+          onSelectNode={setSelectedNodeId}
+          onRename={(title) =>
+            activeSession.id && handleRenameSession(activeSession.id, title, activeSession.color ?? "#c79f4a")
+          }
+        >
+          <NarrativeWorkspaceTopBar
             themes={themes.length}
             orientation={orientation}
             renderMode={renderMode}
-            onOpenDrawer={() => setDrawerOpen(true)}
+            onBack={() => {
+              setActiveSession(null);
+              setResponse(null);
+              setIsSituationOpen(false);
+            }}
+            onOpenSituation={() => setIsSituationOpen(true)}
             onOrientationChange={setOrientation}
             onRenderModeChange={setRenderMode}
           />
-          <div className="absolute inset-x-0 bottom-[132px] top-[50px]">
+          <div className="absolute inset-x-0 bottom-0 top-[50px]">
             {renderMode === "mermaid" && response ? (
               <NarrativeMermaidView source={response.mermaidSource} />
             ) : (
@@ -149,126 +220,40 @@ export function NarrativeCanvas({ themes, isLoading = false }: NarrativeCanvasPr
               />
             )}
           </div>
-
           <NarrativeSensemakingComposer
-            query={query}
-            attachedHeadlines={attachedHeadlines}
+            query={workspaceQuery}
+            attachedHeadlines={workspaceHeadlines}
             isSubmitting={isSubmitting}
             validationMessage={validationMessage}
-            onQueryChange={setQuery}
-            onOpenDrawer={() => setDrawerOpen(true)}
-            onRemoveHeadline={removeHeadline}
-            onSubmit={submitSensemaking}
+            submitLabel="Ask"
+            attachLabel="Catalysts"
+            onQueryChange={setWorkspaceQuery}
+            onOpenDrawer={() => setValidationMessage("Use Sessions to refine the catalyst set.")}
+            onRemoveHeadline={() => setValidationMessage("Catalyst refinement is saved from Sessions.")}
+            onSubmit={handleWorkspaceRequest}
           />
-        </main>
+        </NarrativeSessionWorkspace>
+      )}
 
-        <NarrativeSensemakingDetail
-          response={response}
-          selectedNodeId={selectedNodeId}
-        />
-      </div>
+      <NarrativeSituationOverlay
+        isOpen={isSituationOpen}
+        situation={situation}
+        onClose={() => setIsSituationOpen(false)}
+      />
     </div>
   );
 }
 
-function TopBar({
-  themes,
-  orientation,
-  renderMode,
-  onOpenDrawer,
-  onOrientationChange,
-  onRenderModeChange,
-}: {
-  themes: number;
-  orientation: SensemakingOrientation;
-  renderMode: SensemakingRenderMode;
-  onOpenDrawer: () => void;
-  onOrientationChange: (value: SensemakingOrientation) => void;
-  onRenderModeChange: (value: SensemakingRenderMode) => void;
-}) {
-  return (
-    <div className="absolute inset-x-0 top-0 z-10 flex h-[50px] items-center justify-between border-b border-[var(--fintheon-accent)]/10 bg-[var(--fintheon-bg)]/90 px-3 backdrop-blur-xl">
-      <button
-        type="button"
-        onClick={onOpenDrawer}
-        className="inline-flex h-8 items-center gap-2 rounded-md border border-[var(--fintheon-accent)]/15 px-3 text-xs text-[var(--fintheon-muted)] transition hover:border-[var(--fintheon-accent)]/35 hover:text-[var(--fintheon-accent)]"
-      >
-        <PanelLeftOpen size={14} />
-        Catalysts
-      </button>
-
-      <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-[var(--fintheon-muted)]">
-        <GitBranch size={13} />
-        <span>{themes} themes indexed</span>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <Segmented
-          value={orientation}
-          options={[
-            ["horizontal", "Left to Right"],
-            ["vertical", "Top Down"],
-          ]}
-          onChange={(value) => onOrientationChange(value as SensemakingOrientation)}
-        />
-        <Segmented
-          value={renderMode}
-          options={[
-            ["flow", "Map"],
-            ["mermaid", "Mermaid"],
-          ]}
-          onChange={(value) => onRenderModeChange(value as SensemakingRenderMode)}
-          icon={<LayoutDashboard size={12} />}
-        />
-      </div>
-    </div>
-  );
-}
-
-function Segmented({
-  value,
-  options,
-  onChange,
-  icon,
-}: {
-  value: string;
-  options: [string, string][];
-  onChange: (value: string) => void;
-  icon?: ReactNode;
-}) {
-  return (
-    <div className="inline-flex items-center gap-1 rounded-md border border-[var(--fintheon-accent)]/12 bg-[var(--fintheon-surface)]/55 p-1">
-      {icon}
-      {options.map(([id, label]) => (
-        <button
-          key={id}
-          type="button"
-          onClick={() => onChange(id)}
-          className={`rounded px-2 py-1 text-[10px] uppercase tracking-[0.12em] transition ${
-            value === id
-              ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]"
-              : "text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]"
-          }`}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function mapRiskFlowItems(items: Array<Record<string, unknown>>): NarrativeHeadlineOption[] {
-  return items.map((item) => ({
-    id: String(item.id ?? item.tweet_id ?? ""),
-    headline: String(item.headline ?? item.title ?? "Untitled headline"),
-    summary: String(item.body ?? item.summary ?? item.content ?? ""),
-    source: String(item.source ?? "RiskFlow"),
-    severity: String(item.severity ?? item.impact ?? "medium"),
-    publishedAt: String(item.publishedAt ?? item.published_at ?? new Date().toISOString()),
-    symbols: Array.isArray(item.symbols) ? item.symbols.map(String) : [],
-    tags: Array.isArray(item.tags) ? item.tags.map(String) : [],
-    narrativeThreads: Array.isArray(item.narrativeThreads)
-      ? item.narrativeThreads.map(String)
-      : [],
-  }));
+function toSummary(
+  session: NarrativeWorkspaceSession,
+  catalystCount: number,
+): NarrativeSessionSummary {
+  return {
+    id: session.id ?? "new-session",
+    title: session.title ?? "Untitled narrative",
+    updatedAt: session.generatedAt ?? new Date().toISOString(),
+    catalystCount,
+    color: session.color ?? "#c79f4a",
+    deskLabel: "Priced In Capital",
+  };
 }

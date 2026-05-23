@@ -9,12 +9,21 @@ export interface TodoItem {
 
 const STORAGE_KEY = "fintheon:todo-list";
 
+const SEED_TODO: TodoItem = {
+  id: "todo_seed_pmdb_review",
+  text: "Review PMDB Monday — Kevin Warsh FOMC chair gap risk",
+  done: false,
+  createdAt: Date.now(),
+};
+
 function readSaved(): TodoItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as TodoItem[]) : [];
+    if (raw) return JSON.parse(raw) as TodoItem[];
+    persist([SEED_TODO]);
+    return [SEED_TODO];
   } catch {
-    return [];
+    return [SEED_TODO];
   }
 }
 

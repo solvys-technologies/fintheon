@@ -1951,6 +1951,11 @@ ipcMain.handle("blocker:enable-fast", async () => {
   return { ok: true, mode: "runtime" };
 });
 
+ipcMain.handle("blocker:disable-fast", async () => {
+  fastBlockerEnabled = false;
+  return { ok: true, mode: "runtime" };
+});
+
 ipcMain.handle("blocker:disable", async () => {
   if (IS_WIN) return { ok: false, reason: "blocker is macOS-only" };
   try {

@@ -9,6 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-22T20:09:00-04:00",
+    agent: "codex",
+    summary:
+      "S79 correction: applied NarrativeFlow desk sessions to the live tab, removed duplicate NarrativeFlow from Arbitrum, wired session create/open/rename/refine requests, upgraded the React Flow research map, and made Docs Quick Share a printable PDF-ready synthesis.",
+    files: [
+      "frontend/components/narrative/NarrativeCanvas.tsx",
+      "frontend/components/narrative/NarrativeFlowLanding.tsx",
+      "frontend/components/narrative/NarrativeSessionWorkspace.tsx",
+      "frontend/components/narrative/NarrativeWorkspaceChrome.tsx",
+      "frontend/components/narrative/NarrativeSensemakingMap.tsx",
+      "frontend/components/narrative/NarrativeDocsTab.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+      "frontend/lib/narrative-session-api.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-22T16:20:00-04:00",
     agent: "codex",
     summary:
@@ -25,6 +42,116 @@ export const changelog: ChangelogEntry[] = [
       "scripts/fintheon-setup.sh",
       "scripts/install-cli.sh",
       "scripts/fintheon-cli.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-22T16:20:00-04:00",
+    agent: "codex",
+    summary:
+      "S79-T5 follow-up: linked the quick access header lock to the runtime-only platform blocker, added Blocker settings for choosing a platform or custom link target, and exposed a passwordless in-app unblock IPC path.",
+    files: [
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/settings/BlockerTab.tsx",
+      "frontend/hooks/usePlatformBlocker.ts",
+      "frontend/lib/platform-blocker.ts",
+      "electron/preload.cjs",
+      "electron/main.cjs",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-22T16:11:00-04:00",
+    agent: "codex",
+    summary:
+      "S79-T5 bulletin watchlist patch: replaced Sticky Bulletin's Catalyst phrase-watch contents with a desk bulletin watchlist, added Zen-only Desk Narrative toggles, inline blocked-note status, and documented the required visible/blocked QA note gate.",
+    files: [
+      "frontend/components/StickyBulletin.tsx",
+      "frontend/hooks/useStickyBulletin.ts",
+      "frontend/components/bulletin/BulletinWatchlistTab.tsx",
+      "frontend/components/bulletin/bulletin-watchlist-utils.ts",
+      "sprint-md/S79-T5-unification-validation.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-22T16:10:00-04:00",
+    agent: "codex",
+    summary:
+      "S79-T4: added deterministic NarrativeFlow catalyst classification, persisted agent-work/tag/conflict artifacts, a desk-scoped Situation Map API, exported first-run narrative chips, and a standalone React Flow Situation Map component.",
+    files: [
+      "backend-hono/src/services/narrative-classification/types.ts",
+      "backend-hono/src/services/narrative-classification/tag-classifier.ts",
+      "backend-hono/src/services/narrative-classification/situation-map.ts",
+      "backend-hono/src/routes/narrative/classification.ts",
+      "backend-hono/src/routes/narrative/index.ts",
+      "frontend/hooks/useNarrativeSituationMap.ts",
+      "frontend/components/narrative/NarrativeSituationMap.tsx",
+      "frontend/components/narrative/NarrativeFlowLanding.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-22T16:05:00-04:00",
+    agent: "codex",
+    summary:
+      "S79-T1 follow-up: added low-friction Narrative Desk deletion, catalyst add/replace/remove refinement endpoints, workspace artifact version-save guidance, and an agent-facing HOW block in the sprint brief so UI agents know exactly which session APIs to call.",
+    files: [
+      "backend-hono/src/services/narrative-sessions/session-store.ts",
+      "backend-hono/src/routes/narrative/sessions/index.ts",
+      "backend-hono/src/routes/narrative/sessions/handlers.ts",
+      "sprint-md/S79-T1-narrative-desk-session-data.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-22T15:50:00-04:00",
+    agent: "codex",
+    summary:
+      "S79-T1: added Supabase-backed Narrative Desk session data with a default Priced In Capital desk, session/catalyst/message/work-event/link/tag persistence, versioned generated artifacts, and /api/narrative/sessions routes while leaving the existing sensemaking API and frontend untouched.",
+    files: [
+      "supabase/migrations/20260522160000_narrative_desk_sessions.sql",
+      "backend-hono/src/services/narrative-sessions/default-desk.ts",
+      "backend-hono/src/services/narrative-sessions/session-store.ts",
+      "backend-hono/src/services/narrative-sessions/artifact-store.ts",
+      "backend-hono/src/services/narrative-sessions/history-store.ts",
+      "backend-hono/src/services/narrative-sessions/session-generator.ts",
+      "backend-hono/src/services/narrative-sessions/types.ts",
+      "backend-hono/src/routes/narrative/sessions/index.ts",
+      "backend-hono/src/routes/narrative/sessions/handlers.ts",
+      "backend-hono/src/routes/narrative/sessions/validation.ts",
+      "backend-hono/src/routes/narrative/index.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-22T15:45:59-04:00",
+    agent: "codex",
+    summary:
+      "S79-T2 narrative opener: added the standalone NarrativeFlow landing state, desk memory rows, RiskFlow picker transition, default narrative chips, inline rename/color affordance, and dedicated RiskFlow headline hook without wiring persistence into NarrativeCanvas.",
+    files: [
+      "frontend/components/narrative/NarrativeFlowLanding.tsx",
+      "frontend/components/narrative/NarrativeSessionHistory.tsx",
+      "frontend/components/narrative/NarrativeRiskFlowPicker.tsx",
+      "frontend/components/narrative/NarrativeColorPopover.tsx",
+      "frontend/components/narrative/NarrativeSensemakingComposer.tsx",
+      "frontend/hooks/useNarrativeRiskFlowHeadlines.ts",
+      "frontend/components/narrative/sensemaking-types.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-22T10:35:00-04:00",
+    agent: "codex",
+    summary:
+      "S79-T3 loaded NarrativeFlow workspace: added the focused session shell, persisted resizable Flow/Timeline/Docs work drawer, timeline conflict cards, docs/share pane, and selected-catalyst quick actions while preserving the existing canvas owner boundary.",
+    files: [
+      "frontend/components/narrative/NarrativeSessionWorkspace.tsx",
+      "frontend/components/narrative/NarrativeWorkDrawer.tsx",
+      "frontend/components/narrative/NarrativeFlowTab.tsx",
+      "frontend/components/narrative/NarrativeTimelineTab.tsx",
+      "frontend/components/narrative/NarrativeDocsTab.tsx",
+      "frontend/components/narrative/NarrativeSensemakingDetail.tsx",
       "src/lib/changelog.ts",
     ],
   },

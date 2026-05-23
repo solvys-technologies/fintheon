@@ -7,29 +7,25 @@ import {
   RefreshCw,
   Lock,
   Globe,
+  Link2,
   Plus,
   Trash2,
   AlertTriangle,
 } from "lucide-react";
 import Toggle from "../Toggle";
 import { useSettings } from "../../contexts/SettingsContext";
+import {
+  domainsFromUrl,
+  getBlockerApi,
+  loadBlockerQuickTarget,
+  normalizeDomain,
+  saveBlockerQuickTarget,
+  type BlockerQuickTarget,
+} from "../../lib/platform-blocker";
 
 interface LockoutElectron {
   checkAccessibility: () => Promise<{ granted: boolean }>;
   requestAccessibility: () => Promise<{ granted: boolean }>;
-}
-
-interface BlockerApi {
-  enable: () => Promise<unknown>;
-  disable: () => Promise<unknown>;
-  getStatus: () => Promise<{
-    blocked: boolean;
-    layers: { hosts: boolean; resolver: boolean; runtime?: boolean };
-  }>;
-  getDomains: () => Promise<{ domains: string[] }>;
-  setDomains: (
-    domains: string[],
-  ) => Promise<{ ok: boolean; domains?: string[]; reason?: string }>;
 }
 
 interface BlockerState {
@@ -39,27 +35,13 @@ interface BlockerState {
   error: string | null;
 }
 
-function getBlockerApi(): BlockerApi | null {
-  const e = window as unknown as { electron?: { blocker?: BlockerApi } };
-  return e.electron?.blocker ?? null;
-}
-
-function normalizeDomain(input: string): string | null {
-  let s = input.trim().toLowerCase();
-  if (!s) return null;
-  s = s.replace(/^https?:\/\//, "");
-  s = s.replace(/\/.*$/, "");
-  s = s.replace(/^www\./, "");
-  if (!s.includes(".") || s.endsWith(".")) return null;
-  return s;
-}
-
 export function BlockerTab() {
   const {
     lockoutAutoBlockOutsideTradingWindow,
     setLockoutAutoBlockOutsideTradingWindow,
     lockoutPermission,
     setLockoutPermission,
+    proposerIframeSources,
   } = useSettings();
   const [accessibilityCheckLoading, setAccessibilityCheckLoading] = useState(false);
   const [state, setState] = useState<BlockerState>({
@@ -73,6 +55,17 @@ export function BlockerTab() {
   const [newDomain, setNewDomain] = useState("");
   const [domainError, setDomainError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [quickTarget, setQuickTarget] = useState<BlockerQuickTarget>(() => {
+    return (
+      loadBlockerQuickTarget() ?? {
+        mode: "platform",
+        platformId: proposerIframeSources[0]?.id ?? "topstepx",
+        url: "",
+      }
+    );
+  });
+  const [quickTargetSaving, setQuickTargetSaving] = useState(false);
+  const [quickTargetError, setQuickTargetError] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
     const api = getBlockerApi();
@@ -151,6 +144,64 @@ export function BlockerTab() {
       );
     } finally {
       setSaving(false);
+    }
+  };
+
+  const quickTargetSource =
+    proposerIframeSources.find((source) => source.id === quickTarget.platformId) ??
+    proposerIframeSources[0];
+  const quickTargetDomains =
+    quickTarget.mode === "link"
+      ? domainsFromUrl(quickTarget.url)
+      : domainsFromUrl(quickTargetSource?.url ?? "");
+
+  const persistQuickTarget = () => {
+    setQuickTargetError(null);
+    const targetToSave: BlockerQuickTarget = {
+      mode: quickTarget.mode,
+      platformId:
+        quickTarget.mode === "platform"
+          ? quickTargetSource?.id ?? quickTarget.platformId
+          : quickTarget.platformId,
+      url: quickTarget.mode === "link" ? quickTarget.url.trim() : "",
+    };
+    const nextDomains =
+      targetToSave.mode === "link"
+        ? domainsFromUrl(targetToSave.url)
+        : domainsFromUrl(quickTargetSource?.url ?? "");
+    if (nextDomains.length === 0) {
+      setQuickTargetError("Choose a platform or enter a valid URL.");
+      return null;
+    }
+    saveBlockerQuickTarget(targetToSave);
+    setQuickTarget(targetToSave);
+    return { target: targetToSave, domains: nextDomains };
+  };
+
+  const handleSaveQuickTarget = () => {
+    persistQuickTarget();
+  };
+
+  const handleBlockQuickTargetInApp = async () => {
+    const api = getBlockerApi();
+    if (!api) return;
+    const saved = persistQuickTarget();
+    if (!saved) return;
+    setQuickTargetSaving(true);
+    try {
+      const result = await api.setDomains(saved.domains);
+      if (!result.ok) {
+        setQuickTargetError(result.reason ?? "Failed to save target domains");
+        return;
+      }
+      await api.enableFast();
+      await loadAll();
+    } catch (err) {
+      setQuickTargetError(
+        err instanceof Error ? err.message : "Failed to block in-app",
+      );
+    } finally {
+      setQuickTargetSaving(false);
     }
   };
 
@@ -238,6 +289,100 @@ export function BlockerTab() {
       </div>
 
       {autoLockPolicy}
+
+      <div className="rounded-lg border border-[var(--fintheon-accent)]/10 p-5 bg-[rgba(10,10,0,0.4)] space-y-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <Link2 className="w-4 h-4 text-[var(--fintheon-accent)]/60" />
+              <span className="text-[13px] font-semibold text-white">
+                Quick Access Target
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-500 mt-1 leading-relaxed max-w-md">
+              The header lock blocks only this target inside Fintheon.
+            </p>
+          </div>
+          <div className="inline-flex rounded-md border border-[var(--fintheon-accent)]/15 bg-black/20 p-0.5 shrink-0">
+            {(["platform", "link"] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() =>
+                  setQuickTarget((prev) => ({ ...prev, mode }))
+                }
+                className={`px-3 py-1.5 rounded text-[10px] font-semibold uppercase tracking-[0.12em] transition-colors ${
+                  quickTarget.mode === mode
+                    ? "bg-[var(--fintheon-accent)]/18 text-[var(--fintheon-accent)]"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {quickTarget.mode === "platform" ? (
+          <select
+            value={quickTargetSource?.id ?? ""}
+            onChange={(event) =>
+              setQuickTarget((prev) => ({
+                ...prev,
+                platformId: event.target.value,
+              }))
+            }
+            className="w-full px-3 py-2 rounded-md text-[12px] bg-black/20 border border-[var(--fintheon-accent)]/15 text-white focus:outline-none focus:border-[var(--fintheon-accent)]/40"
+          >
+            {proposerIframeSources.map((source) => (
+              <option key={source.id} value={source.id}>
+                {source.label} — {source.url}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type="text"
+            value={quickTarget.url}
+            onChange={(event) =>
+              setQuickTarget((prev) => ({
+                ...prev,
+                url: event.target.value,
+              }))
+            }
+            placeholder="https://trading-platform.example"
+            className="w-full px-3 py-2 rounded-md text-[12px] bg-black/20 border border-[var(--fintheon-accent)]/15 text-white placeholder-gray-600 focus:outline-none focus:border-[var(--fintheon-accent)]/40 transition-colors"
+          />
+        )}
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="text-[10px] text-gray-500 font-mono">
+            {quickTargetDomains.length > 0
+              ? quickTargetDomains.join(", ")
+              : "No valid domains detected"}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSaveQuickTarget}
+              className="px-3 py-1.5 rounded-md text-[11px] font-semibold bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/20 border border-[var(--fintheon-accent)]/15 transition-all"
+            >
+              Save Target
+            </button>
+            <button
+              onClick={handleBlockQuickTargetInApp}
+              disabled={quickTargetSaving || quickTargetDomains.length === 0}
+              className="px-3 py-1.5 rounded-md text-[11px] font-semibold bg-red-500/12 text-red-300 hover:bg-red-500/20 border border-red-500/15 disabled:opacity-40 transition-all"
+            >
+              {quickTargetSaving ? "Blocking..." : "Block In-App"}
+            </button>
+          </div>
+        </div>
+        {quickTargetError && (
+          <p className="text-[10px] text-red-400 flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3" />
+            {quickTargetError}
+          </p>
+        )}
+      </div>
 
       {/* Lockout Accessibility Permission */}
       <div className="rounded-lg border border-[var(--fintheon-accent)]/10 p-5 bg-[rgba(10,10,0,0.4)]">
