@@ -10,6 +10,7 @@ import {
 import type { IssueTrackingType, TodoItem } from "./hooks/useTodoList";
 import { MessageQueue, type QueuedMessage } from "./MessageQueue";
 import { BrailleSpinner } from "./primitive/BrailleSpinner";
+import { RepoChatComposerSurface } from "./composer/RepoChatComposer";
 
 interface TodoDrawerProps {
   isOpen: boolean;
@@ -132,17 +133,13 @@ export function TodoDrawer({
   const doneCount = todos.length - pendingTodos.length;
 
   return (
-    <div
-      aria-hidden={!isOpen}
-      className="fintheon-chat-input-drawer"
+    <RepoChatComposerSurface
+      open={isOpen}
+      maxHeight="196px"
       style={{
-        maxHeight: isOpen ? "196px" : "0",
-        opacity: isOpen ? 1 : 0,
         transition: "max-height 220ms cubic-bezier(0.4, 0, 0.2, 1)",
-        borderColor: isOpen
-          ? "color-mix(in srgb, var(--fintheon-accent) 18%, transparent)"
-          : "transparent",
-        boxShadow: isOpen ? undefined : "none",
+        borderColor:
+          "color-mix(in srgb, var(--fintheon-accent) 18%, transparent)",
       }}
     >
       <div
@@ -256,6 +253,6 @@ export function TodoDrawer({
           )}
         </div>
       </div>
-    </div>
+    </RepoChatComposerSurface>
   );
 }

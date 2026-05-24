@@ -9,6 +9,24 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-24T01:44:00-04:00",
+    agent: "codex",
+    summary:
+      "v6.7.23 fixes composer drawer clipping by hoisting chat input drawers to a measured body-level layer anchored to the visible input bar. Attach, mention, skills/connectors, approval, work/todo, and NarrativeInputBar queue drawers now keep the 90% input-relative width without being clipped by overflow-hidden chat containers.",
+    files: [
+      "frontend/components/chat/composer/RepoChatComposer.tsx",
+      "frontend/components/chat/TodoDrawer.tsx",
+      "frontend/index.css",
+      "package.json",
+      "mobile/package.json",
+      "scripts/fintheon-setup.sh",
+      "scripts/fintheon-update.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-24T00:42:00-04:00",
     agent: "codex",
     summary:
