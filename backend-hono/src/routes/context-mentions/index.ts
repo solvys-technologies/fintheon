@@ -15,6 +15,9 @@ const mentionTypes = [
   "riskflow",
   "instrument",
   "vault",
+  "memo",
+  "chart",
+  "agent",
   "all",
 ] as const;
 

@@ -36,6 +36,7 @@ scripts/.linear-env
 Video Footage/
 video/
 backend-hono/logs/
+memory/file-room/
 execution-bridge/.venv/
 supabase/.temp/
 fintheon-debug-sprint/

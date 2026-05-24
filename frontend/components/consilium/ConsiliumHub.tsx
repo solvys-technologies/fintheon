@@ -40,7 +40,7 @@ import { ApparatusFlowMap } from "../apparatus/ApparatusFlowMap";
 import { ProxVoiceForum } from "../proxvoice/ProxVoiceForum";
 import { AgentLounge } from "./AgentLounge";
 import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
-import { SoulFileroomPanel } from "../memory/SoulFileroomPanel";
+import { FileRoomPanel } from "../memory/FileRoomPanel";
 import { AiLoader } from "../chat/FintheonThread";
 import { useHarperOps } from "../../hooks/useHarperOps";
 import { useThemes } from "../../hooks/useThemes";
@@ -1139,7 +1139,7 @@ export function ConsiliumHub() {
           {displayedTab === "apparatus" && (
             <>
               {displayedApparatusSub === "desk" && <ApparatusFlowMap />}
-              {displayedApparatusSub === "fileroom" && <SoulFileroomPanel />}
+              {displayedApparatusSub === "fileroom" && <FileRoomPanel />}
               {displayedApparatusSub === "lounge" && <AgentLounge />}
             </>
           )}

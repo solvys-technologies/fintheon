@@ -127,6 +127,9 @@ import { createApparatusRoutes } from "./apparatus/agent-health.js";
 import { createAuditRoutes } from "./audit/index.js";
 // [claude-code 2026-05-07] Fileroom SOUL card editor — read/write agent soul files
 import { createSoulRoutes } from "./soul/index.js";
+import { createFileRoomRoutes } from "./file-room/index.js";
+import { createDeskInboxRoutes } from "./desk-inbox/index.js";
+import { createChartEvidenceRoutes } from "./chart-evidence/index.js";
 // [claude-code 2026-05-13] Lockout — trading lockout with countdown
 import { createLockoutRoutes } from "./lockout/index.js";
 // [claude-code 2026-05-16] S68-T1: Theme route — replaces regime tracker
@@ -144,6 +147,15 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/soul", authMiddleware, requireAuth);
   app.use("/api/soul/*", authMiddleware, requireAuth);
   app.route("/api/soul", createSoulRoutes());
+  app.use("/api/file-room", authMiddleware, requireAuth);
+  app.use("/api/file-room/*", authMiddleware, requireAuth);
+  app.route("/api/file-room", createFileRoomRoutes());
+  app.use("/api/desk-inbox", authMiddleware, requireAuth);
+  app.use("/api/desk-inbox/*", authMiddleware, requireAuth);
+  app.route("/api/desk-inbox", createDeskInboxRoutes());
+  app.use("/api/chart-evidence", authMiddleware, requireAuth);
+  app.use("/api/chart-evidence/*", authMiddleware, requireAuth);
+  app.route("/api/chart-evidence", createChartEvidenceRoutes());
   // Terminal — local-dev shell execution (localhost guard inside handler)
   app.route("/api/terminal", createTerminalRoutes());
   // Setup — CLI onboarding welcome endpoint (localhost guard inside handler)

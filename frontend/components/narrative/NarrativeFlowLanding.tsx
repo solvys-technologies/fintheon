@@ -218,7 +218,7 @@ export function NarrativeFlowLanding({
   return (
     <div className="relative flex h-full min-h-[620px] flex-col justify-center overflow-hidden bg-[var(--fintheon-bg)] px-4 py-10">
       <div
-        className={`pointer-events-none relative -top-12 mx-auto mb-8 w-full max-w-3xl text-center transition duration-500 ${greetingPhaseClass}`}
+        className={`pointer-events-none relative -top-16 mx-auto mb-8 w-full max-w-3xl text-center transition duration-500 ${greetingPhaseClass}`}
       >
         <p
           className="text-[26px] leading-tight text-[var(--fintheon-text)]/86"
@@ -235,7 +235,7 @@ export function NarrativeFlowLanding({
       </div>
 
       <div
-        className={`mx-auto mt-[min(15vh,112px)] w-full max-w-5xl transition duration-500 ${greetingPhaseClass}`}
+        className={`relative top-6 mx-auto mt-[min(15vh,112px)] w-full max-w-5xl transition duration-500 ${greetingPhaseClass}`}
       >
         <NarrativeSensemakingComposer
           mode="opener"

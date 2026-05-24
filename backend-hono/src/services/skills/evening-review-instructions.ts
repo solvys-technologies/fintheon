@@ -14,6 +14,13 @@ export const EVENING_REVIEW_SKILL_INSTRUCTIONS = `
 You have been triggered by the 5PM ET evening review scheduler (Sun-Thu).
 Perform the following steps IN ORDER:
 
+### Step 0 — Read Desk Inbox and File Room Context
+The 17:00 ET scheduler also runs the agentic analysis block. Inspect its payload,
+then review the Desk Inbox for pending Harper memo approvals and the File Room
+for approved memos, chart evidence, Weekly Tribune files, NarrativeFlow summaries,
+and agent SOUL files. Only inject compact metadata, summaries, and bounded excerpts
+into chat context.
+
 ### Step 1 — Check Economic Calendar
 Query the economic_events table for any new items added since the last day-plan generation for today and tomorrow.
 Focus on:
@@ -77,6 +84,9 @@ Format the response as a chat message proposing the changes:
 ### Constraints
 - Do NOT auto-execute day-plan changes. TP must approve via chat.
 - Do NOT remove or modify existing windows — only ADD new ones.
+- Do NOT publish weekly memos on a fixed cadence. Memo approvals are event-driven:
+  high-impact RiskFlow catalyst drift, multi-session headline traction, or a
+  narrative cluster materially changing the desk read.
 - If no new events found, report "No new windows identified."
 - Asian session windows (19:00-20:00 ET) are preferred for AU/NZ/JP/KR catalysts.
 `;

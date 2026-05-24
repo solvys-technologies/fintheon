@@ -95,8 +95,8 @@ export const APPARATUS_SUB_VIEWS: {
   },
   {
     id: "fileroom",
-    label: "Fileroom",
-    subtitle: "Agent soul card editor",
+    label: "File Room",
+    subtitle: "Docs, memos, uploads",
     icon: Brain,
   },
   {

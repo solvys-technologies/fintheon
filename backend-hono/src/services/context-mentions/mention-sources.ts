@@ -7,6 +7,7 @@ import { listDocuments } from "../documents/doc-store.js";
 import { listAllSkills } from "../skills/registry.js";
 import * as themeStore from "../theme-tracker/persistence.js";
 import { getFeed } from "../riskflow/feed-service.js";
+import { listFileRoom } from "../file-room/index.js";
 
 export type MentionType =
   | "document"
@@ -16,7 +17,10 @@ export type MentionType =
   | "theme"
   | "riskflow"
   | "instrument"
-  | "vault";
+  | "vault"
+  | "memo"
+  | "chart"
+  | "agent";
 
 export interface MentionItem {
   id: string;
@@ -84,6 +88,7 @@ export async function listMentions(query: MentionQuery): Promise<MentionItem[]> 
     readNarratives(query),
     readRiskFlow(),
     readInstruments(),
+    readFileRoomMentions(query),
     readVaultNotes(),
   ]);
   return groups
@@ -225,6 +230,31 @@ async function readVaultNotes(): Promise<MentionItem[]> {
       };
     }),
   );
+}
+
+async function readFileRoomMentions(query: MentionQuery): Promise<MentionItem[]> {
+  const fileRoom = await listFileRoom(query.deskId).catch(() => null);
+  if (!fileRoom) return [];
+  return fileRoom.sections.flatMap((section) =>
+    section.items.slice(0, 30).map((item) => ({
+      id: `file-room:${item.id}`,
+      type: mentionTypeForFileRoomSection(item.sectionId),
+      label: item.title,
+      subtitle: `${section.title} · ${fileRoom.desk.name}`,
+      preview: item.summary || item.excerpt || item.path,
+      source: "file-room",
+      referenceId: item.id,
+      tags: [...item.tags, ...item.tickers, item.kind].filter(Boolean),
+      updatedAt: item.updatedAt,
+    })),
+  );
+}
+
+function mentionTypeForFileRoomSection(sectionId: string): MentionType {
+  if (sectionId === "agentic-memos") return "memo";
+  if (sectionId === "chart-evidence") return "chart";
+  if (sectionId === "agent-souls") return "agent";
+  return "vault";
 }
 
 async function collectMarkdown(root: string, depth: number, cap: number): Promise<string[]> {

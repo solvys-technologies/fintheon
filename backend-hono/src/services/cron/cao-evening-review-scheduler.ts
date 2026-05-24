@@ -28,6 +28,7 @@ let lastFiredAt: string | null = null;
  */
 async function tick(): Promise<void> {
   try {
+    const analysisBlock = await runEveningAnalysisBlock();
     // Try to enqueue through Harper's autonomous loop
     const { enqueueTask } =
       await import("../harper-autonomous/loop-manager.js");
@@ -38,6 +39,7 @@ async function tick(): Promise<void> {
         trigger: "cron:17:00-et",
         instructionsSource: "evening-review-instructions",
         timestamp: new Date().toISOString(),
+        analysisBlock,
       },
       priority: "normal",
     });
@@ -53,6 +55,25 @@ async function tick(): Promise<void> {
     log.info(
       "CAO evening review: Harper autonomous loop unavailable (non-fatal). Evening review will not auto-trigger.",
     );
+  }
+}
+
+async function runEveningAnalysisBlock() {
+  try {
+    const { runAgenticAnalysisBlock } =
+      await import("../agentic-analysis-block/index.js");
+    const result = await runAgenticAnalysisBlock("priced-in-capital");
+    return {
+      createdMemoIds: result.created.map((item) => item.id),
+      created: result.created.length,
+      inspected: result.inspected,
+      skipped: result.skipped,
+    };
+  } catch (err) {
+    log.warn("CAO evening review analysis block failed (swallowed)", {
+      error: String(err),
+    });
+    return null;
   }
 }
 

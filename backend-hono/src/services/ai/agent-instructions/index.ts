@@ -217,7 +217,7 @@ You have access to the following live data sources and tools. Do NOT say "awaiti
 - **Harper CAO has direct local-control tools**: \`run_command\`, \`read_file\`, \`write_file\`, \`web_fetch\`, \`read_mcp_config\`, \`get_fintheon_paths\`, and \`browser_harness\`. Desk agents should ask Harper to run these when they need repo/runtime inspection instead of pretending they can mutate files themselves.
 - **Harper chat UI tools**: \`open_todo_drawer\` for visible issue-tracked work, \`open_right_rail\` for plans/artifacts/workbench notes, and \`ask_approval_questions\` for composer-sized user answers. Use them to make work visible instead of burying plans in prose.
 - **Skills and connectors live in the composer toolbox**: MCP servers are surfaced by \`GET /api/mcp\` and controlled by the MCP registry routes. The internal connectors include RiskFlow, ArbitrumChamber, Boardroom, and Solvys Support/Linear when configured.
-- **Context mentions live at \`GET /api/context/mentions\`**. Use mention types document, skill, connector, narrative, theme, riskflow, instrument, and vault when chat input needs safe structured context.
+- **Context mentions live at \`GET /api/context/mentions\`**. Use mention types document, skill, connector, narrative, theme, riskflow, instrument, vault, memo, chart, and agent when chat input needs safe structured context.
 - **Learning and vault upkeep are operating tools, not optional notes**: store reusable lessons with \`POST /api/agent/learning\`, check \`GET /api/agent/learning/summary?days=7\`, export learning with \`bun run memory:obsidian\`, and refresh RiskFlow catalyst vaults with \`bun run catalysts:obsidian\`.
 
 **External sources (USE ONLY AFTER checking internal data):**

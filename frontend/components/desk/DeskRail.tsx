@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { BookOpen, ShieldAlert } from "lucide-react";
+import { BookOpen, Inbox, ShieldAlert } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { RiskSignalCards } from "../narrative/RiskSignalCards";
 import { DeskPlansFeed } from "./DeskPlansFeed";
+import { DeskInboxFeed } from "./DeskInboxFeed";
 
-type DeskRailTab = "plans" | "signals";
+type DeskRailTab = "plans" | "signals" | "inbox";
 
 export function DeskRail() {
   const [activeTab, setActiveTab] = useState<DeskRailTab>("plans");
@@ -21,7 +22,7 @@ export function DeskRail() {
               Plans & Signals
             </h1>
           </div>
-          <div className="grid grid-cols-2 gap-1 rounded-md border border-[var(--fintheon-accent)]/12 bg-black/20 p-1">
+          <div className="grid grid-cols-3 gap-1 rounded-md border border-[color-mix(in_srgb,var(--fintheon-accent)_12%,transparent)] bg-[color-mix(in_srgb,var(--fintheon-surface)_78%,var(--fintheon-bg))] p-1">
             <DeskRailTabButton
               icon={BookOpen}
               label="Plans"
@@ -34,12 +35,20 @@ export function DeskRail() {
               selected={activeTab === "signals"}
               onClick={() => setActiveTab("signals")}
             />
+            <DeskRailTabButton
+              icon={Inbox}
+              label="Inbox"
+              selected={activeTab === "inbox"}
+              onClick={() => setActiveTab("inbox")}
+            />
           </div>
         </div>
       </header>
       <div className="min-h-0 flex-1 overflow-hidden">
         {activeTab === "plans" ? (
           <DeskPlansFeed />
+        ) : activeTab === "inbox" ? (
+          <DeskInboxFeed />
         ) : (
           <div className="h-full overflow-y-auto px-3 py-3">
             <RiskSignalCards compact />
@@ -68,8 +77,8 @@ function DeskRailTabButton({
       className={cn(
         "inline-flex h-7 items-center justify-center gap-1.5 rounded-[4px] px-2 text-[10px] font-semibold transition-colors",
         selected
-          ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
-          : "text-[var(--fintheon-muted)]/45 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/72",
+          ? "bg-[color-mix(in_srgb,var(--fintheon-accent)_10%,transparent)] text-[var(--fintheon-accent)]"
+          : "text-[color-mix(in_srgb,var(--fintheon-muted)_45%,transparent)] hover:bg-[color-mix(in_srgb,var(--fintheon-accent)_5%,transparent)] hover:text-[color-mix(in_srgb,var(--fintheon-text)_72%,transparent)]",
       )}
       aria-pressed={selected}
     >

@@ -614,6 +614,17 @@
     inset 0 -5px 0 var(--black);
 }
 
+.cao-front-faceplate::before {
+  content: "";
+  position: absolute;
+  left: 39px;
+  top: 23px;
+  z-index: 5;
+  width: 10px;
+  height: 5px;
+  background: var(--black);
+}
+
 .cao-front-ear,
 .cao-front-eye {
   position: absolute;
@@ -651,24 +662,41 @@
 .cao-front-eye {
   top: 43px;
   z-index: 3;
-  width: 34px;
-  height: 18px;
+  width: 28px;
+  height: 16px;
   border: 5px solid var(--black);
-  background:
-    linear-gradient(
-      90deg,
-      var(--iris) 0 38%,
-      var(--pupil) 38% 62%,
-      var(--iris) 62% 100%
-    );
+  background: var(--wolf-fur);
+}
+
+.cao-front-eye::before,
+.cao-front-eye::after {
+  content: "";
+  position: absolute;
+  display: block;
+}
+
+.cao-front-eye::before {
+  left: 9px;
+  top: 4px;
+  width: 9px;
+  height: 7px;
+  background: var(--iris);
+}
+
+.cao-front-eye::after {
+  left: 11px;
+  top: 5px;
+  width: 6px;
+  height: 6px;
+  background: var(--pupil);
 }
 
 .cao-front-eye-left {
-  left: 20px;
+  left: 24px;
 }
 
 .cao-front-eye-right {
-  left: 70px;
+  left: 72px;
 }
 
 .cao-laptop {

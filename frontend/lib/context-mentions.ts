@@ -9,7 +9,10 @@ export type ContextMentionType =
   | "theme"
   | "riskflow"
   | "instrument"
-  | "vault";
+  | "vault"
+  | "memo"
+  | "chart"
+  | "agent";
 
 export interface ContextMention {
   id: string;
