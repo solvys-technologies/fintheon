@@ -5,7 +5,7 @@
 /**
  * Harper Routes
  * POST /api/harper/chat — streaming SSE chat via Strands agent
- * GET  /api/harper/status — check if VProxy/Strands is available
+ * GET  /api/harper/status — check if Strands is available
  */
 
 import { Hono } from "hono";
@@ -431,7 +431,7 @@ export function createHarperRoutes() {
       });
 
       // Route through the AI provider chain (DeepSeek → OpenCode Go)
-      // No more VProxy pre-flight; the chain handles availability internally.
+      // The provider chain handles availability internally.
       const providerLabel =
         body.provider === "nous"
           ? "Nous Research (Hermes-4)"

@@ -122,7 +122,7 @@ export function RegimeControl({ regime, onRegimeChanged }: RegimeControlProps) {
           </button>
 
           {dropdownOpen && (
-            <div className="absolute z-20 mt-1 right-0 w-60 rounded border border-zinc-700 bg-[var(--fintheon-surface)] shadow-lg py-1">
+            <div className="fintheon-dropdown-surface absolute z-20 mt-1 right-0 w-60 rounded border border-zinc-700 bg-[var(--fintheon-surface)] shadow-lg py-1">
               {MARKET_REGIMES.map((r) => (
                 <button
                   key={r}

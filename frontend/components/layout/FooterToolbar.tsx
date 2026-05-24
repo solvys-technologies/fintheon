@@ -659,7 +659,7 @@ export function FooterToolbar({
                   {showSlashSuggestions &&
                     panelOpen &&
                     activeTab === "terminal" && (
-                      <div className="absolute left-0 right-0 bottom-full mb-0.5 z-50 max-h-48 overflow-y-auto rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-lg">
+                      <div className="fintheon-dropdown-surface absolute left-0 right-0 bottom-full mb-0.5 z-50 max-h-48 overflow-y-auto rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-lg">
                         {slashSuggestions.map((item, i) => (
                           <button
                             key={item.slug}

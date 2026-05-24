@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 // [claude-code 2026-04-24] S35-T5: TOTT/WT → TWT rename; legacy TOTT/WT alias (sunsets 2026-05-08)
-// dispatch-brief.ts — Generate daily briefs via Claude CLI (Sonnet) + POST to Supabase + iMessage
+// dispatch-brief.ts — Generate daily briefs via provider chain + POST to Supabase + iMessage
 // Usage: bun run scripts/dispatch-brief.ts MDB|ADB|PMDB|TWT
 // Standalone — does NOT require backend to be running.
 
@@ -8,6 +8,7 @@ import { createClient } from "@supabase/supabase-js";
 import { execFileSync } from "child_process";
 import { appendFileSync, mkdirSync, readFileSync } from "fs";
 import { join } from "path";
+import { generateViaChain } from "../src/services/ai/provider-chain.js";
 
 // ── Config ──
 type DispatchBriefType = "MDB" | "ADB" | "PMDB" | "TWT";
@@ -30,12 +31,7 @@ const BRIEF_TYPE: DispatchBriefType = normalizeBriefType(
 const RECIPIENT = "+15618490392";
 const LOG_DIR = join(import.meta.dir, "..", "logs");
 const LOG_FILE = join(LOG_DIR, `dispatch-${BRIEF_TYPE.toLowerCase()}.log`);
-const CLAUDE_PATH = "/Users/tifos/.local/bin/claude";
-const VPROXY_BASE_URL = (
-  process.env.VPROXY_BASE_URL ?? "http://localhost:8317"
-).replace(/\/+$/, "");
-const VPROXY_API_KEY = process.env.VPROXY_API_KEY ?? "CLI_PROXY_API_KEY";
-const VPROXY_MODEL = process.env.VPROXY_ANTHROPIC_MODEL ?? "claude-opus-4.6";
+const BRIEF_MODEL = process.env.DISPATCH_BRIEF_MODEL ?? "deepseek-reasoner";
 
 mkdirSync(LOG_DIR, { recursive: true });
 
@@ -222,8 +218,8 @@ async function fetchContext(): Promise<string> {
   );
 }
 
-// ── Generate via VProxy Anthropic (preferred) ──
-async function generateViaVProxy(
+// ── Generate via provider chain ──
+async function generateViaProviderChain(
   prompt: string,
   context: string,
 ): Promise<string> {
@@ -235,61 +231,18 @@ async function generateViaVProxy(
   });
   const fullPrompt = `${prompt}\n\nHere is the current market context:\n\n${context}\n\nGenerate the brief now. Today is ${today}.`;
 
-  const response = await fetch(`${VPROXY_BASE_URL}/v1/messages`, {
-    method: "POST",
-    headers: {
-      "x-api-key": VPROXY_API_KEY,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: VPROXY_MODEL,
-      max_tokens: 8192,
-      messages: [{ role: "user", content: fullPrompt }],
-    }),
-    signal: AbortSignal.timeout(120_000),
+  const result = await generateViaChain({
+    prompt: fullPrompt,
+    model: BRIEF_MODEL,
+    maxOutputTokens: 8192,
+    timeoutMs: 120_000,
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `VProxy Anthropic error ${response.status}: ${errorText.slice(0, 200)}`,
-    );
+  if (!result.response.trim()) {
+    throw new Error("Provider chain returned empty content");
   }
 
-  const payload = (await response.json()) as {
-    content?: Array<{ type?: string; text?: string }>;
-  };
-  const text = (payload.content ?? [])
-    .filter((block) => block.type === "text" && typeof block.text === "string")
-    .map((block) => block.text ?? "")
-    .join("")
-    .trim();
-
-  if (!text) {
-    throw new Error("VProxy Anthropic returned empty content");
-  }
-
-  return text;
-}
-
-// ── Generate via Claude CLI (fallback) ──
-function generateViaClaudeCli(prompt: string, context: string): string {
-  const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-  const fullPrompt = `${prompt}\n\nHere is the current market context:\n\n${context}\n\nGenerate the brief now. Today is ${today}.`;
-
-  const result = execFileSync(
-    CLAUDE_PATH,
-    ["-p", fullPrompt, "--model", "opus", "--output-format", "text"],
-    { timeout: 120000, maxBuffer: 1024 * 1024, encoding: "utf-8" },
-  );
-
-  return result.trim();
+  return result.response.trim();
 }
 
 // ── Persist to Supabase ──
@@ -335,24 +288,22 @@ async function main() {
   log(`Context: ${context.length} chars`);
 
   let content = "";
-  let generatedBy = "vproxy-anthropic";
+  const generatedBy = "provider-chain";
   try {
-    log(`Generating brief via VProxy Anthropic (${VPROXY_MODEL})...`);
-    content = await generateViaVProxy(config.prompt, context);
-  } catch (vproxyErr) {
+    log(`Generating brief via provider chain (${BRIEF_MODEL})...`);
+    content = await generateViaProviderChain(config.prompt, context);
+  } catch (err) {
     log(
-      `VProxy generation failed, falling back to Claude CLI: ${vproxyErr instanceof Error ? vproxyErr.message : String(vproxyErr)}`,
+      `FATAL: Provider chain generation failed: ${err instanceof Error ? err.message : String(err)}`,
     );
-    generatedBy = "claude-cli-opus";
-    content = generateViaClaudeCli(config.prompt, context);
+    sendIMessage(`${BRIEF_TYPE} dispatch failed — provider chain unavailable.`);
+    process.exit(1);
   }
   log(`Generated: ${content.length} chars`);
 
   if (!content || content.length < 50) {
     log("FATAL: Brief too short or empty");
-    sendIMessage(
-      `⚠️ ${BRIEF_TYPE} dispatch failed — empty response from Claude CLI.`,
-    );
+    sendIMessage(`${BRIEF_TYPE} dispatch failed — empty provider response.`);
     process.exit(1);
   }
 

@@ -117,7 +117,7 @@ export function ProxVoiceForum() {
               </p>
             )}
           </div>
-          <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-md bg-[var(--fintheon-bg)] px-3 py-2 fintheon-fade-in">
+          <div className="fintheon-popover-surface absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 px-3 py-2 fintheon-fade-in">
             <button
               onClick={() =>
                 voice.state === "connected" ? voice.disconnect() : void voice.connect()

@@ -34,13 +34,12 @@ export default function PompaToast({
 
   return (
     <div
+      className="fintheon-toast-surface"
       style={{
         position: "fixed",
         bottom: "1.5rem",
         right: "1.5rem",
         zIndex: 9995,
-        backgroundColor: "#0a0806",
-        border: "1px solid #c79f4a",
         borderRadius: "6px",
         padding: "0.85rem 1.25rem",
         display: "flex",
@@ -50,7 +49,6 @@ export default function PompaToast({
         opacity: exiting ? 0 : 1,
         transform: exiting ? "translateY(8px)" : "translateY(0)",
         transition: "opacity 0.4s ease, transform 0.4s ease",
-        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)",
       }}
     >
       {/* Left laurel decoration */}

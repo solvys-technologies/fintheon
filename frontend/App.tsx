@@ -34,7 +34,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { SystemStatusProvider } from "./contexts/SystemStatusContext";
 import { migrateStorageKeys } from "./lib/storage-migration";
 import { AuthShell } from "./components/auth/AuthShell";
-import { DotMatrixLoader } from "./components/icon-bank/DotMatrixLoader";
+import { LoadingBootScreen } from "./components/loading/LoadingBootScreen";
 import { ConsulControlCorners } from "./components/consul-control/ConsulControlCorners";
 import { useConsulControlStatus } from "./hooks/useConsulControlStatus";
 
@@ -139,23 +139,7 @@ function AuthGate() {
   useAppInit(canEnterApp, handleInitReady);
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#050402]">
-        <div className="flex flex-col items-center gap-4">
-          <img
-            src="./logo.png"
-            alt="Fintheon"
-            className="h-16 w-16 opacity-60"
-          />
-          <div className="flex items-center gap-2">
-            <DotMatrixLoader variant="diagonal-scan" size={18} />
-            <p className="text-[11px] tracking-[0.3em] text-[#c79f4a]/60">
-              LOADING
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingBootScreen phrase="Restoring session" />;
   }
 
   if (!canEnterApp) {

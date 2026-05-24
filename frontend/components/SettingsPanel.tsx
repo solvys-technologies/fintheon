@@ -601,7 +601,7 @@ export function SettingsPage() {
             </div>
           )}
           <div
-            className={`h-full bg-[var(--fintheon-bg)] flex flex-col py-5 transition-all duration-200 ease-out overflow-hidden ${sidebarHovered ? "w-52 opacity-100" : "w-0 opacity-0"}`}
+            className={`h-full flex flex-col py-5 transition-all duration-200 ease-out overflow-hidden ${sidebarHovered ? "fintheon-rail-surface w-52 opacity-100" : "w-0 opacity-0"}`}
           >
             <div className="px-4 mb-4">
               <span className="text-[10px] tracking-[0.2em] uppercase text-gray-500 font-semibold">

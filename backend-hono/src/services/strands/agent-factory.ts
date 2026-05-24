@@ -1,22 +1,19 @@
 // [claude-code 2026-05-03] S58-T1: DeepSeek v4 Pro primary provider migration
-// [claude-code 2026-04-23] S32-T3 Ollama fallback chain — local provider now goes through createChainModel
+// [codex 2026-05-23] Local provider routes through the Hermes/OpenCode API.
 // [codex 2026-05-18] v6.7.3: default Strands agent routing is DeepSeek direct.
 // [claude-code 2026-04-10] S8-T2: added createAgentForTask() for DAG dispatch.
 // [claude-code 2026-04-08] Nous provider tries arcee trinity-large first, then qwen3.6-plus
-// [claude-code 2026-04-07] Strands agent factory — VProxy, Hermes, or Nous Direct provider selection
+// [claude-code 2026-04-07] Strands agent factory — provider selection
 // [claude-code 2026-05-07] S61-T2: Sub-agent tools wired from capability registry
 import { Agent, tool, type ConversationManager } from "@strands-agents/sdk";
 import { OpenAIModel } from "@strands-agents/sdk/models/openai";
 import {
-  createVProxyModel,
   checkDeepSeekDirectHealth,
-  createChainModel,
   createOllamaFallbackModel,
   createDeepSeekDirectModel,
   createDeepSeekOcApiModel,
-  type VProxyModelOptions,
+  type StrandsModelOptions,
 } from "./provider.js";
-import { isOllamaFallbackEnabled } from "../ai/ollama-hermes-client.js";
 import { createLogger } from "../../lib/logger.js";
 import type { HermesAgentId } from "../agent-bus/types.js";
 import { BASE_PROMPTS } from "../ai/agent-instructions/base-prompts.js";
@@ -46,7 +43,7 @@ export interface CreateAgentOptions {
   name: string;
   description?: string;
   systemPrompt: string;
-  model?: VProxyModelOptions;
+  model?: StrandsModelOptions;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tools?: any[];
   printer?: boolean;
@@ -95,11 +92,18 @@ export function createAgent(options: CreateAgentOptions): Agent {
       break;
     case "opencode-go":
     case "deepseek-oc-api":
+    case "local":
       log.info("Creating Strands agent (DeepSeek OC API)", {
         name: options.name,
         hasUserKey: Boolean(options.userApiKey),
       });
       model = createDeepSeekOcApiModel(options.model, options.userApiKey);
+      break;
+    case "ollama-qwen":
+      log.info("Creating Strands agent (Ollama-Qwen fallback)", {
+        name: options.name,
+      });
+      model = createOllamaFallbackModel(options.model);
       break;
     case "nous":
       // eslint-disable-next-line no-case-declarations
@@ -114,9 +118,7 @@ export function createAgent(options: CreateAgentOptions): Agent {
       );
       break;
     default:
-      log.info("Creating Strands agent (VProxy local)", { name: options.name });
-      model = createVProxyModel(options.model);
-      break;
+      throw new Error(`Unsupported Harper provider: ${provider}`);
   }
 
   return new Agent({
@@ -130,7 +132,7 @@ export function createAgent(options: CreateAgentOptions): Agent {
   });
 }
 
-/** Check if the Strands + VProxy stack is operational */
+/** Check if the Strands provider stack is operational */
 export async function isStrandsAvailable(): Promise<boolean> {
   const deepseek = await checkDeepSeekDirectHealth();
   return deepseek.available;

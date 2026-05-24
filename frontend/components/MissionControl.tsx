@@ -54,7 +54,7 @@ export default function MissionControl({ onClose }: MissionControlProps) {
   };
 
   return (
-    <div className="w-[280px] bg-[var(--fintheon-surface)] border-r border-zinc-900 flex flex-col">
+    <div className="fintheon-rail-surface w-[280px] bg-[var(--fintheon-surface)] border-r border-zinc-900 flex flex-col">
       <div className="h-14 border-b border-zinc-900 flex items-center justify-between px-4">
         <h2 className="text-sm font-medium text-[var(--fintheon-accent)] tracking-wider uppercase">
           Mission Control

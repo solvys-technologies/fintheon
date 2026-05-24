@@ -11,11 +11,9 @@ import {
   Bell,
   BellOff,
   CubeFocus,
-  Radio,
 } from "lucide-react";
 import { useDND } from "../../contexts/DNDContext";
 import { useServerNotifications } from "../../contexts/NotificationsContext";
-import { useProxVoice } from "../../contexts/ProxVoiceContext";
 import { FadingRuler } from "../shared/FadingRuler";
 import {
   getSidebarOrder,
@@ -114,7 +112,6 @@ export function NavSidebar({
   refinementActive = false,
 }: NavSidebarProps) {
   const { dndActive, toggleManualDnd, queueCount } = useDND();
-  const proxVoice = useProxVoice();
   // [claude-code 2026-04-25] S35-Unified: badge reflects server unread + local queue.
   const { unreadCount: serverUnread } = useServerNotifications();
   const totalBadgeCount = queueCount + serverUnread;
@@ -135,8 +132,6 @@ export function NavSidebar({
 
   const expanded = hovered || manualExpand;
   const sidebarWidthPx = topStepXEnabled ? 0 : 44;
-  const voiceEnabled =
-    proxVoice.state === "connected" || proxVoice.state === "connecting";
 
   const handleMouseEnter = useCallback(() => {
     hoverTimerRef.current = setTimeout(() => setHovered(true), 3000);
@@ -249,7 +244,6 @@ export function NavSidebar({
   // content (z-10).
   const sidebarContent = (
     <div
-      style={{ backgroundColor: "var(--fintheon-surface)" }}
       className={`fintheon-side-surface relative h-full border-r-0 flex flex-col py-3 transition-[width] duration-300 ease-in-out ${
         expanded ? "w-48" : "w-11"
       }`}
@@ -351,39 +345,6 @@ export function NavSidebar({
             )}
           </button>
         )}
-        <button
-          onClick={() => {
-            if (voiceEnabled) {
-              void proxVoice.disconnect();
-            } else {
-              void proxVoice.connect();
-            }
-          }}
-          className={`w-full flex items-center gap-2.5 rounded-md transition-colors px-2 py-1.5 justify-start ${
-            voiceEnabled
-              ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]"
-              : "fintheon-nav-inactive"
-          }`}
-          title={expanded ? undefined : "ProxVoice"}
-        >
-          <Radio className="w-4 h-4 shrink-0" />
-          {expanded && (
-            <div className="min-w-0 text-left">
-              <div
-                className={`text-[11px] font-semibold truncate ${voiceEnabled ? "text-[var(--fintheon-accent)]" : ""}`}
-              >
-                ProxVoice
-              </div>
-              <div
-                className={`text-[9px] truncate ${voiceEnabled ? "text-[var(--fintheon-accent)]/60" : "text-gray-500"}`}
-              >
-                {voiceEnabled
-                  ? `${proxVoice.participants.length} on floor`
-                  : "Tap to join"}
-              </div>
-            </div>
-          )}
-        </button>
         {/* DND / Notification Center — hidden when iFrame active (moved to TopHeader) */}
         {!topStepXEnabled && (
           <button

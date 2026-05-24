@@ -8,6 +8,7 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname),
       "@frontend": path.resolve(__dirname, "../frontend"),
+      three: path.resolve(__dirname, "node_modules/three"),
       "lucide-react": path.resolve(
         __dirname,
         "../frontend/components/icon-bank/AnimatedIcons.tsx",

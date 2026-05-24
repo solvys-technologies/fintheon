@@ -168,7 +168,7 @@ export function AccountTrackerWidget({
                   ?.accountName || "Select Account"}
               </button>
               {showAccountDropdown && (
-                <div className="absolute left-0 right-0 top-full mt-1 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded z-10 min-w-[180px]">
+                <div className="fintheon-dropdown-surface absolute left-0 right-0 top-full mt-1 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded z-10 min-w-[180px]">
                   {projectxAccounts.map((account) => (
                     <button
                       key={account.accountId}

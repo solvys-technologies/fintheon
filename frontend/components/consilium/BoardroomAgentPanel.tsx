@@ -133,7 +133,7 @@ export function BoardroomAgentPanel({
 
   return (
     <div
-      className={`flex flex-col rounded-lg bg-[#050402] p-3 transition-opacity ${
+      className={`fintheon-liquid-surface flex flex-col rounded-lg bg-[#050402] p-3 transition-opacity ${
         isDim ? "opacity-40" : "opacity-100"
       } ${fullWidth ? "col-span-full" : ""}`}
       style={{

@@ -121,7 +121,7 @@ export function ArbitrumSettingsPanel({ onClose }: ArbitrumSettingsPanelProps) {
 
   if (!authed) {
     return (
-      <div className="absolute inset-0 z-50 flex items-center justify-center bg-[var(--fintheon-bg)]/90 backdrop-blur-[2px] p-4">
+      <div className="fintheon-modal-backdrop absolute inset-0 z-50 flex items-center justify-center p-4">
         <DevPasswordGate onAuthenticated={() => setAuthed(true)} />
       </div>
     );

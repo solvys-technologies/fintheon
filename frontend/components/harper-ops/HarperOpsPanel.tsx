@@ -172,7 +172,7 @@ export function HarperOpsPanel() {
 
   return (
     <div
-      className="h-full flex flex-col text-[var(--fintheon-text)]"
+      className="fintheon-liquid-surface h-full flex flex-col text-[var(--fintheon-text)]"
       style={{ fontFamily: "var(--font-body)" }}
     >
       {/* Status bar */}

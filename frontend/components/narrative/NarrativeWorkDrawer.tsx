@@ -77,7 +77,7 @@ export function NarrativeWorkDrawer({
 
   return (
     <aside
-      className="relative flex h-full min-h-0 shrink-0 flex-col bg-[var(--fintheon-bg)]/95"
+      className="fintheon-rail-surface relative flex h-full min-h-0 shrink-0 flex-col"
       style={{ width }}
     >
       <div

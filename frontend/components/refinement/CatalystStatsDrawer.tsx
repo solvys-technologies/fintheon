@@ -351,8 +351,8 @@ export function CatalystStatsDrawer({
     <div
       className={
         inline
-          ? "flex min-h-[360px] flex-col border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)]"
-          : `absolute right-0 top-0 bottom-0 z-40 flex w-[420px] flex-col border-l border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-2xl transition-all duration-300 ease-in-out ${open ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none invisible"}`
+          ? "fintheon-rail-surface flex min-h-[360px] flex-col border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)]"
+          : `fintheon-rail-surface absolute right-0 top-0 bottom-0 z-40 flex w-[420px] flex-col border-l border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-2xl transition-all duration-300 ease-in-out ${open ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none invisible"}`
       }
     >
       {/* Header — title + refresh + close, mirrors ChatPanel chrome density */}

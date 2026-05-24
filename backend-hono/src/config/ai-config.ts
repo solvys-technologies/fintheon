@@ -1,4 +1,4 @@
-// [claude-code 2026-04-23] Rollback: reinstate VProxy as primary; drop GitHub-backed inference provider
+// [codex 2026-05-23] Default inference provider config after local gateway cleanup.
 // [claude-code 2026-03-14] Default inference provider config.
 import priceSystemPrompt from "../prompts/price-system-prompt.js";
 import type {

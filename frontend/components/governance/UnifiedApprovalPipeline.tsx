@@ -67,7 +67,7 @@ export function UnifiedApprovalPipeline({
   };
 
   return (
-    <div className="w-full max-w-2xl rounded border border-[#c79f4a]/20 bg-[#050402]/80 backdrop-blur-md overflow-hidden">
+    <div className="fintheon-liquid-surface w-full max-w-2xl rounded border border-[#c79f4a]/20 bg-[#050402]/80 backdrop-blur-md overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-[#c79f4a]/20">
         <div className="flex items-center gap-2">

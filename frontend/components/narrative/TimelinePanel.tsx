@@ -407,7 +407,7 @@ export function TimelinePanel() {
             </button>
             {tagFilterOpen && (
               <div
-                className="absolute top-full right-0 mt-1.5 z-50 w-72 rounded-xl border bg-[var(--fintheon-bg)] shadow-2xl overflow-hidden"
+                className="fintheon-dropdown-surface absolute top-full right-0 mt-1.5 z-50 w-72 rounded-xl border bg-[var(--fintheon-bg)] shadow-2xl overflow-hidden"
                 style={{
                   borderColor:
                     "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",

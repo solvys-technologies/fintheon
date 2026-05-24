@@ -97,7 +97,7 @@ export async function runDebate(
     debateRounds,
     consensusScore,
     finalAssessment,
-    model: "strands-vproxy",
+    model: "strands-deepseek",
     totalLatencyMs: Date.now() - startTime,
     createdAt: new Date().toISOString(),
   };

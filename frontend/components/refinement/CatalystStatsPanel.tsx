@@ -307,7 +307,7 @@ export function CatalystStatsPanel({ disabled }: Props) {
   const totalCount = stats.reduce((sum, s) => sum + s.count, 0);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="fintheon-liquid-surface flex flex-col gap-3 p-3">
       <div
         style={{
           fontFamily: "var(--font-data)",

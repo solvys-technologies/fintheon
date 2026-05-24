@@ -7,7 +7,7 @@ Harper's identity, agent roster, palette, build rules, terminology, and API surf
 - **Backend**: Hono on port 8080, managed by launchd (`io.solvys.fintheon-backend`). Logs at `~/.hermes/logs/fintheon-backend.{log,err.log}`.
 - **Frontend**: Vite + React 19 + Tailwind, bundled into the Electron DMG.
 - **Database**: Supabase Postgres (pooler on `aws-0-us-west-2.pooler.supabase.com`). Notion is fully deprecated — never reference it for storage.
-- **AI routing**: VProxy gateway on `localhost:8317` → Anthropic API. Smart Model Routing (T9) runs per-agent.
+- **AI routing**: DeepSeek/Hermes provider chain. Smart Model Routing (T9) runs per-agent.
 - **Hermes sidecar**: port 8318 — long-context, voice, skills, routing/select.
 
 ## Tool Approval
@@ -40,6 +40,31 @@ The export creates an Obsidian authoring layer:
 - `Narratives/Drafts/` is for human-written narratives; never overwrite those drafts from an export.
 
 When a narrative draft is ready for app use, assign the catalyst IDs to the matching NF-Workspace session with `POST /api/narrative/sessions/:id/catalyst-bank/assign`, including tags and a concise `deskFit`.
+
+First-session bootstrap:
+
+1. Search the catalyst bank for current anchors:
+
+```bash
+curl -s "http://localhost:8080/api/narrative/catalyst-bank?limit=12"
+```
+
+2. Pick at least 3 RiskFlow catalyst IDs and create the NF-Workspace session:
+
+```bash
+curl -s -X POST "http://localhost:8080/api/narrative/sessions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Build my first NF-Workspace session from these catalysts.",
+    "catalystIds": ["financialjuice:example-1", "financialjuice:example-2", "financialjuice:example-3"],
+    "narrativeSlugs": ["rate-cut-cycle", "price-stability", "max-employment"],
+    "title": "First NF-Workspace Session",
+    "color": "#c79f4a",
+    "reasoningLevel": "standard"
+  }'
+```
+
+3. Tell TP the session is ready, then use `open_right_rail` for the starter plan and `ask_approval_questions` only if you need desk/trader preferences before refining.
 
 ## Scheduled Jobs (launchd)
 
@@ -140,6 +165,14 @@ When updating Linear:
 - Normal local-agent flow is `Todo/Backlog` -> `In Progress (Solvys Agent)` -> `Awaiting Review` -> `Done`.
 - If validator acceptance is already confirmed, close the full reviewed sprint issue set, not only the last ticket.
 - Leave review follow-ups, bug tickets, and planned-only briefs open even if the parent sprint number appears in a release.
+
+Solvys Support access:
+
+- Prefer the `solvys-support` MCP connector when it is available. Its Linear tools are prefixed `solvys_support_*`.
+- Authentication comes from Linear. The local MCP wrapper sources `scripts/.linear-env`, maps `LINEAR_API_KEY` to `LINEAR_ACCESS_TOKEN`, and starts `mcp-server-linear`.
+- If MCP is unavailable, use Linear GraphQL directly: source `scripts/.linear-env`, call `${LINEAR_API:-https://api.linear.app/graphql}`, and send `Authorization: $LINEAR_API_KEY`.
+- Use `LINEAR_TEAM_ID` from the same env file for team-scoped support queries and issue creation.
+- Never reveal, summarize, paste, or log the Linear token. Refer to the variable names only.
 
 When creating ORCH tickets for later Codex planning:
 

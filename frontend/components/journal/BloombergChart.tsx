@@ -185,7 +185,7 @@ export function BloombergChart({
             </svg>
           </button>
           {filterOpen && (
-            <div className="absolute top-full right-0 mt-0.5 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded shadow-lg min-w-[60px] z-20">
+            <div className="fintheon-dropdown-surface absolute top-full right-0 mt-0.5 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded shadow-lg min-w-[60px] z-20">
               {metrics.map((m) => (
                 <button
                   key={m.value}

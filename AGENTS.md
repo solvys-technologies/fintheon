@@ -9,6 +9,8 @@
 - Do NOT reiterate or summarize subagent results already visible to the user
 - If nothing meaningful to add, end your turn silently — empty acknowledgments are not wanted
 - Every Linear issue must include `@` file references to `sprint-md/` brief files in its description
+- Use the `solvys-support` MCP server for Linear-backed support operations when available; its tools are prefixed `solvys_support_*`
+- For Linear API fallback, source `scripts/.linear-env` and use `Authorization: $LINEAR_API_KEY`; never print or paste the token into tickets, logs, or responses
 - End good sessions with "flush memory" to trigger the continual-learning / agents-memory-updater flow
 - Implement first, then iterate from feedback — prefer direct action over over-planning
 - Use compact text in UI labels, tooltips, and settings
@@ -23,6 +25,7 @@
 - Cursor skills live in `.cursor/skills/<name>/SKILL.md`; Claude Code agent skills in `.claude/skills/<name>/SKILL.md`
 - Git tags follow `v{M.m.p}` format; release branches follow `v.{MONTH}.{DATE}.{PATCH}`
 - Watcher script is `scripts/linear-watcher.sh`, polls every 5 seconds, uses `scripts/.linear-env`, and is opened at startup by `launchd/io.solvys.fintheon-linear-watcher.plist`
+- Solvys Support MCP entry is `solvys-support` in `.mcp.json`; it launches `scripts/solvys-support-mcp.sh`, which maps `LINEAR_API_KEY` to `LINEAR_ACCESS_TOKEN` for `mcp-server-linear`
 - Beta phases mapped to Linear Initiatives/cycles: Pre-Release, Closed Beta, Open Beta
 - ORCH tickets are runbook/human items — the watcher automatically skips them
 - Electron app uses CommonJS (`electron/main.cjs`, `electron/preload.cjs`), not ESM

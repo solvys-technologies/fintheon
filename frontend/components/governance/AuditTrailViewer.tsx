@@ -58,7 +58,7 @@ export function AuditTrailViewer({ limit = 20 }: AuditTrailViewerProps) {
   }
 
   return (
-    <div className="rounded border border-[#c79f4a]/20 bg-[#050402]/80 backdrop-blur-md overflow-hidden">
+    <div className="fintheon-liquid-surface rounded border border-[#c79f4a]/20 bg-[#050402]/80 backdrop-blur-md overflow-hidden">
       {/* Column headers */}
       <div className="grid grid-cols-[1fr_6rem_8rem_7rem] px-4 py-2 border-b border-[#c79f4a]/20 text-[#f0ead6]/30 text-xs uppercase tracking-wide">
         <span>Timestamp</span>

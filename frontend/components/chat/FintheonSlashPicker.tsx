@@ -70,8 +70,7 @@ export function FintheonSlashPicker({
   if (filtered.length === 0) {
     return (
       <div
-        className="absolute bottom-full mb-1 left-0 w-72 rounded-lg border border-[var(--fintheon-accent)]/20 shadow-xl z-50 overflow-hidden"
-        style={{ backgroundColor: "var(--fintheon-surface)" }}
+        className="fintheon-dropdown-surface absolute bottom-full mb-1 left-0 w-72 rounded-lg border border-[var(--fintheon-accent)]/20 shadow-xl z-50 overflow-hidden"
       >
         <div className="px-3 py-3 text-[12px] text-gray-500 text-center">
           No matching skills for "/{query}"
@@ -82,8 +81,7 @@ export function FintheonSlashPicker({
 
   return (
     <div
-      className="absolute bottom-full mb-1 left-0 w-72 rounded-lg border border-[var(--fintheon-accent)]/20 shadow-xl z-50 overflow-hidden"
-      style={{ backgroundColor: "var(--fintheon-surface)" }}
+      className="fintheon-dropdown-surface absolute bottom-full mb-1 left-0 w-72 rounded-lg border border-[var(--fintheon-accent)]/20 shadow-xl z-50 overflow-hidden"
     >
       <div className="px-3 py-1.5 border-b border-[var(--fintheon-accent)]/10">
         <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">

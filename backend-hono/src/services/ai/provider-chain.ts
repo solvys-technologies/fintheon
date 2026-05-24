@@ -1,6 +1,6 @@
 // [claude-code 2026-05-07] Refactored: Hermes Agent API server (localhost:8081) is now
 //   the primary AI gateway. DeepSeek direct is retained as a fallback. Stripped all
-//   VProxy references (port 8317). The chain is: Hermes Agent API → DeepSeek direct.
+//   local subscription gateway references. The chain is: Hermes Agent API → DeepSeek direct.
 
 import { createLogger } from "../../lib/logger.js";
 import {

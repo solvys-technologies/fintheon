@@ -282,7 +282,7 @@ export async function generateTextViaClaude(
   prompt: string,
   options?: Partial<ClaudeSDKConfig>,
 ): Promise<string> {
-  // Preferred path for Harper flows: VProxy → Ollama-via-Hermes chain.
+  // Preferred path for Harper flows: Hermes Agent API, then DeepSeek direct.
   try {
     const chain = await generateViaChain({
       prompt,
@@ -294,13 +294,13 @@ export async function generateTextViaClaude(
     return chain.response;
   } catch (err) {
     log.warn(
-      "AI chain (VProxy+Ollama) failed — falling back to Claude CLI if available",
+      "AI chain failed — falling back to Claude CLI if available",
       { error: err instanceof Error ? err.message : String(err) },
     );
   }
 
   if (!isAvailable()) {
-    throw new Error("Claude CLI not available and VProxy request failed");
+    throw new Error("Claude CLI not available and AI chain request failed");
   }
 
   // Try persistent session first (serialized, no concurrency management needed)

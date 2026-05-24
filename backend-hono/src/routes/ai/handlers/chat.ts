@@ -3,9 +3,9 @@
 /**
  * AI Chat Handler
  * Handle chat messages and AI responses via Strands agent network
- * Routes through P.I.C. agent network — single inference path via VProxy
+ * Routes through P.I.C. agent network.
  *
- * All chat goes through Strands agents → VProxy → Claude models.
+ * All chat goes through Strands agents and the DeepSeek/Hermes provider chain.
  * Agent detection routes to: Harper, Oracle, Feucht, Consul, Herald.
  */
 
@@ -98,7 +98,7 @@ async function createAgentForRole(
 
 /**
  * POST /api/ai/chat
- * Strands Agent Processing - Routes through P.I.C. agent network via VProxy
+ * Strands Agent Processing - Routes through P.I.C. agent network
  */
 export async function handleChat(c: Context) {
   const startTime = Date.now();
@@ -400,7 +400,7 @@ export async function handleChat(c: Context) {
     cognition.step(
       "gateway-call",
       `Streaming from ${toAgentLabel(agentInfo.agent)}`,
-      "Strands agent via VProxy",
+      "Strands agent via provider chain",
     );
 
     const agentModel =

@@ -148,14 +148,14 @@ const KNOWN_SERVERS: Record<string, Partial<McpServerEntry>> = {
     category: "productivity",
     toolCount: 18,
   },
-  plane: {
-    name: "Plane",
+  "solvys-support": {
+    name: "Solvys Support",
     description:
-      "Issue tracking, sprints, cycles, modules, and product planning",
+      "Linear-backed support queue, issue triage, sprint follow-up, and agent handoffs",
     category: "productivity",
-    toolCount: 15,
+    toolCount: 20,
     requiresApiKey: true,
-    apiKeyEnvVar: "PLANE_API_KEY",
+    apiKeyEnvVar: "LINEAR_ACCESS_TOKEN",
   },
 };
 

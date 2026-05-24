@@ -69,7 +69,7 @@ export function SourcePolicyPanel() {
   }, []);
 
   return (
-    <div style={{ marginTop: 12 }}>
+    <div className="fintheon-liquid-surface p-3" style={{ marginTop: 12 }}>
       <div
         style={{
           display: "flex",

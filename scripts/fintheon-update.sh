@@ -203,7 +203,7 @@ bun install --silent 2>/dev/null || bun install 2>/dev/null || warn "Root deps i
 ok "Root dependencies"
 
 cd "$FINTHEON_ROOT/backend-hono"
-bun install --silent 2>/dev/null || bun install 2>/dev/null || warn "Backend deps install had issues"
+bun install --omit=peer --silent 2>/dev/null || bun install --omit=peer 2>/dev/null || warn "Backend deps install had issues"
 ok "Backend dependencies"
 
 if [[ -d "$FINTHEON_ROOT/frontend" && -f "$FINTHEON_ROOT/frontend/package.json" ]]; then
@@ -341,39 +341,6 @@ if [[ -f "$HERMES_ENV" ]] && grep -q "DEEPSEEK_API_KEY" "$HERMES_ENV"; then
   ok "Hermes Agent DeepSeek API key found"
 else
   warn "DeepSeek API key not found in Hermes Agent config — AI features may be degraded"
-fi
-
-# ── Step 6.5: Ensure MCP servers are cloned/updated ────────────────────────
-
-MCP_DIR="$HOME/Documents/Codebases"
-
-# financial-datasets MCP server (stock data, crypto, news)
-FD_MCP="$MCP_DIR/financial-datasets-mcp"
-if [[ -d "$FD_MCP/.git" ]]; then
-  git -C "$FD_MCP" pull --quiet 2>/dev/null || true
-  ok "financial-datasets MCP updated"
-else
-  git clone --quiet https://github.com/financial-datasets/mcp-server "$FD_MCP" 2>/dev/null || true
-  ok "financial-datasets MCP cloned"
-fi
-
-# tradingview MCP server (screener, technicals, chart data)
-TV_MCP="$MCP_DIR/tradingview-mcp"
-if [[ -d "$TV_MCP/.git" ]]; then
-  git -C "$TV_MCP" pull --quiet 2>/dev/null || true
-  cd "$TV_MCP" && npm install --silent 2>/dev/null || true
-  cd "$FINTHEON_ROOT"
-  ok "tradingview MCP updated"
-else
-  git clone --quiet https://github.com/tradesdontlie/tradingview-mcp.git "$TV_MCP" 2>/dev/null || true
-  cd "$TV_MCP" && npm install --silent 2>/dev/null || true
-  cd "$FINTHEON_ROOT"
-  ok "tradingview MCP cloned"
-fi
-
-# Install uv if missing (needed for Python MCP servers)
-if ! command -v uv &>/dev/null; then
-  curl -LsSf https://astral.sh/uv/install.sh | sh 2>/dev/null || warn "uv install failed — Python MCP servers won't work"
 fi
 
 # ── Step 7: Rebuild backend ─────────────────────────────────────────────────

@@ -113,7 +113,7 @@ export function SharedMemoryPanel({
     return (
       <div className="flex h-full bg-[var(--fintheon-bg)] t-fade-in">
         {/* Left: Card preview list — glass surface */}
-        <div className="relative flex flex-col w-[420px] min-w-[400px] flex-shrink-0 bg-[var(--fintheon-surface)]/40 backdrop-blur-md">
+        <div className="fintheon-rail-surface relative flex flex-col w-[420px] min-w-[400px] flex-shrink-0 bg-[var(--fintheon-surface)]/40 backdrop-blur-md">
           {/* Header */}
           <div className="flex items-center gap-2 px-5 py-3 border-b border-[var(--fintheon-accent)]/10">
             <Brain size={16} className="text-[var(--fintheon-accent)]" />

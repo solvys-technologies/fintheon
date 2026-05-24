@@ -54,7 +54,7 @@ export function RegimeThinkingOverlay({
   return (
     <GlassEffect
       blur={24}
-      tint="rgba(5,4,2,0.7)"
+      tint="var(--fintheon-glass-surface)"
       className={`absolute inset-0 z-10 rounded-2xl flex flex-col items-center justify-center ${
         dissolving
           ? "animate-[glass-dissolve_500ms_ease-out_forwards]"

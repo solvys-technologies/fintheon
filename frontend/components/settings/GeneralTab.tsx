@@ -87,7 +87,7 @@ export function GeneralTab({
                       className="fixed inset-0 z-10"
                       onClick={() => setShowSymbolDropdown(false)}
                     />
-                    <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-md bg-[var(--fintheon-surface)] fintheon-fade-in">
+                    <div className="fintheon-dropdown-surface absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-md bg-[var(--fintheon-surface)] fintheon-fade-in">
                       {availableSymbols.map((sym) => {
                         const isSelected = sym.symbol === symbolKey;
                         return (

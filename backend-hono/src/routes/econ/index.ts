@@ -368,7 +368,7 @@ Return the JSON schema specified in the system prompt.`;
         printsCount: e.prints.length,
       })),
       synthesis_text: JSON.stringify({ events }),
-      model: "strands-vproxy",
+      model: "strands-deepseek",
       user_id: null,
     });
 

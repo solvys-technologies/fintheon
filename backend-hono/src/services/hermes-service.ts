@@ -193,11 +193,9 @@ export const buildHermesHeaders = (config?: {
 
 /**
  * Check if Hermes / Strands is available
- * Now checks VProxy via Strands provider instead of OpenRouter API key.
  */
 export const isHermesAvailable = (): boolean => {
-  // VProxy is always configured locally — return true if env isn't explicitly disabled
-  return process.env.USE_VPROXY_ANTHROPIC !== "false";
+  return process.env.HERMES_ENABLED !== "false";
 };
 
 /**

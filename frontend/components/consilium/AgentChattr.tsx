@@ -115,7 +115,7 @@ function AgentDropdown({
       </button>
 
       {open && (
-        <div className="absolute bottom-full left-0 mb-1 z-50 w-52 rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] py-1 shadow-xl">
+        <div className="fintheon-dropdown-surface absolute bottom-full left-0 mb-1 z-50 w-52 rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] py-1 shadow-xl">
           {/* "All" option */}
           <button
             onClick={() => {
@@ -400,7 +400,7 @@ export function AgentChattr({
 
       {/* Run history overlay */}
       {showHistory && (
-        <div className="absolute top-10 left-3 z-40 w-72 max-h-80 overflow-y-auto rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-xl">
+        <div className="fintheon-dropdown-surface absolute top-10 left-3 z-40 w-72 max-h-80 overflow-y-auto rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-xl">
           <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--fintheon-accent)]/10">
             <span className="text-[10px] text-[var(--fintheon-accent)]/60 uppercase tracking-wider">
               Recent Runs

@@ -1,6 +1,6 @@
 // [claude-code 2026-04-26] S35-cleanup: rerouted Harper normalize from raw
 // OpenRouter (Anthropic Opus, key returns 401 on prod) to invokeAgent which
-// flows VProxy → Ollama Qwen3.5:397b-cloud via Hermes → Nous → OpenRouter.
+// flows through the DeepSeek/Hermes provider chain.
 // [claude-code 2026-04-24] S34-T10: Harper batch categorization pass for backfilled econ events.
 
 import { createHash } from "node:crypto";

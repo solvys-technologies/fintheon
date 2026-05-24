@@ -206,7 +206,7 @@ export function CommandmentsSidebar() {
   const listRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="w-[260px] shrink-0 border-r border-[var(--fintheon-accent)]/10 flex flex-col overflow-y-auto">
+    <div className="fintheon-rail-surface w-[260px] shrink-0 flex flex-col overflow-y-auto">
       <div className="p-3">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5">
@@ -221,7 +221,7 @@ export function CommandmentsSidebar() {
         </div>
         <div
           ref={listRef}
-          className="relative border border-[var(--fintheon-accent)]/20 rounded-md bg-[var(--fintheon-surface)] p-2 space-y-0.5"
+          className="fintheon-liquid-surface relative p-2 space-y-0.5"
         >
           <ConstellationRopes containerRef={listRef} />
           {COMMANDMENTS.map((cmd) => (

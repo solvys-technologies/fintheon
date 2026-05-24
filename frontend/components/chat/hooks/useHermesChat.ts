@@ -3,7 +3,7 @@
  * Simple chat hook for Hermes AI processing
  */
 
-// [claude-code 2026-05-03] S58 deploy fix: default Harper chat provider to DeepSeek, not VProxy/local.
+// [claude-code 2026-05-03] S58 deploy fix: default Harper chat provider to DeepSeek.
 // [claude-code 2026-05-03] S58-T2: route personal CAO DeepSeek providers through client SDK when configured.
 // [claude-code 2026-05-04] S38-T5: removed deepseek-oc-api provider, updated provider routing for v2 dropdown.
 // [claude-code 2026-04-18] Clear cached conversationId on 404 during hydration — otherwise Electron

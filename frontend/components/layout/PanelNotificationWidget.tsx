@@ -35,13 +35,7 @@ export function PanelNotificationWidget({
       }`}
     >
       <div
-        className="backdrop-blur-3xl bg-gradient-to-br from-[var(--fintheon-surface)]/80 via-[var(--fintheon-surface)]/70 to-[var(--fintheon-surface)]/60 border border-[var(--fintheon-accent)]/30 rounded-xl p-3 shadow-2xl min-w-[200px]"
-        style={{
-          backdropFilter: "blur(40px) saturate(180%)",
-          WebkitBackdropFilter: "blur(40px) saturate(180%)",
-          boxShadow:
-            "0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 1px 1px 0 rgba(255, 255, 255, 0.1)",
-        }}
+        className="fintheon-toast-surface p-3 min-w-[200px]"
       >
         <div className="flex items-center justify-between gap-2">
           <div className="flex-1">

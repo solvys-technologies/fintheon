@@ -4,14 +4,13 @@
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { resolve, join } from "path";
-import { existsSync, readFileSync } from "fs";
+import { readFileSync } from "fs";
 import { runCommand, isFintheonRunning, waitForHealth } from "./setup-utils";
 
 const ROOT = resolve(import.meta.dir, "..");
 const BACKEND_DIR = join(ROOT, "backend-hono");
 const FRONTEND_DIR = join(ROOT, "frontend");
 const MOBILE_DIR = join(ROOT, "mobile");
-const MCP_DIR = resolve(ROOT, "..", ""); // ~/Documents/Codebases
 
 async function main() {
   console.log("");
@@ -119,62 +118,19 @@ async function main() {
   const workspaces = [
     { name: "root", dir: ROOT },
     { name: "frontend", dir: FRONTEND_DIR },
-    { name: "backend-hono", dir: BACKEND_DIR },
+    { name: "backend-hono", dir: BACKEND_DIR, args: ["install", "--omit=peer"] },
     { name: "mobile", dir: MOBILE_DIR },
   ];
 
   for (const ws of workspaces) {
     const s = p.spinner();
     s.start(`Installing ${ws.name} dependencies`);
-    const result = await runCommand("bun", ["install"], { cwd: ws.dir });
+    const result = await runCommand("bun", ws.args ?? ["install"], {
+      cwd: ws.dir,
+    });
     s.stop(
       result.ok ? `${ws.name} deps installed` : `${ws.name} install failed`,
     );
-  }
-
-  // Step 4b: Update external MCP server repos
-  const mcpRepos = [
-    {
-      name: "financial-datasets-mcp",
-      dir: join(MCP_DIR, "financial-datasets-mcp"),
-      origin: "https://github.com/financial-datasets/mcp-server",
-      postInstall: null,
-    },
-    {
-      name: "tradingview-mcp",
-      dir: join(MCP_DIR, "tradingview-mcp"),
-      origin: "https://github.com/tradesdontlie/tradingview-mcp.git",
-      postInstall: "npm",
-    },
-  ];
-
-  for (const repo of mcpRepos) {
-    const ms = p.spinner();
-    if (existsSync(join(repo.dir, ".git"))) {
-      ms.start(`Updating ${repo.name}`);
-      const pull = await runCommand(
-        "git",
-        ["-C", repo.dir, "pull", "--quiet"],
-        {
-          cwd: ROOT,
-        },
-      );
-      if (repo.postInstall === "npm") {
-        await runCommand("npm", ["install", "--silent"], { cwd: repo.dir });
-      }
-      ms.stop(pull.ok ? `${repo.name} updated` : `${repo.name} pull failed`);
-    } else {
-      ms.start(`Cloning ${repo.name}`);
-      const clone = await runCommand(
-        "git",
-        ["clone", "--quiet", repo.origin, repo.dir],
-        { cwd: ROOT },
-      );
-      if (clone.ok && repo.postInstall === "npm") {
-        await runCommand("npm", ["install", "--silent"], { cwd: repo.dir });
-      }
-      ms.stop(clone.ok ? `${repo.name} cloned` : `${repo.name} clone failed`);
-    }
   }
 
   // Step 5: Rebuild backend

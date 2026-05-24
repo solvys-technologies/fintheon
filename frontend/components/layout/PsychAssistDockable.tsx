@@ -128,7 +128,7 @@ export function PsychAssistDockable({
   return (
     <div
       ref={panelRef}
-      className="fixed z-50 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-2xl px-3 py-2"
+      className="fintheon-popover-surface fixed z-50 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-2xl px-3 py-2"
       style={{ top: 0, left: 0, width: "340px" }}
     >
       <div className="flex items-center justify-between mb-2">

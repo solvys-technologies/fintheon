@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { validateEnv } from "../index.js";
 
-const FULL_VALID_ENV = {
+const FULL_VALID_ENV: Record<string, string | undefined> = {
   NODE_ENV: "production",
   DATABASE_URL: "postgresql://user:pass@host/db",
   SUPABASE_URL: "https://abc.supabase.co",
@@ -9,6 +9,7 @@ const FULL_VALID_ENV = {
   DEEPSEEK_API_KEY: "sk-deepseek-test-key-value",
   OPENROUTER_API_KEY: "sk-or-test-key-value",
   ENABLE_CENTRAL_SCORING: "true",
+  BYPASS_AUTH: undefined,
 };
 
 function withEnv(
@@ -55,12 +56,11 @@ describe("validateEnv", () => {
     });
   });
 
-  it("allows missing OPENROUTER_API_KEY when VProxy Anthropic is enabled", () => {
+  it("allows missing OPENROUTER_API_KEY when DeepSeek is configured", () => {
     withEnv(
       {
         ...FULL_VALID_ENV,
         OPENROUTER_API_KEY: undefined,
-        USE_VPROXY_ANTHROPIC: "true",
       },
       () => {
         const result = validateEnv();
@@ -74,7 +74,6 @@ describe("validateEnv", () => {
       {
         ...FULL_VALID_ENV,
         OPENROUTER_API_KEY: undefined,
-        USE_VPROXY_ANTHROPIC: "false",
       },
       () => {
         const result = validateEnv();

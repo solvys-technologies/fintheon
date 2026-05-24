@@ -31,6 +31,8 @@ export function SettingsPage() {
     setTheme,
     fontTheme,
     setFontTheme,
+    glassTransparencyEnabled,
+    setGlassTransparencyEnabled,
     availableThemes,
     availableFonts,
   } = useTheme();
@@ -84,6 +86,42 @@ export function SettingsPage() {
               onPick={setFontTheme}
               fonts={availableFonts}
             />
+            <button
+              type="button"
+              onClick={() =>
+                setGlassTransparencyEnabled(!glassTransparencyEnabled)
+              }
+              aria-pressed={glassTransparencyEnabled}
+              style={{
+                width: "100%",
+                minHeight: 48,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0 14px",
+                borderRadius: 8,
+                border:
+                  "1px solid color-mix(in srgb, var(--accent) 18%, transparent)",
+                background:
+                  "color-mix(in srgb, var(--accent) 6%, transparent)",
+                color: "var(--text-primary)",
+                fontFamily: "var(--font-data)",
+                fontSize: 11,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+              }}
+            >
+              <span>Glass</span>
+              <span
+                style={{
+                  color: glassTransparencyEnabled
+                    ? "var(--accent)"
+                    : "var(--text-secondary)",
+                }}
+              >
+                {glassTransparencyEnabled ? "On" : "Off"}
+              </span>
+            </button>
           </div>
         </CollapsibleSection>
 

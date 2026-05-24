@@ -112,6 +112,12 @@ contextBridge.exposeInMainWorld("electron", {
 
   // SOTA updater API (manual flow)
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
+  appearance: {
+    getNativeVibrancy: () =>
+      ipcRenderer.invoke("appearance:get-native-vibrancy"),
+    setNativeVibrancy: (enabled) =>
+      ipcRenderer.invoke("appearance:set-native-vibrancy", enabled),
+  },
   checkForUpdate: () => ipcRenderer.invoke("update-check"),
   downloadUpdate: () => ipcRenderer.invoke("update-download"),
   installUpdate: () => ipcRenderer.invoke("update-install"),

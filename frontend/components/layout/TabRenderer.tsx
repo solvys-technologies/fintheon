@@ -14,6 +14,8 @@ import { EconCalendarProvider } from "../../contexts/EconCalendarContext";
 import { TradingViewCalendar } from "../econ/TradingViewCalendar";
 import { NarrativeProvider } from "../../contexts/NarrativeContext";
 import { DeskMap } from "../narrative/DeskMap";
+import { fetchNarrativeSessions } from "../../lib/narrative-session-api";
+import type { NarrativeSessionSummary } from "../narrative/NarrativeSessionHistory";
 import { PerformanceJournal } from "../journal/PerformanceJournal";
 import { ProposalWidget } from "../proposals/ProposalWidget";
 import { ApparatusMap } from "../apparatus/ApparatusMap";
@@ -117,7 +119,7 @@ export function TabRenderer({
           className={`h-full w-full ${animClass}`}
         >
           <NarrativeProvider>
-            <DeskMap />
+            <DeskNarrativeMapSurface />
           </NarrativeProvider>
         </div>
       )}
@@ -155,6 +157,40 @@ export function TabRenderer({
           <SettingsPage />
         </div>
       )}
+    </div>
+  );
+}
+
+function DeskNarrativeMapSurface() {
+  const [sessions, setSessions] = useState<NarrativeSessionSummary[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchNarrativeSessions()
+      .then((items) => {
+        if (cancelled) return;
+        setSessions(items);
+        setError(null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setSessions([]);
+        setError(err instanceof Error ? err.message : "Narrative sessions failed to load.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <div className="relative h-full w-full">
+      <DeskMap sessions={sessions} activeSessionId={null} />
+      {error ? (
+        <div className="fintheon-popover-surface pointer-events-none absolute left-4 top-4 z-50 max-w-sm px-3 py-2 text-xs text-[var(--fintheon-muted)]">
+          {error}
+        </div>
+      ) : null}
     </div>
   );
 }

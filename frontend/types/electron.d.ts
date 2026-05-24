@@ -46,9 +46,19 @@ export interface BackendEngineStatus {
   detail?: string;
 }
 
+export interface NativeVibrancyStatus {
+  ok: boolean;
+  enabled: boolean;
+  native: boolean;
+  reason?: string;
+}
+
 export interface ElectronAPI {
-  platform: "electron";
-  isElectron: true;
+  platform: string;
+  apiBase: string;
+  isWindows: boolean;
+  isMac: boolean;
+  isElectron?: boolean;
   toggleMiniWidget: () => Promise<void>;
   setKeepWidgetOnClose: (value: boolean) => Promise<void>;
   getKeepWidgetOnClose: () => Promise<boolean>;
@@ -80,6 +90,10 @@ export interface ElectronAPI {
   };
 
   // SOTA desktop updater (manual check + manual download handoff)
+  appearance: {
+    getNativeVibrancy: () => Promise<NativeVibrancyStatus>;
+    setNativeVibrancy: (enabled: boolean) => Promise<NativeVibrancyStatus>;
+  };
   checkForUpdate: () => Promise<DesktopUpdateStatus>;
   downloadUpdate: () => Promise<{
     ok: boolean;

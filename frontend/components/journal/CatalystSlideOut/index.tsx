@@ -76,11 +76,9 @@ export function CatalystSlideOut({
   return (
     <div
       ref={panelRef}
-      className="fixed top-0 right-0 h-full z-50 flex flex-col"
+      className="fintheon-rail-surface fixed top-0 right-0 h-full z-50 flex flex-col"
       style={{
         width: 400,
-        backgroundColor: "#050402",
-        borderLeft: "1px solid #1a1a1a",
         transform: isOpen ? "translateX(0)" : "translateX(100%)",
         transition: "transform 200ms ease-out",
         willChange: "transform",

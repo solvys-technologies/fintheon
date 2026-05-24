@@ -1,4 +1,4 @@
-// [claude-code 2026-05-03] S58 deploy fix: mobile chat labels relay fallback as DeepSeek-backed, not VProxy/desktop-primary.
+// [claude-code 2026-05-03] S58 deploy fix: mobile chat labels relay fallback as DeepSeek-backed.
 // [claude-code 2026-05-03] S58-T2: mobile chat uses direct DeepSeek SDK when a user key exists, relay otherwise.
 // [claude-code 2026-05-04] S38-T5: added provider dropdown + first-time API key popup integration.
 // [claude-code 2026-04-18] v5.22 S2: TP saw a hollow "thinking bubble" appear before any

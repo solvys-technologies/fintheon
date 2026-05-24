@@ -103,13 +103,7 @@ export function NarrativeFlowFilterBar({
               onClick={() => setDropdownOpen(false)}
             />
             <div
-              className="absolute top-full left-0 mt-1 z-20 min-w-[180px] rounded-lg overflow-hidden"
-              style={{
-                backdropFilter: "blur(24px)",
-                WebkitBackdropFilter: "blur(24px)",
-                backgroundColor: "rgba(10,9,5,0.92)",
-                border: "1px solid rgba(199,159,74,0.15)",
-              }}
+              className="fintheon-dropdown-surface absolute top-full left-0 mt-1 z-20 min-w-[180px] overflow-hidden"
             >
               {themes.map((t) => (
                 <button

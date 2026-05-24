@@ -56,7 +56,7 @@ export function ProxVoicePanel({ open, onClose, anchorRect }: ProxVoicePanelProp
   return createPortal(
     <>
       <div
-        className="fixed z-[9998] w-[380px] overflow-hidden rounded-md bg-[var(--fintheon-surface)] fintheon-fade-in"
+        className="fintheon-popover-surface fixed z-[9998] w-[380px] overflow-hidden rounded-md bg-[var(--fintheon-surface)] fintheon-fade-in"
         style={panelPosition}
         onMouseMove={(event) => {
           if (!drag) return;
@@ -192,7 +192,7 @@ export function ProxVoicePanel({ open, onClose, anchorRect }: ProxVoicePanelProp
       </div>
       {profile && (
         <div
-          className="fixed inset-0 z-[9999] flex items-end bg-black/30 p-0 sm:items-start sm:justify-end sm:p-16"
+          className="fintheon-modal-backdrop fixed inset-0 z-[9999] flex items-end bg-black/30 p-0 sm:items-start sm:justify-end sm:p-16"
           onClick={() => setProfile(null)}
         >
           <div onClick={(e) => e.stopPropagation()}>

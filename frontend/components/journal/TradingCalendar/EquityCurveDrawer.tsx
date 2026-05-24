@@ -84,16 +84,11 @@ export function EquityCurveDrawer({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center"
-      style={{ background: "rgba(0,0,0,0.6)" }}
+      className="fintheon-modal-backdrop fixed inset-0 z-50 flex items-end justify-center"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl rounded-t-lg p-4"
-        style={{
-          background: "#0a0a00",
-          border: "1px solid rgba(199,159,74,0.15)",
-        }}
+        className="fintheon-sheet-surface w-full max-w-2xl rounded-t-lg p-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-3">

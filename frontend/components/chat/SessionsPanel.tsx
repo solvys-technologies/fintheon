@@ -100,7 +100,7 @@ export function SessionsPanel({
   }, {});
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="fintheon-rail-surface flex flex-col h-full">
       {/* Header */}
       <div
         className="flex items-center justify-between px-4 py-3 border-b"

@@ -1,6 +1,6 @@
 // [claude-code 2026-05-07] Refactored: Hermes Agent API server (localhost:8081) is now
 //   the primary AI gateway for all Arbitrum seats. DeepSeek direct, Ollama, and Groq
-//   retained as explicit alternates. Stripped VProxy references.
+//   retained as explicit alternates.
 
 import { resolveProvider, type ArbitrumProvider } from "../hermes-service.js";
 

@@ -79,7 +79,7 @@ export function SanctumSitemapDrawer({
       <div
         onMouseEnter={cancelHide}
         onMouseLeave={scheduleHide}
-        className={`fixed top-12 right-0 z-40 w-[240px] flex flex-col bg-[var(--fintheon-bg)]/95 backdrop-blur-xl border-l border-[var(--fintheon-accent)]/15 shadow-[0_0_40px_rgba(0,0,0,0.5)] transition-transform duration-200 ease-out`}
+        className={`fintheon-rail-surface fixed top-12 right-0 z-40 w-[240px] flex flex-col bg-[var(--fintheon-bg)]/95 backdrop-blur-xl border-l border-[var(--fintheon-accent)]/15 shadow-[0_0_40px_rgba(0,0,0,0.5)] transition-transform duration-200 ease-out`}
         style={{
           bottom: 0,
           transform: open ? "translateX(0)" : "translateX(100%)",

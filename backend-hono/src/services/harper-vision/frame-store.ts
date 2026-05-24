@@ -10,8 +10,6 @@ import type {
   HarperVisionFrameIngest,
   HarperVisionFrameRecord,
 } from "../../types/harper-vision.js";
-import { describeTradingDeskFrame } from "../vproxy/vision.js";
-import { embedText } from "../embeddings/index.js";
 
 const supabaseUrl = process.env.SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
@@ -92,28 +90,10 @@ async function storeImage(
 }
 
 async function generateDescriptionAsync(
-  frameId: string,
-  base64Image: string,
+  _frameId: string,
+  _base64Image: string,
 ): Promise<void> {
-  const description = await describeTradingDeskFrame(base64Image);
-  if (!description) return;
-
-  const embedding = await embedText(description);
-
-  const { error } = await supabase
-    .from("harper_vision_frames")
-    .update({
-      description,
-      description_embedding: embedding,
-    })
-    .eq("id", frameId);
-
-  if (error) {
-    console.error(
-      "[HarperVision] Frame description update error:",
-      error.message,
-    );
-  }
+  return;
 }
 
 export async function getRecentFrames(

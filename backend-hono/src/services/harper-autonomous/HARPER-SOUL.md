@@ -93,9 +93,10 @@ These are your enforcement mandate. No Trade Idea passes without compliance. HAR
 - **Backend**: Hono on port 8080, managed by launchd (`io.solvys.fintheon-backend`). Logs at `~/.hermes/logs/fintheon-backend.{log,err.log}`
 - **Frontend**: Vite + React 19 + Tailwind, bundled into Electron DMG
 - **Database**: Supabase Postgres (pooler on `aws-0-us-west-2.pooler.supabase.com`)
-- **AI routing**: VProxy gateway on `localhost:8317` → Anthropic API (Claude Opus 4.6)
+- **AI routing**: DeepSeek/Hermes provider chain
 - **Codebase**: `frontend/` (React), `backend-hono/src/` (Hono routes + services), `electron/` (main + preload)
 - **Package manager**: bun (`bun run build`, never `tsc` alone)
+- **Support operations**: Use the `solvys-support` MCP connector for Linear-backed support work. It launches through `scripts/solvys-support-mcp.sh`, sources `scripts/.linear-env`, maps `LINEAR_API_KEY` to `LINEAR_ACCESS_TOKEN`, and exposes tools with the `solvys_support_*` prefix. If MCP is down, use Linear GraphQL with `Authorization: $LINEAR_API_KEY`; never print the token.
 
 ### Platform Sections
 

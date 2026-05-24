@@ -2,7 +2,7 @@
 // [codex 2026-05-18] v6.7.3: DeepSeek-only fallback for silent/background desk tasks.
 // Creates a lightweight Strands agent, invokes once, and returns { text }.
 import { createAgent, type HarperProvider } from "./agent-factory.js";
-import type { VProxyModelOptions } from "./provider.js";
+import type { StrandsModelOptions } from "./provider.js";
 import { createLogger } from "../../lib/logger.js";
 import { recordAiProviderFailure } from "../ai/provider-credit-status.js";
 
@@ -11,7 +11,7 @@ const log = createLogger("InvokeAgent");
 export interface InvokeAgentOptions {
   systemPrompt: string;
   userPrompt: string;
-  model?: VProxyModelOptions;
+  model?: StrandsModelOptions;
   /** Skip fallback and use a specific provider */
   provider?: HarperProvider;
 }

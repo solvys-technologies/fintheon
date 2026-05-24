@@ -65,7 +65,7 @@ export function ReasoningLevelSelector({
 
       {open && (
         <div
-          className={`fintheon-popover-motion absolute bottom-full left-0 z-50 mb-2 w-[230px] overflow-hidden rounded-lg border border-[var(--fintheon-accent)]/15 bg-[#0a0905] ${
+          className={`fintheon-dropdown-surface fintheon-popover-motion absolute bottom-full left-0 z-50 mb-2 w-[230px] overflow-hidden rounded-lg border border-[var(--fintheon-accent)]/15 bg-[#0a0905] ${
             isClosing ? "is-closing" : ""
           }`}
           style={{ boxShadow: "none" }}

@@ -13,7 +13,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   ];
 
   return (
-    <div className="w-16 bg-[var(--fintheon-bg)] border-r border-zinc-900 flex flex-col items-center py-4 gap-2">
+    <div className="fintheon-side-surface w-16 flex flex-col items-center py-4 gap-2">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;

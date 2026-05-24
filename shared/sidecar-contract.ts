@@ -327,7 +327,6 @@ export const ModelProviderSchema = z.enum([
   "qwen",
   "deepseek",
   "openrouter",
-  "vproxy",
   "local",
 ]);
 export type ModelProvider = z.infer<typeof ModelProviderSchema>;

@@ -30,6 +30,7 @@ const API_BASE =
 const BACKEND_SETTINGS_URL = `${API_BASE}/api/settings`;
 const MODE_STORAGE_KEY = "fintheon:theme-mode:desktop";
 const ZEN_STORAGE_KEY = "fintheon:zen-mode:desktop";
+const GLASS_TRANSPARENCY_STORAGE_KEY = "fintheon:glass-transparency:desktop";
 
 export type ThemeMode = "dark" | "light";
 
@@ -44,6 +45,8 @@ interface ThemeContextValue {
   setPompaEnabled: (v: boolean) => void;
   zenModeEnabled: boolean;
   setZenModeEnabled: (v: boolean) => void;
+  glassTransparencyEnabled: boolean;
+  setGlassTransparencyEnabled: (v: boolean) => void;
   mode: ThemeMode;
   setMode: (mode: ThemeMode) => void;
 }
@@ -87,8 +90,39 @@ function saveZenMode(enabled: boolean) {
   } catch {}
 }
 
+function loadStoredGlassTransparency(): boolean {
+  try {
+    return localStorage.getItem(GLASS_TRANSPARENCY_STORAGE_KEY) !== "false";
+  } catch {
+    return true;
+  }
+}
+
+function saveGlassTransparency(enabled: boolean) {
+  try {
+    localStorage.setItem(GLASS_TRANSPARENCY_STORAGE_KEY, String(enabled));
+  } catch {}
+}
+
 function applyZenModeToDOM(enabled: boolean) {
   document.documentElement.dataset.zenMode = enabled ? "true" : "false";
+}
+
+function applyGlassTransparencyToDOM(enabled: boolean) {
+  const root = document.documentElement;
+  const body = document.body;
+  const enabledValue = enabled ? "true" : "false";
+  const nativeVibrancy =
+    enabled && Boolean(window.electron?.isMac && window.electron?.appearance);
+
+  root.dataset.fintheonGlassTransparency = enabledValue;
+  root.dataset.fintheonNativeVibrancy = nativeVibrancy ? "true" : "false";
+  if (body) {
+    body.dataset.fintheonGlassTransparency = enabledValue;
+    body.dataset.fintheonNativeVibrancy = nativeVibrancy ? "true" : "false";
+  }
+
+  window.electron?.appearance?.setNativeVibrancy(enabled).catch(() => {});
 }
 
 function applyThemeToDOM(theme: ThemeConfig, mode?: ThemeMode) {
@@ -100,11 +134,12 @@ function applyThemeToDOM(theme: ThemeConfig, mode?: ThemeMode) {
   const surface = isLight ? LIGHT_SURFACE.surface : theme.surface;
   const muted = isLight ? LIGHT_SURFACE.muted : theme.muted;
   const border = isLight ? LIGHT_SURFACE.border : theme.border;
+  const primary = theme.primary ?? theme.accent;
 
   root.setAttribute("data-theme", mode || "dark");
   root.dataset.fintheonSurfaceTheme = theme.glassVariant ?? "solid";
   if (body) body.dataset.fintheonSurfaceTheme = theme.glassVariant ?? "solid";
-  root.style.setProperty("--fintheon-primary", theme.primary ?? theme.accent);
+  root.style.setProperty("--fintheon-primary", primary);
   root.style.setProperty("--fintheon-secondary", theme.secondary ?? theme.muted);
   root.style.setProperty("--fintheon-accent", theme.accent);
   root.style.setProperty("--fintheon-bg", bg);
@@ -204,6 +239,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (typeof document !== "undefined") applyZenModeToDOM(stored);
     return stored;
   });
+  const [glassTransparencyEnabled, setGlassTransparencyState] =
+    useState<boolean>(() => {
+      const stored = loadStoredGlassTransparency();
+      if (typeof document !== "undefined") applyGlassTransparencyToDOM(stored);
+      return stored;
+    });
 
   useEffect(() => {
     localStorage.setItem("fintheon:pompa-mode", String(pompaEnabled));
@@ -213,6 +254,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setZenModeState(next);
     applyZenModeToDOM(next);
     saveZenMode(next);
+  }, []);
+
+  const setGlassTransparencyEnabled = useCallback((next: boolean) => {
+    setGlassTransparencyState(next);
+    applyGlassTransparencyToDOM(next);
+    saveGlassTransparency(next);
   }, []);
 
   const backendSynced = useRef(false);
@@ -263,7 +310,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const data = res.ok ? await res.json() : null;
         const remote = data?.settings;
         if (remote?.appearance) {
-          const { colorTheme, fontThemeId, pompaMode, themeMode, zenModeEnabled: remoteZenMode, zenMode } = remote.appearance;
+          const {
+            colorTheme,
+            fontThemeId,
+            pompaMode,
+            themeMode,
+            zenModeEnabled: remoteZenMode,
+            zenMode,
+            glassTransparencyEnabled: remoteGlassTransparency,
+          } = remote.appearance;
           const remoteMode = themeMode === "light" ? "light" : mode;
           if (themeMode === "light" || themeMode === "dark") {
             setModeState(themeMode);
@@ -295,6 +350,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             applyZenModeToDOM(nextZen);
             saveZenMode(nextZen);
           }
+          if (remoteGlassTransparency !== undefined) {
+            const nextGlass = remoteGlassTransparency !== false;
+            setGlassTransparencyState(nextGlass);
+            applyGlassTransparencyToDOM(nextGlass);
+            saveGlassTransparency(nextGlass);
+          }
         }
       } finally {
         backendSynced.current = true;
@@ -310,6 +371,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       pompaMode: pompaEnabled,
       themeMode: mode,
       zenModeEnabled,
+      glassTransparencyEnabled,
     };
     (async () => {
       const token = await getAccessToken();
@@ -324,7 +386,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ settings: { appearance } }),
       }).catch(() => {});
     })();
-  }, [theme, fontTheme, pompaEnabled, mode, zenModeEnabled]);
+  }, [
+    theme,
+    fontTheme,
+    pompaEnabled,
+    mode,
+    zenModeEnabled,
+    glassTransparencyEnabled,
+  ]);
 
   return (
     <ThemeContext.Provider
@@ -339,6 +408,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setPompaEnabled,
         zenModeEnabled,
         setZenModeEnabled,
+        glassTransparencyEnabled,
+        setGlassTransparencyEnabled,
         mode,
         setMode,
       }}

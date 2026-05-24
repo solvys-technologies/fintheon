@@ -48,7 +48,7 @@ async function summarizeOlderMessages(
     process.env.HERMES_API_KEY ||
     "opencode-go";
   const baseUrl = (
-    process.env.HERMES_API_URL || "http://localhost:8317/v1"
+    process.env.HERMES_API_URL || "http://localhost:8081/v1"
   ).replace(/\/+$/, "");
 
   const summaryPrompt = `Summarize this conversation history concisely, preserving key facts, decisions, and context:\n\n${olderMessages.map((m) => `${m.role}: ${m.content}`).join("\n\n")}`;

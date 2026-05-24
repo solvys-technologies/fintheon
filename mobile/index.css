@@ -57,6 +57,7 @@
 
   /* ── Fintheon Legacy Tokens (shared component compatibility) ── */
   --fintheon-accent: #d4af37;
+  --fintheon-primary: #d4af37;
   --fintheon-bg: #050402;
   --fintheon-text: #f0ead6;
   --fintheon-bullish: #34d399;
@@ -64,19 +65,42 @@
   --fintheon-surface: #0a0a00;
   --fintheon-border: #d4af37;
   --fintheon-muted: #6b7280;
+  --fintheon-glass-surface-opacity: 58%;
+  --fintheon-glass-backdrop-opacity: 58%;
+  --fintheon-glass-field-opacity: 52%;
+  --fintheon-glass-primary-mix: color-mix(
+    in srgb,
+    var(--fintheon-primary) 20%,
+    var(--fintheon-surface)
+  );
+  --fintheon-glass-surface: color-mix(
+    in srgb,
+    var(--fintheon-glass-primary-mix) var(--fintheon-glass-surface-opacity),
+    transparent
+  );
+  --fintheon-glass-field: color-mix(
+    in srgb,
+    var(--fintheon-glass-primary-mix) var(--fintheon-glass-field-opacity),
+    transparent
+  );
+  --fintheon-glass-shell: color-mix(
+    in srgb,
+    var(--fintheon-glass-primary-mix) var(--fintheon-glass-backdrop-opacity),
+    transparent
+  );
   --fintheon-glass-bg: color-mix(
     in srgb,
-    var(--fintheon-surface) 55%,
+    var(--fintheon-glass-primary-mix) var(--fintheon-glass-surface-opacity),
     transparent
   );
   --fintheon-glass-border: color-mix(
     in srgb,
-    var(--fintheon-accent) 16%,
+    var(--fintheon-primary) 20%,
     transparent
   );
   --fintheon-glass-highlight: color-mix(
     in srgb,
-    var(--fintheon-accent) 6%,
+    var(--fintheon-primary) 8%,
     transparent
   );
   --fintheon-glass-shadow:
@@ -88,6 +112,24 @@
   --fintheon-neutral: #6b7280;
   --fintheon-low-neutral: #3b82f6;
   --fintheon-low: #34d399;
+}
+
+html[data-fintheon-glass-transparency="false"] {
+  --fintheon-glass-surface-opacity: 92%;
+  --fintheon-glass-backdrop-opacity: 86%;
+  --fintheon-glass-field-opacity: 86%;
+  --fintheon-glass-surface: color-mix(
+    in srgb,
+    var(--fintheon-glass-primary-mix) 92%,
+    var(--fintheon-surface)
+  );
+  --fintheon-glass-field: color-mix(
+    in srgb,
+    var(--fintheon-glass-primary-mix) 86%,
+    var(--fintheon-surface)
+  );
+  --fintheon-glass-shell: var(--fintheon-surface);
+  --fintheon-glass-bg: var(--fintheon-glass-surface);
 }
 
 /* ── Font Display ── */
@@ -450,9 +492,10 @@ select {
 /* Shared Zen/RiskFlow glass chrome for mobile-web toasts and pop-up sheets. */
 .fintheon-toast-surface,
 .fintheon-modal-surface,
-.fintheon-sheet-surface {
+.fintheon-sheet-surface,
+.fintheon-rail-surface {
   border: 1px solid var(--fintheon-glass-border);
-  background: var(--fintheon-glass-bg);
+  background: var(--fintheon-glass-surface);
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
   box-shadow: var(--fintheon-glass-shadow);
@@ -474,8 +517,12 @@ select {
   overflow: hidden;
 }
 
+.fintheon-rail-surface {
+  overflow: hidden;
+}
+
 .fintheon-modal-backdrop {
-  background: rgba(5, 4, 2, 0.72);
+  background: color-mix(in srgb, var(--fintheon-glass-primary-mix) 42%, transparent);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }

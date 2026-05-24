@@ -33,6 +33,7 @@ import { useAuth } from "./AuthContext";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 const MODE_STORAGE_KEY = "fintheon:theme-mode";
+const GLASS_TRANSPARENCY_STORAGE_KEY = "fintheon:glass-transparency:mobile";
 
 export type ThemeMode = "dark" | "light";
 
@@ -43,6 +44,8 @@ interface ThemeContextValue {
   setMode: (mode: ThemeMode) => void;
   fontTheme: FontTheme;
   setFontTheme: (theme: FontTheme) => void;
+  glassTransparencyEnabled: boolean;
+  setGlassTransparencyEnabled: (enabled: boolean) => void;
   availableThemes: Record<string, ThemeConfig>;
   availableFonts: Record<string, FontTheme>;
 }
@@ -77,6 +80,34 @@ function saveMode(mode: ThemeMode) {
   }
 }
 
+function loadStoredGlassTransparency(): boolean {
+  try {
+    return localStorage.getItem(GLASS_TRANSPARENCY_STORAGE_KEY) !== "false";
+  } catch {
+    return true;
+  }
+}
+
+function saveGlassTransparency(enabled: boolean) {
+  try {
+    localStorage.setItem(
+      GLASS_TRANSPARENCY_STORAGE_KEY,
+      enabled ? "true" : "false",
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
+function applyGlassTransparencyToDOM(enabled: boolean) {
+  const value = enabled ? "true" : "false";
+  document.documentElement.setAttribute(
+    "data-fintheon-glass-transparency",
+    value,
+  );
+  document.body?.setAttribute("data-fintheon-glass-transparency", value);
+}
+
 function applyThemeToDOM(theme: ThemeConfig, mode: ThemeMode) {
   const root = document.documentElement;
   const isLight = mode === "light";
@@ -91,6 +122,7 @@ function applyThemeToDOM(theme: ThemeConfig, mode: ThemeMode) {
   root.setAttribute("data-theme", mode);
   // Fintheon tokens (shared components)
   root.style.setProperty("--fintheon-accent", theme.accent);
+  root.style.setProperty("--fintheon-primary", theme.primary ?? theme.accent);
   root.style.setProperty("--fintheon-bg", bg);
   root.style.setProperty("--fintheon-text", text);
   root.style.setProperty("--fintheon-bullish", theme.bullish);
@@ -141,6 +173,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return stored;
   });
 
+  const [glassTransparencyEnabled, setGlassTransparencyState] =
+    useState<boolean>(() => {
+      const stored = loadStoredGlassTransparency();
+      applyGlassTransparencyToDOM(stored);
+      return stored;
+    });
+
   const backendSynced = useRef(false);
 
   const setTheme = useCallback(
@@ -167,10 +206,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     saveFontTheme(next);
   }, []);
 
+  const setGlassTransparencyEnabled = useCallback((enabled: boolean) => {
+    setGlassTransparencyState(enabled);
+    applyGlassTransparencyToDOM(enabled);
+    saveGlassTransparency(enabled);
+  }, []);
+
   // Fetch backend theme on mount (backend is source of truth when authenticated)
   useEffect(() => {
     applyThemeToDOM(theme, mode);
     applyFontThemeToDOM(fontTheme);
+    applyGlassTransparencyToDOM(glassTransparencyEnabled);
 
     if (!isAuthenticated) {
       backendSynced.current = true;
@@ -204,6 +250,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           applyFontThemeToDOM(ft);
           saveFontTheme(ft);
         }
+        if (typeof remote?.glassTransparencyEnabled === "boolean") {
+          setGlassTransparencyState(remote.glassTransparencyEnabled);
+          applyGlassTransparencyToDOM(remote.glassTransparencyEnabled);
+          saveGlassTransparency(remote.glassTransparencyEnabled);
+        }
       } catch {}
       backendSynced.current = true;
     })();
@@ -212,7 +263,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // Sync theme changes to backend
   useEffect(() => {
     if (!backendSynced.current || !isAuthenticated) return;
-    const appearance = { colorTheme: theme, fontThemeId: fontTheme.id };
+    const appearance = {
+      colorTheme: theme,
+      fontThemeId: fontTheme.id,
+      glassTransparencyEnabled,
+    };
     (async () => {
       try {
         const token = await getAccessToken();
@@ -226,7 +281,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         });
       } catch {}
     })();
-  }, [theme, fontTheme, isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [theme, fontTheme, glassTransparencyEnabled, isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <ThemeContext.Provider
@@ -237,6 +292,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setMode,
         fontTheme,
         setFontTheme,
+        glassTransparencyEnabled,
+        setGlassTransparencyEnabled,
         availableThemes: THEME_PRESETS,
         availableFonts: FONT_THEMES,
       }}

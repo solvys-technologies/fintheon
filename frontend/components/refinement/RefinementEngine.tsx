@@ -638,7 +638,7 @@ export function RefinementEngine() {
             onClick={() => setIsKickstartDrawerOpen(false)}
             aria-label="Close kickstart drawer"
           />
-          <aside className="absolute right-0 top-0 h-full w-[420px] border-l border-[var(--fintheon-accent)]/25 bg-[var(--fintheon-bg)] shadow-2xl">
+          <aside className="fintheon-rail-surface absolute right-0 top-0 h-full w-[420px] border-l border-[var(--fintheon-accent)]/25 bg-[var(--fintheon-bg)] shadow-2xl">
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--fintheon-accent)]/20">
               <div>
                 <div className="text-[12px] font-bold tracking-[0.12em] text-[var(--fintheon-text)]">

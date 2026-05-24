@@ -124,7 +124,7 @@ export function ToolbarDnD({
       </SortableContext>
       <DragOverlay>
         {activeId ? (
-          <div className="backdrop-blur-sm bg-[rgba(5,4,2,0.7)] border border-[var(--fintheon-accent)]/30 rounded-md shadow-lg px-3 py-1.5 flex items-center gap-1">
+          <div className="fintheon-popover-surface backdrop-blur-sm bg-[rgba(5,4,2,0.7)] border border-[var(--fintheon-accent)]/30 rounded-md shadow-lg px-3 py-1.5 flex items-center gap-1">
             <GripVertical className="w-3 h-3 text-[var(--fintheon-accent)]" />
             {children(activeId)}
           </div>

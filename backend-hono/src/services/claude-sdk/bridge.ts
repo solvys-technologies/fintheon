@@ -1,5 +1,5 @@
-// [claude-code 2026-04-23] S32-T3 Ollama fallback chain — bridge streams via chain, tools only on VProxy path
-// [claude-code 2026-04-04] Switch VProxy from textStream→fullStream to capture text across multi-step tool calls
+// [codex 2026-05-23] Local subscription gateway path removed from chat bridge.
+// [claude-code 2026-04-23] S32-T3 Ollama fallback chain
 // [claude-code 2026-03-10] Claude SDK Bridge — relays Fintheon chat to Claude Code CLI stream-json
 /**
  * Claude SDK Bridge
@@ -22,11 +22,6 @@ import {
   type ClaudeSDKConfig,
 } from "./process-manager.js";
 import { getSessionManager } from "./session-manager.js";
-import {
-  getVProxyHealth,
-  isVProxyAnthropicEnabled,
-  streamTextViaVProxy,
-} from "../vproxy/anthropic-client.js";
 import {
   isOllamaFallbackEnabled,
   streamTextViaOllama,
@@ -93,11 +88,7 @@ export interface BridgeChatResult {
  * Check if Claude SDK bridge is available for use.
  */
 export async function isBridgeAvailable(): Promise<boolean> {
-  if (isVProxyAnthropicEnabled()) {
-    const vproxy = await getVProxyHealth();
-    if (vproxy.available) return true;
-  }
-
+  if (isOllamaFallbackEnabled()) return true;
   if (!isAvailable()) {
     const h = await getHealth();
     return h.available;
@@ -114,7 +105,7 @@ export function bridgeChat(
   request: BridgeChatRequest,
   configOverrides?: Partial<ClaudeSDKConfig>,
 ): BridgeChatResult {
-  const { message, history, researchContext, thinkHarder, requestId } = request;
+  const { message, history, researchContext, thinkHarder } = request;
 
   // Build the prompt with conversation context
   const prompt = buildPrompt(message, history, researchContext);
@@ -128,39 +119,6 @@ export function bridgeChat(
     maxTurns,
     ...configOverrides,
   };
-
-  // Preferred route: VProxy → Ollama-via-Hermes chain.
-  // Stream fallback runs only when VProxy health check fails BEFORE the first token
-  // is shipped; once VProxy streaming has started, a mid-stream failure surfaces to
-  // the client rather than silently restarting (user has already seen output).
-  // Tools require VProxy — Ollama streams text only.
-  if (isVProxyAnthropicEnabled()) {
-    console.log(`${LOG_PREFIX} Routing through VProxy Anthropic stream`);
-    let fullText = "";
-    let aborted = false;
-    const controller = new AbortController();
-
-    const chainStream = wrapChainStream(
-      prompt,
-      spawnOpts,
-      (text) => {
-        fullText += text;
-      },
-      () => aborted,
-      controller.signal,
-      true,
-      requestId,
-    );
-
-    return {
-      stream: chainStream,
-      abort: () => {
-        aborted = true;
-        controller.abort();
-      },
-      getFullText: () => fullText,
-    };
-  }
 
   // Try persistent session for streaming
   const session = getSessionManager();
@@ -181,6 +139,32 @@ export function bridgeChat(
       stream: sessionStream,
       abort: () => {
         aborted = true;
+      },
+      getFullText: () => fullText,
+    };
+  }
+
+  if (isOllamaFallbackEnabled()) {
+    console.log(`${LOG_PREFIX} Routing through Ollama-Qwen stream`);
+    let fullText = "";
+    let aborted = false;
+    const controller = new AbortController();
+
+    const ollamaStream = wrapOllamaStream(
+      prompt,
+      spawnOpts,
+      (text) => {
+        fullText += text;
+      },
+      () => aborted,
+      controller.signal,
+    );
+
+    return {
+      stream: ollamaStream,
+      abort: () => {
+        aborted = true;
+        controller.abort();
       },
       getFullText: () => fullText,
     };
@@ -271,39 +255,6 @@ async function* wrapSessionStream(
   yield { type: "text-end", id: messageId };
 }
 
-/**
- * Chain-aware stream wrapper: picks VProxy or Ollama based on VProxy health at
- * request start. On VProxy path a mid-stream failure falls through to Claude CLI.
- * On Ollama path, tools are disabled (Ollama-Qwen has no Harper tool schema).
- */
-async function* wrapChainStream(
-  prompt: string,
-  options: Partial<ClaudeSDKConfig>,
-  onText: (text: string) => void,
-  isAborted: () => boolean,
-  abortSignal: AbortSignal,
-  enableTools = false,
-  requestId?: string,
-): AsyncGenerator<BridgeStreamEvent> {
-  const vproxyHealth = await getVProxyHealth();
-  if (!vproxyHealth.available && isOllamaFallbackEnabled()) {
-    console.log(
-      `${LOG_PREFIX} VProxy unhealthy (${vproxyHealth.error ?? "unknown"}) — streaming via Ollama-Qwen fallback`,
-    );
-    yield* wrapOllamaStream(prompt, options, onText, isAborted, abortSignal);
-    return;
-  }
-  yield* wrapVProxyStream(
-    prompt,
-    options,
-    onText,
-    isAborted,
-    abortSignal,
-    enableTools,
-    requestId,
-  );
-}
-
 async function* wrapOllamaStream(
   prompt: string,
   options: Partial<ClaudeSDKConfig>,
@@ -339,101 +290,6 @@ async function* wrapOllamaStream(
     };
   }
   if (!textStarted) yield { type: "text-start", id: messageId };
-  yield { type: "text-end", id: messageId };
-}
-
-async function* wrapVProxyStream(
-  prompt: string,
-  options: Partial<ClaudeSDKConfig>,
-  onText: (text: string) => void,
-  isAborted: () => boolean,
-  abortSignal: AbortSignal,
-  enableTools = false,
-  requestId?: string,
-): AsyncGenerator<BridgeStreamEvent> {
-  const messageId = `vproxy-${Date.now()}`;
-  let textStarted = false;
-
-  try {
-    const result = streamTextViaVProxy({
-      prompt,
-      systemPrompt: options.systemPrompt,
-      model: options.model,
-      maxOutputTokens: 8192,
-      abortSignal,
-      enableTools,
-      requestId,
-    });
-
-    let deltaCount = 0;
-    let toolCallCount = 0;
-    let stepCount = 0;
-    // Use fullStream to capture text across multi-step tool calling.
-    // textStream only yields text-type content and misses text generated
-    // after tool results are sent back to the model.
-    for await (const part of result.fullStream) {
-      if (isAborted()) break;
-
-      if (part.type === "step-start") stepCount++;
-
-      switch (part.type) {
-        case "text-delta":
-          if (part.text) {
-            deltaCount++;
-            if (!textStarted) {
-              textStarted = true;
-              yield { type: "text-start", id: messageId };
-            }
-            onText(part.text);
-            yield { type: "text-delta", id: messageId, delta: part.text };
-          }
-          break;
-        case "tool-call":
-          toolCallCount++;
-          yield {
-            type: "tool-use",
-            id: messageId,
-            metadata: { toolName: part.toolName, toolCallId: part.toolCallId },
-          };
-          break;
-        case "error":
-          console.error(
-            `${LOG_PREFIX} fullStream error event:`,
-            (part as any).error,
-          );
-          yield {
-            type: "error",
-            id: messageId,
-            delta: (part as any).error?.message ?? "VProxy stream error",
-          };
-          break;
-        // tool-result, step-start, step-finish, etc. — skip
-      }
-    }
-    console.log(
-      `${LOG_PREFIX} VProxy fullStream ended (${deltaCount} text deltas, ${toolCallCount} tool calls, textStarted=${textStarted})`,
-    );
-  } catch (err) {
-    if (isAborted()) return;
-    console.error(`${LOG_PREFIX} VProxy stream error:`, err);
-    // If no text has shipped yet, silent fallback to Ollama (chain policy).
-    // Once tokens are out, we surface the error instead of restarting the stream.
-    if (!textStarted && isOllamaFallbackEnabled()) {
-      console.warn(
-        `${LOG_PREFIX} VProxy failed before first token — falling back to ollama-qwen for request ${requestId ?? "-"}`,
-      );
-      yield* wrapOllamaStream(prompt, options, onText, isAborted, abortSignal);
-      return;
-    }
-    console.warn(`${LOG_PREFIX} Falling back to Claude CLI`);
-    const { process: proc, abort } = spawnClaudeProcess(prompt, options);
-    yield* parseClaudeStream(proc, onText, isAborted, abort);
-    return;
-  }
-
-  if (!textStarted) {
-    yield { type: "text-start", id: messageId };
-  }
   yield { type: "text-end", id: messageId };
 }
 

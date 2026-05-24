@@ -73,19 +73,7 @@ export function StickyBulletin({
       style={posStyle}
       className="w-[360px] animate-in fade-in slide-in-from-top-2 duration-200"
     >
-      <div
-        className="rounded-xl overflow-hidden"
-        style={{
-          background:
-            "linear-gradient(135deg, color-mix(in srgb, var(--fintheon-surface) 85%, transparent), color-mix(in srgb, var(--fintheon-bg) 92%, transparent))",
-          backdropFilter: "blur(20px) saturate(1.3)",
-          WebkitBackdropFilter: "blur(20px) saturate(1.3)",
-          border:
-            "1px solid color-mix(in srgb, var(--fintheon-accent) 18%, transparent)",
-          boxShadow:
-            "0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 color-mix(in srgb, var(--fintheon-accent) 8%, transparent)",
-        }}
-      >
+      <div className="fintheon-popover-surface rounded-xl overflow-hidden">
         {/* Header */}
         <div
           className="flex items-center justify-between px-4 py-3"

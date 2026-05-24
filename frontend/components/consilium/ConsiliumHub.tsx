@@ -678,7 +678,7 @@ export function ConsiliumHub() {
           </button>
 
           <div
-            className="absolute top-full left-0 mt-1 z-50 min-w-[220px] overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]"
+            className="fintheon-dropdown-surface absolute top-full left-0 mt-1 z-50 min-w-[220px] overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]"
             style={{
               opacity: sanctumDropdownOpen ? 1 : 0,
               transform: sanctumDropdownOpen
@@ -753,7 +753,7 @@ export function ConsiliumHub() {
           </button>
 
           <div
-            className="absolute top-full left-0 mt-1 z-50 min-w-[200px] overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]"
+            className="fintheon-dropdown-surface absolute top-full left-0 mt-1 z-50 min-w-[200px] overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]"
             style={{
               opacity: boardroomDropdownOpen ? 1 : 0,
               transform: boardroomDropdownOpen
@@ -819,7 +819,7 @@ export function ConsiliumHub() {
           </button>
 
           <div
-            className="absolute top-full left-0 mt-1 z-50 min-w-[210px] overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]"
+            className="fintheon-dropdown-surface absolute top-full left-0 mt-1 z-50 min-w-[210px] overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]"
             style={{
               opacity: apparatusDropdownOpen ? 1 : 0,
               transform: apparatusDropdownOpen
@@ -969,7 +969,7 @@ export function ConsiliumHub() {
               <ChevronDown size={12} />
             </button>
             {analysisDropdownOpen ? (
-              <div className="absolute right-0 top-[calc(100%+6px)] z-50 w-40 overflow-hidden rounded-md border border-[var(--fintheon-overlay-border,var(--fintheon-accent))]/70 bg-[var(--fintheon-overlay-surface,var(--fintheon-bg))] p-1 shadow-2xl shadow-black/40">
+              <div className="fintheon-dropdown-surface absolute right-0 top-[calc(100%+6px)] z-50 w-40 overflow-hidden p-1">
                 <button
                   type="button"
                   onClick={() => {

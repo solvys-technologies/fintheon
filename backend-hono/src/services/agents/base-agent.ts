@@ -66,7 +66,7 @@ export async function runAgent<T>(
   return {
     report: reportData as T,
     latencyMs,
-    model: "strands-vproxy",
+    model: "strands-deepseek",
   };
 }
 

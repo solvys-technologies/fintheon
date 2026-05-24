@@ -15,7 +15,7 @@ export function ChatPanel({ showChat, onClose }: ChatPanelProps) {
 
   return (
     <div
-      className={`absolute right-0 top-0 bottom-0 w-[420px] z-40 flex flex-col bg-[var(--fintheon-bg)] border-l border-[var(--fintheon-accent)]/20 shadow-2xl transition-all duration-300 ease-in-out ${showChat ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none invisible"}`}
+      className={`fintheon-rail-surface absolute right-0 top-0 bottom-0 w-[420px] z-40 flex flex-col bg-[var(--fintheon-bg)] border-l border-[var(--fintheon-accent)]/20 shadow-2xl transition-all duration-300 ease-in-out ${showChat ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none invisible"}`}
     >
       <div className="flex items-center justify-between px-3 py-2 flex-shrink-0">
         {/* Left icons — match main Consilium chat toolbar: Report, New, History */}

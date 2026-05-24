@@ -4,7 +4,7 @@
 
 - **Platform**: Fintheon by Priced In Capital (PIC) / Solvys Technologies
 - **Stack**: React 19 + Vite frontend, Hono backend (port 8080), Supabase Postgres, Electron desktop
-- **AI**: Claude Opus 4.6 via VProxy gateway (localhost:8317)
+- **AI**: DeepSeek/Hermes provider chain
 - **Palette**: BG #050402, Accent #c79f4a (Solvys Gold), Text #f0ead6
 
 ## Agent Roster

@@ -96,7 +96,7 @@ export function DeskPlanCustomForm({
         <BookOpen className="w-3 h-3" />
       </button>
       <div
-        className={`absolute right-0 top-7 z-[80] w-[340px] origin-top-right rounded border border-[var(--fintheon-accent)]/20 bg-[#080705]/95 p-3 shadow-2xl backdrop-blur transition-all duration-200 ${
+        className={`fintheon-dropdown-surface absolute right-0 top-7 z-[80] w-[340px] origin-top-right rounded border border-[var(--fintheon-accent)]/20 bg-[#080705]/95 p-3 shadow-2xl backdrop-blur transition-all duration-200 ${
           isOpen
             ? "pointer-events-auto translate-y-0 opacity-100 scale-100"
             : "pointer-events-none -translate-y-1 opacity-0 scale-[0.98]"

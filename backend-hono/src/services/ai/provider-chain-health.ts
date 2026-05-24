@@ -1,4 +1,4 @@
-// [claude-code 2026-05-06] S59-T4: stripped OpenRouter and VProxy.
+// [claude-code 2026-05-06] S59-T4: stripped OpenRouter.
 // Chain health reports DeepSeek direct + OpenCode Go availability.
 import { checkDeepSeekDirectHealth } from "../strands/deepseek-health.js";
 

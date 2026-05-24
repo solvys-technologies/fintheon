@@ -61,7 +61,7 @@ export function SourceFilterMenu({
       <div
         aria-hidden={!open}
         data-origin="top-left"
-        className={`t-dropdown absolute left-0 top-full mt-1 z-50 min-w-[160px] py-1 bg-zinc-900 border border-zinc-700 rounded shadow-lg ${open ? "is-open" : ""}`}
+        className={`fintheon-dropdown-surface t-dropdown absolute left-0 top-full mt-1 z-50 min-w-[160px] py-1 bg-zinc-900 border border-zinc-700 rounded shadow-lg ${open ? "is-open" : ""}`}
       >
         <button
           type="button"

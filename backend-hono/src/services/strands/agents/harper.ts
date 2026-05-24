@@ -77,7 +77,7 @@ export async function createHarperAgent(
       ? createConversationManager(opts.conversationId, opts.userId)
       : undefined;
 
-  // DeepSeek direct primary. If unavailable, try opencode-go. No VProxy.
+  // DeepSeek direct primary. If unavailable, try opencode-go.
   let effectiveProvider = opts?.provider;
   if (!effectiveProvider) {
     const deepseekHealth = await checkDeepSeekDirectHealth();

@@ -9,6 +9,59 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-23T22:55:03-04:00",
+    agent: "codex",
+    summary:
+      "v6.7.21 release: Liquid-Dom shell, native vibrancy, and primary-tinted glass surfaces now cover desktop/mobile modals, drawers, rails, sidebars, toasts, dropdowns, and MainContent corner backing.",
+    files: [
+      "frontend/index.css",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/ui/LiquidDomBackdrop.tsx",
+      "frontend/contexts/ThemeContext.tsx",
+      "electron/main.cjs",
+      "mobile/index.css",
+      "mobile/contexts/ThemeContext.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-23T19:59:00-04:00",
+    agent: "codex",
+    summary:
+      "Verified the NF-Workspace first-session API path with live RiskFlow catalysts and forced NF-Desk Map surfaces to stay scoped to the user's desk narratives instead of falling back to the legacy global catalyst canvas.",
+    files: [
+      "frontend/components/narrative/DeskMap.tsx",
+      "frontend/components/layout/TabRenderer.tsx",
+      "backend-hono/src/services/ai/agent-instructions/harper-extra.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-23T19:52:00-04:00",
+    agent: "codex",
+    summary:
+      "Applied the approved dithered Three.js loading globe across desktop/web login, cold-start splash, auth restore loading, and mobile login/auth loading. The globe now initializes from the saved theme primary color, keeps the slower idle spin, pulses briefly on auth recognition, uses the faster ready zoom/fade path, renders filled countries/grid/dither/stars, and restricts shooting beams to the approved geopolitical endpoints.",
+    files: [
+      "frontend/App.tsx",
+      "frontend/components/SplashScreen.tsx",
+      "frontend/components/auth/AuthShell.tsx",
+      "frontend/components/loading/LoadingBootScreen.tsx",
+      "frontend/components/loading/LoadingGlobe.tsx",
+      "frontend/components/loading/LoadingStatusCard.tsx",
+      "frontend/components/loading/loading-globe-config.ts",
+      "frontend/components/loading/loading-globe-geometry.ts",
+      "frontend/components/loading/loading-globe-scene.ts",
+      "frontend/package.json",
+      "frontend/bun.lock",
+      "mobile/App.tsx",
+      "mobile/components/auth/MobileLoginScreen.tsx",
+      "mobile/package.json",
+      "mobile/bun.lock",
+      "mobile/vite.config.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-23T18:57:00-04:00",
     agent: "codex",
     summary:

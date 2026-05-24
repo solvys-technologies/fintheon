@@ -198,7 +198,7 @@ export function BulletinPost({
       </div>
 
       {/* Hover action bar — floating top-right */}
-      <div className="absolute right-3 top-1 flex items-center gap-0.5 rounded-md border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] px-1 py-0.5 opacity-0 shadow-lg transition-opacity group-hover/msg:opacity-100">
+      <div className="fintheon-popover-surface absolute right-3 top-1 flex items-center gap-0.5 px-1 py-0.5 opacity-0 transition-opacity group-hover/msg:opacity-100">
         {/* Vote button (opens pills if no votes yet) */}
         {totalVotes === 0 && (
           <button

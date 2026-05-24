@@ -146,7 +146,7 @@ export function ClusterBeamPanel() {
       <div
         role="dialog"
         aria-label="Cluster beam"
-        className={`fixed top-0 right-0 z-50 h-full w-[420px] flex flex-col bg-[var(--fintheon-bg)] border-l border-[var(--fintheon-accent)]/15 transition-transform duration-300 ease-in-out ${
+        className={`fintheon-rail-surface fixed top-0 right-0 z-50 h-full w-[420px] flex flex-col bg-[var(--fintheon-bg)] border-l border-[var(--fintheon-accent)]/15 transition-transform duration-300 ease-in-out ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >

@@ -1,7 +1,7 @@
-// [codex 2026-05-23] Globe login motion: accelerated sign-in state and
-// compact fuse/message container, replacing the old card/rectangle layout.
+// [codex 2026-05-23] Login now shares the dithered Three.js globe with splash.
 import React, { useEffect, useRef, useState } from "react";
-import { DotMatrixLoader } from "../icon-bank/DotMatrixLoader";
+import { LoadingGlobe } from "../loading/LoadingGlobe";
+import { LoadingStatusCard } from "../loading/LoadingStatusCard";
 import { TimeQuote } from "./TimeQuote";
 import { GoogleSignInButton } from "./GoogleSignInButton";
 
@@ -37,87 +37,70 @@ export const AuthShell: React.FC<AuthShellProps> = ({
   const busy = isLoading || submitted;
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-[#050402] text-[#f0ead6] selection:bg-[#c79f4a]/25">
-      <div className="absolute inset-0 opacity-[0.22]">
-        <div className="absolute left-1/2 top-1/2 h-[82vmin] w-[82vmin] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#c79f4a]/8" />
-      </div>
-      <main className="relative z-10 flex min-h-screen flex-col items-center justify-center gap-8 px-6">
-        <div className="flex flex-col items-center gap-5">
-          <GlobeMark accelerated={submitted} />
-          <div className="text-center">
-            <h1
-              className="text-3xl font-light tracking-[0.24em] text-[#c79f4a]"
-              style={{ fontFamily: "'Cinzel', 'Georgia', serif" }}
-            >
-              FINTHEON
-            </h1>
-            <p className="mt-2 text-[10px] uppercase tracking-[0.28em] text-[#f0ead6]/52">
-              Integrated Trading Environment
-            </p>
-          </div>
-        </div>
-
-        <div className="w-full max-w-[360px] rounded-[22px] border border-[#c79f4a]/18 bg-[#0a0905]/92 px-5 py-5">
-          <div className="mb-4 flex items-center justify-center gap-3">
-            <span className="h-[2px] w-12 overflow-hidden rounded-[2px] bg-[#c79f4a]/15">
-              <span
-                className="block h-full w-1/2 bg-[#c79f4a]/55"
-                style={{ animation: "authFuse 1800ms ease-in-out infinite" }}
-              />
-            </span>
-            <span className="text-[10px] uppercase tracking-[0.22em] text-[#c79f4a]/70">
-              {showLoader ? "Opening terminal" : "Access terminal"}
-            </span>
-          </div>
-          {showLoader ? (
-            <div className="mb-4 flex justify-center">
-              <DotMatrixLoader
-                variant="diagonal-scan"
-                size={34}
-                label="Authenticating"
-              />
-            </div>
-          ) : null}
+    <div style={shellStyle}>
+      <LoadingGlobe
+        phase={submitted ? "auth" : "idle"}
+        style={{ position: "absolute", inset: "-6vmin" }}
+      />
+      <div style={scanlineStyle} />
+      <main style={contentStyle}>
+        <section style={panelStyle}>
+          <LoadingStatusCard
+            bare
+            phrase={showLoader ? "Opening terminal" : "Access terminal"}
+          />
           <GoogleSignInButton
             onClick={handleSignIn}
             isLoading={isLoading || showLoader}
             disabled={busy}
           />
-          <div className="mt-5 text-center">
+          <div style={{ marginTop: 4 }}>
             <TimeQuote />
           </div>
-        </div>
+        </section>
       </main>
-      <style>{`
-        @keyframes authFuse {
-          0%, 100% { transform: translateX(-85%); opacity: 0.35; }
-          50% { transform: translateX(170%); opacity: 0.95; }
-        }
-      `}</style>
     </div>
   );
 };
 
-function GlobeMark({ accelerated }: { accelerated: boolean }) {
-  const duration = accelerated ? "6s" : "18s";
-  return (
-    <div className="relative h-48 w-48" aria-hidden="true">
-      <svg viewBox="0 0 160 160" className="h-full w-full text-[#c79f4a]">
-        <circle cx="80" cy="80" r="58" fill="none" stroke="currentColor" strokeOpacity=".42" />
-        <g style={{ transformOrigin: "80px 80px", animation: `authGlobe ${duration} linear infinite` }}>
-          <ellipse cx="80" cy="80" rx="58" ry="18" fill="none" stroke="currentColor" strokeOpacity=".28" />
-          <ellipse cx="80" cy="80" rx="58" ry="34" fill="none" stroke="currentColor" strokeOpacity=".22" />
-          <path d="M80 22c-22 20-22 96 0 116M80 22c22 20 22 96 0 116" fill="none" stroke="currentColor" strokeOpacity=".32" />
-          <path d="M28 58h104M28 102h104" fill="none" stroke="currentColor" strokeOpacity=".2" />
-        </g>
-        <circle cx="80" cy="80" r="4" fill="currentColor" opacity=".75" />
-      </svg>
-      <style>{`
-        @keyframes authGlobe {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
-    </div>
-  );
-}
+const shellStyle: React.CSSProperties = {
+  position: "relative",
+  minHeight: "100vh",
+  width: "100%",
+  overflow: "hidden",
+  background: "var(--fintheon-bg, #050402)",
+  color: "var(--fintheon-text, #f0ead6)",
+};
+
+const contentStyle: React.CSSProperties = {
+  position: "relative",
+  zIndex: 2,
+  display: "grid",
+  minHeight: "100vh",
+  placeItems: "center",
+  padding: 24,
+};
+
+const panelStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 14,
+  justifyItems: "center",
+  width: "min(340px, calc(100vw - 48px))",
+  padding: "16px 16px 18px",
+  border: "1px solid color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 18%, transparent)",
+  borderRadius: 8,
+  background: "color-mix(in srgb, var(--fintheon-surface, #0a0905) 83%, transparent)",
+  backdropFilter: "blur(18px) saturate(1.18)",
+  WebkitBackdropFilter: "blur(18px) saturate(1.18)",
+  overflow: "hidden",
+};
+
+const scanlineStyle: React.CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  background:
+    "repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 3px), radial-gradient(circle at center, transparent 0 42%, rgba(0,0,0,0.56) 78%)",
+  mixBlendMode: "screen",
+  opacity: 0.28,
+  pointerEvents: "none",
+};

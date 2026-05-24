@@ -63,7 +63,7 @@ export function NarrativeSituationOverlay({
 }) {
   if (!isOpen) return null;
   return (
-    <div className="absolute inset-4 z-40 overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)]">
+    <div className="fintheon-modal-surface absolute inset-4 z-40 overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)]">
       <div className="flex h-10 items-center justify-between border-b border-[var(--fintheon-accent)]/10 px-3">
         <span className="text-[10px] uppercase tracking-[0.18em] text-[var(--fintheon-accent)]">
           Situation Map
@@ -133,7 +133,7 @@ export function NarrativeWorkspaceViewMenu({
       </button>
 
       <div
-        className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-md bg-[var(--fintheon-bg)]/96 py-1 shadow-[0_10px_30px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-[opacity,transform] duration-150"
+        className="fintheon-dropdown-surface absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-md bg-[var(--fintheon-bg)]/96 py-1 shadow-[0_10px_30px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-[opacity,transform] duration-150"
         style={{
           opacity: open ? 1 : 0,
           transform: open ? "translateY(0)" : "translateY(-4px)",

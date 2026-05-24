@@ -27,7 +27,6 @@ import { buildThoughtBankPromptBlock } from "./ai/agent-instructions/thought-ban
 import { getContextForAgent } from "./agent-context-bank-service.js";
 import type { AgentMemoryEntry } from "./agent-context-bank-service.js";
 import { createLogger } from "../lib/logger.js";
-import { checkVProxyHealth, isVProxyEnabled } from "./strands/index.js";
 import { checkDeepSeekDirectHealth } from "./strands/provider.js";
 import { llmCall } from "./ai/llm-call.js";
 import { toRoutingAgent } from "./ai/agent-map.js";
@@ -650,8 +649,7 @@ export async function handleHermesChat(
     messages.push({ role: "user", content: request.message });
   }
 
-  // Primary for Harper: Anthropic via VProxy (subscription OAuth)
-  const claudePrompt =
+  const providerPrompt =
     systemPrompt +
     "\n\n" +
     messages
@@ -659,8 +657,7 @@ export async function handleHermesChat(
       .map((m) => (typeof m.content === "string" ? m.content : "[multimodal]"))
       .join("\n");
 
-  // S58-T1: no Claude SDK primary path. Smart routing invokes the provider chain:
-  // DeepSeek direct -> OpenRouter -> VProxy last resort.
+  // S58-T1: no Claude SDK primary path. Smart routing invokes the provider chain.
 
   const routingAgent = toRoutingAgent(agentInfo.agent);
   const routingTask = agentInfoToTaskType(agentInfo.intent);
@@ -680,7 +677,7 @@ export async function handleHermesChat(
         const { generateViaChain } = await import("./ai/provider-chain.js");
         const content = await generateViaChain({
           prompt: request.message,
-          systemPrompt: claudePrompt.replace(request.message, "").trim(),
+          systemPrompt: providerPrompt.replace(request.message, "").trim(),
           model: rule.model,
           maxOutputTokens: 8192,
           timeoutMs: 120_000,
@@ -737,7 +734,7 @@ function agentInfoToTaskType(intent: string): TaskType | undefined {
 /**
  * Initialize Hermes agent on startup:
  * 1. Optionally launch Hermes gateway process if configured
- * 2. Warm up DeepSeek primary, then VProxy last-resort health.
+ * 2. Warm up DeepSeek primary.
  */
 export async function initHermesAgent(): Promise<void> {
   const hermesEnabled = process.env.HERMES_ENABLED !== "false";
@@ -811,26 +808,7 @@ export async function initHermesAgent(): Promise<void> {
     });
   }
 
-  if (isVProxyEnabled()) {
-    try {
-      const vproxyHealth = await checkVProxyHealth(true);
-      if (vproxyHealth.available) {
-        log.info("VProxy warm-up complete (Strands ready)");
-        return;
-      }
-      log.warn("VProxy warm-up failed (non-fatal)", {
-        error: vproxyHealth.error,
-      });
-    } catch (error) {
-      log.warn("VProxy warm-up failed (non-fatal)", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
-
-  log.info(
-    "DeepSeek unavailable and VProxy unavailable; OpenRouter remains request-time fallback",
-  );
+  log.info("DeepSeek unavailable; provider chain will retry at request time");
 }
 
 /**

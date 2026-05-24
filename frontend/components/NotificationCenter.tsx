@@ -154,14 +154,11 @@ export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
     <div
       ref={panelRef}
       data-open={revealed ? "true" : "false"}
-      className="t-panel-slide absolute left-12 bottom-8 z-50"
+      className="fintheon-popover-surface t-panel-slide absolute left-12 bottom-8 z-50"
       style={{
         width: "340px",
         maxHeight: "420px",
-        backgroundColor: "var(--fintheon-surface)",
-        border: "1px solid var(--fintheon-accent)",
         borderRadius: "10px",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
       }}
     >
       {/* Header */}

@@ -359,7 +359,7 @@ export function YouTubeMiniplayer({ onClose }: YouTubeMiniplayerProps) {
     return (
       <div
         ref={panelRef}
-        className="fixed z-50 flex items-center gap-2 px-3 py-2 rounded-2xl border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-surface)] select-none"
+        className="fintheon-popover-surface fixed z-50 flex items-center gap-2 px-3 py-2 rounded-2xl border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-surface)] select-none"
         style={{ top: 0, left: 0 }}
       >
         <button
@@ -392,7 +392,7 @@ export function YouTubeMiniplayer({ onClose }: YouTubeMiniplayerProps) {
   return (
     <div
       ref={panelRef}
-      className="fixed z-50 rounded-2xl border border-[var(--fintheon-accent)]/25 bg-[var(--fintheon-surface)] overflow-hidden flex flex-col"
+      className="fintheon-popover-surface fixed z-50 rounded-2xl border border-[var(--fintheon-accent)]/25 bg-[var(--fintheon-surface)] overflow-hidden flex flex-col"
       style={{
         top: 0,
         left: 0,

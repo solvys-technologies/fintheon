@@ -69,7 +69,7 @@ export function HeadlinePickerPopover({
   return (
     <div
       ref={ref}
-      className="absolute bottom-full left-0 right-0 z-50 mb-1 mx-2 max-h-64 flex flex-col rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-xl overflow-hidden"
+      className="fintheon-dropdown-surface absolute bottom-full left-0 right-0 z-50 mb-1 mx-2 max-h-64 flex flex-col rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-xl overflow-hidden"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-[var(--fintheon-accent)]/10 shrink-0">

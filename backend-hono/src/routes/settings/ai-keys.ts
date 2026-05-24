@@ -34,7 +34,7 @@ function resolveOpenCodeBaseUrl(): string {
   const raw =
     process.env.OPENCODE_GO_API_URL ||
     process.env.HERMES_API_URL ||
-    "http://localhost:8317/v1";
+    "http://localhost:8081/v1";
   return raw.replace(/\/$/, "");
 }
 

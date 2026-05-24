@@ -1,4 +1,4 @@
-// [codex 2026-05-23] DeskMap is the desk-wide NarrativeFlow canvas; NF-Workspace sessions build onto it.
+// [codex 2026-05-23] DeskMap is the desk-scoped narrative map; global catalyst swarm stays out of NF-Desk Map.
 // [claude-code 2026-05-16] S68-T4: Camera pan/zoom persistence, Reset View button, layout save/restore includes viewport
 // [claude-code 2026-03-30] Added narrative visibility filter dropdown in top-right of canvas
 // [claude-code 2026-03-30] Unified data: seed events + RiskFlow alerts both load into NarrativeContext
@@ -525,10 +525,10 @@ function WorkspaceNarrativesMap({
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
               <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--fintheon-accent)]">
-                Fresh DeskMap
+                Fresh NF-Desk Map
               </p>
               <p className="mt-2 max-w-sm text-xs leading-5 text-[var(--fintheon-muted)]">
-                NF-Workspace sessions will appear here as the desk builds its map.
+                Your desk narratives will appear here as NF-Workspace sessions are created.
               </p>
             </div>
           </div>
@@ -594,14 +594,14 @@ function WorkspaceNarrativesMap({
       </div>
       <div className="absolute left-3 top-3 z-30 pointer-events-none">
         <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--fintheon-accent)]/70">
-          DeskMap
+          NF-Desk Map
         </p>
         <p className="mt-1 text-xs text-[var(--fintheon-muted)]/70">
           {desk?.name ?? "Priced In Capital"}
         </p>
       </div>
       <div className="absolute bottom-3 left-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]/55">
-        {sessions.length} NF-Workspaces
+        {sessions.length} desk narrative{sessions.length === 1 ? "" : "s"}
       </div>
     </div>
   );
@@ -687,7 +687,7 @@ function DeskMapImageControls({
         </IconControl>
       ) : null}
       {localError || error ? (
-        <div className="absolute right-0 top-[calc(100%+6px)] w-56 rounded bg-[var(--fintheon-overlay-surface,var(--fintheon-bg))] px-2 py-1 text-[10px] text-red-300 shadow-xl">
+        <div className="fintheon-popover-surface absolute right-0 top-[calc(100%+6px)] w-56 px-2 py-1 text-[10px] text-red-300">
           {localError ?? error}
         </div>
       ) : null}
@@ -808,7 +808,7 @@ function TimeframeFilterDropdown({
 
       {open && (
         <div
-          className="absolute top-full right-0 mt-1.5 w-36 rounded-xl border bg-[var(--fintheon-bg)] shadow-2xl overflow-hidden"
+          className="fintheon-dropdown-surface absolute top-full right-0 mt-1.5 w-36 rounded-xl border bg-[var(--fintheon-bg)] shadow-2xl overflow-hidden"
           style={{
             borderColor:
               "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
@@ -1030,7 +1030,7 @@ function NarrativeFilterDropdown({
 
       {open && (
         <div
-          className="absolute top-full right-0 mt-1.5 w-72 rounded-xl border bg-[var(--fintheon-bg)] shadow-2xl overflow-hidden"
+          className="fintheon-dropdown-surface absolute top-full right-0 mt-1.5 w-72 rounded-xl border bg-[var(--fintheon-bg)] shadow-2xl overflow-hidden"
           style={{
             borderColor:
               "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",

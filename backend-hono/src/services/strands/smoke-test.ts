@@ -1,16 +1,16 @@
-// [claude-code 2026-04-04] Smoke test: verify Strands Agent talks to VProxy
+// [codex 2026-05-23] Smoke test: verify Strands Agent talks to the provider chain
 // Run: cd backend-hono && bun run src/services/strands/smoke-test.ts
 import { createAgent, isStrandsAvailable } from "./agent-factory.js";
 
 async function main() {
-  console.log("[Strands Smoke Test] Checking VProxy availability...");
+  console.log("[Strands Smoke Test] Checking provider availability...");
 
   const available = await isStrandsAvailable();
   if (!available) {
-    console.error("[FAIL] VProxy not available at localhost:8317");
+    console.error("[FAIL] DeepSeek provider not available");
     process.exit(1);
   }
-  console.log("[OK] VProxy is available");
+  console.log("[OK] Strands provider is available");
 
   console.log("[Strands Smoke Test] Creating agent and invoking...");
 
@@ -25,7 +25,7 @@ async function main() {
   console.log("[Response]", text);
 
   if (text.includes("STRANDS_OK")) {
-    console.log("[PASS] Strands + VProxy integration working");
+    console.log("[PASS] Strands provider integration working");
   } else {
     console.log("[WARN] Response received but did not contain STRANDS_OK");
     console.log("[PASS] Agent invocation completed successfully");

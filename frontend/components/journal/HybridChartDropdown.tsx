@@ -35,7 +35,7 @@ export function HybridChartDropdown({
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-0.5 z-20 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded shadow-lg min-w-[80px]">
+        <div className="fintheon-dropdown-surface absolute top-full left-0 mt-0.5 z-20 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded shadow-lg min-w-[80px]">
           {OPTIONS.map((opt) => (
             <button
               key={opt.value}

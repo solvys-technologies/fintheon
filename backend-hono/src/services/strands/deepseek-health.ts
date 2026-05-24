@@ -1,7 +1,7 @@
 // [claude-code 2026-05-03] S58-T1: DeepSeek direct and OC API health checks.
 const DEEPSEEK_MODEL = "deepseek-reasoner";
 const DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1";
-const OC_API_BASE_URL = "http://localhost:8317/v1";
+const OC_API_BASE_URL = "http://localhost:8081/v1";
 
 function normalizeUrl(raw: string): string {
   const stripped = raw.replace(/\/+$/, "");

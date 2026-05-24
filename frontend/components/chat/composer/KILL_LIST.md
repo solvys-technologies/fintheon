@@ -7,7 +7,7 @@ These patterns are banned from repo-owned chat composer work:
 - Popup-positioned Attach panels.
 - Popup-positioned Skills+Connectors panels.
 - Drawer surfaces that float with a visual gap from the input bar.
-- Drawer widths based on viewport or arbitrary card widths instead of 92% of the rendered composer width.
+- Drawer widths based on viewport or arbitrary card widths instead of 90% of the rendered composer width.
 - Icon triggers that open but cannot close on second click.
 - Local chat input shells pretending to be the shared composer.
 - NarrativeFlow-specific composer chrome that diverges from the repo-owned composer.

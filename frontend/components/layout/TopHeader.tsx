@@ -639,7 +639,7 @@ export function TopHeader({
                       left: layoutDropdownPos.left,
                       zIndex: 9999,
                     }}
-                    className="w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden animate-dropdown-enter"
+                    className="fintheon-dropdown-surface w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden animate-dropdown-enter"
                   >
                     {layoutOptions.map((option) => (
                       <button
@@ -702,7 +702,7 @@ export function TopHeader({
                       left: platformDropdownPos.left,
                       zIndex: 9999,
                     }}
-                    className="w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden py-1 animate-dropdown-enter"
+                    className="fintheon-dropdown-surface w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden py-1 animate-dropdown-enter"
                   >
                     {platformOptions.map((option) => (
                       <button
