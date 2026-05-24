@@ -9,6 +9,64 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-24T14:49:00-04:00",
+    agent: "codex",
+    summary:
+      "v6.7.24 unifies the NarrativeFlow CAO release: the CAO avatar now ships with themed attire/desk/floor accents, black-grey Damier briefcase, final slam/open-laptop sequence, Desk rail rename, and onboarding cleanup.",
+    files: [
+      "frontend/components/narrative/NarrativeCaoWolfAvatar.tsx",
+      "frontend/components/narrative/cao-wolf-avatar.css",
+      "frontend/components/narrative/NarrativeFlowLanding.tsx",
+      "frontend/components/narrative/NarrativeInputBar.tsx",
+      "frontend/components/desk/DeskRail.tsx",
+      "frontend/components/onboarding/FirstTimeTour.tsx",
+      "cao-wolf-chat-prototype.html",
+      "package.json",
+      "mobile/package.json",
+      "scripts/fintheon-setup.sh",
+      "scripts/fintheon-update.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-24T09:20:00-04:00",
+    agent: "codex",
+    summary:
+      "Refactored the old Proposals rail into a Desk rail with only Plans and Signals tabs. Plans now renders upcoming desk-plan windows as a compact newest-first feed, while Signals reuses the Forum Risk Signals rail and the old Scorecards tab is removed from the surface.",
+    files: [
+      "frontend/components/desk/DeskRail.tsx",
+      "frontend/components/desk/DeskPlansFeed.tsx",
+      "frontend/components/desk/desk-plan-feed-utils.ts",
+      "frontend/components/proposals/ProposalWidget.tsx",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/components/layout/TabRenderer.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/mission-control/MiniProposalCard.tsx",
+      "frontend/components/onboarding/FirstTimeTour.tsx",
+      "frontend/components/onboarding/TourCard.tsx",
+      "frontend/components/onboarding/WhatsNewButton.tsx",
+      "frontend/components/onboarding/tour-content.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-24T04:10:00-04:00",
+    agent: "codex",
+    summary:
+      "Integrated the approved CAO wolf Easter egg into the NarrativeFlow greeting composer only: the avatar waits for the greeting content fade-in, runs along the lowered opener input bar, defaults on with Opt+Right Cmd visibility toggling, stays below composer-attached drawers, and fades out with the greeting state before the loaded workspace appears.",
+    files: [
+      "frontend/components/narrative/NarrativeCaoWolfAvatar.tsx",
+      "frontend/components/narrative/cao-wolf-avatar.css",
+      "frontend/components/narrative/NarrativeFlowLanding.tsx",
+      "frontend/components/narrative/NarrativeInputBar.tsx",
+      "frontend/components/narrative/NarrativeSensemakingComposer.tsx",
+      "frontend/components/narrative/NarrativeSessionWorkspace.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-24T01:44:00-04:00",
     agent: "codex",
     summary:

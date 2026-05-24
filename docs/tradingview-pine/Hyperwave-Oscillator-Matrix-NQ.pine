@@ -1,0 +1,139 @@
+// This Pine Script(R) code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+//@version=6
+indicator("Hyperwave Oscillator Matrix [NQ Optimized]", shorttitle="Hyperwave Matrix NQ", overlay=false, max_boxes_count=50, max_lines_count=50, max_labels_count=50)
+
+// --- Lookback Settings ---
+rsiLength   = input.int(28, "RSI Lookback", minval=1, group="Lookback Settings")
+mfiLength   = input.int(10, "MFI Lookback", minval=1, group="Lookback Settings")
+cciLength   = input.int(28, "CCI Lookback", minval=1, group="Lookback Settings")
+stochLength = input.int(28, "Stoch Lookback", minval=1, group="Lookback Settings")
+wprLength   = input.int(28, "WPR Lookback", minval=1, group="Lookback Settings")
+momLength   = input.int(5, "Momentum Lookback", minval=1, group="Lookback Settings")
+smooth      = input.int(8, "Hyperwave Smoothing", minval=1, group="Lookback Settings")
+
+// --- Bond Spike Reversal ---
+bondSymbol       = input.symbol("CBOT:ZN1!", "Bond Link", group="Bond Spike Reversal")
+bondSpikeWindow  = input.int(100, "Spike Baseline", minval=5, group="Bond Spike Reversal")
+bondSpikePercent = input.float(85, "ATR(1) Spike %", minval=1, maxval=200, step=1, group="Bond Spike Reversal")
+minMatrixAgree   = input.int(4, "Matrix Agreement", minval=1, maxval=6, group="Bond Spike Reversal")
+bondCooldownBars = input.int(3, "Marker Cooldown Bars", minval=0, group="Bond Spike Reversal")
+
+// --- Style ---
+bullColor      = input.color(#ffa726, "Bullish Color", group="Style")
+bearColor      = input.color(#787b86, "Bearish Color", group="Style")
+midLineColor   = input.color(#787b86, "Middle Line Color", group="Style")
+hyperLineColor = input.color(#ffa726, "Hyperwave Line Color", group="Style")
+sigLineColor   = input.color(#787b86, "Signal Line Color", group="Style")
+neutralColor   = input.color(#787b86, "Matrix Neutral", group="Style")
+
+// --- Matrix Calculations ---
+rsiVal   = ta.rsi(close, rsiLength)
+mfi      = ta.mfi(close, mfiLength)
+mfiVal   = volume > 0 ? mfi : rsiVal
+cci      = ta.cci(close, cciLength)
+cciVal   = math.max(0, math.min(100, 50 + (cci / 5)))
+stochVal = ta.stoch(close, high, low, stochLength)
+wprVal   = 100 + ta.wpr(wprLength)
+mom      = close - close[momLength]
+momVal   = math.max(0, math.min(100, 50 + (mom / close * 1000)))
+
+matrixSum = (nz(rsiVal, 50) + nz(mfiVal, 50) + nz(cciVal, 50) + nz(stochVal, 50) + nz(wprVal, 50) + nz(momVal, 50)) / 6
+hyperwave = ta.ema(matrixSum, smooth) - 50
+signal    = ta.ema(hyperwave, smooth * 2)
+
+// --- Chart ATR(1) Fuse ---
+chartAtr1 = ta.atr(1)
+atrMax    = ta.highest(chartAtr1, 100)
+atrNorm   = atrMax > 0 ? (chartAtr1 / atrMax) * 100 : 0
+fuseVal   = atrNorm - 50
+fuseCol   = close > open ? bullColor : bearColor
+
+// --- Bond ATR(1) Spike Link ---
+bondAtr1 = request.security(bondSymbol, timeframe.period, ta.atr(1), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off, ignore_invalid_symbol=true)
+bondAtrBaseline = ta.highest(bondAtr1[1], bondSpikeWindow)
+hasBondData     = not na(bondAtr1) and not na(bondAtrBaseline) and bondAtrBaseline > 0
+bondSpikeAny    = hasBondData and bondAtr1 >= bondAtrBaseline * (bondSpikePercent / 100)
+
+matrixBullCount = (rsiVal > 70 ? 1 : 0) + (mfiVal > 70 ? 1 : 0) + (cciVal > 70 ? 1 : 0) + (stochVal > 70 ? 1 : 0) + (wprVal > 70 ? 1 : 0) + (momVal > 70 ? 1 : 0)
+matrixBearCount = (rsiVal < 30 ? 1 : 0) + (mfiVal < 30 ? 1 : 0) + (cciVal < 30 ? 1 : 0) + (stochVal < 30 ? 1 : 0) + (wprVal < 30 ? 1 : 0) + (momVal < 30 ? 1 : 0)
+
+bullMatrixReversal = matrixBearCount >= minMatrixAgree and hyperwave <= -10 and hyperwave > hyperwave[1]
+bearMatrixReversal = matrixBullCount >= minMatrixAgree and hyperwave >= 10 and hyperwave < hyperwave[1]
+
+var int lastBondSignalBar = na
+isCoolingDown = not na(lastBondSignalBar) and bar_index - lastBondSignalBar <= bondCooldownBars
+
+bondBullCandidate = bondSpikeAny and bullMatrixReversal and not isCoolingDown
+bondBearCandidate = bondSpikeAny and bearMatrixReversal and not isCoolingDown
+
+varip bool bondBullMarker = false
+varip bool bondBearMarker = false
+
+// Realtime latch keeps a live triangle from blinking away before the bar closes.
+if barstate.isnew
+    bondBullMarker := false
+    bondBearMarker := false
+
+if bondBullCandidate
+    bondBullMarker := true
+    lastBondSignalBar := bar_index
+else if bondBearCandidate
+    bondBearMarker := true
+    lastBondSignalBar := bar_index
+
+getMatrixColor(float val) =>
+    val > 70 ? bullColor :
+     val > 50 ? color.new(bullColor, 60) :
+     val < 30 ? bearColor :
+     val < 50 ? color.new(bearColor, 60) :
+     neutralColor
+
+// --- Visuals ---
+hline(0, "Zero Line", color=midLineColor, linestyle=hline.style_dotted)
+
+pHyper = plot(hyperwave, "Hyperwave", color=hyperLineColor, linewidth=2)
+pSig   = plot(signal, "Signal Line", color=sigLineColor, linewidth=1)
+fill(pHyper, pSig, top_value=50, bottom_value=-50, top_color=color.new(bullColor, 50), bottom_color=color.new(bearColor, 50), title="Ribbon Fill")
+
+matrixYOffset = -70
+plot(matrixYOffset - 0, "RSI State", color=getMatrixColor(rsiVal), linewidth=5, style=plot.style_linebr)
+plot(matrixYOffset - 5, "MFI State", color=getMatrixColor(mfiVal), linewidth=5, style=plot.style_linebr)
+plot(matrixYOffset - 10, "CCI State", color=getMatrixColor(cciVal), linewidth=5, style=plot.style_linebr)
+plot(matrixYOffset - 15, "Stoch State", color=getMatrixColor(stochVal), linewidth=5, style=plot.style_linebr)
+plot(matrixYOffset - 20, "WPR State", color=getMatrixColor(wprVal), linewidth=5, style=plot.style_linebr)
+plot(matrixYOffset - 25, "Mom State", color=getMatrixColor(momVal), linewidth=5, style=plot.style_linebr)
+
+bondMarkerY = matrixYOffset - 35
+plotshape(bondBullMarker ? bondMarkerY : na, "Bond Spike Bull Reversal", shape.triangleup, location.absolute, color=bullColor, size=size.small)
+plotshape(bondBearMarker ? bondMarkerY : na, "Bond Spike Bear Reversal", shape.triangledown, location.absolute, color=bearColor, size=size.small)
+
+alertcondition(bondBullMarker, "Bond Spike Bull Reversal", "Bond ATR(1) spike converged with oversold matrix reversal.")
+alertcondition(bondBearMarker, "Bond Spike Bear Reversal", "Bond ATR(1) spike converged with overbought matrix reversal.")
+
+// --- ATR Fuse Spike ---
+var box[] fuseStack = array.new_box()
+var line fuseLine = na
+var label fuseLabel = na
+
+if barstate.islast
+    if array.size(fuseStack) > 0
+        for i = 0 to array.size(fuseStack) - 1
+            box.delete(array.get(fuseStack, i))
+        array.clear(fuseStack)
+    line.delete(fuseLine)
+    label.delete(fuseLabel)
+
+    fuseLine := line.new(bar_index + 2, -50, bar_index + 2, 50, color=color.new(neutralColor, 80), width=1)
+
+    int segments = 5
+    float totalRange = fuseVal - (-50)
+    float step = totalRange / segments
+
+    if totalRange > 0
+        for i = 0 to segments - 1
+            float btm = -50 + (i * step)
+            float top = -50 + ((i + 1) * step)
+            color segCol = color.new(fuseCol, 70 - (i * 12))
+            array.push(fuseStack, box.new(bar_index + 1, top, bar_index + 3, btm, bgcolor=segCol, border_color=na))
+
+    fuseLabel := label.new(bar_index + 3, fuseVal, "ATR(1) FUSE", color=#00000000, textcolor=fuseCol, style=label.style_label_left, size=size.tiny)

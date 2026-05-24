@@ -17,7 +17,7 @@ import { DeskMap } from "../narrative/DeskMap";
 import { fetchNarrativeSessions } from "../../lib/narrative-session-api";
 import type { NarrativeSessionSummary } from "../narrative/NarrativeSessionHistory";
 import { PerformanceJournal } from "../journal/PerformanceJournal";
-import { ProposalWidget } from "../proposals/ProposalWidget";
+import { DeskRail } from "../desk/DeskRail";
 import { ApparatusMap } from "../apparatus/ApparatusMap";
 import { AdminShell } from "../admin/AdminShell";
 import { SettingsPage } from "../SettingsPanel";
@@ -136,10 +136,10 @@ export function TabRenderer({
       {!showRefinement && activeTab === "proposals" && (
         <div
           key="proposals"
-          data-tour-target="proposals"
+          data-tour-target="desk-rail"
           className={`h-full w-full ${animClass}`}
         >
-          <ProposalWidget />
+          <DeskRail />
         </div>
       )}
       {!showRefinement && activeTab === "performance" && (

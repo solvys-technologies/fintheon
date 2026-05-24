@@ -36,7 +36,7 @@ import {
   Clock705,
   Lock,
 } from "lucide-react";
-import { WhatsNewButton } from "../onboarding/FirstTimeTour";
+import { WhatsNewButton } from "../onboarding/WhatsNewButton";
 import { StickyBulletin } from "../StickyBulletin";
 import { TraderNametag } from "../TraderNametag";
 import { FadingRuler } from "../shared/FadingRuler";
@@ -64,7 +64,7 @@ const TAB_LABELS: Record<NavTab, string> = {
   dashboard: "Desk",
   feed: "Desk", // feed section removed; fallback for history
   analysis: "Consilium",
-  proposals: "Proposals",
+  proposals: "Desk",
   apparatus: "Apparatus",
   riskflow: "RiskFlow",
   econ: "Econ Calendar",

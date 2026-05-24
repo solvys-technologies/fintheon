@@ -30,7 +30,7 @@ import { useConsiliumNav } from "../../lib/consilium-nav-store";
 import { AgentChattr } from "./AgentChattr";
 import { Sanctum } from "../narrative/Sanctum";
 import { TimelinePanel } from "../narrative/TimelinePanel";
-import { ProposalWidget } from "../proposals/ProposalWidget";
+import { DeskRail } from "../desk/DeskRail";
 import { NarrativeCanvas } from "../narrative/NarrativeCanvas";
 import {
   NarrativeProvider,
@@ -627,7 +627,7 @@ export function ConsiliumHub() {
 
   return (
     <div className="flex h-full flex-col bg-transparent">
-      {/* Tab bar: Sanctum dropdown + regular tabs + Proposals toggle */}
+      {/* Tab bar: Sanctum dropdown + regular tabs + Desk rail toggle */}
       <div className="flex items-center gap-0.5 px-4 pt-3 pb-1.5">
         <h2
           className="mr-3 flex items-center gap-1.5 text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
@@ -984,7 +984,7 @@ export function ConsiliumHub() {
                 >
                   <span className="inline-flex items-center gap-1.5">
                     {showProposals ? <PanelRightClose size={13} /> : <PanelRightOpen size={13} />}
-                    Proposals
+                    Desk
                   </span>
                 </button>
                 <button
@@ -1020,20 +1020,20 @@ export function ConsiliumHub() {
                 ? "border border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
                 : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
             }`}
-            title={showProposals ? "Hide Proposals" : "Show Proposals"}
-            aria-label={showProposals ? "Hide Proposals" : "Show Proposals"}
+            title={showProposals ? "Hide Desk" : "Show Desk"}
+            aria-label={showProposals ? "Hide Desk" : "Show Desk"}
           >
             {showProposals ? (
               <PanelRightClose size={14} />
             ) : (
               <PanelRightOpen size={14} />
             )}
-            <span className="fintheon-zen-label">Proposals</span>
+            <span className="fintheon-zen-label">Desk</span>
           </button>
         )}
       </div>
 
-      {/* Tab content + Proposals panel */}
+      {/* Tab content + Desk rail */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         <div
           className="flex-1 min-h-0 min-w-0 overflow-hidden"
@@ -1145,7 +1145,7 @@ export function ConsiliumHub() {
           )}
         </div>
 
-        {/* Collapsible Proposals + Scorecards right panel */}
+        {/* Collapsible Desk rail */}
         <div
           className={`flex-shrink-0 overflow-hidden border-l border-[var(--fintheon-accent)]/10 ${
             showProposals ? "w-80" : "w-0 border-l-0"
@@ -1162,7 +1162,7 @@ export function ConsiliumHub() {
             }}
           >
             <div className="flex-1 min-h-0 overflow-y-auto">
-              <ProposalWidget />
+              <DeskRail />
             </div>
           </div>
         </div>

@@ -41,6 +41,9 @@ interface NarrativeSensemakingComposerProps {
   riskflowAlerts?: RiskFlowAlert[];
   onAttachHeadlines?: (items: HeadlineAttachment[]) => void;
   riskFlowDrawerOpen?: boolean;
+  caoWolfEnabled?: boolean;
+  caoWolfRunKey?: string | number;
+  caoWolfReserveSpace?: boolean;
 }
 
 export function NarrativeSensemakingComposer({

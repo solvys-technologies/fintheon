@@ -110,7 +110,6 @@ export function NarrativeSessionWorkspace({
         </div>
 
         <div className="h-full min-h-0">{children}</div>
-
       </main>
 
       {isResearchRailOpen ? (

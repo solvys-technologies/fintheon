@@ -419,17 +419,19 @@ export function NarrativeCanvas({
           onOpenSession={handleOpenSession}
         />
       ) : !activeSession ? (
-          <NarrativeFlowLanding
-            sessions={sessions}
-            isSubmitting={isSubmitting || isLoading}
-            statusMessage={validationMessage}
-            reasoningLevel={reasoningLevel}
-            onReasoningLevelChange={handleReasoningLevelChange}
-            onCreateSession={handleCreateSession}
-            onOpenSession={handleOpenSession}
-            onRenameSession={handleRenameSession}
-          />
-        ) : (
+        <NarrativeFlowLanding
+          sessions={sessions}
+          isHistoryOpen={isHistoryOpen}
+          isSubmitting={isSubmitting || isLoading}
+          statusMessage={validationMessage}
+          reasoningLevel={reasoningLevel}
+          onNewSession={resetWorkspace}
+          onReasoningLevelChange={handleReasoningLevelChange}
+          onCreateSession={handleCreateSession}
+          onOpenSession={handleOpenSession}
+          onRenameSession={handleRenameSession}
+        />
+      ) : (
           <NarrativeSessionWorkspace
             session={activeSession}
             response={response}

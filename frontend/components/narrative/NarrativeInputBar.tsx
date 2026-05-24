@@ -33,6 +33,7 @@ import {
   mentionToken,
   type ContextMention,
 } from "../../lib/context-mentions";
+import { NarrativeCaoWolfAvatar } from "./NarrativeCaoWolfAvatar";
 import type { NarrativeHeadlineOption } from "./sensemaking-types";
 
 interface NarrativeChip {
@@ -78,6 +79,9 @@ interface NarrativeInputBarProps {
   riskflowAlerts?: RiskFlowAlert[];
   onAttachHeadlines?: (items: HeadlineAttachment[]) => void;
   riskFlowDrawerOpen?: boolean;
+  caoWolfEnabled?: boolean;
+  caoWolfRunKey?: string | number;
+  caoWolfReserveSpace?: boolean;
 }
 
 function getMentionQuery(value: string): string | null {
@@ -124,6 +128,9 @@ export function NarrativeInputBar({
   riskflowAlerts = [],
   onAttachHeadlines,
   riskFlowDrawerOpen = false,
+  caoWolfEnabled = false,
+  caoWolfRunKey = 0,
+  caoWolfReserveSpace = false,
 }: NarrativeInputBarProps) {
   const [focused, setFocused] = useState(false);
   const [showToolboxModal, setShowToolboxModal] = useState(false);
@@ -137,6 +144,8 @@ export function NarrativeInputBar({
   const { provider, setProvider } = useHarperProvider();
   const isOpener = mode === "opener";
   const isOverlay = mode === "overlay";
+  const hasCaoWolfHost = caoWolfReserveSpace || caoWolfEnabled;
+  const shouldShowCaoWolf = caoWolfEnabled;
   const catalystCount = attachedHeadlines.length;
   const catalystReady = catalystCount >= minHeadlines;
   const draftReady = query.trim().length > 0;
@@ -147,6 +156,9 @@ export function NarrativeInputBar({
     : isOverlay
       ? "relative z-20 px-2"
       : "pointer-events-none absolute inset-x-0 bottom-0 z-20 px-4 pb-4";
+  const hostClass = hasCaoWolfHost
+    ? `${wrapperClass} narrative-cao-wolf-composer-host`
+    : wrapperClass;
   const composerMaxWidth = isOverlay ? "32rem" : "56rem";
   const rows = isOpener ? 2 : 1;
   const placeholder = isOpener
@@ -174,7 +186,10 @@ export function NarrativeInputBar({
 
   return (
     <>
-    <div className={wrapperClass}>
+    <div className={hostClass}>
+      {shouldShowCaoWolf ? (
+        <NarrativeCaoWolfAvatar runKey={caoWolfRunKey} />
+      ) : null}
       <RepoChatComposer
         format={isOverlay ? "compact" : "full"}
         maxWidth={composerMaxWidth}
