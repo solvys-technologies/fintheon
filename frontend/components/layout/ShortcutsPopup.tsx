@@ -47,7 +47,6 @@ export default function ShortcutsPopup({
   return (
     <div
       ref={overlayRef}
-      className="fintheon-modal-backdrop"
       onClick={(e) => {
         if (e.target === overlayRef.current) onClose();
       }}
@@ -58,13 +57,15 @@ export default function ShortcutsPopup({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        backgroundColor: "rgba(0, 0, 0, 0.6)",
         backdropFilter: "blur(4px)",
         animation: "fadeIn 0.3s ease-out",
       }}
     >
       <div
-        className="fintheon-modal-surface"
         style={{
+          backgroundColor: "#0a0806",
+          border: "1px solid rgba(199, 159, 74, 0.25)",
           borderRadius: "8px",
           padding: "2rem",
           width: "420px",

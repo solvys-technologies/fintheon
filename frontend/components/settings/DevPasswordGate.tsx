@@ -31,7 +31,12 @@ export function DevPasswordGate({ onAuthenticated }: DevPasswordGateProps) {
   return (
     <div className="flex items-center justify-center py-20">
       <div
-        className="fintheon-modal-surface w-full max-w-sm p-8 text-center"
+        className="w-full max-w-sm rounded-lg border p-8 text-center"
+        style={{
+          borderColor:
+            "color-mix(in srgb, var(--fintheon-accent) 25%, transparent)",
+          backgroundColor: "rgba(10,10,0,0.4)",
+        }}
       >
         <div
           className="mx-auto mb-4 w-10 h-10 rounded-lg flex items-center justify-center"

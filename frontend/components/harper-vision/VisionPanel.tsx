@@ -43,13 +43,21 @@ export const VisionPanel: React.FC<VisionPanelProps> = ({ onClose }) => {
     }
   };
 
+  const panelStyle: React.CSSProperties = {
+    background: "rgba(10, 9, 5, 0.85)",
+    border: "1px solid rgba(199, 159, 74, 0.35)",
+    borderRadius: "6px",
+  };
+
   return (
     <div
-      className="fintheon-modal-backdrop fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: "rgba(5, 4, 2, 0.70)" }}
       onClick={onClose}
     >
       <div
-        className="fintheon-modal-surface w-full max-w-md mx-4 p-6"
+        className="w-full max-w-md mx-4 p-6"
+        style={panelStyle}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

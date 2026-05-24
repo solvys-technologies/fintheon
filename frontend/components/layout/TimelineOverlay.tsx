@@ -318,7 +318,7 @@ export function TimelineOverlay({ open, onClose }: TimelineOverlayProps) {
       {open && <div className="fixed inset-0 z-40" onClick={onClose} />}
 
       <div
-        className={`fintheon-rail-surface fixed top-0 left-0 z-50 h-full w-[380px] flex flex-col bg-[var(--fintheon-bg)] border-r border-[var(--fintheon-accent)]/15 shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 z-50 h-full w-[380px] flex flex-col bg-[var(--fintheon-bg)] border-r border-[var(--fintheon-accent)]/15 shadow-2xl transition-transform duration-300 ease-in-out ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -427,7 +427,7 @@ export function TimelineOverlay({ open, onClose }: TimelineOverlayProps) {
           </button>
 
           {dropdownOpen && (
-            <div className="fintheon-dropdown-surface absolute left-4 right-4 top-full mt-1 z-50 rounded-lg border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] shadow-xl overflow-hidden max-h-[300px] overflow-y-auto">
+            <div className="absolute left-4 right-4 top-full mt-1 z-50 rounded-lg border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] shadow-xl overflow-hidden max-h-[300px] overflow-y-auto">
               {NARRATIVE_THREADS.map((thread) => (
                 <button
                   key={thread.slug}
@@ -598,7 +598,7 @@ export function TimelineToggleButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="fintheon-rail-surface fixed left-0 top-1/2 -translate-y-1/2 z-30 flex items-center gap-1 rounded-r-lg border border-l-0 border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)]/90 backdrop-blur-sm px-2 py-3 text-[var(--fintheon-accent)]/60 transition-all hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
+      className="fixed left-0 top-1/2 -translate-y-1/2 z-30 flex items-center gap-1 rounded-r-lg border border-l-0 border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)]/90 backdrop-blur-sm px-2 py-3 text-[var(--fintheon-accent)]/60 transition-all hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
       title="Open Timeline"
     >
       <Clock className="w-3.5 h-3.5" />

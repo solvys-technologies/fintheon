@@ -120,7 +120,6 @@ export function MainMenuDrawer({
           {/* Drawer */}
           <motion.div
             ref={drawerRef}
-            className="fintheon-rail-surface"
             initial={{ x: `-${DRAWER_WIDTH}` }}
             animate={{ x: 0 }}
             exit={{ x: `-${DRAWER_WIDTH}` }}
@@ -131,6 +130,7 @@ export function MainMenuDrawer({
               left: 0,
               bottom: 0,
               width: DRAWER_WIDTH,
+              background: "var(--surface, #0a0a0a)",
               display: "flex",
               flexDirection: "column",
               paddingTop: "env(safe-area-inset-top)",

@@ -2,6 +2,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { formatEasternClockRange } from "../../lib/eastern-time-format";
 import { cn } from "../../lib/utils";
+import { FadingRuler } from "../shared/FadingRuler";
 import type { DayPlan, DayPlanWindow } from "../../types/day-plan";
 import { EmptyTimeline } from "./DeskPlanMapEmptyStates";
 import {
@@ -40,7 +41,7 @@ export function DeskPlanSprintTimeline({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-end justify-between gap-4 border-b border-[var(--fintheon-accent)]/10 pb-3">
+      <div className="flex items-end justify-between gap-4 pb-3">
         <div>
           <p className="font-mono text-[10px] text-[var(--fintheon-accent)]">
             {segment.dateLabel}
@@ -53,34 +54,49 @@ export function DeskPlanSprintTimeline({
           {blocks.length} blocks
         </p>
       </div>
+      <FadingRuler className="opacity-35" />
 
       <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
         <TimeRuler segment={segment} />
         {blocks.length === 0 ? (
           <BlankSegment segment={segment} />
         ) : (
-          <div className="mt-3 space-y-3">
-            {blocks.map((item) => {
+          <div className="mt-3 flex flex-col gap-3">
+            {blocks.map((item, index) => {
               const blockId = `${item.plan.id}-${item.window.id}`;
               return (
-                <SprintBlock
-                  key={blockId}
-                  plan={item.plan}
-                  window={item.window}
-                  overlap={item.overlap!}
-                  isExpanded={expandedId === blockId}
-                  deletingId={deletingId}
-                  onDelete={onDelete}
-                  onToggle={() =>
-                    setExpandedId((current) => (current === blockId ? null : blockId))
-                  }
-                />
+                <div key={blockId} className="flex flex-col gap-3">
+                  <SprintBlock
+                    plan={item.plan}
+                    window={item.window}
+                    overlap={item.overlap!}
+                    isExpanded={expandedId === blockId}
+                    deletingId={deletingId}
+                    onDelete={onDelete}
+                    onToggle={() =>
+                      setExpandedId((current) => (current === blockId ? null : blockId))
+                    }
+                  />
+                  {index < blocks.length - 1 ? <SprintLaneDivider /> : null}
+                </div>
               );
             })}
           </div>
         )}
       </div>
 
+    </div>
+  );
+}
+
+function SprintLaneDivider() {
+  return (
+    <div
+      aria-hidden="true"
+      className="grid grid-cols-[86px_1fr] gap-3"
+    >
+      <span />
+      <FadingRuler className="opacity-30" />
     </div>
   );
 }

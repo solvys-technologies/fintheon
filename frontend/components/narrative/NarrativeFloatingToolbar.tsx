@@ -247,7 +247,7 @@ export function NarrativeFloatingToolbar({
               </button>
               {/* Sanctum dropdown */}
               {a.id === "sanctum" && sanctumOpen && (
-                <div className="fintheon-dropdown-surface absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 min-w-[170px] rounded-lg border border-[var(--fintheon-border)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden">
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 min-w-[170px] rounded-lg border border-[var(--fintheon-border)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden">
                   {[
                     { label: "Command Center", page: 0 },
                     { label: "Economic Intelligence", page: 1 },
@@ -298,7 +298,7 @@ export function NarrativeFloatingToolbar({
             {Math.round(scale * 100)}%
           </button>
           {zoomOpen && (
-            <div className="fintheon-dropdown-surface absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 min-w-[130px] rounded-lg border border-[var(--fintheon-border)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden">
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 min-w-[130px] rounded-lg border border-[var(--fintheon-border)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden">
               {ZOOM_PRESETS.map((z) => (
                 <button
                   key={z.label}

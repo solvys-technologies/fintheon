@@ -102,7 +102,7 @@ export function TourTooltip({
   return (
     <div
       ref={tooltipRef}
-      className="fixed z-[9999]"
+      className="fixed z-[9999] shadow-2xl"
       style={{
         top,
         left,
@@ -110,7 +110,7 @@ export function TourTooltip({
         transition: "all 300ms ease",
       }}
     >
-      <div className="fintheon-popover-surface overflow-hidden">
+      <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-xl overflow-hidden">
         {/* Content */}
         <div className="px-5 py-4">
           <div className="text-lg font-semibold text-white mb-1.5">

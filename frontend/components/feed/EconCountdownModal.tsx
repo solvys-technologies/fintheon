@@ -4,8 +4,8 @@
 // degraged reason display. Dev logging gated on import.meta.env.DEV.
 // Fades in at T-5min, Doto mm:ss countdown, cross-fades to Actual/Forecast on
 // SSE econ-print arrival, fades out 20s after print (or 15min after scheduled
-// if no print lands). Uses the shared primary-tinted toast surface so econ
-// alerts match the rest of the system/news glass chrome.
+// if no print lands). No glass, no box-shadow, no gradient, no emoji — flat
+// #050402 + 1px #c79f4a border per feedback_no_glass_effects.
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
@@ -231,8 +231,10 @@ function CountdownCard({ card, msUntil }: CountdownCardProps) {
   return (
     <div
       key={card.flashKey}
-      className="fintheon-toast-surface pointer-events-auto w-[260px] px-3.5 py-3 text-[#f0ead6]"
+      className="pointer-events-auto w-[260px] px-3.5 py-3 text-[#f0ead6]"
       style={{
+        backgroundColor: "#050402",
+        border: "1px solid var(--fintheon-accent)",
         opacity: reduced ? 1 : visible ? 1 : 0,
         transform: reduced ? "none" : visible ? "translateY(0)" : "translateY(8px)",
         transition: reduced

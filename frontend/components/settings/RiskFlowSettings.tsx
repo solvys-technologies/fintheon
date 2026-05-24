@@ -473,7 +473,12 @@ export function RiskFlowSettings() {
 
                 {regimeDropdownOpen && (
                   <div
-                    className="fintheon-dropdown-surface absolute left-0 top-full mt-1 z-50 py-1 w-56"
+                    className="absolute left-0 top-full mt-1 z-50 rounded-lg border py-1 w-56 shadow-xl"
+                    style={{
+                      backgroundColor: "var(--fintheon-bg, #0a0a00)",
+                      borderColor:
+                        "color-mix(in srgb, var(--fintheon-accent) 25%, transparent)",
+                    }}
                   >
                     {MARKET_REGIMES.map((r) => (
                       <button

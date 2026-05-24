@@ -53,6 +53,12 @@ const RENDERERS: CustomRenderer[] = SLOT_LANGUAGES.map((language) => ({
   language,
   component: SLOT_RENDERERS[language],
 }));
+const ALLOWED_TAGS = { "market-ticker": ["symbol"] };
+const COMPONENTS = {
+  "market-ticker": MarketTickerMention as ComponentType<Record<string, unknown>>,
+};
+const LITERAL_TAG_CONTENT = ["market-ticker"];
+const PLUGINS = { renderers: RENDERERS };
 
 interface StreamdownChatProps {
   content: string;
@@ -71,12 +77,10 @@ export function StreamdownChat({
       className={className}
       mode={streaming ? "streaming" : "static"}
       parseIncompleteMarkdown={streaming}
-      allowedTags={{ "market-ticker": ["symbol"] }}
-      components={{
-        "market-ticker": MarketTickerMention as ComponentType<Record<string, unknown>>,
-      }}
-      literalTagContent={["market-ticker"]}
-      plugins={{ renderers: RENDERERS }}
+      allowedTags={ALLOWED_TAGS}
+      components={COMPONENTS}
+      literalTagContent={LITERAL_TAG_CONTENT}
+      plugins={PLUGINS}
     >
       {enhancedContent}
     </Streamdown>

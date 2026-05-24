@@ -39,7 +39,8 @@ export function DraggablePanel({
     disabled: defaultPosition !== "floating",
   });
 
-  const baseClasses = "fintheon-rail-surface flex flex-col";
+  const baseClasses =
+    "bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 flex flex-col";
 
   if (defaultPosition === "floating") {
     return (

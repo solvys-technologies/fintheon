@@ -9,7 +9,7 @@ const SWATCHES = ["#c79f4a", "#34D399", "#FBBF24", "#A78BFA", "#14B8A6", "#F9731
 
 export function NarrativeColorPopover({ color, onChange }: NarrativeColorPopoverProps) {
   return (
-    <div className="fintheon-popover-surface w-44 px-3 py-2">
+    <div className="w-44 rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)] px-3 py-2">
       <div className="mb-2 text-[9px] uppercase tracking-[0.18em] text-[var(--fintheon-muted)]">
         Color
       </div>

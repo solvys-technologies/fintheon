@@ -194,10 +194,12 @@ export function SessionsDropdown({
     <div
       ref={dropdownRef}
       onKeyDown={handleKeyDown}
-      className="fintheon-dropdown-surface absolute right-0 top-full mt-1 z-50 w-[280px] rounded-lg border overflow-hidden"
+      className="absolute right-0 top-full mt-1 z-50 w-[280px] rounded-lg border overflow-hidden"
       style={{
         borderColor:
           "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
+        backgroundColor: "#0a0a08",
+        boxShadow: "0 20px 40px rgba(0,0,0,0.5)",
         maxHeight: "350px",
       }}
     >

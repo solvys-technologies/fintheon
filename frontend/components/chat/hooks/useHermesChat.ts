@@ -73,6 +73,9 @@ export function useHermesChat(
   // [claude-code 2026-03-10] Track requestId from X-Request-Id header for cognition stream
   const [lastRequestId, setLastRequestId] = useState<string | null>(null);
   const hydratedRef = useRef<string | undefined>(undefined);
+  const pendingConversationIdRef = useRef<string | null>(null);
+  const runtimeChatIdRef = useRef<string | null>(null);
+  const previousConversationIdRef = useRef(conversationId);
   // Abort controller ref — allows stop button to kill the active fetch
   const abortRef = useRef<AbortController | null>(null);
   // [claude-code 2026-03-13] Ref to avoid stale closure in DefaultChatTransport's prepareSendMessagesRequest
@@ -88,6 +91,16 @@ export function useHermesChat(
   useEffect(() => {
     conversationIdRef.current = conversationId;
   }, [conversationId]);
+
+  const commitPendingConversationId = useCallback(() => {
+    const pendingConversationId = pendingConversationIdRef.current;
+    if (!pendingConversationId) return;
+
+    pendingConversationIdRef.current = null;
+    hydratedRef.current = pendingConversationId;
+    conversationIdRef.current = pendingConversationId;
+    setConversationId(pendingConversationId);
+  }, [setConversationId]);
 
   const fetchFn = useCallback(
     async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
@@ -166,7 +179,9 @@ export function useHermesChat(
 
         setLastError(null);
         const convId = response.headers.get("X-Conversation-Id");
-        if (convId) setConversationId(convId);
+        if (convId && convId !== conversationIdRef.current) {
+          pendingConversationIdRef.current = convId;
+        }
         const reqId = response.headers.get("X-Request-Id");
         if (reqId) setLastRequestId(reqId);
 
@@ -175,9 +190,11 @@ export function useHermesChat(
         if (timeoutId) clearTimeout(timeoutId);
         if (error instanceof DOMException && error.name === "AbortError") {
           // User-initiated stop — don't show error
+          pendingConversationIdRef.current = null;
           setIsStreaming(false);
           throw error;
         }
+        pendingConversationIdRef.current = null;
         if (
           !(error instanceof Error) ||
           !error.message.startsWith("Chat request failed")
@@ -189,7 +206,7 @@ export function useHermesChat(
         throw error;
       }
     },
-    [setConversationId],
+    [agentOverride],
   );
 
   // Harper routes through dedicated /api/harper/chat for full Fintheon context injection
@@ -197,6 +214,10 @@ export function useHermesChat(
   const chatEndpoint = isHarperRoute
     ? `${API_BASE_URL}/api/harper/chat`
     : `${API_BASE_URL}/api/ai/chat`;
+  if (!runtimeChatIdRef.current) {
+    runtimeChatIdRef.current = `hermes-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  }
+  const runtimeChatId = runtimeChatIdRef.current;
 
   const {
     messages: useChatMessages,
@@ -210,7 +231,7 @@ export function useHermesChat(
     addToolOutput,
     addToolApprovalResponse,
   } = useChat({
-    id: conversationId ?? "new",
+    id: runtimeChatId,
     transport: new DefaultChatTransport({
       api: chatEndpoint,
       fetch: fetchFn,
@@ -356,7 +377,9 @@ export function useHermesChat(
                     .join("") || "",
               };
             }),
-            ...(conversationId && { conversationId }),
+            ...(conversationIdRef.current && {
+              conversationId: conversationIdRef.current,
+            }),
             ...(agentOverride && { agentOverride }),
             ...(thinkHarderRef.current && { thinkHarder: true }),
             ...(reasoningLevelRef.current && {
@@ -386,8 +409,12 @@ export function useHermesChat(
         };
       },
     }),
-    onFinish: () => setIsStreaming(false),
+    onFinish: () => {
+      setIsStreaming(false);
+      commitPendingConversationId();
+    },
     onError: (error) => {
+      pendingConversationIdRef.current = null;
       setIsStreaming(false);
       if (!lastError) {
         const msg =
@@ -403,6 +430,17 @@ export function useHermesChat(
       }
     },
   });
+
+  useEffect(() => {
+    const previousConversationId = previousConversationIdRef.current;
+    previousConversationIdRef.current = conversationId;
+
+    if (conversationId || !previousConversationId) return;
+
+    pendingConversationIdRef.current = null;
+    hydratedRef.current = undefined;
+    setUseChatMessages([]);
+  }, [conversationId, setUseChatMessages]);
 
   // [claude-code 2026-04-10] Hydrate messages when conversationId changes (session switch or remount)
   useEffect(() => {
@@ -478,6 +516,7 @@ export function useHermesChat(
   const hardStop = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
+    pendingConversationIdRef.current = null;
     stop();
     setIsStreaming(false);
   }, [stop]);

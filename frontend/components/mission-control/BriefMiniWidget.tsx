@@ -293,7 +293,7 @@ export function BriefMiniWidget() {
 
           {/* Dropdown menu */}
           {dropdownOpen && todayBriefs.length > 1 && (
-            <div className="fintheon-dropdown-surface absolute top-full left-0 mt-1 z-50 min-w-[180px] py-1 bg-[#0a0a07] border border-zinc-800">
+            <div className="absolute top-full left-0 mt-1 z-50 min-w-[180px] py-1 bg-[#0a0a07] border border-zinc-800">
               {todayBriefs.map((b) => (
                 <button
                   key={b.id}

@@ -318,15 +318,14 @@ export function NotificationCard({
         <button
           type="button"
           onClick={onCardTap}
-          className="fintheon-toast-surface"
           style={{
             width: "100%",
             display: "flex",
             alignItems: "stretch",
             gap: 12,
             background: n.read
-              ? "var(--fintheon-glass-surface)"
-              : "color-mix(in srgb, var(--accent) 5%, var(--fintheon-glass-surface))",
+              ? "color-mix(in srgb, white 1.5%, transparent)"
+              : "color-mix(in srgb, var(--accent) 5%, transparent)",
             backdropFilter: "blur(20px) saturate(1.4)",
             WebkitBackdropFilter: "blur(20px) saturate(1.4)",
             border:

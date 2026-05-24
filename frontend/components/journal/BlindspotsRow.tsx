@@ -109,7 +109,7 @@ function TitleRow({ updatedAt }: { updatedAt: string }) {
           {tooltipOpen && (
             <div
               role="tooltip"
-              className="fintheon-popover-surface absolute left-full top-1/2 -translate-y-1/2 ml-2 w-[240px] p-2 rounded border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-bg)] text-[10px] leading-snug text-[var(--fintheon-text)] z-20"
+              className="absolute left-full top-1/2 -translate-y-1/2 ml-2 w-[240px] p-2 rounded border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-bg)] text-[10px] leading-snug text-[var(--fintheon-text)] z-20"
             >
               Left column is what's been costing you this week. Right column is
               the paired corrective action the desk wants logged before next

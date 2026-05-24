@@ -239,7 +239,7 @@ export function NarrativeToolbar({
             <Filter className="w-3.5 h-3.5" />
           </ToolbarBtn>
           {filterOpen && (
-            <div className="fintheon-dropdown-surface absolute right-0 top-full mt-1 z-50 bg-[var(--fintheon-surface)]/95 backdrop-blur-lg border border-[var(--fintheon-border)]/30 rounded-lg shadow-xl py-1 min-w-[100px]">
+            <div className="absolute right-0 top-full mt-1 z-50 bg-[var(--fintheon-surface)]/95 backdrop-blur-lg border border-[var(--fintheon-border)]/30 rounded-lg shadow-xl py-1 min-w-[100px]">
               {SENTIMENT_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}

@@ -81,7 +81,7 @@ export function DeskPanel({ peers, isAdmin, onUpdated }: DeskPanelProps) {
   if (!isAdmin) return null;
 
   return (
-    <section className="fintheon-liquid-surface rounded-xl border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)] p-3">
+    <section className="rounded-xl border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)] p-3">
       <div className="mb-3 flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-[var(--fintheon-text)]">

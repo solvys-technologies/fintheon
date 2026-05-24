@@ -215,11 +215,6 @@ process.on("SIGHUP", () => sigHandler("SIGHUP"));
 
 const CONFIG_PATH = path.join(app.getPath("userData"), "fintheon-startup.json");
 const DEFAULT_CONFIG = { backendAutostart: true, launchOnLogin: false };
-const APPEARANCE_CONFIG_PATH = path.join(
-  app.getPath("userData"),
-  "fintheon-appearance.json",
-);
-const DEFAULT_APPEARANCE_CONFIG = { nativeVibrancyEnabled: true };
 
 function readStartupConfig() {
   try {
@@ -238,43 +233,6 @@ function writeStartupConfig(cfg) {
     fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2), "utf8");
   } catch (err) {
     console.error("[Config] Failed to write startup config:", err.message);
-  }
-}
-
-function readAppearanceConfig() {
-  try {
-    if (fs.existsSync(APPEARANCE_CONFIG_PATH)) {
-      return {
-        ...DEFAULT_APPEARANCE_CONFIG,
-        ...JSON.parse(fs.readFileSync(APPEARANCE_CONFIG_PATH, "utf8")),
-      };
-    }
-  } catch {}
-  return { ...DEFAULT_APPEARANCE_CONFIG };
-}
-
-function writeAppearanceConfig(cfg) {
-  try {
-    fs.writeFileSync(
-      APPEARANCE_CONFIG_PATH,
-      JSON.stringify(cfg, null, 2),
-      "utf8",
-    );
-  } catch (err) {
-    console.error("[Appearance] Failed to write config:", err.message);
-  }
-}
-
-function applyNativeVibrancy(enabled) {
-  if (!IS_MAC || !mainWindow) return { ok: false, enabled: false };
-  try {
-    mainWindow.setVibrancy(enabled ? "sidebar" : null);
-    mainWindow.setVisualEffectState(enabled ? "active" : "inactive");
-    mainWindow.setBackgroundColor(enabled ? "#00000000" : "#050402");
-    return { ok: true, enabled };
-  } catch (err) {
-    console.warn("[Appearance] Failed to apply native vibrancy:", err.message);
-    return { ok: false, enabled: false, reason: err.message };
   }
 }
 
@@ -984,13 +942,10 @@ const shouldAllowInAppPopup = (urlString) => {
 };
 
 function createWindow(apiBase) {
-  const appearanceConfig = readAppearanceConfig();
-  const nativeVibrancyEnabled =
-    IS_MAC && appearanceConfig.nativeVibrancyEnabled !== false;
   // [claude-code 2026-04-23] Windows: use titleBarOverlay for Win 11 frameless chrome
   // that inherits Solvys palette (BG #050402, accent #c79f4a). macOS keeps the
   // native traffic-light chrome — no override needed.
-  const platformChrome = IS_WIN
+  const windowsChrome = IS_WIN
     ? {
         titleBarStyle: "hidden",
         titleBarOverlay: {
@@ -1001,14 +956,7 @@ function createWindow(apiBase) {
         backgroundColor: "#050402",
         autoHideMenuBar: true,
       }
-    : IS_MAC
-      ? {
-          transparent: true,
-          backgroundColor: "#00000000",
-          vibrancy: nativeVibrancyEnabled ? "sidebar" : undefined,
-          visualEffectState: nativeVibrancyEnabled ? "active" : "inactive",
-        }
-      : {};
+    : {};
 
   // [claude-code 2026-04-24] apiBase is resolved by the caller in app.whenReady().
   // Mac defaults to localhost:8080 when a local backend is healthy, falls back
@@ -1023,7 +971,7 @@ function createWindow(apiBase) {
     width: 1600,
     height: 980,
     title: "Fintheon",
-    ...platformChrome,
+    ...windowsChrome,
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -1556,30 +1504,6 @@ ipcMain.handle("update-defer-until-close", async () => {
 
 ipcMain.handle("get-app-version", () => {
   return app.getVersion();
-});
-
-ipcMain.handle("appearance:get-native-vibrancy", () => {
-  const cfg = readAppearanceConfig();
-  return {
-    ok: true,
-    enabled: cfg.nativeVibrancyEnabled !== false,
-    native: IS_MAC,
-  };
-});
-
-ipcMain.handle("appearance:set-native-vibrancy", (_event, enabled) => {
-  const cfg = {
-    ...readAppearanceConfig(),
-    nativeVibrancyEnabled: enabled !== false,
-  };
-  writeAppearanceConfig(cfg);
-  const applied = applyNativeVibrancy(cfg.nativeVibrancyEnabled);
-  return {
-    ok: applied.ok || !IS_MAC,
-    enabled: cfg.nativeVibrancyEnabled,
-    native: IS_MAC,
-    reason: applied.reason,
-  };
 });
 
 // Startup config IPC

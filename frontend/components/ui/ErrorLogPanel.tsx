@@ -114,7 +114,7 @@ export function ErrorLogPanel() {
   const { errors, clearErrors } = useErrorLog();
 
   return (
-    <div className="fintheon-rail-surface h-full flex flex-col">
+    <div className="h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-[var(--fintheon-accent)]/10">
         <span className="text-[10px] text-zinc-500 uppercase tracking-wider">

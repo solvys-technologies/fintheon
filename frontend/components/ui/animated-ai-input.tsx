@@ -183,7 +183,7 @@ export const AnimatedAiInput: FC<AnimatedAiInputProps> = ({
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 4, scale: 0.96 }}
                       transition={{ duration: 0.12 }}
-                      className="fintheon-dropdown-surface absolute bottom-full left-0 mb-1 min-w-[180px] rounded-lg border border-[var(--fintheon-accent)]/15 bg-[#0f0e0a] shadow-xl z-50"
+                      className="absolute bottom-full left-0 mb-1 min-w-[180px] rounded-lg border border-[var(--fintheon-accent)]/15 bg-[#0f0e0a] shadow-xl z-50"
                     >
                       {agents.map((agent) => (
                         <button

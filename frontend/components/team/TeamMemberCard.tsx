@@ -244,7 +244,7 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
           )}
 
           {dropdownOpen && isSelf && (
-            <div className="fintheon-dropdown-surface absolute top-full left-0 mt-1 z-50 rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-lg min-w-[140px]">
+            <div className="absolute top-full left-0 mt-1 z-50 rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-lg min-w-[140px]">
               {STATUS_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}

@@ -77,7 +77,7 @@ export function AgentFilterDropdown({
 
       {/* Dropdown panel */}
       {open && (
-        <div className="fintheon-dropdown-surface absolute left-0 top-full z-50 mt-1 w-56 rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] py-1 shadow-xl">
+        <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] py-1 shadow-xl">
           {/* Clear / select-all row */}
           {hasSelection && (
             <>

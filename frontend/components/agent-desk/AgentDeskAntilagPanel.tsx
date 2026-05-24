@@ -46,7 +46,7 @@ export function AgentDeskAntilagPanel() {
 
   return (
     <div
-      className="fintheon-liquid-surface rounded border p-2.5 space-y-2"
+      className="rounded border p-2.5 space-y-2"
       style={{
         borderColor: "rgba(212, 175, 55, 0.16)",
         backgroundColor: "rgba(199, 159, 74, 0.06)",

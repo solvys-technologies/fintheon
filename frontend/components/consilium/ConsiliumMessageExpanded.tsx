@@ -57,11 +57,11 @@ export function ConsiliumMessageExpanded({
 
   return (
     <div
-      className="fintheon-modal-backdrop absolute inset-0 z-50"
+      className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="fintheon-rail-surface absolute bottom-0 right-0 top-0 flex w-[420px] flex-col border-l border-[#c79f4a]/20 bg-[#050402]"
+        className="absolute bottom-0 right-0 top-0 flex w-[420px] flex-col border-l border-[#c79f4a]/20 bg-[#050402]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

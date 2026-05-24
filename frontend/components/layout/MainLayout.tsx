@@ -62,7 +62,6 @@ import { TabRenderer } from "./TabRenderer";
 import { MissionControlContent } from "./MissionControlContent";
 import { ChatPanel } from "./ChatPanel";
 import { YouTubeMiniplayer } from "./YouTubeMiniplayer";
-import { LiquidDomBackdrop } from "../ui/LiquidDomBackdrop";
 // [claude-code 2026-04-03] S14-T6: Removed PeerCarousel + PeerOnboarding — team status now in footer panel
 // TeamOnboarding re-wired into TeamPanel behind auth gate (2026-04-11)
 // Voice lives in the app-native ProxVoice surface.
@@ -162,7 +161,7 @@ const COMPACT_SEVERE_BP = 1060;
 function MainLayoutInner() {
   const { iframeUrls, defaultLayout, defaultPlatform, developerSettings } =
     useSettings();
-  const { theme, zenModeEnabled, glassTransparencyEnabled } = useTheme();
+  const { theme, zenModeEnabled } = useTheme();
   const isStone = theme.name === "solvys-stone";
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
   const [activeTab, setActiveTab] = useState<NavTab>(() => readLastRoute());
@@ -861,13 +860,12 @@ function MainLayoutInner() {
     <ScheduleProvider>
       <YouTubeMiniplayerProvider>
         <div
-          className={`fintheon-app-shell relative h-screen w-full overflow-hidden flex flex-col bg-[var(--fintheon-bg)] text-white ${topStepXEnabled ? "topstepx-active" : ""}`}
+          className={`fintheon-app-shell h-screen w-full overflow-hidden flex flex-col bg-[var(--fintheon-bg)] text-white ${topStepXEnabled ? "topstepx-active" : ""}`}
         >
           {/* [claude-code 2026-04-24] Standalone waveform overlay — no border, no
             background. Doubles as user-mic indicator (when listening) and agent
             voice (when speaking). The previous draggable COACH popup is gone. */}
           <AgentVoiceWaveform />
-          <LiquidDomBackdrop enabled={glassTransparencyEnabled} />
           <TopHeader
             topStepXEnabled={topStepXEnabled}
             onTopStepXToggle={handleBrowserEnable} // [claude-code 2026-03-16] Restore: clicking platform in dropdown enables iframe
@@ -922,7 +920,7 @@ function MainLayoutInner() {
 
           {/* S14-T6: Peers panel removed — team status is now in footer Team tab */}
 
-          <div className="fintheon-shell-field flex-1 flex overflow-hidden relative bg-[var(--fintheon-surface)]">
+          <div className="flex-1 flex overflow-hidden relative bg-[var(--fintheon-surface)]">
             <div
               className={
                 topStepXEnabled

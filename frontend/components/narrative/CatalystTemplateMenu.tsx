@@ -41,7 +41,7 @@ export function CatalystTemplateMenu({
   return (
     <div
       ref={menuRef}
-      className="fintheon-dropdown-surface fixed z-50 backdrop-blur-lg bg-[var(--fintheon-surface)]/90 border border-[var(--fintheon-border)]/30 rounded-lg shadow-xl p-2 animate-fade-in"
+      className="fixed z-50 backdrop-blur-lg bg-[var(--fintheon-surface)]/90 border border-[var(--fintheon-border)]/30 rounded-lg shadow-xl p-2 animate-fade-in"
       style={{ left: anchorPosition.x, top: anchorPosition.y }}
     >
       <div className="grid grid-cols-2 gap-1 min-w-[200px]">

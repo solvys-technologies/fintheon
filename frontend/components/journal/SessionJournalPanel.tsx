@@ -93,7 +93,7 @@ export function SessionJournalPanel() {
 
   return (
     <section
-      className={`fintheon-liquid-surface bg-[var(--fintheon-surface)] border rounded-lg p-3 transition-colors duration-500 ${
+      className={`bg-[var(--fintheon-surface)] border rounded-lg p-3 transition-colors duration-500 ${
         saveFlash ? "border-(--fintheon-accent)" : "border-(--fintheon-accent)/15"
       }`}
       aria-label="Session journal"

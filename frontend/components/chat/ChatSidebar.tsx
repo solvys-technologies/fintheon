@@ -376,7 +376,7 @@ function ChatSidebarInner({
           {toasts.map((toast) => (
             <div
               key={toast.id}
-              className="fintheon-toast-surface pointer-events-auto flex items-start gap-2 rounded-lg border border-[#c79f4a]/25 bg-[#0a0904] px-3 py-2 shadow-lg"
+              className="pointer-events-auto flex items-start gap-2 rounded-lg border border-[#c79f4a]/25 bg-[#0a0904] px-3 py-2 shadow-lg"
               style={{ animation: "toast-in 200ms ease-out" }}
             >
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -473,7 +473,7 @@ function ChatSidebarInner({
       </div>
 
       <aside
-        className={`fintheon-rail-surface absolute right-0 top-0 z-40 h-full border-l border-[var(--fintheon-accent)]/20 bg-[#090704] shadow-2xl transition-transform duration-300 ease-out ${
+        className={`absolute right-0 top-0 z-40 h-full border-l border-[var(--fintheon-accent)]/20 bg-[#090704] shadow-2xl transition-transform duration-300 ease-out ${
           mode === "plan" ? "translate-x-0" : "translate-x-full"
         } w-full md:w-[40%]`}
         aria-label="Agent workspace rail"

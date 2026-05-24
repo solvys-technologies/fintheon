@@ -23,7 +23,7 @@ export function StrategiumPeekBar({
     <button
       type="button"
       onClick={onRestore}
-      className={`fintheon-footer-surface w-full h-9 shrink-0 flex items-center justify-between px-3 bg-[var(--fintheon-surface)] border-t border-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/25 transition-colors ${shimmerClass}`}
+      className={`w-full h-9 shrink-0 flex items-center justify-between px-3 bg-[var(--fintheon-surface)] border-t border-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/25 transition-colors ${shimmerClass}`}
       title={`Restore ${label}`}
       aria-label={`Restore ${label}`}
     >

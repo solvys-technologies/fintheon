@@ -38,7 +38,7 @@ export function NarrativeCatalystDrawer({
 
   return (
     <aside
-      className={`fintheon-rail-surface absolute inset-y-0 left-0 z-30 w-[360px] max-w-[calc(100%-24px)] border-r border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]/98 backdrop-blur-xl transition-transform duration-200 ${open ? "translate-x-0" : "-translate-x-full"}`}
+      className={`absolute inset-y-0 left-0 z-30 w-[360px] max-w-[calc(100%-24px)] border-r border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]/98 backdrop-blur-xl transition-transform duration-200 ${open ? "translate-x-0" : "-translate-x-full"}`}
     >
       <div className="flex h-full min-h-0 flex-col">
         <div className="flex items-center justify-between border-b border-[var(--fintheon-accent)]/10 px-4 py-3">

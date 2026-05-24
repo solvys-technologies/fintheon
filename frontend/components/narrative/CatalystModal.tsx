@@ -538,7 +538,12 @@ export function CatalystModal({ open, onClose, editCard }: CatalystModalProps) {
               </button>
               {instrumentDropdownOpen && (
                 <div
-                  className="fintheon-dropdown-surface absolute top-full left-0 right-0 mt-1 z-50 max-h-48 overflow-y-auto"
+                  className="absolute top-full left-0 right-0 mt-1 z-50 max-h-48 overflow-y-auto rounded border shadow-lg"
+                  style={{
+                    backgroundColor: "var(--fintheon-bg)",
+                    borderColor:
+                      "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
+                  }}
                 >
                   <input
                     value={instrumentFilter}
@@ -713,7 +718,12 @@ export function CatalystModal({ open, onClose, editCard }: CatalystModalProps) {
             {/* Tag suggestions dropdown */}
             {tagSuggestionsOpen && tagSuggestions.length > 0 && (
               <div
-                className="fintheon-dropdown-surface absolute top-full left-0 right-0 mt-1 z-50 max-h-32 overflow-y-auto"
+                className="absolute top-full left-0 right-0 mt-1 z-50 max-h-32 overflow-y-auto rounded border shadow-lg"
+                style={{
+                  backgroundColor: "var(--fintheon-bg)",
+                  borderColor:
+                    "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
+                }}
               >
                 {tagSuggestions.map((s) => (
                   <button

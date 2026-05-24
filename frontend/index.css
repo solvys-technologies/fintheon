@@ -47,56 +47,31 @@ html *::-webkit-scrollbar {
   --fintheon-muted: #6b7280;
   /* [S38] Theme-swappable accent alias — voice orb ring + pixel sweep route through this */
   --accent-primary: var(--fintheon-accent);
-  --fintheon-primary: var(--fintheon-accent);
-  /* Native/CSS glass: Codex-sidebar transparency, then 15% clearer. */
-  --fintheon-glass-surface-opacity: 58%;
-  --fintheon-glass-backdrop-opacity: 58%;
-  --fintheon-glass-field-opacity: 52%;
-  --fintheon-glass-primary-mix: color-mix(
-    in srgb,
-    var(--fintheon-primary, var(--fintheon-accent)) 20%,
-    var(--fintheon-surface)
-  );
-  --fintheon-glass-surface: color-mix(
-    in srgb,
-    var(--fintheon-glass-primary-mix) var(--fintheon-glass-surface-opacity),
-    transparent
-  );
-  --fintheon-glass-field: color-mix(
-    in srgb,
-    var(--fintheon-glass-primary-mix) var(--fintheon-glass-field-opacity),
-    transparent
-  );
-  --fintheon-glass-shell: color-mix(
-    in srgb,
-    var(--fintheon-glass-primary-mix) var(--fintheon-glass-backdrop-opacity),
-    transparent
-  );
-  --fintheon-glass-perimeter: var(--fintheon-glass-field);
   /* Liquid glass surface — translucent with accent tint */
   --fintheon-glass-bg: color-mix(
     in srgb,
-    var(--fintheon-glass-primary-mix) 58%,
+    var(--fintheon-surface) 55%,
     transparent
   );
   --fintheon-glass-border: color-mix(
     in srgb,
-    var(--fintheon-primary, var(--fintheon-accent)) 20%,
+    var(--fintheon-accent) 16%,
     transparent
   );
   --fintheon-glass-highlight: color-mix(
     in srgb,
-    var(--fintheon-primary, var(--fintheon-accent)) 8%,
+    var(--fintheon-accent) 6%,
     transparent
   );
   --fintheon-overlay-surface: color-mix(
     in srgb,
-    var(--fintheon-glass-primary-mix) 58%,
-    transparent
+    color-mix(in srgb, var(--fintheon-accent) 7%, rgba(17, 16, 14, 0.98))
+      90%,
+    black 10%
   );
   --fintheon-overlay-border: color-mix(
     in srgb,
-    var(--fintheon-primary, var(--fintheon-accent)) 20%,
+    var(--fintheon-accent) 14%,
     transparent
   );
   --fintheon-glass-shadow:
@@ -487,102 +462,6 @@ html[data-zen-mode="true"] button[aria-label] {
   }
 }
 
-@keyframes cognition-tool-peek-primary-shimmer {
-  0%,
-  100% {
-    opacity: 0.84;
-    text-shadow: 0 0 7px color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 22%, transparent);
-  }
-  38% {
-    opacity: 1;
-    text-shadow: 0 0 14px color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 48%, transparent);
-  }
-  66% {
-    opacity: 0.92;
-    text-shadow: 0 0 10px color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 34%, transparent);
-  }
-}
-
-@keyframes cognition-tool-peek-loader-shimmer {
-  0%,
-  100% {
-    opacity: 0.86;
-    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 30%, transparent));
-  }
-  50% {
-    opacity: 1;
-    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 58%, transparent));
-  }
-}
-
-@keyframes cognition-tool-peek-dot-sweep {
-  0%,
-  100% {
-    opacity: 0.2;
-  }
-  12% {
-    opacity: 1;
-  }
-  42% {
-    opacity: 0.46;
-  }
-}
-
-.cognition-tool-peek {
-  color: var(--fintheon-primary, var(--fintheon-accent));
-}
-.cognition-tool-peek:hover {
-  color: color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 88%, #ffffff);
-}
-.cognition-tool-peek__loader {
-  color: var(--fintheon-primary, var(--fintheon-accent));
-  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 36%, transparent));
-}
-.cognition-tool-peek__spinner {
-  --dm-loader-color: var(--fintheon-primary, var(--fintheon-accent));
-  animation: cognition-tool-peek-loader-shimmer 2.4s ease-in-out infinite;
-  opacity: 1;
-}
-.cognition-tool-peek__spinner .dm-loader__disc {
-  background: color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 12%, transparent);
-}
-.cognition-tool-peek__spinner .dm-loader__svg {
-  opacity: 1;
-}
-.cognition-tool-peek__spinner .dm-loader__svg svg use {
-  fill: currentColor !important;
-}
-.cognition-tool-peek__spinner .dm-loader__svg svg use[href="#b"] {
-  opacity: 0.3 !important;
-}
-.cognition-tool-peek__spinner .dm-loader__svg svg .l {
-  animation-name: cognition-tool-peek-dot-sweep !important;
-  animation-duration: 1.9s !important;
-  animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1) !important;
-  animation-fill-mode: both !important;
-}
-.cognition-tool-peek__phrase {
-  color: var(--fintheon-primary, var(--fintheon-accent));
-  text-shadow: 0 0 8px color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 24%, transparent);
-}
-.cognition-tool-peek__phrase--active {
-  animation: cognition-tool-peek-primary-shimmer 3.8s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .cognition-tool-peek__spinner,
-  .cognition-tool-peek__phrase--active {
-    animation: none;
-  }
-  .cognition-tool-peek__spinner .dm-loader__svg svg .l {
-    animation: none !important;
-    opacity: 0.78 !important;
-  }
-  .cognition-tool-peek__spinner,
-  .cognition-tool-peek__phrase {
-    opacity: 1;
-  }
-}
-
 /* Subtle pulse glow for new-message indicator */
 @keyframes msg-pulse {
   0%,
@@ -791,32 +670,9 @@ html[data-zen-mode="true"] button[aria-label] {
   }
   body {
     @apply bg-background text-foreground;
-    background: var(--fintheon-bg) !important;
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-  }
-  html,
-  #root {
-    background: var(--fintheon-bg) !important;
-  }
-  html[data-fintheon-native-vibrancy="true"],
-  html[data-fintheon-native-vibrancy="true"] body,
-  html[data-fintheon-native-vibrancy="true"] #root {
-    background: transparent !important;
-  }
-
-  html[data-fintheon-glass-transparency="false"] {
-    --fintheon-glass-bg: var(--fintheon-surface);
-    --fintheon-glass-surface: var(--fintheon-surface);
-    --fintheon-glass-field: var(--fintheon-surface);
-    --fintheon-glass-shell: var(--fintheon-surface);
-    --fintheon-overlay-surface: var(--fintheon-surface);
-    --fintheon-overlay-border: color-mix(
-      in srgb,
-      var(--fintheon-accent) 18%,
-      transparent
-    );
   }
   /* Ensure ALL interactive/UI elements inherit the theme font */
   button,
@@ -1933,15 +1789,13 @@ html[data-zen-mode="true"] button[aria-label] {
 .fintheon-modal-surface,
 .fintheon-sheet-surface,
 .fintheon-popover-surface,
-.fintheon-liquid-surface,
-.fintheon-dropdown-surface,
-.fintheon-rail-surface {
+.fintheon-liquid-surface {
   position: relative;
   isolation: isolate;
   border: 1px solid var(--fintheon-overlay-border);
-  background: var(--fintheon-glass-surface) !important;
-  backdrop-filter: blur(24px) saturate(1.35);
-  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+  background: var(--fintheon-overlay-surface);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
   box-shadow: none;
 }
 
@@ -1949,9 +1803,7 @@ html[data-zen-mode="true"] button[aria-label] {
 .fintheon-modal-surface::before,
 .fintheon-sheet-surface::before,
 .fintheon-popover-surface::before,
-.fintheon-liquid-surface::before,
-.fintheon-dropdown-surface::before,
-.fintheon-rail-surface::before {
+.fintheon-liquid-surface::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -1988,15 +1840,6 @@ html[data-zen-mode="true"] button[aria-label] {
 
 .fintheon-liquid-surface {
   border-radius: 8px;
-  overflow: hidden;
-}
-
-.fintheon-dropdown-surface {
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.fintheon-rail-surface {
   overflow: hidden;
 }
 
@@ -2243,11 +2086,7 @@ html[data-zen-mode="true"] button[aria-label] {
 }
 
 .fintheon-modal-backdrop {
-  background: color-mix(
-    in srgb,
-    var(--fintheon-glass-primary-mix) 42%,
-    transparent
-  );
+  background: rgba(5, 4, 2, 0.87);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
@@ -2316,13 +2155,14 @@ html[data-zen-mode="true"] button[aria-label] {
   position: relative;
   left: auto;
   width: var(--fintheon-chat-drawer-width, 90%);
+  max-width: 100%;
   transform: none;
   margin-inline: auto;
   margin-bottom: 0;
   overflow: hidden;
   border-radius: 14px 14px 0 0;
-  background: var(--fintheon-glass-surface);
-  border: 1px solid color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 18%, transparent);
+  background: var(--fintheon-overlay-surface);
+  border: 1px solid color-mix(in srgb, var(--fintheon-accent) 10%, transparent);
   border-bottom-color: transparent;
   backdrop-filter: blur(20px) saturate(1.25);
   -webkit-backdrop-filter: blur(20px) saturate(1.25);
@@ -2354,11 +2194,10 @@ html[data-zen-mode="true"] button[aria-label] {
 }
 
 .fintheon-chat-input-drawer--peek {
-  --fintheon-chat-peek-lift: clamp(7px, 0.7vh, 10px);
   display: flex;
-  min-height: 46px;
-  max-height: 48px;
-  margin-bottom: var(--fintheon-chat-peek-lift);
+  min-height: 34px;
+  max-height: 36px;
+  margin-bottom: -1px;
   padding: 0;
   cursor: pointer;
   color: inherit;
@@ -2391,7 +2230,7 @@ html[data-zen-mode="true"] button[aria-label] {
   flex: 1;
   align-items: center;
   gap: 0.5rem;
-  padding: 9px 12px 8px;
+  padding: 8px 12px 7px;
 }
 
 .fintheon-chat-input-drawer-peek__action {
@@ -2423,7 +2262,7 @@ html[data-zen-mode="true"] button[aria-label] {
 
 .narrative-canvas-chat .fintheon-chat-input-drawer,
 .narrative-canvas-chat__response {
-  background: var(--fintheon-glass-surface);
+  background: var(--fintheon-overlay-surface);
 }
 
 .fintheon-content-bottom-fade {
@@ -2451,11 +2290,14 @@ html[data-zen-mode="true"] button[aria-label] {
     transparent
   ) !important;
   border-top-color: transparent !important;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 
 @media (max-width: 900px) {
   .fintheon-chat-input-drawer {
     width: var(--fintheon-chat-drawer-width, 90%);
+    max-width: 100%;
   }
 }
 
@@ -2579,113 +2421,25 @@ html[data-zen-mode="true"] button[aria-label] {
   border-color: color-mix(in srgb, var(--fintheon-accent) 34%, transparent) !important;
 }
 
-.fintheon-app-shell {
-  position: relative;
-  isolation: isolate;
-  background: var(--fintheon-glass-perimeter) !important;
-}
-
-.fintheon-app-shell::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: var(--fintheon-glass-perimeter);
-  backdrop-filter: blur(22px) saturate(1.22);
-  -webkit-backdrop-filter: blur(22px) saturate(1.22);
-}
-
-.fintheon-app-shell > :not(.fintheon-liquid-dom-backdrop) {
-  position: relative;
-  z-index: 1;
-}
-
-.fintheon-liquid-dom-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.36;
-  mix-blend-mode: screen;
-}
-
-.fintheon-shell-field,
-.fintheon-side-surface,
 .fintheon-footer-surface {
-  position: relative;
-  isolation: isolate;
-  background: transparent !important;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  box-shadow: none !important;
-}
-
-.fintheon-main-surface {
-  position: relative;
-  isolation: isolate;
-  background: var(--fintheon-glass-surface) !important;
-  background-clip: padding-box;
-  backdrop-filter: blur(28px) saturate(1.32);
-  -webkit-backdrop-filter: blur(28px) saturate(1.32);
-  box-shadow: none !important;
-}
-
-.fintheon-main-surface::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, white 5%, transparent),
-      transparent 34%
-    ),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 8%, transparent),
-      transparent 46%
-    );
-  opacity: 0.52;
-}
-
-.fintheon-shell-field::before,
-.fintheon-side-surface::before,
-.fintheon-footer-surface::before {
-  display: none;
+  background: color-mix(
+    in srgb,
+    var(--fintheon-surface) 22%,
+    transparent
+  ) !important;
 }
 
 [data-fintheon-surface-theme="frosted"] .fintheon-side-surface,
-[data-fintheon-surface-theme="frosted"] .fintheon-footer-surface,
-[data-fintheon-surface-theme="frosted"] .fintheon-shell-field {
+[data-fintheon-surface-theme="frosted"] .fintheon-footer-surface {
   border-color: transparent !important;
-  background: transparent !important;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  box-shadow: none !important;
-}
-
-[data-fintheon-surface-theme="frosted"] .fintheon-main-surface {
-  border-color: transparent !important;
-  background: var(--fintheon-glass-surface) !important;
+  background: color-mix(in srgb, var(--fintheon-surface) 74%, transparent) !important;
   backdrop-filter: blur(14px) saturate(1.08);
   -webkit-backdrop-filter: blur(14px) saturate(1.08);
   box-shadow: none !important;
 }
 
 [data-fintheon-surface-theme="liquid"] .fintheon-side-surface,
-[data-fintheon-surface-theme="liquid"] .fintheon-footer-surface,
-[data-fintheon-surface-theme="liquid"] .fintheon-shell-field {
-  border-color: transparent !important;
-  background: transparent !important;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  box-shadow: none !important;
-}
-
-[data-fintheon-surface-theme="liquid"] .fintheon-main-surface {
+[data-fintheon-surface-theme="liquid"] .fintheon-footer-surface {
   border-color: transparent !important;
   background:
     linear-gradient(
@@ -2693,35 +2447,10 @@ html[data-zen-mode="true"] button[aria-label] {
       color-mix(in srgb, white 5%, transparent),
       transparent 30%
     ),
-    var(--fintheon-glass-surface) !important;
+    color-mix(in srgb, var(--fintheon-surface) 68%, transparent) !important;
   backdrop-filter: blur(18px) saturate(1.16);
   -webkit-backdrop-filter: blur(18px) saturate(1.16);
   box-shadow: none !important;
-}
-
-[data-fintheon-glass-transparency="false"] .fintheon-shell-field,
-[data-fintheon-glass-transparency="false"] .fintheon-main-surface,
-[data-fintheon-glass-transparency="false"] .fintheon-side-surface,
-[data-fintheon-glass-transparency="false"] .fintheon-footer-surface {
-  background: var(--fintheon-surface) !important;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-[data-fintheon-glass-transparency="false"] .fintheon-app-shell {
-  background: var(--fintheon-surface) !important;
-}
-
-[data-fintheon-glass-transparency="false"] .fintheon-app-shell::before {
-  display: none;
-}
-
-[data-fintheon-glass-transparency="false"] .fintheon-main-surface {
-  background: var(--fintheon-bg) !important;
-}
-
-[data-fintheon-glass-transparency="false"] .fintheon-liquid-dom-backdrop {
-  display: none;
 }
 
 .theme-color-popover,

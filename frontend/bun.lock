@@ -12,7 +12,6 @@
         "@dnd-kit/core": "^6.3.1",
         "@dnd-kit/sortable": "^10.0.0",
         "@dnd-kit/utilities": "^3.2.2",
-        "@liquid-dom/react": "^0.1.0",
         "@livekit/components-react": "^2.9.20",
         "@sentry/react": "^8.55.0",
         "@sentry/vite-plugin": "^4.6.1",
@@ -221,12 +220,6 @@
     "@jridgewell/sourcemap-codec": ["@jridgewell/sourcemap-codec@1.5.5", "", {}, "sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og=="],
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
-
-    "@liquid-dom/core": ["@liquid-dom/core@0.1.0", "", { "dependencies": { "@liquid-dom/layout": "0.1.0" } }, "sha512-ocYx9zxR6TcsXbl2HhQTGv26sgmz9x5h51GHJ4ncBZ4qEHaOqoUbHrguNaHuan214y0C5kvPFwjzKhu3mhGc3w=="],
-
-    "@liquid-dom/layout": ["@liquid-dom/layout@0.1.0", "", {}, "sha512-WrN0dQHI5qEROP+TwslugeZ/whWE3eqshIxekhQvrcs1xNv2u/T0qgOmbvTK44b0hMDEXIZnpzKRiqX9tL1+rQ=="],
-
-    "@liquid-dom/react": ["@liquid-dom/react@0.1.0", "", { "dependencies": { "@liquid-dom/core": "0.1.0", "@liquid-dom/layout": "0.1.0" }, "peerDependencies": { "react": ">=19", "react-dom": ">=19" } }, "sha512-ywYhR6jEqKItiQtVg7h24rxDK/g/zAJyTzSmH0Y7Y/p9kN2D8IzDKIdsVvD8aRqsKjeGOF6xh9cD5j38aajFnQ=="],
 
     "@livekit/components-core": ["@livekit/components-core@0.12.13", "", { "dependencies": { "@floating-ui/dom": "1.7.4", "loglevel": "1.9.1", "rxjs": "7.8.2" }, "peerDependencies": { "livekit-client": "^2.17.2", "tslib": "^2.6.2" } }, "sha512-DQmi84afHoHjZ62wm8y+XPNIDHTwFHAltjd3lmyXj8UZHOY7wcza4vFt1xnghJOD5wLRY58L1dkAgAw59MgWvw=="],
 

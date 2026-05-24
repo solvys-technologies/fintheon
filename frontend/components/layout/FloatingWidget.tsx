@@ -246,7 +246,11 @@ export function FloatingWidget({
           {notifications.length > 1 && (
             <button
               onClick={clearAllNotifications}
-              className="fintheon-toast-surface absolute right-0 top-0 z-[60] flex items-center gap-1 px-2 py-1 text-[10px] text-red-400 transition-all hover:text-red-300"
+              className="absolute right-0 top-0 z-[60] flex items-center gap-1 rounded-xl border border-red-500/20 bg-black/70 px-2 py-1 text-[10px] text-red-400 shadow-lg backdrop-blur-2xl transition-all hover:bg-red-500/10 hover:text-red-300"
+              style={{
+                backdropFilter: "blur(28px) saturate(150%)",
+                WebkitBackdropFilter: "blur(28px) saturate(150%)",
+              }}
             >
               <Trash2 className="w-3 h-3" />
               {notifications.length}
@@ -260,11 +264,15 @@ export function FloatingWidget({
             return (
               <div
                 key={newsItem.notificationId}
-                className="fintheon-toast-surface absolute right-0 w-80 p-3 opacity-100 transition-all duration-500 animate-slide-up"
+                className="absolute right-0 w-80 rounded-2xl border border-zinc-700/60 bg-gradient-to-br from-black/70 via-zinc-900/65 to-black/75 p-3 opacity-100 shadow-2xl backdrop-blur-3xl transition-all duration-500 animate-slide-up"
                 style={{
                   bottom: `${stackDepth * 58}px`,
                   right: `${index * 10}px`,
                   zIndex: 40 + visibleNotifications.length - index,
+                  backdropFilter: "blur(36px) saturate(145%)",
+                  WebkitBackdropFilter: "blur(36px) saturate(145%)",
+                  boxShadow:
+                    "0 12px 40px 0 rgba(0, 0, 0, 0.58), inset 0 1px 0 0 rgba(255, 255, 255, 0.06)",
                 }}
               >
                 <div className="flex items-start gap-2">

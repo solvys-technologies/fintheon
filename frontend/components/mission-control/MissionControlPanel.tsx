@@ -65,7 +65,7 @@ export function MissionControlPanel({
 
   return (
     <div
-      className={`fintheon-rail-surface relative transition-all duration-200 ease-out ${panelWidth}`}
+      className={`relative bg-[var(--fintheon-bg)] transition-all duration-200 ease-out ${panelWidth}`}
       onMouseEnter={handleCollapsedEnter}
       onMouseLeave={handleCollapsedLeave}
       style={{ minWidth: collapsed && !peekOpen ? "12px" : undefined }}

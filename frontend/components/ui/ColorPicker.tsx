@@ -283,9 +283,10 @@ export function ColorPickerPopover({
   return (
     <div
       ref={popoverRef}
-      className="fintheon-popover-surface p-4 flex flex-col gap-3 z-50"
+      className="rounded-xl border border-[var(--fintheon-border)]/20 bg-[#0c0a06] shadow-2xl p-4 flex flex-col gap-3 z-50"
       style={{
         width: 252,
+        boxShadow: "0 20px 60px rgba(0,0,0,0.7), 0 0 1px rgba(199,159,74,0.2)",
       }}
       onClick={(e) => e.stopPropagation()}
     >

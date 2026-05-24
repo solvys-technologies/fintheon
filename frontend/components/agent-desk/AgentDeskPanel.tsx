@@ -89,7 +89,7 @@ export function AgentDeskPanel({
 
   return (
     <div
-      className="fintheon-rail-surface w-72 border-l flex flex-col"
+      className="w-72 border-l flex flex-col"
       style={{
         backgroundColor: "rgba(10, 10, 0, 0.6)",
         borderColor: "rgba(212, 175, 55, 0.15)",

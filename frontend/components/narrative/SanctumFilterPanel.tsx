@@ -175,7 +175,7 @@ export function SanctumFilterPanel({
   return (
     <div
       ref={panelRef}
-      className="fintheon-dropdown-surface absolute top-full right-0 mt-1 z-50 w-[260px] max-h-[70vh] overflow-y-auto rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl"
+      className="absolute top-full right-0 mt-1 z-50 w-[260px] max-h-[70vh] overflow-y-auto rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl"
       style={{
         scrollbarWidth: "thin",
         scrollbarColor: "#c79f4a30 transparent",

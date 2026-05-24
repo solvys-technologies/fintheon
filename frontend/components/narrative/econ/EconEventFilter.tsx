@@ -89,7 +89,7 @@ export function EconEventFilter({
 
         {/* Dropdown panel */}
         <div
-          className="fintheon-dropdown-surface absolute top-full left-0 right-0 mt-1 z-30 rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)]/95 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden max-h-[420px] overflow-y-auto transition-[opacity,transform] duration-200 ease-out"
+          className="absolute top-full left-0 right-0 mt-1 z-30 rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)]/95 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden max-h-[420px] overflow-y-auto transition-[opacity,transform] duration-200 ease-out"
           style={{
             opacity: open ? 1 : 0,
             transform: open ? "translateY(0)" : "translateY(-4px)",

@@ -220,9 +220,11 @@ export function ProviderDropdown({
       {/* ── Expanded dropdown ── */}
       {open && (
         <div
-          className="fintheon-dropdown-surface absolute bottom-full right-0 mb-1 min-w-[220px] rounded-2xl border overflow-hidden z-50"
+          className="absolute bottom-full right-0 mb-1 min-w-[220px] rounded-2xl border overflow-hidden z-50"
           style={{
+            backgroundColor: "#050402",
             borderColor: "rgba(199, 159, 74, 0.3)",
+            boxShadow: "0 4px 24px rgba(0, 0, 0, 0.6)",
           }}
         >
           {PROVIDERS.map((p, i) => {

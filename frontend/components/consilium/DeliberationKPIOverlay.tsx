@@ -78,8 +78,9 @@ export function DeliberationKPIOverlay({
 
   const overlay = (
     <div
-      className="fintheon-popover-surface fixed top-[180px] right-4 z-50 w-[220px]"
+      className="fixed top-[180px] right-4 z-50 w-[220px] rounded-lg border border-[var(--fintheon-accent)]/20 bg-[#0a0906]/95 backdrop-blur-sm"
       style={{
+        boxShadow: "0 0 12px rgba(212, 175, 55, 0.2)",
         animation: exiting
           ? "kpi-overlay-exit 250ms ease-in forwards"
           : "kpi-overlay-enter 300ms ease-out",

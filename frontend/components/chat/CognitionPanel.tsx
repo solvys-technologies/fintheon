@@ -190,25 +190,21 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
     isStreaming && !done ? THINKING_PHRASES[phraseIndex] : "Thought trail";
 
   return (
-    <div className="fintheon-liquid-surface overflow-hidden bg-transparent px-2 py-1">
+    <div className="overflow-hidden bg-transparent">
       <button
         onClick={() => setCollapsed((c) => !c)}
-        className="cognition-tool-peek flex w-full items-center gap-2 px-1 py-1 text-left transition-colors duration-200"
+        className="flex w-full items-center gap-2 px-1 py-1 text-left transition-colors duration-200 hover:text-[var(--fintheon-accent)]"
         aria-expanded={!collapsed}
         title={collapsed ? "Show tool calls" : "Hide tool calls"}
       >
-        <span className="cognition-tool-peek__loader flex h-6 w-6 shrink-0 items-center justify-center">
-          <BrailleSpinner
-            size={12}
-            color="var(--fintheon-primary, var(--fintheon-accent))"
-            className="cognition-tool-peek__spinner"
-          />
+        <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+          <BrailleSpinner size={9} />
         </span>
         <span className="min-w-0">
           <span
             className={
-              "cognition-tool-peek__phrase block truncate text-[12px] font-semibold" +
-              (isStreaming && !done ? " cognition-tool-peek__phrase--active" : "")
+              "block truncate text-[12px] font-medium text-[var(--fintheon-accent)]/78" +
+              (isStreaming && !done ? " cognition-thought-shimmer" : "")
             }
           >
             {currentPhrase}

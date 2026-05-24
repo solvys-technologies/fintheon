@@ -20,8 +20,7 @@ export function AgentActivityRail({
   if (!entries.length) return null;
   return (
     <div
-      className="fintheon-rail-surface"
-      style={{ marginTop: 8, padding: "6px 10px" }}
+      style={{ marginTop: 8, padding: "6px 10px", border: "1px solid #27272a" }}
     >
       {entries.map((entry) => (
         <div key={entry.id} style={{ fontSize: 11, color: "#a1a1aa" }}>

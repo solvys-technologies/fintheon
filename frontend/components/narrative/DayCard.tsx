@@ -390,7 +390,7 @@ export function DayCard({
               </button>
             ) : null}
             {showStreakPopup && (
-              <div className="fintheon-popover-surface absolute top-full right-0 z-50 mt-2 p-3">
+              <div className="absolute top-full right-0 z-50 mt-2 rounded-lg border border-white/8 bg-[#1a1915] p-3 shadow-lg">
                 <div className="flex gap-1">
                   {Array.from({ length: 14 }).map((_, i) => (
                     <div

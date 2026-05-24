@@ -79,7 +79,7 @@ export function DoctoringPanel() {
   }, [fetchTickets]);
 
   return (
-    <div className="fintheon-liquid-surface" style={CONTAINER}>
+    <div style={CONTAINER}>
       <div
         style={{
           display: "flex",

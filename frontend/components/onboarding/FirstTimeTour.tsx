@@ -427,7 +427,7 @@ export function WhatsNewButton() {
       </button>
 
       {showPanel && (
-        <div className="fintheon-dropdown-surface absolute right-0 top-full mt-2 w-80 bg-[#0c0a06] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-[#0c0a06] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl z-50 overflow-hidden">
           <div className="px-4 py-3 border-b border-[var(--fintheon-accent)]/10">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-[var(--fintheon-accent)] uppercase tracking-wider">

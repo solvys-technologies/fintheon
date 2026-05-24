@@ -10,7 +10,7 @@ export function NarrativeAgentRail({ hypothesis }: NarrativeAgentRailProps) {
   const consensus = hypothesis?.deliberationSummary.consensus;
 
   return (
-    <aside className="fintheon-rail-surface t-panel-slide min-h-0 p-3" data-open="true">
+    <aside className="t-panel-slide min-h-0 rounded-md border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-surface)] p-3" data-open="true">
       <div className="mb-3 flex items-center justify-between">
         <div>
           <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--fintheon-accent)]/70">

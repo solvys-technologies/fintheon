@@ -21,7 +21,7 @@ export function TeamPanel() {
 
   return (
     <div
-      className="fintheon-liquid-surface h-full flex flex-col px-3 py-2"
+      className="h-full flex flex-col px-3 py-2"
       style={{ fontFamily: "var(--font-body)" }}
     >
       {/* Header */}

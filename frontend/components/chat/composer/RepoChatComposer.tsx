@@ -28,6 +28,7 @@ export function RepoChatComposer({
   const innerStyle = {
     "--fintheon-chat-composer-max":
       maxWidth ?? (format === "compact" ? "32rem" : "56rem"),
+    "--fintheon-chat-drawer-width": "90%",
   } as CSSProperties;
 
   return (

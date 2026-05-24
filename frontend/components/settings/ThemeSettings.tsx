@@ -86,8 +86,6 @@ export function ThemeSettings() {
     setPompaEnabled,
     zenModeEnabled,
     setZenModeEnabled,
-    glassTransparencyEnabled,
-    setGlassTransparencyEnabled,
     mode,
     setMode,
   } = useTheme();
@@ -346,13 +344,6 @@ export function ThemeSettings() {
                 setGlassVariant(theme.glassVariant === "liquid" ? "solid" : "liquid")
               }
             />
-            <EffectToggle
-              label={glassTransparencyEnabled ? "Glass On" : "Glass Off"}
-              enabled={glassTransparencyEnabled}
-              onToggle={() =>
-                setGlassTransparencyEnabled(!glassTransparencyEnabled)
-              }
-            />
           </div>
           <button
             onClick={() => {
@@ -360,7 +351,6 @@ export function ThemeSettings() {
               setFontTheme(DEFAULT_FONT_THEME);
               setMode("dark");
               setZenModeEnabled(false);
-              setGlassTransparencyEnabled(true);
             }}
             className="fintheon-action-link text-[11px] font-semibold uppercase"
           >

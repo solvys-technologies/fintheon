@@ -9,16 +9,47 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
-    date: "2026-05-23T22:55:03-04:00",
+    date: "2026-05-24T00:42:00-04:00",
     agent: "codex",
     summary:
-      "v6.7.21 release: Liquid-Dom shell, native vibrancy, and primary-tinted glass surfaces now cover desktop/mobile modals, drawers, rails, sidebars, toasts, dropdowns, and MainContent corner backing.",
+      "Prepared v6.7.22 by briefing embedded agents on their current tool map: Harper local-control tools, Harper chat UI tools, composer toolbox connectors, context mentions, MCP registry, learning endpoints, and Obsidian vault exports. The release keeps the LiquidDOM rollback intact and ships the chat-interface stabilization pass.",
     files: [
+      "backend-hono/src/services/ai/agent-instructions/index.ts",
+      "package.json",
+      "mobile/package.json",
+      "scripts/fintheon-setup.sh",
+      "scripts/fintheon-update.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-24T00:10:00-04:00",
+    agent: "codex",
+    summary:
+      "Stabilized the chat composer surface after the rollback: centered composer-attached drawers at 90% of the input bar, prevented Streamdown prop churn from triggering React update-depth loops, adopted first-message conversation IDs without resetting the live chat instance, and added fading sprint-map lane dividers.",
+    files: [
+      "frontend/components/executive/DeskPlanSprintTimeline.tsx",
+      "frontend/components/chat/composer/RepoChatComposer.tsx",
+      "frontend/components/chat/hooks/useHermesChat.ts",
+      "frontend/components/chat/slots/StreamdownChat.tsx",
+      "frontend/index.css",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-23T23:52:00-04:00",
+    agent: "codex",
+    summary:
+      "Reverted the LiquidDOM/native-vibrancy glass pass from the desktop and mobile shells, restoring the pre-sprint app chrome, modal/backdrop CSS, theme settings, and rail/dropdown positioning behavior.",
+    files: [
+      "electron/main.cjs",
+      "electron/preload.cjs",
       "frontend/index.css",
       "frontend/components/layout/MainLayout.tsx",
       "frontend/components/ui/LiquidDomBackdrop.tsx",
       "frontend/contexts/ThemeContext.tsx",
-      "electron/main.cjs",
       "mobile/index.css",
       "mobile/contexts/ThemeContext.tsx",
       "src/lib/changelog.ts",

@@ -9,7 +9,7 @@ export function AgentSummaryPanel({ summary }: AgentSummaryPanelProps) {
   if (!summary) return null;
 
   return (
-    <div className="fintheon-liquid-surface bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/10 rounded-lg p-3">
+    <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/10 rounded-lg p-3">
       <div className="flex items-center gap-2 mb-2">
         <BarChart3 className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
         <span className="text-xs font-semibold text-[var(--fintheon-text)]">

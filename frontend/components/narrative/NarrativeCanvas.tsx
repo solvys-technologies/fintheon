@@ -612,7 +612,7 @@ function NarrativeSessionDrawer({
 }) {
   return (
     <aside
-      className={`fintheon-rail-surface absolute bottom-0 left-0 z-40 w-[360px] overflow-hidden bg-[var(--fintheon-bg)]/96 backdrop-blur-xl transition duration-200 ${
+      className={`absolute bottom-0 left-0 z-40 w-[360px] overflow-hidden bg-[var(--fintheon-bg)]/96 backdrop-blur-xl transition duration-200 ${
         isWorkspaceOpen ? "top-[50px]" : "top-0"
       } ${
         isOpen
