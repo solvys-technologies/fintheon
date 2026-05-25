@@ -8,14 +8,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDayPlan } from "../../hooks/useDayPlan";
 import { useDayPlanMultiWeek } from "../../hooks/useDayPlanWeek";
-import { useStreak } from "../../hooks/useStreak";
 import { useDriftStatus } from "../../hooks/useDriftStatus";
 import { useLockout } from "../../hooks/useLockout";
 import { useSettings } from "../../contexts/SettingsContext";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { FadingRuler } from "../shared/FadingRuler";
 import { AgenticFeedbackControls } from "../shared/AgenticFeedbackControls";
-import { StreakBadge } from "../streak/StreakBadge";
 import { DayPlanChevronNav } from "./DayPlanChevronNav";
 import { DeskPlanCustomForm } from "./DeskPlanCustomForm";
 import { PriceRevealTag } from "./PriceRevealTag";
@@ -44,7 +42,6 @@ interface DayCardProps {
   className?: string;
   bare?: boolean;
   hideStreak?: boolean;
-  showStreakInHeader?: boolean;
 }
 
 function fmtTradingWindow(w: DayPlanWindow): string {
@@ -133,7 +130,6 @@ export function DayCard({
     goPrev: goPrevPlan,
     isLoading: multiWeekLoading,
   } = useDayPlanMultiWeek();
-  const { data: streak } = useStreak();
   const { data: drift } = useDriftStatus();
   const {
     lockoutDefaultDuration,
@@ -149,7 +145,6 @@ export function DayCard({
 
   const [currentWindowIndex, setCurrentWindowIndex] = useState(0);
   const [shimmering, setShimmering] = useState(false);
-  const [showStreakPopup, setShowStreakPopup] = useState(false);
   const [countryFilter, setCountryFilter] = useState("ALL");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
   const autoLockKeyRef = useRef<string | null>(null);
@@ -206,12 +201,11 @@ export function DayCard({
 
   const driftVisual: DriftKind | "in-window" = drift?.kind ?? "in-window";
 
-  const dayOfWeekLabel = plan?.date ? (() => {
+  const dateLabel = plan?.date ? (() => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const [y, m, d] = plan.date.split('-').map(Number);
     const date = new Date(y, m - 1, d);
-    return `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}`;
+    return `${months[date.getMonth()]} ${date.getDate()}`;
   })() : null;
 
   const baseSurface = bare
@@ -271,36 +265,36 @@ export function DayCard({
       aria-label="Day card"
       data-tour-target="day-card"
     >
-      {!hideStreak && plan?.date && (
-        <div className="mb-1 flex items-center justify-end">
-          <span
-            className="ml-auto text-right text-[11.5px]"
-            style={{
-              color: "var(--fintheon-muted, #908774)",
-              fontFamily: "var(--font-data, monospace)",
-            }}
-          >
-            {dayOfWeekLabel}
-          </span>
-        </div>
-      )}
       <header className="flex items-center justify-between gap-3 mb-1">
-        <div className="flex items-baseline gap-2">
-          <span
-            className="text-[11.5px] font-semibold uppercase tracking-[0.2em]"
-            style={{
-              color: "var(--fintheon-accent)",
-              fontFamily: "var(--font-heading)",
-            }}
-          >
-            Desk Plan
-          </span>
-          {plan?.sourceBriefId && (
+        <div className="min-w-0">
+          <div className="flex items-baseline gap-2">
             <span
-              className="text-[9px] uppercase tracking-widest"
-              style={{ color: "var(--fintheon-muted, #908774)" }}
+              className="text-[11.5px] font-semibold uppercase tracking-[0.2em]"
+              style={{
+                color: "var(--fintheon-accent)",
+                fontFamily: "var(--font-heading)",
+              }}
             >
-              brief
+              Desk Plan
+            </span>
+            {plan?.sourceBriefId && (
+              <span
+                className="text-[9px] uppercase tracking-widest"
+                style={{ color: "var(--fintheon-muted, #908774)" }}
+              >
+                brief
+              </span>
+            )}
+          </div>
+          {!hideStreak && dateLabel && (
+            <span
+              className="mt-0.5 block text-[10.5px]"
+              style={{
+                color: "var(--fintheon-muted, #908774)",
+                fontFamily: "var(--font-data, monospace)",
+              }}
+            >
+              {dateLabel}
             </span>
           )}
         </div>
@@ -368,45 +362,6 @@ export function DayCard({
           </button>
         </div>
       </header>
-
-      {!hideStreak && (
-        <div className="mb-2 flex justify-end">
-          <span
-            className="relative inline-flex items-center gap-1.5"
-            onMouseEnter={() => setShowStreakPopup(true)}
-            onMouseLeave={() => setShowStreakPopup(false)}
-          >
-            <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={14} />
-            {totalPlans > 1 ? (
-              <button
-                type="button"
-                onClick={goNextPlan}
-                disabled={currentPlanIndex >= totalPlans - 1}
-                className="inline-flex h-5 w-5 items-center justify-center rounded text-[var(--fintheon-accent)]/65 transition-colors hover:bg-[var(--fintheon-accent)]/8 hover:text-[var(--fintheon-accent)] disabled:cursor-default disabled:text-gray-700"
-                title="Next scored desk plan"
-                aria-label="Next scored desk plan"
-              >
-                <ChevronRight className="h-3 w-3" />
-              </button>
-            ) : null}
-            {showStreakPopup && (
-              <div className="absolute top-full right-0 z-50 mt-2 rounded-lg border border-white/8 bg-[#1a1915] p-3 shadow-lg">
-                <div className="flex gap-1">
-                  {Array.from({ length: 14 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-3.5 w-3.5 rounded"
-                      style={{
-                        background: i < 10 ? "#4ade80" : "#ef4444",
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </span>
-        </div>
-      )}
 
       <p
         className="text-[13.5px] leading-relaxed mb-3"

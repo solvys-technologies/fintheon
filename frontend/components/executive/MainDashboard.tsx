@@ -38,7 +38,7 @@ import { DAY_PLAN_REFETCH_EVENT } from "../../hooks/useDayPlan";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-const DASHBOARD_PAGES = ["Briefing", "Sprint Map", "RiskFlow"];
+const DASHBOARD_PAGES = ["Briefing", "Sprint Map"];
 
 function briefTypeToLabel(bt: string): string {
   switch (bt) {
@@ -441,19 +441,14 @@ export function MainDashboard({
                   </div>
                 </div>
 
-                {/* Right: Day Plan (50%) — bare DayCard, day-of-week header, Risk Signals */}
+                {/* Right: Day Plan (50%) — bare DayCard + Risk Signals */}
                 <div className="grid flex-1 min-w-0 min-h-0 grid-rows-2 gap-4 overflow-hidden p-4">
                   <div className="flex min-h-0 flex-col overflow-hidden">
                     <KanbanTitle
                       title=""
                       tone="gold"
                       headerRight={
-                        <div className="ml-auto flex items-center gap-2 text-right">
-                          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--fintheon-accent)]">
-                            {new Date().toLocaleDateString("en-US", {
-                              weekday: "long",
-                            })}
-                          </span>
+                        <div className="ml-auto flex items-center gap-2">
                           <DeskPlanAdvanceButton
                             isLoading={deskPlanAdvancing}
                             onClick={advanceDeskPlan}
@@ -462,7 +457,7 @@ export function MainDashboard({
                       }
                     />
                     <div className="mt-2 min-h-0 flex-1 overflow-y-auto pr-1 relative">
-                      <DayCard bare showStreakInHeader />
+                      <DayCard bare />
                     </div>
                   </div>
 
@@ -722,71 +717,6 @@ export function MainDashboard({
             className="h-full min-h-0 snap-start pt-0.5 pb-1 px-2 flex flex-col"
           >
             <DeskPlanSprintMap />
-          </div>
-
-          {/* Page 3: Full RiskFlow */}
-          <div
-            data-dash-page="2"
-            className="h-full min-h-0 snap-start pt-0.5 pb-1 px-2 flex flex-col"
-          >
-            <KanbanTitle
-              title="RiskFlow"
-              tag="Full Feed"
-              tone="emerald"
-              headerRight={
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void refresh();
-                    }}
-                    disabled={refreshing}
-                    className="p-1 rounded hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-400 transition-colors disabled:opacity-40"
-                    title="Refresh feeds"
-                  >
-                    <RefreshCw
-                      className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`}
-                    />
-                  </button>
-                </div>
-              }
-            />
-            <div className="mt-3 flex-1 min-h-0 overflow-y-auto pr-1 space-y-0">
-              {tapeAlerts.length === 0 ? (
-                <div className="text-xs text-gray-500 px-1 py-8 text-center">
-                  No actions in the feed right now.
-                </div>
-              ) : (
-                tapeAlerts.map((alert, idx) => {
-                  const total = tapeAlerts.length;
-                  // S3: Fade starts at bottom 15% — top 85% fully readable
-                  const fadeStart = Math.floor(total * 0.85);
-                  const ratio =
-                    idx < fadeStart
-                      ? 0
-                      : (idx - fadeStart) / Math.max(1, total - fadeStart - 1);
-                  const baseOpacity = Math.max(0.35, 1 - ratio * 0.65);
-                  const seen = isSeen(alert.id);
-                  const opacity = seen
-                    ? Math.max(0.25, baseOpacity * 0.6)
-                    : baseOpacity;
-                  const borderOpacity = Math.max(0.2, 0.4 - ratio * 0.2);
-                  const isVivid = idx < fadeStart && !seen;
-
-                  return (
-                    <ExpandableTapeItem
-                      key={alert.id}
-                      alert={alert}
-                      isVivid={isVivid}
-                      opacity={opacity}
-                      borderOpacity={borderOpacity}
-                      seen={seen}
-                      onOpenIdea={setSelectedIdea}
-                    />
-                  );
-                })
-              )}
-            </div>
           </div>
         </div>
 

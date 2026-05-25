@@ -1,8 +1,8 @@
 // [claude-code 2026-05-15] S66-T2: Themed lock screen overlay with frosted glass + countdown
 import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Lock } from "lucide-react";
 import { useLockout } from "../hooks/useLockout";
+import { DeskBlockOverlay } from "./blocker/DeskBlockOverlay";
 
 function formatCountdown(seconds: number | null): string {
   if (seconds == null || seconds <= 0) return "00:00:00";
@@ -57,95 +57,7 @@ export function LockScreen() {
   if (!mounted) return null;
 
   return createPortal(
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 99999,
-        display: state.locked ? "flex" : "none",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "var(--fintheon-bg)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "1.5rem",
-        }}
-      >
-        <div
-          style={{
-            borderRadius: "0.75rem",
-            border: "1px solid rgba(199,159,74,0.1)",
-            padding: "2rem",
-            background: "rgba(5,4,2,0.7)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "1.5rem",
-          }}
-        >
-          <Lock
-            size={48}
-            color="var(--fintheon-accent)"
-            style={{ flexShrink: 0 }}
-          />
-          <div
-            style={{
-              width: "50%",
-              height: "1px",
-              background: "var(--fintheon-accent)",
-              opacity: 0.3,
-            }}
-          />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "0.5rem",
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "system-ui",
-                color: "var(--fintheon-text)",
-                fontSize: "16px",
-                fontWeight: 600,
-              }}
-            >
-              This app has been blocked by the agentic desk.
-            </span>
-            <span
-              style={{
-                fontFamily: "system-ui",
-                color: "var(--fintheon-text)",
-                opacity: 0.6,
-                fontSize: "13px",
-              }}
-            >
-              See you next session!
-            </span>
-          </div>
-          <span
-            style={{
-              fontFamily: "system-ui, monospace",
-              color: "var(--fintheon-accent)",
-              fontSize: "28px",
-              fontWeight: 300,
-              fontVariantNumeric: "tabular-nums",
-            }}
-          >
-            {display}
-          </span>
-        </div>
-      </div>
-    </div>,
+    <DeskBlockOverlay visible={state.locked} fixed countdown={display} />,
     document.body,
   );
 }

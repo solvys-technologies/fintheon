@@ -185,7 +185,7 @@ function ToastItem({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Container — split by position; Zen reroutes market toasts off top-right */
+/*  Container — split by position; Zen reroutes market toasts to bottom-left */
 /* ------------------------------------------------------------------ */
 
 export function ToastContainer() {
@@ -221,10 +221,12 @@ export function ToastContainer() {
     dismissToast(toast.id);
   };
 
-  const bottomLeft = toasts.filter((t) => t.position !== "top-right");
-  const marketToasts = toasts.filter((t) => t.position === "top-right");
-  const topRight = zenModeActive ? [] : marketToasts;
-  const bottomRight = zenModeActive ? marketToasts : [];
+  const bottomLeft = toasts.filter(
+    (t) => t.position !== "top-right" || zenModeActive,
+  );
+  const topRight = zenModeActive
+    ? []
+    : toasts.filter((t) => t.position === "top-right");
 
   return (
     <>
@@ -261,27 +263,6 @@ export function ToastContainer() {
           }}
         >
           {topRight.map((toast) => (
-            <ToastItem
-              key={toast.id}
-              toast={toast}
-              onDismiss={dismissToast}
-              onBlock={handleBlock}
-            />
-          ))}
-        </div>
-      )}
-      {/* Zen mode: no toast may pop in top-right; market toasts sit above the headline pile. */}
-      {bottomRight.length > 0 && (
-        <div
-          className="fixed z-[100] flex flex-col items-end"
-          style={{
-            right: "24px",
-            bottom: "364px",
-            gap: "10px",
-            pointerEvents: "none",
-          }}
-        >
-          {bottomRight.map((toast) => (
             <ToastItem
               key={toast.id}
               toast={toast}

@@ -1,7 +1,14 @@
 // [codex 2026-05-23] NarrativeFlow domain composer with queue, intelligence, and context stats.
-import { useState, type MouseEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 import {
   ArrowUp,
+  Check,
+  ChevronDown,
   GitBranch,
   Loader2,
   Paperclip,
@@ -134,10 +141,12 @@ export function NarrativeInputBar({
 }: NarrativeInputBarProps) {
   const [focused, setFocused] = useState(false);
   const [showToolboxModal, setShowToolboxModal] = useState(false);
+  const [showNarrativeMenu, setShowNarrativeMenu] = useState(false);
   const [showProviderModal, setShowProviderModal] = useState(false);
   const [providerAnchorRect, setProviderAnchorRect] = useState<DOMRect | null>(
     null,
   );
+  const narrativeMenuRef = useRef<HTMLDivElement>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [selectedMentions, setSelectedMentions] = useState<ContextMention[]>([]);
   const { servers, activeIds, toggle: toggleConnector } = useMcpConnectors();
@@ -151,6 +160,9 @@ export function NarrativeInputBar({
   const draftReady = query.trim().length > 0;
   const canSubmit = catalystReady && draftReady && !isSubmitting;
   const canQueue = catalystReady && isSubmitting && draftReady;
+  const selectedNarrativeCount = selectedNarrativeSlugs?.size ?? 0;
+  const hasNarrativeSelector =
+    narrativeChips.length > 0 && Boolean(onToggleNarrative);
   const wrapperClass = isOpener
     ? "relative z-20 px-4"
     : isOverlay
@@ -176,13 +188,32 @@ export function NarrativeInputBar({
     if (canSubmit) onSubmit();
   }
 
-  function openProviderModal(event: MouseEvent<HTMLButtonElement>) {
+  function openProviderModal(event: ReactMouseEvent<HTMLButtonElement>) {
     if (showToolboxModal) setShowToolboxModal(false);
+    if (showNarrativeMenu) setShowNarrativeMenu(false);
     if (mentionQuery !== null) setMentionQuery(null);
     if (riskFlowDrawerOpen) (onCloseDrawer ?? onOpenDrawer)();
     setProviderAnchorRect(event.currentTarget.getBoundingClientRect());
     setShowProviderModal(true);
   }
+
+  useEffect(() => {
+    if (!showNarrativeMenu) return;
+    const close = (event: MouseEvent) => {
+      if (!narrativeMenuRef.current?.contains(event.target as Node)) {
+        setShowNarrativeMenu(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowNarrativeMenu(false);
+    };
+    document.addEventListener("mousedown", close);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [showNarrativeMenu]);
 
   return (
     <>
@@ -330,10 +361,11 @@ export function NarrativeInputBar({
             <div className="flex min-w-0 items-center gap-1">
               <button
                 type="button"
-                onClick={() => {
-                  if (showToolboxModal) setShowToolboxModal(false);
-                  onOpenDrawer();
-                }}
+                  onClick={() => {
+                    if (showToolboxModal) setShowToolboxModal(false);
+                    if (showNarrativeMenu) setShowNarrativeMenu(false);
+                    onOpenDrawer();
+                  }}
                 aria-pressed={riskFlowDrawerOpen}
                 className={`narrative-icon-button flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
                   riskFlowDrawerOpen
@@ -344,10 +376,79 @@ export function NarrativeInputBar({
               >
                 {isOpener ? <Paperclip size={15} /> : <Plus size={15} />}
               </button>
+              {hasNarrativeSelector ? (
+                <div ref={narrativeMenuRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (showToolboxModal) setShowToolboxModal(false);
+                      if (riskFlowDrawerOpen) (onCloseDrawer ?? onOpenDrawer)();
+                      setShowNarrativeMenu((open) => !open);
+                    }}
+                    aria-haspopup="menu"
+                    aria-expanded={showNarrativeMenu}
+                    className={`narrative-icon-button flex h-8 items-center gap-1.5 rounded-lg px-2 text-[10px] transition-colors ${
+                      showNarrativeMenu
+                        ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+                        : "text-zinc-500 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
+                    }`}
+                    title="Select Narrative"
+                  >
+                    <GitBranch size={13} />
+                    {!isOverlay ? (
+                      <span className="max-w-[112px] truncate">
+                        Select Narrative
+                      </span>
+                    ) : null}
+                    {selectedNarrativeCount > 0 ? (
+                      <span className="rounded-sm bg-[var(--fintheon-accent)]/12 px-1 text-[9px] text-[var(--fintheon-accent)]">
+                        {selectedNarrativeCount}
+                      </span>
+                    ) : null}
+                    <ChevronDown size={10} className="opacity-55" />
+                  </button>
+                  {showNarrativeMenu ? (
+                    <div
+                      role="menu"
+                      className="absolute bottom-10 left-0 z-50 w-64 overflow-hidden rounded-md border border-[var(--fintheon-accent)]/16 bg-[#0d0a06] shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+                    >
+                      <div className="border-b border-[var(--fintheon-accent)]/10 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/70">
+                        Select Narrative
+                      </div>
+                      <div className="max-h-56 overflow-y-auto p-1">
+                        {narrativeChips.map((chip) => {
+                          const selected = selectedNarrativeSlugs?.has(chip.slug) ?? false;
+                          return (
+                            <button
+                              key={chip.slug}
+                              type="button"
+                              role="menuitemcheckbox"
+                              aria-checked={selected}
+                              onClick={() => onToggleNarrative?.(chip.slug)}
+                              className={`flex w-full items-center gap-2 rounded-[4px] px-2 py-2 text-left transition ${
+                                selected
+                                  ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+                                  : "text-[var(--fintheon-text)]/74 hover:bg-[var(--fintheon-accent)]/7 hover:text-[var(--fintheon-text)]"
+                              }`}
+                            >
+                              <GitBranch size={12} className="shrink-0" />
+                              <span className="min-w-0 flex-1 truncate text-[12px] font-medium">
+                                {chip.label}
+                              </span>
+                              {selected ? <Check size={12} className="shrink-0" /> : null}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
               {!isOverlay ? (
                 <button
                   type="button"
                   onClick={() => {
+                    if (showNarrativeMenu) setShowNarrativeMenu(false);
                     if (!showToolboxModal && riskFlowDrawerOpen) {
                       (onCloseDrawer ?? onOpenDrawer)();
                     }

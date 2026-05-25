@@ -12,6 +12,7 @@ import {
   useState,
   useRef,
   useEffect,
+  useLayoutEffect,
   useCallback,
   type KeyboardEvent,
   type ChangeEvent,
@@ -161,6 +162,8 @@ export interface PromptBoxProps {
   // Hide the reasoning selector (used in Agentic Forum where deep research is always on)
   hideThinkHarder?: boolean;
   // Headline attachment (multi-select from scored feed items)
+  showAttachSelector?: boolean;
+  attachSelectorTitle?: string;
   headlineAlerts?: RiskFlowAlert[];
   headlineChips?: HeadlineChip[];
   onHeadlineToggle?: (chip: HeadlineChip) => void;
@@ -214,6 +217,8 @@ export function PromptBox({
   relaySlot,
   dispatchBanner,
   onRiskFlowPick,
+  showAttachSelector = true,
+  attachSelectorTitle = "Attach",
   headlineAlerts,
   headlineChips,
   onHeadlineToggle,
@@ -243,7 +248,7 @@ export function PromptBox({
   const activeDrawer =
     mentionQuery !== null
       ? "mentions"
-      : showAttach
+      : showAttachSelector && showAttach
         ? "attach"
         : toolboxOpen
           ? "skills-connectors"
@@ -267,6 +272,10 @@ export function PromptBox({
     if (approvalDrawerOpen) setShowAttach(false);
   }, [approvalDrawerOpen]);
 
+  useEffect(() => {
+    if (!showAttachSelector) setShowAttach(false);
+  }, [showAttachSelector]);
+
   /* Draft persistence — load on mount */
   useEffect(() => {
     const draft = localStorage.getItem(draftKey);
@@ -283,13 +292,20 @@ export function PromptBox({
     }
   }, [text, draftKey]);
 
-  /* Auto-resize textarea */
-  useEffect(() => {
+  const resizeTextarea = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, compact ? 100 : 160)}px`;
-  }, [text, compact]);
+    const maxHeight = compact ? 100 : 170;
+    const nextHeight = Math.min(el.scrollHeight, maxHeight);
+    el.style.height = `${nextHeight}px`;
+    el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
+  }, [compact]);
+
+  /* Auto-resize textarea */
+  useLayoutEffect(() => {
+    resizeTextarea();
+  }, [resizeTextarea, text, images.length, headlineChips?.length]);
 
   /* S38-T1: Sync recalled history text into textarea */
   useEffect(() => {
@@ -308,26 +324,29 @@ export function PromptBox({
 
   /* Send with vanish animation */
   const handleSend = useCallback(() => {
-    const msg = text.trim();
+    const draftText = textareaRef.current?.value ?? text;
+    const msg = draftText.trim();
     if (!msg && images.length === 0) return;
 
-    // Trigger vanish animation
+    onSend(
+      `${msg}${formatMentionContext(selectedMentions)}`,
+      images.length > 0 ? images : undefined,
+    );
+    setText("");
+    setImages([]);
+    setMentionQuery(null);
+    setSelectedMentions([]);
+    localStorage.removeItem(draftKey);
+    if (textareaRef.current) {
+      textareaRef.current.value = "";
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.overflowY = "hidden";
+    }
+
+    // Trigger vanish animation after the send is already handed off so a
+    // movement/unmount of the composer cannot swallow the message submit.
     setVanishing(true);
-    setTimeout(() => {
-      onSend(
-        `${msg}${formatMentionContext(selectedMentions)}`,
-        images.length > 0 ? images : undefined,
-      );
-      setText("");
-      setImages([]);
-      setMentionQuery(null);
-      setSelectedMentions([]);
-      localStorage.removeItem(draftKey);
-      if (textareaRef.current) {
-        textareaRef.current.style.height = "auto";
-      }
-      setVanishing(false);
-    }, 300);
+    window.setTimeout(() => setVanishing(false), 260);
   }, [text, images, onSend, draftKey, selectedMentions]);
 
   /* Keyboard shortcuts */
@@ -514,29 +533,31 @@ export function PromptBox({
         {!hasInlineDrawer && drawerPeekSlot}
 
         {/* Attach panel */}
-        <FintheonAttachPopup
-          open={showAttach}
-          onClose={() => setShowAttach(false)}
-          onAttachImage={handleAttachImage}
-          onAttachDocument={({ filename, text }) => {
-            const attached = `\n\n[Attached Document: ${filename}]\n${text}`;
-            setText((prev) => `${prev}${attached}`);
-            setShowAttach(false);
-          }}
-          riskflowAlerts={headlineAlerts}
-          onAttachHeadlines={(items: HeadlineAttachment[]) => {
-            if (onHeadlineToggle) {
-              items.forEach((item) =>
-                onHeadlineToggle({
-                  id: item.id,
-                  headline: item.headline,
-                  severity: item.severity,
-                  direction: item.direction,
-                }),
-              );
-            }
-          }}
-        />
+        {showAttachSelector ? (
+          <FintheonAttachPopup
+            open={showAttach}
+            onClose={() => setShowAttach(false)}
+            onAttachImage={handleAttachImage}
+            onAttachDocument={({ filename, text }) => {
+              const attached = `\n\n[Attached Document: ${filename}]\n${text}`;
+              setText((prev) => `${prev}${attached}`);
+              setShowAttach(false);
+            }}
+            riskflowAlerts={headlineAlerts}
+            onAttachHeadlines={(items: HeadlineAttachment[]) => {
+              if (onHeadlineToggle) {
+                items.forEach((item) =>
+                  onHeadlineToggle({
+                    id: item.id,
+                    headline: item.headline,
+                    severity: item.severity,
+                    direction: item.direction,
+                  }),
+                );
+              }
+            }}
+          />
+        ) : null}
 
         <ContextMentionDrawer
           open={mentionQuery !== null}
@@ -671,6 +692,7 @@ export function PromptBox({
             onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
               const val = e.target.value;
               setText(val);
+              window.requestAnimationFrame(resizeTextarea);
               setMentionQuery(getMentionQuery(val));
               // Auto-dismiss the attach popup once the user starts composing a message —
               // otherwise the popup hangs over the input and blocks the first word or two.
@@ -689,6 +711,7 @@ export function PromptBox({
                 setSlashQuery(null);
               }
             }}
+            onInput={resizeTextarea}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             onFocus={() => setFocused(true)}
@@ -721,23 +744,26 @@ export function PromptBox({
               {relaySlot}
 
               {/* Attach */}
-              <button
-                onClick={() => {
-                  const nextOpen = !showAttach;
-                  if (nextOpen) onInputActivity?.();
-                  setShowAttach(nextOpen);
-                }}
-                aria-pressed={showAttach}
-                className={`flex items-center justify-center rounded-lg transition-colors ${
-                  showAttach
-                    ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
-                    : "text-zinc-500 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
-                }`}
-                style={{ width: "32px", height: "32px" }}
-                title="Attach"
-              >
-                <Plus size={16} />
-              </button>
+              {showAttachSelector ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextOpen = !showAttach;
+                    if (nextOpen) onInputActivity?.();
+                    setShowAttach(nextOpen);
+                  }}
+                  aria-pressed={showAttach}
+                  className={`flex items-center justify-center rounded-lg transition-colors ${
+                    showAttach
+                      ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+                      : "text-zinc-500 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
+                  }`}
+                  style={{ width: "32px", height: "32px" }}
+                  title={attachSelectorTitle}
+                >
+                  <Plus size={16} />
+                </button>
+              ) : null}
 
               {/* Toolbox trigger */}
               {pluginSlot}
@@ -775,6 +801,7 @@ export function PromptBox({
                 queuedCount={queueCount}
               />
               <button
+                type="button"
                 onClick={
                   isProcessing && !text.trim() && images.length === 0 && onStop
                     ? onStop

@@ -29,7 +29,6 @@ import type {
   SanctumNarrative,
 } from "../../types/agent-desk";
 import { AUDITORIUM_PAGES } from "../../types/agent-desk";
-import { SanctumChart } from "./SanctumChart";
 import { SanctumEconIntel } from "./SanctumEconIntel";
 import { SanctumHeader } from "./SanctumHeader";
 import { SanctumBriefing } from "./SanctumBriefing";
@@ -87,8 +86,6 @@ export function Sanctum({
   revisionChecking,
 }: SanctumProps) {
   const { data: ivData, isLoading: ivLoading } = useIVScoreData();
-  // Guardrailed 5-day rolling window — no user toggle
-  const rollingDays = 5 as const;
   const [running, setRunning] = useState(false);
   const [preset, setPreset] = useState<SanctumPreset>(() => {
     try {
@@ -221,15 +218,14 @@ export function Sanctum({
       />
 
       <div className="flex flex-1 min-h-0">
-        {/* [claude-code 2026-04-25] S38: When chart mode is active, the TradingView chart
-            is pinned to the right half of the viewport and stays visible across every
-            page; the left half scrolls/pages independently. Off-mode falls back to the
-            full-width single-scroll layout. */}
+        {/* [codex 2026-05-25] Chart mode now compacts this Arbitrum stack for the
+            shared Consilium TradingView quick rail instead of mounting a local
+            second iframe. */}
         {/* Main scrollable area */}
         <div
           ref={containerRef}
           onScroll={handleScroll}
-          className={`${chartMode ? "w-1/2" : "flex-1"} overflow-y-auto scroll-smooth snap-y snap-mandatory`}
+          className="flex-1 min-w-0 overflow-y-auto scroll-smooth snap-y snap-mandatory"
         >
           {/* ── Page 0: Command Center ── */}
           {showPage(0) && (
@@ -277,7 +273,7 @@ export function Sanctum({
                           data={ivData}
                           isLoading={ivLoading}
                         />
-                        <DayCard id="day-card-anchor" bare hideStreak />
+                        <DayCard id="day-card-anchor" bare />
                       </div>
 
                       {/* Vertical ruler between Volatility Read and Deliberation */}
@@ -424,24 +420,6 @@ export function Sanctum({
           )}
 
         </div>
-
-        {/* [claude-code 2026-04-25] S38: Persistent right-half chart panel — pinned across
-            every Sanctum page when chart mode is active, so the chart stays in view as the
-            user scrolls/snaps through the left-half content. */}
-        {chartMode && (
-          <div className="w-1/2 shrink-0 border-l border-[var(--fintheon-accent)]/15 min-h-0 overflow-hidden">
-            <SanctumChart
-              timeSeries={data?.timeSeries ?? []}
-              rollingDays={rollingDays}
-              selectedSymbol={selectedSymbol}
-              compositeIV={data?.compositeIV}
-              confidence={data?.confidence}
-              regimeShiftProbability={data?.regimeShiftProbability}
-              scenarios={data?.scenarios}
-            />
-          </div>
-        )}
-
         {/* Scroll-lock page indicators */}
         {visiblePages.length > 1 && (
           <div className="shrink-0 w-6 flex flex-col items-center justify-center gap-3 py-8">

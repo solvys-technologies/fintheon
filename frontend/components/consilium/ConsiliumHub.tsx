@@ -28,7 +28,6 @@ import { useSettings } from "../../contexts/SettingsContext";
 import { useConsiliumNav } from "../../lib/consilium-nav-store";
 import { AgentChattr } from "./AgentChattr";
 import { Sanctum } from "../narrative/Sanctum";
-import { SanctumChart } from "../narrative/SanctumChart";
 import { TimelinePanel } from "../narrative/TimelinePanel";
 import { DeskRail } from "../desk/DeskRail";
 import {
@@ -44,6 +43,7 @@ import { ApparatusFlowMap } from "../apparatus/ApparatusFlowMap";
 import { ProxVoiceForum } from "../proxvoice/ProxVoiceForum";
 import { AgentLounge } from "./AgentLounge";
 import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
+import { TradingViewQuickRail } from "../layout/TradingViewQuickRail";
 import { FileRoomPanel } from "../memory/FileRoomPanel";
 import { AiLoader } from "../chat/FintheonThread";
 import { useHarperOps } from "../../hooks/useHarperOps";
@@ -345,6 +345,34 @@ export function ConsiliumHub() {
     },
     [activeTab],
   );
+
+  useEffect(() => {
+    const openNarrativeFlow = () => {
+      try {
+        localStorage.removeItem("fintheon:pending-consilium-surface");
+      } catch {
+        /* ignore */
+      }
+      handleSanctumSubChange("narratives");
+      handleNarrativeSurfaceSelect("workspace");
+    };
+    try {
+      if (
+        localStorage.getItem("fintheon:pending-consilium-surface") ===
+        "narrativeflow"
+      ) {
+        window.setTimeout(openNarrativeFlow, 0);
+      }
+    } catch {
+      /* ignore */
+    }
+    window.addEventListener("fintheon:open-narrativeflow", openNarrativeFlow);
+    return () =>
+      window.removeEventListener(
+        "fintheon:open-narrativeflow",
+        openNarrativeFlow,
+      );
+  }, [handleNarrativeSurfaceSelect, handleSanctumSubChange]);
 
   const handleBoardroomSubChange = useCallback(
     (sub: BoardroomSubView) => {
@@ -967,20 +995,18 @@ export function ConsiliumHub() {
           />
         )}
 
-        {activeTab === "sanctum" && (
-          <button
-            onClick={toggleChart}
-            className={`flex items-center rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
-              showChart
-                ? "border border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
-                : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
-            }`}
-            title={showChart ? "Close split panel" : "Open split panel"}
-            aria-label={showChart ? "Close split panel" : "Open split panel"}
-          >
-            <LineChart size={14} />
-          </button>
-        )}
+        <button
+          onClick={toggleChart}
+          className={`flex items-center rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+            showChart
+              ? "border border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
+              : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
+          }`}
+          title={showChart ? "Hide TradingView rail" : "Show TradingView rail"}
+          aria-label={showChart ? "Hide TradingView rail" : "Show TradingView rail"}
+        >
+          <LineChart size={14} />
+        </button>
 
         {activeTab === "sanctum" && sanctumSubView === "narratives" ? (
           <div ref={analysisDropdownRef} className="relative">
@@ -1019,43 +1045,30 @@ export function ConsiliumHub() {
 
       {/* Tab content + Desk rail */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        <div
-          className="flex-1 min-h-0 min-w-0 overflow-hidden"
-          style={{
-            opacity: transitioning ? 0 : 1,
-            transform: transitioning ? "translateY(6px)" : "translateY(0)",
-            transition:
-              "opacity 220ms var(--ease-spring), transform 220ms var(--ease-spring)",
-          }}
-        >
+        <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
+          <div className="flex h-full min-h-0">
+            <div
+              className="h-full min-w-0 overflow-hidden transition-[flex-basis] duration-300 ease-out"
+              style={{ flex: `0 0 ${showChart ? "50%" : "100%"}` }}
+            >
+              <div
+                className="h-full w-full"
+                style={{
+                  opacity: transitioning ? 0 : 1,
+                  transform: transitioning ? "translateY(6px)" : "translateY(0)",
+                  transition:
+                    "opacity 220ms var(--ease-spring), transform 220ms var(--ease-spring)",
+                }}
+              >
           {/* Sanctum sub-views — shared NarrativeProvider so seeds carry across views */}
           {displayedTab === "sanctum" && (
             <NarrativeProvider>
               {displayedSubView === "narratives" && (
-                <div className="flex h-full min-h-0">
-                  <div
-                    className="h-full min-w-0 transition-[flex-basis] duration-300 ease-out"
-                    style={{ flexBasis: showChart ? "50%" : "100%" }}
-                  >
-                    <NarrativeCanvas
-                      themes={flowThemes}
-                      isLoading={flowThemesLoading}
-                      chartMode={showChart}
-                    />
-                  </div>
-                  <div
-                    aria-hidden={!showChart}
-                    className={`shrink-0 overflow-hidden border-l border-[color-mix(in_srgb,var(--fintheon-accent)_15%,transparent)] transition-[flex-basis,transform] duration-300 ease-out ${
-                      showChart ? "" : "pointer-events-none"
-                    }`}
-                    style={{
-                      flexBasis: showChart ? "50%" : "0%",
-                      transform: showChart ? "translateX(0)" : "translateX(100%)",
-                    }}
-                  >
-                    <SanctumChart selectedSymbol={selectedSymbol.symbol} />
-                  </div>
-                </div>
+                <NarrativeCanvas
+                  themes={flowThemes}
+                  isLoading={flowThemesLoading}
+                  chartMode={showChart}
+                />
               )}
               {displayedSubView === "arbitrumChamber" && (
                 <SanctumWithNarratives
@@ -1146,6 +1159,13 @@ export function ConsiliumHub() {
               {displayedApparatusSub === "lounge" && <AgentLounge />}
             </>
           )}
+              </div>
+            </div>
+            <TradingViewQuickRail
+              open={showChart}
+              selectedSymbol={selectedSymbol.symbol}
+            />
+          </div>
         </div>
 
         {/* Collapsible Desk rail */}

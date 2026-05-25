@@ -9,6 +9,64 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-25T11:24:37-04:00",
+    agent: "codex",
+    summary:
+      "v6.7.27 prepares branch closeout: TradingView quick rail now works across Consilium and Zen split browser, Zen news toasts stay bottom-left, Desk drops the RiskFlow page, and Desk Plan widgets use the shared clean date-only card across desktop/mobile.",
+    files: [
+      "frontend/components/layout/TradingViewQuickRail.tsx",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/components/TradingBrowser.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/ui/Toast.tsx",
+      "frontend/components/executive/MainDashboard.tsx",
+      "frontend/components/mission-control/DeskThemeWidget.tsx",
+      "frontend/components/narrative/DayCard.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+      "mobile/components/home/MobileDeskPlanWeek.tsx",
+      "package.json",
+      "mobile/package.json",
+      "scripts/fintheon-setup.sh",
+      "scripts/fintheon-update.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-25T11:20:00-04:00",
+    agent: "codex",
+    summary:
+      "Reworked Desk Block behavior around a clean-slate TopStepX default: blocker domains now come only from the selected platform plus user-added domains, runtime lockouts overwrite instead of merging stale URLs, blocked webviews are redirected to black before paint, and the blocked-platform overlay shows the loading globe with a static Desk Block notice and a Monitor The Situation jump to NarrativeFlow.",
+    files: [
+      "electron/main.cjs",
+      "frontend/components/blocker/DeskBlockOverlay.tsx",
+      "frontend/components/TradingBrowser.tsx",
+      "frontend/components/LockScreen.tsx",
+      "frontend/components/settings/BlockerTab.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/hooks/useBlockedUrlOverlay.ts",
+      "frontend/hooks/useLockout.ts",
+      "frontend/hooks/usePlatformBlocker.ts",
+      "frontend/lib/platform-blocker.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-25T10:46:00-04:00",
+    agent: "codex",
+    summary:
+      "Restored NarrativeFlow composer intent: main CAO chat hides the attachment selector, NarrativeFlow keeps context attachment plus Select Narrative, and PromptBox send/autogrow interactions are hardened.",
+    files: [
+      "frontend/components/ChatInterface.tsx",
+      "frontend/components/chat/FintheonComposer.tsx",
+      "frontend/components/narrative/NarrativeInputBar.tsx",
+      "frontend/components/ui/chatgpt-prompt-input.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-25T10:45:00-04:00",
     agent: "codex",
     summary:

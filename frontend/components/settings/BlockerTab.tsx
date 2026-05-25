@@ -7,18 +7,22 @@ import {
   RefreshCw,
   Lock,
   Globe,
-  Link2,
   Plus,
   Trash2,
 } from "lucide-react";
 import Toggle from "../Toggle";
 import { useSettings } from "../../contexts/SettingsContext";
 import {
+  DEFAULT_BLOCKER_PLATFORM_ID,
   domainsFromUrl,
   getBlockerApi,
+  loadBlockerCustomDomains,
   loadBlockerQuickTarget,
+  mergeDomainLists,
+  notifyBlockerStateUpdated,
   normalizeDomain,
   saveBlockerQuickTarget,
+  saveBlockerCustomDomains,
   type BlockerQuickTarget,
 } from "../../lib/platform-blocker";
 import { SettingsActionStatus } from "./SettingsActionStatus";
@@ -50,7 +54,9 @@ export function BlockerTab() {
     isLoading: true,
     error: null,
   });
-  const [domains, setDomains] = useState<string[]>([]);
+  const [domains, setDomains] = useState<string[]>(() =>
+    loadBlockerCustomDomains(),
+  );
   const [toggling, setToggling] = useState(false);
   const [newDomain, setNewDomain] = useState("");
   const [domainError, setDomainError] = useState<string | null>(null);
@@ -59,7 +65,7 @@ export function BlockerTab() {
     return (
       loadBlockerQuickTarget() ?? {
         mode: "platform",
-        platformId: proposerIframeSources[0]?.id ?? "topstepx",
+        platformId: DEFAULT_BLOCKER_PLATFORM_ID,
         url: "",
       }
     );
@@ -80,17 +86,14 @@ export function BlockerTab() {
     }
     try {
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
-      const [statusResult, domainsResult] = await Promise.all([
-        api.getStatus(),
-        api.getDomains(),
-      ]);
+      const statusResult = await api.getStatus();
       setState({
         blocked: statusResult.blocked,
         layers: statusResult.layers ?? { hosts: false, resolver: false },
         isLoading: false,
         error: null,
       });
-      setDomains(domainsResult.domains);
+      setDomains(loadBlockerCustomDomains());
     } catch (err) {
       setState({
         blocked: false,
@@ -127,16 +130,21 @@ export function BlockerTab() {
   const handleSaveDomains = async () => {
     const api = getBlockerApi();
     if (!api) return;
-    if (domains.length === 0) {
-      setDomainError("At least one domain is required to block");
-      return;
-    }
     setSaving(true);
     setDomainError(null);
     try {
-      const result = await api.setDomains(domains);
+      const customDomains = mergeDomainLists(domains);
+      const nextCombinedDomains = mergeDomainLists(
+        quickTargetDomains,
+        customDomains,
+      );
+      saveBlockerCustomDomains(customDomains);
+      setDomains(customDomains);
+      const result = await api.setDomains(nextCombinedDomains);
       if (!result.ok) {
         setDomainError(result.reason ?? "Failed to save domains");
+      } else {
+        notifyBlockerStateUpdated();
       }
     } catch (err) {
       setDomainError(
@@ -149,37 +157,49 @@ export function BlockerTab() {
 
   const quickTargetSource =
     proposerIframeSources.find((source) => source.id === quickTarget.platformId) ??
+    proposerIframeSources.find((source) => source.id === DEFAULT_BLOCKER_PLATFORM_ID) ??
     proposerIframeSources[0];
-  const quickTargetDomains =
-    quickTarget.mode === "link"
-      ? domainsFromUrl(quickTarget.url)
-      : domainsFromUrl(quickTargetSource?.url ?? "");
+  const quickTargetDomains = domainsFromUrl(quickTargetSource?.url ?? "");
+  const combinedDomains = mergeDomainLists(quickTargetDomains, domains);
 
   const persistQuickTarget = () => {
     setQuickTargetError(null);
     const targetToSave: BlockerQuickTarget = {
-      mode: quickTarget.mode,
+      mode: "platform",
       platformId:
-        quickTarget.mode === "platform"
-          ? quickTargetSource?.id ?? quickTarget.platformId
-          : quickTarget.platformId,
-      url: quickTarget.mode === "link" ? quickTarget.url.trim() : "",
+        quickTargetSource?.id ??
+        quickTarget.platformId ??
+        DEFAULT_BLOCKER_PLATFORM_ID,
+      url: "",
     };
-    const nextDomains =
-      targetToSave.mode === "link"
-        ? domainsFromUrl(targetToSave.url)
-        : domainsFromUrl(quickTargetSource?.url ?? "");
+    const nextDomains = domainsFromUrl(quickTargetSource?.url ?? "");
+    const nextCombinedDomains = mergeDomainLists(nextDomains, domains);
     if (nextDomains.length === 0) {
-      setQuickTargetError("Choose a platform or enter a valid URL.");
+      setQuickTargetError("Choose a platform with a valid URL.");
       return null;
     }
     saveBlockerQuickTarget(targetToSave);
     setQuickTarget(targetToSave);
-    return { target: targetToSave, domains: nextDomains };
+    return { target: targetToSave, domains: nextCombinedDomains };
   };
 
-  const handleSaveQuickTarget = () => {
-    persistQuickTarget();
+  const handleSaveQuickTarget = async () => {
+    const saved = persistQuickTarget();
+    const api = getBlockerApi();
+    if (!saved || !api || !state.blocked) return;
+    setQuickTargetSaving(true);
+    try {
+      saveBlockerCustomDomains(domains);
+      const result = await api.setDomains(saved.domains);
+      if (!result.ok) {
+        setQuickTargetError(result.reason ?? "Failed to update blocker domains");
+        return;
+      }
+      notifyBlockerStateUpdated();
+      await loadAll();
+    } finally {
+      setQuickTargetSaving(false);
+    }
   };
 
   const handleBlockQuickTargetInApp = async () => {
@@ -189,12 +209,14 @@ export function BlockerTab() {
     if (!saved) return;
     setQuickTargetSaving(true);
     try {
+      saveBlockerCustomDomains(domains);
       const result = await api.setDomains(saved.domains);
       if (!result.ok) {
         setQuickTargetError(result.reason ?? "Failed to save target domains");
         return;
       }
       await api.enableFast();
+      notifyBlockerStateUpdated();
       await loadAll();
     } catch (err) {
       setQuickTargetError(
@@ -213,10 +235,11 @@ export function BlockerTab() {
       if (state.blocked) {
         await api.disable();
       } else {
-        // Save current domain list first, then enable
-        await api.setDomains(domains);
+        saveBlockerCustomDomains(domains);
+        await api.setDomains(combinedDomains);
         await api.enable();
       }
+      notifyBlockerStateUpdated();
       await loadAll();
     } catch (err) {
       setState((prev) => ({
@@ -294,73 +317,43 @@ export function BlockerTab() {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <Link2 className="w-4 h-4 text-[var(--fintheon-accent)]/60" />
+              <Globe className="w-4 h-4 text-[var(--fintheon-accent)]/60" />
               <span className="text-[13px] font-semibold text-white">
-                Quick Access Target
+                Blocked Platform
               </span>
             </div>
             <p className="text-[11px] text-gray-500 mt-1 leading-relaxed max-w-md">
-              The header lock blocks only this target inside Fintheon.
+              Choose one platform from the available platform dropdown. Fintheon
+              blocks that platform plus the custom domains below.
             </p>
-          </div>
-          <div className="inline-flex rounded-md border border-[var(--fintheon-accent)]/15 bg-black/20 p-0.5 shrink-0">
-            {(["platform", "link"] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() =>
-                  setQuickTarget((prev) => ({ ...prev, mode }))
-                }
-                className={`px-3 py-1.5 rounded text-[10px] font-semibold uppercase tracking-[0.12em] transition-colors ${
-                  quickTarget.mode === mode
-                    ? "bg-[var(--fintheon-accent)]/18 text-[var(--fintheon-accent)]"
-                    : "text-gray-500 hover:text-gray-300"
-                }`}
-              >
-                {mode}
-              </button>
-            ))}
           </div>
         </div>
 
-        {quickTarget.mode === "platform" ? (
-          <select
-            value={quickTargetSource?.id ?? ""}
-            onChange={(event) =>
-              setQuickTarget((prev) => ({
-                ...prev,
-                platformId: event.target.value,
-              }))
-            }
-            className="w-full px-3 py-2 rounded-md text-[12px] bg-black/20 border border-[var(--fintheon-accent)]/15 text-white focus:outline-none focus:border-[var(--fintheon-accent)]/40"
-          >
-            {proposerIframeSources.map((source) => (
-              <option key={source.id} value={source.id}>
-                {source.label} — {source.url}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <input
-            type="text"
-            value={quickTarget.url}
-            onChange={(event) =>
-              setQuickTarget((prev) => ({
-                ...prev,
-                url: event.target.value,
-              }))
-            }
-            placeholder="https://trading-platform.example"
-            className="w-full px-3 py-2 rounded-md text-[12px] bg-black/20 border border-[var(--fintheon-accent)]/15 text-white placeholder-gray-600 focus:outline-none focus:border-[var(--fintheon-accent)]/40 transition-colors"
-          />
-        )}
+        <select
+          value={quickTargetSource?.id ?? DEFAULT_BLOCKER_PLATFORM_ID}
+          onChange={(event) =>
+            setQuickTarget({
+              mode: "platform",
+              platformId: event.target.value,
+              url: "",
+            })
+          }
+          className="w-full px-3 py-2 rounded-md text-[12px] bg-black/20 border border-[var(--fintheon-accent)]/15 text-white focus:outline-none focus:border-[var(--fintheon-accent)]/40"
+        >
+          {proposerIframeSources.map((source) => (
+            <option key={source.id} value={source.id}>
+              {source.label} — {source.url}
+            </option>
+          ))}
+        </select>
 
         <div className="flex flex-wrap items-start justify-end gap-3 text-right">
           <div className="flex min-w-0 flex-1 flex-col items-end">
             <SettingsActionStatus
-              label={quickTargetDomains.length > 0 ? "Target Ready" : "No Target"}
+              label={quickTargetDomains.length > 0 ? "Platform Ready" : "No Platform"}
               detail={
                 quickTargetDomains.length > 0
-                  ? quickTargetDomains.join(", ")
+                  ? `${quickTargetDomains.join(", ")}${domains.length > 0 ? ` + ${domains.length} custom` : ""}`
                   : "No valid domains detected"
               }
               tone={quickTargetDomains.length > 0 ? "success" : "muted"}
@@ -371,7 +364,7 @@ export function BlockerTab() {
               onClick={handleSaveQuickTarget}
               className="px-3 py-1.5 rounded-md text-[11px] font-semibold bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/20 border border-[var(--fintheon-accent)]/15 transition-all"
             >
-              Save Target
+              Save Platform
             </button>
             <button
               onClick={handleBlockQuickTargetInApp}
@@ -475,9 +468,9 @@ export function BlockerTab() {
               <p className="text-[11px] text-gray-500 mt-1 leading-relaxed max-w-md">
                 {state.blocked
                   ? runtimeOnlyBlocked
-                    ? `${domains.length} domain${domains.length === 1 ? "" : "s"} blocked in Fintheon runtime.`
-                    : `${domains.length} domain${domains.length === 1 ? "" : "s"} blocked system-wide. No browser, PWA, or app can reach them.`
-                  : "Toggle blocking on to prevent access to the domains below across all browsers and applications on this computer."}
+                    ? `${combinedDomains.length} domain${combinedDomains.length === 1 ? "" : "s"} blocked in Fintheon runtime.`
+                    : `${combinedDomains.length} domain${combinedDomains.length === 1 ? "" : "s"} blocked system-wide. No browser, PWA, or app can reach them.`
+                  : "Blocking is limited to the selected platform and any custom domains below."}
               </p>
               {state.error && (
                 <p className="text-[11px] text-red-400 mt-2">{state.error}</p>
@@ -487,7 +480,7 @@ export function BlockerTab() {
           <div className="flex shrink-0 flex-col items-end gap-1 text-right">
             <button
               onClick={handleToggle}
-              disabled={toggling || state.isLoading || domains.length === 0}
+              disabled={toggling || state.isLoading || combinedDomains.length === 0}
               className={`shrink-0 px-4 py-2 rounded-md text-[12px] font-semibold transition-all ${
                 state.blocked
                   ? "bg-red-500/15 text-red-400 hover:bg-red-500/25 border border-red-500/20"
@@ -575,7 +568,7 @@ export function BlockerTab() {
         <div className="flex items-center gap-2">
           <Globe className="w-4 h-4 text-[var(--fintheon-accent)]/60" />
           <span className="text-[13px] font-semibold text-white">
-            Blocked Domains
+            Custom Blocked Domains
           </span>
           <span className="text-[10px] text-gray-500 ml-1">
             ({domains.length})
@@ -641,8 +634,8 @@ export function BlockerTab() {
         )) || (
           <div className="flex justify-end">
             <SettingsActionStatus
-              label="No Domains"
-              detail="Add at least one domain above, then save."
+              label="Clean Slate"
+              detail="No custom URL domains set."
             />
           </div>
         )}
@@ -687,21 +680,22 @@ export function BlockerTab() {
               1.
             </span>
             <span>
-              Add any domain to the list above. Subdomains are automatically
-              included — e.g. blocking{" "}
-              <code className="text-[var(--fintheon-accent)]/80 bg-[var(--fintheon-accent)]/5 px-1 rounded">
-                twitter.com
-              </code>{" "}
-              also blocks{" "}
-              <code className="text-[var(--fintheon-accent)]/80 bg-[var(--fintheon-accent)]/5 px-1 rounded">
-                x.com
-              </code>
-              .
+              Pick one platform from the dropdown. TopStepX is the default
+              clean-slate platform.
             </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-[var(--fintheon-accent)]/60 mt-0.5 shrink-0">
               2.
+            </span>
+            <span>
+              Add only the extra domains you specifically want blocked.
+              Subdomains of each saved domain are included.
+            </span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-[var(--fintheon-accent)]/60 mt-0.5 shrink-0">
+              3.
             </span>
             <span>
               <strong className="text-gray-400">DNS Block</strong> writes to{" "}
@@ -713,7 +707,7 @@ export function BlockerTab() {
           </li>
           <li className="flex items-start gap-2">
             <span className="text-[var(--fintheon-accent)]/60 mt-0.5 shrink-0">
-              3.
+              4.
             </span>
             <span>
               <strong className="text-gray-400">DNS Override</strong> creates{" "}
@@ -726,16 +720,17 @@ export function BlockerTab() {
           </li>
           <li className="flex items-start gap-2">
             <span className="text-[var(--fintheon-accent)]/60 mt-0.5 shrink-0">
-              4.
+              5.
             </span>
             <span>
-              <strong className="text-gray-400">In-app filter</strong> catches
-              blocked domains inside Fintheon's own webviews and iframes.
+              <strong className="text-gray-400">In-app filter</strong> catches blocked
+              domains inside Fintheon's own webviews and shows the Desk Block
+              screen instead of the blank white blocked pane.
             </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-[var(--fintheon-accent)]/60 mt-0.5 shrink-0">
-              5.
+              6.
             </span>
             <span>
               Requires macOS admin password (one-time system dialog). All three

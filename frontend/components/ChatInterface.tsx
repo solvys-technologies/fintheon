@@ -51,6 +51,7 @@ export interface ChatWorkspaceOption {
 type ChatComposerPlacement = "bottom" | "center-until-start";
 
 function ChatInterfaceInner({
+  surfaceId,
   conversationId,
   setConversationId,
   clearConversationId,
@@ -70,6 +71,7 @@ function ChatInterfaceInner({
   composerPlacement = "bottom",
   hideHeader = false,
 }: {
+  surfaceId: string;
   conversationId: string | undefined;
   setConversationId: (id: string) => void;
   clearConversationId: () => void;
@@ -411,8 +413,9 @@ function ChatInterfaceInner({
     },
     [conversationId],
   );
+  const isNarrativeFlowSurface = surfaceId === "narrativeflow";
   const workspaceSlot =
-    workspaceOptions.length > 0 ? (
+    isNarrativeFlowSurface && workspaceOptions.length > 0 ? (
       <ChatWorkspaceSelector
         options={workspaceOptions}
         activeId={activeWorkspaceId}
@@ -509,6 +512,8 @@ function ChatInterfaceInner({
               workspaceSlot={workspaceSlot}
               queueCount={queue.length}
               onMessageSubmitted={() => setHasChatStarted(true)}
+              showAttachSelector={isNarrativeFlowSurface}
+              attachSelectorTitle="Attach NarrativeFlow context"
             />
           </div>
         </div>
@@ -734,6 +739,7 @@ export default function ChatInterface({
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <ChatInterfaceInner
+        surfaceId={surfaceId}
         conversationId={conversationId}
         setConversationId={setConversationId}
         clearConversationId={clearConversationId}

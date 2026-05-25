@@ -7,7 +7,6 @@ const WEEK_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"] as const;
 
 function formatDay(date: string): string {
   return new Date(`${date}T12:00:00`).toLocaleDateString([], {
-    weekday: "short",
     month: "short",
     day: "numeric",
   });

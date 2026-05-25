@@ -4,6 +4,8 @@ import { EmbeddedBrowserFrame } from "./layout/EmbeddedBrowserFrame";
 import { useSettings } from "../contexts/SettingsContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useEffect, useState } from "react";
+import { DeskBlockOverlay } from "./blocker/DeskBlockOverlay";
+import { useBlockedUrlOverlay } from "../hooks/useBlockedUrlOverlay";
 
 export type BuiltinPlatform =
   | "topstepx"
@@ -97,17 +99,37 @@ export function TradingBrowser({
     <div
       className={`h-full w-full overflow-hidden ${isStone ? "bg-black" : "bg-[var(--fintheon-surface)]"}`}
     >
-      <div
-        className={`h-full ${splitViewEnabled && allowSplitView ? "grid grid-cols-2 gap-0" : ""}`}
-      >
-        <BrowserPane
-          activePlatform={primaryPlatform}
-          activeUrl={primaryUrl}
-          resolveUrl={resolveUrl}
-          resolveLabel={resolveLabel}
-          frameBg={frameBg}
-        />
-        {splitViewEnabled && allowSplitView && (
+      <div className="flex h-full min-h-0">
+        <div
+          className="h-full min-w-0 transition-[flex-basis] duration-300 ease-out"
+          style={{
+            flex: `0 0 ${splitViewEnabled && allowSplitView ? "50%" : "100%"}`,
+          }}
+        >
+          <BrowserPane
+            activePlatform={primaryPlatform}
+            activeUrl={primaryUrl}
+            resolveUrl={resolveUrl}
+            resolveLabel={resolveLabel}
+            frameBg={frameBg}
+          />
+        </div>
+        <div
+          aria-hidden={!(splitViewEnabled && allowSplitView)}
+          className={`h-full min-w-0 shrink-0 overflow-hidden border-l border-[var(--fintheon-accent)]/10 transition-[flex-basis,transform,opacity,border-color] duration-300 ease-out ${
+            splitViewEnabled && allowSplitView
+              ? ""
+              : "pointer-events-none border-transparent"
+          }`}
+          style={{
+            flex: `0 0 ${splitViewEnabled && allowSplitView ? "50%" : "0%"}`,
+            opacity: splitViewEnabled && allowSplitView ? 1 : 0,
+            transform:
+              splitViewEnabled && allowSplitView
+                ? "translateX(0)"
+                : "translateX(100%)",
+          }}
+        >
           <BrowserPane
             activePlatform={secondaryPlatform}
             activeUrl={secondaryUrl}
@@ -115,7 +137,7 @@ export function TradingBrowser({
             resolveLabel={resolveLabel}
             frameBg={frameBg}
           />
-        )}
+        </div>
       </div>
     </div>
   );
@@ -137,6 +159,7 @@ function BrowserPane({
   const [visitedPlatforms, setVisitedPlatforms] = useState<TradingPlatform[]>(
     () => (activeUrl ? [activePlatform] : []),
   );
+  const { shouldOverlay } = useBlockedUrlOverlay(activeUrl);
 
   useEffect(() => {
     if (!activeUrl) return;
@@ -147,6 +170,7 @@ function BrowserPane({
 
   return (
     <div className="relative h-full w-full overflow-hidden">
+      {shouldOverlay ? <DeskBlockOverlay visible /> : null}
       {visitedPlatforms.map((platform) => {
         const url = resolveUrl(platform);
         if (!url) return null;

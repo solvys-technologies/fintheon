@@ -71,6 +71,8 @@ interface FintheonComposerProps {
   onQueueMessage?: (text: string) => void;
   queueCount?: number;
   onMessageSubmitted?: () => void;
+  showAttachSelector?: boolean;
+  attachSelectorTitle?: string;
 }
 
 export function FintheonComposer({
@@ -97,6 +99,8 @@ export function FintheonComposer({
   onQueueMessage,
   queueCount = 0,
   onMessageSubmitted,
+  showAttachSelector = false,
+  attachSelectorTitle,
 }: FintheonComposerProps) {
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
@@ -449,6 +453,8 @@ export function FintheonComposer({
         onHistoryUp={handleHistoryUp}
         onHistoryDown={handleHistoryDown}
         onHistoryEscape={handleHistoryEscape}
+        showAttachSelector={showAttachSelector}
+        attachSelectorTitle={attachSelectorTitle}
         headlineAlerts={alerts}
         headlineChips={headlineChips}
         onHeadlineToggle={handleHeadlineToggle}

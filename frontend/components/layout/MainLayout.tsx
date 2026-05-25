@@ -5,7 +5,7 @@
 // [claude-code 2026-03-20] S3:T4c: Linked Strategium ↔ RiskFlow collapse — both expand/collapse together
 // [claude-code 2026-03-22] Replaced "The Tape" in Castra with RiskFlowMini (same as non-iFrame Strategium)
 // [claude-code 2026-03-31] S12-T2: Added Documents tab (TipTap editor)
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
 import type { IVScoreResponse } from "../../types/market-data";
 import { TopHeader } from "./TopHeader";
@@ -31,6 +31,7 @@ import RiskFlowMini from "../RiskFlowMini";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import { SearchModal } from "../search/SearchModal";
 import { useSettings } from "../../contexts/SettingsContext";
+import { useToast } from "../../contexts/ToastContext";
 import {
   PsychAssistDockable,
   type PsychAssistDockTarget,
@@ -397,6 +398,34 @@ function MainLayoutInner() {
   };
 
   useEffect(() => {
+    const jumpToNarrativeFlow = () => {
+      try {
+        window.localStorage.setItem(
+          "fintheon:pending-consilium-surface",
+          "narrativeflow",
+        );
+      } catch {
+        /* ignore */
+      }
+      setShowRefinement(false);
+      if (topStepXEnabled) handleBrowserToggle();
+      navigateTab("analysis");
+      window.setTimeout(() => {
+        window.dispatchEvent(new Event("fintheon:open-narrativeflow"));
+      }, 80);
+    };
+    window.addEventListener(
+      "fintheon:jump-to-narrativeflow",
+      jumpToNarrativeFlow,
+    );
+    return () =>
+      window.removeEventListener(
+        "fintheon:jump-to-narrativeflow",
+        jumpToNarrativeFlow,
+      );
+  }, [handleBrowserToggle, historyIndex, tabHistory, topStepXEnabled]);
+
+  useEffect(() => {
     const handler = (event: Event) => {
       const tab = (event as CustomEvent<{ tab?: NavTab }>).detail?.tab;
       if (tab) navigateTab(tab);
@@ -423,7 +452,13 @@ function MainLayoutInner() {
 
   const backend = useBackend();
   const { isAuthenticated } = useAuth();
-  const { alerts: riskFlowAlerts, removeAlert, isSeen } = useRiskFlow();
+  const {
+    alerts: riskFlowAlerts,
+    isSeen,
+    freshAlertId,
+  } = useRiskFlow();
+  const { addToast } = useToast();
+  const lastZenNewsToastRef = useRef<string | null>(null);
   useKeyboardShortcuts({
     navigateTab: navigateTab as (tab: string) => void,
     setShowSearchModal,
@@ -519,6 +554,45 @@ function MainLayoutInner() {
   const showCombinedPanel = topStepXEnabled && layoutOption === "combined";
   const zenModeActive =
     zenModeEnabled || (topStepXEnabled && layoutOption === "tickers-only");
+  const zenFreshAlert = useMemo(
+    () => riskFlowAlerts.find((alert) => alert.id === freshAlertId) ?? null,
+    [freshAlertId, riskFlowAlerts],
+  );
+
+  useEffect(() => {
+    if (!zenModeActive || !zenFreshAlert) return;
+    const isRiskFlowMainVisible = activeTab === "riskflow" && !topStepXEnabled;
+    const shouldToast =
+      missionControlCollapsed || !isRiskFlowMainVisible || topStepXEnabled;
+    if (!shouldToast) return;
+    if (lastZenNewsToastRef.current === zenFreshAlert.id) return;
+
+    lastZenNewsToastRef.current = zenFreshAlert.id;
+    addToast(
+      "RiskFlow",
+      "reminder",
+      zenFreshAlert.headline,
+      "news-alert",
+      "bottom-left",
+      {
+        label: "Open RiskFlow",
+        onClick: () => {
+          if (topStepXEnabled) handleBrowserToggle();
+          navigateTab("riskflow");
+        },
+      },
+      undefined,
+      12000,
+    );
+  }, [
+    activeTab,
+    addToast,
+    handleBrowserToggle,
+    missionControlCollapsed,
+    topStepXEnabled,
+    zenFreshAlert,
+    zenModeActive,
+  ]);
 
   useEffect(() => {
     document.documentElement.dataset.zenMode = zenModeActive ? "true" : "false";

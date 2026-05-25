@@ -3,6 +3,13 @@
 // [claude-code 2026-05-15] S66-T2: Added lockUntilDeskSession, lock screen IPC listeners
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSettings } from "../contexts/SettingsContext";
+import {
+  loadBlockerCustomDomains,
+  loadBlockerQuickTarget,
+  mergeDomainLists,
+  notifyBlockerStateUpdated,
+  resolveBlockerTarget,
+} from "../lib/platform-blocker";
 
 export interface LockoutState {
   locked: boolean;
@@ -22,7 +29,6 @@ interface NextWindowInfo {
 
 interface BlockerApi {
   enableFast: () => Promise<unknown>;
-  getDomains: () => Promise<{ domains: string[] }>;
   setDomains: (
     domains: string[],
   ) => Promise<{ ok: boolean; domains?: string[]; reason?: string }>;
@@ -35,31 +41,6 @@ interface LockoutElectronApi {
 
 const API_BASE =
   (import.meta as any).env?.VITE_API_URL || "http://localhost:8080";
-
-function normalizeDomain(input: string): string | null {
-  let s = input.trim().toLowerCase();
-  if (!s) return null;
-  s = s.replace(/^https?:\/\//, "");
-  s = s.replace(/\/.*$/, "");
-  s = s.replace(/^www\./, "");
-  if (!s.includes(".") || s.endsWith(".")) return null;
-  return s;
-}
-
-function domainsFromUrl(rawUrl: string): string[] {
-  if (!rawUrl) return [];
-  try {
-    const withProtocol = /^https?:\/\//i.test(rawUrl)
-      ? rawUrl
-      : `https://${rawUrl}`;
-    const host = new URL(withProtocol).hostname;
-    const normalized = normalizeDomain(host);
-    if (!normalized) return [];
-    return Array.from(new Set([normalized, `www.${normalized}`]));
-  } catch {
-    return [];
-  }
-}
 
 function getBlockerApi(): BlockerApi | null {
   const e = window as unknown as { electron?: { blocker?: BlockerApi } };
@@ -177,24 +158,22 @@ export function useLockout(pollMs = 5000) {
   const ensureSelectedPlatformBlocked = useCallback(async () => {
     const api = getBlockerApi();
     if (!api) return;
-    const selectedSource = proposerIframeSources.find(
-      (source) => source.id === defaultPlatform,
+    const target = resolveBlockerTarget({
+      target: loadBlockerQuickTarget(),
+      sources: proposerIframeSources,
+      selectedPlatform: defaultPlatform,
+    });
+    const blockerDomains = mergeDomainLists(
+      target?.domains ?? [],
+      loadBlockerCustomDomains(),
     );
-    if (!selectedSource?.url) return;
-
-    const platformDomains = domainsFromUrl(selectedSource.url);
-    if (platformDomains.length === 0) return;
+    if (blockerDomains.length === 0) return;
 
     try {
-      const existing = await api.getDomains();
-      const merged = Array.from(
-        new Set([...(existing?.domains ?? []), ...platformDomains]),
-      )
-        .map((domain) => normalizeDomain(domain))
-        .filter((domain): domain is string => !!domain);
-      if (merged.length === 0) return;
-      await api.setDomains(merged);
+      const result = await api.setDomains(blockerDomains);
+      if (!result.ok) return;
       await api.enableFast();
+      notifyBlockerStateUpdated();
     } catch {
       // Best effort only — lockout itself should still proceed.
     }

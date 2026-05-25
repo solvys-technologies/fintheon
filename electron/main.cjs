@@ -40,18 +40,19 @@ const fs = require("fs");
 const IS_MAC = process.platform === "darwin";
 const IS_WIN = process.platform === "win32";
 
-// [claude-code 2026-05-13] Default blocked domains (TopStepX-related). User can customize in settings.
+// [claude-code 2026-05-13] Default blocked domains. Clean-slate blocker policy:
+// only the selected dropdown platform plus user-added domains should be blocked.
 const DEFAULT_BLOCKED_DOMAINS = [
   "topstepx.com",
   "www.topstepx.com",
-  "app.topstepx.com",
-  "topstep.com",
-  "www.topstep.com",
-  "dashboard.topstep.com",
-  "projectx.com",
-  "www.projectx.com",
 ];
 const BLOCKED_DOMAINS_PATH = "fintheon-blocked-domains.json";
+const BLOCKED_DOMAINS_VERSION = 2;
+const BLOCKED_PAGE_URL =
+  "data:text/html;charset=utf-8," +
+  encodeURIComponent(
+    "<!doctype html><html><head><meta charset='utf-8'><style>html,body{margin:0;width:100%;height:100%;background:#000;overflow:hidden}</style></head><body></body></html>",
+  );
 let fastBlockerEnabled = false;
 
 /** Load blocked domains from userData, falling back to defaults */
@@ -61,7 +62,20 @@ function loadBlockedDomains() {
     if (fs.existsSync(p)) {
       const raw = fs.readFileSync(p, "utf8");
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (
+        parsed &&
+        parsed.version === BLOCKED_DOMAINS_VERSION &&
+        Array.isArray(parsed.domains) &&
+        parsed.domains.length > 0
+      ) {
+        return parsed.domains;
+      }
+      // Legacy array shape carried broad hidden defaults. Migrate once to the
+      // new clean slate: TopStepX only until the renderer saves explicit domains.
+      if (Array.isArray(parsed)) {
+        saveBlockedDomains(DEFAULT_BLOCKED_DOMAINS);
+        return [...DEFAULT_BLOCKED_DOMAINS];
+      }
     }
   } catch {}
   return [...DEFAULT_BLOCKED_DOMAINS];
@@ -71,7 +85,15 @@ function loadBlockedDomains() {
 function saveBlockedDomains(domains) {
   try {
     const p = path.join(app.getPath("userData"), BLOCKED_DOMAINS_PATH);
-    fs.writeFileSync(p, JSON.stringify(domains, null, 2), "utf8");
+    fs.writeFileSync(
+      p,
+      JSON.stringify(
+        { version: BLOCKED_DOMAINS_VERSION, domains },
+        null,
+        2,
+      ),
+      "utf8",
+    );
     return true;
   } catch {
     return false;
@@ -1051,7 +1073,9 @@ function createWindow(apiBase) {
           const blocked = domains.some(
             (d) => host === d || host.endsWith("." + d),
           );
-          callback({ cancel: blocked });
+          callback(
+            blocked ? { redirectURL: BLOCKED_PAGE_URL } : { cancel: false },
+          );
         },
       );
     }
@@ -1982,7 +2006,8 @@ function readResolverBlocked() {
   try {
     if (!fs.existsSync(RESOLVER_DIR)) return false;
     const files = fs.readdirSync(RESOLVER_DIR);
-    return files.length > 0;
+    const resolverDomains = getEtldPlusOne(loadBlockedDomains());
+    return resolverDomains.some((domain) => files.includes(domain));
   } catch {
     return false;
   }
@@ -2052,11 +2077,14 @@ function disableBlocking() {
     }
   }
 
-  // Layer 2: /etc/resolver/ removals — remove ALL resolver files (not just known ones)
+  // Layer 2: /etc/resolver/ removals — remove only files for the active block list.
   let resolverResult = "noop";
   try {
     if (fs.existsSync(RESOLVER_DIR)) {
-      const files = fs.readdirSync(RESOLVER_DIR);
+      const resolverDomains = getEtldPlusOne(loadBlockedDomains());
+      const files = fs
+        .readdirSync(RESOLVER_DIR)
+        .filter((file) => resolverDomains.includes(file));
       if (files.length > 0) {
         const removeCmds = files.map((f) => `rm -f ${RESOLVER_DIR}/${f}`);
         sudoRun(removeCmds.join(" && "));
@@ -2119,13 +2147,14 @@ ipcMain.handle("blocker:set-domains", async (_event, domains) => {
       return s || null;
     })
     .filter(Boolean);
-  if (cleaned.length === 0) {
+  const unique = Array.from(new Set(cleaned));
+  if (unique.length === 0) {
     return { ok: false, reason: "at least one valid domain required" };
   }
-  saveBlockedDomains(cleaned);
+  saveBlockedDomains(unique);
   // Keep domain updates passwordless during runtime lock cycles.
   // webRequest reads domains dynamically, so it picks up changes instantly.
-  return { ok: true, domains: cleaned };
+  return { ok: true, domains: unique };
 });
 
 ipcMain.handle("blocker:enable", async () => {
