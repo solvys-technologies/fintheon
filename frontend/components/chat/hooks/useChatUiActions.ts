@@ -10,8 +10,36 @@ export interface ChatUiTodoItem {
 
 export interface ChatUiRightRailPayload {
   title: string;
-  surface?: "plan" | "canvas" | "browser" | "report";
+  surface?:
+    | "plan"
+    | "canvas"
+    | "browser"
+    | "report"
+    | "narrativeflow"
+    | "narrativeflow-data"
+    | "narrativeflow-edit";
   markdown: string;
+  append?: boolean;
+}
+
+export type NarrativeFlowUiAction =
+  | "narrativeflow_open_surface"
+  | "narrativeflow_show_internal_data"
+  | "narrativeflow_stage_edit"
+  | "narrativeflow_apply_approved_edit";
+
+export interface NarrativeFlowUiActionPayload {
+  action: NarrativeFlowUiAction;
+  surface?: "workspace" | "forecasts" | "coliseum" | "resolved" | "map";
+  dataKind?: string;
+  editType?: string;
+  sessionId?: string;
+  targetId?: string;
+  operationId?: string;
+  title?: string;
+  markdown?: string;
+  previewMarkdown?: string;
+  patch?: Record<string, unknown>;
   append?: boolean;
 }
 
@@ -46,6 +74,7 @@ export interface ChatAnswerWidget {
 interface UseChatUiActionsOptions {
   onTodoDrawer?: (payload: { title?: string; items: ChatUiTodoItem[] }) => void;
   onRightRail?: (payload: ChatUiRightRailPayload) => void;
+  onNarrativeFlowAction?: (payload: NarrativeFlowUiActionPayload) => void;
 }
 
 interface CognitionStep {
@@ -68,11 +97,40 @@ function answersToMarkdown(
   return lines.join("\n");
 }
 
+function isNarrativeFlowAction(
+  action: string | undefined,
+): action is NarrativeFlowUiAction {
+  return (
+    action === "narrativeflow_open_surface" ||
+    action === "narrativeflow_show_internal_data" ||
+    action === "narrativeflow_stage_edit" ||
+    action === "narrativeflow_apply_approved_edit"
+  );
+}
+
+function dispatchNarrativeFlowAction(payload: NarrativeFlowUiActionPayload) {
+  window.dispatchEvent(
+    new CustomEvent("fintheon:narrative-agent-action", {
+      detail: payload,
+    }),
+  );
+  if (payload.action === "narrativeflow_open_surface" && payload.surface) {
+    window.dispatchEvent(
+      new CustomEvent("fintheon:narrative-surface-change", {
+        detail: {
+          mode: payload.surface,
+          sessionId: payload.sessionId ?? payload.targetId,
+        },
+      }),
+    );
+  }
+}
+
 export function useChatUiActions(
   requestId: string | null,
   options: UseChatUiActionsOptions,
 ) {
-  const { onTodoDrawer, onRightRail } = options;
+  const { onNarrativeFlowAction, onRightRail, onTodoDrawer } = options;
   const [questionnaire, setQuestionnaire] =
     useState<ChatUiQuestionnaire | null>(null);
   const [answerWidgets, setAnswerWidgets] = useState<ChatAnswerWidget[]>([]);
@@ -101,6 +159,29 @@ export function useChatUiActions(
         if (action === "open_right_rail") {
           onRightRail?.(detail);
         }
+        if (isNarrativeFlowAction(action)) {
+          const payload = {
+            ...(detail as Record<string, unknown>),
+            action,
+          } as NarrativeFlowUiActionPayload;
+          onNarrativeFlowAction?.(payload);
+          dispatchNarrativeFlowAction(payload);
+          if (action === "narrativeflow_show_internal_data") {
+            onRightRail?.({
+              title: String(detail.title ?? "NarrativeFlow Internal Data"),
+              surface: "narrativeflow-data",
+              markdown: String(detail.markdown ?? ""),
+              append: Boolean(detail.append),
+            });
+          }
+          if (action === "narrativeflow_stage_edit") {
+            onRightRail?.({
+              title: "Staged NarrativeFlow Edit",
+              surface: "narrativeflow-edit",
+              markdown: String(detail.previewMarkdown ?? ""),
+            });
+          }
+        }
         if (action === "approval_questions") {
           setQuestionnaire({
             actionId: String(detail.actionId),
@@ -116,7 +197,7 @@ export function useChatUiActions(
         /* ignore malformed stream payload */
       }
     },
-    [onRightRail, onTodoDrawer],
+    [onNarrativeFlowAction, onRightRail, onTodoDrawer],
   );
 
   useEffect(() => {

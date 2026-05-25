@@ -35,12 +35,16 @@ export async function handleListConversations(c: Context) {
     const limit = parseInt(c.req.query("limit") ?? "20", 10);
     const cursor = c.req.query("cursor");
     const includeArchived = c.req.query("archived") === "true";
+    const workspaceId = c.req.query("workspaceId");
+    const surface = c.req.query("surface");
 
     const { conversations, hasMore } =
       await conversationStore.listConversations(userId, {
         limit,
         cursor,
         includeArchived,
+        workspaceId,
+        surface,
       });
 
     const response: ConversationListResponse = {

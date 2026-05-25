@@ -6,6 +6,7 @@
 //   ghost conversationId around for FintheonComposer's relay button to trip over.
 // [claude-code 2026-03-07] assistant-ui runtime hook — wraps useHermesChat via useAISDKRuntime
 import { useHermesChat } from "./hooks/useHermesChat";
+import type { HermesWorkspaceContext } from "./hooks/useHermesChat";
 import { useOpenAgentsRuntime } from "./hooks/useOpenAgentsRuntime";
 import { usePersistentHermesConversation } from "../../hooks/usePersistentHermesConversation";
 import { toHermesAgentOverride } from "../../lib/hermesAgentRouting";
@@ -17,6 +18,7 @@ export function useHermesRuntime(
   thinkHarder?: boolean,
   surfaceId?: string,
   reasoningLevel?: ReasoningLevel,
+  workspaceContext?: HermesWorkspaceContext | null,
 ) {
   const { conversationId, setConversationId, clearConversationId } =
     usePersistentHermesConversation(agentId, surfaceId);
@@ -29,6 +31,8 @@ export function useHermesRuntime(
     thinkHarder,
     clearConversationId,
     reasoningLevel,
+    surfaceId,
+    workspaceContext,
   );
 
   // Build chatHelpers compatible with UseChatHelpers from @ai-sdk/react

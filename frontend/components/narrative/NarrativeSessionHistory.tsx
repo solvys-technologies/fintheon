@@ -8,6 +8,7 @@ export interface NarrativeSessionSummary {
   updatedAt: string;
   catalystCount: number;
   color: string;
+  status?: string;
   deskLabel?: string;
 }
 

@@ -38,7 +38,7 @@ interface PanelIconProps {
   active: boolean;
 }
 
-function PanelIcon({ side, active }: PanelIconProps) {
+export function PanelIcon({ side, active }: PanelIconProps) {
   const accent = "var(--fintheon-accent)";
   const frameStroke = active
     ? accent

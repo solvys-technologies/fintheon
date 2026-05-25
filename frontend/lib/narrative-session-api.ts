@@ -87,6 +87,12 @@ export async function updateNarrativeSession(input: {
   return toSessionBundle(requireSession(data.session));
 }
 
+export async function deleteNarrativeSession(id: string): Promise<void> {
+  await requestJson(`/api/narrative/sessions/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+
 export async function refineNarrativeSession(input: {
   sessionId: string;
   query: string;
@@ -144,7 +150,7 @@ async function addNarrativeSessionMessage(sessionId: string, content: string): P
   });
 }
 
-async function saveNarrativeArtifact(
+export async function saveNarrativeArtifact(
   sessionId: string,
   type: "flow" | "timeline" | "docs",
   payload: Record<string, unknown>,
@@ -180,6 +186,7 @@ function toSessionSummary(session: RawSession): NarrativeSessionSummary {
     updatedAt: String(session.updatedAt ?? session.updated_at ?? new Date().toISOString()),
     catalystCount: toNumber(session.catalystCount ?? session.catalyst_count),
     color: String(session.color ?? "#c79f4a"),
+    status: String(session.status ?? "active"),
     deskLabel: String(session.desk?.name ?? "Priced In Capital"),
   };
 }
@@ -311,6 +318,7 @@ interface RawSession extends Record<string, unknown> {
   id?: unknown;
   title?: unknown;
   color?: unknown;
+  status?: unknown;
   desk?: { name?: unknown };
 }
 interface RawSessionDetail extends RawSession {

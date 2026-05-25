@@ -24,7 +24,7 @@ export function FintheonProviderTrigger({
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-1.5 rounded-lg text-[var(--fintheon-accent)] transition-colors hover:bg-[var(--fintheon-accent)]/10 ${
+      className={`fintheon-provider-trigger flex items-center gap-1.5 rounded-lg text-[var(--fintheon-accent)] transition-colors hover:bg-[var(--fintheon-accent)]/10 ${
         compact ? "px-1.5" : "px-2"
       }`}
       style={{ height: 28 }}
@@ -33,6 +33,7 @@ export function FintheonProviderTrigger({
       <DeepSeekWhaleIcon className="h-[10.88px] w-[13.6px] shrink-0" />
       {!compact ? (
         <span
+          className="fintheon-provider-trigger__label"
           style={{
             fontSize: 11,
             color: "var(--fintheon-text)",

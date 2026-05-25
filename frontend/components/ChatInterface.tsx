@@ -1,11 +1,18 @@
 // [claude-code 2026-03-29] S9-T5: Replace checkpoint sidebar with real conversation history, Take Note button
 // [claude-code 2026-03-28] S8-T7: Dual-pane layout (left=conversation, right=artifacts) for Chat
-import { useState, useRef, useCallback, useEffect } from "react";
+import {
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  type ReactNode,
+} from "react";
 import {
   AssistantRuntimeProvider,
   useThread,
   useThreadRuntime,
 } from "@assistant-ui/react";
+import { Check, ChevronDown, Layers } from "lucide-react";
 import { useFintheonAgents } from "../contexts/FintheonAgentContext";
 import { useHermesRuntime } from "./chat/useHermesRuntime";
 import { ChatHeader } from "./chat/ChatHeader";
@@ -34,6 +41,15 @@ import { consumePendingChatPrompt } from "../lib/desk-week-plan";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
+export interface ChatWorkspaceOption {
+  id: string;
+  title: string;
+  status?: string;
+  color?: string;
+}
+
+type ChatComposerPlacement = "bottom" | "center-until-start";
+
 function ChatInterfaceInner({
   conversationId,
   setConversationId,
@@ -45,6 +61,14 @@ function ChatInterfaceInner({
   setReasoningLevel,
   lastRequestId,
   dualPane = false,
+  workspaceOptions = [],
+  activeWorkspaceId = null,
+  onWorkspaceChange,
+  workspaceSelectorLabel = "Workspace",
+  requestedConversationId = null,
+  emptyState,
+  composerPlacement = "bottom",
+  hideHeader = false,
 }: {
   conversationId: string | undefined;
   setConversationId: (id: string) => void;
@@ -56,6 +80,14 @@ function ChatInterfaceInner({
   setReasoningLevel: (level: ReasoningLevel) => void;
   lastRequestId: string | null;
   dualPane?: boolean;
+  workspaceOptions?: ChatWorkspaceOption[];
+  activeWorkspaceId?: string | null;
+  onWorkspaceChange?: (workspaceId: string) => void;
+  workspaceSelectorLabel?: string;
+  requestedConversationId?: string | null;
+  emptyState?: ReactNode;
+  composerPlacement?: ChatComposerPlacement;
+  hideHeader?: boolean;
 }) {
   const { activeAgent } = useFintheonAgents();
   const runtime = useThreadRuntime();
@@ -155,8 +187,18 @@ function ChatInterfaceInner({
   );
 
   useEffect(() => {
-    if (threadMessages.length > 0) setHasChatStarted(true);
-  }, [threadMessages.length]);
+    if (threadMessages.length > 0) {
+      setHasChatStarted(true);
+    } else if (!isRunning) {
+      setHasChatStarted(false);
+    }
+  }, [activeWorkspaceId, isRunning, threadMessages.length]);
+
+  useEffect(() => {
+    if (!requestedConversationId || requestedConversationId === conversationId) return;
+    setConversationId(requestedConversationId);
+    setHasChatStarted(true);
+  }, [conversationId, requestedConversationId, setConversationId]);
 
   useEffect(() => {
     const previousCount = previousWorkItemCountRef.current;
@@ -275,8 +317,13 @@ function ChatInterfaceInner({
   }, [questionnaire?.actionId]);
 
   const approvalDrawerOpen = !!questionnaire && !approvalDrawerCollapsed;
+  const introCenteredMode =
+    composerPlacement === "center-until-start" &&
+    !hasChatStarted &&
+    threadMessages.length === 0 &&
+    !isRunning;
   const workDrawerOpen =
-    showTodoDrawer && hasWorkDrawerContent && !questionnaire;
+    showTodoDrawer && hasWorkDrawerContent && !questionnaire && !introCenteredMode;
   const collapseTodoDrawer = useCallback(() => setShowTodoDrawer(false), []);
   useAutoCollapseDrawer({
     isOpen: workDrawerOpen,
@@ -329,6 +376,11 @@ function ChatInterfaceInner({
     : workDrawerOpen
       ? 230
       : 116;
+  const composerIsCentered =
+    introCenteredMode &&
+    !approvalDrawerOpen &&
+    !workDrawerOpen;
+  const composerInset = composerIsCentered ? 48 : composerBottomInset;
 
   const handleNewChat = useCallback(() => {
     setHasChatStarted(false);
@@ -359,17 +411,28 @@ function ChatInterfaceInner({
     },
     [conversationId],
   );
+  const workspaceSlot =
+    workspaceOptions.length > 0 ? (
+      <ChatWorkspaceSelector
+        options={workspaceOptions}
+        activeId={activeWorkspaceId}
+        onSelect={onWorkspaceChange}
+        label={workspaceSelectorLabel}
+      />
+    ) : undefined;
 
   return (
     <div className="h-full flex flex-col">
-      <ChatHeader
-        onRunMDB={() => handleSend("Run the MDB report")}
-        onNewChat={handleNewChat}
-        onSelectSession={(id) => setConversationId(id)}
-        onNewSession={handleNewChat}
-        currentConversationId={conversationId}
-        isLoading={isRunning}
-      />
+      {hideHeader ? null : (
+        <ChatHeader
+          onRunMDB={() => handleSend("Run the MDB report")}
+          onNewChat={handleNewChat}
+          onSelectSession={(id) => setConversationId(id)}
+          onNewSession={handleNewChat}
+          currentConversationId={conversationId}
+          isLoading={isRunning}
+        />
+      )}
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <div className="flex-1 flex flex-col min-h-0 relative">
@@ -387,10 +450,17 @@ function ChatInterfaceInner({
             onPinCitation={handlePinCitation}
             pinnedCitationIndex={pinnedCitationIndex}
             scrollButtonOffset={scrollButtonOffset}
-            composerBottomInset={composerBottomInset}
+            composerBottomInset={composerInset}
             answerWidgets={answerWidgets}
+            emptyState={emptyState}
           />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30">
+          <div
+            className={`pointer-events-none absolute inset-x-0 z-30 ${
+              composerIsCentered
+                ? "top-1/2 translate-y-8"
+                : "bottom-0"
+            }`}
+          >
             <FintheonComposer
               thinkHarder={thinkHarder}
               setThinkHarder={setThinkHarder}
@@ -435,7 +505,8 @@ function ChatInterfaceInner({
                   agentActive={isRunning}
                 />
               }
-              drawerPeekSlot={drawerPeekSlot}
+              drawerPeekSlot={composerIsCentered ? undefined : drawerPeekSlot}
+              workspaceSlot={workspaceSlot}
               queueCount={queue.length}
               onMessageSubmitted={() => setHasChatStarted(true)}
             />
@@ -478,10 +549,158 @@ function ChatInterfaceInner({
   );
 }
 
+function buildWorkspaceSurfaceId(
+  surfaceId: string,
+  workspaceId: string | null | undefined,
+): string {
+  return workspaceId ? `${surfaceId}:workspace:${workspaceId}` : surfaceId;
+}
+
+function buildWorkspaceContext(
+  surfaceId: string,
+  options: ChatWorkspaceOption[],
+  workspaceId: string | null | undefined,
+) {
+  if (!workspaceId) return null;
+  const workspace = options.find((item) => item.id === workspaceId);
+  return {
+    id: workspaceId,
+    title: workspace?.title ?? "Workspace",
+    status: workspace?.status,
+    color: workspace?.color,
+    type: "narrative-workspace",
+    surfaceId,
+  };
+}
+
+function ChatWorkspaceSelector({
+  options,
+  activeId,
+  onSelect,
+  label = "Workspace",
+}: {
+  options: ChatWorkspaceOption[];
+  activeId?: string | null;
+  onSelect?: (workspaceId: string) => void;
+  label?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const active = options.find((item) => item.id === activeId) ?? options[0];
+  const triggerText = label === "Workspace" ? active.title : label;
+
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+    };
+    window.addEventListener("click", close);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  if (!active) return null;
+
+  return (
+    <div className="relative" onClick={(event) => event.stopPropagation()}>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className={`chat-workspace-selector-trigger flex h-8 max-w-[184px] items-center gap-1.5 rounded-lg px-2 text-[11px] transition-colors ${
+          open
+            ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+            : "text-zinc-500 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
+        }`}
+        title={`${label}: ${active.title}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={label}
+      >
+        <span
+          className="h-2 w-2 shrink-0 rounded-full"
+          style={{ backgroundColor: active.color ?? "rgba(199,159,74,0.72)" }}
+        />
+        <Layers size={14} />
+        <span className="chat-workspace-selector-trigger__label min-w-0 truncate">
+          {triggerText}
+        </span>
+        <ChevronDown size={11} className="shrink-0 opacity-55" />
+      </button>
+      {open ? (
+        <div
+          className="absolute bottom-10 left-0 z-50 w-72 overflow-hidden rounded-md border border-[var(--fintheon-accent)]/16 bg-[#0d0a06] shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+          role="menu"
+        >
+          <div className="border-b border-[var(--fintheon-accent)]/10 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/70">
+            {label}
+          </div>
+          <div className="max-h-64 overflow-y-auto p-1">
+            {options.map((item) => {
+              const selected = item.id === active.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={selected}
+                  onClick={() => {
+                    onSelect?.(item.id);
+                    setOpen(false);
+                  }}
+                  className={`flex w-full items-center gap-2 rounded-[4px] px-2 py-2 text-left transition ${
+                    selected
+                      ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+                      : "text-[var(--fintheon-text)]/74 hover:bg-[var(--fintheon-accent)]/7 hover:text-[var(--fintheon-text)]"
+                  }`}
+                >
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: item.color ?? "rgba(199,159,74,0.64)" }}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[12px] font-medium">
+                      {item.title}
+                    </span>
+                    {item.status ? (
+                      <span className="block font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]">
+                        {item.status}
+                      </span>
+                    ) : null}
+                  </span>
+                  {selected ? <Check size={12} className="shrink-0" /> : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function ChatInterface({
   surfaceId = "analysis",
+  workspaceOptions = [],
+  activeWorkspaceId = null,
+  onWorkspaceChange,
+  workspaceSelectorLabel = "Workspace",
+  requestedConversationId = null,
+  emptyState,
+  composerPlacement = "bottom",
+  hideHeader = false,
 }: {
   surfaceId?: string;
+  workspaceOptions?: ChatWorkspaceOption[];
+  activeWorkspaceId?: string | null;
+  onWorkspaceChange?: (workspaceId: string) => void;
+  workspaceSelectorLabel?: string;
+  requestedConversationId?: string | null;
+  emptyState?: ReactNode;
+  composerPlacement?: ChatComposerPlacement;
+  hideHeader?: boolean;
 }) {
   const { activeAgent } = useFintheonAgents();
   const [thinkHarderState, setThinkHarderState] = useState(false);
@@ -504,8 +723,9 @@ export default function ChatInterface({
   } = useHermesRuntime(
     activeAgent?.id ?? "default",
     thinkHarderState,
-    surfaceId,
+    buildWorkspaceSurfaceId(surfaceId, activeWorkspaceId),
     reasoningLevel,
+    buildWorkspaceContext(surfaceId, workspaceOptions, activeWorkspaceId),
   );
 
   // Chat main surface gets dual-pane layout (conversation + artifacts)
@@ -532,6 +752,14 @@ export default function ChatInterface({
         }}
         lastRequestId={lastRequestId}
         dualPane={isDualPane}
+        workspaceOptions={workspaceOptions}
+        activeWorkspaceId={activeWorkspaceId}
+        onWorkspaceChange={onWorkspaceChange}
+        workspaceSelectorLabel={workspaceSelectorLabel}
+        requestedConversationId={requestedConversationId}
+        emptyState={emptyState}
+        composerPlacement={composerPlacement}
+        hideHeader={hideHeader}
       />
     </AssistantRuntimeProvider>
   );

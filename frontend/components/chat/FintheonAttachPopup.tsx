@@ -245,7 +245,11 @@ export function FintheonAttachPopup({
   ];
 
   return (
-    <RepoChatComposerSurface open={open} kind="drawer">
+    <RepoChatComposerSurface
+      open={open}
+      kind="drawer"
+      className="narrative-attach-drawer"
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2">
         <span className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider">

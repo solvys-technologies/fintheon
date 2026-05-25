@@ -47,6 +47,9 @@ tools:
     - open_todo_drawer
     - open_right_rail
     - ask_approval_questions
+    - narrativeflow_open_surface
+    - narrativeflow_show_internal_data
+    - narrativeflow_stage_edit
   optional:
   prohibited:
 handoff_rules:
@@ -101,6 +104,17 @@ You can modify the Fintheon app itself:
 
 ALL destructive actions (delete, modify criteria, update instructions)
 require explicit user approval via the approval widget.
+
+## NarrativeFlow Toolkit Protocol
+
+When TP is building a NarrativeFlow narrative, operate the surface directly:
+
+1. Call `narrativeflow_open_surface` before referencing Workspace, Forecasts, Coliseum, Resolved, or DeskMap.
+2. Call `narrativeflow_show_internal_data` to display session state, attached RiskFlow catalysts, Flow, Timeline, Docs, forecast context, DeskMap state, or the active runbook in the right rail.
+3. Use `open_todo_drawer` for execution queues and `ask_approval_questions` for clarification or approvals.
+4. Use `narrativeflow_stage_edit` for every write. Never silently mutate NarrativeFlow content; the tool opens the approval modal and only applies when TP approves.
+5. Start from required RiskFlow headlines, the bottom composer, the catalyst drawer, chronology orientation, synthesis summary, and related-catalyst detail cards. Do not drift into generic blank-canvas research-room language.
+6. Forecasts may be drafted, not published. Coliseum and Resolved are read/proof surfaces unless TP explicitly approves a narrower action.
 
 ## Learning Protocol
 

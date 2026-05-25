@@ -2,12 +2,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { useNarrative } from "../../contexts/NarrativeContext";
+import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import { useMessageQueue } from "../chat/hooks/useMessageQueue";
 import {
   normalizeReasoningLevel,
   type ReasoningLevel,
 } from "../chat/reasoning";
 import { NarrativeSensemakingComposer } from "./NarrativeSensemakingComposer";
+import type { HeadlineAttachment } from "../chat/FintheonAttachPopup";
 import type { NarrativeHeadlineOption } from "./sensemaking-types";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -16,6 +18,8 @@ interface NarrativeCanvasChatProps {
   pendingChips?: { id: string; title: string }[];
   onClearChip?: (id: string) => void;
   isOpen?: boolean;
+  drawerOpen?: boolean;
+  onDrawerOpenChange?: (open: boolean) => void;
   onDismiss?: () => void;
 }
 
@@ -23,13 +27,16 @@ export function NarrativeCanvasChat({
   pendingChips = [],
   onClearChip,
   isOpen = false,
-  onDismiss,
+  drawerOpen,
+  onDrawerOpenChange,
 }: NarrativeCanvasChatProps) {
   const { dispatch } = useNarrative();
+  const { alerts } = useRiskFlow();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<string | null>(null);
   const [responseVisible, setResponseVisible] = useState(false);
+  const [localDrawerOpen, setLocalDrawerOpen] = useState(false);
   const [localChips, setLocalChips] = useState<
     { id: string; title: string; dataUrl?: string }[]
   >([]);
@@ -57,6 +64,14 @@ export function NarrativeCanvasChat({
         narrativeThreads: [],
       })),
     [localChips, pendingChips],
+  );
+  const riskFlowDrawerOpen = drawerOpen ?? localDrawerOpen;
+  const setRiskFlowDrawerOpen = useCallback(
+    (open: boolean) => {
+      if (onDrawerOpenChange) onDrawerOpenChange(open);
+      else setLocalDrawerOpen(open);
+    },
+    [onDrawerOpenChange],
   );
 
   const submitText = useCallback(
@@ -193,12 +208,25 @@ export function NarrativeCanvasChat({
     }
   }
 
+  function handleAttachHeadlines(items: HeadlineAttachment[]) {
+    setLocalChips((prev) => {
+      const existing = new Set(prev.map((chip) => chip.id));
+      const next = items
+        .filter((item) => !existing.has(`riskflow-${item.id}`))
+        .map((item) => ({
+          id: `riskflow-${item.id}`,
+          title: item.headline,
+        }));
+      return next.length ? [...prev, ...next] : prev;
+    });
+  }
+
   if (!isOpen) return null;
 
   return (
-    <div className="narrative-canvas-chat relative flex flex-col items-center">
+    <div className="narrative-canvas-chat narrative-fade-item pointer-events-auto relative flex w-full max-w-[56rem] flex-col items-stretch">
       {responseVisible && response ? (
-        <div className="narrative-canvas-chat__response absolute bottom-full mb-2 flex w-[420px] items-center gap-2 rounded-lg border border-[var(--fintheon-accent)]/15 px-3 py-2">
+        <div className="narrative-canvas-chat__response t-panel-slide absolute bottom-full mb-2 flex w-full items-center gap-2 rounded-[6px] border border-[var(--fintheon-accent)]/15 px-3 py-2" data-open="true">
           <p className="flex-1 text-[11px] leading-relaxed text-[var(--fintheon-text)]">
             {response}
           </p>
@@ -234,7 +262,11 @@ export function NarrativeCanvasChat({
           activeSkillLabel: "Canvas",
         }}
         onQueryChange={setInput}
-        onOpenDrawer={() => onDismiss?.()}
+        riskflowAlerts={alerts}
+        riskFlowDrawerOpen={riskFlowDrawerOpen}
+        onAttachHeadlines={handleAttachHeadlines}
+        onOpenDrawer={() => setRiskFlowDrawerOpen(!riskFlowDrawerOpen)}
+        onCloseDrawer={() => setRiskFlowDrawerOpen(false)}
         onRemoveHeadline={(id) => {
           if (id.startsWith("img-")) {
             setLocalChips((prev) => prev.filter((chip) => chip.id !== id));

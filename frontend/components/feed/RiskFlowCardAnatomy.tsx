@@ -54,7 +54,7 @@ export function RiskFlowCardAnatomy({
 
   return (
     <div
-      className={`group relative overflow-hidden border-b border-[var(--fintheon-accent)]/10 bg-transparent transition-colors hover:border-[var(--fintheon-accent)]/22 ${
+      className={`group relative overflow-hidden border-b border-[var(--fintheon-accent)]/10 bg-transparent transition-[opacity,transform,border-color,background-color] duration-200 hover:-translate-y-px hover:border-[var(--fintheon-accent)]/22 ${
         selected ? "border-[var(--fintheon-accent)]/35" : ""
       } ${fresh ? "riskflow-flicker" : ""} ${className}`}
     >

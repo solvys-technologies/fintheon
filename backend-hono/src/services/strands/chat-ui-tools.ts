@@ -4,6 +4,7 @@ import {
   emitChatUiAction,
   requestChatUiQuestions,
 } from "../chat-ui-action-store.js";
+import { createNarrativeFlowChatTools } from "./narrativeflow-chat-tools.js";
 
 const issueTypeSchema = z
   .enum(["task", "bug", "feature", "risk", "chore", "issue"])
@@ -85,5 +86,6 @@ export function createChatUiTools(requestId: string) {
         return renderAnswers(result);
       },
     }),
+    ...createNarrativeFlowChatTools(requestId),
   ];
 }

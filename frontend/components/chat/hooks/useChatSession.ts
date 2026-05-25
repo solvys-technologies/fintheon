@@ -44,6 +44,8 @@ export function useChatSession({
     agentOverride,
     undefined,
     clearConversationId,
+    undefined,
+    surfaceId,
   );
 
   const [lastSentMessage, setLastSentMessage] = useState("");

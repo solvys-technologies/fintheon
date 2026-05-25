@@ -57,6 +57,13 @@ const PLAN_DRAFT_TEMPLATE = `# Plan\n\n## Objectives\n- [ ] \n\n## Steps\n1. \n\
 
 type AgentRailSurface = "plan" | "canvas" | "browser";
 
+function toAgentRailSurface(
+  surface: ChatUiRightRailPayload["surface"],
+): AgentRailSurface {
+  if (surface === "canvas" || surface === "browser") return surface;
+  return "plan";
+}
+
 interface AgentRailEventDetail {
   open?: boolean;
   markdown?: string;
@@ -217,7 +224,7 @@ function ChatSidebarInner({
           detail: {
             open: true,
             title: payload.title,
-            surface: payload.surface === "report" ? "plan" : payload.surface,
+            surface: toAgentRailSurface(payload.surface),
             markdown: payload.markdown,
             append: payload.append,
           },

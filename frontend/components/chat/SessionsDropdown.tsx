@@ -314,23 +314,6 @@ export function SessionsDropdown({
           })}
       </div>
 
-      {/* Footer */}
-      <div
-        className="px-3 py-1.5 text-center border-t"
-        style={{
-          borderColor:
-            "color-mix(in srgb, var(--fintheon-accent) 8%, transparent)",
-          backgroundColor:
-            "color-mix(in srgb, #0a0a08 95%, var(--fintheon-accent) 5%)",
-        }}
-      >
-        <span
-          className="text-[9px] tracking-wider uppercase"
-          style={{ color: "var(--fintheon-muted)", opacity: 0.6 }}
-        >
-          Sessions reset daily at 6PM ET
-        </span>
-      </div>
     </div>
   );
 }

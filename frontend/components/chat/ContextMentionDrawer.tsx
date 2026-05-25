@@ -75,7 +75,11 @@ export function ContextMentionDrawer({
   }, [open, query]);
 
   return (
-    <RepoChatComposerSurface open={open} kind="drawer">
+    <RepoChatComposerSurface
+      open={open}
+      kind="drawer"
+      className="narrative-mention-drawer"
+    >
       <div className="flex max-h-[280px] min-h-0 flex-col overflow-hidden">
         <div className="flex items-center justify-between px-3 py-2.5">
           <div className="flex items-center gap-2">
@@ -115,7 +119,7 @@ export function ContextMentionDrawer({
               key={item.id}
               type="button"
               onClick={() => onSelect(item)}
-              className={`flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left transition-colors ${
+              className={`narrative-drawer-row flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left transition-colors ${
                 selectedIds.has(item.id)
                   ? "bg-[color-mix(in_srgb,var(--fintheon-accent)_10%,transparent)]"
                   : "hover:bg-[color-mix(in_srgb,var(--fintheon-accent)_5%,transparent)]"

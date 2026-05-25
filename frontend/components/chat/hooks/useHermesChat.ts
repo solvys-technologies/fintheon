@@ -25,6 +25,15 @@ import {
 } from "../../../lib/aiCreditErrors";
 import type { ReasoningLevel } from "../reasoning";
 
+export interface HermesWorkspaceContext {
+  id: string;
+  title: string;
+  type?: string;
+  status?: string;
+  color?: string;
+  surfaceId?: string;
+}
+
 /** Convert backend ChatMessage -> UIMessage for useChat hydration */
 function backendToUIMessage(msg: {
   id: string;
@@ -67,6 +76,8 @@ export function useHermesChat(
   thinkHarder?: boolean,
   clearConversationId?: () => void,
   reasoningLevel?: ReasoningLevel,
+  surfaceId?: string,
+  workspaceContext?: HermesWorkspaceContext | null,
 ) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -81,10 +92,14 @@ export function useHermesChat(
   // [claude-code 2026-03-13] Ref to avoid stale closure in DefaultChatTransport's prepareSendMessagesRequest
   const thinkHarderRef = useRef(thinkHarder);
   const reasoningLevelRef = useRef<ReasoningLevel | undefined>(reasoningLevel);
+  const surfaceIdRef = useRef(surfaceId);
+  const workspaceContextRef = useRef(workspaceContext);
   useEffect(() => {
     thinkHarderRef.current = thinkHarder;
     reasoningLevelRef.current = reasoningLevel;
-  }, [thinkHarder, reasoningLevel]);
+    surfaceIdRef.current = surfaceId;
+    workspaceContextRef.current = workspaceContext;
+  }, [thinkHarder, reasoningLevel, surfaceId, workspaceContext]);
 
   // [claude-code 2026-04-06] Ref for conversationId to avoid stale closures in transport callbacks
   const conversationIdRef = useRef(conversationId);
@@ -274,6 +289,8 @@ export function useHermesChat(
           })();
           const opencodeGoModel =
             harperProvider === "opencode-go" ? readOpenCodeGoModel() : null;
+          const currentSurface = readCurrentSurface(surfaceIdRef.current);
+          const currentWorkspace = workspaceContextRef.current ?? undefined;
           return {
             body: {
               message: msgText,
@@ -288,6 +305,8 @@ export function useHermesChat(
               ...(reasoningLevelRef.current && {
                 reasoningLevel: reasoningLevelRef.current,
               }),
+              ...(currentWorkspace && { workspace: currentWorkspace }),
+              metadata: buildChatMetadata(currentSurface, currentWorkspace),
               userContext: (() => {
                 try {
                   const get = (k: string) => {
@@ -330,21 +349,14 @@ export function useHermesChat(
                   return [];
                 }
               })(),
-              surface: (() => {
-                try {
-                  return (
-                    localStorage.getItem("fintheon:current-surface") ??
-                    undefined
-                  );
-                } catch {
-                  return undefined;
-                }
-              })(),
+              surface: currentSurface,
             },
           };
         }
 
         // Standard Hermes/OpenRouter path
+        const currentSurface = readCurrentSurface(surfaceIdRef.current);
+        const currentWorkspace = workspaceContextRef.current ?? undefined;
         return {
           body: {
             messages: messages.map((msg) => {
@@ -385,6 +397,8 @@ export function useHermesChat(
             ...(reasoningLevelRef.current && {
               reasoningLevel: reasoningLevelRef.current,
             }),
+            ...(currentWorkspace && { workspace: currentWorkspace }),
+            metadata: buildChatMetadata(currentSurface, currentWorkspace),
             mcpServers: (() => {
               try {
                 return JSON.parse(
@@ -396,15 +410,7 @@ export function useHermesChat(
               }
             })(),
             // [S23-T3] Surface flag so Hermes handlers can auto-inject ArbitrumChamber context.
-            surface: (() => {
-              try {
-                return (
-                  localStorage.getItem("fintheon:current-surface") ?? undefined
-                );
-              } catch {
-                return undefined;
-              }
-            })(),
+            surface: currentSurface,
           },
         };
       },
@@ -537,5 +543,25 @@ export function useHermesChat(
     lastError,
     clearError: () => setLastError(null),
     lastRequestId,
+  };
+}
+
+function readCurrentSurface(surfaceId?: string): string | undefined {
+  if (surfaceId) return surfaceId.split(":")[0] || surfaceId;
+  try {
+    return localStorage.getItem("fintheon:current-surface") ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function buildChatMetadata(
+  surface: string | undefined,
+  workspace: HermesWorkspaceContext | undefined,
+): Record<string, unknown> | undefined {
+  if (!surface && !workspace) return undefined;
+  return {
+    ...(surface ? { surface } : {}),
+    ...(workspace ? { workspace } : {}),
   };
 }

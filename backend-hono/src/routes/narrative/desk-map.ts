@@ -7,7 +7,7 @@ import {
 
 const updateDeskMapSchema = z.object({
   deskId: z.string().trim().min(1).optional(),
-  mapImageUrl: z.string().trim().max(8_000_000).nullable().optional(),
+  mapImageUrl: z.string().trim().max(12_000_000).nullable().optional(),
   mapImagePrompt: z.string().trim().max(1200).nullable().optional(),
 });
 

@@ -4,6 +4,7 @@
 //             CitationChip, ThinkingTrace, AgentActivityRail, BrailleSpinner.
 import {
   type FC,
+  type ReactNode,
   type RefObject,
   useState,
   useRef,
@@ -141,6 +142,7 @@ interface FintheonThreadProps {
   scrollButtonOffset?: number;
   composerBottomInset?: number;
   answerWidgets?: ChatAnswerWidget[];
+  emptyState?: ReactNode;
 }
 
 export function FintheonThread({
@@ -159,6 +161,7 @@ export function FintheonThread({
   scrollButtonOffset,
   composerBottomInset = 136,
   answerWidgets = [],
+  emptyState,
 }: FintheonThreadProps) {
   const { activeAgent } = useFintheonAgents();
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -176,10 +179,11 @@ export function FintheonThread({
       >
         <div className="max-w-full mx-auto space-y-4 mb-8">
           {/* Greeting screen */}
-          {!compact && messages.length === 0 && !isLoading && !hasSubmittedMessage && (
+          {messages.length === 0 && !isLoading && !hasSubmittedMessage && emptyState}
+          {!emptyState && !compact && messages.length === 0 && !isLoading && !hasSubmittedMessage && (
             <ChatGreeting onSend={onSend} isLoading={isLoading} />
           )}
-          {compact && messages.length === 0 && !hasSubmittedMessage && (
+          {!emptyState && compact && messages.length === 0 && !hasSubmittedMessage && (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
               <p className="text-sm text-[var(--fintheon-accent)]/60 font-medium">
                 Ave, Trader.

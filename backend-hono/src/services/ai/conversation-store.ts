@@ -200,16 +200,25 @@ export async function getConversationWithMessages(
  */
 export async function listConversations(
   userId: string,
-  options: { limit?: number; cursor?: string; includeArchived?: boolean } = {},
+  options: {
+    limit?: number;
+    cursor?: string;
+    includeArchived?: boolean;
+    workspaceId?: string;
+    surface?: string;
+  } = {},
 ): Promise<{ conversations: ConversationListItem[]; hasMore: boolean }> {
   const limit = options.limit ?? 20;
   const includeArchived = options.includeArchived ?? false;
+  const workspaceId = options.workspaceId?.trim();
+  const surface = options.surface?.trim();
 
   if (!isDatabaseAvailable() || !sql) {
     // In-memory fallback
     const all = Array.from(memoryStore.conversations.values())
       .filter((c) => c.userId === userId)
       .filter((c) => includeArchived || !c.isArchived)
+      .filter((c) => matchesConversationScope(c.metadata, workspaceId, surface))
       .sort(
         (a, b) =>
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
@@ -219,6 +228,7 @@ export async function listConversations(
       id: c.id,
       title: c.title,
       model: c.model,
+      metadata: c.metadata,
       messageCount: memoryStore.messages.get(c.id)?.length ?? 0,
       lastMessageAt: c.updatedAt,
       isArchived: c.isArchived,
@@ -229,9 +239,60 @@ export async function listConversations(
     return { conversations: items, hasMore: all.length > limit };
   }
 
-  // Use SQL condition directly - Neon doesn't support template fragment interpolation
-  const result = includeArchived
-    ? await sql`
+  let result: Record<string, unknown>[];
+
+  if (workspaceId && surface) {
+    result = includeArchived
+      ? await sql`
+        SELECT c.*, COUNT(m.id) as message_count, MAX(m.created_at) as last_message_at
+        FROM ai_conversations c
+        LEFT JOIN ai_messages m ON m.conversation_id = c.id
+        WHERE c.user_id = ${userId}
+          AND c.metadata->'workspace'->>'id' = ${workspaceId}
+          AND c.metadata->>'surface' = ${surface}
+        GROUP BY c.id
+        ORDER BY c.updated_at DESC
+        LIMIT ${limit + 1}
+      `
+      : await sql`
+        SELECT c.*, COUNT(m.id) as message_count, MAX(m.created_at) as last_message_at
+        FROM ai_conversations c
+        LEFT JOIN ai_messages m ON m.conversation_id = c.id
+        WHERE c.user_id = ${userId}
+          AND (c.is_archived = false OR c.is_archived IS NULL)
+          AND c.metadata->'workspace'->>'id' = ${workspaceId}
+          AND c.metadata->>'surface' = ${surface}
+        GROUP BY c.id
+        ORDER BY c.updated_at DESC
+        LIMIT ${limit + 1}
+      `;
+  } else if (workspaceId) {
+    result = includeArchived
+      ? await sql`
+        SELECT c.*, COUNT(m.id) as message_count, MAX(m.created_at) as last_message_at
+        FROM ai_conversations c
+        LEFT JOIN ai_messages m ON m.conversation_id = c.id
+        WHERE c.user_id = ${userId}
+          AND c.metadata->'workspace'->>'id' = ${workspaceId}
+        GROUP BY c.id
+        ORDER BY c.updated_at DESC
+        LIMIT ${limit + 1}
+      `
+      : await sql`
+        SELECT c.*, COUNT(m.id) as message_count, MAX(m.created_at) as last_message_at
+        FROM ai_conversations c
+        LEFT JOIN ai_messages m ON m.conversation_id = c.id
+        WHERE c.user_id = ${userId}
+          AND (c.is_archived = false OR c.is_archived IS NULL)
+          AND c.metadata->'workspace'->>'id' = ${workspaceId}
+        GROUP BY c.id
+        ORDER BY c.updated_at DESC
+        LIMIT ${limit + 1}
+      `;
+  } else {
+    // Use SQL condition directly - Neon doesn't support template fragment interpolation
+    result = includeArchived
+      ? await sql`
         SELECT c.*, COUNT(m.id) as message_count, MAX(m.created_at) as last_message_at
         FROM ai_conversations c
         LEFT JOIN ai_messages m ON m.conversation_id = c.id
@@ -240,7 +301,7 @@ export async function listConversations(
         ORDER BY c.updated_at DESC
         LIMIT ${limit + 1}
       `
-    : await sql`
+      : await sql`
         SELECT c.*, COUNT(m.id) as message_count, MAX(m.created_at) as last_message_at
         FROM ai_conversations c
         LEFT JOIN ai_messages m ON m.conversation_id = c.id
@@ -249,6 +310,7 @@ export async function listConversations(
         ORDER BY c.updated_at DESC
         LIMIT ${limit + 1}
       `;
+  }
 
   const hasMore = result.length > limit;
   const rows = result.slice(0, limit);
@@ -258,6 +320,7 @@ export async function listConversations(
       id: String(row.id),
       title: String(row.title ?? "Untitled"),
       model: row.model ? String(row.model) : undefined,
+      metadata: isRecord(row.metadata) ? row.metadata : undefined,
       messageCount: Number(row.message_count ?? 0),
       lastMessageAt: String(row.last_message_at ?? row.updated_at),
       isArchived: Boolean(row.is_archived),
@@ -267,6 +330,25 @@ export async function listConversations(
   );
 
   return { conversations, hasMore };
+}
+
+function matchesConversationScope(
+  metadata: Record<string, unknown> | undefined,
+  workspaceId: string | undefined,
+  surface: string | undefined,
+): boolean {
+  if (!workspaceId && !surface) return true;
+  if (!metadata) return false;
+  const workspace = metadata.workspace;
+  const metadataWorkspaceId = isRecord(workspace) ? String(workspace.id ?? "") : "";
+  const metadataSurface = String(metadata.surface ?? "");
+  if (workspaceId && metadataWorkspaceId !== workspaceId) return false;
+  if (surface && metadataSurface !== surface) return false;
+  return true;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
 /**

@@ -1,6 +1,6 @@
 // [codex 2026-05-23] Composer intelligence selector replacing the binary deep-thinking toggle.
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown } from "lucide-react";
+import { Brain, Check, ChevronDown } from "lucide-react";
 import {
   REASONING_LEVELS,
   type ReasoningLevel,
@@ -52,11 +52,12 @@ export function ReasoningLevelSelector({
       <button
         type="button"
         onClick={() => (open ? close() : setOpen(true))}
-        className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-zinc-500 transition-colors hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
+        className="fintheon-reasoning-trigger flex h-8 items-center gap-1.5 rounded-lg px-2 text-zinc-500 transition-colors hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
         title={`Reasoning: ${active?.label ?? "Standard"}`}
       >
+        <Brain size={13} className="shrink-0" />
         {!compact && (
-          <span className="text-[10px] font-medium">
+          <span className="fintheon-reasoning-trigger__label text-[10px] font-medium">
             {active?.label ?? "Standard"}
           </span>
         )}

@@ -138,6 +138,7 @@ export interface PromptBoxProps {
   personaSlot?: ReactNode;
   toolsSlot?: ReactNode;
   providerSlot?: ReactNode;
+  workspaceSlot?: ReactNode;
   // S60-T3: Modal-aware toolbox triggers (composer toolbar)
   pluginSlot?: ReactNode;
   mcpSlot?: ReactNode;
@@ -204,6 +205,7 @@ export function PromptBox({
   personaSlot,
   toolsSlot,
   providerSlot,
+  workspaceSlot,
   pluginSlot,
   mcpSlot,
   toolboxDrawerSlot,
@@ -710,11 +712,11 @@ export function PromptBox({
           {/* Bottom bar — compact padding matches main composer so the send button
               doesn't crowd the Harper/provider pill in the sidebar chat. */}
           <div
-            className="flex items-center justify-between"
+            className="fintheon-composer-bottom-bar flex flex-wrap items-center justify-between gap-x-2 gap-y-1"
             style={{ padding: compact ? "6px 8px 6px" : "8px 10px 10px" }}
           >
             {/* Left toolbar */}
-            <div className="flex items-center gap-1">
+            <div className="fintheon-composer-toolbar-left flex min-w-0 flex-1 items-center gap-1">
               {/* Relay dispatch (leftmost) — S21-T1 */}
               {relaySlot}
 
@@ -743,6 +745,9 @@ export function PromptBox({
               {/* Secondary toolbox trigger */}
               {mcpSlot}
 
+              {/* Workspace selector */}
+              {workspaceSlot}
+
               {/* Combined Skills + Connectors fallback */}
               {toolsSlot}
 
@@ -751,7 +756,7 @@ export function PromptBox({
             </div>
 
             {/* Right: provider, intelligence, usage, send/stop */}
-            <div className="flex items-center gap-1">
+            <div className="fintheon-composer-toolbar-right flex min-w-0 shrink-0 items-center gap-1">
               {providerSlot}
               {!hideThinkHarder && (
                 <ReasoningLevelSelector

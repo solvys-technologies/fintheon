@@ -99,9 +99,10 @@ export default function NarrativeResearchCard({
         backdropFilter: "blur(24px)",
         WebkitBackdropFilter: "blur(24px)",
         backgroundColor: "rgba(10,9,5,0.68)",
-        border: `1px solid ${borderColor}`,
+        borderColor,
+        borderStyle: isGhost ? "dashed" : "solid",
+        borderWidth: "1px",
         opacity: isGhost ? 0.7 : 1,
-        borderStyle: isGhost ? "dashed" : undefined,
         userSelect: highlightMode ? "text" : "none",
       }}
     >

@@ -1,14 +1,13 @@
 // [claude-code 2026-04-10] Extracted from ConsiliumHub.tsx
 import {
-  Atom,
   Clock,
   GitBranch,
-  Cpu,
   MessageCircle,
   Stadium,
   Brain,
   BookOpen,
   Moon,
+  Users,
 } from "lucide-react";
 import { ArbitrumGlyph } from "../icons/ArbitrumGlyph";
 
@@ -28,6 +27,7 @@ export const REGULAR_TABS: {
 // Icon broadened to include the custom ArbitrumGlyph alongside lucide types — both
 // expose a {size, className} prop API so callers can render uniformly.
 type SubViewIcon = typeof GitBranch | typeof ArbitrumGlyph;
+type LucideIcon = typeof MessageCircle;
 
 export const SANCTUM_SUB_VIEWS: {
   id: SanctumSubView;
@@ -59,7 +59,7 @@ export const BOARDROOM_SUB_VIEWS: {
   id: BoardroomSubView;
   label: string;
   subtitle?: string;
-  icon: typeof MessageCircle;
+  icon: LucideIcon;
 }[] = [
   {
     id: "forum",
@@ -71,7 +71,7 @@ export const BOARDROOM_SUB_VIEWS: {
     id: "agentic-chat",
     label: "Agentic Forum",
     subtitle: "Chat with Hermes & CAO",
-    icon: MessageCircle,
+    icon: Stadium,
   },
   {
     id: "research",
@@ -85,13 +85,13 @@ export const APPARATUS_SUB_VIEWS: {
   id: ApparatusSubView;
   label: string;
   subtitle?: string;
-  icon: typeof Cpu;
+  icon: LucideIcon;
 }[] = [
   {
     id: "desk",
     label: "Desk",
     subtitle: "Agent dossiers & monitoring",
-    icon: Atom,
+    icon: Users,
   },
   {
     id: "fileroom",

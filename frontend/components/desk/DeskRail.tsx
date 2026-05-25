@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BookOpen, Inbox, ShieldAlert } from "lucide-react";
+import { BookOpen, Inbox, ShieldAlert, Users } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { RiskSignalCards } from "../narrative/RiskSignalCards";
 import { DeskPlansFeed } from "./DeskPlansFeed";
@@ -14,13 +14,16 @@ export function DeskRail() {
     <section className="flex h-full min-h-0 flex-col overflow-hidden bg-[var(--fintheon-bg)] text-[var(--fintheon-text)]">
       <header className="border-b border-[var(--fintheon-accent)]/10 px-3 py-3">
         <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="font-mono text-[9px] text-[var(--fintheon-accent)]/60">
-              Desk
-            </p>
-            <h1 className="mt-1 text-[12px] font-semibold text-[var(--fintheon-text)]/88">
-              Plans & Signals
-            </h1>
+          <div className="flex min-w-0 items-center gap-2">
+            <Users className="h-4 w-4 shrink-0 text-[var(--fintheon-accent)]/70" />
+            <div className="min-w-0">
+              <p className="font-mono text-[9px] text-[var(--fintheon-accent)]/60">
+                Desk
+              </p>
+              <h1 className="mt-1 text-[12px] font-semibold text-[var(--fintheon-text)]/88">
+                Plans & Signals
+              </h1>
+            </div>
           </div>
           <div className="grid grid-cols-3 gap-1 rounded-md border border-[color-mix(in_srgb,var(--fintheon-accent)_12%,transparent)] bg-[color-mix(in_srgb,var(--fintheon-surface)_78%,var(--fintheon-bg))] p-1">
             <DeskRailTabButton

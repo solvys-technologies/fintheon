@@ -34,6 +34,7 @@ type ComposerSurfaceGeometry = {
 };
 
 const COMPOSER_SURFACE_GUTTER = 12;
+const COMPOSER_SURFACE_GAP = 8;
 const DEFAULT_SURFACE_MAX_HEIGHT = 280;
 const MIN_SURFACE_MAX_HEIGHT = 112;
 
@@ -126,12 +127,15 @@ export function RepoChatComposerSurface({
     );
     const availableHeight = Math.max(
       MIN_SURFACE_MAX_HEIGHT,
-      rect.top - COMPOSER_SURFACE_GUTTER,
+      rect.top - COMPOSER_SURFACE_GUTTER - COMPOSER_SURFACE_GAP,
     );
     const requestedHeight = parsePixelHeight(maxHeight);
 
     setGeometry({
-      bottom: Math.max(window.innerHeight - rect.top, COMPOSER_SURFACE_GUTTER),
+      bottom: Math.max(
+        window.innerHeight - rect.top + COMPOSER_SURFACE_GAP,
+        COMPOSER_SURFACE_GUTTER,
+      ),
       left,
       maxHeight: Math.min(requestedHeight, availableHeight),
       width: targetWidth,
@@ -173,7 +177,8 @@ export function RepoChatComposerSurface({
             aria-hidden={!open}
             data-composer-surface={kind}
             data-composer-surface-portal="true"
-            className={`fintheon-chat-input-drawer transition-all duration-300 pointer-events-auto ${className}`}
+            data-open="true"
+            className={`fintheon-chat-input-drawer narrative-chat-drawer-motion t-panel-slide transition-all duration-300 pointer-events-auto ${className}`}
             style={{
               ...style,
               bottom: `${geometry.bottom}px`,

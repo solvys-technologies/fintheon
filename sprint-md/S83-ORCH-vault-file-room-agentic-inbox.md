@@ -17,6 +17,16 @@ Build Fintheon's answer to file-backed agent memory: the vault/file base is the 
 - Weekly Tribune, agentic memos, NarrativeFlow summaries, PDFs, Notion wiki links, and SOUL files all appear in the File Room under collapsible type sections.
 - Major-market-event memos are event-driven, not weekly scheduled. Monday-Friday calendar weeks define the analysis window.
 
+## Linear Home
+
+- **Team**: Solvys
+- **Cycle**: Beta Closed
+- **Project**: Beta -- Agent desk & governance
+- **Initiative**: Beta Closed
+- **Phase**: Closed Beta
+- **Branch target**: `sprint/S83`
+- **Due date**: 2026-05-31
+
 ## Trigger Model
 
 1. RiskFlow computes catalyst drift per signal.
@@ -28,13 +38,14 @@ Build Fintheon's answer to file-backed agent memory: the vault/file base is the 
 
 ## Assignment Matrix
 
-| Track | Brief | Owner | Execution path | Phase |
-| --- | --- | --- | --- | --- |
-| S83-T1 | @sprint-md/S83-T1-file-room-vault-index.md | local Solvys Agent | OpenCode local | Closed Beta |
-| S83-T2 | @sprint-md/S83-T2-desk-rail-inbox.md | local Solvys Agent | OpenCode local | Closed Beta |
-| S83-T3 | @sprint-md/S83-T3-cao-memo-drift-engine.md | local Solvys Agent | OpenCode local | Closed Beta |
-| S83-T4 | @sprint-md/S83-T4-chart-evidence-capture.md | local Solvys Agent | OpenCode local | Closed Beta |
-| S83-T5 | @sprint-md/S83-T5-5pm-agentic-analysis-block.md | local Solvys Agent | OpenCode local | Closed Beta |
+| Issue | Linear | Brief | Owner | Execution path | Cycle | Project | Initiative |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| S83-ORCH | SOL-189 | @sprint-md/S83-ORCH-vault-file-room-agentic-inbox.md | TP | planning/runbook | Beta Closed | Beta -- Agent desk & governance | Beta Closed |
+| S83-T1 | SOL-190 | @sprint-md/S83-T1-file-room-vault-index.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Beta -- Agent desk & governance | Beta Closed |
+| S83-T2 | SOL-191 | @sprint-md/S83-T2-desk-rail-inbox.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Beta -- Agent desk & governance | Beta Closed |
+| S83-T3 | SOL-192 | @sprint-md/S83-T3-cao-memo-drift-engine.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Beta -- Agent desk & governance | Beta Closed |
+| S83-T4 | SOL-193 | @sprint-md/S83-T4-chart-evidence-capture.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Beta -- Agent desk & governance | Beta Closed |
+| S83-T5 | SOL-194 | @sprint-md/S83-T5-5pm-agentic-analysis-block.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Beta -- Agent desk & governance | Beta Closed |
 
 ## Wave Sequence
 
@@ -43,3 +54,10 @@ Build Fintheon's answer to file-backed agent memory: the vault/file base is the 
 3. Run S83-T4 in parallel with S83-T3 only if it avoids mutating chat slot contracts.
 4. Run S83-T5 last to bind the daily schedule, Arbitrum, reflection loops, vault reads, and memo proposal workflow.
 5. Unify with backend build, frontend typecheck, clean frontend build, and a Consilium/File Room visual pass.
+
+## Linear Taxonomy Audit
+
+- S83 Linear issues created on 2026-05-24: SOL-189 through SOL-194.
+- SOL-190 through SOL-194 are children of SOL-189.
+- SOL-190 through SOL-194 are assigned to Shashank with 2026-05-31 due date.
+- Issue descriptions include `@sprint-md/...` references and a Linear Organization block.

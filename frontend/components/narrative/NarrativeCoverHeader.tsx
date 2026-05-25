@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
-import { ImagePlus, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { ImagePlus, RefreshCw, Sparkles, Trash2, X } from "lucide-react";
 import type { NarrativeWorkspaceSession } from "./NarrativeSessionWorkspace";
 import type { SensemakingResponse } from "./sensemaking-types";
 
@@ -10,19 +10,23 @@ interface NarrativeCoverHeaderProps {
     coverImageUrl: string | null;
     coverImagePrompt: string | null;
   }) => void | Promise<void>;
+  editControlsOpen?: boolean;
+  onEditControlsOpenChange?: (open: boolean) => void;
 }
 
-const maxUploadBytes = 8 * 1024 * 1024;
+export const maxNarrativeCoverUploadBytes = 8 * 1024 * 1024;
 
 export function NarrativeCoverHeader({
   session,
   response,
   onCoverChange,
+  editControlsOpen = false,
+  onEditControlsOpenChange,
 }: NarrativeCoverHeaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const coverUrl = session?.coverImageUrl ?? null;
-  const coverPrompt = useMemo(() => buildCoverPrompt(session, response), [session, response]);
+  const coverPrompt = useMemo(() => buildNarrativeCoverPrompt(session, response), [session, response]);
 
   async function applyCover(coverImageUrl: string | null, coverImagePrompt: string | null) {
     setError(null);
@@ -39,7 +43,7 @@ export function NarrativeCoverHeader({
       setError("Choose an image, meme, or GIF.");
       return;
     }
-    if (file.size > maxUploadBytes) {
+    if (file.size > maxNarrativeCoverUploadBytes) {
       setError("Use an image under 8 MB.");
       return;
     }
@@ -51,7 +55,7 @@ export function NarrativeCoverHeader({
 
   function generateCover() {
     const seed = `${session?.id ?? "narrative"}:${Date.now()}`;
-    applyCover(buildGeneratedCover(coverPrompt, session?.color ?? "#c79f4a", seed), coverPrompt);
+    applyCover(buildGeneratedNarrativeCover(coverPrompt, session?.color ?? "#c79f4a", seed), coverPrompt);
   }
 
   return (
@@ -87,7 +91,43 @@ export function NarrativeCoverHeader({
             "linear-gradient(to bottom, rgba(0,0,0,0) 0%, var(--fintheon-bg) 78%)",
         }}
       />
-      <div className="pointer-events-auto absolute right-3 top-3 flex items-center gap-1.5">
+      {editControlsOpen ? (
+        <div
+          id="narrative-cover-edit-controls"
+          className="pointer-events-auto absolute left-3 top-12 flex max-w-[min(560px,calc(100%-24px))] flex-wrap items-center gap-1.5 rounded-md border border-[var(--fintheon-accent)]/18 bg-[var(--fintheon-bg)]/92 p-1.5 shadow-[0_14px_40px_rgba(0,0,0,0.36)]"
+        >
+          <span className="px-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/72">
+            Edit narrative
+          </span>
+          <CoverButton title="Change cover" onClick={() => inputRef.current?.click()}>
+            <ImagePlus size={14} />
+            <span>Change Cover</span>
+          </CoverButton>
+          <CoverButton
+            title={coverUrl ? "Regenerate cover" : "Generate cover"}
+            onClick={generateCover}
+          >
+            {coverUrl ? <RefreshCw size={14} /> : <Sparkles size={14} />}
+            <span>{coverUrl ? "Regenerate" : "Generate"}</span>
+          </CoverButton>
+          {coverUrl ? (
+            <CoverButton title="Remove cover" onClick={() => applyCover(null, null)}>
+              <Trash2 size={14} />
+              <span>Remove</span>
+            </CoverButton>
+          ) : null}
+          <button
+            type="button"
+            title="Close edit controls"
+            aria-label="Close edit controls"
+            onClick={() => onEditControlsOpenChange?.(false)}
+            className="ml-0 grid h-7 w-7 place-items-center rounded-[4px] text-[var(--fintheon-muted)] transition hover:bg-[var(--fintheon-accent)]/8 hover:text-[var(--fintheon-accent)] sm:ml-1"
+          >
+            <X size={13} />
+          </button>
+        </div>
+      ) : null}
+      <div className="hidden">
         <input
           ref={inputRef}
           type="file"
@@ -95,20 +135,6 @@ export function NarrativeCoverHeader({
           className="hidden"
           onChange={(event) => handleUpload(event.target.files?.[0])}
         />
-        <CoverButton title="Upload cover" onClick={() => inputRef.current?.click()}>
-          <ImagePlus size={14} />
-        </CoverButton>
-        <CoverButton
-          title={coverUrl ? "Regenerate cover with CAO" : "Generate cover with CAO"}
-          onClick={generateCover}
-        >
-          {coverUrl ? <RefreshCw size={14} /> : <Sparkles size={14} />}
-        </CoverButton>
-        {coverUrl ? (
-          <CoverButton title="Remove cover" onClick={() => applyCover(null, null)}>
-            <Trash2 size={14} />
-          </CoverButton>
-        ) : null}
       </div>
       {error ? (
         <div className="pointer-events-none absolute right-3 top-12 rounded bg-[var(--fintheon-overlay-surface,var(--fintheon-bg))] px-2 py-1 text-[10px] text-red-300">
@@ -134,14 +160,14 @@ function CoverButton({
       title={title}
       aria-label={title}
       onClick={onClick}
-      className="grid h-8 w-8 place-items-center rounded-[4px] border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]/75 text-[var(--fintheon-accent)] backdrop-blur transition hover:border-[var(--fintheon-accent)]/35 hover:bg-[var(--fintheon-accent)]/10"
+      className="inline-flex h-7 items-center gap-1.5 rounded-[4px] border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]/75 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--fintheon-accent)] transition hover:border-[var(--fintheon-accent)]/35 hover:bg-[var(--fintheon-accent)]/10"
     >
       {children}
     </button>
   );
 }
 
-function buildCoverPrompt(
+export function buildNarrativeCoverPrompt(
   session: NarrativeWorkspaceSession | null,
   response: SensemakingResponse | null,
 ): string {
@@ -154,7 +180,7 @@ function buildCoverPrompt(
   return [title, summary, catalysts].filter(Boolean).join(" | ").slice(0, 900);
 }
 
-function buildGeneratedCover(prompt: string, color: string, seed: string): string {
+export function buildGeneratedNarrativeCover(prompt: string, color: string, seed: string): string {
   const hash = Array.from(seed + prompt).reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const accent = hexToRgba(color, 0.72);
   const title = escapeXml(prompt.split("|")[0]?.trim() || "Narrative");

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Clock, MessageSquareText, Plus } from "lucide-react";
 import type { HeadlineAttachment } from "../chat/FintheonAttachPopup";
 import { useMessageQueue } from "../chat/hooks/useMessageQueue";
 import type { ReasoningLevel } from "../chat/reasoning";
@@ -21,14 +20,10 @@ export interface NarrativeCreateSessionInput {
 
 interface NarrativeFlowLandingProps {
   sessions?: NarrativeSessionSummary[];
-  isHistoryOpen?: boolean;
   isSubmitting?: boolean;
   statusMessage?: string | null;
   reasoningLevel: ReasoningLevel;
   onCreateSession: (input: NarrativeCreateSessionInput) => void;
-  onNewSession?: () => void;
-  onOpenSession: (id: string) => void;
-  onRenameSession: (id: string, title: string, color: string) => void;
   onReasoningLevelChange: (level: ReasoningLevel) => void;
 }
 
@@ -63,14 +58,10 @@ const DEFAULT_SESSIONS: NarrativeSessionSummary[] = [
 
 export function NarrativeFlowLanding({
   sessions = DEFAULT_SESSIONS,
-  isHistoryOpen = false,
   isSubmitting = false,
   statusMessage = null,
   reasoningLevel,
   onCreateSession,
-  onNewSession,
-  onOpenSession,
-  onRenameSession,
   onReasoningLevelChange,
 }: NarrativeFlowLandingProps) {
   const { headlines } = useNarrativeRiskFlowHeadlines();
@@ -204,11 +195,6 @@ export function NarrativeFlowLanding({
     submitSessionWithQuery(query);
   }
 
-  function openExistingSession(id: string) {
-    setIsGreetingLeaving(true);
-    onOpenSession(id);
-  }
-
   const greetingPhaseClass = isGreetingLeaving
     ? "-translate-y-8 opacity-0"
     : isGreetingReady
@@ -216,7 +202,7 @@ export function NarrativeFlowLanding({
       : "translate-y-4 opacity-0";
 
   return (
-    <div className="relative flex h-full min-h-[620px] flex-col justify-center overflow-hidden bg-[var(--fintheon-bg)] px-4 py-10">
+    <div className="narrative-analysis-panel relative flex h-full min-h-[620px] flex-col justify-center overflow-hidden bg-[var(--fintheon-bg)] px-4 py-10">
       <div
         className={`pointer-events-none relative -top-16 mx-auto mb-8 w-full max-w-3xl text-center transition duration-500 ${greetingPhaseClass}`}
       >
@@ -277,67 +263,6 @@ export function NarrativeFlowLanding({
           onToggleNarrative={toggleNarrative}
         />
 
-        <div
-          className={`mx-auto w-full max-w-3xl overflow-hidden transition duration-300 ${
-            isHistoryOpen
-              ? "mt-4 max-h-72 translate-y-0 opacity-100"
-              : "pointer-events-none mt-0 max-h-0 translate-y-4 opacity-0"
-          }`}
-          aria-hidden={!isHistoryOpen}
-        >
-          <div className="fintheon-popover-surface">
-            <div className="flex items-center justify-between border-b border-[var(--fintheon-accent)]/10 px-3 py-2">
-              <div className="flex items-center gap-2">
-                <Clock size={13} className="text-[var(--fintheon-accent)]" />
-                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]">
-                  Sessions
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={onNewSession}
-                className="inline-flex h-7 items-center gap-1.5 rounded-[4px] px-2 text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)] transition hover:bg-[var(--fintheon-accent)]/8 hover:text-[var(--fintheon-accent)]"
-                title="New narrative session"
-              >
-                <Plus size={12} />
-                New
-              </button>
-            </div>
-            <div className="max-h-56 overflow-y-auto p-2">
-              {sessions.length === 0 ? (
-                <div className="px-2 py-4 text-center text-xs text-[var(--fintheon-muted)]">
-                  No saved narrative sessions.
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  {sessions.map((session) => (
-                    <button
-                      key={session.id}
-                      type="button"
-                      onClick={() => openExistingSession(session.id)}
-                      className="flex w-full items-start gap-2 rounded-[6px] px-2 py-2 text-left transition hover:bg-[var(--fintheon-accent)]/8"
-                    >
-                      <span
-                        className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-sm"
-                        style={{ backgroundColor: session.color }}
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-xs text-[var(--fintheon-text)]">
-                          {session.title}
-                        </span>
-                        <span className="mt-1 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--fintheon-muted)]">
-                          <MessageSquareText size={11} />
-                          {session.catalystCount} catalysts
-                          <span>{formatLandingSessionTime(session.updatedAt)}</span>
-                        </span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
       </div>
 
     </div>
@@ -360,17 +285,6 @@ function deriveTitle(query: string, headlines: NarrativeHeadlineOption[]) {
   const trimmed = query.trim();
   if (trimmed.length > 0) return trimmed.slice(0, 96);
   return headlines[0]?.headline.slice(0, 96) ?? "Untitled narrative";
-}
-
-function formatLandingSessionTime(value: string) {
-  const timestamp = new Date(value).getTime();
-  if (!Number.isFinite(timestamp)) return "recent";
-  const minutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60_000));
-  if (minutes < 1) return "now";
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
 }
 
 function estimateLandingTokens(

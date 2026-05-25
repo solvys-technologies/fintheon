@@ -31,24 +31,24 @@ The first implementation sprint should build the desk/profile core and a thin Ag
 
 | Track | Title | Owner | Complexity | File Ownership |
 | --- | --- | --- | --- | --- |
-| S80-T1 | Coliseum Desk Profile Schema | local Solvys Agent | High | `supabase/migrations/**`, `backend-hono/src/services/coliseum/**`, `backend-hono/src/routes/coliseum/**` |
-| S80-T2 | Desk Manager Permissions | local Solvys Agent | Medium | `backend-hono/src/services/coliseum/**`, `backend-hono/src/routes/coliseum/**`, route validation |
-| S80-T3 | Agentic Desk Style Core | local Solvys Agent | High | `backend-hono/src/services/desk-context/preflight.ts`, `backend-hono/src/services/coliseum/**`, settings/profile UI |
-| S80-T4 | Desk Forecast Data Model | local Solvys Agent | High | `supabase/migrations/**`, forecast store/routes/types |
-| S80-T5 | NarrativeFlow Toggle Shell | Codex Cloud or local Solvys Agent | High | `frontend/components/narrative/**`, `frontend/lib/coliseum-api.ts` |
-| S80-T6 | Rule-Based Thesis Monitor | local Solvys Agent | High | monitor service, bulletin/notification integration, prediction-market read-only adapter |
+| S80-T1 | Coliseum Desk Profile Schema | Shashank via OpenCode local | High | `supabase/migrations/**`, `backend-hono/src/services/coliseum/**`, `backend-hono/src/routes/coliseum/**` |
+| S80-T2 | Desk Manager Permissions | Shashank via OpenCode local | Medium | `backend-hono/src/services/coliseum/**`, `backend-hono/src/routes/coliseum/**`, route validation |
+| S80-T3 | Agentic Desk Style Core | Shashank via OpenCode local | High | `backend-hono/src/services/desk-context/preflight.ts`, `backend-hono/src/services/coliseum/**`, settings/profile UI |
+| S80-T4 | Desk Forecast Data Model | Shashank via OpenCode local | High | `supabase/migrations/**`, forecast store/routes/types |
+| S80-T5 | NarrativeFlow Toggle Shell | Shashank via OpenCode local | High | `frontend/components/narrative/**`, `frontend/lib/coliseum-api.ts` |
+| S80-T6 | Rule-Based Thesis Monitor | Shashank via OpenCode local | High | monitor service, bulletin/notification integration, prediction-market read-only adapter |
 
 ## Assignment Matrix
 
 | Issue | Linear | Brief | Owner | Execution path | Cycle | Project | Initiative |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | S80-ORCH | SOL-177 | @sprint-md/S80-ORCH-coliseum-desk-core.md | TP | planning/runbook | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
-| S80-T1 | SOL-178 | @sprint-md/S80-T1-coliseum-desk-profile-schema.md | local Solvys Agent | local watcher or direct local implementation | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
-| S80-T2 | SOL-179 | @sprint-md/S80-T2-desk-manager-permissions.md | local Solvys Agent | local watcher or direct local implementation | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
-| S80-T3 | SOL-180 | @sprint-md/S80-T3-agentic-desk-style-core.md | local Solvys Agent | local watcher or direct local implementation | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
-| S80-T4 | SOL-181 | @sprint-md/S80-T4-desk-forecast-data-model.md | local Solvys Agent | local watcher or direct local implementation | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
-| S80-T5 | SOL-182 | @sprint-md/S80-T5-narrativeflow-toggle-shell.md | Codex Cloud or local Solvys Agent | delegated implementation or local watcher | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
-| S80-T6 | SOL-183 | @sprint-md/S80-T6-rule-based-thesis-monitor.md | local Solvys Agent | local watcher or direct local implementation | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
+| S80-T1 | SOL-178 | @sprint-md/S80-T1-coliseum-desk-profile-schema.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
+| S80-T2 | SOL-179 | @sprint-md/S80-T2-desk-manager-permissions.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
+| S80-T3 | SOL-180 | @sprint-md/S80-T3-agentic-desk-style-core.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
+| S80-T4 | SOL-181 | @sprint-md/S80-T4-desk-forecast-data-model.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
+| S80-T5 | SOL-182 | @sprint-md/S80-T5-narrativeflow-toggle-shell.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
+| S80-T6 | SOL-183 | @sprint-md/S80-T6-rule-based-thesis-monitor.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
 
 ## Wave Sequence
 
@@ -117,6 +117,7 @@ rm -rf dist && npx vite build
 - Project milestones created: Phase 0 through Phase 5.
 - S80 issues created: SOL-177 through SOL-183.
 - SOL-178 through SOL-183 are children of SOL-177.
+- 2026-05-24 assignment sync: SOL-178 through SOL-183 assigned to Shashank with 2026-05-30 due date.
 - New S80 issue descriptions include `@sprint-md/...` references and a Linear Organization block.
 
 ## Memory Flush Note

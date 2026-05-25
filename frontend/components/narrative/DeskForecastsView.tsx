@@ -31,6 +31,25 @@ export function DeskForecastsView() {
     };
   }, []);
 
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const forecast = (
+        event as CustomEvent<{ forecast?: ColiseumForecast }>
+      ).detail?.forecast;
+      if (!forecast) return;
+      setForecasts((current) => [
+        forecast,
+        ...current.filter((item) => item.id !== forecast.id),
+      ]);
+      setIsCreating(false);
+      setStatus("Draft saved by Harper.");
+    };
+    window.addEventListener("fintheon:narrative-forecast-created", handler);
+    return () => {
+      window.removeEventListener("fintheon:narrative-forecast-created", handler);
+    };
+  }, []);
+
   const selectedHeadlines = useMemo(
     () => headlines.filter((headline) => form.catalystIds.includes(headline.id)),
     [form.catalystIds, headlines],
@@ -72,12 +91,12 @@ export function DeskForecastsView() {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-[var(--fintheon-bg)] px-4 py-4">
+    <div className="narrative-analysis-panel h-full overflow-y-auto bg-[var(--fintheon-bg)] px-4 py-4">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--fintheon-accent)]">
-              Desk Forecasts
+              Forecasts
             </p>
             <h2 className="mt-1 text-lg text-[var(--fintheon-text)]">
               Priced In Capital
@@ -86,7 +105,7 @@ export function DeskForecastsView() {
           <button
             type="button"
             onClick={() => setIsCreating((value) => !value)}
-            className="inline-flex h-8 items-center gap-2 rounded-[4px] border border-[var(--fintheon-accent)]/25 px-2 text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-accent)] transition hover:bg-[var(--fintheon-accent)]/8"
+            className="inline-flex h-8 items-center gap-2 rounded-[4px] px-2 text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-accent)] transition hover:bg-[var(--fintheon-accent)]/8"
           >
             <Plus size={13} />
             New
@@ -96,7 +115,7 @@ export function DeskForecastsView() {
         {status ? <p className="text-xs text-[var(--fintheon-muted)]">{status}</p> : null}
 
         {isCreating ? (
-          <section className="border border-[var(--fintheon-accent)]/14 bg-[var(--fintheon-panel)]/60 p-3">
+          <section className="fintheon-popover-surface t-panel-slide border border-[var(--fintheon-accent)]/14 bg-[var(--fintheon-panel)]/60 p-3" data-open="true">
             <div className="grid gap-2 md:grid-cols-2">
               <Field label="Title" value={form.title} onChange={(title) => setForm({ ...form, title })} />
               <Field label="Timeframe" value={form.timeframe} onChange={(timeframe) => setForm({ ...form, timeframe })} />
@@ -160,7 +179,7 @@ export function DeskForecastsView() {
             <BetaState label="No forecasts yet." />
           ) : (
             forecasts.map((forecast) => (
-              <article key={forecast.id} className="border border-[var(--fintheon-accent)]/12 bg-white/[0.025] p-3">
+              <article key={forecast.id} className="group border border-[var(--fintheon-accent)]/12 bg-white/[0.025] p-3 transition-all duration-200 hover:-translate-y-px hover:border-[var(--fintheon-accent)]/22 hover:bg-[var(--fintheon-accent)]/[0.035]">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <p className="text-sm text-[var(--fintheon-text)]">{forecast.title}</p>
@@ -196,7 +215,7 @@ export function DeskForecastsView() {
 
 export function BetaState({ label }: { label: string }) {
   return (
-    <div className="flex h-52 items-center justify-center border border-[var(--fintheon-accent)]/12 bg-white/[0.02] text-xs text-[var(--fintheon-muted)]">
+    <div className="narrative-analysis-panel flex min-h-[52vh] items-center justify-center px-6 text-center text-xs leading-5 text-[var(--fintheon-muted)]">
       {label}
     </div>
   );

@@ -68,6 +68,7 @@ export interface ConversationListItem {
   id: string;
   title: string;
   model?: string;
+  metadata?: Record<string, unknown>;
   messageCount: number;
   lastMessageAt: string;
   isArchived: boolean;

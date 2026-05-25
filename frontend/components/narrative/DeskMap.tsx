@@ -12,9 +12,10 @@ import {
   useMemo,
   useRef,
   type ReactNode,
+  type PointerEvent as ReactPointerEvent,
+  type WheelEvent as ReactWheelEvent,
 } from "react";
 import { createPortal } from "react-dom";
-import { useHarperOps } from "../../hooks/useHarperOps";
 import {
   Eye,
   EyeOff,
@@ -28,7 +29,6 @@ import {
 import { useNarrative } from "../../contexts/NarrativeContext";
 import NarrativeForceCanvas from "./NarrativeForceCanvas";
 import { NarrativeSaveModal } from "./NarrativeSaveModal";
-import { RiskFlowImportModal } from "./RiskFlowImportModal";
 import { NarrativeTimelineModal } from "./NarrativeManageModal";
 import { CatalystModal } from "./CatalystModal";
 import { NarrativeHighlightProvider } from "./NarrativeHighlightProvider";
@@ -38,6 +38,7 @@ import {
 } from "./NarrativeFloatingToolbar";
 import { NarrativeCanvasChat } from "./NarrativeCanvasChat";
 import { NarrativeColorKey } from "./NarrativeColorKey";
+import { NarrativeDeskMapCanvas } from "./NarrativeDeskMapCanvas";
 import type { NarrativeSessionSummary } from "./NarrativeSessionHistory";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import {
@@ -62,6 +63,7 @@ const SESSION_MAP_POSITIONS = [
   { x: 22, y: 76 },
 ];
 const maxDeskMapUploadBytes = 8 * 1024 * 1024;
+type WorkspaceSessionFilter = "all" | "withCatalysts" | "active";
 
 export function DeskMap({
   sessions,
@@ -73,25 +75,7 @@ export function DeskMap({
   onOpenSession?: (id: string) => void;
 }) {
   const { state, snapshot, dispatch } = useNarrative();
-  // [claude-code 2026-04-05] Harper presence overlay
-  const { status: harperStatus, feed: harperFeed } = useHarperOps();
-  const [goldFlash, setGoldFlash] = useState(false);
-  const lastSynthesisRef = useRef<string | null>(null);
-  useEffect(() => {
-    const latest = harperFeed[0];
-    if (!latest || latest.id === lastSynthesisRef.current) return;
-    if (
-      (latest.metadata as Record<string, unknown>)?.taskType ===
-      "narrative-synthesis"
-    ) {
-      lastSynthesisRef.current = latest.id;
-      setGoldFlash(true);
-      const t = setTimeout(() => setGoldFlash(false), 3000);
-      return () => clearTimeout(t);
-    }
-  }, [harperFeed]);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
-  const [importModalOpen, setImportModalOpen] = useState(false);
   const [manageModalOpen, setManageModalOpen] = useState(false);
   // Empty set = show all narratives (canvas checks size === 0 → show all)
   const [visibleLaneIds, setVisibleLaneIds] = useState<Set<string>>(new Set());
@@ -100,6 +84,10 @@ export function DeskMap({
   const [editingCard, setEditingCard] = useState<CatalystCard | null>(null);
   const [canvasTool, setCanvasTool] = useState<CanvasTool>("select");
   const [canvasScale, setCanvasScale] = useState(1.0);
+  const [spacePanning, setSpacePanning] = useState(false);
+  const [workspaceResetKey, setWorkspaceResetKey] = useState(0);
+  const [workspaceSessionFilter, setWorkspaceSessionFilter] =
+    useState<WorkspaceSessionFilter>("all");
   const [timeframeFilter, setTimeframeFilter] = useState<string>("all");
   const [desk, setDesk] = useState<DeskMapDesk | null>(null);
   const [mapImageError, setMapImageError] = useState<string | null>(null);
@@ -118,6 +106,58 @@ export function DeskMap({
     [sessions],
   );
   const isWorkspaceScoped = Array.isArray(sessions);
+  const effectiveCanvasTool = spacePanning ? "hand" : canvasTool;
+  const filteredWorkspaceSessions = useMemo(() => {
+    const activeDeskSessions = workspaceSessions.filter(
+      (session) => session.status !== "archived",
+    );
+    if (workspaceSessionFilter === "withCatalysts") {
+      return activeDeskSessions.filter((session) => session.catalystCount > 0);
+    }
+    if (workspaceSessionFilter === "active" && activeSessionId) {
+      return activeDeskSessions.filter((session) => session.id === activeSessionId);
+    }
+    return activeDeskSessions;
+  }, [activeSessionId, workspaceSessionFilter, workspaceSessions]);
+  const workspaceFilterLabel =
+    workspaceSessionFilter === "withCatalysts"
+      ? "Filter: sessions with catalysts"
+      : workspaceSessionFilter === "active"
+        ? "Filter: active session"
+        : null;
+
+  useEffect(() => {
+    const isTextInput = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false;
+      const tag = target.tagName.toLowerCase();
+      return (
+        tag === "input" ||
+        tag === "textarea" ||
+        tag === "select" ||
+        target.isContentEditable
+      );
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isTextInput(event.target)) return;
+      const key = event.key.toLowerCase();
+      if (event.key === " ") {
+        event.preventDefault();
+        setSpacePanning(true);
+        return;
+      }
+      if (key === "v") setCanvasTool("select");
+      if (key === "m") setCanvasTool("multi-select");
+    };
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.key === " ") setSpacePanning(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isWorkspaceScoped) return;
@@ -185,13 +225,6 @@ export function DeskMap({
     dispatch({ type: "TAKE_SNAPSHOT" });
     setSaveModalOpen(false);
   }, [dispatch]);
-
-  const handleImportCatalysts = useCallback(
-    (catalysts: any[]) => {
-      dispatch({ type: "IMPORT_CATALYSTS", catalysts });
-    },
-    [dispatch],
-  );
 
   const handleUndo = useCallback(() => {
     if (snapshot) {
@@ -307,18 +340,13 @@ export function DeskMap({
       />
     </>
   ) : (
-    <DeskMapImageControls
-      desk={desk}
-      sessions={workspaceSessions}
-      error={mapImageError}
-      onImageChange={handleDeskMapImageChange}
-    />
+    null
   );
 
   return (
     <NarrativeHighlightProvider>
       <div
-        className="h-full flex flex-col"
+        className="narrative-analysis-panel h-full flex flex-col"
         style={{ backgroundColor: "var(--fintheon-bg)" }}
       >
         {headerMapControlsHost && mapFilterControls
@@ -327,19 +355,25 @@ export function DeskMap({
         <div className="flex-1 min-h-0 relative overflow-hidden">
           {/* Force-directed mind map canvas */}
           {isWorkspaceScoped ? (
-            <WorkspaceNarrativesMap
-              sessions={workspaceSessions}
+            <NarrativeDeskMapCanvas
+              sessions={filteredWorkspaceSessions}
               activeSessionId={activeSessionId ?? null}
               desk={desk}
-              canvasTool={canvasTool}
+              canvasTool={effectiveCanvasTool}
               scale={canvasScale}
+              heatmapActive={state.heatmapEnabled}
+              filterLabel={workspaceFilterLabel}
+              resetKey={workspaceResetKey}
+              error={mapImageError}
+              onScaleChange={setCanvasScale}
               onOpenSession={onOpenSession}
+              onImageChange={handleDeskMapImageChange}
             />
           ) : (
             <NarrativeForceCanvas
               visibleLaneIds={visibleLaneIds}
               activeTags={activeTags}
-              activeTool={canvasTool}
+              activeTool={effectiveCanvasTool}
               timeframeFilter={timeframeFilter}
               onScaleChange={setCanvasScale}
               onSelectCard={handleSelectCard}
@@ -351,22 +385,16 @@ export function DeskMap({
           {/* Narrative color key — bottom-right */}
           {!isWorkspaceScoped ? <NarrativeColorKey /> : null}
 
-          {/* Harper watching overlay — bottom-left */}
-          {harperStatus?.loop?.alive && (
-            <div className="absolute bottom-3 left-3 z-40 pointer-events-none flex items-center gap-1.5 px-2.5 py-1">
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${goldFlash ? "bg-[#D4AF37]" : "bg-emerald-400"} animate-pulse`}
-              />
-              <span className="text-[10px] tracking-wider text-[#f0ead6]/40 font-mono">
-                {goldFlash ? "FRESH SYNTHESIS" : "HARPER WATCHING"}
-              </span>
-            </div>
-          )}
-
           {/* Map controls — one top-right row */}
           {!headerMapControlsHost && mapFilterControls ? (
-            <div className="absolute right-3 top-3 z-40 flex items-center gap-1.5">
+            <div className="absolute right-3 top-[68px] z-40 flex items-center gap-1.5">
               {mapFilterControls}
+            </div>
+          ) : null}
+
+          {!isWorkspaceScoped && state.filterSentiment !== "all" ? (
+            <div className="pointer-events-none absolute left-1/2 top-[68px] z-30 -translate-x-1/2 rounded-[4px] bg-[color-mix(in_srgb,var(--fintheon-surface)_88%,var(--fintheon-bg))] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--fintheon-accent)]/72">
+              Filter: {state.filterSentiment}
             </div>
           ) : null}
 
@@ -376,40 +404,54 @@ export function DeskMap({
           {/* Figma-style floating toolbar — bottom center */}
           {isWorkspaceScoped ? (
             <NarrativeFloatingToolbar
-              activeTool={canvasTool}
+              activeTool={effectiveCanvasTool}
               onToolChange={setCanvasTool}
-              onAddCatalyst={() => window.dispatchEvent(new Event("fintheon:narrative-new-session"))}
-              onImport={() => setImportModalOpen(true)}
-              onToggleSanctum={() => {}}
+              onImport={() => undefined}
+              onToggleSanctum={(page?: number) => {
+                const mode = page === 1 ? "forecasts" : page === 2 ? "coliseum" : "workspace";
+                window.dispatchEvent(
+                  new CustomEvent("fintheon:narrative-surface-change", {
+                    detail: { mode },
+                  }),
+                );
+              }}
               onToggleHeatmap={() => dispatch({ type: "TOGGLE_HEATMAP" })}
               onToggleFilter={() => {
-                const next =
-                  state.filterSentiment === "all"
-                    ? "bearish"
-                    : state.filterSentiment === "bearish"
-                      ? "bullish"
-                      : "all";
-                dispatch({ type: "SET_FILTER", sentiment: next });
+                setWorkspaceSessionFilter((current) =>
+                  current === "all"
+                    ? "withCatalysts"
+                    : current === "withCatalysts"
+                      ? "active"
+                      : "all",
+                );
               }}
               sanctumActive={false}
               heatmapActive={state.heatmapEnabled}
-              filterActive={state.filterSentiment !== "all"}
+              filterActive={workspaceSessionFilter !== "all"}
               scale={canvasScale}
               onZoomTo={setCanvasScale}
-              onFitView={() => setCanvasScale(1)}
-              onResetView={() => setCanvasScale(1)}
+              onFitView={() => {
+                setCanvasScale(1);
+                setWorkspaceResetKey((value) => value + 1);
+              }}
+              onResetView={() => {
+                setCanvasScale(1);
+                setWorkspaceResetKey((value) => value + 1);
+              }}
+              filterTooltip="Filter map sessions"
             />
           ) : (
             <NarrativeFloatingToolbar
-              activeTool={canvasTool}
+              activeTool={effectiveCanvasTool}
               onToolChange={setCanvasTool}
-              onAddCatalyst={() => {
-                setCatalystModalOpen(true);
-                setEditingCard(null);
-              }}
-              onImport={() => setImportModalOpen(true)}
-              onToggleSanctum={(_page?: number) => {
-                /* TODO: wire to Sanctum sub-view navigation — requires props from MainLayout */
+              onImport={() => undefined}
+              onToggleSanctum={(page?: number) => {
+                const mode = page === 1 ? "forecasts" : page === 2 ? "coliseum" : "workspace";
+                window.dispatchEvent(
+                  new CustomEvent("fintheon:narrative-surface-change", {
+                    detail: { mode },
+                  }),
+                );
               }}
               onToggleHeatmap={() => dispatch({ type: "TOGGLE_HEATMAP" })}
               onToggleFilter={() => {
@@ -438,13 +480,6 @@ export function DeskMap({
           onCancel={() => setSaveModalOpen(false)}
         />
 
-        <RiskFlowImportModal
-          open={importModalOpen}
-          onClose={() => setImportModalOpen(false)}
-          onImport={handleImportCatalysts}
-          lanes={state.lanes}
-        />
-
         <NarrativeTimelineModal
           open={manageModalOpen}
           onClose={() => setManageModalOpen(false)}
@@ -469,6 +504,10 @@ function WorkspaceNarrativesMap({
   desk,
   canvasTool,
   scale,
+  heatmapActive,
+  filterLabel,
+  resetKey,
+  onScaleChange,
   onOpenSession,
 }: {
   sessions: NarrativeSessionSummary[];
@@ -476,8 +515,25 @@ function WorkspaceNarrativesMap({
   desk: DeskMapDesk | null;
   canvasTool: CanvasTool;
   scale: number;
+  heatmapActive: boolean;
+  filterLabel: string | null;
+  resetKey: number;
+  onScaleChange: (scale: number) => void;
   onOpenSession?: (id: string) => void;
 }) {
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
+  const dragRef = useRef<{
+    id: number;
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+  } | null>(null);
+  const holdRef = useRef<{
+    timer: ReturnType<typeof setTimeout> | null;
+    consumed: boolean;
+  }>({ timer: null, consumed: false });
   const links = sessions.flatMap((session, index) =>
     sessions.slice(index + 1).map((next, offset) => ({
       id: `${session.id}-${next.id}`,
@@ -485,22 +541,72 @@ function WorkspaceNarrativesMap({
       to: SESSION_MAP_POSITIONS[(index + offset + 1) % SESSION_MAP_POSITIONS.length],
     })),
   );
+  const canPan = canvasTool === "hand" || canvasTool === "select";
+
+  useEffect(() => {
+    setOffset({ x: 0, y: 0 });
+  }, [resetKey]);
+
+  function clearHoldTimer() {
+    if (holdRef.current.timer) clearTimeout(holdRef.current.timer);
+    holdRef.current.timer = null;
+  }
+
+  function toggleSessionSelection(id: string) {
+    setSelectedSessionIds((current) => {
+      const next = new Set(current);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!canPan) return;
+    if ((event.target as Element | null)?.closest("button")) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = {
+      id: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: offset.x,
+      originY: offset.y,
+    };
+  }
+
+  function handlePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = dragRef.current;
+    if (!drag || drag.id !== event.pointerId) return;
+    setOffset({
+      x: drag.originX + event.clientX - drag.startX,
+      y: drag.originY + event.clientY - drag.startY,
+    });
+  }
+
+  function handlePointerUp(event: ReactPointerEvent<HTMLDivElement>) {
+    if (dragRef.current?.id === event.pointerId) dragRef.current = null;
+  }
+
+  function handleWheel(event: ReactWheelEvent<HTMLDivElement>) {
+    event.preventDefault();
+    const nextScale = Math.max(
+      0.35,
+      Math.min(2, scale * (event.deltaY > 0 ? 0.9 : 1.1)),
+    );
+    onScaleChange(nextScale);
+  }
 
   return (
     <div
-      className={`relative h-full overflow-hidden ${
-        canvasTool === "hand" ? "cursor-grab" : "cursor-default"
+      tabIndex={0}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      onWheel={handleWheel}
+      className={`narrative-deskmap-canvas relative h-full overflow-hidden ${
+        canPan ? "cursor-grab active:cursor-grabbing" : "cursor-default"
       }`}
     >
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 opacity-45"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at center, rgba(199,159,74,0.08), transparent 32%), linear-gradient(rgba(199,159,74,0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(199,159,74,0.055) 1px, transparent 1px)",
-          backgroundSize: "100% 100%, 56px 56px, 56px 56px",
-        }}
-      />
       {desk?.mapImageUrl ? (
         <img
           src={desk.mapImageUrl}
@@ -510,16 +616,10 @@ function WorkspaceNarrativesMap({
         />
       ) : null}
       <div
-        aria-hidden="true"
-        className="absolute inset-0"
+        className="narrative-deskmap-stage absolute inset-0 origin-center"
         style={{
-          background:
-            "radial-gradient(circle at 50% 46%, transparent 0%, rgba(0,0,0,0.24) 68%, rgba(0,0,0,0.52) 100%)",
+          transform: `translate3d(${offset.x}px, ${offset.y}px, 0) scale(${scale})`,
         }}
-      />
-      <div
-        className="absolute inset-0 origin-center transition-transform duration-200"
-        style={{ transform: `scale(${scale})` }}
       >
         {sessions.length === 0 ? (
           <div className="flex h-full items-center justify-center">
@@ -554,13 +654,37 @@ function WorkspaceNarrativesMap({
       {sessions.map((session, index) => {
         const point = SESSION_MAP_POSITIONS[index % SESSION_MAP_POSITIONS.length];
         const isActive = session.id === activeSessionId;
+        const isSelected = selectedSessionIds.has(session.id);
         const size = Math.max(120, Math.min(230, 116 + session.catalystCount * 2));
+        const heat = heatmapActive ? Math.min(0.42, 0.12 + session.catalystCount / 80) : 0.16;
         return (
           <button
             key={session.id}
             type="button"
-            onClick={() => onOpenSession?.(session.id)}
-            className="group absolute -translate-x-1/2 -translate-y-1/2 text-left transition duration-200 hover:scale-[1.02]"
+            onPointerDown={() => {
+              clearHoldTimer();
+              holdRef.current.consumed = false;
+              holdRef.current.timer = setTimeout(() => {
+                toggleSessionSelection(session.id);
+                holdRef.current.consumed = true;
+              }, 420);
+            }}
+            onPointerUp={clearHoldTimer}
+            onPointerLeave={clearHoldTimer}
+            onClick={(event) => {
+              if (holdRef.current.consumed) {
+                holdRef.current.consumed = false;
+                return;
+              }
+              if (canvasTool === "multi-select" || event.shiftKey || event.metaKey) {
+                toggleSessionSelection(session.id);
+                return;
+              }
+              onOpenSession?.(session.id);
+            }}
+            className={`narrative-deskmap-card narrative-fade-item group absolute -translate-x-1/2 -translate-y-1/2 text-left transition duration-200 hover:scale-[1.02] ${
+              isSelected ? "text-[var(--fintheon-accent)]" : ""
+            }`}
             style={{ left: `${point.x}%`, top: `${point.y}%`, width: size }}
           >
             <span
@@ -572,7 +696,11 @@ function WorkspaceNarrativesMap({
                 width: size,
                 height: size,
                 transform: "translate(-50%, -50%)",
-                background: `radial-gradient(circle, ${session.color}26 0%, ${session.color}0d 58%, transparent 70%)`,
+                background: hexToRgba(session.color, Math.min(0.22, heat * 0.7)),
+                backdropFilter: "blur(12px) saturate(0.35)",
+                outline: isSelected
+                  ? "1px solid color-mix(in srgb, var(--fintheon-accent) 42%, transparent)"
+                  : "none",
               }}
             />
             <span
@@ -592,7 +720,7 @@ function WorkspaceNarrativesMap({
         );
       })}
       </div>
-      <div className="absolute left-3 top-3 z-30 pointer-events-none">
+      <div className="absolute left-3 top-[68px] z-30 pointer-events-none">
         <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--fintheon-accent)]/70">
           DeskMap
         </p>
@@ -600,6 +728,11 @@ function WorkspaceNarrativesMap({
           {desk?.name ?? "Priced In Capital"}
         </p>
       </div>
+      {filterLabel ? (
+        <div className="pointer-events-none absolute left-1/2 top-[68px] z-30 -translate-x-1/2 rounded-[4px] bg-[color-mix(in_srgb,var(--fintheon-surface)_88%,var(--fintheon-bg))] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--fintheon-accent)]/72">
+          {filterLabel}
+        </div>
+      ) : null}
       <div className="absolute bottom-3 left-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]/55">
         {sessions.length} NF-Workspaces
       </div>
@@ -710,7 +843,7 @@ function IconControl({
       title={title}
       aria-label={title}
       onClick={onClick}
-      className="grid h-8 w-8 place-items-center rounded-[4px] border border-transparent text-[var(--fintheon-accent)]/55 transition-colors hover:bg-[var(--fintheon-accent)]/8 hover:text-[var(--fintheon-accent)]"
+      className="grid h-8 w-8 place-items-center rounded-[4px] border-0 bg-transparent text-[var(--fintheon-accent)]/55 transition-colors hover:text-[var(--fintheon-accent)]"
     >
       {children}
     </button>

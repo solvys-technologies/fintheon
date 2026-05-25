@@ -866,7 +866,7 @@ function NarrativeFlowCanvas({
 
   return (
     <div
-      className="w-full h-full relative"
+      className="narrative-force-canvas w-full h-full relative"
       style={{ backgroundColor: "var(--fintheon-bg)" }}
     >
       <style>{CANVAS_CSS}</style>
@@ -915,6 +915,7 @@ function NarrativeFlowCanvas({
       <ReactFlow
         nodes={nodes}
         edges={edges}
+        className="narrative-react-flow-canvas narrative-force-reactflow"
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
@@ -922,7 +923,11 @@ function NarrativeFlowCanvas({
         minZoom={0.1}
         maxZoom={1.8}
         panOnDrag={activeTool === "hand" || activeTool === "select"}
+        zoomOnScroll
+        zoomOnPinch
         selectionOnDrag={activeTool === "multi-select"}
+        selectionKeyCode={["Shift", "Meta"]}
+        multiSelectionKeyCode={["Shift", "Meta"]}
         proOptions={{ hideAttribution: true }}
         style={{
           backgroundColor: "var(--fintheon-bg)",

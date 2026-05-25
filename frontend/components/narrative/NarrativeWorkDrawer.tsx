@@ -1,14 +1,27 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { GitBranch } from "lucide-react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
+import {
+  Clock,
+  FileText,
+  GitBranch,
+  Tv,
+  type LucideIcon,
+} from "lucide-react";
 import { NarrativeDocsTab } from "./NarrativeDocsTab";
 import { NarrativeFlowTab } from "./NarrativeFlowTab";
 import { NarrativeTimelineTab } from "./NarrativeTimelineTab";
-import type { NarrativeTranscriptEntry, NarrativeWorkspaceSession } from "./NarrativeSessionWorkspace";
+import type { NarrativeWorkspaceSession } from "./NarrativeSessionWorkspace";
 import type { SensemakingResponse } from "./sensemaking-types";
 
-type WorkDrawerTab = "flow" | "timeline" | "docs" | "transcript";
+export type WorkDrawerTab = "canvas" | "flow" | "timeline" | "docs";
 
 interface NarrativeWorkDrawerProps {
+  isOpen?: boolean;
   session: NarrativeWorkspaceSession | null;
   response: SensemakingResponse | null;
   selectedNodeId: string | null;
@@ -17,20 +30,22 @@ interface NarrativeWorkDrawerProps {
   onOrganize?: () => void;
   onShowAll?: () => void;
   onQuickAction?: (action: string, catalystId: string | null) => void;
+  preferredTab?: WorkDrawerTab;
+  canvasSlot?: ReactNode;
 }
 
-const tabs: { id: WorkDrawerTab; label: string }[] = [
-  { id: "flow", label: "Flow" },
-  { id: "timeline", label: "Timeline" },
-  { id: "docs", label: "Docs" },
-  { id: "transcript", label: "Narratives" },
+const tabs: { id: WorkDrawerTab; label: string; icon: LucideIcon }[] = [
+  { id: "flow", label: "Flow", icon: GitBranch },
+  { id: "timeline", label: "Timeline", icon: Clock },
+  { id: "docs", label: "Docs", icon: FileText },
 ];
 
 const drawerWidthKey = "narrativeflow:work-drawer-width";
 const minWidth = 320;
-const maxWidth = 620;
+const maxWidthRatio = 0.65;
 
 export function NarrativeWorkDrawer({
+  isOpen = true,
   session,
   response,
   selectedNodeId,
@@ -39,16 +54,39 @@ export function NarrativeWorkDrawer({
   onOrganize,
   onShowAll,
   onQuickAction,
+  preferredTab,
+  canvasSlot,
 }: NarrativeWorkDrawerProps) {
   const [activeTab, setActiveTab] = useState<WorkDrawerTab>("flow");
   const [width, setWidth] = useState(380);
   const dragState = useRef<{ startX: number; startWidth: number } | null>(null);
+  const visibleTabs = canvasSlot
+    ? [{ id: "canvas" as const, label: "Canvas", icon: Tv }, ...tabs]
+    : tabs;
+  const compactTabs = width <= 430;
+
+  useEffect(() => {
+    if (!preferredTab) return;
+    setActiveTab(preferredTab);
+  }, [preferredTab]);
+
+  useEffect(() => {
+    if (!canvasSlot && activeTab === "canvas") setActiveTab("flow");
+  }, [activeTab, canvasSlot]);
 
   useEffect(() => {
     const storedValue = window.localStorage.getItem(drawerWidthKey);
     if (!storedValue) return;
     const stored = Number(storedValue);
     if (Number.isFinite(stored)) setWidth(clampWidth(stored));
+  }, []);
+
+  useEffect(() => {
+    function keepWidthInViewport() {
+      setWidth((current) => clampWidth(current));
+    }
+    window.addEventListener("resize", keepWidthInViewport);
+    return () => window.removeEventListener("resize", keepWidthInViewport);
   }, []);
 
   useEffect(() => {
@@ -74,11 +112,19 @@ export function NarrativeWorkDrawer({
     document.body.style.userSelect = "";
     window.removeEventListener("pointermove", resize);
   }
+  const drawerWidth = `min(${width}px, ${maxWidthRatio * 100}vw, calc(100vw - 64px))`;
 
   return (
     <aside
-      className="relative flex h-full min-h-0 shrink-0 flex-col bg-[var(--fintheon-bg)]/95"
-      style={{ width }}
+      className={`narrative-work-drawer t-panel-slide relative flex h-full min-h-0 shrink-0 flex-col bg-[var(--fintheon-bg)]/95 ${
+        isOpen ? "" : "pointer-events-none"
+      }`}
+      data-open={isOpen ? "true" : "false"}
+      style={{
+        width: drawerWidth,
+        marginRight: isOpen ? 0 : `calc(-1 * ${drawerWidth})`,
+        transform: isOpen ? "translateX(0)" : "translateX(100%)",
+      }}
     >
       <div
         aria-hidden="true"
@@ -115,31 +161,66 @@ export function NarrativeWorkDrawer({
               "linear-gradient(to right, transparent 0%, rgba(199,159,74,0.13) 18%, rgba(199,159,74,0.13) 82%, transparent 100%)",
           }}
         />
-        <div className="grid h-8 w-full grid-cols-4 rounded-md p-0.5">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`rounded-[4px] text-xs transition ${
-                activeTab === tab.id
-                  ? "bg-[var(--fintheon-accent)]/12 text-[var(--fintheon-accent)]"
-                  : "text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div
+          className="grid h-8 min-w-0 flex-1 overflow-hidden rounded-[9px] bg-transparent"
+          style={{ gridTemplateColumns: `repeat(${visibleTabs.length}, minmax(0, 1fr))` }}
+        >
+          {visibleTabs.map((tab, index) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <div key={tab.id} className="relative min-w-0 p-[2px]">
+                {index > 0 ? (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-0 top-1/2 h-4 w-px -translate-y-1/2"
+                    style={{
+                      background:
+                        "linear-gradient(to bottom, transparent, rgba(199,159,74,0.2), transparent)",
+                    }}
+                  />
+                ) : null}
+                <button
+                  type="button"
+                  aria-pressed={isActive}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                  }}
+                  className={`narrative-work-tab h-full w-full rounded-[7px] border border-transparent bg-transparent px-1.5 text-xs transition ${
+                    isActive
+                      ? "text-[var(--fintheon-accent)]"
+                      : "text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]"
+                  }`}
+                  data-active={isActive ? "true" : "false"}
+                  title={tab.label}
+                  aria-label={tab.label}
+                >
+                  <span className="inline-flex min-w-0 items-center justify-center gap-1">
+                    <Icon
+                      className="shrink-0"
+                      size={compactTabs ? 14 : 13}
+                      strokeWidth={isActive ? 2.5 : 2}
+                    />
+                    <span className={compactTabs ? "sr-only" : "truncate"}>
+                      {tab.label}
+                    </span>
+                  </span>
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
+      <div className={`min-h-0 flex-1 ${activeTab === "canvas" ? "overflow-hidden p-0" : "overflow-y-auto p-3"}`}>
+        {activeTab === "canvas" ? canvasSlot : null}
         {activeTab === "flow" ? (
           <NarrativeFlowTab
             session={session}
             response={response}
             selectedNodeId={selectedNodeId}
             themeCount={themeCount}
+            onSelectNode={onSelectNode}
             onOrganize={onOrganize}
             onShowAll={onShowAll}
             onQuickAction={onQuickAction}
@@ -155,54 +236,18 @@ export function NarrativeWorkDrawer({
         {activeTab === "docs" ? (
           <NarrativeDocsTab session={session} response={response} />
         ) : null}
-        {activeTab === "transcript" ? (
-          <NarrativesTab entries={session?.transcript ?? []} />
-        ) : null}
       </div>
     </aside>
   );
 }
 
-function NarrativesTab({ entries }: { entries: NarrativeTranscriptEntry[] }) {
-  if (entries.length === 0) {
-    return (
-      <div className="rounded-md border border-[var(--fintheon-accent)]/12 p-4 text-xs leading-5 text-[var(--fintheon-muted)]">
-        Narrative prompts and desk turns will appear here after the desk starts working.
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-[var(--fintheon-accent)]/70">
-        <GitBranch size={13} />
-        Narratives
-      </div>
-      {entries.map((entry) => (
-        <article
-          key={entry.id}
-          className="rounded-md border border-[var(--fintheon-accent)]/10 p-2"
-        >
-          <div className="mb-1 flex items-center justify-between gap-2 text-[10px] text-[var(--fintheon-muted)]">
-            <span className="uppercase tracking-[0.12em]">{entry.speaker}</span>
-            <span>{entry.timestamp ? formatShortTime(entry.timestamp) : ""}</span>
-          </div>
-          <p className="text-[11px] leading-4 text-[var(--fintheon-text)]/85">
-            {entry.text}
-          </p>
-        </article>
-      ))}
-    </div>
-  );
-}
-
 function clampWidth(value: number): number {
-  return Math.min(maxWidth, Math.max(minWidth, Math.round(value)));
-}
-
-function formatShortTime(value: string): string {
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
+  const viewportMax =
+    typeof window === "undefined"
+      ? minWidth * 2
+      : Math.floor(window.innerWidth * maxWidthRatio);
+  return Math.min(
+    Math.max(minWidth, viewportMax),
+    Math.max(minWidth, Math.round(value)),
+  );
 }

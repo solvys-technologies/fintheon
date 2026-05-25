@@ -57,6 +57,22 @@ type FileContentPart =
   | { type: "image_url"; image_url: { url: string } }
   | { type: "file"; file: { name: string; mimeType: string; data: string } };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function buildConversationMetadata(input: {
+  metadata?: Record<string, unknown>;
+  workspace?: Record<string, unknown>;
+  surface?: string;
+} | null): Record<string, unknown> | undefined {
+  if (!input) return undefined;
+  const metadata = isRecord(input.metadata) ? { ...input.metadata } : {};
+  if (isRecord(input.workspace)) metadata.workspace = input.workspace;
+  if (input.surface) metadata.surface = input.surface;
+  return Object.keys(metadata).length > 0 ? metadata : undefined;
+}
+
 function toAgentLabel(agent: HermesAgentRole | string): string {
   switch (agent) {
     case "harper-cao":
@@ -120,7 +136,14 @@ export async function handleChat(c: Context) {
 
   try {
     const body = await c.req
-      .json<ChatRequest & { messages?: { role: string; content: string }[] }>()
+      .json<
+        ChatRequest & {
+          messages?: { role: string; content: string }[];
+          workspace?: Record<string, unknown>;
+          metadata?: Record<string, unknown>;
+          surface?: string;
+        }
+      >()
       .catch((err) => {
         console.error(
           `[Hermes][${requestId}] Failed to parse request body:`,
@@ -278,6 +301,7 @@ export async function handleChat(c: Context) {
       const title = conversationStore.generateTitle(message);
       conversation = await conversationStore.createConversation(userId, {
         title,
+        metadata: buildConversationMetadata(body),
       });
       console.log(
         `[Hermes][${requestId}] Created conversation: ${conversation.id}`,

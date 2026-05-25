@@ -45,6 +45,21 @@ import type {
   BusMessage,
 } from "../../services/agent-bus/types.js";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function buildConversationMetadata(input: {
+  metadata?: Record<string, unknown>;
+  workspace?: Record<string, unknown>;
+  surface?: string;
+}): Record<string, unknown> | undefined {
+  const metadata = isRecord(input.metadata) ? { ...input.metadata } : {};
+  if (isRecord(input.workspace)) metadata.workspace = input.workspace;
+  if (input.surface) metadata.surface = input.surface;
+  return Object.keys(metadata).length > 0 ? metadata : undefined;
+}
+
 export function createHarperRoutes() {
   const app = new Hono();
 
@@ -106,6 +121,8 @@ export function createHarperRoutes() {
         model?: string;
         /** Explicit boardroom surface flag — triggers multi-agent DAG dispatch */
         surface?: string;
+        workspace?: Record<string, unknown>;
+        metadata?: Record<string, unknown>;
         boardroom?: boolean;
         userContext?: {
           traderName?: string;
@@ -419,6 +436,7 @@ export function createHarperRoutes() {
         conversation = await conversationStore.createConversation(userId, {
           title: message.slice(0, 60),
           model: "harper",
+          metadata: buildConversationMetadata(body),
         });
       }
 

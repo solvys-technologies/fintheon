@@ -65,6 +65,7 @@ interface FintheonComposerProps {
   workDrawerSlot?: ReactNode;
   workDrawerOpen?: boolean;
   drawerPeekSlot?: ReactNode;
+  workspaceSlot?: ReactNode;
   reasoningLevel?: ReasoningLevel;
   onReasoningLevelChange?: (level: ReasoningLevel) => void;
   onQueueMessage?: (text: string) => void;
@@ -90,6 +91,7 @@ export function FintheonComposer({
   workDrawerSlot,
   workDrawerOpen,
   drawerPeekSlot,
+  workspaceSlot,
   reasoningLevel,
   onReasoningLevelChange,
   onQueueMessage,
@@ -411,6 +413,7 @@ export function FintheonComposer({
         voiceState={voice.runtimeState}
         onToggleVoice={voice.toggleEnabled}
         providerSlot={providerEl}
+        workspaceSlot={workspaceSlot}
         personaSlot={personaEl}
         mcpSlot={toolboxEl}
         toolboxDrawerSlot={

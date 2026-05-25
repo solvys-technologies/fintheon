@@ -17,6 +17,7 @@ export interface ChatUiAnswer {
 export interface ChatUiQuestionResult {
   status: "answered" | "cancelled" | "expired";
   answers: ChatUiAnswer[];
+  actionId?: string;
 }
 
 interface PendingQuestionnaire {
@@ -56,7 +57,7 @@ export function requestChatUiQuestions(
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
       pendingQuestionnaires.delete(actionId);
-      resolve({ status: "expired", answers: [] });
+      resolve({ status: "expired", answers: [], actionId });
     }, QUESTION_TIMEOUT_MS);
 
     pendingQuestionnaires.set(actionId, { requestId, resolve, timer });
@@ -78,7 +79,7 @@ export function resolveChatUiQuestions(
 
   pendingQuestionnaires.delete(actionId);
   clearTimeout(pending.timer);
-  pending.resolve(result);
+  pending.resolve({ ...result, actionId });
 
   emitChatUiAction(pending.requestId, "approval_questions_resolved", {
     actionId,

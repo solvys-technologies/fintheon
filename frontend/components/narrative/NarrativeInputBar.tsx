@@ -154,12 +154,12 @@ export function NarrativeInputBar({
   const wrapperClass = isOpener
     ? "relative z-20 px-4"
     : isOverlay
-      ? "relative z-20 px-2"
+      ? "relative z-20 w-full px-2"
       : "pointer-events-none absolute inset-x-0 bottom-0 z-20 px-4 pb-4";
   const hostClass = hasCaoWolfHost
     ? `${wrapperClass} narrative-cao-wolf-composer-host`
     : wrapperClass;
-  const composerMaxWidth = isOverlay ? "32rem" : "56rem";
+  const composerMaxWidth = "56rem";
   const rows = isOpener ? 2 : 1;
   const placeholder = isOpener
     ? "What desk narrative are we opening?"
@@ -186,14 +186,14 @@ export function NarrativeInputBar({
 
   return (
     <>
-    <div className={hostClass}>
+    <div className={`${hostClass} narrative-chat-motion`}>
       {shouldShowCaoWolf ? (
         <NarrativeCaoWolfAvatar runKey={caoWolfRunKey} />
       ) : null}
       <RepoChatComposer
         format={isOverlay ? "compact" : "full"}
         maxWidth={composerMaxWidth}
-        className="pointer-events-auto"
+        className="pointer-events-auto w-full"
       >
         <FintheonAttachPopup
           open={
@@ -261,7 +261,7 @@ export function NarrativeInputBar({
         />
 
         <div
-          className={`fintheon-composer-input relative flex flex-col rounded-2xl border backdrop-blur-xl transition ${
+            className={`fintheon-composer-input narrative-composer-shell relative flex flex-col rounded-2xl border backdrop-blur-xl transition ${
             showToolboxModal ||
             mentionQuery !== null ||
             queue.length > 0 ||
@@ -288,7 +288,7 @@ export function NarrativeInputBar({
               {attachedHeadlines.map((item) => (
                 <span
                   key={item.id}
-                  className="inline-flex max-w-[240px] shrink-0 items-center gap-2 rounded-md border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-accent)]/8 px-2 py-1 text-[11px] text-[var(--fintheon-accent)]"
+                  className="narrative-chip-motion inline-flex max-w-[240px] shrink-0 items-center gap-2 rounded-md border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-accent)]/8 px-2 py-1 text-[11px] text-[var(--fintheon-accent)]"
                 >
                   <GitBranch size={12} />
                   <span className="truncate">{item.headline}</span>
@@ -335,7 +335,7 @@ export function NarrativeInputBar({
                   onOpenDrawer();
                 }}
                 aria-pressed={riskFlowDrawerOpen}
-                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                className={`narrative-icon-button flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
                   riskFlowDrawerOpen
                     ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
                     : "text-zinc-500 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
@@ -354,7 +354,7 @@ export function NarrativeInputBar({
                     setShowToolboxModal((open) => !open);
                   }}
                   aria-pressed={showToolboxModal}
-                  className={`relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                  className={`narrative-icon-button relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
                     showToolboxModal
                       ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
                       : "text-zinc-500 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"

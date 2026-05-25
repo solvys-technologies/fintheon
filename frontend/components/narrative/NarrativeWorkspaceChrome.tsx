@@ -26,7 +26,7 @@ export function NarrativeWorkspaceTopBar({
 }: NarrativeWorkspaceTopBarProps) {
   return (
     <div
-      className="absolute inset-x-0 top-0 z-10 flex h-[50px] items-center justify-between bg-[var(--fintheon-bg)]/90 px-3 backdrop-blur-xl"
+      className="absolute inset-x-0 top-[55px] z-10 flex h-[50px] items-center justify-between bg-[var(--fintheon-bg)]/90 px-3 backdrop-blur-xl"
       style={{
         backgroundImage:
           "linear-gradient(to right, transparent, rgba(199,159,74,0.16), transparent)",
@@ -92,11 +92,13 @@ export function NarrativeWorkspaceViewMenu({
   renderMode,
   onOrientationChange,
   onRenderModeChange,
+  menuPlacement = "below-right",
 }: {
   orientation: SensemakingOrientation;
   renderMode: SensemakingRenderMode;
   onOrientationChange: (value: SensemakingOrientation) => void;
   onRenderModeChange: (value: SensemakingRenderMode) => void;
+  menuPlacement?: "below-right" | "above-left";
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -133,10 +135,18 @@ export function NarrativeWorkspaceViewMenu({
       </button>
 
       <div
-        className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-md bg-[var(--fintheon-bg)]/96 py-1 shadow-[0_10px_30px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-[opacity,transform] duration-150"
+        className={`absolute z-50 w-44 overflow-hidden rounded-md bg-[var(--fintheon-bg)]/96 py-1 shadow-[0_10px_30px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-[opacity,transform] duration-150 ${
+          menuPlacement === "above-left"
+            ? "bottom-full left-0 mb-2"
+            : "right-0 top-full mt-2"
+        }`}
         style={{
           opacity: open ? 1 : 0,
-          transform: open ? "translateY(0)" : "translateY(-4px)",
+          transform: open
+            ? "translateY(0)"
+            : menuPlacement === "above-left"
+              ? "translateY(4px)"
+              : "translateY(-4px)",
           pointerEvents: open ? "auto" : "none",
         }}
       >

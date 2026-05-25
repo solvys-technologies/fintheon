@@ -20,7 +20,6 @@ import {
   PanelRightOpen,
   PanelRightClose,
   ChevronDown,
-  Zap,
   LineChart,
   Scroll,
   Plus,
@@ -29,8 +28,13 @@ import { useSettings } from "../../contexts/SettingsContext";
 import { useConsiliumNav } from "../../lib/consilium-nav-store";
 import { AgentChattr } from "./AgentChattr";
 import { Sanctum } from "../narrative/Sanctum";
+import { SanctumChart } from "../narrative/SanctumChart";
 import { TimelinePanel } from "../narrative/TimelinePanel";
 import { DeskRail } from "../desk/DeskRail";
+import {
+  isNarrativeSurfaceMode,
+  type NarrativeSurfaceMode,
+} from "../narrative/narrative-surface-options";
 import { NarrativeCanvas } from "../narrative/NarrativeCanvas";
 import {
   NarrativeProvider,
@@ -56,6 +60,7 @@ import { ChatSidebar } from "../chat/ChatSidebar";
 import { SessionsModal } from "../chat/SessionsModal";
 import { HarperActivityFeed } from "./HarperActivityFeed";
 import { SanctumSitemapDrawer } from "../layout/SanctumSitemapDrawer";
+import { NarrativeAnalysisDropdown } from "./NarrativeAnalysisDropdown";
 import {
   REGULAR_TABS,
   SANCTUM_SUB_VIEWS,
@@ -161,6 +166,8 @@ export function ConsiliumHub() {
   const [apparatusDropdownOpen, setApparatusDropdownOpen] = useState(false);
   const [analysisDropdownOpen, setAnalysisDropdownOpen] = useState(false);
   const [analysisResearchOpen, setAnalysisResearchOpen] = useState(true);
+  const [narrativeSurfaceMode, setNarrativeSurfaceMode] =
+    useState<NarrativeSurfaceMode>("workspace");
   const [transitioning, setTransitioning] = useState(false);
   const [agentDeskData, setAgentDeskData] = useState<SanctumData | null>(null);
   const [riskflowItems, setRiskflowItems] = useState<RiskFlowCatalyst[]>([]);
@@ -280,6 +287,28 @@ export function ConsiliumHub() {
     return () =>
       window.removeEventListener("fintheon:narrative-research-rail-state", handler);
   }, []);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const mode = (event as CustomEvent<{ mode?: unknown }>).detail?.mode;
+      if (isNarrativeSurfaceMode(mode)) setNarrativeSurfaceMode(mode);
+    };
+    window.addEventListener("fintheon:narrative-surface-state", handler);
+    return () =>
+      window.removeEventListener("fintheon:narrative-surface-state", handler);
+  }, []);
+
+  const handleNarrativeSurfaceSelect = useCallback(
+    (mode: NarrativeSurfaceMode) => {
+      setNarrativeSurfaceMode(mode);
+      window.dispatchEvent(
+        new CustomEvent("fintheon:narrative-surface-change", {
+          detail: { mode },
+        }),
+      );
+    },
+    [],
+  );
 
   // Consume pending tab requests from external navigation (e.g. ChatPanel sidebar icons)
   const { pendingTab, clearPending } = useConsiliumNav();
@@ -628,9 +657,9 @@ export function ConsiliumHub() {
   return (
     <div className="flex h-full flex-col bg-transparent">
       {/* Tab bar: Sanctum dropdown + regular tabs + Desk rail toggle */}
-      <div className="flex items-center gap-0.5 px-4 pt-3 pb-1.5">
+      <div className="consilium-tab-bar flex items-center gap-0.5 px-4 pt-3 pb-1.5">
         <h2
-          className="mr-3 flex items-center gap-1.5 text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
+          className="consilium-tab-bar__title mr-3 flex items-center gap-1.5 text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
           style={{ fontFamily: "var(--font-heading, Roboto, sans-serif)" }}
         >
           <Landmark size={14} />
@@ -659,18 +688,24 @@ export function ConsiliumHub() {
         {/* Sanctum tab with dropdown */}
         <div ref={sanctumDropdownRef} className="relative">
           <button
-            onClick={() => setSanctumDropdownOpen((v) => !v)}
+            onClick={() => {
+              if (activeTab !== "sanctum") {
+                handleSanctumSubChange(sanctumSubView);
+                return;
+              }
+              setSanctumDropdownOpen((v) => !v);
+            }}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === "sanctum"
                 ? "border border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
                 : "border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70"
             }`}
             style={{ fontFamily: "var(--font-body, Roboto, sans-serif)" }}
-            aria-label="Sanctum"
-            title="Sanctum"
+            aria-label={`Sanctum: ${activeSanctumSub.label}`}
+            title={`Sanctum: ${activeSanctumSub.label}`}
           >
-            <Zap size={13} />
-            <span className="fintheon-zen-label">Sanctum</span>
+            <SanctumIcon size={13} />
+            <span className="fintheon-zen-label">{activeSanctumSub.label}</span>
             <ChevronDown
               size={10}
               className={`opacity-50 transition-transform ${sanctumDropdownOpen ? "rotate-180" : ""}`}
@@ -935,82 +970,35 @@ export function ConsiliumHub() {
         {activeTab === "sanctum" && (
           <button
             onClick={toggleChart}
-            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+            className={`flex items-center rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
               showChart
                 ? "border border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
                 : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
             }`}
-            title={showChart ? "Hide Chart" : "Show Chart"}
-            aria-label={showChart ? "Hide Chart" : "Show Chart"}
+            title={showChart ? "Close split panel" : "Open split panel"}
+            aria-label={showChart ? "Close split panel" : "Open split panel"}
           >
             <LineChart size={14} />
-            <span className="fintheon-zen-label">Chart</span>
           </button>
         )}
 
         {activeTab === "sanctum" && sanctumSubView === "narratives" ? (
           <div ref={analysisDropdownRef} className="relative">
-            <button
-              onClick={() => setAnalysisDropdownOpen((value) => !value)}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
-                analysisDropdownOpen || showProposals || analysisResearchOpen
-                  ? "border border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
-                  : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
-              }`}
-              title="Analysis"
-              aria-label="Analysis"
-            >
-              {showProposals || analysisResearchOpen ? (
-                <PanelRightClose size={14} />
-              ) : (
-                <PanelRightOpen size={14} />
-              )}
-              <span className="fintheon-zen-label">Analysis</span>
-              <ChevronDown size={12} />
-            </button>
-            {analysisDropdownOpen ? (
-              <div className="absolute right-0 top-[calc(100%+6px)] z-50 w-40 overflow-hidden rounded-md border border-[var(--fintheon-overlay-border,var(--fintheon-accent))]/70 bg-[var(--fintheon-overlay-surface,var(--fintheon-bg))] p-1 shadow-2xl shadow-black/40">
-                <button
-                  type="button"
-                  onClick={() => {
-                    toggleProposals();
-                    setAnalysisDropdownOpen(false);
-                  }}
-                  className={`flex h-8 w-full items-center justify-between rounded-[4px] border border-transparent px-2 text-left text-[11px] transition-colors ${
-                    showProposals
-                      ? "border border-[var(--fintheon-accent)]/22 text-[var(--fintheon-accent)]"
-                      : "text-[var(--fintheon-muted)] hover:bg-[var(--fintheon-accent)]/8 hover:text-[var(--fintheon-text)]"
-                  }`}
-                >
-                  <span className="inline-flex items-center gap-1.5">
-                    {showProposals ? <PanelRightClose size={13} /> : <PanelRightOpen size={13} />}
-                    Desk
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    window.dispatchEvent(new Event("fintheon:narrative-research-rail-toggle"));
-                    setAnalysisResearchOpen((value) => !value);
-                    setAnalysisDropdownOpen(false);
-                  }}
-                  className={`flex h-8 w-full items-center justify-between rounded-[4px] border border-transparent px-2 text-left text-[11px] transition-colors ${
-                    analysisResearchOpen
-                      ? "border border-[var(--fintheon-accent)]/22 text-[var(--fintheon-accent)]"
-                      : "text-[var(--fintheon-muted)] hover:bg-[var(--fintheon-accent)]/8 hover:text-[var(--fintheon-text)]"
-                  }`}
-                >
-                  <span className="inline-flex items-center gap-1.5">
-                    {analysisResearchOpen ? (
-                      <PanelRightClose size={13} />
-                    ) : (
-                      <PanelRightOpen size={13} />
-                    )}
-                    Research
-                  </span>
-                </button>
-              </div>
-            ) : null}
+            <NarrativeAnalysisDropdown
+              open={analysisDropdownOpen}
+              currentMode={narrativeSurfaceMode}
+              showDeskRail={showProposals}
+              researchRailOpen={analysisResearchOpen}
+              onOpenChange={setAnalysisDropdownOpen}
+              onSelectMode={handleNarrativeSurfaceSelect}
+              onToggleDeskRail={toggleProposals}
+              onToggleResearchRail={() => {
+                window.dispatchEvent(
+                  new Event("fintheon:narrative-research-rail-toggle"),
+                );
+                setAnalysisResearchOpen((value) => !value);
+              }}
+            />
           </div>
         ) : (
           <button
@@ -1023,11 +1011,7 @@ export function ConsiliumHub() {
             title={showProposals ? "Hide Desk" : "Show Desk"}
             aria-label={showProposals ? "Hide Desk" : "Show Desk"}
           >
-            {showProposals ? (
-              <PanelRightClose size={14} />
-            ) : (
-              <PanelRightOpen size={14} />
-            )}
+            <Users size={14} />
             <span className="fintheon-zen-label">Desk</span>
           </button>
         )}
@@ -1048,11 +1032,30 @@ export function ConsiliumHub() {
           {displayedTab === "sanctum" && (
             <NarrativeProvider>
               {displayedSubView === "narratives" && (
-                <NarrativeCanvas
-                  themes={flowThemes}
-                  isLoading={flowThemesLoading}
-                  chartMode={showChart}
-                />
+                <div className="flex h-full min-h-0">
+                  <div
+                    className="h-full min-w-0 transition-[flex-basis] duration-300 ease-out"
+                    style={{ flexBasis: showChart ? "50%" : "100%" }}
+                  >
+                    <NarrativeCanvas
+                      themes={flowThemes}
+                      isLoading={flowThemesLoading}
+                      chartMode={showChart}
+                    />
+                  </div>
+                  <div
+                    aria-hidden={!showChart}
+                    className={`shrink-0 overflow-hidden border-l border-[color-mix(in_srgb,var(--fintheon-accent)_15%,transparent)] transition-[flex-basis,transform] duration-300 ease-out ${
+                      showChart ? "" : "pointer-events-none"
+                    }`}
+                    style={{
+                      flexBasis: showChart ? "50%" : "0%",
+                      transform: showChart ? "translateX(0)" : "translateX(100%)",
+                    }}
+                  >
+                    <SanctumChart selectedSymbol={selectedSymbol.symbol} />
+                  </div>
+                </div>
               )}
               {displayedSubView === "arbitrumChamber" && (
                 <SanctumWithNarratives

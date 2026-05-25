@@ -11,7 +11,7 @@ import {
   type NodeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useMemo, type ReactNode } from "react";
+import { useMemo } from "react";
 import type {
   SensemakingCatalyst,
   SensemakingOrientation,
@@ -19,12 +19,14 @@ import type {
   SensemakingResponse,
   SensemakingTimelineNode,
 } from "./sensemaking-types";
+import { NarrativeLinkedCatalystCard } from "./NarrativeLinkedCatalystCard";
 
 interface NarrativeSensemakingMapProps {
   response: SensemakingResponse | null;
   orientation: SensemakingOrientation;
   selectedNodeId: string | null;
   onSelectNode: (id: string) => void;
+  onOpenResearchRail?: (id: string) => void;
 }
 
 interface CatalystNodeData {
@@ -39,6 +41,7 @@ interface CatalystNodeData {
   tags: string[];
   narratives: string[];
   reason: string;
+  catalyst: SensemakingCatalyst;
 }
 
 interface HubNodeData {
@@ -65,6 +68,7 @@ function NarrativeSensemakingMapInner({
   orientation,
   selectedNodeId,
   onSelectNode,
+  onOpenResearchRail,
 }: NarrativeSensemakingMapProps) {
   const { nodes, edges } = useMemo(
     () => buildFlow(response, orientation, selectedNodeId),
@@ -91,7 +95,11 @@ function NarrativeSensemakingMapInner({
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
-      onNodeClick={(_, node) => onSelectNode(node.id)}
+      className="narrative-react-flow-canvas"
+      onNodeClick={(_, node) => {
+        onSelectNode(node.id);
+        onOpenResearchRail?.(node.id);
+      }}
       fitView
       fitViewOptions={{ padding: 0.24 }}
       minZoom={0.35}
@@ -126,7 +134,7 @@ function buildFlow(
     },
   }));
   const catalystNodes = response.timelineNodes.map((node, index) => {
-    const catalyst = catalystsById.get(node.catalystId);
+    const catalyst = catalystsById.get(node.catalystId) ?? fallbackCatalyst(node);
     return {
       id: node.id,
       type: "catalyst",
@@ -143,6 +151,7 @@ function buildFlow(
         tags: catalyst?.tags ?? [],
         narratives: node.narrativeIds,
         reason: node.relationReason,
+        catalyst,
       },
     };
   });
@@ -177,37 +186,14 @@ function CatalystFlowNode({
   data,
   selected,
 }: NodeProps & { data: CatalystNodeData }) {
-  const isAnchor = data.role === "anchor";
   return (
-    <article
-      className={`w-[280px] rounded-md border p-3 ${
-        selected
-          ? "border-[var(--fintheon-accent)]/70 bg-[var(--fintheon-accent)]/12"
-          : isAnchor
-            ? "border-[var(--fintheon-accent)]/45 bg-[var(--fintheon-accent)]/8"
-            : "border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-surface)]/85"
-      }`}
-    >
+    <div className="narrative-flow-node-card relative">
       <Handle type="target" position={Position.Left} className="opacity-0" />
       <Handle type="source" position={Position.Right} className="opacity-0" />
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--fintheon-accent)]/75">
-          {isAnchor ? "Anchor" : "Notable"}
-        </span>
-        <span className="text-[10px] tabular-nums text-[var(--fintheon-muted)]">
-          {data.timeLabel} | IV {data.ivScore.toFixed(1)}
-        </span>
-      </div>
-      <p className="line-clamp-3 text-sm font-medium leading-5 text-[var(--fintheon-text)]">
-        {data.title}
-      </p>
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        <NodeChip>{data.source}</NodeChip>
-        <NodeChip>{data.category}</NodeChip>
-        {data.symbols.slice(0, 3).map((symbol) => (
-          <NodeChip key={symbol}>{symbol}</NodeChip>
-        ))}
-      </div>
+      <NarrativeLinkedCatalystCard
+        catalyst={data.catalyst}
+        selected={selected}
+      />
       <p className="mt-2 line-clamp-2 text-[11px] leading-4 text-[var(--fintheon-muted)]">
         {data.reason}
       </p>
@@ -216,7 +202,7 @@ function CatalystFlowNode({
           {data.narratives.join(" · ")}
         </p>
       ) : null}
-    </article>
+    </div>
   );
 }
 
@@ -240,14 +226,6 @@ function NarrativeHubFlowNode({ data }: NodeProps & { data: HubNodeData }) {
         {data.timeSpan}
       </p>
     </section>
-  );
-}
-
-function NodeChip({ children }: { children: ReactNode }) {
-  return (
-    <span className="rounded border border-[var(--fintheon-accent)]/12 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.1em] text-[var(--fintheon-muted)]">
-      {children}
-    </span>
   );
 }
 
@@ -280,6 +258,28 @@ function catalystMap(response: SensemakingResponse): Map<string, SensemakingCata
   return new Map(
     [...response.anchorCatalysts, ...response.relatedCatalysts].map((item) => [item.id, item]),
   );
+}
+
+function fallbackCatalyst(node: SensemakingTimelineNode): SensemakingCatalyst {
+  return {
+    id: node.catalystId,
+    headline: node.title,
+    summary: node.summary,
+    source: "NarrativeFlow",
+    category: "market-structure",
+    sentiment: "neutral",
+    ivScore: 0,
+    publishedAt: node.timestamp,
+    promotedAt: null,
+    symbols: [],
+    tags: [],
+    narrativeThreads: node.narrativeIds,
+    marketImpact: null,
+    agentNote: node.relationReason,
+    role: node.role,
+    relationScore: 0.5,
+    relationReason: node.relationReason,
+  };
 }
 
 function groupColor(index: number) {
