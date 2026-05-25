@@ -1,3 +1,9 @@
+// [claude-code 2026-04-29] S53-T2: RefinementEngine refactored into a module shell.
+// Runtime health (pipeline stats/states, source accounts, econ filters) now
+// flows through useRiskflowRuntime — one canonical payload. Child panels receive
+// standardized lastAppliedAt / isMutating / degradedReason props. Scoring logic
+// (presets, sensitivities, rescore) stays in this shell since it orchestrates
+// across pipeline + V4 calibration concerns.
 // [claude-code 2026-04-28] S48-T3: Group Sensitivity NotchedFuse section removed
 // and replaced with PipelineHealth table + PipelineToggles. CountdownFuse added.
 // Error handling hardened: silent catch blocks replaced with inline error states.
@@ -9,7 +15,7 @@
 // [claude-code 2026-04-18] S24-T4: Rebuilt scoring calibration workbench.
 // [claude-code 2026-03-27] S2-T7: Refinement Engine
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { RefreshCw, Wrench, BarChart3 } from "lucide-react";
+import { RefreshCw, CubeFocus, AlertTriangle, X, Tv } from "lucide-react";
 import { isRefinementEditUnlocked } from "../../lib/dev-settings-auth";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import type { CalibrationEntry } from "../../../backend-hono/src/types/calibration";
@@ -22,10 +28,14 @@ import { QuickWeightEditor } from "./QuickWeightEditor";
 import { CommentatorManager } from "./CommentatorManager";
 import { SourceAccountsManager } from "./SourceAccountsManager";
 import { EconFiltersManager } from "./EconFiltersManager";
-import { EconFilterEditor } from "./EconFilterEditor";
 import { CatalystStatsDrawer } from "./CatalystStatsDrawer";
 import { PipelineHealth } from "./PipelineHealth";
 import { PipelineToggles } from "./PipelineToggles";
+import { OperatorTimeline } from "./OperatorTimeline";
+import { SourcePolicyPanel } from "./SourcePolicyPanel";
+import { DoctoringPanel } from "./DoctoringPanel";
+import { FinancialJuiceBackfillPanel } from "./FinancialJuiceBackfillPanel";
+import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
 import {
   PresetSelector,
   BUILTIN_PRESETS,
@@ -37,8 +47,7 @@ import { LexiconEditor } from "./LexiconEditor";
 import { ScoreImpactPreview } from "../ui/InlineDiff";
 import { useToast } from "../../contexts/ToastContext";
 import { useAuth } from "../../contexts/AuthContext";
-import { usePipelineStats } from "../../hooks/usePipelineStats";
-import { usePipelineState } from "../../hooks/usePipelineState";
+import { useRiskflowRuntime } from "../../hooks/useRiskflowRuntime";
 import {
   fetchPresets,
   fetchCurrentSensitivities,
@@ -53,8 +62,6 @@ const API_BASE = (
   import.meta.env.VITE_API_URL || "http://localhost:8080"
 ).replace(/\/$/, "");
 
-// Inlined from GroupSensitivityDial — PresetSelector still needs these types
-// for scoring preset matching even though the NotchedFuse dials are removed.
 type SensitivityGroup =
   | "macro"
   | "geopolitical"
@@ -93,6 +100,29 @@ interface RegimeState {
   multipliers?: Record<string, number>;
 }
 
+interface KickstartSourceStat {
+  handle: string;
+  fetched: number;
+  candidates: number;
+  accepted: number;
+}
+
+interface KickstartResult {
+  success: boolean;
+  handles: number;
+  selectedHandles: string[];
+  fetched: number;
+  fetchedRettiwt?: number;
+  fetchedXActions?: number;
+  xactionsEnabled?: boolean;
+  xactionsFallbackHandles?: string[];
+  candidateItems: number;
+  written: number;
+  rescored: number;
+  perSource: KickstartSourceStat[];
+  kickedAt: string;
+}
+
 function sameSensitivities(
   a: SensitivityValues,
   b: SensitivityValues,
@@ -100,42 +130,57 @@ function sameSensitivities(
   return GROUPS.every((g) => Math.abs(a[g] - b[g]) < 0.001);
 }
 
+function isWebSourceHandle(handle: string): boolean {
+  return handle.includes(".") || handle.startsWith("http");
+}
+
 export function RefinementEngine() {
   const { addToast } = useToast();
   const { getAccessToken } = useAuth();
 
-  // [claude-code 2026-04-27] v5.33.4: feed preview moved off the right rail
-  // when the rail became drawer-only. items state retained because the rescore
-  // pipeline still needs a feed-cache invalidation hook (handleRescore →
-  // fetchFeed). Rendered nowhere now; kept for parity with the rescore handler.
+  // --- Runtime health (one canonical payload) ---
+  const {
+    pipelineStats,
+    pipelineStates,
+    sourceAccounts: sourceSummary,
+    econFilters: econSummary,
+    statsLoading,
+    statesLoading,
+    statsError,
+    statesError,
+    lastAppliedAt,
+    isMutating,
+    degradedReason,
+    refetchStats,
+    togglePipeline,
+  } = useRiskflowRuntime();
+
+  // --- Feed cache (retained for rescore invalidation) ---
   const [items, setItems] = useState<RiskFlowAlert[]>([]);
-  const [showStatsDrawer, setShowStatsDrawer] = useState(false);
+
+  // --- Scoring state ---
   const [regime, setRegime] = useState<RegimeState | null>(null);
   const [weights, setWeights] = useState<CalibrationEntry[]>([]);
   const [registry, setRegistry] = useState<CommentatorEntry[]>([]);
   const [sourceAccounts, setSourceAccounts] = useState<SourceAccount[]>([]);
-  // [claude-code 2026-04-24] S34-T1
   const [econFilters, setEconFilters] = useState<EconWatchFilter[]>([]);
   const [isRescoring, setIsRescoring] = useState(false);
-  const [loading, setLoading] = useState(true);
-  // [claude-code 2026-04-28] S48-T3: Group Sensitivity collapsible removed.
-  // Pipeline health and toggles replace the former NotchedFuse section.
-  const {
-    stats: pipelineStats,
-    loading: statsLoading,
-    error: statsError,
-    refetch: refetchStats,
-  } = usePipelineStats();
-  const {
-    pipelines: pipelineStates,
-    loading: statesLoading,
-    error: statesError,
-    togglePipeline: handleTogglePipeline,
-  } = usePipelineState();
-  const [sourceAccountsError, setSourceAccountsError] = useState<string | null>(
+  const [isRefreshingAuth, setIsRefreshingAuth] = useState(false);
+  const [isKickstartDrawerOpen, setIsKickstartDrawerOpen] = useState(false);
+  const [kickstartHandles, setKickstartHandles] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [lastKickstart, setLastKickstart] = useState<KickstartResult | null>(
     null,
   );
-  const [econFiltersError, setEconFiltersError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // --- Plane view mode ---
+  const [viewMode, setViewMode] = useState<"scoring" | "plane">("scoring");
+
+  const planeUrl = import.meta.env.VITE_PLANE_URL || "https://app.plane.so";
+
+  // --- Edit lock ---
   const [editUnlocked, setEditUnlocked] = useState(() =>
     isRefinementEditUnlocked(),
   );
@@ -151,7 +196,7 @@ export function RefinementEngine() {
     };
   }, []);
 
-  // V4: group sensitivities + preset state
+  // --- V4 scoring state ---
   const [appliedSensitivities, setAppliedSensitivities] =
     useState<SensitivityValues>(SENSITIVITY_DEFAULTS);
   const [pendingSensitivities, setPendingSensitivities] =
@@ -172,6 +217,7 @@ export function RefinementEngine() {
     [appliedSensitivities, pendingSensitivities],
   );
 
+  // --- Scoring fetchers (kept in shell — calibration concerns) ---
   const fetchFeed = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/riskflow/feed`).then((r) =>
@@ -179,7 +225,7 @@ export function RefinementEngine() {
       );
       setItems(res.items ?? []);
     } catch {
-      /* silent — empty list preserved */
+      /* silent */
     }
   }, []);
 
@@ -216,34 +262,56 @@ export function RefinementEngine() {
     }
   }, []);
 
+  // Source accounts + econ filters fetched for AdvancedPane CRUD managers.
+  // Summaries come from useRiskflowRuntime; full arrays are needed for the
+  // inline editors.
   const fetchSourceAccounts = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/source-accounts`).then((r) =>
         r.json(),
       );
       setSourceAccounts(res.accounts ?? []);
-      setSourceAccountsError(null);
-    } catch (err) {
-      setSourceAccountsError(
-        err instanceof Error ? err.message : "Failed to load source accounts",
-      );
+    } catch {
+      /* silent */
     }
   }, []);
 
-  // [claude-code 2026-04-24] S34-T1
   const fetchEconFilters = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/econ-filters`).then((r) =>
         r.json(),
       );
       setEconFilters(res.filters ?? []);
-      setEconFiltersError(null);
-    } catch (err) {
-      setEconFiltersError(
-        err instanceof Error ? err.message : "Failed to load econ filters",
-      );
+    } catch {
+      /* silent */
     }
   }, []);
+
+  const kickstartSources = useMemo(
+    () =>
+      sourceAccounts.filter(
+        (a) =>
+          a.active && a.method === "browser" && !isWebSourceHandle(a.handle),
+      ),
+    [sourceAccounts],
+  );
+
+  useEffect(() => {
+    if (kickstartSources.length === 0) {
+      setKickstartHandles(new Set());
+      return;
+    }
+    setKickstartHandles((prev) => {
+      const allowed = new Set(
+        kickstartSources.map((s) => s.handle.toLowerCase()),
+      );
+      const retained = kickstartSources
+        .map((s) => s.handle)
+        .filter((h) => prev.has(h) || prev.has(h.toLowerCase()));
+      if (retained.length > 0) return new Set(retained);
+      return new Set(kickstartSources.map((s) => s.handle));
+    });
+  }, [kickstartSources]);
 
   const loadV4State = useCallback(async () => {
     try {
@@ -260,17 +328,12 @@ export function RefinementEngine() {
       setPresets(combined);
       setAppliedSensitivities(currentRes);
       setPendingSensitivities(currentRes);
-      // Select closest matching preset, fall back to neutral
       const match = combined.find((p) =>
         sameSensitivities(p.sensitivities, currentRes),
       );
       setSelectedPresetId(match?.id ?? null);
       setV4Available(true);
     } catch {
-      // Any unexpected failure here must NOT deadlock the loader — the
-      // other fetchers are silent-on-failure, so loadV4State matches
-      // that contract by flagging V4 unavailable and letting the
-      // Advanced pane + built-in presets still render.
       setV4Available(false);
     }
   }, [getAccessToken]);
@@ -300,7 +363,7 @@ export function RefinementEngine() {
     loadV4State,
   ]);
 
-  // Debounced rescore preview when sensitivities change
+  // --- Debounced rescore preview ---
   useEffect(() => {
     if (!v4Available || !isDirty) {
       setPreview(null);
@@ -320,6 +383,7 @@ export function RefinementEngine() {
     return () => clearTimeout(timer);
   }, [pendingSensitivities, isDirty, v4Available]);
 
+  // --- Scoring actions ---
   const onPresetSelect = useCallback((preset: ScoringPreset) => {
     setPendingSensitivities(preset.sensitivities);
     setSelectedPresetId(preset.id);
@@ -349,14 +413,12 @@ export function RefinementEngine() {
     setIsRescoring(true);
     try {
       const token = (await getAccessToken()) ?? undefined;
-      // Save sensitivities first if dirty
       if (isDirty) {
         const saveRes = await applySensitivities(pendingSensitivities, token);
         if (!isNotReady(saveRes)) {
           setAppliedSensitivities(pendingSensitivities);
         }
       }
-      // Trigger rescore
       const res = await triggerRescore(token);
       if (isNotReady(res)) {
         await fetch(`${API_BASE}/api/riskflow/rescore`, {
@@ -410,7 +472,6 @@ export function RefinementEngine() {
     setIsRescoring(true);
     try {
       const token = (await getAccessToken()) ?? undefined;
-      // Prefer rescore-all (V4); fall back to legacy /rescore on 404
       const res = await triggerRescore(token);
       if (isNotReady(res)) {
         await fetch(`${API_BASE}/api/riskflow/rescore`, {
@@ -433,76 +494,275 @@ export function RefinementEngine() {
     }
   };
 
+  const handleRefreshAuth = useCallback(async () => {
+    if (kickstartHandles.size === 0) {
+      addToast("Pick at least one source", "info");
+      return;
+    }
+    setIsRefreshingAuth(true);
+    try {
+      const token = (await getAccessToken()) ?? undefined;
+      const headers = {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+
+      const kickstartRes = await fetch(`${API_BASE}/api/riskflow/kickstart`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          handles: Array.from(kickstartHandles),
+        }),
+      });
+      if (!kickstartRes.ok) {
+        const text = await kickstartRes.text().catch(() => "");
+        throw new Error(text || `HTTP ${kickstartRes.status}`);
+      }
+      const kickstartJson = (await kickstartRes
+        .json()
+        .catch(() => null)) as KickstartResult | null;
+      setLastKickstart(kickstartJson);
+
+      addToast(
+        "Kickstart complete",
+        "success",
+        `Fetched ${kickstartJson?.fetched ?? 0}, wrote ${kickstartJson?.written ?? 0}`,
+      );
+      await refetchStats();
+      await fetchFeed();
+    } catch {
+      addToast("Kickstart failed", "error");
+    } finally {
+      setIsRefreshingAuth(false);
+    }
+  }, [getAccessToken, addToast, refetchStats, fetchFeed, kickstartHandles]);
+
+  const toggleKickstartHandle = useCallback((handle: string) => {
+    setKickstartHandles((prev) => {
+      const next = new Set(prev);
+      if (next.has(handle)) next.delete(handle);
+      else next.add(handle);
+      return next;
+    });
+  }, []);
+
   return (
     <div className="h-full flex flex-col bg-[var(--fintheon-bg)] relative">
-      {/* [claude-code 2026-04-25] S38: Header toolbar min-height bumped ~12% so chrome breathes */}
-      <div className="flex items-center justify-between px-5 py-4 min-h-[60px] border-b border-[var(--fintheon-accent)]/15">
+      {/* Header toolbar — compact, no borders */}
+      <div className="flex items-center justify-between px-5 py-3">
+        <h1
+          className="text-sm font-bold text-[var(--fintheon-text)]"
+          style={{ fontFamily: "var(--font-heading)", letterSpacing: "0.12em" }}
+        >
+          REFINEMENT ENGINE
+        </h1>
         <div className="flex items-center gap-3">
-          <Wrench className="w-5 h-5 text-[var(--fintheon-accent)]" />
-          <h1
-            className="text-base font-bold text-[var(--fintheon-text)]"
-            style={{
-              fontFamily: "var(--font-heading)",
-              letterSpacing: "0.12em",
-            }}
-          >
-            REFINEMENT ENGINE
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          {isDirty && (
+          {viewMode === "scoring" && (
             <>
               <button
-                onClick={onDiscardChanges}
-                className="px-3 py-2 border border-[var(--fintheon-glass-border)] text-[12px] font-semibold text-[var(--fintheon-muted)] hover:border-[var(--fintheon-accent)]/40"
+                onClick={() => setViewMode("plane")}
+                className="flex items-center gap-1.5 text-xs font-medium text-[var(--fintheon-accent)]/70 hover:text-[var(--fintheon-accent)] transition-colors"
+                title="Open Plane"
               >
-                Discard
+                <Tv className="w-3.5 h-3.5" />
+                Plane
               </button>
+              <span
+                style={{
+                  width: 1,
+                  height: 14,
+                  background: "rgba(199,159,74,0.15)",
+                }}
+              />
+            </>
+          )}
+          {viewMode === "plane" ? (
+            <button
+              onClick={() => setViewMode("scoring")}
+              className="flex items-center gap-1.5 text-xs font-medium text-[var(--fintheon-accent)]/70 hover:text-[var(--fintheon-accent)] transition-colors"
+            >
+              <CubeFocus className="w-3.5 h-3.5" />
+              Scoring
+            </button>
+          ) : (
+            <>
+              {isDirty && (
+                <button
+                  onClick={onDiscardChanges}
+                  className="text-[11px] font-medium text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] transition-colors"
+                >
+                  Discard
+                </button>
+              )}
               <button
-                onClick={onApplyChanges}
-                className="px-4 py-2 bg-[var(--fintheon-accent)] text-[var(--fintheon-bg)] text-[12px] font-bold tracking-wide"
+                onClick={onApplyAndRescore}
+                disabled={isRescoring}
+                className="text-[11px] font-semibold text-[var(--fintheon-accent)] hover:opacity-80 disabled:opacity-40 transition-opacity"
               >
-                Apply Changes
+                {isRescoring ? "Saving…" : "Save"}
+              </button>
+              <span
+                style={{
+                  width: 1,
+                  height: 14,
+                  background: "rgba(199,159,74,0.15)",
+                }}
+              />
+              <button
+                onClick={() => setIsKickstartDrawerOpen(true)}
+                disabled={isRefreshingAuth || kickstartSources.length === 0}
+                className="flex items-center gap-1.5 text-xs font-medium text-[var(--fintheon-accent)]/70 hover:text-[var(--fintheon-accent)] disabled:opacity-30 transition-colors"
+              >
+                <RefreshCw
+                  className={`w-3.5 h-3.5 ${isRefreshingAuth ? "animate-spin" : ""}`}
+                />
+                Kickstart
               </button>
             </>
           )}
-          <button
-            onClick={onApplyAndRescore}
-            disabled={isRescoring}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-[var(--fintheon-accent)] text-[var(--fintheon-bg)] text-[12px] font-bold tracking-wide hover:bg-[var(--fintheon-accent)]/90 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw
-              className={`w-4 h-4 ${isRescoring ? "animate-spin" : ""}`}
-            />
-            {isRescoring ? "Applying…" : "Save & Re-Score"}
-          </button>
-          <button
-            onClick={handleRescore}
-            disabled={isRescoring}
-            className="flex items-center gap-1.5 px-3.5 py-2 border border-[var(--fintheon-accent)]/40 text-[12px] font-semibold text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw
-              className={`w-4 h-4 ${isRescoring ? "animate-spin" : ""}`}
-            />
-            {isRescoring ? "Re-Scoring…" : "Re-Score All"}
-          </button>
-          {/* [claude-code 2026-04-27] v5.33.4: Catalyst Stats moved off the
-              always-visible right rail into a slide-in drawer per TP. This
-              top-right button is the only entry point. */}
-          <button
-            onClick={() => setShowStatsDrawer((v) => !v)}
-            className={`flex items-center gap-1.5 px-3.5 py-2 border text-[12px] font-semibold transition-colors ${
-              showStatsDrawer
-                ? "border-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]"
-                : "border-[var(--fintheon-accent)]/40 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
-            }`}
-            title="Catalyst Stats"
-          >
-            <BarChart3 className="w-4 h-4" />
-            Stats
-          </button>
         </div>
       </div>
+      <div
+        style={{
+          height: 1,
+          margin: "0 20px",
+          background:
+            "linear-gradient(to right, rgba(199,159,74,0.18), transparent 80%)",
+        }}
+      />
+
+      {viewMode === "scoring" && isKickstartDrawerOpen && (
+        <div className="absolute inset-0 z-40">
+          <button
+            className="absolute inset-0 bg-black/35"
+            onClick={() => setIsKickstartDrawerOpen(false)}
+            aria-label="Close kickstart drawer"
+          />
+          <aside className="absolute right-0 top-0 h-full w-[420px] border-l border-[var(--fintheon-accent)]/25 bg-[var(--fintheon-bg)] shadow-2xl">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--fintheon-accent)]/20">
+              <div>
+                <div className="text-[12px] font-bold tracking-[0.12em] text-[var(--fintheon-text)]">
+                  KICKSTART
+                </div>
+                <div className="text-[10px] text-[var(--fintheon-muted)] mt-1">
+                  Toggle sources, then run filtered pull.
+                </div>
+              </div>
+              <button
+                onClick={() => setIsKickstartDrawerOpen(false)}
+                className="p-1 text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 h-[calc(100%-58px)] overflow-y-auto">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-[11px] font-semibold text-[var(--fintheon-muted)]">
+                  Sources ({kickstartSources.length})
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() =>
+                      setKickstartHandles(
+                        new Set(kickstartSources.map((s) => s.handle)),
+                      )
+                    }
+                    className="text-[10px] text-[var(--fintheon-accent)]"
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => setKickstartHandles(new Set())}
+                    className="text-[10px] text-[var(--fintheon-muted)]"
+                  >
+                    None
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2 mb-4">
+                {kickstartSources.map((src) => {
+                  const enabled = kickstartHandles.has(src.handle);
+                  return (
+                    <div
+                      key={src.id}
+                      className="flex items-center justify-between px-3 py-2 border border-[var(--fintheon-glass-border)]"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-semibold text-[var(--fintheon-text)] truncate">
+                          @{src.handle}
+                        </div>
+                        <div className="text-[10px] text-[var(--fintheon-muted)] truncate">
+                          {src.display_name ?? src.category}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => toggleKickstartHandle(src.handle)}
+                        className={`w-10 h-5 rounded-full border transition-colors ${
+                          enabled
+                            ? "bg-[var(--fintheon-accent)] border-[var(--fintheon-accent)]"
+                            : "bg-transparent border-[var(--fintheon-glass-border)]"
+                        }`}
+                        aria-label={`Toggle ${src.handle}`}
+                      >
+                        <span
+                          className={`block w-3.5 h-3.5 rounded-full bg-white transition-transform ${
+                            enabled ? "translate-x-5" : "translate-x-0.5"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={handleRefreshAuth}
+                disabled={isRefreshingAuth || kickstartHandles.size === 0}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[var(--fintheon-accent)] text-[var(--fintheon-bg)] text-[12px] font-bold disabled:opacity-50"
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${isRefreshingAuth ? "animate-spin" : ""}`}
+                />
+                {isRefreshingAuth ? "Running…" : "Run Kickstart"}
+              </button>
+
+              {lastKickstart && (
+                <div className="mt-4 border border-[var(--fintheon-glass-border)]">
+                  <div className="px-3 py-2 border-b border-[var(--fintheon-glass-border)] text-[10px] text-[var(--fintheon-muted)]">
+                    Last run:{" "}
+                    {new Date(lastKickstart.kickedAt).toLocaleString()}
+                  </div>
+                  <div className="px-3 py-2 text-[11px] text-[var(--fintheon-text)]">
+                    fetched {lastKickstart.fetched} · candidates{" "}
+                    {lastKickstart.candidateItems} · written{" "}
+                    {lastKickstart.written}
+                  </div>
+                  <div className="px-3 pb-1 text-[10px] text-[var(--fintheon-muted)]">
+                    rettiwt {lastKickstart.fetchedRettiwt ?? 0} · xactions{" "}
+                    {lastKickstart.fetchedXActions ?? 0}
+                  </div>
+                  <div className="px-3 pb-3 space-y-1">
+                    {lastKickstart.perSource?.map((s) => (
+                      <div
+                        key={s.handle}
+                        className="flex items-center justify-between text-[10px] text-[var(--fintheon-muted)]"
+                      >
+                        <span>@{s.handle}</span>
+                        <span>
+                          {s.fetched}/{s.candidates}/{s.accepted}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
@@ -510,26 +770,78 @@ export function RefinementEngine() {
             Loading Refinement Engine...
           </div>
         </div>
+      ) : viewMode === "plane" ? (
+        <div className="flex-1 min-h-0">
+          <EmbeddedBrowserFrame
+            title="Plane"
+            src={planeUrl}
+            className="w-full h-full"
+          />
+        </div>
       ) : (
         <div className="flex-1 min-h-0 flex">
-          {/* Main pane (75%) — regime / fuses / presets / advanced */}
+          {/* Main pane — regime / pipeline panels / presets / advanced */}
           <div className="flex-1 min-w-0 overflow-y-auto p-4">
             <RegimeControl regime={regime} onRegimeChanged={fetchRegime} />
 
-            {/* S48-T3: PipelineHealth + PipelineToggles replace the former NotchedFuse section */}
+            {/* Shared runtime status bar (one payload → one view) */}
+            {degradedReason && (
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: "6px 10px",
+                  background:
+                    "color-mix(in srgb, var(--fintheon-accent) 6%, transparent)",
+                  borderLeft:
+                    "3px solid color-mix(in srgb, var(--fintheon-accent) 50%, transparent)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 10,
+                  fontFamily: "var(--font-mono)",
+                }}
+              >
+                <AlertTriangle className="w-3 h-3 text-[var(--fintheon-accent)]" />
+                <span style={{ color: "var(--fintheon-accent)" }}>
+                  degraded
+                </span>
+                <span style={{ color: "var(--fintheon-muted)" }}>
+                  {degradedReason}
+                </span>
+              </div>
+            )}
+
             <PipelineHealth
               stats={pipelineStats}
               loading={statsLoading}
               error={statsError}
               onRetry={refetchStats}
+              lastAppliedAt={lastAppliedAt}
+              isMutating={isMutating}
+              degradedReason={degradedReason}
             />
-            <PipelineToggles
-              pipelines={pipelineStates}
-              onToggle={handleTogglePipeline}
-              disabled={!editUnlocked}
-              loading={statesLoading}
-              error={statesError}
-            />
+            <div className="mt-3 grid grid-cols-1 2xl:grid-cols-2 gap-3 items-start">
+              <PipelineToggles
+                pipelines={pipelineStates}
+                onToggle={togglePipeline}
+                disabled={!editUnlocked}
+                loading={statesLoading}
+                error={statesError}
+                lastAppliedAt={lastAppliedAt}
+                isMutating={isMutating}
+                degradedReason={degradedReason}
+              />
+              <CatalystStatsDrawer inline disabled={!editUnlocked} />
+            </div>
+
+            {/* [claude-code 2026-04-29] S53-T4B: Operator hardening panels —
+                source policy enforcement visibility, ingest activity timeline,
+                and doctoring queue. Independent degrade — one failure doesn't
+                blank other controls. */}
+            <SourcePolicyPanel />
+            <OperatorTimeline />
+            <DoctoringPanel />
+            <FinancialJuiceBackfillPanel />
 
             {v4Available ? (
               <>
@@ -579,8 +891,6 @@ export function RefinementEngine() {
             <AdvancedPane
               count={weights.length + registry.length + sourceAccounts.length}
             >
-              {/* [claude-code 2026-04-25] S38: Preset dropdown moved INSIDE the locked Advanced
-                  pane — read-only when locked, interactive when unlocked. */}
               <PresetSelector
                 presets={presets}
                 selectedId={selectedPresetId}
@@ -631,34 +941,21 @@ export function RefinementEngine() {
               <SourceAccountsManager
                 accounts={sourceAccounts}
                 onAccountsChanged={fetchSourceAccounts}
+                lastAppliedAt={lastAppliedAt}
+                isMutating={isMutating}
+                degradedReason={sourceSummary.error ?? degradedReason}
               />
               <div
                 style={{ borderTop: "1px solid var(--fintheon-glass-border)" }}
               />
-              {/* [claude-code 2026-04-24] S34-T1: Econ watch filters */}
               <EconFiltersManager
                 filters={econFilters}
                 onFiltersChanged={fetchEconFilters}
               />
-              {/* [claude-code 2026-04-28] S48-T3: Econ filter editor table */}
-              <EconFilterEditor />
             </AdvancedPane>
           </div>
-
-          {/* [claude-code 2026-04-27] v5.33.4: Right rail (Catalyst Stats +
-              feed preview) removed. Stats now live in CatalystStatsDrawer
-              triggered by the top-right "Stats" button. Main pane spans
-              full width. */}
         </div>
       )}
-
-      {/* Slide-in Catalyst Stats drawer — popover behaviour matches
-          components/layout/ChatPanel: absolute right-0, w-[420px], translate-x. */}
-      <CatalystStatsDrawer
-        open={showStatsDrawer}
-        onClose={() => setShowStatsDrawer(false)}
-        disabled={!editUnlocked}
-      />
     </div>
   );
 }

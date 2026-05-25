@@ -9,12 +9,25 @@ import {
   useThread,
   useThreadRuntime,
 } from "@assistant-ui/react";
-import { X } from "lucide-react";
+import { Play, X } from "lucide-react";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 import { useHermesRuntime } from "./useHermesRuntime";
 import { FintheonThread } from "./FintheonThread";
 import { FintheonComposer } from "./FintheonComposer";
 import { CognitionPanel } from "./CognitionPanel";
+import { TodoDrawer } from "./TodoDrawer";
+import { useTodoList } from "./hooks/useTodoList";
+import { useMessageQueue } from "./hooks/useMessageQueue";
+import {
+  useChatUiActions,
+  type ChatUiRightRailPayload,
+  type ChatUiTodoItem,
+} from "./hooks/useChatUiActions";
+import { useAutoCollapseDrawer } from "./hooks/useAutoCollapseDrawer";
+import { ChatQuestionApprovalDrawer } from "./ChatQuestionApprovalDrawer";
+import { ChatDrawerPeek } from "./ChatDrawerPeek";
+import { normalizeReasoningLevel, shouldThinkHarder } from "./reasoning";
+import type { ReasoningLevel } from "./reasoning";
 import { useAgentBusSSE } from "../../hooks/useAgentBusSSE";
 import { withViewTransition } from "../../lib/view-transition";
 import type { SidebarNotifyEvent } from "../../../backend-hono/src/services/agent-bus/types";
@@ -39,6 +52,26 @@ const HERMES_TO_AGENT_ID: Record<string, string> = {
   herald: "herald",
 };
 
+const PLAN_DRAFT_KEY = "fintheon:plan-markdown-v1";
+const PLAN_DRAFT_TEMPLATE = `# Plan\n\n## Objectives\n- [ ] \n\n## Steps\n1. \n\n## Notes\n`;
+
+type AgentRailSurface = "plan" | "canvas" | "browser";
+
+function toAgentRailSurface(
+  surface: ChatUiRightRailPayload["surface"],
+): AgentRailSurface {
+  if (surface === "canvas" || surface === "browser") return surface;
+  return "plan";
+}
+
+interface AgentRailEventDetail {
+  open?: boolean;
+  markdown?: string;
+  append?: boolean;
+  title?: string;
+  surface?: AgentRailSurface;
+}
+
 interface SidebarToast {
   id: string;
   agentId: string;
@@ -51,23 +84,38 @@ function ChatSidebarInner({
   lastRequestId,
   thinkHarder,
   setThinkHarder,
+  reasoningLevel,
+  setReasoningLevel,
   conversationId,
   setConversationId,
   clearConversationId,
   compact = true,
+  mode,
+  onModeChange,
+  planMarkdown,
+  railTitle,
+  railSurface,
 }: {
   lastError: string | null;
   lastRequestId: string | null;
   thinkHarder: boolean;
   setThinkHarder: (v: boolean) => void;
+  reasoningLevel: ReasoningLevel;
+  setReasoningLevel: (level: ReasoningLevel) => void;
   conversationId: string | undefined;
   setConversationId: (id: string) => void;
   clearConversationId: () => void;
   compact?: boolean;
+  mode: "work" | "plan";
+  onModeChange: (mode: "work" | "plan") => void;
+  planMarkdown: string;
+  railTitle: string;
+  railSurface: AgentRailSurface;
 }) {
   const { activeAgent, agents } = useFintheonAgents();
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
+  const threadMessages = useThread((t) => t.messages);
 
   // Build dynamic display names — CAO name comes from agent context
   const hermesNames: Record<string, string> = useMemo(() => {
@@ -77,6 +125,11 @@ function ChatSidebarInner({
 
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
   const [showSkills, setShowSkills] = useState(false);
+  const [showWorkDrawer, setShowWorkDrawer] = useState(false);
+  const [approvalDrawerCollapsed, setApprovalDrawerCollapsed] = useState(false);
+  const previousWorkItemCountRef = useRef(0);
+  const hasMountedWorkDrawerRef = useRef(false);
+  const [hasChatStarted, setHasChatStarted] = useState(false);
   const [toasts, setToasts] = useState<SidebarToast[]>([]);
   const toastTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
@@ -130,16 +183,166 @@ function ChatSidebarInner({
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const handleSend = useCallback(
+  const sendNow = useCallback(
     (msg: string) => {
+      setHasChatStarted(true);
       runtime.append({ role: "user", content: [{ type: "text", text: msg }] });
     },
     [runtime],
   );
+  const {
+    queue,
+    addQueue,
+    editQueue,
+    removeQueue,
+    reorderQueue,
+    sendOne,
+    sendAll,
+  } = useMessageQueue({ isRunning, sendNow });
+
+  const { todos, addTodo, toggleTodo, removeTodo } = useTodoList();
+  const workItemCount = todos.length + queue.length;
+  const hasWorkDrawerContent = workItemCount > 0;
+
+  const handleTodoUiAction = useCallback(
+    (payload: { items: ChatUiTodoItem[] }) => {
+      for (const item of payload.items) {
+        addTodo(item.text, {
+          issueTrackingType: item.issueType,
+          source: "harper-ui-tool",
+        });
+      }
+      setShowWorkDrawer(true);
+    },
+    [addTodo],
+  );
+
+  const handleRightRailUiAction = useCallback(
+    (payload: ChatUiRightRailPayload) => {
+      window.dispatchEvent(
+        new CustomEvent("fintheon:agent-plan-rail", {
+          detail: {
+            open: true,
+            title: payload.title,
+            surface: toAgentRailSurface(payload.surface),
+            markdown: payload.markdown,
+            append: payload.append,
+          },
+        }),
+      );
+    },
+    [],
+  );
+
+  const {
+    questionnaire,
+    answerWidgets,
+    isSubmittingAnswers,
+    submitAnswers,
+  } = useChatUiActions(lastRequestId, {
+    onTodoDrawer: handleTodoUiAction,
+    onRightRail: handleRightRailUiAction,
+  });
+
+  useEffect(() => {
+    setApprovalDrawerCollapsed(false);
+  }, [questionnaire?.actionId]);
+
+  const approvalDrawerOpen = !!questionnaire && !approvalDrawerCollapsed;
+  const workDrawerOpen =
+    showWorkDrawer && hasWorkDrawerContent && !questionnaire;
+  const collapseWorkDrawer = useCallback(() => setShowWorkDrawer(false), []);
+  useAutoCollapseDrawer({
+    isOpen: workDrawerOpen,
+    isAgentActive: isRunning,
+    onCollapse: collapseWorkDrawer,
+  });
+  const pendingTodoCount = todos.filter((todo) => !todo.done).length;
+  const doneTodoCount = todos.length - pendingTodoCount;
+  const workPeekDetail = [
+    pendingTodoCount > 0
+      ? `${pendingTodoCount} open to-do${pendingTodoCount === 1 ? "" : "s"}`
+      : null,
+    doneTodoCount > 0 ? `${doneTodoCount} complete` : null,
+    queue.length > 0
+      ? `${queue.length} queued message${queue.length === 1 ? "" : "s"}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const drawerPeekSlot =
+    questionnaire && approvalDrawerCollapsed ? (
+      <ChatDrawerPeek
+        tone="action"
+        title="Action needed"
+        detail={`${questionnaire.questions.length} question${
+          questionnaire.questions.length === 1 ? "" : "s"
+        } waiting for your answer`}
+        onOpen={() => setApprovalDrawerCollapsed(false)}
+      />
+    ) : hasWorkDrawerContent && !showWorkDrawer && !questionnaire ? (
+      <ChatDrawerPeek
+        tone="status"
+        title="Status"
+        detail={workPeekDetail || "Active work is waiting"}
+        onOpen={() => setShowWorkDrawer(true)}
+      />
+    ) : null;
+  const hasDrawerPeek = !!drawerPeekSlot;
+  const composerBottomInset = approvalDrawerOpen
+    ? 300
+    : workDrawerOpen
+      ? 240
+      : hasDrawerPeek
+        ? 150
+        : 136;
+  const scrollButtonOffset = approvalDrawerOpen
+    ? 290
+    : workDrawerOpen
+      ? 220
+      : 116;
+
+  const handleSend = useCallback(
+    (msg: string) => {
+      if (isRunning) {
+        addQueue(msg);
+        setHasChatStarted(true);
+        return;
+      }
+      sendNow(msg);
+    },
+    [addQueue, isRunning, sendNow],
+  );
+
+  useEffect(() => {
+    if (threadMessages.length > 0) setHasChatStarted(true);
+  }, [threadMessages.length]);
+
+  useEffect(() => {
+    const previousCount = previousWorkItemCountRef.current;
+    if (!hasMountedWorkDrawerRef.current) {
+      hasMountedWorkDrawerRef.current = true;
+      previousWorkItemCountRef.current = workItemCount;
+      if (workItemCount === 0) setShowWorkDrawer(false);
+      return;
+    }
+    previousWorkItemCountRef.current = workItemCount;
+    if (workItemCount === 0) {
+      setShowWorkDrawer(false);
+      return;
+    }
+    if (previousCount === 0 || workItemCount > previousCount) {
+      setShowWorkDrawer(true);
+    }
+  }, [workItemCount]);
 
   // Listen for toolbar events dispatched from ConsiliumHub icons
   useEffect(() => {
-    const onNewChat = () => withViewTransition(() => clearConversationId());
+    const onNewChat = () =>
+      withViewTransition(() => {
+        setHasChatStarted(false);
+        clearConversationId();
+      });
     const onRunReport = () => {
       if (!isRunning)
         withViewTransition(() => handleSend("Run the MDB report"));
@@ -161,7 +364,19 @@ function ChatSidebarInner({
   }, [clearConversationId, handleSend, isRunning, setConversationId]);
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-[var(--fintheon-bg)]">
+    <div
+      className={`relative flex h-full flex-col overflow-hidden bg-transparent transition-[padding-right] duration-300 ${
+        !compact && mode === "plan" ? "md:pr-[40%]" : "md:pr-0"
+      }`}
+    >
+      {mode === "plan" && (
+        <button
+          aria-label="Close plan drawer backdrop"
+          className="absolute inset-0 z-30 bg-black/20 lg:hidden"
+          onClick={() => onModeChange("work")}
+        />
+      )}
+
       {/* Cross-agent notification toasts */}
       {toasts.length > 0 && (
         <div className="absolute left-2 right-2 top-2 z-50 flex flex-col gap-1.5 pointer-events-none">
@@ -202,6 +417,10 @@ function ChatSidebarInner({
         lastError={lastError}
         lastRequestId={lastRequestId}
         compact={compact}
+        hasSubmittedMessage={hasChatStarted}
+        scrollButtonOffset={scrollButtonOffset}
+        composerBottomInset={composerBottomInset}
+        answerWidgets={answerWidgets}
       />
       {/* Agent cognition — only in compact/sidebar mode (FintheonThread handles it in full chat) */}
       {compact && lastRequestId && isRunning && (
@@ -209,17 +428,110 @@ function ChatSidebarInner({
           <CognitionPanel requestId={lastRequestId} isStreaming={isRunning} />
         </div>
       )}
-      <FintheonComposer
-        thinkHarder={thinkHarder}
-        setThinkHarder={setThinkHarder}
-        lastError={lastError}
-        activeSkill={activeSkill}
-        onSelectSkill={setActiveSkill}
-        showSkills={showSkills}
-        onToggleSkills={() => setShowSkills((v) => !v)}
-        conversationId={conversationId}
-        onConversationGone={clearConversationId}
-      />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30">
+        <FintheonComposer
+          compact={compact}
+          thinkHarder={thinkHarder}
+          setThinkHarder={setThinkHarder}
+          reasoningLevel={reasoningLevel}
+          onReasoningLevelChange={(level) => {
+            setReasoningLevel(level);
+            setThinkHarder(shouldThinkHarder(level));
+          }}
+          lastError={lastError}
+          activeSkill={activeSkill}
+          onSelectSkill={setActiveSkill}
+          showSkills={showSkills}
+          onToggleSkills={() => setShowSkills((v) => !v)}
+          conversationId={conversationId}
+          onConversationGone={clearConversationId}
+          onQueueMessage={addQueue}
+          approvalDrawerOpen={approvalDrawerOpen}
+          approvalDrawerSlot={
+            <ChatQuestionApprovalDrawer
+              questionnaire={questionnaire}
+              isSubmitting={isSubmittingAnswers}
+              onSubmit={submitAnswers}
+              onCancel={() => setApprovalDrawerCollapsed(true)}
+            />
+          }
+          workDrawerOpen={workDrawerOpen}
+          workDrawerSlot={
+            <TodoDrawer
+              isOpen={workDrawerOpen}
+              onClose={() => setShowWorkDrawer(false)}
+              todos={todos}
+              onToggleTodo={toggleTodo}
+              onRemoveTodo={removeTodo}
+              queue={queue}
+              onEditQueue={editQueue}
+              onRemoveQueue={removeQueue}
+              onReorderQueue={reorderQueue}
+              onSendQueueOne={sendOne}
+              onSendQueueAll={sendAll}
+              approvalPending={!!questionnaire}
+              agentActive={isRunning}
+            />
+          }
+          drawerPeekSlot={drawerPeekSlot}
+          queueCount={queue.length}
+          onMessageSubmitted={() => setHasChatStarted(true)}
+        />
+      </div>
+
+      <aside
+        className={`absolute right-0 top-0 z-40 h-full border-l border-[var(--fintheon-accent)]/20 bg-[#090704] shadow-2xl transition-transform duration-300 ease-out ${
+          mode === "plan" ? "translate-x-0" : "translate-x-full"
+        } w-full md:w-[40%]`}
+        aria-label="Agent workspace rail"
+      >
+        <div className="flex h-full flex-col">
+          <div className="flex items-center justify-between border-b border-[var(--fintheon-accent)]/20 px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">
+                Agent Workspace
+              </p>
+              <p className="truncate text-[12px] font-semibold text-[var(--fintheon-accent)]">
+                {railTitle}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                onClick={() => handleSend(`Begin this plan:\n\n${planMarkdown}`)}
+                className="rounded border border-[var(--fintheon-accent)]/25 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--fintheon-accent)] transition-colors hover:bg-[var(--fintheon-accent)]/10"
+                title="Begin this plan"
+              >
+                <span className="inline-flex items-center gap-1">
+                  <Play size={10} />
+                  Begin
+                </span>
+              </button>
+              <button
+                onClick={() => onModeChange("work")}
+                className="rounded border border-[var(--fintheon-accent)]/30 px-2 py-1 text-[10px] text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col gap-2 p-3">
+            <div className="flex items-center justify-between rounded-md border border-white/[0.06] bg-white/[0.025] px-2 py-1">
+              <span className="text-[9px] uppercase tracking-[0.14em] text-[#f0ead6]/42">
+                {railSurface}
+              </span>
+              <span className="text-[9px] uppercase tracking-[0.14em] text-[#f0ead6]/28">
+                agent-controlled
+              </span>
+            </div>
+            <pre
+              className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap rounded-md border border-[var(--fintheon-accent)]/15 bg-[#0d0a06] p-3 font-mono text-[12px] leading-5 text-[#f0ead6] outline-none"
+              aria-label="Agent workspace content"
+            >
+              {planMarkdown}
+            </pre>
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }
@@ -227,6 +539,15 @@ function ChatSidebarInner({
 export function ChatSidebar({ compact = true }: { compact?: boolean } = {}) {
   const { activeAgent } = useFintheonAgents();
   const [thinkHarder, setThinkHarder] = useState(false);
+  const [reasoningLevel, setReasoningLevel] = useState<ReasoningLevel>(() => {
+    try {
+      return normalizeReasoningLevel(
+        localStorage.getItem("fintheon:reasoning-level"),
+      );
+    } catch {
+      return "standard";
+    }
+  });
   const {
     runtime,
     conversationId,
@@ -234,7 +555,79 @@ export function ChatSidebar({ compact = true }: { compact?: boolean } = {}) {
     clearConversationId,
     lastError,
     lastRequestId,
-  } = useHermesRuntime(activeAgent?.id ?? "default", thinkHarder, "chat");
+  } = useHermesRuntime(
+    activeAgent?.id ?? "default",
+    thinkHarder,
+    "chat",
+    reasoningLevel,
+  );
+  const [mode, setMode] = useState<"work" | "plan">("work");
+  const [railTitle, setRailTitle] = useState("plan.md");
+  const [railSurface, setRailSurface] = useState<AgentRailSurface>("plan");
+  const [planMarkdown, setPlanMarkdown] = useState<string>(() => {
+    try {
+      return localStorage.getItem(PLAN_DRAFT_KEY) ?? PLAN_DRAFT_TEMPLATE;
+    } catch {
+      return PLAN_DRAFT_TEMPLATE;
+    }
+  });
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab" && event.shiftKey && mode === "plan") {
+        event.preventDefault();
+        setMode("work");
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [mode]);
+
+  useEffect(() => {
+    const surfaceTitles: Record<AgentRailSurface, string> = {
+      plan: "plan.md",
+      canvas: "canvas.md",
+      browser: "browser.md",
+    };
+    const onAgentRail = (event: Event) => {
+      const detail =
+        (event as CustomEvent<AgentRailEventDetail>).detail ?? {};
+      if (detail.open === false) {
+        setMode("work");
+        return;
+      }
+      const nextSurface = detail.surface ?? "plan";
+      setRailSurface(nextSurface);
+      setRailTitle(detail.title ?? surfaceTitles[nextSurface]);
+      const nextMarkdown = detail.markdown;
+      if (typeof nextMarkdown === "string") {
+        setPlanMarkdown((prev) =>
+          detail.append ? `${prev}${nextMarkdown}` : nextMarkdown,
+        );
+      }
+      setMode("plan");
+    };
+
+    window.addEventListener("fintheon:agent-plan-rail", onAgentRail);
+    return () =>
+      window.removeEventListener("fintheon:agent-plan-rail", onAgentRail);
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("fintheon:reasoning-level", reasoningLevel);
+    } catch {
+      // no-op
+    }
+  }, [reasoningLevel]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(PLAN_DRAFT_KEY, planMarkdown);
+    } catch {
+      // no-op
+    }
+  }, [planMarkdown]);
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
@@ -243,10 +636,17 @@ export function ChatSidebar({ compact = true }: { compact?: boolean } = {}) {
         lastRequestId={lastRequestId ?? null}
         thinkHarder={thinkHarder}
         setThinkHarder={setThinkHarder}
+        reasoningLevel={reasoningLevel}
+        setReasoningLevel={setReasoningLevel}
         conversationId={conversationId}
         setConversationId={setConversationId}
         clearConversationId={clearConversationId}
         compact={compact}
+        mode={mode}
+        onModeChange={setMode}
+        planMarkdown={planMarkdown}
+        railTitle={railTitle}
+        railSurface={railSurface}
       />
     </AssistantRuntimeProvider>
   );

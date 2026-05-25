@@ -33,9 +33,10 @@ ROOT_ENV
 
 cat > "$ROOT/backend-hono/.env" <<'BACKEND_ENV'
 NOTION_API_KEY=ntn_b53970766054GDqCRP7OlJAozGmxJrlUm1XUNMeEEUIg0g
-AI_PRIMARY_PROVIDER=anthropic-vproxy
-USE_VPROXY_ANTHROPIC=true
-VPROXY_BASE_URL=http://localhost:8317
+AI_PRIMARY_PROVIDER=deepseek
+DEEPSEEK_API_KEY=sk-ba5f6a120d3b484e8389bac4d2f616d3
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+HERMES_API_URL=http://localhost:8081/v1
 OPENROUTER_API_KEY=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
 NOUS_API_KEY=sk-0kd71fk7u39bt7gytv3w5a
 SUPABASE_URL=https://nrcfnzclbjboctptxaxx.supabase.co

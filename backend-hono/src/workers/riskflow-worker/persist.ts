@@ -25,8 +25,18 @@
 // via bumpCounter so the quiet "items_ingested: 0" zero is traceable.
 
 import { getSupabaseClient } from "../../config/supabase.js";
+import { checkEconWatchGate } from "../../services/econ-watch-filters/econ-watch-gate.js";
 import { bumpCounter } from "../../services/riskflow/drop-counters.js";
 import { isBannedPublisher } from "../../services/riskflow/content-guard.js";
+import {
+  recordBlockedBeforeFeed,
+  recordIngestAttempt,
+  recordLeakEvent,
+} from "../../services/riskflow/ingest-ledger.js";
+import {
+  checkSourcePolicy,
+  refreshAllowlist,
+} from "../../services/riskflow/source-policy.js";
 import type { CollectedNewsItem } from "./sources/types.js";
 
 const FLAG_WRITES_NEW = "FLAG_RISKFLOW_WORKER_WRITES_RISKFLOW";
@@ -136,13 +146,74 @@ export async function writeCollectedItems(
   }
   if (eligible.length === 0) return 0;
 
+  // [codex 2026-05-08] Worker writes bypass supabase-service.ts, so mirror the
+  // shared econ watch gate here. This is the path used by FinancialJuice RSS.
+  const econWatchEligible: CollectedNewsItem[] = [];
+  for (const item of eligible) {
+    const verdict = await checkEconWatchGate(item);
+    if (verdict.allowed) {
+      econWatchEligible.push(item);
+      continue;
+    }
+
+    bumpCounter(
+      item.source || "unknown",
+      "persist",
+      "blocked_econ_watch_filter",
+    );
+    recordBlockedBeforeFeed(
+      `${verdict.reason}: ${item.source_domain || item.source} — ${item.headline.slice(0, 80)}`,
+    );
+    recordIngestAttempt({
+      source: item.source,
+      pipeline: item.ingest_pipeline ?? "riskflow-worker",
+      decision: "dropped_before_feed",
+      reason: verdict.reason,
+      headlinePreview: item.headline,
+    });
+  }
+  if (econWatchEligible.length === 0) return 0;
+
+  await refreshAllowlist();
+  const policyEligible: CollectedNewsItem[] = [];
+  for (const item of econWatchEligible) {
+    const verdict = checkSourcePolicy(item.source, item.url, {
+      pipeline: item.ingest_pipeline,
+      sourceDomain: item.source_domain,
+    });
+    if (verdict.decision === "allowed") {
+      policyEligible.push(item);
+      recordIngestAttempt({
+        source: item.source,
+        pipeline: item.ingest_pipeline ?? "riskflow-worker",
+        decision: "accepted",
+        reason: verdict.reason,
+        headlinePreview: item.headline,
+      });
+      continue;
+    }
+
+    recordIngestAttempt({
+      source: item.source,
+      pipeline: item.ingest_pipeline ?? "riskflow-worker",
+      decision: "blocked_by_policy",
+      reason: verdict.reason,
+      headlinePreview: item.headline,
+    });
+    recordLeakEvent(
+      `${verdict.decision}: ${item.source_domain || item.source} — ${item.headline.slice(0, 80)}`,
+    );
+    bumpCounter(item.source || "unknown", "persist", "blocked_source_policy");
+  }
+  if (policyEligible.length === 0) return 0;
+
   // [claude-code 2026-04-27] image_url + url are the two display fields the
   // frontend RiskFlow card depends on (RiskFlowDetailCard.tsx renders an <img>
   // wrapped in <a href={alert.url ?? alert.imageUrl}>). Persist both — the
   // central-scorer copies them straight through to scored_riskflow_items.
   // [claude-code 2026-04-27] S46.4/I: video_url threaded through for tweet
   // attachments (highest-bitrate mp4 from extended_entities.media[].video_info).
-  const rows = eligible.map((item) => ({
+  const rows = policyEligible.map((item) => ({
     tweet_id: item.item_id,
     source: item.source,
     source_domain: item.source_domain,
@@ -151,10 +222,14 @@ export async function writeCollectedItems(
     url: item.url ?? null,
     image_url: item.image_url ?? null,
     video_url: item.video_url ?? null,
-    symbols: [] as string[],
-    tags: item.url
-      ? [`url:${item.url}`, `tier:${item.tier}`]
-      : [`tier:${item.tier}`],
+    // Multiple images stored as JSON string in tags so the frontend can render side by side
+    tags: [
+      ...(item.url ? [`url:${item.url}`] : []),
+      `tier:${item.tier}`,
+      ...(item.image_urls && item.image_urls.length > 1
+        ? [`image_urls:${JSON.stringify(item.image_urls)}`]
+        : []),
+    ],
     is_breaking: item.tier === "breaking",
     urgency: item.tier === "breaking" ? 8 : 4,
     published_at: item.published_at,
@@ -178,7 +253,7 @@ export async function writeCollectedItems(
           error: error.message,
         }),
       );
-      for (const item of eligible) {
+      for (const item of policyEligible) {
         bumpCounter(
           item.source || "unknown",
           "persist",
@@ -188,19 +263,19 @@ export async function writeCollectedItems(
       return 0;
     }
     const written = data?.length ?? 0;
-    const droppedDedup = Math.max(0, eligible.length - written);
+    const droppedDedup = Math.max(0, policyEligible.length - written);
     if (droppedDedup > 0) {
       // ignoreDuplicates doesn't tell us WHICH rows got dropped, so distribute
       // the dedup count across sources proportionally to their share of the
       // eligible batch. This is good-enough attribution for trend detection;
       // per-row precision would require a read-before-write per batch.
       const perSource = new Map<string, number>();
-      for (const item of eligible) {
+      for (const item of policyEligible) {
         const src = item.source || "unknown";
         perSource.set(src, (perSource.get(src) ?? 0) + 1);
       }
       const entries = Array.from(perSource.entries());
-      const total = eligible.length;
+      const total = policyEligible.length;
       let allocated = 0;
       for (let i = 0; i < entries.length; i++) {
         const [src, share] = entries[i];
@@ -224,7 +299,7 @@ export async function writeCollectedItems(
         error: err instanceof Error ? err.message : String(err),
       }),
     );
-    for (const item of eligible) {
+    for (const item of policyEligible) {
       bumpCounter(
         item.source || "unknown",
         "persist",
@@ -235,8 +310,9 @@ export async function writeCollectedItems(
   }
 }
 
+// [claude-code 2026-05-03] Added "unified" tier for merged X feed
 export async function upsertHeartbeat(row: {
-  tier: "breaking" | "standard";
+  tier: "breaking" | "standard" | "commentary" | "unified" | "financialjuice";
   last_run_at: string;
   items_ingested: number;
   errors: number;

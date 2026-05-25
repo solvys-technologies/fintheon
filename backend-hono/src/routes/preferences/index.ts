@@ -1,3 +1,4 @@
+// [claude-code 2026-04-29] S51: added "Earnings" to RISKFLOW_BUCKETS for filter persistence
 // [claude-code 2026-04-19] v5.22 S1: Cross-platform user preferences route. Backs the
 //   shared UserPreferences contract (frontend/lib/user-preferences.ts + mobile mirror).
 //   GET returns the merged prefs (defaults filled in); PUT upserts and returns the fresh row.
@@ -9,6 +10,7 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import { z } from "zod";
 import { getSupabaseClient } from "../../config/supabase.js";
+import { isDatabaseAvailable, sql } from "../../config/database.js";
 import { broadcastSyncToUser } from "../../services/notifications/sync-broadcast.js";
 import { NOTIFICATION_CATEGORIES } from "../../services/notifications/emit.js";
 
@@ -29,6 +31,7 @@ const RISKFLOW_BUCKETS = [
   "Macro",
   "Commentary",
   "Econ",
+  "Earnings",
   "Geopolitical",
 ] as const;
 
@@ -47,6 +50,13 @@ const notificationsSchema = z.object({
   blockedCategories: z.array(z.enum(NOTIFICATION_CATEGORIES)).default([]),
   severityThreshold: z.enum(SEVERITY_VALUES).default("medium"),
   econOnlyMode: z.boolean().default(false),
+  deliveryChannels: z
+    .object({
+      web: z.boolean().default(true),
+      push: z.boolean().default(false),
+      desktop: z.boolean().default(true),
+    })
+    .default({ web: true, push: false, desktop: true }),
 });
 
 const fusePaletteOverrideSchema = z
@@ -90,19 +100,56 @@ const DEFAULT_PREFERENCES: Preferences = {
     blockedCategories: [],
     severityThreshold: "medium",
     econOnlyMode: false,
+    deliveryChannels: { web: true, push: false, desktop: true },
   },
   psychAssistEnabled: false,
   riskflowFilters: { severities: [], buckets: [] },
   updatedAt: new Date(0).toISOString(),
 };
 
+const devPreferenceStore = new Map<string, Preferences>();
+
+function dbUserId(userId: string): string {
+  if (userId === "local-user") return "00000000-0000-0000-0000-000000000001";
+  return userId;
+}
+
+function subscriptionCategoriesFromPrefs(
+  notifications: Preferences["notifications"],
+): Record<string, boolean> {
+  const blocked = new Set(notifications.blockedCategories ?? []);
+  return Object.fromEntries(
+    NOTIFICATION_CATEGORIES.map((category) => [
+      category,
+      Boolean(notifications.deliveryChannels?.push) && !blocked.has(category),
+    ]),
+  );
+}
+
+async function syncPushSubscriptionPrefs(
+  userId: string,
+  notifications: Preferences["notifications"],
+): Promise<void> {
+  if (!isDatabaseAvailable()) return;
+  await sql`
+    UPDATE web_push_subscriptions
+    SET categories = ${JSON.stringify(subscriptionCategoriesFromPrefs(notifications))}::jsonb,
+        severity_threshold = ${notifications.severityThreshold},
+        updated_at = now()
+    WHERE user_id = ${userId}
+  `;
+}
+
 export function createPreferencesRoutes(): Hono {
   const router = new Hono();
 
   // GET /api/preferences — current user's merged preferences row.
   router.get("/", async (c: Context) => {
-    const uid = c.get("supabaseUid") as string | undefined;
-    if (!uid) return c.json({ error: "Missing supabase uid" }, 401);
+    const rawUid = c.get("supabaseUid") as string | undefined;
+    if (!rawUid) return c.json({ error: "Missing supabase uid" }, 401);
+    const uid = dbUserId(rawUid);
+    const devPrefs = devPreferenceStore.get(rawUid);
+    if (devPrefs) return c.json(devPrefs);
 
     const sb = getSupabaseClient();
     if (!sb) return c.json(DEFAULT_PREFERENCES);
@@ -125,6 +172,10 @@ export function createPreferencesRoutes(): Hono {
       notifications: {
         ...DEFAULT_PREFERENCES.notifications,
         ...(stored.notifications ?? {}),
+        deliveryChannels: {
+          ...DEFAULT_PREFERENCES.notifications.deliveryChannels,
+          ...(stored.notifications?.deliveryChannels ?? {}),
+        },
       },
       riskflowFilters: stored.riskflowFilters ?? {
         severities: [],
@@ -137,8 +188,9 @@ export function createPreferencesRoutes(): Hono {
 
   // PUT /api/preferences — upsert the full preferences row.
   router.put("/", async (c: Context) => {
-    const uid = c.get("supabaseUid") as string | undefined;
-    if (!uid) return c.json({ error: "Missing supabase uid" }, 401);
+    const rawUid = c.get("supabaseUid") as string | undefined;
+    if (!rawUid) return c.json({ error: "Missing supabase uid" }, 401);
+    const uid = dbUserId(rawUid);
 
     const raw = await c.req.json().catch(() => null);
     const parsed = preferencesSchema.safeParse(raw);
@@ -167,8 +219,22 @@ export function createPreferencesRoutes(): Hono {
     );
 
     if (error) {
+      if (rawUid === "local-user") {
+        devPreferenceStore.set(rawUid, incoming);
+        void syncPushSubscriptionPrefs(rawUid, incoming.notifications).catch(
+          () => {},
+        );
+        return c.json(incoming);
+      }
       console.error("[preferences] upsert failed:", error.message);
       return c.json({ error: "Failed to save preferences" }, 500);
+    }
+
+    void syncPushSubscriptionPrefs(uid, incoming.notifications).catch(() => {});
+    if (uid !== rawUid) {
+      void syncPushSubscriptionPrefs(rawUid, incoming.notifications).catch(
+        () => {},
+      );
     }
 
     // Best-effort cross-device sync — never fail the PUT on a sync hiccup.

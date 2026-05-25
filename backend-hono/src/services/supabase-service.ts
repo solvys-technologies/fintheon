@@ -1,11 +1,23 @@
+// [claude-code 2026-05-03] S58-T3: Preserve TWT/TOTT weekly brief persistence across older WT-constrained databases.
 // [claude-code 2026-03-20] Supabase cloud service — full data layer replacing Notion + scoring, ER, settings, consilium
 // [claude-code 2026-03-19] Supabase cloud service — centralized scoring, ER persistence, user settings, consilium
 // [claude-code 2026-04-24] S34-T3: extended EconEventRecord with country/category/event_key; added upsertEconEvent + readUpcomingEconEvents for the calendar populator + /api/econ/upcoming.
 // [claude-code 2026-04-26] S46.1: writeRawItems now applies the publisher-blocklist
 // (Bloomberg/Reuters/CNBC/Fox/MSNBC/CNN/etc) to every ingest path uniformly.
+// [claude-code 2026-04-29] S53-T4B: source-policy enforcement at writeRawItems boundary —
+// only approved X handles and official .gov domains may enter the feed. Everything else
+// is blocked here with ledger recording.
 import { getSupabaseClient, isSupabaseConfigured } from "../config/supabase.js";
 import { sql as dbSql, isDatabaseAvailable } from "../config/database.js";
 import { filterBlockedPublishers } from "./riskflow/publisher-blocklist.js";
+import { checkEconWatchGate } from "./econ-watch-filters/econ-watch-gate.js";
+import { bumpCounter } from "./riskflow/drop-counters.js";
+import { checkSourcePolicy } from "./riskflow/source-policy.js";
+import {
+  recordIngestAttempt,
+  recordBlockedBeforeFeed,
+  recordLeakEvent,
+} from "./riskflow/ingest-ledger.js";
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -22,6 +34,7 @@ export interface RawRiskFlowItem {
   headline?: string;
   body?: string;
   url?: string;
+  source_domain?: string | null;
   image_url?: string | null;
   /** [claude-code 2026-04-27] S46.4/I: direct .mp4 attached to a tweet. */
   video_url?: string | null;
@@ -100,6 +113,79 @@ export async function writeRawItems(items: RawRiskFlowItem[]): Promise<number> {
     );
   }
   items = filtered.kept;
+  if (items.length === 0) return 0;
+
+  // [codex 2026-05-08] Econ country/category filters apply at the raw ingest
+  // boundary too, not only to scheduled calendar upserts. This catches browser,
+  // feed-poller, Agent-Reach, Exa, and any other service using writeRawItems().
+  const econWatchPassed: RawRiskFlowItem[] = [];
+  for (const item of items) {
+    const verdict = await checkEconWatchGate(item);
+    if (verdict.allowed) {
+      econWatchPassed.push(item);
+      continue;
+    }
+
+    const source = item.source ?? "unknown";
+    bumpCounter(source, "persist", "blocked_econ_watch_filter");
+    recordBlockedBeforeFeed(
+      `${verdict.reason}: ${source} — ${item.headline?.slice(0, 80) ?? "(no headline)"}`,
+    );
+    recordIngestAttempt({
+      source,
+      pipeline: item.ingest_pipeline ?? "unknown",
+      decision: "dropped_before_feed",
+      reason: verdict.reason,
+      headlinePreview: item.headline?.slice(0, 80),
+    });
+  }
+  if (econWatchPassed.length < items.length) {
+    console.log(
+      `[EconWatch] blocked ${items.length - econWatchPassed.length}/${items.length} item(s) by country/category filter`,
+    );
+  }
+  items = econWatchPassed;
+  if (items.length === 0) return 0;
+
+  // [claude-code 2026-04-29] S53-T4B: source-policy enforcement — deny by default.
+  // Only approved X handles and official .gov domains pass.
+  const policyPassed: RawRiskFlowItem[] = [];
+  for (const item of items) {
+    const source = item.source ?? "unknown";
+    const verdict = checkSourcePolicy(source, item.url, {
+      pipeline: item.ingest_pipeline,
+      submittedBy: item.submitted_by,
+      tags: item.tags,
+    });
+    if (verdict.decision === "allowed") {
+      policyPassed.push(item);
+      recordIngestAttempt({
+        source,
+        pipeline: item.ingest_pipeline ?? "unknown",
+        decision: "accepted",
+        reason: verdict.reason,
+        headlinePreview: item.headline?.slice(0, 80),
+      });
+    } else {
+      recordIngestAttempt({
+        source,
+        pipeline: item.ingest_pipeline ?? "unknown",
+        decision: "blocked_by_policy",
+        reason: verdict.reason,
+        headlinePreview: item.headline?.slice(0, 80),
+      });
+      recordLeakEvent(
+        `${verdict.decision}: ${source} — ${item.headline?.slice(0, 60) ?? "(no headline)"}`,
+      );
+    }
+  }
+  if (policyPassed.length < items.length) {
+    console.log(
+      `[SourcePolicy] blocked ${items.length - policyPassed.length}/${items.length} item(s) — ` +
+        `sources not in allowlist`,
+    );
+  }
+  items = policyPassed;
   if (items.length === 0) return 0;
 
   // [claude-code 2026-04-06] Primary: raw SQL (Supabase JS upsert silently fails)
@@ -736,25 +822,35 @@ export async function writeBrief(
 ): Promise<BriefRecord | null> {
   const sb = getSupabaseClient();
   if (!sb) return null;
+  const storageTypes =
+    brief.brief_type === "TWT" ? ["TWT", "WT", "TOTT"] : [brief.brief_type];
 
   // Archive previous active briefs of same type
   await sb
     .from("briefs")
     .update({ status: "Archived" })
-    .eq("brief_type", brief.brief_type)
+    .in("brief_type", storageTypes)
     .eq("status", "Active");
 
-  const { data, error } = await sb
-    .from("briefs")
-    .insert({ ...brief, status: brief.status ?? "Active" })
-    .select()
-    .single();
+  let lastError: string | null = null;
+  for (const storageType of storageTypes) {
+    const { data, error } = await sb
+      .from("briefs")
+      .insert({
+        ...brief,
+        brief_type: storageType,
+        status: brief.status ?? "Active",
+      })
+      .select()
+      .single();
 
-  if (error) {
-    console.error("[Supabase] writeBrief error:", error.message);
-    return null;
+    if (!error) {
+      return storageType === "WT" ? { ...data, brief_type: "TWT" } : data;
+    }
+    lastError = error.message;
   }
-  return data;
+  console.error("[Supabase] writeBrief error:", lastError);
+  return null;
 }
 
 export async function readBriefs(
@@ -771,14 +867,19 @@ export async function readBriefs(
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (type) query = query.eq("brief_type", type);
+  if (type === "TWT") query = query.in("brief_type", ["TWT", "WT", "TOTT"]);
+  else if (type) query = query.eq("brief_type", type);
 
   const { data, error } = await query;
   if (error) {
     console.error("[Supabase] readBriefs error:", error.message);
     return [];
   }
-  return data ?? [];
+  return (data ?? []).map((brief) =>
+    brief.brief_type === "WT" || brief.brief_type === "TOTT"
+      ? { ...brief, brief_type: "TWT" }
+      : brief,
+  );
 }
 
 export async function readLatestBrief(
@@ -892,11 +993,12 @@ export async function readEconEvents(dateRange?: {
   const sb = getSupabaseClient();
   if (!sb) return [];
 
+  const ranged = Boolean(dateRange?.from) && Boolean(dateRange?.to);
   let query = sb
     .from("economic_events")
     .select("*")
     .order("date", { ascending: true })
-    .limit(100);
+    .limit(ranged ? 5000 : 100);
 
   if (dateRange?.from) query = query.gte("date", dateRange.from);
   if (dateRange?.to) query = query.lte("date", dateRange.to);

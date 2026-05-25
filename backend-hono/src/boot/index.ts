@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58-T1: DeepSeek primary env exports.
 // backend/src/boot/index.ts
 // ---------------------------------------------------------------------------
 // Boot-time environment variable validation.
@@ -33,7 +34,7 @@ const CRITICAL_VARS: VarSpec[] = [
       v.length > 20 ? null : "value appears too short to be a valid key",
   },
   {
-    name: "OPENROUTER_API_KEY",
+    name: "DEEPSEEK_API_KEY",
     critical: true,
     validate: (v) =>
       v.length > 10 ? null : "value appears too short to be a valid API key",
@@ -49,6 +50,7 @@ const CRITICAL_VARS: VarSpec[] = [
 ];
 
 const REQUIRED_VARS: VarSpec[] = [
+  { name: "DEEPSEEK_API_KEY" },
   { name: "FRED_API_KEY" },
   { name: "CRON_SECRET_TOKEN" },
 ];
@@ -105,21 +107,7 @@ export function validateEnv(): ValidationResult {
     );
   }
 
-  // OPENROUTER_API_KEY can be omitted when Harper runs through local VProxy Anthropic.
-  const vproxyEnabled = process.env.USE_VPROXY_ANTHROPIC !== "false";
-  if (vproxyEnabled) {
-    const before = criticalErrors.length;
-    for (let i = criticalErrors.length - 1; i >= 0; i--) {
-      if (criticalErrors[i].includes("OPENROUTER_API_KEY")) {
-        criticalErrors.splice(i, 1);
-      }
-    }
-    if (criticalErrors.length < before) {
-      warnings.push(
-        "[INFO] OPENROUTER_API_KEY not required because USE_VPROXY_ANTHROPIC is enabled",
-      );
-    }
-  }
+  // --- DEEPSEEK_API_KEY is used by the AI provider chain as primary; OpenCode Go is fallback.
 
   // --- Required vars (warnings, not fatal) ---
   for (const spec of REQUIRED_VARS) {
@@ -202,14 +190,11 @@ export const env = {
   SUPABASE_URL: process.env.SUPABASE_URL!,
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY!,
   OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY ?? "",
-  OPENROUTER_APP_URL:
-    process.env.OPENROUTER_APP_URL ?? "https://fintheon-solvys.vercel.app",
-  OPENROUTER_APP_NAME: process.env.OPENROUTER_APP_NAME ?? "Fintheon-AI-Gateway",
-  USE_VPROXY_ANTHROPIC: process.env.USE_VPROXY_ANTHROPIC !== "false",
-  VPROXY_BASE_URL: process.env.VPROXY_BASE_URL ?? "http://localhost:8317",
-  VPROXY_API_KEY: process.env.VPROXY_API_KEY ?? "CLI_PROXY_API_KEY",
-  VPROXY_ANTHROPIC_MODEL:
-    process.env.VPROXY_ANTHROPIC_MODEL ?? "claude-opus-4-6",
+  DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY ?? "",
+  OPENCODE_GO_API_URL: process.env.OPENCODE_GO_API_URL,
+  OPENCODE_GO_API_KEY: process.env.OPENCODE_GO_API_KEY,
+  HERMES_API_URL: process.env.HERMES_API_URL,
+  HERMES_API_KEY: process.env.HERMES_API_KEY,
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   VERCEL_AI_GATEWAY_API_KEY: process.env.VERCEL_AI_GATEWAY_API_KEY,
   FRED_API_KEY: process.env.FRED_API_KEY,

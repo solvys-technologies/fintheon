@@ -1,4 +1,4 @@
-// [claude-code 2026-04-05] Claude Peers — peer/auth/desk/voice endpoints + test-fire on twitter-round-robin registration
+// [claude-code 2026-04-05] Claude Peers — peer/auth/desk endpoints + test-fire on twitter-round-robin registration
 import { Hono } from "hono";
 import type { Context } from "hono";
 import {
@@ -19,12 +19,6 @@ import {
   getDeskPeers,
   listDesks,
 } from "../../services/peers/desk-manager.js";
-import {
-  createRoom,
-  joinRoom,
-  leaveRoom,
-  listParticipants,
-} from "../../services/peers/voice-room.js";
 import type { HeartbeatPayload, PeerRegistration } from "../../types/peers.js";
 
 function getUserId(c: Context): string | null {
@@ -138,58 +132,6 @@ export function createPeersRoutes(): Hono {
       }
       return c.json({ error: "Failed to assign peer", details: msg }, 500);
     }
-  });
-
-  router.post("/voice/join", async (c) => {
-    const userId = getUserId(c);
-    if (!userId) return c.json({ error: "Authentication required" }, 401);
-
-    const body = await c.req
-      .json<{ peerId?: string; roomId?: string; roomName?: string }>()
-      .catch(() => null);
-
-    const peers = await listPeers();
-    const resolvedPeerId =
-      body?.peerId ??
-      peers.find((peer) => peer.userId === userId)?.id ??
-      userId;
-
-    let roomId = body?.roomId;
-    if (!roomId) {
-      const room = await createRoom(
-        body?.roomName?.trim() || "Claude Peers Voice",
-      );
-      roomId = room.id;
-    }
-
-    const result = await joinRoom(resolvedPeerId, roomId);
-    return c.json(result);
-  });
-
-  router.post("/voice/leave", async (c) => {
-    const userId = getUserId(c);
-    if (!userId) return c.json({ error: "Authentication required" }, 401);
-
-    const body = await c.req
-      .json<{ peerId?: string; roomId?: string }>()
-      .catch(() => null);
-    if (!body?.roomId) return c.json({ error: "roomId is required" }, 400);
-
-    const peers = await listPeers();
-    const resolvedPeerId =
-      body.peerId ?? peers.find((peer) => peer.userId === userId)?.id ?? userId;
-
-    const left = await leaveRoom(resolvedPeerId, body.roomId);
-    return c.json({ left });
-  });
-
-  router.get("/voice/participants", async (c) => {
-    const roomId = c.req.query("roomId");
-    if (!roomId)
-      return c.json({ error: "roomId query parameter is required" }, 400);
-
-    const data = await listParticipants(roomId);
-    return c.json(data);
   });
 
   router.get("/:id", async (c) => {

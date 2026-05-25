@@ -15,7 +15,9 @@ import { createLogger } from "../../lib/logger.js";
 const log = createLogger("MCP");
 
 const CLAUDE_MCP_PATH = resolve(homedir(), ".claude", "mcp.json");
-const PROJECT_MCP_PATH = resolve(process.cwd(), ".mcp.json");
+// [claude-code 2026-05-07] backend runs from backend-hono/, check repo root too
+const CWD_MCP_PATH = resolve(process.cwd(), ".mcp.json");
+const REPO_ROOT_MCP_PATH = resolve(process.cwd(), "..", ".mcp.json");
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -146,6 +148,15 @@ const KNOWN_SERVERS: Record<string, Partial<McpServerEntry>> = {
     category: "productivity",
     toolCount: 18,
   },
+  "solvys-support": {
+    name: "Solvys Support",
+    description:
+      "Linear-backed support queue, issue triage, sprint follow-up, and agent handoffs",
+    category: "productivity",
+    toolCount: 20,
+    requiresApiKey: true,
+    apiKeyEnvVar: "LINEAR_ACCESS_TOKEN",
+  },
 };
 
 // ── Internal Connectors (not MCP — in-app features) ──────────────────────
@@ -165,8 +176,8 @@ const INTERNAL_CONNECTORS: McpServerEntry[] = [
     source: "internal",
   },
   {
-    id: "aquarium",
-    name: "Aquarium",
+    id: "arbitrumChamber",
+    name: "ArbitrumChamber",
     description: "Discuss the most recent AgentDesk simulation run",
     transport: "stdio",
     enabled: true,
@@ -208,12 +219,16 @@ async function writeClaudeMcpConfig(config: ClaudeMcpConfig): Promise<void> {
 }
 
 async function readProjectMcpConfig(): Promise<ClaudeMcpConfig> {
-  try {
-    const raw = await readFile(PROJECT_MCP_PATH, "utf8");
-    return JSON.parse(raw) as ClaudeMcpConfig;
-  } catch {
-    return { mcpServers: {} };
+  const paths = [CWD_MCP_PATH, REPO_ROOT_MCP_PATH];
+  for (const path of paths) {
+    try {
+      const raw = await readFile(path, "utf8");
+      return JSON.parse(raw) as ClaudeMcpConfig;
+    } catch {
+      // try next path
+    }
   }
+  return { mcpServers: {} };
 }
 
 function claudeServerToEntry(

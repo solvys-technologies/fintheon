@@ -9,7 +9,7 @@ import { Mic, MicOff } from "lucide-react";
 import { useVoice } from "../../contexts/VoiceContext";
 import { resolveVoiceOrbState } from "../../types/voice";
 import { VoiceAuroraOrb } from "./VoiceAuroraOrb";
-import { VoiceModePixelOverlay } from "./VoiceModePixelOverlay";
+import { VoiceBorderGlow } from "./VoiceBorderGlow";
 import { useHarperVoiceSession } from "../../hooks/useHarperVoiceSession";
 
 const INFRACTION_HOLD_MS = 8_000;
@@ -216,12 +216,21 @@ export function HeaderVoiceControl({
 
   return (
     <>
-      <VoiceModePixelOverlay active={enabled} />
+      <style>{`
+        .mic-dormant-shimmer {
+          animation: mic-brighter-shimmer 2s ease-in-out infinite;
+        }
+        @keyframes mic-brighter-shimmer {
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
+        }
+      `}</style>
+      <VoiceBorderGlow active={enabled} />
       <button
         type="button"
         onClick={handleClick}
         disabled={isDisabled}
-        className={`relative rounded-full transition-colors ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:opacity-90"}`}
+        className={`relative transition-colors ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:opacity-90"}`}
         title={getTitle()}
       >
         {showOrb ? (
@@ -229,15 +238,14 @@ export function HeaderVoiceControl({
         ) : (
           /* Dormant/idle state: bordered mic icon — Mic when enabled, MicOff when disabled */
           <div
-            className="rounded-full bg-[#070704] flex items-center justify-center"
+            className="flex items-center justify-center"
             style={{
               width: compact ? "24px" : "28px",
               height: compact ? "24px" : "28px",
-              border: `1.5px solid var(--fintheon-accent)`,
             }}
           >
             {enabled ? (
-              <Mic className="w-3 h-3 text-[var(--fintheon-accent)]/60" />
+              <Mic className="w-3 h-3 toolbar-icon-active mic-dormant-shimmer" />
             ) : (
               <MicOff className="w-3 h-3 text-zinc-500" />
             )}

@@ -61,6 +61,7 @@ export function RefinementEditLockModal({ open, onClose, onUnlocked }: Props) {
       aria-modal="true"
       aria-label="Unlock editing"
       onClick={onClose}
+      className="fintheon-modal-backdrop"
       style={{
         position: "fixed",
         inset: 0,
@@ -68,17 +69,14 @@ export function RefinementEditLockModal({ open, onClose, onUnlocked }: Props) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "rgba(5, 4, 2, 0.72)",
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        className="fintheon-modal-surface"
         style={{
           width: 380,
           maxWidth: "calc(100vw - 40px)",
-          background: "var(--fintheon-bg)",
-          border:
-            "1px solid color-mix(in srgb, var(--fintheon-accent) 30%, transparent)",
           padding: "20px 22px",
           display: "flex",
           flexDirection: "column",

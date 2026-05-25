@@ -1,4 +1,5 @@
 // [claude-code 2026-03-10] Frontend mirror of backend market-data types
+// [claude-code 2026-05-03] S57: IV prediction scenarios are deterministic canonical slots.
 
 export type MarketDataProvider = "fmp" | "unusual-whales" | "yahoo-finance";
 
@@ -117,6 +118,7 @@ export interface IVScoreResponse {
     nextSessionScore: number;
     confidence: number;
     regimeShiftProbability: number;
+    /** Fixed order: Continuation, Risk-on rally, Escalation. Missing buckets return 0%. */
     scenarios: Array<{
       label: string;
       probability: number;

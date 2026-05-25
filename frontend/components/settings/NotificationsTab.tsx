@@ -1,12 +1,17 @@
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — notifications tab
-import React from "react";
-import { Volume2, Mic } from "lucide-react";
-import Toggle from "../Toggle";
+import { useState } from "react";
+import { ChevronDown, Volume2, Mic } from "lucide-react";
 import { useToast } from "../../contexts/ToastContext";
+import { useSettings } from "../../contexts/SettingsContext";
 import {
   HEALING_BOWL_SOUNDS,
   healingBowlPlayer,
 } from "../../utils/healingBowlSounds";
+import type {
+  NotificationCategory,
+  NotificationPrefs,
+  Severity,
+} from "../../lib/user-preferences";
 
 interface NotificationsTabProps {
   alertConfig: any;
@@ -18,47 +23,178 @@ interface NotificationsTabProps {
   };
 }
 
+const CHANNELS: Array<{
+  id: keyof NotificationPrefs["deliveryChannels"];
+  label: string;
+}> = [
+  { id: "web", label: "Web" },
+  { id: "push", label: "Push" },
+  { id: "desktop", label: "Desktop" },
+];
+const CATEGORY_TOGGLES: Array<{ id: NotificationCategory; label: string }> = [
+  { id: "riskflow", label: "RiskFlow" },
+  { id: "geopolitical_alerts", label: "Geopolitical" },
+  { id: "econ_alerts", label: "Economic" },
+  { id: "dailyBrief", label: "Daily Brief" },
+  { id: "regimeActivations", label: "Regime Activations" },
+  { id: "regimeProposals", label: "Regime Proposals" },
+  { id: "lexiconProposals", label: "Lexicon Proposals" },
+  { id: "walkBackReverts", label: "Walk-back Reverts" },
+  { id: "toolApprovals", label: "Tool Approvals" },
+  { id: "maintenance_request", label: "Maintenance" },
+  { id: "chat_relay", label: "Chat Relay" },
+  { id: "system", label: "System" },
+];
+const SEVERITY_SEGMENTS: Array<{ label: string; value: Severity }> = [
+  { label: "CRIT", value: "critical" },
+  { label: "HIGH", value: "high" },
+  { label: "MED", value: "medium" },
+  { label: "LOW", value: "low" },
+];
+
 export function NotificationsTab({
   alertConfig,
   setAlertConfig,
   voiceMemory,
 }: NotificationsTabProps) {
+  const { preferences, updatePreferences } = useSettings();
+  const notifications = preferences.notifications;
+  const blockedCategories = new Set(notifications.blockedCategories ?? []);
+  const [deliveryOpen, setDeliveryOpen] = useState(true);
+
+  const updateNotificationPrefs = (next: NotificationPrefs) => {
+    updatePreferences({ notifications: next });
+  };
+
+  const toggleChannel = (
+    channel: keyof NotificationPrefs["deliveryChannels"],
+    enabled: boolean,
+  ) => {
+    updateNotificationPrefs({
+      ...notifications,
+      deliveryChannels: {
+        ...notifications.deliveryChannels,
+        [channel]: enabled,
+      },
+    });
+  };
+
+  const toggleCategory = (category: NotificationCategory, enabled: boolean) => {
+    const nextBlocked = enabled
+      ? [...blockedCategories].filter((item) => item !== category)
+      : [...blockedCategories, category];
+    updateNotificationPrefs({
+      ...notifications,
+      blockedCategories: nextBlocked,
+    });
+  };
+
   return (
-    <>
-      <section>
-        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
+    <div className="space-y-6 text-right">
+      <section className="fintheon-fade-divider pb-2">
+        <button
+          type="button"
+          onClick={() => setDeliveryOpen((open) => !open)}
+          className="mb-3 flex w-full items-center justify-end gap-2 text-right text-sm font-semibold text-[var(--fintheon-accent)]"
+        >
+          <span>Delivery Channels</span>
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${deliveryOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+        {deliveryOpen && (
+          <div className="space-y-0">
+            {CHANNELS.map((channel) => (
+              <SettingsToggleRow
+                key={channel.id}
+                label={channel.label}
+                enabled={notifications.deliveryChannels[channel.id]}
+                onChange={(val) => toggleChannel(channel.id, val)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="fintheon-fade-divider pb-2">
+        <h3 className="mb-3 text-right text-sm font-semibold text-[var(--fintheon-accent)]">
+          Notification Types
+        </h3>
+        <div className="space-y-0">
+          {CATEGORY_TOGGLES.map((category) => (
+            <SettingsToggleRow
+              key={category.id}
+              label={category.label}
+              enabled={!blockedCategories.has(category.id)}
+              onChange={(val) => toggleCategory(category.id, val)}
+            />
+          ))}
+        </div>
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <span className="text-[10px] uppercase tracking-[0.14em] text-zinc-600">
+            Minimum severity
+          </span>
+          <div className="flex overflow-hidden rounded-md border border-[var(--fintheon-accent)]/15">
+            {SEVERITY_SEGMENTS.map((item) => {
+              const active = notifications.severityThreshold === item.value;
+              return (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() =>
+                    updateNotificationPrefs({
+                      ...notifications,
+                      severityThreshold: item.value,
+                    })
+                  }
+                  className={`h-8 min-w-14 px-3 text-[10px] font-mono transition-colors ${
+                    active
+                      ? "bg-[var(--fintheon-accent)] text-black"
+                      : "text-zinc-400 hover:bg-[var(--fintheon-accent)]/10"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="fintheon-fade-divider pb-2">
+        <h3 className="mb-3 text-right text-sm font-semibold text-[var(--fintheon-accent)]">
           Alert Configuration
         </h3>
-        <div className="space-y-3">
-          <Toggle
+        <div className="space-y-0">
+          <SettingsToggleRow
             label="Price Alerts"
             enabled={alertConfig.priceAlerts}
             onChange={(val) =>
               setAlertConfig({ ...alertConfig, priceAlerts: val })
             }
           />
-          <Toggle
+          <SettingsToggleRow
             label="Psychological Alerts"
             enabled={alertConfig.psychAlerts}
             onChange={(val) =>
               setAlertConfig({ ...alertConfig, psychAlerts: val })
             }
           />
-          <Toggle
+          <SettingsToggleRow
             label="News Alerts"
             enabled={alertConfig.newsAlerts}
             onChange={(val) =>
               setAlertConfig({ ...alertConfig, newsAlerts: val })
             }
           />
-          <Toggle
+          <SettingsToggleRow
             label="Sound Enabled"
             enabled={alertConfig.soundEnabled}
             onChange={(val) =>
               setAlertConfig({ ...alertConfig, soundEnabled: val })
             }
           />
-          <Toggle
+          <SettingsToggleRow
             label="Nametag Emotional Indicator"
             enabled={alertConfig.nametagEmoPulse ?? true}
             onChange={(val) =>
@@ -67,10 +203,12 @@ export function NotificationsTab({
           />
 
           {/* VIX Spike Threshold */}
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-sm text-white">VIX Spike Threshold</span>
-              <p className="text-[10px] text-gray-500">
+          <div className="fintheon-fade-divider flex items-center justify-between gap-4 py-3 text-right">
+            <div className="min-w-0 text-right">
+              <span className="text-[11px] font-medium text-white">
+                VIX Spike Threshold
+              </span>
+              <p className="mt-0.5 text-[10px] text-gray-500">
                 Toast when VIX crosses above this level
               </p>
             </div>
@@ -100,50 +238,48 @@ export function NotificationsTab({
       {/* Don't Show Again — reset blocked notifications */}
       <DndResetSection />
 
-      <section className="pt-6">
-        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
+      <section className="fintheon-fade-divider pb-2">
+        <h3 className="mb-1 text-right text-sm font-semibold text-[var(--fintheon-accent)]">
           Healing Bowl Sound
         </h3>
-        <p className="text-xs text-gray-500 mb-4">
+        <p className="mb-4 text-right text-xs text-gray-500">
           Select a sound to play when emotional tilt is detected. Calm sounds
           are relaxing, shock sounds are alerting.
         </p>
-        <div className="space-y-2">
+        <div className="space-y-0">
           {HEALING_BOWL_SOUNDS.map((sound) => (
             <div
               key={sound.id}
-              className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${
-                alertConfig.healingBowlSound === sound.id
-                  ? "bg-[var(--fintheon-accent)]/20 border-[var(--fintheon-accent)]/40"
-                  : "bg-[var(--fintheon-surface)] border-zinc-800 hover:border-zinc-700"
-              }`}
+              className="fintheon-fade-divider flex cursor-pointer items-center justify-end gap-3 py-3 text-right transition-all hover:opacity-80"
               onClick={() =>
                 setAlertConfig({ ...alertConfig, healingBowlSound: sound.id })
               }
             >
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-medium text-white">
+              <div className="min-w-0 flex-1 text-right">
+                <div className="mb-1 flex items-center justify-end gap-2">
+                  <span className="text-[11px] font-medium text-white">
                     {sound.name}
                   </span>
                   <span
-                    className={`text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                    className={`text-[9px] uppercase tracking-wider ${
                       sound.type === "calm"
-                        ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                        : "bg-orange-500/20 text-orange-400 border border-orange-500/30"
+                        ? "text-blue-400"
+                        : "text-orange-400"
                     }`}
                   >
                     {sound.type}
                   </span>
                 </div>
-                <p className="text-xs text-gray-400">{sound.description}</p>
+                <p className="text-[10px] text-gray-500">
+                  {sound.description}
+                </p>
               </div>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   healingBowlPlayer.preview(sound.id);
                 }}
-                className="ml-3 p-2 rounded-lg bg-[var(--fintheon-accent)]/10 border border-[var(--fintheon-accent)]/30 hover:bg-[var(--fintheon-accent)]/20 transition-colors"
+                className="fintheon-icon-button shrink-0"
                 title="Preview sound"
               >
                 <Volume2 className="w-4 h-4 text-[var(--fintheon-accent)]" />
@@ -153,12 +289,12 @@ export function NotificationsTab({
         </div>
       </section>
 
-      <section className="pt-6">
-        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3 flex items-center gap-2">
+      <section>
+        <h3 className="mb-1 flex items-center justify-end gap-2 text-right text-sm font-semibold text-[var(--fintheon-accent)]">
           <Mic className="w-4 h-4" />
           Microphone Device
         </h3>
-        <p className="text-xs text-gray-500 mb-4">
+        <p className="mb-4 text-right text-xs text-gray-500">
           Select which microphone to use for voice commands. Changes apply on
           next voice session.
         </p>
@@ -175,12 +311,12 @@ export function NotificationsTab({
           ))}
         </select>
         {voiceMemory.devices.length === 0 && (
-          <p className="text-[11px] text-zinc-600 mt-2">
+          <p className="mt-2 text-right text-[11px] text-zinc-600">
             No microphones detected. Grant microphone permission to see devices.
           </p>
         )}
       </section>
-    </>
+    </div>
   );
 }
 
@@ -191,24 +327,19 @@ function DndResetSection() {
   if (blockedTypes.length === 0) return null;
 
   return (
-    <section className="pt-6">
-      <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
+    <section className="fintheon-fade-divider pb-2 text-right">
+      <h3 className="mb-3 text-right text-sm font-semibold text-[var(--fintheon-accent)]">
         Blocked Notifications
       </h3>
-      <p className="text-xs text-gray-500 mb-3">
+      <p className="mb-3 text-right text-xs text-gray-500">
         You've hidden {blockedTypes.length} notification type
         {blockedTypes.length > 1 ? "s" : ""} via "Don't Show Again".
       </p>
-      <div className="flex flex-wrap gap-2 mb-3">
+      <div className="mb-3 flex flex-wrap justify-end gap-2">
         {blockedTypes.map((type: string) => (
           <span
             key={type}
-            className="text-[10px] px-2 py-1 rounded-full border"
-            style={{
-              borderColor: "var(--fintheon-accent)",
-              color: "var(--fintheon-accent)",
-              backgroundColor: "rgba(199,159,74,0.08)",
-            }}
+            className="text-[10px] text-[var(--fintheon-accent)]"
           >
             {type}
           </span>
@@ -216,21 +347,39 @@ function DndResetSection() {
       </div>
       <button
         onClick={resetBlockedNotifications}
-        className="text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors"
-        style={{
-          borderColor: "rgba(239,68,68,0.3)",
-          color: "#EF4444",
-          backgroundColor: "transparent",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.1)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = "transparent";
-        }}
+        className="text-xs font-medium text-red-400 transition-colors hover:text-red-300"
       >
         Reset All — Show Everything
       </button>
     </section>
+  );
+}
+
+function SettingsToggleRow({
+  label,
+  enabled,
+  onChange,
+}: {
+  label: string;
+  enabled: boolean;
+  onChange: (enabled: boolean) => void;
+}) {
+  return (
+    <div className="fintheon-fade-divider flex items-center justify-between gap-4 py-3 text-right">
+      <span className="text-[11px] font-medium text-white">{label}</span>
+      <button
+        type="button"
+        onClick={() => onChange(!enabled)}
+        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+          enabled ? "bg-[var(--fintheon-accent)]" : "bg-zinc-700"
+        }`}
+      >
+        <span
+          className={`inline-block h-3.5 w-3.5 rounded-full bg-black transition-transform ${
+            enabled ? "translate-x-[18px]" : "translate-x-[3px]"
+          }`}
+        />
+      </button>
+    </div>
   );
 }

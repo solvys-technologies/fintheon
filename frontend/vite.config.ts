@@ -34,6 +34,10 @@ export default defineConfig(() => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname),
+        "lucide-react": path.resolve(
+          __dirname,
+          "components/icon-bank/AnimatedIcons.tsx",
+        ),
         zod: path.resolve(__dirname, "node_modules/zod"),
       },
     },

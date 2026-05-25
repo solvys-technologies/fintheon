@@ -23,8 +23,6 @@ primary_region = "ord"
 
 [env]
   GEPA_ENABLED = "true"
-  HERMES_SIDECAR_ENABLED = "true"
-  HERMES_SIDECAR_URL = "http://fintheon-hermes.internal:8318"
 
 [[vm]]
   memory = "512mb"

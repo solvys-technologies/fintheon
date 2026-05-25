@@ -307,18 +307,13 @@ export function CatalystModal({ open, onClose, editCard }: CatalystModalProps) {
   return (
     <div
       ref={backdropRef}
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm ${isClosing ? "animate-fade-out-backdrop" : "animate-fade-in-backdrop"}`}
+      className={`fintheon-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? "animate-fade-out-backdrop" : "animate-fade-in-backdrop"}`}
       onClick={(e) => {
         if (e.target === backdropRef.current) handleClose();
       }}
     >
       <div
-        className={`w-full max-w-lg max-h-[85vh] flex flex-col rounded-lg border shadow-[0_0_40px_rgba(199,159,74,0.12)] overflow-hidden ${isClosing ? "animate-fade-out" : "animate-fade-in"}`}
-        style={{
-          backgroundColor: "var(--fintheon-bg)",
-          borderColor:
-            "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
-        }}
+        className={`fintheon-modal-surface w-full max-w-lg max-h-[85vh] flex flex-col ${isClosing ? "animate-fade-out" : "animate-fade-in"}`}
       >
         {/* Header */}
         <div

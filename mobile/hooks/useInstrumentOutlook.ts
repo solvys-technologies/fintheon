@@ -1,6 +1,6 @@
 // [claude-code 2026-04-18] Drop YM from the mobile cards per TP — desktop keeps the full
 //   five-instrument grid; mobile drops the Dow row to keep cards above the fold.
-// [claude-code 2026-04-15] Instrument outlook hook — 120s polling, 5 instruments from Aquarium
+// [claude-code 2026-04-15] Instrument outlook hook — 120s polling, 5 instruments from ArbitrumChamber
 import { useState, useEffect, useRef, useCallback } from "react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";

@@ -4,7 +4,6 @@ import { useBackend } from "../lib/backend";
 import { useToast } from "../contexts/ToastContext";
 import { useSettings } from "../contexts/SettingsContext";
 import type { StickyBulletinData } from "../lib/services/editor";
-import type { WatchlistPhrase } from "../lib/services/riskflow";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -34,17 +33,6 @@ export function useStickyBulletin(
     StickyBulletinData["antilagTimes"]
   >([]);
   const [loaded, setLoaded] = useState(false);
-
-  // Catalyst Watch state
-  const [phrases, setPhrases] = useState<WatchlistPhrase[]>([]);
-  const [phrasesLoaded, setPhrasesLoaded] = useState(false);
-  const [newPhrase, setNewPhrase] = useState("");
-  const [phraseMatchType, setPhraseMatchType] = useState<"contains" | "exact">(
-    "contains",
-  );
-  const [phraseRepeating, setPhraseRepeating] = useState(false);
-  const [phraseSubmitting, setPhraseSubmitting] = useState(false);
-  const [biasWarning, setBiasWarning] = useState("");
 
   // Hot Times state
   const [showHotTimes, setShowHotTimes] = useState(false);
@@ -101,18 +89,6 @@ export function useStickyBulletin(
       })
       .catch(() => setLoaded(true));
   }, [open, loaded, backend.stickyBulletin]);
-
-  // Load phrases when Trade Idea section opens
-  useEffect(() => {
-    if (activeSection !== "idea" || phrasesLoaded) return;
-    backend.riskflow
-      .getPhrases()
-      .then((res) => {
-        setPhrases(res.phrases);
-        setPhrasesLoaded(true);
-      })
-      .catch(() => setPhrasesLoaded(true));
-  }, [activeSection, phrasesLoaded, backend.riskflow]);
 
   // Load hot times when expanded
   useEffect(() => {
@@ -253,47 +229,6 @@ export function useStickyBulletin(
     }
   };
 
-  // ─── Catalyst Watch handlers ───
-  const handleAddPhrase = async () => {
-    if (!newPhrase.trim()) return;
-    setPhraseSubmitting(true);
-    setBiasWarning("");
-    try {
-      const res = await backend.riskflow.addPhrase({
-        phrase: newPhrase,
-        matchType: phraseMatchType,
-        repeating: phraseRepeating,
-      });
-      setPhrases((prev) => [res.phrase, ...prev]);
-      setNewPhrase("");
-      if (res.removedBias.length > 0) {
-        setBiasWarning(`Removed bias: ${res.removedBias.join(", ")}`);
-        setTimeout(() => setBiasWarning(""), 4000);
-      }
-      addToast(
-        `Watching: "${res.phrase.phrase}"`,
-        "success",
-        undefined,
-        undefined,
-        "top-right",
-      );
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to add";
-      addToast(msg, "error");
-    } finally {
-      setPhraseSubmitting(false);
-    }
-  };
-
-  const handleDeletePhrase = async (id: number) => {
-    try {
-      await backend.riskflow.deletePhrase(id);
-      setPhrases((prev) => prev.filter((p) => p.id !== id));
-    } catch {
-      addToast("Failed to remove", "error");
-    }
-  };
-
   return {
     // Position & refs
     popupPos,
@@ -302,19 +237,6 @@ export function useStickyBulletin(
     // Section navigation
     activeSection,
     setActiveSection,
-
-    // Catalyst Watch
-    phrases,
-    newPhrase,
-    setNewPhrase,
-    phraseMatchType,
-    setPhraseMatchType,
-    phraseRepeating,
-    setPhraseRepeating,
-    phraseSubmitting,
-    biasWarning,
-    handleAddPhrase,
-    handleDeletePhrase,
 
     // Antilag
     antilagTimes,

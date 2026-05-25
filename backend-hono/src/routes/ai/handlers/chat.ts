@@ -3,9 +3,9 @@
 /**
  * AI Chat Handler
  * Handle chat messages and AI responses via Strands agent network
- * Routes through P.I.C. agent network — single inference path via VProxy
+ * Routes through P.I.C. agent network.
  *
- * All chat goes through Strands agents → VProxy → Claude models.
+ * All chat goes through Strands agents and the DeepSeek/Hermes provider chain.
  * Agent detection routes to: Harper, Oracle, Feucht, Consul, Herald.
  */
 
@@ -49,12 +49,29 @@ import {
   detectVerbalFlush,
   verbalFlushMemory,
 } from "../../../services/cao-memory-flush.js";
+import { buildMacroWatchlistContext } from "../../../services/market-data/macro-watchlist.js";
 
 // File attachment content part types
 type FileContentPart =
   | { type: "text"; text: string }
   | { type: "image_url"; image_url: { url: string } }
   | { type: "file"; file: { name: string; mimeType: string; data: string } };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function buildConversationMetadata(input: {
+  metadata?: Record<string, unknown>;
+  workspace?: Record<string, unknown>;
+  surface?: string;
+} | null): Record<string, unknown> | undefined {
+  if (!input) return undefined;
+  const metadata = isRecord(input.metadata) ? { ...input.metadata } : {};
+  if (isRecord(input.workspace)) metadata.workspace = input.workspace;
+  if (input.surface) metadata.surface = input.surface;
+  return Object.keys(metadata).length > 0 ? metadata : undefined;
+}
 
 function toAgentLabel(agent: HermesAgentRole | string): string {
   switch (agent) {
@@ -97,7 +114,7 @@ async function createAgentForRole(
 
 /**
  * POST /api/ai/chat
- * Strands Agent Processing - Routes through P.I.C. agent network via VProxy
+ * Strands Agent Processing - Routes through P.I.C. agent network
  */
 export async function handleChat(c: Context) {
   const startTime = Date.now();
@@ -119,7 +136,14 @@ export async function handleChat(c: Context) {
 
   try {
     const body = await c.req
-      .json<ChatRequest & { messages?: { role: string; content: string }[] }>()
+      .json<
+        ChatRequest & {
+          messages?: { role: string; content: string }[];
+          workspace?: Record<string, unknown>;
+          metadata?: Record<string, unknown>;
+          surface?: string;
+        }
+      >()
       .catch((err) => {
         console.error(
           `[Hermes][${requestId}] Failed to parse request body:`,
@@ -277,6 +301,7 @@ export async function handleChat(c: Context) {
       const title = conversationStore.generateTitle(message);
       conversation = await conversationStore.createConversation(userId, {
         title,
+        metadata: buildConversationMetadata(body),
       });
       console.log(
         `[Hermes][${requestId}] Created conversation: ${conversation.id}`,
@@ -363,26 +388,34 @@ export async function handleChat(c: Context) {
       prompt = `${feedContext}\n\n${prompt}`;
     }
 
-    // [S23-T3] Aquarium awareness: Hermes CAOs (Oracle, Feucht, Consul, Herald) should also
-    // interpret AgentDesk output when the user is on the Aquarium surface.
+    const macroContext = await buildMacroWatchlistContext();
+    if (macroContext) {
+      prompt = `${macroContext}\n\n${prompt}`;
+    }
+
+    // [S23-T3] ArbitrumChamber awareness: Hermes CAOs (Oracle, Feucht, Consul, Herald) should also
+    // interpret AgentDesk output when the user is on the ArbitrumChamber surface.
     const mcpActive = Array.isArray((body as any)?.mcpServers)
       ? ((body as any).mcpServers as string[])
       : [];
     const hermesSurface = (body as any)?.surface as string | undefined;
-    if (hermesSurface === "aquarium" || mcpActive.includes("aquarium")) {
+    if (
+      hermesSurface === "arbitrumChamber" ||
+      mcpActive.includes("arbitrumChamber")
+    ) {
       try {
-        const { buildAquariumContext } =
+        const { buildArbitrumChamberContext } =
           await import("../../../services/harper-handler.js");
-        const aquariumContext = await buildAquariumContext();
-        if (aquariumContext) {
-          prompt = `${aquariumContext}\n\n${prompt}`;
+        const arbitrumChamberContext = await buildArbitrumChamberContext();
+        if (arbitrumChamberContext) {
+          prompt = `${arbitrumChamberContext}\n\n${prompt}`;
           console.log(
-            `[Hermes][${requestId}] Aquarium context injected (surface=${hermesSurface ?? "none"})`,
+            `[Hermes][${requestId}] ArbitrumChamber context injected (surface=${hermesSurface ?? "none"})`,
           );
         }
       } catch (err) {
         console.warn(
-          `[Hermes][${requestId}] Failed to build Aquarium context:`,
+          `[Hermes][${requestId}] Failed to build ArbitrumChamber context:`,
           err,
         );
       }
@@ -391,7 +424,7 @@ export async function handleChat(c: Context) {
     cognition.step(
       "gateway-call",
       `Streaming from ${toAgentLabel(agentInfo.agent)}`,
-      "Strands agent via VProxy",
+      "Strands agent via provider chain",
     );
 
     const agentModel =
@@ -433,7 +466,56 @@ export async function handleChat(c: Context) {
       },
     });
 
-    return uiStreamToSSEResponse(stream, {
+    // S38-T1: wrap stream to emit complete event before DONE
+    const completeEnc = new TextEncoder();
+    const doneEnc = completeEnc.encode("data: [DONE]\n\n");
+    let textBuf = "";
+    let doneSent = false;
+    const wrappedStrm = new ReadableStream<Uint8Array>({
+      start(ctrl) {
+        const reader = stream.getReader();
+        function pump() {
+          reader
+            .read()
+            .then(({ done, value }) => {
+              if (done) {
+                if (!doneSent) {
+                  doneSent = true;
+                  const lat = Date.now() - startTime;
+                  ctrl.enqueue(
+                    completeEnc.encode(
+                      "data: " +
+                        JSON.stringify({
+                          type: "complete",
+                          latency_ms: lat,
+                          source_count: 1,
+                          model:
+                            agentInfo.agent === "harper-cao"
+                              ? "opus"
+                              : agentModel,
+                          provider: "anthropic",
+                          prompt_tokens: Math.ceil(prompt.length / 4),
+                          completion_tokens: Math.ceil(textBuf.length / 4),
+                        }) +
+                        "\n\n",
+                    ),
+                  );
+                }
+                ctrl.enqueue(doneEnc);
+                ctrl.close();
+                return;
+              }
+              textBuf += new TextDecoder().decode(value);
+              ctrl.enqueue(value);
+              pump();
+            })
+            .catch((e) => ctrl.error(e));
+        }
+        pump();
+      },
+    });
+
+    return uiStreamToSSEResponse(wrappedStrm, {
       "X-Conversation-Id": conversation.id,
       "X-Request-Id": requestId,
       "X-Hermes-Agent": agentModel,

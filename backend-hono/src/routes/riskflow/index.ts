@@ -21,6 +21,7 @@ import {
   handleGenerateNote,
   handleRescore,
   handleRescoreAll,
+  handleRettiwtKickstart,
   handlePollingToggle,
   handlePollingStatus,
   handleUserPollingToggle,
@@ -30,6 +31,7 @@ import {
   handleDeletePhrase,
   handleNotRelevant,
   handleGetRiskSignals,
+  handleGetEstimatedDrift,
   handleDoctor,
   handleGetItemById,
 } from "./handlers.js";
@@ -73,6 +75,10 @@ export function createRiskFlowRoutes(): Hono {
   // POST /api/riskflow/refresh - Manual refresh trigger
   router.post("/refresh", handleRefresh);
 
+  // POST /api/riskflow/kickstart - Manual X feed ingest + rescore (formerly rettiwt-kickstart)
+  router.post("/kickstart", handleRettiwtKickstart);
+  router.post("/rettiwt-kickstart", handleRettiwtKickstart); // legacy alias
+
   // POST /api/riskflow/rescore - Re-score with current regime/calibration weights
   router.post("/rescore", handleRescore);
 
@@ -111,6 +117,9 @@ export function createRiskFlowRoutes(): Hono {
 
   // Risk Signals — AI-refined cards (S16-T3)
   router.get("/risk-signals", handleGetRiskSignals);
+
+  // Estimated Drift KPI — volatility persistence from decay taxonomy (S67)
+  router.get("/risk-signals/estimated-drift", handleGetEstimatedDrift);
 
   // GET /api/riskflow/items/:id — single-item lookup for the mobile DetailSheet modal (S25)
   router.get("/items/:id", handleGetItemById);

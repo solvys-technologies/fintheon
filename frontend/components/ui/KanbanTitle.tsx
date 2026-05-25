@@ -22,18 +22,24 @@ export function KanbanTitle({
 }: KanbanTitleProps) {
   return (
     <div className="flex items-center justify-between px-1 py-1">
-      <div className="flex items-center gap-2">
-        <h2 className="text-[11px] font-semibold text-[var(--fintheon-accent)] tracking-[0.2em] uppercase">
-          {title}
-        </h2>
-        {tag ? (
-          <span
-            className={`text-[9px] tracking-[0.22em] uppercase border rounded-full px-2 py-0.5 ${TONE_CLASSES[tone]}`}
-          >
-            {tag}
-          </span>
-        ) : null}
-      </div>
+      {title || tag ? (
+        <div className="flex items-center gap-2">
+          {title ? (
+            <h2 className="text-[11px] font-semibold text-[var(--fintheon-accent)] tracking-[0.2em] uppercase">
+              {title}
+            </h2>
+          ) : null}
+          {tag ? (
+            <span
+              className={`text-[9px] tracking-[0.22em] uppercase border rounded-full px-2 py-0.5 ${TONE_CLASSES[tone]}`}
+            >
+              {tag}
+            </span>
+          ) : null}
+        </div>
+      ) : (
+        <span />
+      )}
       {headerRight}
     </div>
   );

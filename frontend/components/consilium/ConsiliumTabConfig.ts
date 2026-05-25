@@ -1,23 +1,19 @@
 // [claude-code 2026-04-10] Extracted from ConsiliumHub.tsx
-// [claude-code 2026-04-25] S35: Arbitrum entry's icon swapped from Fish (lucide) to
-//   ArbitrumGlyph — stacked +/- in Nothing Display font, matching the deliberation
-//   semantics of the 5-seat chamber.
 import {
-  MessageSquare,
   Clock,
   GitBranch,
-  Cpu,
-  Users,
-  Shield,
+  MessageCircle,
+  Stadium,
   Brain,
   BookOpen,
   Moon,
+  Users,
 } from "lucide-react";
 import { ArbitrumGlyph } from "../icons/ArbitrumGlyph";
 
 // Top-level tabs: Sanctum, Boardroom, Apparatus are dropdowns; Chat is a direct button
 export type ConsiliumTab = "sanctum" | "chat" | "boardroom" | "apparatus";
-export type SanctumSubView = "narratives" | "aquarium" | "timeline";
+export type SanctumSubView = "narratives" | "arbitrumChamber" | "timeline";
 export type BoardroomSubView = "forum" | "agentic-chat" | "research";
 export type ApparatusSubView = "desk" | "fileroom" | "lounge";
 
@@ -25,12 +21,13 @@ export type ApparatusSubView = "desk" | "fileroom" | "lounge";
 export const REGULAR_TABS: {
   id: ConsiliumTab;
   label: string;
-  icon: typeof MessageSquare;
-}[] = [{ id: "chat", label: "Chat", icon: MessageSquare }];
+  icon: typeof MessageCircle;
+}[] = [{ id: "chat", label: "Chat", icon: MessageCircle }];
 
 // Icon broadened to include the custom ArbitrumGlyph alongside lucide types — both
 // expose a {size, className} prop API so callers can render uniformly.
 type SubViewIcon = typeof GitBranch | typeof ArbitrumGlyph;
+type LucideIcon = typeof MessageCircle;
 
 export const SANCTUM_SUB_VIEWS: {
   id: SanctumSubView;
@@ -51,7 +48,7 @@ export const SANCTUM_SUB_VIEWS: {
     icon: GitBranch,
   },
   {
-    id: "aquarium",
+    id: "arbitrumChamber",
     label: "Arbitrum",
     subtitle: "Deliberate it.",
     icon: ArbitrumGlyph,
@@ -62,19 +59,19 @@ export const BOARDROOM_SUB_VIEWS: {
   id: BoardroomSubView;
   label: string;
   subtitle?: string;
-  icon: typeof MessageSquare;
+  icon: LucideIcon;
 }[] = [
   {
     id: "forum",
     label: "Forum",
-    subtitle: "Community hub & voice",
-    icon: MessageSquare,
+    subtitle: "ProxVoice floor",
+    icon: Stadium,
   },
   {
     id: "agentic-chat",
     label: "Agentic Forum",
     subtitle: "Chat with Hermes & CAO",
-    icon: Cpu,
+    icon: Stadium,
   },
   {
     id: "research",
@@ -88,7 +85,7 @@ export const APPARATUS_SUB_VIEWS: {
   id: ApparatusSubView;
   label: string;
   subtitle?: string;
-  icon: typeof Cpu;
+  icon: LucideIcon;
 }[] = [
   {
     id: "desk",
@@ -98,8 +95,8 @@ export const APPARATUS_SUB_VIEWS: {
   },
   {
     id: "fileroom",
-    label: "Fileroom",
-    subtitle: "AI-generated context bank",
+    label: "File Room",
+    subtitle: "Docs, memos, uploads",
     icon: Brain,
   },
   {

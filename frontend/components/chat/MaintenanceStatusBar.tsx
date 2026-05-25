@@ -1,6 +1,7 @@
-// [claude-code 2026-03-06] Kanban-border maintenance status bar for footer toolbar
+// S38-T2: Replaced Loader2 with BrailleSpinner. Nothing-design, flat surface.
 import { useEffect } from "react";
-import { Loader2, Check, X } from "lucide-react";
+import { Check, X } from "lucide-react";
+import { BrailleSpinner } from "./primitive/BrailleSpinner";
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
@@ -29,53 +30,29 @@ export function MaintenanceStatusBar({
 
   if (status === "idle") return null;
 
-  const statusConfig: Record<
-    Exclude<MaintenanceStatus, "idle">,
-    {
-      icon: typeof Loader2 | typeof Check;
-      iconColor: string;
-      spin: boolean;
-      label: string;
+  const isUpdating = status === "updating";
+  const statusLabel = (() => {
+    switch (status) {
+      case "updating":
+        return message || "Updating...";
+      case "applied":
+        return "Changes applied";
+      case "changelog":
+        return "Changelog updated";
+      case "done":
+        return "Maintenance complete";
     }
-  > = {
-    updating: {
-      icon: Loader2,
-      iconColor: "var(--fintheon-accent)",
-      spin: true,
-      label: message || "Updating...",
-    },
-    applied: {
-      icon: Check,
-      iconColor: "#22C55E",
-      spin: false,
-      label: "Changes applied",
-    },
-    changelog: {
-      icon: Check,
-      iconColor: "#22C55E",
-      spin: false,
-      label: "Changelog updated",
-    },
-    done: {
-      icon: Check,
-      iconColor: "#22C55E",
-      spin: false,
-      label: "Maintenance complete",
-    },
-  };
-
-  const config = statusConfig[status];
-  const StatusIcon = config.icon;
+  })();
 
   return (
-    <div className="border-2 border-[var(--fintheon-accent)] rounded-lg px-4 py-2 bg-[var(--fintheon-surface)] flex items-center gap-3">
-      <StatusIcon
-        size={16}
-        className={config.spin ? "animate-spin" : ""}
-        style={{ color: config.iconColor, flexShrink: 0 }}
-      />
+    <div className="border-l border-[#c79f4a] rounded-r px-4 py-2 bg-[var(--fintheon-surface)] flex items-center gap-3">
+      {isUpdating ? (
+        <BrailleSpinner size={16} />
+      ) : (
+        <Check size={16} style={{ color: "#22C55E", flexShrink: 0 }} />
+      )}
       <span className="text-sm text-zinc-300 font-medium flex-1">
-        {config.label}
+        {statusLabel}
       </span>
       <button
         onClick={onDismiss}

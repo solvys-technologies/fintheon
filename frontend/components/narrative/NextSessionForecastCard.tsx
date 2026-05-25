@@ -1,5 +1,5 @@
 // [claude-code 2026-04-19] v5.22 S1: Confidence fuse uses Nothing shimmer + palette color.
-// [claude-code 2026-04-15] S16-T4: Next Session Forecast card — visible on Aquarium Page 0
+// [claude-code 2026-04-15] S16-T4: Next Session Forecast card — visible on ArbitrumChamber Page 0
 import type { IVScoreResponse } from "../../types/market-data";
 import { NothingFuse } from "../shared/NothingFuse";
 

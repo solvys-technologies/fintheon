@@ -2,7 +2,7 @@
 // /v1/voice/* endpoints. Keeps voice-service.ts free of raw HTTP concerns and
 // gives the session routes + tests a single seam to mock.
 
-import { sidecarClient, isSidecarEnabled } from "./sidecar-client.js";
+import { sidecarClient, isSidecarEnabled } from "../hermes/client.js";
 
 export interface SidecarVoiceSttResult {
   transcript: string;

@@ -1,6 +1,8 @@
 // [claude-code 2026-04-28] S48-T3: Pipeline health stats table replacing the former
 // Group Sensitivity NotchedFuse section. Renders per-pipeline rows with status dots,
 // headline count, error count, last seen, and uptime %. Columns are sortable.
+// [claude-code 2026-04-29] S53-T2: Added lastAppliedAt, isMutating, degradedReason
+// status indicators for module-level runtime display.
 import { useState, useMemo } from "react";
 import type { PipelineRow } from "../../hooks/usePipelineStats";
 
@@ -9,6 +11,9 @@ interface Props {
   loading: boolean;
   error: string | null;
   onRetry: () => void;
+  lastAppliedAt?: Date | null;
+  isMutating?: boolean;
+  degradedReason?: string | null;
 }
 
 type SortField = "headline" | "error" | "uptime";
@@ -58,12 +63,25 @@ const TD_TEXT: React.CSSProperties = {
   letterSpacing: "0.02em",
 };
 
-const ROW_BORDER =
-  "1px solid color-mix(in srgb, var(--fintheon-accent) 6%, transparent)";
-const SECTION_BORDER =
-  "1px dotted color-mix(in srgb, var(--fintheon-accent) 35%, transparent)";
+const STATUS_BAR: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  fontSize: 10,
+  fontFamily: "var(--font-mono)",
+  marginBottom: 6,
+  padding: "3px 0",
+};
 
-export function PipelineHealth({ stats, loading, error, onRetry }: Props) {
+export function PipelineHealth({
+  stats,
+  loading,
+  error,
+  onRetry,
+  lastAppliedAt,
+  isMutating,
+  degradedReason,
+}: Props) {
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -85,7 +103,15 @@ export function PipelineHealth({ stats, loading, error, onRetry }: Props) {
   };
 
   return (
-    <div style={{ marginTop: 16, paddingTop: 12, borderTop: SECTION_BORDER }}>
+    <div style={{ marginTop: 16 }}>
+      <div
+        style={{
+          height: 1,
+          background:
+            "linear-gradient(to right, rgba(199,159,74,0.18), transparent 80%)",
+          marginBottom: 12,
+        }}
+      />
       <div
         style={{
           fontFamily: "var(--font-heading)",
@@ -99,6 +125,40 @@ export function PipelineHealth({ stats, loading, error, onRetry }: Props) {
       >
         Pipeline Health
       </div>
+
+      {degradedReason && (
+        <div style={STATUS_BAR}>
+          <span style={{ color: "var(--fintheon-bearish)" }}>degraded</span>
+          <span style={{ color: "var(--fintheon-muted)" }}>
+            {degradedReason}
+          </span>
+        </div>
+      )}
+      {isMutating && (
+        <div style={STATUS_BAR}>
+          <span
+            style={{
+              display: "inline-block",
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: "var(--fintheon-accent)",
+              animation: "fuse-shimmer 1.5s infinite",
+            }}
+          />
+          <span style={{ color: "var(--fintheon-accent)" }}>
+            applying changes...
+          </span>
+        </div>
+      )}
+      {lastAppliedAt && !isMutating && !degradedReason && (
+        <div style={STATUS_BAR}>
+          <span style={{ color: "var(--fintheon-accent)" }}>ok</span>
+          <span style={{ color: "var(--fintheon-muted)" }}>
+            last applied {lastAppliedAt.toLocaleTimeString()}
+          </span>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex flex-col gap-1.5">
@@ -162,9 +222,7 @@ export function PipelineHealth({ stats, loading, error, onRetry }: Props) {
           }}
         >
           <thead>
-            <tr
-              style={{ borderBottom: "1px solid var(--fintheon-glass-border)" }}
-            >
+            <tr style={{ borderBottom: "1px solid rgba(199,159,74,0.08)" }}>
               <th
                 style={{
                   textAlign: "left",
@@ -215,7 +273,7 @@ export function PipelineHealth({ stats, loading, error, onRetry }: Props) {
               return (
                 <tr
                   key={stat.pipeline_id}
-                  style={{ borderBottom: ROW_BORDER }}
+                  style={{ borderBottom: "1px solid rgba(199,159,74,0.06)" }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLElement).style.background =
                       "color-mix(in srgb, var(--fintheon-accent) 4%, transparent)";

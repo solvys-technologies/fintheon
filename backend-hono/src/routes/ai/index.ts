@@ -13,6 +13,7 @@ import {
   handleListConversations,
   handleGetConversation,
   handleCreateConversation,
+  handleAddConversationMessage,
   handleUpdateConversation,
   handleDeleteConversation,
   handleArchiveConversation,
@@ -107,6 +108,9 @@ export function createAiRoutes(): Hono {
 
   // GET /api/ai/conversations/:id - Get conversation with messages
   router.get("/conversations/:id", handleGetConversation);
+
+  // POST /api/ai/conversations/:id/messages - Append a message to a thread
+  router.post("/conversations/:id/messages", handleAddConversationMessage);
 
   // PATCH /api/ai/conversations/:id - Update conversation
   router.patch("/conversations/:id", handleUpdateConversation);

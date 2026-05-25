@@ -4,6 +4,7 @@
  * Day 17 - Phase 5 Integration
  */
 
+// [claude-code 2026-04-29] S52-T2: Earnings items floored at macroLevel 1 (LOW) after enrichment AND rescoreInMemoryFeed
 // [claude-code 2026-04-11] Cache re-sync reduced 120s→30s to match central scorer frequency
 // [claude-code 2026-04-04] Periodic DB re-sync so cache stays fresh when poller idles
 // [claude-code 2026-04-03] Chronological sort (publishedAt DESC), cold start bumped to 200 items
@@ -57,6 +58,8 @@ import { filterWithContentGuard } from "./content-guard.js";
 import { scoredToFeedItem } from "./central-scorer.js";
 import { assignMacroLevel } from "../../utils/assign-macro-level.js";
 import { extractFJEmojiFromText, fjTierFromEmoji } from "./fj-emoji-filter.js";
+import { filterBlockedAtReadTime } from "./feed-integrity.js";
+import { createLogger as createIntegrityLogger } from "../../lib/logger.js";
 
 const log = createLogger("RiskFlow");
 // [claude-code 2026-04-01] Bumped from 100 → 500. All scored items should be accessible.
@@ -197,7 +200,7 @@ function feedItemToRaw(item: FeedItem): RawRiskFlowItem {
 // In-memory cache — seeded from scored DB on boot, then re-synced periodically from DB.
 let feedCache: FeedItem[] | null = null;
 let lastCacheRefreshMs = 0;
-const CACHE_REFRESH_INTERVAL_MS = 30_000; // Re-sync from DB every 30s (matches central scorer frequency)
+const CACHE_REFRESH_INTERVAL_MS = 15_000; // 15s — stable but responsive
 
 function sortFeedItems(items: FeedItem[]): FeedItem[] {
   return [...items].sort(
@@ -316,10 +319,24 @@ async function warmCacheFromDB(): Promise<void> {
     const merged = [...scoredItems, ...freshItems].filter(
       (item, idx, arr) => idx === arr.findIndex((i) => i.id === item.id),
     );
-    if (merged.length === 0) return;
+    if (merged.length === 0) {
+      // Keep existing cache — don't blink to empty just because DB returned 0
+      return;
+    }
 
     const items = sortFeedItems(merged).slice(0, MAX_FEED_ITEMS);
-    feedCache = items;
+    // Merge with existing cache so we don't lose items that were added via SSE
+    if (feedCache) {
+      const existingIds = new Set(feedCache.map((i) => i.id));
+      for (const item of items) {
+        if (!existingIds.has(item.id)) {
+          feedCache.push(item);
+        }
+      }
+    } else {
+      feedCache = items;
+    }
+    feedCache = sortFeedItems(feedCache).slice(0, MAX_FEED_ITEMS);
     lastCacheRefreshMs = Date.now();
     log.info(
       `[FeedService] Cache synced with ${items.length} items from DB (${scoredItems.length} scored + ${freshItems.length} fresh)`,
@@ -374,6 +391,8 @@ function mapToAnalysisSource(source: NewsSource): AnalysisNewsSource {
     DeItaOne: "Custom",
     Custom: "Custom",
     Hermes: "Custom",
+    Untrusted: "Custom",
+    Commentary: "Commentary",
   };
   return sourceMap[source] ?? "Custom";
 }
@@ -441,7 +460,7 @@ async function enrichWithAnalysis(
       }
     }
 
-    const macroLevel = assignMacroLevel({
+    const rawMacroLevel = assignMacroLevel({
       ivScore: normalizedIvScore,
       fjEmojiTier,
       riskType,
@@ -449,6 +468,12 @@ async function enrichWithAnalysis(
       urgencySignals: urgencySignalCount,
       sdSurprise,
     });
+
+    // S51: Earnings items are low priority — floor at macroLevel 1 (LOW)
+    const macroLevel =
+      riskType === "Earnings"
+        ? (Math.min(rawMacroLevel ?? 1, 1) as MacroLevel)
+        : rawMacroLevel;
     if (macroLevel === undefined) {
       log.warn("MacroLevel unassigned after assignMacroLevel()", {
         itemId: item.id,
@@ -972,13 +997,19 @@ export async function rescoreInMemoryFeed(): Promise<number> {
       const riskType = item.riskType ?? "default";
       const keywordMatches = getMatchedKeywords(item.headline);
 
-      const macroLevel = assignMacroLevel({
+      const rawMacroLevel = assignMacroLevel({
         ivScore,
         fjEmojiTier,
         riskType,
         keywordMatches,
         urgencySignals: item.isBreaking ? 2 : 0,
       });
+
+      // S52-T2: Earnings items are low priority — floor at macroLevel 1 (LOW)
+      const macroLevel =
+        riskType === "Earnings"
+          ? (Math.min(rawMacroLevel ?? 1, 1) as MacroLevel)
+          : rawMacroLevel;
 
       return {
         ...item,
@@ -1071,6 +1102,17 @@ export async function getFeed(
       log.info(
         `Headline dedup: ${preDedup} → ${items.length} (removed ${preDedup - items.length})`,
       );
+    }
+
+    // [claude-code 2026-04-30] S55: Read-time blocked-host filter. Strips
+    // items whose URL points to a blocked publisher even if earlier pipeline
+    // stages (normalizeSource, persist, scorer) missed them.
+    const integrityResult = filterBlockedAtReadTime(items);
+    if (integrityResult.dropped > 0) {
+      log.warn(
+        `[FeedIntegrity] Dropped ${integrityResult.dropped} items with blocked publisher hosts: ${integrityResult.blockedHosts.join(", ")}`,
+      );
+      items = integrityResult.clean;
     }
 
     // Apply pagination (offset + limit)

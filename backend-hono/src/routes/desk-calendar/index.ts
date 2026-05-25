@@ -7,11 +7,13 @@ import {
   handleGetQueue,
   handleGetStatus,
 } from "./handlers.js";
+import { handleApproveWeek } from "./weekly-plan.js";
 
 export function createDeskCalendarRoutes(): Hono {
   const router = new Hono();
 
   router.post("/ingest-ics", handleIngestIcs);
+  router.post("/approve-week", handleApproveWeek);
   router.get("/queue", handleGetQueue);
   router.get("/status", handleGetStatus);
 

@@ -1,4 +1,5 @@
 // [claude-code 2026-03-06] Full Regime Tracker modal — grouped by category, W-L tracking, add custom regimes
+// [claude-code 2026-05-16] DEPRECATED — regime tracker replaced by theme-tracker (S68-T1). Kept for backward compat.
 // [claude-code 2026-03-12] Replaced W/L with ORB bullish/bearish, AI generate CTA, delete all regimes, 12H NY time, collapsed active regimes, labeled ORB record
 // [claude-code 2026-04-15] T2: Decomposed into subcomponents, liquid glass shell, 5 bias classifications, removed footer border
 // [claude-code 2026-04-15] T3: Glassmorphic AI generate overlay, thinking animation, mini-chat passthrough
@@ -361,10 +362,13 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black/80" onClick={onClose} />
+      <div
+        className="fintheon-modal-backdrop fixed inset-0 z-50"
+        onClick={onClose}
+      />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
-          className="pointer-events-auto w-full max-w-2xl rounded-lg border border-[var(--fintheon-accent)]/15 bg-[#0a0905] flex flex-col max-h-[85vh] overflow-hidden relative"
+          className="fintheon-modal-surface pointer-events-auto w-full max-w-2xl flex flex-col max-h-[85vh] relative"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

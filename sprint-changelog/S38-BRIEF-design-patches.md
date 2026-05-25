@@ -22,12 +22,12 @@ Continue on `s35-unified` (current active branch; no WIP blocking).
 - [ ] **Sanctum Econ tab — kill "Instrument Fuses" card**: remove `EconInstrumentFuses.tsx` (the vertical-fuse block) entirely; replace its slot, sitting below the agent analysis section, with the same horizontal `InstrumentCardsRow` used at the bottom of the Sanctum Command tab
 - [ ] **Heat-gauge height bump**: increase the height of the horizontal heat bar inside `InstrumentCardsRow` (~25–35%) so the gauge reads at a glance — surrounding text rows stay the same
 - [ ] **Econ Pulse collapsible**: clicking the "ECON PULSE" header row (or any of its pulse rows) toggles the whole pulse block (Inflation / Labor / Supply pulses) so the Econ Events comparison section below reclaims the space
-- [ ] **Aquarium → Arbitrum (UI surface rename)**: in `SanctumHeader.tsx` rename "AQUARIUM" → "ARBITRUM", bump its size, drop the "shark tank" subtitle entirely; in the Sanctum tab/dropdown menu rename the "Aquarium" destination to "Arbitrum"
+- [ ] **ArbitrumChamber → Arbitrum (UI surface rename)**: in `SanctumHeader.tsx` rename "ARBITRUM_CHAMBER" → "ARBITRUM", bump its size, drop the "shark tank" subtitle entirely; in the Sanctum tab/dropdown menu rename the "ArbitrumChamber" destination to "Arbitrum"
 - [ ] **Persistent 50/50 chart split**: when chart mode is active inside Arbitrum, the TradingView iframe locks to 50% viewport width and stays pinned through scroll; the left half (Arbitrum content) reflows into ~6 paginated views so every section (volatility read, next session forecast, chamber seats, instrument cards, econ tab content) remains reachable beside the chart instead of scrolling out from under it
 - [ ] **Sanctum Econ tab — kill "Instrument Fuses" card**: remove `EconInstrumentFuses.tsx` (the vertical-fuse block) entirely; replace its slot, sitting below the agent analysis section, with the same horizontal `InstrumentCardsRow` used at the bottom of the Sanctum Command tab
 - [ ] **Heat-gauge height bump**: increase the height of the horizontal heat bar inside `InstrumentCardsRow` instrument cards (~25–35%) so the gauge reads at a glance — text rows around it stay the same
 - [ ] **Econ Pulse becomes collapsible**: clicking the "ECON PULSE" header row (or any of its rows) toggles the whole pulse block (Inflation / Labor / Supply pulses) so the Econ Events comparison section below reclaims the space
-- [ ] **Aquarium → Arbitrum rename (UI surface)**: in `SanctumHeader.tsx` rename the "AQUARIUM" label to "ARBITRUM", bump its size (the header-left lockup is currently too small), drop the "shark tank" subtitle entirely; in the Sanctum tab/dropdown menu where "Aquarium" appears as a destination, rename to "Arbitrum"
+- [ ] **ArbitrumChamber → Arbitrum rename (UI surface)**: in `SanctumHeader.tsx` rename the "ARBITRUM_CHAMBER" label to "ARBITRUM", bump its size (the header-left lockup is currently too small), drop the "shark tank" subtitle entirely; in the Sanctum tab/dropdown menu where "ArbitrumChamber" appears as a destination, rename to "Arbitrum"
 - [ ] **Persistent 50/50 chart split**: when chart mode is active inside Arbitrum, the TradingView iframe locks to 50% viewport width and stays pinned through scroll; the left half (Arbitrum content) reflows into ~6 paginated views so every section (volatility read, next session forecast, chamber seats, instrument cards, econ tab content) remains reachable beside the chart instead of scrolling out from under it
 
 ## Scope — Excluded (OUT OF BOUNDS)
@@ -133,13 +133,13 @@ Continue on `s35-unified` (current active branch; no WIP blocking).
 - **Heat bar height bump**: inside `InstrumentCardsRow`, increase the heat-bar element's height by ~25–35% (e.g. `h-1` → `h-1.5`, or whatever the existing token equivalent is). Bar only — keep the symbol label, RANGE row, CONVICTION row, and headline excerpt at their current sizes.
 - **Econ Pulse → collapsible**: wrap the Econ Pulse block (header + Inflation Pulse / Labor Pulse / Supply Output rows) in a collapsible region. Header row "ECON PULSE" left-aligned + chevron right-aligned; click anywhere on the header row toggles. Default state: expanded. No card chrome added — keep current flat styling, just make the header clickable. When collapsed, the events-comparison section below slides up to fill the space.
 
-### Sanctum — Aquarium → Arbitrum rename + header lockup
+### Sanctum — ArbitrumChamber → Arbitrum rename + header lockup
 
 - **Files**: `frontend/components/narrative/SanctumHeader.tsx`, plus wherever the Sanctum tab dropdown/menu defines its destination labels (likely `Sanctum.tsx` or a tab config).
-- The Aquarium UI surface label is being retired in favor of direct "Arbitrum" exposure. The earlier canonical-naming decision to keep "Aquarium" as a Sanctum surface label is overridden by this sprint.
-- In `SanctumHeader.tsx`: rename "AQUARIUM" → "ARBITRUM". Bump the lockup size — current is too small relative to the rest of the header. Drop the "shark tank" subtitle string entirely. The "LIVE" pill and any next-session timer can stay.
-- In the Sanctum tab dropdown: rename the "Aquarium" entry to "Arbitrum". Same icon, same destination route, just the label changes.
-- Keep "Aquarium" terminology on the backend / route names / data fields for now — this is a UI-only rename. A future sprint can do the deeper backend rename.
+- The ArbitrumChamber UI surface label is being retired in favor of direct "Arbitrum" exposure. The earlier canonical-naming decision to keep "ArbitrumChamber" as a Sanctum surface label is overridden by this sprint.
+- In `SanctumHeader.tsx`: rename "ARBITRUM_CHAMBER" → "ARBITRUM". Bump the lockup size — current is too small relative to the rest of the header. Drop the "shark tank" subtitle string entirely. The "LIVE" pill and any next-session timer can stay.
+- In the Sanctum tab dropdown: rename the "ArbitrumChamber" entry to "Arbitrum". Same icon, same destination route, just the label changes.
+- Keep "ArbitrumChamber" terminology on the backend / route names / data fields for now — this is a UI-only rename. A future sprint can do the deeper backend rename.
 
 ### Sanctum — Persistent 50/50 chart split
 
@@ -180,7 +180,7 @@ Continue on `s35-unified` (current active branch; no WIP blocking).
    - g. Voice orb ring variable + pixel sweep overlay
    - h. Sanctum Econ tab — kill EconInstrumentFuses, drop in InstrumentCardsRow below analysis, bump heat-bar height
    - i. Sanctum Econ tab — Econ Pulse collapsible header
-   - j. SanctumHeader — Aquarium → Arbitrum rename, bigger lockup, drop "shark tank"; rename dropdown entry
+   - j. SanctumHeader — ArbitrumChamber → Arbitrum rename, bigger lockup, drop "shark tank"; rename dropdown entry
    - k. Sanctum chart-mode — persistent 50/50 split + ~6-page pagination of left half
 6. **Validation** — tsc, clean vite build, backend build, launchd restart, Desktop checkout sync, live curl smoke tests, manual UI pass on every surface touched (including orb activation — click the ring, verify the sweep).
 7. **Changelog + file headers** — Add one consolidated S38 entry in `src/lib/changelog.ts` summarizing all eight patches with the file list. Add `// [claude-code 2026-04-24] S38: {one-line}` to every substantially modified file (refinement components, VoiceAuroraOrb, TopHeader, FooterToolbar, RiskFlowDetailCard, agent-notes service, regime-approval service + route).
@@ -202,7 +202,7 @@ Continue on `s35-unified` (current active branch; no WIP blocking).
 - [ ] Sanctum Econ tab no longer renders an "INSTRUMENT FUSES" card; the file `EconInstrumentFuses.tsx` is deleted; `InstrumentCardsRow` appears below the agent analysis section
 - [ ] Heat bar inside `InstrumentCardsRow` reads visibly taller than before; surrounding rows unchanged
 - [ ] Clicking the "ECON PULSE" header row toggles the pulse block; events-comparison section reclaims the space when collapsed
-- [ ] `SanctumHeader.tsx` shows "ARBITRUM" (not "AQUARIUM"), at a larger size, with no "shark tank" subtitle
+- [ ] `SanctumHeader.tsx` shows "ARBITRUM" (not "ARBITRUM_CHAMBER"), at a larger size, with no "shark tank" subtitle
 - [ ] The Sanctum tab dropdown lists the destination as "Arbitrum"
 - [ ] In chart mode, TradingView occupies exactly 50% viewport width and stays in view as the left half scrolls/pages; left half paginates (~6 pages); chart-mode-off returns to current full-width single-scroll layout
 - [ ] `npx tsc --noEmit --project frontend/tsconfig.json` passes

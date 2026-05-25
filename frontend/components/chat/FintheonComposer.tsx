@@ -1,18 +1,15 @@
-// [claude-code 2026-04-18] S21-T1 polish: guard isDispatchedHere against undefined-on-both-sides
-// false positives (after 404-clear of stale convo, both conversationId and dispatchedConversationId
-// can briefly be undefined → banner would linger). Also added a "dispatching" title for the relay
-// button so the spinner state doesn't keep the stale "send this conversation" tooltip.
-// [claude-code 2026-04-18] S21-T1: Relay dispatch button + disconnect + mirror banner plumbed
-// into the composer's left action cluster (was in ChatHeader's clipboard-copy flow).
 // [claude-code 2026-03-11] T2a: clear active skill badge after send
 // [claude-code 2026-03-11] T3b: MCP auto-activation when skill selected
 // [claude-code 2026-03-11] T5: steer strip removed, queue chips added, always full PromptBox
 // [claude-code 2026-03-12] Switched from independent useVoiceAssistant() to shared VoiceContext
 // [claude-code 2026-04-11] S14-T5: Headline attachment via HeadlinePickerPopover + context injection
-// [claude-code 2026-03-22] Track 4: persona pills → PersonaDropdown, Plug2+Wrench → ToolsDropdown
-import { useEffect, useState, useCallback } from "react";
+// [claude-code 2026-03-22] Track 4: persona pills and split tools replaced by the composer toolbox
+// [claude-code 2026-04-21] Post-S35: removed relay dispatch; added Cmd+K palette, ↑↓ history,
+//   persona slash commands
+// [claude-code 2026-05-06] S60-T3: provider modal and toolbox wired to composer toolbar
+import { useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import { useThread, useThreadRuntime } from "@assistant-ui/react";
-import { Radio, Unplug, Loader2 } from "lucide-react";
+import { Plug } from "lucide-react";
 import { PromptBox } from "../ui/chatgpt-prompt-input";
 import { SKILL_PREFIXES } from "../../lib/skillPrefixes";
 import { SKILLS } from "../../lib/skills";
@@ -20,18 +17,32 @@ import { useVoice } from "../../contexts/VoiceContext";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import { useMcpConnectors } from "../../hooks/useMcpConnectors";
-import { useRelayDispatch } from "../../hooks/useRelayDispatch";
-import { PersonaDropdown } from "./PersonaDropdown";
-import { ToolsDropdown } from "./ToolsDropdown";
-import { ProviderDropdown, useHarperProvider } from "./ProviderDropdown";
+import { useHarperProvider } from "./ProviderDropdown";
+import { FintheonProviderTrigger } from "./FintheonProviderTrigger";
+import { FintheonProviderModal } from "./FintheonProviderModal";
+import { FintheonToolboxModal } from "./FintheonToolboxModal";
+import { CommandPalette } from "./CommandPalette";
 import { API_BASE_URL } from "./constants";
+import type { ReasoningLevel } from "./reasoning";
 import {
   formatHeadlineContext,
   type HeadlineChip,
 } from "./HeadlinePickerPopover";
 
 /* ------------------------------------------------------------------ */
-/*  FintheonComposer                                                      */
+/*  Persona slash-command map                                         */
+/* ------------------------------------------------------------------ */
+
+const PERSONA_COMMANDS: Record<string, string> = {
+  oracle: "oracle",
+  feucht: "feucht",
+  consul: "consul",
+  herald: "herald",
+  harper: "harper",
+};
+
+/* ------------------------------------------------------------------ */
+/*  FintheonComposer                                                   */
 /* ------------------------------------------------------------------ */
 
 interface FintheonComposerProps {
@@ -44,15 +55,24 @@ interface FintheonComposerProps {
   lastError: string | null;
   disabledSkills?: Record<string, { reason: string }>;
   compact?: boolean;
-  /** Current conversation id — required for relay dispatch. */
+  /** @deprecated S38-T1: Dispatch removed — kept for backwards compat */
   conversationId?: string;
-  /**
-   * Optional: eject the cached conversation id when relay dispatch returns
-   * not_found. Self-heal for the hydration/dispatch ownership mismatch —
-   * legacy anon convos that hydrate via the anon fallback will 404 on dispatch,
-   * and without this prop the user stays stuck with a broken relay button.
-   */
+  /** @deprecated S38-T1: Dispatch removed — kept for backwards compat */
   onConversationGone?: () => void;
+  todoSlot?: ReactNode;
+  approvalDrawerSlot?: ReactNode;
+  approvalDrawerOpen?: boolean;
+  workDrawerSlot?: ReactNode;
+  workDrawerOpen?: boolean;
+  drawerPeekSlot?: ReactNode;
+  workspaceSlot?: ReactNode;
+  reasoningLevel?: ReasoningLevel;
+  onReasoningLevelChange?: (level: ReasoningLevel) => void;
+  onQueueMessage?: (text: string) => void;
+  queueCount?: number;
+  onMessageSubmitted?: () => void;
+  showAttachSelector?: boolean;
+  attachSelectorTitle?: string;
 }
 
 export function FintheonComposer({
@@ -65,69 +85,122 @@ export function FintheonComposer({
   lastError,
   disabledSkills: propDisabledSkills,
   compact,
-  conversationId,
-  onConversationGone,
+  conversationId: _conversationId,
+  onConversationGone: _onConversationGone,
+  todoSlot,
+  approvalDrawerSlot,
+  approvalDrawerOpen,
+  workDrawerSlot,
+  workDrawerOpen,
+  drawerPeekSlot,
+  workspaceSlot,
+  reasoningLevel,
+  onReasoningLevelChange,
+  onQueueMessage,
+  queueCount = 0,
+  onMessageSubmitted,
+  showAttachSelector = false,
+  attachSelectorTitle,
 }: FintheonComposerProps) {
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
+  const messages = useThread((t) => t.messages);
   const [apiDisabledSkills, setApiDisabledSkills] = useState<
     Record<string, { reason: string }>
   >({});
   const voice = useVoice();
-  const { activeAgent } = useFintheonAgents();
+  const { activeAgent, agents, setActiveAgent } = useFintheonAgents();
   const { alerts } = useRiskFlow();
   const { servers, activeIds, toggle: toggleConnector } = useMcpConnectors();
   const { provider, setProvider } = useHarperProvider();
   const [headlineChips, setHeadlineChips] = useState<HeadlineChip[]>([]);
 
-  // Relay dispatch — disables the composer and shows a banner while active.
-  // [claude-code 2026-04-18] Fix: don't gate on isMobileReachable. /api/relay/health.connected
-  // on the LOCAL backend means "something is WS-connected to this local backend", not "mobile
-  // is online" — that flag is always false on desktop and was making the button permanently
-  // un-clickable. Dispatch is fire-and-forget via web-push; the push succeeds (pushedTo:0 if
-  // no subscriptions) and the user can open mobile to pick up.
-  const relay = useRelayDispatch();
-  // Guard against undefined-on-both-sides: if conversationId got cleared (e.g. 404-on-hydrate
-  // nuked the stale cache) relay.dispatchedConversationId can also be null/undefined briefly,
-  // and strict equality would resolve true → banner hangs around for one render. Require both
-  // sides to be truthy before claiming "dispatched here".
-  const isDispatchedHere = Boolean(
-    relay.isDispatched &&
-    conversationId &&
-    relay.dispatchedConversationId &&
-    relay.dispatchedConversationId === conversationId,
+  // ── Modal state (S60-T3) ──────────────────────────────────────────────
+  const [showProviderModal, setShowProviderModal] = useState(false);
+  const [providerAnchorRect, setProviderAnchorRect] = useState<DOMRect | null>(
+    null,
   );
-  const relayDisabled =
-    relay.isDispatching ||
-    !conversationId ||
-    (relay.isDispatched && !isDispatchedHere); // already dispatched elsewhere
+  const [showToolboxModal, setShowToolboxModal] = useState(false);
 
-  const handleRelayClick = useCallback(async () => {
-    if (!conversationId) return;
-    if (isDispatchedHere) {
-      await relay.disconnect();
-    } else {
-      try {
-        await relay.dispatch(conversationId);
-      } catch (err) {
-        console.error("[FintheonComposer] relay dispatch failed:", err);
-        // Self-heal: a "not_found" dispatch means the backend doesn't recognize
-        // this convo under the current user's sub — most commonly a legacy anon
-        // convo missed by the 2026-04-18 migration. Evicting the cached id lets
-        // the user start a fresh convo and unblocks the button. The backend also
-        // auto-reassigns on next hydration, so sending a message will usually
-        // just work; this is defense-in-depth for older builds.
-        if (
-          err instanceof Error &&
-          /not_found|Conversation not found/i.test(err.message) &&
-          onConversationGone
-        ) {
-          onConversationGone();
-        }
+  useEffect(() => {
+    if (approvalDrawerOpen) setShowToolboxModal(false);
+  }, [approvalDrawerOpen]);
+
+  // ── Command palette (Cmd+K) ────────────────────────────────────────────
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setShowCommandPalette((v) => !v);
       }
-    }
-  }, [conversationId, isDispatchedHere, relay, onConversationGone]);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
+  // ── Message history navigation (↑↓) ──────────────────────────────────
+  const historyIndexRef = useRef(-1);
+  const [recallText, setRecallText] = useState<string | null>(null);
+
+  const getUserMessages = useCallback(() => {
+    return messages.filter((m: any) => m.role === "user");
+  }, [messages]);
+
+  const handleHistoryUp = useCallback(() => {
+    const userMsgs = getUserMessages();
+    if (userMsgs.length === 0) return;
+    const nextIdx =
+      historyIndexRef.current < userMsgs.length - 1
+        ? historyIndexRef.current + 1
+        : historyIndexRef.current;
+    historyIndexRef.current = nextIdx;
+    const msg = userMsgs[userMsgs.length - 1 - nextIdx];
+    const text =
+      typeof msg.content === "string"
+        ? msg.content
+        : Array.isArray(msg.content)
+          ? msg.content
+              .filter((p: any) => p.type === "text")
+              .map((p: any) => p.text)
+              .join("")
+          : "";
+    setRecallText(text);
+  }, [getUserMessages]);
+
+  const handleHistoryDown = useCallback(() => {
+    const userMsgs = getUserMessages();
+    if (historyIndexRef.current <= 0) {
+      historyIndexRef.current = -1;
+      setRecallText("");
+      return;
+    }
+    historyIndexRef.current -= 1;
+    const msg = userMsgs[userMsgs.length - 1 - historyIndexRef.current];
+    const text =
+      typeof msg.content === "string"
+        ? msg.content
+        : Array.isArray(msg.content)
+          ? msg.content
+              .filter((p: any) => p.type === "text")
+              .map((p: any) => p.text)
+              .join("")
+          : "";
+    setRecallText(text);
+  }, [getUserMessages]);
+
+  const handleHistoryEscape = useCallback(() => {
+    historyIndexRef.current = -1;
+    setRecallText("");
+  }, []);
+
+  // Reset history index when new messages arrive
+  useEffect(() => {
+    historyIndexRef.current = -1;
+  }, [messages.length]);
+
+  // ── Headline attachment ───────────────────────────────────────────────
   const handleHeadlineToggle = useCallback((chip: HeadlineChip) => {
     setHeadlineChips((prev) => {
       const exists = prev.find((c) => c.id === chip.id);
@@ -140,7 +213,7 @@ export function FintheonComposer({
     setHeadlineChips([]);
   }, []);
 
-  // Fetch skills from backend — merge with prop-level disabled skills
+  // ── Fetch skills from backend ──────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -166,22 +239,42 @@ export function FintheonComposer({
 
   const mergedDisabledSkills = { ...apiDisabledSkills, ...propDisabledSkills };
 
+  // ── Send handler (with persona slash-command detection) ────────────────
   const handleSend = useCallback(
     (msg: string, images?: string[]) => {
       let finalText = msg;
+
+      // Detect persona slash commands (set persona for next turn only)
+      const personaMatch = msg.match(/^\/(\w+)/);
+      if (personaMatch && PERSONA_COMMANDS[personaMatch[1]]) {
+        const personaId = PERSONA_COMMANDS[personaMatch[1]];
+        const agent = agents.find((a) => a.id === personaId);
+        if (agent) {
+          setActiveAgent(agent);
+        }
+        // Strip the slash command from the message
+        finalText = msg.replace(/^\/\w+\s*/, "");
+        if (!finalText.trim() && images?.length === 0) {
+          // Pure persona switch — don't send an empty message
+          onSelectSkill(null);
+          return;
+        }
+      }
+
+      // Detect /stop
+      if (msg.trim() === "/stop") {
+        runtime.cancelRun();
+        onSelectSkill(null);
+        return;
+      }
+
       if (activeSkill && SKILL_PREFIXES[activeSkill]) {
-        finalText = SKILL_PREFIXES[activeSkill] + "\n\n" + msg;
+        finalText = SKILL_PREFIXES[activeSkill] + "\n\n" + finalText;
       }
       // Inject attached headline context
       if (headlineChips.length > 0) {
         finalText += formatHeadlineContext(headlineChips);
         setHeadlineChips([]);
-      }
-      const content: Array<{ type: string; text?: string; image?: string }> = [
-        { type: "text", text: finalText },
-      ];
-      if (images?.length) {
-        images.forEach((img) => content.push({ type: "image", image: img }));
       }
       // Auto-activate MCP servers required by the active skill
       if (activeSkill) {
@@ -202,123 +295,180 @@ export function FintheonComposer({
         }
       }
 
+      if (isRunning && onQueueMessage) {
+        onQueueMessage(finalText);
+        onMessageSubmitted?.();
+        onSelectSkill(null);
+        return;
+      }
+
+      const content: Array<{ type: string; text?: string; image?: string }> = [
+        { type: "text", text: finalText },
+      ];
+      if (images?.length) {
+        images.forEach((img) => content.push({ type: "image", image: img }));
+      }
+
       try {
+        onMessageSubmitted?.();
         runtime.append({ role: "user", content: content as any });
         onSelectSkill(null);
       } catch (err) {
         console.error("[FintheonComposer] Failed to append message:", err);
       }
     },
-    [runtime, activeSkill, onSelectSkill, headlineChips],
+    [
+      runtime,
+      activeSkill,
+      onSelectSkill,
+      headlineChips,
+      agents,
+      setActiveAgent,
+      isRunning,
+      onQueueMessage,
+      onMessageSubmitted,
+    ],
   );
 
   const handleStop = useCallback(() => {
     runtime.cancelRun();
   }, [runtime]);
 
+  // ── Toolbar slots (S60-T3: modal triggers) ──────────────────────────────
   const providerEl = (
-    <ProviderDropdown
+    <FintheonProviderTrigger
       provider={provider}
-      onChange={setProvider}
       compact={compact}
+      onClick={(event) => {
+        setProviderAnchorRect(event.currentTarget.getBoundingClientRect());
+        setShowProviderModal(true);
+      }}
     />
   );
-  // Sidebar (compact) routes through CAO only — no persona selector
-  const personaEl = compact ? undefined : <PersonaDropdown />;
+  // Persona selector removed from the composer; slash commands still work.
+  const personaEl = undefined;
 
-  const toolsEl = (
-    <ToolsDropdown
-      skills={SKILLS}
-      activeSkill={activeSkill}
-      onSelectSkill={onSelectSkill}
-      disabledSkills={mergedDisabledSkills}
-      servers={servers}
-      activeConnectorIds={activeIds}
-      onToggleConnector={toggleConnector}
-    />
-  );
-
-  // ── Relay button (leftmost in composer action cluster) ───────────────────────
-  const relayTitle = (() => {
-    if (relay.isDispatching) return "Relay — dispatching to mobile…";
-    if (isDispatchedHere) return `Disconnect — resume on desktop`;
-    if (!conversationId) return "Relay — send a message first";
-    if (relay.isDispatched && !isDispatchedHere)
-      return "Relay — another conversation is already dispatched";
-    return "Relay — send this conversation to your mobile";
-  })();
-
-  const relayEl = (
+  // Unified Skills + Connectors trigger
+  const activeMcpCount = activeIds.length;
+  const toolboxEl = (
     <button
-      onClick={handleRelayClick}
-      disabled={relayDisabled}
-      className={`flex items-center justify-center rounded-lg transition-colors ${
-        isDispatchedHere
-          ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10 hover:bg-[var(--fintheon-accent)]/20"
-          : relayDisabled
-            ? "text-zinc-700 cursor-not-allowed"
-            : "text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
+      onClick={() => setShowToolboxModal((open) => !open)}
+      aria-pressed={showToolboxModal}
+      className={`relative flex items-center justify-center rounded-lg transition-colors ${
+        showToolboxModal
+          ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+          : "text-zinc-500 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
       }`}
       style={{ width: "32px", height: "32px" }}
-      title={relayTitle}
+      title="Skills and connectors"
     >
-      {relay.isDispatching ? (
-        <Loader2 size={16} className="animate-spin" />
-      ) : isDispatchedHere ? (
-        <Unplug size={16} />
-      ) : (
-        <Radio size={16} />
+      <Plug size={14} />
+      {(activeMcpCount > 0 || activeSkill) && (
+        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--fintheon-accent)]" />
       )}
     </button>
   );
 
-  // ── Dispatch banner — shown above input when this convo is dispatched ───────
-  const dispatchBannerEl = isDispatchedHere ? (
-    <div className="mb-2 rounded-lg border border-[var(--fintheon-accent)]/25 bg-[var(--fintheon-accent)]/5 px-3 py-2 text-[12px] text-[var(--fintheon-accent)] flex items-center justify-between">
-      <span>
-        Chatting on {relay.deviceLabel ?? "your mobile"} — desktop is mirroring
-      </span>
-      <button
-        onClick={() => relay.disconnect()}
-        className="text-zinc-400 hover:text-[var(--fintheon-accent)] underline underline-offset-2"
-      >
-        Disconnect
-      </button>
-    </div>
-  ) : null;
+  const estimatedTokens = Math.ceil(
+    messages
+      .map((m: any) => {
+        const parts = m.parts ?? m.content ?? [];
+        if (typeof parts === "string") return parts;
+        if (!Array.isArray(parts)) return "";
+        return parts
+          .filter((part: any) => part.type === "text" && part.text)
+          .map((part: any) => part.text)
+          .join("\n");
+      })
+      .join("\n").length / 4,
+  );
+  const activeSkillLabel =
+    SKILLS.find((skill) => skill.id === activeSkill)?.label ?? null;
 
   return (
-    <PromptBox
-      onSend={handleSend}
-      onStop={handleStop}
-      isProcessing={isRunning}
-      thinkHarder={thinkHarder}
-      setThinkHarder={setThinkHarder}
-      lastError={lastError}
-      activeSkill={activeSkill}
-      onSelectSkill={onSelectSkill}
-      showSkills={showSkills}
-      onToggleSkills={onToggleSkills}
-      disabledSkills={mergedDisabledSkills}
-      compact={compact}
-      voiceEnabled={voice.enabled}
-      voiceState={voice.runtimeState}
-      onToggleVoice={voice.toggleEnabled}
-      providerSlot={providerEl}
-      personaSlot={personaEl}
-      toolsSlot={toolsEl}
-      relaySlot={relayEl}
-      dispatchBanner={dispatchBannerEl}
-      disabled={isDispatchedHere}
-      placeholder={
-        isDispatchedHere
-          ? `Chatting on ${relay.deviceLabel ?? "mobile"} — click Disconnect to resume here`
-          : undefined
-      }
-      headlineAlerts={alerts}
-      headlineChips={headlineChips}
-      onHeadlineToggle={handleHeadlineToggle}
-      onHeadlineClear={handleHeadlineClear}
-    />
+    <>
+      {/* Command palette (Cmd+K) */}
+      {showCommandPalette && (
+        <CommandPalette
+          onClose={() => setShowCommandPalette(false)}
+          onSelectSkill={onSelectSkill}
+          onStop={handleStop}
+          agents={agents}
+          onSwitchAgent={(agent) => setActiveAgent(agent)}
+        />
+      )}
+
+      <PromptBox
+        onSend={handleSend}
+        onStop={handleStop}
+        isProcessing={isRunning}
+        thinkHarder={thinkHarder}
+        setThinkHarder={setThinkHarder}
+        reasoningLevel={reasoningLevel}
+        onReasoningLevelChange={onReasoningLevelChange}
+        lastError={lastError}
+        activeSkill={activeSkill}
+        onSelectSkill={onSelectSkill}
+        showSkills={showSkills}
+        onToggleSkills={onToggleSkills}
+        disabledSkills={mergedDisabledSkills}
+        compact={compact}
+        voiceEnabled={voice.enabled}
+        voiceState={voice.runtimeState}
+        onToggleVoice={voice.toggleEnabled}
+        providerSlot={providerEl}
+        workspaceSlot={workspaceSlot}
+        personaSlot={personaEl}
+        mcpSlot={toolboxEl}
+        toolboxDrawerSlot={
+          <FintheonToolboxModal
+            open={showToolboxModal}
+            onClose={() => setShowToolboxModal(false)}
+            skills={SKILLS}
+            activeSkill={activeSkill}
+            onSelectSkill={onSelectSkill}
+            disabledSkills={mergedDisabledSkills}
+            servers={servers}
+            activeIds={activeIds}
+            onToggleConnector={toggleConnector}
+          />
+        }
+        toolboxOpen={showToolboxModal}
+        onInputActivity={() => setShowToolboxModal(false)}
+        todoSlot={todoSlot}
+        approvalDrawerSlot={approvalDrawerSlot}
+        approvalDrawerOpen={approvalDrawerOpen}
+        workDrawerSlot={workDrawerSlot}
+        workDrawerOpen={workDrawerOpen}
+        drawerPeekSlot={drawerPeekSlot}
+        queueCount={queueCount}
+        contextStats={{
+          messageCount: messages.length,
+          estimatedTokens,
+          connectorCount: activeIds.length,
+          activeSkillLabel,
+        }}
+        recallText={recallText}
+        onRecallConsumed={() => setRecallText(null)}
+        onHistoryUp={handleHistoryUp}
+        onHistoryDown={handleHistoryDown}
+        onHistoryEscape={handleHistoryEscape}
+        showAttachSelector={showAttachSelector}
+        attachSelectorTitle={attachSelectorTitle}
+        headlineAlerts={alerts}
+        headlineChips={headlineChips}
+        onHeadlineToggle={handleHeadlineToggle}
+        onHeadlineClear={handleHeadlineClear}
+      />
+
+      {/* S60-T3: Modal ecosystem */}
+      <FintheonProviderModal
+        open={showProviderModal}
+        onClose={() => setShowProviderModal(false)}
+        provider={provider}
+        onChange={setProvider}
+        anchorRect={providerAnchorRect}
+      />
+    </>
   );
 }

@@ -54,7 +54,7 @@ function HermesSettings() {
   const [showKey, setShowKey] = useState(false);
   const [testResult, setTestResult] = useState<"success" | "fail" | null>(null);
 
-  const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || "";
+  const apiKey = import.meta.env.VITE_HERMES_API_KEY || "";
   const maskedKey = apiKey
     ? apiKey.slice(0, 8) + "..." + apiKey.slice(-4)
     : "(not set)";
@@ -62,15 +62,15 @@ function HermesSettings() {
   const handleTestKey = useCallback(async () => {
     setTestResult(null);
     try {
-      const res = await fetch("https://openrouter.ai/api/v1/models", {
-        headers: { Authorization: `Bearer ${apiKey}` },
+      const res = await fetch(`${gatewayUrl}/health`, {
+        headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined,
         signal: AbortSignal.timeout(5000),
       });
       setTestResult(res.ok ? "success" : "fail");
     } catch {
       setTestResult("fail");
     }
-  }, [apiKey]);
+  }, [apiKey, gatewayUrl]);
 
   const statusColor =
     status === "connected"
@@ -118,7 +118,9 @@ function HermesSettings() {
       {/* API Key + Model */}
       <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg p-4 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] text-zinc-400">OpenRouter API Key</span>
+          <span className="text-[11px] text-zinc-400">
+            Hermes Gateway API Key
+          </span>
           <button
             onClick={() => setShowKey(!showKey)}
             className="text-zinc-500 hover:text-zinc-300 transition-colors"
@@ -151,7 +153,7 @@ function HermesSettings() {
         <div className="text-[10px] text-zinc-600 mt-1">
           Default Model:{" "}
           <span className="text-zinc-400 font-mono">
-            anthropic/claude-opus-4-6
+            deepseek-reasoner via Hermes
           </span>
         </div>
       </div>

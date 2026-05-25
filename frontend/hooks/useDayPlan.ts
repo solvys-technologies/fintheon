@@ -1,3 +1,6 @@
+// [claude-code 2026-04-29] S49: Unwrap { plan } wrapper from /api/day-plan/today.
+//   Backend returns { plan: DayPlan | null }; previously the hook cast the
+//   response body directly as DayPlan so data.windows was always undefined.
 // [claude-code 2026-04-26] S45-T2: useDayPlan — GET /api/day-plan/today on mount,
 //   60s poll. Mirrors useIVScoreData shape: {data, isLoading, error}.
 import { useState, useEffect, useRef } from "react";
@@ -5,6 +8,7 @@ import type { DayPlan } from "../types/day-plan";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const POLL_INTERVAL = 60_000;
+export const DAY_PLAN_REFETCH_EVENT = "fintheon:day-plan-refetch";
 
 export function useDayPlan() {
   const [data, setData] = useState<DayPlan | null>(null);
@@ -25,9 +29,9 @@ export function useDayPlan() {
           }
           return;
         }
-        const json = (await res.json()) as DayPlan;
+        const json = (await res.json()) as { plan: DayPlan | null };
         if (!cancelled) {
-          setData(json);
+          setData(json.plan ?? null);
           setError(null);
           setIsLoading(false);
         }
@@ -37,10 +41,12 @@ export function useDayPlan() {
     }
 
     fetchPlan();
+    window.addEventListener(DAY_PLAN_REFETCH_EVENT, fetchPlan);
     intervalRef.current = setInterval(fetchPlan, POLL_INTERVAL);
 
     return () => {
       cancelled = true;
+      window.removeEventListener(DAY_PLAN_REFETCH_EVENT, fetchPlan);
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);

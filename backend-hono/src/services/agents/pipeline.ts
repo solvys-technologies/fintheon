@@ -19,6 +19,10 @@ import { buildBearCase } from "./bearish-researcher.js";
 import { runDebate } from "./debate-protocol.js";
 import { generateProposal } from "./trader-agent.js";
 import { assessProposal, getUserPsychology } from "./risk-manager.js";
+import {
+  captureFullAnalysisLearning,
+  captureQuickAnalysisLearning,
+} from "./learning-session.js";
 import type {
   AgentPipelineResult,
   MarketDataReport,
@@ -154,7 +158,7 @@ export async function runAgentPipeline(
     proposal,
   );
 
-  return {
+  const result: AgentPipelineResult = {
     marketData,
     newsSentiment: sentiment,
     technical,
@@ -165,6 +169,12 @@ export async function runAgentPipeline(
     pipelineLatencyMs: Date.now() - startTime,
     createdAt: new Date().toISOString(),
   };
+
+  void captureFullAnalysisLearning(result).catch((error) => {
+    console.warn("[AgentLearning] full analysis capture failed", error);
+  });
+
+  return result;
 }
 
 /**
@@ -281,10 +291,16 @@ export async function runAnalystsOnly(userId: string): Promise<{
       analyzeTechnicals(userId),
     ]);
 
-  return {
+  const result = {
     marketData: marketDataReport.reportData as unknown as MarketDataReport,
     sentiment: sentimentReport.reportData as unknown as NewsSentimentReport,
     technical: technicalReport.reportData as unknown as TechnicalReport,
     latencyMs: Date.now() - startTime,
   };
+
+  void captureQuickAnalysisLearning(result).catch((error) => {
+    console.warn("[AgentLearning] quick analysis capture failed", error);
+  });
+
+  return result;
 }

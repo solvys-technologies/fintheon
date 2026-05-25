@@ -1,3 +1,6 @@
+// [claude-code 2026-05-03] Fixed raw_riskflow_items INSERT: removed non-existent columns
+// (sentiment/iv_score/macro_level/risk_type/econ_data). Econ metadata now flows through tags.
+// [claude-code 2026-04-29] S51: extended econ-print tags — directional (beat/miss/inline) + magnitude (high-surprise/moderate-surprise/inline-surprise) for deviation gate
 // [claude-code 2026-04-28] S48-T1: Fix 1 — redirect econ prints from legacy news_feed_items
 // to raw_riskflow_items so they flow through the central scorer pipeline and appear in the feed.
 // Gate at entry via isPipelineEnabled("economic-calendar"). Set url="" for sourceless purge fix.
@@ -12,7 +15,11 @@
 import { calculateIVScore } from "../analysis/iv-scorer.js";
 import { broadcastEconPrint } from "./sse-broadcaster.js";
 import { isPipelineEnabled } from "./pipeline-gate.js";
+import { recordEconIngest, recordIngestAttempt } from "./ingest-ledger.js";
 import { ECON_SOURCE_ID } from "../econ-calendar-service.js";
+import { createLogger } from "../../lib/logger.js";
+
+const log = createLogger("EconBridge");
 
 interface EconPrintEvent {
   eventName: string;
@@ -37,7 +44,15 @@ export async function injectEconPrintToFeed(
     // S48-T1 Fix 1: Gate — skip if economic-calendar pipeline is disabled
     const enabled = await isPipelineEnabled("economic-calendar");
     if (!enabled) {
-      console.log("[EconBridge] Skipped: economic-calendar pipeline disabled");
+      log.info("Skipped: economic-calendar pipeline disabled");
+      recordEconIngest(false);
+      recordIngestAttempt({
+        source: "EconomicCalendar",
+        pipeline: "economic-calendar",
+        decision: "dropped_before_feed",
+        reason: "economic-calendar pipeline disabled",
+        headlinePreview: print.eventName,
+      });
       return;
     }
 
@@ -82,7 +97,17 @@ export async function injectEconPrintToFeed(
         AND created_at::date = ${print.date}::date
       LIMIT 1
     `;
-    if (existing.length > 0) return;
+    if (existing.length > 0) {
+      recordEconIngest(true, 0);
+      recordIngestAttempt({
+        source: "EconomicCalendar",
+        pipeline: "economic-calendar",
+        decision: "accepted",
+        reason: "duplicate print already in raw RiskFlow inbox",
+        headlinePreview: print.eventName,
+      });
+      return;
+    }
 
     const econData = {
       actual: print.actual,
@@ -93,35 +118,63 @@ export async function injectEconPrintToFeed(
         Math.abs(surprise) > 0.01 ? Math.round(surprise * 100) / 100 : null,
     };
 
-    // S48-T1 Fix 1: Write to raw_riskflow_items (not legacy news_feed_items)
-    // with source=ECON_SOURCE_ID + ingest_pipeline=economic-calendar + url=""
+    // S51: extended tags for deviation gate + directional/magnitude
+    const directional =
+      direction === "beat" ? "beat" : direction === "miss" ? "miss" : "inline";
+    const magnitude =
+      Math.abs(surprise) > 5
+        ? "high-surprise"
+        : Math.abs(surprise) > 1
+          ? "moderate-surprise"
+          : "inline-surprise";
+    const tags = [
+      "econ",
+      "print",
+      "econ-print",
+      print.eventName.toLowerCase().replace(/\s+/g, "-"),
+      directional,
+      magnitude,
+    ];
+
+    // Write to raw_riskflow_items using only columns that exist in the table.
+    // Columns like sentiment/iv_score/macro_level/risk_type/econ_data do NOT
+    // exist on raw_riskflow_items — they are added by the central scorer when
+    // promoting to scored_riskflow_items. Emit econ metadata in tags + body
+    // so the scorer can reconstruct them.
     await sql`
       INSERT INTO raw_riskflow_items (
-        headline, body, source, url, created_at, is_breaking,
-        urgency, sentiment, iv_score, macro_level, symbols, tags,
-        econ_data, risk_type, ingest_pipeline
+        tweet_id, headline, body, source, source_domain, url,
+        is_breaking, urgency, symbols, tags, published_at,
+        submitted_by, ingest_pipeline
       ) VALUES (
+        ${`econ:${print.date}:${print.eventName.replace(/[^a-zA-Z0-9]/g, "-")}`},
         ${headline},
         ${headline},
         ${ECON_SOURCE_ID},
+        'economic-calendar',
         '',
-        ${new Date(print.date).toISOString()},
         true,
         'high',
-        ${isBeat ? "bullish" : isMiss ? "bearish" : "neutral"},
-        ${macroLevel >= 3 ? 7 : 5},
-        ${macroLevel},
-        ${JSON.stringify([])},
-        ${JSON.stringify(["econ", "print", print.eventName.toLowerCase().replace(/\s+/g, "-")])},
-        ${JSON.stringify(econData)},
-        'Macro',
+        ${[]},
+        ${tags},
+        ${new Date(print.date).toISOString()},
+        'riskflow-worker',
         'economic-calendar'
       )
     `;
 
-    console.log(
-      `[EconBridge] Injected: ${headline} (macroLevel=${macroLevel})`,
-    );
+    log.info("Injected econ print into RiskFlow inbox", {
+      headline,
+      macroLevel,
+    });
+    recordEconIngest(true);
+    recordIngestAttempt({
+      source: "EconomicCalendar",
+      pipeline: "economic-calendar",
+      decision: "accepted",
+      reason: "econ print inserted into RiskFlow inbox",
+      headlinePreview: headline,
+    });
 
     try {
       broadcastEconPrint({
@@ -140,6 +193,14 @@ export async function injectEconPrintToFeed(
       );
     }
   } catch (err) {
+    recordEconIngest(false);
+    recordIngestAttempt({
+      source: "EconomicCalendar",
+      pipeline: "economic-calendar",
+      decision: "errored",
+      reason: err instanceof Error ? err.message : String(err),
+      headlinePreview: print.eventName,
+    });
     console.error("[EconBridge] Failed to inject econ print:", err);
   }
 }

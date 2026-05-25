@@ -65,7 +65,7 @@ import * as projectxService from "../services/projectx-service.js";
 import { startSharedMemoryCleanup } from "../services/peers/shared-memory.js";
 import { startReflectScheduler } from "../services/autoresearch/reflect-scheduler.js";
 import { startAgentDeskDaily } from "../services/cron/agent-desk-daily.js";
-import { startAquariumScheduler } from "../services/riskflow/aquarium-scheduler.js";
+import { startArbitrumChamberScheduler } from "../services/riskflow/arbitrum-chamber-scheduler.js";
 import { restoreAgentDeskRunningState } from "../services/agent-desk/agent-desk-boot.js";
 import { startDivergenceDetector } from "../services/polymarket-kalshi-divergence.js";
 import { startPredictionResolver } from "../services/polymarket-prediction-resolver.js";
@@ -79,6 +79,8 @@ import { startOutcomeResolver } from "../services/cron/outcome-resolver.js";
 import { startOutcomeTagger } from "../services/scoring/outcome-tagger.js";
 // [claude-code 2026-04-23] Routines service retired — in-process schedulers handle the work directly.
 import { startTradesSync } from "../services/projectx-sync.js";
+// [claude-code 2026-05-05] S59-T2: GEPA evolutionary self-improvement runner — native optimizer, daily 02:00 ET
+import { startGepaRunner } from "../services/gepa/runner.js";
 
 const log = createLogger("Boot");
 let localPeerHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -101,7 +103,8 @@ async function registerLocalPeerOnBoot(): Promise<void> {
 
   const hermesAvailable = isHermesAvailable();
   const capabilities = ["claude-cli"];
-  if (process.env.PEER_ENABLE_TWITTER !== "false") capabilities.push("rettiwt");
+  if (process.env.PEER_ENABLE_TWITTER !== "false")
+    capabilities.push("browser-harness-x");
   if (hermesAvailable) capabilities.push("hermes");
 
   const peer = await registerPeer(userId, {
@@ -209,7 +212,7 @@ export async function bootBackground(): Promise<void> {
   startCatalystPromoter();
   log.info("CatalystPromoter started");
 
-  // AgentDesk running state restore (from latest Aquarium simulation — non-blocking)
+  // AgentDesk running state restore (from latest ArbitrumChamber simulation — non-blocking)
   restoreAgentDeskRunningState().catch((err) =>
     log.warn("AgentDesk running state restore failed (non-fatal)", {
       error: String(err),
@@ -322,6 +325,16 @@ export async function bootBackground(): Promise<void> {
   // [claude-code 2026-04-24] S34-T4: silent-drop counters (60s flush → riskflow_drop_counters)
   startDropCounterFlush();
 
+  // [claude-code 2026-04-29] S53-T4B: source-policy allowlist refresh + ingest ledger flush
+  // (60s interval — activity log, leak sentinel, continuity counters)
+  const { refreshAllowlist } =
+    await import("../services/riskflow/source-policy.js");
+  const { startLedgerFlush } =
+    await import("../services/riskflow/ingest-ledger.js");
+  await refreshAllowlist();
+  startLedgerFlush();
+  log.info("SourcePolicy + IngestLedger started");
+
   // [claude-code 2026-04-18] S24-T4: V4 monitoring loop (2h — proposes regime/lexicon/walk-back changes)
   // Gated by ENABLE_MONITORING_LOOP env var. Turn on after T1/T2/T3 migrations land.
   startMonitoringLoop();
@@ -386,8 +399,8 @@ export async function bootBackground(): Promise<void> {
   startAgentDeskDaily();
   log.info("AgentDeskDaily cron scheduled");
 
-  // Aquarium AI scheduler (Oracle/Nous — 60min interval, first run 20s after boot)
-  startAquariumScheduler();
+  // ArbitrumChamber AI scheduler (Oracle/Nous — 60min interval, first run 20s after boot)
+  startArbitrumChamberScheduler();
 
   // Polymarket/Kalshi divergence detector (15min interval, first run 30s after boot)
   startDivergenceDetector();
@@ -419,6 +432,18 @@ export async function bootBackground(): Promise<void> {
   // contracts and POSTs to polymarket_predictions. Gated by POLYMARKET_SCREENER_ENABLED.)
   startPolymarketScreener();
 
+  // [claude-code 2026-05-05] S59-T2: GEPA evolutionary self-improvement runner
+  // native optimizer, daily 02:00 ET. Gated by GEPA_ENABLED=true.
+  startGepaRunner();
+  log.info("GepaRunner started");
+
+  // [claude-code 2026-05-13] T4: CAO evening review — 17:00 ET Sun-Thu.
+  // Injects [SKILL:EVENING_REVIEW] into Harper's chat pipeline.
+  const { startCaoEveningReviewScheduler } =
+    await import("../services/cron/cao-evening-review-scheduler.js");
+  startCaoEveningReviewScheduler();
+  log.info("CaoEveningReviewScheduler started");
+
   // [claude-code 2026-04-19] Relay connector moved to bootCritical — duplicate call removed here.
 
   // [S27-T10 W2e] Register local skills with the Hermes sidecar so cross-agent skill invocation
@@ -434,7 +459,7 @@ export async function bootBackground(): Promise<void> {
 
 async function registerLocalSkillsWithSidecar(): Promise<void> {
   const { isSidecarEnabled, sidecarClient } =
-    await import("../services/ai/sidecar-client.js");
+    await import("../services/hermes/client.js");
   if (!isSidecarEnabled()) return;
   const { listAllSkills } = await import("../services/skills/registry.js");
   const skills = await listAllSkills();

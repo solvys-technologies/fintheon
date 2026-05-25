@@ -1,0 +1,28 @@
+schema_version: 1
+id: fintheon.pic-macrochain
+name: PIC Macro Chain — Economic Print Forecaster
+version: 0.1.0
+description: >-
+  Proprietary methodology for forecasting economic prints using the PIC macro
+  chain: PMI → PPI → PCE → CPI. Tracks supply chain inputs, energy passthrough,
+  shelter stickiness, and sell-side tell signals to estimate deviation from
+  consensus. Ever-rotating — each print refines the model weights.
+entry_point: ./entry.ts
+soul: ../../backend-hono/src/services/ai/soul/harper.md
+tools:
+  - name: macrochain_forecast
+    description: >-
+      Run the PIC Macro Chain methodology on an upcoming economic print or
+      current conditions. Returns a deviation-from-consensus estimate with
+      supporting evidence from each chain link.
+    input_schema:
+      target_print: string
+      consensus_forecast: string?
+      context: string?
+permissions:
+  - read_market_data
+  - read_news
+  - write_notes
+authors:
+  - Priced In Capital — Harper (CAO)
+license: Proprietary

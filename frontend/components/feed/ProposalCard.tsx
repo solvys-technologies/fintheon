@@ -89,7 +89,7 @@ export function ProposalCard({ proposal, timestamp }: ProposalCardProps) {
           <img
             src={proposal.screenshotUrl}
             alt="Chart"
-            className={`rounded border border-zinc-800 w-full ${expanded ? "max-h-96" : "max-h-20"} object-cover transition-all`}
+            className={`rounded border border-zinc-800 w-full ${expanded ? "max-h-96" : "max-h-20"} object-contain transition-all`}
           />
         </button>
       )}

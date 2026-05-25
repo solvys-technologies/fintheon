@@ -90,10 +90,10 @@ export function ProposalModal({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm ${isClosing ? "animate-fade-out-backdrop" : "animate-fade-in-backdrop"}`}
+      className={`fintheon-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? "animate-fade-out-backdrop" : "animate-fade-in-backdrop"}`}
     >
       <div
-        className={`bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-lg shadow-[0_0_24px_rgba(255,192,56,0.2)] w-full max-w-2xl max-h-[85vh] flex flex-col ${isClosing ? "animate-fade-out" : "animate-fade-in"}`}
+        className={`fintheon-modal-surface w-full max-w-2xl max-h-[85vh] flex flex-col ${isClosing ? "animate-fade-out" : "animate-fade-in"}`}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-zinc-900">

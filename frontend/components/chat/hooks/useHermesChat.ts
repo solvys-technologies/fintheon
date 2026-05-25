@@ -3,6 +3,9 @@
  * Simple chat hook for Hermes AI processing
  */
 
+// [claude-code 2026-05-03] S58 deploy fix: default Harper chat provider to DeepSeek.
+// [claude-code 2026-05-03] S58-T2: route personal CAO DeepSeek providers through client SDK when configured.
+// [claude-code 2026-05-04] S38-T5: removed deepseek-oc-api provider, updated provider routing for v2 dropdown.
 // [claude-code 2026-04-18] Clear cached conversationId on 404 during hydration — otherwise Electron
 //   boots with a stale localStorage UUID, useHermesChat logs "starting fresh", but the consumer
 //   (FintheonComposer) still sees the old ID and fires /api/relay/dispatch → 404 → user reports
@@ -15,6 +18,21 @@ import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
 import { API_BASE_URL } from "../constants.js";
 import { getAccessToken } from "../../../lib/supabase";
+import { emitApiError } from "../../../lib/errorBus";
+import {
+  AI_CREDITS_EXHAUSTED,
+  isAiCreditsExhausted,
+} from "../../../lib/aiCreditErrors";
+import type { ReasoningLevel } from "../reasoning";
+
+export interface HermesWorkspaceContext {
+  id: string;
+  title: string;
+  type?: string;
+  status?: string;
+  color?: string;
+  surfaceId?: string;
+}
 
 /** Convert backend ChatMessage -> UIMessage for useChat hydration */
 function backendToUIMessage(msg: {
@@ -30,31 +48,74 @@ function backendToUIMessage(msg: {
   };
 }
 
+function readHarperProvider(): string {
+  try {
+    const saved = localStorage.getItem("fintheon:harper-provider");
+    if (saved === "deepseek-oc-api") return "opencode-go";
+    return saved && saved !== "local" && saved !== "orouter"
+      ? saved
+      : "deepseek-direct";
+  } catch {
+    return "deepseek-direct";
+  }
+}
+
+function readOpenCodeGoModel(): string | null {
+  try {
+    const model = localStorage.getItem("fintheon:opencode-go-model");
+    return model && model.trim().length > 0 ? model.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 export function useHermesChat(
   conversationId: string | undefined,
   setConversationId: (id: string) => void,
   agentOverride?: string,
   thinkHarder?: boolean,
   clearConversationId?: () => void,
+  reasoningLevel?: ReasoningLevel,
+  surfaceId?: string,
+  workspaceContext?: HermesWorkspaceContext | null,
 ) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   // [claude-code 2026-03-10] Track requestId from X-Request-Id header for cognition stream
   const [lastRequestId, setLastRequestId] = useState<string | null>(null);
   const hydratedRef = useRef<string | undefined>(undefined);
+  const pendingConversationIdRef = useRef<string | null>(null);
+  const runtimeChatIdRef = useRef<string | null>(null);
+  const previousConversationIdRef = useRef(conversationId);
   // Abort controller ref — allows stop button to kill the active fetch
   const abortRef = useRef<AbortController | null>(null);
   // [claude-code 2026-03-13] Ref to avoid stale closure in DefaultChatTransport's prepareSendMessagesRequest
   const thinkHarderRef = useRef(thinkHarder);
+  const reasoningLevelRef = useRef<ReasoningLevel | undefined>(reasoningLevel);
+  const surfaceIdRef = useRef(surfaceId);
+  const workspaceContextRef = useRef(workspaceContext);
   useEffect(() => {
     thinkHarderRef.current = thinkHarder;
-  }, [thinkHarder]);
+    reasoningLevelRef.current = reasoningLevel;
+    surfaceIdRef.current = surfaceId;
+    workspaceContextRef.current = workspaceContext;
+  }, [thinkHarder, reasoningLevel, surfaceId, workspaceContext]);
 
   // [claude-code 2026-04-06] Ref for conversationId to avoid stale closures in transport callbacks
   const conversationIdRef = useRef(conversationId);
   useEffect(() => {
     conversationIdRef.current = conversationId;
   }, [conversationId]);
+
+  const commitPendingConversationId = useCallback(() => {
+    const pendingConversationId = pendingConversationIdRef.current;
+    if (!pendingConversationId) return;
+
+    pendingConversationIdRef.current = null;
+    hydratedRef.current = pendingConversationId;
+    conversationIdRef.current = pendingConversationId;
+    setConversationId(pendingConversationId);
+  }, [setConversationId]);
 
   const fetchFn = useCallback(
     async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
@@ -113,10 +174,19 @@ export function useHermesChat(
           let errText = `Chat request failed (${response.status})`;
           try {
             const json = await response.clone().json();
-            if (json?.error) errText = String(json.error);
+            if (json?.details) errText = String(json.details);
+            else if (json?.error) errText = String(json.error);
             else if (json?.message) errText = String(json.message);
           } catch {
             /* response may not be JSON */
+          }
+          if (response.status === 402 || isAiCreditsExhausted(errText)) {
+            emitApiError({
+              code: AI_CREDITS_EXHAUSTED,
+              message: "Hermes gateway credits exhausted",
+              status: 402,
+              endpoint: "/api/harper/chat",
+            });
           }
           setLastError(errText);
           throw new Error(errText);
@@ -124,7 +194,9 @@ export function useHermesChat(
 
         setLastError(null);
         const convId = response.headers.get("X-Conversation-Id");
-        if (convId) setConversationId(convId);
+        if (convId && convId !== conversationIdRef.current) {
+          pendingConversationIdRef.current = convId;
+        }
         const reqId = response.headers.get("X-Request-Id");
         if (reqId) setLastRequestId(reqId);
 
@@ -133,9 +205,11 @@ export function useHermesChat(
         if (timeoutId) clearTimeout(timeoutId);
         if (error instanceof DOMException && error.name === "AbortError") {
           // User-initiated stop — don't show error
+          pendingConversationIdRef.current = null;
           setIsStreaming(false);
           throw error;
         }
+        pendingConversationIdRef.current = null;
         if (
           !(error instanceof Error) ||
           !error.message.startsWith("Chat request failed")
@@ -147,7 +221,7 @@ export function useHermesChat(
         throw error;
       }
     },
-    [setConversationId],
+    [agentOverride],
   );
 
   // Harper routes through dedicated /api/harper/chat for full Fintheon context injection
@@ -155,6 +229,10 @@ export function useHermesChat(
   const chatEndpoint = isHarperRoute
     ? `${API_BASE_URL}/api/harper/chat`
     : `${API_BASE_URL}/api/ai/chat`;
+  if (!runtimeChatIdRef.current) {
+    runtimeChatIdRef.current = `hermes-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  }
+  const runtimeChatId = runtimeChatIdRef.current;
 
   const {
     messages: useChatMessages,
@@ -168,7 +246,7 @@ export function useHermesChat(
     addToolOutput,
     addToolApprovalResponse,
   } = useChat({
-    id: conversationId ?? "new",
+    id: runtimeChatId,
     transport: new DefaultChatTransport({
       api: chatEndpoint,
       fetch: fetchFn,
@@ -204,23 +282,31 @@ export function useHermesChat(
           // Read provider from localStorage (set by ProviderDropdown)
           const harperProvider = (() => {
             try {
-              return (
-                localStorage.getItem("fintheon:harper-provider") || "local"
-              );
+              return readHarperProvider();
             } catch {
-              return "local";
+              return "deepseek-direct";
             }
           })();
+          const opencodeGoModel =
+            harperProvider === "opencode-go" ? readOpenCodeGoModel() : null;
+          const currentSurface = readCurrentSurface(surfaceIdRef.current);
+          const currentWorkspace = workspaceContextRef.current ?? undefined;
           return {
             body: {
               message: msgText,
               ...(images.length > 0 && { images }),
               history,
               provider: harperProvider,
+              ...(opencodeGoModel ? { model: opencodeGoModel } : {}),
               ...(conversationIdRef.current && {
                 conversationId: conversationIdRef.current,
               }),
               ...(thinkHarderRef.current && { thinkHarder: true }),
+              ...(reasoningLevelRef.current && {
+                reasoningLevel: reasoningLevelRef.current,
+              }),
+              ...(currentWorkspace && { workspace: currentWorkspace }),
+              metadata: buildChatMetadata(currentSurface, currentWorkspace),
               userContext: (() => {
                 try {
                   const get = (k: string) => {
@@ -247,34 +333,30 @@ export function useHermesChat(
                     localStorage.getItem("fintheon:mcp-active-connectors") ??
                       "[]",
                   );
-                  // [S23-T3] Auto-append "aquarium" when the user is on the Aquarium surface
+                  // [S23-T3] Auto-append "arbitrumChamber" when the user is on the ArbitrumChamber surface
                   // so Harper receives the latest AgentDesk context without manual toggling.
                   const surface = localStorage.getItem(
                     "fintheon:current-surface",
                   );
-                  if (surface === "aquarium" && !base.includes("aquarium")) {
-                    return [...base, "aquarium"];
+                  if (
+                    surface === "arbitrumChamber" &&
+                    !base.includes("arbitrumChamber")
+                  ) {
+                    return [...base, "arbitrumChamber"];
                   }
                   return base;
                 } catch {
                   return [];
                 }
               })(),
-              surface: (() => {
-                try {
-                  return (
-                    localStorage.getItem("fintheon:current-surface") ??
-                    undefined
-                  );
-                } catch {
-                  return undefined;
-                }
-              })(),
+              surface: currentSurface,
             },
           };
         }
 
         // Standard Hermes/OpenRouter path
+        const currentSurface = readCurrentSurface(surfaceIdRef.current);
+        const currentWorkspace = workspaceContextRef.current ?? undefined;
         return {
           body: {
             messages: messages.map((msg) => {
@@ -307,9 +389,16 @@ export function useHermesChat(
                     .join("") || "",
               };
             }),
-            ...(conversationId && { conversationId }),
+            ...(conversationIdRef.current && {
+              conversationId: conversationIdRef.current,
+            }),
             ...(agentOverride && { agentOverride }),
             ...(thinkHarderRef.current && { thinkHarder: true }),
+            ...(reasoningLevelRef.current && {
+              reasoningLevel: reasoningLevelRef.current,
+            }),
+            ...(currentWorkspace && { workspace: currentWorkspace }),
+            metadata: buildChatMetadata(currentSurface, currentWorkspace),
             mcpServers: (() => {
               try {
                 return JSON.parse(
@@ -320,22 +409,18 @@ export function useHermesChat(
                 return [];
               }
             })(),
-            // [S23-T3] Surface flag so Hermes handlers can auto-inject Aquarium context.
-            surface: (() => {
-              try {
-                return (
-                  localStorage.getItem("fintheon:current-surface") ?? undefined
-                );
-              } catch {
-                return undefined;
-              }
-            })(),
+            // [S23-T3] Surface flag so Hermes handlers can auto-inject ArbitrumChamber context.
+            surface: currentSurface,
           },
         };
       },
     }),
-    onFinish: () => setIsStreaming(false),
+    onFinish: () => {
+      setIsStreaming(false);
+      commitPendingConversationId();
+    },
     onError: (error) => {
+      pendingConversationIdRef.current = null;
       setIsStreaming(false);
       if (!lastError) {
         const msg =
@@ -351,6 +436,17 @@ export function useHermesChat(
       }
     },
   });
+
+  useEffect(() => {
+    const previousConversationId = previousConversationIdRef.current;
+    previousConversationIdRef.current = conversationId;
+
+    if (conversationId || !previousConversationId) return;
+
+    pendingConversationIdRef.current = null;
+    hydratedRef.current = undefined;
+    setUseChatMessages([]);
+  }, [conversationId, setUseChatMessages]);
 
   // [claude-code 2026-04-10] Hydrate messages when conversationId changes (session switch or remount)
   useEffect(() => {
@@ -426,6 +522,7 @@ export function useHermesChat(
   const hardStop = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
+    pendingConversationIdRef.current = null;
     stop();
     setIsStreaming(false);
   }, [stop]);
@@ -446,5 +543,25 @@ export function useHermesChat(
     lastError,
     clearError: () => setLastError(null),
     lastRequestId,
+  };
+}
+
+function readCurrentSurface(surfaceId?: string): string | undefined {
+  if (surfaceId) return surfaceId.split(":")[0] || surfaceId;
+  try {
+    return localStorage.getItem("fintheon:current-surface") ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function buildChatMetadata(
+  surface: string | undefined,
+  workspace: HermesWorkspaceContext | undefined,
+): Record<string, unknown> | undefined {
+  if (!surface && !workspace) return undefined;
+  return {
+    ...(surface ? { surface } : {}),
+    ...(workspace ? { workspace } : {}),
   };
 }

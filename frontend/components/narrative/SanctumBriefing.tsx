@@ -1,22 +1,28 @@
+// [claude-code 2026-05-11] S62-T1: Risk alert row border uses var(--fintheon-severe)/15 token (replaced red-500/15) to align with inline border-left-color.
 // [claude-code 2026-03-28] S4-T3: Enhanced briefing display — structured sections, severity indicators, accent borders
 // [claude-code 2026-03-23] AgentDesk briefing panel — agent reasoning synthesis
-// [claude-code 2026-04-17] Slop-fallback rendering: compact empty-state with Aquarium trigger link when backend emits SLOP_FALLBACK
+// [claude-code 2026-04-17] Slop-fallback rendering: compact empty-state with ArbitrumChamber trigger link when backend emits SLOP_FALLBACK
 import type { AgentDeskBriefing } from "../../types/agent-desk";
 
-const SLOP_FALLBACK = "No new agentic updates. Trigger an update in Aquarium.";
+const SLOP_FALLBACK =
+  "No new agentic updates. Trigger an update in ArbitrumChamber.";
 
 interface SanctumBriefingProps {
   briefing: AgentDeskBriefing | null;
   isLoading?: boolean;
   noBorder?: boolean;
-  onTriggerAquarium?: () => void;
+  onTriggerArbitrumChamber?: () => void;
+  revisionStatus?: string | null;
+  revisionChecking?: boolean;
 }
 
 export function SanctumBriefing({
   briefing,
   isLoading,
   noBorder,
-  onTriggerAquarium,
+  onTriggerArbitrumChamber,
+  revisionStatus,
+  revisionChecking,
 }: SanctumBriefingProps) {
   if (isLoading) {
     return (
@@ -44,13 +50,13 @@ export function SanctumBriefing({
         <p className="text-[11px] text-[var(--fintheon-text)]/60 leading-relaxed">
           {SLOP_FALLBACK}
         </p>
-        {onTriggerAquarium && (
+        {onTriggerArbitrumChamber && (
           <button
             type="button"
-            onClick={onTriggerAquarium}
+            onClick={onTriggerArbitrumChamber}
             className="mt-3 text-[10px] uppercase tracking-wider text-[var(--fintheon-accent)] hover:text-[var(--fintheon-text)] transition-colors"
           >
-            Trigger Aquarium →
+            Trigger ArbitrumChamber →
           </button>
         )}
       </div>
@@ -59,6 +65,22 @@ export function SanctumBriefing({
 
   return (
     <div className="rounded bg-[var(--fintheon-surface)]/30 overflow-hidden">
+      {/* Revision status bar — shown after refresh check */}
+      {(revisionChecking || revisionStatus) && (
+        <div
+          className={`px-5 py-2.5 border-b ${revisionChecking ? "border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-accent)]/5" : "border-[var(--fintheon-accent)]/10"}`}
+        >
+          {revisionChecking ? (
+            <span className="text-[10px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">
+              [CHECKING FOR UPDATES...]
+            </span>
+          ) : (
+            <span className="text-[10px] text-[var(--fintheon-text)]/45 leading-relaxed">
+              {revisionStatus}
+            </span>
+          )}
+        </div>
+      )}
       {/* Key Findings */}
       {(briefing.keyFindings?.length ?? 0) > 0 && (
         <div
@@ -97,7 +119,7 @@ export function SanctumBriefing({
               return (
                 <div
                   key={i}
-                  className="flex items-start gap-2 pl-2 border border-red-500/15 rounded"
+                  className="flex items-start gap-2 pl-2 border border-[var(--fintheon-severe)]/15 rounded"
                   style={{
                     borderLeftColor: isSevere
                       ? "var(--fintheon-severe)"

@@ -79,6 +79,9 @@ const JUNK_LANGUAGE_PATTERNS = [
   /\bunverified\b/i,
   /\bdeepfake\b/i,
   /\bTucker\s+Carlson\b/i,
+  /\bDan\s+Bongino\b/i,
+  /\bCandace\s+Owens\b/i,
+  /\bNick\s+Fuentes\b/i,
 ];
 
 // ── Political spam / partisan noise ─────────────────────────────────────────
@@ -472,6 +475,10 @@ export function checkContentGuard(
   text: string,
   opts?: ContentGuardOpts,
 ): ContentGuardResult {
+  if (opts?.ingestPipeline === "financialjuice-rss") {
+    return { blocked: false, reason: null };
+  }
+
   // [claude-code 2026-04-26] Banned-publisher check moved off the text scanner —
   // we no longer phrase-block mainstream-media mentions. Curated Twitter relays
   // can quote a Reuters/Bloomberg headline freely. Use isBannedPublisher() for

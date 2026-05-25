@@ -1,3 +1,4 @@
+// [claude-code 2026-05-05] Tight-shell PsychAssist: reduced header width and compact monitor presentation (pulse + waveform + score only).
 // [claude-code 2026-04-17] Migrated drag to useDraggable hook (pointer events + rAF); grip-only; dock-on-release via onDragEnd
 // [claude-code 2026-04-20] S21: Voice activation button + live waveform indicator
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
@@ -82,24 +83,22 @@ export function PsychAssistDockable({
   }, [onUndockToFloating]);
 
   const body = useMemo(() => {
+    const compactMonitor = target === "header";
     return (
       <div className="flex items-center gap-2">
-        <span className="text-[10px] text-[var(--fintheon-accent)] font-semibold tracking-[0.14em] uppercase">
-          PsychAssist
-        </span>
         <div className="flex-1 min-w-0">
-          <CompactERMonitor />
+          <CompactERMonitor compact={compactMonitor} />
         </div>
       </div>
     );
-  }, []);
+  }, [target]);
 
   if (!floating) {
     return (
       <div
         className="flex items-center gap-2 bg-[var(--fintheon-bg)] rounded-lg px-3.5 h-7 overflow-hidden"
         style={{
-          width: headerVisible ? 360 : 0,
+          width: headerVisible ? 228 : 0,
           opacity: headerVisible ? 1 : 0,
           transition:
             "width 280ms cubic-bezier(0.4, 0, 0.2, 1), opacity 220ms ease",
@@ -112,7 +111,7 @@ export function PsychAssistDockable({
         >
           <PictureInPicture2 className="w-3.5 h-3.5" />
         </button>
-        <div className="min-w-[270px] max-w-[340px]">{body}</div>
+        <div className="min-w-[150px] max-w-[188px]">{body}</div>
         {onClose && (
           <button
             onClick={onClose}

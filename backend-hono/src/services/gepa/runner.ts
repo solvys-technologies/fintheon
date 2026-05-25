@@ -13,6 +13,8 @@ import { join, resolve } from "node:path";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { sampleAgent, meanScore, type Sample } from "./sample-sourcing.js";
 import { createEvolutionPr, type PrProposal } from "./pr-creator.js";
+import { optimizeSoul } from "./optimizer.js";
+import { createLogger } from "../../lib/logger.js";
 
 const REPO_ROOT = resolve(new URL("../../../../", import.meta.url).pathname);
 const SOUL_DIR = join(REPO_ROOT, "backend-hono/src/services/ai/soul");
@@ -133,59 +135,6 @@ async function setPause(agent_id: AgentId, days: number): Promise<string> {
   return until.toISOString();
 }
 
-async function callSidecarOptimize(
-  agent_id: AgentId,
-  baseline_metrics: Record<string, number>,
-  samples: Sample[],
-): Promise<{
-  candidate_body: string;
-  projected_delta: Record<string, number>;
-  projected_risk: string;
-  run_id: string;
-} | null> {
-  try {
-    const { isSidecarEnabled, sidecarClient } =
-      await import("../ai/sidecar-client.js");
-    if (!isSidecarEnabled()) return null;
-    const base = (await import("../ai/sidecar-client.js")).getSidecarBaseUrl();
-    const res = await fetch(new URL("/v1/gepa/optimize", base), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: process.env.INTERNAL_HERMES_JWT
-          ? `Bearer ${process.env.INTERNAL_HERMES_JWT}`
-          : "",
-      },
-      body: JSON.stringify({
-        agent_id,
-        baseline_metrics,
-        samples: samples.slice(0, 200), // cap payload
-      }),
-    });
-    if (!res.ok) {
-      console.warn("[gepa] sidecar optimize non-200", res.status);
-      return null;
-    }
-    const body = (await res.json()) as {
-      candidate_body: string;
-      projected_delta?: Record<string, number>;
-      projected_risk?: string;
-      run_id?: string;
-    };
-    // keep client referenced so lint doesn't complain about unused import
-    void sidecarClient;
-    return {
-      candidate_body: body.candidate_body,
-      projected_delta: body.projected_delta ?? {},
-      projected_risk: body.projected_risk ?? "unknown",
-      run_id: body.run_id ?? `run-${Date.now()}`,
-    };
-  } catch (err) {
-    console.warn("[gepa] sidecar optimize failed", err);
-    return null;
-  }
-}
-
 async function readCurrentSoul(agent_id: AgentId): Promise<string> {
   return readFile(join(SOUL_DIR, `${agent_id}.md`), "utf8").catch(() => "");
 }
@@ -236,13 +185,13 @@ export async function runOnce(
       triggered = true;
     } else {
       triggered = true;
-      const proposal = await callSidecarOptimize(
-        agent,
-        { accuracy, baseline_7d },
+      const proposal = optimizeSoul({
+        agent_id: agent,
+        baseline_metrics: { accuracy, baseline_7d },
         samples,
-      );
+      });
       if (!proposal) {
-        skip_reason = "sidecar unavailable";
+        skip_reason = "optimizer unavailable";
       } else {
         const current = await readCurrentSoul(agent);
         if (!withinSizeCap(current, proposal.candidate_body)) {
@@ -356,6 +305,59 @@ export async function loadGepaDiagnostics(): Promise<GepaDiagnostics> {
     console.warn("[gepa] loadDiagnostics failed", err);
     return empty;
   }
+}
+
+// ── Boot-time scheduler ──────────────────────────────────────────────────────
+
+const gepaLogger = createLogger("GEPA");
+
+let gepaTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleNextGepaRun(): void {
+  if (gepaTimer) clearTimeout(gepaTimer);
+
+  // Daily at 02:00 ET (Eastern) = 02:00 local if running in ET, else UTC-adjusted.
+  // Compute ms until next 02:00 in America/New_York.
+  const now = new Date();
+  // Use a simple heuristic: if the system TZ is not ET, approximate via offset.
+  // For a full implementation use Intl.DateTimeFormat with timeZone.
+  const etFormatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  const nowEt = etFormatter.format(now);
+  const [h, m, s] = nowEt.split(":").map(Number);
+  let msUntilTarget = ((2 - h) * 60 - m) * 60 * 1000 - (s ?? 0) * 1000;
+  if (msUntilTarget <= 0) msUntilTarget += 24 * 60 * 60 * 1000;
+
+  gepaTimer = setTimeout(() => {
+    runOnce({ dryRun: false })
+      .then((r) => {
+        const triggered = Object.values(r.agents).filter((a) => a.triggered);
+        gepaLogger.info(
+          `GEPA run complete — ${triggered.length}/${Object.keys(r.agents).length} agents triggered`,
+        );
+        scheduleNextGepaRun();
+      })
+      .catch((err) => {
+        gepaLogger.warn("GEPA run failed (non-fatal)", { error: String(err) });
+        scheduleNextGepaRun();
+      });
+  }, msUntilTarget);
+  gepaTimer.unref?.();
+}
+
+export function startGepaRunner(): void {
+  if (process.env.GEPA_ENABLED !== "true") {
+    gepaLogger.info("GEPA disabled (set GEPA_ENABLED=true to enable)");
+    return;
+  }
+
+  gepaLogger.info("GEPA runner started — daily at 02:00 ET");
+  scheduleNextGepaRun();
 }
 
 // CLI entry — `bun run gepa:dry-run --agent=harper`

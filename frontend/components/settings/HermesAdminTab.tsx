@@ -1,17 +1,11 @@
-// [claude-code 2026-04-19] S27-T11: mount GepaWidget on diagnostics surface.
-// [claude-code 2026-04-19] S27-T9 W2e: mount RoutingWidget on diagnostics surface.
-// [claude-code 2026-04-19] S27-T4: mount HeadlineVolumeWidget on diagnostics surface.
-// [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — Hermes:Admin merged tab
-// [claude-code 2026-03-20] S3:T3 — merged Connection+Hermes tabs into Hermes:Admin
-import React, { useState, useEffect, useCallback } from "react";
+// [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — Hermes settings tab
+// [claude-code 2026-03-20] S3:T3 — merged Connection+Hermes tabs into settings
+import { useState, useEffect, useCallback } from "react";
 import { Copy, RefreshCw } from "lucide-react";
 import { useGateway } from "../../contexts/GatewayContext";
 import { useToast } from "../../contexts/ToastContext";
-import Toggle from "../Toggle";
 import { HermesSettings } from "./HermesSettings";
-import { HeadlineVolumeWidget } from "../diagnostics/HeadlineVolumeWidget";
-import { RoutingWidget } from "../diagnostics/RoutingWidget";
-import { GepaWidget } from "../diagnostics/GepaWidget";
+import { SettingsActionStatus } from "./SettingsActionStatus";
 
 interface DiagnosticService {
   name: string;
@@ -30,12 +24,6 @@ interface DiagnosticsData {
 export function HermesAdminTab() {
   const { status, lastHealthCheck, reconnect, gatewayUrl } = useGateway();
   const { addToast } = useToast();
-  const statusColor =
-    status === "connected"
-      ? "#34D399"
-      : status === "connecting"
-        ? "var(--fintheon-accent)"
-        : "#EF4444";
   const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
 
   const [persistentEnabled, setPersistentEnabled] = useState(
@@ -151,33 +139,36 @@ export function HermesAdminTab() {
 
   return (
     <div className="space-y-6">
-      {/* 1. Gateway Status */}
       <section>
-        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-4">
+        <h3 className="mb-4 text-right text-sm font-semibold text-[var(--fintheon-accent)]">
           Gateway Connection
         </h3>
-        <div className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div
-                className="w-2.5 h-2.5 rounded-full"
-                style={{ backgroundColor: statusColor }}
-              />
-              <span className="text-sm font-medium text-white">
-                {statusLabel}
-              </span>
+        <div className="fintheon-fade-divider pb-2">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="text-right text-sm font-medium text-white">
+              Gateway
             </div>
-            <button
-              onClick={reconnect}
-              className="text-xs text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30 rounded px-3 py-1 hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-            >
-              Reconnect
-            </button>
+            <div className="flex flex-col items-end gap-1 text-right">
+              <button
+                onClick={reconnect}
+                className="fintheon-action-link text-[10px] font-semibold uppercase tracking-[0.14em]"
+              >
+                Reconnect
+              </button>
+              <SettingsActionStatus
+                label={statusLabel}
+                detail={gatewayUrl}
+                tone={
+                  status === "connected"
+                    ? "success"
+                    : status === "connecting"
+                      ? "warning"
+                      : "error"
+                }
+              />
+            </div>
           </div>
-          <div className="text-xs text-gray-500 space-y-1">
-            <p>
-              URL: <span className="text-gray-400">{gatewayUrl}</span>
-            </p>
+          <div className="space-y-1 text-right text-xs text-gray-500">
             {lastHealthCheck && (
               <p>
                 Last check:{" "}
@@ -190,18 +181,31 @@ export function HermesAdminTab() {
         </div>
 
         {/* Persistent Thread */}
-        <div className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg p-4 mt-3">
-          <h4 className="text-sm font-medium text-white mb-3">
+        <div className="fintheon-fade-divider mt-4 pb-2 text-right">
+          <h4 className="mb-3 text-sm font-medium text-white">
             Persistent Thread
           </h4>
           <div className="space-y-3">
-            <Toggle
-              label="Enable persistent thread"
-              enabled={persistentEnabled}
-              onChange={handleTogglePersistent}
-            />
+            <div className="flex items-center justify-between gap-4 text-right">
+              <span className="text-[11px] font-medium text-white">
+                Enable persistent thread
+              </span>
+              <button
+                type="button"
+                onClick={() => handleTogglePersistent(!persistentEnabled)}
+                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                  persistentEnabled ? "bg-[var(--fintheon-accent)]" : "bg-zinc-700"
+                }`}
+              >
+                <span
+                  className={`inline-block h-3.5 w-3.5 rounded-full bg-black transition-transform ${
+                    persistentEnabled ? "translate-x-[18px]" : "translate-x-[3px]"
+                  }`}
+                />
+              </button>
+            </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">
+              <label className="mb-1 block text-right text-xs text-gray-400">
                 Thread / Conversation ID
               </label>
               <input
@@ -217,7 +221,7 @@ export function HermesAdminTab() {
                 }`}
               />
             </div>
-            <p className="text-[11px] text-gray-500">
+            <p className="text-right text-[11px] text-gray-500">
               Keep a single conversation thread across refreshes. Prevents
               new-conversation flicker.
             </p>
@@ -225,12 +229,10 @@ export function HermesAdminTab() {
         </div>
       </section>
 
-      {/* 2. Hermes agent settings (existing component) */}
       <HermesSettings />
 
-      {/* 3. Backend Dependency Status Cards */}
       <section>
-        <div className="flex items-center justify-between mb-3">
+        <div className="mb-3 flex items-center justify-end gap-3 text-right">
           <h3 className="text-sm font-semibold text-[var(--fintheon-accent)]">
             Backend Dependencies
           </h3>
@@ -254,39 +256,44 @@ export function HermesAdminTab() {
 
         {diagnostics && (
           <>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-0">
               {(diagnostics.services ?? []).map((svc) => (
                 <div
                   key={svc.name}
-                  className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/15 rounded-lg p-3"
+                  className="fintheon-fade-divider flex items-start justify-between gap-4 py-3 text-right"
                 >
-                  <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-[11px] font-semibold text-white">
+                    {svc.name}
+                  </span>
+                  <div className="flex min-w-0 flex-col items-end gap-1 text-right">
                     <div
-                      className={`w-2 h-2 rounded-full ${statusDot(svc.status)}`}
+                      className={`h-2 w-2 rounded-full ${statusDot(svc.status)}`}
                     />
-                    <span className="text-[11px] font-semibold text-white truncate">
-                      {svc.name}
-                    </span>
+                    <SettingsActionStatus
+                      label={svc.status}
+                      detail={svc.fix || svc.detail}
+                      tone={
+                        svc.status === "ok"
+                          ? "success"
+                          : svc.status === "degraded"
+                            ? "warning"
+                            : svc.status === "error"
+                              ? "error"
+                              : "muted"
+                      }
+                    />
                   </div>
-                  <div className="text-[10px] text-gray-500 leading-relaxed">
-                    {svc.detail || svc.status}
-                  </div>
-                  {svc.status === "error" && svc.fix && (
-                    <div className="text-[10px] text-red-400/80 mt-1 leading-relaxed">
-                      {svc.fix}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
 
             {/* Missing env vars */}
             {(diagnostics.missingEnvVars ?? []).length > 0 && (
-              <div className="mt-3 bg-[var(--fintheon-bg)] border border-red-500/20 rounded-lg p-3">
-                <div className="text-[11px] font-semibold text-red-400 mb-1">
+              <div className="mt-3 bg-[var(--fintheon-bg)] border border-red-500/20 rounded-lg p-3 text-right">
+                <div className="mb-1 text-[11px] font-semibold text-red-400">
                   Missing Environment Variables
                 </div>
-                <div className="text-[10px] text-gray-500 font-mono space-y-0.5">
+                <div className="space-y-0.5 font-mono text-[10px] text-gray-500">
                   {(diagnostics.missingEnvVars ?? []).map((v) => (
                     <div key={v}>{v}</div>
                   ))}
@@ -305,7 +312,7 @@ export function HermesAdminTab() {
               </button>
             )}
 
-            <div className="text-[10px] text-zinc-600 mt-2">
+            <div className="mt-2 text-right text-[10px] text-zinc-600">
               Last checked:{" "}
               {new Date(diagnostics.timestamp).toLocaleTimeString()}
             </div>
@@ -319,20 +326,6 @@ export function HermesAdminTab() {
         )}
       </section>
 
-      {/* 4. Headline Volume (S27-T4) */}
-      <section>
-        <HeadlineVolumeWidget />
-      </section>
-
-      {/* 5. Smart Model Routing (S27-T9 W2e) */}
-      <section>
-        <RoutingWidget />
-      </section>
-
-      {/* 6. GEPA self-improvement loop (S27-T11) */}
-      <section>
-        <GepaWidget />
-      </section>
     </div>
   );
 }

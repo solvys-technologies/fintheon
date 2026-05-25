@@ -1,6 +1,6 @@
 // [claude-code 2026-04-19] v5.22 S1: Nothing-fuse-shimmer on every component bar, palette
 //   severity colors, "Agent Desk" label replaces AgentDesk.
-// [claude-code 2026-04-15] S16-T4: Blended VIX Score card — visible on Aquarium Page 0
+// [claude-code 2026-04-15] S16-T4: Blended VIX Score card — visible on ArbitrumChamber Page 0
 import type { IVScoreResponse } from "../../types/market-data";
 import { NothingFuse } from "../shared/NothingFuse";
 

@@ -3,58 +3,21 @@
 //   conditioned on the user's selected instrument (localStorage `fintheon:selected-instrument`,
 //   default /ES). Renders link + summary + direction badge in the expanded card.
 // [claude-code 2026-04-10] S9-T2: Refactored to use AlertCardBase — detail variant
-// [claude-code 2026-04-19] Surface-gated SourcePreview — expanded card now shows
-//   scraped source body with YouTube + Open-original CTAs (surface="full" or
-//   "timeline"). Mini surfaces still render the legacy footer link row only.
-import { useState, useCallback } from "react";
-import { ExternalLink } from "lucide-react";
+// [claude-code 2026-04-30] Expanded state now delegates to RiskFlowPostCard:
+//   Twitter-inspired post anatomy, full-card preview toggle, and one Ask AI CTA.
+import { useState } from "react";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
-import { useToast } from "../../contexts/ToastContext";
-import { BeatMissBadge } from "./BeatMissBadge";
-import { DetailFooter } from "./DetailFooter";
 import { AlertCardBase } from "./AlertCardBase";
-import { SourceIcon, YouTubeLogo } from "../../lib/shared-icons";
-import { timeAgo } from "../../lib/time-utils";
-import { linkifyText } from "../../lib/linkify";
-import { bucketOfAlert } from "../../lib/source-buckets";
-import { SourcePreview } from "./SourcePreview";
-import { useYouTubeMiniplayer } from "../../contexts/YouTubeMiniplayerContext";
+import { RiskFlowPostCard } from "./RiskFlowPostCard";
 
 export type RiskFlowDetailSurface = "full" | "timeline" | "mini";
-
-interface DetailedNote {
-  source_url: string | null;
-  summary: string;
-  direction: "bullish" | "bearish" | "neutral";
-  instrument: string;
-}
-
-const API_BASE = (
-  import.meta.env.VITE_API_URL || "http://localhost:8080"
-).replace(/\/$/, "");
-
-function readSelectedInstrument(): string {
-  try {
-    return localStorage.getItem("fintheon:selected-instrument") || "/ES";
-  } catch {
-    return "/ES";
-  }
-}
-
-function directionLabel(
-  d: DetailedNote["direction"],
-  instrument: string,
-): string {
-  const head =
-    d === "bullish" ? "Bullish" : d === "bearish" ? "Bearish" : "Neutral";
-  return `${head} for ${instrument}`;
-}
 
 interface RiskFlowDetailCardProps {
   alert: RiskFlowAlert;
   seen?: boolean;
   onGenerateNote?: (itemId: string) => void;
   onNotRelevant?: (id: string, reason?: string) => void;
+  onAskAI?: (alert: RiskFlowAlert) => void;
   /** Which surface this card is rendering in. Drives SourcePreview visibility. */
   surface?: RiskFlowDetailSurface;
 }
@@ -62,59 +25,11 @@ interface RiskFlowDetailCardProps {
 export function RiskFlowDetailCard({
   alert,
   seen,
-  onGenerateNote,
   onNotRelevant,
+  onAskAI,
   surface = "mini",
 }: RiskFlowDetailCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const [detailedNote, setDetailedNote] = useState<DetailedNote | null>(null);
-  const [generating, setGenerating] = useState(false);
-  const { addToast } = useToast();
-  const { openVideo } = useYouTubeMiniplayer();
-  const hasEconData = alert.econData && alert.econData.beatMiss;
-  const showSourcePreview = surface === "full" || surface === "timeline";
-
-  const handleGenerateNote = useCallback(
-    async (e: React.MouseEvent) => {
-      e.stopPropagation();
-      const rawId = alert.id.replace(/^backend-/, "");
-      const instrument = readSelectedInstrument();
-      setGenerating(true);
-      addToast("Generating analyst note...", "info");
-      try {
-        const res = await fetch(
-          `${API_BASE}/api/riskflow/${encodeURIComponent(rawId)}/generate-note`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ instrument }),
-          },
-        );
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = (await res.json()) as Partial<DetailedNote>;
-        if (
-          typeof data.summary === "string" &&
-          (data.direction === "bullish" ||
-            data.direction === "bearish" ||
-            data.direction === "neutral")
-        ) {
-          setDetailedNote({
-            source_url: data.source_url ?? alert.url ?? null,
-            summary: data.summary,
-            direction: data.direction,
-            instrument: data.instrument ?? instrument,
-          });
-        }
-        if (onGenerateNote) onGenerateNote(rawId);
-      } catch (err) {
-        console.warn("[RiskFlow] Generate note failed:", err);
-        addToast("Note generation failed", "error");
-      } finally {
-        setGenerating(false);
-      }
-    },
-    [alert.id, alert.url, onGenerateNote, addToast],
-  );
 
   return (
     <AlertCardBase
@@ -138,258 +53,12 @@ export function RiskFlowDetailCard({
           : undefined
       }
       expandedContent={
-        <>
-          <div className="px-4 py-3 border-t border-zinc-800/40 bg-transparent">
-            {/* ── Expanded header: source / headline / time / IV fuse ── */}
-            <div className="flex items-center gap-2 mb-2.5">
-              <SourceIcon
-                source={alert.source}
-                className="w-3 h-3 text-[var(--fintheon-muted)] flex-shrink-0"
-              />
-              <span className="text-[9px] tracking-[0.08em] uppercase text-[var(--fintheon-muted)]/60">
-                {bucketOfAlert(alert)}
-              </span>
-              <span className="text-zinc-700">&middot;</span>
-              <span className="text-[9px] text-[var(--fintheon-muted)]/40 tabular-nums">
-                {timeAgo(alert.publishedAt)}
-              </span>
-              {alert.ivScore != null && (
-                <span className="ml-auto text-[9px] font-mono text-[var(--fintheon-muted)]/50 tabular-nums">
-                  IV {Number(alert.ivScore).toFixed(1)}
-                </span>
-              )}
-            </div>
-
-            <p
-              className="text-xs font-medium leading-snug mb-2.5"
-              style={{ color: "var(--fintheon-text)", textWrap: "pretty" }}
-            >
-              {linkifyText(alert.headline)}
-            </p>
-
-            {/* [claude-code 2026-04-25] S35: Hero image + source-link rail. */}
-            {alert.videoUrl ? (
-              <a
-                href={alert.url ?? alert.videoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="block mb-3 overflow-hidden"
-              >
-                <video
-                  src={alert.videoUrl}
-                  poster={alert.imageUrl ?? undefined}
-                  controls
-                  preload="metadata"
-                  data-osint-video={
-                    alert.source.startsWith("twitter:OSINT") ||
-                    alert.source.toLowerCase().includes("osint")
-                  }
-                  className="w-full max-h-96 rounded-lg"
-                />
-              </a>
-            ) : alert.imageUrl ? (
-              <a
-                href={alert.url ?? alert.imageUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="block mb-3 overflow-hidden"
-              >
-                <img
-                  src={alert.imageUrl}
-                  alt=""
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                  onError={(e) => {
-                    (
-                      e.currentTarget.parentElement as HTMLElement
-                    ).style.display = "none";
-                  }}
-                  className="w-full max-h-48 object-cover rounded-lg"
-                />
-              </a>
-            ) : null}
-
-            {/* Agent Note */}
-            {detailedNote ? (
-              <div className="border border-zinc-800/40 px-3 py-2.5 mb-3 bg-[var(--fintheon-surface)]/30 rounded-[2px]">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--fintheon-accent)]">
-                    Oracle
-                  </span>
-                </div>
-                {detailedNote.source_url && (
-                  <a
-                    href={detailedNote.source_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="block mb-1.5 text-[11px] text-[var(--fintheon-accent)] hover:underline break-words"
-                  >
-                    {alert.headline}
-                  </a>
-                )}
-                <p className="text-[11px] text-[var(--fintheon-text)] leading-relaxed mb-1.5">
-                  {detailedNote.summary}
-                </p>
-                <span
-                  className={`inline-block text-[9px] font-bold tracking-[0.12em] uppercase ${
-                    detailedNote.direction === "bullish"
-                      ? "text-emerald-400"
-                      : detailedNote.direction === "bearish"
-                        ? "text-red-400"
-                        : "text-[var(--fintheon-accent)]"
-                  }`}
-                >
-                  {directionLabel(
-                    detailedNote.direction,
-                    detailedNote.instrument,
-                  )}
-                </span>
-              </div>
-            ) : alert.agentNote ? (
-              <div className="border border-zinc-800/40 px-3 py-2.5 mb-3 bg-[var(--fintheon-surface)]/30 rounded-[2px]">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--fintheon-accent)]">
-                    Oracle
-                  </span>
-                </div>
-                <p className="text-[11px] text-[var(--fintheon-text)] leading-relaxed">
-                  {alert.agentNote}
-                </p>
-                {alert.agentNoteGeneratedAt && (
-                  <p className="text-[8px] text-zinc-600 mt-1.5 tabular-nums">
-                    {timeAgo(alert.agentNoteGeneratedAt)}
-                  </p>
-                )}
-              </div>
-            ) : null}
-
-            {/* Econ Data */}
-            {hasEconData && alert.econData && (
-              <div className="flex items-start gap-4 mb-3">
-                <BeatMissBadge
-                  status={alert.econData.beatMiss!}
-                  surprisePercent={alert.econData.surprisePercent}
-                />
-                <div className="flex items-center gap-4 text-[10px] tabular-nums">
-                  {alert.econData.actual != null && (
-                    <div>
-                      <span className="text-[var(--fintheon-accent)]/60 uppercase tracking-wider text-[9px]">
-                        Actual
-                      </span>
-                      <div className="text-[var(--fintheon-text)] font-medium">
-                        {alert.econData.actual}
-                      </div>
-                    </div>
-                  )}
-                  {alert.econData.forecast != null && (
-                    <div>
-                      <span className="text-[var(--fintheon-accent)]/60 uppercase tracking-wider text-[9px]">
-                        Forecast
-                      </span>
-                      <div className="text-[var(--fintheon-text)] font-medium">
-                        {alert.econData.forecast}
-                      </div>
-                    </div>
-                  )}
-                  {alert.econData.previous != null && (
-                    <div>
-                      <span className="text-[var(--fintheon-accent)]/60 uppercase tracking-wider text-[9px]">
-                        Previous
-                      </span>
-                      <div className="text-[var(--fintheon-text)] font-medium">
-                        {alert.econData.previous}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Deviation / beat-miss badge */}
-            {alert.econData?.beatMiss && !hasEconData && (
-              <div className="flex items-center gap-2 mb-3">
-                <span
-                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded-[2px] ${
-                    alert.econData.beatMiss === "beat"
-                      ? "bg-emerald-500/15 text-emerald-400"
-                      : alert.econData.beatMiss === "miss"
-                        ? "bg-red-500/15 text-red-400"
-                        : "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
-                  }`}
-                >
-                  {alert.econData.beatMiss.toUpperCase()}
-                </span>
-              </div>
-            )}
-
-            {/* Summary */}
-            {!showSourcePreview &&
-              alert.summary &&
-              alert.summary !== alert.headline && (
-                <p className="text-[11px] text-[var(--fintheon-text)]/70 leading-relaxed mb-3">
-                  {linkifyText(alert.summary)}
-                </p>
-              )}
-
-            {/* Source preview */}
-            {showSourcePreview && (
-              <div className="mb-3">
-                <SourcePreview alert={alert} />
-              </div>
-            )}
-
-            {/* Author + Source link */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {alert.authorHandle && (
-                <span className="text-[9px] text-[var(--fintheon-accent)]/60">
-                  @{alert.authorHandle}
-                </span>
-              )}
-              {!showSourcePreview && (
-                <div className="ml-auto flex items-center gap-3">
-                  {alert.videoUrl && (
-                    <a
-                      href={alert.videoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[10px] text-red-500/70 hover:text-red-400 transition-colors flex items-center gap-1"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <YouTubeLogo className="w-3 h-3" />
-                      Watch
-                    </a>
-                  )}
-                  {alert.url && alert.url !== alert.videoUrl && (
-                    <a
-                      href={alert.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[10px] text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors flex items-center gap-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (
-                          alert.category === "commentary" &&
-                          alert.url &&
-                          openVideo(alert.url)
-                        ) {
-                          e.preventDefault();
-                        }
-                      }}
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      Source
-                    </a>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <DetailFooter alert={alert} />
-        </>
+        <RiskFlowPostCard
+          alert={alert}
+          surface={surface}
+          onAskAI={onAskAI}
+          onNotRelevant={onNotRelevant}
+        />
       }
     />
   );

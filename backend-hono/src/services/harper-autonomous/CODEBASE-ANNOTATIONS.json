@@ -28,8 +28,8 @@
     "purpose": "Harper autonomous loop — soul file, journal, ops feed, heartbeat, context builder"
   },
   {
-    "path": "backend-hono/src/services/vproxy/anthropic-client.ts",
-    "purpose": "VProxy Anthropic — Claude Opus via Max subscription, tool definitions, FINTHEON_PATHS"
+    "path": "backend-hono/src/services/ai/provider-chain.ts",
+    "purpose": "AI provider chain — Hermes Agent API primary with DeepSeek direct fallback"
   },
   {
     "path": "backend-hono/src/services/claude-sdk/process-manager.ts",

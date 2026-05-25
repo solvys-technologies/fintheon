@@ -21,6 +21,12 @@ import { PriceLevelSlot } from "./PriceLevelSlot";
 import { ProbabilityTableSlot } from "./ProbabilityTableSlot";
 import { AgentHandoffSlot } from "./AgentHandoffSlot";
 import { BacktestResultSlot } from "./BacktestResultSlot";
+import { WeeklyDeskPlanSlot } from "./WeeklyDeskPlanSlot";
+import { MarketTickerStripSlot } from "./MarketTickerStripSlot";
+import {
+  enhanceTickerMentions,
+  MarketTickerMention,
+} from "./MarketTickerMention";
 
 export const SLOT_RENDERERS: Record<
   string,
@@ -36,6 +42,9 @@ export const SLOT_RENDERERS: Record<
   "probability-table": ProbabilityTableSlot,
   "agent-handoff": AgentHandoffSlot,
   "backtest-result": BacktestResultSlot,
+  "weekly-desk-plan": WeeklyDeskPlanSlot,
+  "market-ticker-strip": MarketTickerStripSlot,
+  "ticker-badges": MarketTickerStripSlot,
 };
 
 export const SLOT_LANGUAGES = Object.keys(SLOT_RENDERERS);
@@ -44,6 +53,12 @@ const RENDERERS: CustomRenderer[] = SLOT_LANGUAGES.map((language) => ({
   language,
   component: SLOT_RENDERERS[language],
 }));
+const ALLOWED_TAGS = { "market-ticker": ["symbol"] };
+const COMPONENTS = {
+  "market-ticker": MarketTickerMention as ComponentType<Record<string, unknown>>,
+};
+const LITERAL_TAG_CONTENT = ["market-ticker"];
+const PLUGINS = { renderers: RENDERERS };
 
 interface StreamdownChatProps {
   content: string;
@@ -56,14 +71,18 @@ export function StreamdownChat({
   streaming = false,
   className,
 }: StreamdownChatProps) {
+  const enhancedContent = enhanceTickerMentions(content);
   return (
     <Streamdown
       className={className}
       mode={streaming ? "streaming" : "static"}
       parseIncompleteMarkdown={streaming}
-      plugins={{ renderers: RENDERERS }}
+      allowedTags={ALLOWED_TAGS}
+      components={COMPONENTS}
+      literalTagContent={LITERAL_TAG_CONTENT}
+      plugins={PLUGINS}
     >
-      {content}
+      {enhancedContent}
     </Streamdown>
   );
 }

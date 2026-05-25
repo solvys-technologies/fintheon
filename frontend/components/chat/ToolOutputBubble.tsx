@@ -4,10 +4,10 @@ import {
   ChevronRight,
   Check,
   AlertCircle,
-  Loader2,
   Copy,
   Clock,
 } from "lucide-react";
+import { BrailleSpinner } from "./primitive/BrailleSpinner";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -55,12 +55,6 @@ export function ToolOutputBubble({ tool }: ToolOutputBubbleProps) {
   const [copied, setCopied] = useState(false);
   const color = getToolColor(tool.toolName);
 
-  const StatusIcon =
-    tool.status === "running"
-      ? Loader2
-      : tool.status === "done"
-        ? Check
-        : AlertCircle;
   const statusColor =
     tool.status === "running"
       ? "var(--fintheon-accent)"
@@ -88,11 +82,21 @@ export function ToolOutputBubble({ tool }: ToolOutputBubbleProps) {
         className="w-full flex items-center gap-2 px-3 py-2 hover:bg-white/5 transition-colors"
       >
         {/* Status icon */}
-        <StatusIcon
-          size={13}
-          className={`flex-shrink-0 ${tool.status === "running" ? "animate-spin" : ""}`}
-          style={{ color: statusColor }}
-        />
+        {tool.status === "running" ? (
+          <BrailleSpinner size={13} color={statusColor} />
+        ) : tool.status === "done" ? (
+          <Check
+            size={13}
+            className="flex-shrink-0"
+            style={{ color: statusColor }}
+          />
+        ) : (
+          <AlertCircle
+            size={13}
+            className="flex-shrink-0"
+            style={{ color: statusColor }}
+          />
+        )}
 
         {/* Tool badge */}
         <span

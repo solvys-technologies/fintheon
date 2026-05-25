@@ -39,7 +39,7 @@ File ownership: `frontend/components/layout/TopHeader.tsx`, `frontend/components
 Excluded: chat handler backend, VoiceContext internals (T1 owns).
 
 **T3 — Icon bank overhaul** (frontend visual, isolated directory + audit)
-File ownership: `frontend/components/icon-bank/*` (rewrite contents), plus grep-based edits to every consumer of `UnicodeSpinners` — `frontend/App.tsx`, `frontend/components/feed/RiskFlowMain.tsx`, `frontend/components/narrative/AquariumPredictionCards.tsx`, `frontend/components/chat/FintheonThinkingIndicator.tsx`, `frontend/components/chat/FintheonThread.tsx`, and any newly-found consumers.
+File ownership: `frontend/components/icon-bank/*` (rewrite contents), plus grep-based edits to every consumer of `UnicodeSpinners` — `frontend/App.tsx`, `frontend/components/feed/RiskFlowMain.tsx`, `frontend/components/narrative/ArbitrumChamberPredictionCards.tsx`, `frontend/components/chat/FintheonThinkingIndicator.tsx`, `frontend/components/chat/FintheonThread.tsx`, and any newly-found consumers.
 Excluded: TopHeader.tsx (T2), voice/ directory (T2), any fuse component or adjacent spinner per standing "Fuses are sacred" rule.
 
 **T4 — Unification** — handled by the orchestrator (me), not a separate brief. Merges the three tracks, reconciles any TopHeader/layout overlap, and runs the full validation suite.

@@ -5,9 +5,14 @@ import { useERSafe } from "../contexts/ERContext";
 interface TraderNametagProps {
   name: string;
   disablePulse?: boolean;
+  variant?: "standalone" | "embedded";
 }
 
-export function TraderNametag({ name, disablePulse }: TraderNametagProps) {
+export function TraderNametag({
+  name,
+  disablePulse,
+  variant = "standalone",
+}: TraderNametagProps) {
   if (!name) return null;
 
   const er = useERSafe();
@@ -23,20 +28,23 @@ export function TraderNametag({ name, disablePulse }: TraderNametagProps) {
         : "nametag-pulse-tilt"
       : "";
 
+  const chromeClass =
+    variant === "embedded"
+      ? "h-full px-2"
+      : "bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-md px-2 h-7";
+
   return (
     <div
-      className={`relative bg-(--fintheon-bg) border border-(--fintheon-accent)/20 rounded-md px-2 h-7 flex items-center overflow-hidden ${pulseClass}`}
+      className={`relative flex items-center overflow-hidden ${chromeClass} ${pulseClass}`}
       style={{ boxShadow: "inset 0 1px 0 rgba(199,159,74,0.25)" }}
     >
-      <span className="relative z-10 text-[10px] font-semibold tracking-[0.14em] text-(--fintheon-accent) uppercase select-none">
+      <span className="relative z-10 text-[10px] font-semibold tracking-[0.14em] text-[var(--fintheon-accent)] uppercase select-none">
         {name}
       </span>
       <div
         className="absolute inset-0 z-0 nametag-shimmer"
         style={{
-          background:
-            "linear-gradient(135deg, rgba(199,159,74,0.15) 0%, transparent 50%, rgba(199,159,74,0.08) 100%)",
-          backgroundSize: "200% 100%",
+          background: "rgba(199,159,74,0.06)",
         }}
       />
       <style>{`

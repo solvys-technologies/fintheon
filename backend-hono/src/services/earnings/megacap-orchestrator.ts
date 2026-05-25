@@ -1,6 +1,6 @@
 // [claude-code 2026-04-26] S45.5/F1: replaces the deleted megacap-fmp.ts.
 // Calendar refresh now flows through the free-stack chain (TradingView →
-// browser-harness → FinancialDatasets MCP). Public surface preserved:
+// browser-harness). Public surface preserved:
 // refreshMegacapEarnings, enrichEarningsActual, MEGACAP_TICKERS,
 // HARDCODED_NEXT_EARNINGS — so cron + route handler imports flip with a
 // single path swap.
@@ -17,7 +17,7 @@ export interface RefreshResult {
   upserted: number;
   windowFrom: string;
   windowTo: string;
-  source: "tradingview" | "browser-harness" | "financial-datasets-mcp" | "none";
+  source: "tradingview" | "browser-harness" | "none";
   reason?: string;
 }
 

@@ -123,6 +123,7 @@ export const AUDITORIUM_PAGES = [
   "Command Center",
   "Econ Intel",
   "Risk & Narratives",
+  "Narrative Flow",
 ] as const;
 
 // --- Economic Intelligence Types ---

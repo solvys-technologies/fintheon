@@ -1,7 +1,9 @@
 // [claude-code 2026-04-23] S32-T8 browser_harness — Harper-callable wrapper
 // around the shared Playwright pool. Exposes search/open/read/click/fill/
-// screenshot/close. Rate-limited to 20 actions per minute per user and logs
-// every invocation to browser_harness_audit so we can replay what Harper did.
+// screenshot/close/browse_visible. Rate-limited to 20 actions per minute per
+// user and logs every invocation to browser_harness_audit so we can replay
+// what Harper did.
+// S38-T2: Added browse_visible action — streams session to chat SSE.
 
 import type { Page } from "playwright";
 import { acquirePage } from "./pool.js";
@@ -20,7 +22,8 @@ type HarnessAction =
   | "click"
   | "fill"
   | "screenshot"
-  | "close";
+  | "close"
+  | "browse_visible";
 
 export interface BrowserHarnessInput {
   action: HarnessAction;
@@ -58,9 +61,6 @@ export function isRateLimited(userId: string): boolean {
 }
 
 // ── Per-user page handles ──────────────────────────────────────────────────
-// Each user gets a single long-lived page + release handle so click/fill can
-// operate against the same page that `open` navigated to. Stored in memory;
-// cleared on `close`.
 
 interface PageHandle {
   page: Page;
@@ -168,6 +168,31 @@ async function doScreenshot(page: Page): Promise<unknown> {
   };
 }
 
+/** S38-T2: browse_visible — returns session URL + status for SSE streaming to chat */
+async function doBrowseVisible(
+  userId: string,
+  page: Page | undefined,
+): Promise<{
+  status: "starting" | "active" | "closed";
+  sessionUrl?: string;
+  title?: string;
+}> {
+  if (!page) {
+    return { status: "closed" };
+  }
+  try {
+    const url = page.url();
+    const title = await page.title().catch(() => "");
+    return {
+      status: url && url !== "about:blank" ? "active" : "starting",
+      sessionUrl: url || undefined,
+      title: title || undefined,
+    };
+  } catch {
+    return { status: "closed" };
+  }
+}
+
 // ── Public API ─────────────────────────────────────────────────────────────
 
 export async function browserHarness(
@@ -228,6 +253,11 @@ export async function browserHarness(
         const handle = pagesByUser.get(userId);
         if (!handle) throw new Error("no open page — call open() first");
         data = await doScreenshot(handle.page);
+        break;
+      }
+      case "browse_visible": {
+        const handle = pagesByUser.get(userId);
+        data = await doBrowseVisible(userId, handle?.page);
         break;
       }
       case "close": {
@@ -298,6 +328,11 @@ function summarise(action: HarnessAction, data: unknown): string {
       return `filled ${String(d.filled ?? "")} (${d.length ?? 0} chars)`;
     case "screenshot":
       return `shot ${d.bytes ?? 0}B`;
+    case "browse_visible":
+      return `browse_visible status=${String(d.status ?? "?")} ${String(d.sessionUrl ?? "")}`.slice(
+        0,
+        500,
+      );
     case "close":
       return "page closed";
     default:

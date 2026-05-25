@@ -1,3 +1,4 @@
+// [claude-code 2026-05-12] TopStepX PWA Blocker — /etc/hosts IPC + webRequest guard
 // [claude-code 2026-04-25] S35: window-close + app-quit instrumentation. The S35 crash.log
 // captured render-process-gone cascades but never WHY — macOS log show revealed AppKit
 // `windowShouldClose:` events at every crash timestamp, so the closes were either
@@ -9,26 +10,110 @@
 // [claude-code 2026-02-26] Ensure OAuth popups work for embedded webviews.
 // [claude-code 2026-03-11] Auto-start backend on app init.
 // [claude-code 2026-03-16] Backend build fallback dialog, Discord OAuth popup support
-// [claude-code 2026-03-16] Auto-updater via electron-updater + IPC for renderer update modal
+// [claude-code 2026-05-14] In-app updater: explicit check, background DMG
+// download, downloaded CTA, then install from the prepared artifact.
 // [claude-code 2026-03-20] Configurable backend autostart + launch-on-login toggles (stored in userData)
 // [claude-code 2026-03-23] Browser Use Phase 2 — CDP + browser-use CLI bridge
 // [claude-code 2026-03-24] Supabase Google OAuth deep link: fintheon:// protocol + open-url handler
 // [claude-code 2026-04-19] S27-T5 W2c: voice window chrome hook for active voice sessions
 // [claude-code 2026-04-23] Windows build support — remote-backend mode, platform gating, titleBarOverlay chrome
-const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
+const {
+  app,
+  BrowserWindow,
+  ipcMain,
+  shell,
+  dialog,
+  Menu,
+  Notification,
+  Tray,
+  nativeImage,
+} = require("electron");
 const { installVoiceChromeHook } = require("./window-chrome-voice.cjs");
+const { createUpdateManager } = require("./update-manager.cjs");
+const {
+  installDeskCalendarClickCapture,
+} = require("./desk-calendar-click-capture.cjs");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
-const { autoUpdater } = require("electron-updater");
 
 const IS_MAC = process.platform === "darwin";
 const IS_WIN = process.platform === "win32";
+
+// [claude-code 2026-05-13] Default blocked domains. Clean-slate blocker policy:
+// only the selected dropdown platform plus user-added domains should be blocked.
+const DEFAULT_BLOCKED_DOMAINS = [
+  "topstepx.com",
+  "www.topstepx.com",
+];
+const BLOCKED_DOMAINS_PATH = "fintheon-blocked-domains.json";
+const BLOCKED_DOMAINS_VERSION = 2;
+const BLOCKED_PAGE_URL =
+  "data:text/html;charset=utf-8," +
+  encodeURIComponent(
+    "<!doctype html><html><head><meta charset='utf-8'><style>html,body{margin:0;width:100%;height:100%;background:#000;overflow:hidden}</style></head><body></body></html>",
+  );
+let fastBlockerEnabled = false;
+
+/** Load blocked domains from userData, falling back to defaults */
+function loadBlockedDomains() {
+  try {
+    const p = path.join(app.getPath("userData"), BLOCKED_DOMAINS_PATH);
+    if (fs.existsSync(p)) {
+      const raw = fs.readFileSync(p, "utf8");
+      const parsed = JSON.parse(raw);
+      if (
+        parsed &&
+        parsed.version === BLOCKED_DOMAINS_VERSION &&
+        Array.isArray(parsed.domains) &&
+        parsed.domains.length > 0
+      ) {
+        return parsed.domains;
+      }
+      // Legacy array shape carried broad hidden defaults. Migrate once to the
+      // new clean slate: TopStepX only until the renderer saves explicit domains.
+      if (Array.isArray(parsed)) {
+        saveBlockedDomains(DEFAULT_BLOCKED_DOMAINS);
+        return [...DEFAULT_BLOCKED_DOMAINS];
+      }
+    }
+  } catch {}
+  return [...DEFAULT_BLOCKED_DOMAINS];
+}
+
+/** Save blocked domains to userData */
+function saveBlockedDomains(domains) {
+  try {
+    const p = path.join(app.getPath("userData"), BLOCKED_DOMAINS_PATH);
+    fs.writeFileSync(
+      p,
+      JSON.stringify(
+        { version: BLOCKED_DOMAINS_VERSION, domains },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // [claude-code 2026-04-23] Windows runs in remote-backend mode: no local spawn,
 // no launchd, frontend hits fintheon.fly.dev directly. macOS keeps the localhost
 // sidecar via launchd + app-owned spawn (lifecycle v2).
 const REMOTE_BACKEND_URL = "https://fintheon.fly.dev";
+const RELEASES_LATEST_URL =
+  "https://github.com/solvys-technologies/fintheon/releases/latest";
+let currentApiBase = REMOTE_BACKEND_URL;
+const updateManager = createUpdateManager({
+  app,
+  getCurrentApiBase: () => currentApiBase,
+  getMainWindow: () => mainWindow,
+  releasesLatestUrl: RELEASES_LATEST_URL,
+  remoteBackendUrl: REMOTE_BACKEND_URL,
+});
 
 // [claude-code 2026-04-23] Harper Vision — macOS-only (uses ScreenCaptureKit under the hood).
 // Windows build stubs these out and returns { ok: false } from the IPC handlers.
@@ -43,11 +128,29 @@ if (IS_MAC) {
 
 let mainWindow = null;
 let backendProcess = null;
+let backendTray = null;
 let pendingAuthUrl = null;
 let backendStopInFlight = null;
+let deferredUpdateOnClose = false;
+
+// [claude-code 2026-05-13] S63 T3: Dock menu state + notification tracking
+let dockQuickAccessUrl = "";
+let lastDockLockState = null; // Track transitions for expiry notification
+let notifiedHighIvIds = new Set(); // Track notified RiskFlow items
+let dockMenuPollInterval = null;
+let riskflowPollInterval = null;
 
 // [claude-code 2026-04-16] Track whether WE spawned the backend or found it already running
 let backendOwnedByApp = false;
+const BACKEND_LABEL = "io.solvys.fintheon-backend";
+const BACKEND_HEALTH_URL = "http://localhost:8080/health";
+const BACKEND_LOGS_PATH = "/tmp/fintheon-backend.log";
+const BACKEND_PLIST_PATH = path.join(
+  require("os").homedir(),
+  "Library",
+  "LaunchAgents",
+  `${BACKEND_LABEL}.plist`,
+);
 
 /* ------------------------------------------------------------------ */
 /*  [claude-code 2026-04-25] S35: Crash diagnostics                     */
@@ -108,6 +211,7 @@ app.on("gpu-process-crashed", (_event, killed) => {
 let closeReason = null; // Set by the listener that fires first; read by quit hooks
 
 app.on("before-quit", (_event) => {
+  deferredUpdateOnClose = false;
   logCrash("app-before-quit", { reason: closeReason ?? "unknown" });
 });
 
@@ -159,7 +263,7 @@ async function isBackendAlive() {
   try {
     const http = require("http");
     return new Promise((resolve) => {
-      const req = http.get("http://localhost:8080/health", (res) => {
+      const req = http.get(BACKEND_HEALTH_URL, (res) => {
         resolve(res.statusCode < 500);
       });
       req.on("error", () => resolve(false));
@@ -175,6 +279,390 @@ async function isBackendAlive() {
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function notifyBackendEngineStatus() {
+  backendEngineStatus().then((status) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("backend-engine:status", status);
+    }
+    updateBackendTray(status);
+  });
+}
+
+function runLaunchctl(args) {
+  if (!IS_MAC) return { ok: false, detail: "launchd unavailable" };
+  try {
+    execFileSync("/bin/launchctl", args, { stdio: "pipe" });
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      detail:
+        err?.stderr?.toString()?.trim() ||
+        err?.stdout?.toString()?.trim() ||
+        err?.message ||
+        "launchctl failed",
+    };
+  }
+}
+
+function ensureBackendLaunchAgent() {
+  if (!IS_MAC || !fs.existsSync(BACKEND_PLIST_PATH)) {
+    return { ok: false, detail: "backend LaunchAgent not installed" };
+  }
+  const uid = process.getuid ? process.getuid() : null;
+  if (uid == null) return { ok: false, detail: "missing uid" };
+  const target = `gui/${uid}`;
+  const bootstrap = runLaunchctl(["bootstrap", target, BACKEND_PLIST_PATH]);
+  if (bootstrap.ok || bootstrap.detail?.includes("service already loaded")) {
+    return { ok: true };
+  }
+  const load = runLaunchctl(["load", "-w", BACKEND_PLIST_PATH]);
+  return load.ok ? { ok: true } : bootstrap;
+}
+
+function kickstartBackendLaunchAgent() {
+  if (!IS_MAC) return { ok: false, detail: "launchd unavailable" };
+  const ensured = ensureBackendLaunchAgent();
+  if (!ensured.ok) return ensured;
+  const uid = process.getuid ? process.getuid() : null;
+  if (uid == null) return { ok: false, detail: "missing uid" };
+  const kicked = runLaunchctl([
+    "kickstart",
+    "-k",
+    `gui/${uid}/${BACKEND_LABEL}`,
+  ]);
+  return kicked.ok ? { ok: true } : kicked;
+}
+
+async function backendEngineStatus() {
+  const alive = await isBackendAlive();
+  const healthCheckedAt = new Date().toISOString();
+  return {
+    state: alive ? "connected" : backendProcess ? "starting" : "offline",
+    alive,
+    url: BACKEND_HEALTH_URL,
+    logsPath: BACKEND_LOGS_PATH,
+    checkedAt: healthCheckedAt,
+    detail: alive
+      ? "Backend health check passed"
+      : backendProcess
+        ? "Backend process is starting"
+        : "Backend health check failed",
+  };
+}
+
+async function restartBackendEngine() {
+  let detail = "";
+  if (IS_MAC) {
+    const result = kickstartBackendLaunchAgent();
+    detail = result.detail ?? "launchd restart requested";
+  } else if (backendProcess) {
+    await stopBackend();
+    detail = "app-owned backend restarted";
+  }
+  if (!(await isBackendAlive())) {
+    const started = await startBackend();
+    detail = started.detail ?? detail;
+  }
+  const healthy = await waitForBackendHealthy(15000);
+  if (healthy) await onBackendReady();
+  const status = await backendEngineStatus();
+  updateBackendTray(status);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send("backend-engine:status", status);
+  }
+  return { ok: healthy, detail, status };
+}
+
+/* ------------------------------------------------------------------ */
+/*  S63 T3: Dock menu + notification polling (macOS)                  */
+/* ------------------------------------------------------------------ */
+
+/** Fetch lockout status from backend */
+async function fetchLockoutStatus() {
+  try {
+    const http = require("http");
+    return new Promise((resolve) => {
+      const req = http.get(
+        "http://localhost:8080/api/lockout/status",
+        { timeout: 3000 },
+        (res) => {
+          let data = "";
+          res.on("data", (chunk) => (data += chunk));
+          res.on("end", () => {
+            try {
+              resolve(JSON.parse(data));
+            } catch {
+              resolve(null);
+            }
+          });
+        },
+      );
+      req.on("error", () => resolve(null));
+      req.setTimeout(3000, () => {
+        req.destroy();
+        resolve(null);
+      });
+    });
+  } catch {
+    return null;
+  }
+}
+
+/** Fetch RiskFlow feed items for high-IV notification check */
+async function fetchRiskFlowFeed() {
+  try {
+    const http = require("http");
+    return new Promise((resolve) => {
+      const req = http.get(
+        "http://localhost:8080/api/riskflow/feed?limit=20&breaking=true",
+        { timeout: 5000 },
+        (res) => {
+          let data = "";
+          res.on("data", (chunk) => (data += chunk));
+          res.on("end", () => {
+            try {
+              resolve(JSON.parse(data));
+            } catch {
+              resolve(null);
+            }
+          });
+        },
+      );
+      req.on("error", () => resolve(null));
+      req.setTimeout(5000, () => {
+        req.destroy();
+        resolve(null);
+      });
+    });
+  } catch {
+    return null;
+  }
+}
+
+/** Build and set the macOS dock menu from current state */
+function updateDockMenu(lockStatus) {
+  if (!IS_MAC || !app.dock) return;
+
+  const menuItems = [];
+
+  // Status label
+  if (lockStatus && lockStatus.locked) {
+    const minutes = lockStatus.remaining
+      ? Math.round(lockStatus.remaining / 60)
+      : "?";
+    menuItems.push({
+      label: `Trading Locked \u2014 ${minutes}m remaining`,
+      enabled: false,
+    });
+  } else {
+    menuItems.push({ label: "Trading Unlocked", enabled: false });
+  }
+
+  menuItems.push({ type: "separator" });
+
+  // Lock/unlock action
+  if (lockStatus && lockStatus.locked) {
+    menuItems.push({
+      label: "Unlock Trading",
+      click: () => {
+        postToBackend("/api/lockout/toggle", { locked: false }).catch(() => {});
+      },
+    });
+  } else {
+    menuItems.push({
+      label: "Lock Trading (30m)",
+      click: () => {
+        postToBackend("/api/lockout/toggle", {
+          locked: true,
+          durationMinutes: 30,
+        }).catch(() => {});
+      },
+    });
+  }
+
+  menuItems.push({ type: "separator" });
+
+  // Quick access
+  menuItems.push({
+    label: "Quick Access",
+    click: () => {
+      if (dockQuickAccessUrl && mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send("dock:quick-access", dockQuickAccessUrl);
+      }
+    },
+  });
+
+  menuItems.push({ type: "separator" });
+
+  menuItems.push({
+    label: "Quit",
+    click: () => {
+      closeReason = "dock-menu-quit";
+      app.quit();
+    },
+  });
+
+  const dockMenu = Menu.buildFromTemplate(menuItems);
+  try {
+    app.dock.setMenu(dockMenu);
+  } catch (err) {
+    console.error("[DockMenu] Failed to set menu:", err.message);
+  }
+}
+
+function statusLabel(state) {
+  if (state === "connected") return "Connected";
+  if (state === "starting") return "Starting";
+  if (state === "degraded") return "Degraded";
+  return "Offline";
+}
+
+function updateBackendTray(status) {
+  if (!IS_MAC || !backendTray) return;
+  backendTray.setToolTip(`Fintheon Backend: ${statusLabel(status.state)}`);
+  backendTray.setContextMenu(
+    Menu.buildFromTemplate([
+      { label: `Backend: ${statusLabel(status.state)}`, enabled: false },
+      { label: `URL: ${status.url}`, enabled: false },
+      { label: `Last check: ${status.checkedAt}`, enabled: false },
+      { label: `Logs: ${status.logsPath}`, enabled: false },
+      { type: "separator" },
+      {
+        label: "Restart Backend",
+        click: () => {
+          updateBackendTray({
+            ...status,
+            state: "starting",
+            detail: "Restart requested",
+            checkedAt: new Date().toISOString(),
+          });
+          restartBackendEngine().catch((err) => {
+            console.error("[BackendEngine] Restart failed:", err?.message);
+            notifyBackendEngineStatus();
+          });
+        },
+      },
+      {
+        label: "Open Logs",
+        click: () => shell.openPath(status.logsPath).catch(() => {}),
+      },
+      {
+        label: "Open Fintheon",
+        click: () => {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.show();
+            mainWindow.focus();
+          } else {
+            createWindow(currentApiBase);
+          }
+        },
+      },
+    ]),
+  );
+}
+
+function installBackendTray() {
+  if (!IS_MAC || backendTray) return;
+  backendTray = new Tray(nativeImage.createEmpty());
+  backendTray.setTitle("FT");
+  backendTray.on("click", () => notifyBackendEngineStatus());
+  notifyBackendEngineStatus();
+  setInterval(() => notifyBackendEngineStatus(), 15000);
+}
+
+/** Poll lockout + RiskFlow and update dock menu / fire notifications */
+function startPolling() {
+  if (dockMenuPollInterval) clearInterval(dockMenuPollInterval);
+  if (riskflowPollInterval) clearInterval(riskflowPollInterval);
+
+  // Lockout poll — 5s interval
+  dockMenuPollInterval = setInterval(async () => {
+    const status = await fetchLockoutStatus();
+    if (!status) return;
+
+    updateDockMenu(status);
+
+    // Lockout expiry notification + lock-screen broadcast
+    const currentLocked = !!status.locked;
+    if (lastDockLockState === true && currentLocked === false) {
+      try {
+        const n = new Notification({
+          title: "Trading Lockout Expired",
+          body: "Your trading lockout has expired. Trading is now enabled.",
+        });
+        n.show();
+      } catch (err) {
+        console.error("[DockMenu] Expiry notification failed:", err.message);
+      }
+      try {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send("lock-screen:hide");
+        }
+      } catch {}
+    }
+    if (lastDockLockState === false && currentLocked === true) {
+      try {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send("lock-screen:show");
+        }
+      } catch {}
+    }
+    lastDockLockState = currentLocked;
+  }, 5000);
+
+  // RiskFlow high-IV poll — 60s interval
+  riskflowPollInterval = setInterval(async () => {
+    try {
+      const feed = await fetchRiskFlowFeed();
+      if (!feed || !Array.isArray(feed.items)) return;
+
+      for (const item of feed.items) {
+        const ivScore = item.ivScore ?? item.iv_score ?? 0;
+        if (ivScore >= 8.5 && !notifiedHighIvIds.has(item.id)) {
+          notifiedHighIvIds.add(item.id);
+          const headline = item.headline ?? item.title ?? "High-IV alert";
+          const symbol = item.symbols
+            ? Array.isArray(item.symbols)
+              ? item.symbols.slice(0, 3).join(", ")
+              : String(item.symbols)
+            : "";
+          const prefix = symbol ? `[${symbol}] ` : "";
+          try {
+            const n = new Notification({
+              title: `High-IV Alert (${ivScore.toFixed(1)})`,
+              body: `${prefix}${headline}`,
+            });
+            n.show();
+          } catch (err) {
+            console.error("[RiskFlowNotify] Notification failed:", err.message);
+          }
+        }
+      }
+
+      // Prune set to last 200 to avoid unbounded growth
+      if (notifiedHighIvIds.size > 200) {
+        const arr = Array.from(notifiedHighIvIds);
+        notifiedHighIvIds = new Set(arr.slice(arr.length - 200));
+      }
+    } catch (err) {
+      console.error("[RiskFlowNotify] Poll failed:", err.message);
+    }
+  }, 60000);
+}
+
+function stopPolling() {
+  if (dockMenuPollInterval) {
+    clearInterval(dockMenuPollInterval);
+    dockMenuPollInterval = null;
+  }
+  if (riskflowPollInterval) {
+    clearInterval(riskflowPollInterval);
+    riskflowPollInterval = null;
+  }
 }
 
 async function waitForBackendHealthy(timeoutMs = 15000) {
@@ -195,6 +683,20 @@ async function startBackend() {
     // Disarm any idle shutdown from a previous routine session
     postToBackend("/api/lifecycle/disarm-idle-shutdown").catch(() => {});
     return { ok: true, detail: "already running" };
+  }
+
+  if (IS_MAC) {
+    const launched = ensureBackendLaunchAgent();
+    if (launched.ok) {
+      console.log("[Electron] Backend LaunchAgent loaded");
+      if (await waitForBackendHealthy(12000)) {
+        backendOwnedByApp = false;
+        return { ok: true, detail: "launchd" };
+      }
+      console.warn("[Electron] LaunchAgent loaded but backend is not healthy");
+    } else {
+      console.warn("[Electron] Backend LaunchAgent unavailable:", launched.detail);
+    }
   }
 
   const repoRoot = app.isPackaged
@@ -408,60 +910,8 @@ async function smartShutdownBackend() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Auto-Updater (electron-updater)                                    */
+/*  In-app updater: check -> background download -> installed asset     */
 /* ------------------------------------------------------------------ */
-
-function setupAutoUpdater() {
-  // Auto-download in background — toast appears when ready to install
-  autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true;
-
-  autoUpdater.on("update-available", (info) => {
-    console.log("[Updater] Update available:", info.version);
-    if (mainWindow) {
-      mainWindow.webContents.send("update-available", {
-        version: info.version,
-        releaseNotes: info.releaseNotes || "",
-        releaseDate: info.releaseDate || "",
-      });
-    }
-  });
-
-  autoUpdater.on("update-not-available", () => {
-    console.log("[Updater] App is up to date");
-  });
-
-  autoUpdater.on("download-progress", (progress) => {
-    console.log(`[Updater] Download: ${Math.round(progress.percent)}%`);
-    if (mainWindow) {
-      mainWindow.webContents.send("update-download-progress", {
-        percent: Math.round(progress.percent),
-        transferred: progress.transferred,
-        total: progress.total,
-      });
-    }
-  });
-
-  autoUpdater.on("update-downloaded", () => {
-    console.log("[Updater] Update downloaded, ready to install");
-    if (mainWindow) {
-      mainWindow.webContents.send("update-downloaded");
-    }
-  });
-
-  autoUpdater.on("error", (err) => {
-    console.error("[Updater] Error:", err.message);
-  });
-
-  // Check immediately, then every 30 minutes
-  autoUpdater.checkForUpdates().catch(() => {});
-  setInterval(
-    () => {
-      autoUpdater.checkForUpdates().catch(() => {});
-    },
-    30 * 60 * 1000,
-  );
-}
 
 const shouldAllowInAppPopup = (urlString) => {
   try {
@@ -478,6 +928,10 @@ const shouldAllowInAppPopup = (urlString) => {
     // TradeSea iframe login
     if (host === "app.tradesea.ai") return true;
     if (host === "tradesea.ai") return true;
+
+    // Plane (project management)
+    if (host === "app.plane.so") return true;
+    if (host.endsWith(".plane.so")) return true;
 
     // Discord (Boardroom)
     if (host === "discord.com") return true;
@@ -533,6 +987,7 @@ function createWindow(apiBase) {
   // hanging on "Model inference · 121ms" whenever launchd was down.
   const resolvedApiBase =
     apiBase || (IS_WIN ? REMOTE_BACKEND_URL : "http://localhost:8080");
+  currentApiBase = resolvedApiBase;
 
   const win = new BrowserWindow({
     width: 1600,
@@ -552,13 +1007,12 @@ function createWindow(apiBase) {
     },
   });
 
-  // [claude-code 2026-04-17] Auto-grant mic/speaker + related media permissions
-  // to the persist:fintheon partition so the hidden Fluxer webview can wire
-  // system audio without a permission prompt.
+  // Auto-grant mic/speaker + related media permissions to the shared Fintheon
+  // partition so app-native voice can start without repeated prompts.
   try {
     const { session: electronSession } = require("electron");
-    const fluxerSession = electronSession.fromPartition("persist:fintheon");
-    fluxerSession.setPermissionRequestHandler((_wc, permission, cb) => {
+    const voiceSession = electronSession.fromPartition("persist:fintheon");
+    voiceSession.setPermissionRequestHandler((_wc, permission, cb) => {
       const allowed = new Set([
         "media",
         "audioCapture",
@@ -568,7 +1022,7 @@ function createWindow(apiBase) {
       ]);
       cb(allowed.has(permission));
     });
-    fluxerSession.setPermissionCheckHandler((_wc, permission) => {
+    voiceSession.setPermissionCheckHandler((_wc, permission) => {
       const allowed = new Set([
         "media",
         "audioCapture",
@@ -580,6 +1034,56 @@ function createWindow(apiBase) {
     });
   } catch (err) {
     console.warn("[Electron] Failed to install media permission handler:", err);
+  }
+
+  // [claude-code 2026-05-12] TopStepX PWA Blocker — session-level webRequest guard.
+  // Blocks navigation to blocked domains in ALL Electron sessions (default + persist:fintheon).
+  // Uses a callback filter so domain list changes take effect without re-registration.
+  // This catches PWAs loaded inside the app, iframes, and webviews.
+  try {
+    const { session: electronSession } = require("electron");
+    const blockTargets = [
+      electronSession.defaultSession,
+      electronSession.fromPartition("persist:fintheon"),
+    ];
+    const isBlocked = loadBlockedDomains();
+    for (const sess of blockTargets) {
+      sess.webRequest.onBeforeRequest(
+        { urls: ["*://*/*"] },
+        (details, callback) => {
+          if (
+            !fastBlockerEnabled &&
+            !(readHostsBlocked() || readResolverBlocked())
+          ) {
+            callback({ cancel: false });
+            return;
+          }
+          const domains = loadBlockedDomains();
+          if (domains.length === 0) {
+            callback({ cancel: false });
+            return;
+          }
+          let host;
+          try {
+            host = new URL(details.url).hostname.toLowerCase();
+          } catch {
+            callback({ cancel: false });
+            return;
+          }
+          const blocked = domains.some(
+            (d) => host === d || host.endsWith("." + d),
+          );
+          callback(
+            blocked ? { redirectURL: BLOCKED_PAGE_URL } : { cancel: false },
+          );
+        },
+      );
+    }
+    console.log(
+      "[Blocker] webRequest filter installed (callback-based, dynamic domain list).",
+    );
+  } catch (err) {
+    console.warn("[Blocker] Failed to install webRequest filter:", err);
   }
 
   // [claude-code 2026-04-26] S46: TV Calendar Final Integration.
@@ -661,6 +1165,7 @@ function createWindow(apiBase) {
                 ingested,
                 title: first?.title ?? null,
                 starts_at: first?.starts_at ?? null,
+                queueCount: Number(body.queueCount ?? 0),
               });
             } else {
               console.warn(
@@ -687,6 +1192,11 @@ function createWindow(apiBase) {
   } catch (err) {
     console.warn("[DeskCal] Failed to arm download interceptor:", err);
   }
+
+  installDeskCalendarClickCapture({
+    win,
+    getApiBase: () => currentApiBase || resolvedApiBase,
+  });
 
   const rendererPath = path.join(
     __dirname,
@@ -788,7 +1298,17 @@ app.whenReady().then(async () => {
     `[Electron] Renderer api-base resolved to ${apiBase} (local healthy: ${localBackendHealthy})`,
   );
   createWindow(apiBase);
-  setupAutoUpdater();
+  installBackendTray();
+
+  // [claude-code 2026-05-13] S63 T3: Start dock menu + notification polling
+  if (IS_MAC && localBackendHealthy) {
+    // Do an initial dock menu build even before the first poll fires
+    fetchLockoutStatus().then((status) => {
+      if (status) updateDockMenu(status);
+    });
+    startPolling();
+    console.log("[DockMenu] Polling started (lockout 5s, RiskFlow 60s)");
+  }
 
   // Forward any pending auth URL AFTER the renderer finishes loading
   // (sending before did-finish-load means the IPC message is lost)
@@ -798,6 +1318,20 @@ app.whenReady().then(async () => {
         console.log("[Electron] Forwarding pending auth URL:", pendingAuthUrl);
         mainWindow.webContents.send("auth-callback", pendingAuthUrl);
         pendingAuthUrl = null;
+      }
+      // [claude-code 2026-05-01] Post-update success toast: install script
+      // drops just-updated.json before reopening; consume + delete it here.
+      try {
+        const marker = path.join(app.getPath("userData"), "just-updated.json");
+        if (fs.existsSync(marker)) {
+          const payload = JSON.parse(fs.readFileSync(marker, "utf8"));
+          mainWindow.webContents.send("update-just-installed", {
+            version: payload.version ?? app.getVersion(),
+          });
+          fs.unlinkSync(marker);
+        }
+      } catch (err) {
+        console.warn("[Updater] marker consume failed:", err?.message);
       }
     });
   }
@@ -944,12 +1478,13 @@ app.whenReady().then(async () => {
 
 // [claude-code 2026-04-16] Smart shutdown: kill if app-owned, arm idle timeout if routine-owned
 app.on("window-all-closed", () => {
-  void smartShutdownBackend();
+  stopPolling();
+  console.log("[Electron] All windows closed; backend engine remains running");
   if (process.platform !== "darwin") app.quit();
 });
 
 app.on("before-quit", () => {
-  void smartShutdownBackend();
+  console.log("[Electron] App quitting; backend engine remains managed by launchd");
 });
 
 ipcMain.handle("toggle-mini-widget", () => {
@@ -968,28 +1503,27 @@ ipcMain.handle("open-external", (_event, url) => {
   return { ok: true };
 });
 
-// Auto-update IPC handlers
-ipcMain.handle("update-download", () => {
-  autoUpdater.downloadUpdate().catch((err) => {
-    console.error("[Updater] Download failed:", err.message);
-  });
-  return { ok: true };
+// In-app updater IPC handlers (background download flow)
+ipcMain.handle("update-check", async () => {
+  return await updateManager.checkForDesktopUpdate();
 });
 
-// [claude-code 2026-04-16] Fix: await stopBackend() before quitAndInstall to prevent hang
+ipcMain.handle("update-download", async () => {
+  const info = await updateManager.checkForDesktopUpdate();
+  if (!info.ok || !info.updateAvailable || !info.latest) {
+    return { ok: false, reason: info.reason ?? "no update available" };
+  }
+  return await updateManager.downloadUpdate(info.latest);
+});
+
 ipcMain.handle("update-install", async () => {
-  console.log("[Updater] Installing update — stopping backend first...");
-  await stopBackend();
-  console.log("[Updater] Backend stopped — calling quitAndInstall");
-  setImmediate(() => {
-    autoUpdater.quitAndInstall(false, true);
-  });
-  return { ok: true };
+  deferredUpdateOnClose = false;
+  return await updateManager.installUpdate();
 });
 
-ipcMain.handle("update-check", () => {
-  autoUpdater.checkForUpdates().catch(() => {});
-  return { ok: true };
+ipcMain.handle("update-defer-until-close", async () => {
+  deferredUpdateOnClose = false;
+  return { ok: true, deferred: true };
 });
 
 ipcMain.handle("get-app-version", () => {
@@ -1031,11 +1565,20 @@ ipcMain.handle("start-backend", async () => {
 });
 
 ipcMain.handle("stop-backend", async () => {
-  return await stopBackend();
+  if (backendOwnedByApp) return await stopBackend();
+  return { ok: true, detail: "persistent backend engine left running" };
 });
 
 ipcMain.handle("is-backend-alive", async () => {
   return { alive: await isBackendAlive() };
+});
+
+ipcMain.handle("backend-engine:status", async () => {
+  return await backendEngineStatus();
+});
+
+ipcMain.handle("backend-engine:restart", async () => {
+  return await restartBackendEngine();
 });
 
 // Fintheon CLI: run shell command from project root and stream output to renderer
@@ -1153,6 +1696,65 @@ ipcMain.handle("system-permissions:request", async (_event, name) => {
   } catch {
     return "denied";
   }
+});
+
+/* ------------------------------------------------------------------ */
+/*  S66 T2: Lockout accessibility + lock screen IPC                  */
+/* ------------------------------------------------------------------ */
+
+ipcMain.handle("lockout:check-accessibility", () => {
+  if (!app.isPackaged) return { granted: false, reason: "dev-mode" };
+  if (!IS_MAC) return { granted: true };
+  try {
+    const granted = systemPreferences.isTrustedAccessibilityClient(false);
+    return { granted };
+  } catch {
+    return { granted: false };
+  }
+});
+
+ipcMain.handle("lockout:request-accessibility", () => {
+  if (!app.isPackaged) return { granted: false, reason: "dev-mode" };
+  if (!IS_MAC) return { granted: true };
+  try {
+    const granted = systemPreferences.isTrustedAccessibilityClient(true);
+    return { granted };
+  } catch {
+    return { granted: false };
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/*  S63 T3: Dock menu + notification IPC handlers                    */
+/* ------------------------------------------------------------------ */
+
+// Renderer sends system toast notifications (RiskFlow, lockout, etc.)
+ipcMain.handle("system-notification:show", (_event, { title, body }) => {
+  try {
+    const n = new Notification({ title, body });
+    n.show();
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+// [claude-code 2026-05-13] S64 T3: Lockout OS notification — "touch grass, kid."
+ipcMain.on("show-lockout-notification", () => {
+  try {
+    const n = new Notification({
+      title: "touch grass, kid.",
+      body: "this app has been blocked by the agentic desk. see you next session!",
+    });
+    n.show();
+  } catch (err) {
+    console.error("[Lockout] Notification failed:", err.message);
+  }
+});
+
+// Renderer persists the quick access URL to main process for dock menu
+ipcMain.on("quick-access:set-url", (_event, url) => {
+  dockQuickAccessUrl = typeof url === "string" ? url : "";
 });
 
 /* ------------------------------------------------------------------ */
@@ -1285,4 +1887,304 @@ ipcMain.handle("harper-vision:set-privacy-mode", async (_event, enabled) => {
 
 ipcMain.handle("harper-vision:get-privacy-mode", async () => {
   return { privacyMode: readHarperVisionPrivacy() };
+});
+
+// S38-T1: Cmd+K menu shortcut bridge — allow renderer to unregister/re-register
+// the Cmd+K accelerator so the command palette captures it.
+let savedShortcuts = {};
+ipcMain.handle("menu:unregister-shortcut", (_event, shortcut) => {
+  try {
+    const menu = require("electron").Menu.getApplicationMenu();
+    if (!menu) return { ok: false, reason: "no application menu" };
+    const items = menu.items;
+    for (const item of items) {
+      if (item.accelerator === shortcut) {
+        savedShortcuts[shortcut] = item.accelerator;
+        item.accelerator = null;
+        require("electron").Menu.setApplicationMenu(menu);
+        return { ok: true };
+      }
+      // Search submenus
+      if (item.submenu) {
+        for (const sub of item.submenu.items) {
+          if (sub.accelerator === shortcut) {
+            savedShortcuts[shortcut] = {
+              parent: item,
+              sub: sub,
+              accel: sub.accelerator,
+            };
+            sub.accelerator = null;
+            require("electron").Menu.setApplicationMenu(menu);
+            return { ok: true };
+          }
+        }
+      }
+    }
+    return { ok: false, reason: "shortcut not found in menu" };
+  } catch (err) {
+    return { ok: false, reason: err.message };
+  }
+});
+
+ipcMain.handle("menu:register-shortcut", (_event, shortcut) => {
+  try {
+    const saved = savedShortcuts[shortcut];
+    if (!saved) return { ok: false, reason: "no saved shortcut state" };
+    const menu = require("electron").Menu.getApplicationMenu();
+    if (!menu) return { ok: false, reason: "no application menu" };
+    if (saved.sub) {
+      saved.sub.accelerator = saved.accel;
+    } else {
+      for (const item of menu.items) {
+        if (item.accelerator === null && saved === shortcut) {
+          item.accelerator = shortcut;
+          break;
+        }
+      }
+    }
+    require("electron").Menu.setApplicationMenu(menu);
+    delete savedShortcuts[shortcut];
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, reason: err.message };
+  }
+});
+
+// [claude-code 2026-05-12] TopStepX PWA Blocker — system-level IPC handlers
+// Layer 1: /etc/hosts (zero-config block on standard macOS)
+// Layer 2: /etc/resolver/ (per-domain DNS override for systems with custom DNS resolvers)
+// Layer 3: Electron webRequest (blocks in-app, see createWindow() for registration)
+/* ------------------------------------------------------------------ */
+const BLOCKER_MARKER_START = "# FINTHEON-BLOCKER-START";
+const BLOCKER_MARKER_END = "# FINTHEON-BLOCKER-END";
+const RESOLVER_DIR = "/etc/resolver";
+
+/** Build the /etc/hosts block entries from a domain list */
+function buildHostsBlockEntries(domains) {
+  const lines = domains.map((d) => `0.0.0.0 ${d}`);
+  return [BLOCKER_MARKER_START, ...lines, BLOCKER_MARKER_END].join("\n");
+}
+
+/** Get unique eTLD+1 domains from a domain list (for /etc/resolver/ files) */
+function getEtldPlusOne(domains) {
+  return Array.from(
+    new Set(
+      domains.map((d) => {
+        const parts = d.split(".");
+        return parts.length >= 2 ? parts.slice(-2).join(".") : d;
+      }),
+    ),
+  );
+}
+
+/** Flush macOS DNS cache */
+function flushDns() {
+  try {
+    execFileSync("dscacheutil", ["-flushcache"], { timeout: 5000 });
+    execFileSync("killall", ["-HUP", "mDNSResponder"], { timeout: 5000 });
+  } catch {}
+}
+
+/** Run a shell command with sudo via osascript (standard macOS auth dialog) */
+function sudoRun(command) {
+  const script = `do shell script "${command.replace(/"/g, '\\"')}" with administrator privileges`;
+  return execFileSync("osascript", ["-e", script], { timeout: 30000 });
+}
+
+/** Read /etc/hosts and check for blocker markers */
+function readHostsBlocked() {
+  try {
+    const hosts = fs.readFileSync("/etc/hosts", "utf8");
+    return hosts.includes(BLOCKER_MARKER_START);
+  } catch {
+    return false;
+  }
+}
+
+/** Check resolver dir exists with at least one resolver file for known resolver domains */
+function readResolverBlocked() {
+  try {
+    if (!fs.existsSync(RESOLVER_DIR)) return false;
+    const files = fs.readdirSync(RESOLVER_DIR);
+    const resolverDomains = getEtldPlusOne(loadBlockedDomains());
+    return resolverDomains.some((domain) => files.includes(domain));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Enable blocking: writes /etc/hosts entries AND creates /etc/resolver/ overrides.
+ * The resolver files force macOS to use 127.0.0.1 for DNS on just these domains,
+ * which takes priority over system-wide custom resolvers (Control D, NextDNS, etc.).
+ */
+function enableBlocking() {
+  if (IS_WIN) return { ok: false, reason: "blocker is macOS-only" };
+  const domains = loadBlockedDomains();
+  if (domains.length === 0)
+    return { ok: false, reason: "no domains configured" };
+
+  // Layer 1: /etc/hosts
+  let hostsResult = "noop";
+  if (!readHostsBlocked()) {
+    const entries = buildHostsBlockEntries(domains);
+    const current = fs.readFileSync("/etc/hosts", "utf8");
+    const updated = current.trimEnd() + "\n\n" + entries + "\n";
+    const escaped = updated.replace(/"/g, '\\"').replace(/\n/g, "\\n");
+    sudoRun(`printf '%b' '${escaped}' > /etc/hosts`);
+    hostsResult = "written";
+  }
+
+  // Layer 2: /etc/resolver/ per-domain overrides
+  let resolverResult = "noop";
+  const etld = getEtldPlusOne(domains);
+  const commands = [`mkdir -p ${RESOLVER_DIR}`];
+  for (const domain of etld) {
+    commands.push(`echo 'nameserver 127.0.0.1' > ${RESOLVER_DIR}/${domain}`);
+  }
+  sudoRun(commands.join(" && "));
+  resolverResult = "written";
+
+  flushDns();
+  return {
+    ok: true,
+    hosts: hostsResult,
+    resolver: resolverResult,
+    domainCount: domains.length,
+  };
+}
+
+/**
+ * Disable blocking: removes /etc/hosts entries AND removes /etc/resolver/ overrides.
+ */
+function disableBlocking() {
+  if (IS_WIN) return { ok: false, reason: "blocker is macOS-only" };
+
+  // Layer 1: /etc/hosts
+  let hostsResult = "noop";
+  if (readHostsBlocked()) {
+    const current = fs.readFileSync("/etc/hosts", "utf8");
+    const startIdx = current.indexOf(BLOCKER_MARKER_START);
+    const endIdx = current.indexOf(BLOCKER_MARKER_END);
+    if (startIdx !== -1 && endIdx !== -1) {
+      const updated =
+        current.slice(0, startIdx - 1).trimEnd() +
+        "\n" +
+        current.slice(endIdx + BLOCKER_MARKER_END.length + 1).trimStart();
+      const escaped = updated.replace(/"/g, '\\"').replace(/\n/g, "\\n");
+      sudoRun(`printf '%b' '${escaped}' > /etc/hosts`);
+      hostsResult = "removed";
+    }
+  }
+
+  // Layer 2: /etc/resolver/ removals — remove only files for the active block list.
+  let resolverResult = "noop";
+  try {
+    if (fs.existsSync(RESOLVER_DIR)) {
+      const resolverDomains = getEtldPlusOne(loadBlockedDomains());
+      const files = fs
+        .readdirSync(RESOLVER_DIR)
+        .filter((file) => resolverDomains.includes(file));
+      if (files.length > 0) {
+        const removeCmds = files.map((f) => `rm -f ${RESOLVER_DIR}/${f}`);
+        sudoRun(removeCmds.join(" && "));
+      }
+    }
+    resolverResult = "removed";
+  } catch {}
+
+  flushDns();
+  return { ok: true, hosts: hostsResult, resolver: resolverResult };
+}
+
+ipcMain.handle("blocker:status", async () => {
+  if (IS_WIN)
+    return { ok: true, blocked: false, reason: "blocker is macOS-only" };
+  try {
+    const hostsBlocked = readHostsBlocked();
+    const resolverBlocked = readResolverBlocked();
+    const blocked = hostsBlocked || resolverBlocked || fastBlockerEnabled;
+    const domains = loadBlockedDomains();
+    return {
+      ok: true,
+      blocked,
+      layers: {
+        hosts: hostsBlocked,
+        resolver: resolverBlocked,
+        runtime: fastBlockerEnabled,
+      },
+      domains,
+    };
+  } catch (err) {
+    return { ok: false, blocked: false, reason: err.message };
+  }
+});
+
+ipcMain.handle("blocker:get-domains", async () => {
+  try {
+    return { ok: true, domains: loadBlockedDomains() };
+  } catch (err) {
+    return {
+      ok: false,
+      domains: [...DEFAULT_BLOCKED_DOMAINS],
+      reason: err.message,
+    };
+  }
+});
+
+ipcMain.handle("blocker:set-domains", async (_event, domains) => {
+  if (!Array.isArray(domains)) {
+    return { ok: false, reason: "domains must be an array" };
+  }
+  const cleaned = domains
+    .map((d) => {
+      if (typeof d !== "string") return null;
+      // Strip protocol, path, trailing slash, whitespace
+      let s = d.trim().toLowerCase();
+      s = s.replace(/^https?:\/\//, "");
+      s = s.replace(/\/.*$/, "");
+      s = s.replace(/^www\./, "");
+      return s || null;
+    })
+    .filter(Boolean);
+  const unique = Array.from(new Set(cleaned));
+  if (unique.length === 0) {
+    return { ok: false, reason: "at least one valid domain required" };
+  }
+  saveBlockedDomains(unique);
+  // Keep domain updates passwordless during runtime lock cycles.
+  // webRequest reads domains dynamically, so it picks up changes instantly.
+  return { ok: true, domains: unique };
+});
+
+ipcMain.handle("blocker:enable", async () => {
+  if (IS_WIN) return { ok: false, reason: "blocker is macOS-only" };
+  try {
+    return enableBlocking();
+  } catch (err) {
+    return { ok: false, reason: err.message };
+  }
+});
+
+ipcMain.handle("blocker:enable-fast", async () => {
+  fastBlockerEnabled = true;
+  return { ok: true, mode: "runtime" };
+});
+
+ipcMain.handle("blocker:disable-fast", async () => {
+  fastBlockerEnabled = false;
+  return { ok: true, mode: "runtime" };
+});
+
+ipcMain.handle("blocker:disable", async () => {
+  if (IS_WIN) return { ok: false, reason: "blocker is macOS-only" };
+  try {
+    fastBlockerEnabled = false;
+    if (!readHostsBlocked() && !readResolverBlocked()) {
+      return { ok: true, hosts: "noop", resolver: "noop", mode: "runtime" };
+    }
+    return disableBlocking();
+  } catch (err) {
+    return { ok: false, reason: err.message };
+  }
 });

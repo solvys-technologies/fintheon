@@ -196,13 +196,7 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
   }, [doctorBusy, doctorCooldownSec, addToast]);
 
   const newsState = deriveNewsState(presence.services, presence.online);
-  const rettiwtChip = presence.services.rettiwtRateLimited
-    ? "X rate-limited"
-    : presence.services.rettiwtNoKeys
-      ? "No X keys"
-      : presence.services.rettiwt
-        ? "X live"
-        : null;
+  const xChip = presence.services.xHomeTimeline ? "X live" : null;
 
   return (
     <div
@@ -318,9 +312,9 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
           lastSuccessAt={presence.services.lastSuccessAt}
           totalContributions={presence.services.totalContributions}
         />
-        {rettiwtChip && !isSelf && (
+        {xChip && !isSelf && (
           <span className="text-[9px] text-[var(--fintheon-muted)] font-mono opacity-60">
-            {rettiwtChip}
+            {xChip}
           </span>
         )}
       </div>
@@ -328,12 +322,12 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
       {/* Doctor button — self only, glass-styled, cooldown-aware */}
       {isSelf && (
         <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-[var(--fintheon-accent)]/10">
-          {rettiwtChip && (
+          {xChip && (
             <span
               className="text-[9px] font-mono tracking-wider text-[var(--fintheon-muted)] opacity-70"
-              title="Your Rettiwt (X) contribution — optional"
+              title="X Home Timeline — RiskFlow data source"
             >
-              {rettiwtChip}
+              {xChip}
             </span>
           )}
           <button
@@ -343,7 +337,7 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
             title={
               doctorCooldownSec > 0
                 ? `Cooldown ${doctorCooldownSec}s`
-                : "Doctor: re-score backlog + tick Agent Reach"
+                : "Doctor: re-score backlog"
             }
           >
             <Stethoscope

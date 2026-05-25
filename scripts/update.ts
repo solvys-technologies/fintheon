@@ -4,14 +4,13 @@
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { resolve, join } from "path";
-import { existsSync, readFileSync } from "fs";
+import { readFileSync } from "fs";
 import { runCommand, isFintheonRunning, waitForHealth } from "./setup-utils";
 
 const ROOT = resolve(import.meta.dir, "..");
 const BACKEND_DIR = join(ROOT, "backend-hono");
 const FRONTEND_DIR = join(ROOT, "frontend");
 const MOBILE_DIR = join(ROOT, "mobile");
-const MCP_DIR = resolve(ROOT, "..", ""); // ~/Documents/Codebases
 
 async function main() {
   console.log("");
@@ -57,7 +56,7 @@ async function main() {
     stash.stop("Changes stashed");
   }
 
-  // Step 3: Fetch + pull (prune stale tags + branches)
+  // Step 3: Fetch + sync to latest published release tag (fallback: pull rebase)
   const pullSpinner = p.spinner();
   pullSpinner.start("Pulling latest changes");
   await runCommand("git", ["fetch", "--all", "--prune", "--prune-tags"], {
@@ -65,116 +64,76 @@ async function main() {
   });
   // Also force-sync tags so deleted remote tags are removed locally
   await runCommand("git", ["fetch", "--tags", "--force"], { cwd: ROOT });
-  const pull = await runCommand("git", ["pull", "--rebase"], { cwd: ROOT });
+  const latestRelease = await runCommand(
+    "gh",
+    [
+      "release",
+      "view",
+      "--repo",
+      "solvys-technologies/fintheon",
+      "--json",
+      "tagName",
+      "--jq",
+      ".tagName",
+    ],
+    { cwd: ROOT },
+  );
 
-  if (!pull.ok) {
-    pullSpinner.stop("Pull failed");
-    p.log.error(pull.stderr.slice(0, 300));
-    p.log.info("Resolve conflicts manually, then re-run: bun run update");
-    process.exit(1);
+  let syncedToRelease = false;
+  if (latestRelease.ok) {
+    const tag = latestRelease.stdout.trim();
+    if (/^v\d+\.\d+\.\d+$/.test(tag)) {
+      await runCommand(
+        "git",
+        ["fetch", "origin", `refs/tags/${tag}:refs/tags/${tag}`],
+        { cwd: ROOT },
+      );
+      const reset = await runCommand("git", ["reset", "--hard", tag], {
+        cwd: ROOT,
+      });
+      if (reset.ok) {
+        syncedToRelease = true;
+        pullSpinner.stop(`Synced to release ${tag}`);
+      }
+    }
   }
 
-  if (pull.stdout.includes("Already up to date")) {
-    pullSpinner.stop("Already up to date");
-    p.outro(pc.yellow("No updates available."));
-    return;
+  if (!syncedToRelease) {
+    const pull = await runCommand("git", ["pull", "--rebase"], { cwd: ROOT });
+    if (!pull.ok) {
+      pullSpinner.stop("Pull failed");
+      p.log.error(pull.stderr.slice(0, 300));
+      p.log.info("Resolve conflicts manually, then re-run: bun run update");
+      process.exit(1);
+    }
+    if (pull.stdout.includes("Already up to date")) {
+      pullSpinner.stop("Already up to date");
+      p.outro(pc.yellow("No updates available."));
+      return;
+    }
+    pullSpinner.stop("Latest changes pulled");
   }
-
-  pullSpinner.stop("Latest changes pulled");
 
   // Step 4: Install deps (in case package.json changed)
   const workspaces = [
     { name: "root", dir: ROOT },
     { name: "frontend", dir: FRONTEND_DIR },
-    { name: "backend-hono", dir: BACKEND_DIR },
+    { name: "backend-hono", dir: BACKEND_DIR, args: ["install", "--omit=peer"] },
     { name: "mobile", dir: MOBILE_DIR },
   ];
 
   for (const ws of workspaces) {
     const s = p.spinner();
     s.start(`Installing ${ws.name} dependencies`);
-    const result = await runCommand("bun", ["install"], { cwd: ws.dir });
+    const result = await runCommand("bun", ws.args ?? ["install"], {
+      cwd: ws.dir,
+    });
     s.stop(
       result.ok ? `${ws.name} deps installed` : `${ws.name} install failed`,
     );
   }
 
-  // Step 4b: Update external MCP server repos
-  const mcpRepos = [
-    {
-      name: "financial-datasets-mcp",
-      dir: join(MCP_DIR, "financial-datasets-mcp"),
-      origin: "https://github.com/financial-datasets/mcp-server",
-      postInstall: null,
-    },
-    {
-      name: "tradingview-mcp",
-      dir: join(MCP_DIR, "tradingview-mcp"),
-      origin: "https://github.com/tradesdontlie/tradingview-mcp.git",
-      postInstall: "npm",
-    },
-  ];
-
-  for (const repo of mcpRepos) {
-    const ms = p.spinner();
-    if (existsSync(join(repo.dir, ".git"))) {
-      ms.start(`Updating ${repo.name}`);
-      const pull = await runCommand(
-        "git",
-        ["-C", repo.dir, "pull", "--quiet"],
-        {
-          cwd: ROOT,
-        },
-      );
-      if (repo.postInstall === "npm") {
-        await runCommand("npm", ["install", "--silent"], { cwd: repo.dir });
-      }
-      ms.stop(pull.ok ? `${repo.name} updated` : `${repo.name} pull failed`);
-    } else {
-      ms.start(`Cloning ${repo.name}`);
-      const clone = await runCommand(
-        "git",
-        ["clone", "--quiet", repo.origin, repo.dir],
-        { cwd: ROOT },
-      );
-      if (clone.ok && repo.postInstall === "npm") {
-        await runCommand("npm", ["install", "--silent"], { cwd: repo.dir });
-      }
-      ms.stop(clone.ok ? `${repo.name} cloned` : `${repo.name} clone failed`);
-    }
-  }
-
-  // Step 5: Verify Anthropic OAuth via VProxy
-  const oauthScript = join(ROOT, "scripts", "vproxy-anthropic-oauth.sh");
-  const runOauth = await p.confirm({
-    message: "Verify Anthropic OAuth via VProxy now?",
-    initialValue: true,
-  });
-  if (p.isCancel(runOauth)) {
-    p.cancel("Update cancelled.");
-    process.exit(0);
-  }
-  if (runOauth) {
-    if (!existsSync(oauthScript)) {
-      p.log.warn(
-        "OAuth helper script missing — run `fintheon oauth` after update",
-      );
-    } else {
-      const oauthSpinner = p.spinner();
-      oauthSpinner.start("Checking VProxy Anthropic OAuth");
-      const oauth = await runCommand("bash", [oauthScript, "--yes"], {
-        cwd: ROOT,
-      });
-      oauthSpinner.stop(
-        oauth.ok ? "VProxy OAuth ready" : "VProxy OAuth check failed",
-      );
-      if (!oauth.ok) {
-        p.log.warn("Non-fatal — run `fintheon oauth` after update");
-      }
-    }
-  }
-
-  // Step 6: Rebuild backend
+  // Step 5: Rebuild backend
   const buildSpinner = p.spinner();
   buildSpinner.start("Rebuilding backend");
   const build = await runCommand("bun", ["run", "build"], { cwd: BACKEND_DIR });
@@ -185,7 +144,7 @@ async function main() {
     p.log.error(build.stderr.slice(0, 300));
   }
 
-  // Step 7: Rebuild frontend
+  // Step 6: Rebuild frontend
   const feBuildSpinner = p.spinner();
   feBuildSpinner.start("Rebuilding frontend");
   const feBuild = await runCommand("bunx", ["vite", "build"], {
@@ -198,7 +157,7 @@ async function main() {
     p.log.warn(feBuild.stderr.slice(0, 200));
   }
 
-  // Step 8: Verify mobile instance bridge (API proxy → fintheon.fly.dev)
+  // Step 7: Verify mobile instance bridge (API proxy → fintheon.fly.dev)
   const bridgeSpinner = p.spinner();
   bridgeSpinner.start("Checking mobile bridge connection");
   try {
@@ -220,7 +179,7 @@ async function main() {
     );
   }
 
-  // Step 9: Restart backend if it was running
+  // Step 8: Restart backend if it was running
   const wasRunning = await isFintheonRunning(8080);
   if (wasRunning) {
     p.log.info("Backend was running — it will pick up changes on next restart");
@@ -229,7 +188,7 @@ async function main() {
     );
   }
 
-  // Step 10: Show new version (from package.json — matches release tags)
+  // Step 9: Show new version (from package.json — matches release tags)
   let newVersion = "unknown";
   try {
     // Re-read after pull — package.json may have been updated

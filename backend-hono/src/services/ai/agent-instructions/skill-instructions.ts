@@ -1,4 +1,5 @@
 // [claude-code 2026-03-22] Source of Truth fusion — skill instruction blocks (moved from agent-instructions.ts)
+// [claude-code 2026-05-12] Added MACROCHAIN — PIC Macro Chain methodology, ever-rotating via shared memory
 
 /**
  * Skill instruction blocks — appended when [SKILL:*] is detected in message
@@ -14,6 +15,25 @@ export const SKILL_INSTRUCTIONS: Record<string, string> = {
   NARRATIVE: `\n\n[Skill: Narrative]\nAnalyze current NarrativeFlow board state. Identify active narratives in the data cycle (PMI>PPI>CPI>PCE>GDP), recent catalysts, suggest new connections or flag stale theses. Apply third-order thinking.`,
   // [claude-code 2026-03-23] Browser Use Phase 2
   CHARTLEVELS: `\n\n[Skill: Chart Levels]\nDraw horizontal price lines on the TopStep X chart via Browser Use CLI. Extract entry, stop loss, and take profit levels from the current trade proposal or user message. Call POST /api/proposals/chart with { ticker, direction, entry, stopLoss, takeProfit }. Lines are drawn as colored horizontal rays: entry (green #22c55e), stop (red #ef4444), target (blue #3b82f6). Confirm back to the user with the plotted levels. Respects blackout period (8:30a-12p EST). If the user provides a ticker and levels, format the API call. If a recent proposal exists, use its levels automatically.`,
+  // [claude-code 2026-05-12] PIC Macro Chain — proprietary economic print forecasting methodology
+  MACROCHAIN: `\n\n[Skill: Macro Chain — PIC Economic Print Forecasting]
+Apply the Priced In Capital Macro Chain methodology to forecast the next economic print. The chain is: PMI → PPI → PCE → CPI (extends to GDP, NFP).
+
+WEIGHTING MODEL (ever-rotating via damped learning rate α=0.3):
+- Energy passthrough (25%): WTI 4-week average vs prior survey period. Gasoline above $4/gal adds 10-15bps to headline.
+- PPI stickiness / input costs (30%): NFIB input cost subcomponents >40% for 4+ consecutive months means PPI passthrough is still baking in. The lag window closes at ~4 months.
+- Shelter repricing (20%): 4.5-5% annualized until rate relief materializes. Do not forecast improvement without cuts.
+- Sell-side tells (15%): BofA rate cut forecast shifts are highest-weight. Bessent Treasury vocabulary == 2021 echo (transient).
+- Supply chain velocity (10%): Urals premiums, Brent-WTI spread, Indian refiner margin compression.
+
+RULES:
+1. Pull NFIB input cost subcomponents first — they lead PPI by 6-8 weeks
+2. Check WTI 4-week average vs prior survey period for energy passthrough magnitude
+3. Read BofA rate cut forecasts — they front-run the data
+4. Cross-check Bessent/White House vocabulary against 2021 "transient" patterns
+5. Compare PIC estimate vs consensus; identify deviation driver (composition > headline)
+6. After print lands: compute delta, damped-update weights (α=0.3), store via shared memory
+7. Second order: ask what the composition says about structural vs. transitory stickiness`,
 };
 
 export const DEEP_ANALYSIS_BLOCK = `\n\n[Deep Analysis Mode]

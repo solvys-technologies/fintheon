@@ -4,19 +4,20 @@
 //   are active (was silent truncation); (4) Compact mode bottom-bar padding bumped to match the
 //   main composer so the send button no longer crowds the Harper pill; (5) Paste handler logs
 //   a one-time note when non-image clipboard items are dropped (was silent).
-// [claude-code 2026-03-28] S8-T7: Pulsing icon (replaces Think Harder), no bg/border when active
+// [claude-code 2026-03-28] S8-T7: reasoning affordance, no bg/border when active
 // [claude-code 2026-03-11] T5: steer strip removed, queue chips added, RiskFlow drag-drop
-// [claude-code 2026-03-22] Track 4: persona/tools slots, icon-only Think, removed Plug2+Wrench
+// [claude-code 2026-03-22] Track 4: compact toolbox slots and reasoning selector
 // Based on 21st.dev ChatGPT prompt input, rewritten without Radix
 import {
   useState,
   useRef,
   useEffect,
+  useLayoutEffect,
   useCallback,
   type KeyboardEvent,
   type ChangeEvent,
   type ClipboardEvent,
-  type FC,
+  type ReactNode,
 } from "react";
 import {
   ArrowUp,
@@ -36,11 +37,20 @@ import {
 } from "../chat/FintheonAttachPopup";
 import { SkillBadge } from "../chat/SkillBadge";
 import { UsageRing } from "../chat/UsageRing";
+import { ReasoningLevelSelector } from "../chat/ReasoningLevelSelector";
+import type { ReasoningLevel } from "../chat/reasoning";
 import {
   HeadlineChips,
   type HeadlineChip,
 } from "../chat/HeadlinePickerPopover";
+import { ContextMentionDrawer } from "../chat/ContextMentionDrawer";
+import { RepoChatComposer } from "../chat/composer/RepoChatComposer";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
+import {
+  formatMentionContext,
+  mentionToken,
+  type ContextMention,
+} from "../../lib/context-mentions";
 
 /* ------------------------------------------------------------------ */
 /*  RiskFlow preview builder                                          */
@@ -75,29 +85,18 @@ function buildRiskFlowPreview(data: {
   return parts.join("\n");
 }
 
-/* ------------------------------------------------------------------ */
-/*  Deep Research icon                                                */
-/* ------------------------------------------------------------------ */
+function getMentionQuery(value: string): string | null {
+  const match = value.match(/(^|\s)@([a-zA-Z0-9_.-]{0,48})$/);
+  return match ? match[2] : null;
+}
 
-const ThinkHarderIcon: FC<{ active: boolean }> = ({ active }) => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 16 16"
-    fill="none"
-    stroke={active ? "var(--fintheon-accent)" : "currentColor"}
-    strokeWidth="1.4"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={
-      active ? "animate-[pulse-icon_1.5s_ease-in-out_infinite]" : "opacity-50"
-    }
-  >
-    <circle cx="8" cy="8" r="4.5" />
-    <circle cx="8" cy="8" r="2.2" />
-    <path d="M8 1.5v1.6M8 12.9v1.6M1.5 8h1.6M12.9 8h1.6" />
-  </svg>
-);
+function replaceMentionQuery(value: string, item: ContextMention): string {
+  const token = mentionToken(item);
+  if (/(^|\s)@[a-zA-Z0-9_.-]{0,48}$/.test(value)) {
+    return value.replace(/(^|\s)@[a-zA-Z0-9_.-]{0,48}$/, `$1${token} `);
+  }
+  return `${value}${value.endsWith(" ") || value.length === 0 ? "" : " "}${token} `;
+}
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                             */
@@ -110,6 +109,8 @@ export interface PromptBoxProps {
   placeholder?: string;
   thinkHarder: boolean;
   setThinkHarder: (v: boolean) => void;
+  reasoningLevel?: ReasoningLevel;
+  onReasoningLevelChange?: (value: ReasoningLevel) => void;
   activeSkill: string | null;
   onSelectSkill: (id: string | null) => void;
   showSkills: boolean;
@@ -127,23 +128,52 @@ export interface PromptBoxProps {
   // Queue chips
   queueJobs?: Array<{ jobId: string; status: string; position: number }>;
   onCancelJob?: (jobId: string) => void;
-  // Slots for persona + tools + provider dropdowns
-  personaSlot?: React.ReactNode;
-  toolsSlot?: React.ReactNode;
-  providerSlot?: React.ReactNode;
+  queueCount?: number;
+  contextStats?: {
+    messageCount: number;
+    estimatedTokens: number;
+    connectorCount: number;
+    activeSkillLabel?: string | null;
+  };
+  // Slots for compact toolbar controls
+  personaSlot?: ReactNode;
+  toolsSlot?: ReactNode;
+  providerSlot?: ReactNode;
+  workspaceSlot?: ReactNode;
+  // S60-T3: Modal-aware toolbox triggers (composer toolbar)
+  pluginSlot?: ReactNode;
+  mcpSlot?: ReactNode;
+  toolboxDrawerSlot?: ReactNode;
+  toolboxOpen?: boolean;
+  onInputActivity?: () => void;
   // Relay dispatch button (leftmost in action cluster). Renders either relay or disconnect.
-  relaySlot?: React.ReactNode;
+  relaySlot?: ReactNode;
   // Optional banner shown above the input while dispatched (e.g. "Chatting on iPhone").
-  dispatchBanner?: React.ReactNode;
+  dispatchBanner?: ReactNode;
+  // Todo + Queue drawer toggle button
+  todoSlot?: ReactNode;
+  approvalDrawerSlot?: ReactNode;
+  approvalDrawerOpen?: boolean;
+  workDrawerSlot?: ReactNode;
+  workDrawerOpen?: boolean;
+  drawerPeekSlot?: ReactNode;
   // Boardroom: swap pulsing icon for newspaper RiskFlow picker
   onRiskFlowPick?: () => void;
-  // Hide the Think Harder toggle (used in Agentic Forum where deep-research is always on)
+  // Hide the reasoning selector (used in Agentic Forum where deep research is always on)
   hideThinkHarder?: boolean;
   // Headline attachment (multi-select from scored feed items)
+  showAttachSelector?: boolean;
+  attachSelectorTitle?: string;
   headlineAlerts?: RiskFlowAlert[];
   headlineChips?: HeadlineChip[];
   onHeadlineToggle?: (chip: HeadlineChip) => void;
   onHeadlineClear?: () => void;
+  // S38-T1: History navigation
+  recallText?: string | null;
+  onRecallConsumed?: () => void;
+  onHistoryUp?: () => void;
+  onHistoryDown?: () => void;
+  onHistoryEscape?: () => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -157,6 +187,8 @@ export function PromptBox({
   placeholder = "Message your analysts...",
   thinkHarder,
   setThinkHarder,
+  reasoningLevel = thinkHarder ? "deep" : "standard",
+  onReasoningLevelChange,
   activeSkill,
   onSelectSkill,
   showSkills,
@@ -171,29 +203,78 @@ export function PromptBox({
   onToggleVoice,
   queueJobs,
   onCancelJob,
+  queueCount = 0,
+  contextStats,
   personaSlot,
   toolsSlot,
   providerSlot,
+  workspaceSlot,
+  pluginSlot,
+  mcpSlot,
+  toolboxDrawerSlot,
+  toolboxOpen = false,
+  onInputActivity,
   relaySlot,
   dispatchBanner,
   onRiskFlowPick,
+  showAttachSelector = true,
+  attachSelectorTitle = "Attach",
   headlineAlerts,
   headlineChips,
   onHeadlineToggle,
   onHeadlineClear,
   hideThinkHarder,
+  recallText,
+  onRecallConsumed,
+  onHistoryUp,
+  onHistoryDown,
+  onHistoryEscape,
+  todoSlot,
+  approvalDrawerSlot,
+  approvalDrawerOpen = false,
+  workDrawerSlot,
+  workDrawerOpen = false,
+  drawerPeekSlot,
 }: PromptBoxProps) {
   const [text, setText] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [vanishing, setVanishing] = useState(false);
   const [showAttach, setShowAttach] = useState(false);
   const [slashQuery, setSlashQuery] = useState<string | null>(null);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [selectedMentions, setSelectedMentions] = useState<ContextMention[]>([]);
   const [fullSizeImage, setFullSizeImage] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
+  const activeDrawer =
+    mentionQuery !== null
+      ? "mentions"
+      : showAttachSelector && showAttach
+        ? "attach"
+        : toolboxOpen
+          ? "skills-connectors"
+          : approvalDrawerOpen
+            ? "approval"
+            : workDrawerOpen
+            ? "work"
+            : null;
+  const hasInlineDrawer = activeDrawer !== null;
+  const hasDrawerPreview = !hasInlineDrawer && !!drawerPeekSlot;
   // IME composition state — blocks Enter-to-send while a candidate is being composed.
   const isComposingRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    if (toolboxOpen) setShowAttach(false);
+  }, [toolboxOpen]);
+
+  useEffect(() => {
+    if (approvalDrawerOpen) setShowAttach(false);
+  }, [approvalDrawerOpen]);
+
+  useEffect(() => {
+    if (!showAttachSelector) setShowAttach(false);
+  }, [showAttachSelector]);
 
   /* Draft persistence — load on mount */
   useEffect(() => {
@@ -211,13 +292,28 @@ export function PromptBox({
     }
   }, [text, draftKey]);
 
-  /* Auto-resize textarea */
-  useEffect(() => {
+  const resizeTextarea = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, compact ? 100 : 160)}px`;
-  }, [text, compact]);
+    const maxHeight = compact ? 100 : 170;
+    const nextHeight = Math.min(el.scrollHeight, maxHeight);
+    el.style.height = `${nextHeight}px`;
+    el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
+  }, [compact]);
+
+  /* Auto-resize textarea */
+  useLayoutEffect(() => {
+    resizeTextarea();
+  }, [resizeTextarea, text, images.length, headlineChips?.length]);
+
+  /* S38-T1: Sync recalled history text into textarea */
+  useEffect(() => {
+    if (recallText !== null && recallText !== undefined) {
+      setText(recallText);
+      onRecallConsumed?.();
+    }
+  }, [recallText]);
 
   /* Full-size image dialog */
   useEffect(() => {
@@ -228,22 +324,30 @@ export function PromptBox({
 
   /* Send with vanish animation */
   const handleSend = useCallback(() => {
-    const msg = text.trim();
+    const draftText = textareaRef.current?.value ?? text;
+    const msg = draftText.trim();
     if (!msg && images.length === 0) return;
 
-    // Trigger vanish animation
+    onSend(
+      `${msg}${formatMentionContext(selectedMentions)}`,
+      images.length > 0 ? images : undefined,
+    );
+    setText("");
+    setImages([]);
+    setMentionQuery(null);
+    setSelectedMentions([]);
+    localStorage.removeItem(draftKey);
+    if (textareaRef.current) {
+      textareaRef.current.value = "";
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.overflowY = "hidden";
+    }
+
+    // Trigger vanish animation after the send is already handed off so a
+    // movement/unmount of the composer cannot swallow the message submit.
     setVanishing(true);
-    setTimeout(() => {
-      onSend(msg, images.length > 0 ? images : undefined);
-      setText("");
-      setImages([]);
-      localStorage.removeItem(draftKey);
-      if (textareaRef.current) {
-        textareaRef.current.style.height = "auto";
-      }
-      setVanishing(false);
-    }, 300);
-  }, [text, images, onSend, draftKey]);
+    window.setTimeout(() => setVanishing(false), 260);
+  }, [text, images, onSend, draftKey, selectedMentions]);
 
   /* Keyboard shortcuts */
   const lastSpaceRef = useRef(0);
@@ -254,7 +358,7 @@ export function PromptBox({
       // (Chromium also sets e.keyCode === 229 during composition; we keep a ref for safety.)
       if (isComposingRef.current || e.nativeEvent.isComposing) return;
       e.preventDefault();
-      if (isProcessing && onStop) {
+      if (isProcessing && !text.trim() && images.length === 0 && onStop) {
         onStop();
       } else {
         handleSend();
@@ -268,6 +372,19 @@ export function PromptBox({
         onStop();
       }
       lastSpaceRef.current = now;
+    }
+    // S38-T1: Arrow history navigation
+    if (e.key === "ArrowUp" && !text.trim() && onHistoryUp) {
+      e.preventDefault();
+      onHistoryUp();
+    }
+    if (e.key === "ArrowDown" && onHistoryDown) {
+      e.preventDefault();
+      onHistoryDown();
+    }
+    if (e.key === "Escape" && onHistoryEscape) {
+      e.preventDefault();
+      onHistoryEscape();
     }
   };
 
@@ -371,13 +488,14 @@ export function PromptBox({
   const hiddenQueueCount = Math.max(0, activeQueueJobs.length - 2);
 
   return (
-    <div
-      className="pt-4 pb-4 px-4"
+    <>
+    <RepoChatComposer
+      format={compact ? "compact" : "full"}
+      className="px-4 pb-4 pt-3"
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
     >
-      <div className="relative w-full max-w-3xl mx-auto">
         {/* Active skill badge */}
         {activeSkill && (
           <div className="mb-2">
@@ -406,28 +524,54 @@ export function PromptBox({
           </div>
         )}
 
+        {!showAttach && !toolboxOpen && mentionQuery === null
+          ? approvalDrawerOpen
+            ? approvalDrawerSlot
+            : workDrawerSlot
+          : null}
+        {toolboxDrawerSlot}
+        {!hasInlineDrawer && drawerPeekSlot}
+
         {/* Attach panel */}
-        <FintheonAttachPopup
-          open={showAttach}
-          onClose={() => setShowAttach(false)}
-          onAttachImage={handleAttachImage}
-          onAttachDocument={({ filename, text }) => {
-            const attached = `\n\n[Attached Document: ${filename}]\n${text}`;
-            setText((prev) => `${prev}${attached}`);
-            setShowAttach(false);
-          }}
-          riskflowAlerts={headlineAlerts}
-          onAttachHeadlines={(items: HeadlineAttachment[]) => {
-            if (onHeadlineToggle) {
-              items.forEach((item) =>
-                onHeadlineToggle({
-                  id: item.id,
-                  headline: item.headline,
-                  severity: item.severity,
-                  direction: item.direction,
-                }),
-              );
-            }
+        {showAttachSelector ? (
+          <FintheonAttachPopup
+            open={showAttach}
+            onClose={() => setShowAttach(false)}
+            onAttachImage={handleAttachImage}
+            onAttachDocument={({ filename, text }) => {
+              const attached = `\n\n[Attached Document: ${filename}]\n${text}`;
+              setText((prev) => `${prev}${attached}`);
+              setShowAttach(false);
+            }}
+            riskflowAlerts={headlineAlerts}
+            onAttachHeadlines={(items: HeadlineAttachment[]) => {
+              if (onHeadlineToggle) {
+                items.forEach((item) =>
+                  onHeadlineToggle({
+                    id: item.id,
+                    headline: item.headline,
+                    severity: item.severity,
+                    direction: item.direction,
+                  }),
+                );
+              }
+            }}
+          />
+        ) : null}
+
+        <ContextMentionDrawer
+          open={mentionQuery !== null}
+          query={mentionQuery ?? ""}
+          selected={selectedMentions}
+          onClose={() => setMentionQuery(null)}
+          onSelect={(item) => {
+            setSelectedMentions((current) =>
+              current.some((mention) => mention.id === item.id)
+                ? current
+                : [...current, item],
+            );
+            setText((current) => replaceMentionQuery(current, item));
+            setMentionQuery(null);
           }}
         />
 
@@ -440,7 +584,11 @@ export function PromptBox({
                 className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-[var(--fintheon-accent)]/20 cursor-pointer"
                 onClick={() => setFullSizeImage(src)}
               >
-                <img src={src} alt="" className="w-full h-full object-cover" />
+                <img
+                  src={src}
+                  alt=""
+                  className="w-full h-full object-contain"
+                />
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -508,8 +656,11 @@ export function PromptBox({
         {/* Main input container */}
         <div
           className={[
-            "relative flex flex-col rounded-lg border",
+            "fintheon-composer-input relative flex flex-col rounded-2xl border",
             "backdrop-blur-xl",
+            hasInlineDrawer || hasDrawerPreview
+              ? "fintheon-composer-input--drawer-open"
+              : "",
             focused
               ? "border-[var(--fintheon-accent)]/55"
               : text
@@ -541,9 +692,14 @@ export function PromptBox({
             onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
               const val = e.target.value;
               setText(val);
+              window.requestAnimationFrame(resizeTextarea);
+              setMentionQuery(getMentionQuery(val));
               // Auto-dismiss the attach popup once the user starts composing a message —
               // otherwise the popup hangs over the input and blocks the first word or two.
-              if (val.length > 0 && showAttach) setShowAttach(false);
+              if (val.length > 0) {
+                if (showAttach) setShowAttach(false);
+                onInputActivity?.();
+              }
               // Slash-command detection
               if (
                 val.startsWith("/") &&
@@ -555,6 +711,7 @@ export function PromptBox({
                 setSlashQuery(null);
               }
             }}
+            onInput={resizeTextarea}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             onFocus={() => setFocused(true)}
@@ -578,63 +735,93 @@ export function PromptBox({
           {/* Bottom bar — compact padding matches main composer so the send button
               doesn't crowd the Harper/provider pill in the sidebar chat. */}
           <div
-            className="flex items-center justify-between"
-            style={{ padding: compact ? "8px 10px 10px" : "8px 10px 10px" }}
+            className="fintheon-composer-bottom-bar flex flex-wrap items-center justify-between gap-x-2 gap-y-1"
+            style={{ padding: compact ? "6px 8px 6px" : "8px 10px 10px" }}
           >
             {/* Left toolbar */}
-            <div className="flex items-center gap-1">
+            <div className="fintheon-composer-toolbar-left flex min-w-0 flex-1 items-center gap-1">
               {/* Relay dispatch (leftmost) — S21-T1 */}
               {relaySlot}
 
               {/* Attach */}
-              <button
-                onClick={() => setShowAttach((v) => !v)}
-                className="flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-                style={{ width: "32px", height: "32px" }}
-                title="Attach"
-              >
-                <Plus size={16} />
-              </button>
+              {showAttachSelector ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextOpen = !showAttach;
+                    if (nextOpen) onInputActivity?.();
+                    setShowAttach(nextOpen);
+                  }}
+                  aria-pressed={showAttach}
+                  className={`flex items-center justify-center rounded-lg transition-colors ${
+                    showAttach
+                      ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+                      : "text-zinc-500 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
+                  }`}
+                  style={{ width: "32px", height: "32px" }}
+                  title={attachSelectorTitle}
+                >
+                  <Plus size={16} />
+                </button>
+              ) : null}
 
-              {/* Tools (combined Skills + Connectors) */}
+              {/* Toolbox trigger */}
+              {pluginSlot}
+
+              {/* Secondary toolbox trigger */}
+              {mcpSlot}
+
+              {/* Workspace selector */}
+              {workspaceSlot}
+
+              {/* Combined Skills + Connectors fallback */}
               {toolsSlot}
 
-              {/* Think Harder toggle */}
-              {!hideThinkHarder && (
-                <button
-                  onClick={() => setThinkHarder(!thinkHarder)}
-                  title={thinkHarder ? "Deep Research ON" : "Deep Research OFF"}
-                  className="flex items-center justify-center rounded-lg transition-all text-zinc-500 hover:text-[var(--fintheon-accent)]"
-                  style={{ width: "32px", height: "32px" }}
-                >
-                  <ThinkHarderIcon active={thinkHarder} />
-                </button>
-              )}
+              {/* Todo + Queue drawer toggle */}
+              {todoSlot}
             </div>
 
-            {/* Right: Persona + Usage + Send/Stop */}
-            <div className="flex items-center gap-2">
+            {/* Right: provider, intelligence, usage, send/stop */}
+            <div className="fintheon-composer-toolbar-right flex min-w-0 shrink-0 items-center gap-1">
               {providerSlot}
+              {!hideThinkHarder && (
+                <ReasoningLevelSelector
+                  value={reasoningLevel}
+                  onChange={(next) => {
+                    onReasoningLevelChange?.(next);
+                    setThinkHarder(next === "deep" || next === "max");
+                  }}
+                  compact={compact}
+                />
+              )}
               {personaSlot}
-              <UsageRing />
+              <UsageRing
+                stats={contextStats}
+                draftText={text}
+                queuedCount={queueCount}
+              />
               <button
-                onClick={isProcessing && onStop ? onStop : handleSend}
+                type="button"
+                onClick={
+                  isProcessing && !text.trim() && images.length === 0 && onStop
+                    ? onStop
+                    : handleSend
+                }
                 disabled={!text.trim() && images.length === 0 && !isProcessing}
-                className={`flex items-center justify-center rounded-full ${
-                  isProcessing
-                    ? "bg-[var(--fintheon-accent)]/80 hover:bg-[var(--fintheon-accent)] text-black"
-                    : text.trim() || focused
-                      ? "bg-[var(--fintheon-accent)] hover:bg-[#C5A030] text-black"
-                      : "bg-[var(--fintheon-accent)]/30 text-black/50 disabled:opacity-20"
-                }`}
+                className="fintheon-send-button flex items-center justify-center rounded-full"
                 style={{
                   width: "34px",
                   height: "34px",
-                  transition: "all 1.3s ease",
                 }}
-                title={isProcessing ? "Stop" : "Send"}
+                title={
+                  isProcessing && (text.trim() || images.length > 0)
+                    ? "Queue message"
+                    : isProcessing
+                      ? "Stop"
+                      : "Send"
+                }
               >
-                {isProcessing ? (
+                {isProcessing && !text.trim() && images.length === 0 ? (
                   <Square size={12} fill="currentColor" />
                 ) : (
                   <ArrowUp size={16} strokeWidth={2.5} />
@@ -643,7 +830,7 @@ export function PromptBox({
             </div>
           </div>
         </div>
-      </div>
+    </RepoChatComposer>
 
       {/* Full-size image dialog (native <dialog>) */}
       <dialog
@@ -683,6 +870,6 @@ export function PromptBox({
           </div>
         )}
       </dialog>
-    </div>
+    </>
   );
 }

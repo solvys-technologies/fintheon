@@ -1,3 +1,5 @@
+// [claude-code 2026-05-15] S66: chat overhaul + rich text rendering toolbar integration.
+// [claude-code 2026-05-15] S65-T4: Updated terminal initial history, help, and clear outputs to present shell-first CLI (no / emphasis). De-emphasized slash-command-centric language so the terminal reads like a real shell prompt.
 // [claude-code 2026-04-03] Removed stale heartbeat/pulse/NTN/X indicators — system status now from /api/diagnostics only
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
@@ -10,11 +12,7 @@ import {
   FileText,
   AlertTriangle,
 } from "lucide-react";
-import {
-  PLATFORM_LABELS,
-  PLATFORM_URLS,
-  type TradingPlatform,
-} from "../TradingBrowser";
+import { PLATFORM_URLS, type TradingPlatform } from "../TradingBrowser";
 import { changelog } from "../../../src/lib/changelog";
 import { useErrorLog } from "../../hooks/useErrorLog";
 import { useSystemStatus } from "../../hooks/useSystemStatus";
@@ -79,6 +77,13 @@ function resolveSlashCommand(input: string): string | null {
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
+function compactPrompt(cwd: string) {
+  const parts = cwd.split("/").filter(Boolean);
+  if (parts.length <= 1) return cwd;
+  const tail = parts.slice(-2).join("/");
+  return parts.length === 2 ? tail : `.../${tail}`;
+}
+
 /** Render terminal output with clickable `backtick commands` */
 function renderOutputLine(text: string, onClickCommand: (cmd: string) => void) {
   const parts = text.split(/`([^`]+)`/);
@@ -110,9 +115,11 @@ interface FooterToolbarProps {
   onSplitViewToggle?: () => void;
   allowSplitView?: boolean;
   onPowerOff?: () => void;
+  compactLevel?: 0 | 1 | 2;
 }
 
 export function FooterToolbar({
+  compactLevel = 0,
   topStepXEnabled = false,
   primaryPlatform = "topstepx",
   onPrimaryPlatformChange,
@@ -132,19 +139,14 @@ export function FooterToolbar({
   >([
     {
       type: "output",
-      text: 'Fintheon CLI — type / for commands or "help" for built-ins.',
-    },
-    {
-      type: "output",
-      text: "Slash commands: /start-backend, /frontend, /install, /build, /typecheck, /hermes-start, /hermes-restart, /hermes-port",
+      text: 'Fintheon CLI — type any shell command. "help" for built-ins, / for slash shortcuts.',
     },
   ]);
+  const [terminalCwd, setTerminalCwd] = useState("fintheon");
   const [slashSuggestionsOpen, setSlashSuggestionsOpen] = useState(false);
   const [slashSuggestionsIndex, setSlashSuggestionsIndex] = useState(0);
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const cliContainerRef = useRef<HTMLDivElement>(null);
-  const prevPanelOpenRef = useRef(false);
   const activeProcessRef = useRef<{
     processId: string;
     es: EventSource;
@@ -160,8 +162,6 @@ export function FooterToolbar({
     return () =>
       window.removeEventListener("fintheon:update-installing", handler);
   }, []);
-  const isElectron =
-    typeof window !== "undefined" && window.electron?.runShellCommand != null;
   const slashFilter = cliInput.startsWith("/")
     ? cliInput.slice(1).toLowerCase().trim()
     : "";
@@ -174,6 +174,7 @@ export function FooterToolbar({
     : CLI_SLASH_COMMANDS;
   const showSlashSuggestions =
     slashSuggestionsOpen && (cliInput === "/" || slashSuggestions.length > 0);
+  const terminalPrompt = compactPrompt(terminalCwd);
 
   useEffect(() => {
     setSlashSuggestionsIndex(0);
@@ -214,29 +215,12 @@ export function FooterToolbar({
     terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [cliHistory]);
 
-  // When panel first opens on terminal tab: focus input and show commands list (popup)
+  // When panel opens on terminal tab: focus an empty shell-style prompt.
   useEffect(() => {
     if (panelOpen && activeTab === "terminal") {
       inputRef.current?.focus();
-      const justOpened = !prevPanelOpenRef.current;
-      if (justOpened) {
-        setCliInput("/");
-        setSlashSuggestionsOpen(true);
-      }
     }
-    prevPanelOpenRef.current = panelOpen;
   }, [panelOpen, activeTab]);
-
-  // Click outside to close slash suggestions
-  useEffect(() => {
-    if (!showSlashSuggestions) return;
-    const onMouseDown = (e: MouseEvent) => {
-      if (cliContainerRef.current?.contains(e.target as Node)) return;
-      setSlashSuggestionsOpen(false);
-    };
-    document.addEventListener("mousedown", onMouseDown);
-    return () => document.removeEventListener("mousedown", onMouseDown);
-  }, [showSlashSuggestions]);
 
   const runViaBackend = useCallback((cmd: string) => {
     fetch(`${API_BASE}/api/terminal/run`, {
@@ -245,53 +229,61 @@ export function FooterToolbar({
       body: JSON.stringify({ command: cmd }),
     })
       .then((r) => r.json())
-      .then((data: { ok?: boolean; processId?: string; error?: string }) => {
-        if (!data.ok || !data.processId) {
-          setCliHistory((prev) => [
-            ...prev,
-            { type: "output", text: data.error ?? "Failed to start command" },
-          ]);
-          return;
-        }
-        const es = new EventSource(
-          `${API_BASE}/api/terminal/stream/${data.processId}`,
-        );
-        activeProcessRef.current = { processId: data.processId, es };
-
-        const stripAnsi = (s: string) =>
-          s.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "");
-        const onData = (e: MessageEvent) => {
-          const lines = stripAnsi(String(e.data)).split("\n").filter(Boolean);
-          setCliHistory((prev) => [
-            ...prev,
-            ...lines.map((text) => ({ type: "output" as const, text })),
-          ]);
-        };
-        es.addEventListener("stdout", onData);
-        es.addEventListener("stderr", onData);
-        es.addEventListener("exit", (e: MessageEvent) => {
-          try {
-            const { code, signal } = JSON.parse(e.data);
-            const exitVal = code ?? signal ?? "?";
+      .then(
+        (data: {
+          ok?: boolean;
+          processId?: string;
+          cwd?: string;
+          error?: string;
+        }) => {
+          if (!data.ok || !data.processId) {
             setCliHistory((prev) => [
               ...prev,
-              { type: "output", text: `[exit ${exitVal}]` },
+              { type: "output", text: data.error ?? "Failed to start command" },
             ]);
-          } catch {
-            setCliHistory((prev) => [
-              ...prev,
-              { type: "output", text: "[exit]" },
-            ]);
+            return;
           }
-          es.close();
-          activeProcessRef.current = null;
-        });
-        es.onerror = () => {
-          es.close();
-          activeProcessRef.current = null;
-        };
-      })
-      .catch((err) => {
+          if (data.cwd) setTerminalCwd(data.cwd);
+          const es = new EventSource(
+            `${API_BASE}/api/terminal/stream/${data.processId}`,
+          );
+          activeProcessRef.current = { processId: data.processId, es };
+
+          const stripAnsi = (s: string) =>
+            s.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "");
+          const onData = (e: MessageEvent) => {
+            const lines = stripAnsi(String(e.data)).split("\n").filter(Boolean);
+            setCliHistory((prev) => [
+              ...prev,
+              ...lines.map((text) => ({ type: "output" as const, text })),
+            ]);
+          };
+          es.addEventListener("stdout", onData);
+          es.addEventListener("stderr", onData);
+          es.addEventListener("exit", (e: MessageEvent) => {
+            try {
+              const { code, signal } = JSON.parse(e.data);
+              const exitVal = code ?? signal ?? "?";
+              setCliHistory((prev) => [
+                ...prev,
+                { type: "output", text: `[exit ${exitVal}]` },
+              ]);
+            } catch {
+              setCliHistory((prev) => [
+                ...prev,
+                { type: "output", text: "[exit]" },
+              ]);
+            }
+            es.close();
+            activeProcessRef.current = null;
+          });
+          es.onerror = () => {
+            es.close();
+            activeProcessRef.current = null;
+          };
+        },
+      )
+      .catch(() => {
         setCliHistory((prev) => [
           ...prev,
           {
@@ -372,28 +364,31 @@ export function FooterToolbar({
 
       const newHistory = [
         ...cliHistory,
-        { type: "input" as const, text: displayCmd },
+        { type: "input" as const, text: `${terminalPrompt} $ ${displayCmd}` },
       ];
 
       const lower = cmd.toLowerCase().trim();
       if (lower === "help") {
         newHistory.push({
           type: "output",
-          text: "Built-in: help, changelog, clear, status, version, update. Slash: /start-backend, /frontend, /install, /build, /typecheck, /hermes-start, /hermes-restart, /hermes-port",
+          text: "Any line runs as a shell command from the project root. Ctrl+C kills a running process.",
         });
         newHistory.push({
           type: "output",
-          text: "Any line runs as a shell command. Ctrl+C to kill a running process.",
+          text: "Built-in: help, changelog, clear, status, version, update",
+        });
+        newHistory.push({
+          type: "output",
+          text: "Slash shortcuts: /start-backend, /frontend, /install, /build, /typecheck, /hermes-start, /hermes-restart, /hermes-port",
         });
         setCliHistory(newHistory);
         return;
       }
       if (lower === "clear") {
         setCliHistory([
-          { type: "output", text: "Fintheon CLI — type / for commands." },
           {
             type: "output",
-            text: "Slash: /start-backend, /backend, /frontend, /install, /build, /typecheck",
+            text: 'Fintheon CLI — type any shell command. "help" for built-ins, / for slash shortcuts.',
           },
         ]);
         return;
@@ -420,24 +415,42 @@ export function FooterToolbar({
         setCliHistory(newHistory);
         return;
       }
-      // Intercept update commands — the bash script kills the app, so use Electron auto-updater instead
+      // Intercept update commands — use Electron SOTA updater bridge in desktop runtime
       if (lower === "update" || lower === "fintheon update") {
         newHistory.push({
           type: "output",
-          text: "Checking for updates via Electron auto-updater...",
+          text: "Checking for updates via desktop updater...",
         });
         setCliHistory(newHistory);
         if (window.electron?.checkForUpdate) {
           window.electron
             .checkForUpdate()
-            .then(({ ok }) => {
+            .then((result) => {
+              if (!result.ok) {
+                setCliHistory((prev) => [
+                  ...prev,
+                  {
+                    type: "output",
+                    text: "Update check failed — open latest release manually: https://github.com/solvys-technologies/fintheon/releases/latest",
+                  },
+                ]);
+                return;
+              }
+              if (result.updateAvailable) {
+                setCliHistory((prev) => [
+                  ...prev,
+                  {
+                    type: "output",
+                    text: `Update available: ${result.latest ?? "new version"}. Download will continue in the background; install from the toast when ready.`,
+                  },
+                ]);
+                return;
+              }
               setCliHistory((prev) => [
                 ...prev,
                 {
                   type: "output",
-                  text: ok
-                    ? "Update check triggered — banner will appear if an update is available."
-                    : "Update check failed or already up to date.",
+                  text: "Already up to date.",
                 },
               ]);
             })
@@ -472,6 +485,7 @@ export function FooterToolbar({
       showSlashSuggestions,
       slashSuggestions,
       slashSuggestionsIndex,
+      terminalPrompt,
     ],
   );
 
@@ -488,6 +502,11 @@ export function FooterToolbar({
   const { errorCount } = useErrorLog();
   const { overall: systemOverall, services } = useSystemStatus();
   const { status: gatewayStatus } = useGateway();
+  const narrowedServiceNames = new Set(["Hermes", "AI", "X"]);
+  const visibleServices =
+    compactLevel >= 1
+      ? services.filter((svc) => narrowedServiceNames.has(svc.name))
+      : services;
   const togglePanel = () => setPanelOpen((v) => !v);
 
   // [claude-code 2026-04-26] Listen for the header PanelToggleGroup footer
@@ -519,7 +538,10 @@ export function FooterToolbar({
   };
 
   return (
-    <div className="flex-shrink-0 border-t border-[var(--fintheon-accent)]/12 bg-[var(--fintheon-bg)]">
+    // [claude-code 2026-04-30] S56-shell: footer now shares --fintheon-surface
+    // with TopHeader + sidebar so the left column blends continuously and no
+    // corner triangles peek through main content's edges.
+    <div className="fintheon-footer-surface relative flex-shrink-0 bg-[var(--fintheon-surface)]">
       {/* Slide-up panel */}
       <div
         className="overflow-hidden transition-all duration-300 ease-in-out"
@@ -527,7 +549,7 @@ export function FooterToolbar({
       >
         <div className="h-[280px] flex flex-col border-b border-[var(--fintheon-accent)]/10">
           {/* Panel tab bar */}
-          <div className="flex items-center gap-0 border-b border-[var(--fintheon-accent)]/10 bg-[var(--fintheon-surface)] shrink-0">
+          <div className="flex items-center gap-0 border-b border-[var(--fintheon-accent)]/10 bg-transparent shrink-0">
             <button
               onClick={() => setActiveTab("terminal")}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-colors border-b-2 ${
@@ -609,7 +631,7 @@ export function FooterToolbar({
                       }
                     >
                       {line.type === "input"
-                        ? `> ${line.text}`
+                        ? line.text
                         : renderOutputLine(line.text, (cmd) => {
                             setCliInput(cmd);
                             inputRef.current?.focus();
@@ -621,8 +643,8 @@ export function FooterToolbar({
                 {/* Terminal input + slash suggestions */}
                 <div className="relative shrink-0">
                   <div className="flex items-center gap-1.5 px-3 py-2 border-t border-[var(--fintheon-accent)]/10">
-                    <span className="text-[var(--fintheon-accent)]/50 text-[11px] font-mono">
-                      {">"}
+                    <span className="min-w-fit text-[var(--fintheon-accent)]/70 text-[11px] font-mono">
+                      {terminalPrompt} $
                     </span>
                     <input
                       ref={inputRef}
@@ -697,21 +719,26 @@ export function FooterToolbar({
 
       {/* Toolbar strip */}
       <div className="h-7 flex items-center gap-3 px-3">
-        {/* Panel toggle */}
-        <button
-          onClick={togglePanel}
-          className="flex items-center gap-1 text-[10px] text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] transition-colors"
-          title={panelOpen ? "Close panel" : "Open panel"}
-        >
-          {panelOpen ? (
-            <ChevronDown className="w-3 h-3" />
-          ) : (
-            <ChevronUp className="w-3 h-3" />
-          )}
-          <span className="font-mono tracking-[0.12em]">
-            Epoch {EPOCH_VERSION}
+        {/* Panel toggle
+            [claude-code 2026-04-30] S56-shell: bumped contrast — gold/50 was
+            illegible against the new --fintheon-surface footer; using
+            --fintheon-text/75 with accent on hover. */}
+        <div className="flex items-center gap-1">
+          <span className="font-mono tracking-[0.12em] text-[10px] text-[var(--fintheon-text)]/75">
+            {EPOCH_VERSION}
           </span>
-        </button>
+          <button
+            onClick={togglePanel}
+            className="flex h-5 w-5 items-center justify-center text-[var(--fintheon-text)]/75 hover:text-[var(--fintheon-accent)] transition-colors"
+            title={panelOpen ? "Close panel" : "Open panel"}
+          >
+            {panelOpen ? (
+              <ChevronDown className="w-3 h-3" />
+            ) : (
+              <ChevronUp className="w-3 h-3" />
+            )}
+          </button>
+        </div>
 
         <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
 
@@ -727,114 +754,65 @@ export function FooterToolbar({
         >
           <Terminal className="w-3 h-3" />
         </button>
-        <button
-          onClick={() => openTab("changelog")}
-          className={`flex items-center gap-1 text-[10px] transition-colors ${
-            panelOpen && activeTab === "changelog"
-              ? "text-[var(--fintheon-accent)]"
-              : "text-zinc-600 hover:text-[var(--fintheon-accent)]"
-          }`}
-          title="Changelog"
-        >
-          <FileText className="w-3 h-3" />
-        </button>
-        <button
-          onClick={() => openTab("errors")}
-          className={`relative flex items-center gap-1 text-[10px] transition-colors ${
-            panelOpen && activeTab === "errors"
-              ? "text-red-400"
-              : errorCount > 0
-                ? "text-red-400/60 hover:text-red-400"
+        {compactLevel < 2 && (
+          <button
+            onClick={() => openTab("changelog")}
+            className={`flex items-center gap-1 text-[10px] transition-colors ${
+              panelOpen && activeTab === "changelog"
+                ? "text-[var(--fintheon-accent)]"
+                : "text-zinc-600 hover:text-[var(--fintheon-accent)]"
+            }`}
+            title="Changelog"
+          >
+            <FileText className="w-3 h-3" />
+          </button>
+        )}
+        {compactLevel < 2 && (
+          <button
+            onClick={() => openTab("errors")}
+            className={`relative flex items-center gap-1 text-[10px] transition-colors ${
+              panelOpen && activeTab === "errors"
+                ? "text-red-400"
+                : errorCount > 0
+                  ? "text-red-400/60 hover:text-red-400"
+                  : "text-zinc-600 hover:text-zinc-400"
+            }`}
+            title="Error Log"
+          >
+            <AlertTriangle className="w-3 h-3" />
+            {errorCount > 0 && (
+              <span className="absolute -top-1 -right-1.5 w-2.5 h-2.5 rounded-full bg-red-500 text-[7px] text-white flex items-center justify-center leading-none">
+                {errorCount > 9 ? "!" : errorCount}
+              </span>
+            )}
+          </button>
+        )}
+        {compactLevel < 2 && (
+          <button
+            onClick={() => openTab("team")}
+            className={`flex items-center text-[10px] transition-colors ${
+              panelOpen && activeTab === "team"
+                ? "text-[var(--fintheon-accent)]"
                 : "text-zinc-600 hover:text-zinc-400"
-          }`}
-          title="Error Log"
-        >
-          <AlertTriangle className="w-3 h-3" />
-          {errorCount > 0 && (
-            <span className="absolute -top-1 -right-1.5 w-2.5 h-2.5 rounded-full bg-red-500 text-[7px] text-white flex items-center justify-center leading-none">
-              {errorCount > 9 ? "!" : errorCount}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => openTab("team")}
-          className={`flex items-center text-[10px] transition-colors ${
-            panelOpen && activeTab === "team"
-              ? "text-[var(--fintheon-accent)]"
-              : "text-zinc-600 hover:text-zinc-400"
-          }`}
-          title="Team"
-        >
-          <Users className="w-3 h-3" />
-        </button>
-        <button
-          onClick={() => openTab("harper-ops")}
-          className={`relative flex items-center text-[10px] transition-colors ${
-            panelOpen && activeTab === "harper-ops"
-              ? "text-[var(--fintheon-accent)]"
-              : "text-zinc-600 hover:text-zinc-400"
-          }`}
-          title="Harper Ops"
-        >
-          <Bot className="w-3 h-3" />
-        </button>
-
-        <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
-
-        {/* Quick CLI — always available in toolbar */}
-        <div
-          ref={cliContainerRef}
-          className="relative flex items-center gap-1.5 flex-1 min-w-0"
-        >
-          <Terminal className="w-3 h-3 text-[var(--fintheon-accent)]/30 shrink-0" />
-          <input
-            value={cliInput}
-            onChange={(e) => onCliInputChange(e.target.value)}
-            onFocus={() =>
-              cliInput.startsWith("/") && setSlashSuggestionsOpen(true)
-            }
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && cliInput.trim()) {
-                setPanelOpen(true);
-                setActiveTab("terminal");
-                handleCli(e);
-              }
-            }}
-            className="flex-1 bg-transparent text-[11px] text-gray-500 placeholder-gray-700 focus:outline-none font-mono"
-            placeholder="> or / for scripts"
-            spellCheck={false}
-          />
-          {showSlashSuggestions && !panelOpen && (
-            <div className="absolute left-0 right-0 top-full mt-0.5 z-50 max-h-48 overflow-y-auto rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-lg">
-              {slashSuggestions.map((item, i) => (
-                <button
-                  key={item.slug}
-                  type="button"
-                  onClick={() => {
-                    setCliInput(item.command);
-                    setSlashSuggestionsOpen(false);
-                    setPanelOpen(true);
-                    setActiveTab("terminal");
-                    inputRef.current?.focus();
-                  }}
-                  className={`w-full text-left px-3 py-1.5 text-[11px] font-mono transition-colors ${
-                    i === slashSuggestionsIndex
-                      ? "bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)]"
-                      : "text-zinc-400 hover:bg-[var(--fintheon-accent)]/10 hover:text-zinc-300"
-                  }`}
-                >
-                  <span className="text-[var(--fintheon-accent)]/70">
-                    /{item.slug}
-                  </span>
-                  <span className="ml-2 text-zinc-500">{item.label}</span>
-                  <span className="ml-auto pl-3 text-zinc-600 text-[10px] truncate max-w-[45%] inline-block align-bottom">
-                    {item.command}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+            }`}
+            title="Team"
+          >
+            <Users className="w-3 h-3" />
+          </button>
+        )}
+        {compactLevel < 2 && (
+          <button
+            onClick={() => openTab("harper-ops")}
+            className={`relative flex items-center text-[10px] transition-colors ${
+              panelOpen && activeTab === "harper-ops"
+                ? "text-[var(--fintheon-accent)]"
+                : "text-zinc-600 hover:text-zinc-400"
+            }`}
+            title="Harper Ops"
+          >
+            <Bot className="w-3 h-3" />
+          </button>
+        )}
 
         {/* Iframe controls (when TopStepX active) */}
         {topStepXEnabled && (
@@ -916,90 +894,92 @@ export function FooterToolbar({
           </>
         )}
 
-        {/* S14-T6: Peers toggle removed — team status is in footer Team tab */}
+        {/* Right section — pushed to end */}
+        <div className="ml-auto flex items-center gap-3">
+          {/* Update installing status */}
+          {compactLevel < 1 && updateInstalling && (
+            <>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <div className="h-1.5 w-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
+                <span className="text-[9px] tracking-[0.15em] uppercase text-[var(--fintheon-accent)]/70 font-medium">
+                  Installing update...
+                </span>
+              </div>
+              <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
+            </>
+          )}
 
-        {/* Update installing status */}
-        {updateInstalling && (
-          <div className="flex items-center gap-1.5 shrink-0">
-            <div className="h-1.5 w-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
-            <span className="text-[9px] tracking-[0.15em] uppercase text-[var(--fintheon-accent)]/70 font-medium">
-              Installing update...
-            </span>
-          </div>
-        )}
-        {updateInstalling && (
-          <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
-        )}
+          {/* Fetch status — shows during refresh or polling */}
+          {compactLevel < 1 && fetchStatus && (
+            <>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {refreshing && (
+                  <div className="h-1.5 w-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
+                )}
+                <span className="text-[9px] tracking-[0.15em] uppercase text-[var(--fintheon-accent)]/70 font-medium">
+                  {fetchStatus}
+                </span>
+              </div>
+              <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
+            </>
+          )}
 
-        {/* Fetch status — shows during refresh or polling */}
-        {fetchStatus && (
-          <div className="flex items-center gap-1.5 shrink-0">
-            {refreshing && (
-              <div className="h-1.5 w-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
+          {/* Desk name */}
+          {compactLevel < 1 && (
+            <>
+              <span className="text-[9px] tracking-[0.15em] uppercase text-[var(--fintheon-accent)]/50 font-mono shrink-0">
+                Priced In Capital
+              </span>
+              <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
+            </>
+          )}
+
+          {/* System status indicators — real-time from /api/diagnostics */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            {compactLevel < 1 && (
+              <StatusIndicator
+                label="Gateway"
+                status={
+                  gatewayStatus === "connected"
+                    ? "ok"
+                    : gatewayStatus === "connecting"
+                      ? "degraded"
+                      : "error"
+                }
+                detail={
+                  gatewayStatus === "connected"
+                    ? "Backend reachable"
+                    : gatewayStatus === "connecting"
+                      ? "Connecting..."
+                      : "Disconnected"
+                }
+              />
             )}
-            <span className="text-[9px] tracking-[0.15em] uppercase text-[var(--fintheon-accent)]/70 font-medium">
-              {fetchStatus}
-            </span>
+            {visibleServices.map((svc) => (
+              <StatusIndicator
+                key={svc.key}
+                label={svc.name}
+                status={svc.status}
+                detail={svc.detail}
+              />
+            ))}
           </div>
-        )}
-        {fetchStatus && (
           <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
-        )}
-
-        {/* [claude-code 2026-04-25] S38: Desk-name slot — relocated from TopHeader. Sits to the
-            LEFT of the system status indicators; existing fetch/update status messages render
-            above this in the row, so they appear to the LEFT of the desk name. Placeholder
-            string for now; future sprint wires this to a per-user desk preference. */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="text-[9px] tracking-[0.18em] uppercase text-zinc-500 font-medium">
-            Priced In Capital
-          </span>
-        </div>
-        <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
-
-        {/* System status indicators — real-time from /api/diagnostics */}
-        <div className="flex items-center gap-2.5 shrink-0">
+          {/* Overall system status */}
           <StatusIndicator
-            label="Gateway"
-            status={
-              gatewayStatus === "connected"
-                ? "ok"
-                : gatewayStatus === "connecting"
-                  ? "degraded"
-                  : "error"
-            }
+            label="fintheon"
+            status={gatewayStatus !== "connected" ? "error" : systemOverall}
             detail={
-              gatewayStatus === "connected"
-                ? "Backend reachable"
-                : gatewayStatus === "connecting"
-                  ? "Connecting..."
-                  : "Disconnected"
+              gatewayStatus !== "connected"
+                ? "Backend offline"
+                : systemOverall === "ok"
+                  ? "All systems nominal"
+                  : systemOverall === "degraded"
+                    ? "Some services degraded"
+                    : "Services unavailable"
             }
           />
-          {services.map((svc) => (
-            <StatusIndicator
-              key={svc.key}
-              label={svc.name}
-              status={svc.status}
-              detail={svc.detail}
-            />
-          ))}
         </div>
-        <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
-        {/* Overall system status */}
-        <StatusIndicator
-          label="fintheon"
-          status={gatewayStatus !== "connected" ? "error" : systemOverall}
-          detail={
-            gatewayStatus !== "connected"
-              ? "Backend offline"
-              : systemOverall === "ok"
-                ? "All systems nominal"
-                : systemOverall === "degraded"
-                  ? "Some services degraded"
-                  : "Services unavailable"
-          }
-        />
       </div>
     </div>
   );

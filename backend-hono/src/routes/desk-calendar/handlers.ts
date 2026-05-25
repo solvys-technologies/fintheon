@@ -5,6 +5,7 @@
 import type { Context } from "hono";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
+import { addCustomDeskPlanEvent } from "../../services/day-plan/custom-desk-plan.js";
 import { parseIcsEvents, inferSeverity } from "./ics-parser.js";
 
 const log = createLogger("DeskCalendar");
@@ -66,13 +67,28 @@ export async function handleIngestIcs(c: Context): Promise<Response> {
     );
   }
   lastIngestError = null;
+  const deskPlanResults = await Promise.allSettled(
+    events.map((evt) => addCustomDeskPlanEvent(icsEventToDeskPlan(evt))),
+  );
+  const deskPlanFailures = deskPlanResults.filter(
+    (result) => result.status === "rejected",
+  );
+  if (deskPlanFailures.length > 0) {
+    lastIngestError = `${deskPlanFailures.length} desk-plan conversion failed`;
+    log.warn("desk_plan_conversion_failed", {
+      failures: deskPlanFailures.length,
+    });
+  }
+  const queueCount = await readUpcomingQueueCount(supabase);
   const statusMessage =
     (data?.length ?? 0) > 0
-      ? `Saved ${data!.length} event${data!.length === 1 ? "" : "s"} to desk queue`
+      ? `Saved ${data!.length} event${data!.length === 1 ? "" : "s"} to Desk Plan`
       : "No new events to save";
   return c.json({
     ingested: data?.length ?? 0,
     events: data ?? [],
+    queueCount,
+    deskPlanWindows: deskPlanResults.length - deskPlanFailures.length,
     statusMessage,
   });
 }
@@ -138,4 +154,136 @@ export function getDeskCalendarDiagnostics(): {
   last_ingest_error: string | null;
 } {
   return { last_ingest_error: lastIngestError };
+}
+
+async function readUpcomingQueueCount(
+  supabase: NonNullable<ReturnType<typeof getSupabaseClient>>,
+): Promise<number> {
+  const now = new Date().toISOString();
+  const horizon = new Date(Date.now() + 14 * 86_400_000).toISOString();
+  const { count } = await supabase
+    .from(TABLE)
+    .select("id", { count: "exact", head: true })
+    .gte("starts_at", now)
+    .lt("starts_at", horizon);
+  return count ?? 0;
+}
+
+function icsEventToDeskPlan(evt: ReturnType<typeof parseIcsEvents>[number]) {
+  const start = new Date(evt.startsAt);
+  const end = evt.endsAt
+    ? new Date(evt.endsAt)
+    : new Date(start.getTime() + 90 * 60_000);
+  const country = inferCountry(evt.title, evt.description);
+  return {
+    date: formatInNewYork(start, "date"),
+    eventName: cleanEventTitle(resolveDeskEventTitle(evt.title, evt.description)),
+    country,
+    currency: currencyForCountry(country),
+    category: inferCategory(evt.title, evt.description),
+    impact: severityToImpact(inferSeverity(evt.title, evt.description)),
+    time: formatInNewYork(start, "time"),
+    startTime: formatInNewYork(new Date(start.getTime() - 45 * 60_000), "time"),
+    endTime: formatInNewYork(end, "time"),
+    forecast: extractField(evt.description, "forecast"),
+    previous:
+      extractField(evt.description, "previous") ??
+      extractField(evt.description, "prior"),
+    detail: evt.description ?? evt.url ?? undefined,
+  };
+}
+
+function resolveDeskEventTitle(title: string, description: string | null): string {
+  const cleaned = cleanEventTitle(title);
+  if (cleaned && !isCountryOnly(cleaned)) return cleaned;
+  const lines = (description ?? "")
+    .split(/\r?\n/)
+    .map((line) => cleanEventTitle(line))
+    .filter(Boolean);
+  return (
+    lines.find((line) => !isCountryOnly(line) && !isMetadataLine(line)) ??
+    cleaned ??
+    title
+  );
+}
+
+function isCountryOnly(value: string): boolean {
+  return /^(US|USA|NZ|AU|JP|GB|UK|EU|CA|CN|CH)$/i.test(value.trim());
+}
+
+function isMetadataLine(value: string): boolean {
+  return /^(country|symbol)\s*:/i.test(value.trim());
+}
+
+function formatInNewYork(date: Date, kind: "date" | "time"): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const get = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? "00";
+  if (kind === "date") return `${get("year")}-${get("month")}-${get("day")}`;
+  return `${get("hour")}:${get("minute")}`;
+}
+
+function cleanEventTitle(title: string): string {
+  return title
+    .replace(/^\s*([A-Z]{2,3}|USA|United States)\s*[-:]\s*/i, "")
+    .trim();
+}
+
+function inferCountry(title: string, description: string | null): string {
+  const blob = `${title} ${description ?? ""}`.toUpperCase();
+  const direct = blob.match(/\b(USA|US|NZ|AU|JP|GB|UK|CA|EU|CN|CH)\b/);
+  if (direct?.[1] === "USA") return "US";
+  if (direct?.[1] === "UK") return "GB";
+  return direct?.[1] ?? "US";
+}
+
+function currencyForCountry(country: string): string {
+  const map: Record<string, string> = {
+    US: "USD",
+    NZ: "NZD",
+    AU: "AUD",
+    JP: "JPY",
+    GB: "GBP",
+    CA: "CAD",
+    EU: "EUR",
+    CN: "CNY",
+    CH: "CHF",
+  };
+  return map[country] ?? country;
+}
+
+function inferCategory(title: string, description: string | null): string {
+  const blob = `${title} ${description ?? ""}`.toLowerCase();
+  if (
+    /\b(speech|speaks?|remarks|testimony|statement|press conference)\b/.test(
+      blob,
+    )
+  )
+    return "Speaker";
+  return "Economic";
+}
+
+function severityToImpact(severity: number | null): "low" | "medium" | "high" {
+  if (severity == null || severity <= 1) return "low";
+  if (severity === 2) return "medium";
+  return "high";
+}
+
+function extractField(
+  description: string | null,
+  label: string,
+): string | undefined {
+  if (!description) return undefined;
+  const match = description.match(
+    new RegExp(`${label}\\s*[:：]\\s*([^\\n|]+)`, "i"),
+  );
+  return match?.[1]?.trim() || undefined;
 }

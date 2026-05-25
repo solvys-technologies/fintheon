@@ -5,9 +5,12 @@ import {
   RefreshCw,
   Loader2,
   Brain,
-  Zap,
-  Compass,
+  BarChart3,
+  Megaphone,
+  Search,
   Eye,
+  Circle,
+  Sparkles,
 } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -17,9 +20,9 @@ const AGENT_META: Record<
   { label: string; color: string; icon: typeof Brain }
 > = {
   oracle: { label: "Oracle", color: "#a78bfa", icon: Eye },
-  feucht: { label: "Feucht", color: "#f87171", icon: Zap },
-  consul: { label: "Consul", color: "#c79f4a", icon: Compass },
-  herald: { label: "Herald", color: "#38bdf8", icon: Zap },
+  feucht: { label: "Feucht", color: "#f87171", icon: BarChart3 },
+  consul: { label: "Consul", color: "#c79f4a", icon: Search },
+  herald: { label: "Herald", color: "#38bdf8", icon: Megaphone },
   harper: { label: "Harper", color: "#34d399", icon: Brain },
 };
 
@@ -55,7 +58,40 @@ export function AgentLounge() {
   const [dreams, setDreams] = useState<DreamEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
+  const [afterhoursActive, setAfterhoursActive] = useState(false);
+  const [dreamingAgents, setDreamingAgents] = useState<Set<string>>(new Set());
   const feedRef = useRef<HTMLDivElement>(null);
+  const pulseRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Check if afterhours (16:30-17:30 ET)
+  useEffect(() => {
+    const checkAfterhours = () => {
+      const now = new Date();
+      const etNow = new Date(
+        now.toLocaleString("en-US", { timeZone: "America/New_York" }),
+      );
+      const hours = etNow.getHours();
+      const minutes = etNow.getMinutes();
+      const isAfterhours =
+        (hours === 16 && minutes >= 30) || (hours === 17 && minutes < 30);
+      setAfterhoursActive(isAfterhours);
+
+      // Detect dreaming agents from recent dreams (last 30 min)
+      if (dreams.length > 0) {
+        const recentThreshold = Date.now() - 30 * 60 * 1000;
+        const recent = dreams.filter(
+          (d) => new Date(d.createdAt).getTime() > recentThreshold,
+        );
+        setDreamingAgents(new Set(recent.map((d) => d.agentId)));
+      }
+    };
+
+    checkAfterhours();
+    pulseRef.current = setInterval(checkAfterhours, 30000); // check every 30s
+    return () => {
+      if (pulseRef.current) clearInterval(pulseRef.current);
+    };
+  }, [dreams]);
 
   const loadDreams = useCallback(async () => {
     try {
@@ -133,15 +169,63 @@ export function AgentLounge() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--fintheon-accent)]/10">
         <div className="flex items-center gap-2">
-          <Moon size={14} className="text-[var(--fintheon-accent)]/60" />
+          <div className="relative">
+            <Moon
+              size={14}
+              className={`transition-all duration-700 ${
+                afterhoursActive
+                  ? "text-[var(--fintheon-accent)] animate-pulse drop-shadow-[0_0_6px_var(--fintheon-accent)]"
+                  : "text-[var(--fintheon-accent)]/60"
+              }`}
+            />
+            {afterhoursActive && (
+              <Sparkles
+                size={8}
+                className="absolute -top-1 -right-1 text-[var(--fintheon-accent)] animate-pulse"
+              />
+            )}
+          </div>
           <span className="text-xs font-medium text-[var(--fintheon-text)]/70 uppercase tracking-wider">
             Agent Lounge
           </span>
-          <span className="text-[9px] text-[var(--fintheon-text)]/30">
-            Where agents discuss their dreams
-          </span>
+          {afterhoursActive && (
+            <span className="text-[9px] font-medium text-[var(--fintheon-accent)]/80 animate-pulse">
+              Afterhours
+            </span>
+          )}
+          {!afterhoursActive && (
+            <span className="text-[9px] text-[var(--fintheon-text)]/30">
+              Where agents discuss their dreams
+            </span>
+          )}
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
+          {/* Agent presence indicators */}
+          {Object.entries(AGENT_META).map(([id, meta]) => {
+            const isDreaming = dreamingAgents.has(id);
+            return (
+              <div
+                key={id}
+                className="relative flex items-center justify-center w-5 h-5 rounded-full"
+                title={`${meta.label}${isDreaming ? " — dreaming" : " — idle"}`}
+                style={{
+                  background: isDreaming ? `${meta.color}15` : "transparent",
+                  border: `1px solid ${isDreaming ? meta.color + "40" : "transparent"}`,
+                }}
+              >
+                <Circle
+                  size={6}
+                  fill={isDreaming ? meta.color : "transparent"}
+                  stroke={isDreaming ? meta.color : "currentColor"}
+                  className={`transition-all duration-500 ${
+                    isDreaming
+                      ? "text-transparent animate-pulse"
+                      : "text-[var(--fintheon-text)]/15"
+                  }`}
+                />
+              </div>
+            );
+          })}
           <button
             onClick={loadDreams}
             className="p-1.5 rounded-md text-[var(--fintheon-text)]/30 hover:text-[var(--fintheon-text)]/60 hover:bg-[var(--fintheon-accent)]/5 transition-colors"

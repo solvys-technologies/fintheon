@@ -1,3 +1,4 @@
+// [claude-code 2026-05-05] Added compact mode for tight header shells: keeps pulse + waveform + ER score and drops resonance wording.
 // [claude-code 2026-03-14] Refactored to use useERSafe() from ERContext (shared state), local fallback retained
 // [claude-code 2026-05-19] SOL-71: fixed color palette to Solvys, added lockout overlay, pass isLockedOut to WaveformCanvas
 import { useState, useEffect, useRef } from "react";
@@ -8,6 +9,7 @@ import { useERSafe } from "../../contexts/ERContext";
 
 interface CompactERMonitorProps {
   onERScoreChange?: (score: number) => void;
+  compact?: boolean;
 }
 
 /**
@@ -15,7 +17,10 @@ interface CompactERMonitorProps {
  * Designed for the tickers-only floating widget
  * Uses shared ERContext when available, falls back to local monitoring
  */
-export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
+export function CompactERMonitor({
+  onERScoreChange,
+  compact = false,
+}: CompactERMonitorProps) {
   const backend = useBackend();
   const erContext = useERSafe();
 
@@ -43,14 +48,14 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
     erScore > 0.5 ? "Steadfast" : erScore < -0.5 ? "Tilted" : "Poised";
   // Solvys palette: gold accent for all states, no emerald/red
   const stateColor = {
-    Steadfast: "text-(--fintheon-accent)",
-    Tilted: "text-(--fintheon-accent)/70",
-    Poised: "text-(--fintheon-text)/40",
+    Steadfast: "text-[var(--fintheon-accent)]",
+    Tilted: "text-[var(--fintheon-accent)]/70",
+    Poised: "text-[var(--fintheon-text)]/40",
   };
   const stateBgColor = {
-    Steadfast: "bg-(--fintheon-accent)",
-    Tilted: "bg-(--fintheon-accent)/50",
-    Poised: "bg-(--fintheon-text)/20",
+    Steadfast: "bg-[var(--fintheon-accent)]",
+    Tilted: "bg-[var(--fintheon-accent)]/50",
+    Poised: "bg-[var(--fintheon-text)]/20",
   };
 
   const startMonitoring = async () => {
@@ -231,16 +236,16 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
   return (
     <div className="flex items-center gap-2 w-full py-1">
       {/* Waveform - Landscape oriented */}
-      <div className="relative h-7 flex-1 bg-black/50 rounded border border-(--fintheon-accent)/10 overflow-hidden min-w-[80px]">
+      <div className="relative h-7 flex-1 bg-black/50 rounded border border-[var(--fintheon-accent)]/10 overflow-hidden min-w-[80px]">
         <div className="absolute inset-0 scanline-overlay opacity-50" />
         {isLockedOut && (
-          <div className="absolute inset-0 z-10 flex items-center justify-between px-1.5 bg-(--fintheon-bg)/90">
-            <span className="text-[8px] uppercase tracking-widest text-(--fintheon-accent) cognition-thought-shimmer">
+          <div className="absolute inset-0 z-10 flex items-center justify-between px-1.5 bg-[var(--fintheon-bg)]/90">
+            <span className="text-[8px] uppercase tracking-widest text-[var(--fintheon-accent)] cognition-thought-shimmer">
               locked out
             </span>
             <button
               onClick={() => erContext?.dismissLockout()}
-              className="text-[8px] text-(--fintheon-text)/40 hover:text-(--fintheon-text)/80"
+              className="text-[8px] text-[var(--fintheon-text)]/40 hover:text-[var(--fintheon-text)]/80"
             >
               dismiss
             </button>
@@ -267,11 +272,13 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
         <span className={`text-xs font-bold ${stateColor[resonanceState]}`}>
           {erScore.toFixed(1)}
         </span>
-        <span className={`text-[9px] ${stateColor[resonanceState]}`}>
-          {resonanceState}
-        </span>
-        {resonanceState === "Tilted" && !isLockedOut && (
-          <AlertTriangle className="w-3 h-3 text-(--fintheon-accent)/60 animate-pulse" />
+        {!compact && (
+          <span className={`text-[9px] ${stateColor[resonanceState]}`}>
+            {resonanceState}
+          </span>
+        )}
+        {!compact && resonanceState === "Tilted" && !isLockedOut && (
+          <AlertTriangle className="w-3 h-3 text-[var(--fintheon-accent)]/60 animate-pulse" />
         )}
       </div>
 
@@ -280,7 +287,7 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
         onClick={isMonitoring ? stopMonitoring : startMonitoring}
         className={`toolbar-icon-btn shrink-0 ${
           isMonitoring
-            ? "bg-(--fintheon-accent)/10! border-(--fintheon-accent)/30! text-(--fintheon-accent)!"
+            ? "!bg-[var(--fintheon-accent)]/10 !border-[var(--fintheon-accent)]/30 !text-[var(--fintheon-accent)]"
             : ""
         }`}
         title={isMonitoring ? "Stop PsychAssist" : "Start PsychAssist"}

@@ -25,9 +25,12 @@ const FETCH_TIMEOUT_MS = 25_000;
 export interface XActionsTweet {
   tweet_id: string;
   text: string;
-  timestamp: string; // ISO 8601 if XActions returns it, else fetch time
+  timestamp: string;
   permalink: string;
   author_handle: string;
+  image_url?: string | null;
+  image_urls?: string[] | null;
+  video_url?: string | null;
 }
 
 export function isXActionsConfigured(): boolean {
@@ -84,6 +87,45 @@ function harvestTweets(node: unknown, handle: string): XActionsTweet[] {
       } else {
         isoTs = new Date().toISOString();
       }
+      // Extract media
+      let imageUrl: string | null = null;
+      const imageUrls: string[] = [];
+      let videoUrl: string | null = null;
+      const mediaArr = (obj.media ??
+        (obj as any).extended_entities?.media ??
+        (obj as any).entities?.media) as
+        | Array<{
+            media_url_https?: string;
+            type?: string;
+            video_info?: {
+              variants?: Array<{
+                bitrate?: number;
+                content_type?: string;
+                url?: string;
+              }>;
+            };
+          }>
+        | undefined;
+      if (Array.isArray(mediaArr)) {
+        for (const m of mediaArr) {
+          if (typeof m?.media_url_https === "string") {
+            if (!imageUrl) imageUrl = m.media_url_https;
+            imageUrls.push(m.media_url_https);
+          }
+          if (
+            !videoUrl &&
+            (m?.type === "video" || m?.type === "animated_gif") &&
+            Array.isArray(m.video_info?.variants)
+          ) {
+            const mp4s = m.video_info!.variants!.filter(
+              (v) =>
+                v.content_type === "video/mp4" && typeof v.url === "string",
+            );
+            mp4s.sort((a, b) => (b.bitrate ?? 0) - (a.bitrate ?? 0));
+            if (mp4s.length > 0 && mp4s[0].url) videoUrl = mp4s[0].url;
+          }
+        }
+      }
       out.push({
         tweet_id: idStr,
         text: text.trim(),
@@ -92,6 +134,9 @@ function harvestTweets(node: unknown, handle: string): XActionsTweet[] {
           (obj.url as string | undefined) ??
           `https://x.com/${handle}/status/${idStr}`,
         author_handle: handle,
+        image_url: imageUrl,
+        image_urls: imageUrls.length > 0 ? imageUrls : null,
+        video_url: videoUrl,
       });
     }
     for (const k of Object.keys(obj)) walk(obj[k]);

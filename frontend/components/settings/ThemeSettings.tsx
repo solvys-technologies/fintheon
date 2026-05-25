@@ -1,772 +1,609 @@
-// [claude-code 2026-04-20] S25-T6b: Category color keys section (narrative-*) + narrative overrides bundled into saved custom themes (restore on activation, cleared on Reset to Default).
-// [claude-code 2026-04-18] Remove Digit Size slider (digits reverted to Inter via unicode-range override)
-// [claude-code 2026-04-18] Nothing Font Kit card
-// [claude-code 2026-04-15] Special themes section — Nothing Design (Something Solvys/Monochrome)
-// [claude-code 2026-03-24] Theme settings — font style, color presets, custom color picker, severity colors, save custom themes
-import { useState, useEffect } from "react";
-import { Check, Save } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Check, ChevronDown, Pencil, Save, Trash2, Tv } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
-import { type ThemeConfig, DEFAULT_THEME } from "../../lib/theme";
+import { DEFAULT_THEME, type ThemeConfig } from "../../lib/theme";
 import { DEFAULT_FONT_THEME } from "../../lib/font-theme";
-import { ColorSwatchInput } from "../ui/ColorPicker";
+import type { FontTheme } from "../../lib/font-theme";
+import { getAccessToken } from "../../lib/supabase";
+import { DotMatrixLoader, DotMatrixSuccess } from "../icon-bank/DotMatrixLoader";
+import { SettingsActionStatus } from "./SettingsActionStatus";
 
-const COLOR_FIELDS: { key: keyof ThemeConfig; label: string }[] = [
-  { key: "accent", label: "Accent" },
-  { key: "bg", label: "Background" },
-  { key: "text", label: "Text" },
-  { key: "bullish", label: "Bullish" },
-  { key: "bearish", label: "Bearish" },
+interface ThemeProfile {
+  id: string;
+  name: string;
+  theme: ThemeConfig;
+}
+
+type SavePhase = "idle" | "saving" | "saved";
+
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const PROFILE_KEY = "fintheon:theme-profiles:v1";
+
+const severityFields: ColorFieldConfig[] = [
+  { key: "severe", label: "Critical", detail: "Highest urgency" },
+  { key: "neutralSevere", label: "High", detail: "Elevated risk" },
+  { key: "neutral", label: "Medium", detail: "Baseline attention" },
+  { key: "lowNeutral", label: "Low-Mid", detail: "Watchlist signal" },
+  { key: "low", label: "Low", detail: "Calm / routine" },
 ];
 
-const SEVERITY_FIELDS: { key: keyof ThemeConfig; label: string }[] = [
-  { key: "severe", label: "Severe" },
-  { key: "neutralSevere", label: "Neutral Severe" },
-  { key: "neutral", label: "Neutral" },
-  { key: "lowNeutral", label: "Low Neutral" },
-  { key: "low", label: "Low" },
+const visualFields: ColorFieldConfig[] = [
+  { key: "primary", label: "Primary", detail: "Lead controls" },
+  { key: "secondary", label: "Secondary", detail: "Supporting UI" },
+  { key: "accent", label: "Accent", detail: "Action emphasis" },
+  { key: "bg", label: "Background", detail: "Canvas tone" },
+  { key: "border", label: "Border", detail: "Input outlines" },
 ];
 
-const DEFAULT_SEVERITY: Record<string, string> = {
-  severe: "#EF4444",
-  neutralSevere: "#F59E0B",
-  neutral: "#6B7280",
-  lowNeutral: "#3B82F6",
-  low: "#34D399",
-};
+const reactionFields: ColorFieldConfig[] = [
+  { key: "bullish", label: "Bullish", detail: "Positive reaction" },
+  { key: "bearish", label: "Bearish", detail: "Negative reaction" },
+  { key: "neutral", label: "Neutral", detail: "Balanced state" },
+];
 
-// Narrative category color tokens — mirrors index.css :root + NarrativeColorKey
-const NARRATIVE_FIELDS: {
-  id: NarrativeCategoryKey;
+interface ColorFieldConfig {
+  key: keyof ThemeConfig;
   label: string;
-  token: string;
-  fallback: string;
-}[] = [
-  {
-    id: "geopolitical",
-    label: "Geopolitical",
-    token: "--narrative-geopolitical",
-    fallback: "#F59E0B",
-  },
-  {
-    id: "monetary",
-    label: "Monetary",
-    token: "--narrative-monetary",
-    fallback: "#8B5CF6",
-  },
-  {
-    id: "macroeconomic",
-    label: "Macro",
-    token: "--narrative-macroeconomic",
-    fallback: "#3B82F6",
-  },
-  {
-    id: "market-structure",
-    label: "Market Structure",
-    token: "--narrative-market-structure",
-    fallback: "#EC4899",
-  },
-  {
-    id: "earnings",
-    label: "Earnings",
-    token: "--narrative-earnings",
-    fallback: "#34D399",
-  },
-  {
-    id: "supply-chain",
-    label: "Supply Chain",
-    token: "--narrative-supply-chain",
-    fallback: "#14B8A6",
-  },
-  {
-    id: "black-swan",
-    label: "Black Swan",
-    token: "--narrative-black-swan",
-    fallback: "#EF4444",
-  },
-];
+  detail: string;
+}
 
-type NarrativeCategoryKey =
-  | "geopolitical"
-  | "monetary"
-  | "macroeconomic"
-  | "market-structure"
-  | "earnings"
-  | "supply-chain"
-  | "black-swan";
-
-type NarrativeOverrides = Partial<Record<NarrativeCategoryKey, string>>;
-
-const NARRATIVE_STORAGE_KEY = "fintheon:narrative-color-overrides";
-
-function loadNarrativeOverrides(): NarrativeOverrides {
+function loadLocalProfiles(): ThemeProfile[] {
   try {
-    const raw = localStorage.getItem(NARRATIVE_STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as NarrativeOverrides) : {};
+    return JSON.parse(localStorage.getItem(PROFILE_KEY) ?? "[]");
   } catch {
-    return {};
+    return [];
   }
 }
 
-function persistNarrativeOverrides(next: NarrativeOverrides): void {
+async function saveProfiles(profiles: ThemeProfile[]) {
   try {
-    localStorage.setItem(NARRATIVE_STORAGE_KEY, JSON.stringify(next));
-  } catch {}
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(profiles));
+    const token = await getAccessToken();
+    if (!token) return;
+    await fetch(`${API_BASE}/api/settings`, {
+      method: "PUT",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ settings: { appearance: { savedThemes: profiles } } }),
+    });
+  } catch {
+    /* local theme saving should never block UI */
+  }
 }
-
-function applyNarrativeOverride(token: string, hex: string | null): void {
-  if (typeof document === "undefined") return;
-  if (hex) document.documentElement.style.setProperty(token, hex);
-  else document.documentElement.style.removeProperty(token);
-}
-
-/** ThemeConfig extension: bundles narrative category overrides into a saved theme. */
-interface ThemeConfigWithNarrative extends ThemeConfig {
-  narrativeColors?: NarrativeOverrides;
-}
-
-function isValidHex(v: string): boolean {
-  return /^#[0-9A-Fa-f]{6}$/.test(v);
-}
-
-const SAMPLE_HEADING = "AAPL 189.42  +2.31%";
-const SAMPLE_BODY =
-  "ES broke above 5,420 resistance — watching $1,234.56 target with 62% probability. Risk/reward favors long above the VWAP.";
 
 export function ThemeSettings() {
   const {
     theme,
     setTheme,
     presets,
-    specialPresets,
     fontTheme,
     setFontTheme,
     fontThemes,
     pompaEnabled,
     setPompaEnabled,
+    zenModeEnabled,
+    setZenModeEnabled,
+    mode,
+    setMode,
   } = useTheme();
+  const [profiles, setProfiles] = useState<ThemeProfile[]>(loadLocalProfiles);
+  const [profileName, setProfileName] = useState("");
+  const [profileStatus, setProfileStatus] = useState<{
+    label: string;
+    detail?: string;
+    tone?: "muted" | "success" | "error" | "warning";
+  } | null>(null);
+  const [savePhase, setSavePhase] = useState<SavePhase>("idle");
+  const [openColorKey, setOpenColorKey] = useState<string | null>(null);
+  const [fontOpen, setFontOpen] = useState(false);
 
-  const isSpecialActive = theme.special === true;
-  const [customDraft, setCustomDraft] = useState<Record<string, string>>({});
-  const [customThemes, setCustomThemes] = useState<ThemeConfigWithNarrative[]>(
-    () => {
-      try {
-        return JSON.parse(
-          localStorage.getItem("fintheon-custom-themes") || "[]",
-        );
-      } catch {
-        return [];
-      }
-    },
+  const solidPresets = useMemo(
+    () =>
+      Object.values(presets).filter(
+        (preset) => (preset.glassVariant ?? "solid") === "solid",
+      ),
+    [presets],
   );
-  const [narrativeOverrides, setNarrativeOverrides] =
-    useState<NarrativeOverrides>(() => loadNarrativeOverrides());
 
-  // Hydrate CSS vars from persisted overrides once on mount
   useEffect(() => {
-    for (const { id, token } of NARRATIVE_FIELDS) {
-      if (narrativeOverrides[id]) {
-        applyNarrativeOverride(token, narrativeOverrides[id]!);
+    let cancelled = false;
+    (async () => {
+      const token = await getAccessToken();
+      if (!token) return;
+      const res = await fetch(`${API_BASE}/api/settings`, {
+        credentials: "include",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = res.ok ? await res.json() : null;
+      const saved = data?.settings?.appearance?.savedThemes;
+      if (!cancelled && Array.isArray(saved)) {
+        setProfiles(saved);
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(saved));
       }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    })().catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const presetList = Object.values(presets);
-
-  const handleNarrativeChange = (cat: NarrativeCategoryKey, hex: string) => {
-    if (!isValidHex(hex)) return;
-    const field = NARRATIVE_FIELDS.find((f) => f.id === cat);
-    if (!field) return;
-    const next = { ...narrativeOverrides, [cat]: hex };
-    setNarrativeOverrides(next);
-    persistNarrativeOverrides(next);
-    applyNarrativeOverride(field.token, hex);
+  const updateThemeColor = (key: keyof ThemeConfig, value: string) => {
+    const normalized = normalizeHex(value);
+    if (!normalized) return;
+    setTheme({
+      ...theme,
+      [key]: normalized,
+      name: "custom",
+      label: profileName.trim() || "Custom Theme",
+    });
   };
 
-  const getNarrativeFieldValue = (cat: NarrativeCategoryKey): string => {
-    const override = narrativeOverrides[cat];
-    if (override && isValidHex(override)) return override;
-    const field = NARRATIVE_FIELDS.find((f) => f.id === cat);
-    return field?.fallback ?? "#333333";
+  const setGlassVariant = (variant: "solid" | "frosted" | "liquid") => {
+    setTheme({
+      ...theme,
+      glassEnabled: variant !== "solid",
+      glassVariant: variant,
+      name: "custom",
+      label: profileName.trim() || theme.label || "Custom Theme",
+    });
   };
 
-  const resetNarrativeOverrides = () => {
-    for (const { token } of NARRATIVE_FIELDS) {
-      applyNarrativeOverride(token, null);
-    }
-    setNarrativeOverrides({});
-    persistNarrativeOverrides({});
+  const handleSaveProfile = async () => {
+    const name = profileName.trim() || theme.label || "Custom Theme";
+    const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const nextTheme = { ...theme, name: id || "custom", label: name };
+    const next = [
+      { id: nextTheme.name, name, theme: nextTheme },
+      ...profiles.filter((profile) => profile.id !== nextTheme.name),
+    ];
+    setSavePhase("saving");
+    setProfiles(next);
+    setTheme(nextTheme);
+    setProfileStatus({
+      label: "Theme Saved",
+      detail: name,
+      tone: "success",
+    });
+    await saveProfiles(next);
+    setSavePhase("saved");
+    window.setTimeout(() => setSavePhase("idle"), 1600);
   };
 
-  const applyNarrativeBundle = (bundle: NarrativeOverrides | undefined) => {
-    // First clear every override, then apply what the bundle provides
-    for (const { token } of NARRATIVE_FIELDS) {
-      applyNarrativeOverride(token, null);
-    }
-    const next = bundle ?? {};
-    for (const { id, token } of NARRATIVE_FIELDS) {
-      if (next[id]) applyNarrativeOverride(token, next[id]!);
-    }
-    setNarrativeOverrides(next);
-    persistNarrativeOverrides(next);
-  };
-
-  const handleCustomChange = (key: keyof ThemeConfig, value: string) => {
-    setCustomDraft((d) => ({ ...d, [key]: value }));
-    if (isValidHex(value)) {
-      setTheme({ ...theme, name: "custom", label: "Custom", [key]: value });
-    }
-  };
-
-  const getFieldValue = (key: keyof ThemeConfig): string => {
-    return (
-      customDraft[key] ??
-      (theme[key] as string) ??
-      DEFAULT_SEVERITY[key] ??
-      "#333333"
+  const renameProfile = (profile: ThemeProfile) => {
+    const name = window.prompt("Theme name", profile.name)?.trim();
+    if (!name) return;
+    const next = profiles.map((item) =>
+      item.id === profile.id
+        ? { ...item, name, theme: { ...item.theme, label: name } }
+        : item,
     );
+    setProfiles(next);
+    setProfileStatus({
+      label: "Theme Renamed",
+      detail: name,
+      tone: "success",
+    });
+    void saveProfiles(next);
+  };
+
+  const deleteProfile = (id: string) => {
+    const removed = profiles.find((profile) => profile.id === id);
+    const next = profiles.filter((profile) => profile.id !== id);
+    setProfiles(next);
+    setProfileStatus({
+      label: "Theme Deleted",
+      detail: removed?.name ?? id,
+      tone: "warning",
+    });
+    void saveProfiles(next);
   };
 
   return (
-    <div className="space-y-6">
-      {/* Font Style — with live samples */}
+    <div className="space-y-8 text-right">
       <section>
-        <h3
-          className="text-sm font-semibold mb-4"
-          style={{ color: "var(--fintheon-accent)" }}
-        >
-          Font Style
+        <h3 className="mb-3 text-right text-sm font-semibold text-[var(--fintheon-accent)]">
+          Theme Preset
         </h3>
-
-        {/* Live sample preview — uses current active font */}
-        <div
-          className="mb-4 p-4 rounded-lg border"
-          style={{
-            borderColor:
-              "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
-            backgroundColor: "rgba(10,10,0,0.3)",
-          }}
-        >
-          <div
-            className="text-lg font-semibold text-white mb-1.5"
-            style={{ fontFamily: fontTheme.fontHeading }}
-          >
-            {SAMPLE_HEADING}
-          </div>
-          <div
-            className="text-[13px] leading-relaxed text-zinc-400"
-            style={{ fontFamily: fontTheme.fontBody }}
-          >
-            {SAMPLE_BODY}
-          </div>
-          <div className="mt-2 text-[10px] text-zinc-600 font-mono">
-            Active: {fontTheme.label}
-          </div>
-        </div>
-
-        {/* Font override notice for special themes */}
-        {isSpecialActive && (
-          <div
-            className="mb-3 px-3 py-2 rounded-md text-[11px]"
-            style={{
-              background: "rgba(199,159,74,0.08)",
-              border: "1px solid rgba(199,159,74,0.15)",
-              color: "var(--fintheon-accent)",
-              fontFamily: "'Space Mono', monospace",
-              letterSpacing: "0.04em",
-            }}
-          >
-            [OVERRIDDEN BY {theme.label?.toUpperCase()}]
-          </div>
-        )}
-
-        {/* Font theme cards — each with its own inline sample */}
-        <div
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"
-          style={
-            isSpecialActive
-              ? { opacity: 0.4, pointerEvents: "none" }
-              : undefined
-          }
-        >
-          {Object.values(fontThemes).map((ft) => {
-            const active = fontTheme.id === ft.id;
-            return (
-              <button
-                key={ft.id}
-                onClick={() => setFontTheme(ft)}
-                className="relative text-left p-3 rounded-lg border transition-all hover:scale-[1.01]"
-                style={{
-                  borderColor: active
-                    ? "var(--fintheon-accent)"
-                    : "rgba(255,255,255,0.08)",
-                  backgroundColor: active
-                    ? "color-mix(in srgb, var(--fintheon-accent) 10%, transparent)"
-                    : "rgba(10,10,0,0.4)",
-                }}
-              >
-                {active && (
-                  <div
-                    className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
-                    style={{ backgroundColor: "var(--fintheon-accent)" }}
-                  >
-                    <Check size={12} className="text-black" />
-                  </div>
-                )}
-                <div className="text-[12px] font-medium text-white">
-                  {ft.label}
-                </div>
-                <div className="text-[11px] text-zinc-500 mt-0.5">
-                  {ft.description}
-                </div>
-                {/* Inline font sample — trading context */}
-                <div
-                  className="mt-2 text-[14px] font-semibold text-zinc-300 leading-tight"
-                  style={{ fontFamily: ft.fontHeading }}
-                >
-                  $1,234.56
-                </div>
-                <div
-                  className="text-[11px] text-zinc-500 mt-0.5"
-                  style={{ fontFamily: ft.fontBody }}
-                >
-                  AAPL +2.3%
-                </div>
-              </button>
-            );
-          })}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {profiles.map((profile) => (
+            <ThemeTile
+              key={profile.id}
+              active={theme.name === profile.theme.name}
+              theme={profile.theme}
+              label={profile.name}
+              detail="custom"
+              onSelect={() => setTheme(profile.theme)}
+              onRename={() => renameProfile(profile)}
+              onDelete={() => deleteProfile(profile.id)}
+            />
+          ))}
+          {solidPresets.map((preset) => (
+            <ThemeTile
+              key={preset.name}
+              active={theme.name === preset.name}
+              theme={preset}
+              label={preset.label}
+              detail="solid"
+              onSelect={() => setTheme({ ...preset, glassVariant: theme.glassVariant, glassEnabled: theme.glassEnabled })}
+            />
+          ))}
         </div>
       </section>
 
-      {/* Pompa Mode */}
       <section>
-        <h3
-          className="text-sm font-semibold mb-1"
-          style={{ color: "var(--fintheon-accent)" }}
-        >
-          Pompa
+        <h3 className="mb-3 text-right text-sm font-semibold text-[var(--fintheon-accent)]">
+          Theme Variables
         </h3>
-        <p className="text-[11px] text-zinc-500 mb-3">
-          Ceremonial mode — Roman-themed effects, sounds &amp; animations
-        </p>
-        <button
-          role="switch"
-          aria-checked={pompaEnabled}
-          aria-label="Toggle Pompa ceremonial mode"
-          onClick={() => setPompaEnabled(!pompaEnabled)}
-          onKeyDown={(e) => {
-            if (e.key === " " || e.key === "Enter") {
-              e.preventDefault();
-              setPompaEnabled(!pompaEnabled);
-            }
-          }}
-          className="flex items-center gap-3 w-full p-3 rounded-lg border transition-all"
-          style={{
-            borderColor: pompaEnabled ? "#c79f4a" : "rgba(255,255,255,0.08)",
-            backgroundColor: pompaEnabled
-              ? "rgba(199,159,74,0.1)"
-              : "rgba(10,10,0,0.4)",
-          }}
-        >
-          <div
-            className="relative w-10 h-5 rounded-full transition-colors duration-200"
-            style={{ backgroundColor: pompaEnabled ? "#c79f4a" : "#3f3f46" }}
-          >
-            <div
-              className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200"
-              style={{
-                transform: pompaEnabled ? "translateX(20px)" : "translateX(0)",
-              }}
+        <div className="grid gap-5 lg:grid-cols-3">
+          <ColorGroup
+            title="Severity"
+            fields={severityFields}
+            theme={theme}
+            openColorKey={openColorKey}
+            setOpenColorKey={setOpenColorKey}
+            updateThemeColor={updateThemeColor}
+          />
+          <ColorGroup
+            title="Visuals"
+            fields={visualFields}
+            theme={theme}
+            openColorKey={openColorKey}
+            setOpenColorKey={setOpenColorKey}
+            updateThemeColor={updateThemeColor}
+          />
+          <ColorGroup
+            title="Reactions"
+            fields={reactionFields}
+            theme={theme}
+            openColorKey={openColorKey}
+            setOpenColorKey={setOpenColorKey}
+            updateThemeColor={updateThemeColor}
+          />
+        </div>
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+        <div>
+          <h3 className="mb-3 text-right text-sm font-semibold text-[var(--fintheon-accent)]">
+            Save Theme
+          </h3>
+          <div className="relative">
+            <input
+              value={profileName}
+              onChange={(event) => setProfileName(event.target.value)}
+              placeholder="Name this theme"
+              className="h-10 w-full rounded-md bg-[var(--fintheon-surface)] px-3 pr-12 text-right text-sm text-[var(--fintheon-text)] placeholder:text-[var(--fintheon-text)]/22 focus:outline-none"
+            />
+            <button
+              onClick={handleSaveProfile}
+              className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center text-[var(--fintheon-accent)] transition hover:opacity-80"
+              aria-label="Save theme"
+              title="Save theme"
+            >
+              {savePhase === "saving" ? (
+                <DotMatrixLoader size={16} />
+              ) : savePhase === "saved" ? (
+                <DotMatrixSuccess size={16} />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+          {profileStatus && (
+            <div className="mt-2 flex justify-end">
+              <SettingsActionStatus
+                label={profileStatus.label}
+                detail={profileStatus.detail}
+                tone={profileStatus.tone}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="text-right text-sm font-semibold text-[var(--fintheon-accent)]">
+            Font & Mode
+          </h3>
+          <FontDropdown
+            fontTheme={fontTheme}
+            fontThemes={fontThemes}
+            open={fontOpen}
+            setOpen={setFontOpen}
+            setFontTheme={setFontTheme}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <EffectToggle
+              label={mode === "light" ? "Light" : "Dark"}
+              enabled={mode === "light"}
+              onToggle={() => setMode(mode === "light" ? "dark" : "light")}
+            />
+            <EffectToggle
+              label={pompaEnabled ? "Pompa On" : "Pompa Off"}
+              enabled={pompaEnabled}
+              onToggle={() => setPompaEnabled(!pompaEnabled)}
+            />
+            <EffectToggle
+              label={zenModeEnabled ? "Zen On" : "Zen Off"}
+              enabled={zenModeEnabled}
+              icon={<Tv className="h-3.5 w-3.5" />}
+              onToggle={() => setZenModeEnabled(!zenModeEnabled)}
+            />
+            <EffectToggle
+              label="Frosted Glass"
+              enabled={theme.glassVariant === "frosted"}
+              onToggle={() =>
+                setGlassVariant(theme.glassVariant === "frosted" ? "solid" : "frosted")
+              }
+            />
+            <EffectToggle
+              label="Liquid Glass"
+              enabled={theme.glassVariant === "liquid"}
+              onToggle={() =>
+                setGlassVariant(theme.glassVariant === "liquid" ? "solid" : "liquid")
+              }
             />
           </div>
-          <span
-            className="text-[13px] font-medium"
-            style={{ color: pompaEnabled ? "#f0ead6" : "#71717a" }}
+          <button
+            onClick={() => {
+              setTheme(DEFAULT_THEME);
+              setFontTheme(DEFAULT_FONT_THEME);
+              setMode("dark");
+              setZenModeEnabled(false);
+            }}
+            className="fintheon-action-link text-[11px] font-semibold uppercase"
           >
-            {pompaEnabled ? "Pompa Active" : "Pompa Disabled"}
-          </span>
-        </button>
-      </section>
-
-      {/* Special — Nothing Design themes */}
-      <section>
-        <h3
-          className="text-sm font-semibold mb-1"
-          style={{ color: "var(--fintheon-accent)" }}
-        >
-          Special
-        </h3>
-        <p className="text-[11px] text-zinc-500 mb-3">
-          Nothing Design — industrial typography, flat surfaces, sharp geometry.
-          Overlays on top of color palettes.
-        </p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {Object.values(specialPresets).map((preset) => {
-            const active = theme.name === preset.name;
-            return (
-              <button
-                key={preset.name}
-                onClick={() => {
-                  if (active) {
-                    // Deselect — return to default Solvys Gold
-                    setTheme(DEFAULT_THEME);
-                  } else {
-                    setTheme(preset);
-                  }
-                  setCustomDraft({});
-                }}
-                className="relative text-left p-3 rounded-lg border transition-all hover:scale-[1.01]"
-                style={{
-                  borderColor: active
-                    ? preset.accent
-                    : "rgba(255,255,255,0.08)",
-                  backgroundColor: active
-                    ? `${preset.accent}10`
-                    : "rgba(10,10,0,0.4)",
-                }}
-              >
-                {active && (
-                  <div
-                    className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
-                    style={{ backgroundColor: preset.accent }}
-                  >
-                    <Check size={12} className="text-black" />
-                  </div>
-                )}
-                {/* Color swatch strip */}
-                <div className="flex gap-0 rounded overflow-hidden mb-2 h-5">
-                  {[
-                    { color: preset.accent, label: "Accent" },
-                    { color: preset.bg, label: "BG" },
-                    { color: preset.bullish, label: "Bull" },
-                    { color: preset.bearish, label: "Bear" },
-                    { color: preset.text, label: "Text" },
-                  ].map((s, i) => (
-                    <div
-                      key={i}
-                      className="flex-1"
-                      style={{ backgroundColor: s.color }}
-                      title={`${s.label}: ${s.color}`}
-                    />
-                  ))}
-                </div>
-                {/* Label + font preview */}
-                <div
-                  className="text-[12px] font-medium text-white"
-                  style={
-                    preset.fontHeading
-                      ? { fontFamily: preset.fontHeading }
-                      : undefined
-                  }
-                >
-                  {preset.label}
-                </div>
-                <div
-                  className="text-[11px] text-zinc-500 mt-0.5"
-                  style={
-                    preset.fontBody
-                      ? { fontFamily: preset.fontBody }
-                      : undefined
-                  }
-                >
-                  Doto + Space Grotesk
-                </div>
-                {/* Inline font sample */}
-                <div
-                  className="mt-2 text-[14px] font-semibold leading-tight"
-                  style={{
-                    fontFamily: preset.fontHeading ?? "inherit",
-                    color: preset.accent,
-                  }}
-                >
-                  $1,234.56
-                </div>
-                <div
-                  className="text-[11px] mt-0.5"
-                  style={{
-                    fontFamily: preset.fontBody ?? "inherit",
-                    color: preset.text,
-                  }}
-                >
-                  AAPL +2.3%
-                </div>
-              </button>
-            );
-          })}
+            Reset to Default
+          </button>
         </div>
       </section>
+    </div>
+  );
+}
 
-      {/* Color Presets */}
-      <section>
-        <h3
-          className="text-sm font-semibold mb-3"
-          style={{ color: "var(--fintheon-accent)" }}
-        >
-          Theme Presets
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {presetList.map((preset) => {
-            const active = theme.name === preset.name;
-            return (
-              <button
-                key={preset.name}
-                onClick={() => {
-                  setTheme(preset);
-                  setCustomDraft({});
-                }}
-                className="relative text-left p-3 rounded-lg border transition-all hover:scale-[1.01]"
-                style={{
-                  borderColor: active
-                    ? preset.accent
-                    : "rgba(255,255,255,0.08)",
-                  backgroundColor: active
-                    ? `${preset.accent}10`
-                    : "rgba(10,10,0,0.4)",
-                }}
-              >
-                {active && (
-                  <div
-                    className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
-                    style={{ backgroundColor: preset.accent }}
-                  >
-                    <Check size={12} className="text-black" />
-                  </div>
-                )}
-                {/* Color swatch strip */}
-                <div className="flex gap-0 rounded overflow-hidden mb-2 h-5">
-                  {[
-                    { color: preset.accent, label: "Accent" },
-                    { color: preset.bg, label: "BG" },
-                    { color: preset.bullish, label: "Bull" },
-                    { color: preset.bearish, label: "Bear" },
-                    { color: preset.text, label: "Text" },
-                  ].map((s, i) => (
-                    <div
-                      key={i}
-                      className="flex-1"
-                      style={{ backgroundColor: s.color }}
-                      title={`${s.label}: ${s.color}`}
-                    />
-                  ))}
-                </div>
-                <div className="text-[12px] font-medium text-white">
-                  {preset.label}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Custom Colors — in-app color picker */}
-      <section>
-        <h3
-          className="text-sm font-semibold mb-3"
-          style={{ color: "var(--fintheon-accent)" }}
-        >
-          Custom Colors
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {COLOR_FIELDS.map(({ key, label }) => {
-            const value = getFieldValue(key);
-            return (
-              <ColorSwatchInput
-                key={key}
-                color={value}
-                label={label}
-                onChange={(hex) => handleCustomChange(key, hex)}
-              />
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Severity Colors */}
-      <section>
-        <h3
-          className="text-sm font-semibold mb-1"
-          style={{ color: "var(--fintheon-accent)" }}
-        >
-          Severity Colors
-        </h3>
-        <p className="text-[11px] text-zinc-500 mb-3">
-          Controls RiskFlow badges, alerts, and status indicators across the app
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {SEVERITY_FIELDS.map(({ key, label }) => {
-            const value = getFieldValue(key);
-            return (
-              <ColorSwatchInput
-                key={key}
-                color={value}
-                label={label}
-                onChange={(hex) => handleCustomChange(key, hex)}
-              />
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Narrative Category Colors */}
-      <section>
-        <div className="flex items-baseline justify-between mb-1">
-          <h3
-            className="text-sm font-semibold"
-            style={{ color: "var(--fintheon-accent)" }}
-          >
-            Narrative Category Colors
-          </h3>
-          {Object.keys(narrativeOverrides).length > 0 && (
-            <button
-              onClick={resetNarrativeOverrides}
-              className="text-[10px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
-            >
-              Reset categories
+function ThemeTile({
+  active,
+  theme,
+  label,
+  detail,
+  onSelect,
+  onRename,
+  onDelete,
+}: {
+  active: boolean;
+  theme: ThemeConfig;
+  label: string;
+  detail: string;
+  onSelect: () => void;
+  onRename?: () => void;
+  onDelete?: () => void;
+}) {
+  return (
+    <div className="group relative text-right">
+      <button
+        type="button"
+        onClick={onSelect}
+        className={`w-full text-right transition-opacity hover:opacity-85 ${
+          active ? "opacity-100" : "opacity-70"
+        }`}
+      >
+        <ThemePreview theme={theme} />
+        <span className="mt-2 block truncate text-[12px] font-semibold text-[var(--fintheon-text)]">
+          {label}
+        </span>
+        <span className="block text-[10px] text-zinc-500">{detail}</span>
+      </button>
+      {active && (
+        <Check className="absolute right-1 top-1 h-4 w-4 text-[var(--fintheon-accent)]" />
+      )}
+      {(onRename || onDelete) && (
+        <div className="mt-2 flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          {onRename && (
+            <button onClick={onRename} className="fintheon-icon-button" title="Rename theme">
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {onDelete && (
+            <button onClick={onDelete} className="fintheon-icon-button text-red-400" title="Delete theme">
+              <Trash2 className="h-3.5 w-3.5" />
             </button>
           )}
         </div>
-        <p className="text-[11px] text-zinc-500 mb-3">
-          Controls node, edge and legend colors on the Narrative Flow map and
-          Active Narratives category tags. Saved inside custom themes so they
-          travel with your palette.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {NARRATIVE_FIELDS.map(({ id, label }) => {
-            const value = getNarrativeFieldValue(id);
-            return (
-              <ColorSwatchInput
-                key={id}
-                color={value}
-                label={label}
-                onChange={(hex) => handleNarrativeChange(id, hex)}
-              />
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Save Custom Theme + Reset */}
-      <div className="pt-4 flex items-center gap-3 flex-wrap">
-        <button
-          onClick={() => {
-            const name = prompt("Theme name:");
-            if (!name) return;
-            const custom: ThemeConfigWithNarrative = {
-              ...theme,
-              name: `custom-${Date.now()}`,
-              label: name,
-              narrativeColors:
-                Object.keys(narrativeOverrides).length > 0
-                  ? { ...narrativeOverrides }
-                  : undefined,
-            };
-            const saved = JSON.parse(
-              localStorage.getItem("fintheon-custom-themes") || "[]",
-            ) as ThemeConfigWithNarrative[];
-            saved.push(custom);
-            localStorage.setItem(
-              "fintheon-custom-themes",
-              JSON.stringify(saved),
-            );
-            setCustomThemes(saved);
-          }}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-medium transition-colors border"
-          style={{
-            color: "var(--fintheon-accent)",
-            borderColor:
-              "color-mix(in srgb, var(--fintheon-accent) 30%, transparent)",
-          }}
-        >
-          <Save className="w-3.5 h-3.5" />
-          Save as Custom Theme
-        </button>
-        <button
-          onClick={() => {
-            setTheme(DEFAULT_THEME);
-            setFontTheme(DEFAULT_FONT_THEME);
-            setCustomDraft({});
-            resetNarrativeOverrides();
-          }}
-          className="px-4 py-2 rounded-md text-xs font-medium transition-colors border border-zinc-700 text-zinc-500 hover:text-zinc-300"
-        >
-          Reset to Default
-        </button>
-      </div>
-
-      {/* Saved Custom Themes */}
-      {customThemes.length > 0 && (
-        <section>
-          <h3
-            className="text-sm font-semibold mb-3"
-            style={{ color: "var(--fintheon-accent)" }}
-          >
-            Your Saved Themes
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {customThemes.map((ct, i) => {
-              const active = theme.name === ct.name;
-              return (
-                <button
-                  key={ct.name}
-                  onClick={() => {
-                    // Strip the narrative bundle before handing the base theme to ThemeContext.
-                    const { narrativeColors, ...baseTheme } = ct;
-                    setTheme(baseTheme as ThemeConfig);
-                    setCustomDraft({});
-                    applyNarrativeBundle(narrativeColors);
-                  }}
-                  className="relative text-left p-3 rounded-lg border transition-all hover:scale-[1.01]"
-                  style={{
-                    borderColor: active ? ct.accent : "rgba(255,255,255,0.08)",
-                    backgroundColor: active
-                      ? `${ct.accent}10`
-                      : "rgba(10,10,0,0.4)",
-                  }}
-                >
-                  {active && (
-                    <div
-                      className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: ct.accent }}
-                    >
-                      <Check size={12} className="text-black" />
-                    </div>
-                  )}
-                  <div className="flex gap-0 rounded overflow-hidden mb-2 h-4">
-                    {[ct.accent, ct.bg, ct.bullish, ct.bearish].map((c, j) => (
-                      <div
-                        key={j}
-                        className="flex-1"
-                        style={{ backgroundColor: c }}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[12px] font-medium text-white">
-                      {ct.label}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const updated = customThemes.filter(
-                          (_, idx) => idx !== i,
-                        );
-                        localStorage.setItem(
-                          "fintheon-custom-themes",
-                          JSON.stringify(updated),
-                        );
-                        setCustomThemes(updated);
-                      }}
-                      className="text-[10px] text-zinc-600 hover:text-red-400 transition-colors"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </section>
       )}
     </div>
   );
+}
+
+function ThemePreview({ theme }: { theme: ThemeConfig }) {
+  return (
+    <div className="flex h-4 overflow-hidden rounded-sm">
+      {[theme.primary ?? theme.accent, theme.secondary ?? theme.muted, theme.accent, theme.border].map(
+        (color, index) => (
+          <span key={`${color}-${index}`} className="flex-1" style={{ backgroundColor: color }} />
+        ),
+      )}
+    </div>
+  );
+}
+
+function ColorGroup({
+  title,
+  fields,
+  theme,
+  openColorKey,
+  setOpenColorKey,
+  updateThemeColor,
+}: {
+  title: string;
+  fields: ColorFieldConfig[];
+  theme: ThemeConfig;
+  openColorKey: string | null;
+  setOpenColorKey: (key: string | null) => void;
+  updateThemeColor: (key: keyof ThemeConfig, value: string) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/85">
+        {title}
+      </p>
+      {fields.map((field) => (
+        <ColorToken
+          key={`${title}-${String(field.key)}`}
+          field={field}
+          color={String(theme[field.key] ?? theme.accent ?? "#c79f4a")}
+          open={openColorKey === `${title}-${String(field.key)}`}
+          onOpen={() => {
+            const id = `${title}-${String(field.key)}`;
+            setOpenColorKey(openColorKey === id ? null : id);
+          }}
+          onChange={(value) => updateThemeColor(field.key, value)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ColorToken({
+  field,
+  color,
+  open,
+  onOpen,
+  onChange,
+}: {
+  field: ColorFieldConfig;
+  color: string;
+  open: boolean;
+  onOpen: () => void;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="relative flex items-center justify-between gap-3 py-2 text-right">
+      <div className="min-w-0 text-right">
+        <p className="text-[11px] font-medium text-[var(--fintheon-text)]">{field.label}</p>
+        <p className="mt-0.5 text-[10px] text-[var(--fintheon-text)]/35">{field.detail}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="h-7 w-12 shrink-0 rounded-[4px] transition-transform hover:scale-[1.04]"
+        style={{ backgroundColor: color }}
+        title={`${field.label} color`}
+      />
+      {open && (
+        <div className="theme-color-popover fintheon-popover-surface absolute right-0 top-10 z-50 w-48 p-3 text-right">
+          <label className="block text-[10px] uppercase tracking-[0.14em] text-[var(--fintheon-accent)]">
+            Hex
+            <input
+              autoFocus
+              value={color}
+              onChange={(event) => onChange(event.target.value)}
+              className="mt-2 h-8 w-full rounded-[4px] bg-[rgba(0,0,0,0.34)] px-2 text-right text-[12px] text-[var(--fintheon-text)] outline-none"
+              placeholder="#c79f4a"
+            />
+          </label>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FontDropdown({
+  fontTheme,
+  fontThemes,
+  open,
+  setOpen,
+  setFontTheme,
+}: {
+  fontTheme: FontTheme;
+  fontThemes: Record<string, FontTheme>;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  setFontTheme: (theme: FontTheme) => void;
+}) {
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex h-10 w-full items-center justify-between rounded-md bg-[var(--fintheon-surface)] px-3 text-right text-sm text-[var(--fintheon-text)]"
+      >
+        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+        <span>{fontTheme.label}</span>
+      </button>
+      {open && (
+        <div className="theme-font-popover fintheon-popover-surface absolute right-0 top-12 z-50 w-full p-2 text-right">
+          {Object.values(fontThemes).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                setFontTheme(item);
+                setOpen(false);
+              }}
+              className="w-full rounded-[4px] px-3 py-2 text-right transition hover:bg-white/5"
+            >
+              <span className="block text-[12px] text-[var(--fintheon-text)]" style={{ fontFamily: item.fontHeading }}>
+                {item.label}
+              </span>
+              <span className="mt-1 block text-[10px] text-[var(--fintheon-text)]/42" style={{ fontFamily: item.fontBody }}>
+                The market writes in this voice.
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EffectToggle({
+  label,
+  enabled,
+  icon,
+  onToggle,
+}: {
+  label: string;
+  enabled: boolean;
+  icon?: ReactNode;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={label}
+      title={label}
+      className="flex items-center justify-between gap-3 py-2 text-right"
+    >
+      <span className="flex min-w-0 items-center gap-1.5 text-[12px] text-[var(--fintheon-text)]">
+        {icon ? <span className="shrink-0 text-[var(--fintheon-accent)]">{icon}</span> : null}
+        <span className="truncate">{label}</span>
+      </span>
+      <span
+        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+          enabled ? "bg-[var(--fintheon-accent)]" : "bg-zinc-700"
+        }`}
+      >
+        <span
+          className={`inline-block h-3.5 w-3.5 rounded-full bg-black transition-transform ${
+            enabled ? "translate-x-[18px]" : "translate-x-[3px]"
+          }`}
+        />
+      </span>
+    </button>
+  );
+}
+
+function normalizeHex(value: string): string | null {
+  const trimmed = value.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(trimmed)) return trimmed;
+  if (/^#[0-9a-fA-F]{3}$/.test(trimmed)) {
+    return `#${trimmed
+      .slice(1)
+      .split("")
+      .map((char) => `${char}${char}`)
+      .join("")}`;
+  }
+  return null;
 }

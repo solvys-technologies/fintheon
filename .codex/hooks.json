@@ -1,0 +1,70 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/tifos/Documents/Codebases/fintheon/.codex/hooks/block-dangerous.sh'"
+          },
+          {
+            "type": "command",
+            "command": "'/Users/tifos/Documents/Codebases/fintheon/.codex/hooks/require-tests-for-pr.sh'"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/tifos/Documents/Codebases/fintheon/.codex/hooks/protect-files.sh'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx prettier --write \"$CLAUDE_FILE_PATH\" 2>/dev/null || true"
+          },
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && bun run build 2>&1 | tail -5 || true"
+          },
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && npx eslint \"$CLAUDE_FILE_PATH\" --fix 2>&1 | tail -10 || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/tifos/Documents/Codebases/fintheon/.codex/hooks/log-commands.sh'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/tifos/Documents/Codebases/fintheon/.codex/hooks/auto-commit.sh'"
+          },
+          {
+            "type": "command",
+            "command": "'/Users/tifos/Documents/Codebases/fintheon/.codex/hooks/harper-feed-health.sh'"
+          }
+        ]
+      }
+    ]
+  }
+}

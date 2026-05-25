@@ -258,7 +258,7 @@ export const VisionPanel: React.FC<VisionPanelProps> = ({ onClose }) => {
               style={{
                 border: "1px solid rgba(199, 159, 74, 0.08)",
                 maxHeight: "200px",
-                objectFit: "cover",
+                objectFit: "contain",
               }}
             />
           </div>

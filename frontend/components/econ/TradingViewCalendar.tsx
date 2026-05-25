@@ -1,19 +1,23 @@
-// [claude-code 2026-04-27] S46.4: Restore the full TradingView Economic
-// Calendar iframe in the CALENDAR navtab. Lightweight script widget
-// (EconCalendar.tsx) stays around for surfaces that consume the events
-// context, but the navtab now renders the live TV page so TP can use the
-// "Add to Calendar" CTA. Electron intercepts the resulting .ics download
-// (electron/main.cjs:586+), POSTs to /api/desk/calendar/ingest-ics, and
-// emits desk-calendar:saving / :saved / :failed IPC events that drive the
-// green status text and the success toast — no Google Calendar window,
-// no chooser dialog, no app-leaving navigation.
+// [codex 2026-05-20] Main Calendar must use TradingView's full calendar page,
+// not the lightweight embeddable widget, so Economic/Earnings/Revenue/Dividend/
+// IPO tabs and all country filters stay available. The frame is keyed by the
+// current trading week so stale prior-week sessions snap back on week rollover,
+// while TabRenderer keeps the frame mounted during same-session tab switches.
 import { useEffect, useState } from "react";
-import { CalendarDays, CheckCircle2, Inbox, Loader2 } from "lucide-react";
+import { BookOpen, CalendarDays, Share2 } from "lucide-react";
 import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
+import { DotMatrixLoader, DotMatrixSuccess } from "../icon-bank/DotMatrixLoader";
 import { useToast } from "../../contexts/ToastContext";
+import {
+  buildWeeklyDeskPlanPrompt,
+  storePendingChatPrompt,
+  toDeskWeekPlanEvents,
+  type DeskCalendarQueueEvent,
+} from "../../lib/desk-week-plan";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
-const TRADINGVIEW_CALENDAR_URL = "https://www.tradingview.com/calendar/";
+const TRADINGVIEW_CALENDAR_URL =
+  "https://www.tradingview.com/economic-calendar/";
 
 interface DeskQueueStatus {
   count: number;
@@ -37,6 +41,47 @@ function formatRelative(iso: string | null): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+function tradingWeekKey(now: Date = new Date()): string {
+  const etParts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
+  const get = (type: string) =>
+    etParts.find((part) => part.type === type)?.value ?? "";
+  const weekday = get("weekday");
+  const hourEt = Number(get("hour"));
+  const yyyy = Number(get("year"));
+  const mm = Number(get("month"));
+  const dd = Number(get("day"));
+  const dayMap: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+  const dow = dayMap[weekday] ?? new Date(yyyy, mm - 1, dd).getDay();
+  const advancedToNextWeek =
+    dow === 0 || dow === 6 || (dow === 5 && hourEt >= 16);
+  const noonUtc = Date.UTC(yyyy, mm - 1, dd, 12);
+  const offsetToMonday = advancedToNextWeek
+    ? dow === 0
+      ? 1
+      : dow === 6
+        ? 2
+        : 3
+    : -((dow + 6) % 7);
+  const target = new Date(noonUtc + offsetToMonday * 86_400_000);
+  return target.toISOString().slice(0, 10);
+}
+
 export function TradingViewCalendar() {
   const { addToast } = useToast();
   const [queue, setQueue] = useState<DeskQueueStatus>({
@@ -44,6 +89,8 @@ export function TradingViewCalendar() {
     last_ingest_at: null,
   });
   const [saveState, setSaveState] = useState<SaveState>({ phase: "idle" });
+  const [weekKey, setWeekKey] = useState<string>(() => tradingWeekKey());
+  const [isPlanning, setIsPlanning] = useState(false);
 
   const refreshQueue = async () => {
     try {
@@ -76,6 +123,43 @@ export function TradingViewCalendar() {
     };
   }, []);
 
+  const buildPlanInChat = async () => {
+    if (queue.count === 0 || isPlanning) return;
+    setIsPlanning(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/desk/calendar/queue?days=7`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = (await res.json()) as { events?: DeskCalendarQueueEvent[] };
+      const events = json.events ?? [];
+      if (events.length === 0) {
+        addToast("No queued events", "info", "Add TradingView catalysts first.");
+        return;
+      }
+      const prompt = buildWeeklyDeskPlanPrompt(toDeskWeekPlanEvents(events));
+      storePendingChatPrompt(prompt);
+      window.dispatchEvent(
+        new CustomEvent("fintheon:navigate-tab", { detail: { tab: "analysis" } }),
+      );
+      window.dispatchEvent(
+        new CustomEvent("fintheon:send-chat-text", { detail: { text: prompt } }),
+      );
+      addToast("Week plan sent to CAO chat", "success");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "queue unavailable";
+      addToast("Week plan failed", "error", message);
+    } finally {
+      setIsPlanning(false);
+    }
+  };
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const next = tradingWeekKey();
+      setWeekKey((prev) => (prev === next ? prev : next));
+    }, 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+
   useEffect(() => {
     const bridge = window.electron?.deskCalendar;
     if (!bridge) return;
@@ -84,10 +168,18 @@ export function TradingViewCalendar() {
     });
     bridge.onSaved((payload) => {
       setSaveState({ phase: "saved", title: payload.title });
+      const queueCount = payload.queueCount;
+      if (typeof queueCount === "number") {
+        setQueue((prev) => ({
+          ...prev,
+          count: queueCount,
+          last_ingest_at: new Date().toISOString(),
+        }));
+      }
       addToast(
         payload.ingested > 0
-          ? `Added to desk queue${payload.title ? ` · ${payload.title}` : ""}`
-          : "Event already in desk queue",
+          ? `Added to Desk Plan${payload.title ? ` · ${payload.title}` : ""}`
+          : "Event already in Desk Plan",
         "success",
       );
       void refreshQueue();
@@ -111,26 +203,36 @@ export function TradingViewCalendar() {
   }, []);
 
   return (
-    <div className="h-full w-full flex flex-col bg-[var(--fintheon-bg)]">
-      <div className="flex-shrink-0 px-4 py-3 border-b border-zinc-800/60">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <CalendarDays className="w-4 h-4 text-[var(--fintheon-accent)]" />
+    <div className="relative h-full w-full overflow-hidden bg-black">
+      <div className="absolute inset-x-0 bottom-0 top-12">
+        <EmbeddedBrowserFrame
+          key={weekKey}
+          title="TradingView Economic Calendar"
+          src={TRADINGVIEW_CALENDAR_URL}
+          className="h-full w-full bg-black"
+        />
+      </div>
+      <div className="fintheon-content-top-fade z-20" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 px-4 pt-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="pointer-events-auto flex min-w-0 items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-[var(--fintheon-accent)]" />
             <h2 className="text-sm font-semibold text-[var(--fintheon-accent)]">
-              Economic Calendar
+              Econ Calendar
             </h2>
-            <span className="text-[9px] text-zinc-500 uppercase tracking-wider">
-              TradingView
-            </span>
             {saveState.phase === "saving" && (
               <span className="ml-2 inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
-                <Loader2 className="w-3 h-3 animate-spin" />
-                Saving event to desk queue…
+                <DotMatrixLoader
+                  variant="twin-orbit"
+                  size={18}
+                  color="var(--fintheon-primary, var(--fintheon-accent))"
+                />
+                Saving to Desk Plan…
               </span>
             )}
             {saveState.phase === "saved" && (
               <span className="ml-2 inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
-                <CheckCircle2 className="w-3 h-3" />
+                <DotMatrixSuccess size={14} label="" />
                 Saved
                 {saveState.title ? ` · ${saveState.title}` : ""}
               </span>
@@ -141,28 +243,41 @@ export function TradingViewCalendar() {
               </span>
             )}
           </div>
-          <div
-            className="flex items-center gap-1.5 text-[9px] uppercase tracking-wider text-zinc-500 px-2 py-0.5 rounded border border-zinc-800/60"
-            title={`Desk Queue · ${formatRelative(queue.last_ingest_at)}`}
-          >
-            <Inbox className="w-3 h-3" />
-            <span className="text-[var(--fintheon-accent)] tabular-nums">
-              {queue.count}
-            </span>
-            <span>queued</span>
-            <span className="text-zinc-600">·</span>
-            <span className="text-zinc-500 normal-case tracking-normal">
-              {formatRelative(queue.last_ingest_at)}
-            </span>
+          <div className="pointer-events-auto flex items-center gap-2 pr-1">
+            <div
+              className="flex h-7 items-center gap-1.5 text-[9px] uppercase tracking-wider text-zinc-500"
+              title={`Desk Queue · ${formatRelative(queue.last_ingest_at)}`}
+            >
+              <BookOpen className="h-3 w-3" />
+              <span className="text-[var(--fintheon-accent)] tabular-nums">
+                {queue.count}
+              </span>
+              <span>queued</span>
+              <span className="text-zinc-600">·</span>
+              <span className="text-zinc-500 normal-case tracking-normal">
+                {formatRelative(queue.last_ingest_at)}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={buildPlanInChat}
+              disabled={queue.count === 0 || isPlanning}
+              className="inline-flex h-7 w-7 items-center justify-center text-zinc-500 transition-colors hover:text-[var(--fintheon-accent)] disabled:opacity-35"
+              aria-label="Build weekly plan in CAO chat"
+              title="Build weekly plan in CAO chat"
+            >
+              {isPlanning ? (
+                <DotMatrixLoader
+                  variant="twin-orbit"
+                  size={18}
+                  color="var(--fintheon-accent)"
+                />
+              ) : (
+                <Share2 className="h-3.5 w-3.5" />
+              )}
+            </button>
           </div>
         </div>
-      </div>
-      <div className="flex-1 min-h-0">
-        <EmbeddedBrowserFrame
-          title="TradingView Economic Calendar"
-          src={TRADINGVIEW_CALENDAR_URL}
-          className="w-full h-full"
-        />
       </div>
     </div>
   );

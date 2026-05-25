@@ -3,6 +3,7 @@
 //   so the blindspots interview payloads silently evaporated after onboarding.
 // [claude-code 2026-03-28] S9-T3: Side-by-side Brief+Calendar with needle divider, kill padding
 // [claude-code 2026-03-11] T8: Tale of the Tape label for Sun+Mon<7AM, show only first brief item
+// [claude-code 2026-05-03] Dashboard first page height-lock + Risk Signals rail.
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useBackend } from "../../lib/backend";
 
@@ -17,6 +18,12 @@ import { KanbanTitle } from "../ui/KanbanTitle";
 import { ExpandableTapeItem } from "./ExpandableTapeItem";
 import TradeIdeaModal from "../TradeIdeaModal";
 import { DayCard } from "../narrative/DayCard";
+import { RiskSignalCards } from "../narrative/RiskSignalCards";
+import { DeskPlanSprintMap } from "./DeskPlanSprintMap";
+import {
+  DeskPlanAdvanceButton,
+  RiskSignalsRefreshButton,
+} from "./DashboardKickstartButtons";
 import { RegimeCard } from "../dashboard/RegimeCard";
 import { RegimeTrackerModal } from "../regimes/RegimeTrackerModal";
 import {
@@ -26,8 +33,12 @@ import {
 import { BlindspotsInterview } from "../onboarding/BlindspotsInterview";
 import { RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { useSettings } from "../../contexts/SettingsContext";
+import { useRiskFlowFilters } from "../../hooks/useRiskFlowFilters";
+import { DAY_PLAN_REFETCH_EVENT } from "../../hooks/useDayPlan";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
-const DASHBOARD_PAGES = ["Briefing", "RiskFlow"];
+const DASHBOARD_PAGES = ["Briefing", "Sprint Map"];
 
 function briefTypeToLabel(bt: string): string {
   switch (bt) {
@@ -69,6 +80,10 @@ export function MainDashboard({
   // [claude-code 2026-04-26] Regime Tracker is now a chevron-collapsible row
   // matching Core KPIs / RiskFlow header style. Default collapsed for parity.
   const [regimeCollapsed, setRegimeCollapsed] = useState(true);
+  // [claude-code 2026-05-03] Risk Signals collapsible.
+  const [signalsCollapsed, setSignalsCollapsed] = useState(false);
+  const [riskSignalsRefreshing, setRiskSignalsRefreshing] = useState(false);
+  const [deskPlanAdvancing, setDeskPlanAdvancing] = useState(false);
 
   const handleInterviewComplete = useCallback(
     (data: {
@@ -201,6 +216,7 @@ export function MainDashboard({
   const { alerts, markAllSeen, isSeen, refresh, refreshing, removeAlert } =
     useRiskFlow();
   const { addToast } = useToast();
+  const { filterAlerts } = useRiskFlowFilters();
 
   const handleNotRelevant = useCallback(
     async (id: string) => {
@@ -226,34 +242,92 @@ export function MainDashboard({
   const refreshBrief = useCallback(async () => {
     setNtnRefreshing(true);
     try {
-      // Trigger appwide feed refresh in parallel with brief refresh
+      const apiBase = API_BASE.replace(/\/$/, "");
       const feedRefreshPromise = refresh().catch(() => {});
-
-      // Fetch brief
-      let res = await backend.data.getMdbBrief();
-      if (!res.items[0]?.detail) {
-        await fetch(
-          `${(import.meta.env.VITE_API_URL || "http://localhost:8080").replace(/\/$/, "")}/api/data/brief/generate`,
-          { method: "POST" },
-        ).catch(() => {});
-        await new Promise((r) => setTimeout(r, 2000));
-        res = await backend.data.getMdbBrief();
+      const ensureRes = await fetch(`${apiBase}/api/data/brief/ensure-current`, {
+        method: "POST",
+      });
+      if (!ensureRes.ok) throw new Error(`HTTP ${ensureRes.status}`);
+      const ensured = (await ensureRes.json().catch(() => null)) as {
+        content?: string;
+        briefType?: string;
+        generated?: boolean;
+      } | null;
+      if (ensured?.content) {
+        setNtnText(ensured.content);
+        if (ensured.briefType) setBriefLabel(briefTypeToLabel(ensured.briefType));
+        addToast(
+          ensured.generated ? "Brief generated" : "Brief is current",
+          "success",
+        );
+      } else {
+        const res = await backend.data.getMdbBrief();
+        setNtnText(res.items[0]?.detail ?? "");
+        if (res.briefType) setBriefLabel(briefTypeToLabel(res.briefType));
       }
-      setNtnText(res.items[0]?.detail ?? "");
-      if (res.briefType) setBriefLabel(briefTypeToLabel(res.briefType));
 
       await feedRefreshPromise;
     } catch (error) {
       console.warn("[Dashboard] Brief refresh failed:", error);
+      addToast("Brief refresh failed", "error");
     } finally {
       setNtnRefreshing(false);
     }
-  }, [backend, refresh]);
+  }, [addToast, backend, refresh]);
+
+  const refreshRiskSignals = useCallback(async () => {
+    if (riskSignalsRefreshing) return;
+    setRiskSignalsRefreshing(true);
+    try {
+      const apiBase = API_BASE.replace(/\/$/, "");
+      const response = await fetch(`${apiBase}/api/riskflow/refresh`, {
+        method: "POST",
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      await refresh();
+      addToast("Risk signals refreshed", "success");
+    } catch (error) {
+      console.warn("[Dashboard] Risk signal refresh failed:", error);
+      addToast("Risk signal refresh failed", "error");
+    } finally {
+      setRiskSignalsRefreshing(false);
+    }
+  }, [addToast, refresh, riskSignalsRefreshing]);
+
+  const advanceDeskPlan = useCallback(async () => {
+    if (deskPlanAdvancing) return;
+    setDeskPlanAdvancing(true);
+    try {
+      const apiBase = API_BASE.replace(/\/$/, "");
+      const response = await fetch(`${apiBase}/api/day-plan/kickstart`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ days: 7 }),
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = (await response.json().catch(() => null)) as {
+        failures?: unknown[];
+      } | null;
+      if (payload?.failures?.length) {
+        throw new Error(`${payload.failures.length} day-plan failures`);
+      }
+      window.dispatchEvent(new Event(DAY_PLAN_REFETCH_EVENT));
+      addToast("Desk plan advanced", "success");
+    } catch (error) {
+      console.warn("[Dashboard] Desk plan kickstart failed:", error);
+      addToast("Desk plan advance failed", "error");
+    } finally {
+      setDeskPlanAdvancing(false);
+    }
+  }, [addToast, deskPlanAdvancing]);
   const [selectedIdea, setSelectedIdea] = useState<TradeIdeaDetail | null>(
     null,
   );
   const [showRegimeTracker, setShowRegimeTracker] = useState(false);
-  const tapeAlerts = useMemo(() => alerts.slice(0, 50), [alerts]);
+  const tapeAlerts = useMemo(
+    () => filterAlerts(alerts).slice(0, 50),
+    [alerts, filterAlerts],
+  );
 
   useEffect(() => {
     markAllSeen(tapeAlerts.map((a) => a.id));
@@ -312,12 +386,12 @@ export function MainDashboard({
         <div
           ref={containerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto scroll-smooth snap-y snap-mandatory"
+          className="flex-1 min-h-0 overflow-hidden scroll-smooth snap-y snap-mandatory"
         >
           {/* Page 1: Briefing (default) — NTK Brief + Session Calendar + Core KPIs + Action Tape */}
           <div
             data-dash-page="0"
-            className="min-h-full snap-start pt-0.5 pb-1 px-2 flex flex-col"
+            className="h-full min-h-0 snap-start pt-0.5 pb-1 px-2 flex flex-col overflow-hidden"
           >
             {/* Setup Guide — first-time onboarding */}
             {showSetupGuide && (
@@ -329,8 +403,8 @@ export function MainDashboard({
               </div>
             )}
             {/* Main content — Brief left, Calendar right */}
-            <div className="flex-1 min-h-[520px] flex mt-2">
-              <div className="flex-1 flex border border-[var(--fintheon-accent)]/12 rounded-xl overflow-hidden mx-1 my-1">
+            <div className="flex-1 min-h-0 flex mt-2">
+              <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden mx-1 my-1">
                 {/* Left: Morning Daily Brief (50%) */}
                 <div className="flex-1 min-w-0 overflow-y-auto p-4 flex flex-col">
                   <KanbanTitle
@@ -352,36 +426,87 @@ export function MainDashboard({
                       </div>
                     }
                   />
-                  <textarea
-                    value={ntnText}
-                    readOnly
-                    className="mt-2 flex-1 min-h-0 w-full bg-transparent px-4 py-3 text-sm text-gray-200 border-0 focus:outline-none"
-                    style={{ resize: "vertical", minHeight: "80px" }}
-                    placeholder={
-                      ntnLoaded
-                        ? "Awaiting AI-generated brief..."
-                        : "Loading brief..."
-                    }
-                  />
+                  <div className="mt-2 flex-1 min-h-0 w-full bg-transparent px-4 py-3 overflow-y-auto prose prose-sm prose-invert max-w-none text-sm text-[var(--fintheon-text)]/85 leading-relaxed prose-headings:text-[var(--fintheon-accent)] prose-headings:text-xs prose-headings:uppercase prose-headings:tracking-wider prose-strong:text-[var(--fintheon-text)] prose-a:text-[var(--fintheon-accent)] prose-li:text-[var(--fintheon-text)]/75 prose-code:font-mono prose-code:text-[11px] prose-code:bg-[var(--fintheon-accent)]/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded-[2px] prose-hr:border-[var(--fintheon-accent)]/10">
+                    {ntnText ? (
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {ntnText}
+                      </ReactMarkdown>
+                    ) : (
+                      <span className="text-[var(--fintheon-text)]/30 italic">
+                        {ntnLoaded
+                          ? "Awaiting AI-generated brief..."
+                          : "Loading brief..."}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {/* Right: Day Plan (50%) — bare DayCard, day-of-week header */}
-                <div className="flex-1 min-w-0 overflow-y-auto p-4 flex flex-col">
-                  <KanbanTitle
-                    title={new Date().toLocaleDateString("en-US", {
-                      weekday: "long",
-                    })}
-                    tone="gold"
-                  />
-                  <div className="mt-2 flex-1 min-h-0 overflow-y-auto pr-1 relative">
-                    <DayCard bare />
+                {/* Right: Day Plan (50%) — bare DayCard + Risk Signals */}
+                <div className="grid flex-1 min-w-0 min-h-0 grid-rows-2 gap-4 overflow-hidden p-4">
+                  <div className="flex min-h-0 flex-col overflow-hidden">
+                    <KanbanTitle
+                      title=""
+                      tone="gold"
+                      headerRight={
+                        <div className="ml-auto flex items-center gap-2">
+                          <DeskPlanAdvanceButton
+                            isLoading={deskPlanAdvancing}
+                            onClick={advanceDeskPlan}
+                          />
+                        </div>
+                      }
+                    />
+                    <div className="mt-2 min-h-0 flex-1 overflow-y-auto pr-1 relative">
+                      <DayCard bare />
+                    </div>
+                  </div>
+
+                  <div className="flex min-h-0 flex-col overflow-hidden">
+                    <KanbanTitle
+                      title="Risk Signals"
+                      tone="gold"
+                      headerRight={
+                        <div className="flex items-center gap-1">
+                          <RiskSignalsRefreshButton
+                            isLoading={riskSignalsRefreshing || refreshing}
+                            onClick={refreshRiskSignals}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setSignalsCollapsed((v) => !v)}
+                            className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
+                            title={
+                              signalsCollapsed
+                                ? "Expand Risk Signals"
+                                : "Collapse Risk Signals"
+                            }
+                          >
+                            {signalsCollapsed ? (
+                              <ChevronDown className="w-3 h-3" />
+                            ) : (
+                              <ChevronUp className="w-3 h-3" />
+                            )}
+                          </button>
+                        </div>
+                      }
+                    />
+                    <div
+                      className="mt-2 flex-1 min-h-0 overflow-y-auto pr-1 transition-all duration-300 ease-in-out"
+                      style={{
+                        maxHeight: signalsCollapsed ? "0px" : "9999px",
+                        opacity: signalsCollapsed ? 0 : 1,
+                        overflow: signalsCollapsed ? "hidden" : undefined,
+                      }}
+                    >
+                      <RiskSignalCards compact />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Row 2: Core KPIs — chevron-collapsible (default collapsed) */}
-            <div className="shrink-0 mb-5 mt-4">
+            <div className="hidden shrink-0 mb-5 mt-4">
               <KanbanTitle
                 title="Core KPIs"
                 tone="emerald"
@@ -443,7 +568,7 @@ export function MainDashboard({
 
             {/* Row 2.5: Regime Tracker — KanbanTitle header + chevron, aligned
                 with Core KPIs / RiskFlow row starts (no extra px-4 indent). */}
-            <div className="shrink-0 mb-5">
+            <div className="hidden shrink-0 mb-5">
               <KanbanTitle
                 title="Regime Tracker"
                 tone="gold"
@@ -492,7 +617,7 @@ export function MainDashboard({
 
             {/* Row 3: RiskFlow — fills remaining space, expandable items, recency fade */}
             <div
-              className="flex-1 min-h-0 flex flex-col"
+              className="hidden flex-1 min-h-0 flex-col"
               style={{ transition: "all 300ms ease" }}
             >
               <KanbanTitle
@@ -586,69 +711,12 @@ export function MainDashboard({
             </div>
           </div>
 
-          {/* Page 2: Full RiskFlow */}
+          {/* Page 2: Desk plan sprint map */}
           <div
             data-dash-page="1"
-            className="min-h-full snap-start pt-0.5 pb-1 px-2 flex flex-col"
+            className="h-full min-h-0 snap-start pt-0.5 pb-1 px-2 flex flex-col"
           >
-            <KanbanTitle
-              title="RiskFlow"
-              tag="Full Feed"
-              tone="emerald"
-              headerRight={
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void refresh();
-                    }}
-                    disabled={refreshing}
-                    className="p-1 rounded hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-400 transition-colors disabled:opacity-40"
-                    title="Refresh feeds"
-                  >
-                    <RefreshCw
-                      className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`}
-                    />
-                  </button>
-                </div>
-              }
-            />
-            <div className="mt-3 flex-1 min-h-0 overflow-y-auto pr-1 space-y-0">
-              {tapeAlerts.length === 0 ? (
-                <div className="text-xs text-gray-500 px-1 py-8 text-center">
-                  No actions in the feed right now.
-                </div>
-              ) : (
-                tapeAlerts.map((alert, idx) => {
-                  const total = tapeAlerts.length;
-                  // S3: Fade starts at bottom 15% — top 85% fully readable
-                  const fadeStart = Math.floor(total * 0.85);
-                  const ratio =
-                    idx < fadeStart
-                      ? 0
-                      : (idx - fadeStart) / Math.max(1, total - fadeStart - 1);
-                  const baseOpacity = Math.max(0.35, 1 - ratio * 0.65);
-                  const seen = isSeen(alert.id);
-                  const opacity = seen
-                    ? Math.max(0.25, baseOpacity * 0.6)
-                    : baseOpacity;
-                  const borderOpacity = Math.max(0.2, 0.4 - ratio * 0.2);
-                  const isVivid = idx < fadeStart && !seen;
-
-                  return (
-                    <ExpandableTapeItem
-                      key={alert.id}
-                      alert={alert}
-                      isVivid={isVivid}
-                      opacity={opacity}
-                      borderOpacity={borderOpacity}
-                      seen={seen}
-                      onOpenIdea={setSelectedIdea}
-                    />
-                  );
-                })
-              )}
-            </div>
+            <DeskPlanSprintMap />
           </div>
         </div>
 

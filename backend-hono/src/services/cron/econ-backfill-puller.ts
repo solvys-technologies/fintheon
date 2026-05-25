@@ -1,5 +1,5 @@
 // [claude-code 2026-04-26] S35-cleanup: routed puller through invokeAgent
-// (Strands fallback chain: VProxy → Ollama Qwen3.5:397b-cloud via HERMES_SIDECAR_URL
+// (Strands fallback chain: DeepSeek direct → Hermes/OpenCode API
 // → Nous → OpenRouter). The prod OpenRouter key returns 401 "User not found",
 // so Ollama-Qwen via Hermes is the active rung. FRED date window padded -60
 // days backward so monthly series whose observation_date falls in the prior

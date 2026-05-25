@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58-T2: add mobile user API-key wrapper for direct DeepSeek chat.
 // [claude-code 2026-04-16] Mobile backend client — uses empty baseUrl for relative paths through Vercel proxy
 import ApiClient from "@frontend/lib/apiClient";
 import {
@@ -22,6 +23,14 @@ export function getMobileBackend(
   cachedClient = createBackendClient(apiClient);
   cachedTokenGetter = getAccessToken;
   return cachedClient;
+}
+
+export async function getApiKey(
+  provider: string,
+  getAccessToken: () => Promise<string | null>,
+): Promise<string | null> {
+  const apiClient = new ApiClient(MOBILE_API_BASE, getAccessToken);
+  return apiClient.getUserApiKey(provider);
 }
 
 export type { BackendClient };

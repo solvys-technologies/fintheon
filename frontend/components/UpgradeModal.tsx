@@ -100,10 +100,10 @@ export function UpgradeModal({ onClose }: UpgradeModalProps) {
 
   return (
     <div
-      className={`fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 ${isClosing ? "animate-fade-out-backdrop" : "animate-fade-in-backdrop"}`}
+      className={`fintheon-modal-backdrop fixed inset-0 flex items-center justify-center z-50 p-4 ${isClosing ? "animate-fade-out-backdrop" : "animate-fade-in-backdrop"}`}
     >
       <div
-        className={`bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-lg w-full max-w-6xl max-h-[90vh] overflow-y-auto ${isClosing ? "animate-fade-out" : "animate-fade-in"}`}
+        className={`fintheon-modal-surface w-full max-w-6xl max-h-[90vh] overflow-y-auto ${isClosing ? "animate-fade-out" : "animate-fade-in"}`}
       >
         <div className="sticky top-0 bg-[var(--fintheon-surface)] border-b border-[var(--fintheon-accent)]/20 p-6 flex items-center justify-between">
           <div>

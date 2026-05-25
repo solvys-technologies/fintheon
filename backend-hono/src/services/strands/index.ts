@@ -1,9 +1,12 @@
 // [claude-code 2026-04-04] Strands SDK barrel export
 // Provider + factory
 export {
-  createVProxyModel,
-  checkVProxyHealth,
-  isVProxyEnabled,
+  createChainModel,
+  createDeepSeekDirectModel,
+  createDeepSeekOcApiModel,
+  createOllamaFallbackModel,
+  checkDeepSeekDirectHealth,
+  checkDeepSeekOcApiHealth,
 } from "./provider.js";
 export {
   createAgent,

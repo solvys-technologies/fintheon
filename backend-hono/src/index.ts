@@ -73,6 +73,16 @@ app.get("/health", async (c) => {
   return c.json({ ...health, serviceRegistry: registry }, statusCode);
 });
 
+// Fly readiness must only prove the HTTP process is accepting traffic. The
+// richer /health route can report optional dependency failures, such as the
+// local AI gateway, without blocking deploys.
+app.get("/healthz", (c) =>
+  c.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+  }),
+);
+
 // Lifecycle endpoints — idle shutdown management
 // [claude-code 2026-04-16] Used by Electron to arm/disarm idle timeout on app close/open
 // Localhost-only: these endpoints can terminate the process (arm-idle-shutdown

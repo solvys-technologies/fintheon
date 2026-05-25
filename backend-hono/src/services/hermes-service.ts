@@ -1,12 +1,12 @@
-// [claude-code 2026-03-28] S9-T4: Switch boardroom agents to Grok 4.20 Fast, Harper stays Claude Opus
-// [claude-code 2026-03-14] Hermes inference via OpenRouter (Nous) + Claude Opus 4.6
+// [claude-code 2026-05-03] S58-T1: DeepSeek v4 Pro primary provider migration
+// [codex 2026-05-19] Active agent inference routes through Hermes-compatible providers.
 /**
  * Hermes Service
  * Agentic backend layer for Priced In Capital (P.I.C.)
  * Orchestrates AI agents: Harper (CAO), Oracle (All-Seer), Feucht (Futures & Risk), Consul (Fundamentals), Herald (News)
  *
  * Architecture: HERMES AGENT → FINTHEON UI → H.E's (Human Executives)
- * Inference: OpenRouter (Nous subscription) + Claude Opus 4.6
+ * Inference: Hermes gateway compatible models
  */
 
 // [claude-code 2026-04-05] Strands Phase 8: Removed @ai-sdk/openai import — types/interfaces kept for consumers
@@ -130,44 +130,50 @@ const HERMES_AGENTS: Record<
   },
 };
 
-// [claude-code 2026-04-21] S28: All sub-agents locked to Qwen3.5:397b-cloud via Hermes.
-// Harper toggles via HARPER_DEFAULT_PROVIDER=qwen|anthropic (default: anthropic).
-// [claude-code 2026-04-26] S35-T11: All Arbitrum seats also locked to
-// qwen3.5:397b-cloud via Ollama Cloud. DashScope removed (paid, no key).
-// resolveProvider() now returns 'ollama' for every Hermes-routed Qwen task;
-// OpenRouter remains reserved for harper-cao's Claude-Opus path.
+// [claude-code 2026-04-29] DeepSeek migration — every Hermes-routed sub-agent
+// task now uses `deepseek-reasoner` (DeepSeek's thinking model) via DeepSeek's
+// OpenAI-compatible API. Harper-cao keeps its Claude-Opus path; Arbitrum seats
+// route through the new 'deepseek' provider. Local Ollama still works as a
+// fallback when DEEPSEEK_API_KEY is unset (the ollama-hermes-client honours
+// OLLAMA_BASE_URL).
 export const HERMES_TASK_MODEL_MAP: Record<string, string> = {
-  "harper-cao": "anthropic/claude-opus-4.7",
-  "cao-approval": "anthropic/claude-opus-4.7",
-  "cao-consolidation": "anthropic/claude-opus-4.7",
-  "pma-merged": "qwen3.5:397b-cloud",
-  "prediction-market": "qwen3.5:397b-cloud",
-  "futures-desk": "qwen3.5:397b-cloud",
-  "fa-rippers": "qwen3.5:397b-cloud",
-  "economic-analysis": "qwen3.5:397b-cloud",
-  "fundamentals-desk": "qwen3.5:397b-cloud",
-  "earnings-analysis": "qwen3.5:397b-cloud",
-  "tech-mega-cap": "qwen3.5:397b-cloud",
-  herald: "qwen3.5:397b-cloud",
-  "arbitrum-seat-lead": "qwen3.5:397b-cloud",
-  "arbitrum-seat-forecaster": "qwen3.5:397b-cloud",
-  "arbitrum-seat-risk": "qwen3.5:397b-cloud",
-  "arbitrum-seat-quant": "qwen3.5:397b-cloud",
-  "arbitrum-seat-bear": "qwen3.5:397b-cloud",
+  "harper-cao": "deepseek-reasoner",
+  "cao-approval": "deepseek-reasoner",
+  "cao-consolidation": "deepseek-reasoner",
+  "pma-merged": "deepseek-reasoner",
+  "prediction-market": "deepseek-reasoner",
+  "futures-desk": "deepseek-reasoner",
+  "fa-rippers": "deepseek-reasoner",
+  "economic-analysis": "deepseek-reasoner",
+  "fundamentals-desk": "deepseek-reasoner",
+  "earnings-analysis": "deepseek-reasoner",
+  "tech-mega-cap": "deepseek-reasoner",
+  herald: "deepseek-reasoner",
+  "arbitrum-seat-lead": "deepseek-reasoner",
+  "arbitrum-seat-forecaster": "deepseek-reasoner",
+  "arbitrum-seat-risk": "deepseek-reasoner",
+  "arbitrum-seat-quant": "deepseek-reasoner",
+  "arbitrum-seat-bear": "deepseek-reasoner",
 };
 
-// [claude-code 2026-04-26] S35-T11: Provider-routing abstraction. DashScope
-// removed. Any model id not in ARBITRUM_MODEL_PROVIDER_MAP defaults to
-// 'openrouter' — this preserves harper-cao's existing Claude-Opus OpenRouter
-// path verbatim.
-export type ArbitrumProvider = "ollama" | "groq" | "openrouter";
+// [claude-code 2026-04-29] Provider-routing abstraction. 'deepseek' is the
+// primary path for all Hermes sub-agent tasks. 'ollama' stays available for
+// local Ollama models (e.g. dev mode without an internet key). Any unmapped
+// model defaults to 'openrouter' — preserving harper-cao's Opus path verbatim.
+export type ArbitrumProvider =
+  | "deepseek-direct"
+  | "deepseek-oc-api"
+  | "ollama"
+  | "groq";
 
 const ARBITRUM_MODEL_PROVIDER_MAP: Record<string, ArbitrumProvider> = {
+  "deepseek-reasoner": "deepseek-direct",
+  "deepseek-chat": "deepseek-direct",
   "qwen3.5:397b-cloud": "ollama",
 };
 
 export function resolveProvider(modelId: string): ArbitrumProvider {
-  return ARBITRUM_MODEL_PROVIDER_MAP[modelId] ?? "openrouter";
+  return ARBITRUM_MODEL_PROVIDER_MAP[modelId] ?? "deepseek-direct";
 }
 
 /**
@@ -187,11 +193,9 @@ export const buildHermesHeaders = (config?: {
 
 /**
  * Check if Hermes / Strands is available
- * Now checks VProxy via Strands provider instead of OpenRouter API key.
  */
 export const isHermesAvailable = (): boolean => {
-  // VProxy is always configured locally — return true if env isn't explicitly disabled
-  return process.env.USE_VPROXY_ANTHROPIC !== "false";
+  return process.env.HERMES_ENABLED !== "false";
 };
 
 /**
@@ -251,10 +255,11 @@ export const calculateHermesCost = (
 
   const pricing: Record<string, { input: number; output: number }> = {
     "anthropic/claude-opus-4.6": { input: 0.005, output: 0.025 },
+    "deepseek-reasoner": { input: 0.0005, output: 0.00219 },
     "xai/grok-4-fast": { input: 0.002, output: 0.01 },
   };
 
-  const modelPricing = pricing[model] ?? { input: 0.002, output: 0.01 };
+  const modelPricing = pricing[model] ?? pricing["deepseek-reasoner"];
 
   const inputCostUsd = (inputTokens / 1000) * modelPricing.input;
   const outputCostUsd = (outputTokens / 1000) * modelPricing.output;
@@ -359,13 +364,13 @@ export const validateTradeProposal = (
 
 /**
  * Hermes model IDs used by P.I.C.
- * CAO uses Claude Opus 4.6 (CLI bridge), sub-agents use Grok 4.20 Fast
+ * CAO and sub-agents use Hermes-compatible reasoning models.
  */
 export const HERMES_MODELS = {
-  CAO_REASONING: "anthropic/claude-opus-4.6",
-  FAST_ANALYSIS: "xai/grok-4-fast",
-  NEWS_REALTIME: "xai/grok-4-fast",
-  RESEARCH: "xai/grok-4-fast",
+  CAO_REASONING: "deepseek-reasoner",
+  FAST_ANALYSIS: "deepseek-reasoner",
+  NEWS_REALTIME: "deepseek-reasoner",
+  RESEARCH: "deepseek-reasoner",
 } as const;
 
 export type HermesModelId = (typeof HERMES_MODELS)[keyof typeof HERMES_MODELS];

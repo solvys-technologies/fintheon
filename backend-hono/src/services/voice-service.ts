@@ -5,7 +5,7 @@
 // still type-checks. Added: streamVoiceReply generator + synthesizeGreeting
 // for the new /api/voice/session routes.
 
-import { sidecarClient, isSidecarEnabled } from "./ai/sidecar-client.js";
+import { sidecarClient, isSidecarEnabled } from "./hermes/client.js";
 import { selectModel } from "./ai/routing.js";
 import { createLogger } from "../lib/logger.js";
 import {
@@ -202,7 +202,7 @@ export async function* streamVoiceReply(
   if (!isVoiceEnabled()) {
     yield {
       type: "error",
-      message: "voice sidecar not enabled (HERMES_SIDECAR_ENABLED=false)",
+      message: "voice sidecar not enabled (hermes sidecar removed S59-T1)",
     };
     yield { type: "done", reason: "error" };
     return;

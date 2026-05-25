@@ -1,4 +1,5 @@
 // [claude-code 2026-03-26] S2-T2: Regime state management — get/set/history with in-memory cache
+// [claude-code 2026-05-16] DEPRECATED — replaced by theme-tracker (S68-T1). Preserved for migration reference.
 import type {
   MarketRegime,
   RegimeState,

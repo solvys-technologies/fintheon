@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useSettings } from "../contexts/SettingsContext";
+import { NOTIFICATION_CATEGORIES } from "../lib/user-preferences";
 import {
   getPermissionStatus,
   subscribeToPush,
@@ -35,9 +36,24 @@ export type TestResult =
         | string;
     };
 
+function categoriesFromPreferences(
+  notifications: ReturnType<typeof useSettings>["preferences"]["notifications"],
+  forcePushEnabled = false,
+): Record<string, boolean> {
+  const blocked = new Set(notifications.blockedCategories ?? []);
+  const pushEnabled =
+    forcePushEnabled || notifications.deliveryChannels?.push === true;
+  return Object.fromEntries(
+    NOTIFICATION_CATEGORIES.map((category) => [
+      category,
+      pushEnabled && !blocked.has(category),
+    ]),
+  );
+}
+
 export function usePushNotifications() {
   const { getAccessToken } = useAuth();
-  const { settings } = useSettings();
+  const { preferences } = useSettings();
   const [permissionStatus, setPermissionStatus] = useState<
     NotificationPermission | "unsupported"
   >(getPermissionStatus());
@@ -74,8 +90,11 @@ export function usePushNotifications() {
       }
       const token = await getAccessToken();
       if (!token) return { ok: false, reason: "no-token" };
-      const { severityThreshold: _, ...cats } = settings.notificationPrefs;
-      const ok = await subscribeToPush(token, cats);
+      const ok = await subscribeToPush(
+        token,
+        categoriesFromPreferences(preferences.notifications, true),
+        preferences.notifications.severityThreshold,
+      ).catch(() => false);
       setPermissionStatus(getPermissionStatus());
       if (!ok) {
         setIsSubscribed(false);
@@ -88,7 +107,7 @@ export function usePushNotifications() {
     } finally {
       setIsLoading(false);
     }
-  }, [getAccessToken, settings.notificationPrefs]);
+  }, [getAccessToken, preferences.notifications]);
 
   const disable = useCallback(async () => {
     setIsLoading(true);

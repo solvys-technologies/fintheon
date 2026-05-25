@@ -1,4 +1,5 @@
 // [claude-code 2026-04-19] S27-T8 W1d: SOUL.md loader — literal CLAUDE.md grounding + Zod validation + 5-min cache.
+// [claude-code 2026-05-05] S59-T2: Added native_home optional field to SoulSchema + WHERE YOU ARE rendering in renderSystemPrompt.
 import { readFile } from "node:fs/promises";
 import { dirname, resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -24,13 +25,30 @@ export const SoulSchema = z.object({
     role: z.string().min(1),
     self_description: z.string().optional(),
   }),
+  native_home: z
+    .object({
+      platform: z.string().min(1),
+      platform_description: z.string().min(1),
+      company: z.string().min(1),
+      company_description: z.string().min(1),
+      design_system: z.string().min(1),
+      design_description: z.string().min(1),
+      model_provider: z.string().min(1),
+      model: z.string().min(1),
+      model_company: z.string().min(1),
+    })
+    .optional(),
   scope: z.array(z.string().min(1)).min(1),
   constraints: z.array(z.string().min(1)).min(1),
   grounding: z.object({
     source_of_truth: z.string().min(1),
     extra: z.array(z.string().min(1)).optional(),
   }),
-  tools: z.array(z.string().min(1)),
+  tools: z.object({
+    required: z.array(z.string().min(1)),
+    optional: z.array(z.string().min(1)).catch([]),
+    prohibited: z.array(z.string().min(1)).catch([]),
+  }),
   handoff_rules: z.array(z.string().min(1)),
   voice_style: z.string().min(1),
   memory_policy: z.object({
@@ -209,12 +227,30 @@ export function renderSystemPrompt(soul: LoadedSoul): string {
   if (soul.identity.self_description) {
     parts.push(soul.identity.self_description);
   }
+
+  // WHERE YOU ARE — platform/company/design identity injected from native_home
+  if (soul.native_home) {
+    parts.push(
+      `## WHERE YOU ARE\n` +
+        `You operate inside **${soul.native_home.platform}** — ${soul.native_home.platform_description}.\n` +
+        `You work for **${soul.native_home.company}** — ${soul.native_home.company_description}.\n` +
+        `The design system is **${soul.native_home.design_system}** — ${soul.native_home.design_description}.\n` +
+        `You run on **${soul.native_home.model}** (${soul.native_home.model_company}), provisioned via ${soul.native_home.model_provider}.`,
+    );
+  }
+
   parts.push(`## Scope\n${soul.scope.map((s) => `- ${s}`).join("\n")}`);
   parts.push(
     `## Constraints\n${soul.constraints.map((s) => `- ${s}`).join("\n")}`,
   );
   parts.push(`## Voice\n${soul.voice_style}`);
-  parts.push(`## Tools\n${soul.tools.map((t) => `- ${t}`).join("\n")}`);
+  const toolLines: string[] = [];
+  toolLines.push(
+    `Required: ${soul.tools.required.join(", ")}`,
+    `Optional: ${soul.tools.optional.join(", ") || "(none)"}`,
+    `Prohibited: ${soul.tools.prohibited.join(", ") || "(none)"}`,
+  );
+  parts.push(`## Tools\n${toolLines.join("\n")}`);
   parts.push(
     `## Handoff Rules\n${soul.handoff_rules.map((r) => `- ${r}`).join("\n")}`,
   );

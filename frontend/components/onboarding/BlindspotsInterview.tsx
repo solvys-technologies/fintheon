@@ -115,8 +115,8 @@ export function BlindspotsInterview({
   const progress = ((step + 1) / totalSteps) * 100;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-[440px] bg-[var(--fintheon-surface)]/90 backdrop-blur-md border border-[var(--fintheon-accent)]/20 rounded-xl shadow-2xl overflow-hidden">
+    <div className="fintheon-modal-backdrop fixed inset-0 z-[9999] flex items-center justify-center">
+      <div className="fintheon-modal-surface w-[440px]">
         {/* Progress bar */}
         <div className="h-1 bg-white/5">
           <div

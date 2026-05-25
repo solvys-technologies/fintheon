@@ -1,7 +1,12 @@
+// [claude-code 2026-05-16] S68-T3: Added page 3 (Narrative Flow) with useThemes + NarrativeCanvas
+// [claude-code 2026-05-16] S68-T4: Smooth page transitions with fade-in animation on page sections
+// [claude-code 2026-05-11] S62-T1: Sanctum desktop layout audit — Solvys Gold page headers/tags (Page 1 & 2), vertical FadingRuler spacing parity, horizontal FadingRuler replaces solid divider, Page 0 non-chart padding to p-5.
+// [claude-code 2026-04-29] S51: removed unused compositeIV/regimeShiftProbability/confidence props from ArbitrumChamber call (stale AgentDeskDebatePanel API)
 // [claude-code 2026-04-19] S25-T1: Removed KPI row (moved to Agent Desk fuses), stripped card borders to fading edges, viewport lock ≥1440px, fuses piped into DebatePanel
 // [claude-code 2026-04-25] S38: Chart-mode pin-through — TradingView/SanctumChart is hoisted out of Page 0 into a persistent right-half panel, visible across every Sanctum page. Left half scrolls/snaps independently.
-// [claude-code 2026-04-17] S23-T1: Aquarium restructure — top chart replaced with brief-pattern container (IV+Forecast | Deliberation), Chart toggle renders 50/50 with TradingView iframe, feels polish
+// [claude-code 2026-04-17] S23-T1: ArbitrumChamber restructure — top chart replaced with brief-pattern container (IV+Forecast | Deliberation), Chart toggle renders 50/50 with TradingView iframe, feels polish
 // [claude-code 2026-04-16] Sanctum — full-border severity on Risk Signals containers, solvys-feels polish
+// [claude-code 2026-05-03] S57: Page 0 uses flex height and fading rulers, no chamber inner scroll.
 // [claude-code 2026-03-28] S8-T4: Chart cleanup, Page 2 restructure (50/50 narratives+risk), sim history removed
 // [claude-code 2026-03-28] S4-T3: KPI labels rewritten to trading lingo with interpretive sub-text
 // [claude-code 2026-03-24] Persistence refactor: show persisted data immediately, background updates, no idle state
@@ -15,6 +20,7 @@ import {
   useEffect,
 } from "react";
 import { SolvysLoader } from "../shared/SolvysLoader";
+import { FadingRuler } from "../shared/FadingRuler";
 import type {
   SanctumData,
   SanctumPreset,
@@ -23,18 +29,19 @@ import type {
   SanctumNarrative,
 } from "../../types/agent-desk";
 import { AUDITORIUM_PAGES } from "../../types/agent-desk";
-import { SanctumChart } from "./SanctumChart";
 import { SanctumEconIntel } from "./SanctumEconIntel";
 import { SanctumHeader } from "./SanctumHeader";
 import { SanctumBriefing } from "./SanctumBriefing";
 import { SanctumNarratives } from "./SanctumNarratives";
-import { AquariumPredictionCards } from "./AquariumPredictionCards";
+import { ArbitrumChamberPredictionCards } from "./ArbitrumChamberPredictionCards";
 import { ConsolidatedTradeLedger } from "./ConsolidatedTradeLedger";
 import { BlendedIVForecastCard } from "./BlendedIVForecastCard";
 import { DayCard } from "./DayCard";
 import { RiskSignalCards } from "./RiskSignalCards";
 import { useIVScoreData } from "./useIVScoreData";
 // [claude-code 2026-04-24] S35-T3: swap AgentDeskDebatePanel -> ArbitrumChamber
+// [claude-code 2026-05-01] S56 Track B: removed ArbitrumRiskSignals from Sanctum
+//   (moved to Dashboard right rail, bottom slot now shows SanctumBriefing)
 import { ArbitrumChamber } from "../arbitrum/ArbitrumChamber";
 
 interface CatalystInput {
@@ -55,10 +62,14 @@ interface SanctumProps {
   macroContext?: SimulationContext | null;
   narratives?: SanctumNarrative[];
   selectedSymbol?: string;
-  /** Chart mode — splits Aquarium 50/50 with a TradingView iframe on the right. Toggled from the Consilium tab bar Chart button. */
+  /** Chart mode — splits ArbitrumChamber 50/50 with a TradingView iframe on the right. Toggled from the Consilium tab bar Chart button. */
   chartMode?: boolean;
   /** Fires once per simulationId when AgentDesk deliberation completes — parent should reload latest report. */
   onSynthesisComplete?: () => void;
+  /** Revision check status message shown under the briefing after refresh. */
+  revisionStatus?: string | null;
+  /** Whether a revision check is in progress. */
+  revisionChecking?: boolean;
 }
 
 export function Sanctum({
@@ -71,11 +82,10 @@ export function Sanctum({
   selectedSymbol = "/MNQ",
   chartMode = false,
   onSynthesisComplete,
+  revisionStatus,
+  revisionChecking,
 }: SanctumProps) {
   const { data: ivData, isLoading: ivLoading } = useIVScoreData();
-
-  // Guardrailed 5-day rolling window — no user toggle
-  const rollingDays = 5 as const;
   const [running, setRunning] = useState(false);
   const [preset, setPreset] = useState<SanctumPreset>(() => {
     try {
@@ -136,9 +146,9 @@ export function Sanctum({
       const detail = (e as CustomEvent<{ page?: number }>).detail;
       if (typeof detail?.page === "number") scrollToPage(detail.page);
     };
-    window.addEventListener("fintheon:aquarium-scroll-to", handler);
+    window.addEventListener("fintheon:arbitrumChamber-scroll-to", handler);
     return () =>
-      window.removeEventListener("fintheon:aquarium-scroll-to", handler);
+      window.removeEventListener("fintheon:arbitrumChamber-scroll-to", handler);
   }, [scrollToPage]);
 
   const handlePresetChange = useCallback(
@@ -189,8 +199,14 @@ export function Sanctum({
   return (
     <div
       className="h-full w-full flex flex-col bg-[var(--fintheon-bg)]"
-      data-aquarium-viewport-lock
+      data-arbitrum-chamber-viewport-lock
     >
+      <style>{`
+        @keyframes sanctum-fade-in {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
       {/* Persistent header — always visible */}
       <SanctumHeader
         preset={preset}
@@ -202,21 +218,21 @@ export function Sanctum({
       />
 
       <div className="flex flex-1 min-h-0">
-        {/* [claude-code 2026-04-25] S38: When chart mode is active, the TradingView chart
-            is pinned to the right half of the viewport and stays visible across every
-            page; the left half scrolls/pages independently. Off-mode falls back to the
-            full-width single-scroll layout. */}
+        {/* [codex 2026-05-25] Chart mode now compacts this Arbitrum stack for the
+            shared Consilium TradingView quick rail instead of mounting a local
+            second iframe. */}
         {/* Main scrollable area */}
         <div
           ref={containerRef}
           onScroll={handleScroll}
-          className={`${chartMode ? "w-1/2" : "flex-1"} overflow-y-auto scroll-smooth snap-y snap-mandatory`}
+          className="flex-1 min-w-0 overflow-y-auto scroll-smooth snap-y snap-mandatory"
         >
           {/* ── Page 0: Command Center ── */}
           {showPage(0) && (
             <div
               data-aud-page="0"
-              className={`${chartMode ? "h-full" : "min-h-full"} snap-start p-3 pt-2 flex flex-col`}
+              className={`${chartMode ? "h-full p-3 pt-2" : "min-h-full p-5"} snap-start flex flex-col`}
+              style={{ animation: "sanctum-fade-in 0.35s ease-out" }}
             >
               {chartMode ? (
                 /* [claude-code 2026-04-25] S38: Chart now lives in the persistent right-half
@@ -228,19 +244,21 @@ export function Sanctum({
                       briefing={data.briefing ?? null}
                       isLoading={false}
                       noBorder
+                      revisionStatus={revisionStatus}
+                      revisionChecking={revisionChecking}
                     />
                   )}
                   {/* [claude-code 2026-04-27] S46.4/K: combined IV+forecast card */}
                   <BlendedIVForecastCard data={ivData} isLoading={ivLoading} />
-                  <AquariumPredictionCards />
+                  <ArbitrumChamberPredictionCards />
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col gap-4">
+                <div className="flex-1 min-h-0 flex flex-col gap-4">
                   {/* Brief-pattern top container — Volatility Read + Arbitrum Chamber 50/50, ruler divides */}
-                  <div className="min-h-[520px] flex">
-                    <div className="flex-1 flex overflow-hidden mx-1 my-1">
+                  <div className="flex-1 min-h-0 flex">
+                    <div className="flex-1 min-h-0 flex mx-1 my-1">
                       {/* Left: Volatility Read — Blended IV + Next Session Forecast (50%) */}
-                      <div className="flex-1 min-w-0 overflow-y-auto p-4 flex flex-col gap-3">
+                      <div className="flex-1 min-w-0 min-h-0 p-4 flex flex-col gap-3">
                         <div className="flex items-center gap-2">
                           <span
                             className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
@@ -255,37 +273,28 @@ export function Sanctum({
                           data={ivData}
                           isLoading={ivLoading}
                         />
-                        <DayCard id="day-card-anchor" />
+                        <DayCard id="day-card-anchor" bare />
                       </div>
 
                       {/* Vertical ruler between Volatility Read and Deliberation */}
-                      <div className="w-px shrink-0 bg-[var(--fintheon-accent)]/10" />
+                      <FadingRuler
+                        orientation="vertical"
+                        className="shrink-0"
+                      />
 
                       {/* Right: Arbitrum Chamber (50%) */}
-                      <div className="flex-1 min-w-0 min-h-0 flex flex-col p-4 overflow-y-auto">
+                      <div className="flex-1 min-w-0 min-h-0 p-4 flex flex-col">
                         <ArbitrumChamber
                           simulationId={data?.simulationId ?? null}
                           onSynthesisComplete={onSynthesisComplete}
-                          compositeIV={data?.compositeIV}
-                          regimeShiftProbability={data?.regimeShiftProbability}
-                          confidence={data?.confidence}
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* Briefing */}
-                  {data && data.compositeIV > 0 && (
-                    <SanctumBriefing
-                      briefing={data.briefing ?? null}
-                      isLoading={false}
-                      noBorder
-                    />
-                  )}
-
                   {/* Instrument Fuses — single fused row, /NQ /ES /YM /CL /GC with fading rulers */}
                   <div className="flex justify-center">
-                    <AquariumPredictionCards />
+                    <ArbitrumChamberPredictionCards />
                   </div>
                 </div>
               )}
@@ -312,13 +321,17 @@ export function Sanctum({
             <div
               data-aud-page="1"
               className="min-h-full snap-start p-5 flex flex-col"
+              style={{ animation: "sanctum-fade-in 0.35s ease-out" }}
             >
               <div className="shrink-0 mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-[11px] font-semibold text-[#67e8f9] tracking-[0.2em] uppercase">
+                  <h2
+                    className="text-[11px] font-semibold text-[var(--fintheon-accent)]/85 tracking-[0.2em] uppercase"
+                    style={{ fontFamily: "var(--font-heading)" }}
+                  >
                     Economic Intelligence
                   </h2>
-                  <span className="text-[9px] tracking-[0.22em] uppercase text-[#67e8f9]/60">
+                  <span className="text-[9px] tracking-[0.22em] uppercase text-[var(--fintheon-accent)]/60">
                     Econ Watch
                   </span>
                 </div>
@@ -341,12 +354,16 @@ export function Sanctum({
             <div
               data-aud-page="2"
               className="min-h-full snap-start p-5 flex flex-col"
+              style={{ animation: "sanctum-fade-in 0.35s ease-out" }}
             >
               <div className="shrink-0 mb-4 flex items-center gap-2">
-                <h2 className="text-[11px] font-semibold text-emerald-300 tracking-[0.2em] uppercase">
+                <h2
+                  className="text-[11px] font-semibold text-[var(--fintheon-accent)]/85 tracking-[0.2em] uppercase"
+                  style={{ fontFamily: "var(--font-heading)" }}
+                >
                   Risk & Narratives
                 </h2>
-                <span className="text-[9px] tracking-[0.22em] uppercase text-emerald-300/60">
+                <span className="text-[9px] tracking-[0.22em] uppercase text-[var(--fintheon-accent)]/60">
                   Risk Scan
                 </span>
               </div>
@@ -371,7 +388,7 @@ export function Sanctum({
                     </div>
 
                     {/* Vertical ruler */}
-                    <div className="w-px shrink-0 bg-[var(--fintheon-accent)]/10 mx-2" />
+                    <FadingRuler orientation="vertical" className="shrink-0" />
 
                     {/* Right: Active Narratives */}
                     <div className="flex-1 min-w-0 flex flex-col">
@@ -385,7 +402,7 @@ export function Sanctum({
                   </div>
 
                   {/* Horizontal ruler */}
-                  <div className="h-px bg-[var(--fintheon-accent)]/10" />
+                  <FadingRuler orientation="horizontal" />
 
                   {/* Consolidated Trade Ledger — replaces Polymarket kanban */}
                   <div>
@@ -401,25 +418,8 @@ export function Sanctum({
               )}
             </div>
           )}
+
         </div>
-
-        {/* [claude-code 2026-04-25] S38: Persistent right-half chart panel — pinned across
-            every Sanctum page when chart mode is active, so the chart stays in view as the
-            user scrolls/snaps through the left-half content. */}
-        {chartMode && (
-          <div className="w-1/2 shrink-0 border-l border-[var(--fintheon-accent)]/15 min-h-0 overflow-hidden">
-            <SanctumChart
-              timeSeries={data?.timeSeries ?? []}
-              rollingDays={rollingDays}
-              selectedSymbol={selectedSymbol}
-              compositeIV={data?.compositeIV}
-              confidence={data?.confidence}
-              regimeShiftProbability={data?.regimeShiftProbability}
-              scenarios={data?.scenarios}
-            />
-          </div>
-        )}
-
         {/* Scroll-lock page indicators */}
         {visiblePages.length > 1 && (
           <div className="shrink-0 w-6 flex flex-col items-center justify-center gap-3 py-8">

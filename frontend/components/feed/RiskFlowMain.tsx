@@ -7,6 +7,8 @@
 // [claude-code 2026-04-19] Refresh motion uses Unicode spinners: CIRCLE-QUARTERS in the
 //   header button, METER→ARROW-3 as a top-bar shimmer during refresh, ARROW-3 for loadingMore.
 // [claude-code 2026-04-24] S34-T8: mount EconCountdownModal overlay inside feed pane.
+// [claude-code 2026-04-30] RiskFlow post redesign: full feed cards now expose the
+//   same Ask AI catalyst-to-chat callback used by Strategium mini cards.
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { EconCountdownModal } from "./EconCountdownModal";
 import { Bell, BellOff } from "lucide-react";
@@ -23,7 +25,17 @@ import { SourceFilterMenu } from "./SourceFilterMenu";
 import { useRiskFlowFilters } from "../../hooks/useRiskFlowFilters";
 import { bucketOf, SOURCE_BUCKETS } from "../../lib/source-buckets";
 
-export function RiskFlowMain() {
+interface RiskFlowMainProps {
+  onChatAlert?: (alert: {
+    headline: string;
+    summary?: string | null;
+    source?: string;
+    ivScore?: number | null;
+    publishedAt?: string;
+  }) => void;
+}
+
+export function RiskFlowMain({ onChatAlert }: RiskFlowMainProps) {
   const {
     alerts,
     markAllSeen,
@@ -41,6 +53,41 @@ export function RiskFlowMain() {
   const backend = useBackend();
   const { addToast } = useToast();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [kickstarting, setKickstarting] = useState(false);
+
+  const KICKSTART_HANDLES = [
+    "financialjuice",
+    "DeItaone",
+    "trendspider",
+    "spotgamma",
+    "nicktimiraos",
+    "OSINTTechnical",
+    "MacroEdge",
+    "unusual_whales",
+    "macroedgeRes",
+  ];
+
+  const handleKickstart = useCallback(async () => {
+    setKickstarting(true);
+    try {
+      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:8080";
+      const res = await fetch(`${apiBase}/api/riskflow/kickstart`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ handles: KICKSTART_HANDLES }),
+      });
+      if (res.ok) {
+        addToast("Kickstart dispatched", "success");
+        void refresh();
+      } else {
+        throw new Error(`HTTP ${res.status}`);
+      }
+    } catch {
+      addToast("Kickstart failed", "error");
+    } finally {
+      setKickstarting(false);
+    }
+  }, [refresh, addToast]);
   const {
     severitySet,
     toggleSeverity,
@@ -50,6 +97,7 @@ export function RiskFlowMain() {
     clearBuckets,
     showProposals,
     setShowProposals,
+    filterAlerts,
   } = useRiskFlowFilters();
 
   useEffect(() => {
@@ -122,27 +170,7 @@ export function RiskFlowMain() {
   const lowCount = alerts.filter((a) => a.severity === "low").length;
   const proposalCount = alerts.filter((a) => a.source === "trade-idea").length;
 
-  const items = useMemo(() => {
-    if (showProposals) return alerts.filter((a) => a.source === "trade-idea");
-    let base = [...alerts];
-    if (severitySet.size > 0) {
-      base = base.filter((a) => severitySet.has(a.severity));
-    }
-    if (bucketSet.size > 0) {
-      base = base.filter((a) => {
-        const primary = bucketOf({
-          source: a.source as string,
-          riskType: a.riskType,
-        });
-        if (bucketSet.has(primary)) return true;
-        if (bucketSet.has("Geopolitical") && a.riskType === "Geopolitical") {
-          return true;
-        }
-        return false;
-      });
-    }
-    return base;
-  }, [alerts, severitySet, bucketSet, showProposals]);
+  const items = useMemo(() => filterAlerts(alerts), [alerts, filterAlerts]);
 
   // Pre-compute bucket counts for the filter menu badges.
   const bucketCounts = useMemo(() => {
@@ -173,11 +201,13 @@ export function RiskFlowMain() {
           </span>
           <span className="flex items-center gap-1.5">
             <span
-              className={`w-1.5 h-1.5 rounded-full ${sourceStatus.rettiwt ? "bg-emerald-400" : "bg-zinc-600"}`}
+              className={`w-1.5 h-1.5 rounded-full ${sourceStatus.xHomeTimeline ? "bg-emerald-400" : "bg-zinc-600"}`}
             />
             <span
               className={
-                sourceStatus.rettiwt ? "text-emerald-400/90" : "text-zinc-500"
+                sourceStatus.xHomeTimeline
+                  ? "text-emerald-400/90"
+                  : "text-zinc-500"
               }
             >
               X
@@ -198,13 +228,13 @@ export function RiskFlowMain() {
           <button
             type="button"
             onClick={() => {
-              void refresh();
+              void handleKickstart();
             }}
-            disabled={refreshing}
+            disabled={kickstarting}
             className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40 flex items-center justify-center w-6 h-6"
-            title="Refresh feeds"
+            title="Kickstart ingestion"
           >
-            <CircleQuarters active={refreshing} size={14} />
+            <CircleQuarters active={kickstarting} size={14} />
           </button>
           <button
             onClick={requestNotifications}
@@ -287,6 +317,7 @@ export function RiskFlowMain() {
               seen={isSeen(item.id)}
               onGenerateNote={handleGenerateNote}
               onNotRelevant={handleNotRelevant}
+              onAskAI={onChatAlert}
               surface="full"
             />
           ))

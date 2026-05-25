@@ -5,12 +5,14 @@ interface PanelNotificationWidgetProps {
   panelName: string;
   onRestore: () => void;
   onDismiss: () => void;
+  position?: "top-right" | "bottom-right";
 }
 
 export function PanelNotificationWidget({
   panelName,
   onRestore,
   onDismiss,
+  position = "top-right",
 }: PanelNotificationWidgetProps) {
   const [isVisible, setIsVisible] = useState(true);
 
@@ -27,7 +29,11 @@ export function PanelNotificationWidget({
   if (!isVisible) return null;
 
   return (
-    <div className="fixed top-24 right-6 z-50 animate-slide-in">
+    <div
+      className={`fixed right-6 z-50 animate-slide-in ${
+        position === "bottom-right" ? "bottom-[364px]" : "top-24"
+      }`}
+    >
       <div
         className="backdrop-blur-3xl bg-gradient-to-br from-[var(--fintheon-surface)]/80 via-[var(--fintheon-surface)]/70 to-[var(--fintheon-surface)]/60 border border-[var(--fintheon-accent)]/30 rounded-xl p-3 shadow-2xl min-w-[200px]"
         style={{

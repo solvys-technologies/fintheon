@@ -5,20 +5,14 @@
 export type UserStatus = "online" | "away" | "busy" | "dnd" | "offline";
 
 export interface ServiceStatus {
-  rettiwt: boolean;
-  rettiwtRateLimited: boolean;
-  rettiwtNoKeys: boolean;
+  xHomeTimeline: boolean;
   riskflowKilled: boolean;
   aiRuntime: boolean;
   newsfeedPolling: { active: boolean; lastUpdate: string };
   backendConnection: boolean;
-  // S25-T4
   newsfeedHealthy: boolean;
   newsfeedDegraded: boolean;
-  agentReachActive: boolean;
-  /** ISO of this user's last successful poll contribution (ingest+score). Null if never. */
   lastSuccessAt: string | null;
-  /** Total successful polling contributions for this user. */
   totalContributions: number;
 }
 

@@ -1,10 +1,10 @@
+// [claude-code 2026-05-03] S58-T1: DeepSeek v4 Pro budget pricing.
 // [claude-code 2026-04-19] S27-T9 W2e: per-user daily LLM budget — graceful degrade for Harper/Oracle.
 //   Reads + upserts into public.user_budget_daily. Never a hard cutoff.
 //   ROUTING_DISABLE_BUDGET=true skips the whole layer (TP override).
 
 import { getSupabaseClient } from "../../config/supabase.js";
-import type { AgentId, RoutingRule } from "./routing.js";
-import { ROUTING_TABLE } from "./routing.js";
+import type { RoutingRule } from "./routing.js";
 
 const DEFAULT_CAP_USD = Number(process.env.ROUTING_DAILY_CAP ?? "20");
 const SYSTEM_USER_ID = "00000000-0000-0000-0000-000000000000";
@@ -107,21 +107,9 @@ export async function addSpend(
 }
 
 /**
- * Apply degrade rules per the T9 spec: Harper/Oracle Opus → Sonnet.
- * Feucht/Herald stay Haiku. Consul stays Sonnet.
+ * DeepSeek is already the lowest-cost primary reasoning path; keep routing stable
+ * when a user crosses the soft cap and let callers surface the degraded flag.
  */
 export function applyDegrade(rule: RoutingRule): RoutingRule {
-  const degradeTarget: Partial<Record<AgentId, string>> = {
-    harper: "claude-sonnet-4-6",
-    oracle: "claude-sonnet-4-6",
-  };
-  const target = degradeTarget[rule.agent];
-  if (!target) return rule;
-  const sonnet = ROUTING_TABLE.find((r) => r.agent === "consul");
-  return {
-    ...rule,
-    model: target,
-    cost_per_mtoken_in_usd: sonnet?.cost_per_mtoken_in_usd ?? 3,
-    cost_per_mtoken_out_usd: sonnet?.cost_per_mtoken_out_usd ?? 15,
-  };
+  return rule;
 }

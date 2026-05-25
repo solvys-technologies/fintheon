@@ -1,7 +1,9 @@
 // [claude-code 2026-04-15] T7: Push subscription management utilities
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
+const BUILD_VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
+
+let runtimeVapidPublicKey: string | null = null;
 
 function urlBase64ToUint8Array(base64: string): Uint8Array {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
@@ -21,21 +23,41 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   return navigator.serviceWorker.register("/sw.js");
 }
 
+async function getVapidPublicKey(token: string): Promise<string | null> {
+  if (BUILD_VAPID_PUBLIC_KEY) return BUILD_VAPID_PUBLIC_KEY;
+  if (runtimeVapidPublicKey) return runtimeVapidPublicKey;
+
+  const res = await fetch(`${API_BASE}/api/notifications/web-push/public-key`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return null;
+  const data = (await res.json()) as { publicKey?: string };
+  runtimeVapidPublicKey = data.publicKey || null;
+  return runtimeVapidPublicKey;
+}
+
 export async function subscribeToPush(
   token: string,
   categories: Record<string, boolean>,
+  severityThreshold?: string,
 ): Promise<boolean> {
   const reg = await registerServiceWorker();
   if (!reg) return false;
 
-  const permission = await Notification.requestPermission();
-  if (permission !== "granted") return false;
+  let subscription = await reg.pushManager.getSubscription();
+  if (!subscription) {
+    const vapidPublicKey = await getVapidPublicKey(token);
+    if (!vapidPublicKey) return false;
 
-  const subscription = await reg.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-      .buffer as ArrayBuffer,
-  });
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") return false;
+
+    subscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+        .buffer as ArrayBuffer,
+    });
+  }
 
   const res = await fetch(`${API_BASE}/api/notifications/web-push/subscribe`, {
     method: "POST",
@@ -43,7 +65,11 @@ export async function subscribeToPush(
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ subscription: subscription.toJSON(), categories }),
+    body: JSON.stringify({
+      subscription: subscription.toJSON(),
+      categories,
+      severityThreshold,
+    }),
   });
   return res.ok;
 }

@@ -1,56 +1,68 @@
 // [claude-code 2026-04-16] S16-T3: Risk Signal cards — full-border severity coloring, solvys-feels polish
+// [claude-code 2026-05-03] Solvys cleanup: chevron rows + fading rulers, no card borders.
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronDown, ChevronRight, Loader2, ShieldAlert } from "lucide-react";
+import { FadingRuler } from "../shared/FadingRuler";
+import { AgenticFeedbackControls } from "../shared/AgenticFeedbackControls";
+import { NothingFuse } from "../shared/NothingFuse";
+import {
+  emptyCachedSignals,
+  formatAge,
+  isFreshGenerated,
+  type CachedSignals,
+  type RiskSignal,
+  type RiskSignalPayload,
+} from "./risk-signal-card-utils";
+import {
+  formatDriftLabel,
+  inferSignalDirection,
+  useRiskSignalDrift,
+} from "./useRiskSignalDrift";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const CACHE_KEY = "fintheon:risk-signals";
 const POLL_INTERVAL = 120_000;
+const LEGACY_FALLBACK_COPY =
+  "Recent RiskFlow input cleared the signal threshold before the AI refinement layer produced a card.";
 
-interface RiskSignal {
-  id: string;
-  title: string;
-  summary: string;
-  analysis: string;
-  score: number;
-  severity: "critical" | "high" | "medium" | "low";
-  source: "bulletin" | "catalyst-watch" | "risk-detector";
-  relatedHeadlines: string[];
-  narrativeThreads: string[];
-  generatedAt: string;
+function displayAnalysis(signal: RiskSignal): string {
+  if (signal.analysis.includes(LEGACY_FALLBACK_COPY)) {
+    return "Pending Agentic Desk refinement. This catalyst met the desk-watch threshold and needs Herald/CAO synthesis before it should be treated as a full Risk Signal.";
+  }
+  return signal.analysis;
 }
 
-const SEVERITY_BORDER: Record<string, string> = {
-  critical: "var(--fintheon-bearish)",
-  high: "var(--fintheon-bearish)",
-  medium: "var(--fintheon-accent)",
-  low: "var(--fintheon-muted)",
-};
-
-function scoreColor(score: number): string {
-  if (score >= 8) return "var(--fintheon-bearish)";
-  if (score >= 6) return "#f97316"; // orange
-  if (score >= 4) return "var(--fintheon-accent)";
-  return "var(--fintheon-muted)";
+function isPendingRefinement(signal: RiskSignal): boolean {
+  return (
+    signal.refinementStatus === "pending-refinement" ||
+    signal.analysis.includes(LEGACY_FALLBACK_COPY)
+  );
 }
 
-const SOURCE_LABEL: Record<string, string> = {
-  bulletin: "Bulletin",
-  "catalyst-watch": "Catalyst",
-  "risk-detector": "Systemic",
-};
-
-function loadCached(): RiskSignal[] {
+function loadCached(): CachedSignals {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) throw new Error("empty");
+    const parsed = JSON.parse(raw);
+    const signals = Array.isArray(parsed) ? parsed : (parsed.signals ?? []);
+    const generatedAt =
+      (Array.isArray(parsed) ? signals[0]?.generatedAt : parsed.generatedAt) ??
+      signals[0]?.generatedAt ??
+      null;
+    return {
+      signals,
+      generatedAt,
+      stale: !isFreshGenerated(generatedAt) || Boolean(parsed.stale),
+      freshnessStatus: parsed.freshnessStatus ?? "fresh",
+    };
   } catch {
-    return [];
+    return emptyCachedSignals();
   }
 }
 
-function saveCached(signals: RiskSignal[]): void {
+function saveCached(payload: CachedSignals): void {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(signals));
+    localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
   } catch {
     /* silent */
   }
@@ -58,8 +70,9 @@ function saveCached(signals: RiskSignal[]): void {
 
 export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
   const cached = loadCached();
-  const [signals, setSignals] = useState<RiskSignal[]>(cached);
-  const [loading, setLoading] = useState(cached.length === 0);
+  const [signals, setSignals] = useState<RiskSignal[]>(cached.signals);
+  const [freshness, setFreshness] = useState<CachedSignals>(cached);
+  const [loading, setLoading] = useState(cached.signals.length === 0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -69,12 +82,24 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
     try {
       const res = await fetch(`${API_BASE}/api/riskflow/risk-signals`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const items = data.signals ?? [];
-      if (items.length > 0) {
-        setSignals(items);
-        saveCached(items);
-      }
+      const data = (await res.json()) as RiskSignalPayload;
+      const freshItems = data.signals ?? [];
+      const staleItems = data.staleSignals ?? [];
+      const items = freshItems.length > 0 ? freshItems : staleItems;
+      const generatedAt =
+        data.generatedAt ?? items[0]?.generatedAt ?? cached.generatedAt;
+      const nextFreshness: CachedSignals = {
+        signals: items,
+        generatedAt,
+        stale:
+          Boolean(data.stale) ||
+          freshItems.length === 0 ||
+          !isFreshGenerated(generatedAt),
+        freshnessStatus: data.freshnessStatus ?? "empty",
+      };
+      setSignals(items);
+      setFreshness(nextFreshness);
+      saveCached(nextFreshness);
     } catch (err) {
       console.warn("[RiskSignals] fetch failed:", err);
     } finally {
@@ -123,9 +148,13 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
     };
   }, [visible, fetchSignals]);
 
-  const textSize = compact ? "text-[9px]" : "text-[10px]";
-  const titleSize = compact ? "text-[10px]" : "text-[11px]";
-  const padding = compact ? "px-3 py-2" : "px-4 py-3";
+  const driftData = useRiskSignalDrift(signals);
+
+  const textSize = compact ? "text-[10.5px]" : "text-[11.5px]";
+  const titleSize = compact ? "text-[11.5px]" : "text-[12.5px]";
+  const metaSize = compact ? "text-[9px]" : "text-[9.5px]";
+  const microSize = compact ? "text-[8px]" : "text-[8.5px]";
+  const padding = compact ? "px-1.5 py-2.5" : "px-2.5 py-3";
 
   if (loading) {
     return (
@@ -140,91 +169,121 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
       <div ref={containerRef} className="text-center py-4">
         <ShieldAlert className="w-4 h-4 text-[var(--fintheon-muted)]/30 mx-auto mb-1" />
         <div className="text-[9px] text-[var(--fintheon-muted)]/40">
-          No risk signals — waiting for bulletins or high-severity catalysts
+          {freshness.freshnessStatus === "generation-error"
+            ? "Risk signals unavailable"
+            : "No fresh risk signals"}
+        </div>
+        <div className="mt-1 text-[8px] text-[var(--fintheon-muted)]/30">
+          Inputs checked {formatAge(freshness.generatedAt)}
         </div>
       </div>
     );
   }
 
   return (
-    <div ref={containerRef} className="flex flex-col gap-2 py-2">
-      {signals.map((signal) => {
+    <div ref={containerRef} className="flex flex-col py-1">
+      {freshness.stale && (
+        <div className="px-2 pb-1 text-[8px] text-[var(--fintheon-muted)]/35">
+          Last generated {formatAge(freshness.generatedAt)}
+        </div>
+      )}
+      {signals.map((signal, index) => {
         const expanded = expandedId === signal.id;
-        const borderColor = SEVERITY_BORDER[signal.severity];
-        const badgeColor = scoreColor(signal.score);
+        const direction = inferSignalDirection(signal);
+        const driftLabel = formatDriftLabel(driftData[signal.id]?.label);
+        const directionColor =
+          direction === "BULLISH"
+            ? "var(--fintheon-bullish)"
+            : direction === "BEARISH"
+              ? "var(--fintheon-bearish)"
+              : "var(--fintheon-muted)";
 
         return (
-          <button
-            key={signal.id}
-            type="button"
-            onClick={() => setExpandedId(expanded ? null : signal.id)}
-            className={`w-full text-left rounded-lg transition-colors ${padding}`}
-            style={{
-              border: `1px solid ${borderColor}`,
-              backgroundColor:
-                "color-mix(in srgb, var(--fintheon-surface) 80%, transparent)",
-            }}
-          >
-            {/* Collapsed: title + score badge + source tag */}
-            <div className="flex items-center gap-2">
-              {expanded ? (
-                <ChevronDown className="w-3 h-3 text-[var(--fintheon-muted)]/40 flex-shrink-0" />
-              ) : (
-                <ChevronRight className="w-3 h-3 text-[var(--fintheon-muted)]/40 flex-shrink-0" />
-              )}
-              <span
-                className={`${titleSize} font-semibold text-[var(--fintheon-text)] flex-1 line-clamp-1`}
-              >
-                {signal.title}
-              </span>
-              <span
-                className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded flex-shrink-0"
-                style={{
-                  color: badgeColor,
-                  backgroundColor: `color-mix(in srgb, ${badgeColor} 12%, transparent)`,
-                }}
-              >
-                {signal.score.toFixed(1)}
-              </span>
-              <span className="text-[7px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider flex-shrink-0">
-                {SOURCE_LABEL[signal.source] || signal.source}
-              </span>
-            </div>
-
-            {/* Summary always visible */}
-            <div
-              className={`${textSize} text-[var(--fintheon-muted)]/50 mt-1 line-clamp-1`}
+          <div key={signal.id} className="min-w-0">
+            {index > 0 && <FadingRuler className="my-1" />}
+            <button
+              type="button"
+              onClick={() => setExpandedId(expanded ? null : signal.id)}
+              className={`w-full min-w-0 cursor-pointer rounded-md text-left transition-colors hover:bg-[var(--fintheon-accent)]/5 ${
+                expanded ? "bg-[var(--fintheon-accent)]/5" : ""
+              } ${freshness.stale ? "opacity-70" : ""} ${padding}`}
             >
-              {signal.summary}
-            </div>
+              <div className="flex min-w-0 items-center gap-2">
+                {expanded ? (
+                  <ChevronDown className="h-3 w-3 shrink-0 text-[var(--fintheon-muted)]/45" />
+                ) : (
+                  <ChevronRight className="h-3 w-3 shrink-0 text-[var(--fintheon-muted)]/45" />
+                )}
+                <span
+                  className={`${titleSize} min-w-0 flex-1 font-semibold text-[var(--fintheon-text)] line-clamp-1`}
+                >
+                  {signal.title}
+                </span>
+                <span className="flex shrink-0 items-center gap-2 text-right font-mono leading-tight">
+                  <ChevronRight
+                    className="h-3 w-3"
+                    style={{
+                      color: directionColor,
+                      transform:
+                        direction === "BULLISH"
+                          ? "rotate(-90deg)"
+                          : direction === "BEARISH"
+                            ? "rotate(90deg)"
+                            : "rotate(0deg)",
+                    }}
+                  />
+                    <span className="w-[4.35rem]">
+                    <span className={`mb-1 flex items-center justify-between gap-1 ${metaSize} text-[var(--fintheon-muted)]/50`}>
+                      <span>{driftLabel}</span>
+                      <span>{signal.score.toFixed(1)}</span>
+                    </span>
+                    <NothingFuse
+                      value={Math.max(0, Math.min(1, signal.score / 10))}
+                      score={signal.score}
+                      thickness={2}
+                      segments={5}
+                    />
+                  </span>
+                </span>
+              </div>
 
-            {/* Expanded: analysis + headlines + threads */}
+            </button>
             {expanded && (
-              <div className="mt-2 pt-2 border-t border-[var(--fintheon-border)]/10 space-y-2">
+              <div className="relative ml-5 mt-2 space-y-2 rounded-md bg-[var(--fintheon-accent)]/[0.035] px-2 py-2 pr-16">
+                <FadingRuler />
                 <p
                   className={`${textSize} text-[var(--fintheon-text)]/70 leading-relaxed`}
                 >
-                  {signal.analysis}
+                  {displayAnalysis(signal)}
                 </p>
+
+                {isPendingRefinement(signal) && (
+                  <div className={`${microSize} uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/55`}>
+                    Pending Agentic Desk refinement
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <span className={`${microSize} text-[var(--fintheon-muted)]/30 uppercase tracking-wider`}>
+                    Estimated Drift
+                  </span>
+                  {driftData[signal.id]?.loading ? (
+                    <span className="h-3 w-20 rounded-sm bg-[var(--fintheon-accent)]/10 animate-pulse" />
+                  ) : (
+                    <span className={`${metaSize} text-[var(--fintheon-accent)] font-mono font-medium`}>
+                      {driftData[signal.id]?.label ?? "—"}
+                    </span>
+                  )}
+                </div>
 
                 {signal.relatedHeadlines.length > 0 && (
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[7px] text-[var(--fintheon-muted)]/30 uppercase tracking-wider">
+                      <span className={`${microSize} text-[var(--fintheon-muted)]/30 uppercase tracking-wider`}>
                         Related Headlines
                       </span>
-                      <span className="text-[7px] text-[var(--fintheon-muted)]/30">
-                        {(() => {
-                          const h = Math.max(
-                            0,
-                            (Date.now() -
-                              new Date(signal.generatedAt).getTime()) /
-                              3_600_000,
-                          );
-                          if (h < 1) return "just now";
-                          if (h < 24) return `${Math.round(h)}h ago`;
-                          return `${Math.floor(h / 24)}d ago`;
-                        })()}
+                      <span className={`${microSize} text-[var(--fintheon-muted)]/30`}>
+                        {formatAge(signal.generatedAt)}
                       </span>
                     </div>
                     {signal.relatedHeadlines.map((h, i) => (
@@ -239,27 +298,24 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
                 )}
 
                 {signal.narrativeThreads.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-x-2 gap-y-1">
                     {signal.narrativeThreads.map((t) => (
                       <span
                         key={t}
-                        className="text-[7px] px-1.5 py-0.5 rounded-full border"
-                        style={{
-                          color: "var(--fintheon-accent)",
-                          borderColor:
-                            "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
-                          backgroundColor:
-                            "color-mix(in srgb, var(--fintheon-accent) 5%, transparent)",
-                        }}
+                        className={`${microSize} text-[var(--fintheon-accent)]/70`}
                       >
                         {t}
                       </span>
                     ))}
                   </div>
                 )}
+                <AgenticFeedbackControls
+                  surface="risk-signals"
+                  itemId={signal.id}
+                />
               </div>
             )}
-          </button>
+          </div>
         );
       })}
     </div>

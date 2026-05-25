@@ -22,7 +22,7 @@ Claude Code Routines are cloud-based autonomous agents running on Anthropic infr
 - [ ] Boardroom Synthesis: 10 AM ET — digest standup takeaways (1 run/day)
 - [ ] MiroShark Meta: daily — check for stale predictions, agent convergence (1 run/day)
 - [ ] Poly/Kalshi Divergence Analysis: 2x/day — deep analysis on persistent divergences (2 runs/day)
-- [ ] Aquarium Deep Outlook: 2x/day — full Context Bank + calibration preview (2 runs/day)
+- [ ] ArbitrumChamber Deep Outlook: 2x/day — full Context Bank + calibration preview (2 runs/day)
 
 ### Backend coordination
 

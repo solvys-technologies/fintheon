@@ -101,7 +101,7 @@ Inline fixups: two Ultrareview findings against this same branch that touch adja
 
 ## Known Issues to Preserve (from changelog)
 
-- **S23-T3 Aquarium surface flag** in `FintheonComposer.tsx` — when editing the composer, do not drop the `activeConnectors.includes("aquarium")` auto-append or the `surface` prop forwarding. The new relay button renders in the action cluster; leave the Aquarium wiring untouched.
+- **S23-T3 ArbitrumChamber surface flag** in `FintheonComposer.tsx` — when editing the composer, do not drop the `activeConnectors.includes("arbitrumChamber")` auto-append or the `surface` prop forwarding. The new relay button renders in the action cluster; leave the ArbitrumChamber wiring untouched.
 - **S20-T6 conversation persistence** in `backend-hono/src/routes/relay.ts` — the existing `POST /chat` handler now has an IDOR ownership check (my S21 security fix). The three new routes in this brief follow the same ownership pattern. Do not weaken `/chat`'s check when adding new routes.
 - **Doto digits revert** in `frontend/fonts.css` — do not reintroduce Doto for digits anywhere, including the new "Chatting on iPhone" banner or disconnect button label.
 - **No gradients, no colored emojis, no Kanban borders** — dispatched banner uses flat Solvys Gold text on BG; disconnect button is a flat outlined button.

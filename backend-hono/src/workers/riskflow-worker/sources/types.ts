@@ -3,13 +3,17 @@
 //   (CollectedNewsItem, NewsTier, NewsSource) preserved to keep downstream consumers stable.
 // [claude-code 2026-04-19] S27-T7 (W2d): shared types for riskflow-worker sources.
 
-export type NewsTier = "breaking" | "standard";
+// [claude-code 2026-05-03] Added "unified" to support merged-tier home-timeline polling.
+// Items still emit with their routing tier (breaking/standard/commentary); "unified"
+// only gates the collector—it tells x-handles-browser to skip per-tier filtering.
+export type NewsTier = "breaking" | "standard" | "commentary" | "unified";
 
 export type NewsSource =
   | "browser-harness"
   | "exa"
   | "agent-reach"
   | "kalshi"
+  | "financialjuice-rss"
   | `twitter:${string}`;
 
 export interface CollectedNewsItem {
@@ -27,11 +31,10 @@ export interface CollectedNewsItem {
    *  og:image / twitter:image for browser-harness, <enclosure> /
    *  <media:thumbnail> for RSS. */
   image_url?: string | null;
-  /** Direct .mp4 URL for tweets attaching a video / animated_gif.
-   *  Highest-bitrate variant from extended_entities.media[].video_info.variants[].
-   *  RiskFlowDetailCard renders it inline as <video controls poster={image_url}>
-   *  when present; falls back to <img> otherwise. */
+  /** Direct .mp4 URL for tweets attaching a video / animated_gif. */
   video_url?: string | null;
+  /** Multiple image URLs for tweets with 2+ photos (displayed side by side). */
+  image_urls?: string[] | null;
   tier: NewsTier;
   published_at: string;
   fetched_at: string;

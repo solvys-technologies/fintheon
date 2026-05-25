@@ -1,3 +1,8 @@
+// [claude-code 2026-05-03] S58-T1: DeepSeek primary AI diagnostics.
+// [claude-code 2026-04-29] S53-T1: riskflow_runtime section on GET / —
+//   pipelines enabled/disabled, source accounts by category, econ populator/
+//   scheduler health, drop-counter snapshot, feed poller, headlines_24h.
+//   Canonical control-plane payload for Refinement Engine (T2).
 // [claude-code 2026-04-24] S34-T4: GET /source-quality — merges v_source_signal_noise
 //   with in-memory drop-counter snapshot + recent riskflow_drop_counters rows.
 //   The "items_ingested: 0, errors: 0" silent-drop pattern now has a trace.
@@ -10,7 +15,6 @@
 
 import { Hono } from "hono";
 import { pingDb } from "../../db/optimized.js";
-import { getCurrentSnapshot as getDropCounterSnapshot } from "../../services/riskflow/drop-counters.js";
 import { supabaseAuthHealth } from "../../services/supabase-auth.js";
 import { isPollingActive } from "../../services/riskflow/feed-poller.js";
 import { getFeedHealth } from "../../services/riskflow/feed-service.js";
@@ -28,7 +32,10 @@ import {
   triggerReflect,
   isReflectRunning,
 } from "../../services/autoresearch/reflect-scheduler.js";
-import { getLatestReflectReport } from "../../services/autoresearch/reflect-engine.js";
+import {
+  getLatestReflectReport,
+  distributeExternalReflectInsights,
+} from "../../services/autoresearch/reflect-engine.js";
 import { getBrowseTaskStats24h } from "../../services/browser/operator.js";
 import { getBrowserHarnessStats24h } from "../../services/browser/harness-tool.js";
 import { getFiscalSpeakerStats } from "../../services/cron/fiscal-speaker-populator.js";
@@ -42,14 +49,27 @@ import {
 import {
   getAccounts,
   getAccountHandles,
+  getWireHandles,
+  getMacroHandles,
 } from "../../services/source-accounts/source-accounts-service.js";
+import { getEconPopulatorStatus } from "../../services/cron/econ-calendar-populator.js";
+import {
+  getLastEconKeywordResult,
+  isEconKeywordSchedulerActive,
+} from "../../services/cron/econ-keyword-scheduler.js";
+import {
+  getCurrentSnapshot as getDropCounterSnapshot,
+  isDropCounterFlushRunning,
+} from "../../services/riskflow/drop-counters.js";
+import { getPipelineStateSnapshot } from "../../services/riskflow/pipeline-gate.js";
 import { getDeskCalendarDiagnostics } from "../desk-calendar/handlers.js";
 import { getSttProviderDiagnostics } from "../../services/voice-stt-provider.js";
 import { getTranscriptStats24h } from "../../services/commentary-transcript.js";
+import { checkDeepSeekDirectHealth } from "../../services/strands/provider.js";
 
 const log = createLogger("Diagnostics");
 
-type ServiceStatus = "ok" | "error" | "degraded" | "unavailable";
+type ServiceStatus = "ok" | "error" | "degraded" | "unavailable" | "unknown";
 
 interface ServiceDiagnostic {
   name: string;
@@ -111,6 +131,7 @@ interface DiagnosticsResponse {
     vix_last_success: boolean;
     vix_last_latency_ms: number | null;
     recent_symbols: string[];
+    recent_quote_attempts: Array<{ symbol: string; attempts: RouterAttempt[] }>;
   };
   riskflow_sources?: {
     window: string;
@@ -138,6 +159,51 @@ interface DiagnosticsResponse {
     last_capture_at: string | null;
     last_failure: string | null;
   };
+  riskflow_runtime?: {
+    pipelines: Record<string, boolean>;
+    source_accounts_by_category: Record<string, number>;
+    econ_populator: {
+      running: boolean;
+      last_result: {
+        fetched: number;
+        upserted: number;
+        actualsBridged: number;
+        skippedCountry: number;
+        skippedDate: number;
+        skippedFilter: number;
+      } | null;
+    };
+    econ_keyword_scheduler: {
+      running: boolean;
+      last_result: { scanned: number; promoted: number } | null;
+    };
+    drop_counters: {
+      flush_running: boolean;
+      snapshot: {
+        window_start: string;
+        window_end: string;
+        total_dropped: number;
+        counter_count: number;
+      };
+    };
+    feed_poller_running: boolean;
+    headlines_24h: number;
+  };
+  agent_health?: {
+    agents: Array<{
+      agentId: string;
+      role: string;
+      soulLoaded: boolean;
+      soulVersion: number | null;
+      nativeHomeIntact: boolean;
+      reflectScore: number | null;
+      reflectLastRun: string | null;
+      memoryCount: number;
+      gepaLastRun: string | null;
+      gepaOpenPrs: number;
+      personaHealth: "green" | "amber" | "red";
+    }>;
+  };
 }
 
 async function getNewsWorkerSnapshot(): Promise<
@@ -148,7 +214,7 @@ async function getNewsWorkerSnapshot(): Promise<
   if (!sb) return { age_seconds: null, tiers: [] };
   try {
     const { data, error } = await sb
-      .from("news_worker_heartbeats")
+      .from("riskflow_worker_heartbeats")
       .select("tier, last_run_at, items_ingested, errors");
     if (error || !data) return { age_seconds: null, tiers: [] };
     const now = Date.now();
@@ -183,43 +249,40 @@ async function getNewsWorkerSnapshot(): Promise<
 /* ------------------------------------------------------------------ */
 
 async function checkHermesAI(): Promise<ServiceDiagnostic> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) {
     return {
-      name: "Hermes AI (OpenRouter)",
+      name: "Hermes",
       status: "error",
-      detail: "OPENROUTER_API_KEY not set",
-      fix: "Add OPENROUTER_API_KEY to backend-hono/.env",
+      detail: "DEEPSEEK_API_KEY not set",
+      fix: "Add DEEPSEEK_API_KEY to backend-hono/.env or store a user key in Settings",
     };
   }
 
   try {
     const start = Date.now();
-    const res = await fetch("https://openrouter.ai/api/v1/models", {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      signal: AbortSignal.timeout(8000),
-    });
+    const health = await checkDeepSeekDirectHealth();
     const latency = Date.now() - start;
 
-    if (res.ok) {
+    if (health.available) {
       return {
-        name: "Hermes AI (OpenRouter)",
+        name: "Hermes",
         status: "ok",
-        detail: `${latency}ms response`,
+        detail: `deepseek-reasoner primary — ${latency}ms response`,
       };
     }
     return {
-      name: "Hermes AI (OpenRouter)",
+      name: "Hermes",
       status: "degraded",
-      detail: `HTTP ${res.status} — ${latency}ms`,
-      fix: "Check OpenRouter API key validity at openrouter.ai/settings/keys",
+      detail: `${health.error ?? "unreachable"} — ${latency}ms`,
+      fix: "Check DeepSeek API key validity and api.deepseek.com reachability",
     };
   } catch (err) {
     return {
-      name: "Hermes AI (OpenRouter)",
+      name: "Hermes",
       status: "error",
       detail: err instanceof Error ? err.message : String(err),
-      fix: "Check network connectivity to openrouter.ai",
+      fix: "Check network connectivity to api.deepseek.com",
     };
   }
 }
@@ -312,11 +375,90 @@ function checkSupabaseAuth(): ServiceDiagnostic {
   };
 }
 
-function checkTradingView(): ServiceDiagnostic {
+function formatAge(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return "just now";
+  const hours = Math.floor(ms / 3_600_000);
+  if (hours >= 1) return `${hours}h ago`;
+  return `${Math.max(1, Math.floor(ms / 60_000))}m ago`;
+}
+
+function checkTradingViewEconCalendar(
+  diag: DiagnosticsResponse["desk_calendar"],
+): ServiceDiagnostic {
+  if (!diag || diag.queue_count == null) {
+    return {
+      name: "TradingView Econ Calendar",
+      status: "unknown",
+      detail: "Calendar diagnostics unavailable",
+    };
+  }
+  if (diag.latest_error) {
+    return {
+      name: "TradingView Econ Calendar",
+      status: "degraded",
+      detail: diag.latest_error,
+    };
+  }
+  if (diag.queue_count <= 0) {
+    return {
+      name: "TradingView Econ Calendar",
+      status: "degraded",
+      detail: "No TradingView calendar events queued",
+    };
+  }
+  if (!diag.last_ingest_at) {
+    return {
+      name: "TradingView Econ Calendar",
+      status: "ok",
+      detail: `${diag.queue_count} upcoming events queued`,
+    };
+  }
+  const ageMs = Date.now() - new Date(diag.last_ingest_at).getTime();
+  if (ageMs > 36 * 3_600_000) {
+    return {
+      name: "TradingView Econ Calendar",
+      status: "degraded",
+      detail: `${diag.queue_count} queued; last ingest ${formatAge(diag.last_ingest_at)}`,
+    };
+  }
   return {
-    name: "TradingView",
+    name: "TradingView Econ Calendar",
     status: "ok",
-    detail: "Frontend widget — check browser console for load errors",
+    detail: `${diag.queue_count} queued; last ingest ${formatAge(diag.last_ingest_at)}`,
+  };
+}
+
+function checkTradingViewQuotes(routerHealth: {
+  vix_attempts: RouterAttempt[];
+  recent_quote_attempts: Array<{ symbol: string; attempts: RouterAttempt[] }>;
+}): ServiceDiagnostic {
+  const attempts = [
+    ...routerHealth.recent_quote_attempts.flatMap((row) => row.attempts),
+    ...routerHealth.vix_attempts,
+  ].filter((attempt) => attempt.source === "tradingview");
+  const latest = attempts[attempts.length - 1];
+
+  if (!latest) {
+    return {
+      name: "TradingView Quotes",
+      status: "unknown",
+      detail: "No TradingView quote checks recorded yet",
+    };
+  }
+  if (!latest.success) {
+    return {
+      name: "TradingView Quotes",
+      status: "degraded",
+      detail: latest.error
+        ? `TradingView scanner failed: ${latest.error}`
+        : "TradingView scanner returned no quote data",
+    };
+  }
+  return {
+    name: "TradingView Quotes",
+    status: "ok",
+    detail: `TradingView scanner quote healthy (${latest.latencyMs}ms)`,
   };
 }
 
@@ -324,7 +466,7 @@ function checkTradingView(): ServiceDiagnostic {
 /*  Env var audit                                                       */
 /* ------------------------------------------------------------------ */
 
-const REQUIRED_ENV_VARS = ["OPENROUTER_API_KEY"];
+const REQUIRED_ENV_VARS = ["DEEPSEEK_API_KEY"];
 
 const RECOMMENDED_ENV_VARS = [
   "DATABASE_URL",
@@ -505,6 +647,217 @@ async function loadRiskFlowSourceStats(): Promise<
 }
 
 /* ------------------------------------------------------------------ */
+/*  RiskFlow Runtime — canonical control-plane status payload          */
+/* ------------------------------------------------------------------ */
+
+async function loadRiskFlowRuntime(): Promise<
+  DiagnosticsResponse["riskflow_runtime"]
+> {
+  try {
+    const pipelineSnapshot = getPipelineStateSnapshot();
+    const populatorStatus = getEconPopulatorStatus();
+    const keywordResult = getLastEconKeywordResult();
+    const keywordRunning = isEconKeywordSchedulerActive();
+    const dropSnapshot = getDropCounterSnapshot();
+    const dropFlushRunning = isDropCounterFlushRunning();
+    const feedPollerRunning = isPollingActive();
+
+    const accounts = await getAccounts();
+    const byCategory: Record<string, number> = {};
+    for (const a of accounts) {
+      if (!a.active) continue;
+      byCategory[a.category] = (byCategory[a.category] || 0) + 1;
+    }
+
+    let headlines24h = 0;
+    try {
+      const { getSupabaseClient } = await import("../../config/supabase.js");
+      const sb = getSupabaseClient();
+      if (sb) {
+        const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { count, error } = await sb
+          .from("raw_riskflow_items")
+          .select("*", { count: "exact", head: true })
+          .gte("created_at", since);
+        if (!error && count !== null) headlines24h = count;
+      }
+    } catch {
+      // Non-fatal
+    }
+
+    return {
+      pipelines: pipelineSnapshot,
+      source_accounts_by_category: byCategory,
+      econ_populator: {
+        running: populatorStatus.running,
+        last_result: populatorStatus.lastResult,
+      },
+      econ_keyword_scheduler: {
+        running: keywordRunning,
+        last_result: keywordResult,
+      },
+      drop_counters: {
+        flush_running: dropFlushRunning,
+        snapshot: {
+          window_start: dropSnapshot.window_start,
+          window_end: dropSnapshot.window_end,
+          total_dropped: dropSnapshot.total_dropped,
+          counter_count: dropSnapshot.counters.length,
+        },
+      },
+      feed_poller_running: feedPollerRunning,
+      headlines_24h: headlines24h,
+    };
+  } catch (err) {
+    log.warn("loadRiskFlowRuntime failed", { error: String(err) });
+    return {
+      pipelines: {},
+      source_accounts_by_category: {},
+      econ_populator: { running: false, last_result: null },
+      econ_keyword_scheduler: { running: false, last_result: null },
+      drop_counters: {
+        flush_running: false,
+        snapshot: {
+          window_start: "",
+          window_end: "",
+          total_dropped: 0,
+          counter_count: 0,
+        },
+      },
+      feed_poller_running: false,
+      headlines_24h: 0,
+    };
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Agent Health — per-agent SOUL/memory/GEPA/REFLECT status             */
+/* ------------------------------------------------------------------ */
+
+const AGENT_IDS_DIAG = [
+  "harper",
+  "oracle",
+  "feucht",
+  "consul",
+  "herald",
+] as const;
+const AGENT_ROLES_DIAG: Record<string, string> = {
+  harper: "CAO",
+  oracle: "Forecaster",
+  feucht: "Risk Manager",
+  consul: "Quantitative",
+  herald: "Contrarian",
+};
+
+async function loadAgentHealth(): Promise<DiagnosticsResponse["agent_health"]> {
+  try {
+    // SOUL checks (all 5 agents)
+    const soulResults = await Promise.all(
+      AGENT_IDS_DIAG.map(async (agentId) => {
+        try {
+          const { loadSoul } = await import("../../services/ai/soul/loader.js");
+          const soul = await loadSoul(agentId);
+          const identity = soul.identity;
+          const nativeHomeIntact =
+            typeof identity.name === "string" &&
+            identity.name.length > 0 &&
+            typeof identity.role === "string" &&
+            identity.role.length > 0 &&
+            typeof identity.self_description === "string" &&
+            identity.self_description.length > 0;
+          return {
+            agentId,
+            soulLoaded: true as const,
+            soulVersion: soul.schema_version,
+            nativeHomeIntact,
+          };
+        } catch (err) {
+          log.warn(`SOUL load failed for ${agentId}`, { error: String(err) });
+          return {
+            agentId,
+            soulLoaded: false as const,
+            soulVersion: null,
+            nativeHomeIntact: false as const,
+          };
+        }
+      }),
+    );
+
+    // REFLECT
+    let reflectScore: number | null = null;
+    let reflectLastRun: string | null = null;
+    try {
+      const report = await getLatestReflectReport();
+      if (report) {
+        reflectScore = report.metrics?.scoreCalibration ?? null;
+        reflectLastRun = report.generatedAt;
+      }
+    } catch (err) {
+      log.warn("REFLECT check failed in diagnostics", { error: String(err) });
+    }
+
+    // GEPA
+    let gepaLastRun: string | null = null;
+    let gepaOpenPrs = 0;
+    try {
+      const gepa = await loadGepaSnapshot();
+      if (gepa) {
+        gepaLastRun = gepa.last_run_at;
+        gepaOpenPrs = gepa.evolutions_proposed_7d;
+      }
+    } catch (err) {
+      log.warn("GEPA check failed in diagnostics", { error: String(err) });
+    }
+
+    // Memory counts (parallel)
+    const memoryCounts = await Promise.all(
+      AGENT_IDS_DIAG.map(async (agentId) => {
+        try {
+          const { getSupabaseClient } =
+            await import("../../config/supabase.js");
+          const sb = getSupabaseClient();
+          if (!sb) return { agentId, count: 0 };
+          const { count, error } = await sb
+            .from("agent_memory")
+            .select("*", { count: "exact", head: true })
+            .eq("agent_id", agentId);
+          return { agentId, count: error ? 0 : (count ?? 0) };
+        } catch {
+          return { agentId, count: 0 };
+        }
+      }),
+    );
+
+    const agents = AGENT_IDS_DIAG.map((agentId) => {
+      const soul = soulResults.find((s) => s.agentId === agentId)!;
+      const memc = memoryCounts.find((m) => m.agentId === agentId)!;
+      let personaHealth: "green" | "amber" | "red" = "red";
+      if (soul.soulLoaded && soul.nativeHomeIntact) personaHealth = "green";
+      else if (soul.soulLoaded) personaHealth = "amber";
+
+      return {
+        agentId,
+        role: AGENT_ROLES_DIAG[agentId]!,
+        soulLoaded: soul.soulLoaded,
+        soulVersion: soul.soulVersion,
+        nativeHomeIntact: soul.nativeHomeIntact,
+        reflectScore,
+        reflectLastRun,
+        memoryCount: memc.count,
+        gepaLastRun,
+        gepaOpenPrs,
+        personaHealth,
+      };
+    });
+
+    return { agents };
+  } catch (err) {
+    log.warn("loadAgentHealth failed", { error: String(err) });
+    return { agents: [] };
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /*  Route                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -515,7 +868,7 @@ export function createDiagnosticsRoutes(): Hono {
     const start = Date.now();
 
     const [
-      services,
+      coreServices,
       browserStats,
       newsWorker,
       econBackfill,
@@ -543,17 +896,11 @@ export function createDiagnosticsRoutes(): Hono {
 
     const missingEnvVars = auditEnvVars();
 
-    const hasError = services.some((s) => s.status === "error");
-    const hasDegraded = services.some((s) => s.status === "degraded");
-    const overall: ServiceStatus = hasError
-      ? "error"
-      : hasDegraded
-        ? "degraded"
-        : "ok";
-
-    const [routing, gepa] = await Promise.all([
+    const [routing, gepa, riskflowRuntime, agentHealth] = await Promise.all([
       loadRoutingSnapshot(),
       loadGepaSnapshot(),
+      loadRiskFlowRuntime(),
+      loadAgentHealth(),
     ]);
 
     // [claude-code 2026-04-28] S47-T2: desk calendar diagnostics
@@ -592,6 +939,18 @@ export function createDiagnosticsRoutes(): Hono {
     const vixAttempts = getLastVixAttempts();
     const vixAttempt = vixAttempts[vixAttempts.length - 1];
     const routerHealth = getRouterHealthSnapshot();
+    const services = [
+      ...coreServices,
+      checkTradingViewEconCalendar(deskCalendarDiag),
+      checkTradingViewQuotes(routerHealth),
+    ];
+    const hasError = services.some((s) => s.status === "error");
+    const hasDegraded = services.some((s) => s.status === "degraded");
+    const overall: ServiceStatus = hasError
+      ? "error"
+      : hasDegraded
+        ? "degraded"
+        : "ok";
 
     const response: DiagnosticsResponse & {
       routing?: unknown;
@@ -613,6 +972,7 @@ export function createDiagnosticsRoutes(): Hono {
         vix_last_success: vixAttempt?.success ?? false,
         vix_last_latency_ms: vixAttempt?.latencyMs ?? null,
         recent_symbols: routerHealth.recent_symbols,
+        recent_quote_attempts: routerHealth.recent_quote_attempts,
       },
       riskflow_sources: riskflowSources,
       voice_stt: (() => {
@@ -622,7 +982,8 @@ export function createDiagnosticsRoutes(): Hono {
           model: d.model,
           available: d.available,
           reason: d.reason,
-          sidecar_enabled: process.env.HERMES_SIDECAR_ENABLED === "true",
+          sidecar_enabled: false,
+          sidecar_available: false, // sidecar removed S59-T1
           voice_sidecar_disabled: process.env.VOICE_SIDECAR_DISABLED === "true",
           vibevoice_configured: Boolean(process.env.VIBEVOICE_ASR_URL),
           openai_configured: Boolean(process.env.OPENAI_API_KEY),
@@ -633,6 +994,8 @@ export function createDiagnosticsRoutes(): Hono {
         last_capture_at: transcriptStats.lastCaptureAt,
         last_failure: transcriptStats.lastFailure,
       },
+      riskflow_runtime: riskflowRuntime,
+      agent_health: agentHealth,
       routing,
       gepa,
       fiscal_speakers: getFiscalSpeakerStats(),
@@ -640,8 +1003,9 @@ export function createDiagnosticsRoutes(): Hono {
 
     log.info("Diagnostics check", { overall, elapsed: Date.now() - start });
 
-    const statusCode =
-      overall === "ok" ? 200 : overall === "degraded" ? 207 : 503;
+    // Degraded optional services should stay visible in the body without
+    // failing release/load-balancer HTTP checks.
+    const statusCode = overall === "error" ? 503 : 200;
     return c.json(response, statusCode);
   });
 
@@ -721,6 +1085,50 @@ export function createDiagnosticsRoutes(): Hono {
     );
 
     return c.json({ status: "started", daysBack });
+  });
+
+  router.post("/reflect/ingest", async (c) => {
+    const body = await c.req
+      .json<{
+        scope?: string;
+        summary?: string;
+        findings?: Array<{
+          severity?: "info" | "warning" | "critical";
+          message?: string;
+          recommendation?: string;
+          metric?: string;
+        }>;
+        metadata?: Record<string, unknown>;
+      }>()
+      .catch(() => null);
+
+    const summary = body?.summary?.trim();
+    if (!summary) {
+      return c.json({ error: "summary is required" }, 400);
+    }
+
+    const findings =
+      body?.findings
+        ?.filter((f) => !!f?.message && !!f?.severity)
+        .map((f) => ({
+          severity: f.severity as "info" | "warning" | "critical",
+          message: String(f.message),
+          recommendation: f.recommendation,
+          metric: f.metric,
+        })) ?? [];
+
+    await distributeExternalReflectInsights({
+      scope: body?.scope?.trim() || "agentic",
+      summary,
+      findings,
+      metadata: body?.metadata,
+    });
+
+    return c.json({
+      status: "distributed",
+      scope: body?.scope?.trim() || "agentic",
+      findingsDistributed: findings.length,
+    });
   });
 
   // [claude-code 2026-04-06] Debug: check unscored items count

@@ -2,8 +2,8 @@
 import {
   Crown,
   Eye,
-  Zap,
-  Scroll,
+  ChartLine,
+  MagnifyingGlass,
   Megaphone,
   MessageCircle,
   Bot,
@@ -40,13 +40,13 @@ const AGENT_MAP: Record<BoardroomAgent, AgentConfig> = {
   Feucht: {
     label: "Feucht",
     role: "Risk Desk",
-    icon: Zap,
+    icon: ChartLine,
     accentClass: "text-[#D4AF37]",
   },
   Consul: {
     label: "Consul",
     role: "Fundamentals",
-    icon: Scroll,
+    icon: MagnifyingGlass,
     accentClass: "text-[#D4AF37]",
   },
   Herald: {

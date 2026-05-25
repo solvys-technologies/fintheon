@@ -20,8 +20,10 @@ import {
 } from "../../services/supabase-service.js";
 import { getFeed } from "../../services/riskflow/feed-service.js";
 import { getUserSettings } from "../../services/settings-store.js";
+import { query } from "../../db/optimized.js";
 import {
   getCurrentBriefType,
+  isBriefCurrentForWindow,
   generateBrief,
   BRIEF_LABELS,
 } from "../../services/brief-generator.js";
@@ -145,6 +147,48 @@ function dailyPnlToKpis(records: DailyPnlRecord[]) {
   return kpis;
 }
 
+async function tradeKpisForDate(date?: string) {
+  const targetDate = date ?? new Date().toISOString().slice(0, 10);
+  try {
+    const result = await query<{
+      contracts: string | number | null;
+      notional: string | number | null;
+    }>(
+      `SELECT
+         COALESCE(SUM(ABS(qty)), 0) AS contracts,
+         COALESCE(SUM(ABS(qty * entry_price)), 0) AS notional
+       FROM trades
+       WHERE entry_at::date = $1::date`,
+      [targetDate],
+    );
+    const row = result.rows[0];
+    const contracts = Number(row?.contracts ?? 0);
+    const notional = Number(row?.notional ?? 0);
+    const kpis: Array<{ label: string; value: string; meta: string }> = [];
+
+    kpis.push({
+      label: "Contracts",
+      value: Number.isFinite(contracts)
+        ? contracts.toLocaleString(undefined, { maximumFractionDigits: 2 })
+        : "--",
+      meta: "Today",
+    });
+    kpis.push({
+      label: "Notional",
+      value: Number.isFinite(notional)
+        ? `$${Math.round(notional).toLocaleString()}`
+        : "--",
+      meta: "Gross exposure",
+    });
+    return kpis;
+  } catch (error) {
+    console.warn("[data/performance] trade KPI query skipped", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return [];
+  }
+}
+
 // ── Route factory ───────────────────────────────────────────────────────────
 
 export function createDataRoutes(): Hono {
@@ -189,7 +233,10 @@ export function createDataRoutes(): Hono {
   // GET /api/data/performance
   app.get("/performance", async (c) => {
     const records = await readDailyPnl({ limit: 1 });
-    const kpis = dailyPnlToKpis(records);
+    const kpis = [
+      ...dailyPnlToKpis(records),
+      ...(await tradeKpisForDate(records[0]?.date)),
+    ];
     return c.json({
       kpis,
       count: kpis.length,
@@ -264,7 +311,7 @@ export function createDataRoutes(): Hono {
   // Delegates to shared brief-generator service (also used by dispatch-scheduler crons)
   // Optional body `{ type: "MDB"|"ADB"|"PMDB"|"TWT" }`. Legacy "TOTT" / "WT" normalized to "TWT".
   // [claude-code 2026-04-24] S35-T5: accept body.type with legacy TOTT/WT alias
-  // [claude-code 2026-04-16] Triggers AgentDesk Aquarium run after successful brief publish
+  // [claude-code 2026-04-16] Triggers AgentDesk ArbitrumChamber run after successful brief publish
   app.post("/brief/generate", async (c) => {
     try {
       let overrideType: BriefType | undefined;
@@ -278,14 +325,14 @@ export function createDataRoutes(): Hono {
       }
       const result = await generateBrief(overrideType);
 
-      // Fire-and-forget: trigger Aquarium deliberation after brief publish
+      // Fire-and-forget: trigger ArbitrumChamber deliberation after brief publish
       // Empty lanes → AgentDesk synthesizes from RiskFlow headlines
       startPrediction(
         { lanes: [], catalysts: [], ropes: [] },
         undefined,
         "full-brief",
       ).catch((err) =>
-        console.warn("[Data] Post-brief Aquarium trigger failed:", err),
+        console.warn("[Data] Post-brief ArbitrumChamber trigger failed:", err),
       );
 
       return c.json({
@@ -298,6 +345,54 @@ export function createDataRoutes(): Hono {
     } catch (err) {
       console.error("[Data] /brief/generate error:", err);
       return c.json({ error: "Generation failed", details: String(err) }, 500);
+    }
+  });
+
+  // POST /api/data/brief/ensure-current
+  // Refresh-button contract: check the current Eastern Time briefing window first.
+  // If the frontend-visible brief for that window has not been published, generate it.
+  app.post("/brief/ensure-current", async (c) => {
+    try {
+      const briefType = getCurrentBriefType();
+      const latest = await readLatestBrief(briefType);
+      if (isBriefCurrentForWindow(latest, briefType)) {
+        return c.json({
+          content: latest?.content ?? "",
+          briefType,
+          generatedAt: latest?.created_at ?? new Date().toISOString(),
+          supabaseId: latest?.id ?? null,
+          generated: false,
+          status: "current",
+          timezone: "America/New_York",
+        });
+      }
+
+      const result = await generateBrief(briefType);
+
+      startPrediction(
+        { lanes: [], catalysts: [], ropes: [] },
+        undefined,
+        "full-brief",
+      ).catch((err) =>
+        console.warn("[Data] Post-brief ArbitrumChamber trigger failed:", err),
+      );
+
+      return c.json({
+        content: result.content,
+        briefType: result.briefType,
+        generatedAt: result.generatedAt,
+        supabaseId: result.supabaseId,
+        provider: result.provider,
+        generated: true,
+        status: "generated",
+        timezone: "America/New_York",
+      });
+    } catch (err) {
+      console.error("[Data] /brief/ensure-current error:", err);
+      return c.json(
+        { error: "Ensure current brief failed", details: String(err) },
+        500,
+      );
     }
   });
 

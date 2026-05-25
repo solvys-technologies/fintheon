@@ -37,12 +37,6 @@ export interface DeskRecordResponse {
   createdAt: string;
 }
 
-export interface VoiceParticipantsResponse {
-  roomId: string;
-  participants: Array<{ peerId: string; joinedAt: string }>;
-  configured: boolean;
-}
-
 export class PeersService {
   constructor(private client: ApiClient) {}
 
@@ -102,31 +96,4 @@ export class PeersService {
     return this.client.post(`/api/peers/desks/${deskId}/assign`, { peerId });
   }
 
-  async joinVoice(data: {
-    peerId?: string;
-    roomId?: string;
-    roomName?: string;
-  }): Promise<{
-    room: { id: string; name: string; createdAt: string; configured: boolean };
-    token: string;
-    configured: boolean;
-    url: string | null;
-  }> {
-    return this.client.post("/api/peers/voice/join", data);
-  }
-
-  async leaveVoice(data: {
-    peerId?: string;
-    roomId: string;
-  }): Promise<{ left: boolean }> {
-    return this.client.post("/api/peers/voice/leave", data);
-  }
-
-  async listVoiceParticipants(
-    roomId: string,
-  ): Promise<VoiceParticipantsResponse> {
-    return this.client.get(
-      `/api/peers/voice/participants?roomId=${encodeURIComponent(roomId)}`,
-    );
-  }
 }

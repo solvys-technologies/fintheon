@@ -923,6 +923,312 @@ export async function handleRefresh(c: Context) {
   }
 }
 
+/**
+ * POST /api/riskflow/rettiwt-kickstart
+ * Owner-gated manual Rettiwt pull using the unified X handle-routing filters.
+ * Designed for Refinement Engine "Kickstart" so operators can test/recover
+ * Rettiwt ingestion without relying on the legacy poller path.
+ */
+export async function handleRettiwtKickstart(c: Context) {
+  const userId = c.get("userId") as string | undefined;
+  if (!userId) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const ownerEmail =
+    process.env.POLL_OWNER_EMAIL || "pricedinresearch@gmail.com";
+  const ownerId = process.env.POLL_OWNER_ID || "local-user";
+  const email = c.get("email") as string | undefined;
+  const isOwner =
+    email === ownerEmail || userId === ownerId || userId === "local-user";
+  if (!isOwner) {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+
+  try {
+    const body = await c.req
+      .json<{ handles?: string[] }>()
+      .catch(() => ({}) as { handles?: string[] });
+    const [
+      { forceRefreshPool, getPoolStatus },
+      { getBrowserHandles },
+      { pollHandlesViaRettiwt },
+      { getTweetsViaXActions, isXActionsConfigured },
+      { writeCollectedItems },
+      { getRoutingForHandle, passesContentFilter, isDisallowedRepostOrRetweet },
+      { scoreHeadline },
+    ] = await Promise.all([
+      import("../../services/rettiwt-service.js"),
+      import("../../services/source-accounts/source-accounts-service.js"),
+      import("../../services/twitter/rettiwt-fallback.js"),
+      import("../../services/xactions/client.js"),
+      import("../../workers/riskflow-worker/persist.js"),
+      import("../../workers/riskflow-worker/sources/handle-routing.js"),
+      import("../../workers/riskflow-worker/score.js"),
+    ]);
+
+    const poolRefreshed = await forceRefreshPool().catch(() => ({
+      totalKeys: 0,
+      resetCount: 0,
+    }));
+    const allHandles = await getBrowserHandles();
+    const requestedHandles = Array.isArray(body.handles)
+      ? body.handles
+          .map((h) => h.replace(/^@/, "").trim())
+          .filter((h) => h.length > 0)
+      : [];
+    const handleAllow = new Set(allHandles.map((h) => h.toLowerCase()));
+    const selectedHandles =
+      requestedHandles.length > 0
+        ? requestedHandles.filter((h) => handleAllow.has(h.toLowerCase()))
+        : allHandles;
+    const selectedHandleSet = new Set(
+      selectedHandles.map((h) => h.toLowerCase()),
+    );
+    const selectedHandleLabel = new Map(
+      selectedHandles.map((h) => [h.toLowerCase(), h]),
+    );
+
+    if (selectedHandles.length === 0) {
+      return c.json({
+        success: true,
+        message:
+          allHandles.length === 0
+            ? "No browser handles configured"
+            : "No selected handles are eligible for browser Rettiwt kickstart",
+        poolRefreshed,
+        pool: getPoolStatus(),
+        handles: allHandles.length,
+        selectedHandles: [],
+        fetched: 0,
+        candidateItems: 0,
+        written: 0,
+        rescored: 0,
+        perSource: [],
+        kickedAt: new Date().toISOString(),
+      });
+    }
+
+    interface KickstartTweet {
+      id: string;
+      text: string;
+      username: string;
+      publishedAt: string;
+      url: string;
+      pipeline: "rettiwt" | "xactions";
+    }
+
+    const rettiwtTweetsRaw = await pollHandlesViaRettiwt(selectedHandles);
+    const rettiwtTweets: KickstartTweet[] = rettiwtTweetsRaw.map((tw) => ({
+      id: String(tw.id),
+      text: tw.text ?? "",
+      username: (tw.username || "").replace(/^@/, "").trim(),
+      publishedAt: tw.publishedAt,
+      url: tw.url || "",
+      pipeline: "rettiwt",
+    }));
+
+    const fetchedByHandle = new Map<string, number>();
+    for (const tw of rettiwtTweets) {
+      const key = tw.username.toLowerCase();
+      if (!key) continue;
+      fetchedByHandle.set(key, (fetchedByHandle.get(key) ?? 0) + 1);
+    }
+
+    const xactionsEnabled = isXActionsConfigured();
+    const missingHandles = selectedHandles.filter(
+      (h) => (fetchedByHandle.get(h.toLowerCase()) ?? 0) === 0,
+    );
+    const xactionsTweets: KickstartTweet[] = [];
+    if (xactionsEnabled && missingHandles.length > 0) {
+      const xaByHandle = await Promise.all(
+        missingHandles.map(async (handle) => {
+          const tweets = await getTweetsViaXActions({ handle, limit: 20 });
+          return tweets.map((tw) => ({
+            id: String(tw.tweet_id),
+            text: tw.text ?? "",
+            username: (tw.author_handle || handle).replace(/^@/, "").trim(),
+            publishedAt: tw.timestamp,
+            url:
+              tw.permalink || `https://x.com/${handle}/status/${tw.tweet_id}`,
+            pipeline: "xactions" as const,
+          }));
+        }),
+      );
+      for (const list of xaByHandle) xactionsTweets.push(...list);
+    }
+
+    const seenTweetKey = new Set<string>();
+    const tweets: KickstartTweet[] = [];
+    for (const tw of [...rettiwtTweets, ...xactionsTweets]) {
+      const handleKey = tw.username.toLowerCase();
+      if (!handleKey || !tw.id) continue;
+      const key = `${handleKey}:${tw.id}`;
+      if (seenTweetKey.has(key)) continue;
+      seenTweetKey.add(key);
+      tweets.push(tw);
+    }
+    const now = Date.now();
+    const fetchedAt = new Date(now).toISOString();
+    const perSource = new Map<
+      string,
+      { fetched: number; candidates: number; accepted: number }
+    >();
+    for (const h of selectedHandles) {
+      perSource.set(h.toLowerCase(), {
+        fetched: 0,
+        candidates: 0,
+        accepted: 0,
+      });
+    }
+
+    const items: Array<{
+      item_id: string;
+      source: `twitter:${string}`;
+      source_domain: string;
+      headline: string;
+      body: string;
+      url: string;
+      tier: "breaking" | "standard" | "commentary";
+      published_at: string;
+      fetched_at: string;
+      fetch_latency_ms: number;
+      ingest_pipeline: string;
+      image_url: null;
+      video_url: null;
+    }> = [];
+
+    const isGuardrailRejected = (text: string): boolean => {
+      const t = text.toLowerCase();
+      return /\b(lol|lmao|haha|meme|joke|shitpost|nostalgia|you had to be there)\b/.test(
+        t,
+      );
+    };
+    const isStrictPromoRejected = (text: string): boolean => {
+      const t = text.toLowerCase();
+      return (
+        /\b(promoted|sponsored|paid partnership|ad:|advertisement)\b/i.test(
+          t,
+        ) ||
+        /\b(sign up|subscribe|free trial|join now|use code|coupon|promo code)\b/i.test(
+          t,
+        ) ||
+        /\b(discord\.gg|t\.me\/|patreon|affiliate|referral)\b/i.test(t)
+      );
+    };
+    const sanitizeTweetBody = (text: string): string =>
+      text
+        .replace(/(^|\s)@[A-Za-z0-9_]{1,20}\b/g, " ")
+        .replace(
+          /\b\d+(\.\d+)?\s*(k|m)?\s*(views?|likes?|repl(?:y|ies)|reposts?|bookmarks?)\b/gi,
+          " ",
+        )
+        .replace(/\s+/g, " ")
+        .trim();
+
+    for (const tw of tweets) {
+      const handle = (tw.username || "").replace(/^@/, "").trim();
+      if (!handle) continue;
+      const handleKey = handle.toLowerCase();
+      if (!selectedHandleSet.has(handleKey)) continue;
+      const ps = perSource.get(handleKey) ?? {
+        fetched: 0,
+        candidates: 0,
+        accepted: 0,
+      };
+      ps.fetched += 1;
+      perSource.set(handleKey, ps);
+      const routings = getRoutingForHandle(handle);
+      if (routings.length === 0) continue;
+
+      const rawText = (tw.text || "").replace(/\s+/g, " ").trim();
+      if (isDisallowedRepostOrRetweet(rawText, selectedHandleSet)) continue;
+      const text = sanitizeTweetBody(rawText);
+      if (!text) continue;
+
+      const headline = text.length > 220 ? text.slice(0, 220) : text;
+      if (!scoreHeadline(headline)) continue;
+      if (isGuardrailRejected(text)) continue;
+      if (isStrictPromoRejected(text)) continue;
+
+      const publishedMs = Date.parse(tw.publishedAt);
+      const publishedAt = Number.isFinite(publishedMs)
+        ? new Date(publishedMs).toISOString()
+        : fetchedAt;
+      const latency = Number.isFinite(publishedMs)
+        ? Math.max(0, now - publishedMs)
+        : 0;
+
+      for (const routing of routings) {
+        if (!passesContentFilter(text, routing.contentFilter)) continue;
+        ps.candidates += 1;
+        items.push({
+          item_id: String(tw.id),
+          source: `twitter:${handle}`,
+          source_domain: "x.com",
+          headline,
+          body: text,
+          url: tw.url || `https://x.com/${handle}/status/${tw.id}`,
+          tier: routing.tier,
+          published_at: publishedAt,
+          fetched_at: fetchedAt,
+          fetch_latency_ms: latency,
+          ingest_pipeline:
+            tw.pipeline === "xactions"
+              ? "xactions-kickstart-fallback"
+              : "x-rettiwt-kickstart",
+          image_url: null,
+          video_url: null,
+        });
+      }
+    }
+
+    const written = await writeCollectedItems(items);
+    for (const item of items) {
+      const h = item.source.replace(/^twitter:/, "").toLowerCase();
+      const ps = perSource.get(h) ?? { fetched: 0, candidates: 0, accepted: 0 };
+      ps.accepted += 1;
+      perSource.set(h, ps);
+    }
+
+    await scoringCycle().catch((err: unknown) => {
+      console.warn("[RiskFlow] Rettiwt kickstart scoring failed:", err);
+    });
+    await seedCacheFromDb().catch((err: unknown) => {
+      console.warn("[RiskFlow] Rettiwt kickstart cache seed failed:", err);
+    });
+    const rescored = await feedService
+      .rescoreInMemoryFeed()
+      .catch((_err: unknown) => 0);
+
+    return c.json({
+      success: true,
+      poolRefreshed,
+      pool: getPoolStatus(),
+      handles: allHandles.length,
+      selectedHandles,
+      fetched: tweets.length,
+      fetchedRettiwt: rettiwtTweets.length,
+      fetchedXActions: xactionsTweets.length,
+      xactionsEnabled,
+      xactionsFallbackHandles: missingHandles,
+      candidateItems: items.length,
+      written,
+      rescored,
+      perSource: Array.from(perSource.entries())
+        .map(([handleKey, stats]) => ({
+          handle: selectedHandleLabel.get(handleKey) ?? handleKey,
+          ...stats,
+        }))
+        .sort((a, b) => a.handle.localeCompare(b.handle)),
+      kickedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("[RiskFlow] Rettiwt kickstart error:", error);
+    return c.json({ error: "Rettiwt kickstart failed" }, 500);
+  }
+}
+
 /** POST /api/riskflow/:id/generate-note — manual agent note generation trigger
  *  [claude-code 2026-04-25] S38: When body carries `instrument`, returns the structured
  *  detailed note (source_url + summary + direction). Without an instrument, falls back to
@@ -1088,7 +1394,7 @@ export async function handleNotRelevant(c: Context) {
     await sb.from("scored_riskflow_items").delete().eq("tweet_id", tweetId);
     await sb.from("raw_riskflow_items").delete().eq("tweet_id", tweetId);
 
-    // Enqueue Harper feed-quality task so she reviews dismissed items on next heartbeat
+    // Enqueue Hermes feed-quality review task so dismissed patterns inform future scoring
     try {
       const { enqueueTask } =
         await import("../../services/harper-autonomous/loop-manager.js");
@@ -1104,7 +1410,7 @@ export async function handleNotRelevant(c: Context) {
         priority: "normal",
       });
     } catch {
-      // Harper loop may not be running — that's fine, she'll pick up dismissed items on next heartbeat
+      // Harper loop may not be running — that's fine
     }
 
     return c.json({ ok: true, removed: tweetId, reason: reason ?? null });
@@ -1114,118 +1420,166 @@ export async function handleNotRelevant(c: Context) {
 }
 
 /** GET /api/riskflow/sources — connection status for data source indicators
- * [claude-code 2026-04-18] S25-T2: expanded with multi-source health + per-user polling stats.
+ * [claude-code 2026-05-01] Retired Rettiwt + Agent Reach. Now reads riskflow_worker_heartbeats
+ * from Supabase to surface real-time tier status. X intake is home timeline via persistent browser.
  */
 export async function handleGetSources(c: Context) {
-  const { isRettiwtRateLimited, getRettiwtCooldownMs } =
-    await import("../../services/riskflow/econ-rettiwt-poller.js");
-  const { getCurrentPollingOwner, getActivePollingUsers, getAllUserPollStats } =
-    await import("../../services/riskflow/user-polling-registry.js");
-  const { getPoolStatus } = await import("../../services/rettiwt-service.js");
-  const { getStatus: getHealthStatus } =
-    await import("../../services/health-registry.js");
-  const { getDomainStatus } =
-    await import("../../services/agent-reach-service.js");
-  const { AGENT_REACH_POLLER_NAME } =
-    await import("../../services/riskflow/agent-reach-poller.js");
-
   const supabaseUp = isSupabaseConfigured();
-  const pool = getPoolStatus();
-  const rettiwtUp = pool.availableKeys > 0;
-  const rateLimited = isRettiwtRateLimited();
-  const cooldownSec = rateLimited
-    ? Math.round(getRettiwtCooldownMs() / 1000)
-    : 0;
 
-  // Per-source health from the registry
-  const health = getHealthStatus();
+  // Read riskflow worker tier status from Supabase heartbeats
+  let breakingActive = false;
+  let standardActive = false;
+  let commentaryActive = false;
+  let financialJuiceActive = false;
+  let unifiedActive = false;
+  let breakingLastRun: string | null = null;
+  let standardLastRun: string | null = null;
+  let commentaryLastRun: string | null = null;
+  let financialJuiceLastRun: string | null = null;
+  let unifiedLastRun: string | null = null;
+  let breakingIngested = 0;
+  let standardIngested = 0;
+  let commentaryIngested = 0;
+  let financialJuiceIngested = 0;
+  let unifiedIngested = 0;
+
   const now = Date.now();
-  const STALE_MS = 5 * 60_000; // 5 min
+  const STALE_MS = 5 * 60_000;
 
-  const lookup = (name: string) => {
-    const entry = health.services.find((s) => s.name === name);
-    const lastRunAt = entry?.lastRunAt ?? null;
-    const active = lastRunAt
-      ? now - new Date(lastRunAt).getTime() < STALE_MS
-      : false;
-    return { entry, lastRunAt, active };
-  };
+  try {
+    const sb = getSupabaseClient();
+    if (sb) {
+      const { data } = await sb
+        .from("riskflow_worker_heartbeats")
+        .select("tier, last_run_at, items_ingested");
+      if (data) {
+        for (const row of data as Array<{
+          tier: string;
+          last_run_at: string | null;
+          items_ingested: number;
+        }>) {
+          const lastRunAt = row.last_run_at;
+          const active = lastRunAt
+            ? now - new Date(lastRunAt).getTime() < STALE_MS
+            : false;
+          if (row.tier === "breaking") {
+            breakingActive = active;
+            breakingLastRun = lastRunAt;
+            breakingIngested = row.items_ingested ?? 0;
+          } else if (row.tier === "standard") {
+            standardActive = active;
+            standardLastRun = lastRunAt;
+            standardIngested = row.items_ingested ?? 0;
+          } else if (row.tier === "commentary") {
+            commentaryActive = active;
+            commentaryLastRun = lastRunAt;
+            commentaryIngested = row.items_ingested ?? 0;
+          } else if (row.tier === "financialjuice") {
+            financialJuiceActive = active;
+            financialJuiceLastRun = lastRunAt;
+            financialJuiceIngested = row.items_ingested ?? 0;
+          } else if (row.tier === "unified") {
+            unifiedActive = active;
+            unifiedLastRun = lastRunAt;
+            unifiedIngested = row.items_ingested ?? 0;
+          }
+        }
+      }
+    }
+  } catch {
+    /* heartbeat read is best-effort */
+  }
 
-  const ar = lookup(AGENT_REACH_POLLER_NAME);
-  // feed-poller handles the econ + Rettiwt branch; its lastRunAt represents both.
-  const fp = lookup("feed-poller");
+  const xHomeTimeline = unifiedActive || standardActive || commentaryActive;
+  const financialJuiceRss = financialJuiceActive;
+  const hasIngested =
+    breakingIngested +
+      standardIngested +
+      commentaryIngested +
+      financialJuiceIngested +
+      unifiedIngested >
+    0;
+
+  // Newsfeed health
+  const newsfeedHealthy = financialJuiceRss || xHomeTimeline;
+  const newsfeedDegraded = !hasIngested && newsfeedHealthy;
 
   const sources = {
-    agentReach: {
-      active: ar.active,
-      lastRunAt: ar.lastRunAt,
-      domains: getDomainStatus(),
+    xHomeTimeline: {
+      active: xHomeTimeline,
+      tiers: {
+        breaking: {
+          active: breakingActive,
+          lastRunAt: breakingLastRun,
+          ingested: breakingIngested,
+        },
+        standard: {
+          active: standardActive,
+          lastRunAt: standardLastRun,
+          ingested: standardIngested,
+        },
+        commentary: {
+          active: commentaryActive,
+          lastRunAt: commentaryLastRun,
+          ingested: commentaryIngested,
+        },
+        unified: {
+          active: unifiedActive,
+          lastRunAt: unifiedLastRun,
+          ingested: unifiedIngested,
+        },
+      },
     },
-    rettiwt: {
-      active: fp.active && rettiwtUp,
-      lastRunAt: fp.lastRunAt,
-      rateLimited,
-      poolKeys: pool.totalKeys,
-    },
-    feedPoller: {
-      active: fp.active,
-      lastRunAt: fp.lastRunAt,
+    financialJuiceRss: {
+      active: financialJuiceRss,
+      lastRunAt: financialJuiceLastRun,
+      ingested: financialJuiceIngested,
     },
   };
 
-  const anyActive = sources.agentReach.active || sources.feedPoller.active;
-
-  const anyTripped = Object.values(sources.agentReach.domains).some(
-    (s) => s === "tripped",
-  );
-
-  const newsfeedHealthy = anyActive;
-  const newsfeedDegraded = anyActive && (anyTripped || rateLimited);
+  // method_breakdown — count of items per ingest_pipeline from scored items (last 24h)
+  const methodBreakdown = await (async () => {
+    try {
+      const sb = getSupabaseClient();
+      if (!sb) return null;
+      const sinceIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data } = await sb
+        .from("scored_riskflow_items")
+        .select("ingest_pipeline")
+        .gte("published_at", sinceIso);
+      if (!data) return null;
+      const counts: Record<string, number> = {};
+      for (const row of data as Array<{ ingest_pipeline: string | null }>) {
+        const pipe = row.ingest_pipeline || "unknown";
+        counts[pipe] = (counts[pipe] || 0) + 1;
+      }
+      return counts;
+    } catch {
+      return null;
+    }
+  })();
 
   return c.json({
-    // Legacy fields (kept for backward compat)
     supabase: supabaseUp,
-    rettiwt: rettiwtUp,
-    rettiwtRateLimited: rateLimited,
-    rettiwtCooldownSec: cooldownSec,
-    rettiwtPool: pool,
-    pollingOwner: getCurrentPollingOwner(),
-    activePollers: getActivePollingUsers(),
-    xApi: false,
-
-    // NEW — multi-source health
-    sources,
+    xHomeTimeline,
     newsfeedHealthy,
     newsfeedDegraded,
-
-    // NEW — per-user polling attribution (keyed by userId or "backend" sentinel)
-    userPollStats: getAllUserPollStats(),
-
-    // S48-T1: method_breakdown — count of items per ingest_pipeline from scored items
-    method_breakdown: await (async () => {
-      try {
-        const sb = getSupabaseClient();
-        if (!sb) return null;
-        const sinceIso = new Date(
-          Date.now() - 24 * 60 * 60 * 1000,
-        ).toISOString();
-        const { data } = await sb
-          .from("scored_riskflow_items")
-          .select("ingest_pipeline")
-          .gte("published_at", sinceIso)
-          .limit(5000);
-        const breakdown: Record<string, number> = {};
-        for (const row of (data ?? []) as Array<{
-          ingest_pipeline: string | null;
-        }>) {
-          const p = row.ingest_pipeline || "unknown";
-          breakdown[p] = (breakdown[p] || 0) + 1;
-        }
-        return breakdown;
-      } catch {
-        return null;
-      }
-    })(),
+    sources,
+    method_breakdown: methodBreakdown,
+    // Legacy compat — remove after frontend migration
+    rettiwt: false,
+    rettiwtRateLimited: false,
+    rettiwtCooldownSec: 0,
+    rettiwtPool: {
+      totalKeys: 0,
+      availableKeys: 0,
+      cooldownKeys: 0,
+      disabledKeys: 0,
+    },
+    pollingOwner: null,
+    activePollers: [],
+    xApi: false,
+    userPollStats: {},
   });
 }
 
@@ -1487,12 +1841,19 @@ export async function handleDeletePhrase(c: Context) {
 export async function handleGetRiskSignals(c: Context) {
   const { getRiskSignals } =
     await import("../../services/riskflow/risk-signal-generator.js");
-  const signals = await getRiskSignals();
-  return c.json({
-    signals,
-    generatedAt:
-      signals.length > 0 ? signals[0].generatedAt : new Date().toISOString(),
-  });
+  const result = await getRiskSignals();
+  return c.json(result);
+}
+
+// ── Estimated Drift (S67) ───────────────────────────────────────────────────
+
+export async function handleGetEstimatedDrift(c: Context) {
+  const signalId = c.req.query("signalId") ?? "unknown";
+  const eventType = c.req.query("eventType") ?? "default";
+  const { estimateDrift } =
+    await import("../../services/riskflow/estimated-drift-service.js");
+  const result = estimateDrift(signalId, eventType);
+  return c.json(result);
 }
 
 // ── Single-item lookup for mobile DetailSheet (S25) ─────────────────────────

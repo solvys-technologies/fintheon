@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58-T2: add user AI-key helper for client-side DeepSeek transports.
 // [claude-code 2026-03-16] Added global error bus emission for toast notifications
 /**
  * Hono API Client
@@ -339,6 +340,20 @@ class ApiClient {
 
   async delete<T>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, { method: "DELETE" });
+  }
+
+  async getUserApiKey(provider: string): Promise<string | null> {
+    const data = await this.get<Record<string, unknown>>(
+      `/api/settings/ai-keys?provider=${encodeURIComponent(provider)}`,
+    ).catch(() => null);
+    if (!data) return null;
+    const candidates = [data.apiKey, data.key, data.decryptedKey, data.value];
+    for (const candidate of candidates) {
+      if (typeof candidate === "string" && candidate.trim()) {
+        return candidate.trim();
+      }
+    }
+    return null;
   }
 
   // Create a new client instance with updated auth token getter

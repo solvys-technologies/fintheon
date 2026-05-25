@@ -1,3 +1,4 @@
+// [claude-code 2026-05-15] S66: selectedInstrument state for mobile instrument selector, mirroring desktop TradingTab.
 // [claude-code 2026-04-18] v5.22 S2: cross-platform settings sync. Adds a parallel
 //   /api/preferences fetch + 30s poll for the shared UserPreferences contract (theme,
 //   delivery-window notifications, traderName, fusePalette overrides). The existing
@@ -70,6 +71,7 @@ interface MobileSettings {
   traderName: string;
   hermesEnabled: boolean;
   selectedSymbol: TradingSymbol;
+  selectedInstrument: string;
   alertConfig: AlertConfig;
   bulletinReminder: "once" | "until-pressed";
 }
@@ -112,6 +114,7 @@ const DEFAULT_SETTINGS: MobileSettings = {
   traderName: "",
   hermesEnabled: true,
   selectedSymbol: { symbol: "/MNQ", contractName: "/MNQZ25" },
+  selectedInstrument: "/NQ",
   alertConfig: {
     soundEnabled: true,
     vixSpikeThreshold: 22,
@@ -191,8 +194,11 @@ async function fetchBackendPreferences(
     if (token) headers["Authorization"] = `Bearer ${token}`;
     const res = await fetch(`${API_BASE}${PREFERENCES_API_PATH}`, { headers });
     if (!res.ok) return null;
-    const data = (await res.json()) as { preferences?: UserPreferences };
-    return data?.preferences ?? null;
+    const data = (await res.json()) as
+      | UserPreferences
+      | { preferences?: UserPreferences };
+    if ("preferences" in data) return data.preferences ?? null;
+    return data as UserPreferences;
   } catch {
     return null;
   }
@@ -210,7 +216,7 @@ async function saveBackendPreferences(
     await fetch(`${API_BASE}${PREFERENCES_API_PATH}`, {
       method: "PUT",
       headers,
-      body: JSON.stringify({ preferences }),
+      body: JSON.stringify(preferences),
     });
   } catch {}
 }
@@ -223,7 +229,7 @@ const SettingsContext = createContext<SettingsContextValue | undefined>(
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const { getAccessToken, isAuthenticated } = useAuth();
-  const { theme, setTheme, allThemes } = useTheme();
+  const { theme, setTheme, availableThemes } = useTheme();
   const [settings, setSettings] = useState<MobileSettings>(loadSettings);
   const [synced, setSynced] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -348,6 +354,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           notifications: {
             ...prev.notifications,
             ...(partial.notifications ?? {}),
+            deliveryChannels: {
+              ...prev.notifications.deliveryChannels,
+              ...(partial.notifications?.deliveryChannels ?? {}),
+            },
           },
           updatedAt: new Date().toISOString(),
         };
@@ -375,6 +385,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setPreferencesState((prev) =>
         new Date(remote.updatedAt) > new Date(prev.updatedAt) ? remote : prev,
       );
+      if (remote.traderName) {
+        setSettings((prev) => ({ ...prev, traderName: remote.traderName ?? "" }));
+      }
       lastRemoteThemeRef.current = remote.theme;
     })();
     return () => {
@@ -393,6 +406,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setPreferencesState((prev) =>
         new Date(remote.updatedAt) > new Date(prev.updatedAt) ? remote : prev,
       );
+      if (remote.traderName) {
+        setSettings((prev) =>
+          prev.traderName === remote.traderName
+            ? prev
+            : { ...prev, traderName: remote.traderName ?? "" },
+        );
+      }
     }, PREFERENCES_POLL_MS);
     return () => clearInterval(id);
   }, [isAuthenticated, getAccessToken]);
@@ -415,11 +435,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   // Falls back silently when the remote name doesn't map to a known preset.
   useEffect(() => {
     if (preferences.theme === (theme.name as ThemeMode)) return;
-    const next = allThemes[preferences.theme];
+    const next = availableThemes[preferences.theme];
     if (!next) return;
     lastRemoteThemeRef.current = preferences.theme;
     setTheme(next);
-  }, [preferences.theme, theme.name, allThemes, setTheme]);
+  }, [preferences.theme, theme.name, availableThemes, setTheme]);
 
   return (
     <SettingsContext.Provider

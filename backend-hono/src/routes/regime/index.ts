@@ -1,5 +1,6 @@
 // [claude-code 2026-04-19] S24-T1: mount /proposals subrouter for V4 regime proposal queue.
 // [claude-code 2026-03-26] S2-T2: Market regime CRUD routes
+// [claude-code 2026-05-16] DEPRECATED — replaced by themes route (S68-T1). Preserved for migration reference.
 import { Hono } from "hono";
 import {
   handleGetCurrent,

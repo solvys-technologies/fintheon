@@ -155,7 +155,7 @@ async function spawnAgentResponse(
     );
   } catch (error) {
     console.error(`[BoardroomSpawner] ${agent.displayName} failed:`, error);
-    const fallback = `**${agent.displayName}**: _[Agent unavailable — check OpenRouter connection]_`;
+    const fallback = `**${agent.displayName}**: _[Agent unavailable — check Hermes gateway]_`;
     await appendToBoardroom(fallback, "assistant");
   }
 }

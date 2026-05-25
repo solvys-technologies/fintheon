@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { KNOWN_AGENTS } from "../../contexts/FintheonAgentContext";
+import { FINTHEON_AGENTS } from "../../contexts/FintheonAgentContext";
 
 /* ------------------------------------------------------------------ */
 /*  Ticker data                                                        */
@@ -16,6 +16,10 @@ const TICKER_SYMBOLS = [
   { symbol: "SI", name: "Silver" },
   { symbol: "ZB", name: "30-Year T-Bond" },
   { symbol: "VIX", name: "Volatility Index" },
+  { symbol: "DXY", name: "U.S. Dollar Index" },
+  { symbol: "US02Y", name: "U.S. 2Y Yield" },
+  { symbol: "US10Y", name: "U.S. 10Y Yield" },
+  { symbol: "US30Y", name: "U.S. 30Y Yield" },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -56,9 +60,17 @@ export function TickerMentionPopup({
   const items = useMemo((): MentionItem[] => {
     const q = query.toLowerCase();
     if (triggerChar === "@") {
-      return KNOWN_AGENTS.filter((name) => name.toLowerCase().includes(q)).map(
-        (name) => ({ type: "agent" as const, value: name, label: name }),
-      );
+      return FINTHEON_AGENTS.filter(
+        (agent) =>
+          agent.name.toLowerCase().includes(q) ||
+          agent.id.toLowerCase().includes(q) ||
+          agent.sector.toLowerCase().includes(q),
+      ).map((agent) => ({
+        type: "agent" as const,
+        value: agent.id,
+        label: `@${agent.name}`,
+        sublabel: agent.sector,
+      }));
     }
     return TICKER_SYMBOLS.filter(
       (t) =>
@@ -100,7 +112,7 @@ export function TickerMentionPopup({
 
   return (
     <div
-      className="fixed z-[100] w-52 max-h-[200px] overflow-y-auto rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)] shadow-xl"
+      className="fintheon-popover-surface fixed z-[100] w-52 max-h-[200px] overflow-y-auto"
       style={{ top: position.top, left: position.left }}
       ref={listRef}
     >

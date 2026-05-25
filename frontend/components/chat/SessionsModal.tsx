@@ -2,9 +2,9 @@
 // [claude-code 2026-04-19] Loader swapped to HelixVertical (icon-bank) for consistency with chat thinking
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Search, MessageSquare, Plus, Trash2, X } from "lucide-react";
-import { API_BASE_URL } from "./constants";
-import { HelixVertical } from "../icon-bank/UnicodeSpinners";
+import { BrailleSpinnerCentered } from "./primitive/BrailleSpinner";
 import { withViewTransition } from "../../lib/view-transition";
+import { useBackend } from "../../lib/backend";
 
 interface ConversationSummary {
   id: string;
@@ -69,6 +69,7 @@ export function SessionsModal({
   onNewSession,
   currentConversationId,
 }: SessionsModalProps) {
+  const backend = useBackend();
   const [sessions, setSessions] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -83,12 +84,12 @@ export function SessionsModal({
     setLoading(true);
     setSearch("");
     setSelectedIndex(0);
-    fetch(`${API_BASE_URL}/api/ai/conversations`)
-      .then((r) => r.json())
-      .then((data) => setSessions(data.conversations ?? []))
+    backend.ai
+      .listConversations()
+      .then((data) => setSessions(data ?? []))
       .catch(() => setSessions([]))
       .finally(() => setLoading(false));
-  }, [isOpen]);
+  }, [isOpen, backend]);
 
   // Focus search on open
   useEffect(() => {
@@ -157,26 +158,20 @@ export function SessionsModal({
   const handleDelete = useCallback(async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await fetch(`${API_BASE_URL}/api/ai/conversations/${id}`, {
-        method: "DELETE",
-      });
+      await backend.ai.archiveConversation(id);
       setSessions((prev) => prev.filter((s) => s.id !== id));
     } catch {
       /* ignore */
     }
-  }, []);
+  }, [backend]);
 
   if (!isOpen) return null;
 
   return (
     <div
       ref={dropdownRef}
-      className="absolute right-0 top-full mt-1 w-[300px] rounded-lg border overflow-hidden z-50"
+      className="fintheon-modal-surface absolute right-0 top-full mt-1 w-[300px] z-50"
       style={{
-        borderColor:
-          "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
-        backgroundColor: "var(--fintheon-surface)",
-        boxShadow: "0 12px 36px rgba(0,0,0,0.6), 0 0 1px rgba(212,175,55,0.15)",
         maxHeight: "400px",
       }}
       onKeyDown={handleKeyDown}
@@ -230,7 +225,7 @@ export function SessionsModal({
       >
         {loading && (
           <div className="flex items-center justify-center py-8">
-            <HelixVertical size={12} rows={5} />
+            <BrailleSpinnerCentered size={12} label="" />
           </div>
         )}
 
@@ -257,7 +252,7 @@ export function SessionsModal({
                   className="px-3 py-1 text-[9px] font-semibold tracking-widest uppercase sticky top-0"
                   style={{
                     color: "var(--fintheon-accent)",
-                    backgroundColor: "var(--fintheon-surface)",
+                    backgroundColor: "var(--fintheon-glass-bg)",
                     borderBottom:
                       "1px solid color-mix(in srgb, var(--fintheon-accent) 6%, transparent)",
                   }}

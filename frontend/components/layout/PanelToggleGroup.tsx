@@ -19,26 +19,26 @@
 
 import { useEffect, useState } from "react";
 
-type Side = "left" | "footer" | "right";
+export type PanelSide = "left" | "footer" | "right";
 
-const EVENT_NAME: Record<Side, string> = {
+const EVENT_NAME: Record<PanelSide, string> = {
   left: "fintheon:toggle-nav-sidebar",
   footer: "fintheon:toggle-footer-panel",
   right: "fintheon:toggle-strategium",
 };
 
-const STATE_EVENT_NAME: Record<Side, string> = {
+const STATE_EVENT_NAME: Record<PanelSide, string> = {
   left: "fintheon:nav-sidebar-state",
   footer: "fintheon:footer-panel-state",
   right: "fintheon:strategium-state",
 };
 
 interface PanelIconProps {
-  side: Side;
+  side: PanelSide;
   active: boolean;
 }
 
-function PanelIcon({ side, active }: PanelIconProps) {
+export function PanelIcon({ side, active }: PanelIconProps) {
   const accent = "var(--fintheon-accent)";
   const frameStroke = active
     ? accent
@@ -112,11 +112,11 @@ function PanelIcon({ side, active }: PanelIconProps) {
 }
 
 interface PanelToggleButtonProps {
-  side: Side;
+  side: PanelSide;
   label: string;
 }
 
-function PanelToggleButton({ side, label }: PanelToggleButtonProps) {
+export function PanelToggleButton({ side, label }: PanelToggleButtonProps) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -150,7 +150,13 @@ function PanelToggleButton({ side, label }: PanelToggleButtonProps) {
   );
 }
 
-export function PanelToggleGroup() {
+interface PanelToggleGroupProps {
+  mode?: "full" | "right-only" | "hidden";
+}
+
+export function PanelToggleGroup({ mode = "full" }: PanelToggleGroupProps) {
+  if (mode === "hidden") return null;
+
   return (
     // [claude-code 2026-04-26] Transparent group — no bg/border container per
     // TP. Buttons sit naked next to the iFrame dropdown + VIX ticker.
@@ -159,8 +165,10 @@ export function PanelToggleGroup() {
       role="group"
       aria-label="Panel toggles"
     >
-      <PanelToggleButton side="left" label="left panel" />
-      <PanelToggleButton side="footer" label="footer panel" />
+      {mode === "full" && <PanelToggleButton side="left" label="left panel" />}
+      {mode === "full" && (
+        <PanelToggleButton side="footer" label="footer panel" />
+      )}
       <PanelToggleButton side="right" label="right panel" />
     </div>
   );

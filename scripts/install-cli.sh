@@ -7,7 +7,6 @@
 #   fintheon start     — Start backend + launch app
 #   fintheon stop      — Stop everything
 #   fintheon logs      — Tail backend logs
-#   fintheon oauth     — Connect Anthropic subscription via VProxy
 #   fintheon login     — Sign in to TradingView/TopStepX/etc. via Google OAuth
 #   fintheon peers     — Run per-device peer + Rettiwt + Agent Reach onboarding
 #   fintheon setup     — Re-run first-time setup
@@ -48,7 +47,7 @@ if [[ ! -d "$FINTHEON_ROOT/.git" ]] && [[ "$1" != "setup" ]]; then
   echo "  Fintheon not found at $FINTHEON_ROOT"
   echo "  Run setup first:"
   echo ""
-  echo '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/main/scripts/fintheon-setup.sh)"'
+  echo '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.7.27/scripts/fintheon-setup.sh)"'
   echo ""
   exit 1
 fi
@@ -62,7 +61,7 @@ case "$1" in
       bash "$FINTHEON_ROOT/scripts/fintheon-setup.sh"
     else
       echo "Downloading setup script..."
-      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/main/scripts/fintheon-setup.sh)"
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.7.27/scripts/fintheon-setup.sh)"
     fi
     ;;
   start)
@@ -70,14 +69,21 @@ case "$1" in
       # Backend-only restart — no app relaunch
       echo ""
       echo "  Restarting backend..."
-      cd "$FINTHEON_ROOT/backend-hono" || exit 1
-      lsof -ti:8080 | xargs kill -9 2>/dev/null || true
-      sleep 1
-      nohup bun run src/index.ts > /tmp/fintheon-backend.log 2>&1 &
-      BACKEND_PID=$!
+      PLIST="$HOME/Library/LaunchAgents/io.solvys.fintheon-backend.plist"
+      SRC="$FINTHEON_ROOT/launchd/io.solvys.fintheon-backend.plist"
+      if [[ -f "$SRC" && ! -e "$PLIST" ]]; then
+        ln -s "$SRC" "$PLIST" 2>/dev/null || true
+      fi
+      if [[ -f "$PLIST" ]]; then
+        launchctl bootstrap "gui/$(id -u)" "$PLIST" 2>/dev/null || launchctl load -w "$PLIST" 2>/dev/null || true
+        launchctl kickstart -k "gui/$(id -u)/io.solvys.fintheon-backend" 2>/dev/null || true
+      else
+        cd "$FINTHEON_ROOT/backend-hono" || exit 1
+        nohup bun run src/index.ts > /tmp/fintheon-backend.log 2>&1 &
+      fi
       for i in {1..10}; do
         if curl -s localhost:8080/health > /dev/null 2>&1; then
-          echo "  ✓ Backend live (PID: $BACKEND_PID)"
+          echo "  ✓ Backend live"
           break
         fi
         sleep 2
@@ -92,12 +98,18 @@ case "$1" in
       echo ""
 
       # Start backend
-      cd "$FINTHEON_ROOT/backend-hono" || exit 1
-      lsof -ti:8080 | xargs kill -9 2>/dev/null || true
-      sleep 1
-      nohup bun run src/index.ts > /tmp/fintheon-backend.log 2>&1 &
-      BACKEND_PID=$!
-      echo "  Backend PID: $BACKEND_PID"
+      PLIST="$HOME/Library/LaunchAgents/io.solvys.fintheon-backend.plist"
+      SRC="$FINTHEON_ROOT/launchd/io.solvys.fintheon-backend.plist"
+      if [[ -f "$SRC" && ! -e "$PLIST" ]]; then
+        ln -s "$SRC" "$PLIST" 2>/dev/null || true
+      fi
+      if [[ -f "$PLIST" ]]; then
+        launchctl bootstrap "gui/$(id -u)" "$PLIST" 2>/dev/null || launchctl load -w "$PLIST" 2>/dev/null || true
+        launchctl kickstart -k "gui/$(id -u)/io.solvys.fintheon-backend" 2>/dev/null || true
+      else
+        cd "$FINTHEON_ROOT/backend-hono" || exit 1
+        nohup bun run src/index.ts > /tmp/fintheon-backend.log 2>&1 &
+      fi
 
       # Wait for health
       for i in {1..10}; do
@@ -127,8 +139,7 @@ case "$1" in
     echo "  Stopping Fintheon..."
     pkill -f "Fintheon" 2>/dev/null || true
     pkill -f "electron.*fintheon" 2>/dev/null || true
-    lsof -ti:8080 | xargs kill -9 2>/dev/null || true
-    echo "  ✓ Stopped"
+    echo "  ✓ App stopped; backend engine remains running"
     echo ""
     ;;
   logs)
@@ -137,14 +148,6 @@ case "$1" in
     else
       echo "  No log file found. Is the backend running?"
       echo "  Start with: fintheon start"
-    fi
-    ;;
-  oauth)
-    if [[ -f "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh" ]]; then
-      bash "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh"
-    else
-      echo "  Missing script: $FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh"
-      exit 1
     fi
     ;;
   login)
@@ -175,13 +178,6 @@ case "$1" in
       echo "  Backend:      ✗ Not running"
     fi
 
-    # VProxy
-    if curl -s localhost:8317/v1/models -H "Authorization: Bearer CLI_PROXY_API_KEY" 2>/dev/null | grep -q "claude"; then
-      echo "  VProxy:       ✓ Claude models available on :8317"
-    else
-      echo "  VProxy:       ✗ No Claude models (run: fintheon oauth)"
-    fi
-
     # Strands SDK
     if [[ -d "$FINTHEON_ROOT/backend-hono/node_modules/@strands-agents" ]]; then
       STRANDS_VER=$(cat "$FINTHEON_ROOT/backend-hono/node_modules/@strands-agents/sdk/package.json" 2>/dev/null | grep '"version"' | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
@@ -198,19 +194,11 @@ case "$1" in
       echo "  Zod:          ✗ v$ZOD_VER (need v4+, run: fintheon update)"
     fi
 
-    # Claude Code hooks
-    if [[ -f "$FINTHEON_ROOT/.claude/settings.json" ]] && grep -q "hooks" "$FINTHEON_ROOT/.claude/settings.json" 2>/dev/null; then
-      HOOK_COUNT=$(ls "$FINTHEON_ROOT/.claude/hooks/"*.sh 2>/dev/null | wc -l | tr -d ' ')
-      echo "  Hooks:        ✓ $HOOK_COUNT scripts in .claude/hooks/"
-    else
-      echo "  Hooks:        ✗ Not configured"
-    fi
-
     # jq
     if command -v jq &>/dev/null; then
       echo "  jq:           ✓ $(jq --version 2>/dev/null || echo 'available')"
     else
-      echo "  jq:           ⚠ Missing (hooks use python3 fallback)"
+      echo "  jq:           ⚠ Missing (diagnostics use python3 fallback)"
     fi
 
     # Build check
@@ -302,7 +290,6 @@ case "$1" in
     printf "  ${_G}stop${_R}      ${_D}Stop everything${_R}\n"
     printf "  ${_G}status${_R}    ${_D}Check if services are running${_R}\n"
     printf "  ${_G}logs${_R}      ${_D}Tail backend logs${_R}\n"
-    printf "  ${_G}oauth${_R}     ${_D}Connect Anthropic via VProxy${_R}\n"
     printf "  ${_G}login${_R}     ${_D}Sign in to trading platforms${_R}\n"
     printf "  ${_G}peers${_R}     ${_D}Peer + Rettiwt + Agent Reach onboarding${_R}\n"
     printf "  ${_G}setup${_R}     ${_D}Re-run first-time setup${_R}\n"

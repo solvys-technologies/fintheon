@@ -34,9 +34,17 @@ export interface CognitionEndEvent {
   totalMs: number;
 }
 
-// Global emitter — all active requests share one emitter, scoped by requestId
+// Global emitter — all active requests share one emitter, scoped by requestId.
+// Chat clients only learn requestId from response headers, so the first few
+// steps can be emitted before the EventSource subscriber is attached. Keep a
+// short request-local replay buffer so fast tool calls are not invisible.
 const emitter = new EventEmitter();
 emitter.setMaxListeners(100); // Up to 100 concurrent active requests
+
+const stepBuffers = new Map<string, CognitionStep[]>();
+const endBuffers = new Map<string, CognitionEndEvent>();
+const MAX_BUFFERED_STEPS = 100;
+const BUFFER_TTL_MS = 30_000;
 
 /**
  * Emit a cognition step for a given request.
@@ -46,6 +54,12 @@ export function emitStep(
   step: Omit<CognitionStep, "ts">,
 ): void {
   const event: CognitionStep = { ...step, ts: Date.now() };
+  const existing = stepBuffers.get(requestId) ?? [];
+  existing.push(event);
+  if (existing.length > MAX_BUFFERED_STEPS) {
+    existing.splice(0, existing.length - MAX_BUFFERED_STEPS);
+  }
+  stepBuffers.set(requestId, existing);
   emitter.emit(`step:${requestId}`, event);
 }
 
@@ -53,12 +67,16 @@ export function emitStep(
  * Signal that a request's cognition stream is done.
  */
 export function emitEnd(requestId: string, totalMs: number): void {
-  emitter.emit(`end:${requestId}`, { requestId, totalMs });
+  const event = { requestId, totalMs };
+  endBuffers.set(requestId, event);
+  emitter.emit(`end:${requestId}`, event);
   // Clean up listeners after a short delay
   setTimeout(() => {
     emitter.removeAllListeners(`step:${requestId}`);
     emitter.removeAllListeners(`end:${requestId}`);
-  }, 5_000);
+    stepBuffers.delete(requestId);
+    endBuffers.delete(requestId);
+  }, BUFFER_TTL_MS);
 }
 
 /**
@@ -70,6 +88,10 @@ export function onStep(
   handler: (step: CognitionStep) => void,
 ): () => void {
   emitter.on(`step:${requestId}`, handler);
+  const buffered = stepBuffers.get(requestId) ?? [];
+  for (const step of buffered) {
+    queueMicrotask(() => handler(step));
+  }
   return () => emitter.off(`step:${requestId}`, handler);
 }
 
@@ -80,6 +102,11 @@ export function onEnd(
   requestId: string,
   handler: (ev: CognitionEndEvent) => void,
 ): () => void {
+  const buffered = endBuffers.get(requestId);
+  if (buffered) {
+    queueMicrotask(() => handler(buffered));
+    return () => undefined;
+  }
   emitter.once(`end:${requestId}`, handler);
   return () => emitter.off(`end:${requestId}`, handler);
 }

@@ -69,12 +69,10 @@ export function DetailSheet({
             transition={BACKDROP_TRANSITION}
             onClick={onClose}
             aria-hidden
+            className="fintheon-modal-backdrop"
             style={{
               position: "fixed",
               inset: 0,
-              background: "rgba(0,0,0,0.72)",
-              backdropFilter: "blur(6px)",
-              WebkitBackdropFilter: "blur(6px)",
               zIndex: 1600,
             }}
           />
@@ -93,21 +91,13 @@ export function DetailSheet({
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={0.12}
             onDragEnd={handleDragEnd}
+            className="fintheon-sheet-surface"
             style={{
               position: "fixed",
               top: `calc(env(safe-area-inset-top, 0px) + 24px)`,
               left: 0,
               right: 0,
               bottom: 0,
-              background:
-                "color-mix(in srgb, var(--bg, #050402) 82%, transparent)",
-              backdropFilter: "blur(28px) saturate(1.5)",
-              WebkitBackdropFilter: "blur(28px) saturate(1.5)",
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
-              borderTop:
-                "1px solid color-mix(in srgb, var(--accent) 18%, transparent)",
-              boxShadow: "0 -24px 80px rgba(0,0,0,0.72)",
               display: "flex",
               flexDirection: "column",
               zIndex: 1601,
@@ -129,13 +119,7 @@ export function DetailSheet({
               transition={{ type: "spring", stiffness: 500, damping: 28 }}
             >
               <div
-                style={{
-                  width: 44,
-                  height: 5,
-                  borderRadius: 3,
-                  background:
-                    "color-mix(in srgb, var(--accent) 36%, transparent)",
-                }}
+                className="fintheon-glass-handle"
               />
             </motion.div>
 

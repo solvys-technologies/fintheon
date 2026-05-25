@@ -58,9 +58,9 @@ npm run desktop:build
 
 ### Frontend (Vite + React 19 + Tailwind)
 
-- **Sanctum** — Main hub with dropdown: NarrativeFlow (default), Aquarium, Timeline
+- **Sanctum** — Main hub with dropdown: NarrativeFlow (default), ArbitrumChamber, Timeline
 - **NarrativeFlow** — D3 force-directed mind map of market events with rope connections
-- **Aquarium** (_shark tank_) — TradingView chart + prediction cards + KPIs + briefing
+- **ArbitrumChamber** (_shark tank_) — TradingView chart + prediction cards + KPIs + briefing
 - **RiskFlow** — Live news feed with infinite scroll, scored by Claude CLI
 - **Dashboard** — KPIs, session calendar, account tracker, proposals
 

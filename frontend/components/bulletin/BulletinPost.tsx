@@ -169,7 +169,11 @@ export function BulletinPost({
                 className="h-32 max-w-[240px] overflow-hidden rounded-lg border border-[var(--fintheon-accent)]/15 cursor-pointer"
                 onClick={() => window.open(src, "_blank")}
               >
-                <img src={src} alt="" className="h-full w-full object-cover" />
+                <img
+                  src={src}
+                  alt=""
+                  className="h-full w-full object-contain"
+                />
               </div>
             ))}
           </div>

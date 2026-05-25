@@ -2,6 +2,7 @@
 // [claude-code 2026-03-16] AgentDesk simulation side panel — status, controls, prediction results
 import { useState, useCallback } from "react";
 import { Play, Loader2, CheckCircle, AlertCircle, Zap } from "lucide-react";
+import { AgentDeskAntilagPanel } from "./AgentDeskAntilagPanel";
 import { AgentDeskPrediction } from "./AgentDeskPrediction";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -127,6 +128,8 @@ export function AgentDeskPanel({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
+        <AgentDeskAntilagPanel />
+
         {status === "idle" && (
           <p className="text-[11px] text-gray-500 text-center py-6">
             Run a simulation to generate predictions from your narrative state.

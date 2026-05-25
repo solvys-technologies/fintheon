@@ -1,4 +1,4 @@
-// [claude-code 2026-03-16] Added auto-update types
+// [claude-code 2026-04-29] Updated desktop updater types for SOTA manual flow
 // [claude-code 2026-04-23] Harper Vision — screen capture IPC types
 
 export type CliOutputEvent =
@@ -6,16 +6,12 @@ export type CliOutputEvent =
   | { type: "stderr"; data: string }
   | { type: "exit"; code: number | null; signal: string | null };
 
-export interface UpdateInfo {
-  version: string;
-  releaseNotes: string;
-  releaseDate: string;
-}
-
-export interface UpdateProgress {
-  percent: number;
-  transferred: number;
-  total: number;
+export interface DesktopUpdateStatus {
+  ok: boolean;
+  current?: string | null;
+  latest?: string | null;
+  updateAvailable: boolean;
+  downloadUrl?: string;
 }
 
 export interface StartupConfig {
@@ -84,13 +80,19 @@ export interface ElectronAPI {
   stopBackend: () => Promise<{ ok: boolean }>;
   isBackendAlive: () => Promise<{ alive: boolean }>;
 
-  // Auto-update
-  checkForUpdate: () => Promise<{ ok: boolean }>;
-  downloadUpdate: () => Promise<{ ok: boolean }>;
-  installUpdate: () => Promise<{ ok: boolean }>;
-  onUpdateAvailable: (cb: ((info: UpdateInfo) => void) | null) => void;
-  onUpdateProgress: (cb: ((progress: UpdateProgress) => void) | null) => void;
-  onUpdateDownloaded: (cb: (() => void) | null) => void;
+  // SOTA desktop updater (manual check + manual download handoff)
+  checkForUpdate: () => Promise<DesktopUpdateStatus>;
+  downloadUpdate: () => Promise<{
+    ok: boolean;
+    opened?: boolean;
+    downloadUrl?: string;
+  }>;
+  installUpdate: () => Promise<{
+    ok: boolean;
+    opened?: boolean;
+    downloadUrl?: string;
+  }>;
+  deferUpdateUntilClose: () => Promise<{ ok: boolean; deferred?: boolean }>;
 
   // [claude-code 2026-03-23] Browser Use Phase 2 — CLI command bridge
   browserUse: {

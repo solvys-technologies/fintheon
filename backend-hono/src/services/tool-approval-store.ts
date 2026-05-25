@@ -1,3 +1,5 @@
+// [claude-code 2026-05-07] S61-T1: Integrated audit logger into resolveApproval, grantPermission,
+//   revokePermission, and 30s timeout handler. Every decision emits an immutable audit record.
 // [claude-code 2026-04-19] S25: push now carries lock-screen actions (Approve/Deny) + approvalId.
 //   Added getApprovalById + getApprovalExpiresAt exports for the mobile DetailSheet to render
 //   a live countdown without refetching the full pending list.
@@ -106,17 +108,16 @@ export async function grantPermission(toolName: string): Promise<void> {
   permanentPermissions.set(toolName, permission);
   await savePermissions();
   log.info(`Permanent permission granted: ${toolName}`);
-  logAuditDecision(
-    {
-      agent_id: "user",
-      tool_name: "permission_grant",
-      tool_input: { toolName },
-      description: `Permanent permission granted for ${toolName}`,
-      surface: "settings",
-      correlation_id: toolName,
-    },
-    { decision: "approved", reason: null },
-  ).catch((err) => log.error("audit write failed", { error: String(err) }));
+  logAuditDecision({
+    agent_id: "system",
+    tool_name: "permission_grant",
+    tool_input: { target_tool: toolName },
+    description: `Permanent permission granted for ${toolName}`,
+    surface: "settings",
+    decision: "approved",
+  }).catch((err: unknown) =>
+    log.error("audit write failed", { error: String(err) }),
+  );
 }
 
 /** Revoke permission for a tool */
@@ -124,17 +125,16 @@ export async function revokePermission(toolName: string): Promise<void> {
   permanentPermissions.delete(toolName);
   await savePermissions();
   log.info(`Permission revoked: ${toolName}`);
-  logAuditDecision(
-    {
-      agent_id: "user",
-      tool_name: "permission_revoke",
-      tool_input: { toolName },
-      description: `Permanent permission revoked for ${toolName}`,
-      surface: "settings",
-      correlation_id: toolName,
-    },
-    { decision: "denied", reason: null },
-  ).catch((err) => log.error("audit write failed", { error: String(err) }));
+  logAuditDecision({
+    agent_id: "system",
+    tool_name: "permission_revoke",
+    tool_input: { target_tool: toolName },
+    description: `Permission revoked for ${toolName}`,
+    surface: "settings",
+    decision: "denied",
+  }).catch((err: unknown) =>
+    log.error("audit write failed", { error: String(err) }),
+  );
 }
 
 /** Get all permanent permissions */
@@ -233,17 +233,6 @@ export function requestApproval(
         if (settled) return;
         log.warn(`Approval timeout — auto-approving: ${toolName} (${id})`);
         pendingApprovals.delete(id);
-        logAuditDecision(
-          {
-            agent_id: "unknown",
-            tool_name: toolName,
-            tool_input: toolInput,
-            description,
-            surface: "chat",
-            correlation_id: requestId,
-          },
-          { decision: "timed_out", reason: "30s approval timeout" },
-        ).catch((err) => log.error("audit write failed", { error: String(err) }));
         await grantPermission(toolName);
         emitStep(requestId, {
           kind: "tool-approval-resolved",
@@ -255,6 +244,18 @@ export function requestApproval(
             auto: true,
           }),
         });
+        logAuditDecision({
+          agent_id: "system",
+          tool_name: toolName,
+          tool_input: toolInput,
+          description,
+          surface: "chat",
+          correlation_id: requestId,
+          decision: "timed_out",
+          reason: `Auto-approved after ${APPROVAL_TIMEOUT_MS}ms timeout`,
+        }).catch((err: unknown) =>
+          log.error("audit write failed", { error: String(err) }),
+        );
         settle("approved");
       }, APPROVAL_TIMEOUT_MS);
     }
@@ -274,21 +275,6 @@ export async function resolveApproval(
 
   pendingApprovals.delete(approvalId);
 
-  logAuditDecision(
-    {
-      agent_id: "unknown",
-      tool_name: pending.toolName,
-      tool_input: pending.toolInput,
-      description: pending.description,
-      surface: "chat",
-      correlation_id: pending.requestId,
-    },
-    {
-      decision: decision as "approved" | "denied" | "timed_out",
-      reason: null,
-    },
-  ).catch((err) => log.error("audit write failed", { error: String(err) }));
-
   if (decision === "approved") {
     // Grant permanent permission
     await grantPermission(pending.toolName);
@@ -307,6 +293,18 @@ export async function resolveApproval(
 
   // Resolve the waiting promise
   pending.resolve(decision);
+
+  logAuditDecision({
+    agent_id: "system",
+    tool_name: pending.toolName,
+    tool_input: pending.toolInput,
+    description: pending.description,
+    surface: "chat",
+    correlation_id: pending.requestId ?? pending.id,
+    decision,
+  }).catch((err: unknown) =>
+    log.error("audit write failed", { error: String(err) }),
+  );
 
   log.info(
     `Approval resolved: ${pending.toolName} → ${decision} (${approvalId})`,

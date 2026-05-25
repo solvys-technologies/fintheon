@@ -1,6 +1,8 @@
 // [claude-code 2026-04-16] T6: Sessions panel — switched from bare fetch to BackendClient with auth headers
+// S38-T2: Replaced Loader2 with BrailleSpinner.
 import { useEffect, useState, useCallback } from "react";
-import { Calendar, MessageSquare, Trash2, Loader2 } from "lucide-react";
+import { Calendar, MessageSquare, Trash2 } from "lucide-react";
+import { BrailleSpinner } from "./primitive/BrailleSpinner";
 import { useBackend } from "../../lib/backend";
 
 interface SessionEntry {
@@ -138,11 +140,7 @@ export function SessionsPanel({
       >
         {loading && (
           <div className="flex items-center justify-center py-8">
-            <Loader2
-              size={16}
-              className="animate-spin"
-              style={{ color: "var(--fintheon-accent)" }}
-            />
+            <BrailleSpinner size={14} />
           </div>
         )}
 

@@ -6,7 +6,7 @@ import { useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   ClipboardList,
-  Clock,
+  Clock705,
   CalendarDays,
   StickyNote,
   Plus,
@@ -15,13 +15,13 @@ import {
   Flame,
   ChevronDown,
   ChevronUp,
-  Zap,
   GripVertical,
   TrendingUp,
 } from "lucide-react";
 import { useStickyBulletin, DAY_LABELS } from "../hooks/useStickyBulletin";
 import { useDraggable } from "../hooks/useDraggable";
 import { DayCardBulletinTab } from "./strategium/DayCardBulletinTab";
+import { BulletinWatchlistTab } from "./bulletin/BulletinWatchlistTab";
 
 interface StickyBulletinProps {
   open: boolean;
@@ -31,7 +31,7 @@ interface StickyBulletinProps {
 
 const SECTIONS = [
   { id: "idea" as const, icon: Crosshair, label: "Catalyst" },
-  { id: "antilag" as const, icon: Clock, label: "Antilag" },
+  { id: "antilag" as const, icon: Clock705, label: "Antilag" },
   { id: "event" as const, icon: CalendarDays, label: "Event" },
   { id: "notes" as const, icon: StickyNote, label: "Notes" },
   { id: "daycard" as const, icon: TrendingUp, label: "Day Card" },
@@ -129,7 +129,7 @@ export function StickyBulletin({
                 }}
                 title="Quick clock antilag"
               >
-                <Zap
+                <Clock705
                   className="w-3.5 h-3.5"
                   style={{
                     transform: b.quickClockPulse ? "scale(1.2)" : "scale(1)",
@@ -167,9 +167,7 @@ export function StickyBulletin({
                   color: isActive
                     ? "var(--fintheon-accent)"
                     : "var(--fintheon-muted)",
-                  background: isActive
-                    ? "color-mix(in srgb, var(--fintheon-accent) 12%, transparent)"
-                    : "transparent",
+                  background: "transparent",
                 }}
               >
                 <s.icon className="w-3 h-3" />
@@ -183,211 +181,7 @@ export function StickyBulletin({
         <div className="p-3 min-h-[200px] max-h-[420px] overflow-y-auto custom-scrollbar">
           {/* ═══ Section 1: Catalyst Watch ═══ */}
           {b.activeSection === "idea" && (
-            <div className="space-y-3 animate-in fade-in duration-150">
-              <p
-                className="text-[11px] leading-relaxed"
-                style={{ color: "var(--fintheon-muted)" }}
-              >
-                Add a catalyst phrase to watch. Bias words are auto-removed.
-                Alerts fire when scored items match.
-              </p>
-
-              {/* Inline phrase input */}
-              <div
-                className="rounded-lg p-3 space-y-2"
-                style={{
-                  background:
-                    "color-mix(in srgb, var(--fintheon-bg) 60%, transparent)",
-                  border:
-                    "1px solid color-mix(in srgb, var(--fintheon-accent) 10%, transparent)",
-                }}
-              >
-                <input
-                  type="text"
-                  value={b.newPhrase}
-                  onChange={(e) => b.setNewPhrase(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") b.handleAddPhrase();
-                  }}
-                  placeholder="e.g. FOMC rate decision, tariff, NVDA earnings..."
-                  maxLength={120}
-                  className="w-full bg-transparent border rounded-md px-2.5 py-2 text-[12px] outline-none placeholder:text-gray-600 focus:border-[var(--fintheon-accent)]/40 transition-colors"
-                  style={{
-                    borderColor:
-                      "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
-                    color: "var(--fintheon-text)",
-                    fontFamily: "var(--font-body)",
-                  }}
-                />
-
-                <div className="flex gap-2">
-                  {/* Match type toggle */}
-                  <div
-                    className="flex flex-1 rounded-md overflow-hidden"
-                    style={{
-                      border:
-                        "1px solid color-mix(in srgb, var(--fintheon-accent) 15%, transparent)",
-                    }}
-                  >
-                    {(["contains", "exact"] as const).map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => b.setPhraseMatchType(t)}
-                        className="flex-1 py-1 text-[9px] uppercase tracking-wide transition-colors"
-                        style={{
-                          color:
-                            b.phraseMatchType === t
-                              ? "var(--fintheon-accent)"
-                              : "var(--fintheon-muted)",
-                          background:
-                            b.phraseMatchType === t
-                              ? "color-mix(in srgb, var(--fintheon-accent) 12%, transparent)"
-                              : "transparent",
-                        }}
-                      >
-                        {t === "contains" ? "Contains" : "Exact"}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Repeating toggle */}
-                  <div
-                    className="flex flex-1 rounded-md overflow-hidden"
-                    style={{
-                      border:
-                        "1px solid color-mix(in srgb, var(--fintheon-accent) 15%, transparent)",
-                    }}
-                  >
-                    {([false, true] as const).map((r) => (
-                      <button
-                        key={String(r)}
-                        onClick={() => b.setPhraseRepeating(r)}
-                        className="flex-1 py-1 text-[9px] uppercase tracking-wide transition-colors"
-                        style={{
-                          color:
-                            b.phraseRepeating === r
-                              ? "var(--fintheon-accent)"
-                              : "var(--fintheon-muted)",
-                          background:
-                            b.phraseRepeating === r
-                              ? "color-mix(in srgb, var(--fintheon-accent) 12%, transparent)"
-                              : "transparent",
-                        }}
-                      >
-                        {r ? "Repeat" : "Once"}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <button
-                  onClick={b.handleAddPhrase}
-                  disabled={b.phraseSubmitting || !b.newPhrase.trim()}
-                  className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[10px] font-medium tracking-wide uppercase transition-all duration-200 disabled:opacity-40"
-                  style={{
-                    color: "var(--fintheon-accent)",
-                    background:
-                      "color-mix(in srgb, var(--fintheon-accent) 10%, transparent)",
-                  }}
-                >
-                  <Plus className="w-3 h-3" />
-                  {b.phraseSubmitting ? "Adding..." : "Add Catalyst Watch"}
-                </button>
-              </div>
-
-              {/* Bias warning */}
-              {b.biasWarning && (
-                <p
-                  className="text-[10px] italic animate-in fade-in duration-200"
-                  style={{ color: "var(--fintheon-bearish, #EF4444)" }}
-                >
-                  {b.biasWarning}
-                </p>
-              )}
-
-              {/* Active phrases list */}
-              {b.phrases.length > 0 ? (
-                <div className="space-y-1">
-                  <span
-                    className="text-[9px] uppercase tracking-widest"
-                    style={{ color: "var(--fintheon-muted)" }}
-                  >
-                    Active watches
-                  </span>
-                  {b.phrases.map((p) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center gap-2 py-1.5 px-2 rounded-md group"
-                      style={{
-                        background:
-                          "color-mix(in srgb, var(--fintheon-bg) 40%, transparent)",
-                      }}
-                    >
-                      <Crosshair
-                        className="w-3 h-3 shrink-0"
-                        style={{
-                          color: "var(--fintheon-accent)",
-                          opacity: 0.5,
-                        }}
-                      />
-                      <span
-                        className="text-[11px] flex-1 truncate"
-                        style={{
-                          color: "var(--fintheon-text)",
-                          fontFamily: "var(--font-body)",
-                        }}
-                      >
-                        {p.phrase}
-                      </span>
-                      {p.matchCount > 0 && (
-                        <span
-                          className="text-[9px] px-1.5 py-0.5 rounded-full font-mono"
-                          style={{
-                            color: "var(--fintheon-accent)",
-                            background:
-                              "color-mix(in srgb, var(--fintheon-accent) 12%, transparent)",
-                          }}
-                        >
-                          {p.matchCount}
-                        </span>
-                      )}
-                      <span
-                        className="text-[8px]"
-                        style={{ color: "var(--fintheon-muted)" }}
-                      >
-                        {p.repeating ? "repeat" : "once"}
-                      </span>
-                      <button
-                        onClick={() => b.handleDeletePhrase(p.id)}
-                        className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-white/5 transition-all"
-                        style={{ color: "var(--fintheon-muted)" }}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div
-                  className="text-center py-4 rounded-lg"
-                  style={{
-                    border:
-                      "1px dashed color-mix(in srgb, var(--fintheon-accent) 15%, transparent)",
-                  }}
-                >
-                  <Crosshair
-                    className="w-5 h-5 mx-auto mb-2 opacity-30"
-                    style={{ color: "var(--fintheon-accent)" }}
-                  />
-                  <p
-                    className="text-[10px]"
-                    style={{ color: "var(--fintheon-muted)" }}
-                  >
-                    No active watches. Add a catalyst phrase above.
-                  </p>
-                </div>
-              )}
-            </div>
+            <BulletinWatchlistTab />
           )}
 
           {/* ═══ Section 2: Antilag Times ═══ */}
@@ -433,7 +227,7 @@ export function StickyBulletin({
                     transition: "all 0.3s ease",
                   }}
                 >
-                  <Clock
+                  <Clock705
                     className="w-5 h-5"
                     style={{
                       color: "var(--fintheon-accent)",
@@ -456,7 +250,7 @@ export function StickyBulletin({
                       {DAY_LABELS[new Date().getDay()]} · auto-time
                     </span>
                   </div>
-                  <Zap
+                  <Clock705
                     className="w-3.5 h-3.5"
                     style={{ color: "var(--fintheon-accent)", opacity: 0.4 }}
                   />
@@ -718,7 +512,7 @@ export function StickyBulletin({
                           "color-mix(in srgb, var(--fintheon-bg) 40%, transparent)",
                       }}
                     >
-                      <Clock
+                      <Clock705
                         className="w-3 h-3 shrink-0"
                         style={{
                           color: "var(--fintheon-accent)",

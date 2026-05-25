@@ -47,7 +47,7 @@ export function CatalystImage({
         style={{
           width: "100%",
           maxHeight,
-          objectFit: "cover",
+          objectFit: "contain",
           display: "block",
         }}
       />

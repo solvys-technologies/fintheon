@@ -1,15 +1,20 @@
-// [claude-code 2026-04-23] S32-T3 Ollama fallback chain — OpenAI-compatible client for the Hermes sidecar
-// The "Hermes sidecar" on the fintheon host is Ollama (Mac app on :11434), which natively exposes
-// an OpenAI-compatible endpoint at /v1/chat/completions. Default model is Qwen's latest free cloud
-// build; override via OLLAMA_FALLBACK_MODEL.
+// [claude-code 2026-05-05] S59-T1: Removed HERMES_SIDECAR_URL fallback — sidecar deleted.
 
 import { createLogger } from "../../lib/logger.js";
 
-const log = createLogger("OllamaHermes");
+const log = createLogger("DeepSeekCompat");
 
-const DEFAULT_BASE_URL = "http://localhost:11434";
-const DEFAULT_MODEL = "qwen3.5:397b-cloud";
+const DEFAULT_BASE_URL = "https://api.deepseek.com";
+const DEFAULT_MODEL = "deepseek-reasoner";
 const HEALTH_CACHE_TTL_MS = 15_000;
+
+function getAuthHeaders(): Record<string, string> {
+  const key =
+    process.env.DEEPSEEK_API_KEY ??
+    process.env.HERMES_API_KEY ??
+    process.env.OLLAMA_API_KEY;
+  return key ? { Authorization: `Bearer ${key}` } : {};
+}
 
 export interface OllamaHealth {
   enabled: boolean;
@@ -36,14 +41,11 @@ export interface OllamaStreamOptions extends OllamaTextOptions {
 let healthCache: OllamaHealth | null = null;
 
 export function isOllamaFallbackEnabled(): boolean {
-  return process.env.OLLAMA_FALLBACK_ENABLED !== "false";
+  return process.env.DEEPSEEK_DIRECT_ENABLED !== "false";
 }
 
 export function getOllamaBaseUrl(): string {
-  const raw =
-    process.env.HERMES_SIDECAR_URL ||
-    process.env.OLLAMA_BASE_URL ||
-    DEFAULT_BASE_URL;
+  const raw = process.env.OLLAMA_BASE_URL || DEFAULT_BASE_URL;
   return raw.replace(/\/+$/, "");
 }
 
@@ -79,6 +81,7 @@ export async function getOllamaHealth(force = false): Promise<OllamaHealth> {
 
   try {
     const res = await fetch(`${baseUrl}/v1/models`, {
+      headers: getAuthHeaders(),
       signal: AbortSignal.timeout(5_000),
     });
     if (!res.ok) {
@@ -106,7 +109,10 @@ export async function getOllamaHealth(force = false): Promise<OllamaHealth> {
       checkedAt: Date.now(),
       error: message,
     };
-    log.warn("Ollama health check failed", { error: message, baseUrl });
+    log.warn("DeepSeek-compatible health check failed", {
+      error: message,
+      baseUrl,
+    });
   }
 
   return healthCache;
@@ -121,7 +127,7 @@ interface OllamaChatResponse {
   choices?: Array<{ message?: { content?: string } }>;
 }
 
-/** Non-streaming generation via Ollama OpenAI-compat endpoint. */
+/** Non-streaming generation via DeepSeek/OpenAI-compatible endpoint. */
 export async function generateTextViaOllama(
   options: OllamaTextOptions,
 ): Promise<string> {
@@ -149,14 +155,14 @@ export async function generateTextViaOllama(
   try {
     const res = await fetch(`${baseUrl}/v1/chat/completions`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
     if (!res.ok) {
       const text = await res.text().catch(() => "");
       throw new Error(
-        `Ollama /v1/chat/completions ${res.status}: ${text.slice(0, 200)}`,
+        `DeepSeek-compatible /v1/chat/completions ${res.status}: ${text.slice(0, 200)}`,
       );
     }
     const payload = (await res.json()) as OllamaChatResponse;
@@ -167,7 +173,7 @@ export async function generateTextViaOllama(
 }
 
 /**
- * Stream deltas from Ollama OpenAI-compat endpoint. Yields text chunks.
+ * Stream deltas from DeepSeek/OpenAI-compatible endpoint. Yields text chunks.
  * The caller adapts these into whatever downstream stream shape is required.
  */
 export async function* streamTextViaOllama(
@@ -195,6 +201,7 @@ export async function* streamTextViaOllama(
     headers: {
       "Content-Type": "application/json",
       Accept: "text/event-stream",
+      ...getAuthHeaders(),
     },
     body: JSON.stringify(body),
     signal: options.abortSignal,
@@ -203,7 +210,7 @@ export async function* streamTextViaOllama(
   if (!res.ok || !res.body) {
     const text = res.body ? await res.text() : "";
     throw new Error(
-      `Ollama /v1/chat/completions stream ${res.status}: ${text.slice(0, 200)}`,
+      `DeepSeek-compatible /v1/chat/completions stream ${res.status}: ${text.slice(0, 200)}`,
     );
   }
 

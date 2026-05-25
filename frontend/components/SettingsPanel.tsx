@@ -1,3 +1,5 @@
+// [claude-code 2026-05-15] S66: instrument selector dropdown wired to TradingTab props.
+// [claude-code 2026-05-13] S63 T1: Wired lockoutDefaultDuration + quickAccessUrl props to TradingTab
 // [claude-code 2026-04-25] Settings tab content swap now uses t-panel-slide (solvys-transitions)
 //   for translate-Y + blur + fade entry per tab. Replaces animate-fade-in-tab / animate-fade-out-tab.
 // [claude-code 2026-04-03] Refactored: thin shell that imports tab sub-components
@@ -20,7 +22,6 @@ import {
 import { useSettings, type APIKeys } from "../contexts/SettingsContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
-import { Button } from "./ui/Button";
 import { useState, useEffect } from "react";
 import { useBackend } from "../lib/backend";
 import { useVoiceMemory } from "../hooks/useVoiceMemory";
@@ -37,10 +38,12 @@ import { ApiTab } from "./settings/ApiTab";
 import { IframesTab } from "./settings/IframesTab";
 import { DangerTab } from "./settings/DangerTab";
 import { DeveloperTab } from "./settings/DeveloperTab";
+import { DevPasswordGate } from "./settings/DevPasswordGate";
+import { SettingsActionStatus } from "./settings/SettingsActionStatus";
 
 type SettingsTab =
   | "general"
-  | "hermes-admin"
+  | "admin"
   | "appearance"
   | "desk"
   | "notifications"
@@ -86,28 +89,28 @@ const TABS = [
     description: "Trading symbol, billing, and account preferences",
   },
   {
-    id: "hermes-admin" as const,
-    label: "Hermes:Admin",
-    icon: Cpu,
-    description: "Gateway, agent status, backend dependencies, and diagnostics",
-  },
-  {
-    id: "appearance" as const,
-    label: "Appearance",
-    icon: Palette,
-    description: "Theme and visual customization options",
-  },
-  {
     id: "desk" as const,
     label: "Agentic Desk",
     icon: Users,
-    description: "Agent persona configuration and CAO naming",
+    description: "Hermes routing, agent personas, and CAO naming",
+  },
+  {
+    id: "admin" as const,
+    label: "Hermes Settings",
+    icon: Cpu,
+    description: "Gateway, agent status, backend dependencies, and diagnostics",
   },
   {
     id: "trading" as const,
     label: "Trading",
     icon: CreditCard,
     description: "Risk management, autopilot, and strategy toggles",
+  },
+  {
+    id: "iframes" as const,
+    label: "iFrames",
+    icon: Globe,
+    description: "Embed URLs for Boardroom, Research, and more",
   },
   {
     id: "notifications" as const,
@@ -122,10 +125,10 @@ const TABS = [
     description: "API keys and external service credentials",
   },
   {
-    id: "iframes" as const,
-    label: "iFrames",
-    icon: Globe,
-    description: "Embed URLs for Boardroom, Research, and more",
+    id: "appearance" as const,
+    label: "Appearance",
+    icon: Palette,
+    description: "Theme and visual customization options",
   },
   {
     id: "developer" as const,
@@ -134,13 +137,14 @@ const TABS = [
     description:
       "RiskFlow calibration, mock data, test tools, and tier management",
   },
-  {
-    id: "danger" as const,
-    label: "Danger Zone",
-    icon: AlertTriangle,
-    description: "Reset analysts, clear data, and export config",
-  },
 ];
+const DANGER_TAB = {
+  id: "danger" as const,
+  label: "Danger Zone",
+  icon: AlertTriangle,
+  description: "Reset analysts, clear data, and export config",
+};
+const ORDERED_TABS = [...TABS, DANGER_TAB];
 
 // Per-tab wrapper that drives t-panel-slide entry on mount via a one-frame rAF so
 // the new tab content tweens in from the closed (translate-Y + blur + opacity:0)
@@ -202,6 +206,16 @@ export function SettingsPage() {
     setProposerIframeSources,
     proposerDefaultIframe,
     setProposerDefaultIframe,
+    lockoutDefaultDuration,
+    setLockoutDefaultDuration,
+    lockoutAutoReleaseMinutes,
+    setLockoutAutoReleaseMinutes,
+    persistentLockout,
+    setPersistentLockout,
+    quickAccessUrl,
+    setQuickAccessUrl,
+    selectedInstrument,
+    setSelectedInstrument,
   } = useSettings();
   const backend = useBackend();
   const voiceMemory = useVoiceMemory();
@@ -218,6 +232,12 @@ export function SettingsPage() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { addToast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<{
+    label: string;
+    detail?: string;
+    tone?: "muted" | "success" | "error" | "warning";
+  } | null>(null);
+  const orderedTabs = ORDERED_TABS;
 
   const handleTabChange = (tab: SettingsTab) => {
     if (!showLanding && tab === activeTab && !tabTransitioning) return;
@@ -252,6 +272,11 @@ export function SettingsPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
+    setSaveStatus({
+      label: "Saving",
+      detail: "Syncing local settings and account preferences.",
+      tone: "warning",
+    });
     const startTime = Date.now();
     try {
       if (isAuthenticated) {
@@ -285,6 +310,11 @@ export function SettingsPage() {
                 "Settings saved. ProjectX credentials failed — check API key.",
                 "info",
               );
+              setSaveStatus({
+                label: "Saved Locally",
+                detail: "ProjectX credential sync needs attention.",
+                tone: "warning",
+              });
               setIsSaving(false);
             }, remaining);
             return;
@@ -295,6 +325,11 @@ export function SettingsPage() {
       const remaining = Math.max(0, 1200 - elapsed);
       setTimeout(() => {
         addToast("Settings saved successfully", "success");
+        setSaveStatus({
+          label: "Saved",
+          detail: "Settings are current on this surface.",
+          tone: "success",
+        });
         setIsSaving(false);
       }, remaining);
     } catch (error) {
@@ -303,6 +338,11 @@ export function SettingsPage() {
       const remaining = Math.max(0, 1200 - elapsed);
       setTimeout(() => {
         addToast("Settings saved locally. Backend sync unavailable.", "info");
+        setSaveStatus({
+          label: "Saved Locally",
+          detail: "Backend sync was unavailable.",
+          tone: "warning",
+        });
         setIsSaving(false);
       }, remaining);
     }
@@ -358,6 +398,16 @@ export function SettingsPage() {
             setAutoPilotSettings={setAutoPilotSettings}
             tradingModels={tradingModels}
             setTradingModels={setTradingModels}
+            lockoutDefaultDuration={lockoutDefaultDuration}
+            setLockoutDefaultDuration={setLockoutDefaultDuration}
+            lockoutAutoReleaseMinutes={lockoutAutoReleaseMinutes}
+            setLockoutAutoReleaseMinutes={setLockoutAutoReleaseMinutes}
+            persistentLockout={persistentLockout}
+            setPersistentLockout={setPersistentLockout}
+            quickAccessUrl={quickAccessUrl}
+            setQuickAccessUrl={setQuickAccessUrl}
+            selectedInstrument={selectedInstrument}
+            setSelectedInstrument={setSelectedInstrument}
           />,
         );
       case "general":
@@ -394,8 +444,15 @@ export function SettingsPage() {
             setProposerDefaultIframe={setProposerDefaultIframe}
           />,
         );
-      case "hermes-admin":
-        return wrap("hermes-admin", <HermesAdminTab />);
+      case "admin":
+        return wrap(
+          "admin",
+          devAuthenticated ? (
+            <HermesAdminTab />
+          ) : (
+            <DevPasswordGate onAuthenticated={() => setDevAuthenticated(true)} />
+          ),
+        );
       case "appearance":
         return wrap("appearance", <ThemeSettings />);
       case "desk":
@@ -422,7 +479,7 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="h-full w-full flex relative">
+    <div className="settings-pass-through h-full w-full flex relative">
       <div className="flex-1 flex flex-col min-h-0">
         {showLanding ? (
           <div
@@ -438,20 +495,22 @@ export function SettingsPage() {
                 </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {TABS.map((tab) => {
+                {orderedTabs.map((tab) => {
                   const Icon = tab.icon;
                   const isDanger = tab.id === "danger";
                   return (
                     <React.Fragment key={tab.id}>
                       {isDanger && <div className="hidden lg:block" />}
-                      <button
-                        onClick={() => handleTabChange(tab.id)}
-                        className={`group text-left p-4 rounded-lg border transition-all hover:scale-[1.01] ${isDanger ? "border-red-500/15 hover:border-red-500/30 hover:bg-red-500/5" : "fintheon-accent-border fintheon-accent-border-hover"}`}
-                        style={{ backgroundColor: "rgba(10,10,0,0.4)" }}
+                      <div
+                        className={`group relative text-right p-4 rounded-md transition-all duration-200 hover:opacity-80 ${isDanger ? "text-red-400" : "text-[var(--fintheon-text)]"}`}
                       >
-                        <div className="flex items-start gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleTabChange(tab.id)}
+                          className="flex w-full items-start justify-end gap-3 text-right"
+                        >
                           <div
-                            className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isDanger ? "bg-red-500/10 text-red-400 group-hover:bg-red-500/20" : "fintheon-settings-icon"} transition-colors`}
+                            className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${isDanger ? "text-red-400" : "text-[var(--fintheon-accent)]/70"} transition-opacity duration-200`}
                           >
                             <Icon className="w-4 h-4" />
                           </div>
@@ -465,8 +524,8 @@ export function SettingsPage() {
                               {tab.description}
                             </div>
                           </div>
-                        </div>
-                      </button>
+                        </button>
+                      </div>
                     </React.Fragment>
                   );
                 })}
@@ -488,29 +547,35 @@ export function SettingsPage() {
               <div className="flex items-center gap-2">
                 {(() => {
                   const Icon =
-                    TABS.find((t) => t.id === activeTab)?.icon ?? Settings;
+                    orderedTabs.find((t) => t.id === activeTab)?.icon ?? Settings;
                   return (
                     <Icon className="w-4 h-4 text-[var(--fintheon-accent)]/60" />
                   );
                 })()}
                 <h2 className="text-[14px] font-semibold text-white tracking-tight">
-                  {TABS.find((t) => t.id === activeTab)?.label}
+                  {orderedTabs.find((t) => t.id === activeTab)?.label}
                 </h2>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto px-8 py-4 pb-20 space-y-6 relative">
+            <div className="flex-1 overflow-y-auto px-8 py-4 pb-28 space-y-6 relative">
               {renderTabContent()}
             </div>
-            <div className="sticky bottom-0 bg-[var(--fintheon-bg)] backdrop-blur-sm border-t border-[var(--fintheon-accent)]/10 px-8 py-3">
-              <div className="flex items-center justify-end gap-3">
-                <Button
-                  variant="primary"
+            <div className="sticky bottom-0 bg-[var(--fintheon-bg)] px-8 pb-7 pt-3">
+              <div className="flex flex-col items-end justify-end gap-1 text-right">
+                <button
                   onClick={handleSave}
-                  className="px-6 py-2"
+                  className="fintheon-action-link text-right text-[11px] font-semibold uppercase tracking-[0.14em]"
                   disabled={isSaving}
                 >
                   {isSaving ? "Saving..." : "Save Changes"}
-                </Button>
+                </button>
+                {saveStatus && (
+                  <SettingsActionStatus
+                    label={saveStatus.label}
+                    detail={saveStatus.detail}
+                    tone={saveStatus.tone}
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -526,17 +591,17 @@ export function SettingsPage() {
           {!sidebarHovered && (
             <div className="absolute right-0 top-0 bottom-0 w-3 bg-transparent cursor-pointer">
               <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col gap-1.5">
-                {TABS.map((_, i) => (
+                {orderedTabs.map((_, i) => (
                   <div
                     key={i}
-                    className={`w-1 rounded-full transition-all ${TABS[i].id === activeTab ? "h-4 bg-[var(--fintheon-accent)]" : "h-1.5 bg-[var(--fintheon-accent)]/25"}`}
+                    className={`w-1 rounded-full transition-all ${orderedTabs[i].id === activeTab ? "h-4 bg-[var(--fintheon-accent)]" : "h-1.5 bg-[var(--fintheon-accent)]/25"}`}
                   />
                 ))}
               </div>
             </div>
           )}
           <div
-            className={`h-full bg-[var(--fintheon-bg)] border-l border-[var(--fintheon-accent)]/15 flex flex-col py-5 transition-all duration-200 ease-out overflow-hidden ${sidebarHovered ? "w-52 opacity-100" : "w-0 opacity-0"}`}
+            className={`h-full bg-[var(--fintheon-bg)] flex flex-col py-5 transition-all duration-200 ease-out overflow-hidden ${sidebarHovered ? "w-52 opacity-100" : "w-0 opacity-0"}`}
           >
             <div className="px-4 mb-4">
               <span className="text-[10px] tracking-[0.2em] uppercase text-gray-500 font-semibold">
@@ -544,14 +609,14 @@ export function SettingsPage() {
               </span>
             </div>
             <div className="flex-1 space-y-0.5 px-2">
-              {TABS.map((tab) => {
+              {orderedTabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => handleTabChange(tab.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${isActive ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]" : "text-gray-400 hover:bg-[var(--fintheon-accent)]/8 hover:text-gray-200"}`}
+                    className={`w-full flex items-center justify-end gap-3 px-3 py-2.5 rounded-md text-right transition-opacity duration-200 hover:opacity-80 ${isActive ? "text-[var(--fintheon-accent)]" : "text-gray-400"}`}
                   >
                     <Icon className="w-4 h-4 shrink-0" />
                     <span

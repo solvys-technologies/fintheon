@@ -12,9 +12,11 @@ import {
   Scroll,
   Trophy,
   Minus,
+  HeartPulse,
 } from "lucide-react";
 import { MemoryCard } from "./MemoryCard";
 import { CommandmentsSidebar } from "./CommandmentsSidebar";
+import { AgentHealthDashboard } from "./AgentHealthDashboard";
 import type {
   AgentNode,
   AgentConnection,
@@ -474,6 +476,7 @@ const conflicts = CONNECTIONS.filter((c) => c.type === "conflict");
 
 export function ApparatusMap() {
   const [showSchedule, setShowSchedule] = useState(false);
+  const [viewMode, setViewMode] = useState<"briefing" | "health">("briefing");
   const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const gridRef = useRef<HTMLDivElement>(null);
@@ -551,6 +554,19 @@ export function ApparatusMap() {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() =>
+              setViewMode(viewMode === "briefing" ? "health" : "briefing")
+            }
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded border transition-colors text-[10px] font-mono ${
+              viewMode === "health"
+                ? "border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+                : "border-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/30"
+            }`}
+          >
+            <HeartPulse size={10} />
+            Agent Health
+          </button>
           {conflicts.map((c) => (
             <div
               key={`${c.from}-${c.to}`}
@@ -576,306 +592,350 @@ export function ApparatusMap() {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 flex overflow-hidden">
-        {/* Left sidebar: Commandments (full 14 with Source of Truth metadata) */}
-        <CommandmentsSidebar />
+      {viewMode === "health" ? (
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <AgentHealthDashboard />
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 flex overflow-hidden">
+          {/* Left sidebar: Commandments (full 14 with Source of Truth metadata) */}
+          <CommandmentsSidebar />
 
-        {/* Center: Agent briefing cards grid */}
-        <div className="flex-1 min-w-0 min-h-0 overflow-y-auto p-4">
-          <div
-            ref={gridRef}
-            className="relative grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4"
-          >
-            {/* SVG overlay for agent connection lines */}
-            {expandedAgent && lines.length > 0 && (
-              <svg
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  zIndex: 1,
-                  width: "100%",
-                  height: "100%",
-                  overflow: "visible",
-                }}
-              >
-                {lines.map((line) => (
-                  <path
-                    key={line.key}
-                    d={line.d}
-                    stroke={line.color}
-                    strokeWidth={1.5}
-                    opacity={0.2}
-                    fill="none"
-                    className="rope-breathe"
-                  />
-                ))}
-              </svg>
-            )}
-            {AGENTS.map((agent) => {
-              const isExpanded = expandedAgent === agent.id;
-              const agentConflicts = conflicts.filter(
-                (c) => c.from === agent.id || c.to === agent.id,
-              );
-              const agentConnections = CONNECTIONS.filter(
-                (c) =>
-                  c.type === "context" &&
-                  (c.from === agent.id || c.to === agent.id),
-              );
-
-              return (
-                <div
-                  key={agent.id}
-                  ref={(el) => {
-                    cardRefs.current[agent.id] = el;
+          {/* Center: Agent briefing cards grid */}
+          <div className="flex-1 min-w-0 min-h-0 overflow-y-auto p-4">
+            <div
+              ref={gridRef}
+              className="relative grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4"
+            >
+              {/* SVG overlay for agent connection lines */}
+              {expandedAgent && lines.length > 0 && (
+                <svg
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    zIndex: 1,
+                    width: "100%",
+                    height: "100%",
+                    overflow: "visible",
                   }}
-                  className={`border rounded-lg transition-all cursor-pointer ${
-                    isExpanded
-                      ? "bg-[var(--fintheon-surface)] border-[var(--fintheon-accent)]/40 col-span-1 lg:col-span-2 xl:col-span-3"
-                      : "bg-[var(--fintheon-bg)] border-[var(--fintheon-accent)]/20 hover:border-[var(--fintheon-accent)]/40 hover:bg-[var(--fintheon-accent)]/5"
-                  }`}
-                  style={{ position: "relative", zIndex: isExpanded ? 2 : 0 }}
-                  onClick={() =>
-                    setExpandedAgent((prev) =>
-                      prev === agent.id ? null : agent.id,
-                    )
-                  }
                 >
-                  {/* Card header */}
-                  <div className="px-3 py-2.5 border-b border-[var(--fintheon-accent)]/10 flex items-center justify-between">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-xs font-semibold text-[var(--fintheon-text)] tracking-wide">
-                        {agent.label}
-                      </span>
-                      <span className="text-[9px] text-[var(--fintheon-accent)]/50 font-mono uppercase">
-                        {agent.role}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      {agentConflicts.length > 0 && (
-                        <span className="text-[8px] text-red-400 font-mono border border-red-500/30 rounded px-1.5 py-0.5">
-                          CONFLICT
+                  {lines.map((line) => (
+                    <path
+                      key={line.key}
+                      d={line.d}
+                      stroke={line.color}
+                      strokeWidth={1.5}
+                      opacity={0.2}
+                      fill="none"
+                      className="rope-breathe"
+                    />
+                  ))}
+                </svg>
+              )}
+              {AGENTS.map((agent) => {
+                const isExpanded = expandedAgent === agent.id;
+                const agentConflicts = conflicts.filter(
+                  (c) => c.from === agent.id || c.to === agent.id,
+                );
+                const agentConnections = CONNECTIONS.filter(
+                  (c) =>
+                    c.type === "context" &&
+                    (c.from === agent.id || c.to === agent.id),
+                );
+
+                return (
+                  <div
+                    key={agent.id}
+                    ref={(el) => {
+                      cardRefs.current[agent.id] = el;
+                    }}
+                    className={`border rounded-lg transition-all cursor-pointer ${
+                      isExpanded
+                        ? "bg-[var(--fintheon-surface)] border-[var(--fintheon-accent)]/40 col-span-1 lg:col-span-2 xl:col-span-3"
+                        : "bg-[var(--fintheon-bg)] border-[var(--fintheon-accent)]/20 hover:border-[var(--fintheon-accent)]/40 hover:bg-[var(--fintheon-accent)]/5"
+                    }`}
+                    style={{ position: "relative", zIndex: isExpanded ? 2 : 0 }}
+                    onClick={() =>
+                      setExpandedAgent((prev) =>
+                        prev === agent.id ? null : agent.id,
+                      )
+                    }
+                  >
+                    {/* Card header */}
+                    <div className="px-3 py-2.5 border-b border-[var(--fintheon-accent)]/10 flex items-center justify-between">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xs font-semibold text-[var(--fintheon-text)] tracking-wide">
+                          {agent.label}
                         </span>
-                      )}
-                      <span className="text-[8px] text-[var(--fintheon-accent)]/30 font-mono">
-                        {agent.memories.length} facts
-                      </span>
+                        <span className="text-[9px] text-[var(--fintheon-accent)]/50 font-mono uppercase">
+                          {agent.role}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {agentConflicts.length > 0 && (
+                          <span className="text-[8px] text-red-400 font-mono border border-red-500/30 rounded px-1.5 py-0.5">
+                            CONFLICT
+                          </span>
+                        )}
+                        <span className="text-[8px] text-[var(--fintheon-accent)]/30 font-mono">
+                          {agent.memories.length} facts
+                        </span>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Collapsed: bio snippet + 2 memories */}
-                  {!isExpanded && (
-                    <div className="p-3 space-y-2">
-                      {agent.bio && (
-                        <p className="text-[11px] text-[var(--fintheon-text)]/40 leading-relaxed italic line-clamp-2">
-                          {agent.bio}
-                        </p>
-                      )}
-                      {agent.dossier && (
-                        <p className="text-[10px] leading-relaxed text-[var(--fintheon-text-muted)] mt-1.5 line-clamp-2 italic opacity-70">
-                          {agent.dossier.split(". ").slice(0, 2).join(". ")}.
-                        </p>
-                      )}
-                      {agent.memories.slice(0, 2).map((mem) => (
-                        <MemoryCard key={mem.id} memory={mem} />
-                      ))}
-                      {agent.memories.length > 2 && (
-                        <div className="text-[8px] text-[var(--fintheon-accent)]/30 font-mono text-center pt-1">
-                          +{agent.memories.length - 2} more
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Expanded: full dossier */}
-                  {isExpanded && (
-                    <div className="p-3 space-y-3">
-                      {/* Bio */}
-                      {agent.bio && (
-                        <div className="border-b border-[var(--fintheon-accent)]/10 pb-3">
-                          <div className="flex items-center gap-1.5 mb-1.5">
-                            <BookOpen
-                              size={9}
-                              className="text-[var(--fintheon-accent)]/60"
-                            />
-                            <span className="text-[8px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">
-                              Personnel File
-                            </span>
-                          </div>
-                          <p className="text-[13px] text-[var(--fintheon-text)]/60 leading-relaxed italic">
+                    {/* Collapsed: bio snippet + 2 memories */}
+                    {!isExpanded && (
+                      <div className="p-3 space-y-2">
+                        {agent.bio && (
+                          <p className="text-[11px] text-[var(--fintheon-text)]/40 leading-relaxed italic line-clamp-2">
                             {agent.bio}
                           </p>
-                        </div>
-                      )}
-
-                      {/* Dossier / Historical Fiction */}
-                      {agent.dossier && (
-                        <div className="border-b border-[var(--fintheon-accent)]/10 pb-3">
-                          <div className="flex items-center gap-1.5 mb-1.5">
-                            <Scroll
-                              size={9}
-                              className="text-[var(--fintheon-accent)]/60"
-                            />
-                            <span className="text-[8px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">
-                              Origin Dossier
-                            </span>
-                          </div>
-                          <p className="text-[13px] text-[var(--fintheon-text)]/50 leading-[1.6]">
-                            {agent.dossier}
+                        )}
+                        {agent.dossier && (
+                          <p className="text-[10px] leading-relaxed text-[var(--fintheon-text-muted)] mt-1.5 line-clamp-2 italic opacity-70">
+                            {agent.dossier.split(". ").slice(0, 2).join(". ")}.
                           </p>
-                        </div>
-                      )}
+                        )}
+                        {agent.memories.slice(0, 2).map((mem) => (
+                          <MemoryCard key={mem.id} memory={mem} />
+                        ))}
+                        {agent.memories.length > 2 && (
+                          <div className="text-[8px] text-[var(--fintheon-accent)]/30 font-mono text-center pt-1">
+                            +{agent.memories.length - 2} more
+                          </div>
+                        )}
+                      </div>
+                    )}
 
-                      {/* Win/Loss Record (Feucht) */}
-                      {agent.record && (
-                        <div className="border-b border-[var(--fintheon-accent)]/10 pb-3">
-                          <div className="flex items-center gap-1.5 mb-2">
-                            <Trophy
-                              size={9}
-                              className="text-[var(--fintheon-accent)]/60"
-                            />
-                            <span className="text-[8px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">
-                              Combat Record
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-4 gap-2 mb-2">
-                            <div className="bg-black/20 rounded px-2 py-1.5">
-                              <div className="text-[7px] text-[var(--fintheon-accent)]/40 font-mono">
-                                W / L / BE
-                              </div>
-                              <div className="text-[11px] font-mono mt-0.5">
-                                <span className="text-emerald-400">
-                                  {agent.record.wins}
-                                </span>
-                                <span className="text-[var(--fintheon-text)]/20">
-                                  {" "}
-                                  /{" "}
-                                </span>
-                                <span className="text-red-400">
-                                  {agent.record.losses}
-                                </span>
-                                <span className="text-[var(--fintheon-text)]/20">
-                                  {" "}
-                                  /{" "}
-                                </span>
-                                <span className="text-[var(--fintheon-text)]/40">
-                                  {agent.record.breakeven}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="bg-black/20 rounded px-2 py-1.5">
-                              <div className="text-[7px] text-[var(--fintheon-accent)]/40 font-mono">
-                                Win Rate
-                              </div>
-                              <div className="text-[11px] font-mono text-[var(--fintheon-accent)] mt-0.5">
-                                {agent.record.winRate}%
-                              </div>
-                            </div>
-                            <div className="bg-black/20 rounded px-2 py-1.5">
-                              <div className="text-[7px] text-[var(--fintheon-accent)]/40 font-mono">
-                                Total P&L
-                              </div>
-                              <div
-                                className={`text-[11px] font-mono mt-0.5 ${agent.record.totalPnl >= 0 ? "text-emerald-400" : "text-red-400"}`}
-                              >
-                                {agent.record.totalPnl >= 0 ? "+" : ""}$
-                                {agent.record.totalPnl.toLocaleString()}
-                              </div>
-                            </div>
-                            <div className="bg-black/20 rounded px-2 py-1.5">
-                              <div className="text-[7px] text-[var(--fintheon-accent)]/40 font-mono">
-                                Avg RR
-                              </div>
-                              <div className="text-[11px] font-mono text-[var(--fintheon-text)]/70 mt-0.5">
-                                {agent.record.avgRR}:1
-                              </div>
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[7px] text-[var(--fintheon-accent)]/40 font-mono w-14 shrink-0">
-                                STREAK
-                              </span>
-                              <span className="text-[9px] text-[var(--fintheon-text)]/60 font-mono">
-                                {agent.record.streak}
-                              </span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <span className="text-[7px] text-emerald-400/60 font-mono w-14 shrink-0">
-                                BEST
-                              </span>
-                              <span className="text-[9px] text-emerald-400/70 font-mono">
-                                {agent.record.bestTrade}
-                              </span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <span className="text-[7px] text-red-400/60 font-mono w-14 shrink-0">
-                                WORST
-                              </span>
-                              <span className="text-[9px] text-red-400/70 font-mono">
-                                {agent.record.worstTrade}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Active Narratives */}
-                      {agent.activeNarratives &&
-                        agent.activeNarratives.length > 0 && (
+                    {/* Expanded: full dossier */}
+                    {isExpanded && (
+                      <div className="p-3 space-y-3">
+                        {/* Bio */}
+                        {agent.bio && (
                           <div className="border-b border-[var(--fintheon-accent)]/10 pb-3">
-                            <div className="flex items-center gap-1.5 mb-2">
-                              <Eye
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                              <BookOpen
                                 size={9}
                                 className="text-[var(--fintheon-accent)]/60"
                               />
                               <span className="text-[8px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">
-                                Active Narratives
+                                Personnel File
                               </span>
                             </div>
-                            <div className="space-y-1.5">
-                              {agent.activeNarratives.map((n) => (
+                            <p className="text-[13px] text-[var(--fintheon-text)]/60 leading-relaxed italic">
+                              {agent.bio}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Dossier / Historical Fiction */}
+                        {agent.dossier && (
+                          <div className="border-b border-[var(--fintheon-accent)]/10 pb-3">
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                              <Scroll
+                                size={9}
+                                className="text-[var(--fintheon-accent)]/60"
+                              />
+                              <span className="text-[8px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">
+                                Origin Dossier
+                              </span>
+                            </div>
+                            <p className="text-[13px] text-[var(--fintheon-text)]/50 leading-[1.6]">
+                              {agent.dossier}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Win/Loss Record (Feucht) */}
+                        {agent.record && (
+                          <div className="border-b border-[var(--fintheon-accent)]/10 pb-3">
+                            <div className="flex items-center gap-1.5 mb-2">
+                              <Trophy
+                                size={9}
+                                className="text-[var(--fintheon-accent)]/60"
+                              />
+                              <span className="text-[8px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">
+                                Combat Record
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-4 gap-2 mb-2">
+                              <div className="bg-black/20 rounded px-2 py-1.5">
+                                <div className="text-[7px] text-[var(--fintheon-accent)]/40 font-mono">
+                                  W / L / BE
+                                </div>
+                                <div className="text-[11px] font-mono mt-0.5">
+                                  <span className="text-emerald-400">
+                                    {agent.record.wins}
+                                  </span>
+                                  <span className="text-[var(--fintheon-text)]/20">
+                                    {" "}
+                                    /{" "}
+                                  </span>
+                                  <span className="text-red-400">
+                                    {agent.record.losses}
+                                  </span>
+                                  <span className="text-[var(--fintheon-text)]/20">
+                                    {" "}
+                                    /{" "}
+                                  </span>
+                                  <span className="text-[var(--fintheon-text)]/40">
+                                    {agent.record.breakeven}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="bg-black/20 rounded px-2 py-1.5">
+                                <div className="text-[7px] text-[var(--fintheon-accent)]/40 font-mono">
+                                  Win Rate
+                                </div>
+                                <div className="text-[11px] font-mono text-[var(--fintheon-accent)] mt-0.5">
+                                  {agent.record.winRate}%
+                                </div>
+                              </div>
+                              <div className="bg-black/20 rounded px-2 py-1.5">
+                                <div className="text-[7px] text-[var(--fintheon-accent)]/40 font-mono">
+                                  Total P&L
+                                </div>
                                 <div
-                                  key={n.thread}
+                                  className={`text-[11px] font-mono mt-0.5 ${agent.record.totalPnl >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                                >
+                                  {agent.record.totalPnl >= 0 ? "+" : ""}$
+                                  {agent.record.totalPnl.toLocaleString()}
+                                </div>
+                              </div>
+                              <div className="bg-black/20 rounded px-2 py-1.5">
+                                <div className="text-[7px] text-[var(--fintheon-accent)]/40 font-mono">
+                                  Avg RR
+                                </div>
+                                <div className="text-[11px] font-mono text-[var(--fintheon-text)]/70 mt-0.5">
+                                  {agent.record.avgRR}:1
+                                </div>
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[7px] text-[var(--fintheon-accent)]/40 font-mono w-14 shrink-0">
+                                  STREAK
+                                </span>
+                                <span className="text-[9px] text-[var(--fintheon-text)]/60 font-mono">
+                                  {agent.record.streak}
+                                </span>
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <span className="text-[7px] text-emerald-400/60 font-mono w-14 shrink-0">
+                                  BEST
+                                </span>
+                                <span className="text-[9px] text-emerald-400/70 font-mono">
+                                  {agent.record.bestTrade}
+                                </span>
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <span className="text-[7px] text-red-400/60 font-mono w-14 shrink-0">
+                                  WORST
+                                </span>
+                                <span className="text-[9px] text-red-400/70 font-mono">
+                                  {agent.record.worstTrade}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Active Narratives */}
+                        {agent.activeNarratives &&
+                          agent.activeNarratives.length > 0 && (
+                            <div className="border-b border-[var(--fintheon-accent)]/10 pb-3">
+                              <div className="flex items-center gap-1.5 mb-2">
+                                <Eye
+                                  size={9}
+                                  className="text-[var(--fintheon-accent)]/60"
+                                />
+                                <span className="text-[8px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">
+                                  Active Narratives
+                                </span>
+                              </div>
+                              <div className="space-y-1.5">
+                                {agent.activeNarratives.map((n) => (
+                                  <div
+                                    key={n.thread}
+                                    className="flex items-start gap-2"
+                                  >
+                                    <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                                      <div
+                                        className="w-1.5 h-1.5 rounded-full"
+                                        style={{ backgroundColor: n.color }}
+                                      />
+                                      {n.stance === "bullish" && (
+                                        <Diff
+                                          size={8}
+                                          className="text-emerald-400"
+                                        />
+                                      )}
+                                      {n.stance === "bearish" && (
+                                        <TrendingDown
+                                          size={8}
+                                          className="text-red-400"
+                                        />
+                                      )}
+                                      {n.stance === "neutral" && (
+                                        <Minus
+                                          size={8}
+                                          className="text-[var(--fintheon-text)]/30"
+                                        />
+                                      )}
+                                      {n.stance === "watching" && (
+                                        <Eye
+                                          size={8}
+                                          className="text-[var(--fintheon-accent)]/40"
+                                        />
+                                      )}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <span
+                                        className="text-[9px] font-mono"
+                                        style={{ color: n.color }}
+                                      >
+                                        {n.thread}
+                                      </span>
+                                      <span className="text-[11px] text-[var(--fintheon-text)]/40 ml-1.5">
+                                        {n.note}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                        {/* Memory facts (2-col grid when expanded) */}
+                        <div>
+                          <span className="text-[8px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider block mb-2">
+                            Intelligence Facts
+                          </span>
+                          <div className="grid grid-cols-2 gap-2">
+                            {agent.memories.map((mem) => (
+                              <MemoryCard key={mem.id} memory={mem} />
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Connections */}
+                        {agentConnections.length > 0 && (
+                          <div className="border-t border-[var(--fintheon-accent)]/10 pt-2">
+                            <span className="text-[8px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">
+                              Connections
+                            </span>
+                            <div className="mt-1.5 space-y-1">
+                              {agentConnections.map((conn) => (
+                                <div
+                                  key={`${conn.from}-${conn.to}`}
                                   className="flex items-start gap-2"
                                 >
-                                  <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                                    <div
-                                      className="w-1.5 h-1.5 rounded-full"
-                                      style={{ backgroundColor: n.color }}
-                                    />
-                                    {n.stance === "bullish" && (
-                                      <Diff
-                                        size={8}
-                                        className="text-emerald-400"
-                                      />
-                                    )}
-                                    {n.stance === "bearish" && (
-                                      <TrendingDown
-                                        size={8}
-                                        className="text-red-400"
-                                      />
-                                    )}
-                                    {n.stance === "neutral" && (
-                                      <Minus
-                                        size={8}
-                                        className="text-[var(--fintheon-text)]/30"
-                                      />
-                                    )}
-                                    {n.stance === "watching" && (
-                                      <Eye
-                                        size={8}
-                                        className="text-[var(--fintheon-accent)]/40"
-                                      />
-                                    )}
-                                  </div>
-                                  <div className="min-w-0">
-                                    <span
-                                      className="text-[9px] font-mono"
-                                      style={{ color: n.color }}
-                                    >
-                                      {n.thread}
+                                  <div className="w-1 h-1 rounded-full bg-[var(--fintheon-accent)]/30 mt-1.5 shrink-0" />
+                                  <div>
+                                    <span className="text-[9px] text-[var(--fintheon-accent)]/60 font-mono">
+                                      {conn.label}
                                     </span>
                                     <span className="text-[11px] text-[var(--fintheon-text)]/40 ml-1.5">
-                                      {n.note}
+                                      {conn.detail}
                                     </span>
                                   </div>
                                 </div>
@@ -884,147 +944,112 @@ export function ApparatusMap() {
                           </div>
                         )}
 
-                      {/* Memory facts (2-col grid when expanded) */}
-                      <div>
-                        <span className="text-[8px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider block mb-2">
-                          Intelligence Facts
-                        </span>
-                        <div className="grid grid-cols-2 gap-2">
-                          {agent.memories.map((mem) => (
-                            <MemoryCard key={mem.id} memory={mem} />
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Connections */}
-                      {agentConnections.length > 0 && (
-                        <div className="border-t border-[var(--fintheon-accent)]/10 pt-2">
-                          <span className="text-[8px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">
-                            Connections
-                          </span>
-                          <div className="mt-1.5 space-y-1">
-                            {agentConnections.map((conn) => (
-                              <div
-                                key={`${conn.from}-${conn.to}`}
-                                className="flex items-start gap-2"
-                              >
-                                <div className="w-1 h-1 rounded-full bg-[var(--fintheon-accent)]/30 mt-1.5 shrink-0" />
-                                <div>
-                                  <span className="text-[9px] text-[var(--fintheon-accent)]/60 font-mono">
-                                    {conn.label}
-                                  </span>
-                                  <span className="text-[11px] text-[var(--fintheon-text)]/40 ml-1.5">
-                                    {conn.detail}
+                        {/* Notable Info */}
+                        {agent.notableInfo && agent.notableInfo.length > 0 && (
+                          <div className="border-t border-[var(--fintheon-accent)]/10 pt-2">
+                            <span className="text-[8px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">
+                              Notable Intel
+                            </span>
+                            <div className="mt-1.5 space-y-1">
+                              {agent.notableInfo.map((info, i) => (
+                                <div key={i} className="flex items-start gap-2">
+                                  <div className="w-1 h-1 rounded-full bg-[var(--fintheon-accent)]/20 mt-1.5 shrink-0" />
+                                  <span className="text-[12px] text-[var(--fintheon-text)]/40 leading-relaxed">
+                                    {info}
                                   </span>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
 
-                      {/* Notable Info */}
-                      {agent.notableInfo && agent.notableInfo.length > 0 && (
-                        <div className="border-t border-[var(--fintheon-accent)]/10 pt-2">
-                          <span className="text-[8px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">
-                            Notable Intel
-                          </span>
-                          <div className="mt-1.5 space-y-1">
-                            {agent.notableInfo.map((info, i) => (
-                              <div key={i} className="flex items-start gap-2">
-                                <div className="w-1 h-1 rounded-full bg-[var(--fintheon-accent)]/20 mt-1.5 shrink-0" />
-                                <span className="text-[12px] text-[var(--fintheon-text)]/40 leading-relaxed">
-                                  {info}
-                                </span>
-                              </div>
-                            ))}
+                        {/* Conflict detail */}
+                        {agentConflicts.map((conf) => (
+                          <div
+                            key={`${conf.from}-${conf.to}`}
+                            className="border-t border-red-500/15 pt-2"
+                          >
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <AlertTriangle
+                                size={9}
+                                className="text-red-400"
+                              />
+                              <span className="text-[8px] text-red-400 font-mono uppercase tracking-wider">
+                                Conflict
+                              </span>
+                            </div>
+                            <p className="text-[9px] text-red-400/70 leading-relaxed">
+                              {conf.detail}
+                            </p>
                           </div>
-                        </div>
-                      )}
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-                      {/* Conflict detail */}
-                      {agentConflicts.map((conf) => (
-                        <div
-                          key={`${conf.from}-${conf.to}`}
-                          className="border-t border-red-500/15 pt-2"
-                        >
-                          <div className="flex items-center gap-1.5 mb-1">
-                            <AlertTriangle size={9} className="text-red-400" />
-                            <span className="text-[8px] text-red-400 font-mono uppercase tracking-wider">
-                              Conflict
-                            </span>
-                          </div>
-                          <p className="text-[9px] text-red-400/70 leading-relaxed">
-                            {conf.detail}
-                          </p>
+          {/* Right sidebar: Schedule (conditional) */}
+          {showSchedule && (
+            <div className="w-[250px] shrink-0 border-l border-[var(--fintheon-accent)]/10 flex flex-col overflow-y-auto animate-fade-in-tab">
+              <div className="p-3">
+                <span className="text-[10px] font-semibold text-[var(--fintheon-accent)] tracking-[0.15em] uppercase block mb-2">
+                  Cron Schedule
+                </span>
+                <div className="space-y-1.5">
+                  {CRON_SCHEDULE.map((entry, i) => (
+                    <div key={i} className="flex items-start gap-2 py-1">
+                      <div className="w-1 h-1 rounded-full bg-[var(--fintheon-accent)]/40 mt-1.5 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-[9px] text-[var(--fintheon-text)]/70 font-mono">
+                          <span className="text-[var(--fintheon-accent)]/80">
+                            {entry.agent}:
+                          </span>{" "}
+                          {entry.description}
                         </div>
-                      ))}
+                        <div className="text-[8px] text-[var(--fintheon-accent)]/30 font-mono">
+                          {entry.schedule}
+                        </div>
+                      </div>
                     </div>
-                  )}
+                  ))}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+
+              <div className="p-3 border-t border-[var(--fintheon-accent)]/10 flex-1">
+                <span className="text-[10px] font-semibold text-[var(--fintheon-accent)] tracking-[0.15em] uppercase block mb-2">
+                  Live Activity
+                </span>
+                <div className="space-y-2">
+                  {MOCK_ACTIVITY.map((act, i) => (
+                    <div key={i} className="flex items-start gap-2 py-1">
+                      <div className="relative shrink-0 mt-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[var(--fintheon-accent)]/60" />
+                        {i === 0 && (
+                          <div className="absolute inset-0 w-1.5 h-1.5 rounded-full bg-[var(--fintheon-accent)] animate-ping" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[9px] text-[var(--fintheon-text)]/60">
+                          <span className="text-[var(--fintheon-accent)]/70 font-semibold">
+                            {act.agent}:
+                          </span>{" "}
+                          {act.action}
+                        </div>
+                        <div className="text-[7px] text-[var(--fintheon-text)]/25 font-mono">
+                          {act.elapsed}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* Right sidebar: Schedule (conditional) */}
-        {showSchedule && (
-          <div className="w-[250px] shrink-0 border-l border-[var(--fintheon-accent)]/10 flex flex-col overflow-y-auto animate-fade-in-tab">
-            <div className="p-3">
-              <span className="text-[10px] font-semibold text-[var(--fintheon-accent)] tracking-[0.15em] uppercase block mb-2">
-                Cron Schedule
-              </span>
-              <div className="space-y-1.5">
-                {CRON_SCHEDULE.map((entry, i) => (
-                  <div key={i} className="flex items-start gap-2 py-1">
-                    <div className="w-1 h-1 rounded-full bg-[var(--fintheon-accent)]/40 mt-1.5 shrink-0" />
-                    <div className="min-w-0">
-                      <div className="text-[9px] text-[var(--fintheon-text)]/70 font-mono">
-                        <span className="text-[var(--fintheon-accent)]/80">
-                          {entry.agent}:
-                        </span>{" "}
-                        {entry.description}
-                      </div>
-                      <div className="text-[8px] text-[var(--fintheon-accent)]/30 font-mono">
-                        {entry.schedule}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="p-3 border-t border-[var(--fintheon-accent)]/10 flex-1">
-              <span className="text-[10px] font-semibold text-[var(--fintheon-accent)] tracking-[0.15em] uppercase block mb-2">
-                Live Activity
-              </span>
-              <div className="space-y-2">
-                {MOCK_ACTIVITY.map((act, i) => (
-                  <div key={i} className="flex items-start gap-2 py-1">
-                    <div className="relative shrink-0 mt-1">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[var(--fintheon-accent)]/60" />
-                      {i === 0 && (
-                        <div className="absolute inset-0 w-1.5 h-1.5 rounded-full bg-[var(--fintheon-accent)] animate-ping" />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-[9px] text-[var(--fintheon-text)]/60">
-                        <span className="text-[var(--fintheon-accent)]/70 font-semibold">
-                          {act.agent}:
-                        </span>{" "}
-                        {act.action}
-                      </div>
-                      <div className="text-[7px] text-[var(--fintheon-text)]/25 font-mono">
-                        {act.elapsed}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

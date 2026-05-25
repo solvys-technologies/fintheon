@@ -71,8 +71,8 @@ export default function QuickFintheonModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+    <div className="fintheon-modal-backdrop fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="fintheon-modal-surface w-full max-w-lg animate-in fade-in zoom-in duration-200">
         {/* Header */}
         <div className="p-4 border-b border-[var(--fintheon-accent)]/10 flex items-center justify-between bg-[var(--fintheon-accent)]/5">
           <div className="flex items-center gap-2 text-[var(--fintheon-accent)]">
@@ -113,7 +113,7 @@ export default function QuickFintheonModal({
                 <img
                   src={image}
                   alt="Chart Preview"
-                  className="w-full h-auto max-h-[300px] object-cover"
+                  className="w-full h-auto max-h-[300px] object-contain"
                 />
                 <button
                   onClick={() => setImage(null)}

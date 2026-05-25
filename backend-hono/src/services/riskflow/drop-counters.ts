@@ -3,6 +3,8 @@
 // Instrumentation-first — no behavior change; just counts real zeroes so the
 // news-worker "items_ingested: 0, errors: 0" mystery can be traced to a
 // concrete drop class per source.
+// [claude-code 2026-04-29] S53-T1: exposed isDropCounterFlushRunning() for
+// riskflow_runtime control-plane payload.
 
 import { createLogger } from "../../lib/logger.js";
 import { getSupabaseClient } from "../../config/supabase.js";
@@ -127,6 +129,10 @@ export function startDropCounterFlush(): void {
     );
   }, FLUSH_INTERVAL_MS);
   log.info(`Drop-counter flush started (every ${FLUSH_INTERVAL_MS / 1000}s)`);
+}
+
+export function isDropCounterFlushRunning(): boolean {
+  return flushTimer !== null;
 }
 
 export function stopDropCounterFlush(): void {

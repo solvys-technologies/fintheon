@@ -3,7 +3,7 @@ import type { McpServerConfig } from "../types/mcp";
 
 /**
  * Internal connectors are NOT MCP servers. They are in-app features routed
- * through Harper chat that appear alongside MCP connectors in the ToolsDropdown.
+ * through Harper chat that appear alongside MCP connectors in the composer toolbox.
  * When active, they inject context into Harper's system prompt or trigger backend endpoints.
  */
 export const INTERNAL_CONNECTORS: McpServerConfig[] = [

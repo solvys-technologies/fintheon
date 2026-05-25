@@ -1,6 +1,8 @@
+// [claude-code 2026-05-15] S66-T1: added selectedInstrument for global instrument selection.
 // [claude-code 2026-04-19] v5.22 S1: added cross-platform preferences sync (GET/PUT
 //   /api/preferences). Runs PARALLEL to the existing /api/settings trading-settings pipe —
 //   the UserPreferences contract is the cross-device shape shared with mobile.
+// [claude-code 2026-05-13] S63 T1+T3: Added lockoutDefaultDuration + quickAccessUrl state and context
 // [claude-code 2026-04-18] Attach Supabase JWT to backend-settings fetches. After the bare-URL
 //   fix (file:// → localhost:8080) the requests were reaching the backend but without an
 //   Authorization header, producing 401 in the Electron console. Now gets the token via
@@ -10,6 +12,7 @@ import {
   createContext,
   useContext,
   useState,
+  useCallback,
   useRef,
   ReactNode,
   useEffect,
@@ -102,7 +105,11 @@ export type DefaultPlatform =
   | "research"
   | "tradesea"
   | "tradovate"
-  | "tradingview";
+  | "tradelocker"
+  | "tradingview"
+  | "unusual-whales"
+  | (string & {});
+export type DefaultChatProvider = "deepseek-direct" | "opencode-go";
 
 interface SettingsContextType {
   apiKeys: APIKeys;
@@ -164,6 +171,33 @@ interface SettingsContextType {
   /** Custom CAO display name (default: "Harper") */
   caoName: string;
   setCaoName: (name: string) => void;
+  /** Default chat provider for Harper sessions. */
+  defaultChatProvider: DefaultChatProvider;
+  setDefaultChatProvider: (provider: DefaultChatProvider) => void;
+  /** Preferred OpenCode Go model for personal chat sessions. */
+  openCodeGoModel: string;
+  setOpenCodeGoModel: (model: string) => void;
+  /** Lockout default duration in minutes (default: 30) */
+  lockoutDefaultDuration: number;
+  setLockoutDefaultDuration: (minutes: number) => void;
+  /** Auto-release minutes before next trading window (default: 15) */
+  lockoutAutoReleaseMinutes: number;
+  setLockoutAutoReleaseMinutes: (minutes: number) => void;
+  /** Whether Desk Plan automatically locks trading outside active windows */
+  lockoutAutoBlockOutsideTradingWindow: boolean;
+  setLockoutAutoBlockOutsideTradingWindow: (enabled: boolean) => void;
+  /** Whether lockout persists across app restart (default: false) */
+  persistentLockout: boolean;
+  setPersistentLockout: (enabled: boolean) => void;
+  /** Quick Access URL for dock menu / system tray */
+  quickAccessUrl: string;
+  setQuickAccessUrl: (url: string) => void;
+  /** Selected instrument for IV scoring and desk plan (default: /NQ) */
+  selectedInstrument: string;
+  setSelectedInstrument: (instrument: string) => void;
+  /** Lockout accessibility permission status (default: "granted") */
+  lockoutPermission: "prompt" | "granted" | "denied";
+  setLockoutPermission: (status: "prompt" | "granted" | "denied") => void;
   /** v5.22 S1: cross-device preferences contract (theme, notifications, fuse palette). */
   preferences: UserPreferences;
   updatePreferences: (patch: Partial<UserPreferences>) => void;
@@ -175,6 +209,8 @@ const SettingsContext = createContext<SettingsContextType | undefined>(
 
 const STORAGE_KEY = "fintheon:settings";
 const PREFERENCES_STORAGE_KEY = "fintheon:preferences";
+const LOCKOUT_AUTO_BLOCK_EXPLICIT_KEY =
+  "fintheon:lockout-auto-block-explicit";
 // [claude-code 2026-04-18] Must be absolute: under Electron file:// a relative "/api/settings"
 //   resolves against the file protocol and throws ERR_FILE_NOT_FOUND, so both load+save silently
 //   no-op and settings never round-trip to Supabase until a reload on localhost.
@@ -191,6 +227,26 @@ function loadFromStorage<T>(key: string, defaultValue: T): T {
     }
   } catch {}
   return defaultValue;
+}
+
+function hasExplicitAutoBlockSetting(): boolean {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed.lockoutAutoBlockOutsideTradingWindowExplicit === true)
+        return true;
+    }
+    return localStorage.getItem(LOCKOUT_AUTO_BLOCK_EXPLICIT_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function loadAutoBlockSetting(): boolean {
+  return hasExplicitAutoBlockSetting()
+    ? loadFromStorage("lockoutAutoBlockOutsideTradingWindow", false)
+    : false;
 }
 
 async function fetchBackendSettings(): Promise<Record<string, unknown> | null> {
@@ -261,6 +317,10 @@ function loadPreferencesFromStorage(): UserPreferences {
       notifications: {
         ...DEFAULT_PREFERENCES.notifications,
         ...(parsed?.notifications ?? {}),
+        deliveryChannels: {
+          ...DEFAULT_PREFERENCES.notifications.deliveryChannels,
+          ...(parsed?.notifications?.deliveryChannels ?? {}),
+        },
       },
     };
   } catch {
@@ -355,7 +415,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   );
   const [iframeUrls, setIframeUrls] = useState<IframeUrls>(() =>
     loadFromStorage("iframeUrls", {
-      boardroom: "https://web.fluxer.app/channels/1492795127439495222",
+      boardroom: "",
       research:
         "https://www.notion.so/solvys/344141b0da7d809ab3dff394c5c0aecc?v=344141b0da7d80ba935d000c9bda216f",
     }),
@@ -492,6 +552,60 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [caoName, setCaoName] = useState<string>(() =>
     loadFromStorage("caoName", "Harper"),
   );
+  const [defaultChatProvider, setDefaultChatProvider] =
+    useState<DefaultChatProvider>(() =>
+      loadFromStorage("defaultChatProvider", "deepseek-direct"),
+    );
+  const [openCodeGoModel, setOpenCodeGoModel] = useState<string>(() =>
+    loadFromStorage("openCodeGoModel", "deepseek-reasoner"),
+  );
+  const [lockoutDefaultDuration, setLockoutDefaultDuration] = useState<number>(
+    () => loadFromStorage("lockoutDefaultDuration", 30),
+  );
+  const [quickAccessUrl, setQuickAccessUrl] = useState<string>(() =>
+    loadFromStorage("quickAccessUrl", ""),
+  );
+  const [lockoutAutoReleaseMinutes, setLockoutAutoReleaseMinutes] =
+    useState<number>(() => loadFromStorage("lockoutAutoReleaseMinutes", 30));
+  const [
+    lockoutAutoBlockOutsideTradingWindow,
+    setLockoutAutoBlockOutsideTradingWindowValue,
+  ] = useState<boolean>(() => loadAutoBlockSetting());
+  const [
+    lockoutAutoBlockOutsideTradingWindowExplicit,
+    setLockoutAutoBlockOutsideTradingWindowExplicit,
+  ] = useState<boolean>(() => hasExplicitAutoBlockSetting());
+  const [persistentLockout, setPersistentLockout] = useState<boolean>(() =>
+    loadFromStorage("persistentLockout", false),
+  );
+  const [selectedInstrument, setSelectedInstrumentValue] = useState<string>(() =>
+    loadFromStorage("selectedInstrument", "/NQ"),
+  );
+  const [lockoutPermission, setLockoutPermission] = useState<
+    "prompt" | "granted" | "denied"
+  >(() => loadFromStorage("lockoutPermission", "granted"));
+
+  const setLockoutAutoBlockOutsideTradingWindow = useCallback(
+    (enabled: boolean) => {
+      setLockoutAutoBlockOutsideTradingWindowExplicit(true);
+      try {
+        localStorage.setItem(LOCKOUT_AUTO_BLOCK_EXPLICIT_KEY, "true");
+      } catch {
+        /* ignore */
+      }
+      setLockoutAutoBlockOutsideTradingWindowValue(enabled);
+    },
+    [],
+  );
+
+  const INSTRUMENT_STORAGE_KEY = "fintheon:selected-instrument";
+
+  const setSelectedInstrument = (instrument: string) => {
+    setSelectedInstrumentValue(instrument);
+    try {
+      localStorage.setItem(INSTRUMENT_STORAGE_KEY, instrument);
+    } catch {}
+  };
 
   // [claude-code 2026-04-19] v5.22 S1: shared cross-platform preferences.
   const [preferences, setPreferences] = useState<UserPreferences>(() =>
@@ -507,6 +621,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         notifications: {
           ...prev.notifications,
           ...(patch.notifications ?? {}),
+          deliveryChannels: {
+            ...prev.notifications.deliveryChannels,
+            ...(patch.notifications?.deliveryChannels ?? {}),
+          },
         },
         updatedAt: new Date().toISOString(),
       };
@@ -526,6 +644,31 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       return next;
     });
   };
+
+  // Ensure fuse palette preferences drive the CSS variables consumed by desktop
+  // RiskFlow cards/fuses (which resolve color via var(--fintheon-*)).
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    const preferred = preferences.fusePalette;
+    const severity = preferred?.severity;
+
+    const setOrClear = (name: string, value?: string) => {
+      if (value && value.trim().length > 0) {
+        root.style.setProperty(name, value);
+      } else {
+        root.style.removeProperty(name);
+      }
+    };
+
+    setOrClear("--fintheon-severe", severity?.critical);
+    setOrClear("--fintheon-high", severity?.high);
+    setOrClear("--fintheon-accent", severity?.medium);
+    setOrClear("--fintheon-low", severity?.low);
+    setOrClear("--fintheon-muted", severity?.neutral);
+    setOrClear("--fintheon-bullish", preferred?.bullishColor);
+    setOrClear("--fintheon-bearish", preferred?.bearishColor);
+  }, [preferences.fusePalette]);
 
   // Initial fetch + 30s polling for cross-device updates.
   useEffect(() => {
@@ -633,17 +776,39 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         if (remote.proposerIframeSources) {
           const remoteSources =
             remote.proposerIframeSources as ProposerIframeSource[];
-          const customEntries = remoteSources.filter(
-            (s: ProposerIframeSource) => !s.builtin,
-          );
-          setProposerIframeSources([
-            ...BUILTIN_PROPOSER_SOURCES,
-            ...customEntries,
-          ]);
+          if (Array.isArray(remoteSources) && remoteSources.length > 0) {
+            setProposerIframeSources(remoteSources);
+          }
         }
         if (remote.proposerDefaultIframe)
           setProposerDefaultIframe(remote.proposerDefaultIframe as string);
         if (remote.caoName) setCaoName(remote.caoName as string);
+        if (remote.defaultChatProvider)
+          setDefaultChatProvider(
+            remote.defaultChatProvider as DefaultChatProvider,
+          );
+        if (remote.openCodeGoModel)
+          setOpenCodeGoModel(remote.openCodeGoModel as string);
+        if (remote.lockoutDefaultDuration !== undefined)
+          setLockoutDefaultDuration(remote.lockoutDefaultDuration as number);
+        if (remote.lockoutAutoReleaseMinutes !== undefined)
+          setLockoutAutoReleaseMinutes(
+            remote.lockoutAutoReleaseMinutes as number,
+          );
+        if (remote.lockoutAutoBlockOutsideTradingWindow !== undefined) {
+          if (remote.lockoutAutoBlockOutsideTradingWindowExplicit === true) {
+            setLockoutAutoBlockOutsideTradingWindowExplicit(true);
+            setLockoutAutoBlockOutsideTradingWindowValue(
+              remote.lockoutAutoBlockOutsideTradingWindow as boolean,
+            );
+          } else if (remote.lockoutAutoBlockOutsideTradingWindow === false) {
+            setLockoutAutoBlockOutsideTradingWindowValue(false);
+          }
+        }
+        if (remote.persistentLockout !== undefined)
+          setPersistentLockout(remote.persistentLockout as boolean);
+        if (remote.quickAccessUrl)
+          setQuickAccessUrl(remote.quickAccessUrl as string);
       }
       backendSynced.current = true;
     });
@@ -679,6 +844,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       proposerIframeSources,
       proposerDefaultIframe,
       caoName,
+      defaultChatProvider,
+      openCodeGoModel,
+      lockoutDefaultDuration,
+      lockoutAutoReleaseMinutes,
+      lockoutAutoBlockOutsideTradingWindow,
+      lockoutAutoBlockOutsideTradingWindowExplicit,
+      persistentLockout,
+      quickAccessUrl,
+      selectedInstrument,
+      lockoutPermission,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
@@ -717,7 +892,44 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     proposerIframeSources,
     proposerDefaultIframe,
     caoName,
+    defaultChatProvider,
+    openCodeGoModel,
+    lockoutDefaultDuration,
+    lockoutAutoReleaseMinutes,
+    lockoutAutoBlockOutsideTradingWindow,
+    lockoutAutoBlockOutsideTradingWindowExplicit,
+    persistentLockout,
+    quickAccessUrl,
+    selectedInstrument,
+    lockoutPermission,
   ]);
+
+  // Check lockout accessibility permission via Electron IPC on init
+  useEffect(() => {
+    const el = (window as any).electron;
+    if (el?.lockout?.checkAccessibility) {
+      el.lockout.checkAccessibility().then((result: { granted: boolean }) => {
+        if (result && typeof result.granted === "boolean") {
+          setLockoutPermission(result.granted ? "granted" : "denied");
+        }
+      }).catch(() => {});
+    }
+  }, []);
+
+  // Keep chat routing preferences mirrored into legacy localStorage keys used
+  // by composer/runtime hooks so provider/model changes apply immediately.
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "fintheon:default-chat-provider",
+        defaultChatProvider,
+      );
+      localStorage.setItem("fintheon:harper-provider", defaultChatProvider);
+      localStorage.setItem("fintheon:opencode-go-model", openCodeGoModel);
+    } catch {
+      /* ignore local storage sync issues */
+    }
+  }, [defaultChatProvider, openCodeGoModel]);
 
   return (
     <SettingsContext.Provider
@@ -776,6 +988,24 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setProposerDefaultIframe,
         caoName,
         setCaoName,
+        defaultChatProvider,
+        setDefaultChatProvider,
+        openCodeGoModel,
+        setOpenCodeGoModel,
+        lockoutDefaultDuration,
+        setLockoutDefaultDuration,
+        lockoutAutoReleaseMinutes,
+        setLockoutAutoReleaseMinutes,
+        lockoutAutoBlockOutsideTradingWindow,
+        setLockoutAutoBlockOutsideTradingWindow,
+        persistentLockout,
+        setPersistentLockout,
+        quickAccessUrl,
+        setQuickAccessUrl,
+        selectedInstrument,
+        setSelectedInstrument,
+        lockoutPermission,
+        setLockoutPermission,
         preferences,
         updatePreferences,
       }}

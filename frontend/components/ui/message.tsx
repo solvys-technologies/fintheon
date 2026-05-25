@@ -54,7 +54,7 @@ export function MessageAvatar({
       }}
     >
       {src ? (
-        <img src={src} alt={alt} className="w-full h-full object-cover" />
+        <img src={src} alt={alt} className="w-full h-full object-contain" />
       ) : (
         <span>{fallback ?? alt.charAt(0).toUpperCase()}</span>
       )}

@@ -29,6 +29,8 @@ interface RefillOpts {
   to: string; // ISO_DATE
   tailHandleMs: number;
   tailCycleMs: number;
+  /** Tier for all `twitter:` sources in this run (default standard). */
+  twitterTier?: "breaking" | "standard" | "commentary";
 }
 
 interface RefillSourceResult {
@@ -65,7 +67,9 @@ export async function runRefillForSources(
       try {
         const items = await collectFromXHandlesBrowser({
           handles: [handle],
-          tier: "standard",
+          tier: opts.twitterTier ?? "standard",
+          from: opts.from,
+          to: opts.to,
         });
         const ingested = await writeCollectedItems(items);
         perSource.push({

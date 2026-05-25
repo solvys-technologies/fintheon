@@ -63,6 +63,18 @@ export interface ReflectAdjustment {
   autoApplied: boolean;
 }
 
+export interface ExternalReflectInsight {
+  scope: string;
+  summary: string;
+  findings?: Array<{
+    severity: "info" | "warning" | "critical";
+    message: string;
+    recommendation?: string;
+    metric?: string;
+  }>;
+  metadata?: Record<string, unknown>;
+}
+
 // ── Metric Thresholds ───────────────────────────────────────────────────────
 
 const THRESHOLDS = {
@@ -431,13 +443,34 @@ function buildSummary(
 
 // ── Distribute REFLECT Findings to All Agents ──────────────────────────────
 
-const ALL_AGENTS: AgentId[] = [
+export const ALL_AGENTS: AgentId[] = [
   "oracle",
   "feucht",
   "consul",
   "herald",
   "harper",
 ];
+
+async function addReflectMemoryToAllAgents(input: {
+  content: string;
+  metadata?: Record<string, unknown>;
+  ttlHours?: number;
+}): Promise<void> {
+  for (const agentId of ALL_AGENTS) {
+    await addMemory({
+      agentId,
+      memoryType: "reflect_finding",
+      content: input.content,
+      metadata: input.metadata,
+      ttlHours: input.ttlHours ?? 7 * 24,
+    }).catch((err) =>
+      log.warn("Failed to distribute REFLECT finding", {
+        agent: agentId,
+        error: err instanceof Error ? err.message : String(err),
+      }),
+    );
+  }
+}
 
 async function distributeReflectFindings(report: ReflectReport): Promise<void> {
   const actionableFindings = report.findings.filter(
@@ -447,20 +480,10 @@ async function distributeReflectFindings(report: ReflectReport): Promise<void> {
   if (actionableFindings.length === 0 && report.findings.length > 0) {
     // All healthy — still distribute a summary so agents know the system is calibrated
     const content = `REFLECT ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${report.summary}`;
-    for (const agentId of ALL_AGENTS) {
-      await addMemory({
-        agentId,
-        memoryType: "reflect_finding",
-        content,
-        metadata: { metrics: report.metrics },
-        ttlHours: 7 * 24, // 7-day retention
-      }).catch((err) =>
-        log.warn("Failed to distribute REFLECT finding", {
-          agent: agentId,
-          error: err instanceof Error ? err.message : String(err),
-        }),
-      );
-    }
+    await addReflectMemoryToAllAgents({
+      content,
+      metadata: { metrics: report.metrics, scope: "riskflow" },
+    });
     return;
   }
 
@@ -469,29 +492,53 @@ async function distributeReflectFindings(report: ReflectReport): Promise<void> {
       `REFLECT [${finding.severity.toUpperCase()}] ${finding.message} — ` +
       `Recommendation: ${finding.recommendation}`;
 
-    for (const agentId of ALL_AGENTS) {
-      await addMemory({
-        agentId,
-        memoryType: "reflect_finding",
-        content,
-        metadata: {
-          metric: finding.metric,
-          severity: finding.severity,
-          currentValue: finding.currentValue,
-        },
-        ttlHours: 7 * 24,
-      }).catch((err) =>
-        log.warn("Failed to distribute REFLECT finding", {
-          agent: agentId,
-          error: err instanceof Error ? err.message : String(err),
-        }),
-      );
-    }
+    await addReflectMemoryToAllAgents({
+      content,
+      metadata: {
+        metric: finding.metric,
+        severity: finding.severity,
+        currentValue: finding.currentValue,
+        scope: "riskflow",
+      },
+    });
   }
 
   log.info(
     `Distributed ${actionableFindings.length} REFLECT findings to ${ALL_AGENTS.length} agents`,
   );
+}
+
+export async function distributeExternalReflectInsights(
+  insight: ExternalReflectInsight,
+): Promise<void> {
+  const scope = insight.scope?.trim() || "agentic";
+  const datePrefix = new Date().toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+
+  await addReflectMemoryToAllAgents({
+    content: `REFLECT ${datePrefix} [${scope}] ${insight.summary}`,
+    metadata: {
+      scope,
+      source: "external-reflect",
+      ...(insight.metadata ?? {}),
+    },
+  });
+
+  for (const finding of insight.findings ?? []) {
+    const line = `REFLECT [${scope}] [${finding.severity.toUpperCase()}] ${finding.message}${finding.recommendation ? ` — Recommendation: ${finding.recommendation}` : ""}`;
+    await addReflectMemoryToAllAgents({
+      content: line,
+      metadata: {
+        scope,
+        severity: finding.severity,
+        metric: finding.metric ?? null,
+        source: "external-reflect",
+        ...(insight.metadata ?? {}),
+      },
+    });
+  }
 }
 
 // ── Persistence ─────────────────────────────────────────────────────────────

@@ -35,7 +35,7 @@ export function estimateTokens(
 }
 
 /**
- * Summarize older messages via OpenRouter (Opus 4.6) when context exceeds threshold
+ * Summarize older messages via OpenCode Go when context exceeds threshold
  */
 async function summarizeOlderMessages(
   messages: { role: "user" | "assistant"; content: string }[],
@@ -43,45 +43,40 @@ async function summarizeOlderMessages(
   const olderMessages = messages.slice(0, messages.length - VERBATIM_TAIL);
   if (olderMessages.length === 0) return null;
 
-  const apiKey = process.env.OPENROUTER_API_KEY ?? "";
-  if (!apiKey) return null;
+  const apiKey =
+    process.env.OPENCODE_GO_API_KEY ||
+    process.env.HERMES_API_KEY ||
+    "opencode-go";
+  const baseUrl = (
+    process.env.HERMES_API_URL || "http://localhost:8081/v1"
+  ).replace(/\/+$/, "");
 
   const summaryPrompt = `Summarize this conversation history concisely, preserving key facts, decisions, and context:\n\n${olderMessages.map((m) => `${m.role}: ${m.content}`).join("\n\n")}`;
 
   try {
-    const response = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer":
-            process.env.OPENROUTER_APP_URL ??
-            "https://fintheon-solvys.vercel.app",
-          "X-Title": process.env.OPENROUTER_APP_NAME ?? "Fintheon-AI-Gateway",
-        },
-        body: JSON.stringify({
-          model: "anthropic/claude-opus-4.6",
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are a concise conversation summarizer. Preserve key facts, trade ideas, decisions, and numbers. Be brief.",
-            },
-            { role: "user", content: summaryPrompt },
-          ],
-          max_tokens: 1024,
-        }),
-        signal: AbortSignal.timeout(15_000),
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        model: "deepseek-reasoner",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a concise conversation summarizer. Preserve key facts, trade ideas, decisions, and numbers. Be brief.",
+          },
+          { role: "user", content: summaryPrompt },
+        ],
+        max_tokens: 1024,
+      }),
+      signal: AbortSignal.timeout(15_000),
+    });
 
     if (!response.ok) {
-      console.warn(
-        "[ConversationStore] Summarization (OpenRouter) error:",
-        response.status,
-      );
+      console.warn("[ConversationStore] Summarization error:", response.status);
       return null;
     }
 
@@ -205,16 +200,25 @@ export async function getConversationWithMessages(
  */
 export async function listConversations(
   userId: string,
-  options: { limit?: number; cursor?: string; includeArchived?: boolean } = {},
+  options: {
+    limit?: number;
+    cursor?: string;
+    includeArchived?: boolean;
+    workspaceId?: string;
+    surface?: string;
+  } = {},
 ): Promise<{ conversations: ConversationListItem[]; hasMore: boolean }> {
   const limit = options.limit ?? 20;
   const includeArchived = options.includeArchived ?? false;
+  const workspaceId = options.workspaceId?.trim();
+  const surface = options.surface?.trim();
 
   if (!isDatabaseAvailable() || !sql) {
     // In-memory fallback
     const all = Array.from(memoryStore.conversations.values())
       .filter((c) => c.userId === userId)
       .filter((c) => includeArchived || !c.isArchived)
+      .filter((c) => matchesConversationScope(c.metadata, workspaceId, surface))
       .sort(
         (a, b) =>
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
@@ -224,6 +228,7 @@ export async function listConversations(
       id: c.id,
       title: c.title,
       model: c.model,
+      metadata: c.metadata,
       messageCount: memoryStore.messages.get(c.id)?.length ?? 0,
       lastMessageAt: c.updatedAt,
       isArchived: c.isArchived,
@@ -234,9 +239,60 @@ export async function listConversations(
     return { conversations: items, hasMore: all.length > limit };
   }
 
-  // Use SQL condition directly - Neon doesn't support template fragment interpolation
-  const result = includeArchived
-    ? await sql`
+  let result: Record<string, unknown>[];
+
+  if (workspaceId && surface) {
+    result = includeArchived
+      ? await sql`
+        SELECT c.*, COUNT(m.id) as message_count, MAX(m.created_at) as last_message_at
+        FROM ai_conversations c
+        LEFT JOIN ai_messages m ON m.conversation_id = c.id
+        WHERE c.user_id = ${userId}
+          AND c.metadata->'workspace'->>'id' = ${workspaceId}
+          AND c.metadata->>'surface' = ${surface}
+        GROUP BY c.id
+        ORDER BY c.updated_at DESC
+        LIMIT ${limit + 1}
+      `
+      : await sql`
+        SELECT c.*, COUNT(m.id) as message_count, MAX(m.created_at) as last_message_at
+        FROM ai_conversations c
+        LEFT JOIN ai_messages m ON m.conversation_id = c.id
+        WHERE c.user_id = ${userId}
+          AND (c.is_archived = false OR c.is_archived IS NULL)
+          AND c.metadata->'workspace'->>'id' = ${workspaceId}
+          AND c.metadata->>'surface' = ${surface}
+        GROUP BY c.id
+        ORDER BY c.updated_at DESC
+        LIMIT ${limit + 1}
+      `;
+  } else if (workspaceId) {
+    result = includeArchived
+      ? await sql`
+        SELECT c.*, COUNT(m.id) as message_count, MAX(m.created_at) as last_message_at
+        FROM ai_conversations c
+        LEFT JOIN ai_messages m ON m.conversation_id = c.id
+        WHERE c.user_id = ${userId}
+          AND c.metadata->'workspace'->>'id' = ${workspaceId}
+        GROUP BY c.id
+        ORDER BY c.updated_at DESC
+        LIMIT ${limit + 1}
+      `
+      : await sql`
+        SELECT c.*, COUNT(m.id) as message_count, MAX(m.created_at) as last_message_at
+        FROM ai_conversations c
+        LEFT JOIN ai_messages m ON m.conversation_id = c.id
+        WHERE c.user_id = ${userId}
+          AND (c.is_archived = false OR c.is_archived IS NULL)
+          AND c.metadata->'workspace'->>'id' = ${workspaceId}
+        GROUP BY c.id
+        ORDER BY c.updated_at DESC
+        LIMIT ${limit + 1}
+      `;
+  } else {
+    // Use SQL condition directly - Neon doesn't support template fragment interpolation
+    result = includeArchived
+      ? await sql`
         SELECT c.*, COUNT(m.id) as message_count, MAX(m.created_at) as last_message_at
         FROM ai_conversations c
         LEFT JOIN ai_messages m ON m.conversation_id = c.id
@@ -245,7 +301,7 @@ export async function listConversations(
         ORDER BY c.updated_at DESC
         LIMIT ${limit + 1}
       `
-    : await sql`
+      : await sql`
         SELECT c.*, COUNT(m.id) as message_count, MAX(m.created_at) as last_message_at
         FROM ai_conversations c
         LEFT JOIN ai_messages m ON m.conversation_id = c.id
@@ -254,6 +310,7 @@ export async function listConversations(
         ORDER BY c.updated_at DESC
         LIMIT ${limit + 1}
       `;
+  }
 
   const hasMore = result.length > limit;
   const rows = result.slice(0, limit);
@@ -263,6 +320,7 @@ export async function listConversations(
       id: String(row.id),
       title: String(row.title ?? "Untitled"),
       model: row.model ? String(row.model) : undefined,
+      metadata: isRecord(row.metadata) ? row.metadata : undefined,
       messageCount: Number(row.message_count ?? 0),
       lastMessageAt: String(row.last_message_at ?? row.updated_at),
       isArchived: Boolean(row.is_archived),
@@ -272,6 +330,25 @@ export async function listConversations(
   );
 
   return { conversations, hasMore };
+}
+
+function matchesConversationScope(
+  metadata: Record<string, unknown> | undefined,
+  workspaceId: string | undefined,
+  surface: string | undefined,
+): boolean {
+  if (!workspaceId && !surface) return true;
+  if (!metadata) return false;
+  const workspace = metadata.workspace;
+  const metadataWorkspaceId = isRecord(workspace) ? String(workspace.id ?? "") : "";
+  const metadataSurface = String(metadata.surface ?? "");
+  if (workspaceId && metadataWorkspaceId !== workspaceId) return false;
+  if (surface && metadataSurface !== surface) return false;
+  return true;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
 /**

@@ -1,5 +1,8 @@
 // [claude-code 2026-04-19] Chat FAB now forwards to chat tab (no floating overlay) per TP
 // [claude-code 2026-04-16] Shell — toolbar + bulletin FAB with glow reminder + chat FAB status
+// [claude-code 2026-05-01] S56 Track D: replaced HamburgerMenu with MainMenuDrawer
+//   (Twitter-style left drawer). <main> now wraps in a transformable container
+//   that slides right 80vw on menu open via framer-motion.
 import {
   useRef,
   useCallback,
@@ -7,14 +10,14 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { motion } from "framer-motion";
 import { Newspaper, ShieldCheck } from "lucide-react";
-import { useSwipeGesture } from "../../hooks/useSwipeGesture";
 import { useVixTicker } from "../../hooks/useVixTicker";
 import { useHaptic } from "../../hooks/useHaptic";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useRoutineApprovals } from "../../hooks/useRoutineApprovals";
 import { MobileToolbar } from "./MobileToolbar";
-import { HamburgerMenu } from "./HamburgerMenu";
+import { MainMenuDrawer } from "./MainMenuDrawer";
 import { FloatingChatButton } from "./FloatingChatButton";
 import { MobileBulletin } from "../bulletin/MobileBulletin";
 import { RoutineApprovalCard } from "../routines/RoutineApprovalCard";
@@ -27,7 +30,6 @@ interface MobileShellProps {
 }
 
 const TOOLBAR_HEIGHT = 48; // just the bar, no chevron
-const TAB_COUNT = 5;
 
 export function MobileShell({
   activeTab,
@@ -60,24 +62,35 @@ export function MobileShell({
     }
   }, [settings.bulletinReminder]);
 
-  const handleSwipeLeft = useCallback(() => {
-    if (activeTab < TAB_COUNT - 1) {
-      vibrate(10);
-      onTabChange(activeTab + 1);
-    }
-  }, [activeTab, onTabChange, vibrate]);
-
-  const handleSwipeRight = useCallback(() => {
-    if (activeTab > 0) {
-      vibrate(10);
-      onTabChange(activeTab - 1);
-    }
-  }, [activeTab, onTabChange, vibrate]);
-
-  useSwipeGesture(contentRef, {
-    onSwipeLeft: handleSwipeLeft,
-    onSwipeRight: handleSwipeRight,
-  });
+  // S56 Track D: menu nav routes → mobile tab equivalents
+  const handleMenuNavigate = useCallback(
+    (route: string) => {
+      switch (route) {
+        case "dashboard":
+          onTabChange(0);
+          break;
+        case "riskflow":
+          onTabChange(1);
+          break;
+        case "chat":
+          onChatTap();
+          break;
+        case "calendar":
+          onTabChange(3);
+          break;
+        case "arbitrum":
+        case "timeline":
+          onTabChange(4);
+          break;
+        case "settings":
+          onTabChange(5);
+          break;
+        default:
+          break;
+      }
+    },
+    [onTabChange, onChatTap],
+  );
 
   return (
     <div
@@ -92,29 +105,50 @@ export function MobileShell({
         flexDirection: "column",
       }}
     >
-      <MobileToolbar
-        onHamburgerTap={() => setMenuOpen(true)}
-        menuOpen={menuOpen}
+      <MainMenuDrawer
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onNavigate={handleMenuNavigate}
       />
 
-      <main
-        ref={contentRef}
+      <motion.div
+        animate={{ x: menuOpen ? "82vw" : 0 }}
+        transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
         style={{
           flex: 1,
           minHeight: 0,
-          overflow: "hidden",
-          paddingTop: `calc(env(safe-area-inset-top) + ${TOOLBAR_HEIGHT}px)`,
-          // Chat tab (index 2) manages its own bottom padding via the sticky
-          // composer — adding 24px here forced the input into a floating
-          // pocket instead of hugging the bottom edge like a native app.
-          paddingBottom:
-            activeTab === 2 ? "0" : `calc(env(safe-area-inset-bottom) + 24px)`,
           display: "flex",
           flexDirection: "column",
+          position: "relative",
+          zIndex: 30,
+          background: "var(--black)",
+          borderRadius: menuOpen ? "18px 0 0 18px" : "0",
+          overflow: "hidden",
+          boxShadow: menuOpen ? "-16px 0 44px rgba(0,0,0,0.42)" : "none",
         }}
       >
-        {children}
-      </main>
+        <MobileToolbar
+          onHamburgerTap={() => setMenuOpen((v) => !v)}
+          menuOpen={menuOpen}
+        />
+        <main
+          ref={contentRef}
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflow: "hidden",
+            paddingTop: `calc(env(safe-area-inset-top) + ${TOOLBAR_HEIGHT}px)`,
+            paddingBottom:
+              activeTab === 2
+                ? "0"
+                : `calc(env(safe-area-inset-bottom) + 24px)`,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {children}
+        </main>
+      </motion.div>
 
       {/* Floating buttons — bulletin above chat. Hidden on chat tab itself. */}
       {activeTab !== 2 && (
@@ -233,11 +267,10 @@ export function MobileShell({
         onClose={() => setApprovalsOpen(false)}
       />
 
-      <HamburgerMenu
+      <MainMenuDrawer
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
-        activeTab={activeTab}
-        onNavigate={onTabChange}
+        onNavigate={handleMenuNavigate}
       />
     </div>
   );

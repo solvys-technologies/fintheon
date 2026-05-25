@@ -1,3 +1,6 @@
+// [claude-code 2026-05-03] S58 deploy fix: mobile chat labels relay fallback as DeepSeek-backed.
+// [claude-code 2026-05-03] S58-T2: mobile chat uses direct DeepSeek SDK when a user key exists, relay otherwise.
+// [claude-code 2026-05-04] S38-T5: added provider dropdown + first-time API key popup integration.
 // [claude-code 2026-04-18] v5.22 S2: TP saw a hollow "thinking bubble" appear before any
 // text streamed. Root cause: ChatPage pre-created the assistant message with content:""
 // at send-time, and ChatMessage renders the bubble chrome unconditionally. Fix: defer the
@@ -34,15 +37,61 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSettings } from "../../contexts/SettingsContext";
 import { getMobileBackend } from "../../lib/backend";
-import ChatMessage, { type ChatMessageData } from "./ChatMessage";
+import type { ChatMessageData } from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import ConnectionStatus, { type RelayState } from "./ConnectionStatus";
-import { ThinkingIndicator } from "./ThinkingIndicator";
 import { ToolCallCard } from "./ToolCallCard";
 import { ToolApprovalCard } from "./ToolApprovalCard";
 import { useToolApprovals } from "../../hooks/useToolApprovals";
+import { useConversations } from "../../hooks/useConversations";
+import SessionList from "./SessionList";
+import { AssistantMessagePrimitive } from "@frontend/components/chat/AssistantMessagePrimitive";
+import { UserMessagePrimitive } from "@frontend/components/chat/UserMessagePrimitive";
+import {
+  AgentActivityRail,
+  type ActivityEntry,
+} from "@frontend/components/chat/AgentActivityRail";
+import {
+  ArtifactPane,
+  type ArtifactPaneProps,
+} from "@frontend/components/chat/ArtifactPane";
+import { BrailleSpinner } from "@frontend/components/chat/primitive/BrailleSpinner";
+import {
+  createDeepSeekStreamResponse,
+  fetchDeepSeekKey,
+  type DeepSeekChatMessage,
+} from "@frontend/lib/deepseek-sdk";
+import { FirstTimeApiKeyPopup } from "@frontend/components/chat/FirstTimeApiKeyPopup";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
+const PROVIDER_STORAGE_KEY = "fintheon:harper-provider";
+
+type HarperProvider = "deepseek-direct" | "opencode-go";
+
+function normalizeProvider(raw: string | null): HarperProvider {
+  return raw === "opencode-go" ? "opencode-go" : "deepseek-direct";
+}
+
+function useMobileHarperProvider() {
+  const [provider, setProviderState] = useState<HarperProvider>(() => {
+    try {
+      return normalizeProvider(localStorage.getItem(PROVIDER_STORAGE_KEY));
+    } catch {
+      return "deepseek-direct";
+    }
+  });
+
+  const setProvider = useCallback((next: HarperProvider) => {
+    setProviderState(next);
+    try {
+      localStorage.setItem(PROVIDER_STORAGE_KEY, next);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  return { provider, setProvider };
+}
 
 interface ChatPageProps {
   visible: boolean;
@@ -54,14 +103,36 @@ export default function ChatPage({ visible }: ChatPageProps) {
   const [messages, setMessages] = useState<ChatMessageData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [relayState, setRelayState] = useState<RelayState>("reconnecting");
+  const [hasDirectDeepSeekKey, setHasDirectDeepSeekKey] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [mirrorDevice, setMirrorDevice] = useState<string | null>(null);
   const [activeToolCall, setActiveToolCall] = useState<{
     name: string;
     input?: string;
   } | null>(null);
+  const { provider } = useMobileHarperProvider();
+  const [showFirstTimePopup, setShowFirstTimePopup] = useState(false);
+  const [activityEntries, setActivityEntries] = useState<ActivityEntry[]>([]);
+  const [artifact, setArtifact] = useState<
+    | (Omit<
+        ArtifactPaneProps,
+        | "onClose"
+        | "variant"
+        | "onBrowserTakeControl"
+        | "onBrowserResumeAgent"
+        | "isBrowserUserControlling"
+      > & { artifactType: ArtifactPaneProps["artifactType"] })
+    | null
+  >(null);
   const { approvals, addApproval, resolveApproval, resolveFromEvent } =
     useToolApprovals();
+  const {
+    sessions,
+    isLoading: sessionsLoading,
+    loadSession,
+    refresh: refreshSessions,
+  } = useConversations();
+  const [sessionsOpen, setSessionsOpen] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -69,6 +140,30 @@ export default function ChatPage({ visible }: ChatPageProps) {
   const conversationIdRef = useRef(conversationId);
   conversationIdRef.current = conversationId;
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const key = await fetchDeepSeekKey({
+        apiBaseUrl: API_BASE,
+        getAccessToken,
+      }).catch(() => null);
+      if (!cancelled) setHasDirectDeepSeekKey(Boolean(key));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [getAccessToken]);
+
+  // S38-T5: First-time API key popup — check on mount
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("fintheon:chat-first-open") === null) {
+        setShowFirstTimePopup(true);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
   // Auto-scroll on new messages
   useEffect(() => {
     const el = scrollRef.current;
@@ -141,6 +236,34 @@ export default function ChatPage({ visible }: ChatPageProps) {
     [getAccessToken],
   );
 
+  const handleSelectSession = useCallback(
+    async (id: string) => {
+      const session = await loadSession(id);
+      if (!session) return;
+      setMessages(
+        session.messages
+          .filter((m) => m.role === "user" || m.role === "assistant")
+          .map((m) => ({
+            id: m.id,
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            timestamp: m.createdAt,
+          })),
+      );
+      setConversationId(session.id);
+      setSessionsOpen(false);
+    },
+    [loadSession],
+  );
+
+  const handleNewSession = useCallback(() => {
+    abortRef.current?.abort();
+    setMessages([]);
+    setConversationId(null);
+    setMirrorDevice(null);
+    setSessionsOpen(false);
+  }, []);
+
   useEffect(() => {
     // Check sessionStorage for a pending relay conversation on mount
     try {
@@ -163,6 +286,32 @@ export default function ChatPage({ visible }: ChatPageProps) {
     window.addEventListener("fintheon:relay-dispatch", handler);
     return () => window.removeEventListener("fintheon:relay-dispatch", handler);
   }, [loadRelayConversation]);
+
+  // Listen for citation chip / artifact events dispatched from message primitives
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail) return;
+      if (detail.kind === "citation" && detail.payload) {
+        setArtifact({
+          artifactType: "citation",
+          citationSource: {
+            title: detail.payload.title ?? detail.payload.source ?? "Source",
+            url: detail.payload.url,
+            content: detail.payload.content,
+          },
+        });
+      } else if (detail.kind && detail.payload) {
+        // Generic artifact dispatch
+        setArtifact({
+          artifactType: detail.kind,
+          ...detail.payload,
+        });
+      }
+    };
+    window.addEventListener("fintheon:artifact", handler);
+    return () => window.removeEventListener("fintheon:artifact", handler);
+  }, []);
 
   // Poll /api/relay/health every 20s: if desktop dispatched us here, show the
   // "FROM DESKTOP" badge and auto-load the dispatched conversation when we
@@ -266,27 +415,56 @@ export default function ChatPage({ visible }: ChatPageProps) {
       abortRef.current = controller;
 
       try {
-        const token = await getAccessToken();
-        const headers: Record<string, string> = {
-          "Content-Type": "application/json",
-          Accept: "text/event-stream",
-        };
-        if (token) headers["Authorization"] = `Bearer ${token}`;
-
-        const res = await fetch(`${API_BASE}/api/relay/chat`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            message: text,
-            conversationId: conversationIdRef.current,
-            ...(opts?.images?.length ? { images: opts.images } : {}),
-            ...(opts?.riskFlowContext
-              ? { riskFlowContext: opts.riskFlowContext }
-              : {}),
-            ...(settings.traderName ? { traderName: settings.traderName } : {}),
-          }),
-          signal: controller.signal,
+        const directMessages: DeepSeekChatMessage[] = messages
+          .filter(
+            (message) =>
+              message.role === "user" || message.role === "assistant",
+          )
+          .map((message) => ({ role: message.role, content: message.content }));
+        directMessages.push({
+          role: "user",
+          content: opts?.riskFlowContext
+            ? `${text}\n\nRiskFlow context:\n${opts.riskFlowContext}`
+            : text,
         });
+
+        const res =
+          provider === "deepseek-direct" && !opts?.images?.length
+            ? (
+                await createDeepSeekStreamResponse(directMessages, {
+                  provider: "deepseek-direct",
+                  apiBaseUrl: API_BASE,
+                  conversationId: conversationIdRef.current,
+                  getAccessToken,
+                  signal: controller.signal,
+                  title: text.slice(0, 80),
+                })
+              ).response
+            : await (async () => {
+                const token = await getAccessToken();
+                const headers: Record<string, string> = {
+                  "Content-Type": "application/json",
+                  Accept: "text/event-stream",
+                };
+                if (token) headers["Authorization"] = `Bearer ${token}`;
+                return fetch(`${API_BASE}/api/relay/chat`, {
+                  method: "POST",
+                  headers,
+                  body: JSON.stringify({
+                    message: text,
+                    provider,
+                    conversationId: conversationIdRef.current,
+                    ...(opts?.images?.length ? { images: opts.images } : {}),
+                    ...(opts?.riskFlowContext
+                      ? { riskFlowContext: opts.riskFlowContext }
+                      : {}),
+                    ...(settings.traderName
+                      ? { traderName: settings.traderName }
+                      : {}),
+                  }),
+                  signal: controller.signal,
+                });
+              })();
 
         if (!res.ok) {
           const err = await res
@@ -304,7 +482,12 @@ export default function ChatPage({ visible }: ChatPageProps) {
         // closing the stream, so late events still paint into a fresh bubble.
         watchdog = setTimeout(() => {
           if (eventCount === 0) {
-            setUserStatus("sent", "HARPER SILENT — CHECK DESKTOP RELAY");
+            setUserStatus(
+              "sent",
+              provider === "deepseek-direct"
+                ? "DEEPSEEK SILENT — CHECK API KEY"
+                : "HARPER SILENT — CHECK BACKEND",
+            );
           }
         }, 12_000);
 
@@ -352,8 +535,9 @@ export default function ChatPage({ visible }: ChatPageProps) {
                 event.type === "tool_use" ||
                 event.type === "tool-use"
               ) {
+                const toolName = event.name || event.tool || "unknown";
                 setActiveToolCall({
-                  name: event.name || event.tool || "unknown",
+                  name: toolName,
                   input:
                     typeof event.input === "string"
                       ? event.input
@@ -361,6 +545,23 @@ export default function ChatPage({ visible }: ChatPageProps) {
                         ? JSON.stringify(event.input).slice(0, 120)
                         : undefined,
                 });
+                // Push to AgentActivityRail
+                setActivityEntries((prev) => [
+                  ...prev,
+                  {
+                    id: `tool-${Date.now()}-${prev.length}`,
+                    type: "tool_call",
+                    label: toolName,
+                    detail:
+                      typeof event.input === "string"
+                        ? event.input.slice(0, 80)
+                        : event.input
+                          ? JSON.stringify(event.input).slice(0, 80)
+                          : undefined,
+                    timestamp: new Date(),
+                    status: "running",
+                  },
+                ]);
               } else if (event.type === "tool-approval-needed") {
                 setActiveToolCall(null);
                 addApproval({
@@ -472,12 +673,14 @@ export default function ChatPage({ visible }: ChatPageProps) {
       isLoading,
       getAccessToken,
       settings.traderName,
+      provider,
+      messages,
       addApproval,
       resolveFromEvent,
     ],
   );
 
-  const isOffline = relayState === "offline";
+  const isOffline = relayState === "offline" && provider !== "deepseek-direct";
   // Informational flag — true when there's nothing loaded yet. We no longer
   // disable input on it (relay-connected mobile chats are first-class); it
   // only drives the empty-state copy.
@@ -539,6 +742,39 @@ export default function ChatPage({ visible }: ChatPageProps) {
           )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <button
+            type="button"
+            onClick={() => {
+              void refreshSessions();
+              setSessionsOpen(true);
+            }}
+            style={{
+              background: "transparent",
+              border: "1px solid rgba(199,159,74,0.24)",
+              borderRadius: 4,
+              color: "var(--accent, #c79f4a)",
+              fontFamily: "var(--font-data)",
+              fontSize: 9,
+              letterSpacing: "0.08em",
+              padding: "3px 7px",
+              textTransform: "uppercase",
+            }}
+          >
+            History
+          </button>
+          <span
+            style={{
+              fontFamily: "var(--font-data)",
+              fontSize: 9,
+              color: "var(--accent, #c79f4a)",
+              letterSpacing: "0.1em",
+              padding: "2px 6px",
+              border: "1px solid rgba(199,159,74,0.35)",
+              borderRadius: 4,
+            }}
+          >
+            {provider === "deepseek-direct" ? "DEEPSEEK DIRECT" : "OPENCODE GO"}
+          </span>
           <ConnectionStatus onStateChange={setRelayState} />
         </div>
       </div>
@@ -634,23 +870,34 @@ export default function ChatPage({ visible }: ChatPageProps) {
             </span>
           </div>
         )}
-        {messages.map((msg) => (
-          <ChatMessage key={msg.id} message={msg} />
-        ))}
+        {/* S38-T2: Render messages via primitives (Nothing-design, t-text-swap, braille spinners) */}
+        {messages.map((msg) =>
+          msg.role === "user" ? (
+            <UserMessagePrimitive
+              key={msg.id}
+              rawContent={msg.content}
+              createdAt={new Date(msg.timestamp)}
+            />
+          ) : (
+            <AssistantMessagePrimitive
+              key={msg.id}
+              rawContent={msg.content}
+              messageId={msg.id}
+              agentName="Harper"
+            />
+          ),
+        )}
 
-        {/* Thinking indicator — shows during streaming until either an assistant
-            message is inserted (first text-delta) or the existing assistant bubble
-            picks up content. The last-msg-is-user case covers the new lazy-insert
-            window where Harper hasn't sent a delta yet. */}
-        <ThinkingIndicator
-          isThinking={
-            isLoading &&
-            messages.length > 0 &&
-            (messages[messages.length - 1].role === "user" ||
-              (messages[messages.length - 1].role === "assistant" &&
-                messages[messages.length - 1].content === ""))
-          }
-        />
+        {/* BrailleSpinner — replaces legacy ThinkingIndicator */}
+        {isLoading &&
+          messages.length > 0 &&
+          (messages[messages.length - 1].role === "user" ||
+            (messages[messages.length - 1].role === "assistant" &&
+              messages[messages.length - 1].content === "")) && (
+            <div className="flex justify-start px-4 py-1">
+              <BrailleSpinner size={12} label="Thinking" />
+            </div>
+          )}
 
         {/* Active tool call card */}
         {activeToolCall && (
@@ -673,6 +920,32 @@ export default function ChatPage({ visible }: ChatPageProps) {
           />
         ))}
       </div>
+
+      {/* S38-T2: AgentActivityRail — drawer variant for mobile, docked below messages */}
+      <AgentActivityRail
+        entries={activityEntries}
+        isStreaming={isLoading}
+        variant="drawer"
+      />
+
+      {/* S38-T2: ArtifactPane — bottom sheet (60% height, swipe-up expand) for artifact content */}
+      {artifact && (
+        <div
+          className="flex flex-col border-t bg-[#050402]"
+          style={{
+            borderColor: "#c79f4a26",
+            maxHeight: "60vh",
+            minHeight: "30vh",
+            overflowY: "auto",
+          }}
+        >
+          <ArtifactPane
+            {...artifact}
+            variant="sheet"
+            onClose={() => setArtifact(null)}
+          />
+        </div>
+      )}
 
       {/* Composer — sticky in the flex column. Replaces the old position:fixed
           + 100px spacer: with the viewport meta's `interactive-widget=
@@ -698,6 +971,26 @@ export default function ChatPage({ visible }: ChatPageProps) {
       </div>
 
       {/* Session list removed S21-T1 — mobile is remote-control only. */}
+
+      {/* S38-T5: First-time API key popup */}
+      {showFirstTimePopup && (
+        <FirstTimeApiKeyPopup
+          visible={showFirstTimePopup}
+          surface="mobile"
+          onDismiss={() => setShowFirstTimePopup(false)}
+        />
+      )}
+
+      <SessionList
+        open={sessionsOpen}
+        onClose={() => setSessionsOpen(false)}
+        sessions={sessions}
+        isLoading={sessionsLoading}
+        activeSessionId={conversationId}
+        onSelect={handleSelectSession}
+        onNewSession={handleNewSession}
+        onRefresh={refreshSessions}
+      />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 // [claude-code 2026-04-15] T3: Glassmorphic thinking overlay for AI regime generation
+// [claude-code 2026-05-16] DEPRECATED — regime tracker replaced by theme-tracker (S68-T1). Kept for backward compat.
 import { useEffect, useRef, useState } from "react";
 import { GlassEffect } from "../ui/liquid-glass";
 
@@ -53,7 +54,7 @@ export function RegimeThinkingOverlay({
   return (
     <GlassEffect
       blur={24}
-      tint="rgba(5,4,2,0.7)"
+      tint="var(--fintheon-glass-surface)"
       className={`absolute inset-0 z-10 rounded-2xl flex flex-col items-center justify-center ${
         dissolving
           ? "animate-[glass-dissolve_500ms_ease-out_forwards]"

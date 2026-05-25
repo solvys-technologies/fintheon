@@ -1,17 +1,24 @@
+// [claude-code 2026-05-06] S60-T2: delegates runtime creation to open-agents adapter
+// instead of direct useAISDKRuntime — establishes open-agents SDK bridge layer
+// while preserving all existing conversation, error, and request-ID semantics.
 // [claude-code 2026-04-18] Pass clearConversationId into useHermesChat so the 404 branch
 //   in the hydration effect can nuke the stale localStorage entry instead of leaving a
 //   ghost conversationId around for FintheonComposer's relay button to trip over.
 // [claude-code 2026-03-07] assistant-ui runtime hook — wraps useHermesChat via useAISDKRuntime
-import { useAISDKRuntime } from "@assistant-ui/react-ai-sdk";
 import { useHermesChat } from "./hooks/useHermesChat";
+import type { HermesWorkspaceContext } from "./hooks/useHermesChat";
+import { useOpenAgentsRuntime } from "./hooks/useOpenAgentsRuntime";
 import { usePersistentHermesConversation } from "../../hooks/usePersistentHermesConversation";
 import { toHermesAgentOverride } from "../../lib/hermesAgentRouting";
+import type { ReasoningLevel } from "./reasoning";
 
 // [claude-code 2026-03-09] Added surfaceId for per-surface session isolation
 export function useHermesRuntime(
   agentId: string,
   thinkHarder?: boolean,
   surfaceId?: string,
+  reasoningLevel?: ReasoningLevel,
+  workspaceContext?: HermesWorkspaceContext | null,
 ) {
   const { conversationId, setConversationId, clearConversationId } =
     usePersistentHermesConversation(agentId, surfaceId);
@@ -23,9 +30,12 @@ export function useHermesRuntime(
     agentOverride,
     thinkHarder,
     clearConversationId,
+    reasoningLevel,
+    surfaceId,
+    workspaceContext,
   );
 
-  // useAISDKRuntime expects UseChatHelpers shape — add missing fields
+  // Build chatHelpers compatible with UseChatHelpers from @ai-sdk/react
   const chatHelpers = {
     ...chat,
     id: agentId,
@@ -34,7 +44,7 @@ export function useHermesRuntime(
       chat.stop();
     },
   };
-  const runtime = useAISDKRuntime(chatHelpers);
+  const runtime = useOpenAgentsRuntime(chatHelpers);
 
   return {
     runtime,

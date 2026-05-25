@@ -49,17 +49,25 @@ const POLL_INTERVAL_MS = 30_000;
 
 /** Map backend service names → short display keys for the footer */
 const KEY_MAP: Record<string, string> = {
-  "Hermes AI (OpenRouter)": "ai",
+  Hermes: "ai",
+  "Hermes AI (DeepSeek primary)": "ai",
+  "Hermes AI (Gateway)": "ai",
   Supabase: "database",
   "X Feed": "x-feed",
   "Supabase Auth": "auth",
+  "TradingView Econ Calendar": "econ",
+  "TradingView Quotes": "quotes",
 };
 
 const SHORT_NAMES: Record<string, string> = {
-  "Hermes AI (OpenRouter)": "AI",
+  Hermes: "Hermes",
+  "Hermes AI (DeepSeek primary)": "Hermes",
+  "Hermes AI (Gateway)": "AI",
   Supabase: "Database",
   "X Feed": "X",
   "Supabase Auth": "Auth",
+  "TradingView Econ Calendar": "econ",
+  "TradingView Quotes": "quotes",
 };
 
 function normalizeStatus(s: string): StatusLevel {

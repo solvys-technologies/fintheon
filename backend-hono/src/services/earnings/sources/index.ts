@@ -1,5 +1,5 @@
 // [claude-code 2026-04-26] S45.5/F1: free-stack earnings chain runner.
-// TradingView Calendar → browser-harness scrape → FinancialDatasets MCP.
+// TradingView Calendar → browser-harness scrape.
 // Per memory rule "No new paid services without explicit TP greenlight":
 // FMP is OUT permanently; this chain is the canonical path going forward.
 
@@ -9,13 +9,12 @@ import {
   type TVCalendarRow,
 } from "./tradingview-calendar.js";
 import { fetchBrowserHarnessEarnings } from "./browser-harness-scrape.js";
-import { fetchFinancialDatasetsEarnings } from "./financial-datasets-mcp.js";
 
 const log = createLogger("EarningsChain");
 
 export interface ChainResult {
   rows: TVCalendarRow[];
-  source: "tradingview" | "browser-harness" | "financial-datasets-mcp" | "none";
+  source: "tradingview" | "browser-harness" | "none";
 }
 
 /**
@@ -36,16 +35,7 @@ export async function runEarningsChain(): Promise<ChainResult> {
     return { rows: harness, source: "browser-harness" };
   }
 
-  const fd = await fetchFinancialDatasetsEarnings();
-  if (fd.length > 0) {
-    log.info("chain hit", {
-      source: "financial-datasets-mcp",
-      rows: fd.length,
-    });
-    return { rows: fd, source: "financial-datasets-mcp" };
-  }
-
-  log.warn("chain produced zero rows from all 3 sources");
+  log.warn("chain produced zero rows from all sources");
   return { rows: [], source: "none" };
 }
 

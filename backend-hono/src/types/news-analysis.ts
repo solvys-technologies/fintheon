@@ -9,7 +9,9 @@ export type NewsSource =
   | "TwitterCli"
   | "DeItaOne"
   | "Custom"
-  | "Hermes";
+  | "Hermes"
+  | "Untrusted"
+  | "Commentary";
 
 export type UrgencyLevel = "immediate" | "high" | "normal";
 

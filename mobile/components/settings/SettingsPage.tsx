@@ -1,9 +1,12 @@
+// [claude-code 2026-05-03] S58-T2: add mobile AI provider key section for direct DeepSeek chat.
 // [claude-code 2026-04-19] S26-P1 T4+T8: borderless sections per TP ("I don't want them
 //   to be cards"). Stacked with no gap so the invisible per-section separators read as
 //   the divider between them. About section gets a link row to pricedinresearch.io/fintheon.
 // [claude-code 2026-04-19] TP beta polish: full rewrite. Scrollable shell, full-width,
 //   accordion theme picker, 5-font picker, manual save via a clearly-pressable
 //   SaveButton. Broken into focused modules under 300 lines.
+// [claude-code 2026-05-05] S59-T3: Agent Health section — per-agent SOUL/GEPA/REFLECT status
+import { useState, lazy, Suspense } from "react";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -13,6 +16,13 @@ import { FontPickerList } from "./FontPickerList";
 import { NotificationsSection } from "./NotificationsSection";
 import { TraderSection } from "./TraderSection";
 import { SaveButton } from "./SaveButton";
+import { AiProviderSection } from "./AiProviderSection";
+
+const AgentHealthDashboard = lazy(() =>
+  import("../apparatus/AgentHealthDashboard").then((m) => ({
+    default: m.AgentHealthDashboard,
+  })),
+);
 
 export function SettingsPage() {
   const { isDirty, isSaving, saveAll } = useSettings();
@@ -22,10 +32,10 @@ export function SettingsPage() {
     fontTheme,
     setFontTheme,
     availableThemes,
-    specialThemes,
     availableFonts,
   } = useTheme();
-  const { user, signOut } = useAuth();
+  const { user, signOut, getAccessToken } = useAuth();
+  const [hasDeepSeekKey, setHasDeepSeekKey] = useState(false);
 
   const trailingSave = (
     <SaveButton visible={isDirty} saving={isSaving} onSave={saveAll} />
@@ -67,8 +77,7 @@ export function SettingsPage() {
             <ThemePickerAccordion
               current={theme}
               onPick={setTheme}
-              standard={availableThemes}
-              special={specialThemes}
+              themes={availableThemes}
             />
             <FontPickerList
               current={fontTheme}
@@ -80,6 +89,40 @@ export function SettingsPage() {
 
         <CollapsibleSection id="trader" title="Trader" trailing={trailingSave}>
           <TraderSection />
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          id="ai-provider"
+          title="AI Provider"
+          subtitle={hasDeepSeekKey ? "DeepSeek key set" : "No key configured"}
+        >
+          <AiProviderSection
+            getAccessToken={getAccessToken}
+            onStatusChange={setHasDeepSeekKey}
+          />
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          id="agent-health"
+          title="Agent Health"
+          subtitle="SOUL / REFLECT / GEPA / Memory"
+        >
+          <Suspense
+            fallback={
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  color: "var(--text-disabled)",
+                  letterSpacing: "0.1em",
+                }}
+              >
+                [LOADING...]
+              </span>
+            }
+          >
+            <AgentHealthDashboard />
+          </Suspense>
         </CollapsibleSection>
 
         <CollapsibleSection

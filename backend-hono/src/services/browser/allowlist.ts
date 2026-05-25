@@ -33,6 +33,8 @@ export const BROWSER_ALLOWLIST: BrowserAllowlistEntry[] = [
   // Yahoo Finance — market-data router last-resort page scrape
   { domain: "finance.yahoo.com", tier: "data", dailyQuota: 200 },
   { domain: "yahoo.com", tier: "data", dailyQuota: 200 },
+  // CFTC — Commitment of Traders report
+  { domain: "cftc.gov", tier: "regulatory", dailyQuota: 20 },
   // Twitter
   { domain: "x.com", tier: "social", dailyQuota: 500 },
   { domain: "twitter.com", tier: "social", dailyQuota: 500 },

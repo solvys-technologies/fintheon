@@ -1,3 +1,6 @@
+// [claude-code 2026-04-29] S52-T1: standardized sawdust footer with shared NothingFuse
+//   component (replaces custom inline bar), gated DEVIATION row on econ-print tag,
+//   stripped EVENT WEIGHT/TIMING/MOMENTUM/VIX CONTEXT rows.
 // [claude-code 2026-04-20] Footer row added: horizontal IV bar picks up the
 //   juice from the preview card's drained vertical fuse (fills 0→IV on mount),
 //   paperclip icon right-justified links to the original source, and the IV
@@ -7,11 +10,15 @@
 // [claude-code 2026-04-19] Surface-gated SourcePreview — when rendering in the full or
 //   timeline surface, the expanded card shows the scraped body in a SourcePreview block
 //   with YouTube + open-original CTAs; mini surfaces keep the legacy [OPEN SOURCE] link.
+// [claude-code 2026-04-30] Expanded body is distilled to media/source footer only:
+// the preview row owns headline, IV, source, and direction metadata.
+// [claude-code 2026-05-03] Added video support: auto-play muted loop with X-inspired
+// mute toggle button, matching desktop RiskFlowPostCard behavior.
 import { motion } from "framer-motion";
-import { Paperclip } from "lucide-react";
+import { Paperclip, Volume2, VolumeX } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
 import type { MobileRiskFlowAlert } from "../../contexts/RiskFlowContext";
-import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
-import { SourcePreview } from "./SourcePreview";
+import { NothingFuse } from "@frontend/components/shared/NothingFuse";
 
 export type RiskFlowExpandedSurface = "full" | "timeline" | "mini";
 
@@ -25,46 +32,33 @@ interface RiskFlowCardExpandedProps {
   severityColor?: string;
 }
 
-const SEVERITY_COLORS: Record<AlertSeverity, string> = {
-  critical: "var(--fintheon-severe)",
-  high: "var(--fintheon-severe)",
-  medium: "var(--fintheon-neutral-severe)",
-  low: "var(--fintheon-neutral)",
-};
+function getXStatusId(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (!/(^|\.)x\.com$|(^|\.)twitter\.com$/i.test(parsed.hostname)) {
+      return null;
+    }
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    const statusIdx = parts.findIndex((part) => part === "status");
+    return statusIdx >= 0 ? (parts[statusIdx + 1] ?? null) : null;
+  } catch {
+    return null;
+  }
+}
 
-function SubScoreRow({
-  label,
-  value,
-  severity,
-}: {
-  label: string;
-  value: number;
-  severity: AlertSeverity;
-}) {
-  return (
-    <div className="flex items-center justify-between py-1">
-      <span
-        style={{
-          fontFamily: "var(--font-data)",
-          fontSize: "11px",
-          letterSpacing: "0.06em",
-          textTransform: "uppercase",
-          color: "var(--text-secondary)",
-        }}
-      >
-        {label}
-      </span>
-      <span
-        style={{
-          fontFamily: "var(--font-data)",
-          fontSize: "11px",
-          color: SEVERITY_COLORS[severity],
-        }}
-      >
-        {value.toFixed(1)}
-      </span>
-    </div>
-  );
+function openMobileSource(url: string): void {
+  const statusId = getXStatusId(url);
+  if (!statusId) {
+    window.open(url, "_blank", "noopener,noreferrer");
+    return;
+  }
+
+  window.location.href = `twitter://status?id=${statusId}`;
+  window.setTimeout(() => {
+    if (document.visibilityState === "visible") {
+      window.location.href = url;
+    }
+  }, 700);
 }
 
 export function RiskFlowCardExpanded({
@@ -76,7 +70,14 @@ export function RiskFlowCardExpanded({
   const showSourcePreview = surface === "full" || surface === "timeline";
   const showFooter =
     !showSourcePreview && ivScore != null && severityColor != null;
-  const ivFillPercent = Math.max(0, Math.min(100, ((ivScore ?? 0) / 10) * 100));
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const toggleMute = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsMuted((prev) => !prev);
+  }, []);
+
   return (
     <motion.div
       initial={{ height: 0, opacity: 0 }}
@@ -89,15 +90,39 @@ export function RiskFlowCardExpanded({
         className="pb-4 pt-2 fade-divider-top"
         style={{ borderTop: "none", padding: "8px 12px 16px 26px" }}
       >
-        {/* [claude-code 2026-04-25] S35: hero image — RSS enclosure / og:image, hidden
-            on load failure so a broken image never breaks the expanded card. */}
-        {alert.imageUrl && (
-          <a
-            href={alert.url ?? alert.imageUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
+        <div style={{ marginBottom: 12 }}>
+          <span
             style={{
+              fontFamily: "var(--font-data)",
+              fontSize: "10px",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "var(--text-secondary)",
+              display: "block",
+              marginBottom: 4,
+            }}
+          >
+            HEADLINE
+          </span>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 15,
+              color: "var(--text-primary)",
+              lineHeight: 1.45,
+              margin: 0,
+              overflowWrap: "anywhere",
+            }}
+          >
+            {alert.title}
+          </p>
+        </div>
+
+        {/* Video: auto-play muted loop, stops on collapse (unmount). */}
+        {alert.videoUrl ? (
+          <div
+            style={{
+              position: "relative",
               display: "block",
               marginBottom: "12px",
               borderRadius: "8px",
@@ -105,42 +130,86 @@ export function RiskFlowCardExpanded({
               border: "1px solid var(--border)",
             }}
           >
-            <img
-              src={alert.imageUrl}
-              alt=""
-              loading="lazy"
-              referrerPolicy="no-referrer"
-              onError={(e) => {
-                const wrap = e.currentTarget
-                  .parentElement as HTMLElement | null;
-                if (wrap) wrap.style.display = "none";
-              }}
+            <video
+              ref={videoRef}
+              src={alert.videoUrl}
+              poster={alert.imageUrl ?? undefined}
+              muted={isMuted}
+              loop
+              autoPlay
+              playsInline
+              preload="metadata"
               style={{
                 width: "100%",
-                maxHeight: "200px",
-                objectFit: "cover",
+                maxHeight: "280px",
+                objectFit: "contain",
                 display: "block",
+                background: "var(--fintheon-bg, #050402)",
+              }}
+              onError={(e) => {
+                const wrapper = e.currentTarget.parentElement;
+                if (wrapper) wrapper.style.display = "none";
               }}
             />
-          </a>
-        )}
-
-        {/* Source preview (full/timeline) or plain content text (mini) */}
-        {showSourcePreview ? (
-          <SourcePreview alert={alert} />
-        ) : (
-          alert.content && (
-            <p
+            <button
+              type="button"
+              onClick={toggleMute}
               style={{
-                fontFamily: "var(--font-body)",
-                fontSize: "13px",
-                color: "var(--text-primary)",
-                lineHeight: 1.6,
+                position: "absolute",
+                bottom: 8,
+                left: 8,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                background: "rgba(0,0,0,0.6)",
+                color: "rgba(255,255,255,0.9)",
+                backdropFilter: "blur(6px)",
+                WebkitBackdropFilter: "blur(6px)",
+                border: 0,
+                padding: 0,
+                cursor: "pointer",
+              }}
+              aria-label={isMuted ? "Unmute" : "Mute"}
+            >
+              {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+            </button>
+          </div>
+        ) : (
+          alert.imageUrl && (
+            <a
+              href={alert.url ?? alert.imageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                display: "block",
                 marginBottom: "12px",
+                borderRadius: "8px",
+                overflow: "hidden",
+                border: "1px solid var(--border)",
               }}
             >
-              {alert.content}
-            </p>
+              <img
+                src={alert.imageUrl}
+                alt=""
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  const wrap = e.currentTarget
+                    .parentElement as HTMLElement | null;
+                  if (wrap) wrap.style.display = "none";
+                }}
+                style={{
+                  width: "100%",
+                  maxHeight: "200px",
+                  objectFit: "cover",
+                  display: "block",
+                }}
+              />
+            </a>
           )
         )}
 
@@ -173,36 +242,40 @@ export function RiskFlowCardExpanded({
           </div>
         )}
 
-        {/* Sub-scores */}
-        {alert.subScores && (
-          <div className="mb-3">
-            <SubScoreRow
-              label="EVENT WEIGHT"
-              value={alert.subScores.eventWeight}
-              severity={alert.severity}
-            />
-            <SubScoreRow
-              label="TIMING"
-              value={alert.subScores.timing}
-              severity={alert.severity}
-            />
-            <SubScoreRow
-              label="DEVIATION"
-              value={alert.subScores.deviation}
-              severity={alert.severity}
-            />
-            <SubScoreRow
-              label="MOMENTUM"
-              value={alert.subScores.momentum}
-              severity={alert.severity}
-            />
-            <SubScoreRow
-              label="VIX CONTEXT"
-              value={alert.subScores.vixContext}
-              severity={alert.severity}
-            />
-          </div>
-        )}
+        {/* S51: DEVIATION row — only if econ-print tag + surprisePercent */}
+        {Array.isArray(alert.tags) &&
+          alert.tags.includes("econ-print") &&
+          alert.econData?.surprisePercent != null && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "12px",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "var(--font-data)",
+                  fontSize: "11px",
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                DEVIATION
+              </span>
+              <span
+                style={{
+                  fontFamily: "var(--font-data)",
+                  fontSize: "11px",
+                  color: "var(--text-primary)",
+                }}
+              >
+                {alert.econData.surprisePercent.toFixed(1)}
+              </span>
+            </div>
+          )}
 
         {/* Symbol chips */}
         {alert.symbols && alert.symbols.length > 0 && (
@@ -217,7 +290,7 @@ export function RiskFlowCardExpanded({
                   textTransform: "uppercase",
                   color: "var(--accent)",
                   border: "1px solid var(--accent)",
-                  borderRadius: "999px",
+                  borderRadius: 6,
                   padding: "2px 8px",
                 }}
               >
@@ -227,10 +300,7 @@ export function RiskFlowCardExpanded({
           </div>
         )}
 
-        {/* Footer — horizontal fuse picks up the drained juice from the
-            preview card, paperclip links to the original, IV numeral anchors
-            the bottom-right. Only rendered when RiskFlowCard wires ivScore +
-            severityColor (i.e. the tap-expand flow). */}
+        {/* S52-T1: Sawdust fuse footer — shared NothingFuse, paperclip, IV score */}
         {showFooter && (
           <div
             style={{
@@ -240,36 +310,26 @@ export function RiskFlowCardExpanded({
               marginTop: 4,
             }}
           >
-            {/* Horizontal fuse bar — fills from 0 to ivFillPercent on mount */}
-            <div
-              style={{
-                flex: 1,
-                height: 4,
-                borderRadius: 2,
-                background: "var(--fintheon-surface, #0a0a00)",
-                overflow: "hidden",
-                position: "relative",
-              }}
-            >
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${ivFillPercent}%` }}
-                transition={{ duration: 0.72, ease: [0.16, 0.8, 0.24, 1] }}
-                style={{
-                  height: "100%",
-                  background: severityColor,
-                  borderRadius: 2,
-                }}
+            {/* NothingFuse — shared segmented bar with mount-charge animateIn */}
+            <div style={{ flex: 1 }}>
+              <NothingFuse
+                value={Math.min(1, Math.max(0.1, (ivScore ?? 0) / 10))}
+                color={severityColor}
+                orientation="horizontal"
+                thickness={4}
+                segments={10}
+                animateIn
               />
             </div>
 
             {/* Paperclip → original source */}
             {alert.url && (
-              <a
-                href={alert.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openMobileSource(alert.url!);
+                }}
                 aria-label="Open original source"
                 style={{
                   display: "inline-flex",
@@ -280,10 +340,13 @@ export function RiskFlowCardExpanded({
                   color: "var(--text-secondary)",
                   borderRadius: 6,
                   WebkitTapHighlightColor: "transparent",
+                  background: "transparent",
+                  border: 0,
+                  padding: 0,
                 }}
               >
                 <Paperclip size={16} />
-              </a>
+              </button>
             )}
 
             {/* IV numeral — far right, Doto */}

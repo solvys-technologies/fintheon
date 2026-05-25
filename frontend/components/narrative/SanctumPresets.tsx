@@ -8,7 +8,7 @@ interface SanctumPresetsProps {
   onChange: (preset: SanctumPreset) => void;
 }
 
-// Tabs visible in the Aquarium header. chart-focus is owned by the Chart button in the top bar.
+// Tabs visible in the ArbitrumChamber header. chart-focus is owned by the Chart button in the top bar.
 const VISIBLE_PRESET_IDS: SanctumPreset[] = [
   "full-brief",
   "econ-watch",

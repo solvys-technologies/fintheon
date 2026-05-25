@@ -1,37 +1,27 @@
-// [claude-code 2026-04-26] S45-T1: Day-plan orchestrator. Pulls TV/Yahoo bars,
-// runs VWAP/POC/VAH/VAL math, picks the dominant window, computes prices of
-// interest + invalidation + profit target + expected move, generates the
-// Desk Theme via Sonnet, and persists day_plans + day_plan_windows. Idempotent
-// on (team_id, date).
+// [claude-code 2026-05-15] Econ forecast: replaced TV-based price computation with
+//   AI-powered econ forecast engine. Each window now carries miss/beat scenarios,
+//   AI prediction, and notable events instead of invalidation/profit-target/entries.
+//   Prices pulled fresh at viewing time (30 min before window) via maybeRefreshForecast.
+//   Old price fields retained as optional for migration transition.
 
 import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
 import { readEconEvents } from "../supabase-service.js";
 import { getFeed } from "../riskflow/feed-service.js";
 import { getCurrentRegime } from "../regime/regime-service.js";
-import { fetchVIX } from "../market-data/router.js";
-import { continuousVIXMultiplier } from "../iv-scoring/computation.js";
-import { fetchInstrumentBars } from "./tv-bars-fetcher.js";
 import {
-  expectedMove,
-  pointOfControl,
-  timeAnchoredVWAP,
-  valueArea,
-  type OHLCVBar,
-} from "./vwap-poc-math.js";
-import {
-  roundEntry,
-  roundFine,
-  roundPricesOfInterest,
-} from "./price-rounding.js";
+  generateEconForecast,
+  isSpeechEvent,
+} from "../econ-forecast/econ-forecast-service.js";
 import { generateDeskTheme } from "./desk-theme-generator.js";
-import { planDay } from "./window-scheduler.js";
+import { planDay, type PlannedWindow } from "./window-scheduler.js";
 import type { DayPlan, DayPlanWindow } from "../../types/day-plan.js";
 
 const log = createLogger("DayPlanService");
 
 const DEFAULT_TEAM = "pic";
 const DEFAULT_INSTRUMENT = "/NQ";
+const FORECAST_MAX_AGE_MINUTES = 60;
 
 export interface GenerateDayPlanInput {
   teamId?: string;
@@ -40,6 +30,7 @@ export interface GenerateDayPlanInput {
   override?: boolean;
   overrideReason?: string;
   generatedBy?: string;
+  planVariant?: string | null;
 }
 
 export interface GenerateDayPlanResult {
@@ -48,78 +39,90 @@ export interface GenerateDayPlanResult {
   reused: boolean;
 }
 
+/**
+ * Generate the Desk Plan for a given date. Pulls econ events, schedules windows,
+ * generates AI forecasts per window, and persists.
+ */
 export async function generateDayPlan(
   input: GenerateDayPlanInput = {},
 ): Promise<GenerateDayPlanResult> {
   const teamId = input.teamId ?? DEFAULT_TEAM;
   const reference = input.date ?? new Date();
-  const dateIso = reference.toISOString().slice(0, 10);
-  const instrument = input.instrument ?? DEFAULT_INSTRUMENT;
+  const dateIso = input.date
+    ? reference.toISOString().slice(0, 10)
+    : dateInNewYork(reference);
+  const econEvents = await readEconEvents({ from: dateIso, to: dateIso }).catch(
+    () => [],
+  );
+  const autonomousEvents = econEvents.filter(isAutonomousDeskException);
+  const planned = planDay(new Date(`${dateIso}T12:00:00Z`), autonomousEvents);
 
+  const existing = await readDayPlan(teamId, dateIso);
+  if (existing?.generatedBy === "agentic-desk-manual") {
+    return { plan: existing, persisted: true, reused: true };
+  }
+  if (autonomousEvents.length === 0) {
+    return existing
+      ? { plan: existing, persisted: true, reused: true }
+      : {
+          plan: synthesizeInMemoryPlan({
+            teamId,
+            dateIso,
+            eventName: null,
+            deskTheme: null,
+            generatedBy: input.generatedBy ?? "day-plan-empty",
+            planVariant: input.planVariant ?? null,
+            windows: [],
+          }),
+          persisted: false,
+          reused: true,
+        };
+  }
   if (!input.override) {
-    const existing = await readDayPlan(teamId, dateIso);
     if (existing) {
-      return { plan: existing, persisted: false, reused: true };
+      const candidate = hydrateLegacyWindowNames(existing, planned);
+      if (isStaleAgainstUpcomingEvents(candidate, planned)) {
+        log.warn("Existing day-plan is stale against upcoming econ events", {
+          date: dateIso,
+          existingEvent: candidate.eventName,
+          plannedEvent: planned.dominantEvent,
+        });
+      } else {
+        // Check if any existing windows need forecast refresh (30-min pre-window)
+        const updated = await maybeRefreshExisting(candidate);
+        return updated
+          ? { plan: updated, persisted: true, reused: true }
+          : { plan: candidate, persisted: false, reused: true };
+      }
     }
   }
 
-  const [econEvents, feedResponse, regimeState, vix] = await Promise.all([
-    readEconEvents({ from: dateIso, to: dateIso }).catch(() => []),
-    getFeed("system", { limit: 20 }).catch(() => ({ items: [] }) as never),
+  const [feedResponse, regimeState] = await Promise.all([
+    getFeed("system", { limit: 20 }).catch(() => ({ items: [] } as never)),
     getCurrentRegime().catch(() => null),
-    fetchVIX()
-      .then((r) => r.vix)
-      .catch(() => null),
   ]);
-
-  const planned = planDay(reference, econEvents);
-  const dominantWindow = planned.windows[0] ?? {
-    windowIndex: 0,
-    startTime: "09:30",
-    endTime: "11:00",
-    eventName: null,
-    ivScore: null,
-  };
-
-  // Pull bars for the three benchmarks; the planner ultimately keys off
-  // `instrument` but the fetcher does it in one shot for cost.
-  const barSets = await fetchInstrumentBars(["/NQ", "/ES", "/YM"]);
-  const barsForInstrument =
-    barSets.find((b) => b.symbol === instrument)?.bars ??
-    barSets[0]?.bars ??
-    [];
-
-  const anchorTs = anchorForWindow(reference, dominantWindow.startTime);
-  const vwap = timeAnchoredVWAP(barsForInstrument, anchorTs);
-  const poc = pointOfControl(barsForInstrument);
-  const va = valueArea(barsForInstrument);
-
-  const spot = latestClose(barsForInstrument) ?? vwap ?? poc ?? null;
-
-  const ivScore = dominantWindow.ivScore;
-  const ivPct = ivScoreToImpliedVol(ivScore);
-  const vixMultiplier = vix?.value ? continuousVIXMultiplier(vix.value) : 1;
-  const expectedMovePct = spot
-    ? (expectedMove(spot, ivPct, 1, vixMultiplier) / spot) * 100
-    : null;
-
-  const candidatePrices = [vwap, poc, va?.vah, va?.val].filter(
-    (n): n is number => typeof n === "number" && Number.isFinite(n),
-  );
-  const pricesOfInterest = roundPricesOfInterest(candidatePrices, instrument);
-  const invalidation = computeInvalidation(va, instrument);
-  const profitTarget = computeProfitTarget(spot, expectedMovePct, instrument);
 
   const topHeadline = (feedResponse.items ?? [])[0]?.headline ?? "";
   const eventName = planned.dominantEvent;
+
+  // Build windows with econ forecasts
+  const windows = await buildWindows(
+    dateIso,
+    planned,
+    econEvents,
+  );
+
+  // Generate desk theme (no price references)
   const deskTheme = await generateDeskTheme({
     date: dateIso,
     catalystHeadline: topHeadline || (eventName ?? "today's session"),
-    ivScore,
+    ivScore: planned.ivScore,
     eventName,
-    windowLabel: `${dominantWindow.startTime}-${dominantWindow.endTime}`,
-    instrument,
-    pricesOfInterest,
+    windowLabel: windows[0]
+      ? `${windows[0].startTime}-${windows[0].endTime}`
+      : "09:30-11:00",
+    instrument: input.instrument ?? DEFAULT_INSTRUMENT,
+    pricesOfInterest: [], // no longer used for price-based theme
     regime: regimeState?.regime ?? null,
   });
 
@@ -129,33 +132,96 @@ export async function generateDayPlan(
     eventName,
     deskTheme,
     generatedBy: input.generatedBy ?? "day-plan-cron",
-    windows: [
-      {
-        windowIndex: dominantWindow.windowIndex,
-        startTime: dominantWindow.startTime,
-        endTime: dominantWindow.endTime,
-        pricesOfInterest,
-        invalidation,
-        profitTarget,
-        expectedMovePct,
-      },
-    ],
+    planVariant: input.planVariant ?? null,
+    windows,
   });
 
-  log.info("Day-plan generated", {
+  log.info("Day-plan generated with econ forecasts", {
     date: dateIso,
     teamId,
-    instrument,
-    barsCount: barsForInstrument.length,
-    pricesOfInterest,
-    invalidation,
-    profitTarget,
-    expectedMovePct,
+    windowCount: windows.length,
     override: !!input.override,
-    overrideReason: input.overrideReason,
   });
 
   return { plan, persisted: true, reused: false };
+}
+
+function isAutonomousDeskException(event: {
+  category?: string | null;
+  name?: string | null;
+}): boolean {
+  const category = (event.category ?? "").toLowerCase();
+  const name = (event.name ?? "").toLowerCase();
+  if (category !== "speaker") return false;
+  return /\b(speech|speaks?|remarks|testimony|statement|press conference|briefing|gaggle|pool\s*(call|report|notice|log)|travel pool)\b/.test(
+    name,
+  );
+}
+
+function isStaleAgainstUpcomingEvents(
+  existing: DayPlan,
+  planned: ReturnType<typeof planDay>,
+): boolean {
+  if (planned.windows.length > 0 && existing.windows.length === 0) return true;
+  const plannedNames = new Set(
+    planned.windows
+      .map((window) => normalizeEventName(window.eventName))
+      .filter((name): name is string => Boolean(name)),
+  );
+  const plannedDominant = normalizeEventName(planned.dominantEvent);
+  const existingNames = new Set(
+    [
+      existing.eventName,
+      ...existing.windows.map((window) => window.eventName),
+    ]
+      .map(normalizeEventName)
+      .filter((name): name is string => Boolean(name)),
+  );
+
+  if (plannedNames.size === 0 && !plannedDominant) {
+    return existingNames.size > 0;
+  }
+  const existingWindowNames = existing.windows
+    .map((window) => normalizeEventName(window.eventName))
+    .filter(Boolean);
+  if (plannedNames.size > 0 && existingWindowNames.length === 0) return true;
+  if (plannedDominant && !existingNames.has(plannedDominant)) return true;
+  for (const name of existingNames) {
+    if (!plannedNames.has(name) && name !== plannedDominant) return true;
+  }
+  return false;
+}
+
+function hydrateLegacyWindowNames(
+  existing: DayPlan,
+  planned: ReturnType<typeof planDay>,
+): DayPlan {
+  if (existing.windows.length === 0) return existing;
+  const hasStoredWindowNames = existing.windows.some((window) =>
+    normalizeEventName(window.eventName),
+  );
+  if (hasStoredWindowNames) return existing;
+  return {
+    ...existing,
+    windows: existing.windows.map((window, index) => ({
+      ...window,
+      eventName: planned.windows[index]?.eventName ?? window.eventName,
+    })),
+  };
+}
+
+function normalizeEventName(value: string | null | undefined): string | null {
+  const normalized = value?.trim().toLowerCase().replace(/\s+/g, " ");
+  return normalized || null;
+}
+
+function dateInNewYork(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
 }
 
 export async function regenerateDayPlan(
@@ -237,20 +303,196 @@ export async function readWeekPlans(
   return planRows.map((p) => rowsToDayPlan(p, grouped.get(p.id) ?? []));
 }
 
+// ── Window building ─────────────────────────────────────────────────────────
+
+async function buildWindows(
+  dateIso: string,
+  planned: { windows: PlannedWindow[] },
+  econEvents: Awaited<ReturnType<typeof readEconEvents>>,
+): Promise<
+  Array<{
+    windowIndex: number;
+    startTime: string;
+    endTime: string;
+    eventName: string | null;
+    eventCountry?: string | null;
+    econForecast: any;
+  }>
+> {
+  const results: Array<{
+    windowIndex: number;
+    startTime: string;
+    endTime: string;
+    eventName: string | null;
+    eventCountry?: string | null;
+    econForecast: any;
+  }> = [];
+
+  for (const pw of planned.windows ?? []) {
+    const matchedEvent = findMatchingEvent(pw.eventName, econEvents);
+    const isSpeech = matchedEvent ? isSpeechEvent(matchedEvent) : false;
+
+    let econForecast = null;
+    if (matchedEvent) {
+      econForecast = await generateEconForecast({
+        eventName: matchedEvent.name,
+        eventDate: dateIso,
+        eventTime: matchedEvent.time ?? pw.startTime,
+        eventCountry: matchedEvent.country ?? undefined,
+        eventCategory: matchedEvent.category ?? undefined,
+        forecast: matchedEvent.forecast ?? undefined,
+        previous: matchedEvent.previous ?? undefined,
+        isSpeech,
+      }).catch((err) => {
+        log.warn("Econ forecast generation failed for window", {
+          event: matchedEvent.name,
+          error: err instanceof Error ? err.message : String(err),
+        });
+        return null;
+      });
+      if (econForecast) {
+        econForecast = {
+          ...econForecast,
+          eventCountry: matchedEvent.country ?? null,
+          eventTime: matchedEvent.time ?? pw.startTime,
+        };
+      }
+    }
+
+    results.push({
+      windowIndex: pw.windowIndex,
+      startTime: pw.startTime,
+      endTime: pw.endTime,
+      eventName: pw.eventName ?? null,
+      eventCountry: matchedEvent?.country ?? null,
+      econForecast,
+    });
+  }
+
+  return results;
+}
+
+function findMatchingEvent(
+  eventName: string | null | undefined,
+  events: Awaited<ReturnType<typeof readEconEvents>>,
+): (typeof events)[number] | null {
+  if (!eventName) return null;
+  const name = eventName.toLowerCase().trim();
+  const match = events.find(
+    (e) => (e.name ?? "").toLowerCase().trim() === name,
+  );
+  if (match) return match;
+  // Fuzzy match: event name contains the matching event
+  for (const e of events) {
+    const en = (e.name ?? "").toLowerCase().trim();
+    if (en && (name.includes(en) || en.includes(name))) return e;
+  }
+  return null;
+}
+
+// ── Refresh logic ───────────────────────────────────────────────────────────
+
+/**
+ * Check if any existing windows need forecast refresh (within 30-min pre-window).
+ * If so, regenerate the forecast and update persistence.
+ */
+async function maybeRefreshExisting(plan: DayPlan): Promise<DayPlan | null> {
+  let changed = false;
+  const updatedWindows: DayPlanWindow[] = [];
+  const econEvents = await readEconEvents({
+    from: plan.date,
+    to: plan.date,
+  }).catch(() => []);
+
+  for (const w of plan.windows) {
+    if (!w.eventName) {
+      updatedWindows.push(w);
+      continue;
+    }
+
+    const age = w.econForecast?.generatedAt
+      ? Date.now() - new Date(w.econForecast.generatedAt).getTime()
+      : Infinity;
+    const isFresh = age < FORECAST_MAX_AGE_MINUTES * 60_000;
+    if (w.econForecast && isFresh) {
+      updatedWindows.push(w);
+      continue;
+    }
+
+    try {
+      const matchedEvent = findMatchingEvent(w.eventName, econEvents);
+      if (matchedEvent) {
+        const isSpeech = isSpeechEvent(matchedEvent);
+        const forecast = await generateEconForecast({
+          eventName: matchedEvent.name,
+          eventDate: plan.date,
+          eventTime: matchedEvent.time ?? w.startTime,
+          eventCountry: matchedEvent.country ?? undefined,
+          eventCategory: matchedEvent.category ?? undefined,
+          forecast: matchedEvent.forecast ?? undefined,
+          previous: matchedEvent.previous ?? undefined,
+          isSpeech,
+        }).catch(() => null);
+
+        changed = true;
+        updatedWindows.push({
+          ...w,
+          eventCountry: matchedEvent.country ?? w.eventCountry ?? null,
+          econForecast: forecast
+            ? {
+                ...forecast,
+                eventCountry: matchedEvent.country ?? null,
+                eventTime: matchedEvent.time ?? w.startTime,
+              }
+            : w.econForecast,
+        });
+        continue;
+      }
+    } catch {
+      // Non-fatal
+    }
+
+    updatedWindows.push(w);
+  }
+
+  if (!changed) return null;
+
+  // Persist the refreshed forecasts
+  const sb = getSupabaseClient();
+  if (sb) {
+    try {
+      for (const w of updatedWindows) {
+        await sb
+          .from("day_plan_windows")
+          .update({ econ_forecast: w.econForecast })
+          .eq("id", w.id);
+      }
+    } catch (err) {
+      log.warn("Failed to persist refreshed forecasts", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  return { ...plan, windows: updatedWindows };
+}
+
+// ── Persistence ─────────────────────────────────────────────────────────────
+
 interface PersistInput {
   teamId: string;
   dateIso: string;
   eventName: string | null;
   deskTheme: string | null;
   generatedBy: string;
+  planVariant?: string | null;
   windows: Array<{
     windowIndex: number;
     startTime: string;
     endTime: string;
-    pricesOfInterest: number[];
-    invalidation: number | null;
-    profitTarget: number | null;
-    expectedMovePct: number | null;
+    eventName: string | null;
+    eventCountry?: string | null;
+    econForecast: any;
   }>;
 }
 
@@ -260,21 +502,31 @@ async function persistDayPlan(input: PersistInput): Promise<DayPlan> {
     return synthesizeInMemoryPlan(input);
   }
 
-  const { data: planRow, error: planErr } = await sb
+  const generatedAt = new Date().toISOString();
+  const planPayload = {
+    team_id: input.teamId,
+    date: input.dateIso,
+    event_name: input.eventName,
+    desk_theme: input.deskTheme,
+    generated_by: input.generatedBy,
+    generated_at: generatedAt,
+    plan_variant: input.planVariant ?? null,
+  };
+  let { data: planRow, error: planErr } = await sb
     .from("day_plans")
-    .upsert(
-      {
-        team_id: input.teamId,
-        date: input.dateIso,
-        event_name: input.eventName,
-        desk_theme: input.deskTheme,
-        generated_by: input.generatedBy,
-        generated_at: new Date().toISOString(),
-      },
-      { onConflict: "team_id,date" },
-    )
+    .upsert(planPayload, { onConflict: "team_id,date" })
     .select()
     .single();
+  if (planErr?.message?.includes("plan_variant")) {
+    const { plan_variant: _planVariant, ...legacyPayload } = planPayload;
+    const legacyResult = await sb
+      .from("day_plans")
+      .upsert(legacyPayload, { onConflict: "team_id,date" })
+      .select()
+      .single();
+    planRow = legacyResult.data;
+    planErr = legacyResult.error;
+  }
   if (planErr || !planRow) {
     log.warn("day_plans upsert failed — returning in-memory plan", {
       error: planErr?.message,
@@ -282,7 +534,6 @@ async function persistDayPlan(input: PersistInput): Promise<DayPlan> {
     return synthesizeInMemoryPlan(input);
   }
 
-  // Replace windows for the day to keep persistence idempotent.
   await sb.from("day_plan_windows").delete().eq("day_plan_id", planRow.id);
 
   const windowInserts = input.windows.map((w) => ({
@@ -290,21 +541,55 @@ async function persistDayPlan(input: PersistInput): Promise<DayPlan> {
     window_index: w.windowIndex,
     start_time: w.startTime,
     end_time: w.endTime,
-    prices_of_interest: w.pricesOfInterest,
-    invalidation: w.invalidation,
-    profit_target: w.profitTarget,
-    expected_move_pct: w.expectedMovePct,
+    event_name: w.eventName,
+    econ_forecast: w.econForecast,
   }));
 
-  const { data: insertedWindows, error: winErr } = await sb
+  let { data: insertedWindows, error: winErr } = await sb
     .from("day_plan_windows")
     .insert(windowInserts)
     .select();
+  if (winErr?.message?.includes("econ_forecast")) {
+    const legacyWindowInserts = windowInserts.map(
+      ({ econ_forecast: _econForecast, ...legacyWindow }) => legacyWindow,
+    );
+    const legacyWindowResult = await sb
+      .from("day_plan_windows")
+      .insert(legacyWindowInserts)
+      .select();
+    insertedWindows = legacyWindowResult.data;
+    winErr = legacyWindowResult.error;
+  }
+  if (winErr?.message?.includes("event_name")) {
+    const minimalWindowInserts = windowInserts.map(
+      ({
+        event_name: _eventName,
+        econ_forecast: _econForecast,
+        ...legacyWindow
+      }) => legacyWindow,
+    );
+    const minimalWindowResult = await sb
+      .from("day_plan_windows")
+      .insert(minimalWindowInserts)
+      .select();
+    insertedWindows = minimalWindowResult.data;
+    winErr = minimalWindowResult.error;
+  }
   if (winErr) {
     log.warn("day_plan_windows insert failed", { error: winErr.message });
   }
 
-  return rowsToDayPlan(planRow, insertedWindows ?? []);
+  const persisted = rowsToDayPlan(planRow, insertedWindows ?? []);
+  if (persisted.windows.length === 0) return persisted;
+  return {
+    ...persisted,
+    windows: persisted.windows.map((window, index) => ({
+      ...window,
+      eventName: input.windows[index]?.eventName ?? window.eventName,
+      eventCountry: input.windows[index]?.eventCountry ?? window.eventCountry,
+      econForecast: input.windows[index]?.econForecast ?? window.econForecast,
+    })),
+  };
 }
 
 function synthesizeInMemoryPlan(input: PersistInput): DayPlan {
@@ -318,31 +603,41 @@ function synthesizeInMemoryPlan(input: PersistInput): DayPlan {
     generatedBy: input.generatedBy,
     generatedAt: new Date().toISOString(),
     sourceBriefId: null,
+    institutionalPositioning: null,
+    planVariant: input.planVariant ?? null,
     windows: input.windows.map((w, i) => ({
       id: `mem-w-${i}`,
       dayPlanId: planId,
       windowIndex: w.windowIndex,
       startTime: w.startTime,
       endTime: w.endTime,
-      pricesOfInterest: w.pricesOfInterest,
-      invalidation: w.invalidation,
-      profitTarget: w.profitTarget,
-      expectedMovePct: w.expectedMovePct,
+      eventName: w.eventName,
+      eventCountry: w.eventCountry ?? w.econForecast?.eventCountry ?? null,
+      econForecast: w.econForecast ?? null,
     })),
   };
 }
 
 function rowsToDayPlan(planRow: any, windowRows: any[]): DayPlan {
+  const planEventName = planRow.event_name ?? null;
   return {
     id: planRow.id,
     teamId: planRow.team_id,
     date: planRow.date,
-    eventName: planRow.event_name,
+    eventName: planEventName,
     deskTheme: planRow.desk_theme,
     generatedBy: planRow.generated_by,
     generatedAt: planRow.generated_at,
     sourceBriefId: planRow.source_brief_id,
-    windows: windowRows.map(rowToWindow),
+    institutionalPositioning: planRow.institutional_positioning ?? null,
+    planVariant: planRow.plan_variant ?? null,
+    windows: windowRows.map((row) => {
+      const window = rowToWindow(row);
+      return {
+        ...window,
+        eventName: window.eventName ?? planEventName,
+      };
+    }),
   };
 }
 
@@ -359,53 +654,20 @@ function rowToWindow(row: any): DayPlanWindow {
       typeof row.end_time === "string"
         ? row.end_time.slice(0, 5)
         : row.end_time,
+    eventName: row.event_name ?? null,
+    eventCountry: row.econ_forecast?.eventCountry ?? null,
+    econForecast: row.econ_forecast ?? null,
+    // Deprecated price fields — retained for migration transition
     pricesOfInterest: Array.isArray(row.prices_of_interest)
       ? row.prices_of_interest.map((n: any) => Number(n))
+      : [],
+    entries: Array.isArray(row.entries)
+      ? row.entries.map((n: any) => Number(n))
       : [],
     invalidation: row.invalidation == null ? null : Number(row.invalidation),
     profitTarget: row.profit_target == null ? null : Number(row.profit_target),
     expectedMovePct:
       row.expected_move_pct == null ? null : Number(row.expected_move_pct),
+    sessionPrice: row.session_price == null ? null : Number(row.session_price),
   };
-}
-
-function anchorForWindow(reference: Date, hhmm: string): number {
-  const [hh, mm] = hhmm.split(":").map((n) => parseInt(n, 10));
-  const dt = new Date(reference);
-  dt.setHours(hh ?? 9, mm ?? 30, 0, 0);
-  return dt.getTime();
-}
-
-function latestClose(bars: OHLCVBar[]): number | null {
-  for (let i = bars.length - 1; i >= 0; i--) {
-    const close = bars[i]?.close;
-    if (typeof close === "number" && Number.isFinite(close)) return close;
-  }
-  return null;
-}
-
-function ivScoreToImpliedVol(ivScore: number | null): number {
-  if (ivScore == null) return 0.16;
-  // Map 0-10 catalyst score to a rough IV decimal: 0→0.10, 5→0.20, 10→0.35
-  const clamped = Math.max(0, Math.min(10, ivScore));
-  return 0.1 + (clamped / 10) * 0.25;
-}
-
-function computeInvalidation(
-  va: { vah: number; val: number; poc: number } | null,
-  instrument: string,
-): number | null {
-  if (!va) return null;
-  // Below VAL by one fine handle = invalidation for a long bias day
-  return roundFine(va.val, instrument);
-}
-
-function computeProfitTarget(
-  spot: number | null,
-  expectedMovePct: number | null,
-  instrument: string,
-): number | null {
-  if (spot == null || expectedMovePct == null) return null;
-  const target = spot * (1 + expectedMovePct / 100);
-  return roundEntry(target, instrument);
 }

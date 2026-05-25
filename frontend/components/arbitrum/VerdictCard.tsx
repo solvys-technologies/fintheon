@@ -1,8 +1,11 @@
 // [claude-code 2026-04-25] Consensus + chamber-confidence numerals now use DigitGroup
 //   (solvys-transitions number pop-in) so the percentages cascade in on every verdict refresh.
 // [claude-code 2026-04-24] S35-T3: standalone Arbitrum verdict card — consensus, confidence, digest, dissent
+// [claude-code 2026-05-03] S57: embedded mode drops inner card border for chamber layout.
 import { NothingFuse } from "../shared/NothingFuse";
 import { DigitGroup } from "../shared/DigitGroup";
+import { FadingRuler } from "../shared/FadingRuler";
+import { AgenticFeedbackControls } from "../shared/AgenticFeedbackControls";
 import { DissentBadge } from "./DissentBadge";
 import { StreamdownChat } from "../chat/slots";
 import type { ArbitrumVerdict } from "./types";
@@ -10,12 +13,24 @@ import type { ArbitrumVerdict } from "./types";
 interface VerdictCardProps {
   verdict: ArbitrumVerdict;
   compact?: boolean;
+  embedded?: boolean;
   className?: string;
+}
+
+function cleanDigestText(text: string): string {
+  return text
+    .replace(
+      /\s*,?\s*conf\s+\d+(?:\.\d+)?%?(?:\s*(?:\/|out of)\s*\d+(?:\.\d+)?%?)?/gi,
+      "",
+    )
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 export function VerdictCard({
   verdict,
   compact = false,
+  embedded = false,
   className,
 }: VerdictCardProps) {
   const {
@@ -26,18 +41,22 @@ export function VerdictCard({
     created_at,
     trigger,
   } = verdict;
-  const pct = Math.round(consensus_probability * 100);
-  const conf = Math.max(0, Math.min(10, confidence * 10));
+  const consensusScore = Math.max(0, Math.min(10, consensus_probability * 10));
+  const confidenceScore = Math.max(0, Math.min(10, confidence * 10));
+  const cleanedDigest = cleanDigestText(digest_text);
+  const surfaceClass = embedded
+    ? "bg-transparent py-2"
+    : `bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/30 ${
+        compact ? "p-3" : "p-4"
+      }`;
 
   return (
-    <div
-      className={`bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/30 ${compact ? "p-3" : "p-4"} ${className ?? ""}`}
-    >
+    <div className={`relative ${surfaceClass} ${className ?? ""}`}>
+      {embedded && <FadingRuler className="mb-2" />}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-baseline gap-2">
           <DigitGroup
-            value={`${pct}`}
-            suffix="%"
+            value={consensusScore.toFixed(1)}
             className="text-[var(--fintheon-accent)] leading-none"
             style={{
               fontFamily: "Doto, ui-monospace, monospace",
@@ -45,7 +64,7 @@ export function VerdictCard({
             }}
           />
           <span className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/60">
-            consensus
+            consensus score
           </span>
         </div>
         {dissent && <DissentBadge dissent={dissent} />}
@@ -57,8 +76,7 @@ export function VerdictCard({
             chamber confidence
           </span>
           <DigitGroup
-            value={conf.toFixed(1)}
-            suffix="/10"
+            value={confidenceScore.toFixed(1)}
             className="text-[var(--fintheon-text)]/80 text-xs"
             style={{ fontFamily: "Doto, ui-monospace, monospace" }}
           />
@@ -78,9 +96,10 @@ export function VerdictCard({
           [&_strong]:text-[var(--fintheon-accent)] [&_strong]:font-medium
           [&_em]:text-[var(--fintheon-text)]/55 [&_em]:not-italic
           [&_hr]:border-[var(--fintheon-accent)]/15 [&_hr]:my-2
-          ${compact ? "text-[11px]" : "text-sm"}`}
+          ${compact ? "text-[11px]" : "text-sm"}
+          ${embedded ? "max-h-[18rem] overflow-y-auto pr-2" : ""}`}
       >
-        <StreamdownChat content={digest_text} />
+        <StreamdownChat content={cleanedDigest} />
       </div>
 
       <div className="mt-3 flex items-center justify-between text-[10px] text-[var(--fintheon-text)]/40">
@@ -97,6 +116,8 @@ export function VerdictCard({
         </span>
         {trigger && <span className="uppercase tracking-wider">{trigger}</span>}
       </div>
+      {embedded && <FadingRuler className="mt-2" />}
+      <AgenticFeedbackControls surface="arbitrum-chamber" itemId={verdict.id} />
     </div>
   );
 }

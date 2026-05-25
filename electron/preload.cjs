@@ -1,4 +1,5 @@
-// [claude-code 2026-03-16] Added auto-update IPC bridge
+// [claude-code 2026-05-12] TopStepX PWA Blocker — electron.blocker bridge
+// [claude-code 2026-04-29] Switched to SOTA manual desktop updater bridge
 // [claude-code 2026-03-23] Browser Use Phase 2 — browserUse IPC bridge
 // [claude-code 2026-03-24] Auth deep link callback bridge for Supabase OAuth
 // [claude-code 2026-04-23] Harper Vision — screen capture IPC bridge
@@ -28,6 +29,24 @@ ipcRenderer.on("auth-callback", (_event, url) => {
   if (typeof authCallbackHandler === "function") authCallbackHandler(url);
 });
 
+// [claude-code 2026-05-01] Post-update success toast bridge — main fires
+// "update-just-installed" once on the first launch after install script ran.
+let updateJustInstalledHandler = null;
+ipcRenderer.on("update-just-installed", (_event, payload) => {
+  if (typeof updateJustInstalledHandler === "function")
+    updateJustInstalledHandler(payload);
+});
+let updateDownloadedHandler = null;
+ipcRenderer.on("update-downloaded", (_event, payload) => {
+  if (typeof updateDownloadedHandler === "function")
+    updateDownloadedHandler(payload);
+});
+let updateDownloadFailedHandler = null;
+ipcRenderer.on("update-download-failed", (_event, payload) => {
+  if (typeof updateDownloadFailedHandler === "function")
+    updateDownloadFailedHandler(payload);
+});
+
 // [claude-code 2026-04-27] S46.4 Desk Calendar IPC bridge — TV iframe .ics
 // downloads are intercepted in main.cjs and emitted as saving/saved/failed
 // events. The renderer listens via electron.deskCalendar.on*Status to drive
@@ -48,22 +67,10 @@ ipcRenderer.on("desk-calendar:failed", (_event, payload) => {
     deskCalendarFailedCallback(payload);
 });
 
-// Auto-update event forwarding
-let updateAvailableCallback = null;
-let updateProgressCallback = null;
-let updateDownloadedCallback = null;
-
-ipcRenderer.on("update-available", (_event, info) => {
-  if (typeof updateAvailableCallback === "function")
-    updateAvailableCallback(info);
-});
-ipcRenderer.on("update-download-progress", (_event, progress) => {
-  if (typeof updateProgressCallback === "function")
-    updateProgressCallback(progress);
-});
-ipcRenderer.on("update-downloaded", () => {
-  if (typeof updateDownloadedCallback === "function")
-    updateDownloadedCallback();
+let backendEngineStatusCallback = null;
+ipcRenderer.on("backend-engine:status", (_event, payload) => {
+  if (typeof backendEngineStatusCallback === "function")
+    backendEngineStatusCallback(payload);
 });
 
 contextBridge.exposeInMainWorld("electron", {
@@ -92,20 +99,31 @@ contextBridge.exposeInMainWorld("electron", {
   startBackend: () => ipcRenderer.invoke("start-backend"),
   stopBackend: () => ipcRenderer.invoke("stop-backend"),
   isBackendAlive: () => ipcRenderer.invoke("is-backend-alive"),
+  backendEngine: {
+    getStatus: () => ipcRenderer.invoke("backend-engine:status"),
+    restart: () => ipcRenderer.invoke("backend-engine:restart"),
+    onStatusChange: (cb) => {
+      backendEngineStatusCallback = typeof cb === "function" ? cb : null;
+      return () => {
+        backendEngineStatusCallback = null;
+      };
+    },
+  },
 
-  // Auto-update API
+  // SOTA updater API (manual flow)
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
   checkForUpdate: () => ipcRenderer.invoke("update-check"),
   downloadUpdate: () => ipcRenderer.invoke("update-download"),
   installUpdate: () => ipcRenderer.invoke("update-install"),
-  onUpdateAvailable: (cb) => {
-    updateAvailableCallback = typeof cb === "function" ? cb : null;
-  },
-  onUpdateProgress: (cb) => {
-    updateProgressCallback = typeof cb === "function" ? cb : null;
+  deferUpdateUntilClose: () => ipcRenderer.invoke("update-defer-until-close"),
+  onUpdateJustInstalled: (cb) => {
+    updateJustInstalledHandler = typeof cb === "function" ? cb : null;
   },
   onUpdateDownloaded: (cb) => {
-    updateDownloadedCallback = typeof cb === "function" ? cb : null;
+    updateDownloadedHandler = typeof cb === "function" ? cb : null;
+  },
+  onUpdateDownloadFailed: (cb) => {
+    updateDownloadFailedHandler = typeof cb === "function" ? cb : null;
   },
 
   // Auth — deep link callback + open URL in system browser
@@ -133,6 +151,17 @@ contextBridge.exposeInMainWorld("electron", {
     },
   },
 
+  // [claude-code 2026-05-12] TopStepX PWA Blocker — enable/disable/status + domain management
+  blocker: {
+    enable: () => ipcRenderer.invoke("blocker:enable"),
+    enableFast: () => ipcRenderer.invoke("blocker:enable-fast"),
+    disableFast: () => ipcRenderer.invoke("blocker:disable-fast"),
+    disable: () => ipcRenderer.invoke("blocker:disable"),
+    getStatus: () => ipcRenderer.invoke("blocker:status"),
+    getDomains: () => ipcRenderer.invoke("blocker:get-domains"),
+    setDomains: (domains) => ipcRenderer.invoke("blocker:set-domains", domains),
+  },
+
   // [claude-code 2026-04-23] Harper Vision — screen + audio capture bridge
   harperVision: {
     captureScreen: () => ipcRenderer.invoke("harper-vision:capture-screen"),
@@ -146,6 +175,49 @@ contextBridge.exposeInMainWorld("electron", {
     setPrivacyMode: (enabled) =>
       ipcRenderer.invoke("harper-vision:set-privacy-mode", enabled),
     getPrivacyMode: () => ipcRenderer.invoke("harper-vision:get-privacy-mode"),
+  },
+
+  // [claude-code 2026-05-13] S63 T3: macOS Dock integration + system notifications
+  dock: {
+    updateMenu: (state) => ipcRenderer.send("dock:update-menu", state),
+    onQuickAccess: (cb) => {
+      const handler = (_event, url) => {
+        if (typeof cb === "function") cb(url);
+      };
+      ipcRenderer.on("dock:quick-access", handler);
+      // Return cleanup function
+      return () => ipcRenderer.removeListener("dock:quick-access", handler);
+    },
+  },
+  systemNotification: {
+    show: (title, body) =>
+      ipcRenderer.invoke("system-notification:show", { title, body }),
+  },
+  quickAccess: {
+    setUrl: (url) => ipcRenderer.send("quick-access:set-url", url),
+  },
+
+  // [claude-code 2026-05-13] S64 T3: Lockout OS notification bridge
+  // [claude-code 2026-05-15] S66-T2: added accessibility + lock screen listeners
+  lockout: {
+    showNotification: () => ipcRenderer.send("show-lockout-notification"),
+    checkAccessibility: () => ipcRenderer.invoke("lockout:check-accessibility"),
+    requestAccessibility: () =>
+      ipcRenderer.invoke("lockout:request-accessibility"),
+    onLockScreenShow: (callback) => {
+      const handler = (_event) => {
+        if (typeof callback === "function") callback();
+      };
+      ipcRenderer.on("lock-screen:show", handler);
+      return () => ipcRenderer.removeListener("lock-screen:show", handler);
+    },
+    onLockScreenHide: (callback) => {
+      const handler = (_event) => {
+        if (typeof callback === "function") callback();
+      };
+      ipcRenderer.on("lock-screen:hide", handler);
+      return () => ipcRenderer.removeListener("lock-screen:hide", handler);
+    },
   },
 });
 
@@ -162,3 +234,12 @@ contextBridge.exposeInMainWorld("systemPermissions", {
 // existing __FINTHEON_API_BASE__ convention. Build-time VITE_API_URL is authoritative;
 // this is a belt-and-suspenders fallback for any code that reads at runtime.
 contextBridge.exposeInMainWorld("__FINTHEON_API_BASE__", API_BASE);
+
+// S38-T1: Cmd+K menu shortcut bridge — renderer can unregister/re-register the
+// Cmd+K accelerator so the command palette captures it instead of the Electron menu.
+contextBridge.exposeInMainWorld("electronMenu", {
+  unregisterShortcut: (shortcut) =>
+    ipcRenderer.invoke("menu:unregister-shortcut", shortcut),
+  registerShortcut: (shortcut) =>
+    ipcRenderer.invoke("menu:register-shortcut", shortcut),
+});

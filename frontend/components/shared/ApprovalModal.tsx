@@ -1,8 +1,9 @@
 // [claude-code 2026-04-28] S47-T4: Shared approval modal for tools/Narratives/Catalyst Watch/Refinement edits.
 // Reuses the developer-settings SHA-256 gate for admin password verification.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Lock, Check, X } from "lucide-react";
+import { CheckCircle2, X } from "lucide-react";
 import { authenticateDev } from "../../lib/dev-settings-auth";
+import { ChatCitationIcon } from "../icon-bank/ChatCitationIcon";
 
 export interface ApprovalModalProps {
   open: boolean;
@@ -79,6 +80,7 @@ export function ApprovalModal({
       aria-modal="true"
       aria-label={title}
       onClick={onClose}
+      className="fintheon-modal-backdrop"
       style={{
         position: "fixed",
         inset: 0,
@@ -86,17 +88,14 @@ export function ApprovalModal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "rgba(5, 4, 2, 0.72)",
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        className="fintheon-modal-surface"
         style={{
           width: 400,
           maxWidth: "calc(100vw - 40px)",
-          background: "var(--fintheon-bg)",
-          border:
-            "1px solid color-mix(in srgb, var(--fintheon-accent) 30%, transparent)",
           padding: "20px 22px",
           display: "flex",
           flexDirection: "column",
@@ -104,7 +103,7 @@ export function ApprovalModal({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Lock size={14} strokeWidth={2.2} color="var(--fintheon-accent)" />
+          <ChatCitationIcon kind="approval" size={30} title="Approval" />
           <div
             style={{
               fontFamily: "var(--font-heading)",
@@ -215,7 +214,7 @@ export function ApprovalModal({
               gap: 6,
             }}
           >
-            <Check size={12} />
+            <CheckCircle2 size={12} />
             {checking ? "Checking…" : actionLabel}
           </button>
         </div>

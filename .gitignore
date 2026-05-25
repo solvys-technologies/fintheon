@@ -27,6 +27,7 @@ secrets.env
 **/.env.local
 **/.env*.local
 .env.development
+scripts/.linear-env
 .env.local.db
 .firecrawl/
 .claude/command-log.txt
@@ -35,6 +36,7 @@ secrets.env
 Video Footage/
 video/
 backend-hono/logs/
+memory/file-room/
 execution-bridge/.venv/
 supabase/.temp/
 fintheon-debug-sprint/

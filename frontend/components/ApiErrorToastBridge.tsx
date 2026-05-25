@@ -6,6 +6,7 @@ import {
   getFixDescription,
   type ApiErrorEvent,
 } from "../lib/errorBus";
+import { AI_CREDITS_EXHAUSTED } from "../lib/aiCreditErrors";
 
 /** Minimum ms between toasts for the same error code to prevent spam */
 const DEDUP_WINDOW_MS = 5000;
@@ -31,6 +32,19 @@ export function ApiErrorToastBridge() {
       }
 
       const fix = getFixDescription(err.code, err.status);
+      if (err.code === AI_CREDITS_EXHAUSTED) {
+        addToast(
+          "Hermes credits exhausted",
+          "error",
+          fix,
+          "api-error",
+          "bottom-left",
+          undefined,
+          undefined,
+          12000,
+        );
+        return;
+      }
       const label = err.endpoint
         ? `${err.message} (${err.endpoint.replace("/api/", "")})`
         : err.message;

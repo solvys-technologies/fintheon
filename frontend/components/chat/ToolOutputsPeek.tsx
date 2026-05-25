@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Wrench, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Wrench } from "lucide-react";
+import { BrailleSpinner } from "./primitive/BrailleSpinner";
 import { ToolOutputBubble, type ToolOutputData } from "./ToolOutputBubble";
 
 /* ------------------------------------------------------------------ */
@@ -34,12 +35,7 @@ export function ToolOutputsPeek({ tools }: ToolOutputsPeekProps) {
         <span className="text-[11px] font-medium text-gray-400">
           {running > 0 ? `${running} running` : `${done} tools`}
         </span>
-        {running > 0 && (
-          <Loader2
-            size={11}
-            className="text-[var(--fintheon-accent)] animate-spin"
-          />
-        )}
+        {running > 0 && <BrailleSpinner size={11} />}
         {expanded ? (
           <ChevronDown size={12} className="text-gray-500 ml-1" />
         ) : (

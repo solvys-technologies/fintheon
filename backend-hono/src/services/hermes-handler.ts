@@ -1,3 +1,4 @@
+// [claude-code 2026-05-03] S58-T1: DeepSeek primary provider chain replaces Claude/OpenRouter primary path.
 // [claude-code 2026-04-19] S27-T9 W2e: Live Smart Model Routing — OpenRouter call now picks the per-agent model via selectModel() + llmCall() (budget-aware degrade, telemetry to routing_decisions).
 // [claude-code 2026-03-14] Hermes routes to OpenRouter (Nous subscription) + Claude Sonnet 4.6
 // [claude-code 2026-03-14] Model routing fix: default→Sonnet 4.6, thinkHarder→Opus via chat.ts
@@ -5,9 +6,9 @@
 /**
  * Hermes Handler
  * LOCAL orchestration layer for P.I.C. (Priced In Capital)
- * Processes messages through agent logic, routes to OpenRouter (Sonnet 4.6)
+ * Processes messages through agent logic, routes to DeepSeek primary chain
  *
- * Architecture: User Message → Hermes → P.I.C. Agent → OpenRouter (Sonnet 4.6) → Response
+ * Architecture: User Message → Hermes → P.I.C. Agent → Provider Chain → Response
  */
 
 import { execFile, spawn as spawnProcess } from "node:child_process";
@@ -22,11 +23,11 @@ import {
   buildReflectContext,
 } from "./ai/agent-instructions/index.js";
 import { buildThoughtBankPromptBlock } from "./ai/agent-instructions/thought-bank-awareness.js";
-// [claude-code 2026-04-17] S23-T4: HermesChatRequest now accepts userId + surface so per-user agent_context_bank memories and Aquarium surface context can be injected when available.
+// [claude-code 2026-04-17] S23-T4: HermesChatRequest now accepts userId + surface so per-user agent_context_bank memories and ArbitrumChamber surface context can be injected when available.
 import { getContextForAgent } from "./agent-context-bank-service.js";
 import type { AgentMemoryEntry } from "./agent-context-bank-service.js";
 import { createLogger } from "../lib/logger.js";
-import { checkVProxyHealth, isVProxyEnabled } from "./strands/index.js";
+import { checkDeepSeekDirectHealth } from "./strands/provider.js";
 import { llmCall } from "./ai/llm-call.js";
 import { toRoutingAgent } from "./ai/agent-map.js";
 import type { TaskType } from "./ai/routing.js";
@@ -529,7 +530,6 @@ ${agent === "herald" ? "- News sentiment analysis\n- Social signal detection\n- 
 *Hermes local processing is active.*`;
 }
 
-const OPENROUTER_OPUS_MODEL = "anthropic/claude-sonnet-4-6";
 let hermesAvailable = false;
 
 export function isHermesAvailable(): boolean {
@@ -649,8 +649,7 @@ export async function handleHermesChat(
     messages.push({ role: "user", content: request.message });
   }
 
-  // Primary for Harper: Anthropic via VProxy (subscription OAuth)
-  const claudePrompt =
+  const providerPrompt =
     systemPrompt +
     "\n\n" +
     messages
@@ -658,51 +657,7 @@ export async function handleHermesChat(
       .map((m) => (typeof m.content === "string" ? m.content : "[multimodal]"))
       .join("\n");
 
-  try {
-    const { generateTextViaClaude } =
-      await import("./claude-sdk/process-manager.js");
-    const shouldUseHarperProvider = agentInfo.agent === "harper-cao";
-    if (shouldUseHarperProvider) {
-      log.info("Calling Harper provider (Anthropic via VProxy preferred)", {
-        agent: agentInfo.agent,
-      });
-      const content = await generateTextViaClaude(claudePrompt, {
-        timeoutMs: 60_000,
-      });
-
-      if (content) {
-        log.info("Harper provider response received", {
-          preview: content.substring(0, 50),
-        });
-        return {
-          content,
-          agent: agentInfo.agent,
-          confidence: agentInfo.confidence,
-          metadata: {
-            intent: agentInfo.intent,
-            symbols: extractSymbols(request.message),
-            injections: injectionAudit,
-          },
-        };
-      }
-    }
-  } catch (cliErr) {
-    log.warn("Harper provider failed, falling back to OpenRouter", {
-      error: String(cliErr),
-    });
-  }
-
-  // Fallback: OpenRouter via Smart Model Routing (T9 W2e) — per-agent model,
-  //   budget-aware degrade, telemetry to routing_decisions.
-  const apiKey = process.env.OPENROUTER_API_KEY ?? "";
-  const baseUrl = "https://openrouter.ai/api/v1";
-
-  if (!apiKey) {
-    log.warn(
-      "OPENROUTER_API_KEY not set and Claude CLI failed, using local fallback",
-    );
-    return generateLocalResponse(request, agentInfo);
-  }
+  // S58-T1: no Claude SDK primary path. Smart routing invokes the provider chain.
 
   const routingAgent = toRoutingAgent(agentInfo.agent);
   const routingTask = agentInfoToTaskType(agentInfo.intent);
@@ -714,40 +669,22 @@ export async function handleHermesChat(
       conversationId: request.conversationId ?? "adhoc",
       userId: request.userId,
       invoke: async (rule) => {
-        log.info("Calling OpenRouter via selectModel", {
+        log.info("Calling AI provider chain via selectModel", {
           agent: routingAgent,
           model: rule.model,
           provider: rule.provider,
         });
-        const response = await fetch(`${baseUrl}/chat/completions`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-            "HTTP-Referer":
-              process.env.OPENROUTER_APP_URL ??
-              "https://fintheon-solvys.vercel.app",
-            "X-Title": process.env.OPENROUTER_APP_NAME ?? "Fintheon-AI-Gateway",
-          },
-          body: JSON.stringify({
-            model: toOpenRouterModel(rule.model),
-            messages,
-            max_tokens: 8192,
-          }),
-        });
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`OpenRouter ${response.status}: ${errorText}`);
-        }
-        const data = (await response.json()) as {
-          choices?: { message?: { content?: string } }[];
-          usage?: { prompt_tokens?: number; completion_tokens?: number };
-        };
-        const content = data.choices?.[0]?.message?.content ?? "";
+        const { generateViaChain } = await import("./ai/provider-chain.js");
+        const content = await generateViaChain({
+          prompt: request.message,
+          systemPrompt: providerPrompt.replace(request.message, "").trim(),
+          model: rule.model,
+          maxOutputTokens: 8192,
+          timeoutMs: 120_000,
+          requestId: request.conversationId,
+        }).then((result) => result.response);
         return {
           result: content,
-          input_tokens: data.usage?.prompt_tokens,
-          output_tokens: data.usage?.completion_tokens,
           user_id: request.userId,
         };
       },
@@ -755,11 +692,11 @@ export async function handleHermesChat(
 
     const content = outcome.result;
     if (!content) {
-      log.warn("Empty response from OpenRouter, using local fallback");
+      log.warn("Empty response from AI provider chain, using local fallback");
       return generateLocalResponse(request, agentInfo);
     }
 
-    log.info("OpenRouter response received", {
+    log.info("AI provider chain response received", {
       agent: routingAgent,
       model: outcome.rule.model,
       latency_ms: outcome.latency_ms,
@@ -778,16 +715,9 @@ export async function handleHermesChat(
       },
     };
   } catch (error) {
-    log.error("OpenRouter request failed", { error: String(error) });
+    log.error("AI provider chain request failed", { error: String(error) });
     return generateLocalResponse(request, agentInfo);
   }
-}
-
-// Anthropic models routed through OpenRouter need the `anthropic/` prefix.
-function toOpenRouterModel(model: string): string {
-  if (model.includes("/")) return model;
-  if (model.startsWith("claude-")) return `anthropic/${model}`;
-  return model;
 }
 
 // Map hermes intent buckets → routing TaskType so the router can specialize on task.
@@ -804,7 +734,7 @@ function agentInfoToTaskType(intent: string): TaskType | undefined {
 /**
  * Initialize Hermes agent on startup:
  * 1. Optionally launch Hermes gateway process if configured
- * 2. Warm up OpenRouter (Sonnet 4.6) connection with a Harper (CAO) ping
+ * 2. Warm up DeepSeek primary.
  */
 export async function initHermesAgent(): Promise<void> {
   const hermesEnabled = process.env.HERMES_ENABLED !== "false";
@@ -863,75 +793,22 @@ export async function initHermesAgent(): Promise<void> {
     });
   }
 
-  if (isVProxyEnabled()) {
-    try {
-      const vproxyHealth = await checkVProxyHealth(true);
-      if (vproxyHealth.available) {
-        log.info("VProxy warm-up complete (Strands ready)");
-        return;
-      }
-      log.warn("VProxy warm-up failed (non-fatal)", {
-        error: vproxyHealth.error,
-      });
-    } catch (error) {
-      log.warn("VProxy warm-up failed (non-fatal)", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
-
-  const apiKey = process.env.OPENROUTER_API_KEY ?? "";
-  if (!apiKey) {
-    log.info("OPENROUTER_API_KEY not set — skipping OpenRouter warm-up");
-    return;
-  }
-
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15_000);
-    const response = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer":
-            process.env.OPENROUTER_APP_URL ??
-            "https://fintheon-solvys.vercel.app",
-          "X-Title": process.env.OPENROUTER_APP_NAME ?? "Fintheon-AI-Gateway",
-        },
-        body: JSON.stringify({
-          model: OPENROUTER_OPUS_MODEL,
-          messages: [
-            {
-              role: "system",
-              content: "You are Harper, CAO of Priced In Capital.",
-            },
-            {
-              role: "user",
-              content:
-                "[SYSTEM] Agent initialization ping — confirm availability.",
-            },
-          ],
-          max_tokens: 64,
-        }),
-        signal: controller.signal,
-      },
-    );
-    clearTimeout(timeout);
-    if (response.ok) {
-      log.info("OpenRouter warm-up complete (harper-cao ready)");
-    } else {
-      log.warn("OpenRouter warm-up failed (non-fatal)", {
-        status: response.status,
-      });
+    const deepseekHealth = await checkDeepSeekDirectHealth();
+    if (deepseekHealth.available) {
+      log.info("DeepSeek warm-up complete (harper-cao ready)");
+      return;
     }
+    log.warn("DeepSeek warm-up failed (non-fatal)", {
+      error: deepseekHealth.error,
+    });
   } catch (error) {
-    log.warn("OpenRouter warm-up failed (non-fatal)", {
+    log.warn("DeepSeek warm-up failed (non-fatal)", {
       error: error instanceof Error ? error.message : String(error),
     });
   }
+
+  log.info("DeepSeek unavailable; provider chain will retry at request time");
 }
 
 /**

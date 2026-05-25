@@ -40,7 +40,7 @@ export function FeedItem({ item }: FeedItemProps) {
   const displayText = decodeHtmlEntities(item.text);
 
   return (
-    <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-border)]/10 rounded p-3 hover:bg-[var(--fintheon-surface)]/80 transition-colors">
+    <div className="bg-transparent border-b border-[var(--fintheon-border)]/10 p-3 hover:bg-[var(--fintheon-accent)]/5 transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">

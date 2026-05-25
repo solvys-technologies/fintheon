@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { BrailleSpinner } from "./primitive/BrailleSpinner";
 
 const THINKING_PHRASES = [
   "Surveying the arena...",
@@ -46,38 +47,31 @@ export function FintheonThinkingIndicator({
 
   return (
     <div
-      className="w-full rounded-xl fintheon-thinking-container-borderless overflow-hidden transition-all duration-300 ease-in-out"
+      className="w-full rounded-2xl fintheon-thinking-container-borderless overflow-hidden transition-all duration-300 ease-in-out"
       style={{
         maxHeight: isThinking ? "200px" : "0px",
         opacity: isThinking ? 1 : 0,
         padding: isThinking ? "10px 12px" : "0px 12px",
       }}
     >
-      <div className="flex items-start gap-3">
-        {/* Pulse dot — Solvys gold on dim bg */}
-        <div className="mt-0.5 h-6 w-6 flex-shrink-0 flex items-center justify-center">
-          <span
-            style={{
-              display: "inline-block",
-              width: "8px",
-              height: "8px",
-              borderRadius: "50%",
-              backgroundColor: "#c79f4a",
-              animation: "p 1.5s ease-in-out infinite",
-            }}
-          />
+      <div className="flex items-center gap-3 flex-nowrap">
+        {/* Braille spinner (replaces pulse dot while thinking) */}
+        <div className="h-6 w-6 flex-shrink-0 flex items-center justify-center">
+          <BrailleSpinner size={10} />
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-nowrap">
             <span
-              className="text-[12px] font-medium"
+              className="text-[12px] font-medium truncate whitespace-nowrap"
               style={{ color: "var(--fintheon-accent)" }}
             >
               {phrase}
             </span>
             {agentName && (
-              <span className="text-[10px] text-zinc-500">({agentName})</span>
+              <span className="text-[10px] text-zinc-500 whitespace-nowrap">
+                ({agentName})
+              </span>
             )}
           </div>
 

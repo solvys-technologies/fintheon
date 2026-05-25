@@ -2,12 +2,12 @@
 //   solid accent active fill (no gradients), endpoint dots, Inter-Mono drag-value popover.
 //   Snap-to-tick on release; free-drag between.
 // [claude-code 2026-03-27] S2-T7: Quick weight editor — compact sliders for event type weights
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { SlidersHorizontal, Save, ChevronDown, ChevronUp } from "lucide-react";
 import type { CalibrationEntry } from "../../../backend-hono/src/types/calibration";
+import { NothingFuse } from "../shared/NothingFuse";
 
-const TICK_VALUES = [0, 2.5, 5, 7.5, 10] as const;
-const SNAP_STEP = 1;
+const WHOLE_TICKS = Array.from({ length: 11 }, (_, i) => i);
 
 const API_BASE = (
   import.meta.env.VITE_API_URL || "http://localhost:8080"
@@ -155,13 +155,28 @@ function NothingWeightSlider({
   onChange,
 }: NothingWeightSliderProps) {
   const [dragging, setDragging] = useState(false);
+  const trackRef = useRef<HTMLDivElement>(null);
   const pct = Math.max(0, Math.min(100, (value / 10) * 100));
+
+  const setFromClientX = useCallback(
+    (clientX: number) => {
+      const track = trackRef.current;
+      if (!track) return;
+      const rect = track.getBoundingClientRect();
+      if (rect.width <= 0) return;
+      const ratio = Math.max(
+        0,
+        Math.min(1, (clientX - rect.left) / rect.width),
+      );
+      const next = Math.round(ratio * 10 * 10) / 10;
+      onChange(next);
+    },
+    [onChange],
+  );
 
   const handleRelease = useCallback(() => {
     setDragging(false);
-    const snapped = Math.round(value / SNAP_STEP) * SNAP_STEP;
-    if (snapped !== value) onChange(snapped);
-  }, [value, onChange]);
+  }, []);
 
   return (
     <div className="flex items-center gap-2">
@@ -172,39 +187,53 @@ function NothingWeightSlider({
         {eventType}
       </span>
       <div className="relative flex-1 h-6 flex items-center">
-        {/* Tick marks above the track */}
-        <div className="absolute inset-x-0 top-0.5 h-1.5 pointer-events-none">
-          {TICK_VALUES.map((t) => (
+        <div
+          ref={trackRef}
+          className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[8px] cursor-pointer"
+          onPointerDown={(e) => {
+            e.currentTarget.setPointerCapture(e.pointerId);
+            setDragging(true);
+            setFromClientX(e.clientX);
+          }}
+          onPointerMove={(e) => {
+            if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
+            setFromClientX(e.clientX);
+          }}
+          onPointerUp={(e) => {
+            if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+              e.currentTarget.releasePointerCapture(e.pointerId);
+            }
+            handleRelease();
+          }}
+        >
+          <NothingFuse
+            value={value / 10}
+            severity={isChanged ? "high" : "medium"}
+            orientation="horizontal"
+            thickness={8}
+            segments={10}
+          />
+          {WHOLE_TICKS.map((tick) => (
             <span
-              key={t}
+              key={tick}
               aria-hidden="true"
-              className="absolute top-0 w-px h-1.5 bg-[var(--fintheon-text)]/40"
-              style={{ left: `${(t / 10) * 100}%` }}
+              className="absolute top-1/2 h-[10px] w-px -translate-y-1/2 bg-[var(--fintheon-bg)]/85"
+              style={{ left: `${(tick / 10) * 100}%` }}
             />
           ))}
-        </div>
-        {/* Endpoint dots */}
-        <span
-          aria-hidden="true"
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[var(--fintheon-accent)]/70"
-        />
-        <span
-          aria-hidden="true"
-          className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[var(--fintheon-accent)]/70"
-        />
-        {/* Solid accent active fill (no gradient) */}
-        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[2px] bg-[var(--fintheon-text)]/15 rounded-sm">
-          <div
-            className="h-full bg-[var(--fintheon-accent)] rounded-sm"
-            style={{ width: `${pct}%` }}
+          <span
+            aria-hidden="true"
+            className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[var(--fintheon-accent)] bg-[var(--fintheon-bg)]"
+            style={{ left: `${pct}%` }}
           />
         </div>
+
         {/* Native input drives a11y + keyboard; rendered transparent on top of the visual track */}
         <input
           type="range"
           min={0}
           max={10}
-          step={0.5}
+          step={0.1}
           value={value}
           onChange={(e) => onChange(parseFloat(e.target.value))}
           onMouseDown={() => setDragging(true)}
@@ -213,7 +242,7 @@ function NothingWeightSlider({
           onTouchEnd={handleRelease}
           onKeyUp={handleRelease}
           aria-label={`${eventType} weight`}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          className="absolute inset-0 z-10 w-full h-full opacity-0 cursor-pointer"
         />
         {/* Drag-value popover — Inter Mono, only while dragging */}
         {dragging && (
@@ -231,7 +260,7 @@ function NothingWeightSlider({
         )}
       </div>
       <span
-        className={`text-[9px] w-6 text-right font-mono ${isChanged ? "text-[var(--fintheon-accent)]" : "text-zinc-500"}`}
+        className={`w-9 text-right text-[10px] tabular-nums font-mono ${isChanged ? "text-[var(--fintheon-accent)]" : "text-zinc-500"}`}
       >
         {value.toFixed(1)}
       </span>

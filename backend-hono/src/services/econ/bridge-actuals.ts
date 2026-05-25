@@ -1,5 +1,5 @@
 // [claude-code 2026-04-25] S35-cleanup: bridge populated economic_events.actual
-// rows into econ_prints so the Aquarium event-card / /api/econ/synthesize path
+// rows into econ_prints so the ArbitrumChamber event-card / /api/econ/synthesize path
 // has print history to render. Idempotent: dedupes on (headline ILIKE event-name,
 // printed_at::date) so re-running it after another orchestrator drain is safe.
 

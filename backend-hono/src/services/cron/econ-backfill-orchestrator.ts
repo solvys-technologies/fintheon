@@ -1,7 +1,7 @@
 // [claude-code 2026-04-24] S34-T10: backfill orchestrator cron.
 // Monday 02:00 ET — claims 2 oldest pending slices, pulls raw econ events via free-tier LLM,
 // queues raw, then batch-normalizes via Harper and upserts into economic_events idempotently.
-// Gated on ECON_BACKFILL_ENABLED; no-op if OPENROUTER_API_KEY missing (warn, don't crash).
+// Gated on ECON_BACKFILL_ENABLED; no-op if DEEPSEEK_API_KEY missing (warn, don't crash).
 
 import cron from "node-cron";
 import { createLogger } from "../../lib/logger.js";
@@ -165,8 +165,8 @@ export async function runBackfillTickOnce(): Promise<{
 }> {
   lastRunAt = new Date().toISOString();
 
-  if (!process.env.OPENROUTER_API_KEY) {
-    log.warn("OPENROUTER_API_KEY missing — skipping backfill tick");
+  if (!process.env.DEEPSEEK_API_KEY) {
+    log.warn("DEEPSEEK_API_KEY missing — skipping backfill tick");
     return { processed: 0, failed: 0 };
   }
 

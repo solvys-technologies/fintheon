@@ -122,10 +122,10 @@ async function callLlm(
     const cleaned = stripMarkdownFences(text);
     const parsed = JSON.parse(cleaned);
     if (!Array.isArray(parsed)) throw new Error("LLM response is not an array");
-    return { parsed, provider: "strands-vproxy" };
+    return { parsed, provider: "strands-deepseek" };
   } catch (err) {
     console.error("[Narrative] LLM call or parse failed:", err);
-    return { parsed: null, provider: "strands-vproxy" };
+    return { parsed: null, provider: "strands-deepseek" };
   }
 }
 

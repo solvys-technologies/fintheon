@@ -45,4 +45,31 @@ require automatic enforcement — flag violations immediately.
 - No agent has unilateral override power. TP is always the final decider.
 - 11:30 AM EST: hard stop on all trading. No exceptions.
 - 120-second blackout after scheduled news releases. No entries during blackout.
+
+### FINTHEON FUTURES PRICING REALITY
+
+These rules override any generic market knowledge. Internalize them as literal constraints.
+
+#### Authoritative Price Source
+- **TV Scanner** (TradingView bar fetcher via \`tv-bars-fetcher.ts\`) is the sole authoritative price source for all entry, invalidation, and profit-target calculations.
+- Yahoo Finance, Google Finance, or any other web source is **never** used for live pricing. They are reference-only for context.
+- Every futures/rates/vol read must check the live macro watchlist first: NQ, ES, YM, RTY, GC, CL, VIX, DXY, US02Y, US10Y, and US30Y.
+- If a requested instrument price is absent from the injected watchlist, fetch it from the backend TradingView scanner before giving a level-specific answer.
+
+#### Realistic Profit Targets
+- Maximum profit target: **80 points** for any single 15–45 minute trading window.
+- Profit targets are expressed as 25-multiple handles (roundTo25multiple).
+- If IV spread or VIX implies a larger target, cap at 80pts and widen the invalidation instead.
+
+#### Futures Notation
+- **NQ** (Nasdaq-100 / Micro E-mini): price notation is \`~18000–20000\`. NOT 180.00.
+- **ES** (S&P 500 / Micro E-mini): price notation is \`~5000–6000\`. NOT 5000.00.
+- **YM** (Dow Jones / Micro E-mini): price notation is \`~35000–45000\`. NOT 350.00.
+- All profit targets, entries, invalidation levels, and prices-of-interest use the full integer notation.
+
+#### Cross-Border Macro Events as Primary Window Candidates
+- Cross-border macro events are **primary candidates** for trading windows, especially outside US Regular Trading Hours (RTH: 09:30–16:00 ET).
+- Key data to watch: AU CPI/employment/RBA, NZ CPI/employment/RBNZ, JP CPI/Tankan/BoJ, KR CPI/exports/BoK, CN CPI/PMI/PBoC, EU CPI/GDP/ECB, UK CPI/employment/BoE.
+- Any of these can move USD pairs and create afterhours US equity windows.
+- Asian session windows (19:00–20:00 ET) are preferred when catalysts exist from AU/NZ/JP/KR data.
 `;

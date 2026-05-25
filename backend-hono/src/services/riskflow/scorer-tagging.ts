@@ -1,3 +1,4 @@
+// [claude-code 2026-04-29] S52-T2: expanded Earnings keywords for broader headline mix (forecast, net income, dividend, buyback, earnings call, preannounce, top/bottom line)
 // [claude-code 2026-04-28] S48-T1: Fix 2 — added missing econ narrative keywords (gdp, industrial-output, consumer-sentiment, manufacturing-pmi, retail-activity, trade-flows, capital-goods, housing-activity)
 // [claude-code 2026-04-16] S20-T9: Split from central-scorer.ts — source normalization, risk classification, narrative gate, dismissed patterns
 // [claude-code 2026-03-23] Central scoring agent — polls unscored items from Supabase, runs AI analysis, writes scored results
@@ -55,7 +56,7 @@ export function isSimilarToDismissed(
 // ── Narrative Keywords ──────────────────────────────────────────────────────
 const NARRATIVE_KEYWORDS: Record<string, RegExp> = {
   "middle-east-conflict":
-    /\b(iran|israel|irgc|houthi|hezbollah|hamas|gaza|lebanon|netanyahu|araghchi|khamenei|hormuz|strait|missile|ceasefire|idf)\b/i,
+    /\b(iran|israel|irgc|houthi|hezbollah|hamas|gaza|lebanon|netanyahu|araghchi|khamenei|hormuz|strait|missile|ceasefire|idf|ukmto|cargo vessel|maritime incident|engine room|shipping lane|gulf of oman|dubai|uae)\b/i,
   "liquidity-credit":
     /\b(liquidity|credit|repo|reverse repo|TGA|treasury general|QT|quantitative tight|bank run|bank stress|deposit flight|private credit|redemption)\b/i,
   "ai-singularity":
@@ -99,18 +100,15 @@ export function matchesAnyNarrative(text: string): boolean {
 // ── Source Normalization ─────────────────────────────────────────────────────
 // S10-T1a: Normalize raw source labels to the 4 watchlist categories
 
-const FJ_ACCOUNTS = new Set([
-  "financialjuice",
-  "firstsquawk",
-  "wallstjesus",
-  "unusual_whales",
-  "newsfilterio",
-  "marketcurrents",
-  "livesquawk",
-  "waboratory",
-]);
+const FJ_ACCOUNTS = new Set(["financialjuice", "firstsquawk"]);
 
 const DEITAONE_ACCOUNTS = new Set(["deltaone", "deItaone", "deitaone"]);
+
+// [claude-code 2026-04-30] S55: Commentary accounts are managed via the
+// Refinement Engine (riskflow_source_accounts table, category="Commentary").
+// No hardcoded accounts here — the Commentary worker tier polls whatever the
+// operator has added. FinancialJuice is seeded as the default Commentary entry.
+const COMMENTARY_ACCOUNTS = new Set<string>([]);
 
 const OSINT_ACCOUNTS = new Set([
   "osintdefender",
@@ -166,6 +164,15 @@ const GEO_KEYWORDS = [
   "congress",
   "legislation",
   "treasury secretary",
+  "ukmto",
+  "hormuz",
+  "red sea",
+  "cargo vessel",
+  "engine room fire",
+  "maritime incident",
+  "shipping lane",
+  "uae",
+  "dubai",
 ];
 
 const PREDICTION_KEYWORDS = [
@@ -180,18 +187,70 @@ export function normalizeSource(
   rawSource: string | undefined,
   headline: string,
   tags: string[] = [],
-): "FinancialJuice" | "OSINTSources" | "EconomicCalendar" | "Polymarket" {
+  url?: string | null,
+):
+  | "FinancialJuice"
+  | "OSINTSources"
+  | "EconomicCalendar"
+  | "Polymarket"
+  | "Commentary"
+  | "Untrusted" {
   const src = (rawSource || "").toLowerCase().replace(/[^a-z0-9_]/g, "");
+
+  // Handle twitter:handle sources — extract handle and check account sets
+  if ((rawSource || "").startsWith("twitter:")) {
+    const handle = (rawSource || "").replace(/^twitter:/i, "").toLowerCase();
+    if (FJ_ACCOUNTS.has(handle)) return "FinancialJuice";
+    if (DEITAONE_ACCOUNTS.has(handle)) return "FinancialJuice";
+    if (COMMENTARY_ACCOUNTS.has(handle)) return "Commentary";
+    if (OSINT_ACCOUNTS.has(handle)) return "OSINTSources";
+  }
 
   if (rawSource === "FinancialJuice") return "FinancialJuice";
   if (rawSource === "OSINTSources") return "OSINTSources";
   if (rawSource === "DeItaOne") return "FinancialJuice";
+  if (rawSource === "Commentary") return "Commentary";
   if (rawSource === "EconomicCalendar") return "EconomicCalendar";
   if (rawSource === "Polymarket" || rawSource === "Kalshi") return "Polymarket";
 
   if (FJ_ACCOUNTS.has(src)) return "FinancialJuice";
   if (DEITAONE_ACCOUNTS.has(src)) return "FinancialJuice";
+  if (COMMENTARY_ACCOUNTS.has(src)) return "Commentary";
   if (OSINT_ACCOUNTS.has(src)) return "OSINTSources";
+
+  // [claude-code 2026-04-30] S55: Unknown source with a blocked publisher URL
+  // must NEVER default to FinancialJuice. This was the root cause of the
+  // trust-label failure — items from Agent Reach RSS with seekingalpha.com URLs
+  // were getting normalized to FinancialJuice because the source field was
+  // an unrecognized RSS tag.
+  if (url) {
+    try {
+      const host = new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+      const BLOCKED_HOSTS = [
+        "seekingalpha.com",
+        "bloomberg.com",
+        "cnbc.com",
+        "marketwatch.com",
+        "reuters.com",
+        "wsj.com",
+        "ft.com",
+        "barrons.com",
+        "zerohedge.com",
+        "foxnews.com",
+        "foxbusiness.com",
+        "msnbc.com",
+        "cnn.com",
+        "yahoo.com",
+        "finance.yahoo.com",
+        "businessinsider.com",
+      ];
+      for (const blocked of BLOCKED_HOSTS) {
+        if (host === blocked || host.endsWith("." + blocked)) {
+          return "Untrusted";
+        }
+      }
+    } catch {}
+  }
 
   const text = (headline + " " + tags.join(" ")).toLowerCase();
 
@@ -199,7 +258,9 @@ export function normalizeSource(
   if (ECON_KEYWORDS.some((kw) => text.includes(kw))) return "EconomicCalendar";
   if (GEO_KEYWORDS.some((kw) => text.includes(kw))) return "OSINTSources";
 
-  return "FinancialJuice";
+  // [claude-code 2026-04-30] S55: Unknown sources that don't match any
+  // keyword bucket are now "Untrusted" instead of defaulting to FinancialJuice.
+  return "Untrusted";
 }
 
 // ── Risk Type Classification ─────────────────────────────────────────────────
@@ -232,16 +293,67 @@ const RISK_TYPE_KEYWORDS: Record<string, string[]> = {
     "invasion",
     "missile",
     "nuclear",
+    "ukmto",
+    "hormuz",
+    "red sea",
+    "cargo vessel",
+    "maritime incident",
+    "engine room fire",
+    "shipping lane",
+    "uae",
+    "dubai",
   ],
   Earnings: [
     "earnings",
     "eps",
+    "earnings per share",
+    "q1 preview",
+    "q2 preview",
+    "q3 preview",
+    "q4 preview",
+    "q1 earnings",
+    "q2 earnings",
+    "q3 earnings",
+    "q4 earnings",
+    "q1 results",
+    "q2 results",
+    "q3 results",
+    "q4 results",
+    "analyst estimate",
+    "revenue guidance",
+    "analyst cut",
+    "analyst raises",
+    "beat estimates",
+    "miss estimates",
+    "results",
+    "ebit",
+    "margin",
+    "gross margin",
+    "operating margin",
+    "net income",
+    "operating income",
     "revenue",
     "guidance",
+    "forecast",
+    "outlook",
+    "forward guidance",
     "beat",
     "miss",
     "quarterly",
+    "quarterly report",
     "fiscal",
+    "fiscal year",
+    "dividend",
+    "buyback",
+    "share repurchase",
+    "earnings call",
+    "conference call",
+    "preannounce",
+    "profit warning",
+    "top line",
+    "bottom line",
+    "sales growth",
+    "comparable sales",
   ],
   Technical: [
     "resistance",

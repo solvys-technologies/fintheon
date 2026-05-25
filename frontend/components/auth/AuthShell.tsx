@@ -1,13 +1,9 @@
-// [claude-code 2026-04-05] Login screen — shuffled hero backgrounds, top-aligned layout, frosted branding window
-import React, { useMemo } from "react";
+// [codex 2026-05-23] Login now shares the dithered Three.js globe with splash.
+import React, { useEffect, useRef, useState } from "react";
+import { LoadingGlobe } from "../loading/LoadingGlobe";
+import { LoadingStatusCard } from "../loading/LoadingStatusCard";
 import { TimeQuote } from "./TimeQuote";
 import { GoogleSignInButton } from "./GoogleSignInButton";
-
-const HERO_BACKGROUNDS = [
-  "./halftone-heroes/hero-bg-1.png",
-  "./halftone-heroes/hero-bg-2.png",
-  "./halftone-heroes/hero-bg-3.png",
-];
 
 type AuthShellProps = {
   onSignIn: () => void;
@@ -17,89 +13,94 @@ type AuthShellProps = {
 
 export const AuthShell: React.FC<AuthShellProps> = ({
   onSignIn,
-  onSkipAuth,
   isLoading = false,
 }) => {
-  const bg = useMemo(
-    () => HERO_BACKGROUNDS[Math.floor(Math.random() * HERO_BACKGROUNDS.length)],
-    [],
-  );
+  const [submitted, setSubmitted] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
+  const signInTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (signInTimerRef.current) window.clearTimeout(signInTimerRef.current);
+    };
+  }, []);
+
+  function handleSignIn() {
+    if (submitted) return;
+    setSubmitted(true);
+    signInTimerRef.current = window.setTimeout(() => {
+      setShowLoader(true);
+      void onSignIn();
+    }, 3000);
+  }
+
+  const busy = isLoading || submitted;
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-[#050402] text-white selection:bg-yellow-500/30">
-      {/* Hero background — shuffled halftone (relative path for Electron) */}
-      <div
-        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-[0.18]"
-        style={{ backgroundImage: `url('${bg}')` }}
+    <div style={shellStyle}>
+      <LoadingGlobe
+        phase={submitted ? "auth" : "idle"}
+        style={{ position: "absolute", inset: "-6vmin" }}
       />
-      {/* Gradient overlay — darkens left for text readability */}
-      <div className="absolute inset-0 z-[1] bg-gradient-to-r from-[#050402]/95 via-[#050402]/70 to-[#050402]/40" />
-
-      {/* Both columns use items-start with same top padding so boxes are horizontally aligned */}
-      <main className="relative z-10 flex min-h-screen flex-col items-center px-6 pt-[38vh] md:flex-row md:items-start md:px-0">
-        {/* Left — Branding (55%) */}
-        <div className="flex w-full flex-col items-center md:w-[55%] md:items-start md:pl-[10%]">
-          {/* Frosted glass window */}
-          <div className="rounded-xl border border-[#c79f4a]/10 bg-[#050402]/60 px-8 py-8 backdrop-blur-sm">
-            {/* Logo + Title inline */}
-            <div className="flex items-center gap-5">
-              <img
-                src="./logo.png"
-                alt="Fintheon"
-                className="h-14 w-14 object-contain opacity-90 drop-shadow-[0_0_10px_rgba(199,159,74,0.3)]"
-              />
-              <h1
-                className="text-3xl font-light tracking-[0.18em] text-[#c79f4a] drop-shadow-[0_0_12px_rgba(199,159,74,0.4)]"
-                style={{ fontFamily: "'Cinzel', 'Georgia', serif" }}
-              >
-                FINTHEON
-              </h1>
-            </div>
-            {/* Subtitle — aligned with title (offset by logo + gap = 56px ≈ pl-14) */}
-            <p
-              className="mt-3 pl-14 text-xs tracking-[0.3em] text-[#f0ead6]/60"
-              style={{ fontFamily: "'Cinzel', 'Georgia', serif" }}
-            >
-              Integrated Trading Environment
-            </p>
-
-            <div className="mt-6 pl-14">
-              <TimeQuote />
-            </div>
+      <div style={scanlineStyle} />
+      <main style={contentStyle}>
+        <section style={panelStyle}>
+          <LoadingStatusCard
+            bare
+            phrase={showLoader ? "Opening terminal" : "Access terminal"}
+          />
+          <GoogleSignInButton
+            onClick={handleSignIn}
+            isLoading={isLoading || showLoader}
+            disabled={busy}
+          />
+          <div style={{ marginTop: 4 }}>
+            <TimeQuote />
           </div>
-        </div>
-
-        {/* Right — Login card (45%), top-aligned with branding box */}
-        <div className="flex w-full flex-col items-center py-12 md:w-[45%] md:py-0 md:pr-[8%]">
-          <div className="w-full max-w-sm rounded-2xl border border-[#c79f4a]/15 bg-[#0a0906]/90 px-8 py-10 shadow-[0_25px_55px_rgba(0,0,0,0.65)] backdrop-blur-lg">
-            <p
-              className="mb-8 text-center text-xs font-semibold uppercase tracking-[0.4em] text-[#c79f4a]/70"
-              style={{ fontVariant: "small-caps" }}
-            >
-              Access Terminal
-            </p>
-
-            <GoogleSignInButton onClick={onSignIn} isLoading={isLoading} />
-          </div>
-
-          {/* Footer links */}
-          <footer className="mt-6 flex gap-6 text-[11px] font-medium uppercase tracking-[0.25em] text-yellow-600/90">
-            <a
-              href="#"
-              className="transition-all duration-300 hover:text-yellow-400"
-            >
-              Terms of Use
-            </a>
-            <span className="text-yellow-800">&bull;</span>
-            <a
-              href="#"
-              className="transition-all duration-300 hover:text-yellow-400"
-            >
-              Privacy Policy
-            </a>
-          </footer>
-        </div>
+        </section>
       </main>
     </div>
   );
+};
+
+const shellStyle: React.CSSProperties = {
+  position: "relative",
+  minHeight: "100vh",
+  width: "100%",
+  overflow: "hidden",
+  background: "var(--fintheon-bg, #050402)",
+  color: "var(--fintheon-text, #f0ead6)",
+};
+
+const contentStyle: React.CSSProperties = {
+  position: "relative",
+  zIndex: 2,
+  display: "grid",
+  minHeight: "100vh",
+  placeItems: "center",
+  padding: 24,
+};
+
+const panelStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 14,
+  justifyItems: "center",
+  width: "min(340px, calc(100vw - 48px))",
+  padding: "16px 16px 18px",
+  border: "1px solid color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 18%, transparent)",
+  borderRadius: 8,
+  background: "color-mix(in srgb, var(--fintheon-surface, #0a0905) 83%, transparent)",
+  backdropFilter: "blur(18px) saturate(1.18)",
+  WebkitBackdropFilter: "blur(18px) saturate(1.18)",
+  overflow: "hidden",
+};
+
+const scanlineStyle: React.CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  background:
+    "repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 3px), radial-gradient(circle at center, transparent 0 42%, rgba(0,0,0,0.56) 78%)",
+  mixBlendMode: "screen",
+  opacity: 0.28,
+  pointerEvents: "none",
 };

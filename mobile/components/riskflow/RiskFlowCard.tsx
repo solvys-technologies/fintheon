@@ -1,3 +1,9 @@
+// [claude-code 2026-05-01] S56 Track D: moved onClick outside SwipeAction so tapping
+//   anywhere on the card triggers expand/collapse (was only the fuse before).
+// [codex 2026-05-20] S52 headline clamp remains the preview; expanded state now
+//   renders the full headline in RiskFlowCardExpanded so mobile users can read it
+//   without opening the desktop/feed detail. S51: source-type icons,
+//   bucket-left/time-ago-right header, Earnings bucket support in source-buckets.
 // [claude-code 2026-04-20] Tap-to-expand restored per TP — tap the card now
 //   expands RiskFlowCardExpanded inline (not the DetailSheet modal). The
 //   vertical fuse drains on tap, fades to zero opacity, then the expanded
@@ -18,7 +24,16 @@
 //   (var(--font-data) was getting mapped to a heavier mono on some themes), matching
 //   desktop's right-stacked IVStack. Chevron stays in the right column above the numeral.
 import { useCallback, useState } from "react";
-import { ChevronUp, ChevronDown, Minus } from "lucide-react";
+import {
+  ChevronUp,
+  ChevronDown,
+  Minus,
+  Activity,
+  BarChart3,
+  Globe,
+  Globe2,
+  BookText,
+} from "lucide-react";
 import { useHaptic } from "../../hooks/useHaptic";
 import { motion, AnimatePresence } from "framer-motion";
 import type { MobileRiskFlowAlert } from "../../contexts/RiskFlowContext";
@@ -28,7 +43,7 @@ import { SwipeAction } from "../shared/SwipeAction";
 import { VerticalFuseBar } from "../shared/VerticalFuseBar";
 import { CARD_PRESS } from "../../lib/sheet-motion";
 import { colorForSeverity, type FuseSeverity } from "../../lib/fuse-palette";
-import { bucketOf } from "../../lib/source-buckets";
+import { bucketOf, type SourceBucket } from "../../lib/source-buckets";
 import { RiskFlowCardExpanded } from "./RiskFlowCardExpanded";
 
 /** How long the drain takes — covers the staggered top-down segment fade. Keep this
@@ -71,6 +86,29 @@ function formatSource(source: string): string {
   return map[source] || source.toUpperCase().slice(0, 6);
 }
 
+function BucketSourceIcon({
+  bucket,
+  size,
+}: {
+  bucket: SourceBucket;
+  size: number;
+}) {
+  switch (bucket) {
+    case "Wire":
+      return <Activity size={size} />;
+    case "Econ":
+      return <BarChart3 size={size} />;
+    case "Macro":
+      return <Globe size={size} />;
+    case "Geopolitical":
+      return <Globe2 size={size} />;
+    case "Earnings":
+      return <BookText size={size} />;
+    default:
+      return null;
+  }
+}
+
 function DirectionChevron({
   direction,
   color,
@@ -78,10 +116,8 @@ function DirectionChevron({
   direction: string | null | undefined;
   color: string;
 }) {
-  if (direction === "Bullish")
-    return <ChevronUp size={14} color="var(--fintheon-bullish)" />;
-  if (direction === "Bearish")
-    return <ChevronDown size={14} color="var(--fintheon-bearish)" />;
+  if (direction === "Bullish") return <ChevronUp size={14} color={color} />;
+  if (direction === "Bearish") return <ChevronDown size={14} color={color} />;
   return <Minus size={12} color={color} />;
 }
 
@@ -94,7 +130,15 @@ export function RiskFlowCard({
   const [draining, setDraining] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const severityColor = colorForSeverity(paletteSeverity(alert.severity));
-  const ivScore = alert.ivScore ?? 0;
+  const ivScore =
+    alert.ivScore ??
+    (alert.severity === "critical"
+      ? 9
+      : alert.severity === "high"
+        ? 7
+        : alert.severity === "medium"
+          ? 5
+          : 3);
 
   const handleTap = useCallback(() => {
     if (expanded) {
@@ -118,29 +162,28 @@ export function RiskFlowCard({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, delay: index * 0.04, ease: "easeOut" }}
+      onClick={handleTap}
+      role="button"
+      tabIndex={0}
+      aria-label={
+        expanded
+          ? `Collapse headline: ${alert.title}`
+          : `Expand headline: ${alert.title}`
+      }
+      aria-expanded={expanded}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleTap();
+        }
+      }}
+      style={{ cursor: "pointer", WebkitTapHighlightColor: "transparent" }}
     >
       <SwipeAction onSwipeLeft={() => onDismiss(alert.id)}>
         <motion.div
-          onClick={handleTap}
           whileTap={CARD_PRESS}
-          role="button"
-          tabIndex={0}
-          aria-label={
-            expanded
-              ? `Collapse headline: ${alert.title}`
-              : `Expand headline: ${alert.title}`
-          }
-          aria-expanded={expanded}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              handleTap();
-            }
-          }}
           style={{
             background: "var(--surface)",
-            cursor: "pointer",
-            WebkitTapHighlightColor: "transparent",
           }}
         >
           <div
@@ -178,7 +221,7 @@ export function RiskFlowCard({
                 gap: 3,
               }}
             >
-              {/* Source + time */}
+              {/* Source + time — bucket left, time-ago right */}
               <div
                 style={{
                   fontFamily: "var(--font-data)",
@@ -188,20 +231,27 @@ export function RiskFlowCard({
                   color: "var(--text-secondary)",
                   display: "flex",
                   alignItems: "center",
-                  gap: 4,
+                  justifyContent: "space-between",
                 }}
               >
-                <span>
+                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  {(() => {
+                    const b = bucketOf({
+                      source: alert.source,
+                      riskType: alert.riskType,
+                    });
+                    return <BucketSourceIcon bucket={b} size={12} />;
+                  })()}
                   {bucketOf({
                     source: alert.source,
                     riskType: alert.riskType,
                   })}
                 </span>
-                <span style={{ color: "var(--text-disabled)" }}>&middot;</span>
                 <span>{timeAgo(alert.publishedAt)}</span>
               </div>
 
-              {/* Headline — 3-line clamp when collapsed, full text when expanded. */}
+              {/* Headline — always 3-line clamp; remainder streams in via
+                  RiskFlowCardExpanded t-text-reveal on expand. */}
               <h3
                 style={{
                   fontFamily: "var(--font-body)",
@@ -209,14 +259,10 @@ export function RiskFlowCard({
                   color: "var(--text-primary)",
                   lineHeight: 1.45,
                   margin: 0,
-                  ...(expanded
-                    ? { wordBreak: "break-word" as const }
-                    : {
-                        display: "-webkit-box",
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: "vertical" as const,
-                        overflow: "hidden",
-                      }),
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical" as const,
+                  overflow: "hidden",
                 }}
               >
                 {alert.title}

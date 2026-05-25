@@ -4,16 +4,17 @@ import {
   Settings,
   LogOut,
   Landmark,
-  LayoutDashboard,
+  Users,
   CalendarDays,
   GripVertical,
   BookOpenCheck,
   Bell,
   BellOff,
-  Wrench,
+  CubeFocus,
 } from "lucide-react";
 import { useDND } from "../../contexts/DNDContext";
 import { useServerNotifications } from "../../contexts/NotificationsContext";
+import { FadingRuler } from "../shared/FadingRuler";
 import {
   getSidebarOrder,
   setSidebarOrder,
@@ -59,15 +60,15 @@ const NAV_ITEMS_MAP: Record<
   >,
   {
     id: NavTab;
-    icon: typeof LayoutDashboard;
+    icon: typeof Users;
     label: string;
     description: string;
   }
 > = {
   dashboard: {
     id: "dashboard",
-    icon: LayoutDashboard,
-    label: "Dashboard",
+    icon: Users,
+    label: "Desk",
     description: "KPIs, calendar, RiskFlow",
   },
   analysis: {
@@ -93,6 +94,9 @@ const NAV_ITEMS_MAP: Record<
 // Icon size: original was w-6 h-6 (24px). 35% smaller = ~15.6px → w-4 h-4 (16px)
 // Button size: original was w-12 h-12 (48px). 35% smaller = ~31px → w-8 h-8 (32px)
 // Sidebar collapsed width: original w-16 (64px). 35% smaller = ~42px → w-11 (44px)
+const SIDEBAR_BUTTON_CLASS =
+  "flex items-center gap-2.5 rounded-md transition-colors min-w-0 px-2 py-1.5 justify-start";
+const SIDEBAR_ICON_CLASS = "w-4 h-4 shrink-0";
 
 export function NavSidebar({
   activeTab,
@@ -127,6 +131,7 @@ export function NavSidebar({
   const [order, setOrder] = useState<NavTabId[]>(() => getSidebarOrder());
 
   const expanded = hovered || manualExpand;
+  const sidebarWidthPx = topStepXEnabled ? 0 : 44;
 
   const handleMouseEnter = useCallback(() => {
     hoverTimerRef.current = setTimeout(() => setHovered(true), 3000);
@@ -172,6 +177,20 @@ export function NavSidebar({
   useEffect(() => {
     onOverlayVisibilityChange?.(topStepXEnabled && expanded);
   }, [onOverlayVisibilityChange, topStepXEnabled, expanded]);
+
+  // Keep sibling surfaces aligned to the physical rail footprint; expansion now layers under main content.
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--fintheon-sidebar-width",
+      `${sidebarWidthPx}px`,
+    );
+    return () => {
+      document.documentElement.style.setProperty(
+        "--fintheon-sidebar-width",
+        "0px",
+      );
+    };
+  }, [sidebarWidthPx]);
 
   // NOTE: edit-mode sync happens in the setEditMode wrapper above.
   // Unmount clears edit mode so stray reorder state doesn't leak across route changes.
@@ -219,10 +238,13 @@ export function NavSidebar({
       description: NAV_ITEMS_MAP[tabId].description,
     }));
 
+  // [claude-code 2026-04-30] S56-shell: relative positioning so the wrapper grows
+  // with width, pushing main content right (flex displaces siblings instead of
+  // overlapping). Previously absolute + z-0 hid the expanded panel under main
+  // content (z-10).
   const sidebarContent = (
     <div
-      style={{ backgroundColor: "var(--fintheon-surface)" }}
-      className={`h-full border-r fintheon-accent-border flex flex-col py-3 transition-all duration-200 ease-out ${
+      className={`fintheon-side-surface relative h-full border-r-0 flex flex-col py-3 transition-[width] duration-300 ease-in-out ${
         expanded ? "w-48" : "w-11"
       }`}
       onMouseEnter={handleMouseEnter}
@@ -232,25 +254,10 @@ export function NavSidebar({
           Hover-driven expansion (handleMouseEnter/Leave) is the only trigger;
           the layout buttons in the heading toolbar control visibility. */}
 
-      {expanded && (
-        <div className="px-2 mb-2 flex justify-end">
-          <button
-            type="button"
-            onClick={() => setEditMode((v) => !v)}
-            className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
-              editMode
-                ? "fintheon-accent-border fintheon-nav-active-light"
-                : "border-zinc-700 text-zinc-400 fintheon-accent-hover"
-            }`}
-            title={editMode ? "Finish reordering" : "Enable drag reorder"}
-          >
-            {editMode ? "Done" : "Edit"}
-          </button>
-        </div>
-      )}
       <div className="flex-1 space-y-1 px-1.5">
-        {orderedItems.map(({ tabId, icon: Icon, label, description }) => {
+        {orderedItems.map(({ tabId, icon: Icon, label, description }, idx) => {
           const isActive = activeTab === tabId;
+          const isDashboard = tabId === "dashboard";
           return (
             <div
               key={tabId}
@@ -273,14 +280,12 @@ export function NavSidebar({
               <button
                 onClick={() => onTabChange(tabId as NavTab)}
                 data-tour-target={tabId}
-                className={`flex-1 w-full flex items-center gap-2.5 rounded-md transition-colors min-w-0 ${
-                  expanded ? "px-2 py-1.5" : "justify-center py-1.5 px-0"
-                } ${
+                className={`${expanded && isDashboard ? "flex-1" : "w-full"} ${SIDEBAR_BUTTON_CLASS} ${
                   isActive ? "fintheon-nav-active" : "fintheon-nav-inactive"
                 }`}
                 title={expanded ? undefined : label}
               >
-                <Icon className="w-4 h-4 shrink-0" />
+                <Icon className={SIDEBAR_ICON_CLASS} />
                 {expanded && (
                   <div className="min-w-0 text-left">
                     <div
@@ -296,6 +301,16 @@ export function NavSidebar({
                   </div>
                 )}
               </button>
+              {expanded && isDashboard && (
+                <button
+                  type="button"
+                  onClick={() => setEditMode((v) => !v)}
+                  className="shrink-0 px-1 py-0.5 text-[9px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/55 hover:text-[var(--fintheon-accent)] transition-colors"
+                  title={editMode ? "Finish reordering" : "Enable drag reorder"}
+                >
+                  {editMode ? "Done" : "Edit"}
+                </button>
+              )}
             </div>
           );
         })}
@@ -306,16 +321,14 @@ export function NavSidebar({
         {refinementEnabled && (
           <button
             onClick={onRefinementClick}
-            className={`w-full flex items-center gap-2.5 rounded-md transition-colors ${
-              expanded ? "px-2 py-1.5" : "justify-center py-1.5"
-            } ${
+            className={`w-full flex items-center gap-2.5 rounded-md transition-colors px-2 py-1.5 justify-start ${
               refinementActive
                 ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]"
                 : "fintheon-nav-inactive"
             }`}
             title={expanded ? undefined : "Refinement Engine"}
           >
-            <Wrench className="w-4 h-4 shrink-0" />
+            <CubeFocus className="w-4 h-4 shrink-0" />
             {expanded && (
               <div className="min-w-0 text-left">
                 <div
@@ -342,9 +355,7 @@ export function NavSidebar({
                 toggleManualDnd();
               }
             }}
-            className={`w-full flex items-center gap-2.5 rounded-md transition-colors relative ${
-              expanded ? "px-2 py-1.5" : "justify-center py-1.5"
-            } ${
+            className={`w-full flex items-center gap-2.5 rounded-md transition-colors relative px-2 py-1.5 justify-start ${
               dndActive
                 ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]"
                 : "fintheon-nav-inactive"
@@ -389,9 +400,7 @@ export function NavSidebar({
         <button
           onClick={() => onTabChange("performance")}
           data-tour-target="performance"
-          className={`w-full flex items-center gap-2.5 rounded-md transition-colors ${
-            expanded ? "px-2 py-1.5" : "justify-center py-1.5"
-          } ${
+          className={`w-full flex items-center gap-2.5 rounded-md transition-colors px-2 py-1.5 justify-start ${
             activeTab === "performance"
               ? "fintheon-nav-active"
               : "fintheon-nav-inactive"
@@ -416,9 +425,7 @@ export function NavSidebar({
         </button>
         <button
           onClick={() => onTabChange("settings")}
-          className={`w-full flex items-center gap-2.5 rounded-md transition-colors ${
-            expanded ? "px-2 py-1.5" : "justify-center py-1.5"
-          } ${
+          className={`w-full flex items-center gap-2.5 rounded-md transition-colors px-2 py-1.5 justify-start ${
             activeTab === "settings"
               ? "fintheon-nav-active"
               : "fintheon-nav-inactive"
@@ -443,9 +450,7 @@ export function NavSidebar({
         </button>
         <button
           onClick={onLogout}
-          className={`w-full flex items-center gap-2.5 rounded-md text-red-500/60 hover:text-red-500 hover:bg-red-500/10 transition-colors ${
-            expanded ? "px-2 py-1.5" : "justify-center py-1.5"
-          }`}
+          className="w-full flex items-center gap-2.5 rounded-md text-red-500/60 hover:text-red-500 hover:bg-red-500/10 transition-colors px-2 py-1.5 justify-start"
           title={expanded ? undefined : "Logout"}
         >
           <LogOut className="w-4 h-4 shrink-0" />

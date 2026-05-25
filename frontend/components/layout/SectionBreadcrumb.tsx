@@ -13,7 +13,7 @@ const TAB_META: Record<string, { label: string; parent?: string }> = {
   riskflow: { label: "RiskFlow" },
   chatroom: { label: "Board Room" },
   econ: { label: "Economic Calendar" },
-  narrative: { label: "NarrativeMap" },
+  narrative: { label: "DeskMap" },
   performance: { label: "Performance" },
   team: { label: "Team" },
   settings: { label: "Settings" },

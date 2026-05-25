@@ -4,18 +4,18 @@
 
 - **Platform**: Fintheon by Priced In Capital (PIC) / Solvys Technologies
 - **Stack**: React 19 + Vite frontend, Hono backend (port 8080), Supabase Postgres, Electron desktop
-- **AI**: Claude Opus 4.6 via VProxy gateway (localhost:8317)
+- **AI**: DeepSeek/Hermes provider chain
 - **Palette**: BG #050402, Accent #c79f4a (Solvys Gold), Text #f0ead6
 
 ## Agent Roster
 
-| Agent          | Role                                             |
-| -------------- | ------------------------------------------------ |
+| Agent      | Role                                             |
+| ---------- | ------------------------------------------------ |
 | **Harper** | CAO — executive synthesis, full platform access  |
-| **Oracle**     | Prediction markets, probabilistic reasoning      |
-| **Feucht**     | Futures/risk, technical levels, execution        |
-| **Consul**     | Mega-cap fundamentals, earnings, sector rotation |
-| **Herald**     | Breaking news, social sentiment, headline risk   |
+| **Oracle** | Prediction markets, probabilistic reasoning      |
+| **Feucht** | Futures/risk, technical levels, execution        |
+| **Consul** | Mega-cap fundamentals, earnings, sector rotation |
+| **Herald** | Breaking news, social sentiment, headline risk   |
 
 Protocol: "Harper orchestrates, Oracle analyzes, Feucht guards, Consul validates, Herald communicates"
 
@@ -70,7 +70,7 @@ Protocol: "Harper orchestrates, Oracle analyzes, Feucht guards, Consul validates
 - `backend-hono/src/services/ai/agent-instructions/` — Agent system prompts
 - `backend-hono/src/services/arbitrum/` — Arbitrum deliberation engine (5-seat chamber)
 - `backend-hono/src/routes/` — All API routes
-- `frontend/components/arbitrum/` — Arbitrum UI surfaces (Aquarium panel, hover peek)
+- `frontend/components/arbitrum/` — Arbitrum UI surfaces (ArbitrumChamber panel, hover peek)
 - `src/lib/changelog.ts` — Changelog (add entry after every feature/fix)
 
 ## API Endpoints (Key)
@@ -81,7 +81,7 @@ Protocol: "Harper orchestrates, Oracle analyzes, Feucht guards, Consul validates
 - `POST /api/data/brief/generate` — Trigger brief (MDB/ADB/PMDB/TWT)
 - `GET /api/data/brief/latest?type=X` — Fetch latest brief
 - `GET /api/mcp` — MCP server config list
-- `GET /api/miroshark/latest` — Latest Aquarium simulation (legacy; deprecated with MiroShark)
+- `GET /api/miroshark/latest` — Latest ArbitrumChamber simulation (legacy; deprecated with MiroShark)
 - `POST /api/arbitrum/deliberate` — Fire a chamber run
 - `GET /api/arbitrum/latest` — Latest Arbitrum verdict
 - `GET /api/arbitrum/verdicts/:id` — Specific verdict by id
@@ -94,13 +94,13 @@ When TP directs an agent to "fix X," these are the authoritative names. Any inte
 | Canonical name                            | What it is                                                       | Internal locator                                               |
 | ----------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------- |
 | **Consilium**                             | Main workspace                                                   | `frontend/components/consilium/`                               |
-| **Sanctum**                               | Timeline + Aquarium + NarrativeFlow composite                    | `frontend/components/narrative/Sanctum.tsx`                    |
+| **Sanctum**                               | Timeline + ArbitrumChamber + NarrativeFlow composite             | `frontend/components/narrative/Sanctum.tsx`                    |
 | **Forum**                                 | Team channel (Fluxer iframe)                                     | `frontend/components/consilium/FluxerEmbed.tsx`                |
 | **Agentic Forum** (aka Agentic Boardroom) | DAG + agent-swarm runtime                                        | `backend-hono/src/services/boardroom-*` + DAG routes           |
 | **Apparatus**                             | Where the agents live (agent registry)                           | `frontend/components/apparatus/`                               |
 | **Strategium**                            | Right rail — mission control + RiskFlow feed + economic calendar | `frontend/components/MissionControl.tsx` + Strategium panels   |
 | **Arbitrum**                              | 5-seat deliberation engine (replaces MiroShark)                  | `backend-hono/src/services/arbitrum/`                          |
-| **Aquarium**                              | Surface label inside Sanctum for Arbitrum output                 | `frontend/components/narrative/Sanctum.tsx` (chart-mode panel) |
+| **ArbitrumChamber**                       | Surface label inside Sanctum for Arbitrum output                 | `frontend/components/narrative/Sanctum.tsx` (chart-mode panel) |
 | **RiskFlow**                              | Scored news feed                                                 | `backend-hono/src/services/riskflow/`                          |
 | **NarrativeFlow**                         | Catalyst cards promoted from RiskFlow                            | `frontend/components/narrative/NarrativeCanvas.tsx`            |
 | **CAO chat**                              | Main chat feature (persona: Harper)                              | `/api/harper/chat` + frontend ChatInterface                    |
@@ -117,7 +117,7 @@ When TP directs an agent to "fix X," these are the authoritative names. Any inte
 - **TWT** = Tribune Weekly / Weekly Tribune (4:30 PM Sundays) — supersedes legacy TOTT
 - **RiskFlow** = Scored news feed with IV-weighted urgency
 - **NarrativeFlow** = Catalyst cards promoted from RiskFlow into narrative threads
-- **Aquarium** = Surface label inside Sanctum for Arbitrum output (formerly MiroShark multi-agent simulation — **MiroShark deprecated 2026-04-24**, replaced by Arbitrum; see Arbitrum section below)
+- **ArbitrumChamber** = Surface label inside Sanctum for Arbitrum output (formerly MiroShark multi-agent simulation — **MiroShark deprecated 2026-04-24**, replaced by Arbitrum; see Arbitrum section below)
 - **PsychAssist** = Trader tilt detection via ER scoring
 
 ## Arbitrum (deliberation engine, replaces MiroShark)
@@ -138,7 +138,7 @@ When TP directs an agent to "fix X," these are the authoritative names. Any inte
 
 **Routing:** Hermes-only, never OpenRouter. Harper-CAO keeps its existing Claude-Opus path for chat; Arbitrum seats route through Hermes → Ollama Cloud (qwen3.5:397b-cloud). DashScope removed 2026-04-26 (paid, no key); Groq retained as an explicit alternate provider but not currently mapped to any seat.
 
-**Engine surface vs UI surface:** the engine is `services/arbitrum/`. The user sees output inside Sanctum's Aquarium surface and as a peek textbox in the IV scoring widget hover modal.
+**Engine surface vs UI surface:** the engine is `services/arbitrum/`. The user sees output inside Sanctum's ArbitrumChamber surface and as a peek textbox in the IV scoring widget hover modal.
 
 **Brand note:** yes, the name collides with Arbitrum the Ethereum L2. Disambiguate as "Fintheon Arbitrum" when needed.
 

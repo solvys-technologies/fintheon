@@ -7,6 +7,8 @@ import {
   getAppState,
   upsertAppState,
 } from "../../services/supabase-service.js";
+import { normalizeSocialLinks } from "../../services/proxvoice/social-links.js";
+import { getPublicVoiceProfile } from "../../services/proxvoice/token-service.js";
 
 export function createProfileRoutes(): Hono {
   const router = new Hono();
@@ -71,6 +73,75 @@ export function createProfileRoutes(): Hono {
       return c.json({ error: "Failed to update app state" }, 500);
     }
     return c.json({ ok: true });
+  });
+
+  router.get("/social-links", async (c: Context) => {
+    const supabaseUid = c.get("supabaseUid") as string;
+    const state = await getAppState(supabaseUid);
+    if (state === null) return c.json({ error: "Profile not found" }, 404);
+    const appState = state as { socialLinks?: unknown };
+    return c.json({ socialLinks: normalizeSocialLinks(appState.socialLinks) });
+  });
+
+  router.put("/social-links", async (c: Context) => {
+    const supabaseUid = c.get("supabaseUid") as string;
+    const email = c.get("email") as string | undefined;
+    await getOrCreateProfile(supabaseUid, email);
+    const body = (await c.req
+      .json<{ socialLinks?: unknown }>()
+      .catch(() => ({}))) as { socialLinks?: unknown };
+    const existing = (await getAppState(supabaseUid)) ?? {};
+    const socialLinks = normalizeSocialLinks(body.socialLinks ?? body);
+    const ok = await upsertAppState(supabaseUid, { ...existing, socialLinks });
+    if (!ok) return c.json({ error: "Failed to update social links" }, 500);
+    return c.json({ socialLinks });
+  });
+
+  router.get("/voice-profile", async (c: Context) => {
+    const supabaseUid = c.get("supabaseUid") as string;
+    const email = c.get("email") as string | undefined;
+    const profile = await getPublicVoiceProfile({ userId: supabaseUid, email });
+    return c.json({ profile });
+  });
+
+  router.put("/voice-profile", async (c: Context) => {
+    const supabaseUid = c.get("supabaseUid") as string;
+    const email = c.get("email") as string | undefined;
+    await getOrCreateProfile(supabaseUid, email);
+    const body = (await c.req.json().catch(() => ({}))) as {
+      displayName?: unknown;
+      avatarUrl?: unknown;
+      bio?: unknown;
+      position?: unknown;
+      broker?: unknown;
+      socialLinks?: unknown;
+    };
+    const displayName =
+      typeof body.displayName === "string" ? body.displayName.trim().slice(0, 32) : undefined;
+    const avatarUrl =
+      typeof body.avatarUrl === "string" ? body.avatarUrl.trim().slice(0, 500_000) : undefined;
+    if (displayName || avatarUrl !== undefined) {
+      await updateProfile(supabaseUid, {
+        ...(displayName ? { display_name: displayName } : {}),
+        ...(avatarUrl !== undefined ? { avatar_url: avatarUrl } : {}),
+      });
+    }
+    const existing = (await getAppState(supabaseUid)) ?? {};
+    const nextState = {
+      ...existing,
+      ...(avatarUrl !== undefined ? { avatarUrl } : {}),
+      ...(typeof body.bio === "string" ? { bio: body.bio.trim().slice(0, 180) } : {}),
+      ...(typeof body.position === "string"
+        ? { position: body.position.trim().slice(0, 48) }
+        : {}),
+      ...(typeof body.broker === "string"
+        ? { broker: body.broker.trim().slice(0, 48) }
+        : {}),
+      ...(body.socialLinks ? { socialLinks: normalizeSocialLinks(body.socialLinks) } : {}),
+    };
+    await upsertAppState(supabaseUid, nextState);
+    const profile = await getPublicVoiceProfile({ userId: supabaseUid, email });
+    return c.json({ profile });
   });
 
   return router;

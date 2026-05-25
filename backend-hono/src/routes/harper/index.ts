@@ -1,20 +1,19 @@
+// [claude-code 2026-05-03] S58-T1: Harper provider routing accepts DeepSeek primary.
 // [claude-code 2026-04-19] S25: mounted /approvals/:id + /dispatch subroutes for the mobile
 //   catalyst DetailSheet flow — GET one approval with expiresAt, POST seeded conversation.
 // [claude-code 2026-04-05] Strands Phase 8: Harper routes — streamHarperChat() replaces old CLI bridge + createUIMessageStreamResponse
 /**
  * Harper Routes
  * POST /api/harper/chat — streaming SSE chat via Strands agent
- * GET  /api/harper/status — check if VProxy/Strands is available
+ * GET  /api/harper/status — check if Strands is available
  */
 
 import { Hono } from "hono";
 import {
   streamHarperChat,
-  isStrandsAvailable,
-  isVProxyEnabled,
   FINTHEON_PATHS,
 } from "../../services/strands/index.js";
-import { checkVProxyHealth } from "../../services/strands/provider.js";
+import { checkDeepSeekDirectHealth } from "../../services/strands/provider.js";
 import { uiStreamToSSEResponse } from "../../services/strands/stream-adapter.js";
 import { createRequestCognition } from "../../services/cognition-emitter.js";
 import * as conversationStore from "../../services/ai/conversation-store.js";
@@ -27,6 +26,7 @@ import {
 } from "../../services/tool-approval-store.js";
 import { createApprovalDetailRoutes } from "./approvals.js";
 import { createDispatchRoute } from "./dispatch.js";
+import { createHarperUiActionRoutes } from "./ui-actions.js";
 import {
   browseTask,
   BrowseTaskInputSchema,
@@ -35,26 +35,44 @@ import {
 import { agentBus } from "../../services/agent-bus/bus.js";
 import { executeDag } from "../../services/agent-bus/dag-scheduler.js";
 import { createAgentDeskDAG } from "../../services/agent-bus/templates/agent-desk-template.js";
+import {
+  isAiCreditError,
+  recordAiProviderFailure,
+} from "../../services/ai/provider-credit-status.js";
 import type {
   AgentStreamEvent,
   DAGProgressEvent,
   BusMessage,
 } from "../../services/agent-bus/types.js";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function buildConversationMetadata(input: {
+  metadata?: Record<string, unknown>;
+  workspace?: Record<string, unknown>;
+  surface?: string;
+}): Record<string, unknown> | undefined {
+  const metadata = isRecord(input.metadata) ? { ...input.metadata } : {};
+  if (isRecord(input.workspace)) metadata.workspace = input.workspace;
+  if (input.surface) metadata.surface = input.surface;
+  return Object.keys(metadata).length > 0 ? metadata : undefined;
+}
+
 export function createHarperRoutes() {
   const app = new Hono();
 
   // ── Status check ─────────────────────────────────────────────────────────
   app.get("/status", async (c) => {
-    const available = await isStrandsAvailable();
-    const usingVProxy = isVProxyEnabled();
+    const deepseek = await checkDeepSeekDirectHealth();
     return c.json({
-      available,
+      available: deepseek.available,
       agent: "harper",
-      model: usingVProxy
-        ? (process.env.VPROXY_ANTHROPIC_MODEL ?? "claude-opus-4-6")
-        : "claude-opus-local",
-      provider: usingVProxy ? "strands-vproxy" : "strands-local",
+      model: "deepseek-reasoner",
+      provider: "deepseek-direct",
+      fallback: "disabled",
+      error: deepseek.error,
     });
   });
 
@@ -89,12 +107,22 @@ export function createHarperRoutes() {
         conversationId?: string;
         history?: Array<{ role: "user" | "assistant"; content: string }>;
         thinkHarder?: boolean;
+        reasoningLevel?: "quick" | "standard" | "deep" | "max";
         persona?: string;
         riskFlowContext?: string;
         activeConnectors?: string[];
-        provider?: "local" | "ollama-qwen" | "nous";
+        provider?:
+          | "deepseek-direct"
+          | "opencode-go"
+          | "deepseek-oc-api"
+          | "local"
+          | "ollama-qwen"
+          | "nous";
+        model?: string;
         /** Explicit boardroom surface flag — triggers multi-agent DAG dispatch */
         surface?: string;
+        workspace?: Record<string, unknown>;
+        metadata?: Record<string, unknown>;
         boardroom?: boolean;
         userContext?: {
           traderName?: string;
@@ -205,7 +233,7 @@ export function createHarperRoutes() {
             //   Streaming those deltas verbatim leaked raw `{"agentId":"feucht",...}`
             //   into the Harper chat bubble. Buffer per agent, parse on completion,
             //   and emit a one-line prose summary — the source truth (JSON) stays
-            //   available via the Aquarium/AgentDesk surfaces where it belongs.
+            //   available via the ArbitrumChamber/AgentDesk surfaces where it belongs.
             const agentBuffers = new Map<string, string>();
             const agentCompleted = new Set<string>();
 
@@ -408,6 +436,7 @@ export function createHarperRoutes() {
         conversation = await conversationStore.createConversation(userId, {
           title: message.slice(0, 60),
           model: "harper",
+          metadata: buildConversationMetadata(body),
         });
       }
 
@@ -419,44 +448,15 @@ export function createHarperRoutes() {
         model: "harper",
       });
 
-      // VProxy pre-flight — if Local selected but VProxy is down, stream a friendly error
-      const isLocalProvider = !body.provider || body.provider === "local";
-      if (isLocalProvider) {
-        const health = await checkVProxyHealth(true); // force fresh check
-        if (!health.available) {
-          const enc = new TextEncoder();
-          const msgId = `harper-${Date.now()}`;
-          const sseError = (ev: object) =>
-            enc.encode(`data: ${JSON.stringify(ev)}\n\n`);
-          const stream = new ReadableStream<Uint8Array>({
-            start(ctrl) {
-              ctrl.enqueue(sseError({ type: "start", messageId: msgId }));
-              ctrl.enqueue(sseError({ type: "start-step" }));
-              ctrl.enqueue(sseError({ type: "text-start", id: "txt-1" }));
-              const msg = `⚠️ VProxy (Local) is not available right now. Switch the provider dropdown to **Nous** or **ORouter** to continue. (${health.error ?? "connection refused"})`;
-              ctrl.enqueue(
-                sseError({ type: "text-delta", id: "txt-1", delta: msg }),
-              );
-              ctrl.enqueue(sseError({ type: "text-end", id: "txt-1" }));
-              ctrl.enqueue(sseError({ type: "finish-step" }));
-              ctrl.enqueue(sseError({ type: "finish", finishReason: "stop" }));
-              ctrl.enqueue(enc.encode("data: [DONE]\n\n"));
-              ctrl.close();
-            },
-          });
-          return uiStreamToSSEResponse(stream, {
-            "Access-Control-Allow-Origin": c.req.header("Origin") || "*",
-            "X-Request-Id": requestId,
-          });
-        }
-      }
-
+      // Route through the AI provider chain (DeepSeek → OpenCode Go)
+      // The provider chain handles availability internally.
       const providerLabel =
         body.provider === "nous"
           ? "Nous Research (Hermes-4)"
-          : body.provider === "ollama-qwen"
-            ? "Ollama Qwen (Mac)"
-            : "VProxy Local";
+          : body.provider === "opencode-go" ||
+              body.provider === "deepseek-oc-api"
+            ? "OpenCode Go"
+            : "DeepSeek v4 Pro";
       cognition.step(
         "agent-route",
         `Harper (${providerLabel})`,
@@ -477,12 +477,14 @@ export function createHarperRoutes() {
           userId,
           history: body.history,
           thinkHarder: body.thinkHarder,
+          reasoningLevel: body.reasoningLevel,
           persona: body.persona,
           riskFlowContext: body.riskFlowContext,
           activeConnectors: body.activeConnectors,
           surface: body.surface,
           userContext: body.userContext,
           provider: body.provider,
+          model: body.model,
         },
         {
           "Access-Control-Allow-Origin": c.req.header("Origin") || "*",
@@ -498,18 +500,22 @@ export function createHarperRoutes() {
         "Stream initiated",
         `${duration}ms to first byte`,
       );
-      cognition.done();
 
       return response;
     } catch (error) {
       console.error(`[Harper][${requestId}] Handler error:`, error);
       cognition.done();
+      const isCreditError = isAiCreditError(error);
+      if (isCreditError) recordAiProviderFailure("hermes-gateway", error);
       return c.json(
         {
-          error: "Harper request failed",
+          error: isCreditError
+            ? "Hermes gateway credits exhausted"
+            : "Harper request failed",
           details: error instanceof Error ? error.message : String(error),
+          code: isCreditError ? "ai_credits_exhausted" : undefined,
         },
-        500,
+        isCreditError ? 402 : 500,
       );
     }
   });
@@ -591,6 +597,8 @@ export function createHarperRoutes() {
 
   // [S25] Ask CAO dispatch — seeded conversation from catalyst/riskflow/brief context.
   app.route("/dispatch", createDispatchRoute());
+
+  app.route("/ui-actions", createHarperUiActionRoutes());
 
   return app;
 }

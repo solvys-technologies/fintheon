@@ -1,8 +1,8 @@
-// [claude-code 2026-04-17] S23-T1/T2: Debate button → Chart button (LineChart icon, toggles Sanctum 50/50 with TradingView), Proposals iframe-toggle removed, reloadLatestReport wired into AgentDesk synthesis-complete callback to fix Aquarium hang
+// [claude-code 2026-04-17] S23-T1/T2: Debate button → Chart button (LineChart icon, toggles Sanctum 50/50 with TradingView), Proposals iframe-toggle removed, reloadLatestReport wired into AgentDesk synthesis-complete callback to fix ArbitrumChamber hang
 // [claude-code 2026-04-03] Spring-physics CSS transitions for dropdowns, tab content, side panels
 // [claude-code 2026-04-03] S14-T3: Consilium restructure — Boardroom + Apparatus as dropdowns
-// [claude-code 2026-03-30] Wire narratives from NarrativeContext → Sanctum (Aquarium)
-// [claude-code 2026-03-28] S7: Sanctum dropdown (NarrativeFlow/Aquarium/Timeline) inside Consilium tab bar
+// [claude-code 2026-03-30] Wire narratives from NarrativeContext → Sanctum (ArbitrumChamber)
+// [claude-code 2026-03-28] S7: Sanctum dropdown (NarrativeFlow/ArbitrumChamber/Timeline) inside Consilium tab bar
 import {
   useState,
   useCallback,
@@ -16,10 +16,10 @@ import {
   Users,
   Clock,
   Cpu,
+  Landmark,
   PanelRightOpen,
   PanelRightClose,
   ChevronDown,
-  Zap,
   LineChart,
   Scroll,
   Plus,
@@ -29,19 +29,25 @@ import { useConsiliumNav } from "../../lib/consilium-nav-store";
 import { AgentChattr } from "./AgentChattr";
 import { Sanctum } from "../narrative/Sanctum";
 import { TimelinePanel } from "../narrative/TimelinePanel";
-import { ProposalWidget } from "../proposals/ProposalWidget";
-import { NarrativeMap } from "../narrative/NarrativeMap";
+import { DeskRail } from "../desk/DeskRail";
+import {
+  isNarrativeSurfaceMode,
+  type NarrativeSurfaceMode,
+} from "../narrative/narrative-surface-options";
+import { NarrativeCanvas } from "../narrative/NarrativeCanvas";
 import {
   NarrativeProvider,
   useNarrative,
 } from "../../contexts/NarrativeContext";
 import { ApparatusFlowMap } from "../apparatus/ApparatusFlowMap";
-import { FluxerEmbed } from "./FluxerEmbed";
+import { ProxVoiceForum } from "../proxvoice/ProxVoiceForum";
 import { AgentLounge } from "./AgentLounge";
 import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
-import { SharedMemoryPanel } from "../memory/SharedMemoryPanel";
+import { TradingViewQuickRail } from "../layout/TradingViewQuickRail";
+import { FileRoomPanel } from "../memory/FileRoomPanel";
 import { AiLoader } from "../chat/FintheonThread";
 import { useHarperOps } from "../../hooks/useHarperOps";
+import { useThemes } from "../../hooks/useThemes";
 import type {
   SanctumData,
   SanctumPreset,
@@ -54,6 +60,7 @@ import { ChatSidebar } from "../chat/ChatSidebar";
 import { SessionsModal } from "../chat/SessionsModal";
 import { HarperActivityFeed } from "./HarperActivityFeed";
 import { SanctumSitemapDrawer } from "../layout/SanctumSitemapDrawer";
+import { NarrativeAnalysisDropdown } from "./NarrativeAnalysisDropdown";
 import {
   REGULAR_TABS,
   SANCTUM_SUB_VIEWS,
@@ -71,7 +78,7 @@ const ResearchBoard = lazy(() => import("../research/ResearchBoard"));
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-/** Bridge: reads NarrativeContext lanes → SanctumNarrative[] for Sanctum (Aquarium) */
+/** Bridge: reads NarrativeContext lanes → SanctumNarrative[] for Sanctum (ArbitrumChamber) */
 function SanctumWithNarratives(
   props: Omit<React.ComponentProps<typeof Sanctum>, "narratives" | "catalysts">,
 ) {
@@ -139,6 +146,7 @@ function SanctumWithNarratives(
 export function ConsiliumHub() {
   const { selectedSymbol, iframeUrls } = useSettings();
   const { status: harperStatus } = useHarperOps();
+  const { themes: flowThemes, isLoading: flowThemesLoading } = useThemes();
   const [activeTab, setActiveTab] = useState<ConsiliumTab>("chat");
   const [sanctumSubView, setSanctumSubView] =
     useState<SanctumSubView>("narratives");
@@ -156,6 +164,10 @@ export function ConsiliumHub() {
   const [sanctumDropdownOpen, setSanctumDropdownOpen] = useState(false);
   const [boardroomDropdownOpen, setBoardroomDropdownOpen] = useState(false);
   const [apparatusDropdownOpen, setApparatusDropdownOpen] = useState(false);
+  const [analysisDropdownOpen, setAnalysisDropdownOpen] = useState(false);
+  const [analysisResearchOpen, setAnalysisResearchOpen] = useState(true);
+  const [narrativeSurfaceMode, setNarrativeSurfaceMode] =
+    useState<NarrativeSurfaceMode>("workspace");
   const [transitioning, setTransitioning] = useState(false);
   const [agentDeskData, setAgentDeskData] = useState<SanctumData | null>(null);
   const [riskflowItems, setRiskflowItems] = useState<RiskFlowCatalyst[]>([]);
@@ -177,6 +189,8 @@ export function ConsiliumHub() {
   const [showHarperFeed, setShowHarperFeed] = useState(true);
   const [showSessionsDropdown, setShowSessionsDropdown] = useState(false);
   const [boardroomDagRunning, setBoardroomDagRunning] = useState(false);
+  const [revisionStatus, setRevisionStatus] = useState<string | null>(null);
+  const [revisionChecking, setRevisionChecking] = useState(false);
   const transitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Listen for DAG running events dispatched from AgentChattr
@@ -195,15 +209,16 @@ export function ConsiliumHub() {
   const sanctumDropdownRef = useRef<HTMLDivElement>(null);
   const boardroomDropdownRef = useRef<HTMLDivElement>(null);
   const apparatusDropdownRef = useRef<HTMLDivElement>(null);
+  const analysisDropdownRef = useRef<HTMLDivElement>(null);
 
-  // [S23-T3] Persist current Consilium surface so useHermesChat can auto-inject Aquarium/surface
+  // [S23-T3] Persist current Consilium surface so useHermesChat can auto-inject ArbitrumChamber/surface
   // context into Harper + Hermes prompts without threading props through every chat widget.
   useEffect(() => {
     try {
       const surface =
         activeTab === "sanctum"
-          ? sanctumSubView === "aquarium"
-            ? "aquarium"
+          ? sanctumSubView === "arbitrumChamber"
+            ? "arbitrumChamber"
             : sanctumSubView === "narratives"
               ? "narratives"
               : "timeline"
@@ -218,7 +233,10 @@ export function ConsiliumHub() {
 
   useEffect(() => {
     const anyOpen =
-      sanctumDropdownOpen || boardroomDropdownOpen || apparatusDropdownOpen;
+      sanctumDropdownOpen ||
+      boardroomDropdownOpen ||
+      apparatusDropdownOpen ||
+      analysisDropdownOpen;
     if (!anyOpen) return;
     const handler = (e: MouseEvent) => {
       const target = e.target as Node;
@@ -243,10 +261,54 @@ export function ConsiliumHub() {
       ) {
         setApparatusDropdownOpen(false);
       }
+      if (
+        analysisDropdownOpen &&
+        analysisDropdownRef.current &&
+        !analysisDropdownRef.current.contains(target)
+      ) {
+        setAnalysisDropdownOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [sanctumDropdownOpen, boardroomDropdownOpen, apparatusDropdownOpen]);
+  }, [
+    analysisDropdownOpen,
+    apparatusDropdownOpen,
+    boardroomDropdownOpen,
+    sanctumDropdownOpen,
+  ]);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ open?: boolean }>).detail;
+      if (typeof detail?.open === "boolean") setAnalysisResearchOpen(detail.open);
+    };
+    window.addEventListener("fintheon:narrative-research-rail-state", handler);
+    return () =>
+      window.removeEventListener("fintheon:narrative-research-rail-state", handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const mode = (event as CustomEvent<{ mode?: unknown }>).detail?.mode;
+      if (isNarrativeSurfaceMode(mode)) setNarrativeSurfaceMode(mode);
+    };
+    window.addEventListener("fintheon:narrative-surface-state", handler);
+    return () =>
+      window.removeEventListener("fintheon:narrative-surface-state", handler);
+  }, []);
+
+  const handleNarrativeSurfaceSelect = useCallback(
+    (mode: NarrativeSurfaceMode) => {
+      setNarrativeSurfaceMode(mode);
+      window.dispatchEvent(
+        new CustomEvent("fintheon:narrative-surface-change", {
+          detail: { mode },
+        }),
+      );
+    },
+    [],
+  );
 
   // Consume pending tab requests from external navigation (e.g. ChatPanel sidebar icons)
   const { pendingTab, clearPending } = useConsiliumNav();
@@ -283,6 +345,34 @@ export function ConsiliumHub() {
     },
     [activeTab],
   );
+
+  useEffect(() => {
+    const openNarrativeFlow = () => {
+      try {
+        localStorage.removeItem("fintheon:pending-consilium-surface");
+      } catch {
+        /* ignore */
+      }
+      handleSanctumSubChange("narratives");
+      handleNarrativeSurfaceSelect("workspace");
+    };
+    try {
+      if (
+        localStorage.getItem("fintheon:pending-consilium-surface") ===
+        "narrativeflow"
+      ) {
+        window.setTimeout(openNarrativeFlow, 0);
+      }
+    } catch {
+      /* ignore */
+    }
+    window.addEventListener("fintheon:open-narrativeflow", openNarrativeFlow);
+    return () =>
+      window.removeEventListener(
+        "fintheon:open-narrativeflow",
+        openNarrativeFlow,
+      );
+  }, [handleNarrativeSurfaceSelect, handleSanctumSubChange]);
 
   const handleBoardroomSubChange = useCallback(
     (sub: BoardroomSubView) => {
@@ -464,6 +554,35 @@ export function ConsiliumHub() {
       preset?: SanctumPreset,
       narrativeState?: { lanes: any[]; catalysts: any[]; ropes: any[] },
     ) => {
+      // Quick revision check first — scan recent RiskFlow items
+      setRevisionChecking(true);
+      setRevisionStatus(null);
+      try {
+        const revRes = await fetch(`${API_BASE}/api/arbitrum/revision-check`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+        if (revRes.ok) {
+          const rev = (await revRes.json()) as {
+            hasChanges: boolean;
+            statusMessage: string;
+            planUpdated?: boolean;
+          };
+          if (!rev.hasChanges) {
+            setRevisionStatus(rev.statusMessage);
+            setRevisionChecking(false);
+            return;
+          }
+          // Notable items found — status message will show after deliberation
+          setRevisionStatus(rev.statusMessage);
+        }
+      } catch {
+        // Non-blocking — proceed with deliberation even if check fails
+      } finally {
+        setRevisionChecking(false);
+      }
+
       setAgentDeskData((prev) =>
         prev
           ? { ...prev, status: "running" }
@@ -564,14 +683,15 @@ export function ConsiliumHub() {
   const SanctumIcon = activeSanctumSub.icon;
 
   return (
-    <div className="flex h-full flex-col bg-[var(--fintheon-bg)]">
-      {/* Tab bar: Sanctum dropdown + regular tabs + Proposals toggle */}
-      <div className="flex items-center gap-0.5 px-4 pt-3 pb-1">
+    <div className="flex h-full flex-col bg-transparent">
+      {/* Tab bar: Sanctum dropdown + regular tabs + Desk rail toggle */}
+      <div className="consilium-tab-bar flex items-center gap-0.5 px-4 pt-3 pb-1.5">
         <h2
-          className="mr-3 text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
+          className="consilium-tab-bar__title mr-3 flex items-center gap-1.5 text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
           style={{ fontFamily: "var(--font-heading, Roboto, sans-serif)" }}
         >
-          Consilium
+          <Landmark size={14} />
+          <span>Consilium</span>
         </h2>
 
         {/* Chat button (direct) */}
@@ -581,29 +701,39 @@ export function ConsiliumHub() {
             onClick={() => handleTabChange(id)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === id
-                ? "text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
+                ? "border border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
                 : "border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70"
             }`}
             style={{ fontFamily: "var(--font-body, Roboto, sans-serif)" }}
+            aria-label={label}
+            title={label}
           >
             <Icon size={13} />
-            {label}
+            <span className="fintheon-zen-label">{label}</span>
           </button>
         ))}
 
         {/* Sanctum tab with dropdown */}
         <div ref={sanctumDropdownRef} className="relative">
           <button
-            onClick={() => setSanctumDropdownOpen((v) => !v)}
+            onClick={() => {
+              if (activeTab !== "sanctum") {
+                handleSanctumSubChange(sanctumSubView);
+                return;
+              }
+              setSanctumDropdownOpen((v) => !v);
+            }}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === "sanctum"
-                ? "text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
+                ? "border border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
                 : "border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70"
             }`}
             style={{ fontFamily: "var(--font-body, Roboto, sans-serif)" }}
+            aria-label={`Sanctum: ${activeSanctumSub.label}`}
+            title={`Sanctum: ${activeSanctumSub.label}`}
           >
-            <Zap size={13} />
-            Sanctum
+            <SanctumIcon size={13} />
+            <span className="fintheon-zen-label">{activeSanctumSub.label}</span>
             <ChevronDown
               size={10}
               className={`opacity-50 transition-transform ${sanctumDropdownOpen ? "rotate-180" : ""}`}
@@ -611,7 +741,7 @@ export function ConsiliumHub() {
           </button>
 
           <div
-            className="absolute top-full left-0 mt-1 z-50 min-w-[220px] rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl overflow-hidden"
+            className="absolute top-full left-0 mt-1 z-50 min-w-[220px] overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]"
             style={{
               opacity: sanctumDropdownOpen ? 1 : 0,
               transform: sanctumDropdownOpen
@@ -627,9 +757,9 @@ export function ConsiliumHub() {
                 <button
                   key={id}
                   onClick={() => handleSanctumSubChange(id)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
+                  className={`w-full flex items-center gap-2.5 border border-transparent px-3 py-2 text-xs transition-colors ${
                     sanctumSubView === id && activeTab === "sanctum"
-                      ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
+                      ? "border border-[var(--fintheon-accent)]/22 text-[var(--fintheon-accent)]"
                       : "text-[var(--fintheon-text)]/50 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/5"
                   }`}
                   style={{
@@ -661,13 +791,15 @@ export function ConsiliumHub() {
             onClick={() => setBoardroomDropdownOpen((v) => !v)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === "boardroom"
-                ? "text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
+                ? "border border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
                 : "border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70"
             }`}
             style={{ fontFamily: "var(--font-body, Roboto, sans-serif)" }}
+            aria-label="Imperium"
+            title="Imperium"
           >
             <Users size={13} />
-            Imperium
+            <span className="fintheon-zen-label">Imperium</span>
             {harperStatus?.loop?.alive && (
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
             )}
@@ -684,7 +816,7 @@ export function ConsiliumHub() {
           </button>
 
           <div
-            className="absolute top-full left-0 mt-1 z-50 min-w-[200px] rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl overflow-hidden"
+            className="absolute top-full left-0 mt-1 z-50 min-w-[200px] overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]"
             style={{
               opacity: boardroomDropdownOpen ? 1 : 0,
               transform: boardroomDropdownOpen
@@ -700,9 +832,9 @@ export function ConsiliumHub() {
                 <button
                   key={id}
                   onClick={() => handleBoardroomSubChange(id)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
+                  className={`w-full flex items-center gap-2.5 border border-transparent px-3 py-2 text-xs transition-colors ${
                     boardroomSubView === id && activeTab === "boardroom"
-                      ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
+                      ? "border border-[var(--fintheon-accent)]/22 text-[var(--fintheon-accent)]"
                       : "text-[var(--fintheon-text)]/50 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/5"
                   }`}
                   style={{
@@ -734,13 +866,15 @@ export function ConsiliumHub() {
             onClick={() => setApparatusDropdownOpen((v) => !v)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === "apparatus"
-                ? "text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
+                ? "border border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
                 : "border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70"
             }`}
             style={{ fontFamily: "var(--font-body, Roboto, sans-serif)" }}
+            aria-label="Apparatus"
+            title="Apparatus"
           >
             <Cpu size={13} />
-            Apparatus
+            <span className="fintheon-zen-label">Apparatus</span>
             <ChevronDown
               size={10}
               className={`opacity-50 transition-transform ${apparatusDropdownOpen ? "rotate-180" : ""}`}
@@ -748,7 +882,7 @@ export function ConsiliumHub() {
           </button>
 
           <div
-            className="absolute top-full left-0 mt-1 z-50 min-w-[210px] rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl overflow-hidden"
+            className="absolute top-full left-0 mt-1 z-50 min-w-[210px] overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]"
             style={{
               opacity: apparatusDropdownOpen ? 1 : 0,
               transform: apparatusDropdownOpen
@@ -764,9 +898,9 @@ export function ConsiliumHub() {
                 <button
                   key={id}
                   onClick={() => handleApparatusSubChange(id)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
+                  className={`w-full flex items-center gap-2.5 border border-transparent px-3 py-2 text-xs transition-colors ${
                     apparatusSubView === id && activeTab === "apparatus"
-                      ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
+                      ? "border border-[var(--fintheon-accent)]/22 text-[var(--fintheon-accent)]"
                       : "text-[var(--fintheon-text)]/50 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/5"
                   }`}
                   style={{
@@ -844,54 +978,99 @@ export function ConsiliumHub() {
         )}
 
         {activeTab === "sanctum" && (
-          <button
-            onClick={toggleChart}
-            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
-              showChart
-                ? "text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
-                : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
+          <div
+            id="narrativeflow-header-actions"
+            className={`flex items-center gap-1.5 ${
+              sanctumSubView === "narratives" ? "" : "hidden"
             }`}
-            title={showChart ? "Hide Chart" : "Show Chart"}
-          >
-            <LineChart size={14} />
-            Chart
-          </button>
+          />
+        )}
+
+        {activeTab === "sanctum" && (
+          <div
+            id="narrativeflow-map-controls"
+            className={`flex items-center gap-1.5 ${
+              sanctumSubView === "narratives" ? "" : "hidden"
+            }`}
+          />
         )}
 
         <button
-          onClick={toggleProposals}
-          className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
-            showProposals
-              ? "text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
+          onClick={toggleChart}
+          className={`flex items-center rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+            showChart
+              ? "border border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
               : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
           }`}
-          title={showProposals ? "Hide Proposals" : "Show Proposals"}
+          title={showChart ? "Hide TradingView rail" : "Show TradingView rail"}
+          aria-label={showChart ? "Hide TradingView rail" : "Show TradingView rail"}
         >
-          {showProposals ? (
-            <PanelRightClose size={14} />
-          ) : (
-            <PanelRightOpen size={14} />
-          )}
-          Proposals
+          <LineChart size={14} />
         </button>
+
+        {activeTab === "sanctum" && sanctumSubView === "narratives" ? (
+          <div ref={analysisDropdownRef} className="relative">
+            <NarrativeAnalysisDropdown
+              open={analysisDropdownOpen}
+              currentMode={narrativeSurfaceMode}
+              showDeskRail={showProposals}
+              researchRailOpen={analysisResearchOpen}
+              onOpenChange={setAnalysisDropdownOpen}
+              onSelectMode={handleNarrativeSurfaceSelect}
+              onToggleDeskRail={toggleProposals}
+              onToggleResearchRail={() => {
+                window.dispatchEvent(
+                  new Event("fintheon:narrative-research-rail-toggle"),
+                );
+                setAnalysisResearchOpen((value) => !value);
+              }}
+            />
+          </div>
+        ) : (
+          <button
+            onClick={toggleProposals}
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+              showProposals
+                ? "border border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
+                : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
+            }`}
+            title={showProposals ? "Hide Desk" : "Show Desk"}
+            aria-label={showProposals ? "Hide Desk" : "Show Desk"}
+          >
+            <Users size={14} />
+            <span className="fintheon-zen-label">Desk</span>
+          </button>
+        )}
       </div>
 
-      {/* Tab content + Proposals panel */}
+      {/* Tab content + Desk rail */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        <div
-          className="flex-1 min-h-0 min-w-0 overflow-hidden"
-          style={{
-            opacity: transitioning ? 0 : 1,
-            transform: transitioning ? "translateY(6px)" : "translateY(0)",
-            transition:
-              "opacity 220ms var(--ease-spring), transform 220ms var(--ease-spring)",
-          }}
-        >
+        <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
+          <div className="flex h-full min-h-0">
+            <div
+              className="h-full min-w-0 overflow-hidden transition-[flex-basis] duration-300 ease-out"
+              style={{ flex: `0 0 ${showChart ? "50%" : "100%"}` }}
+            >
+              <div
+                className="h-full w-full"
+                style={{
+                  opacity: transitioning ? 0 : 1,
+                  transform: transitioning ? "translateY(6px)" : "translateY(0)",
+                  transition:
+                    "opacity 220ms var(--ease-spring), transform 220ms var(--ease-spring)",
+                }}
+              >
           {/* Sanctum sub-views — shared NarrativeProvider so seeds carry across views */}
           {displayedTab === "sanctum" && (
             <NarrativeProvider>
-              {displayedSubView === "narratives" && <NarrativeMap />}
-              {displayedSubView === "aquarium" && (
+              {displayedSubView === "narratives" && (
+                <NarrativeCanvas
+                  themes={flowThemes}
+                  isLoading={flowThemesLoading}
+                  chartMode={showChart}
+                />
+              )}
+              {displayedSubView === "arbitrumChamber" && (
                 <SanctumWithNarratives
                   data={agentDeskData}
                   onRun={handleRunAgentDesk}
@@ -900,6 +1079,8 @@ export function ConsiliumHub() {
                   selectedSymbol={selectedSymbol.symbol}
                   chartMode={showChart}
                   onSynthesisComplete={reloadLatestReport}
+                  revisionStatus={revisionStatus}
+                  revisionChecking={revisionChecking}
                 />
               )}
               {displayedSubView === "timeline" && <TimelinePanel />}
@@ -917,7 +1098,7 @@ export function ConsiliumHub() {
           {/* Imperium sub-views */}
           {displayedTab === "boardroom" && (
             <>
-              {displayedBoardroomSub === "forum" && <FluxerEmbed />}
+              {displayedBoardroomSub === "forum" && <ProxVoiceForum />}
               {displayedBoardroomSub === "agentic-chat" && (
                 <div className="flex h-full">
                   <div className="flex-1 min-w-0">
@@ -974,15 +1155,20 @@ export function ConsiliumHub() {
           {displayedTab === "apparatus" && (
             <>
               {displayedApparatusSub === "desk" && <ApparatusFlowMap />}
-              {displayedApparatusSub === "fileroom" && (
-                <SharedMemoryPanel mode="fileroom" />
-              )}
+              {displayedApparatusSub === "fileroom" && <FileRoomPanel />}
               {displayedApparatusSub === "lounge" && <AgentLounge />}
             </>
           )}
+              </div>
+            </div>
+            <TradingViewQuickRail
+              open={showChart}
+              selectedSymbol={selectedSymbol.symbol}
+            />
+          </div>
         </div>
 
-        {/* Collapsible Proposals + Scorecards right panel */}
+        {/* Collapsible Desk rail */}
         <div
           className={`flex-shrink-0 overflow-hidden border-l border-[var(--fintheon-accent)]/10 ${
             showProposals ? "w-80" : "w-0 border-l-0"
@@ -999,7 +1185,7 @@ export function ConsiliumHub() {
             }}
           >
             <div className="flex-1 min-h-0 overflow-y-auto">
-              <ProposalWidget />
+              <DeskRail />
             </div>
           </div>
         </div>

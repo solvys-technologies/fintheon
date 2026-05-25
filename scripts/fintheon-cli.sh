@@ -11,7 +11,7 @@ if [[ ! -d "$FINTHEON_ROOT/.git" ]] && [[ "$1" != "setup" ]]; then
   echo "  Fintheon not found at $FINTHEON_ROOT"
   echo "  Run setup first:"
   echo ""
-  echo '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/main/scripts/fintheon-setup.sh)"'
+  echo '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.7.27/scripts/fintheon-setup.sh)"'
   echo ""
   exit 1
 fi
@@ -25,7 +25,7 @@ case "$1" in
       bash "$FINTHEON_ROOT/scripts/fintheon-setup.sh"
     else
       echo "Downloading setup script..."
-      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/main/scripts/fintheon-setup.sh)"
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.7.27/scripts/fintheon-setup.sh)"
     fi
     ;;
   start)
@@ -80,14 +80,6 @@ case "$1" in
       echo "  Start with: fintheon start"
     fi
     ;;
-  oauth)
-    if [[ -f "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh" ]]; then
-      bash "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh"
-    else
-      echo "  Missing script: $FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh"
-      exit 1
-    fi
-    ;;
   login)
     PLATFORM="${2:-tradingview}"
     echo ""
@@ -116,13 +108,6 @@ case "$1" in
       echo "  Backend:      ✗ Not running"
     fi
 
-    # VProxy
-    if curl -s localhost:8317/v1/models -H "Authorization: Bearer CLI_PROXY_API_KEY" 2>/dev/null | grep -q "claude"; then
-      echo "  VProxy:       ✓ Claude models available on :8317"
-    else
-      echo "  VProxy:       ✗ No Claude models (run: fintheon oauth)"
-    fi
-
     # Strands SDK
     if [[ -d "$FINTHEON_ROOT/backend-hono/node_modules/@strands-agents" ]]; then
       STRANDS_VER=$(cat "$FINTHEON_ROOT/backend-hono/node_modules/@strands-agents/sdk/package.json" 2>/dev/null | grep '"version"' | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
@@ -139,19 +124,11 @@ case "$1" in
       echo "  Zod:          ✗ v$ZOD_VER (need v4+, run: fintheon update)"
     fi
 
-    # Claude Code hooks
-    if [[ -f "$FINTHEON_ROOT/.claude/settings.json" ]] && grep -q "hooks" "$FINTHEON_ROOT/.claude/settings.json" 2>/dev/null; then
-      HOOK_COUNT=$(ls "$FINTHEON_ROOT/.claude/hooks/"*.sh 2>/dev/null | wc -l | tr -d ' ')
-      echo "  Hooks:        ✓ $HOOK_COUNT scripts in .claude/hooks/"
-    else
-      echo "  Hooks:        ✗ Not configured"
-    fi
-
     # jq
     if command -v jq &>/dev/null; then
       echo "  jq:           ✓ $(jq --version 2>/dev/null || echo 'available')"
     else
-      echo "  jq:           ⚠ Missing (hooks use python3 fallback)"
+      echo "  jq:           ⚠ Missing (diagnostics use python3 fallback)"
     fi
 
     # Build check
@@ -242,7 +219,6 @@ case "$1" in
     printf "  ${_G}stop${_R}      ${_D}Stop everything${_R}\n"
     printf "  ${_G}status${_R}    ${_D}Check if services are running${_R}\n"
     printf "  ${_G}logs${_R}      ${_D}Tail backend logs${_R}\n"
-    printf "  ${_G}oauth${_R}     ${_D}Connect Anthropic via VProxy${_R}\n"
     printf "  ${_G}login${_R}     ${_D}Sign in to trading platforms${_R}\n"
     printf "  ${_G}peers${_R}     ${_D}Peer + Rettiwt + Agent Reach onboarding${_R}\n"
     printf "  ${_G}setup${_R}     ${_D}Re-run first-time setup${_R}\n"

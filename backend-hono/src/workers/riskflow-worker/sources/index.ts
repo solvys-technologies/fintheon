@@ -1,54 +1,36 @@
+// [claude-code 2026-05-03] Unified X tier: all handles (wire + commentary + macro)
+// polled in one home-timeline pass, filtered post-extraction by handle-routing rules.
+// Replaces the three separate tier collectors (breaking/commentary/standard X).
+// Non-X standard-tier sources (COT, FOMC, Fed Speeches, Kalshi) kept separate.
+// [claude-code 2026-05-05] Increased unified X tier safeCollect timeout 90s→150s.
 // [claude-code 2026-04-27] S46.4 source narrowing per TP:
 //   - SEC EDGAR + Treasury press REMOVED from standard tier.
-//   - Exa STRIPPED entirely (worker no longer imports the Exa collector;
-//     sources/exa.ts deleted in v5.33.2 per TP "turn off Exa completely").
+//   - Exa STRIPPED entirely (worker no longer imports the Exa collector).
 //   - Standard tier .gov set narrowed to TP-approved trio:
-//       1) COT (Commitment of Traders) — CFTC weekly Friday 15:30 ET via
-//          browser-harness (HTML page; no clean RSS).
-//       2) FOMC Minutes — federalreserve.gov/feeds/press_monetary.xml,
-//          post-filtered to titles starting with "Minutes of the Federal
-//          Open Market Committee" (drops every other press release).
-//       3) Speech transcripts — federalreserve.gov/feeds/speeches.xml, full feed.
+//       1) COT (Commitment of Traders) — CFTC weekly
+//       2) FOMC Minutes — federalreserve.gov/feeds/press_monetary.xml
+//       3) Speech transcripts — federalreserve.gov/feeds/speeches.xml
 //   - Macro X-handle path unchanged.
-// [claude-code 2026-04-26] Removed direct mainstream-media scrape URLs from
-// breaking tier (reuters.com, bloomberg.com browser-harness + RSS). Policy:
-// no website pulls from mainstream media. Twitter wire-handles + .gov + bank
-// research are the only intake. Standard tier kept .gov / Treasury / Exa
-// unchanged. Mainstream content still flows through curated Twitter relays
-// when those handles re-quote a headline.
-// [claude-code 2026-04-24] S35-T10: renamed dir from workers/news-worker. Tier-coordinator
-//   semantics unchanged; service log strings now emit "riskflow-worker".
-// [claude-code 2026-04-19] S27-T7 (W2d): tier coordinators — compose source
-// collectors and hand off to persist.ts. Per-source failures are isolated so
-// one bad source never kills the tier (AgentReach pattern).
-// [claude-code 2026-04-24] S34-T5: add DB-driven handle collectors — Wire in
-// Breaking tier, Macro in Standard tier — sourced from riskflow_source_accounts
-// via source-accounts-service (30s cache). Closes the Refinement Engine loop.
+// [claude-code 2026-04-26] Removed direct mainstream-media scrape URLs.
+// [claude-code 2026-04-24] S35-T10: renamed dir from workers/news-worker.
+// [claude-code 2026-04-24] S34-T5: add DB-driven handle collectors.
+// [claude-code 2026-04-30] S55: Commentary tier added.
+// [claude-code 2026-04-29] Rettiwt + Agent Reach removed from active worker composition.
 
 import { collectFromBrowserHarness } from "./browser-harness.js";
-import { collectFromAgentReach } from "./agent-reach.js";
+import { collectFromFinancialJuiceRss } from "./financialjuice-rss.js";
+import { collectFromOfficialGovRss } from "./official-gov-rss.js";
 import { collectFromXHandlesBrowser } from "./x-handles-browser.js";
 import { writeCollectedItems } from "../persist.js";
-import {
-  getWireHandles,
-  getMacroHandles,
-} from "../../../services/source-accounts/source-accounts-service.js";
+import { getBrowserHandles } from "../../../services/source-accounts/source-accounts-service.js";
 import type { CollectedNewsItem } from "./types.js";
-// [claude-code 2026-04-29] S48-T5: Kalshi whale-alert pipe wired into
-// Standard tier. Pipeline-gated via ingest_pipeline_state so TP can kill
-// the source from the Refinement Engine without a deploy.
-import { pollKalshiWhaleAlerts } from "../../../services/riskflow/kalshi-feed-pipe.js";
 import { isPipelineEnabled } from "../../../services/riskflow/pipeline-gate.js";
+import { pollKalshiWhaleAlerts } from "../../../services/riskflow/kalshi-feed-pipe.js";
 
-// FOMC Minutes title prefix — press_monetary.xml mixes minutes with every other
-// monetary press release (intermeeting statements, FAQ updates, etc.). TP only
-// wants the meeting minutes; drop the rest.
 const FOMC_MINUTES_TITLE_PREFIX =
   "Minutes of the Federal Open Market Committee";
-
-// CFTC Commitment of Traders weekly report — public HTML page updated Friday
-// 15:30 ET. Browser-harness already strips boilerplate and pulls the body.
 const COT_REPORT_URL = "https://www.cftc.gov/dea/futures/deacmesf.htm";
+const FINANCIALJUICE_HANDLE = "financialjuice";
 
 export interface TierRunResult {
   ingested: number;
@@ -58,9 +40,18 @@ export interface TierRunResult {
 async function safeCollect(
   label: string,
   fn: () => Promise<CollectedNewsItem[]>,
+  timeoutMs = 90_000,
 ): Promise<{ items: CollectedNewsItem[]; errors: number }> {
   try {
-    const items = await fn();
+    const items = await Promise.race([
+      fn(),
+      new Promise<CollectedNewsItem[]>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`collector timeout after ${timeoutMs}ms`)),
+          timeoutMs,
+        ),
+      ),
+    ]);
     return { items, errors: 0 };
   } catch (err) {
     console.warn(
@@ -76,79 +67,77 @@ async function safeCollect(
   }
 }
 
-export async function runBreakingTier(): Promise<TierRunResult> {
-  // PRIMARY: Browserbase / Playwright-driven X.com timeline scrape per
-  // curated handle. Public Nitter mirrors are mostly dead, so this is the
-  // first attempt every tick. Returns tweet-granularity items keyed on
-  // tweet_id for clean dedupe.
-  const wireHandles = await getWireHandles().catch(() => []);
-  const primary = await safeCollect("x-handles-browser:wire", () =>
-    collectFromXHandlesBrowser({ handles: wireHandles, tier: "breaking" }),
+/**
+ * Unified X tier: one home-timeline pass for all browser handles.
+ * Content filtering via handle-routing.ts rules applied post-extraction.
+ * Passes tier="unified" so the tier gating in collectFromXHandlesBrowser
+ * lets all routing tiers through.
+ */
+export async function runUnifiedXTier(): Promise<TierRunResult> {
+  const handles = (await getBrowserHandles().catch(() => [] as string[]))
+    // FinancialJuice is now RSS-primary. Keep the X collector focused on
+    // sources that still require browser control.
+    .filter((handle) => handle.toLowerCase() !== FINANCIALJUICE_HANDLE);
+  if (handles.length === 0) {
+    console.log(
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        service: "riskflow-worker",
+        stage: "unified_x_tier_empty",
+        message: "No browser handles configured",
+      }),
+    );
+    return { ingested: 0, errors: 0 };
+  }
+
+  // 150s timeout — auth refresh can take 60s + timeline fetch 60s = 120s max
+  const primary = await safeCollect(
+    "x-handles-browser:unified",
+    () => collectFromXHandlesBrowser({ handles, tier: "unified" }),
+    150_000,
   );
 
-  // SECONDARY: agent-reach Nitter RSS — only fires if the primary returned
-  // nothing for a handle (Playwright crash, X login wall, etc.). Idempotent
-  // tweet_id collapsing means duplicates collapse if both win.
-  const fallback =
-    primary.items.length === 0 && wireHandles.length > 0
-      ? await safeCollect("agent-reach:wire-handles", () =>
-          collectFromAgentReach({ handles: wireHandles, tier: "breaking" }),
-        )
-      : { items: [] as CollectedNewsItem[], errors: 0 };
-
-  const items = [...primary.items, ...fallback.items];
-  const errors = primary.errors + fallback.errors;
-  const ingested = await writeCollectedItems(items);
-  return { ingested, errors };
+  const ingested = await writeCollectedItems(primary.items);
+  return { ingested, errors: primary.errors };
 }
 
+export async function runFinancialJuiceRssTier(): Promise<TierRunResult> {
+  const result = await safeCollect(
+    "financialjuice-rss",
+    () => collectFromFinancialJuiceRss({ tier: "breaking" }),
+    7_000,
+  );
+  const ingested = await writeCollectedItems(result.items);
+  return { ingested, errors: result.errors };
+}
+
+/**
+ * Standard tier: non-X sources only (COT, FOMC, Fed Speeches, Kalshi).
+ * X handles are now in the unified tier.
+ */
 export async function runStandardTier(): Promise<TierRunResult> {
   const results = await Promise.all([
-    // [claude-code 2026-04-27] S46.4: only the COT weekly report is left from
-    // the gov-website pulls. SEC EDGAR + Federal Reserve press-releases page
-    // were noisy and overlap with the FOMC Minutes/Speech RSS we pull below;
-    // SEC EDGAR + Treasury press dropped per TP. Keep the wrapper so the
-    // browser-harness pool stays warm for COT.
     safeCollect("browser-harness:cot", () =>
       collectFromBrowserHarness({
         urls: [COT_REPORT_URL],
         tier: "standard",
       }),
     ),
-    // [claude-code 2026-04-27] FOMC Minutes — pulled from press_monetary.xml
-    // and post-filtered to titles starting with the canonical minutes prefix.
-    // The press_monetary feed mixes minutes with intermeeting statements,
-    // FAQ updates, and admin notes; TP only wants the actual meeting minutes.
-    safeCollect("agent-reach:fomc-minutes", async () => {
-      const items = await collectFromAgentReach({
-        rssFeeds: ["https://www.federalreserve.gov/feeds/press_monetary.xml"],
+    safeCollect("official-gov-rss:fomc-minutes", async () => {
+      const items = await collectFromOfficialGovRss({
+        feeds: ["https://www.federalreserve.gov/feeds/press_monetary.xml"],
         tier: "standard",
       });
       return items.filter((it) =>
         it.headline.startsWith(FOMC_MINUTES_TITLE_PREFIX),
       );
     }),
-    // [claude-code 2026-04-27] Fed speech transcripts — full feed.
-    safeCollect("agent-reach:fed-speeches", () =>
-      collectFromAgentReach({
-        rssFeeds: ["https://www.federalreserve.gov/feeds/speeches.xml"],
+    safeCollect("official-gov-rss:fed-speeches", () =>
+      collectFromOfficialGovRss({
+        feeds: ["https://www.federalreserve.gov/feeds/speeches.xml"],
         tier: "standard",
       }),
     ),
-    // PRIMARY for macro handles — Browserbase/Playwright. Falls through to
-    // Nitter (next entry) only if the browser path returned nothing for a
-    // handle.
-    safeCollect("x-handles-browser:macro", async () => {
-      const handles = await getMacroHandles();
-      if (handles.length === 0) return [];
-      return collectFromXHandlesBrowser({ handles, tier: "standard" });
-    }),
-    safeCollect("agent-reach:macro-handles", async () => {
-      const handles = await getMacroHandles();
-      if (handles.length === 0) return [];
-      return collectFromAgentReach({ handles, tier: "standard" });
-    }),
-    // S48-T5: Kalshi whale alerts (Econ & Politics only). Pipeline-gated.
     safeCollect("kalshi-whale", async () => {
       if (!(await isPipelineEnabled("kalshi-whale"))) return [];
       return pollKalshiWhaleAlerts();
@@ -159,4 +148,33 @@ export async function runStandardTier(): Promise<TierRunResult> {
   const errors = results.reduce((sum, r) => sum + r.errors, 0);
   const ingested = await writeCollectedItems(items);
   return { ingested, errors };
+}
+
+// Legacy exports for backward compatibility during migration.
+// These are no-op wrappers that log a warning — the scheduler now calls
+// runUnifiedXTier directly. Remove after 2026-06-03.
+export async function runBreakingTier(): Promise<TierRunResult> {
+  console.warn(
+    JSON.stringify({
+      ts: new Date().toISOString(),
+      service: "riskflow-worker",
+      stage: "legacy_tier_call",
+      tier: "breaking",
+      message: "runBreakingTier is deprecated — use runUnifiedXTier",
+    }),
+  );
+  return { ingested: 0, errors: 0 };
+}
+
+export async function runCommentaryTier(): Promise<TierRunResult> {
+  console.warn(
+    JSON.stringify({
+      ts: new Date().toISOString(),
+      service: "riskflow-worker",
+      stage: "legacy_tier_call",
+      tier: "commentary",
+      message: "runCommentaryTier is deprecated — use runUnifiedXTier",
+    }),
+  );
+  return { ingested: 0, errors: 0 };
 }

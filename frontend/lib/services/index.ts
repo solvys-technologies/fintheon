@@ -17,6 +17,11 @@ export * from "./data";
 export * from "./journal";
 export * from "./memory";
 export * from "./editor";
+export * from "./proxvoice";
+
+export * from "./soul";
+export * from "./file-room";
+export * from "./desk-inbox";
 
 import ApiClient from "../apiClient";
 import { McpService } from "../mcp-service";
@@ -61,6 +66,10 @@ import {
   BulletinService,
   StickyBulletinService,
 } from "./editor";
+import { SoulService } from "./soul";
+import { FileRoomService } from "./file-room";
+import { DeskInboxService } from "./desk-inbox";
+import { ProxVoiceService } from "./proxvoice";
 
 // Main Backend Client Interface
 export interface BackendClient {
@@ -98,6 +107,10 @@ export interface BackendClient {
   memory: MemoryService;
   editorSidebar: EditorSidebarService;
   stickyBulletin: StickyBulletinService;
+  soul: SoulService;
+  fileRoom: FileRoomService;
+  deskInbox: DeskInboxService;
+  proxVoice: ProxVoiceService;
 }
 
 // Create backend client from API client
@@ -137,5 +150,9 @@ export function createBackendClient(client: ApiClient): BackendClient {
     memory: new MemoryService(client),
     editorSidebar: new EditorSidebarService(client),
     stickyBulletin: new StickyBulletinService(client),
+    soul: new SoulService(client),
+    fileRoom: new FileRoomService(client),
+    deskInbox: new DeskInboxService(client),
+    proxVoice: new ProxVoiceService(client),
   };
 }

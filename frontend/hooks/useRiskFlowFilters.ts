@@ -1,4 +1,4 @@
-// [claude-code 2026-04-10] S9-T2: Extracted filter state from RiskFlowMini
+// [claude-code 2026-04-29] S51: added Earnings to VALID_BUCKETS for filter validation
 // [claude-code 2026-04-15] S16-T5: Expanded source filters for all pipeline sources
 // [claude-code 2026-04-19] RiskFlow card polish: severity filter is now a multi-select Set
 //   so the user can stack priorities (e.g. CRIT + HIGH). Empty set = "All". The legacy
@@ -24,6 +24,7 @@ import {
 import { useSettings } from "../contexts/SettingsContext";
 
 const STORAGE_KEY = "fintheon:riskflow-filters:v2";
+const FILTER_EVENT = "fintheon:riskflow-filters:update";
 const VALID_SEVERITIES: ReadonlySet<AlertSeverity> = new Set([
   "critical",
   "high",
@@ -36,6 +37,7 @@ const VALID_BUCKETS: ReadonlySet<SourceBucket> = new Set([
   "OSINT",
   "Commentary",
   "Econ",
+  "Earnings",
   "Geopolitical",
 ]);
 
@@ -43,6 +45,10 @@ interface PersistedFilterState {
   severities: AlertSeverity[];
   buckets: SourceBucket[];
   proposals: boolean;
+}
+
+interface FilterEventDetail extends PersistedFilterState {
+  sourceId: string;
 }
 
 function loadPersisted(): PersistedFilterState | null {
@@ -88,6 +94,18 @@ function savePersisted(state: PersistedFilterState): void {
   } catch {}
 }
 
+function broadcastPersisted(
+  state: PersistedFilterState,
+  sourceId: string,
+): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent<FilterEventDetail>(FILTER_EVENT, {
+      detail: { ...state, sourceId },
+    }),
+  );
+}
+
 export type SeverityFilter = "all" | "high" | "medium";
 // [claude-code 2026-04-19] Legacy single-value source filter kept for back-compat.
 // New callers should use `bucketSet` / `toggleBucket` instead.
@@ -124,6 +142,9 @@ interface UseRiskFlowFiltersReturn {
 export function useRiskFlowFilters(): UseRiskFlowFiltersReturn {
   const { preferences, updatePreferences } = useSettings();
   const remoteFilters = preferences.riskflowFilters;
+  const instanceId = useRef(
+    `riskflow-filters-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  );
 
   const [severitySet, setSeveritySet] = useState<Set<AlertSeverity>>(() => {
     const persisted = loadPersisted();
@@ -137,6 +158,38 @@ export function useRiskFlowFilters(): UseRiskFlowFiltersReturn {
     const persisted = loadPersisted();
     return persisted?.proposals ?? false;
   });
+
+  useEffect(() => {
+    const applyState = (state: PersistedFilterState) => {
+      const nextSev = new Set(state.severities);
+      const nextBuckets = new Set(state.buckets);
+      setSeveritySet((prev) => (setsEqual(prev, nextSev) ? prev : nextSev));
+      setBucketSet((prev) =>
+        setsEqual(prev, nextBuckets) ? prev : nextBuckets,
+      );
+      setShowProposals((prev) =>
+        prev === state.proposals ? prev : state.proposals,
+      );
+    };
+
+    const onFilterEvent = (event: Event) => {
+      const detail = (event as CustomEvent<FilterEventDetail>).detail;
+      if (!detail || detail.sourceId === instanceId.current) return;
+      applyState(detail);
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== STORAGE_KEY) return;
+      const persisted = loadPersisted();
+      if (persisted) applyState(persisted);
+    };
+
+    window.addEventListener(FILTER_EVENT, onFilterEvent as EventListener);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(FILTER_EVENT, onFilterEvent as EventListener);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
 
   // Reconcile with server preferences. First sync after preferences load
   // (updatedAt > epoch) wins — local state is overwritten with the server's
@@ -178,11 +231,13 @@ export function useRiskFlowFilters(): UseRiskFlowFiltersReturn {
   }, [remoteFilters]);
 
   useEffect(() => {
-    savePersisted({
+    const nextPersisted = {
       severities: Array.from(severitySet),
       buckets: Array.from(bucketSet),
       proposals: showProposals,
-    });
+    };
+    savePersisted(nextPersisted);
+    broadcastPersisted(nextPersisted, instanceId.current);
     if (!reconciled.current) return;
     const sev = Array.from(severitySet);
     const buc = Array.from(bucketSet);

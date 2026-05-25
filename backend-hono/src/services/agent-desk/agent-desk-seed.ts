@@ -51,6 +51,13 @@ interface ContextSnapshot {
   gexNet?: number;
   macroIndicators?: Record<string, number>;
   econPrintHistory?: EconPrintSnapshot[];
+  upcomingEconEvents?: Array<{
+    eventName: string;
+    date: string;
+    time: string | null;
+    country: string | null;
+    impact: string | null;
+  }>;
 }
 
 /** Map narrative categories to AgentDesk agent roles */
@@ -258,6 +265,18 @@ export function convertNarrativeToSeed(
         iv: p.ivScore,
       })),
     };
+  }
+
+  if (context?.upcomingEconEvents?.length) {
+    environmentalContext.upcomingEconEvents = context.upcomingEconEvents
+      .slice(0, 8)
+      .map((event) => ({
+        event: event.eventName,
+        date: event.date,
+        time: event.time,
+        country: event.country,
+        impact: event.impact,
+      }));
   }
 
   return {

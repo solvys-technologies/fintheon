@@ -317,9 +317,9 @@ export function RiskFlowSettings() {
         </h3>
 
         {weightsLoading ? (
-          <p className="text-xs text-gray-500">Loading weights...</p>
+          <p className="text-right text-xs text-gray-500">Loading weights...</p>
         ) : weights.length === 0 ? (
-          <div className="text-xs text-gray-500">
+          <div className="text-right text-xs text-gray-500">
             <p className="mb-2">No calibration weights found.</p>
             <button
               onClick={handleResetAllWeights}
@@ -395,7 +395,7 @@ export function RiskFlowSettings() {
             ))}
 
             {/* Save / Reset buttons */}
-            <div className="flex items-center gap-2 pt-2">
+            <div className="flex flex-col items-end gap-1 pt-2 text-right sm:flex-row sm:justify-end sm:gap-2">
               <button
                 onClick={handleSaveAllWeights}
                 disabled={weightsSaving || dirtyCount === 0}
@@ -440,7 +440,7 @@ export function RiskFlowSettings() {
         </h3>
 
         {regimeLoading ? (
-          <p className="text-xs text-gray-500">Loading regime...</p>
+          <p className="text-right text-xs text-gray-500">Loading regime...</p>
         ) : regime ? (
           <div
             className="rounded-lg border p-4 space-y-3"
@@ -451,7 +451,7 @@ export function RiskFlowSettings() {
             }}
           >
             {/* Regime selector + confidence */}
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex flex-wrap items-start justify-end gap-3 text-right">
               <div className="relative">
                 <button
                   onClick={() => setRegimeDropdownOpen((prev) => !prev)}
@@ -515,7 +515,7 @@ export function RiskFlowSettings() {
             </div>
 
             {/* Set by / timestamp */}
-            <p className="text-[11px] text-gray-600">
+            <p className="text-right text-[11px] text-gray-600">
               Set by: <span className="text-gray-400">{regime.detectedBy}</span>
               {regime.timestamp && (
                 <>
@@ -531,10 +531,10 @@ export function RiskFlowSettings() {
             {/* Sentiment multipliers */}
             {regime.multipliers && (
               <div>
-                <p className="text-[11px] text-gray-600 mb-1">
+                <p className="mb-1 text-right text-[11px] text-gray-600">
                   Sentiment Multipliers:
                 </p>
-                <div className="flex gap-4 text-xs">
+                <div className="flex flex-wrap justify-end gap-4 text-right text-xs">
                   <span className="text-gray-400">
                     Bullish:{" "}
                     <span className="font-mono text-white">

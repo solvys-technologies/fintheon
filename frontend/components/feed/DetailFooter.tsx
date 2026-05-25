@@ -1,6 +1,11 @@
 // [claude-code 2026-03-27] S3: Plain text detail footer for expanded RiskFlow cards
 // Shows IV, deviation, beat/miss, cyclical, sub-scores, speaker, regime as monospace tickers
+// [claude-code 2026-04-30] Econ deviation + beat/miss colors use fuse palette bullish/bearish vars.
 import type { RiskFlowAlert, SubScoreBreakdown } from "../../lib/riskflow-feed";
+import {
+  econBeatMissPresentation,
+  econSignedDeviationColor,
+} from "../../lib/econ-deviation-presentation";
 
 interface DetailFooterProps {
   alert: RiskFlowAlert;
@@ -17,8 +22,7 @@ function computeDeviation(
   const sign = dev >= 0 ? "+" : "";
   return {
     text: `${sign}${dev.toFixed(2)}%`,
-    color:
-      dev > 0 ? "text-emerald-400" : dev < 0 ? "text-red-400" : "text-zinc-500",
+    color: econSignedDeviationColor(dev),
   };
 }
 
@@ -28,20 +32,26 @@ function deriveBeatMiss(
 ): { label: string; color: string } | null {
   const ed = alert.econData;
   if (ed?.beatMiss) {
-    if (ed.beatMiss === "beat")
-      return { label: "BEAT", color: "text-emerald-400" };
-    if (ed.beatMiss === "miss") return { label: "MISS", color: "text-red-400" };
-    if (ed.beatMiss === "inline")
-      return { label: "IN LINE", color: "text-zinc-500" };
+    const { color } = econBeatMissPresentation(ed.beatMiss);
+    if (ed.beatMiss === "beat") return { label: "BEAT", color };
+    if (ed.beatMiss === "miss") return { label: "MISS", color };
+    if (ed.beatMiss === "inline") return { label: "IN LINE", color };
   }
   // Derive from numbers if no beatMiss field
   if (!ed || ed.actual == null || ed.forecast == null) return null;
   const diff = Math.abs(ed.actual - ed.forecast);
   const threshold = Math.abs(ed.forecast) * 0.005; // 0.5% tolerance
-  if (diff <= threshold) return { label: "IN LINE", color: "text-zinc-500" };
-  return ed.actual > ed.forecast
-    ? { label: "BEAT", color: "text-emerald-400" }
-    : { label: "MISS", color: "text-red-400" };
+  if (diff <= threshold) {
+    return {
+      label: "IN LINE",
+      color: econBeatMissPresentation("inline").color,
+    };
+  }
+  const status = ed.actual > ed.forecast ? "beat" : "miss";
+  const { color } = econBeatMissPresentation(status);
+  return status === "beat"
+    ? { label: "BEAT", color }
+    : { label: "MISS", color };
 }
 
 /** Infer cyclical/counter-cyclical */
@@ -113,13 +123,18 @@ export function DetailFooter({ alert }: DetailFooterProps) {
           {deviation && (
             <span className="text-zinc-500">
               Deviation:{" "}
-              <span className={deviation.color}>{deviation.text}</span>
+              <span
+                className="font-semibold"
+                style={{ color: deviation.color }}
+              >
+                {deviation.text}
+              </span>
             </span>
           )}
           {beatMiss && (
             <span className="text-zinc-500">
               Beat/Miss:{" "}
-              <span className={`font-semibold ${beatMiss.color}`}>
+              <span className="font-semibold" style={{ color: beatMiss.color }}>
                 {beatMiss.label}
               </span>
             </span>

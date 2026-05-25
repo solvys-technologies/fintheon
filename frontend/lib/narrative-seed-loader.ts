@@ -291,7 +291,7 @@ export function importRiskFlowItems(
 
 /**
  * Convert a single RiskFlowAlert (with DB-supplied narrative data) into a CatalystCard.
- * Used by NarrativeMap to sync promoted items from the unified feed.
+ * Used by DeskMap to sync promoted items from the unified feed.
  * Narrative threads come from the API (populated by catalyst-promoter), not client-side keywords.
  */
 export function alertToCatalyst(a: RiskFlowAlert): CatalystCard {

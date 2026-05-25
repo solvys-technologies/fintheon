@@ -1,9 +1,11 @@
+// [claude-code 2026-05-05] Strategium mirror: main content now has full 4-sided border + rounding (border-r + rounded-r-2xl) and Strategium uses bg-surface (lighter) so right-side rounded corners show the same floating-below effect as the left sidebar.
+// [claude-code 2026-05-05] Shell resiliency + polish: overflow-safe root container and rounded Strategium housing aligned with sidebar visual language.
 // [claude-code 2026-03-11] Track 4: MC overhaul — no Panels header, collapse in MC header, 50/50 flex, gear menu
 // [claude-code 2026-03-11] T3d: removed auto-enable from platform dropdown — power controlled via dedicated button only
 // [claude-code 2026-03-20] S3:T4c: Linked Strategium ↔ RiskFlow collapse — both expand/collapse together
 // [claude-code 2026-03-22] Replaced "The Tape" in Castra with RiskFlowMini (same as non-iFrame Strategium)
 // [claude-code 2026-03-31] S12-T2: Added Documents tab (TipTap editor)
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
 import type { IVScoreResponse } from "../../types/market-data";
 import { TopHeader } from "./TopHeader";
@@ -29,10 +31,13 @@ import RiskFlowMini from "../RiskFlowMini";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import { SearchModal } from "../search/SearchModal";
 import { useSettings } from "../../contexts/SettingsContext";
+import { useToast } from "../../contexts/ToastContext";
 import {
   PsychAssistDockable,
   type PsychAssistDockTarget,
 } from "./PsychAssistDockable";
+import { EconCountdownWidget } from "./EconCountdownWidget";
+import { useEconWatchHealth } from "../../hooks/useEconWatchHealth";
 // [claude-code 2026-04-20] S21: Voice layer — Performance chat button + app-wide agent popup
 // [claude-code 2026-04-24] PerformanceChatButton retired — heading-toolbar chat
 // button had no clear purpose; the orb is the single voice trigger now.
@@ -60,8 +65,7 @@ import { ChatPanel } from "./ChatPanel";
 import { YouTubeMiniplayer } from "./YouTubeMiniplayer";
 // [claude-code 2026-04-03] S14-T6: Removed PeerCarousel + PeerOnboarding — team status now in footer panel
 // TeamOnboarding re-wired into TeamPanel behind auth gate (2026-04-11)
-// [claude-code 2026-04-12] VoiceWidget removed — voice now lives inside Fluxer embed in Consilium
-import { EPOCH_VERSION } from "../../lib/epoch-version";
+// Voice lives in the app-native ProxVoice surface.
 import {
   DEFAULT_MISSION_WIDGET_ORDER,
   getMissionWidgetOrder,
@@ -150,14 +154,37 @@ export function MainLayout() {
   );
 }
 
+// Responsive tier breakpoints for progressive shell compaction
+const COMPACT_MODERATE_BP = 1280;
+const COMPACT_SEVERE_BP = 1060;
+
 // Main layout component - no authentication needed
 function MainLayoutInner() {
   const { iframeUrls, defaultLayout, defaultPlatform, developerSettings } =
     useSettings();
-  const { theme } = useTheme();
+  const { theme, zenModeEnabled } = useTheme();
   const isStone = theme.name === "solvys-stone";
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
   const [activeTab, setActiveTab] = useState<NavTab>(() => readLastRoute());
+
+  // [claude-code 2026-05-05] Tiered responsive compaction — MainLayout owns
+  // the viewport-width state and passes compactLevel (0/1/2) to children so
+  // each surface can progressively shed non-essential chrome.
+  const [viewportWidth, setViewportWidth] = useState(() =>
+    typeof window === "undefined" ? 1600 : window.innerWidth,
+  );
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  const compactLevel: 0 | 1 | 2 =
+    viewportWidth < COMPACT_SEVERE_BP
+      ? 2
+      : viewportWidth < COMPACT_MODERATE_BP
+        ? 1
+        : 0;
 
   const {
     topStepXEnabled,
@@ -292,11 +319,11 @@ function MainLayoutInner() {
   // Toggles the Strategium right-panel collapse + broadcasts state back so the
   // header icon's filled-right indicator stays in sync.
   useEffect(() => {
-    const onToggle = () => setMissionControlCollapsed(!missionControlCollapsed);
+    const onToggle = () => setMissionControlCollapsed((prev: boolean) => !prev);
     window.addEventListener("fintheon:toggle-strategium", onToggle);
     return () =>
       window.removeEventListener("fintheon:toggle-strategium", onToggle);
-  }, [missionControlCollapsed, setMissionControlCollapsed]);
+  }, [setMissionControlCollapsed]);
 
   useEffect(() => {
     window.dispatchEvent(
@@ -325,6 +352,27 @@ function MainLayoutInner() {
     }
   }, [psychAssistTarget]);
 
+  const { events: econWatchEvents } = useEconWatchHealth();
+  const [econCountdownDismissed, setEconCountdownDismissed] = useState(false);
+
+  // Show econ countdown when there's an upcoming event within 60min window
+  // and the user hasn't dismissed it. PsychAssist shows otherwise.
+  const showEconCountdown = (() => {
+    if (econCountdownDismissed) return false;
+    const now = Date.now();
+    for (const ev of econWatchEvents) {
+      if (ev.status !== "upcoming") continue;
+      const target = new Date(ev.scheduledAt).getTime();
+      if (target > now && target - now < 60 * 60 * 1000) return true;
+    }
+    return false;
+  })();
+
+  // Reset dismissal when the event window changes
+  useEffect(() => {
+    if (!showEconCountdown) setEconCountdownDismissed(false);
+  }, [showEconCountdown]);
+
   useEffect(() => {
     setMissionWidgetOrderState((prev) =>
       normalizeOrder(prev, DEFAULT_MISSION_WIDGET_ORDER),
@@ -349,6 +397,43 @@ function MainLayoutInner() {
     setActiveTab(tab);
   };
 
+  useEffect(() => {
+    const jumpToNarrativeFlow = () => {
+      try {
+        window.localStorage.setItem(
+          "fintheon:pending-consilium-surface",
+          "narrativeflow",
+        );
+      } catch {
+        /* ignore */
+      }
+      setShowRefinement(false);
+      if (topStepXEnabled) handleBrowserToggle();
+      navigateTab("analysis");
+      window.setTimeout(() => {
+        window.dispatchEvent(new Event("fintheon:open-narrativeflow"));
+      }, 80);
+    };
+    window.addEventListener(
+      "fintheon:jump-to-narrativeflow",
+      jumpToNarrativeFlow,
+    );
+    return () =>
+      window.removeEventListener(
+        "fintheon:jump-to-narrativeflow",
+        jumpToNarrativeFlow,
+      );
+  }, [handleBrowserToggle, historyIndex, tabHistory, topStepXEnabled]);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const tab = (event as CustomEvent<{ tab?: NavTab }>).detail?.tab;
+      if (tab) navigateTab(tab);
+    };
+    window.addEventListener("fintheon:navigate-tab", handler);
+    return () => window.removeEventListener("fintheon:navigate-tab", handler);
+  }, [tabHistory, historyIndex]);
+
   const goBack = () => {
     if (historyIndex > 0) {
       const newIdx = historyIndex - 1;
@@ -367,7 +452,13 @@ function MainLayoutInner() {
 
   const backend = useBackend();
   const { isAuthenticated } = useAuth();
-  const { alerts: riskFlowAlerts, removeAlert, isSeen } = useRiskFlow();
+  const {
+    alerts: riskFlowAlerts,
+    isSeen,
+    freshAlertId,
+  } = useRiskFlow();
+  const { addToast } = useToast();
+  const lastZenNewsToastRef = useRef<string | null>(null);
   useKeyboardShortcuts({
     navigateTab: navigateTab as (tab: string) => void,
     setShowSearchModal,
@@ -461,6 +552,69 @@ function MainLayoutInner() {
   const showTape = topStepXEnabled && tapePosition !== "floating";
   const showFloatingWidget = topStepXEnabled && layoutOption === "tickers-only";
   const showCombinedPanel = topStepXEnabled && layoutOption === "combined";
+  const zenModeActive =
+    zenModeEnabled || (topStepXEnabled && layoutOption === "tickers-only");
+  const zenFreshAlert = useMemo(
+    () => riskFlowAlerts.find((alert) => alert.id === freshAlertId) ?? null,
+    [freshAlertId, riskFlowAlerts],
+  );
+
+  useEffect(() => {
+    if (!zenModeActive || !zenFreshAlert) return;
+    const isRiskFlowMainVisible = activeTab === "riskflow" && !topStepXEnabled;
+    const shouldToast =
+      missionControlCollapsed || !isRiskFlowMainVisible || topStepXEnabled;
+    if (!shouldToast) return;
+    if (lastZenNewsToastRef.current === zenFreshAlert.id) return;
+
+    lastZenNewsToastRef.current = zenFreshAlert.id;
+    addToast(
+      "RiskFlow",
+      "reminder",
+      zenFreshAlert.headline,
+      "news-alert",
+      "bottom-left",
+      {
+        label: "Open RiskFlow",
+        onClick: () => {
+          if (topStepXEnabled) handleBrowserToggle();
+          navigateTab("riskflow");
+        },
+      },
+      undefined,
+      12000,
+    );
+  }, [
+    activeTab,
+    addToast,
+    handleBrowserToggle,
+    missionControlCollapsed,
+    topStepXEnabled,
+    zenFreshAlert,
+    zenModeActive,
+  ]);
+
+  useEffect(() => {
+    document.documentElement.dataset.zenMode = zenModeActive ? "true" : "false";
+    document.body.dataset.fintheonZenMode = zenModeActive ? "true" : "false";
+    document.body.classList.toggle("fintheon-zen-mode", zenModeActive);
+    window.dispatchEvent(
+      new CustomEvent("fintheon:zen-mode-change", {
+        detail: { active: zenModeActive },
+      }),
+    );
+
+    return () => {
+      document.documentElement.dataset.zenMode = zenModeEnabled ? "true" : "false";
+      document.body.dataset.fintheonZenMode = "false";
+      document.body.classList.remove("fintheon-zen-mode");
+      window.dispatchEvent(
+        new CustomEvent("fintheon:zen-mode-change", {
+          detail: { active: false },
+        }),
+      );
+    };
+  }, [zenModeActive, zenModeEnabled]);
 
   // Determine panel order based on position and layout option
   const leftPanels: React.ReactNode[] = [];
@@ -609,7 +763,7 @@ function MainLayoutInner() {
       rightPanels.push(
         <div
           key="combined"
-          className={`bg-[var(--fintheon-surface)] border-l border-[var(--fintheon-accent)]/10 transition-all duration-200 ${combinedPanelCollapsed ? "w-16" : "w-[380px]"}`}
+          className={`fintheon-side-surface bg-[var(--fintheon-bg)] border-y border-r border-[var(--fintheon-accent)]/20 rounded-tr-2xl rounded-br-2xl transition-all duration-200 ${combinedPanelCollapsed ? "w-16" : "w-[min(380px,42vw)]"}`}
         >
           <div className="h-full flex flex-col">
             {combinedPanelCollapsed && (
@@ -679,19 +833,20 @@ function MainLayoutInner() {
       activeTab === "performance" ||
       activeTab === "proposals" ||
       activeTab === "settings";
-    if (!hideRightPanel && !missionControlCollapsed) {
+    if (!hideRightPanel) {
       rightPanels.push(
-        // [claude-code 2026-04-26] Per TP: when Strategium is collapsed, render
-        // NOTHING — no rail, no divider, no chevron. The only ways to expand are
-        // (a) the layout button in the heading toolbar (PanelToggleGroup), or
-        // (b) the in-panel chevron on the expanded panel (which can only collapse).
+        // [claude-code 2026-04-29] S49: Strategium now uses a slide-out drawer
+        // transition (like ChatPanel). Always rendered in DOM when not hidden by
+        // active-tab guard; width + opacity transition handles open/close.
         <div
           key="right-stack"
-          className="flex-shrink-0 h-full min-w-0 flex flex-col w-[380px] overflow-hidden"
+          className={`h-full flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${
+            missionControlCollapsed
+              ? "w-0 opacity-0 pointer-events-none invisible"
+              : "w-[min(380px,42vw)] opacity-100"
+          }`}
         >
-          {/* [claude-code 2026-04-26] Inner expanded content fades + slides in
-              from the right. Uses opacity-100 animate-in so mount triggers slide. */}
-          <div className="flex-1 min-h-0 flex flex-col w-[380px] animate-in fade-in slide-in-from-right-2 duration-300">
+          <div className="fintheon-side-surface flex-1 min-h-0 flex flex-col bg-[var(--fintheon-surface)] border-r border-[var(--fintheon-accent)]/20 rounded-tr-2xl rounded-br-2xl">
             {/* Widgets pane — shown in balanced + widgetsOnly.
                   [claude-code 2026-04-24] min-h-0 is CRITICAL in widgetsOnly:
                   without it, flex-1 + inner content force the pane taller than
@@ -779,7 +934,7 @@ function MainLayoutInner() {
     <ScheduleProvider>
       <YouTubeMiniplayerProvider>
         <div
-          className={`h-screen flex flex-col bg-[var(--fintheon-bg)] text-white ${topStepXEnabled ? "topstepx-active" : ""}`}
+          className={`fintheon-app-shell h-screen w-full overflow-hidden flex flex-col bg-[var(--fintheon-bg)] text-white ${topStepXEnabled ? "topstepx-active" : ""}`}
         >
           {/* [claude-code 2026-04-24] Standalone waveform overlay — no border, no
             background. Doubles as user-mic indicator (when listening) and agent
@@ -813,7 +968,8 @@ function MainLayoutInner() {
             psychAssistHeadingWidget={
               topStepXEnabled &&
               layoutOption === "tickers-only" &&
-              psychAssistTarget === "header" ? (
+              psychAssistTarget === "header" &&
+              !showEconCountdown ? (
                 <PsychAssistDockable
                   target="header"
                   onDockToHeader={() => setPsychAssistTarget("header")}
@@ -821,14 +977,31 @@ function MainLayoutInner() {
                 />
               ) : undefined
             }
+            econCountdownWidget={
+              topStepXEnabled &&
+              layoutOption === "tickers-only" &&
+              showEconCountdown ? (
+                <EconCountdownWidget
+                  visible={showEconCountdown}
+                  onDismiss={() => setEconCountdownDismissed(true)}
+                />
+              ) : undefined
+            }
+            compactLevel={compactLevel}
             /* [claude-code 2026-04-24] performanceChatWidget removed — orb is
              the only voice trigger now. */
           />
 
           {/* S14-T6: Peers panel removed — team status is now in footer Team tab */}
 
-          <div className="flex-1 flex overflow-hidden relative">
-            <div className="relative">
+          <div className="flex-1 flex overflow-hidden relative bg-[var(--fintheon-surface)]">
+            <div
+              className={
+                topStepXEnabled
+                  ? "hidden"
+                  : "relative shrink-0 transition-[width] duration-300 ease-in-out"
+              }
+            >
               <NavSidebar
                 activeTab={activeTab}
                 onTabChange={(tab) => {
@@ -856,8 +1029,11 @@ function MainLayoutInner() {
             {/* Left Panels */}
             {leftPanels.length > 0 && <div className="flex">{leftPanels}</div>}
 
-            {/* Center Content - TopStepX or Main Content with crossfade */}
-            <div className="flex-1 overflow-hidden relative min-w-0 flex flex-col">
+            {/* Center Content - TopStepX or Main Content with crossfade.
+                Full 4-sided gold hairline border + rounded corners so the main
+                content floats above both the left sidebar and the right Strategium
+                (which use bg-surface, lighter than the main content's bg-bg). */}
+            <div className="fintheon-main-surface z-10 flex-1 overflow-hidden relative min-w-0 flex flex-col border-t border-b border-l border-r border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] rounded-tl-2xl rounded-bl-2xl rounded-tr-2xl rounded-br-2xl">
               {/* Timeline overlay — slides over browser, does not affect iframe sizing */}
               <TimelineOverlay
                 open={timelineOverlayOpen}
@@ -900,6 +1076,7 @@ function MainLayoutInner() {
                   prevTab={prevTab}
                   showRefinement={showRefinement}
                   navigateTab={navigateTab}
+                  onChatAlert={handleChatAlert}
                 />
               </div>
             </div>
@@ -934,6 +1111,7 @@ function MainLayoutInner() {
             {showMissionControlNotification && (
               <PanelNotificationWidget
                 panelName="Mission Control"
+                position={zenModeActive ? "bottom-right" : "top-right"}
                 onRestore={() => {
                   setMissionControlPosition("right");
                   setShowMissionControlNotification(false);
@@ -944,6 +1122,7 @@ function MainLayoutInner() {
             {showTapeNotification && (
               <PanelNotificationWidget
                 panelName="RiskFlow"
+                position={zenModeActive ? "bottom-right" : "top-right"}
                 onRestore={() => {
                   setTapePosition("right");
                   setShowTapeNotification(false);
@@ -980,6 +1159,7 @@ function MainLayoutInner() {
           <SessionCountdownWidget />
 
           <FooterToolbar
+            compactLevel={compactLevel}
             topStepXEnabled={topStepXEnabled}
             primaryPlatform={selectedPlatform}
             onPrimaryPlatformChange={setSelectedPlatform}

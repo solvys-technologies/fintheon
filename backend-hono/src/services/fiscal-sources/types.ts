@@ -1,13 +1,14 @@
 // [claude-code 2026-04-24] S34-T7: Shared fiscal speaker scrape contract.
 
-export type FiscalSpeaker = "Trump" | "Bessent" | "Powell" | "Fed";
+export type FiscalSpeaker = "Trump" | "Bessent" | "Powell" | "Fed" | "PoolCall";
 
 export type FiscalSource =
   | "fed-rss"
   | "fed-html"
   | "treasury-rss"
   | "whitehouse-rss"
-  | "truth-rss";
+  | "truth-rss"
+  | "wh-pool-rss";
 
 export interface ScrapedFiscalEvent {
   speaker: FiscalSpeaker;

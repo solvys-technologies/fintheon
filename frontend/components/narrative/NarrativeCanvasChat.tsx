@@ -1,19 +1,25 @@
-// [claude-code 2026-04-19] S25-T6: Chat input now hidden by default — parent toolbar toggles via isOpen. Gold up-chevron send (Airplane send removed). Image paste clipboard → auto-pinned as chip alongside RiskFlow headline pins.
-// [claude-code 2026-03-28] S8-T2: Ephemeral command palette chat — expandable above toolbar
-// Same Claude CLI session as sidebar Chat. Responses auto-hide after 8s.
-import { useState, useRef, useCallback, useEffect } from "react";
-import { Loader2, ChevronUp, X } from "lucide-react";
+// [codex 2026-05-23] Canvas chat now uses the NarrativeFlow domain composer shell.
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { X } from "lucide-react";
 import { useNarrative } from "../../contexts/NarrativeContext";
+import { useRiskFlow } from "../../contexts/RiskFlowContext";
+import { useMessageQueue } from "../chat/hooks/useMessageQueue";
+import {
+  normalizeReasoningLevel,
+  type ReasoningLevel,
+} from "../chat/reasoning";
+import { NarrativeSensemakingComposer } from "./NarrativeSensemakingComposer";
+import type { HeadlineAttachment } from "../chat/FintheonAttachPopup";
+import type { NarrativeHeadlineOption } from "./sensemaking-types";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 interface NarrativeCanvasChatProps {
-  /** Card data chips dragged or added from canvas */
   pendingChips?: { id: string; title: string }[];
   onClearChip?: (id: string) => void;
-  /** Parent-controlled visibility. Hidden by default — the toolbar chip toggles this. */
   isOpen?: boolean;
-  /** Called on Escape so the toolbar can flip its chip back off. */
+  drawerOpen?: boolean;
+  onDrawerOpenChange?: (open: boolean) => void;
   onDismiss?: () => void;
 }
 
@@ -21,303 +27,263 @@ export function NarrativeCanvasChat({
   pendingChips = [],
   onClearChip,
   isOpen = false,
-  onDismiss,
+  drawerOpen,
+  onDrawerOpenChange,
 }: NarrativeCanvasChatProps) {
-  // Local chips for image-paste attachments (url data URIs surface as title="image-<ts>")
-  const [localChips, setLocalChips] = useState<
-    { id: string; title: string; dataUrl?: string }[]
-  >([]);
   const { dispatch } = useNarrative();
+  const { alerts } = useRiskFlow();
   const [input, setInput] = useState("");
-  const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<string | null>(null);
   const [responseVisible, setResponseVisible] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const hideTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [localDrawerOpen, setLocalDrawerOpen] = useState(false);
+  const [localChips, setLocalChips] = useState<
+    { id: string; title: string; dataUrl?: string }[]
+  >([]);
+  const [reasoningLevel, setReasoningLevel] = useState<ReasoningLevel>(() => {
+    try {
+      return normalizeReasoningLevel(
+        localStorage.getItem("fintheon:narrative-reasoning-level"),
+      );
+    } catch {
+      return "standard";
+    }
+  });
 
-  // Auto-expand when user starts typing
-  const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setInput(e.target.value);
-      if (!expanded && e.target.value.length > 0) setExpanded(true);
+  const attachedHeadlines = useMemo<NarrativeHeadlineOption[]>(
+    () =>
+      [...pendingChips, ...localChips].map((chip) => ({
+        id: chip.id,
+        headline: chip.title,
+        summary: chip.title,
+        source: chip.id.startsWith("img-") ? "pasted-image" : "canvas",
+        severity: "medium",
+        publishedAt: new Date().toISOString(),
+        symbols: [],
+        tags: [],
+        narrativeThreads: [],
+      })),
+    [localChips, pendingChips],
+  );
+  const riskFlowDrawerOpen = drawerOpen ?? localDrawerOpen;
+  const setRiskFlowDrawerOpen = useCallback(
+    (open: boolean) => {
+      if (onDrawerOpenChange) onDrawerOpenChange(open);
+      else setLocalDrawerOpen(open);
     },
-    [expanded],
+    [onDrawerOpenChange],
   );
 
-  // Auto-hide response after 8s
+  const submitText = useCallback(
+    async (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed || loading) return;
+
+      setLoading(true);
+      setInput("");
+      const chipContext =
+        pendingChips.length > 0
+          ? `\n\nReferenced cards: ${pendingChips.map((c) => c.title).join(", ")}`
+          : "";
+
+      try {
+        const res = await fetch(`${API_BASE}/api/narrative/score-riskflow`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            reasoningLevel,
+            items: [
+              {
+                id: `user-${Date.now()}`,
+                headline: trimmed,
+                summary: trimmed + chipContext,
+                source: "user",
+                severity: "medium",
+                tags: [],
+                publishedAt: new Date().toISOString(),
+              },
+            ],
+          }),
+        });
+
+        if (!res.ok) throw new Error(`Score failed: ${res.status}`);
+        const { scored } = await res.json();
+
+        if (scored && scored.length > 0) {
+          for (const item of scored) {
+            dispatch({
+              type: "ADD_CATALYST",
+              catalyst: {
+                title: item.suggestedTitle || trimmed,
+                description: item.suggestedDescription || trimmed,
+                date: new Date().toISOString().slice(0, 10),
+                sentiment: item.sentiment ?? "bearish",
+                severity: item.severity ?? "medium",
+                source: "agent",
+                narrativeIds: item.tickers ?? [],
+                isGhost: false,
+                templateType: null,
+                position: null,
+                tags: item.themes ?? [],
+                category: undefined,
+                drillDepth: 0,
+              },
+            });
+          }
+          setResponse(`Added ${scored.length} event${scored.length === 1 ? "" : "s"} to NarrativeFlow.`);
+        } else {
+          setResponse("No scoreable events found. Add more market context.");
+        }
+      } catch (err) {
+        console.error("[CanvasChat] Scoring failed:", err);
+        dispatch({
+          type: "ADD_CATALYST",
+          catalyst: {
+            title: trimmed,
+            description: chipContext || "",
+            date: new Date().toISOString().slice(0, 10),
+            sentiment: "bearish",
+            severity: "medium",
+            source: "user",
+            narrativeIds: [],
+            isGhost: false,
+            templateType: null,
+            position: null,
+            tags: [],
+            category: "macroeconomic",
+            drillDepth: 0,
+          },
+        });
+        setResponse("Added as user event. Scoring is unavailable.");
+      } finally {
+        setLoading(false);
+        setResponseVisible(true);
+        pendingChips.forEach((chip) => onClearChip?.(chip.id));
+      }
+    },
+    [dispatch, loading, onClearChip, pendingChips, reasoningLevel],
+  );
+
+  const queue = useMessageQueue({
+    isRunning: loading,
+    sendNow: submitText,
+    storageKey: "fintheon:narrative-canvas-chat-queue",
+  });
+
   useEffect(() => {
-    if (responseVisible) {
-      hideTimerRef.current = setTimeout(() => {
-        setResponseVisible(false);
-        setResponse(null);
-      }, 8000);
-      return () => clearTimeout(hideTimerRef.current);
-    }
+    if (!responseVisible) return;
+    const timer = setTimeout(() => {
+      setResponseVisible(false);
+      setResponse(null);
+    }, 8000);
+    return () => clearTimeout(timer);
   }, [responseVisible]);
 
-  const handleSubmit = useCallback(async () => {
-    const text = input.trim();
-    if (!text || loading) return;
-
-    setLoading(true);
-    setInput("");
-
-    // Build context from pending chips
-    const chipContext =
-      pendingChips.length > 0
-        ? `\n\nReferenced cards: ${pendingChips.map((c) => c.title).join(", ")}`
-        : "";
-
+  function handleReasoningLevelChange(level: ReasoningLevel) {
+    setReasoningLevel(level);
     try {
-      const res = await fetch(`${API_BASE}/api/narrative/score-riskflow`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: [
-            {
-              id: `user-${Date.now()}`,
-              headline: text,
-              summary: text + chipContext,
-              source: "user",
-              severity: "medium",
-              tags: [],
-              publishedAt: new Date().toISOString(),
-            },
-          ],
-        }),
-      });
-
-      if (!res.ok) throw new Error(`Score failed: ${res.status}`);
-      const { scored } = await res.json();
-
-      if (scored && scored.length > 0) {
-        for (const item of scored) {
-          dispatch({
-            type: "ADD_CATALYST",
-            catalyst: {
-              title: item.suggestedTitle || text,
-              description: item.suggestedDescription || text,
-              date: new Date().toISOString().slice(0, 10),
-              sentiment: item.sentiment ?? "bearish",
-              severity: item.severity ?? "medium",
-              source: "agent",
-              narrativeIds: item.tickers ?? [],
-              isGhost: false,
-              templateType: null,
-              position: null,
-              tags: item.themes ?? [],
-              category: undefined,
-              drillDepth: 0,
-            },
-          });
-        }
-        setResponse(
-          `Added ${scored.length} event${scored.length !== 1 ? "s" : ""} to the Observatory.`,
-        );
-      } else {
-        setResponse("No scoreable events found. Try adding more context.");
-      }
-    } catch (err) {
-      console.error("[CanvasChat] Scoring failed:", err);
-      // Fallback: add as user event
-      dispatch({
-        type: "ADD_CATALYST",
-        catalyst: {
-          title: text,
-          description: chipContext || "",
-          date: new Date().toISOString().slice(0, 10),
-          sentiment: "bearish",
-          severity: "medium",
-          source: "user",
-          narrativeIds: [],
-          isGhost: false,
-          templateType: null,
-          position: null,
-          tags: [],
-          category: "macroeconomic",
-          drillDepth: 0,
-        },
-      });
-      setResponse("Added as user event (scoring unavailable).");
-    } finally {
-      setLoading(false);
-      setResponseVisible(true);
-      setExpanded(false);
-      // Clear chips after submission
-      pendingChips.forEach((c) => onClearChip?.(c.id));
+      localStorage.setItem("fintheon:narrative-reasoning-level", level);
+    } catch {
+      /* ignore */
     }
-  }, [input, loading, pendingChips, onClearChip, dispatch]);
+  }
 
-  const dismissResponse = useCallback(() => {
-    setResponseVisible(false);
-    setResponse(null);
-    clearTimeout(hideTimerRef.current);
-  }, []);
+  function handlePaste(event: React.ClipboardEvent<HTMLTextAreaElement>) {
+    for (const item of Array.from(event.clipboardData.items)) {
+      if (item.kind !== "file" || !item.type.startsWith("image/")) continue;
+      const blob = item.getAsFile();
+      if (!blob) continue;
+      const reader = new FileReader();
+      reader.onload = () => {
+        setLocalChips((prev) => [
+          ...prev,
+          {
+            id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            title: `image (${Math.round(blob.size / 1024)}KB)`,
+            dataUrl: String(reader.result ?? ""),
+          },
+        ]);
+      };
+      reader.readAsDataURL(blob);
+    }
+  }
 
-  // Image-paste capture → attach as localChip
-  const handlePaste = useCallback(
-    (e: React.ClipboardEvent<HTMLInputElement>) => {
-      for (const item of Array.from(e.clipboardData.items)) {
-        if (item.kind === "file" && item.type.startsWith("image/")) {
-          const blob = item.getAsFile();
-          if (!blob) continue;
-          const reader = new FileReader();
-          reader.onload = () => {
-            const url = String(reader.result ?? "");
-            const id = `img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-            setLocalChips((prev) => [
-              ...prev,
-              {
-                id,
-                title: `image (${Math.round(blob.size / 1024)}KB)`,
-                dataUrl: url,
-              },
-            ]);
-          };
-          reader.readAsDataURL(blob);
-        }
-      }
-    },
-    [],
-  );
+  function handleAttachHeadlines(items: HeadlineAttachment[]) {
+    setLocalChips((prev) => {
+      const existing = new Set(prev.map((chip) => chip.id));
+      const next = items
+        .filter((item) => !existing.has(`riskflow-${item.id}`))
+        .map((item) => ({
+          id: `riskflow-${item.id}`,
+          title: item.headline,
+        }));
+      return next.length ? [...prev, ...next] : prev;
+    });
+  }
 
-  // Hidden by default — parent toolbar controls isOpen
   if (!isOpen) return null;
 
   return (
-    <div className="relative flex flex-col items-center">
-      {/* Ephemeral response popup — slides up from input */}
-      {responseVisible && response && (
-        <div
-          className="absolute bottom-full mb-2 w-[400px] px-3 py-2 rounded-xl border flex items-center gap-2 animate-in slide-in-from-bottom-2 duration-200"
-          style={{
-            backgroundColor:
-              "color-mix(in srgb, var(--fintheon-surface) 95%, transparent)",
-            borderColor:
-              "color-mix(in srgb, var(--fintheon-accent) 25%, transparent)",
-            backdropFilter: "blur(16px)",
-            boxShadow: "0 -4px 24px rgba(0,0,0,0.3)",
-          }}
-        >
-          <p
-            className="flex-1 text-[11px] leading-relaxed"
-            style={{
-              color: "var(--fintheon-text)",
-              fontFamily: "var(--font-body)",
-            }}
-          >
+    <div className="narrative-canvas-chat narrative-fade-item pointer-events-auto relative flex w-full max-w-[56rem] flex-col items-stretch">
+      {responseVisible && response ? (
+        <div className="narrative-canvas-chat__response t-panel-slide absolute bottom-full mb-2 flex w-full items-center gap-2 rounded-[6px] border border-[var(--fintheon-accent)]/15 px-3 py-2" data-open="true">
+          <p className="flex-1 text-[11px] leading-relaxed text-[var(--fintheon-text)]">
             {response}
           </p>
           <button
-            onClick={dismissResponse}
-            className="p-0.5 rounded hover:bg-[var(--fintheon-accent)]/10 transition-colors shrink-0"
-            style={{ color: "var(--fintheon-muted)" }}
+            type="button"
+            onClick={() => {
+              setResponseVisible(false);
+              setResponse(null);
+            }}
+            className="shrink-0 rounded p-0.5 text-[var(--fintheon-muted)] hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-text)]"
+            title="Dismiss"
           >
-            <X className="w-3 h-3" />
+            <X size={12} />
           </button>
         </div>
-      )}
+      ) : null}
 
-      {/* Chat input */}
-      <div
-        className="flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-200"
-        style={{
-          width: expanded ? 440 : 320,
-          backgroundColor:
-            "color-mix(in srgb, var(--fintheon-surface) 90%, transparent)",
-          borderColor: expanded
-            ? "color-mix(in srgb, var(--fintheon-accent) 30%, transparent)"
-            : "color-mix(in srgb, var(--fintheon-accent) 15%, transparent)",
-          backdropFilter: "blur(16px)",
+      <NarrativeSensemakingComposer
+        mode="overlay"
+        query={input}
+        attachedHeadlines={attachedHeadlines}
+        isSubmitting={loading}
+        validationMessage={null}
+        minHeadlines={0}
+        reasoningLevel={reasoningLevel}
+        queue={queue.queue}
+        contextStats={{
+          messageCount: attachedHeadlines.length,
+          estimatedTokens: Math.ceil(
+            `${input}\n${attachedHeadlines.map((item) => item.headline).join("\n")}`.length / 4,
+          ),
+          connectorCount: attachedHeadlines.length,
+          activeSkillLabel: "Canvas",
         }}
-      >
-        {/* Persona indicator: pulsing green dot */}
-        <div className="relative shrink-0">
-          <div className="w-2 h-2 rounded-full bg-emerald-500" />
-          <div className="absolute inset-0 w-2 h-2 rounded-full bg-emerald-500 animate-ping opacity-40" />
-        </div>
-
-        {/* Pending card chips (RiskFlow headline pins + pasted images) */}
-        {(pendingChips.length > 0 || localChips.length > 0) && (
-          <div className="flex items-center gap-1 shrink-0">
-            {[
-              ...pendingChips,
-              ...localChips.map((c) => ({ id: c.id, title: c.title })),
-            ]
-              .slice(0, 3)
-              .map((chip) => (
-                <span
-                  key={chip.id}
-                  className="text-[8px] px-1.5 py-0.5 rounded-full border flex items-center gap-1"
-                  style={{
-                    color: "var(--fintheon-accent)",
-                    backgroundColor:
-                      "color-mix(in srgb, var(--fintheon-accent) 10%, transparent)",
-                    borderColor:
-                      "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
-                  }}
-                >
-                  <span className="truncate max-w-[80px]">{chip.title}</span>
-                  <button
-                    onClick={() => {
-                      if (chip.id.startsWith("img-")) {
-                        setLocalChips((prev) =>
-                          prev.filter((c) => c.id !== chip.id),
-                        );
-                      } else {
-                        onClearChip?.(chip.id);
-                      }
-                    }}
-                    className="opacity-50 hover:opacity-100"
-                  >
-                    <X className="w-2 h-2" />
-                  </button>
-                </span>
-              ))}
-          </div>
-        )}
-
-        <input
-          ref={inputRef}
-          value={input}
-          onChange={handleInputChange}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleSubmit();
-            if (e.key === "Escape") {
-              setExpanded(false);
-              setInput("");
-              onDismiss?.();
-            }
-          }}
-          onFocus={() => setExpanded(true)}
-          onBlur={() => {
-            if (!input.trim()) setExpanded(false);
-          }}
-          onPaste={handlePaste}
-          placeholder="Message Harper…"
-          className="flex-1 text-[11px] bg-transparent outline-none min-w-0"
-          style={{
-            color: "var(--fintheon-text)",
-            fontFamily: "var(--font-body)",
-          }}
-          disabled={loading}
-          autoFocus
-        />
-
-        <button
-          onClick={handleSubmit}
-          disabled={loading || !input.trim()}
-          className="p-1.5 rounded-lg transition-colors hover:bg-[var(--fintheon-accent)]/10 disabled:opacity-30 shrink-0"
-          style={{ color: "var(--fintheon-accent)" }}
-        >
-          {loading ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <ChevronUp className="w-3.5 h-3.5" strokeWidth={2.5} />
-          )}
-        </button>
-      </div>
+        onQueryChange={setInput}
+        riskflowAlerts={alerts}
+        riskFlowDrawerOpen={riskFlowDrawerOpen}
+        onAttachHeadlines={handleAttachHeadlines}
+        onOpenDrawer={() => setRiskFlowDrawerOpen(!riskFlowDrawerOpen)}
+        onCloseDrawer={() => setRiskFlowDrawerOpen(false)}
+        onRemoveHeadline={(id) => {
+          if (id.startsWith("img-")) {
+            setLocalChips((prev) => prev.filter((chip) => chip.id !== id));
+          } else {
+            onClearChip?.(id);
+          }
+        }}
+        onSubmit={() => submitText(input)}
+        onQueueMessage={queue.addQueue}
+        onEditQueue={queue.editQueue}
+        onRemoveQueue={queue.removeQueue}
+        onReorderQueue={queue.reorderQueue}
+        onSendQueueOne={queue.sendOne}
+        onSendQueueAll={queue.sendAll}
+        onReasoningLevelChange={handleReasoningLevelChange}
+        onPaste={handlePaste}
+      />
     </div>
   );
 }

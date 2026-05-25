@@ -44,8 +44,12 @@ import {
 import { tagHeadlineSubjects } from "./headline-tagger.js";
 import { checkContentGuard, isBannedPublisher } from "./content-guard.js";
 import { bumpCounter } from "./drop-counters.js";
+import { checkSourcePolicy } from "./source-policy.js";
+import { validateAgainstGuidelines } from "./immutable-guidelines.js";
+import { recordIngestAttempt, recordLeakEvent } from "./ingest-ledger.js";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { normalizeHeadline } from "./text-utils.js";
+import { classifyWirePrint } from "./wire-print-classifier.js";
 
 // Re-export from extracted modules for backward compatibility
 export { normalizeSource, classifyRiskType } from "./scorer-tagging.js";
@@ -74,7 +78,12 @@ let scoringStartedAt = 0;
 function rawToFeedItem(raw: RawRiskFlowItem & { id: string }): FeedItem {
   return {
     id: raw.tweet_id,
-    source: normalizeSource(raw.source, raw.headline || "", raw.tags || []),
+    source: normalizeSource(
+      raw.source,
+      raw.headline || "",
+      raw.tags || [],
+      raw.url,
+    ),
     headline: raw.headline || "",
     body: raw.body,
     url: raw.url,
@@ -124,6 +133,28 @@ function feedItemToScored(
   };
 }
 
+async function deleteRawItemsByTweetId(tweetIds: string[]): Promise<number> {
+  if (tweetIds.length === 0) return 0;
+  const sb = getSupabaseClient();
+  if (!sb) return 0;
+
+  let deleted = 0;
+  const chunkSize = 200;
+  for (let i = 0; i < tweetIds.length; i += chunkSize) {
+    const chunk = tweetIds.slice(i, i + chunkSize);
+    const { count, error } = await sb
+      .from("raw_riskflow_items")
+      .delete({ count: "exact" })
+      .in("tweet_id", chunk);
+    if (error) {
+      log.warn("Policy raw purge failed", { error: error.message });
+      continue;
+    }
+    deleted += count ?? 0;
+  }
+  return deleted;
+}
+
 export async function scoringCycle(): Promise<number> {
   // [claude-code 2026-04-12] Staleness guard: if isScoring has been true for >90s, force-reset
   if (isScoring) {
@@ -156,8 +187,10 @@ export async function scoringCycle(): Promise<number> {
     log.info(`Processing ${unscoredItems.length} unscored items`);
 
     const rawIdMap = new Map<string, string>();
+    const rawByTweetId = new Map<string, RawRiskFlowItem & { id: string }>();
     const feedItems = unscoredItems.map((raw) => {
       rawIdMap.set(raw.tweet_id, raw.id);
+      rawByTweetId.set(raw.tweet_id, raw);
       return rawToFeedItem(raw);
     });
 
@@ -209,6 +242,23 @@ export async function scoringCycle(): Promise<number> {
       if (result.speculationDemote) {
         speculationDemoteIds.add(item.id);
       }
+      // Immutable guidelines gate — NEVER regress on these rules
+      const guidelineCheck = validateAgainstGuidelines(
+        item.headline,
+        item.body ?? undefined,
+      );
+      if (!guidelineCheck.passed) {
+        blockedIds.add(item.id);
+        bumpCounter(
+          item.source || "unknown",
+          "central-scorer",
+          `immutable-guideline:${guidelineCheck.violation?.rule.slice(0, 40)}`,
+        );
+        log.info(
+          `Immutable guideline blocked: [${guidelineCheck.violation?.rule.slice(0, 60)}] ${item.headline.slice(0, 80)}`,
+        );
+        return false;
+      }
       return true;
     });
 
@@ -226,6 +276,48 @@ export async function scoringCycle(): Promise<number> {
       log.info(
         `Wrote ${blockedScored.length} content-guard-blocked items as scored (macroLevel 0)`,
       );
+    }
+
+    // [claude-code 2026-04-29] S53-T4B: source-policy enforcement in scorer.
+    // Items from the external riskflow-worker bypass the writeRawItems boundary,
+    // so we re-check here. Only approved sources pass.
+    const { refreshAllowlist } = await import("./source-policy.js");
+    await refreshAllowlist();
+    const policyBlockedIds = new Set<string>();
+    const policyPassed = guardedFeedItems.filter((item) => {
+      const raw = rawByTweetId.get(item.id);
+      const verdict = checkSourcePolicy(raw?.source ?? item.source, item.url, {
+        pipeline: raw?.ingest_pipeline,
+        submittedBy: raw?.submitted_by,
+        sourceDomain: raw?.source_domain,
+        tags: raw?.tags,
+      });
+      if (verdict.decision === "allowed") return true;
+      policyBlockedIds.add(item.id);
+      recordIngestAttempt({
+        source: item.source,
+        pipeline: "central-scorer-policy",
+        decision: "blocked_by_policy",
+        reason: verdict.reason,
+        headlinePreview: item.headline?.slice(0, 80),
+      });
+      recordLeakEvent(
+        `scorer-policy: ${verdict.decision} — ${item.source} — ${item.headline?.slice(0, 60) ?? "(no headline)"}`,
+      );
+      return false;
+    });
+    if (policyBlockedIds.size > 0) {
+      log.info(
+        `SourcePolicy blocked ${policyBlockedIds.size} item(s) in scorer — ` +
+          `sources not in allowlist`,
+      );
+      await deleteRawItemsByTweetId(Array.from(policyBlockedIds)).catch((err) =>
+        log.warn("Policy raw purge threw", {
+          error: err instanceof Error ? err.message : String(err),
+        }),
+      );
+      guardedFeedItems.length = 0;
+      guardedFeedItems.push(...policyPassed);
     }
 
     // ── Dismissed-pattern filter ──────────────────────────────────────────
@@ -321,7 +413,84 @@ export async function scoringCycle(): Promise<number> {
       enrichedItems = feedItems;
     }
 
-    // Classify risk type
+    // [claude-code 2026-04-30] S55: WIRE word-gate classification.
+    // Approved WIRE sources (FinancialJuice, DeItaOne) get classified
+    // by word gates instead of emoji-dependent heuristics.
+    //   Econ gate: "Actual" AND "Forecast" → Macro risk type
+    //   Earnings gate: "EPS" AND ("REV" or "Revenue") → Earnings risk type
+    const APPROVED_WIRE_SOURCES = new Set([
+      "FinancialJuice",
+      "DeItaOne",
+      "TwitterCli",
+    ]);
+    let wireEconCount = 0;
+    let wireEarningsCount = 0;
+    for (const item of enrichedItems) {
+      if (!APPROVED_WIRE_SOURCES.has(item.source)) continue;
+      const text = `${item.headline} ${item.body || ""}`;
+      const wireClass = classifyWirePrint(text);
+      if (wireClass.class === "econ") {
+        item.riskType = "Macro";
+        if (!item.tags) item.tags = [];
+        if (!item.tags.includes("econ-print")) item.tags.push("econ-print");
+        if (!item.tags.includes("wire-word-gate"))
+          item.tags.push("wire-word-gate");
+        wireEconCount++;
+      } else if (wireClass.class === "earnings") {
+        item.riskType = "Earnings";
+        if (!item.tags) item.tags = [];
+        if (!item.tags.includes("earnings-print"))
+          item.tags.push("earnings-print");
+        if (!item.tags.includes("wire-word-gate"))
+          item.tags.push("wire-word-gate");
+        wireEarningsCount++;
+      }
+    }
+    if (wireEconCount > 0 || wireEarningsCount > 0) {
+      log.info(
+        `WIRE word-gate classified: ${wireEconCount} econ prints, ${wireEarningsCount} earnings prints`,
+      );
+    }
+
+    // [claude-code 2026-04-30] S55: Auto-trip FinancialJuice → Commentary.
+    // Items from FinancialJuice that lack econ data signals (numbers, dollar
+    // amounts, percentage signs, Actual/Forecast keywords) are opinion/color
+    // commentary, not wire data. Reclassify them to Commentary so they don't
+    // pollute the Wire/Macro feed with low-signal noise.
+    let autoTrippedCommentary = 0;
+    for (const item of enrichedItems) {
+      if (item.source !== "FinancialJuice") continue;
+      if (item.riskType && item.riskType !== "Commentary") continue; // already classified
+      const text = `${item.headline} ${item.body || ""}`;
+      const hasNumbers = /\d/.test(text);
+      const hasDollar = /\$|USD\b/i.test(text);
+      const hasPercent = /%\b|percent\b/i.test(text);
+      const hasEconKeywords =
+        /\b(actual|forecast|previous|beat|miss|inline)\b/i.test(text);
+      const hasTicker = /\$[A-Z]{1,5}\b|\b[A-Z]{1,5}\b/.test(text);
+      const dataSignals = [
+        hasNumbers,
+        hasDollar,
+        hasPercent,
+        hasEconKeywords,
+        hasTicker,
+      ].filter(Boolean).length;
+      // If the item has < 2 data signals, it's opinion/commentary, not wire data
+      if (dataSignals < 2) {
+        item.source = "Commentary" as any;
+        item.riskType = "Commentary";
+        if (!item.tags) item.tags = [];
+        if (!item.tags.includes("auto-tripped")) item.tags.push("auto-tripped");
+        autoTrippedCommentary++;
+      }
+    }
+    if (autoTrippedCommentary > 0) {
+      log.info(
+        `Auto-tripped ${autoTrippedCommentary} FinancialJuice items → Commentary (low data density)`,
+      );
+    }
+
+    // Classify risk type (for items not already classified by WIRE word gates)
     for (const item of enrichedItems) {
       if (!item.riskType) {
         item.riskType = classifyRiskType(item.headline, item.tags || []);
@@ -583,7 +752,6 @@ export async function scoringCycle(): Promise<number> {
           coalesceAndEmit(
             {
               userId: "all",
-              category: "riskflow",
               severity: item.macroLevel === 4 ? "critical" : "high",
               ...payload,
             },
@@ -910,6 +1078,7 @@ export function scoredToFeedItem(scored: ScoredRiskFlowItem): FeedItem {
       scored.source,
       scored.headline || "",
       scored.tags || [],
+      scored.url,
     ),
     headline: scored.headline || "",
     body: scored.body,
@@ -927,7 +1096,10 @@ export function scoredToFeedItem(scored: ScoredRiskFlowItem): FeedItem {
     analyzedAt: scored.analyzed_at,
     subScores: (pbs?.subScores ??
       scored.sub_scores) as unknown as FeedItem["subScores"],
-    riskType: (pbs?.riskType as FeedItem["riskType"]) ?? null,
+    riskType:
+      (scored.risk_type as FeedItem["riskType"]) ??
+      (pbs?.riskType as FeedItem["riskType"]) ??
+      null,
     agentNote: pbs?.agentNote ?? null,
     agentNoteGeneratedAt: pbs?.agentNoteGeneratedAt ?? null,
     econData: (pbs?.econData as FeedItem["econData"]) ?? null,

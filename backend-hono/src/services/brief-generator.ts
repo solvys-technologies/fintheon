@@ -1,10 +1,11 @@
+// [claude-code 2026-05-03] S58-T3: Route MDB/ADB/PMDB/TWT generation through the DeepSeek primary provider chain.
 // [claude-code 2026-04-26] S45-T1: Inline Desk Theme block — pulls today's day_plan + windows and renders a monospace gutter (titles left / values right) before invokeAgent so MDB / ADB / PMDB / TWT all carry the prescriptive Day Card context.
 // [claude-code 2026-04-24] S35-T11: Inject Arbitrum "Chamber Read" (17:00 session digest) into PMDB prompt. Dynamic import of getLatestChamberRead so build stays green before T1/T12 lands the arbitrum barrel.
 // [claude-code 2026-04-19] S24-T1: MDB no longer writes regime directly — it proposes. Live behind SCORING_V4 env flag so V3 is a one-toggle rollback. Root cause: 2026-04-17 TP manually set BULL_TREND; MDB silently overwrote it 10h later via setRegime(). Kills the silent-override footgun.
 // [claude-code 2026-04-05] Strands Phase 8: Replace generateText + OpenRouter fallback with invokeAgent
 // [claude-code 2026-03-26] S2-T2: Add regime classification to MDB prompt + auto-parse after generation
-import { invokeAgent } from "./strands/index.js";
 import { readDayPlan } from "./day-plan/day-plan-service.js";
+import { generateViaChain } from "./ai/provider-chain.js";
 import type { DayPlan } from "../types/day-plan.js";
 import {
   writeBrief,
@@ -31,7 +32,7 @@ export const BRIEF_LABELS: Record<string, string> = {
   MDB: "Morning Daily Brief (MDB)",
   ADB: "Afternoon Daily Brief (ADB)",
   PMDB: "Post-Market Daily Brief (PMDB)",
-  TWT: "The Weekly Tribune",
+  TWT: "The Weekly Tribune (legacy TOTT)",
 };
 
 /**
@@ -76,22 +77,34 @@ async function fetchDeskThemeBlock(dateIso: string): Promise<string | null> {
 }
 
 function formatDeskThemeBlock(plan: DayPlan): string {
-  const lines: string[] = ["## Desk Theme", "```"];
+  const lines: string[] = ["## Desk Plan", "```"];
   if (plan.eventName) lines.push(padRow("Event", plan.eventName));
   if (plan.deskTheme) lines.push(padRow("Theme", plan.deskTheme));
   for (const w of plan.windows) {
     lines.push(padRow("Window", `${w.startTime}-${w.endTime} ET`));
-    if (w.pricesOfInterest.length > 0) {
-      lines.push(padRow("Prices", w.pricesOfInterest.join(" / ")));
+    if (w.eventName) {
+      lines.push(padRow("Catalyst", w.eventName));
     }
-    if (w.invalidation != null) {
-      lines.push(padRow("Invalidation", String(w.invalidation)));
-    }
-    if (w.profitTarget != null) {
-      lines.push(padRow("Profit target", String(w.profitTarget)));
-    }
-    if (w.expectedMovePct != null) {
-      lines.push(padRow("Expected move", `${w.expectedMovePct.toFixed(2)}%`));
+    if (w.econForecast) {
+      lines.push(padRow("Forecast", w.econForecast.forecast));
+      lines.push(
+        padRow(
+          "Miss",
+          `${w.econForecast.miss.description} (${w.econForecast.miss.probability}%)`,
+        ),
+      );
+      lines.push(
+        padRow(
+          "Beat",
+          `${w.econForecast.beat.description} (${w.econForecast.beat.probability}%)`,
+        ),
+      );
+      if (w.econForecast.otherNotableEvents.length > 0) {
+        lines.push(
+          padRow("Also", w.econForecast.otherNotableEvents.join(", ")),
+        );
+      }
+      lines.push(padRow("Prediction", w.econForecast.aiPrediction));
     }
   }
   lines.push("```");
@@ -102,8 +115,23 @@ function padRow(label: string, value: string): string {
   return `${label.padEnd(16, " ")}${value}`;
 }
 
-export function getCurrentBriefType(): BriefType {
-  const now = new Date();
+function toNewYorkWallDate(date: Date): Date {
+  return new Date(
+    date.toLocaleString("en-US", { timeZone: "America/New_York" }),
+  );
+}
+
+function dateInNewYork(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+export function getCurrentBriefType(nowInput = new Date()): BriefType {
+  const now = toNewYorkWallDate(nowInput);
   const day = now.getDay();
   const h = now.getHours();
   const timeVal = h * 60 + now.getMinutes();
@@ -115,6 +143,88 @@ export function getCurrentBriefType(): BriefType {
   if (timeVal >= 17 * 60 + 30) return "PMDB";
   if (timeVal >= 11 * 60) return "ADB";
   return "MDB";
+}
+
+export function getBriefWindowStart(
+  type: BriefType,
+  nowInput = new Date(),
+): Date {
+  const now = toNewYorkWallDate(nowInput);
+  const start = new Date(now);
+  start.setSeconds(0, 0);
+
+  if (type === "TWT") {
+    const day = now.getDay();
+    const timeVal = now.getHours() * 60 + now.getMinutes();
+    const daysBackToSunday = day === 0 && timeVal >= 17 * 60 ? 0 : day;
+    start.setDate(now.getDate() - daysBackToSunday);
+    start.setHours(17, 0, 0, 0);
+    return start;
+  }
+
+  if (type === "PMDB") {
+    const timeVal = now.getHours() * 60 + now.getMinutes();
+    if (timeVal < 6 * 60 + 30) start.setDate(now.getDate() - 1);
+    start.setHours(17, 30, 0, 0);
+    return start;
+  }
+
+  if (type === "ADB") {
+    start.setHours(11, 0, 0, 0);
+    return start;
+  }
+
+  start.setHours(6, 30, 0, 0);
+  return start;
+}
+
+export function isBriefCurrentForWindow(
+  brief: Pick<BriefRecord, "created_at" | "content"> | null | undefined,
+  type: BriefType,
+  nowInput = new Date(),
+): boolean {
+  if (!brief?.created_at) return false;
+  const createdAt = toNewYorkWallDate(new Date(brief.created_at));
+  const windowStart = getBriefWindowStart(type, nowInput);
+  return (
+    createdAt >= windowStart &&
+    briefContentMatchesCurrentDate(brief.content, nowInput)
+  );
+}
+
+function briefContentMatchesCurrentDate(
+  content: string | undefined,
+  nowInput: Date,
+): boolean {
+  if (!content) return false;
+  const header = content.slice(0, 800);
+  const match = header.match(
+    /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),\s+(\d{4})\b/i,
+  );
+  if (!match) return true;
+  const monthNames = [
+    "january",
+    "february",
+    "march",
+    "april",
+    "may",
+    "june",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december",
+  ];
+  const statedMonth = monthNames.indexOf(match[1].toLowerCase()) + 1;
+  const statedDay = Number(match[2]);
+  const statedYear = Number(match[3]);
+  const current = toNewYorkWallDate(nowInput);
+  return (
+    statedYear === current.getFullYear() &&
+    statedMonth === current.getMonth() + 1 &&
+    statedDay === current.getDate()
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -137,7 +247,7 @@ export async function generateBrief(
   overrideType?: BriefType,
 ): Promise<GenerateBriefResult> {
   const briefType = overrideType ?? getCurrentBriefType();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = dateInNewYork(new Date());
 
   const [feedResponse, econEvents] = await Promise.allSettled([
     getFeed("system", { limit: 20 }),
@@ -206,6 +316,9 @@ export async function generateBrief(
 ## Today's Economic Events
 ${econSummary}
 
+## Brief Date (America/New_York)
+${today}
+
 ## Recent RiskFlow Headlines
 ${feedSummary}
 ${deskThemeSection}
@@ -223,9 +336,9 @@ ${
 One-line justification for regime classification.
 **Best Intraday Approach:** Specific strategy recommendation (Ripper, AWV, Snipe, etc.)
 
-CRITICAL: Only reference data from the headlines and events provided above. Do NOT fabricate price levels, percentage moves, stock tickers, or actual/forecast numbers that aren't in the input. If you don't have specific data, say so — never hallucinate.
+CRITICAL: Only reference data from the headlines and events provided above. Do NOT fabricate price levels, percentage moves, stock tickers, or actual/forecast numbers that aren't in the input. If you don't have specific data, say so — never hallucinate. NEVER use emojis, decorative unicode symbols, or ASCII art of any kind. Use plain Markdown headers, bullet points, and bold text only.
 
-Be direct, use financial shorthand. Anchor ONLY to key macro events. 300-500 words.`
+Be direct, use financial shorthand. Anchor ONLY to key macro events. 300-500 words. NEVER use emojis or decorative unicode symbols.`
     : `Write the Weekly Tribune for Priced In Capital. This is a two-part report: Past Week Recap + What We Got Ahead.
 
 # PART 1: Past Week Recap
@@ -263,30 +376,38 @@ Be direct, use financial shorthand. Anchor ONLY to key macro events. 300-500 wor
 ## Today's Economic Events
 ${econSummary}
 
+## Brief Date (America/New_York)
+${today}
+
 ## Recent RiskFlow Headlines
 ${feedSummary}
 ${chamberSection}${deskThemeSection}
 ## Instructions
 ${
   briefType === "ADB"
-    ? "Write 3-5 bullet points covering ONLY new headlines and data since the morning that moved or could move the market. Skip anything already covered in the MDB. Be direct and actionable. Max 200 words."
+    ? "Write 3-5 bullet points covering ONLY new headlines and data since the morning that moved or could move the market. Skip anything already covered in the MDB. Be direct and actionable. Max 200 words. NEVER use emojis."
     : chamberRead
-      ? "Write 4-6 bullet points covering new developments since the afternoon brief — post-market moves, after-hours earnings, overnight catalysts. Lead with a 1-sentence restatement of the Chamber Read consensus above, flag any dissent, then the bullets. Be direct and actionable. Max 250 words."
-      : "Write 3-5 bullet points covering ONLY new developments since the afternoon brief — post-market moves, after-hours earnings, overnight catalysts. Be direct and actionable. Max 200 words."
+      ? "Write the PMDB (Post-Market Daily Brief) for Thursday, May 7, 2026. Use plain Markdown — no emojis, no decorative symbols. Format as: ## PMDB header, then bullet-point sections covering new developments since the afternoon brief — post-market moves, after-hours earnings, overnight catalysts. Lead with a 1-sentence restatement of the Chamber Read consensus above, flag any dissent, then the bullets. Be direct and actionable. Max 300 words."
+      : "Write the PMDB (Post-Market Daily Brief) for today. Use plain Markdown — no emojis, no decorative symbols. Format as: ## PMDB header, then bullet-point sections covering new developments since the afternoon brief — post-market moves, after-hours earnings, overnight catalysts. Be direct and actionable. Max 300 words."
 }`;
 
-  let text: string;
-  const usedProvider = "strands-vproxy";
-
-  log.info("Generating brief via Strands agent...");
-  const result = await invokeAgent({
-    systemPrompt:
-      "You are Fintheon, a macro trading assistant for Priced In Capital.",
-    userPrompt: prompt,
-    model: { temperature: 0.4, maxTokens: isFull ? 4096 : 1024 },
+  log.info("Generating brief via DeepSeek primary provider chain...", {
+    briefType,
   });
-  text = result.text;
-  log.info(`Strands agent generated ${text.length} chars`);
+  const result = await generateViaChain({
+    systemPrompt:
+      "You are Fintheon, a macro trading assistant for Priced In Capital. You generate the recurring MDB, ADB, PMDB, and TWT reports exactly when requested. NEVER use emojis or decorative unicode symbols — plain Markdown only. Use ## headers, bullet points (-), and **bold** text.",
+    prompt,
+    model: "deepseek-reasoner",
+    temperature: 0.4,
+    maxOutputTokens: isFull ? 4096 : 1024,
+    timeoutMs: 180_000,
+  });
+  const text = result.response;
+  const usedProvider = result.provider;
+  log.info(`Brief provider chain generated ${text.length} chars`, {
+    provider: usedProvider,
+  });
 
   // Auto-detect regime from MDB output (MDB only — parse after generation)
   // [S24-T1] V4: MDB PROPOSES; TP approves. Never writes market_regimes directly.
@@ -354,6 +475,21 @@ ${
     length: text.length,
   });
 
+  // [claude-code 2026-05-13] S64-T1: After TWT generation, trigger week desk plan generation.
+  if (briefType === "TWT") {
+    void (async () => {
+      try {
+        const { triggerWeekPlan } = await import("./desk-planner.js");
+        await triggerWeekPlan();
+        log.info("Week desk plan triggered from TWT publish");
+      } catch (err) {
+        log.warn("TWT->desk-plan trigger failed (non-fatal)", {
+          error: String(err),
+        });
+      }
+    })();
+  }
+
   // [claude-code 2026-04-18] A1: Daily Brief push trigger. Idempotent via fingerprint (one push per type per day).
   void (async () => {
     try {
@@ -394,7 +530,5 @@ export async function wasBriefGeneratedToday(
   type: BriefType,
 ): Promise<boolean> {
   const latest = await readLatestBrief(type);
-  if (!latest?.created_at) return false;
-  const today = new Date().toISOString().slice(0, 10);
-  return latest.created_at.startsWith(today);
+  return isBriefCurrentForWindow(latest, type);
 }

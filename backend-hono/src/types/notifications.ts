@@ -7,10 +7,16 @@
 
 export type PushCategory =
   | "riskflow"
+  | "geopolitical_alerts"
   | "dailyBrief"
   | "regimeActivations"
+  | "regimeProposals"
+  | "lexiconProposals"
+  | "walkBackReverts"
   | "toolApprovals"
+  | "maintenance_request"
   | "chat_relay"
+  | "econ_alerts"
   | "test"
   | "system";
 

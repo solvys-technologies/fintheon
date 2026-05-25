@@ -1,31 +1,60 @@
-// [claude-code 2026-04-24] S35-T10: renamed dir from workers/news-worker. Heartbeats now
-//   key on riskflow_worker_heartbeats; diagnostics surfaces riskflow_worker_age_seconds
-//   (with news_worker_age_seconds dual-emitted through 2026-05-08).
-// [claude-code 2026-04-19] S27-T7 (W2d): scheduler — two tiers.
-// Breaking (60s): Reuters, Bloomberg, X/Twitter via browser-harness.
-// Standard (5m): SEC, FOMC, newsletters via Exa + RSS + AgentReach scrape.
-// Upserts heartbeats per tier so /api/diagnostics can show riskflow_worker_age_seconds.
+// [claude-code 2026-05-12] FinancialJuice at 5s; X throttled to 10m during after-hours.
+// [claude-code 2026-05-03] Round-robin multi-device scheduler for X polling.
+// Replaced the 3-tier timer architecture with a single coordination-aware loop:
+//   1. Check cross-device coordinator (Supabase) — should THIS Mac mini poll now?
+//   2. If yes, run unified X tier (one home-timeline pass for all handles) +
+//      standard tier (non-X: COT, FOMC, Fed Speeches, Kalshi).
+//   3. If no, sleep CHECK_INTERVAL_MS then re-check.
+//   4. 90-minute rotation between team devices. Fallback chain to main device.
+//
+// Legacy tiers (breaking/commentary/standard X) replaced by runUnifiedXTier.
+// Non-X standard tier preserved as runStandardTier.
+//
+// [claude-code 2026-04-24] S35-T10: renamed dir from workers/news-worker.
+// [claude-code 2026-04-19] S27-T7 (W2d): original scheduler.
 
-import { runBreakingTier, runStandardTier } from "./sources/index.js";
+import {
+  runFinancialJuiceRssTier,
+  runUnifiedXTier,
+  runStandardTier,
+} from "./sources/index.js";
 import { upsertHeartbeat } from "./persist.js";
+import {
+  shouldPollThisCycle,
+  recordCycleSuccess,
+  releaseSlot,
+  getCheckIntervalMs,
+  getDeviceId,
+  getRotationIntervalMs,
+} from "./coordination.js";
+import { isAfterHours } from "../../services/riskflow/market-hours.js";
 
-const BREAKING_INTERVAL_MS = 60_000;
-const STANDARD_INTERVAL_MS = 5 * 60_000;
+const UNIFIED_INTERVAL_RTH_MS = 60_000; // 60s between X cycles during regular trading hours
+const UNIFIED_INTERVAL_AH_MS = 600_000; // 10m between X cycles during after-hours
+const FINANCIALJUICE_INTERVAL_MS = 5_000; // Real-time RSS wire poll every 5s
+const STANDARD_INTERVAL_MS = 300_000; // 5m between non-X sweeps when active
+
+function getUnifiedIntervalMs(): number {
+  return isAfterHours() ? UNIFIED_INTERVAL_AH_MS : UNIFIED_INTERVAL_RTH_MS;
+}
 
 interface TierState {
-  tier: "breaking" | "standard";
   running: boolean;
   lastRunAt: string | null;
   lastItemsIngested: number;
   lastErrors: number;
   totalRuns: number;
   totalErrors: number;
-  timer: NodeJS.Timeout | null;
 }
 
-const state: Record<"breaking" | "standard", TierState> = {
-  breaking: {
-    tier: "breaking",
+const state: Record<
+  "financialjuice" | "unified" | "standard",
+  TierState & {
+    timer: ReturnType<typeof setTimeout> | null;
+    intervalMs: number;
+  }
+> = {
+  financialjuice: {
     running: false,
     lastRunAt: null,
     lastItemsIngested: 0,
@@ -33,9 +62,19 @@ const state: Record<"breaking" | "standard", TierState> = {
     totalRuns: 0,
     totalErrors: 0,
     timer: null,
+    intervalMs: FINANCIALJUICE_INTERVAL_MS,
+  },
+  unified: {
+    running: false,
+    lastRunAt: null,
+    lastItemsIngested: 0,
+    lastErrors: 0,
+    totalRuns: 0,
+    totalErrors: 0,
+    timer: null,
+    intervalMs: getUnifiedIntervalMs(),
   },
   standard: {
-    tier: "standard",
     running: false,
     lastRunAt: null,
     lastItemsIngested: 0,
@@ -43,10 +82,13 @@ const state: Record<"breaking" | "standard", TierState> = {
     totalRuns: 0,
     totalErrors: 0,
     timer: null,
+    intervalMs: STANDARD_INTERVAL_MS,
   },
 };
 
-async function runTier(tier: "breaking" | "standard"): Promise<void> {
+async function runCycle(
+  tier: "financialjuice" | "unified" | "standard",
+): Promise<void> {
   const s = state[tier];
   if (s.running) return;
   s.running = true;
@@ -55,9 +97,16 @@ async function runTier(tier: "breaking" | "standard"): Promise<void> {
   let errors = 0;
   try {
     const result =
-      tier === "breaking" ? await runBreakingTier() : await runStandardTier();
+      tier === "financialjuice"
+        ? await runFinancialJuiceRssTier()
+        : tier === "unified"
+          ? await runUnifiedXTier()
+          : await runStandardTier();
     ingested = result.ingested;
     errors = result.errors;
+    if ((tier === "unified" || tier === "financialjuice") && ingested > 0) {
+      recordCycleSuccess().catch(() => {});
+    }
   } catch (err) {
     errors += 1;
     console.error(
@@ -93,47 +142,98 @@ async function runTier(tier: "breaking" | "standard"): Promise<void> {
         ingested,
         errors,
         duration_ms: Date.now() - started,
+        device: getDeviceId(),
       }),
     );
   }
 }
 
+async function unifiedPollLoop(): Promise<void> {
+  const shouldPoll = await shouldPollThisCycle();
+  if (shouldPoll) {
+    await runCycle("unified");
+    state.unified.intervalMs = getUnifiedIntervalMs();
+    state.unified.timer = setTimeout(unifiedPollLoop, state.unified.intervalMs);
+  } else {
+    const checkMs = getCheckIntervalMs();
+    state.unified.timer = setTimeout(unifiedPollLoop, checkMs);
+  }
+}
+
+async function financialJuicePollLoop(): Promise<void> {
+  const shouldPoll = await shouldPollThisCycle();
+  if (shouldPoll) {
+    await runCycle("financialjuice");
+    state.financialjuice.timer = setTimeout(
+      financialJuicePollLoop,
+      FINANCIALJUICE_INTERVAL_MS,
+    );
+  } else {
+    const checkMs = getCheckIntervalMs();
+    state.financialjuice.timer = setTimeout(financialJuicePollLoop, checkMs);
+  }
+}
+
 export function startScheduler(): void {
-  if (state.breaking.timer || state.standard.timer) return;
+  if (state.unified.timer || state.standard.timer) return;
 
-  // Stagger first runs so both tiers don't fire on the same tick.
-  setTimeout(() => void runTier("breaking"), 1_000);
-  setTimeout(() => void runTier("standard"), 3_000);
+  const deviceId = getDeviceId();
+  const rotationMin = Math.round(getRotationIntervalMs() / 60_000);
 
-  state.breaking.timer = setInterval(
-    () => void runTier("breaking"),
-    BREAKING_INTERVAL_MS,
+  console.log(
+    JSON.stringify({
+      ts: new Date().toISOString(),
+      service: "riskflow-worker",
+      stage: "scheduler_started",
+      device: deviceId,
+      rotation_interval_minutes: rotationMin,
+      unified_interval_rth_ms: UNIFIED_INTERVAL_RTH_MS,
+      unified_interval_ah_ms: UNIFIED_INTERVAL_AH_MS,
+      standard_interval_ms: STANDARD_INTERVAL_MS,
+      financialjuice_interval_ms: FINANCIALJUICE_INTERVAL_MS,
+    }),
   );
+
+  // FinancialJuice RSS — primary real-time wire pipe, independent of X auth.
+  // Coordination still matters on Fly because multiple worker machines run.
+  setTimeout(() => void financialJuicePollLoop(), 1_000);
+
+  // Unified X tier — coordination-aware loop
+  setTimeout(() => void unifiedPollLoop(), 2_000);
+
+  // Standard tier — independent, runs regardless of device rotation
+  // (gov RSS + Kalshi don't need X credentials)
+  setTimeout(() => void runCycle("standard"), 5_000);
   state.standard.timer = setInterval(
-    () => void runTier("standard"),
+    () => void runCycle("standard"),
     STANDARD_INTERVAL_MS,
   );
 }
 
 export async function stopScheduler(): Promise<void> {
-  if (state.breaking.timer) clearInterval(state.breaking.timer);
+  if (state.unified.timer) clearTimeout(state.unified.timer);
+  if (state.financialjuice.timer) clearTimeout(state.financialjuice.timer);
   if (state.standard.timer) clearInterval(state.standard.timer);
-  state.breaking.timer = null;
+  state.financialjuice.timer = null;
+  state.unified.timer = null;
   state.standard.timer = null;
+  await releaseSlot();
 }
 
 export function getSchedulerSnapshot() {
-  const tiers = (["breaking", "standard"] as const).map((t) => {
-    const s = state[t];
-    return {
-      tier: s.tier,
-      running: s.running,
-      last_run_at: s.lastRunAt,
-      last_items_ingested: s.lastItemsIngested,
-      last_errors: s.lastErrors,
-      total_runs: s.totalRuns,
-      total_errors: s.totalErrors,
-    };
-  });
-  return { tiers };
+  const tiers = (["financialjuice", "unified", "standard"] as const).map(
+    (t) => {
+      const s = state[t];
+      return {
+        tier: t,
+        running: s.running,
+        last_run_at: s.lastRunAt,
+        last_items_ingested: s.lastItemsIngested,
+        last_errors: s.lastErrors,
+        total_runs: s.totalRuns,
+        total_errors: s.totalErrors,
+      };
+    },
+  );
+  return { tiers, device: getDeviceId() };
 }

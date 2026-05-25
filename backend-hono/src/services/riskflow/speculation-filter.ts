@@ -24,6 +24,9 @@ const SPECULATION_PATTERNS: RegExp[] = [
   /\btalks?\s+of\b/i,
   /\b(?:under|being)\s+consider(?:ed|ing)\b/i,
   /\bhinting\b/i,
+  /\bdragged\b/i,
+  /\blets\s+you\s+trade\b/i,
+  /\btrade\s+like\b/i,
 ];
 
 export function isSpeculative(headline: string, body?: string): boolean {

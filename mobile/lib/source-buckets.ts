@@ -1,3 +1,4 @@
+// [claude-code 2026-04-29] S51: added Earnings bucket — routes Earnings-tagged alerts to dedicated bucket
 // [claude-code 2026-04-28] S47-T1: General stripped; Wire/Macro added.
 // Mirror of frontend/lib/source-buckets.ts — kept as a sibling copy so the
 // mobile bundle stays independent of frontend's build graph.
@@ -8,6 +9,7 @@ export type SourceBucket =
   | "Macro"
   | "Commentary"
   | "Econ"
+  | "Earnings"
   | "Geopolitical";
 
 export const SOURCE_BUCKETS: SourceBucket[] = [
@@ -16,6 +18,7 @@ export const SOURCE_BUCKETS: SourceBucket[] = [
   "OSINT",
   "Commentary",
   "Econ",
+  "Earnings",
   "Geopolitical",
 ];
 
@@ -29,6 +32,7 @@ export function bucketOf(alert: {
   const riskType = alert.riskType ?? null;
 
   if (riskType === "Geopolitical") return "Geopolitical";
+  if (riskType === "Earnings") return "Earnings";
   if (src === "OSINTSources" || src === "osint-sources") return "OSINT";
   if (src === "Hermes") return "Commentary";
   if (submittedBy.startsWith("commentary-scraper:")) return "Commentary";

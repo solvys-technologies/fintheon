@@ -11,7 +11,7 @@ interface MiniProposal {
 }
 
 interface MiniProposalCardProps {
-  /** Navigate to full proposals tab */
+  /** Navigate to the full Desk rail. */
   onExpand?: () => void;
 }
 
@@ -60,7 +60,7 @@ export function MiniProposalCard({ onExpand }: MiniProposalCardProps) {
       type="button"
       onClick={onExpand}
       className="w-full bg-[var(--fintheon-accent)]/5 border border-[var(--fintheon-accent)]/20 rounded px-2.5 py-1.5 flex items-center gap-2 hover:bg-[var(--fintheon-accent)]/10 transition-colors group"
-      title="Click to expand in Proposals tab"
+      title="Open in Desk rail"
     >
       <Target className="w-3 h-3 text-[var(--fintheon-accent)] flex-shrink-0" />
 

@@ -16,11 +16,18 @@ import { useBackend } from "../lib/backend";
 import { useToast, type NotificationType } from "../contexts/ToastContext";
 import { useDND } from "../contexts/DNDContext";
 import { healingBowlPlayer } from "../utils/healingBowlSounds";
+import { isElectron } from "../lib/platform";
+import type {
+  NotificationCategory,
+  NotificationPrefs,
+  Severity,
+} from "../lib/user-preferences";
 
 interface Notification {
   id: string;
   type: "iv" | "news" | "tilt" | "trade" | "warning";
-  severity?: "info" | "warning" | "success" | "error";
+  category: string;
+  severity?: Severity | "info" | "warning" | "success" | "error";
   title: string;
   message: string;
   timestamp: Date;
@@ -40,6 +47,63 @@ function toDndType(type: Notification["type"]): NotificationType {
     case "warning":
       return "general";
   }
+}
+
+const SEVERITY_ORDER: Severity[] = ["low", "medium", "high", "critical"];
+
+function severityRank(severity?: Notification["severity"]): number {
+  if (severity === "error") return SEVERITY_ORDER.indexOf("critical");
+  if (severity === "warning") return SEVERITY_ORDER.indexOf("high");
+  const rank = SEVERITY_ORDER.indexOf(severity as Severity);
+  return rank >= 0 ? rank : SEVERITY_ORDER.indexOf("medium");
+}
+
+function categoryToToastType(category: string): Notification["type"] {
+  if (category === "econ_alerts" || category === "geopolitical_alerts") {
+    return "news";
+  }
+  if (category === "riskflow" || category === "dailyBrief") return "iv";
+  if (category === "toolApprovals" || category === "maintenance_request") {
+    return "trade";
+  }
+  if (category === "system" || category === "test") return "warning";
+  return "news";
+}
+
+function categoryLabel(category: string): string {
+  switch (category) {
+    case "geopolitical_alerts":
+      return "Geo";
+    case "econ_alerts":
+      return "Econ";
+    case "dailyBrief":
+      return "Brief";
+    case "chat_relay":
+      return "Chat";
+    case "maintenance_request":
+      return "Maint";
+    case "riskflow":
+      return "RiskFlow";
+    default:
+      return category.replace(/_/g, " ");
+  }
+}
+
+function shouldShowOnThisSurface(
+  notification: Notification,
+  prefs: NotificationPrefs,
+): boolean {
+  const channelEnabled = isElectron()
+    ? prefs.deliveryChannels.desktop
+    : prefs.deliveryChannels.web;
+  if (!channelEnabled) return false;
+  const category = notification.category as NotificationCategory;
+  if (notification.severity === "critical") return true;
+  if (prefs.blockedCategories.includes(category)) return false;
+  if (prefs.econOnlyMode && category !== "econ_alerts") return false;
+  if (prefs.criticalOnly) return false;
+  if (prefs.manualDnd) return false;
+  return severityRank(notification.severity) >= severityRank(prefs.severityThreshold);
 }
 
 interface NotificationToastProps {
@@ -157,15 +221,7 @@ export function NotificationToast({
       }}
     >
       <div
-        className="backdrop-blur-2xl overflow-hidden"
-        style={{
-          borderRadius: "8px",
-          border: "1px solid var(--fintheon-glass-border)",
-          backgroundColor: "var(--fintheon-glass-bg)",
-          backdropFilter: "blur(24px) saturate(1.4)",
-          WebkitBackdropFilter: "blur(24px) saturate(1.4)",
-          boxShadow: "var(--fintheon-glass-shadow)",
-        }}
+        className="fintheon-toast-surface"
       >
         <div
           className="flex items-start justify-between"
@@ -173,14 +229,7 @@ export function NotificationToast({
         >
           <div className="flex items-start gap-2 flex-1 min-w-0">
             <span
-              className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest flex-shrink-0 mt-0.5"
-              style={{
-                color: "var(--fintheon-accent)",
-                backgroundColor:
-                  "color-mix(in srgb, var(--fintheon-accent) 12%, transparent)",
-                border:
-                  "1px solid color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
-              }}
+              className="fintheon-toast-badge inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest flex-shrink-0 mt-0.5"
             >
               {severityConfig.label}
             </span>
@@ -215,7 +264,7 @@ export function NotificationToast({
                       ? "Psych"
                       : notification.type === "trade"
                         ? "Trade"
-                        : "RiskFlow"}
+                        : categoryLabel(notification.category)}
                 </span>
               </div>
             </div>
@@ -265,6 +314,7 @@ export function NotificationContainer() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [lastChecked, setLastChecked] = useState<Date>(new Date());
   const backend = useBackend();
+  const { preferences } = useSettings();
   const { isNotificationBlocked, blockNotificationType } = useToast();
   const { dndActive, tryQueue } = useDND();
 
@@ -294,12 +344,16 @@ export function NotificationContainer() {
           )
           .map((item: any) => ({
             id: item.id.toString(),
-            type: item.type as any,
+            type: categoryToToastType(String(item.category ?? item.type ?? "system")),
+            category: String(item.category ?? item.type ?? "system"),
             severity: item.severity as any,
             title: item.title,
-            message: item.message,
+            message: item.body ?? item.message ?? "",
             timestamp: new Date(item.createdAt),
           }))
+          .filter((n: Notification) =>
+            shouldShowOnThisSurface(n, preferences.notifications),
+          )
           // Filter out blocked notification types
           .filter(
             (n: Notification) => !isNotificationBlocked(toDndType(n.type)),
@@ -343,7 +397,14 @@ export function NotificationContainer() {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [lastChecked, backend, isNotificationBlocked, dndActive, tryQueue]);
+  }, [
+    lastChecked,
+    backend,
+    isNotificationBlocked,
+    dndActive,
+    tryQueue,
+    preferences.notifications,
+  ]);
 
   return (
     <div

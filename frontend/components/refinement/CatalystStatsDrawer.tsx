@@ -9,7 +9,7 @@
 //     match the wire-handle / web-host classification, right-aligned).
 //   - Per-source ruler-divided rows under each category, source label
 //     left + count right-aligned.
-//   - Bulk-handling controls below: bulk delete, 14d refill, MSM Audit
+//   - Bulk-handling controls below: bulk delete, 14d refill, Purge audit
 //     (today + all-time variants).
 //
 // Auth: backend admin routes are gated on Supabase JWT + superadmin
@@ -32,7 +32,7 @@ interface SourceStat {
   count: number;
 }
 
-interface MsmAuditResponse {
+interface PurgeAuditResponse {
   confirmed: false;
   scope: "today" | "all" | "range";
   from: string | null;
@@ -49,9 +49,10 @@ interface MsmAuditResponse {
 }
 
 interface Props {
-  open: boolean;
-  onClose: () => void;
+  open?: boolean;
+  onClose?: () => void;
   disabled: boolean;
+  inline?: boolean;
 }
 
 const RULER_STYLE: React.CSSProperties = {
@@ -60,7 +61,12 @@ const RULER_STYLE: React.CSSProperties = {
     "linear-gradient(to right, transparent 0%, color-mix(in srgb, var(--fintheon-accent) 32%, transparent) 50%, transparent 100%)",
 };
 
-export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
+export function CatalystStatsDrawer({
+  open = false,
+  onClose,
+  disabled,
+  inline = false,
+}: Props) {
   const { addToast } = useToast();
   const { getAccessToken } = useAuth();
   const [stats, setStats] = useState<SourceStat[]>([]);
@@ -73,7 +79,9 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
   const [refillToDate, setRefillToDate] = useState<string>(() =>
     new Date().toISOString().slice(0, 10),
   );
-  const [auditResult, setAuditResult] = useState<MsmAuditResponse | null>(null);
+  const [auditResult, setAuditResult] = useState<PurgeAuditResponse | null>(
+    null,
+  );
   const [busy, setBusy] = useState<string | null>(null);
 
   const buildHeaders = useCallback(async (): Promise<Record<
@@ -124,8 +132,8 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
 
   // Pull on first open + whenever the drawer is reopened.
   useEffect(() => {
-    if (open) void fetchStats();
-  }, [open, fetchStats]);
+    if (inline || open) void fetchStats();
+  }, [inline, open, fetchStats]);
 
   // Group sources by category for the aggregate display.
   const grouped = useMemo(() => {
@@ -268,22 +276,22 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
     }
   };
 
-  const onMsmAudit = async (scope: "today" | "all") => {
+  const onPurgeAudit = async (scope: "today" | "all") => {
     setBusy("audit");
     try {
       const headers = await buildHeaders();
       if (!headers) return;
-      const res = await fetch(`${API_BASE}/api/admin/riskflow/msm-purge`, {
+      const res = await fetch(`${API_BASE}/api/admin/riskflow/purge`, {
         method: "POST",
         headers,
         body: JSON.stringify({ scope }),
       });
       const json = (await res.json()) as
-        | MsmAuditResponse
+        | PurgeAuditResponse
         | { error: string; detail?: string };
       if (!res.ok || (json as { error?: string }).error) {
         addToast(
-          "MSM audit failed",
+          "Purge audit failed",
           "error",
           (json as { detail?: string }).detail ??
             (json as { error?: string }).error ??
@@ -291,17 +299,17 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
         );
         return;
       }
-      setAuditResult(json as MsmAuditResponse);
+      setAuditResult(json as PurgeAuditResponse);
     } finally {
       setBusy(null);
     }
   };
 
-  const onMsmConfirm = async () => {
+  const onPurgeConfirm = async () => {
     if (!auditResult) return;
     if (
       !window.confirm(
-        `Hard-delete ${auditResult.candidate_count} catalyst(s) matching mainstream-media patterns (scope=${auditResult.scope})?`,
+        `Hard-delete ${auditResult.candidate_count} catalyst(s) matching blocked domains or keywords (scope=${auditResult.scope})?`,
       )
     )
       return;
@@ -309,7 +317,7 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
     try {
       const headers = await buildHeaders();
       if (!headers) return;
-      const res = await fetch(`${API_BASE}/api/admin/riskflow/msm-purge`, {
+      const res = await fetch(`${API_BASE}/api/admin/riskflow/purge`, {
         method: "POST",
         headers,
         body: JSON.stringify({ confirm: true, scope: auditResult.scope }),
@@ -322,7 +330,7 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
       };
       if (!res.ok || json.error) {
         addToast(
-          "MSM purge failed",
+          "Purge failed",
           "error",
           json.detail ?? json.error ?? `${res.status}`,
         );
@@ -341,7 +349,11 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
 
   return (
     <div
-      className={`absolute right-0 top-0 bottom-0 w-[420px] z-40 flex flex-col bg-[var(--fintheon-bg)] border-l border-[var(--fintheon-accent)]/20 shadow-2xl transition-all duration-300 ease-in-out ${open ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none invisible"}`}
+      className={
+        inline
+          ? "flex min-h-[360px] flex-col border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)]"
+          : `absolute right-0 top-0 bottom-0 z-40 flex w-[420px] flex-col border-l border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-2xl transition-all duration-300 ease-in-out ${open ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none invisible"}`
+      }
     >
       {/* Header — title + refresh + close, mirrors ChatPanel chrome density */}
       <div className="flex items-center justify-between px-3 py-2 flex-shrink-0 border-b border-[var(--fintheon-accent)]/15">
@@ -371,13 +383,15 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
               className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
             />
           </button>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8 transition-colors"
-            title="Close"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
+          {!inline && (
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8 transition-colors"
+              title="Close"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -442,80 +456,153 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
           {grouped.length > 0 && <div aria-hidden="true" style={RULER_STYLE} />}
         </div>
 
-        {/* [claude-code 2026-04-28] S48-T3: Web URL source section — filtered to polling_type: "web" */}
-        <div
-          style={{
-            marginTop: 24,
-            paddingTop: 12,
-            borderTop: "1px solid var(--fintheon-glass-border)",
-          }}
-        >
-          <h3
-            style={{
-              fontFamily: "var(--font-heading)",
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              color: "var(--fintheon-accent)",
-              marginBottom: 6,
-            }}
-          >
-            WEB SOURCES
-          </h3>
-          {webSources.length === 0 ? (
-            <p
-              style={{
-                fontSize: 10,
-                color: "var(--fintheon-muted)",
-                fontFamily: "var(--font-body)",
-              }}
-            >
-              No web sources ingested in this window
-            </p>
-          ) : (
-            <div className="flex flex-col">
-              {webSources.map((s) => (
-                <div
-                  key={s.source}
+        {/* [claude-code 2026-05-06] Split into X/Twitter vs RSS/Web — social sources never
+            appear in the web section and vice versa. Left fading ruler replaces border. */}
+        {(() => {
+          const social = grouped.filter(([_, e]) => e.pollingType === "social");
+          const web = grouped.filter(([_, e]) => e.pollingType === "web");
+          return (
+            <>
+              {/* X/Twitter section */}
+              <div style={{ marginTop: 12 }}>
+                <h3
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "2px 4px",
-                    borderBottom:
-                      "1px solid color-mix(in srgb, var(--fintheon-accent) 4%, transparent)",
+                    fontFamily: "var(--font-heading)",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    color: "var(--fintheon-accent)",
+                    marginBottom: 8,
                   }}
                 >
-                  <span
+                  X / TWITTER
+                </h3>
+                {social.length === 0 ? (
+                  <p style={{ fontSize: 10, color: "var(--fintheon-muted)" }}>
+                    No X sources in window.
+                  </p>
+                ) : (
+                  <div
                     style={{
-                      fontSize: 10,
-                      color: "var(--fintheon-text)",
-                      fontFamily: "var(--font-mono)",
-                      flex: 1,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
+                      borderLeft: "1px solid rgba(199,159,74,0.12)",
+                      paddingLeft: 10,
                     }}
                   >
-                    {s.source}
-                  </span>
-                  <span
+                    {social.map(([cat, entry]) => (
+                      <div key={cat}>
+                        <div className="flex items-baseline justify-between py-1.5">
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--fintheon-text)]">
+                            {cat}
+                          </span>
+                          <span
+                            className="text-[var(--fintheon-accent)] tabular-nums"
+                            style={{
+                              fontFamily: "var(--font-data)",
+                              fontSize: 14,
+                            }}
+                          >
+                            {entry.aggregate}
+                          </span>
+                        </div>
+                        {entry.sources.map((stat) => (
+                          <label
+                            key={stat.source}
+                            className="flex items-center gap-2 px-0 py-1 text-[10px] cursor-pointer hover:bg-[var(--fintheon-accent)]/5"
+                          >
+                            <input
+                              type="checkbox"
+                              disabled={disabled}
+                              checked={selected.has(stat.source)}
+                              onChange={() => toggleSource(stat.source)}
+                              className="accent-[var(--fintheon-accent)]"
+                            />
+                            <span className="flex-1 truncate text-zinc-300 font-mono">
+                              {stat.source.replace(/^twitter:/, "@")}
+                            </span>
+                            <span className="tabular-nums text-zinc-300">
+                              {stat.count}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div
+                style={{
+                  height: 1,
+                  margin: "16px 0",
+                  background:
+                    "linear-gradient(to right, rgba(199,159,74,0.18), transparent 80%)",
+                }}
+              />
+
+              {/* RSS/Web section */}
+              <div>
+                <h3
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    color: "var(--fintheon-accent)",
+                    marginBottom: 8,
+                  }}
+                >
+                  RSS / WEB
+                </h3>
+                {web.length === 0 ? (
+                  <p style={{ fontSize: 10, color: "var(--fintheon-muted)" }}>
+                    No web sources in window.
+                  </p>
+                ) : (
+                  <div
                     style={{
-                      fontSize: 10,
-                      fontFamily: "var(--font-data)",
-                      color: "var(--fintheon-muted)",
-                      flexShrink: 0,
-                      marginLeft: 8,
+                      borderLeft: "1px solid rgba(199,159,74,0.12)",
+                      paddingLeft: 10,
                     }}
                   >
-                    {s.count}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                    {web.map(([cat, entry]) => (
+                      <div key={cat}>
+                        <div className="flex items-baseline justify-between py-1.5">
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--fintheon-text)]">
+                            {cat}
+                          </span>
+                          <span
+                            className="text-[var(--fintheon-accent)] tabular-nums"
+                            style={{
+                              fontFamily: "var(--font-data)",
+                              fontSize: 14,
+                            }}
+                          >
+                            {entry.aggregate}
+                          </span>
+                        </div>
+                        {entry.sources.map((stat) => (
+                          <div
+                            key={stat.source}
+                            className="flex justify-between items-center py-1 text-[10px]"
+                          >
+                            <span className="text-zinc-300 font-mono truncate flex-1 mr-2">
+                              {stat.source}
+                            </span>
+                            <span className="tabular-nums text-zinc-300">
+                              {stat.count}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          );
+        })()}
 
         {/* Bulk handling */}
         <div className="flex flex-col gap-2">
@@ -562,20 +649,20 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
               {busy === "refill" ? "Refilling…" : "Refill 14d"}
             </button>
             <button
-              onClick={() => onMsmAudit("today")}
+              onClick={() => onPurgeAudit("today")}
               disabled={disabled || busy !== null}
               className="inline-flex items-center gap-1 px-2 py-1 border border-amber-500/40 text-[11px] text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
             >
               <ShieldAlert className="w-3 h-3" />
-              {busy === "audit" ? "Auditing…" : "MSM · today"}
+              {busy === "audit" ? "Auditing…" : "Purge · today"}
             </button>
             <button
-              onClick={() => onMsmAudit("all")}
+              onClick={() => onPurgeAudit("all")}
               disabled={disabled || busy !== null}
               className="inline-flex items-center gap-1 px-2 py-1 border border-amber-500/40 text-[11px] text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
             >
               <ShieldAlert className="w-3 h-3" />
-              MSM · all-time
+              Purge · all-time
             </button>
           </div>
         </div>
@@ -604,7 +691,7 @@ export function CatalystStatsDrawer({ open, onClose, disabled }: Props) {
             </ul>
             <div className="flex items-center gap-2">
               <button
-                onClick={onMsmConfirm}
+                onClick={onPurgeConfirm}
                 disabled={busy !== null}
                 className="px-2 py-1 border border-red-500/40 text-[11px] text-red-400 hover:bg-red-500/10 disabled:opacity-50"
               >

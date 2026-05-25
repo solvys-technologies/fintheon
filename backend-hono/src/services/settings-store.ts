@@ -14,6 +14,25 @@ export interface UserSettings {
 // In-memory fallback for dev / no-database mode
 const memorySettings = new Map<string, UserSettings>();
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function mergeSettings(
+  current: UserSettings,
+  patch: UserSettings,
+): UserSettings {
+  const next: UserSettings = { ...current };
+  for (const [key, value] of Object.entries(patch)) {
+    const existing = next[key];
+    next[key] =
+      isPlainObject(existing) && isPlainObject(value)
+        ? mergeSettings(existing, value)
+        : value;
+  }
+  return next;
+}
+
 /**
  * Get user settings
  */
@@ -31,9 +50,9 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
   } catch (err: unknown) {
     // Table may not exist yet — graceful fallback
     const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes("does not exist")) {
+    if (msg.includes("does not exist") || msg.includes("column \"settings\"")) {
       console.warn(
-        "[SettingsStore] user_settings table not found, using memory fallback",
+        "[SettingsStore] user_settings settings column unavailable, using memory fallback",
       );
       return memorySettings.get(userId) ?? {};
     }
@@ -49,24 +68,26 @@ export async function saveUserSettings(
   settings: UserSettings,
 ): Promise<UserSettings> {
   if (!isDatabaseAvailable() || !sql) {
-    memorySettings.set(userId, settings);
-    return settings;
+    const merged = mergeSettings(memorySettings.get(userId) ?? {}, settings);
+    memorySettings.set(userId, merged);
+    return merged;
   }
 
   try {
-    const jsonStr = JSON.stringify(settings);
+    const current = await getUserSettings(userId);
+    const merged = mergeSettings(current, settings);
+    const jsonStr = JSON.stringify(merged);
     await sql`
       INSERT INTO user_settings (user_id, settings, updated_at)
       VALUES (${userId}, ${jsonStr}::jsonb, NOW())
       ON CONFLICT (user_id)
       DO UPDATE SET settings = ${jsonStr}::jsonb, updated_at = NOW()
     `;
-    return settings;
+    return merged;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes("does not exist")) {
-      // Auto-create table
-      console.log("[SettingsStore] Creating user_settings table...");
+    if (msg.includes("does not exist") || msg.includes("column \"settings\"")) {
+      console.log("[SettingsStore] Ensuring user_settings settings column...");
       await sql`
         CREATE TABLE IF NOT EXISTS user_settings (
           user_id TEXT PRIMARY KEY,
@@ -74,6 +95,10 @@ export async function saveUserSettings(
           created_at TIMESTAMPTZ DEFAULT NOW(),
           updated_at TIMESTAMPTZ DEFAULT NOW()
         )
+      `;
+      await sql`
+        ALTER TABLE user_settings
+        ADD COLUMN IF NOT EXISTS settings JSONB NOT NULL DEFAULT '{}'::jsonb
       `;
       // Retry the upsert
       const jsonStr = JSON.stringify(settings);

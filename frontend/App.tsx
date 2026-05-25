@@ -18,6 +18,7 @@ import { RiskFlowProvider } from "./contexts/RiskFlowContext";
 import { ContextBankProvider } from "./contexts/ContextBankContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { VoiceProvider } from "./contexts/VoiceContext";
+import { ProxVoiceProvider } from "./contexts/ProxVoiceContext";
 import { VoiceRimFrame } from "./components/voice/VoiceRimFrame";
 import { ERProvider } from "./contexts/ERContext";
 import { MainLayout } from "./components/layout/MainLayout";
@@ -26,12 +27,14 @@ import { NotificationContainer } from "./components/NotificationToast";
 import { ToastContainer } from "./components/ui/Toast";
 import { PreMarketReminder } from "./components/PreMarketReminder";
 import { ApiErrorToastBridge } from "./components/ApiErrorToastBridge";
+import { AiCreditToastBridge } from "./components/AiCreditToastBridge";
+import { DeskPlanPlannerToastBridge } from "./components/DeskPlanPlannerToastBridge";
 import { VersionChecker } from "./components/VersionChecker";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { SystemStatusProvider } from "./contexts/SystemStatusContext";
 import { migrateStorageKeys } from "./lib/storage-migration";
 import { AuthShell } from "./components/auth/AuthShell";
-import { CircleQuarters } from "./components/icon-bank/UnicodeSpinners";
+import { LoadingBootScreen } from "./components/loading/LoadingBootScreen";
 import { ConsulControlCorners } from "./components/consul-control/ConsulControlCorners";
 import { useConsulControlStatus } from "./hooks/useConsulControlStatus";
 
@@ -125,35 +128,21 @@ function AuthGate() {
   const { isAuthenticated, isLoading, signIn } = useAuth();
   const [initComplete, setInitComplete] = useState(false);
   const [showSplash] = useState(() => isColdStart());
+  const authBypass = import.meta.env.VITE_BYPASS_AUTH === "true";
+  const canEnterApp = isAuthenticated || authBypass;
 
   const handleInitReady = useCallback(() => {
     setInitComplete(true);
   }, []);
 
   // Run headless init once authenticated
-  useAppInit(isAuthenticated, handleInitReady);
+  useAppInit(canEnterApp, handleInitReady);
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#050402]">
-        <div className="flex flex-col items-center gap-4">
-          <img
-            src="./logo.png"
-            alt="Fintheon"
-            className="h-16 w-16 opacity-60"
-          />
-          <div className="flex items-center gap-2">
-            <CircleQuarters size={11} color="#c79f4a" />
-            <p className="text-[11px] tracking-[0.3em] text-[#c79f4a]/60">
-              LOADING
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingBootScreen phrase="Restoring session" />;
   }
 
-  if (!isAuthenticated) {
+  if (!canEnterApp) {
     return <AuthShell onSignIn={signIn} isLoading={isLoading} />;
   }
 
@@ -172,8 +161,9 @@ function AuthGate() {
                       <ContextBankProvider>
                         <ThreadProvider>
                           <VoiceProvider>
-                            <ERProvider>
-                              <div className="dark">
+                            <ProxVoiceProvider>
+                              <ERProvider>
+                                <div className="dark">
                                 <VoiceRimFrame />
                                 <style>{`
                   * {
@@ -209,16 +199,19 @@ function AuthGate() {
                     );
                     pointer-events: none;
                   }
-                `}</style>
+                                `}</style>
                                 <ApiErrorToastBridge />
+                                <AiCreditToastBridge />
+                                <DeskPlanPlannerToastBridge />
                                 <VersionChecker />
                                 <MainLayout />
                                 <ConsulControlLayer />
                                 <NotificationContainer />
                                 <ToastContainer />
                                 <PreMarketReminder />
-                              </div>
-                            </ERProvider>
+                                </div>
+                              </ERProvider>
+                            </ProxVoiceProvider>
                           </VoiceProvider>
                         </ThreadProvider>
                       </ContextBankProvider>

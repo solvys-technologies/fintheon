@@ -1,3 +1,4 @@
+// [claude-code 2026-05-15] S66-T1: added instrument selector dropdown.
 // [claude-code 2026-04-19] S26-P1 T6: strip TraderSection to identity only per TP —
 //   "the CAO name does not need to be there... risk limits don't need to be there;
 //   scrap that completely." Left with Display Name (read-only) + Trader Tag (the
@@ -5,8 +6,16 @@
 //   Reminder / Haptics) moved to NotificationsSection.
 import { useSettings } from "../../contexts/SettingsContext";
 
+const SUPPORTED_INSTRUMENTS = [
+  "/NQ", "/ES", "/YM", "/RTY", "/MNQ", "/MES", "/MYM", "/M2K",
+  "/CL", "/GC", "/SI", "/NG", "/MCL", "/MGC", "/SIL",
+  "/ZB", "/ZN", "/ZT",
+  "/BTC", "/ETH",
+  "/6E", "/6J", "/6B", "/6A", "/6C", "/6S",
+];
+
 export function TraderSection() {
-  const { settings } = useSettings();
+  const { settings, updateSettings } = useSettings();
   const name = settings.traderName;
 
   return (
@@ -19,6 +28,35 @@ export function TraderSection() {
       <FieldLabel value="TRADER TAG">
         <TraderTag value={name || "—"} hasValue={!!name} />
         <Caption>[APPEARS NEXT TO THE FINTHEON WORDMARK]</Caption>
+      </FieldLabel>
+
+      <FieldLabel value="INSTRUMENT">
+        <select
+          value={settings.selectedInstrument}
+          onChange={(e) => updateSettings({ selectedInstrument: e.target.value })}
+          style={{
+            width: "100%",
+            padding: "12px 14px",
+            background: "color-mix(in srgb, var(--accent) 2%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--accent) 12%, transparent)",
+            borderRadius: 10,
+            color: "var(--text-primary)",
+            fontFamily: "var(--font-data)",
+            fontSize: 14,
+            minHeight: 44,
+            boxSizing: "border-box",
+            appearance: "none",
+            cursor: "pointer",
+            outline: "none",
+          }}
+        >
+          {SUPPORTED_INSTRUMENTS.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+        <Caption>[SELECTS THE INSTRUMENT FOR DESK PLAN AND IV SCORING]</Caption>
       </FieldLabel>
     </div>
   );

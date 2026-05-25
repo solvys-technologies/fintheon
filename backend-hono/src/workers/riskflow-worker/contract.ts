@@ -7,8 +7,9 @@
 // and changes require sprint brief + TP signoff.
 
 export const NEWS_WORKER_CONTRACT = {
-  BREAKING_INTERVAL_MS: 180_000, // 3 min — was 60_000
-  STANDARD_INTERVAL_MS: 3_600_000, // 1 hour — was 300_000
+  BREAKING_INTERVAL_MS: 60_000, // 60s wire handles
+  COMMENTARY_INTERVAL_MS: 60_000, // 60s commentary handles
+  STANDARD_INTERVAL_MS: 300_000, // 5m standard tier sweep
   ECON_BURST_ARM_OFFSET_MS: 30_000, // T-30s before scheduled release
   ECON_BURST_INTERVAL_MS: 1_000, // 1s during release window — was 500ms (S46.4)
   ECON_BURST_WINDOW_MS: 90_000, // 90s burst window

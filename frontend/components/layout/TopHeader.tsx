@@ -1,9 +1,12 @@
+// [claude-code 2026-05-05] Responsive shell compaction: icon-only header dropdown triggers, context-aware panel-toggle visibility by layout mode, and nametag suppression at marginal widths.
+// [claude-code 2026-05-01] v6.0.5: removed toolbar's own border-t so it doesn't double-stroke the new MainContent top border
 // [claude-code 2026-03-03] Toolbar items reorderable via getToolbarOrder/setToolbarOrder.
 // [claude-code 2026-03-11] T2: IV score wired to backend /api/market-data/iv-score — replaces local quickIVScore
 // [claude-code 2026-03-20] S3:T4b: Merge platform/layout into one toolbar slot; DND moves to header when iFrame active
 // [claude-code 2026-03-20] S3:T4c: createPortal for platform/layout dropdowns — fixes z-index behind Strategium panel
 // [claude-code 2026-03-20] S3:T5 — VIX spike toast trigger when VIX crosses above threshold
 // [claude-code 2026-03-24] Change VIX risk toast from threshold-crossing to scheduled pre-market-open times (EST)
+// [claude-code 2026-05-16] S67: lockout dropdown with briefing anchor options, toolbar icon colors → var(--fintheon-accent), pill bg removed, d+h timer format
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "../../contexts/AuthContext";
@@ -12,36 +15,38 @@ import { IVScoreCard } from "../IVScoreCard";
 import { useBackend } from "../../lib/backend";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useToast } from "../../contexts/ToastContext";
-import { isElectron } from "../../lib/platform";
 import {
   getToolbarOrder,
-  setToolbarOrder,
   type ToolbarItemId,
 } from "../../lib/layoutOrderStorage";
 import { HeaderVoiceControl } from "../voice/HeaderVoiceControl";
-import { PanelToggleGroup } from "./PanelToggleGroup";
+import { PanelToggleButton } from "./PanelToggleGroup";
 import {
-  GripVertical,
   Layers,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Monitor,
+  Tv,
   MessageCircle,
   Power,
   Bell,
   BellOff,
   ClipboardList,
-  Zap,
+  Clock705,
+  Lock,
 } from "lucide-react";
-import { WhatsNewButton } from "../onboarding/FirstTimeTour";
+import { WhatsNewButton } from "../onboarding/WhatsNewButton";
 import { StickyBulletin } from "../StickyBulletin";
 import { TraderNametag } from "../TraderNametag";
-import { FluxerCallWidget } from "../consilium/FluxerCallWidget";
+import { FadingRuler } from "../shared/FadingRuler";
+import { ProxVoiceHeaderControl } from "../proxvoice/ProxVoiceHeaderControl";
 import type { IVScoreResponse } from "../../types/market-data";
 import type { TradingPlatform } from "../TradingBrowser";
 import { useDND } from "../../contexts/DNDContext";
 import { useServerNotifications } from "../../contexts/NotificationsContext";
+import { usePlatformBlocker } from "../../hooks/usePlatformBlocker";
+import { ToolbarDnD } from "./ToolbarDnD";
 
 type NavTab =
   | "feed"
@@ -56,19 +61,26 @@ type NavTab =
   | "settings";
 
 const TAB_LABELS: Record<NavTab, string> = {
-  dashboard: "Dashboard",
-  feed: "Dashboard", // feed section removed; fallback for history
+  dashboard: "Desk",
+  feed: "Desk", // feed section removed; fallback for history
   analysis: "Consilium",
-  proposals: "Proposals",
+  proposals: "Desk",
   apparatus: "Apparatus",
   riskflow: "RiskFlow",
-  econ: "Economic Calendar",
-  narrative: "NarrativeMap",
+  econ: "Econ Calendar",
+  narrative: "DeskMap",
   performance: "Performance",
   settings: "Settings",
 };
 
 type LayoutOption = "tickers-only" | "combined";
+
+const TOOLBAR_PILL_CLASS =
+  "flex items-center gap-0.5 h-8 rounded-md px-1";
+
+function activeIconStyle(color: string) {
+  return { "--toolbar-icon-active-color": color } as React.CSSProperties;
+}
 
 interface TopHeaderProps {
   topStepXEnabled?: boolean;
@@ -89,7 +101,9 @@ interface TopHeaderProps {
   psychAssistHeadingWidget?: React.ReactNode;
   voiceRoomWidget?: React.ReactNode;
   performanceChatWidget?: React.ReactNode;
+  econCountdownWidget?: React.ReactNode;
   toolbarEditMode?: boolean;
+  compactLevel?: 0 | 1 | 2;
 }
 
 export function TopHeader({
@@ -111,12 +125,18 @@ export function TopHeader({
   psychAssistHeadingWidget,
   voiceRoomWidget,
   performanceChatWidget,
+  econCountdownWidget,
   toolbarEditMode = false,
+  compactLevel = 0,
 }: TopHeaderProps) {
   const { tier } = useAuth();
   const backend = useBackend();
-  const { selectedSymbol, traderName, alertConfig, proposerIframeSources } =
-    useSettings();
+  const {
+    selectedSymbol,
+    traderName,
+    alertConfig,
+    proposerIframeSources,
+  } = useSettings();
   const { addToast } = useToast();
   const instanceName =
     import.meta.env.VITE_FINTHEON_INSTANCE_NAME || "Fintheon";
@@ -145,8 +165,13 @@ export function TopHeader({
   const { dndActive, toggleManualDnd, queueCount } = useDND();
   // [claude-code 2026-04-25] S35-Unified: badge counts server-side notifications + local queue.
   const { unreadCount: serverUnread } = useServerNotifications();
+  // [claude-code 2026-04-29] S53-T3: Econ watch health moved to FooterToolbar (S55)
   const totalBadgeCount = queueCount + serverUnread;
   const [quickClockPulse, setQuickClockPulse] = useState(false);
+  const shouldShowLeftPanelToggle = !topStepXEnabled && compactLevel < 2;
+  const shouldShowRightPanelToggle = !(
+    topStepXEnabled && layoutOption === "tickers-only"
+  );
   const handleQuickClock = useCallback(async () => {
     const now = new Date();
     const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
@@ -164,43 +189,35 @@ export function TopHeader({
       });
     } catch {}
   }, []);
+  const {
+    state: platformBlockerState,
+    blockTargetInApp,
+    unblockInApp,
+  } = usePlatformBlocker(selectedPlatform);
+  const handleQuickPlatformBlock = useCallback(async () => {
+    const result = platformBlockerState.activeForTarget
+      ? await unblockInApp()
+      : await blockTargetInApp();
+    if (result.ok) {
+      addToast(
+        platformBlockerState.activeForTarget
+          ? "In-app blocker cleared"
+          : `Blocked ${platformBlockerState.target?.label ?? "platform"} in-app`,
+        "success",
+      );
+      return;
+    }
+    addToast(result.reason ?? "Blocker update failed", "error");
+  }, [
+    addToast,
+    blockTargetInApp,
+    platformBlockerState.activeForTarget,
+    platformBlockerState.target?.label,
+    unblockInApp,
+  ]);
   useEffect(() => {
     setToolbarOrderState(getToolbarOrder());
   }, []);
-
-  const handleToolbarDragStart = useCallback(
-    (e: React.DragEvent, id: ToolbarItemId) => {
-      e.dataTransfer.setData("text/plain", id);
-      e.dataTransfer.effectAllowed = "move";
-    },
-    [],
-  );
-
-  const handleToolbarDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  }, []);
-
-  const handleToolbarDrop = useCallback(
-    (e: React.DragEvent, targetId: ToolbarItemId) => {
-      e.preventDefault();
-      const sourceId = e.dataTransfer.getData("text/plain") as
-        | ToolbarItemId
-        | "";
-      if (!sourceId || sourceId === targetId) return;
-      setToolbarOrderState((prev) => {
-        const next = [...prev];
-        const si = next.indexOf(sourceId);
-        const ti = next.indexOf(targetId);
-        if (si === -1 || ti === -1) return prev;
-        next.splice(si, 1);
-        next.splice(ti, 0, sourceId);
-        setToolbarOrder(next);
-        return next;
-      });
-    },
-    [],
-  );
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -284,7 +301,7 @@ export function TopHeader({
       value: "tickers-only",
       label: "Zen",
       description: "Supports split-frame browser view",
-      icon: <GripVertical className="w-4 h-4" />,
+      icon: <Tv className="w-4 h-4" />,
     },
   ];
 
@@ -432,7 +449,7 @@ export function TopHeader({
     <div
       id="fintheon-heading-toolbar"
       data-tour-target="toolbar"
-      className={`relative bg-[var(--fintheon-surface)] flex items-center justify-between px-3 lg:px-6 border-t fintheon-accent-border-top ${topStepXEnabled && layoutOption === "tickers-only" ? "h-[47px]" : "h-[50px]"}`}
+      className={`fintheon-side-surface relative bg-[var(--fintheon-surface)] flex items-center justify-between px-3 ${topStepXEnabled && layoutOption === "tickers-only" ? "h-[47px]" : "h-[50px]"}`}
     >
       <div className="flex items-center gap-2 lg:gap-4 xl:gap-6">
         <div
@@ -442,22 +459,30 @@ export function TopHeader({
               header — now lives in the FooterToolbar desk-name slot. Leaves the instance
               name + time-of-day greeting. */}
           <div className="flex flex-col leading-tight">
-            <span className="text-[12px] font-semibold tracking-[0.22em] text-[var(--fintheon-accent)] uppercase">
-              {instanceName}
-            </span>
-            <span className="text-[9px] text-gray-600 italic hidden xl:block">
-              {(() => {
-                const h = new Date().getHours();
-                if (h < 12) return "Ave. The markets stir.";
-                if (h < 17) return "The Forum is active.";
-                return "The day's battles are done.";
-              })()}
-            </span>
+            {compactLevel < 2 && (
+              <span className="text-[12px] font-semibold tracking-[0.22em] text-[var(--fintheon-accent)] uppercase">
+                {instanceName}
+              </span>
+            )}
+            {compactLevel < 1 && (
+              <span className="text-[9px] text-gray-600 italic hidden xl:block">
+                {(() => {
+                  const h = new Date().getHours();
+                  if (h < 12) return "Ave. The markets stir.";
+                  if (h < 17) return "The Forum is active.";
+                  return "The day's battles are done.";
+                })()}
+              </span>
+            )}
           </div>
 
+          {shouldShowLeftPanelToggle && (
+            <PanelToggleButton side="left" label="left panel" />
+          )}
+
           {/* Breadcrumb navigation — back/forward + section name */}
-          {!topStepXEnabled && (
-            <div className="flex items-center gap-1 ml-2">
+          {!topStepXEnabled && compactLevel < 2 && (
+            <div className="flex items-center gap-1">
               <button
                 onClick={onBack}
                 disabled={historyIndex <= 0}
@@ -474,67 +499,110 @@ export function TopHeader({
               >
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
-              <span className="text-[10px] tracking-[0.18em] uppercase text-gray-300 ml-2">
-                {TAB_LABELS[activeTab] || activeTab}
-              </span>
+              {compactLevel < 1 && (
+                <span className="text-[10px] tracking-[0.18em] uppercase text-gray-300 ml-2">
+                  {TAB_LABELS[activeTab] || activeTab}
+                </span>
+              )}
             </div>
           )}
 
-          <button
-            onClick={() => setShowUpgrade(true)}
-            className="relative bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg px-2.5 h-7 hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors cursor-pointer flex items-center hidden xl:flex"
-          >
-            <span className="text-[13px] text-gray-300">
-              {getTierDisplayName()}
-            </span>
-          </button>
-          {traderName && (
-            <TraderNametag
-              name={traderName}
-              disablePulse={!(alertConfig.nametagEmoPulse ?? true)}
-            />
-          )}
-          <FluxerCallWidget />
-          {topStepXEnabled && (
-            <button
-              onClick={toggleManualDnd}
-              className={`relative toolbar-icon-btn ${dndActive ? "toolbar-active" : ""}`}
-              title={dndActive ? "Do Not Disturb (ON)" : "Notifications"}
-            >
-              {dndActive ? (
-                <BellOff className="w-3 h-3" />
-              ) : (
-                <Bell className="w-3 h-3" />
+          {compactLevel < 1 && (
+            <div className="hidden xl:flex items-center h-7 overflow-hidden rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)]">
+              {traderName && (
+                <>
+                  <TraderNametag
+                    name={traderName}
+                    variant="embedded"
+                    disablePulse={!(alertConfig.nametagEmoPulse ?? true)}
+                  />
+                  <FadingRuler orientation="vertical" className="mx-0.5" />
+                </>
               )}
-              {totalBadgeCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-500/80 text-white text-[8px] font-bold leading-none">
-                  {totalBadgeCount > 99 ? "99+" : totalBadgeCount}
+              <button
+                onClick={() => setShowUpgrade(true)}
+                className="h-full px-2.5 text-[11px] text-gray-300 hover:text-[var(--fintheon-accent)] transition-colors"
+              >
+                <span className="whitespace-nowrap">
+                  {getTierDisplayName()}
                 </span>
-              )}
-            </button>
+              </button>
+            </div>
           )}
-          <button
-            onClick={handleQuickClock}
-            className={`toolbar-icon-btn ${quickClockPulse ? "toolbar-active" : ""}`}
-            title="Quick clock antilag"
-          >
-            <Zap className="w-3 h-3" />
-          </button>
-          {voiceRoomWidget}
+          {(compactLevel < 2 || topStepXEnabled) && (
+            <div className={TOOLBAR_PILL_CLASS}>
+              {compactLevel < 1 && <ProxVoiceHeaderControl />}
+              {compactLevel < 1 && topStepXEnabled && <FadingRuler orientation="vertical" className="mx-0.5" />}
+              {topStepXEnabled && (
+                <button
+                  onClick={toggleManualDnd}
+                  className={`relative toolbar-icon-btn ${dndActive ? "toolbar-active" : ""}`}
+                  title={dndActive ? "Do Not Disturb (ON)" : "Notifications"}
+                >
+                  {dndActive ? (
+                    <BellOff className="w-3 h-3 toolbar-icon-active" />
+                  ) : (
+                    <Bell className="w-3 h-3" />
+                  )}
+                  {totalBadgeCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-500/80 text-white text-[8px] font-bold leading-none">
+                      {totalBadgeCount > 99 ? "99+" : totalBadgeCount}
+                    </span>
+                  )}
+                </button>
+              )}
+              {((compactLevel < 1 && topStepXEnabled) || (compactLevel < 2 && topStepXEnabled)) && compactLevel < 2 && <FadingRuler orientation="vertical" className="mx-0.5" />}
+              {compactLevel < 2 && (
+                <button
+                  onClick={handleQuickClock}
+                  className={`toolbar-icon-btn ${quickClockPulse ? "toolbar-active" : ""}`}
+                  title="Quick clock antilag"
+                >
+                  <Clock705
+                    className={`w-3 h-3 ${quickClockPulse ? "toolbar-icon-active" : ""}`}
+                  />
+                </button>
+              )}
+              {compactLevel < 2 && <FadingRuler orientation="vertical" className="mx-0.5" />}
+              {compactLevel < 2 && (
+                <button
+                  onClick={handleQuickPlatformBlock}
+                  disabled={platformBlockerState.loading || !platformBlockerState.target}
+                  className={`toolbar-icon-btn ${
+                    platformBlockerState.activeForTarget ? "toolbar-active" : ""
+                  }`}
+                  title={
+                    platformBlockerState.activeForTarget
+                      ? `Unblock ${platformBlockerState.target?.label ?? "platform"} in-app`
+                      : `Block ${platformBlockerState.target?.label ?? "selected platform"} in-app`
+                  }
+                >
+                  <Lock
+                    className={`w-3 h-3 ${
+                      platformBlockerState.activeForTarget
+                        ? "toolbar-icon-active"
+                        : ""
+                    }`}
+                    style={
+                      platformBlockerState.activeForTarget
+                        ? activeIconStyle("#ef4444")
+                        : undefined
+                    }
+                  />
+                </button>
+              )}
+            </div>
+          )}
+          {compactLevel < 2 && voiceRoomWidget}
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 lg:gap-3 min-w-0 flex-shrink">
+      <div className="flex items-center gap-1.5 lg:gap-3 min-w-0 shrink-0">
         <div className="flex items-center gap-2 flex-shrink-0">
-          <WhatsNewButton />
+          {compactLevel < 1 && <WhatsNewButton />}
           {psychAssistHeadingWidget}
+          {econCountdownWidget}
           {activeTab === "performance" && performanceChatWidget}
-          {/* [claude-code 2026-04-26] Per TP: layout buttons sit FIRST, then
-              the iFrame/Browser dropdown, then the VIX ticker, then the rest
-              of the toolbar. PanelToggleGroup is transparent (no bg/border).
-              The platform/iFrame slot is rendered inline here so the order is
-              fixed; toolbarOrder.map skips id==="platform" further down. */}
-          <PanelToggleGroup />
           {topStepXEnabled && onLayoutOptionChange ? (
             // iFrame active → Castra/Zen layout dropdown
             <div className="relative" ref={dropdownRef}>
@@ -544,15 +612,18 @@ export function TopHeader({
               <button
                 onClick={() => setShowLayoutDropdown(!showLayoutDropdown)}
                 className="px-2.5 h-7 rounded-lg text-xs font-medium text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
+                aria-label="Layout Options"
                 title="Layout Options"
               >
                 {layoutOptions.find((opt) => opt.value === layoutOption)?.icon}
-                <span>
-                  {
-                    layoutOptions.find((opt) => opt.value === layoutOption)
-                      ?.label
-                  }
-                </span>
+                {compactLevel < 1 && (
+                  <span className="fintheon-zen-label">
+                    {
+                      layoutOptions.find((opt) => opt.value === layoutOption)
+                        ?.label
+                    }
+                  </span>
+                )}
                 <ChevronDown
                   className={`w-3 h-3 transition-transform ${showLayoutDropdown ? "rotate-180" : ""}`}
                 />
@@ -577,9 +648,9 @@ export function TopHeader({
                           onLayoutOptionChange(option.value);
                           setShowLayoutDropdown(false);
                         }}
-                        className={`w-full px-4 py-3 text-left hover:bg-[var(--fintheon-accent)]/10 transition-colors flex items-start gap-3 ${
+                        className={`w-full border border-transparent px-4 py-3 text-left hover:bg-[var(--fintheon-accent)]/10 transition-colors flex items-start gap-3 ${
                           layoutOption === option.value
-                            ? "bg-[var(--fintheon-accent)]/20"
+                            ? "border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
                             : ""
                         }`}
                       >
@@ -607,10 +678,15 @@ export function TopHeader({
               <button
                 onClick={() => setShowPlatformDropdown(!showPlatformDropdown)}
                 className="px-2.5 h-7 rounded-lg text-xs font-medium text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
+                aria-label="Select trading platform"
                 title="Select trading platform"
               >
-                {!isElectron() && <Monitor className="w-3 h-3" />}
-                <span>{selectedPlatformLabel}</span>
+                {selectedPlatformLabel.toLowerCase().includes("tradingview") ? (
+                  <Tv className="w-3 h-3" />
+                ) : (
+                  <Monitor className="w-3 h-3" />
+                )}
+                {compactLevel < 1 && <span className="fintheon-zen-label">{selectedPlatformLabel}</span>}
                 <ChevronDown
                   className={`w-3 h-3 transition-transform ${showPlatformDropdown ? "rotate-180" : ""}`}
                 />
@@ -668,116 +744,88 @@ export function TopHeader({
           )}
           <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-2.5 h-7 flex items-center flex-shrink-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-[9px] text-gray-500">VIX</span>
+              {compactLevel < 2 && (
+                <span className="text-[9px] text-gray-500">VIX</span>
+              )}
               <span className="text-xs font-mono text-gray-300">
                 {ivData ? ivData.vix.level.toFixed(2) : "--"}
               </span>
             </div>
           </div>
-          {toolbarOrder.map((id) => {
-            const wrapper = (node: React.ReactNode) => (
-              <div
-                key={id}
-                draggable={toolbarEditMode}
-                onDragStart={
-                  toolbarEditMode
-                    ? (e) => handleToolbarDragStart(e, id)
-                    : undefined
-                }
-                onDragOver={toolbarEditMode ? handleToolbarDragOver : undefined}
-                onDrop={
-                  toolbarEditMode ? (e) => handleToolbarDrop(e, id) : undefined
-                }
-                className="flex items-center gap-0.5 group/toolbar"
-              >
-                {toolbarEditMode && (
-                  <div
-                    className="cursor-grab active:cursor-grabbing touch-none shrink-0 p-0.5 text-gray-600 hover:text-[var(--fintheon-accent)]"
-                    title="Drag to reorder"
-                  >
-                    <GripVertical className="w-3 h-3" />
-                  </div>
-                )}
-                {node}
-              </div>
-            );
-            // [claude-code 2026-04-26] platform slot rendered inline above
-            // (before VIX) to enforce: layout buttons → browser dropdown → VIX.
-            if (id === "platform") return null;
-            if (id === "power" && onTopStepXDisable) {
-              return wrapper(
-                <button
-                  onClick={onTopStepXDisable}
-                  className={`toolbar-icon-btn ${
-                    topStepXEnabled
-                      ? "!border-emerald-500/30 !bg-emerald-500/10 !text-emerald-400"
-                      : ""
-                  }`}
-                  title={
-                    topStepXEnabled
-                      ? "Hide iFrame layouts"
-                      : "Show iFrame layouts"
-                  }
-                >
-                  <Power className="w-3 h-3" />
-                </button>,
-              );
-            }
-            if (id === "layout") {
-              return null; // Layout dropdown is rendered in the 'platform' slot
-            }
-            if (id === "chat" && onChatToggle) {
-              return wrapper(
-                <button
-                  onClick={onChatToggle}
-                  className={`toolbar-icon-btn ${
-                    chatOpen
-                      ? "!bg-[#6366f1]/15 !border-[#6366f1]/30 !text-[#6366f1]"
-                      : "!border-[#6366f1]/20 !text-[#6366f1]/50"
-                  }`}
-                  title="Convene"
-                >
-                  <MessageCircle className="w-3 h-3" />
-                </button>,
-              );
-            }
-            if (id === "voice") {
-              return wrapper(
-                <HeaderVoiceControl
-                  compact={topStepXEnabled && layoutOption === "tickers-only"}
-                />,
-              );
-            }
-            if (id === "bulletin") {
-              return wrapper(
-                <>
-                  <button
-                    ref={bulletinBtnRef}
-                    onClick={() => setShowBulletin(!showBulletin)}
-                    className={`toolbar-icon-btn ${showBulletin ? "toolbar-active" : ""}`}
-                    title="Bulletin"
-                  >
-                    <ClipboardList className="w-3 h-3" />
-                  </button>
-                  <StickyBulletin
-                    open={showBulletin}
-                    onClose={() => setShowBulletin(false)}
-                    anchorRef={bulletinBtnRef}
+          <ToolbarDnD
+            items={toolbarOrder}
+            editMode={toolbarEditMode}
+            onOrderChange={setToolbarOrderState}
+          >
+            {(id) => {
+              if (id === "ivScore") {
+                return (
+                  <IVScoreCard
+                    data={ivData}
+                    loading={ivLoading}
+                    layoutOption={layoutOption}
+                    compactCopy={!topStepXEnabled && compactLevel >= 1}
                   />
-                </>,
-              );
-            }
-            if (id === "ivScore") {
-              return wrapper(
-                <IVScoreCard
-                  data={ivData}
-                  loading={ivLoading}
-                  layoutOption={layoutOption}
-                />,
-              );
-            }
-            return null;
-          })}
+                );
+              }
+              return null;
+            }}
+          </ToolbarDnD>
+          <div className={TOOLBAR_PILL_CLASS}>
+            {onTopStepXDisable && (
+              <button
+                onClick={onTopStepXDisable}
+                className={`toolbar-icon-btn ${topStepXEnabled ? "toolbar-active" : ""}`}
+                title={
+                  topStepXEnabled ? "Hide iFrame layouts" : "Show iFrame layouts"
+                }
+              >
+                <Power
+                  className={`w-3 h-3 ${topStepXEnabled ? "toolbar-icon-active" : ""}`}
+                  style={
+                    topStepXEnabled
+                      ? activeIconStyle("#34d399")
+                      : undefined
+                  }
+                />
+              </button>
+            )}
+            {onTopStepXDisable && <FadingRuler orientation="vertical" className="mx-0.5" />}
+            <button
+              ref={bulletinBtnRef}
+              onClick={() => setShowBulletin(!showBulletin)}
+              className={`toolbar-icon-btn ${showBulletin ? "toolbar-active" : ""}`}
+              title="Bulletin"
+            >
+              <ClipboardList
+                className={`w-3 h-3 ${showBulletin ? "toolbar-icon-active" : ""}`}
+              />
+            </button>
+            <StickyBulletin
+              open={showBulletin}
+              onClose={() => setShowBulletin(false)}
+              anchorRef={bulletinBtnRef}
+            />
+            <FadingRuler orientation="vertical" className="mx-0.5" />
+            {onChatToggle && (
+              <button
+                onClick={onChatToggle}
+                className={`toolbar-icon-btn ${chatOpen ? "toolbar-active" : ""}`}
+                title="Convene"
+              >
+                <MessageCircle
+                  className={`w-3 h-3 ${chatOpen ? "toolbar-icon-active" : ""}`}
+                />
+              </button>
+            )}
+            {onChatToggle && <FadingRuler orientation="vertical" className="mx-0.5" />}
+            <HeaderVoiceControl
+              compact={topStepXEnabled && layoutOption === "tickers-only"}
+            />
+          </div>
+          {shouldShowRightPanelToggle && (
+            <PanelToggleButton side="right" label="right panel" />
+          )}
         </div>
       </div>
       {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}

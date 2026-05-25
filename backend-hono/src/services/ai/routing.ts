@@ -1,11 +1,12 @@
+// [claude-code 2026-05-03] S58-T1: DeepSeek v4 Pro primary provider migration
 // [claude-code 2026-04-19] S27-T9 W1d: Smart Model Routing foundation — per-agent default routing table + env-var overrides.
-//   W2e (Claude-10) flips live across call sites and adds the budget/diagnostics layer.
 // [claude-code 2026-04-19] S27-T5 W2c: harper-voice model locked to qwen/qwen3.6-plus-preview:free (see QWEN_REASONING_LATEST rationale).
+// [codex 2026-05-18] v6.7.3: core desk routing is DeepSeek-only.
 
 export type AgentId =
   | "harper"
   | "harper-voice"
-  | "harper-debug" // [S28] Sonnet sub-agent spawned by Harper for bug triage / debug sessions.
+  | "harper-debug"
   | "oracle"
   | "feucht"
   | "consul"
@@ -20,7 +21,13 @@ export type TaskType =
   | "voice"
   | "structured-extraction";
 
-export type RoutingProvider = "anthropic" | "openrouter" | "hermes-sidecar";
+export type RoutingProvider =
+  | "deepseek-direct"
+  | "deepseek-oc-api"
+  | "anthropic"
+  | "openrouter"
+  | "hermes-sidecar"
+  | "opencode-go";
 
 export interface RoutingRule {
   agent: AgentId;
@@ -32,95 +39,69 @@ export interface RoutingRule {
   cost_per_mtoken_out_usd: number;
 }
 
-// [claude-code 2026-04-19] S27-T5 W2c: locked the harper-voice model.
-//
-// Chose `qwen/qwen3.6-plus-preview:free` (April 2026). Rationale:
-//   - Free tier on OpenRouter / can be piped through Hermes sidecar at $0/token.
-//   - 1M context window, up to 65k output tokens, native function calling.
-//   - Outperforms Claude 4.5 Opus on Terminal-Bench 2.0 (61.6 vs 59.3) and
-//     RealWorldQA (85.4 vs 77.0) — comfortably above the "Sonnet-equivalent or
-//     better" bar set by the S27-T5 brief.
-//   - ~3x faster than Claude Opus 4.6 on first-token latency, which is what
-//     matters for the <2s end-of-speech → first-audio voice target.
-//   - Hybrid architecture keeps chain-of-thought reasoning on for smart
-//     answers while still streaming quickly through the sidecar TTS pipe.
-//
-// If load-tests show p95 > 2s, set env `ROUTING_OVERRIDE_HARPER_VOICE` to
-// `qwen/qwen3.5-plus-02-15` or a Hermes-4 variant — see brief §5 fallback.
+// Legacy voice model ID retained for the voice surface only.
 export const QWEN_REASONING_LATEST = "qwen/qwen3.6-plus-preview:free";
 
-// [claude-code 2026-04-21] S28: Qwen3.5 397B Cloud — static model for all Hermes sub-agents.
-// Harper can toggle between this and Claude Opus 4.7 via HARPER_DEFAULT_PROVIDER env.
-export const QWEN_CLOUD_LATEST = "qwen3.5:397b-cloud";
+// Desk agents route to `deepseek-reasoner` via DeepSeek's OpenAI-compatible API.
+export const QWEN_CLOUD_LATEST = "deepseek-reasoner";
 
-// [claude-code 2026-04-20] S28 directive — model split:
-//   - CAO (Harper) keeps Opus (heaviest reasoning, only position that needs it)
-//   - Harper-voice keeps Qwen (free/fast, voice-native)
-//   - Harper-debug is a Sonnet sub-agent Harper can spawn for bug triage only
-//     (not for team coding — team work flows through Agent Swarm + DAG)
-//   - All Hermes desk agents (Oracle, Feucht, Consul, Herald) route to Qwen.
-//     Qwen is the smartest non-Opus model per S28 call and keeps their cost
-//     profile at $0 via the hermes-sidecar pipe.
-// ROUTING_OVERRIDE_<AGENT> env vars remain as per-agent escape hatches.
-
-// [claude-code 2026-04-21] S28 update: All sub-agents locked to Qwen3.5:397b-cloud.
-// Harper can toggle via HARPER_DEFAULT_PROVIDER=qwen|anthropic (default: anthropic).
+// DeepSeek remains the primary agent route; opencode-go is retained as a user-configurable utility path.
 export const ROUTING_TABLE: RoutingRule[] = [
   {
     agent: "harper",
-    model: "claude-opus-4-7",
-    provider: "anthropic",
-    max_input_tokens: 200_000,
-    cost_per_mtoken_in_usd: 15,
-    cost_per_mtoken_out_usd: 75,
+    model: QWEN_CLOUD_LATEST,
+    provider: "deepseek-direct",
+    max_input_tokens: 128_000,
+    cost_per_mtoken_in_usd: 0.5,
+    cost_per_mtoken_out_usd: 2.19,
   },
   {
     agent: "harper-voice",
     model: QWEN_REASONING_LATEST,
-    provider: "hermes-sidecar",
-    max_input_tokens: 1_000_000,
-    cost_per_mtoken_in_usd: 0,
-    cost_per_mtoken_out_usd: 0,
+    provider: "deepseek-direct",
+    max_input_tokens: 128_000,
+    cost_per_mtoken_in_usd: 0.5,
+    cost_per_mtoken_out_usd: 2.19,
   },
   {
     agent: "harper-debug",
-    model: "claude-sonnet-4-6",
-    provider: "anthropic",
-    max_input_tokens: 200_000,
-    cost_per_mtoken_in_usd: 3,
-    cost_per_mtoken_out_usd: 15,
+    model: QWEN_CLOUD_LATEST,
+    provider: "deepseek-direct",
+    max_input_tokens: 128_000,
+    cost_per_mtoken_in_usd: 0.5,
+    cost_per_mtoken_out_usd: 2.19,
   },
   {
     agent: "oracle",
     model: QWEN_CLOUD_LATEST,
-    provider: "hermes-sidecar",
-    max_input_tokens: 1_000_000,
-    cost_per_mtoken_in_usd: 0,
-    cost_per_mtoken_out_usd: 0,
+    provider: "deepseek-direct",
+    max_input_tokens: 128_000,
+    cost_per_mtoken_in_usd: 0.5,
+    cost_per_mtoken_out_usd: 2.19,
   },
   {
     agent: "feucht",
     model: QWEN_CLOUD_LATEST,
-    provider: "hermes-sidecar",
-    max_input_tokens: 1_000_000,
-    cost_per_mtoken_in_usd: 0,
-    cost_per_mtoken_out_usd: 0,
+    provider: "deepseek-direct",
+    max_input_tokens: 128_000,
+    cost_per_mtoken_in_usd: 0.5,
+    cost_per_mtoken_out_usd: 2.19,
   },
   {
     agent: "consul",
     model: QWEN_CLOUD_LATEST,
-    provider: "hermes-sidecar",
-    max_input_tokens: 1_000_000,
-    cost_per_mtoken_in_usd: 0,
-    cost_per_mtoken_out_usd: 0,
+    provider: "deepseek-direct",
+    max_input_tokens: 128_000,
+    cost_per_mtoken_in_usd: 0.5,
+    cost_per_mtoken_out_usd: 2.19,
   },
   {
     agent: "herald",
     model: QWEN_CLOUD_LATEST,
-    provider: "hermes-sidecar",
-    max_input_tokens: 1_000_000,
-    cost_per_mtoken_in_usd: 0,
-    cost_per_mtoken_out_usd: 0,
+    provider: "deepseek-direct",
+    max_input_tokens: 128_000,
+    cost_per_mtoken_in_usd: 0.5,
+    cost_per_mtoken_out_usd: 2.19,
   },
 ];
 
@@ -133,7 +114,7 @@ function overrideEnvKey(agent: AgentId): string {
  *
  * Resolution order:
  *   1. ROUTING_OVERRIDE_<AGENT> env var — swaps model, keeps provider/metadata
- *   2. HARPER_DEFAULT_PROVIDER=qwen|anthropic (Harper only, default: anthropic)
+ *   2. HARPER_DEFAULT_PROVIDER=deepseek|opencode-go (Harper only, default: deepseek)
  *   3. Task-specific row in ROUTING_TABLE (agent + task match)
  *   4. Default row for the agent
  */
@@ -151,16 +132,21 @@ export function selectModel(agent: AgentId, task?: TaskType): RoutingRule {
     );
   }
 
-  // [claude-code 2026-04-21] Harper provider toggle
+  // Harper provider routing supports DeepSeek direct and the explicit OpenCode utility path.
   if (agent === "harper" && task !== "voice") {
-    const harperProvider = process.env.HARPER_DEFAULT_PROVIDER ?? "anthropic";
-    if (harperProvider === "qwen") {
+    const harperProvider = process.env.HARPER_DEFAULT_PROVIDER ?? "deepseek";
+    if (harperProvider === "deepseek-oc-api") {
       return {
         ...match,
         model: QWEN_CLOUD_LATEST,
-        provider: "hermes-sidecar",
-        cost_per_mtoken_in_usd: 0,
-        cost_per_mtoken_out_usd: 0,
+        provider: "deepseek-oc-api",
+      };
+    }
+    if (harperProvider === "opencode-go") {
+      return {
+        ...match,
+        model: QWEN_CLOUD_LATEST,
+        provider: "opencode-go",
       };
     }
   }

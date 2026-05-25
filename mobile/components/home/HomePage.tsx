@@ -1,8 +1,10 @@
+// [claude-code 2026-04-29] S49: added MobileDeskPlan below BriefingCard on Page 1;
+//   moved MiniSessionCalendar to last page (bottom of dash); stripped Risk Signals page.
 // [claude-code 2026-04-18] v5.22 polish per TP: (a) page 2 swapped from TradingView
 //   EconCalendarEmbed (rendered as a black void on TP's screenshot) to native
 //   MiniSessionCalendar — same data, no third-party iframe, no widget rendering bug.
 //   (b) Catalyst page removed from the snap stack — RiskFlow already covers that surface
-//   per TP. (c) Briefing-page Aquarium row moved out of page 2 and lives below the
+//   per TP. (c) Briefing-page ArbitrumChamber row moved out of page 2 and lives below the
 //   calendar still, but page count drops from 6 → 5.
 // [claude-code 2026-04-18] v5.22 S2 (post-S1 reconcile): AGENTIC DESK → AGENT DESK; hero
 //   ticker labels aligned on one row (alignItems flex-start + lineHeight 1 on labels);
@@ -11,22 +13,17 @@
 //   name. Legacy `/api/miroshark/*` URLs still aliased on the backend.
 // [claude-code 2026-04-19] Tighten page 1 padding (−25% above brief), give briefing card
 //   more vertical room; page 2 calendar now owns real pixel height so no black gap above
-//   Aquarium. Aquarium rendered in a compact glass sliver at bottom.
+//   ArbitrumChamber. ArbitrumChamber rendered in a compact glass sliver at bottom.
 // [claude-code 2026-04-16] T7: Dash — snap pages, Risk Signals replaces Proposals, NarrativeFlow catalysts + timeline
 // [claude-code 2026-04-17] Observe hero VIX visibility so toolbar VIX can fade in/out
 import { useRef } from "react";
 import { motion, type Variants } from "framer-motion";
 import { VixBadge } from "../shared/VixBadge";
 import { BriefingCard } from "./BriefingCard";
-import { AquariumSummary } from "./AquariumSummary";
 import { InstrumentOutlookCards } from "./InstrumentOutlookCards";
 import { MobileRiskSignalCards } from "./RiskSignalCards";
-// [claude-code 2026-04-25] S35: mobile Arbitrum surface — chamber consensus + dissent
-//   on the home dash. Was missing entirely; risk signals from the chamber were never
-//   reaching the mobile dash because the integration didn't exist.
-import { ArbitrumVerdictCard } from "./ArbitrumVerdictCard";
-import { MiniSessionCalendar } from "./MiniSessionCalendar";
-import { TimelineView } from "./TimelineView";
+import { QuickStatsRow } from "./QuickStatsRow";
+import { MobileDeskPlanWeek } from "./MobileDeskPlanWeek";
 import { useIVScore } from "../../hooks/useIVScore";
 import { useObserveHeroVixVisibility } from "../../hooks/useHeroVixVisible";
 import { colorForScore } from "../../lib/fuse-palette";
@@ -339,43 +336,16 @@ export function HomePage() {
           <motion.div variants={item} style={{ flex: 1 }}>
             <BriefingCard />
           </motion.div>
+
         </motion.div>
       </SnapPage>
 
-      {/* Page 2: Session Calendar + Aquarium Analysis
-          [claude-code 2026-04-18] Replaced the TradingView Econ Calendar embed with the
-          native MiniSessionCalendar — the TV iframe was rendering as a black void on TP's
-          phone. Native version reads /api/econ/calendar directly, no third-party widget. */}
-      <SnapPage style={{ padding: 0, gap: 0 }}>
-        <div
-          style={{
-            flex: 1,
-            minHeight: 0,
-            display: "flex",
-            flexDirection: "column",
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
-          <div
-            style={{
-              flex: 1,
-              minHeight: 0,
-              overflowY: "auto",
-              WebkitOverflowScrolling: "touch",
-              padding: "16px 16px 0",
-            }}
-          >
-            <MiniSessionCalendar maxEvents={20} />
-          </div>
-          <div className="fade-divider" style={{ margin: "0 16px" }} />
-          <div style={{ padding: "12px 16px 16px", flexShrink: 0 }}>
-            <AquariumSummary />
-          </div>
-        </div>
+      {/* Page 2: Desk Plans */}
+      <SnapPage style={{ padding: 0 }}>
+        <MobileDeskPlanWeek />
       </SnapPage>
 
-      {/* Page 3: Instrument Outlook Cards */}
+      {/* Page 3: Market Heat + Forecast + Risk Signals */}
       <SnapPage>
         <div
           style={{
@@ -386,59 +356,11 @@ export function HomePage() {
             zIndex: 1,
           }}
         >
+          <QuickStatsRow />
+          <div className="fade-divider" style={{ margin: "14px 0" }} />
           <InstrumentOutlookCards />
-        </div>
-      </SnapPage>
-
-      {/* [claude-code 2026-04-25] S35: Page 4 (new) — Arbitrum chamber verdict.
-          Inserted before Risk Signals so the chamber read sits next to the
-          instruments + IV cards rather than at the very bottom of the dash. */}
-      <SnapPage>
-        <div
-          style={{
-            flex: 1,
-            paddingTop: 24,
-            paddingBottom: 24,
-            overflowY: "auto",
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
-          <ArbitrumVerdictCard />
-        </div>
-      </SnapPage>
-
-      {/* Page 5: Risk Signals — same /api/riskflow/risk-signals source as desktop Aquarium */}
-      <SnapPage>
-        <div
-          style={{
-            flex: 1,
-            paddingTop: 24,
-            paddingBottom: 24,
-            overflowY: "auto",
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
+          <div className="fade-divider" style={{ margin: "14px 0" }} />
           <MobileRiskSignalCards />
-        </div>
-      </SnapPage>
-
-      {/* Page 5: Timeline
-          [claude-code 2026-04-18] CatalystCards page removed per TP — RiskFlow already
-          covers that surface. Was former page 5; Timeline shifts up. */}
-      <SnapPage>
-        <div
-          style={{
-            flex: 1,
-            paddingTop: 24,
-            paddingBottom: 64,
-            overflowY: "auto",
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
-          <TimelineView />
         </div>
       </SnapPage>
     </div>

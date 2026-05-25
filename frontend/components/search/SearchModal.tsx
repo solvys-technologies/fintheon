@@ -166,13 +166,13 @@ export function SearchModal({
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="fintheon-modal-backdrop absolute inset-0"
         onClick={onClose}
       />
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-lg rounded-xl border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)] shadow-2xl overflow-hidden"
+        className="fintheon-modal-surface relative w-full max-w-lg"
         onKeyDown={handleKeyDown}
       >
         {/* Search input */}

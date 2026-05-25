@@ -1,17 +1,27 @@
-// [claude-code 2026-04-28] T3: Renamed Desk Theme -> Desk Plan in visible UI.
-// [claude-code 2026-04-26] S45-T2: DayCard — Sanctum surface under Volatility Read.
-//   Lays out Desk Plan + data table + streak/drift footer. NO border on the
-//   container; FadingRuler primitives carry the visual character. Titles
-//   left-justified, values right-justified (Doto), monospace gutter via
-//   font-mono. Two prices max, one target. Field names mirror T1 backend types
-//   (DayPlan: deskTheme/eventName + windows[]; DayPlanWindow: startTime/endTime,
-//   pricesOfInterest, invalidation, profitTarget, expectedMovePct).
+// [claude-code 2026-05-15] Econ forecast: replaced price rows (Prices of Interest,
+//   Invalidation Point, Profit Target, Expected Move) with econ forecast rows
+//   (Forecast, Miss, Beat, Notable Events, AI Prediction). Speeches show
+//   hawkish/dovish/none instead of numerical values. Chevron arrows indicate
+//   bullish (green up) or bearish (red down) for equities per scenario.
+//   Prices hidden until 30 min before window — fresh data pulled at that time.
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDayPlan } from "../../hooks/useDayPlan";
-import { useStreak } from "../../hooks/useStreak";
+import { useDayPlanMultiWeek } from "../../hooks/useDayPlanWeek";
 import { useDriftStatus } from "../../hooks/useDriftStatus";
+import { useLockout } from "../../hooks/useLockout";
+import { useSettings } from "../../contexts/SettingsContext";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { FadingRuler } from "../shared/FadingRuler";
-import { StreakBadge } from "../streak/StreakBadge";
+import { AgenticFeedbackControls } from "../shared/AgenticFeedbackControls";
+import { DayPlanChevronNav } from "./DayPlanChevronNav";
+import { DeskPlanCustomForm } from "./DeskPlanCustomForm";
+import { PriceRevealTag } from "./PriceRevealTag";
+import { formatEasternClockRange } from "../../lib/eastern-time-format";
 import type { DayPlanWindow, DriftKind } from "../../types/day-plan";
+import {
+  getDeskPlanLockoutDecision,
+} from "../../utils/day-plan-lockout";
 
 const DRIFT_LABELS: Record<DriftKind | "in-window", string> = {
   "in-window": "in-window",
@@ -28,52 +38,225 @@ const DRIFT_COLORS: Record<DriftKind | "in-window", string> = {
 };
 
 interface DayCardProps {
-  /** Anchor id used by the Strategium daycard tab to scrollIntoView. */
   id?: string;
   className?: string;
-  /** [claude-code 2026-04-26] When the parent container already supplies the
-   * surface (e.g. MainDashboard's brief/plan split), drop the inner bg + p-3
-   * so the content stretches to fill flush. */
   bare?: boolean;
-}
-
-function fmtPrice(v: number | null): string {
-  if (v == null) return "—";
-  return v.toFixed(2);
-}
-
-function fmtPrices(values: number[]): string {
-  return values
-    .slice(0, 2)
-    .map((v) => v.toFixed(2))
-    .join(", ");
+  hideStreak?: boolean;
 }
 
 function fmtTradingWindow(w: DayPlanWindow): string {
-  return `${w.startTime}-${w.endTime}`;
+  const range = formatEasternClockRange(w.startTime, w.endTime);
+  const country = (w.eventCountry ?? w.econForecast?.eventCountry ?? "")
+    .toUpperCase()
+    .trim();
+  if (country && country !== "US" && isOvernightWindow(w)) {
+    return `(${country}) ${range}`;
+  }
+  return range;
 }
 
-function fmtExpectedMove(pct: number | null): string {
-  if (pct == null) return "—";
-  return `± ${pct.toFixed(2)}%`;
+function isOvernightWindow(w: Pick<DayPlanWindow, "startTime" | "endTime">): boolean {
+  const start = minutesFromClock(w.startTime);
+  const end = minutesFromClock(w.endTime);
+  if (start == null || end == null) return false;
+  return start < 8 * 60 || start >= 18 * 60 || end < start;
+}
+
+function minutesFromClock(value: string): number | null {
+  const match = value.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+  return hours * 60 + minutes;
+}
+
+function currentEasternMinutes(): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
+  const minute = Number(
+    parts.find((part) => part.type === "minute")?.value ?? "0",
+  );
+  return hour * 60 + minute;
+}
+
+function currentEasternDateIso(): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const get = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+function defaultWindowIndex(planDate: string | undefined, windows: DayPlanWindow[]): number {
+  if (windows.length === 0) return 0;
+  if (planDate !== currentEasternDateIso()) return 0;
+  const now = currentEasternMinutes();
+  const active = windows.findIndex((window) => {
+    const start = minutesFromClock(window.startTime);
+    const end = minutesFromClock(window.endTime);
+    if (start == null || end == null) return false;
+    return now >= start && now <= end;
+  });
+  if (active >= 0) return active;
+  const upcoming = windows.findIndex((window) => {
+    const start = minutesFromClock(window.startTime);
+    return start != null && start >= now;
+  });
+  return upcoming >= 0 ? upcoming : 0;
 }
 
 export function DayCard({
   id = "day-card-anchor",
   className,
   bare,
+  hideStreak,
 }: DayCardProps) {
-  const { data, isLoading } = useDayPlan();
-  const { data: streak } = useStreak();
+  const { data: todayData, isLoading: todayLoading } = useDayPlan();
+  const {
+    currentPlan: multiWeekPlan,
+    totalPlans,
+    currentPlanIndex,
+    goNext: goNextPlan,
+    goPrev: goPrevPlan,
+    isLoading: multiWeekLoading,
+  } = useDayPlanMultiWeek();
   const { data: drift } = useDriftStatus();
+  const {
+    lockoutDefaultDuration,
+    lockoutAutoBlockOutsideTradingWindow,
+    lockoutAutoReleaseMinutes,
+  } = useSettings();
+  const {
+    state: lockoutState,
+    lock: lockoutLock,
+    unlock: lockoutUnlock,
+    lockUntil: lockoutLockUntil,
+  } = useLockout();
 
-  const plan = data;
-  const window = plan?.windows?.[0] ?? null;
-  const hasWindow = !!window;
+  const [currentWindowIndex, setCurrentWindowIndex] = useState(0);
+  const [shimmering, setShimmering] = useState(false);
+  const [countryFilter, setCountryFilter] = useState("ALL");
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
+  const autoLockKeyRef = useRef<string | null>(null);
+
+  const plan = multiWeekPlan ?? todayData;
+  const isLoading = multiWeekLoading && todayLoading;
+  const allWindows = useMemo(
+    () =>
+      [...(plan?.windows ?? [])].sort((a, b) => {
+        const aStart = minutesFromClock(a.startTime) ?? Number.MAX_SAFE_INTEGER;
+        const bStart = minutesFromClock(b.startTime) ?? Number.MAX_SAFE_INTEGER;
+        if (aStart !== bStart) return aStart - bStart;
+        const aEnd = minutesFromClock(a.endTime) ?? Number.MAX_SAFE_INTEGER;
+        const bEnd = minutesFromClock(b.endTime) ?? Number.MAX_SAFE_INTEGER;
+        return aEnd - bEnd;
+      }),
+    [plan?.windows],
+  );
+  const countries = useMemo(
+    () => [
+      ...new Set(
+        allWindows
+          .map((window) => window.eventCountry ?? window.econForecast?.eventCountry ?? "")
+          .filter(Boolean),
+      ),
+    ],
+    [allWindows],
+  );
+  const windows = useMemo(
+    () =>
+      countryFilter === "ALL"
+        ? allWindows
+        : allWindows.filter(
+            (window) =>
+              (window.eventCountry ?? window.econForecast?.eventCountry ?? "")
+                .toUpperCase()
+                .trim() === countryFilter,
+          ),
+    [allWindows, countryFilter],
+  );
+  const windowSignature = windows
+    .map((window) => `${window.id}:${window.startTime}:${window.endTime}`)
+    .join("|");
+  const currentWindow = windows[currentWindowIndex] ?? null;
+  const hasWindow = !!currentWindow;
+
+  useEffect(() => {
+    if (windows.length === 0) {
+      setCurrentWindowIndex(0);
+      return;
+    }
+    setCurrentWindowIndex(defaultWindowIndex(plan?.date, windows));
+  }, [plan?.date, windowSignature]);
 
   const driftVisual: DriftKind | "in-window" = drift?.kind ?? "in-window";
 
-  const baseSurface = bare ? "" : "bg-[var(--fintheon-surface)] rounded-lg p-3";
+  const dateLabel = plan?.date ? (() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const [y, m, d] = plan.date.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    return `${months[date.getMonth()]} ${date.getDate()}`;
+  })() : null;
+
+  const baseSurface = bare
+    ? "relative"
+    : "relative bg-[var(--fintheon-surface)] rounded-lg p-3";
+  const lockoutButtonTitle =
+    lockoutState.locked && lockoutState.remaining
+      ? `${Math.round(lockoutState.remaining / 60)}m left`
+      : undefined;
+  const toggleExpandedRow = (key: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (!lockoutAutoBlockOutsideTradingWindow) {
+      autoLockKeyRef.current = null;
+      return;
+    }
+    if (isLoading || lockoutState.locked || !plan?.date || windows.length === 0)
+      return;
+
+    const decision = getDeskPlanLockoutDecision({
+      planDate: plan.date,
+      windows,
+      autoReleaseMinutes: lockoutAutoReleaseMinutes,
+    });
+    if (decision.isAllowed || !decision.lockUntil) {
+      autoLockKeyRef.current = null;
+      return;
+    }
+
+    const key = `${plan.date}:${decision.lockUntil}`;
+    if (autoLockKeyRef.current === key) return;
+    autoLockKeyRef.current = key;
+    lockoutLockUntil(decision.lockUntil).then((ok) => {
+      if (!ok) autoLockKeyRef.current = null;
+    });
+  }, [
+    isLoading,
+    lockoutAutoBlockOutsideTradingWindow,
+    lockoutAutoReleaseMinutes,
+    lockoutLockUntil,
+    lockoutState.locked,
+    plan?.date,
+    windows,
+  ]);
 
   return (
     <section
@@ -82,28 +265,106 @@ export function DayCard({
       aria-label="Day card"
       data-tour-target="day-card"
     >
-      <header className="flex items-baseline gap-2 mb-1">
-        <span
-          className="text-[10px] font-semibold uppercase tracking-[0.2em]"
-          style={{
-            color: "var(--fintheon-accent)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
-          Desk Plan
-        </span>
-        {plan?.sourceBriefId && (
-          <span
-            className="text-[8px] uppercase tracking-widest"
-            style={{ color: "var(--fintheon-muted, #908774)" }}
+      <header className="flex items-center justify-between gap-3 mb-1">
+        <div className="min-w-0">
+          <div className="flex items-baseline gap-2">
+            <span
+              className="text-[11.5px] font-semibold uppercase tracking-[0.2em]"
+              style={{
+                color: "var(--fintheon-accent)",
+                fontFamily: "var(--font-heading)",
+              }}
+            >
+              Desk Plan
+            </span>
+            {plan?.sourceBriefId && (
+              <span
+                className="text-[9px] uppercase tracking-widest"
+                style={{ color: "var(--fintheon-muted, #908774)" }}
+              >
+                brief
+              </span>
+            )}
+          </div>
+          {!hideStreak && dateLabel && (
+            <span
+              className="mt-0.5 block text-[10.5px]"
+              style={{
+                color: "var(--fintheon-muted, #908774)",
+                fontFamily: "var(--font-data, monospace)",
+              }}
+            >
+              {dateLabel}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {!hideStreak && (
+            <>
+              <DeskPlanCustomForm
+                countries={countries}
+                selectedCountry={countryFilter}
+                onCountryChange={setCountryFilter}
+              />
+              <DayPlanChevronNav
+                currentIndex={currentPlanIndex}
+                totalPlans={totalPlans}
+                onPrev={goPrevPlan}
+                onNext={goNextPlan}
+              />
+            </>
+          )}
+          <button
+            onClick={() => {
+              const action = lockoutState.locked
+                ? lockoutUnlock()
+                : lockoutLock(lockoutDefaultDuration);
+              setShimmering(true);
+              setTimeout(() => setShimmering(false), 600);
+              return action;
+            }}
+            title={lockoutButtonTitle}
+            className={`desk-plan-lock-btn inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] uppercase tracking-[0.12em] cursor-pointer transition-colors ${shimmering ? "shimmering" : ""}`}
+            style={{
+              fontFamily: "var(--font-data, monospace)",
+              color: lockoutState.locked
+                ? "rgba(199, 159, 74, 0.9)"
+                : "var(--fintheon-muted, #908774)",
+              border: `1px solid ${lockoutState.locked ? "rgba(199, 159, 74, 0.3)" : "rgba(255, 255, 255, 0.08)"}`,
+              borderColor: "transparent",
+              background: "transparent",
+            }}
           >
-            brief
-          </span>
-        )}
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              {lockoutState.locked ? (
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              ) : (
+                <>
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 9 0v4" />
+                </>
+              )}
+              {lockoutState.locked && (
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              )}
+            </svg>
+            {lockoutState.locked ? "LOCK" : "UNLOCK"}
+          </button>
+        </div>
       </header>
 
       <p
-        className="text-[12px] leading-relaxed mb-3"
+        className="text-[13.5px] leading-relaxed mb-3"
         style={{
           color: "var(--fintheon-text)",
           fontFamily: "var(--font-body)",
@@ -111,88 +372,378 @@ export function DayCard({
         }}
       >
         {isLoading
-          ? "Loading…"
+          ? "Loading\u2026"
           : plan?.deskTheme || "No plan published for today."}
       </p>
 
       <FadingRuler />
 
-      <dl className="font-mono text-[12px] py-3 space-y-1.5">
-        <Row label="Event" value={plan?.eventName ?? "—"} loading={isLoading} />
+      <dl className="font-mono text-[13.5px] py-3 space-y-1.5">
         <Row
+          label="Event"
+          value={plan?.eventName ?? "\u2014"}
+          loading={isLoading}
+        />
+        <WindowControlRow
           label="Trading Window"
-          value={hasWindow ? fmtTradingWindow(window!) : "—"}
+          value={hasWindow ? fmtTradingWindow(currentWindow!) : "\u2014"}
           loading={isLoading}
-        />
-        <Row
-          label="Prices of Interest"
-          value={
-            hasWindow && window!.pricesOfInterest.length > 0
-              ? fmtPrices(window!.pricesOfInterest)
-              : "—"
+          currentIndex={currentWindowIndex}
+          totalWindows={windows.length}
+          onPrev={() => setCurrentWindowIndex((value) => Math.max(0, value - 1))}
+          onNext={() =>
+            setCurrentWindowIndex((value) =>
+              Math.min(windows.length - 1, value + 1),
+            )
           }
-          loading={isLoading}
-          doto
         />
-        <Row
-          label="Invalidation Point"
-          value={hasWindow ? fmtPrice(window!.invalidation) : "—"}
+        <GatedForecastRow
+          label="Forecast"
+          planDate={plan?.date}
+          window={currentWindow}
           loading={isLoading}
-          doto
+          renderValue={(f) => f.forecast}
         />
-        <Row
-          label="Profit Target"
-          value={hasWindow ? fmtPrice(window!.profitTarget) : "—"}
+        <GatedForecastRow
+          label="Miss"
+          planDate={plan?.date}
+          window={currentWindow}
           loading={isLoading}
-          doto
+          renderValue={(f) => `${f.miss.probability}%`}
+          scenario={currentWindow?.econForecast?.miss}
+          expanded={expandedRows.has("miss")}
+          onToggle={() => toggleExpandedRow("miss")}
+          detail={(f) => f.miss.description}
         />
-        <Row
-          label="Expected Move"
-          value={hasWindow ? fmtExpectedMove(window!.expectedMovePct) : "—"}
+        <GatedForecastRow
+          label="Beat"
+          planDate={plan?.date}
+          window={currentWindow}
           loading={isLoading}
-          doto
+          renderValue={(f) => `${f.beat.probability}%`}
+          scenario={currentWindow?.econForecast?.beat}
+          expanded={expandedRows.has("beat")}
+          onToggle={() => toggleExpandedRow("beat")}
+          detail={(f) => f.beat.description}
+        />
+        {currentWindow?.econForecast?.otherNotableEvents &&
+          currentWindow.econForecast.otherNotableEvents.length > 0 && (
+          <Row
+            label="Notable"
+            value={currentWindow.econForecast.otherNotableEvents.join(", ")}
+            loading={false}
+          />
+        )}
+        <GatedForecastRow
+          label="Thesis"
+          planDate={plan?.date}
+          window={currentWindow}
+          loading={isLoading}
+          renderValue={() => "View thesis"}
+          expanded={expandedRows.has("thesis")}
+          onToggle={() => toggleExpandedRow("thesis")}
+          detail={(f) => f.aiPrediction}
         />
       </dl>
 
       <FadingRuler />
 
-      <footer className="flex items-center justify-between pt-3">
-        <StreakBadge current={streak?.streakAtClose ?? 0} fontSize={16} />
-        {drift && (
-          <span
-            className="inline-flex items-center gap-1.5"
-            title={drift.message ?? undefined}
-            aria-label={`Drift ${DRIFT_LABELS[driftVisual]}${drift.message ? ` — ${drift.message}` : ""}`}
-          >
-            <span
-              className="text-[9px] uppercase tracking-[0.16em]"
-              style={{
-                color: "var(--fintheon-muted, #908774)",
-                fontFamily: "var(--font-data, monospace)",
-              }}
+      {drift && (
+        <footer className="flex items-center justify-end pt-3">
+          <div className="flex items-center gap-2">
+              <span
+                className="inline-flex items-center gap-1.5"
+                title={drift.message ?? undefined}
+                aria-label={`Drift ${DRIFT_LABELS[driftVisual]}${drift.message ? ` \u2014 ${drift.message}` : ""}`}
+              >
+                <span
+        className="text-[10.5px] uppercase tracking-[0.16em]"
+                  style={{
+                    color: "var(--fintheon-muted, #908774)",
+                    fontFamily: "var(--font-data, monospace)",
+                  }}
+                >
+                  Drift
+                </span>
+                <span
+                  aria-hidden
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: DRIFT_COLORS[driftVisual],
+                    display: "inline-block",
+                  }}
+                />
+                <span
+        className="text-[11.5px]"
+                  style={{ color: "var(--fintheon-text)" }}
+                >
+                  {DRIFT_LABELS[driftVisual]}
+                </span>
+              </span>
+          </div>
+        </footer>
+      )}
+      {plan?.date && (
+        <AgenticFeedbackControls
+          surface="desk-plan"
+          itemId={`${plan.date}:${currentWindow?.id ?? currentWindowIndex}`}
+        />
+      )}
+    </section>
+  );
+}
+
+function WindowControlRow({
+  label,
+  value,
+  loading,
+  currentIndex,
+  totalWindows,
+  onPrev,
+  onNext,
+}: {
+  label: string;
+  value: string;
+  loading: boolean;
+  currentIndex: number;
+  totalWindows: number;
+  onPrev: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <div className="flex items-baseline gap-3">
+      <dt
+        className="text-[12.5px]"
+        style={{
+          color: "var(--fintheon-muted, #908774)",
+          fontFamily: "var(--font-body)",
+          letterSpacing: "0.02em",
+        }}
+      >
+        {label}
+      </dt>
+      <span
+        aria-hidden
+        className="flex-1"
+        style={{
+          height: 0,
+          borderBottom:
+            "1px dotted color-mix(in srgb, var(--fintheon-accent) 14%, transparent)",
+          transform: "translateY(-3px)",
+        }}
+      />
+      <dd className="flex items-center gap-1.5 text-right shrink-0">
+        {totalWindows > 1 && (
+          <span className="inline-flex items-center gap-1">
+            <button
+              type="button"
+              onClick={onPrev}
+              disabled={currentIndex <= 0}
+              className="p-0.5 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] disabled:text-gray-700 disabled:cursor-default transition-colors"
+              aria-label="Previous desk plan window"
             >
-              Drift
-            </span>
+              <ChevronLeft className="w-3 h-3" />
+            </button>
             <span
-              aria-hidden
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                background: DRIFT_COLORS[driftVisual],
-                display: "inline-block",
-              }}
-            />
-            <span
-              className="text-[10px]"
-              style={{ color: "var(--fintheon-text)" }}
+              className="text-[11.5px] tabular-nums"
+              style={{ color: "var(--fintheon-muted, #908774)" }}
             >
-              {DRIFT_LABELS[driftVisual]}
+              {currentIndex + 1}/{totalWindows}
             </span>
+            <button
+              type="button"
+              onClick={onNext}
+              disabled={currentIndex >= totalWindows - 1}
+              className="p-0.5 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] disabled:text-gray-700 disabled:cursor-default transition-colors"
+              aria-label="Next desk plan window"
+            >
+              <ChevronRight className="w-3 h-3" />
+            </button>
           </span>
         )}
-      </footer>
-    </section>
+        <span
+          className="tabular-nums"
+          style={{
+            color: loading
+              ? "var(--fintheon-muted, #908774)"
+              : "var(--fintheon-text)",
+            fontFamily: "var(--font-data, monospace)",
+            letterSpacing: "0.01em",
+          }}
+        >
+          {value}
+        </span>
+      </dd>
+    </div>
+  );
+}
+
+type ScenarioTone = "neutral" | "bullish" | "bearish";
+
+function GatedForecastRow({
+  label,
+  planDate,
+  window,
+  loading,
+  renderValue,
+  scenario,
+  expanded,
+  onToggle,
+  detail,
+}: {
+  label: string;
+  planDate?: string | null;
+  window: DayPlanWindow | null;
+  loading: boolean;
+  renderValue: (f: NonNullable<DayPlanWindow["econForecast"]>) => string;
+  scenario?: { isBullishForEquities: boolean } | null;
+  expanded?: boolean;
+  onToggle?: () => void;
+  detail?: (f: NonNullable<DayPlanWindow["econForecast"]>) => string;
+}) {
+  if (loading || !window) {
+    return (
+      <Row label={label} value={"\u2014"} loading />
+    );
+  }
+
+  const tone: ScenarioTone = scenario
+    ? scenario.isBullishForEquities
+      ? "bullish"
+      : "bearish"
+    : "neutral";
+
+  const hasDetail = Boolean(detail && window.econForecast);
+  const rowContent = (
+    <div className="flex items-baseline gap-3">
+      <dt
+        className="flex items-center gap-1 text-[12.5px]"
+        style={{
+          color: "var(--fintheon-muted, #908774)",
+          fontFamily: "var(--font-body)",
+          letterSpacing: "0.02em",
+        }}
+      >
+        {hasDetail && (
+          <ChevronDown
+            className={`h-3 w-3 transition-transform ${expanded ? "" : "-rotate-90"}`}
+            style={{
+              color:
+                tone === "bullish"
+                  ? "var(--fintheon-bullish)"
+                  : tone === "bearish"
+                    ? "var(--fintheon-bearish)"
+                    : "var(--fintheon-accent)",
+            }}
+          />
+        )}
+        {label}
+      </dt>
+      <span
+        aria-hidden
+        className="flex-1"
+        style={{
+          height: 0,
+          borderBottom:
+            "1px dotted color-mix(in srgb, var(--fintheon-accent) 14%, transparent)",
+          transform: "translateY(-3px)",
+        }}
+      />
+      <dd
+        className="tabular-nums text-right shrink-0"
+        style={{
+          fontFamily: "var(--font-data, monospace)",
+          letterSpacing: "0.01em",
+        }}
+      >
+        <PriceRevealTag planDate={planDate} windowStartTime={window.startTime}>
+          <span
+            style={{
+              color:
+                tone === "neutral"
+                  ? "var(--fintheon-text)"
+                  : tone === "bullish"
+                    ? "var(--fintheon-bullish)"
+                    : "var(--fintheon-bearish)",
+            }}
+          >
+            {window.econForecast ? (
+              <span className="inline-flex items-center gap-1">
+                {tone !== "neutral" && (
+                  <Chevron
+                    bullish={tone === "bullish"}
+                  />
+                )}
+                <span>{renderValue(window.econForecast)}</span>
+              </span>
+            ) : (
+              "\u2014"
+            )}
+          </span>
+        </PriceRevealTag>
+      </dd>
+    </div>
+  );
+
+  if (!hasDetail) return rowContent;
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full text-left transition-colors hover:bg-[var(--fintheon-accent)]/[0.035]"
+      >
+        {rowContent}
+      </button>
+      {expanded && window.econForecast && (
+        <div
+          className="ml-4 mt-1 rounded-sm px-3 py-2 text-[12.5px] leading-relaxed"
+          style={{
+            color:
+              tone === "bullish"
+                ? "var(--fintheon-bullish)"
+                : tone === "bearish"
+                  ? "var(--fintheon-bearish)"
+                  : "var(--fintheon-text)",
+            background:
+              "color-mix(in srgb, var(--fintheon-accent) 5%, transparent)",
+            fontFamily: "var(--font-body)",
+          }}
+        >
+          {detail?.(window.econForecast)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Chevron({ bullish }: { bullish: boolean }) {
+  return (
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 10 10"
+      style={{
+        color: bullish
+          ? "var(--fintheon-bullish)"
+          : "var(--fintheon-bearish)",
+        transform: bullish ? "rotate(0deg)" : "rotate(180deg)",
+        flexShrink: 0,
+      }}
+      aria-hidden
+    >
+      <path
+        d="M3 6L5 3L7 6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
@@ -200,17 +751,24 @@ function Row({
   label,
   value,
   loading,
-  doto,
+  tone = "neutral",
 }: {
   label: string;
   value: string;
   loading: boolean;
-  doto?: boolean;
+  tone?: ScenarioTone;
 }) {
+  const valueColor =
+    loading || tone === "neutral"
+      ? undefined
+      : tone === "bullish"
+        ? "var(--fintheon-bullish)"
+        : "var(--fintheon-bearish)";
+
   return (
     <div className="flex items-baseline gap-3">
       <dt
-        className="text-[11px]"
+        className="text-[12.5px]"
         style={{
           color: "var(--fintheon-muted, #908774)",
           fontFamily: "var(--font-body)",
@@ -232,14 +790,13 @@ function Row({
       <dd
         className="tabular-nums text-right shrink-0"
         style={{
-          color: loading
-            ? "var(--fintheon-muted, #908774)"
-            : "var(--fintheon-text)",
-          fontFamily: doto
-            ? "'Doto', 'Readable Digits', var(--font-data, monospace)"
-            : "var(--font-data, monospace)",
-          letterSpacing: doto ? "0.04em" : "0.01em",
-          fontWeight: doto ? 600 : 400,
+          color:
+            valueColor ??
+            (loading
+              ? "var(--fintheon-muted, #908774)"
+              : "var(--fintheon-text)"),
+          fontFamily: "var(--font-data, monospace)",
+          letterSpacing: "0.01em",
         }}
       >
         {value}

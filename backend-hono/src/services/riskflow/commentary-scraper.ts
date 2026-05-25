@@ -1,3 +1,9 @@
+// [claude-code 2026-04-30] S55: QUARANTINED. This service uses Rettiwt
+// (deprecated 2026-04-26) for curated timeline scraping. Rettiwt has been
+// stripped from all active worker pipelines. This service self-disables when
+// Rettiwt auth keys are absent, but the code path is retained for reference.
+// To reactivate, set RISKFLOW_COMMENTARY_SCRAPER=enabled AND ensure valid
+// Rettiwt keys exist in Supabase. Without both, this is a no-op.
 // [claude-code 2026-04-12] Curated timeline scraper — replaced open rettiwtSearch + Exa with curated account timelines
 // Pulls from the same riskflow_source_accounts table as econ-rettiwt-poller, on a slower 30/60-min cadence.
 // All items pass through content guard before hitting raw_riskflow_items.
@@ -181,8 +187,19 @@ export async function pollCommentary(): Promise<void> {
 // ─── Boot ───────────────────────────────────────────────────────
 
 export function startCommentaryScraper(): void {
+  // [claude-code 2026-04-30] S55: Quarantine gate. This path writes to
+  // raw_riskflow_items via Rettiwt (deprecated). It must be explicitly
+  // enabled via env flag + have valid Rettiwt keys. Otherwise: no-op.
+  if (process.env.RISKFLOW_COMMENTARY_SCRAPER !== "enabled") {
+    log.info(
+      "Commentary scraper disabled (quarantine gate: RISKFLOW_COMMENTARY_SCRAPER != enabled)",
+    );
+    return;
+  }
+
   if (!isRettiwtAvailable()) {
     log.warn("No Rettiwt keys available — commentary scraper disabled");
+    return;
   }
 
   if (scraperTimeout) return;

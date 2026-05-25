@@ -126,13 +126,13 @@ export function SanctumFilterPanel({
   // Derive visible lane IDs from state for narrative toggles
   // visibleLaneIds logic: catalysts store narrative slugs, we track which ones are hidden
   // Using categoryFilter for categories. For narratives, we use the existing visibleLaneIds pattern.
-  // Since visibleLaneIds isn't in state (it's local to NarrativeMap), we track hidden narratives locally.
-  // Actually, checking the NarrativeMap: visibleLaneIds is derived from a local useState. Let's manage narrative
+  // Since visibleLaneIds isn't in state (it's local to DeskMap), we track hidden narratives locally.
+  // Actually, checking the DeskMap: visibleLaneIds is derived from a local useState. Let's manage narrative
   // toggles through the existing lanes/catalysts pattern — but the brief says to add to state.
   // For now, narrative toggles will dispatch SET_FILTER style actions through the existing visibleLaneIds.
-  // HOWEVER: visibleLaneIds lives in NarrativeMap as local state. The brief says to use approach 2 (state).
+  // HOWEVER: visibleLaneIds lives in DeskMap as local state. The brief says to use approach 2 (state).
   // We'll pass narrative visibility through state as well. But to keep scope minimal, let's reuse
-  // the category filter pattern for narratives too — but narratives are already handled by NarrativeMap's
+  // the category filter pattern for narratives too — but narratives are already handled by DeskMap's
   // visibleLaneIds which is passed down. The filter panel can work within state for categories/sort/sentiment.
 
   const handleSentimentChange = useCallback(

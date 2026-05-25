@@ -28,7 +28,7 @@ const AUTO_APPROVED_TOOLS = new Set([
   "browser_harness",
 ]);
 
-/** Ensure tool results are never empty — VProxy/OpenAI rejects empty content */
+/** Ensure tool results are never empty — OpenAI-compatible clients reject empty content */
 function ensureNonEmpty(result: unknown): string {
   const s = typeof result === "string" ? result : JSON.stringify(result ?? "");
   return s.trim().length > 0 ? s : "(no output)";

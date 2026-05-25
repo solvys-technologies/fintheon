@@ -1,6 +1,10 @@
 // [claude-code 2026-04-16] T2: Inline approve/deny card for tool approval-gated calls
 import { Check, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  ChatCitationIcon,
+  citationKindForTool,
+} from "@frontend/components/icon-bank/ChatCitationIcon";
 
 interface ToolApprovalCardProps {
   approvalId: string;
@@ -57,16 +61,23 @@ export function ToolApprovalCard({
             borderBottom: "1px solid var(--border-visible)",
           }}
         >
-          <span
-            style={{
-              fontFamily: "var(--font-data)",
-              fontSize: 11,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              color: "var(--text-secondary)",
-            }}
-          >
-            {toolName}
+          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <ChatCitationIcon
+              kind={citationKindForTool(toolName)}
+              size={26}
+              title={toolName}
+            />
+            <span
+              style={{
+                fontFamily: "var(--font-data)",
+                fontSize: 11,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                color: "var(--text-secondary)",
+              }}
+            >
+              {toolName}
+            </span>
           </span>
           {badge && (
             <span

@@ -520,11 +520,57 @@ function formatSeedContext(seed: AgentDeskSeed): string {
       if (macro.fedFundsRate != null)
         sections.push(`  Fed Funds Rate: ${macro.fedFundsRate.toFixed(2)}%`);
     }
+    const econStats = ctx.econPrintStats as
+      | {
+          totalPrints?: number;
+          beats?: number;
+          misses?: number;
+          inlines?: number;
+          beatRatio?: number;
+          avgAbsSurprise?: number;
+          avgIVScore?: number;
+          recentPrints?: Array<{
+            event?: string;
+            direction?: string | null;
+            surprise?: number | null;
+            iv?: number | null;
+          }>;
+        }
+      | undefined;
+    if (econStats) {
+      sections.push("Economic Print History:");
+      sections.push(
+        `  Prints: ${econStats.totalPrints ?? 0}; beats ${econStats.beats ?? 0}; misses ${econStats.misses ?? 0}; inline ${econStats.inlines ?? 0}; avg surprise ${econStats.avgAbsSurprise ?? 0}; avg IV ${econStats.avgIVScore ?? 0}`,
+      );
+      for (const item of econStats.recentPrints ?? []) {
+        sections.push(
+          `  ${item.event ?? "Print"}: ${item.direction ?? "unknown"} surprise=${item.surprise ?? "n/a"} iv=${item.iv ?? "n/a"}`,
+        );
+      }
+    }
+    const upcoming = ctx.upcomingEconEvents as
+      | Array<{
+          event?: string;
+          date?: string;
+          time?: string | null;
+          country?: string | null;
+          impact?: string | null;
+        }>
+      | undefined;
+    if (upcoming?.length) {
+      sections.push("Upcoming Economic Catalysts:");
+      for (const event of upcoming) {
+        const when = `${event.date ?? "?"}${event.time ? ` ${event.time} ET` : ""}`;
+        sections.push(
+          `  ${when} ${event.country ?? ""} ${event.event ?? "Event"} impact=${event.impact ?? "unknown"}`,
+        );
+      }
+    }
   }
 
   sections.push("\n--- TASK ---");
   sections.push(
-    "Analyze the above context. For each of the 6 risk categories (geopolitical, political, monetary-policy, earnings-corporate, market-structure, black-swan), provide an IV score (0-10), confidence (0-1), and delta from current baseline.",
+    "Analyze the above context. For scheduled economic catalysts, infer the likely print or speech tone using recent macro prints, FRED indicators, RiskFlow headlines, and second-order policy reaction. For each of the 6 risk categories (geopolitical, political, monetary-policy, earnings-corporate, market-structure, black-swan), provide an IV score (0-10), confidence (0-1), and delta from current baseline.",
   );
   sections.push(
     "Also provide 2-4 scenarios with probabilities, and 1-3 upcoming events you predict within the next 30 days.",

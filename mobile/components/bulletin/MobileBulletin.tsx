@@ -5,7 +5,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Crosshair,
-  Clock,
+  Clock705,
   CalendarDays,
   StickyNote,
   X,
@@ -44,7 +44,7 @@ interface WatchPhrase {
 
 const SECTIONS: { id: SectionId; icon: typeof Crosshair; label: string }[] = [
   { id: "catalyst", icon: Crosshair, label: "Catalyst" },
-  { id: "antilag", icon: Clock, label: "Antilag" },
+  { id: "antilag", icon: Clock705, label: "Antilag" },
   { id: "event", icon: CalendarDays, label: "Event" },
   { id: "notes", icon: StickyNote, label: "Notes" },
   { id: "daycard", icon: TrendingUp, label: "Day Card" },

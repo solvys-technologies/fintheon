@@ -1,15 +1,19 @@
+// [claude-code 2026-05-03] S58-T1: DeepSeek v4 Pro primary provider migration
 // [claude-code 2026-04-05] Harper agent — Strands-based CAO with tools + streaming + cognition telemetry
 import { createAgent, type HarperProvider } from "../agent-factory.js";
 import { createHarperTools } from "../harper-tools.js";
+import { createChatUiTools } from "../chat-ui-tools.js";
 import { getAllSolvysTools } from "../skills/index.js";
 import { strandsToUIStream, uiStreamToSSEResponse } from "../stream-adapter.js";
 import { TextBlock, ImageBlock } from "@strands-agents/sdk";
 import type { ContentBlock } from "@strands-agents/sdk";
 import { withCognition } from "../telemetry.js";
 import { createConversationManager } from "../memory-store.js";
-import { checkVProxyHealth } from "../provider.js";
+import { checkDeepSeekDirectHealth } from "../provider.js";
 import { getAgentSystemPrompt } from "../../ai/agent-instructions/index.js";
+import { getUserApiKey } from "../../ai/api-key-crypto.js";
 import { createLogger } from "../../../lib/logger.js";
+import { buildReleaseContext } from "../release-context.js";
 
 const log = createLogger("HarperAgent");
 
@@ -30,14 +34,17 @@ export interface HarperChatOptions {
   userId?: string;
   history?: Array<{ role: "user" | "assistant"; content: string }>;
   thinkHarder?: boolean;
+  reasoningLevel?: "quick" | "standard" | "deep" | "max";
   persona?: string;
   riskFlowContext?: string;
   activeConnectors?: string[];
-  /** [S23-T3] Active Consilium surface — auto-enables surface-specific context injection (e.g. "aquarium"). */
+  /** [S23-T3] Active Consilium surface — auto-enables surface-specific context injection (e.g. "arbitrumChamber"). */
   surface?: string;
   userContext?: UserContext;
-  /** AI provider override: local (VProxy), ollama-qwen (Mac Ollama via tunnel), nous (Hermes-4 via Nous Research direct) */
+  /** AI provider override: DeepSeek direct or OpenCode Go utility path. */
   provider?: HarperProvider;
+  /** Per-user OpenCode Go model choice from Hermes:Admin. */
+  model?: string;
   /** When true, tool approvals block indefinitely (no 30s auto-approve) — mobile user decides */
   relayOriginated?: boolean;
 }
@@ -53,6 +60,7 @@ export async function createHarperAgent(
     conversationId?: string;
     userId?: string;
     provider?: HarperProvider;
+    model?: string;
     relayOriginated?: boolean;
   },
 ) {
@@ -60,6 +68,7 @@ export async function createHarperAgent(
     noTimeout: opts?.relayOriginated,
     userId: opts?.userId,
   });
+  const chatUiTools = createChatUiTools(requestId);
   const solvysTools = getAllSolvysTools();
   const systemPrompt = await getAgentSystemPrompt("harper-cao", {});
 
@@ -68,20 +77,17 @@ export async function createHarperAgent(
       ? createConversationManager(opts.conversationId, opts.userId)
       : undefined;
 
-  // Auto-fallback: when no explicit provider, prefer VProxy (local Opus subscription);
-  // if it's unreachable, fall back to Nous Research direct (free Hermes-4 405B).
-  // OpenRouter rung removed 2026-04-26.
+  // DeepSeek direct primary. If unavailable, try opencode-go.
   let effectiveProvider = opts?.provider;
   if (!effectiveProvider) {
-    const health = await checkVProxyHealth();
-    effectiveProvider = health.available ? "local" : "nous";
-    if (!health.available) {
-      log.warn(
-        "VProxy unreachable — falling back to Nous Research (Hermes-4)",
-        {
-          error: health.error,
-        },
-      );
+    const deepseekHealth = await checkDeepSeekDirectHealth();
+    if (deepseekHealth.available) {
+      effectiveProvider = "deepseek-direct";
+    } else {
+      effectiveProvider = "opencode-go";
+      log.warn("DeepSeek direct unavailable, trying opencode-go", {
+        deepseekError: deepseekHealth.error,
+      });
     }
   }
 
@@ -90,14 +96,23 @@ export async function createHarperAgent(
     description:
       "Chief Agentic Officer — coordinates PIC agent network, runs tools, manages the Fintheon platform",
     systemPrompt,
-    tools: [...coreTools, ...solvysTools],
+    tools: [...coreTools, ...chatUiTools, ...solvysTools],
     model: {
-      model: "claude-opus-4-6",
+      model: opts?.model || "deepseek-reasoner",
       temperature: 0.3,
       maxTokens: 16384,
     },
     conversationManager,
     provider: effectiveProvider,
+    userApiKey: opts?.userId
+      ? await getUserApiKey(
+          opts.userId,
+          effectiveProvider === "opencode-go" ||
+            effectiveProvider === "deepseek-oc-api"
+            ? "opencode-go"
+            : "deepseek",
+        )
+      : undefined,
   });
 }
 
@@ -114,6 +129,7 @@ export async function streamHarperChat(
     conversationId,
     userId,
     provider: options.provider,
+    model: options.model,
     relayOriginated: options.relayOriginated,
   });
 
@@ -136,25 +152,39 @@ export async function streamHarperChat(
     prompt = `[RiskFlow Context]\n${options.riskFlowContext}\n\n${prompt}`;
   }
 
-  // [S23-T3] Aquarium awareness: when the user is on the Aquarium surface (or the connector is
+  const level = options.reasoningLevel ?? (options.thinkHarder ? "deep" : "standard");
+  prompt = `[Intelligence Level: ${level}]
+Use the selected level to choose inspection depth, tool aggression, and verification:
+- quick: answer directly unless a tool is required.
+- standard: inspect the most relevant live source before making product claims.
+- deep: verify across code/runtime context and use tools when product state is disputed.
+- max: exhaustive inspection; prefer demonstration or artifact proof over prose.
+
+${prompt}`;
+
+  const releaseContext = await buildReleaseContext(message);
+  if (releaseContext) prompt = `${releaseContext}\n\n${prompt}`;
+
+  // [S23-T3] ArbitrumChamber awareness: when the user is on the ArbitrumChamber surface (or the connector is
   // explicitly active), inject the latest AgentDesk simulation with interpretation scaffolding so
   // Harper reads her own output as ground truth instead of treating it as debug noise.
-  const aquariumActive =
-    options.surface === "aquarium" ||
-    !!options.activeConnectors?.includes("aquarium");
-  if (aquariumActive) {
+  const arbitrumChamberActive =
+    options.surface === "arbitrumChamber" ||
+    !!options.activeConnectors?.includes("arbitrumChamber");
+  if (arbitrumChamberActive) {
     try {
-      const { buildAquariumContext } = await import("../../harper-handler.js");
-      const aquariumContext = await buildAquariumContext();
-      if (aquariumContext) {
-        prompt = `${aquariumContext}\n\n${prompt}`;
-        log.info("aquarium context injected (strands)", {
+      const { buildArbitrumChamberContext } =
+        await import("../../harper-handler.js");
+      const arbitrumChamberContext = await buildArbitrumChamberContext();
+      if (arbitrumChamberContext) {
+        prompt = `${arbitrumChamberContext}\n\n${prompt}`;
+        log.info("arbitrumChamber context injected (strands)", {
           requestId,
           surface: options.surface,
         });
       }
     } catch (err) {
-      log.warn("failed to build aquarium context (non-fatal, strands)", {
+      log.warn("failed to build arbitrumChamber context (non-fatal, strands)", {
         error: String(err),
       });
     }

@@ -7,16 +7,23 @@ export type CliOutputEvent =
   | { type: "stderr"; data: string }
   | { type: "exit"; code: number | null; signal: string | null };
 
-export interface UpdateInfo {
-  version: string;
-  releaseNotes: string;
-  releaseDate: string;
+export interface DesktopUpdateStatus {
+  ok: boolean;
+  current?: string | null;
+  latest?: string | null;
+  updateAvailable: boolean;
+  downloadUrl?: string;
+  downloaded?: boolean;
+  downloading?: boolean;
+  reason?: string;
 }
 
-export interface UpdateProgress {
-  percent: number;
-  transferred: number;
-  total: number;
+export interface DesktopDownloadedUpdate {
+  version: string;
+  tag?: string;
+  assetName?: string;
+  dmgPath?: string;
+  reason?: string;
 }
 
 export interface StartupConfig {
@@ -24,9 +31,34 @@ export interface StartupConfig {
   launchOnLogin: boolean;
 }
 
+export type BackendEngineState =
+  | "connected"
+  | "starting"
+  | "degraded"
+  | "offline";
+
+export interface BackendEngineStatus {
+  state: BackendEngineState;
+  alive: boolean;
+  url: string;
+  logsPath: string;
+  checkedAt: string;
+  detail?: string;
+}
+
+export interface NativeVibrancyStatus {
+  ok: boolean;
+  enabled: boolean;
+  native: boolean;
+  reason?: string;
+}
+
 export interface ElectronAPI {
-  platform: "electron";
-  isElectron: true;
+  platform: string;
+  apiBase: string;
+  isWindows: boolean;
+  isMac: boolean;
+  isElectron?: boolean;
   toggleMiniWidget: () => Promise<void>;
   setKeepWidgetOnClose: (value: boolean) => Promise<void>;
   getKeepWidgetOnClose: () => Promise<boolean>;
@@ -43,16 +75,51 @@ export interface ElectronAPI {
   getStartupConfig: () => Promise<StartupConfig>;
   setStartupConfig: (patch: Partial<StartupConfig>) => Promise<StartupConfig>;
   startBackend: () => Promise<{ ok: boolean; detail?: string }>;
-  stopBackend: () => Promise<{ ok: boolean }>;
+  stopBackend: () => Promise<{ ok: boolean; detail?: string }>;
   isBackendAlive: () => Promise<{ alive: boolean }>;
+  backendEngine: {
+    getStatus: () => Promise<BackendEngineStatus>;
+    restart: () => Promise<{
+      ok: boolean;
+      detail?: string;
+      status: BackendEngineStatus;
+    }>;
+    onStatusChange: (
+      cb: ((status: BackendEngineStatus) => void) | null,
+    ) => () => void;
+  };
 
-  // Auto-update
-  checkForUpdate: () => Promise<{ ok: boolean }>;
-  onUpdateAvailable: (cb: ((info: UpdateInfo) => void) | null) => void;
-  onUpdateProgress: (cb: ((progress: UpdateProgress) => void) | null) => void;
-  onUpdateDownloaded: (cb: (() => void) | null) => void;
-  downloadUpdate: () => Promise<{ ok: boolean }>;
-  installUpdate: () => Promise<{ ok: boolean }>;
+  // SOTA desktop updater (manual check + manual download handoff)
+  appearance: {
+    getNativeVibrancy: () => Promise<NativeVibrancyStatus>;
+    setNativeVibrancy: (enabled: boolean) => Promise<NativeVibrancyStatus>;
+  };
+  checkForUpdate: () => Promise<DesktopUpdateStatus>;
+  downloadUpdate: () => Promise<{
+    ok: boolean;
+    version?: string;
+    assetName?: string;
+    dmgPath?: string;
+    reason?: string;
+  }>;
+  installUpdate: () => Promise<{
+    ok: boolean;
+    opened?: boolean;
+    downloadUrl?: string;
+    installing?: boolean;
+    target?: string;
+    reason?: string;
+  }>;
+  deferUpdateUntilClose: () => Promise<{ ok: boolean; deferred?: boolean }>;
+  onUpdateJustInstalled: (
+    cb: ((payload: { version: string }) => void) | null,
+  ) => void;
+  onUpdateDownloaded: (
+    cb: ((payload: DesktopDownloadedUpdate) => void) | null,
+  ) => void;
+  onUpdateDownloadFailed: (
+    cb: ((payload: DesktopDownloadedUpdate) => void) | null,
+  ) => void;
 
   // [claude-code 2026-03-24] Auth — deep link callback + system browser open
   onAuthCallback: (cb: ((url: string) => void) | null) => void;
@@ -76,6 +143,7 @@ export interface ElectronAPI {
             ingested: number;
             title: string | null;
             starts_at: string | null;
+            queueCount?: number;
           }) => void)
         | null,
     ) => void;

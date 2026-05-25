@@ -1,8 +1,6 @@
-// [claude-code 2026-04-28] T6: SolvysLoader — dotmatrix-inspired Braille beat loader.
-//   Uses Braille pulse animation with Solvys Gold accent.
-//   Respects prefers-reduced-motion; reduced motion renders a static gold dot.
-import { useEffect, useMemo, useRef, useState } from "react";
+// [codex 2026-05-23] SolvysLoader now routes through dot/matrix only.
 import type { CSSProperties } from "react";
+import { DotMatrixLoader } from "../icon-bank/DotMatrixLoader";
 
 interface SolvysLoaderProps {
   /** Text rendered beneath the glyph. Omit for inline-only use. */
@@ -15,32 +13,6 @@ interface SolvysLoaderProps {
   style?: CSSProperties;
 }
 
-const MONO_STACK =
-  "ui-monospace, 'SF Mono', Menlo, Monaco, 'Cascadia Code', 'Roboto Mono', monospace";
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === "undefined") return false;
-  return (
-    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
-  );
-}
-
-// Braille dot frames: a single cell that pulses through density states.
-const BRAILLE_BEAT_FRAMES = [
-  "⠀",
-  "⠁",
-  "⠃",
-  "⠇",
-  "⠏",
-  "⠟",
-  "⠿",
-  "⠟",
-  "⠏",
-  "⠇",
-  "⠃",
-  "⠁",
-];
-
 export function SolvysLoader({
   text,
   size = 14,
@@ -48,59 +20,15 @@ export function SolvysLoader({
   className,
   style,
 }: SolvysLoaderProps) {
-  const [frameIdx, setFrameIdx] = useState(0);
-  const [reduced, setReduced] = useState(prefersReducedMotion);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const onChange = () => setReduced(mql.matches);
-    mql.addEventListener?.("change", onChange);
-    setReduced(mql.matches);
-    return () => mql.removeEventListener?.("change", onChange);
-  }, []);
-
-  useEffect(() => {
-    if (reduced) return;
-    const id = window.setInterval(() => {
-      setFrameIdx((i) => (i + 1) % BRAILLE_BEAT_FRAMES.length);
-    }, 90);
-    return () => window.clearInterval(id);
-  }, [reduced]);
-
-  const glyph = reduced ? "●" : BRAILLE_BEAT_FRAMES[frameIdx];
-  const resolvedColor = color ?? "var(--fintheon-accent)";
-
-  const glyphStyle: CSSProperties = {
-    fontFamily: MONO_STACK,
-    fontSize: size,
-    fontVariantNumeric: "tabular-nums",
-    color: resolvedColor,
-    lineHeight: 1,
-    letterSpacing: 0,
-    whiteSpace: "pre",
-    display: "inline-block",
-    width: size * 1.4,
-    textAlign: "center",
-  };
-
   return (
-    <div
-      className={`inline-flex items-center gap-2${className ? ` ${className}` : ""}`}
+    <DotMatrixLoader
+      variant="diagonal-scan"
+      size={size}
+      color={color ?? "var(--fintheon-accent)"}
+      label={text}
+      className={className}
       style={style}
-    >
-      <span style={glyphStyle} aria-hidden="true">
-        {glyph}
-      </span>
-      {text && (
-        <span
-          className="text-[10px] tracking-[0.18em] uppercase"
-          style={{ color: "var(--fintheon-muted)" }}
-        >
-          {text}
-        </span>
-      )}
-    </div>
+    />
   );
 }
 

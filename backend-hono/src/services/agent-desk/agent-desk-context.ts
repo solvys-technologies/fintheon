@@ -9,6 +9,7 @@ import type {
   SimulationContext,
   RiskFlowHeadline,
   EconPrintStat,
+  UpcomingEconEvent,
 } from "./agent-desk-types.js";
 import {
   fetchFredIndicators,
@@ -17,7 +18,11 @@ import {
 } from "../systemic/fred-service.js";
 import { fetchVIX } from "../market-data/router.js";
 import { getSupabaseClient } from "../../config/supabase.js";
-import { readRecentEconPrintStats } from "../supabase-service.js";
+import {
+  readEconEvents,
+  readRecentEconPrintStats,
+} from "../supabase-service.js";
+import { getAntilagSummary } from "./antilag-service.js";
 
 /**
  * Assemble a SimulationContext bundle by fetching live data from all available sources.
@@ -31,8 +36,16 @@ export async function assembleSimulationContext(
   const fetchFred = preset !== "risk-scan";
   const fetchRiskFlow = preset === "full-brief" || preset === "risk-scan";
   const fetchEconHistory = preset === "full-brief" || preset === "econ-watch";
+  const fetchUpcomingEcon = preset === "full-brief" || preset === "econ-watch";
 
-  const [vixResult, fredResult, riskflowResult, econResult] =
+  const [
+    vixResult,
+    fredResult,
+    riskflowResult,
+    econResult,
+    upcomingResult,
+    antilagResult,
+  ] =
     await Promise.allSettled([
       fetchVix ? fetchVIX().then((r) => r.vix.value) : Promise.resolve(null),
       fetchFred
@@ -40,6 +53,8 @@ export async function assembleSimulationContext(
         : Promise.resolve(getCachedFredIndicators()),
       fetchRiskFlow ? fetchRiskFlowHeadlines() : Promise.resolve([]),
       fetchEconHistory ? fetchEconPrintHistory() : Promise.resolve([]),
+      fetchUpcomingEcon ? fetchUpcomingEconEvents() : Promise.resolve([]),
+      getAntilagSummary(),
     ]);
 
   const vixLevel = vixResult.status === "fulfilled" ? vixResult.value : null;
@@ -51,16 +66,112 @@ export async function assembleSimulationContext(
     riskflowResult.status === "fulfilled" ? riskflowResult.value : [];
   const econPrintHistory =
     econResult.status === "fulfilled" ? econResult.value : [];
+  const upcomingEconEvents =
+    upcomingResult.status === "fulfilled" ? upcomingResult.value : [];
+  const antilag =
+    antilagResult.status === "fulfilled" ? antilagResult.value : undefined;
 
   return {
     vixLevel,
     fredIndicators,
     riskflowHeadlines,
+    antilag,
     econPrintHistory:
       econPrintHistory.length > 0 ? econPrintHistory : undefined,
+    upcomingEconEvents:
+      upcomingEconEvents.length > 0 ? upcomingEconEvents : undefined,
     fredFetchedAt: getFredFetchedAt()?.toISOString() ?? null,
     fetchedAt: new Date().toISOString(),
   };
+}
+
+async function fetchUpcomingEconEvents(): Promise<UpcomingEconEvent[]> {
+  const today = todayInNewYork();
+  const horizon = new Date();
+  horizon.setDate(horizon.getDate() + 7);
+  const to = formatDateInNewYork(horizon);
+  const events = await readEconEvents({ from: today.dateIso, to });
+  return events
+    .filter((event) => isUpcomingOrMultiDayEvent(event, today))
+    .sort((a, b) => {
+      const aKey = `${a.date ?? ""}T${a.time ?? "23:59"}`;
+      const bKey = `${b.date ?? ""}T${b.time ?? "23:59"}`;
+      return aKey.localeCompare(bKey);
+    })
+    .slice(0, 12)
+    .map((event) => ({
+      eventName: event.name ?? "Untitled event",
+      date: event.date ?? today.dateIso,
+      time: event.time ?? null,
+      country: event.country ?? null,
+      category: event.category ?? null,
+      impact: event.impact ?? null,
+      forecast: event.forecast ?? null,
+      previous: event.previous ?? null,
+    }));
+}
+
+function isUpcomingOrMultiDayEvent(
+  event: Awaited<ReturnType<typeof readEconEvents>>[number],
+  now: { dateIso: string; minutes: number },
+): boolean {
+  if (!event.date) return false;
+  if (event.date > now.dateIso) return true;
+  if (event.date < now.dateIso) return isMultiDayEvent(event);
+  if (!event.time) return true;
+  const minutes = minutesFromHHMM(event.time);
+  if (minutes == null) return false;
+  return minutes >= now.minutes - 15 || isMultiDayEvent(event);
+}
+
+function isMultiDayEvent(event: {
+  name?: string | null;
+  category?: string | null;
+}): boolean {
+  const text = `${event.name ?? ""} ${event.category ?? ""}`.toLowerCase();
+  return /\b(jackson hole|summit|symposium|forum|conference|meetings?)\b/.test(
+    text,
+  );
+}
+
+function todayInNewYork(): { dateIso: string; minutes: number } {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  })
+    .formatToParts(now)
+    .reduce<Record<string, string>>((acc, part) => {
+      if (part.type !== "literal") acc[part.type] = part.value;
+      return acc;
+    }, {});
+  return {
+    dateIso: `${parts.year}-${parts.month}-${parts.day}`,
+    minutes: Number(parts.hour ?? "0") * 60 + Number(parts.minute ?? "0"),
+  };
+}
+
+function formatDateInNewYork(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function minutesFromHHMM(value: string): number | null {
+  const match = value.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+  return hours * 60 + minutes;
 }
 
 /**

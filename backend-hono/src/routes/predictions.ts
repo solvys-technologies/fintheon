@@ -2,12 +2,12 @@
 //   so the fuses don't collapse to baseline (3.0 / neutral / ±135pts) when the news-worker
 //   pipeline has a hiccup. Adds `staleness` to the response so the UI can flag old reads.
 // [claude-code 2026-04-15] S16-T2: Add priceProposedAt + fuseConfidence to polymarket-outlook response
-// [claude-code 2026-04-10] Serve AI-generated Aquarium outlook (Oracle/Nous) when fresh, fall back to heuristic
+// [claude-code 2026-04-10] Serve AI-generated ArbitrumChamber outlook (Oracle/Nous) when fresh, fall back to heuristic
 // [claude-code 2026-03-28] S7: Forward-looking performance prediction endpoint
 // Aggregates scored FJ items + scheduled econ events → per-instrument outlook
 import { Hono } from "hono";
 import { getSupabaseClient } from "../config/supabase.js";
-import { getAIAquariumOutlook } from "../services/riskflow/aquarium-scheduler.js";
+import { getAIArbitrumChamberOutlook } from "../services/riskflow/arbitrum-chamber-scheduler.js";
 
 const app = new Hono();
 
@@ -52,7 +52,7 @@ interface InstrumentOutlook {
 // GET /api/predictions/outlook
 app.get("/outlook", async (c) => {
   // Serve AI-generated outlook if fresh (< 4 hours)
-  const ai = getAIAquariumOutlook();
+  const ai = getAIArbitrumChamberOutlook();
   if (ai) {
     const ageMs = Date.now() - new Date(ai.generatedAt).getTime();
     if (ageMs < 4 * 60 * 60 * 1000) {

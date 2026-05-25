@@ -131,7 +131,13 @@ export function classifyEventType(parsed: ParsedHeadline): string {
   if (
     wordMatch(headline, "war") ||
     headline.includes("attack") ||
-    headline.includes("missile")
+    headline.includes("missile") ||
+    headline.includes("ukmto") ||
+    headline.includes("hormuz") ||
+    headline.includes("red sea") ||
+    headline.includes("cargo vessel") ||
+    headline.includes("maritime incident") ||
+    headline.includes("engine room")
   )
     return "conflict";
   if (eventType === "geopolitical") return "geopolitical";

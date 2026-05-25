@@ -19,8 +19,6 @@ import {
 import {
   type ThemeConfig,
   THEME_PRESETS,
-  SPECIAL_PRESETS,
-  ALL_PRESETS,
   loadStoredTheme,
   saveTheme,
 } from "@frontend/lib/theme";
@@ -46,8 +44,6 @@ interface ThemeContextValue {
   fontTheme: FontTheme;
   setFontTheme: (theme: FontTheme) => void;
   availableThemes: Record<string, ThemeConfig>;
-  specialThemes: Record<string, ThemeConfig>;
-  allThemes: Record<string, ThemeConfig>;
   availableFonts: Record<string, FontTheme>;
 }
 
@@ -242,8 +238,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         fontTheme,
         setFontTheme,
         availableThemes: THEME_PRESETS,
-        specialThemes: SPECIAL_PRESETS,
-        allThemes: ALL_PRESETS,
         availableFonts: FONT_THEMES,
       }}
     >

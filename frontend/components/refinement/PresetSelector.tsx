@@ -125,7 +125,7 @@ export function PresetSelector({
             display: "flex",
             alignItems: "center",
             gap: 4,
-            padding: "3px 8px",
+            padding: "4px 9px",
             fontSize: 10,
             fontFamily: "var(--font-data)",
             letterSpacing: "0.04em",
@@ -221,7 +221,10 @@ export function PresetSelector({
                 {p.builtin && (
                   <span
                     style={{
+                      minWidth: 54,
+                      textAlign: "right",
                       fontSize: 9,
+                      fontFamily: "var(--font-data)",
                       letterSpacing: "0.08em",
                       color: "var(--fintheon-muted)",
                     }}

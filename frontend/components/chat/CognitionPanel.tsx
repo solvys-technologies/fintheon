@@ -1,4 +1,4 @@
-// [claude-code 2026-04-24] "thought for" redesign — label change, dot removal,
+// [claude-code 2026-04-24] cognition label redesign — label change, dot removal,
 //   Streamdown-rendered thinking stream, slow semi-unsteady shimmer on phrases.
 // [claude-code 2026-03-10] Agent cognition visualization — real-time step-by-step process panel
 // Connects to /api/ai/cognition/stream SSE and renders agent pipeline steps as they arrive.
@@ -6,7 +6,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { API_BASE_URL } from "./constants.js";
-import { StreamdownChat } from "./slots";
+import { BrailleSpinner } from "./primitive/BrailleSpinner";
 
 export type CognitionStepKind =
   | "agent-route"
@@ -33,7 +33,6 @@ interface Props {
   isStreaming: boolean;
 }
 
-// Human-readable kind → short phrase prefix. Keeps the thought stream natural.
 const KIND_PHRASE: Record<CognitionStepKind, string> = {
   "agent-route": "Routing",
   "context-build": "Building context",
@@ -41,38 +40,62 @@ const KIND_PHRASE: Record<CognitionStepKind, string> = {
   "tool-dispatch": "Calling tool",
   "tool-approval-needed": "Awaiting approval",
   "tool-approval-resolved": "Approval resolved",
-  "gateway-call": "Gateway call",
+  "gateway-call": "Calling Tools...",
   "gateway-fallback": "Gateway fallback",
   "response-ready": "Response ready",
   error: "Error",
 };
 
-function stepsToMarkdown(steps: CognitionStep[]): string {
-  // Render each step as a single line, tool calls in inline code. Keep markdown
-  // minimal so Streamdown streams it without slot dispatch or block styling.
-  return steps
-    .map((s) => {
-      const prefix = KIND_PHRASE[s.kind] ?? s.kind;
-      const detail = s.detail
-        ? s.kind === "tool-dispatch" || s.kind === "gateway-call"
-          ? ` \`${s.detail}\``
-          : ` — ${s.detail}`
-        : "";
-      const dur = s.durationMs !== undefined ? ` _(${s.durationMs}ms)_` : "";
-      return `${prefix}${detail ? ":" : ""}${detail}${dur}`;
-    })
-    .join("\n\n");
+const THINKING_PHRASES = [
+  "Surveying the arena...",
+  "Running risk models...",
+  "Reviewing the legion's positions...",
+  "Consulting the Consilium...",
+  "Analyzing macro data...",
+  "Checking volatility surface...",
+  "Evaluating sentiment...",
+  "Processing market signals...",
+  "Cross-referencing events...",
+  "Calculating exposure...",
+  "Mapping liquidity pockets...",
+  "Tracking implied vol drift...",
+  "Pricing catalyst risk...",
+  "Calibrating entry zones...",
+  "Stress-testing conviction...",
+];
+
+function parseDetail(detail: string | undefined): string {
+  if (!detail) return "";
+  const trimmed = detail.trim();
+  if (!trimmed.startsWith("{")) return trimmed;
+  try {
+    const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+    const command = typeof parsed.command === "string" ? parsed.command : null;
+    const path = typeof parsed.path === "string" ? parsed.path : null;
+    const query = typeof parsed.query === "string" ? parsed.query : null;
+    const label = command ?? path ?? query;
+    return label ? label : trimmed;
+  } catch {
+    return trimmed;
+  }
 }
 
-function formatElapsed(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
+function stepLabel(step: CognitionStep): string {
+  if (step.kind === "tool-dispatch") return "Tool call";
+  if (step.kind === "gateway-call") return "Calling Tools...";
+  return KIND_PHRASE[step.kind] ?? step.kind;
 }
 
-/**
- * Hook: opens SSE connection to cognition stream for a given requestId.
- * Collects steps until `done` event or requestId changes.
- */
+function isToolStep(step: CognitionStep): boolean {
+  return (
+    step.kind === "tool-dispatch" ||
+    step.kind === "gateway-call" ||
+    step.kind === "gateway-fallback" ||
+    step.kind === "tool-approval-needed" ||
+    step.kind === "tool-approval-resolved"
+  );
+}
+
 export function useCognitionStream(requestId: string | null) {
   const [steps, setSteps] = useState<CognitionStep[]>([]);
   const [done, setDone] = useState(false);
@@ -98,6 +121,11 @@ export function useCognitionStream(requestId: string | null) {
       try {
         const step = JSON.parse(e.data) as CognitionStep;
         setSteps((s) => [...s, step]);
+        window.dispatchEvent(
+          new CustomEvent("fintheon:cognition-step", {
+            detail: { requestId, step },
+          }),
+        );
       } catch {
         /* ignore malformed */
       }
@@ -121,90 +149,103 @@ export function useCognitionStream(requestId: string | null) {
   return { steps, done };
 }
 
-/**
- * CognitionPanel — collapsible "thought for …" panel that streams the agent's
- * thinking phrases (routing, tool calls, gateway hops) via Streamdown.
- */
 export function CognitionPanel({ requestId, isStreaming }: Props) {
   const { steps, done } = useCognitionStream(requestId);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const toolLogRef = useRef<HTMLDivElement>(null);
 
-  // Elapsed: live while streaming, frozen at last step once done.
-  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    if (done || !isStreaming) return;
-    const t = setInterval(() => setNow(Date.now()), 120);
-    return () => clearInterval(t);
+    if (!isStreaming || done) return;
+    const interval = setInterval(() => {
+      setPhraseIndex((i) => (i + 1) % THINKING_PHRASES.length);
+    }, 2000);
+    return () => clearInterval(interval);
   }, [done, isStreaming]);
 
-  const elapsedMs = useMemo(() => {
-    if (steps.length === 0) return 0;
-    const start = steps[0].ts;
-    const end = done ? steps[steps.length - 1].ts : now;
-    return Math.max(0, end - start);
-  }, [steps, done, now]);
-
   useEffect(() => {
-    if (done && steps.length > 0 && !steps.some((s) => s.kind === "error")) {
-      const t = setTimeout(() => setCollapsed(true), 4_000);
-      return () => clearTimeout(t);
+    if (requestId) {
+      setCollapsed(true);
+      setPhraseIndex(0);
     }
-  }, [done, steps]);
-
-  useEffect(() => {
-    if (requestId) setCollapsed(false);
   }, [requestId]);
 
-  const markdown = useMemo(() => stepsToMarkdown(steps), [steps]);
-  const stillThinking = isStreaming && !done;
+  const toolSteps = useMemo(
+    () =>
+      steps.filter(
+        (step) => isToolStep(step) && step.kind !== "gateway-call",
+      ),
+    [steps],
+  );
+
+  useEffect(() => {
+    const node = toolLogRef.current;
+    if (!node || collapsed) return;
+    node.scrollTop = node.scrollHeight;
+  }, [collapsed, toolSteps.length]);
 
   if (!requestId || steps.length === 0) return null;
 
+  const currentPhrase =
+    isStreaming && !done ? THINKING_PHRASES[phraseIndex] : "Thought trail";
+
   return (
-    <div className="rounded-xl bg-[var(--fintheon-bg)]/90 overflow-hidden">
-      {/* Header — "thought for {elapsed}" with caret. No status dot. */}
+    <div className="overflow-hidden bg-transparent">
       <button
         onClick={() => setCollapsed((c) => !c)}
-        className="w-full flex items-center justify-between px-3 py-2 hover:bg-white/3 transition-colors"
+        className="flex w-full items-center gap-2 px-1 py-1 text-left transition-colors duration-200 hover:text-[var(--fintheon-accent)]"
+        aria-expanded={!collapsed}
+        title={collapsed ? "Show tool calls" : "Hide tool calls"}
       >
-        <div className="flex items-center gap-1.5">
+        <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+          <BrailleSpinner size={9} />
+        </span>
+        <span className="min-w-0">
           <span
             className={
-              "text-[10px] font-medium tracking-wider lowercase text-[var(--fintheon-accent)]/70" +
-              (stillThinking ? " cognition-thought-shimmer" : "")
+              "block truncate text-[12px] font-medium text-[var(--fintheon-accent)]/78" +
+              (isStreaming && !done ? " cognition-thought-shimmer" : "")
             }
           >
-            thought for
+            {currentPhrase}
           </span>
-          <span className="text-[10px] text-[var(--fintheon-text)]/55 tabular-nums">
-            {formatElapsed(elapsedMs)}
-          </span>
-        </div>
-        <span
-          className="text-[var(--fintheon-text)]/25 text-[10px]"
-          style={{
-            display: "inline-block",
-            transform: collapsed ? "rotate(-90deg)" : "rotate(0)",
-            transition: "transform var(--t-icon-swap-dur) var(--t-icon-swap-ease)",
-          }}
-        >
-          ▾
         </span>
       </button>
 
-      {/* Thinking stream — Streamdown renders phrases as they arrive. */}
-      {!collapsed && (
-        <div className="px-3 pb-2.5">
+      <div
+        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
+          collapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
+        }`}
+      >
+        <div className="min-h-0 overflow-hidden">
           <div
-            className={
-              "text-[11px] leading-relaxed text-[var(--fintheon-text)]/75 space-y-1" +
-              (stillThinking ? " cognition-thought-shimmer" : "")
-            }
+            ref={toolLogRef}
+            className="max-h-[30vh] space-y-1.5 overflow-y-auto px-7 pb-2 pr-2"
           >
-            <StreamdownChat content={markdown} streaming={stillThinking} />
+            {toolSteps.map((step, i) => {
+              const detail = parseDetail(step.detail);
+              return (
+                <div
+                  key={`${step.ts}-${i}`}
+                  className="grid grid-cols-[7.5rem_1fr] items-start gap-2 rounded-md bg-black/18 px-2.5 py-2 text-[10.5px] leading-4 text-[var(--fintheon-text)]/68 transition-colors duration-200 hover:bg-black/28"
+                >
+                  <span className="font-mono uppercase tracking-[0.12em] text-[var(--fintheon-accent)]/68">
+                    {stepLabel(step)}
+                  </span>
+                  <span className="min-w-0 break-words font-mono text-[var(--fintheon-text)]/56">
+                    {detail || "queued"}
+                  </span>
+                </div>
+              );
+            })}
+            {toolSteps.length === 0 && (
+              <div className="rounded-md bg-black/18 px-2.5 py-2 text-[10.5px] leading-4 text-[var(--fintheon-text)]/48">
+                Waiting for tool calls.
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

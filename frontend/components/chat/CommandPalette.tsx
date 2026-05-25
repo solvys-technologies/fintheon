@@ -1,0 +1,68 @@
+import type { FintheonAgent } from "../../contexts/FintheonAgentContext";
+
+interface CommandPaletteProps {
+  onClose: () => void;
+  onSelectSkill: (id: string | null) => void;
+  onStop: () => void;
+  agents: FintheonAgent[];
+  onSwitchAgent: (agent: FintheonAgent) => void;
+}
+
+export function CommandPalette({
+  onClose,
+  onStop,
+  agents,
+  onSwitchAgent,
+}: CommandPaletteProps) {
+  return (
+    <div
+      role="dialog"
+      aria-label="Command Palette"
+      className="fintheon-modal-backdrop"
+      style={{
+        position: "fixed",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 9999,
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="fintheon-modal-surface"
+        style={{
+          width: 420,
+          padding: 12,
+        }}
+      >
+        <div style={{ fontSize: 12, marginBottom: 8, color: "#a1a1aa" }}>
+          Command Palette
+        </div>
+        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+          <button type="button" onClick={onStop}>
+            Stop
+          </button>
+        </div>
+        <div style={{ fontSize: 11, color: "#a1a1aa", marginBottom: 4 }}>
+          Agents
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {agents.map((agent) => (
+            <button
+              key={agent.id}
+              type="button"
+              onClick={() => {
+                onSwitchAgent(agent);
+                onClose();
+              }}
+            >
+              {agent.name ?? agent.id}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

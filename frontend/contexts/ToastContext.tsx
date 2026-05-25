@@ -47,6 +47,10 @@ export interface Toast {
   position?: ToastPosition;
   /** Optional CTA button */
   cta?: { label: string; onClick: () => void };
+  /** Optional secondary CTA button */
+  secondaryCta?: { label: string; onClick: () => void };
+  /** Optional override for auto-dismiss duration */
+  durationMs?: number;
 }
 
 interface ToastContextValue {
@@ -58,6 +62,8 @@ interface ToastContextValue {
     notificationType?: NotificationType,
     position?: ToastPosition,
     cta?: { label: string; onClick: () => void },
+    secondaryCta?: { label: string; onClick: () => void },
+    durationMs?: number,
   ) => string;
   dismissToast: (id: string) => void;
   /** Permanently block a notification type (Don't Show Again) */
@@ -143,6 +149,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       notificationType?: NotificationType,
       position?: ToastPosition,
       cta?: { label: string; onClick: () => void },
+      secondaryCta?: { label: string; onClick: () => void },
+      durationMs?: number,
     ): string => {
       // Skip if this notification type is blocked
       if (notificationType && blockedTypes.includes(notificationType)) {
@@ -158,19 +166,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         notificationType,
         position: position ?? "bottom-left",
         cta,
+        secondaryCta,
+        durationMs,
       };
       setToasts((prev) => [...prev, toast]);
 
       // Auto-dismiss (except 'updating' and toasts with CTAs which stay until manually dismissed)
       if (variant !== "updating" && !cta) {
         const delay =
-          variant === "error"
+          durationMs ??
+          (variant === "error"
             ? 2500
             : variant === "reminder"
               ? 8000
               : variant === "vix"
                 ? 10000
-                : 4000;
+                : 4000);
         setTimeout(() => dismissToast(id), delay);
       }
 

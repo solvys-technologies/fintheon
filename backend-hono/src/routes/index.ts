@@ -27,7 +27,7 @@ import { createArbitrumRoutes } from "./arbitrum/index.js";
 import { createConsulControlRoutes } from "./consul-control/index.js";
 import { createERRoutes } from "./er/index.js";
 import { createVoiceRoutes } from "./voice/index.js";
-import { livekit } from "./livekit/index.js";
+import { createProxVoiceRoutes } from "./proxvoice/index.js";
 import { createRegimeRoutes } from "./regimes/index.js";
 import { createMarketRegimeRoutes } from "./regime/index.js";
 import { createLexiconRoutes } from "./lexicon/index.js";
@@ -42,6 +42,7 @@ import { createBlindspotsRoutes } from "./blindspots.js";
 import { createBlindspotsUserRoutes } from "./blindspots-user.js";
 import { systemic as systemicRoutes } from "./systemic/index.js";
 import { createContextBankRoutes } from "./context-bank/index.js";
+import { createContextMentionRoutes } from "./context-mentions/index.js";
 import { createAutopilotRoutes } from "./autopilot/index.js";
 import { createProposalRoutes } from "./proposals/index.js";
 import cloudRoutes from "./cloud/index.js";
@@ -78,14 +79,15 @@ import { createMemoryRoutes } from "./memory/index.js";
 import { createEditorRoutes } from "./editor/index.js";
 import { createMcpRoutes } from "./mcp/index.js";
 import { createDagRoutes } from "./dag/index.js";
-// [claude-code 2026-05-13] S61-T1: agent audit log — decision trail for all tool approvals and permission changes
-import { createAuditRoutes } from "./audit/index.js";
 import { createDreamRoutes } from "./agent-bus/dreams.js";
 import { createPolymarketRoutes } from "./polymarket/index.js";
 import { createRelayRoutes } from "./relay.js";
 import { createRelayQuickRoutes } from "./relay-quick.js";
 import { createPreviewRoutes } from "./preview.js";
-import { createWebPushRoutes } from "./web-push.js";
+import {
+  createWebPushPublicRoutes,
+  createWebPushRoutes,
+} from "./web-push.js";
 import { createOracleRoutes } from "./oracle.js";
 import { createMeRoutes } from "./me/index.js";
 import { createMaintenanceRoutes } from "./maintenance.js";
@@ -97,6 +99,7 @@ import { createPsychAssistForkRoutes } from "./admin/psych-assist-fork.js";
 import { createEconBackfillRoutes } from "./admin/econ-backfill.js";
 // [claude-code 2026-04-27] S46.4: bulk delete + refill + MSM purge audit
 import { createRiskFlowBulkRoutes } from "./admin/riskflow-bulk.js";
+import { createRiskFlowBackfillDripRoutes } from "./admin/riskflow-backfill-drip.js";
 // [claude-code 2026-04-28] S48-T1: pipeline toggle and stats admin routes
 import { createPipelineRoutes } from "./admin/pipelines.js";
 import { createPipelineStatsRoutes } from "./admin/pipeline-stats.js";
@@ -118,11 +121,41 @@ import { createWatchoutsRoutes } from "./watchouts/index.js";
 import { createDayPlanRoutes } from "./day-plan/index.js";
 // [claude-code 2026-04-26] S46: Desk Calendar — ingest TV .ics + queue for Desk Theme
 import { createDeskCalendarRoutes } from "./desk-calendar/index.js";
+// [claude-code 2026-05-05] S59-T3: Agent Health Dashboard — per-agent SOUL/memory/GEPA/REFLECT status
+import { createApparatusRoutes } from "./apparatus/agent-health.js";
+// [claude-code 2026-05-07] S61-T1: Audit logger routes — mutation contract audit trail
+import { createAuditRoutes } from "./audit/index.js";
+// [claude-code 2026-05-07] Fileroom SOUL card editor — read/write agent soul files
+import { createSoulRoutes } from "./soul/index.js";
+import { createFileRoomRoutes } from "./file-room/index.js";
+import { createDeskInboxRoutes } from "./desk-inbox/index.js";
+import { createChartEvidenceRoutes } from "./chart-evidence/index.js";
+// [claude-code 2026-05-13] Lockout — trading lockout with countdown
+import { createLockoutRoutes } from "./lockout/index.js";
+// [claude-code 2026-05-16] S68-T1: Theme route — replaces regime tracker
+import { createThemeRoutes } from "./themes/index.js";
+import { createAgentLearningRoutes } from "./agent-learning/index.js";
+import { createColiseumRoutes } from "./coliseum/index.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
   // Diagnostics — service status, missing env vars, suggested fixes
   app.route("/api/diagnostics", createDiagnosticsRoutes());
+  // [S59-T3] Agent Health Dashboard — per-agent SOUL/memory/GEPA/REFLECT status
+  app.route("/api/apparatus", createApparatusRoutes());
+  // [claude-code 2026-05-07] Fileroom SOUL card editor — read/write agent soul files (auth-gated)
+  app.use("/api/soul", authMiddleware, requireAuth);
+  app.use("/api/soul/*", authMiddleware, requireAuth);
+  app.route("/api/soul", createSoulRoutes());
+  app.use("/api/file-room", authMiddleware, requireAuth);
+  app.use("/api/file-room/*", authMiddleware, requireAuth);
+  app.route("/api/file-room", createFileRoomRoutes());
+  app.use("/api/desk-inbox", authMiddleware, requireAuth);
+  app.use("/api/desk-inbox/*", authMiddleware, requireAuth);
+  app.route("/api/desk-inbox", createDeskInboxRoutes());
+  app.use("/api/chart-evidence", authMiddleware, requireAuth);
+  app.use("/api/chart-evidence/*", authMiddleware, requireAuth);
+  app.route("/api/chart-evidence", createChartEvidenceRoutes());
   // Terminal — local-dev shell execution (localhost guard inside handler)
   app.route("/api/terminal", createTerminalRoutes());
   // Setup — CLI onboarding welcome endpoint (localhost guard inside handler)
@@ -135,8 +168,10 @@ export function registerRoutes(app: Hono): void {
   // Data routes — Supabase-backed (replaces Notion polling routes)
   app.route("/api/data", createDataRoutes());
 
+  // [claude-code 2026-05-16] DEPRECATED — replaced by /api/themes (S68-T1). Kept for backward compat.
   // Regime tracker — public, returns active trading regimes (session-based time windows)
   app.route("/api/regimes", createRegimeRoutes());
+  // [claude-code 2026-05-16] DEPRECATED — replaced by /api/themes (S68-T1). Kept for backward compat.
   // Market regime engine — public, macro regime classification (CRUD + detect)
   // [S24-T1] /proposals subroute: agent proposals + TP approval queue.
   app.route("/api/regime", createMarketRegimeRoutes());
@@ -165,23 +200,24 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/context-bank", createContextBankRoutes());
   // Agent Desk multi-agent simulation — feature-flagged via AGENT_DESK_ENABLED
   // [claude-code 2026-04-24] S35-T9: dropped /api/miroshark legacy alias.
-  //   Arbitrum (S35-T1) is the deliberation engine now; Aquarium UI stays on
+  //   Arbitrum (S35-T1) is the deliberation engine now; ArbitrumChamber UI stays on
   //   /api/agent-desk for historical simulations until AgentDesk fully retires.
   app.route("/api/agent-desk", createAgentDeskRoutes());
   // [claude-code 2026-04-24] S35-T1: Arbitrum deliberation chamber —
   //   /latest, /:id, /deliberate. Public reads (digest_text is UI content).
+  // [claude-code 2026-05-01] S56 Track A: /seats/overrides PUT is superadmin-gated
+  //   inside the sub-router (requireAuth + requireSuperadmin). authMiddleware provides
+  //   ambient user context for both public GET and gated PUT.
+  app.use("/api/arbitrum/seats/overrides", authMiddleware);
   app.route("/api/arbitrum", createArbitrumRoutes());
   // [claude-code 2026-04-24] Consul Control stub — kills /status 404 spam from
   //   useConsulControlStatus until the real "Harper has the wheel" signal lands.
   app.route("/api/consul-control", createConsulControlRoutes());
   // DAG scheduler — status, SSE stream, cancel (S8-T2)
   app.route("/api/dag", createDagRoutes());
-  // [S61-T1] Agent audit log — auth-gated decision trail for tool approvals and permission changes
-  app.use("/api/audit", authMiddleware, requireAuth);
-  app.use("/api/audit/*", authMiddleware, requireAuth);
-  app.route("/api/audit", createAuditRoutes());
   // Agent Dream Room — autonomous agent reflection channel
   app.route("/api/agent-bus/dreams", createDreamRoutes());
+
   // Proposal charting is public/local; resolution writes are auth-gated.
   app.use("/api/proposals/resolve", authMiddleware, requireAuth);
   app.use("/api/proposals/performance", authMiddleware, requireAuth);
@@ -237,6 +273,24 @@ export function registerRoutes(app: Hono): void {
   // mobile EmbedPreview can render even before Supabase token is hydrated on cold start.
   app.route("/api/preview", createPreviewRoutes());
 
+  // [claude-code 2026-05-13] Lockout — in-memory trading lockout. Auth-gated.
+  app.use("/api/lockout", authMiddleware);
+  app.use("/api/lockout/*", authMiddleware);
+  app.route("/api/lockout", createLockoutRoutes());
+
+  // Theme tracker — replaces regime tracker (S68-T1). Public read/write, in-memory.
+  app.route("/api/themes", createThemeRoutes());
+
+  // Safe mention inventory for chat drawers and NarrativeFlow source citation.
+  app.use("/api/context", authMiddleware);
+  app.use("/api/context/*", authMiddleware);
+  app.route("/api/context", createContextMentionRoutes());
+
+  // Coliseum — closed-beta desk profiles, desk style, and forecast lifecycle.
+  app.use("/api/coliseum", authMiddleware);
+  app.use("/api/coliseum/*", authMiddleware);
+  app.route("/api/coliseum", createColiseumRoutes());
+
   // [S26-P2 T9] Maintenance — super-admin commit/deploy/deny for agent-proposed fixes.
   // GET /api/maintenance/request/:id is public (modal renders for anyone), POST
   // /api/maintenance/decision is gated inside the handler (returns 401 unauthed /
@@ -245,6 +299,8 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/maintenance/*", authMiddleware);
   app.route("/api/maintenance", createMaintenanceRoutes());
   // Harper — Claude CLI chat via SDK bridge (public, local-only)
+  app.use("/api/harper", authMiddleware);
+  app.use("/api/harper/*", authMiddleware);
   app.route("/api/harper", createHarperRoutes());
   // [claude-code 2026-04-23] S31-T9 predictive knowledge graph — Routine-secret-gated
   // weekly proposer trigger. Mounted BEFORE the harper-ops catch-all so the more
@@ -255,7 +311,7 @@ export function registerRoutes(app: Hono): void {
   );
   // Harper Ops — autonomous loop monitoring + control (public, local-only)
   app.route("/api/harper-ops", createHarperOpsRoutes());
-  // Aquarium ops — context audit badges + groupthink guard (Track 7b)
+  // ArbitrumChamber ops — context audit badges + groupthink guard (Track 7b)
   app.route("/api/ops", createOpsRoutes());
   // Econ Intelligence — event cards, filters, KPI/instrument fuses (Track 4a/4b)
   app.route("/api/econ", createEconRoutes());
@@ -299,6 +355,9 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/er", authMiddleware);
   app.use("/api/er/*", authMiddleware);
 
+  // Public metadata needed before a browser can create a web-push subscription.
+  app.route("/api/notifications/web-push", createWebPushPublicRoutes());
+
   // Hard auth required — these endpoints MUST have a verified identity
   app.use("/api/account", authMiddleware, requireAuth);
   app.use("/api/account/*", authMiddleware, requireAuth);
@@ -314,6 +373,8 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/settings/*", authMiddleware, requireAuth);
   app.use("/api/profile", authMiddleware, requireAuth);
   app.use("/api/profile/*", authMiddleware, requireAuth);
+  app.use("/api/proxvoice", authMiddleware, requireAuth);
+  app.use("/api/proxvoice/*", authMiddleware, requireAuth);
   // [claude-code 2026-04-19] v5.22 S1: shared cross-platform preferences — theme,
   //   traderName, notifications, fuse palette overrides (reusable by mobile).
   app.use("/api/preferences", authMiddleware, requireAuth);
@@ -362,6 +423,9 @@ export function registerRoutes(app: Hono): void {
 
   // Phase 6: Agent routes
   app.route("/api/agents", createAgentRoutes());
+  // Agent learning intake — singular alias matches SOUL prompt instructions.
+  app.route("/api/agent", createAgentLearningRoutes());
+  app.route("/api/agents", createAgentLearningRoutes());
 
   // ER telemetry routes
   app.route("/api/er", createERRoutes());
@@ -369,8 +433,8 @@ export function registerRoutes(app: Hono): void {
   // Voice assistant routes
   app.route("/api/voice", createVoiceRoutes());
 
-  // LiveKit group voice call token generation
-  app.route("/api/livekit", livekit);
+  // ProxVoice: LiveKit-backed always-on floor audio
+  app.route("/api/proxvoice", createProxVoiceRoutes());
 
   // User settings persistence
   app.route("/api/settings", createSettingsRoutes());
@@ -408,6 +472,11 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/research", authMiddleware, requireAuth);
   app.use("/api/research/*", authMiddleware, requireAuth);
   app.route("/api/research", createResearchRoutes());
+
+  // S61-T1: Audit log — auth-gated mutation decision trail
+  app.use("/api/audit", authMiddleware, requireAuth);
+  app.use("/api/audit/*", authMiddleware, requireAuth);
+  app.route("/api/audit", createAuditRoutes());
 
   // Shared memory — team-level KV store + analysis history FTS (S13-T3)
   app.use("/api/memory", authMiddleware, requireAuth);
@@ -455,6 +524,7 @@ export function registerRoutes(app: Hono): void {
     requireSuperadmin,
   );
   app.route("/api/admin/riskflow", createRiskFlowBulkRoutes());
+  app.route("/api/admin/riskflow", createRiskFlowBackfillDripRoutes());
 
   // [claude-code 2026-04-28] S48-T1: pipeline management — superadmin-gated
   app.use(

@@ -1,3 +1,5 @@
+// [claude-code 2026-04-30] "solvys fuses" baseline — vertical fuse remains
+//   segmented and linearly incremented bottom-up.
 // [claude-code 2026-04-20] `animateIn` — when true, the fuse mounts empty and
 //   fills bottom-up, one segment at a time, so new scored items arriving at
 //   the top of the feed visibly "charge up". Staggered delays mirror the
@@ -56,6 +58,7 @@ export function VerticalFuseBar({
         alignSelf: "stretch",
         flexShrink: 0,
       }}
+      data-solvys-fuse="true"
     >
       <div
         style={{

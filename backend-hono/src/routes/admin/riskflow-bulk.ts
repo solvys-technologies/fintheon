@@ -19,7 +19,7 @@
 //          listed sources, sleeping `tail_handle_ms` between handle fetches
 //          and `tail_cycle_ms` between cycle passes (mass-refill rate-limit).
 //
-//   POST /api/admin/riskflow/msm-purge      body: { confirm?: boolean }
+//   POST /api/admin/riskflow/purge          body: { confirm?: boolean }
 //        → audit pass returns candidate_count + sample_headlines (≤20).
 //          With confirm:true → hard-DELETE matched rows from BOTH
 //          scored_riskflow_items + raw_riskflow_items.
@@ -29,17 +29,17 @@
 // header read from the dev-settings password manager — see RefinementEngine
 // Catalyst Stats panel.
 
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { runRefillForSources } from "../../services/riskflow/refill-driver.js";
+import { BLOCKED_HOST_LIST } from "../../services/riskflow/publisher-blocklist.js";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-// MSM publisher needles — kept in lockstep with publisher-blocklist.ts so the
-// audit pass surfaces every row the universal block-list would have rejected
-// at the persist boundary, plus the historical rows that landed before the
-// block-list shipped.
-const MSM_NEEDLES = [
+// Purge needles catch historical rows that landed before block-list enforcement.
+// Keep language/source-agnostic: this is not "MSM" only, it purges blocked
+// domains and blocked publisher keywords wherever they leaked.
+const PURGE_KEYWORDS = [
   "bloomberg",
   "reuters",
   "cnbc",
@@ -59,6 +59,7 @@ const MSM_NEEDLES = [
   "business insider",
   "seeking alpha",
   "zero hedge",
+  "forexlive",
 ];
 
 interface SourceStat {
@@ -302,7 +303,7 @@ export function createRiskFlowBulkRoutes() {
     return c.json({ ok: true, ...result });
   });
 
-  // POST /msm-purge — audit + confirm-gated mainstream-media row removal.
+  // POST /purge and /msm-purge — audit + confirm-gated blocked row removal.
   // [claude-code 2026-04-27] v5.33.3:
   //   - body.from / body.to (YYYY-MM-DD) scope the purge by published_at;
   //     defaults to TODAY in America/New_York when both are omitted.
@@ -313,7 +314,7 @@ export function createRiskFlowBulkRoutes() {
   //     wire tweets that quote MSM names inline ("Fed announces XYZ:
   //     REUTERS" from FinancialJuice) stay in the feed; only MSM URLs +
   //     MSM-published text (web scrapes) get dropped.
-  router.post("/msm-purge", async (c) => {
+  const handlePurge = async (c: Context) => {
     const sb = getSupabaseClient();
     if (!sb) return c.json({ error: "supabase_unavailable" }, 503);
 
@@ -359,36 +360,40 @@ export function createRiskFlowBulkRoutes() {
       toIso = new Date(etMidnight.getTime() + 86_400_000).toISOString();
     }
 
-    // Build the OR clause — every needle hits headline + body + url.
-    const orParts: string[] = [];
-    for (const needle of MSM_NEEDLES) {
-      orParts.push(`headline.ilike.%${needle}%`);
-      orParts.push(`body.ilike.%${needle}%`);
-      orParts.push(`url.ilike.%${needle}%`);
+    // Build OR clauses. Scored rows do not have source_domain; raw rows do.
+    const scoredOrParts: string[] = [];
+    const rawOrParts: string[] = [];
+    for (const needle of PURGE_KEYWORDS) {
+      scoredOrParts.push(`headline.ilike.%${needle}%`);
+      scoredOrParts.push(`body.ilike.%${needle}%`);
+      scoredOrParts.push(`url.ilike.%${needle}%`);
+      rawOrParts.push(`headline.ilike.%${needle}%`);
+      rawOrParts.push(`body.ilike.%${needle}%`);
+      rawOrParts.push(`url.ilike.%${needle}%`);
     }
-    const orClause = orParts.join(",");
+    for (const host of BLOCKED_HOST_LIST) {
+      scoredOrParts.push(`url.ilike.%${host}%`);
+      rawOrParts.push(`url.ilike.%${host}%`);
+      rawOrParts.push(`source_domain.ilike.%${host}%`);
+    }
+    const scoredOrClause = scoredOrParts.join(",");
+    const rawOrClause = rawOrParts.join(",");
 
-    // [claude-code 2026-04-27] v5.33.6: scored_riskflow_items has no
-    // source_domain column (only raw does), so the wire-relay exemption
-    // checks the `source` column instead. Worker writes "twitter:<handle>"
-    // / "nitter:<handle>" into source for X relays — those rows stay in
-    // the feed even if their body mentions Reuters/Bloomberg.
-    function applyFilters<
-      T extends { or: Function; not: Function; gte: Function; lt: Function },
-    >(q: T): T {
-      let out: T = q.or(orClause) as T;
-      out = out.not("source", "ilike", "twitter:%") as T;
-      out = out.not("source", "ilike", "nitter:%") as T;
+    function applyTimeFilters<T extends { gte: Function; lt: Function }>(
+      q: T,
+    ): T {
+      let out: T = q;
       if (fromIso) out = out.gte("published_at", fromIso) as T;
       if (toIso) out = out.lt("published_at", toIso) as T;
       return out;
     }
 
     if (!confirm) {
-      const sampleQ = applyFilters(
+      const sampleQ = applyTimeFilters(
         sb
           .from("scored_riskflow_items")
-          .select("id, headline, source, published_at, url"),
+          .select("id, headline, source, published_at, url")
+          .or(scoredOrClause),
       );
       const { data: sample, error: sampleErr } = await sampleQ
         .order("published_at", { ascending: false })
@@ -399,10 +404,11 @@ export function createRiskFlowBulkRoutes() {
           500,
         );
       }
-      const countQ = applyFilters(
+      const countQ = applyTimeFilters(
         sb
           .from("scored_riskflow_items")
-          .select("id", { count: "exact", head: true }),
+          .select("id", { count: "exact", head: true })
+          .or(scoredOrClause),
       );
       const { count, error: countErr } = await countQ;
       if (countErr) {
@@ -428,12 +434,16 @@ export function createRiskFlowBulkRoutes() {
         to: toIso,
         candidate_count: count ?? 0,
         sample: aliasedSample,
-        needles: MSM_NEEDLES,
+        needles: PURGE_KEYWORDS,
+        blocked_domains: BLOCKED_HOST_LIST,
       });
     }
 
-    const scoredDelQ = applyFilters(
-      sb.from("scored_riskflow_items").delete({ count: "exact" }),
+    const scoredDelQ = applyTimeFilters(
+      sb
+        .from("scored_riskflow_items")
+        .delete({ count: "exact" })
+        .or(scoredOrClause),
     );
     const { count: scoredDeleted, error: scoredErr } = await scoredDelQ;
     if (scoredErr) {
@@ -442,8 +452,8 @@ export function createRiskFlowBulkRoutes() {
         500,
       );
     }
-    const rawDelQ = applyFilters(
-      sb.from("raw_riskflow_items").delete({ count: "exact" }),
+    const rawDelQ = applyTimeFilters(
+      sb.from("raw_riskflow_items").delete({ count: "exact" }).or(rawOrClause),
     );
     const { count: rawDeleted, error: rawErr } = await rawDelQ;
     if (rawErr) {
@@ -458,7 +468,10 @@ export function createRiskFlowBulkRoutes() {
       scored_deleted: scoredDeleted ?? 0,
       raw_deleted: rawDeleted ?? 0,
     });
-  });
+  };
+
+  router.post("/purge", handlePurge);
+  router.post("/msm-purge", handlePurge);
 
   return router;
 }

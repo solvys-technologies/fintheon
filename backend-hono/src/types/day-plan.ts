@@ -1,5 +1,7 @@
-// [claude-code 2026-04-26] S45-T1: Day Card type contract — server-side brain
-// owns this file; T2 mirrors the shapes it needs verbatim on the frontend.
+// [claude-code 2026-05-15] S66-T1: added planVariant field for multi-plan-per-day support
+// [claude-code 2026-05-15] Econ forecast: replaced price fields (invalidation/profitTarget/entries/
+//   pricesOfInterest/expectedMovePct) with econForecast containing miss/beat scenarios,
+//   AI prediction, and other notable events. Prices now pulled fresh at viewing time.
 
 export type DriftKind = "drift_alert" | "tilt_stop" | "dead_volume";
 
@@ -7,32 +9,70 @@ export type DailyColor = "green" | "red" | "flat";
 
 export type FeedbackAction = "followed" | "faded" | "sat_out";
 
+export type PositioningBias =
+  | "bullish"
+  | "tactically_bullish"
+  | "bearish"
+  | "tactically_bearish";
+
+export interface EconForecastScenario {
+  description: string;
+  isBullishForEquities: boolean;
+  probability: number;
+}
+
+export interface EconForecast {
+  forecast: string;
+  miss: EconForecastScenario;
+  beat: EconForecastScenario;
+  otherNotableEvents: string[];
+  aiPrediction: string;
+  generatedAt: string;
+  eventCountry?: string | null;
+  eventTime?: string | null;
+  validationChecks?: EconForecastValidationCheck[];
+}
+
+export interface EconForecastValidationCheck {
+  pass: number;
+  verdict: "pass" | "adjusted" | "fallback_pass";
+  rationale: string;
+  checkedAt: string;
+}
+
 export interface DayPlanWindow {
   id: string;
   dayPlanId: string;
   windowIndex: number;
-  /** "HH:MM" America/New_York */
   startTime: string;
-  /** "HH:MM" America/New_York */
   endTime: string;
-  pricesOfInterest: number[];
-  invalidation: number | null;
-  profitTarget: number | null;
-  expectedMovePct: number | null;
+  /** Enriched economic event name for this window */
+  eventName?: string | null;
+  /** Country/region abbreviation for the matched overnight or international event */
+  eventCountry?: string | null;
+  /** AI-generated econ forecast (miss/beat scenarios + prediction) */
+  econForecast: EconForecast | null;
+  /** Deprecated — retained for schema compatibility during migration transition */
+  pricesOfInterest?: number[];
+  entries?: number[];
+  invalidation?: number | null;
+  profitTarget?: number | null;
+  expectedMovePct?: number | null;
+  sessionPrice?: number | null;
 }
 
 export interface DayPlan {
   id: string;
   teamId: string;
-  /** ISO date "YYYY-MM-DD" */
   date: string;
   eventName: string | null;
   deskTheme: string | null;
   generatedBy: string;
-  /** ISO timestamp */
   generatedAt: string;
   sourceBriefId: string | null;
   windows: DayPlanWindow[];
+  institutionalPositioning: PositioningBias | null;
+  planVariant?: string | null;
 }
 
 export interface DayPlanFeedback {

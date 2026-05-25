@@ -198,7 +198,12 @@ const detectEventType = (text: string): string | undefined => {
   if (
     upper.includes("SANCTION") ||
     upper.includes("WAR") ||
-    upper.includes("TENSION")
+    upper.includes("TENSION") ||
+    upper.includes("UKMTO") ||
+    upper.includes("HORMUZ") ||
+    upper.includes("RED SEA") ||
+    upper.includes("CARGO VESSEL") ||
+    upper.includes("MARITIME INCIDENT")
   )
     return "geopolitical";
   if (upper.includes("BANK") && upper.includes("CRISIS"))

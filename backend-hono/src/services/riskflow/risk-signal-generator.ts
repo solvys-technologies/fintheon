@@ -4,26 +4,18 @@ import { listPosts } from "../bulletin/bulletin-store.js";
 import { getCachedAssessment } from "../systemic/risk-detector.js";
 import { invokeAgent } from "../strands/invoke-helper.js";
 import { createLogger } from "../../lib/logger.js";
+import type {
+  CatalystCandidate,
+  RiskSignal,
+  RiskSignalResult,
+} from "./risk-signal-types.js";
+import { RISK_SIGNAL_SOURCE_WINDOW } from "./risk-signal-types.js";
 
 const log = createLogger("RiskSignalGenerator");
 
-export interface RiskSignal {
-  id: string;
-  title: string;
-  summary: string;
-  analysis: string;
-  score: number;
-  severity: "critical" | "high" | "medium" | "low";
-  source: "bulletin" | "catalyst-watch" | "risk-detector";
-  relatedHeadlines: string[];
-  narrativeThreads: string[];
-  generatedAt: string;
-}
-
 // ── In-memory cache (10 min TTL) ─────────────────────────────────────────────
 const CACHE_TTL_MS = 10 * 60 * 1000;
-let cachedSignals: RiskSignal[] = [];
-let cachedAt = 0;
+let cachedResult: RiskSignalResult | null = null;
 
 function severityFromScore(score: number): RiskSignal["severity"] {
   if (score >= 8) return "critical";
@@ -47,25 +39,35 @@ async function fetchRecentBulletins(): Promise<string[]> {
   }
 }
 
-async function fetchHighSeverityCatalysts(): Promise<string[]> {
+async function fetchHighSeverityCatalysts(): Promise<CatalystCandidate[]> {
   try {
     const sb = getSupabaseClient();
     if (!sb) return [];
 
-    const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+    const cutoff = new Date(
+      Date.now() -
+        RISK_SIGNAL_SOURCE_WINDOW.catalystsHours * 60 * 60 * 1000,
+    ).toISOString();
     const { data } = await sb
       .from("scored_riskflow_items")
-      .select("headline, sentiment, iv_score, macro_level")
+      .select("headline, sentiment, iv_score, macro_level, published_at")
       .gte("published_at", cutoff)
-      .gte("macro_level", 3)
       .order("iv_score", { ascending: false })
-      .limit(25);
+      .limit(60);
 
     if (!data || data.length === 0) return [];
-    return data.map(
-      (r) =>
-        `[IV ${r.iv_score} ${r.sentiment ?? "neutral"} ML${r.macro_level}] ${r.headline}`,
-    );
+    return data
+      .map((r) => ({
+        headline: String(r.headline ?? ""),
+        sentiment: String(r.sentiment ?? "neutral"),
+        ivScore: Number(r.iv_score ?? 0),
+        macroLevel: Number(r.macro_level ?? 0),
+        publishedAt: String(r.published_at ?? ""),
+      }))
+      .filter(
+        (r) => r.headline && (r.ivScore >= 6.5 || r.macroLevel >= 2),
+      )
+      .slice(0, 25);
   } catch (err) {
     log.warn("Failed to fetch catalysts for risk signals", {
       error: String(err),
@@ -88,17 +90,78 @@ function getSystemicContext(): string {
   return lines.join("\n");
 }
 
-export async function generateRiskSignals(): Promise<RiskSignal[]> {
+function formatCatalysts(catalysts: CatalystCandidate[]): string[] {
+  return catalysts.map(
+    (r) =>
+      `[IV ${r.ivScore} ${r.sentiment} ML${r.macroLevel}] ${r.headline}`,
+  );
+}
+
+function normalizeDirection(value: unknown): RiskSignal["direction"] {
+  const raw = String(value ?? "").toLowerCase();
+  if (raw === "bullish" || raw === "bearish") return raw;
+  return "neutral";
+}
+
+function toResult(
+  signals: RiskSignal[],
+  status: RiskSignalResult["freshnessStatus"],
+  counts: RiskSignalResult["inputCounts"],
+  reason?: string,
+): RiskSignalResult {
+  return {
+    signals,
+    staleSignals: [],
+    generatedAt: new Date().toISOString(),
+    sourceWindow: RISK_SIGNAL_SOURCE_WINDOW,
+    inputCounts: counts,
+    cached: false,
+    stale: false,
+    freshnessStatus: status,
+    diagnostics: reason ? { reason } : undefined,
+  };
+}
+
+function buildFallbackSignals(catalysts: CatalystCandidate[]): RiskSignal[] {
+  const now = new Date().toISOString();
+  return catalysts.slice(0, 5).map((row, index) => {
+    const score = Math.min(10, Math.max(row.ivScore, row.macroLevel * 2));
+    const sourceTag =
+      row.macroLevel >= 3 ? "macro-pressure" : row.sentiment || "riskflow";
+    return {
+      id: `riskflow-${index + 1}-${row.headline
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 24)}`,
+      title: row.headline.slice(0, 96),
+      summary: `IV ${row.ivScore.toFixed(1)} / ML${row.macroLevel} catalyst`,
+      analysis:
+        "Pending Agentic Desk refinement. This catalyst met the desk-watch threshold and needs Herald/CAO synthesis before it should be treated as a full Risk Signal.",
+      direction: normalizeDirection(row.sentiment),
+      refinementStatus: "pending-refinement",
+      score: Number(score.toFixed(1)),
+      severity: severityFromScore(score),
+      source: "catalyst-watch",
+      relatedHeadlines: [row.headline],
+      narrativeThreads: ["riskflow", sourceTag].filter(Boolean).slice(0, 2),
+      generatedAt: now,
+    };
+  });
+}
+
+export async function generateRiskSignals(): Promise<RiskSignalResult> {
   const [bulletins, catalysts] = await Promise.all([
     fetchRecentBulletins(),
     fetchHighSeverityCatalysts(),
   ]);
+  const counts = { bulletins: bulletins.length, catalysts: catalysts.length };
 
   const systemicContext = getSystemicContext();
 
   if (bulletins.length === 0 && catalysts.length === 0) {
     log.info("No bulletins or catalysts — returning empty risk signals");
-    return [];
+    return toResult([], "empty", counts, "no_recent_signal_inputs");
   }
 
   const systemPrompt = `You are Herald, the news & sentiment analyst at Priced In Capital. You refine raw risk data into structured Risk Signals for the trading desk. Output ONLY valid JSON — no markdown fencing, no commentary.`;
@@ -108,8 +171,8 @@ export async function generateRiskSignals(): Promise<RiskSignal[]> {
 ANALYST BULLETINS (last 24h):
 ${bulletins.length > 0 ? bulletins.join("\n") : "(none)"}
 
-HIGH-SEVERITY CATALYSTS (last 12h, macro_level >= 3):
-${catalysts.length > 0 ? catalysts.join("\n") : "(none)"}
+HIGH-SEVERITY CATALYSTS (last 24h, IV >= 6.5 or macro_level >= 2):
+${catalysts.length > 0 ? formatCatalysts(catalysts).join("\n") : "(none)"}
 
 SYSTEMIC RISK CONTEXT:
 ${systemicContext}
@@ -121,6 +184,7 @@ Return a JSON array with this exact structure:
     "title": "<clear concise title>",
     "summary": "<one-liner summary>",
     "analysis": "<2-4 sentence deep analysis>",
+    "direction": "<bullish|bearish|neutral>",
     "score": <0-10 float>,
     "source": "<bulletin|catalyst-watch|risk-detector>",
     "relatedHeadlines": ["<headline1>", "<headline2>"],
@@ -130,6 +194,7 @@ Return a JSON array with this exact structure:
 
 Rules:
 - score 0-10: market impact potential (0=negligible, 10=massive)
+- direction must reflect the catalyst's likely market effect, not severity; use "neutral" when the evidence is mixed or insufficient
 - source: "bulletin" if derived from analyst bulletins, "catalyst-watch" if from catalysts, "risk-detector" if from systemic context
 - Deduplicate overlapping signals — merge related items into one signal
 - relatedHeadlines: 1-3 original headlines that informed this signal
@@ -140,7 +205,7 @@ Rules:
     const result = await invokeAgent({
       systemPrompt,
       userPrompt,
-      provider: "nous",
+      provider: "deepseek-direct",
     });
 
     const raw = result.text
@@ -154,28 +219,38 @@ Rules:
       log.warn("Risk signal AI response had no JSON array", {
         preview: raw.slice(0, 200),
       });
-      return [];
+      return toResult(
+        buildFallbackSignals(catalysts),
+        catalysts.length > 0 ? "fresh" : "generation-error",
+        counts,
+        "ai_response_missing_json",
+      );
     }
 
     const parsed = JSON.parse(raw.slice(arrayStart, arrayEnd + 1)) as Array<
       Record<string, unknown>
     >;
-    if (!Array.isArray(parsed) || parsed.length === 0) return [];
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return toResult(buildFallbackSignals(catalysts), "fresh", counts);
+    }
 
     const now = new Date().toISOString();
-    return parsed.map((item) => {
+    const signals: RiskSignal[] = parsed.map((item) => {
       const score = Math.min(10, Math.max(0, Number(item.score) || 0));
+      const source = String(item.source);
       return {
         id: String(item.id || crypto.randomUUID().slice(0, 8)),
         title: String(item.title || "Untitled Signal"),
         summary: String(item.summary || ""),
         analysis: String(item.analysis || ""),
+        direction: normalizeDirection(item.direction),
+        refinementStatus: "agentic",
         score: Number(score.toFixed(1)),
         severity: severityFromScore(score),
         source: (["bulletin", "catalyst-watch", "risk-detector"].includes(
-          String(item.source),
+          source,
         )
-          ? String(item.source)
+          ? source
           : "catalyst-watch") as RiskSignal["source"],
         relatedHeadlines: Array.isArray(item.relatedHeadlines)
           ? (item.relatedHeadlines as string[]).slice(0, 3)
@@ -186,21 +261,43 @@ Rules:
         generatedAt: now,
       };
     });
+    return toResult(signals, "fresh", counts);
   } catch (err) {
     log.error("Risk signal generation failed", { error: String(err) });
-    return [];
+    return toResult(
+      buildFallbackSignals(catalysts),
+      catalysts.length > 0 ? "fresh" : "generation-error",
+      counts,
+      "ai_refinement_failed",
+    );
   }
 }
 
-export async function getRiskSignals(): Promise<RiskSignal[]> {
-  if (Date.now() - cachedAt < CACHE_TTL_MS && cachedSignals.length > 0) {
-    return cachedSignals;
+export async function getRiskSignals(): Promise<RiskSignalResult> {
+  if (
+    cachedResult &&
+    cachedResult.signals.length > 0 &&
+    Date.now() - new Date(cachedResult.generatedAt).getTime() < CACHE_TTL_MS
+  ) {
+    return { ...cachedResult, cached: true };
   }
 
-  const signals = await generateRiskSignals();
-  if (signals.length > 0) {
-    cachedSignals = signals;
-    cachedAt = Date.now();
+  const result = await generateRiskSignals();
+  if (result.signals.length > 0) {
+    cachedResult = result;
+    return result;
   }
-  return signals.length > 0 ? signals : cachedSignals;
+
+  const staleSignals = cachedResult?.signals ?? [];
+  return {
+    ...result,
+    staleSignals,
+    stale: staleSignals.length > 0,
+    freshnessStatus:
+      staleSignals.length > 0 ? "stale-cache" : result.freshnessStatus,
+    diagnostics: {
+      ...result.diagnostics,
+      staleGeneratedAt: cachedResult?.generatedAt ?? null,
+    },
+  };
 }

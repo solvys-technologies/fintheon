@@ -1,4 +1,4 @@
-// [claude-code 2026-04-16] Boot-time restore of AgentDesk running state from latest Aquarium simulation.
+// [claude-code 2026-04-16] Boot-time restore of AgentDesk running state from latest ArbitrumChamber simulation.
 // Without this, agentDeskComponent in the IV score is always 0 after backend restart.
 
 import { getSupabaseClient } from "../../config/supabase.js";
@@ -17,7 +17,7 @@ const ALL_CATEGORIES: AgentDeskRiskCategory[] = [
 ];
 
 /**
- * Restore AgentDesk running state from the latest Aquarium simulation in DB.
+ * Restore AgentDesk running state from the latest ArbitrumChamber simulation in DB.
  * Called once at boot — if no recent simulation exists, running state stays null (score 0).
  */
 export async function restoreAgentDeskRunningState(): Promise<void> {

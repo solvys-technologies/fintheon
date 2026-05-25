@@ -14,10 +14,8 @@ interface TextPartProps {
 
 export function TextPartRenderer({ text, isStreaming }: TextPartProps) {
   return (
-    <div className="text-sm text-zinc-300">
-      <div className="prose prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-black/50 prose-pre:border prose-pre:border-gray-800 prose-sm">
-        <StreamdownChat content={text} streaming={isStreaming} />
-      </div>
+    <div className="fintheon-chat-markdown text-sm text-zinc-300">
+      <StreamdownChat content={text} streaming={isStreaming} />
       {isStreaming && (
         <span className="inline-block w-2 h-4 bg-[var(--fintheon-accent)] animate-pulse ml-0.5" />
       )}

@@ -89,12 +89,14 @@ async function runDispatch(job: DispatchJob): Promise<void> {
       // Non-fatal — brief is still stored in Supabase
     }
 
-    // Fire-and-forget: trigger AgentDesk Aquarium after every brief
+    // Fire-and-forget: trigger AgentDesk ArbitrumChamber after every brief
     startPrediction(
       { lanes: [], catalysts: [], ropes: [] },
       undefined,
       "full-brief",
-    ).catch((err) => log.warn(`Post-brief Aquarium trigger failed:`, err));
+    ).catch((err) =>
+      log.warn(`Post-brief ArbitrumChamber trigger failed:`, err),
+    );
 
     log.info(`${job.briefType} dispatch complete`, {
       supabaseId: result.supabaseId,
@@ -245,13 +247,13 @@ export async function catchUpMissedBriefs(): Promise<void> {
         /* non-fatal */
       }
 
-      // Fire-and-forget: trigger AgentDesk Aquarium after catch-up brief
+      // Fire-and-forget: trigger AgentDesk ArbitrumChamber after catch-up brief
       startPrediction(
         { lanes: [], catalysts: [], ropes: [] },
         undefined,
         "full-brief",
       ).catch((err) =>
-        log.warn(`Catch-up post-brief Aquarium trigger failed:`, err),
+        log.warn(`Catch-up post-brief ArbitrumChamber trigger failed:`, err),
       );
 
       log.info(`Catch-up: ${job.briefType} generated`, {

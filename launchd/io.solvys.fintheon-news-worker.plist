@@ -8,7 +8,7 @@
   <array>
     <string>/Users/tifos/.bun/bin/bun</string>
     <string>run</string>
-    <string>src/workers/news-worker/index.ts</string>
+    <string>src/workers/riskflow-worker/index.ts</string>
   </array>
   <key>WorkingDirectory</key>
   <string>/Users/tifos/Documents/Codebases/fintheon/backend-hono</string>
@@ -30,7 +30,7 @@
     <key>NEWS_WORKER_PORT</key>
     <string>8082</string>
     <key>FLAG_NEWS_WORKER_WRITES_RISKFLOW</key>
-    <string>false</string>
+    <string>true</string>
     <key>PATH</key>
     <string>/Users/tifos/.bun/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
   </dict>
