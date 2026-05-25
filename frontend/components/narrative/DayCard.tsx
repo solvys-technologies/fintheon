@@ -14,8 +14,6 @@ import { useSettings } from "../../contexts/SettingsContext";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { FadingRuler } from "../shared/FadingRuler";
 import { AgenticFeedbackControls } from "../shared/AgenticFeedbackControls";
-import { DayPlanChevronNav } from "./DayPlanChevronNav";
-import { DeskPlanCustomForm } from "./DeskPlanCustomForm";
 import { PriceRevealTag } from "./PriceRevealTag";
 import { formatEasternClockRange } from "../../lib/eastern-time-format";
 import type { DayPlanWindow, DriftKind } from "../../types/day-plan";
@@ -124,28 +122,19 @@ export function DayCard({
   const { data: todayData, isLoading: todayLoading } = useDayPlan();
   const {
     currentPlan: multiWeekPlan,
-    totalPlans,
-    currentPlanIndex,
-    goNext: goNextPlan,
-    goPrev: goPrevPlan,
     isLoading: multiWeekLoading,
   } = useDayPlanMultiWeek();
   const { data: drift } = useDriftStatus();
   const {
-    lockoutDefaultDuration,
     lockoutAutoBlockOutsideTradingWindow,
     lockoutAutoReleaseMinutes,
   } = useSettings();
   const {
     state: lockoutState,
-    lock: lockoutLock,
-    unlock: lockoutUnlock,
     lockUntil: lockoutLockUntil,
   } = useLockout();
 
   const [currentWindowIndex, setCurrentWindowIndex] = useState(0);
-  const [shimmering, setShimmering] = useState(false);
-  const [countryFilter, setCountryFilter] = useState("ALL");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
   const autoLockKeyRef = useRef<string | null>(null);
 
@@ -163,28 +152,7 @@ export function DayCard({
       }),
     [plan?.windows],
   );
-  const countries = useMemo(
-    () => [
-      ...new Set(
-        allWindows
-          .map((window) => window.eventCountry ?? window.econForecast?.eventCountry ?? "")
-          .filter(Boolean),
-      ),
-    ],
-    [allWindows],
-  );
-  const windows = useMemo(
-    () =>
-      countryFilter === "ALL"
-        ? allWindows
-        : allWindows.filter(
-            (window) =>
-              (window.eventCountry ?? window.econForecast?.eventCountry ?? "")
-                .toUpperCase()
-                .trim() === countryFilter,
-          ),
-    [allWindows, countryFilter],
-  );
+  const windows = allWindows;
   const windowSignature = windows
     .map((window) => `${window.id}:${window.startTime}:${window.endTime}`)
     .join("|");
@@ -211,10 +179,6 @@ export function DayCard({
   const baseSurface = bare
     ? "relative"
     : "relative bg-[var(--fintheon-surface)] rounded-lg p-3";
-  const lockoutButtonTitle =
-    lockoutState.locked && lockoutState.remaining
-      ? `${Math.round(lockoutState.remaining / 60)}m left`
-      : undefined;
   const toggleExpandedRow = (key: string) => {
     setExpandedRows((prev) => {
       const next = new Set(prev);
@@ -265,7 +229,7 @@ export function DayCard({
       aria-label="Day card"
       data-tour-target="day-card"
     >
-      <header className="flex items-center justify-between gap-3 mb-1">
+      <header className="flex items-center gap-3 mb-1">
         <div className="min-w-0">
           <div className="flex items-baseline gap-2">
             <span
@@ -297,69 +261,6 @@ export function DayCard({
               {dateLabel}
             </span>
           )}
-        </div>
-        <div className="flex items-center gap-2">
-          {!hideStreak && (
-            <>
-              <DeskPlanCustomForm
-                countries={countries}
-                selectedCountry={countryFilter}
-                onCountryChange={setCountryFilter}
-              />
-              <DayPlanChevronNav
-                currentIndex={currentPlanIndex}
-                totalPlans={totalPlans}
-                onPrev={goPrevPlan}
-                onNext={goNextPlan}
-              />
-            </>
-          )}
-          <button
-            onClick={() => {
-              const action = lockoutState.locked
-                ? lockoutUnlock()
-                : lockoutLock(lockoutDefaultDuration);
-              setShimmering(true);
-              setTimeout(() => setShimmering(false), 600);
-              return action;
-            }}
-            title={lockoutButtonTitle}
-            className={`desk-plan-lock-btn inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] uppercase tracking-[0.12em] cursor-pointer transition-colors ${shimmering ? "shimmering" : ""}`}
-            style={{
-              fontFamily: "var(--font-data, monospace)",
-              color: lockoutState.locked
-                ? "rgba(199, 159, 74, 0.9)"
-                : "var(--fintheon-muted, #908774)",
-              border: `1px solid ${lockoutState.locked ? "rgba(199, 159, 74, 0.3)" : "rgba(255, 255, 255, 0.08)"}`,
-              borderColor: "transparent",
-              background: "transparent",
-            }}
-          >
-            <svg
-              width="10"
-              height="10"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              {lockoutState.locked ? (
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              ) : (
-                <>
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 9 0v4" />
-                </>
-              )}
-              {lockoutState.locked && (
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              )}
-            </svg>
-            {lockoutState.locked ? "LOCK" : "UNLOCK"}
-          </button>
         </div>
       </header>
 

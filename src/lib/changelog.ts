@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-25T12:18:00-04:00",
+    agent: "codex",
+    summary:
+      "Desk Plan widget closeout: canonical desktop DayCard header now stays date-only with action chrome removed, and the mobile Desk Plan card mirrors the same compact Desk Plan plus date header.",
+    files: [
+      "frontend/components/narrative/DayCard.tsx",
+      "mobile/components/home/MobileDeskPlan.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-21T01:00:00",
     agent: "claude-code",
     summary:

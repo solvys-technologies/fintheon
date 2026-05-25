@@ -12,6 +12,13 @@ function fmtTradingWindow(w: DayPlanWindow): string {
   return `${w.startTime}-${w.endTime} ET`;
 }
 
+function formatDateLabel(date: string): string {
+  return new Date(`${date}T12:00:00`).toLocaleDateString([], {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 type ScenarioTone = "neutral" | "bullish" | "bearish";
 
 function DotoNum({
@@ -147,7 +154,6 @@ export function MobileDeskPlan() {
   const [planIndex, setPlanIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [currentWindowIndex, setCurrentWindowIndex] = useState(0);
-  const [lockoutLocked, setLockoutLocked] = useState(false);
 
   const fetchPlan = useCallback(async () => {
     setLoading(true);
@@ -183,26 +189,6 @@ export function MobileDeskPlan() {
   }, [fetchPlan]);
 
   const plan = allPlans[planIndex] ?? null;
-  const totalPlans = allPlans.length;
-
-  useEffect(() => {
-    async function pollLockout() {
-      try {
-        const res = await fetch(`${API_BASE}/api/lockout/status`, {
-          credentials: "include",
-        });
-        if (res.ok) {
-          const data = (await res.json()) as { locked: boolean };
-          setLockoutLocked(!!data.locked);
-        }
-      } catch {
-        // silently retry
-      }
-    }
-    pollLockout();
-    const id = window.setInterval(pollLockout, 10_000);
-    return () => window.clearInterval(id);
-  }, []);
 
   const themeText = plan?.deskTheme ?? null;
   const eventName = plan?.eventName ?? null;
@@ -239,79 +225,19 @@ export function MobileDeskPlan() {
 
   return (
     <div style={shellStyle}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
+      <div>
         <Label>DESK PLAN</Label>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {totalPlans > 1 && (
-            <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <button
-                onClick={() => setPlanIndex((i) => Math.max(0, i - 1))}
-                disabled={planIndex <= 0}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: planIndex > 0 ? "pointer" : "default",
-                  opacity: planIndex > 0 ? 0.6 : 0.2,
-                  padding: 4,
-                  color: "var(--accent)",
-                  fontSize: 14,
-                  lineHeight: 1,
-                }}
-              >
-                &#8249;
-              </button>
-              <span
-                style={{
-                  fontFamily: "var(--font-data, monospace)",
-                  fontSize: 9,
-                  color: "var(--text-secondary)",
-                  minWidth: 24,
-                  textAlign: "center",
-                }}
-              >
-                {planIndex + 1}/{totalPlans}
-              </span>
-              <button
-                onClick={() =>
-                  setPlanIndex((i) => Math.min(totalPlans - 1, i + 1))
-                }
-                disabled={planIndex >= totalPlans - 1}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: planIndex < totalPlans - 1 ? "pointer" : "default",
-                  opacity: planIndex < totalPlans - 1 ? 0.6 : 0.2,
-                  padding: 4,
-                  color: "var(--accent)",
-                  fontSize: 14,
-                  lineHeight: 1,
-                }}
-              >
-                &#8250;
-              </button>
-            </div>
-          )}
-          <span
-            style={{
-              fontFamily: "var(--font-data, monospace)",
-              fontSize: 9,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              color: lockoutLocked
-                ? "var(--accent, #c79f4a)"
-                : "var(--text-secondary)",
-              opacity: lockoutLocked ? 1 : 0.5,
-            }}
-          >
-            {lockoutLocked ? "LOCKED" : "OPEN"}
-          </span>
-        </div>
+        <span
+          style={{
+            display: "block",
+            marginTop: 2,
+            fontFamily: "var(--font-data, monospace)",
+            fontSize: 10,
+            color: "var(--text-secondary)",
+          }}
+        >
+          {formatDateLabel(plan.date)}
+        </span>
       </div>
 
       {themeText && (
