@@ -52,6 +52,7 @@ export const changelog: ChangelogEntry[] = [
       "frontend/components/narrative/NarrativeInputBar.tsx",
       "frontend/components/narrative/NarrativeSensemakingComposer.tsx",
       "frontend/components/narrative/SanctumChart.tsx",
+      "frontend/components/narrative/CatalystModal.tsx",
       "frontend/components/narrative/narrative-selection.ts",
       "frontend/components/memory/FileRoomSectionList.tsx",
       "frontend/contexts/SettingsContext.tsx",
