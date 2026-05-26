@@ -62,6 +62,15 @@ export function ProxVoiceForum() {
                     ? "opacity-0"
                     : "fintheon-fade-in opacity-100"
                 }`}
+                style={{
+                  border:
+                    "1px solid color-mix(in srgb, var(--fintheon-accent) 14%, transparent)",
+                  boxShadow:
+                    participant.isSpeaking ||
+                    (participant.audioLevel ?? 0) > 0.08
+                      ? `0 0 ${8 + Math.round((participant.audioLevel ?? 0.4) * 24)}px color-mix(in srgb, var(--fintheon-accent) ${12 + Math.round((participant.audioLevel ?? 0.4) * 24)}%, transparent)`
+                      : "none",
+                }}
               >
                 <div className="flex items-center gap-3">
                   <button

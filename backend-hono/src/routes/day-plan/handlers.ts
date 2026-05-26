@@ -556,6 +556,15 @@ export async function handlePostCaoEveningReview(
     endTime:
       typeof w.end_time === "string" ? w.end_time.slice(0, 5) : w.end_time,
     eventName: w.event_name ?? null,
+    importance:
+      w.importance ??
+      w.impact ??
+      w.severity ??
+      w.econ_forecast?.importance ??
+      w.econ_forecast?.impact ??
+      null,
+    impact: w.impact ?? w.econ_forecast?.impact ?? null,
+    severity: w.severity ?? w.econ_forecast?.severity ?? null,
     econForecast: w.econ_forecast ?? null,
   }));
 

@@ -1,6 +1,13 @@
 // S38-T1: Expanded MessageQueue — drag-reorder, Send All/One, session storage
 import { useState, useEffect, useCallback, useRef } from "react";
-import { X, Edit3, Check, ListOrdered, Send, GripVertical } from "lucide-react";
+import {
+  X,
+  PencilLine,
+  Check,
+  ListOrdered,
+  Send,
+  GripVertical,
+} from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -184,7 +191,7 @@ export function MessageQueue({
                     className="text-gray-500 hover:text-[var(--fintheon-accent)] transition-colors"
                     title="Edit"
                   >
-                    <Edit3 size={12} />
+                    <PencilLine size={12} />
                   </button>
                   <button
                     onClick={() => onRemove(msg.id)}

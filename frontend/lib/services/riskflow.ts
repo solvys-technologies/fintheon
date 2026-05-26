@@ -211,6 +211,24 @@ export class RiskFlowService {
     return this.client.post("/api/riskflow/phrases", data);
   }
 
+  async refinePhrase(data: {
+    phrase: string;
+    intelligenceLevel?: string;
+  }): Promise<{ phrase: string; degraded?: boolean }> {
+    return this.client.post("/api/riskflow/phrases/refine", data);
+  }
+
+  async updatePhrase(
+    id: number,
+    data: {
+      phrase: string;
+      matchType?: "contains" | "exact";
+      repeating?: boolean;
+    },
+  ): Promise<{ phrase: WatchlistPhrase; removedBias: string[] }> {
+    return this.client.patch(`/api/riskflow/phrases/${id}`, data);
+  }
+
   async deletePhrase(id: number): Promise<{ ok: boolean }> {
     return this.client.delete(`/api/riskflow/phrases/${id}`);
   }

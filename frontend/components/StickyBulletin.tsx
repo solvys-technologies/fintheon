@@ -2,16 +2,16 @@
 // [claude-code 2026-04-11] v2: Inline Catalyst Watch, Hot Times dropdown, Quick Clock
 // [claude-code 2026-04-11] v3: Extracted hook to useStickyBulletin.ts
 // [claude-code 2026-04-17] v4: Drag migrated to useDraggable hook (pointer events + rAF, grip-only)
-import { useRef, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  BookOpen,
   ClipboardList,
   Clock705,
-  CalendarDays,
+  Eye,
   StickyNote,
   Plus,
   X,
-  Crosshair,
   Flame,
   ChevronDown,
   ChevronUp,
@@ -19,9 +19,10 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useStickyBulletin, DAY_LABELS } from "../hooks/useStickyBulletin";
-import { useDraggable } from "../hooks/useDraggable";
-import { DayCardBulletinTab } from "./strategium/DayCardBulletinTab";
-import { BulletinWatchlistTab } from "./bulletin/BulletinWatchlistTab";
+import { useDayPlanMultiWeek } from "../hooks/useDayPlanWeek";
+import { BulletinDeskPlanTab } from "./bulletin/BulletinDeskPlanTab";
+import { WatchTagsTab } from "./bulletin/WatchTagsTab";
+import { QueuedDeskEventFeed } from "./desk/QueuedDeskEventFeed";
 
 interface StickyBulletinProps {
   open: boolean;
@@ -30,11 +31,11 @@ interface StickyBulletinProps {
 }
 
 const SECTIONS = [
-  { id: "idea" as const, icon: Crosshair, label: "Catalyst" },
+  { id: "desk" as const, icon: BookOpen, label: "Desk" },
   { id: "antilag" as const, icon: Clock705, label: "Antilag" },
-  { id: "event" as const, icon: CalendarDays, label: "Event" },
+  { id: "watch" as const, icon: Eye, label: "Watch" },
   { id: "notes" as const, icon: StickyNote, label: "Notes" },
-  { id: "daycard" as const, icon: TrendingUp, label: "Day Card" },
+  { id: "upcoming" as const, icon: TrendingUp, label: "Upcoming" },
 ];
 
 export function StickyBulletin({
@@ -43,26 +44,31 @@ export function StickyBulletin({
   anchorRef,
 }: StickyBulletinProps) {
   const b = useStickyBulletin(open, anchorRef);
-  const gripRef = useRef<HTMLButtonElement>(null);
-  const draggable = useDraggable({
-    elementRef: b.panelRef,
-    handleRef: gripRef,
-    bounds: "viewport",
-    disabled: !open,
-  });
+  const [manualPos, setManualPos] = useState<{
+    top: number;
+    right: number;
+  } | null>(null);
+  const [drag, setDrag] = useState<{
+    x: number;
+    y: number;
+    top: number;
+    right: number;
+  } | null>(null);
 
-  // Reset drag transform when popup closes so next open re-anchors to the anchor button
   useEffect(() => {
-    if (!open) draggable.reset();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!open) {
+      setManualPos(null);
+      setDrag(null);
+    }
   }, [open]);
 
-  if (!open || !b.popupPos) return null;
+  const panelPosition = manualPos ?? b.popupPos;
+  if (!open || !panelPosition) return null;
 
   const posStyle = {
     position: "fixed" as const,
-    top: b.popupPos.top,
-    right: b.popupPos.right,
+    top: panelPosition.top,
+    right: panelPosition.right,
     zIndex: 9998,
   };
 
@@ -72,6 +78,15 @@ export function StickyBulletin({
       data-bulletin-panel
       style={posStyle}
       className="w-[360px] animate-in fade-in slide-in-from-top-2 duration-200"
+      onMouseMove={(event) => {
+        if (!drag) return;
+        setManualPos({
+          top: Math.max(12, drag.top + event.clientY - drag.y),
+          right: Math.max(12, drag.right - (event.clientX - drag.x)),
+        });
+      }}
+      onMouseUp={() => setDrag(null)}
+      onMouseLeave={() => setDrag(null)}
     >
       <div
         className="rounded-xl overflow-hidden"
@@ -88,15 +103,22 @@ export function StickyBulletin({
       >
         {/* Header */}
         <div
-          className="flex items-center justify-between px-4 py-3"
+          className="flex cursor-move items-center justify-between px-4 py-3"
           style={{
             borderBottom:
               "1px solid color-mix(in srgb, var(--fintheon-accent) 12%, transparent)",
           }}
+          onMouseDown={(event) =>
+            setDrag({
+              x: event.clientX,
+              y: event.clientY,
+              top: panelPosition.top,
+              right: panelPosition.right,
+            })
+          }
         >
           <div className="flex items-center gap-2">
             <button
-              ref={gripRef}
               className="cursor-grab active:cursor-grabbing touch-none p-0.5"
               title="Drag"
               aria-label="Drag bulletin"
@@ -121,6 +143,7 @@ export function StickyBulletin({
             {b.showQuickClock && (
               <button
                 onClick={b.handleQuickClock}
+                onMouseDown={(event) => event.stopPropagation()}
                 className="p-1 rounded-md hover:bg-[var(--fintheon-accent)]/10 transition-all active:scale-90"
                 style={{
                   color: b.quickClockPulse
@@ -140,6 +163,7 @@ export function StickyBulletin({
             )}
             <button
               onClick={onClose}
+              onMouseDown={(event) => event.stopPropagation()}
               className="p-1 rounded-md hover:bg-white/5 transition-colors"
               style={{ color: "var(--fintheon-muted)" }}
             >
@@ -179,8 +203,8 @@ export function StickyBulletin({
 
         {/* Content area */}
         <div className="p-3 min-h-[200px] max-h-[420px] overflow-y-auto custom-scrollbar">
-          {/* ═══ Section 1: Catalyst Watch ═══ */}
-          {b.activeSection === "idea" && <BulletinWatchlistTab />}
+          {/* ═══ Section 1: Desk Plan ═══ */}
+          {b.activeSection === "desk" && <BulletinDeskPlanTab />}
 
           {/* ═══ Section 2: Antilag Times ═══ */}
           {b.activeSection === "antilag" && (
@@ -553,83 +577,8 @@ export function StickyBulletin({
             </div>
           )}
 
-          {/* ═══ Section 3: Event of the Week ═══ */}
-          {b.activeSection === "event" && (
-            <div className="space-y-3 animate-in fade-in duration-150">
-              <div className="flex items-center justify-between">
-                <p
-                  className="text-[11px]"
-                  style={{ color: "var(--fintheon-muted)" }}
-                >
-                  Your weekly forecast or key event to monitor.
-                </p>
-                {!b.editingEvent && b.eventOfWeek && (
-                  <button
-                    onClick={() => b.setEditingEvent(true)}
-                    className="text-[9px] px-2 py-0.5 rounded transition-colors"
-                    style={{
-                      color: "var(--fintheon-accent)",
-                      background:
-                        "color-mix(in srgb, var(--fintheon-accent) 10%, transparent)",
-                    }}
-                  >
-                    Edit
-                  </button>
-                )}
-              </div>
-
-              {b.editingEvent || !b.eventOfWeek ? (
-                <div className="space-y-2">
-                  <textarea
-                    value={b.eventOfWeek}
-                    onChange={(e) => b.handleEventChange(e.target.value)}
-                    onFocus={() => b.setEditingEvent(true)}
-                    onBlur={() =>
-                      setTimeout(() => b.setEditingEvent(false), 300)
-                    }
-                    placeholder="e.g. FOMC rate decision Wednesday 2pm — expecting hawkish hold, watching for dot plot shifts..."
-                    rows={4}
-                    className="w-full bg-transparent border rounded-lg px-3 py-2 text-[12px] leading-relaxed outline-none resize-none placeholder:text-gray-600 focus:border-[var(--fintheon-accent)]/30 transition-colors"
-                    style={{
-                      borderColor:
-                        "color-mix(in srgb, var(--fintheon-accent) 15%, transparent)",
-                      color: "var(--fintheon-text)",
-                      fontFamily: "var(--font-body)",
-                    }}
-                  />
-                  <div className="flex justify-end">
-                    <span
-                      className="text-[9px] italic"
-                      style={{ color: "var(--fintheon-muted)", opacity: 0.6 }}
-                    >
-                      Auto-saves
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className="rounded-lg p-3 cursor-pointer transition-all duration-200 hover:bg-white/[0.02]"
-                  onClick={() => b.setEditingEvent(true)}
-                  style={{
-                    background:
-                      "color-mix(in srgb, var(--fintheon-bg) 50%, transparent)",
-                    border:
-                      "1px solid color-mix(in srgb, var(--fintheon-accent) 10%, transparent)",
-                  }}
-                >
-                  <p
-                    className="text-[12px] leading-relaxed whitespace-pre-wrap"
-                    style={{
-                      color: "var(--fintheon-text)",
-                      fontFamily: "var(--font-body)",
-                    }}
-                  >
-                    {b.eventOfWeek}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
+          {/* ═══ Section 3: WatchTags ═══ */}
+          {b.activeSection === "watch" && <WatchTagsTab />}
 
           {/* ═══ Section 4: Trading Notes ═══ */}
           {b.activeSection === "notes" && (
@@ -709,8 +658,8 @@ export function StickyBulletin({
             </div>
           )}
 
-          {/* ═══ Section 5: Day Card preview (S45-T2) ═══ */}
-          {b.activeSection === "daycard" && <DayCardBulletinTab />}
+          {/* ═══ Section 5: Upcoming Desk Queue ═══ */}
+          {b.activeSection === "upcoming" && <UpcomingBulletinTab />}
         </div>
 
         {/* Footer — subtle accent line */}
@@ -724,5 +673,20 @@ export function StickyBulletin({
       </div>
     </div>,
     document.body,
+  );
+}
+
+function UpcomingBulletinTab() {
+  const { allPlans, isLoading, error } = useDayPlanMultiWeek();
+
+  return (
+    <QueuedDeskEventFeed
+      plans={allPlans}
+      isLoading={isLoading}
+      error={error ? "Queued desk plans unavailable." : null}
+      compact
+      maxItems={8}
+      className="max-h-[340px]"
+    />
   );
 }

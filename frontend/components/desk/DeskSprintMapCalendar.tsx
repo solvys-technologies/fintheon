@@ -1,4 +1,10 @@
-import { CalendarDays, FileText, Route, type LucideIcon } from "lucide-react";
+import {
+  CalendarDays,
+  FileText,
+  Map as MapIcon,
+  Route,
+  type LucideIcon,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { DAY_PLAN_REFETCH_EVENT } from "../../hooks/useDayPlan";
 import type { DayPlan } from "../../types/day-plan";
@@ -14,7 +20,7 @@ import {
   sortPlans,
 } from "../executive/DeskPlanMapUtils";
 
-type DeskMapView = "map" | "calendar" | "briefing";
+type DeskMapView = "sprint" | "calendar" | "briefing";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const MULTI_REFETCH_EVENT = "fintheon:day-plan-multi-refetch";
@@ -26,7 +32,8 @@ export function DeskSprintMapCalendar({
   plans: DayPlan[];
   isLoading: boolean;
 }) {
-  const [view, setView] = useState<DeskMapView>("map");
+  const [view, setView] = useState<DeskMapView>("sprint");
+  const [transitionDirection, setTransitionDirection] = useState(0);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const sortedPlans = useMemo(() => sortPlans(plans), [plans]);
@@ -48,6 +55,11 @@ export function DeskSprintMapCalendar({
   useEffect(() => {
     setSegmentIndex(findNextDeskPlanSegmentIndex(segments));
   }, [segments]);
+
+  const handleSegmentIndexChange = (nextIndex: number) => {
+    setTransitionDirection(nextIndex >= segmentIndex ? 1 : -1);
+    setSegmentIndex(nextIndex);
+  };
 
   const handleDelete = async (plan: DayPlan) => {
     if (plan.id.startsWith("plan-") || plan.id.startsWith("mem-")) return;
@@ -102,11 +114,12 @@ export function DeskSprintMapCalendar({
           <p className="text-[11px] text-[var(--fintheon-muted)]/45">
             [LOADING...]
           </p>
-        ) : view === "map" ? (
+        ) : view === "sprint" ? (
           <DeskPlanSprintTimeline
             plans={sortedPlans}
             segments={segments}
             segmentIndex={segmentIndex}
+            transitionDirection={transitionDirection}
             deletingId={deletingId}
             onDelete={handleDelete}
           />
@@ -122,11 +135,11 @@ export function DeskSprintMapCalendar({
           />
         )}
       </div>
-      {view !== "briefing" ? (
+      {view === "sprint" ? (
         <DeskPlanRelativeScrubber
           segments={segments}
           segmentIndex={segmentIndex}
-          onSegmentIndexChange={setSegmentIndex}
+          onSegmentIndexChange={handleSegmentIndexChange}
         />
       ) : null}
     </section>
@@ -141,24 +154,24 @@ function DeskSprintViewToggle({
   onViewChange: (view: DeskMapView) => void;
 }) {
   return (
-    <div className="inline-flex h-8 items-center gap-1 border-b border-[var(--fintheon-accent)]/10">
+    <div className="inline-flex h-8 w-[282px] items-center justify-between gap-1">
       <ToggleButton
-        icon={Route}
-        label="Map"
-        isSelected={view === "map"}
-        onClick={() => onViewChange("map")}
+        icon={FileText}
+        label="Briefing"
+        isSelected={view === "briefing"}
+        onClick={() => onViewChange("briefing")}
+      />
+      <ToggleButton
+        icon={MapIcon}
+        label="Sprint"
+        isSelected={view === "sprint"}
+        onClick={() => onViewChange("sprint")}
       />
       <ToggleButton
         icon={CalendarDays}
         label="Calendar"
         isSelected={view === "calendar"}
         onClick={() => onViewChange("calendar")}
-      />
-      <ToggleButton
-        icon={FileText}
-        label="Briefing"
-        isSelected={view === "briefing"}
-        onClick={() => onViewChange("briefing")}
       />
     </div>
   );

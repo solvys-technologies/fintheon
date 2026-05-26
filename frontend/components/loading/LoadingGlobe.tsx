@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import * as THREE from "three";
 import { readLoadingThemeColors } from "./loading-globe-config";
@@ -30,6 +30,7 @@ export function LoadingGlobe({
 }: LoadingGlobeProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const phaseRef = useRef<LoadingGlobePhase>(phase);
+  const [webglFailed, setWebglFailed] = useState(false);
 
   useEffect(() => {
     phaseRef.current = phase;
@@ -44,11 +45,26 @@ export function LoadingGlobe({
     const primaryColor = new THREE.Color(colors.primary);
     const bgColor = new THREE.Color(colors.bg);
     const starGold = new THREE.Color("#d3ad52").lerp(primaryColor, 0.34);
-    const renderer = new THREE.WebGLRenderer({
-      antialias: false,
-      alpha: true,
-      powerPreference: "high-performance",
-    });
+    if (!canCreateWebGLContext()) {
+      setWebglFailed(true);
+      return;
+    }
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        antialias: false,
+        alpha: true,
+        powerPreference: "high-performance",
+      });
+      setWebglFailed(false);
+    } catch (error) {
+      console.warn(
+        "[LoadingGlobe] WebGL unavailable, using CSS fallback",
+        error,
+      );
+      setWebglFailed(true);
+      return;
+    }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.domElement.style.position = "absolute";
@@ -178,9 +194,52 @@ export function LoadingGlobe({
       className={className}
       aria-hidden="true"
       style={{ position: "relative", overflow: "hidden", ...style }}
-    />
+    >
+      {webglFailed ? (
+        <div style={fallbackGlobeStyle}>
+          <div style={fallbackCoreStyle} />
+        </div>
+      ) : null}
+    </div>
   );
 }
+
+function canCreateWebGLContext() {
+  try {
+    const canvas = document.createElement("canvas");
+    const context =
+      canvas.getContext("webgl2") ||
+      canvas.getContext("webgl") ||
+      canvas.getContext("experimental-webgl");
+    return Boolean(context);
+  } catch {
+    return false;
+  }
+}
+
+const fallbackGlobeStyle: CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  background:
+    "radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--fintheon-accent) 18%, transparent) 0 18%, transparent 34%), radial-gradient(circle at 50% 50%, transparent 0 35%, color-mix(in srgb, var(--fintheon-accent) 12%, transparent) 36% 37%, transparent 38%), repeating-radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--fintheon-accent) 10%, transparent) 0 1px, transparent 1px 12px)",
+  opacity: 0.62,
+};
+
+const fallbackCoreStyle: CSSProperties = {
+  position: "absolute",
+  left: "50%",
+  top: "50%",
+  width: "min(46vmin, 520px)",
+  aspectRatio: "1",
+  transform: "translate(-50%, -50%)",
+  borderRadius: "999px",
+  border:
+    "1px solid color-mix(in srgb, var(--fintheon-accent) 24%, transparent)",
+  background:
+    "radial-gradient(circle at 35% 28%, color-mix(in srgb, var(--fintheon-accent) 16%, transparent), transparent 34%), linear-gradient(135deg, transparent 0 48%, color-mix(in srgb, var(--fintheon-accent) 14%, transparent) 49% 50%, transparent 51%)",
+  boxShadow:
+    "0 0 54px color-mix(in srgb, var(--fintheon-accent) 12%, transparent)",
+};
 
 function syncPhase(
   state: { lastPhase: LoadingGlobePhase; authPulse: number; authUntil: number },

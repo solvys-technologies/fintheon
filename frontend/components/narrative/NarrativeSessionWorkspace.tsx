@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Edit3, ImagePlus, RefreshCw, Sparkles, Trash2, X } from "lucide-react";
+import {
+  ImagePlus,
+  PencilLine,
+  RefreshCw,
+  Sparkles,
+  Trash2,
+  X,
+} from "lucide-react";
 import {
   NarrativeCoverHeader,
   buildGeneratedNarrativeCover,
@@ -248,7 +255,7 @@ export function NarrativeSessionWorkspace({
             {session.status}
           </span>
         ) : null}
-        <Edit3
+        <PencilLine
           size={12}
           className="shrink-0 text-[var(--fintheon-accent)]/58 opacity-0 transition group-hover:opacity-100"
           aria-hidden="true"

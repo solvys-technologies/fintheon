@@ -60,6 +60,7 @@ type LegacyIconKey =
   | "layers"
   | "link"
   | "lock"
+  | "lock-open"
   | "mail"
   | "menu"
   | "message"
@@ -67,9 +68,11 @@ type LegacyIconKey =
   | "mic"
   | "minus"
   | "moon"
+  | "monitor"
   | "network"
   | "open-book"
   | "pause"
+  | "pencil-line"
   | "phone"
   | "play"
   | "plug"
@@ -253,6 +256,7 @@ const PATHS: Record<LegacyIconKey, string[]> = {
     "M14 11a5 5 0 0 0-7.1 0l-2 2a5 5 0 0 0 7.1 7.1l1.1-1.1",
   ],
   lock: ["M6 10h12v11H6z", "M8 10V7a4 4 0 0 1 8 0v3"],
+  "lock-open": ["M6 10h12v11H6z", "M8 10V7a4 4 0 0 1 7.5-2"],
   mail: ["M3 6h18v12H3z", "M3 7l9 7 9-7"],
   menu: ["M4 7h16", "M4 12h16", "M4 17h16"],
   message: ["M4 5h16v12H7l-3 3V5Z"],
@@ -266,6 +270,7 @@ const PATHS: Record<LegacyIconKey, string[]> = {
   ],
   minus: ["M5 12h14"],
   moon: ["M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 7 7 0 1 0 20.5 14.2Z"],
+  monitor: ["M4 5h16v12H4z", "M9 21h6", "M12 17v4"],
   network: [
     "M6 7a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z",
     "M18 23a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z",
@@ -278,6 +283,11 @@ const PATHS: Record<LegacyIconKey, string[]> = {
     "M20.5 5.5A3.5 3.5 0 0 0 17 4h-5v16h5a3.5 3.5 0 0 1 3.5 2V5.5Z",
   ],
   pause: ["M8 5v14", "M16 5v14"],
+  "pencil-line": [
+    "M17 3a2.8 2.8 0 0 1 4 4L8 20l-5 1 1-5L17 3Z",
+    "M15 5l4 4",
+    "M3 21h18",
+  ],
   phone: [
     "M22 16.9v3a2 2 0 0 1-2.2 2 19 19 0 0 1-17.7-17.7A2 2 0 0 1 4.1 2h3l2 5-2 1.2a12 12 0 0 0 5.7 5.7l1.2-2 5 2Z",
   ],
@@ -489,7 +499,7 @@ export const Activity = i("activity"),
   Diff = i("chart"),
   DollarSign = i("graph-up-preview"),
   Download = i("download"),
-  Edit3 = i("wrench"),
+  Edit3 = i("pencil-line"),
   ExternalLink = i("internet-preview"),
   Eye = i("eye-preview"),
   EyeOff = i("eye-off"),
@@ -512,8 +522,8 @@ export const Activity = i("activity"),
   LayoutDashboard = i("users-three-preview"),
   Link = i("internet-preview"),
   ListOrdered = i("chart-candle-preview"),
-  Lock = i("fingerprint-preview"),
-  LockOpen = i("fingerprint-preview"),
+  Lock = i("lock"),
+  LockOpen = i("lock-open"),
   Mail = i("mail"),
   MagnifyingGlass = i("magnifying-glass-preview"),
   Maximize2 = i("grid"),
@@ -531,7 +541,8 @@ export const Activity = i("activity"),
   PanelRightClose = i("grid"),
   Paperclip = i("internet-preview"),
   Pause = i("pause"),
-  Pencil = i("wrench"),
+  Pencil = i("pencil-line"),
+  PencilLine = i("pencil-line"),
   Phone = i("phone-preview"),
   PhoneOff = i("phone-preview"),
   PictureInPicture2 = i("grid"),
@@ -572,12 +583,12 @@ export const Activity = i("activity"),
   Trash2 = i("trash"),
   TrendingDown = i("trend-down"),
   TrendingUp = i("graph-up-preview"),
-  Tv = i("tv-preview"),
+  Tv = i("monitor"),
   Upload = i("upload"),
   User = i("profile-circle-preview"),
   UserPlus = i("profile-circle-preview"),
   Users = i("users-three-preview"),
-  Volume2 = i("mic-preview"),
+  Volume2 = i("radio-tower-preview"),
   VolumeOff = i("volume-x"),
   VolumeX = i("volume-x"),
   Wrench = i("wrench"),
@@ -632,7 +643,7 @@ export const HardDrive = Cpu,
   SplitSquareVertical = Columns3,
   LogOut = ArrowRight,
   BookOpenCheck = BookOpen,
-  Monitor = Tv,
+  Monitor = i("monitor"),
   ClipboardList = FileText,
   Link2 = Link,
   BriefcaseBusiness = Building2,

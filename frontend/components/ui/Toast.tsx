@@ -30,6 +30,7 @@ const VARIANT_CONFIG: Record<
   info: { Icon: Info },
   reminder: { Icon: AlertTriangle, label: "REMINDER" },
   vix: { Icon: Activity, label: "VIX" },
+  watch: { Icon: AlertTriangle, label: "WATCH" },
 };
 
 /* ------------------------------------------------------------------ */
@@ -48,6 +49,7 @@ function ToastItem({
   const [entered, setEntered] = useState(false);
   const cfg = VARIANT_CONFIG[toast.variant];
   const isTopRight = toast.position === "top-right";
+  const isBottomRight = toast.position === "bottom-right";
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => setEntered(true));
@@ -56,7 +58,7 @@ function ToastItem({
 
   const isVisible = entered && !toast.exiting;
   const hasDND = !!toast.notificationType;
-  const slideX = isTopRight ? "16px" : "-16px";
+  const slideX = isTopRight || isBottomRight ? "16px" : "-16px";
 
   return (
     <div
@@ -74,7 +76,11 @@ function ToastItem({
         maxWidth: "380px",
       }}
     >
-      <div className="fintheon-toast-surface">
+      <div
+        className={`fintheon-toast-surface ${
+          toast.variant === "watch" ? "fintheon-toast-watch" : ""
+        }`}
+      >
         <div
           className="flex items-start justify-between"
           style={{ padding: "10px 12px" }}
@@ -217,8 +223,13 @@ export function ToastContainer() {
     dismissToast(toast.id);
   };
 
+  const bottomRight = toasts.filter(
+    (t) => t.position === "bottom-right" && !zenModeActive,
+  );
   const bottomLeft = toasts.filter(
-    (t) => t.position !== "top-right" || zenModeActive,
+    (t) =>
+      (t.position !== "top-right" && t.position !== "bottom-right") ||
+      zenModeActive,
   );
   const topRight = zenModeActive
     ? []
@@ -238,6 +249,27 @@ export function ToastContainer() {
           }}
         >
           {bottomLeft.map((toast) => (
+            <ToastItem
+              key={toast.id}
+              toast={toast}
+              onDismiss={dismissToast}
+              onBlock={handleBlock}
+            />
+          ))}
+        </div>
+      )}
+      {/* Watch/RiskFlow toasts — bottom-right outside Zen */}
+      {bottomRight.length > 0 && (
+        <div
+          className="fixed z-[100] flex flex-col items-end"
+          style={{
+            bottom: "38px",
+            right: "24px",
+            gap: "10px",
+            pointerEvents: "none",
+          }}
+        >
+          {bottomRight.map((toast) => (
             <ToastItem
               key={toast.id}
               toast={toast}

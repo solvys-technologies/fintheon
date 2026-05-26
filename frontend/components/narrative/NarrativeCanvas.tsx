@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
   Clock,
-  Edit3,
+  PencilLine,
   History,
   MessageSquareText,
   Plus,
@@ -996,7 +996,7 @@ function NarrativeSessionDrawerRow({
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[4px] text-[var(--fintheon-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--fintheon-accent)]"
           title="Rename narrative"
         >
-          <Edit3 size={13} />
+          <PencilLine size={13} />
         </button>
       </div>
 

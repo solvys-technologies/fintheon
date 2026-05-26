@@ -129,6 +129,8 @@ export function NavSidebar({
     [controlledEditMode, editMode, onEditModeChange],
   );
   const [order, setOrder] = useState<NavTabId[]>(() => getSidebarOrder());
+  const instanceName =
+    import.meta.env.VITE_FINTHEON_INSTANCE_NAME || "Fintheon";
 
   const expanded = hovered || manualExpand;
   const sidebarWidthPx = topStepXEnabled ? 0 : 44;
@@ -253,6 +255,20 @@ export function NavSidebar({
       {/* [claude-code 2026-04-26] Sidebar expand/collapse chevron removed per TP.
           Hover-driven expansion (handleMouseEnter/Leave) is the only trigger;
           the layout buttons in the heading toolbar control visibility. */}
+
+      {expanded ? (
+        <div className="px-3 pb-3 pt-0.5">
+          <div className="flex flex-col leading-tight">
+            <span className="text-[12px] font-semibold uppercase tracking-[0.22em] text-[var(--fintheon-accent)]">
+              {instanceName}
+            </span>
+            <span className="mt-0.5 hidden text-[9px] italic text-gray-600 xl:block">
+              {sidebarGreeting()}
+            </span>
+          </div>
+          <FadingRuler className="mt-3 opacity-35" />
+        </div>
+      ) : null}
 
       <div className="flex-1 space-y-1 px-1.5">
         {orderedItems.map(({ tabId, icon: Icon, label, description }, idx) => {
@@ -469,4 +485,11 @@ export function NavSidebar({
 
   // Normal sidebar
   return sidebarContent;
+}
+
+function sidebarGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Ave. The markets stir.";
+  if (h < 17) return "The Forum is active.";
+  return "The day's battles are done.";
 }

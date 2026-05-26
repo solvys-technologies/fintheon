@@ -9,6 +9,29 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-26T13:05:00-04:00",
+    agent: "codex",
+    summary:
+      "Desk annotation batch: polished the Desk Plan/Streamdown daily brief surfaces, rebuilt the second-page Briefing/Sprint/Calendar controls and sprint matrix, moved Bulletin to Desk/Watch/Upcoming tabs backed by queued desk events and WatchTags, aligned Forum/Bulletin chrome, added RiskFlow Watch toasts, replaced global edit/lock/browser glyphs, matched footer/sidebar color, and added a WebGL-safe loading globe fallback.",
+    files: [
+      "backend-hono/src/routes/riskflow/handlers.ts",
+      "backend-hono/src/services/riskflow/watchlist-phrases-service.ts",
+      "frontend/components/StickyBulletin.tsx",
+      "frontend/components/bulletin/BulletinDeskPlanTab.tsx",
+      "frontend/components/bulletin/WatchTagsTab.tsx",
+      "frontend/components/desk/DeskDailyBriefingPanel.tsx",
+      "frontend/components/desk/DeskPlanWidget.tsx",
+      "frontend/components/desk/DeskSprintMapCalendar.tsx",
+      "frontend/components/desk/QueuedDeskEventFeed.tsx",
+      "frontend/components/executive/DeskPlanSprintTimeline.tsx",
+      "frontend/components/loading/LoadingGlobe.tsx",
+      "frontend/components/proxvoice/ProxVoicePanel.tsx",
+      "frontend/contexts/RiskFlowContext.tsx",
+      "frontend/index.css",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-26T10:57:00-04:00",
     agent: "codex",
     summary:

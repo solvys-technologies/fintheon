@@ -204,8 +204,8 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
             <button
               type="button"
               onClick={() => setExpandedId(expanded ? null : signal.id)}
-              className={`w-full min-w-0 cursor-pointer rounded-md text-left transition-colors hover:bg-[var(--fintheon-accent)]/5 ${
-                expanded ? "bg-[var(--fintheon-accent)]/5" : ""
+              className={`w-full min-w-0 cursor-pointer rounded-md text-left transition-colors hover:text-[var(--fintheon-accent)] ${
+                expanded ? "text-[var(--fintheon-accent)]" : ""
               } ${freshness.stale ? "opacity-70" : ""} ${padding}`}
             >
               <div className="flex min-w-0 items-center gap-2">
@@ -250,7 +250,7 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
               </div>
             </button>
             {expanded && (
-              <div className="relative ml-5 mt-2 space-y-2 rounded-md bg-[var(--fintheon-accent)]/[0.035] px-2 py-2 pr-16">
+              <div className="relative ml-5 mt-2 space-y-2 px-2 py-2 pr-16">
                 <FadingRuler />
                 <p
                   className={`${textSize} text-[var(--fintheon-text)]/70 leading-relaxed`}

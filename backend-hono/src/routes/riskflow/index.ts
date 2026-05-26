@@ -28,6 +28,8 @@ import {
   handleUserPollingStatus,
   handleGetPhrases,
   handleAddPhrase,
+  handleRefinePhrase,
+  handleUpdatePhrase,
   handleDeletePhrase,
   handleNotRelevant,
   handleGetRiskSignals,
@@ -112,7 +114,9 @@ export function createRiskFlowRoutes(): Hono {
 
   // Catalyst Watch — watchlist phrase CRUD
   router.get("/phrases", handleGetPhrases);
+  router.post("/phrases/refine", handleRefinePhrase);
   router.post("/phrases", handleAddPhrase);
+  router.patch("/phrases/:id", handleUpdatePhrase);
   router.delete("/phrases/:id", handleDeletePhrase);
 
   // Risk Signals — AI-refined cards (S16-T3)

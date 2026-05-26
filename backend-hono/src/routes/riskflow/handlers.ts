@@ -60,6 +60,7 @@ import {
 import { getSupabaseClient } from "../../config/supabase.js";
 import { scoringCycle } from "../../services/riskflow/central-scorer.js";
 import { seedCacheFromDb } from "../../services/riskflow/feed-service.js";
+import { invokeAgent } from "../../services/strands/invoke-helper.js";
 
 /**
  * Internal function to trigger feed pre-fetching
@@ -1816,6 +1817,71 @@ export async function handleAddPhrase(c: Context) {
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Failed to add phrase";
+    return c.json({ error: msg }, 400);
+  }
+}
+
+/**
+ * POST /api/riskflow/phrases/refine
+ * Refine a raw WatchTag phrase through the AI provider chain.
+ */
+export async function handleRefinePhrase(c: Context) {
+  const userId = c.get("userId") as string | undefined;
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+  const body = await c.req.json<{
+    phrase?: string;
+    intelligenceLevel?: string;
+  }>();
+  const input = body.phrase?.trim() ?? "";
+  if (!input) return c.json({ error: "Phrase is required" }, 400);
+
+  try {
+    const result = await invokeAgent({
+      systemPrompt:
+        "You refine trader watchlist filters. Return one neutral keyword phrase only. Remove directional bias, verbs like buy/sell, and filler. Keep it under 10 words.",
+      userPrompt: `Refine this WatchTag: ${input}\nIntelligence level: ${body.intelligenceLevel ?? "standard"}`,
+      model: { temperature: 0.15, maxTokens: 48 },
+    });
+    const raw = result.text
+      .replace(/[`"'“”]/g, "")
+      .split(/\n/)
+      .find(Boolean)
+      ?.trim();
+    const refined = watchlistPhrasesService.stripBias(raw || input).cleaned;
+    return c.json({ phrase: refined || input });
+  } catch {
+    const refined = watchlistPhrasesService.stripBias(input).cleaned;
+    return c.json({ phrase: refined || input, degraded: true });
+  }
+}
+
+/**
+ * PATCH /api/riskflow/phrases/:id
+ * Edit an active WatchTag phrase.
+ */
+export async function handleUpdatePhrase(c: Context) {
+  const userId = c.get("userId") as string | undefined;
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+  const id = parseInt(c.req.param("id"), 10);
+  if (isNaN(id)) return c.json({ error: "Invalid phrase ID" }, 400);
+
+  try {
+    const body = await c.req.json<{
+      phrase: string;
+      matchType?: "contains" | "exact";
+      repeating?: boolean;
+    }>();
+    if (!body.phrase?.trim()) {
+      return c.json({ error: "Phrase is required" }, 400);
+    }
+    const result = await watchlistPhrasesService.updatePhrase(userId, id, body);
+    if (!result) return c.json({ error: "Not found" }, 404);
+    return c.json(result);
+  } catch (error) {
+    const msg =
+      error instanceof Error ? error.message : "Failed to update phrase";
     return c.json({ error: msg }, 400);
   }
 }

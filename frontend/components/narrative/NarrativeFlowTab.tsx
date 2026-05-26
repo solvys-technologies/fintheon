@@ -1,7 +1,7 @@
 import {
   Check,
   ChevronDown,
-  Pencil,
+  PencilLine,
   RefreshCw,
   Search,
   SlidersHorizontal,
@@ -150,7 +150,7 @@ export function NarrativeFlowTab({
               aria-expanded={editControlsOpen}
               title="Edit narrative"
             >
-              <Pencil size={13} strokeWidth={2} />
+              <PencilLine size={13} strokeWidth={2} />
             </button>
             <button
               type="button"

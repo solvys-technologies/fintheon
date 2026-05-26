@@ -10,7 +10,7 @@ import {
   ChevronDown,
   ChevronUp,
   Trash2,
-  Pencil,
+  PencilLine,
   Power,
 } from "lucide-react";
 import type {
@@ -374,7 +374,7 @@ export function SourceAccountsManager({
             onClick={() => startEdit(account)}
             className="p-0.5 text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] transition-colors"
           >
-            <Pencil className="w-2.5 h-2.5" />
+            <PencilLine className="w-2.5 h-2.5" />
           </button>
           <button
             onClick={() => handleRemove(account.id)}

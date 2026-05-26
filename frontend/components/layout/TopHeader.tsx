@@ -27,14 +27,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Monitor,
-  Tv,
   MessageCircle,
-  Power,
+  PictureInPicture2,
   Bell,
   BellOff,
   ClipboardList,
   Clock705,
   Lock,
+  LockOpen,
 } from "lucide-react";
 import { WhatsNewButton } from "../onboarding/WhatsNewButton";
 import { StickyBulletin } from "../StickyBulletin";
@@ -120,7 +120,6 @@ export function TopHeader({
   historyIndex = 0,
   onBack,
   onForward,
-  hideBranding = false,
   psychAssistHeadingWidget,
   voiceRoomWidget,
   performanceChatWidget,
@@ -133,8 +132,6 @@ export function TopHeader({
   const { selectedSymbol, traderName, alertConfig, proposerIframeSources } =
     useSettings();
   const { addToast } = useToast();
-  const instanceName =
-    import.meta.env.VITE_FINTHEON_INSTANCE_NAME || "Fintheon";
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [ivData, setIvData] = useState<IVScoreResponse | null>(null);
   const [ivLoading, setIvLoading] = useState(true);
@@ -296,7 +293,7 @@ export function TopHeader({
       value: "tickers-only",
       label: "Zen",
       description: "Supports split-frame browser view",
-      icon: <Tv className="w-4 h-4" />,
+      icon: <Monitor className="w-4 h-4" />,
     },
   ];
 
@@ -447,30 +444,7 @@ export function TopHeader({
       className={`fintheon-side-surface relative bg-[var(--fintheon-surface)] flex items-center justify-between px-3 ${topStepXEnabled && layoutOption === "tickers-only" ? "h-[47px]" : "h-[50px]"}`}
     >
       <div className="flex items-center gap-2 lg:gap-4 xl:gap-6">
-        <div
-          className={`flex items-center gap-3 transition-opacity duration-150 ${hideBranding ? "opacity-0 pointer-events-none" : "opacity-100"}`}
-        >
-          {/* [claude-code 2026-04-25] S38: "Priced In Capital" brand string removed from
-              header — now lives in the FooterToolbar desk-name slot. Leaves the instance
-              name + time-of-day greeting. */}
-          <div className="flex flex-col leading-tight">
-            {compactLevel < 2 && (
-              <span className="text-[12px] font-semibold tracking-[0.22em] text-[var(--fintheon-accent)] uppercase">
-                {instanceName}
-              </span>
-            )}
-            {compactLevel < 1 && (
-              <span className="text-[9px] text-gray-600 italic hidden xl:block">
-                {(() => {
-                  const h = new Date().getHours();
-                  if (h < 12) return "Ave. The markets stir.";
-                  if (h < 17) return "The Forum is active.";
-                  return "The day's battles are done.";
-                })()}
-              </span>
-            )}
-          </div>
-
+        <div className="flex items-center gap-3">
           {shouldShowLeftPanelToggle && (
             <PanelToggleButton side="left" label="left panel" />
           )}
@@ -582,18 +556,14 @@ export function TopHeader({
                       : `Block ${platformBlockerState.target?.label ?? "selected platform"} in-app`
                   }
                 >
-                  <Lock
-                    className={`w-3 h-3 ${
-                      platformBlockerState.activeForTarget
-                        ? "toolbar-icon-active"
-                        : ""
-                    }`}
-                    style={
-                      platformBlockerState.activeForTarget
-                        ? activeIconStyle("#ef4444")
-                        : undefined
-                    }
-                  />
+                  {platformBlockerState.activeForTarget ? (
+                    <Lock
+                      className="w-3 h-3 toolbar-icon-active"
+                      style={activeIconStyle("#ef4444")}
+                    />
+                  ) : (
+                    <LockOpen className="w-3 h-3" />
+                  )}
                 </button>
               )}
             </div>
@@ -686,11 +656,7 @@ export function TopHeader({
                 aria-label="Select trading platform"
                 title="Select trading platform"
               >
-                {selectedPlatformLabel.toLowerCase().includes("tradingview") ? (
-                  <Tv className="w-3 h-3" />
-                ) : (
-                  <Monitor className="w-3 h-3" />
-                )}
+                <Monitor className="w-3 h-3" />
                 {compactLevel < 1 && (
                   <span className="fintheon-zen-label">
                     {selectedPlatformLabel}
@@ -791,7 +757,7 @@ export function TopHeader({
                     : "Show iFrame layouts"
                 }
               >
-                <Power
+                <PictureInPicture2
                   className={`w-3 h-3 ${topStepXEnabled ? "toolbar-icon-active" : ""}`}
                   style={
                     topStepXEnabled ? activeIconStyle("#34d399") : undefined

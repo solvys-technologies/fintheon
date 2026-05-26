@@ -11,7 +11,7 @@ import React, {
 } from "react";
 import {
   ChevronRight,
-  Pencil,
+  PencilLine,
   GripVertical,
   Eye,
   EyeOff,
@@ -160,7 +160,7 @@ export function MissionControlContent({
                 title={editMode ? "Finish editing layout" : "Edit layout"}
                 aria-pressed={editMode}
               >
-                <Pencil className="w-3.5 h-3.5" />
+                <PencilLine className="w-3.5 h-3.5" />
               </button>
             )}
             {onResetLayout && (

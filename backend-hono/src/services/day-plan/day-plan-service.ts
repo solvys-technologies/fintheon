@@ -649,6 +649,15 @@ function rowToWindow(row: any): DayPlanWindow {
         : row.end_time,
     eventName: row.event_name ?? null,
     eventCountry: row.econ_forecast?.eventCountry ?? null,
+    importance:
+      row.importance ??
+      row.impact ??
+      row.severity ??
+      row.econ_forecast?.importance ??
+      row.econ_forecast?.impact ??
+      null,
+    impact: row.impact ?? row.econ_forecast?.impact ?? null,
+    severity: row.severity ?? row.econ_forecast?.severity ?? null,
     econForecast: row.econ_forecast ?? null,
     // Deprecated price fields — retained for migration transition
     pricesOfInterest: Array.isArray(row.prices_of_interest)

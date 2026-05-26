@@ -5,7 +5,7 @@
 //   parseIncompleteMarkdown: true keeps the stream readable mid-token;
 //   mode: "streaming" keeps fade-in animations suppressed per-block.
 
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 import {
   Streamdown,
   type CustomRenderer,
@@ -53,11 +53,20 @@ const RENDERERS: CustomRenderer[] = SLOT_LANGUAGES.map((language) => ({
   language,
   component: SLOT_RENDERERS[language],
 }));
-const ALLOWED_TAGS = { "market-ticker": ["symbol"] };
+function BriefTimeToken({ children }: { children?: ReactNode }) {
+  return (
+    <span className="fintheon-brief-time-token" data-brief-time>
+      {children}
+    </span>
+  );
+}
+
+const ALLOWED_TAGS = { "market-ticker": ["symbol"], "brief-time": [] };
 const COMPONENTS = {
   "market-ticker": MarketTickerMention as ComponentType<
     Record<string, unknown>
   >,
+  "brief-time": BriefTimeToken as ComponentType<Record<string, unknown>>,
 };
 const LITERAL_TAG_CONTENT = ["market-ticker"];
 const PLUGINS = { renderers: RENDERERS };

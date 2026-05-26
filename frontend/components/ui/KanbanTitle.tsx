@@ -2,6 +2,7 @@
 
 interface KanbanTitleProps {
   title: string;
+  titleIcon?: React.ReactNode;
   tag?: string;
   tone?: "gold" | "violet" | "cyan" | "emerald";
   headerRight?: React.ReactNode;
@@ -16,6 +17,7 @@ const TONE_CLASSES: Record<NonNullable<KanbanTitleProps["tone"]>, string> = {
 
 export function KanbanTitle({
   title,
+  titleIcon,
   tag,
   tone = "gold",
   headerRight,
@@ -24,6 +26,7 @@ export function KanbanTitle({
     <div className="flex items-center justify-between px-1 py-1">
       {title || tag ? (
         <div className="flex items-center gap-2">
+          {titleIcon}
           {title ? (
             <h2 className="text-[11px] font-semibold text-[var(--fintheon-accent)] tracking-[0.2em] uppercase">
               {title}

@@ -1,5 +1,14 @@
-import { ChevronDown, FileText, RefreshCw } from "lucide-react";
+import {
+  ChevronDown,
+  FileText,
+  Moon,
+  Newspaper,
+  RefreshCw,
+  Sun,
+  type LucideIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { StreamdownChat } from "../chat/slots";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -9,6 +18,17 @@ interface TodayBrief {
   label: string;
   content: string;
   createdAt: string;
+}
+
+interface BriefOption {
+  id: string;
+  type: string;
+  label: string;
+  brief: TodayBrief | null;
+  disabled: boolean;
+  timeLabel: string;
+  countdown: string | null;
+  Icon: LucideIcon;
 }
 
 export function DeskDailyBriefingPanel() {
@@ -26,7 +46,9 @@ export function DeskDailyBriefingPanel() {
       const response = await fetch(`${apiBase}/api/data/briefs/today`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = (await response.json()) as { briefs?: TodayBrief[] };
-      const briefs = data.briefs ?? [];
+      const briefs = (data.briefs ?? []).filter((brief) =>
+        isUsableBrief(brief.content),
+      );
       setTodayBriefs(briefs);
       setSelectedId((current) =>
         current && briefs.some((brief) => brief.id === current)
@@ -79,6 +101,10 @@ export function DeskDailyBriefingPanel() {
       null,
     [selectedId, todayBriefs],
   );
+  const briefOptions = useMemo(
+    () => buildBriefOptions(todayBriefs),
+    [todayBriefs],
+  );
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -90,18 +116,20 @@ export function DeskDailyBriefingPanel() {
     <section className="flex min-h-0 flex-col overflow-hidden px-2 py-1">
       <header className="flex shrink-0 items-center justify-between gap-3 px-1 py-1">
         <div className="relative flex min-w-0 items-center gap-2">
-          <FileText className="h-3.5 w-3.5 shrink-0 text-[var(--fintheon-accent)]" />
+          <FileText className="h-4 w-4 shrink-0 text-[var(--fintheon-accent)]" />
           <button
             type="button"
             onClick={() => setDropdownOpen((open) => !open)}
-            className="flex min-w-0 items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--fintheon-accent)] transition-colors hover:text-[var(--fintheon-text)]"
+            className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.17em] text-[var(--fintheon-accent)] transition-colors hover:text-[var(--fintheon-text)]"
             aria-haspopup="menu"
             aria-expanded={dropdownOpen}
           >
             <span className="truncate">
-              {activeBrief?.label ?? "Dawn Dispatch"}
+              {activeBrief
+                ? labelForBriefType(activeBrief.type)
+                : "Dawn Dispatch"}
             </span>
-            {todayBriefs.length > 1 ? (
+            {briefOptions.length > 1 ? (
               <ChevronDown
                 className={`h-2.5 w-2.5 shrink-0 transition-transform ${
                   dropdownOpen ? "rotate-180" : ""
@@ -109,25 +137,39 @@ export function DeskDailyBriefingPanel() {
               />
             ) : null}
           </button>
-          {dropdownOpen && todayBriefs.length > 1 ? (
-            <div className="absolute left-0 top-full z-50 mt-1 min-w-[190px] border border-[var(--fintheon-accent)]/12 bg-[#0a0a07] py-1">
-              {todayBriefs.map((brief) => (
+          {dropdownOpen && briefOptions.length > 1 ? (
+            <div className="absolute left-0 top-full z-50 mt-2 min-w-[245px] overflow-hidden rounded-xl border border-[var(--fintheon-accent)]/14 bg-[#0a0a07]/95 py-1 shadow-2xl backdrop-blur animate-in fade-in zoom-in-95 duration-150">
+              {briefOptions.map((option) => (
                 <button
-                  key={brief.id}
+                  key={option.id}
                   type="button"
+                  disabled={option.disabled}
                   onClick={() => {
-                    setSelectedId(brief.id);
+                    if (!option.brief) return;
+                    setSelectedId(option.brief.id);
                     setDropdownOpen(false);
                   }}
-                  className={`flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left text-[10px] transition-colors ${
-                    brief.id === selectedId
-                      ? "bg-[var(--fintheon-accent)]/5 text-[var(--fintheon-accent)]"
-                      : "text-zinc-400 hover:bg-zinc-800/45 hover:text-zinc-200"
+                  className={`grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 text-left text-[10px] transition-colors ${
+                    option.brief?.id === selectedId
+                      ? "text-[var(--fintheon-accent)]"
+                      : option.disabled
+                        ? "text-zinc-700"
+                        : "text-zinc-400 hover:text-zinc-200"
                   }`}
                 >
-                  <span className="font-semibold">{brief.label}</span>
+                  <option.Icon className="h-3 w-3" />
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold">
+                      {option.label}
+                    </span>
+                    {option.countdown ? (
+                      <span className="mt-0.5 block font-mono text-[8.5px] uppercase tracking-[0.12em] text-zinc-600">
+                        {option.countdown}
+                      </span>
+                    ) : null}
+                  </span>
                   <span className="font-mono text-[9px] text-zinc-600">
-                    {formatBriefTime(brief.createdAt)}
+                    {option.timeLabel}
                   </span>
                 </button>
               ))}
@@ -175,79 +217,20 @@ export function DeskDailyBriefingPanel() {
 }
 
 function BriefContent({ text }: { text: string }) {
-  const lines = text.split("\n");
   return (
-    <div className="space-y-1.5">
-      {lines.map((line, index) => (
-        <BriefLine key={`${index}-${line.slice(0, 12)}`} line={line} />
-      ))}
-    </div>
-  );
-}
-
-function BriefLine({ line }: { line: string }) {
-  const trimmed = line.trim();
-  if (!trimmed) return <div className="h-1.5" />;
-  if (/^-{3,}$/.test(trimmed)) {
-    return <hr className="my-1 border-zinc-800" />;
-  }
-  if (trimmed.startsWith("## ")) {
-    return (
-      <h3 className="mt-2 text-[10px] font-bold uppercase tracking-wide text-[var(--fintheon-accent)]">
-        {trimmed.slice(3)}
-      </h3>
-    );
-  }
-  if (trimmed.startsWith("# ")) {
-    return (
-      <h2 className="mt-2 text-xs font-bold uppercase tracking-wide text-[var(--fintheon-text)]">
-        {trimmed.slice(2)}
-      </h2>
-    );
-  }
-  const labelMatch = trimmed.match(/^([^:]{3,42}):\s*(.*)$/);
-  if (labelMatch) {
-    return (
-      <p className="text-[10.5px] leading-relaxed text-zinc-400">
-        <span className="font-semibold text-[var(--fintheon-accent)]">
-          {labelMatch[1]}:
-        </span>{" "}
-        {renderInlineBold(labelMatch[2])}
-      </p>
-    );
-  }
-  if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-    return (
-      <p className="pl-2 text-[10.5px] leading-relaxed text-zinc-400">
-        <span className="text-[var(--fintheon-accent)]/65">- </span>
-        {renderInlineBold(trimmed.slice(2))}
-      </p>
-    );
-  }
-  return (
-    <p className="text-[10.5px] leading-relaxed text-zinc-400">
-      {renderInlineBold(trimmed)}
-    </p>
-  );
-}
-
-function renderInlineBold(text: string) {
-  return text.split(/\*\*(.*?)\*\*/g).map((part, index) =>
-    index % 2 === 1 ? (
-      <span key={`${index}-${part}`} className="font-semibold text-zinc-300">
-        {part}
-      </span>
-    ) : (
-      part
-    ),
+    <StreamdownChat
+      content={prepareDeskBriefMarkdown(text)}
+      className="fintheon-desk-brief-markdown text-[10.5px] leading-relaxed text-zinc-400"
+    />
   );
 }
 
 function labelForBriefType(type: string) {
-  if (type === "MDB") return "Dawn Dispatch";
-  if (type === "ADB") return "Midday Dispatch";
-  if (type === "PMDB") return "Dusk Dispatch";
-  return type || "Brief";
+  if (type === "MDB") return "Morning Daily Brief";
+  if (type === "ADB") return "Afternoon Daily Brief";
+  if (type === "PMDB") return "Post-Market Daily Brief";
+  if (type === "TWT") return "The Weekly Tribune";
+  return type || "Dawn Dispatch";
 }
 
 function pickDefaultBriefId(briefs: TodayBrief[]) {
@@ -274,4 +257,103 @@ function formatBriefTime(iso: string) {
   } catch {
     return "";
   }
+}
+
+function prepareDeskBriefMarkdown(text: string) {
+  return text.replace(
+    /(^|\n)(\s*(?:[-*]\s*)?)(\d{1,2}:\d{2})(?=:)/g,
+    (_match, prefix: string, lead: string, time: string) =>
+      `${prefix}${lead}<brief-time>${time}</brief-time>`,
+  );
+}
+
+function buildBriefOptions(briefs: TodayBrief[]): BriefOption[] {
+  const byType = new Map(briefs.map((brief) => [brief.type, brief]));
+  const now = new Date();
+  const options: BriefOption[] = [
+    scheduledOption("MDB", "Morning Daily Brief", "06:30", Sun, byType, now),
+    scheduledOption("ADB", "Afternoon Daily Brief", "10:45", Sun, byType, now),
+    scheduledOption(
+      "PMDB",
+      "Post-Market Daily Brief",
+      "16:15",
+      Moon,
+      byType,
+      now,
+    ),
+  ];
+  const weekly = byType.get("TWT");
+  if (weekly && isWeeklyVisible(weekly.createdAt, now)) {
+    options.push({
+      id: weekly.id,
+      type: "TWT",
+      label: "The Weekly Tribune",
+      brief: weekly,
+      disabled: false,
+      Icon: Newspaper,
+      timeLabel: formatBriefTime(weekly.createdAt),
+      countdown: `${formatDurationUntil(addHours(new Date(weekly.createdAt), 48), now)} left`,
+    });
+  }
+  return options;
+}
+
+function scheduledOption(
+  type: string,
+  label: string,
+  clock: string,
+  Icon: LucideIcon,
+  byType: Map<string, TodayBrief>,
+  now: Date,
+): BriefOption {
+  const brief = byType.get(type) ?? null;
+  const scheduledAt = scheduledToday(clock);
+  return {
+    id: brief?.id ?? `${type}-upcoming`,
+    type,
+    label,
+    brief,
+    disabled: !brief,
+    Icon,
+    timeLabel: brief
+      ? formatBriefTime(brief.createdAt)
+      : formatClockLabel(clock),
+    countdown: brief ? null : `${formatDurationUntil(scheduledAt, now)} until`,
+  };
+}
+
+function scheduledToday(clock: string) {
+  const [hour, minute] = clock.split(":").map(Number);
+  const date = new Date();
+  date.setHours(hour, minute, 0, 0);
+  return date;
+}
+
+function formatClockLabel(clock: string) {
+  const [hour, minute] = clock.split(":").map(Number);
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(2026, 0, 1, hour, minute));
+}
+
+function formatDurationUntil(target: Date, now: Date) {
+  const delta = Math.max(0, target.getTime() - now.getTime());
+  const minutes = Math.ceil(delta / 60_000);
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours <= 0) return `${mins}m`;
+  return mins === 0 ? `${hours}h` : `${hours}h ${mins}m`;
+}
+
+function addHours(date: Date, hours: number) {
+  const next = new Date(date);
+  next.setHours(next.getHours() + hours);
+  return next;
+}
+
+function isWeeklyVisible(createdAt: string, now: Date) {
+  const created = new Date(createdAt);
+  if (!Number.isFinite(created.getTime())) return false;
+  return now.getTime() - created.getTime() <= 48 * 60 * 60 * 1000;
 }

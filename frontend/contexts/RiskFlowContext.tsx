@@ -18,7 +18,9 @@ import {
 } from "../lib/riskflow-feed";
 import { useBackend } from "../lib/backend";
 import { useSettings } from "./SettingsContext";
+import { useToast } from "./ToastContext";
 import type { RiskFlowItem } from "../types/api";
+import type { WatchlistPhrase } from "../lib/services/riskflow";
 
 // [claude-code 2026-03-16] T2: ensureScoring + downgradeNonFinancialBreaking on merged feed
 
@@ -107,9 +109,25 @@ function persistIds(key: string, ids: Set<string>): void {
   }
 }
 
+function watchPhraseMatches(
+  phrase: WatchlistPhrase,
+  headline: string,
+  tags: string[],
+) {
+  const target = [headline, ...tags].join(" ").toLowerCase();
+  if (phrase.matchType === "exact") {
+    return target.includes(phrase.phraseLower);
+  }
+  return phrase.phraseLower
+    .split(/\s+/)
+    .filter(Boolean)
+    .every((word) => target.includes(word));
+}
+
 export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const backend = useBackend();
   const { selectedSymbol } = useSettings();
+  const { addToast } = useToast();
   const [backendAlerts, setBackendAlerts] = useState<RiskFlowAlert[]>([]);
   const [seenIds, setSeenIds] = useState<Set<string>>(() =>
     loadStoredIds(SEEN_STORAGE_KEY),
@@ -121,7 +139,9 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const [hasMore, setHasMore] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
   const [freshAlertId, setFreshAlertId] = useState<string | null>(null);
+  const [watchPhrases, setWatchPhrases] = useState<WatchlistPhrase[]>([]);
   const prevAlertIdsRef = useRef<Set<string>>(new Set());
+  const watchToastSeenRef = useRef<Set<string>>(new Set());
   const freshClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backendIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
     null,
@@ -156,6 +176,46 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
       setFreshAlertId(null);
     }, 1200);
   }, [backendAlerts]);
+
+  const refreshWatchPhrases = useCallback(async () => {
+    try {
+      const result = await backend.riskflow.getPhrases();
+      setWatchPhrases(result.phrases ?? []);
+    } catch {
+      setWatchPhrases([]);
+    }
+  }, [backend.riskflow]);
+
+  useEffect(() => {
+    void refreshWatchPhrases();
+    const handler = () => void refreshWatchPhrases();
+    window.addEventListener("fintheon:watchtags-refetch", handler);
+    return () =>
+      window.removeEventListener("fintheon:watchtags-refetch", handler);
+  }, [refreshWatchPhrases]);
+
+  useEffect(() => {
+    if (!freshAlertId || watchPhrases.length === 0) return;
+    const alert = backendAlerts.find((item) => item.id === freshAlertId);
+    if (!alert || (alert.ivScore ?? 0) <= 4.9) return;
+    const match = watchPhrases.find((phrase) =>
+      watchPhraseMatches(phrase, alert.headline, alert.tags ?? []),
+    );
+    if (!match) return;
+    const toastKey = `${match.id}:${alert.id}`;
+    if (watchToastSeenRef.current.has(toastKey)) return;
+    watchToastSeenRef.current.add(toastKey);
+    addToast(
+      alert.headline,
+      "watch",
+      `WatchTag: ${match.phrase} / IV ${(alert.ivScore ?? 0).toFixed(1)}`,
+      "riskflow-watch",
+      "bottom-right",
+      undefined,
+      undefined,
+      12000,
+    );
+  }, [addToast, backendAlerts, freshAlertId, watchPhrases]);
 
   useEffect(() => {
     return () => {

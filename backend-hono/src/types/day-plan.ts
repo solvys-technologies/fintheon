@@ -50,6 +50,10 @@ export interface DayPlanWindow {
   eventName?: string | null;
   /** Country/region abbreviation for the matched overnight or international event */
   eventCountry?: string | null;
+  /** Optional event importance imported from calendar/ICS sources. */
+  importance?: string | number | null;
+  impact?: string | number | null;
+  severity?: string | number | null;
   /** AI-generated econ forecast (miss/beat scenarios + prediction) */
   econForecast: EconForecast | null;
   /** Deprecated — retained for schema compatibility during migration transition */

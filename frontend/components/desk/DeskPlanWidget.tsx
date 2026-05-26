@@ -49,23 +49,23 @@ export function DeskPlanWidget() {
         headerRight={
           <div className="ml-auto flex flex-col items-end gap-0.5">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/62">
-                <BookOpen className="h-3 w-3" />
+              <span className="inline-flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-[0.17em] text-[var(--fintheon-accent)]/72">
                 Desk Plan
+                <BookOpen className="h-4 w-4" />
               </span>
               <DeskPlanAdvanceButton
                 isLoading={isAdvancing}
                 onClick={advanceDeskPlan}
               />
             </div>
-            <span className="font-mono text-[9px] text-[var(--fintheon-muted)]/48">
+            <span className="font-mono text-[10.5px] text-[var(--fintheon-muted)]/52">
               {deskDateLabel}
             </span>
           </div>
         }
       />
       <div className="relative mt-2 min-h-0 flex-1 overflow-y-auto pr-1">
-        <DayCard bare hideHeader />
+        <DayCard bare hideHeader fillThesis className="flex h-full flex-col" />
       </div>
     </section>
   );

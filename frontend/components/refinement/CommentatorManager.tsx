@@ -8,7 +8,7 @@ import {
   ChevronDown,
   ChevronUp,
   Trash2,
-  Pencil,
+  PencilLine,
   Sprout,
 } from "lucide-react";
 import type {
@@ -313,7 +313,7 @@ export function CommentatorManager({
                   onClick={() => startEdit(entry)}
                   className="p-0.5 text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors"
                 >
-                  <Pencil className="w-2.5 h-2.5" />
+                  <PencilLine className="w-2.5 h-2.5" />
                 </button>
                 <button
                   onClick={() => handleRemove(entry.id)}

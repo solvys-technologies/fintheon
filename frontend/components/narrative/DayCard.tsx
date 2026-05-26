@@ -38,6 +38,7 @@ interface DayCardProps {
   className?: string;
   bare?: boolean;
   hideHeader?: boolean;
+  fillThesis?: boolean;
   hideStreak?: boolean;
 }
 
@@ -122,6 +123,7 @@ export function DayCard({
   className,
   bare,
   hideHeader,
+  fillThesis,
   hideStreak,
 }: DayCardProps) {
   const { data: todayData, isLoading: todayLoading } = useDayPlan();
@@ -166,6 +168,16 @@ export function DayCard({
     }
     setCurrentWindowIndex(defaultWindowIndex(plan?.date, windows));
   }, [plan?.date, windowSignature]);
+
+  useEffect(() => {
+    if (!fillThesis || !hasWindow) return;
+    setExpandedRows((prev) => {
+      if (prev.has("thesis")) return prev;
+      const next = new Set(prev);
+      next.add("thesis");
+      return next;
+    });
+  }, [fillThesis, hasWindow, currentWindow?.id]);
 
   const driftVisual: DriftKind | "in-window" = drift?.kind ?? "in-window";
 
@@ -281,22 +293,28 @@ export function DayCard({
         </header>
       )}
 
-      <p
-        className="text-[13.5px] leading-relaxed mb-3"
-        style={{
-          color: "var(--fintheon-text)",
-          fontFamily: "var(--font-body)",
-          minHeight: "1.4em",
-        }}
-      >
-        {isLoading
-          ? "Loading\u2026"
-          : plan?.deskTheme || "No plan published for today."}
-      </p>
+      {!fillThesis && (
+        <p
+          className="text-[13.5px] leading-relaxed mb-3"
+          style={{
+            color: "var(--fintheon-text)",
+            fontFamily: "var(--font-body)",
+            minHeight: "1.4em",
+          }}
+        >
+          {isLoading
+            ? "Loading\u2026"
+            : plan?.deskTheme || "No plan published for today."}
+        </p>
+      )}
 
       <FadingRuler />
 
-      <dl className="font-mono text-[13.5px] py-3 space-y-1.5">
+      <dl
+        className={`font-mono text-[13.5px] py-3 space-y-1.5 ${
+          fillThesis ? "flex min-h-0 flex-1 flex-col" : ""
+        }`}
+      >
         <Row
           label="Event"
           value={plan?.eventName ?? "\u2014"}
@@ -362,7 +380,8 @@ export function DayCard({
           renderValue={() => "View thesis"}
           expanded={expandedRows.has("thesis")}
           onToggle={() => toggleExpandedRow("thesis")}
-          detail={(f) => f.aiPrediction}
+          detail={(f) => buildThesisDetail(f)}
+          fillDetail={fillThesis}
         />
       </dl>
 
@@ -444,16 +463,7 @@ function WindowControlRow({
       >
         {label}
       </dt>
-      <span
-        aria-hidden
-        className="flex-1"
-        style={{
-          height: 0,
-          borderBottom:
-            "1px dotted color-mix(in srgb, var(--fintheon-accent) 14%, transparent)",
-          transform: "translateY(-3px)",
-        }}
-      />
+      <DottedLeader />
       <dd className="flex items-center gap-1.5 text-right shrink-0">
         {totalWindows > 1 && (
           <span className="inline-flex items-center gap-1">
@@ -512,6 +522,7 @@ function GatedForecastRow({
   expanded,
   onToggle,
   detail,
+  fillDetail,
 }: {
   label: string;
   planDate?: string | null;
@@ -522,6 +533,7 @@ function GatedForecastRow({
   expanded?: boolean;
   onToggle?: () => void;
   detail?: (f: NonNullable<DayPlanWindow["econForecast"]>) => string;
+  fillDetail?: boolean;
 }) {
   if (loading || !window) {
     return <Row label={label} value={"\u2014"} loading />;
@@ -559,16 +571,7 @@ function GatedForecastRow({
         )}
         {label}
       </dt>
-      <span
-        aria-hidden
-        className="flex-1"
-        style={{
-          height: 0,
-          borderBottom:
-            "1px dotted color-mix(in srgb, var(--fintheon-accent) 14%, transparent)",
-          transform: "translateY(-3px)",
-        }}
-      />
+      <DottedLeader />
       <dd
         className="tabular-nums text-right shrink-0"
         style={{
@@ -604,17 +607,21 @@ function GatedForecastRow({
   if (!hasDetail) return rowContent;
 
   return (
-    <div>
+    <div className={fillDetail ? "flex min-h-0 flex-1 flex-col" : undefined}>
       <button
         type="button"
         onClick={onToggle}
-        className="w-full text-left transition-colors hover:bg-[var(--fintheon-accent)]/[0.035]"
+        className="w-full text-left transition-colors hover:text-[var(--fintheon-accent)]"
       >
         {rowContent}
       </button>
       {expanded && window.econForecast && (
         <div
-          className="ml-4 mt-1 rounded-sm px-3 py-2 text-[12.5px] leading-relaxed"
+          className={`ml-4 mt-1 animate-in fade-in duration-300 text-[12.5px] leading-relaxed ${
+            fillDetail
+              ? "min-h-[112px] flex-1 overflow-y-auto pr-1"
+              : "px-3 py-2"
+          }`}
           style={{
             color:
               tone === "bullish"
@@ -622,8 +629,6 @@ function GatedForecastRow({
                 : tone === "bearish"
                   ? "var(--fintheon-bearish)"
                   : "var(--fintheon-text)",
-            background:
-              "color-mix(in srgb, var(--fintheon-accent) 5%, transparent)",
             fontFamily: "var(--font-body)",
           }}
         >
@@ -689,16 +694,7 @@ function Row({
       >
         {label}
       </dt>
-      <span
-        aria-hidden
-        className="flex-1"
-        style={{
-          height: 0,
-          borderBottom:
-            "1px dotted color-mix(in srgb, var(--fintheon-accent) 14%, transparent)",
-          transform: "translateY(-3px)",
-        }}
-      />
+      <DottedLeader />
       <dd
         className="tabular-nums text-right shrink-0"
         style={{
@@ -715,4 +711,37 @@ function Row({
       </dd>
     </div>
   );
+}
+
+function DottedLeader() {
+  return (
+    <span
+      aria-hidden
+      className="flex-1"
+      style={{
+        height: 1,
+        transform: "translateY(-3px)",
+        backgroundImage:
+          "repeating-linear-gradient(to right, color-mix(in srgb, var(--fintheon-accent) 16%, transparent) 0 2px, transparent 2px 7px)",
+        WebkitMaskImage:
+          "linear-gradient(to right, #000 0%, #000 35%, transparent 50%, #000 65%, #000 100%)",
+        maskImage:
+          "linear-gradient(to right, #000 0%, #000 35%, transparent 50%, #000 65%, #000 100%)",
+      }}
+    />
+  );
+}
+
+function buildThesisDetail(
+  forecast: NonNullable<DayPlanWindow["econForecast"]>,
+) {
+  const base = forecast.aiPrediction?.trim() || "Awaiting agent forecast.";
+  if (base.length >= 160) return base;
+  const miss = forecast.miss?.description
+    ? ` Miss path: ${forecast.miss.description}`
+    : "";
+  const beat = forecast.beat?.description
+    ? ` Beat path: ${forecast.beat.description}`
+    : "";
+  return `${base}${miss}${beat}`;
 }

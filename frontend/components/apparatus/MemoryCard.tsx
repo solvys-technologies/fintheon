@@ -7,7 +7,7 @@ import {
   BarChart3,
   Diff,
   MessageSquare,
-  Pencil,
+  PencilLine,
   History,
 } from "lucide-react";
 import type { AgentMemory, MemorySource } from "./types";
@@ -18,7 +18,7 @@ const SOURCE_ICONS: Record<MemorySource, typeof Twitter> = {
   agentDesk: BarChart3,
   trade: Diff,
   boardroom: MessageSquare,
-  manual: Pencil,
+  manual: PencilLine,
 };
 
 const SOURCE_LABELS: Record<MemorySource, string> = {

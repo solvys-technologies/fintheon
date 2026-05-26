@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import { useToast } from "../../contexts/ToastContext";
 import { RiskSignalCards } from "../narrative/RiskSignalCards";
@@ -42,6 +42,9 @@ export function DeskRiskSignalsPanel({
     <section className="flex min-h-0 flex-col overflow-hidden px-2 py-1">
       <KanbanTitle
         title="Risk Signals"
+        titleIcon={
+          <AlertTriangle className="h-3.5 w-3.5 text-[var(--fintheon-accent)]/72" />
+        }
         tone="gold"
         headerRight={
           <div className="flex items-center gap-1">

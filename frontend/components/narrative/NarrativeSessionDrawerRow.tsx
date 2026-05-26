@@ -1,6 +1,6 @@
 import {
   ChevronDown,
-  Edit3,
+  PencilLine,
   Inbox,
   MessageSquareText,
   RotateCcw,
@@ -122,7 +122,7 @@ export function NarrativeSessionDrawerRow({
           className="row-action"
           title="Rename narrative"
         >
-          <Edit3 size={13} />
+          <PencilLine size={13} />
         </button>
         <button
           type="button"

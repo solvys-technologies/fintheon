@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Check, ChevronDown, Pencil, Save, Trash2, Tv } from "lucide-react";
+import { Check, ChevronDown, PencilLine, Save, Trash2, Tv } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { DEFAULT_THEME, type ThemeConfig } from "../../lib/theme";
 import { DEFAULT_FONT_THEME } from "../../lib/font-theme";
@@ -423,7 +423,7 @@ function ThemeTile({
               className="fintheon-icon-button"
               title="Rename theme"
             >
-              <Pencil className="h-3.5 w-3.5" />
+              <PencilLine className="h-3.5 w-3.5" />
             </button>
           )}
           {onDelete && (

@@ -342,6 +342,7 @@ export const LUCIDE_TO_NUCLEO: Record<string, string> = {
 
   // Writing
   Pencil: "pen-3",
+  PencilLine: "pen-3",
   Edit3: "pen-3",
   BookOpen: "feather",
   BookOpenCheck: "book-bookmark",

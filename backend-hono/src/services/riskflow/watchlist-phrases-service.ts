@@ -125,6 +125,59 @@ export async function addPhrase(
 }
 
 /**
+ * Update an active watchlist phrase for a user.
+ */
+export async function updatePhrase(
+  userId: string,
+  phraseId: number,
+  data: {
+    phrase: string;
+    matchType?: "contains" | "exact";
+    repeating?: boolean;
+  },
+): Promise<{ phrase: WatchlistPhrase; removedBias: string[] } | null> {
+  const { cleaned, removed } = stripBias(data.phrase);
+  if (!cleaned.trim()) {
+    throw new Error("Phrase is empty after removing bias words");
+  }
+  const words = cleaned.trim().split(/\s+/);
+  if (words.length > 10) {
+    throw new Error("Phrase must be 10 words or fewer");
+  }
+  const phraseLower = cleaned.toLowerCase();
+  const matchType = data.matchType ?? "contains";
+  const repeating = data.repeating ?? true;
+
+  if (!isDatabaseAvailable() || !sql) {
+    const existing = memoryPhrases.find(
+      (p) => p.id === phraseId && p.userId === userId && p.isActive,
+    );
+    if (!existing) return null;
+    existing.phrase = cleaned;
+    existing.phraseLower = phraseLower;
+    existing.matchType = matchType;
+    existing.repeating = repeating;
+    phraseCacheTime = 0;
+    return { phrase: existing, removedBias: removed };
+  }
+
+  const result = await sql`
+    UPDATE watchlist_phrases
+    SET phrase = ${cleaned},
+        phrase_lower = ${phraseLower},
+        match_type = ${matchType},
+        repeating = ${repeating}
+    WHERE id = ${phraseId} AND user_id = ${userId} AND is_active = true
+    RETURNING id, user_id, phrase, phrase_lower, is_active, match_type, repeating,
+              match_count, last_matched_at, created_at
+  `;
+  phraseCacheTime = 0;
+  return result.length > 0
+    ? { phrase: rowToPhrase(result[0]), removedBias: removed }
+    : null;
+}
+
+/**
  * Get all active phrases for a user
  */
 export async function getUserPhrases(

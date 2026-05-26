@@ -6,13 +6,12 @@ import {
   ChevronUp,
   ChevronDown,
   Terminal,
-  ExternalLink,
   SplitSquareVertical,
   Power,
   FileText,
   AlertTriangle,
 } from "lucide-react";
-import { PLATFORM_URLS, type TradingPlatform } from "../TradingBrowser";
+import type { TradingPlatform } from "../TradingBrowser";
 import { changelog } from "../../../src/lib/changelog";
 import { useErrorLog } from "../../hooks/useErrorLog";
 import { useSystemStatus } from "../../hooks/useSystemStatus";
@@ -814,40 +813,22 @@ export function FooterToolbar({
           </button>
         )}
 
-        {/* Iframe controls (when TopStepX active) */}
-        {topStepXEnabled && (
-          <>
-            <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
-            {/* [claude-code 2026-04-24] Footer iFrame picker — single source: the
-                user-managed catalogue in Settings → iFrames. No hardcoded list. */}
-            <select
-              value={primaryPlatform}
-              onChange={(e) =>
-                onPrimaryPlatformChange?.(e.target.value as TradingPlatform)
-              }
-              className="px-1.5 py-0.5 bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/15 rounded text-[10px] text-[var(--fintheon-accent)] focus:outline-none"
-            >
-              {proposerIframeSources.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-            {allowSplitView && (
-              <>
+        {/* Right section — pushed to end */}
+        <div className="ml-auto flex items-center gap-3">
+          {/* Iframe controls (when TopStepX active) */}
+          {topStepXEnabled && (
+            <>
+              <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={onSplitViewToggle}
-                  className={`p-0.5 rounded transition-colors ${
-                    splitViewEnabled
-                      ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
-                      : "text-gray-600 hover:text-[var(--fintheon-accent)]"
-                  }`}
-                  title="Toggle split view"
+                  onClick={onPowerOff}
+                  className="p-0.5 rounded text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  title="Power off iframe"
                 >
-                  <SplitSquareVertical className="w-3 h-3" />
+                  <Power className="w-3 h-3" />
                 </button>
-                {splitViewEnabled && (
+                {allowSplitView && splitViewEnabled && (
                   <select
                     value={secondaryPlatform}
                     onChange={(e) =>
@@ -867,35 +848,37 @@ export function FooterToolbar({
                       ))}
                   </select>
                 )}
-              </>
-            )}
-            <button
-              type="button"
-              onClick={() =>
-                window.open(
-                  PLATFORM_URLS[primaryPlatform],
-                  "_blank",
-                  "noopener,noreferrer",
-                )
-              }
-              className="p-0.5 rounded text-gray-600 hover:text-gray-300 transition-colors"
-              title="Open in browser"
-            >
-              <ExternalLink className="w-3 h-3" />
-            </button>
-            <button
-              type="button"
-              onClick={onPowerOff}
-              className="p-0.5 rounded text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-              title="Power off iframe"
-            >
-              <Power className="w-3 h-3" />
-            </button>
-          </>
-        )}
+                {allowSplitView && (
+                  <button
+                    type="button"
+                    onClick={onSplitViewToggle}
+                    className={`p-0.5 rounded transition-colors ${
+                      splitViewEnabled
+                        ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
+                        : "text-gray-600 hover:text-[var(--fintheon-accent)]"
+                    }`}
+                    title="Toggle split view"
+                  >
+                    <SplitSquareVertical className="w-3 h-3" />
+                  </button>
+                )}
+                <select
+                  value={primaryPlatform}
+                  onChange={(e) =>
+                    onPrimaryPlatformChange?.(e.target.value as TradingPlatform)
+                  }
+                  className="px-1.5 py-0.5 bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/15 rounded text-[10px] text-[var(--fintheon-accent)] focus:outline-none"
+                >
+                  {proposerIframeSources.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
 
-        {/* Right section — pushed to end */}
-        <div className="ml-auto flex items-center gap-3">
           {/* Update installing status */}
           {compactLevel < 1 && updateInstalling && (
             <>

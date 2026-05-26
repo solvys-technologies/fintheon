@@ -42,6 +42,9 @@ export interface DayPlanWindow {
   endTime: string;
   eventName?: string | null;
   eventCountry?: string | null;
+  importance?: string | number | null;
+  impact?: string | number | null;
+  severity?: string | number | null;
   econForecast: EconForecast | null;
 }
 

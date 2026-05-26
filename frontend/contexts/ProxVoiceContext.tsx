@@ -27,6 +27,8 @@ interface ProxVoiceParticipant {
   name: string;
   isLocal: boolean;
   isSpeaking: boolean;
+  audioLevel?: number;
+  cadence?: number;
   isMuted: boolean;
   outputMuted: boolean;
   leaving?: boolean;
@@ -59,6 +61,15 @@ function parseProfile(participant: Participant): ProxVoiceProfile | null {
   } catch {
     return null;
   }
+}
+
+function readAudioLevel(participant: Participant, active: boolean) {
+  const level = (participant as Participant & { audioLevel?: number })
+    .audioLevel;
+  if (typeof level === "number" && Number.isFinite(level)) {
+    return Math.max(0, Math.min(1, level));
+  }
+  return active ? 0.45 : 0;
 }
 
 export function ProxVoiceProvider({ children }: { children: React.ReactNode }) {
@@ -99,16 +110,22 @@ export function ProxVoiceProvider({ children }: { children: React.ReactNode }) {
       ...Array.from(room.remoteParticipants.values()),
     ];
     const mapped: ProxVoiceParticipant[] = allParticipants.map(
-      (participant) => ({
-        identity: participant.identity,
-        name: participant.name || participant.identity,
-        isLocal: participant.identity === room.localParticipant.identity,
-        isSpeaking: active.has(participant.identity),
-        isMuted: !participant.isMicrophoneEnabled,
-        outputMuted: outputMuted.has(participant.identity),
-        leaving: false,
-        profile: parseProfile(participant),
-      }),
+      (participant) => {
+        const isSpeaking = active.has(participant.identity);
+        const audioLevel = readAudioLevel(participant, isSpeaking);
+        return {
+          identity: participant.identity,
+          name: participant.name || participant.identity,
+          isLocal: participant.identity === room.localParticipant.identity,
+          isSpeaking,
+          audioLevel,
+          cadence: audioLevel,
+          isMuted: !participant.isMicrophoneEnabled,
+          outputMuted: outputMuted.has(participant.identity),
+          leaving: false,
+          profile: parseProfile(participant),
+        };
+      },
     );
     const nextIds = new Set(mapped.map((participant) => participant.identity));
     const leaving = Array.from(previousParticipants.current.values())

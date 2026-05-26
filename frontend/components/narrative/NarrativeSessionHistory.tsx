@@ -1,4 +1,4 @@
-import { Edit3 } from "lucide-react";
+import { PencilLine } from "lucide-react";
 import { useState } from "react";
 import { NarrativeColorPopover } from "./NarrativeColorPopover";
 
@@ -126,7 +126,7 @@ function SessionRow({
           className="flex h-7 w-7 items-center justify-center rounded border border-transparent text-[var(--fintheon-muted)] opacity-0 transition group-hover:border-[var(--fintheon-accent)]/15 group-hover:opacity-100 hover:text-[var(--fintheon-accent)]"
           title="Rename narrative"
         >
-          <Edit3 size={13} />
+          <PencilLine size={13} />
         </button>
       </div>
 

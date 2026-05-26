@@ -17,10 +17,11 @@ export type ToastVariant =
   | "updating"
   | "info"
   | "reminder"
-  | "vix";
+  | "vix"
+  | "watch";
 
 /** Toast placement: trading/market alerts → top-right, system → bottom-left */
-export type ToastPosition = "top-right" | "bottom-left";
+export type ToastPosition = "top-right" | "bottom-left" | "bottom-right";
 
 /** Unique notification type ID used for "Don't Show Again" blocklist */
 export type NotificationType =
@@ -33,6 +34,7 @@ export type NotificationType =
   | "tilt-alert"
   | "trade-alert"
   | "iv-alert"
+  | "riskflow-watch"
   | "general";
 
 export interface Toast {
@@ -179,9 +181,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             ? 2500
             : variant === "reminder"
               ? 8000
-              : variant === "vix"
-                ? 10000
-                : 4000);
+              : variant === "watch"
+                ? 12000
+                : variant === "vix"
+                  ? 10000
+                  : 4000);
         setTimeout(() => dismissToast(id), delay);
       }
 

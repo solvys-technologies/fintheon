@@ -6,6 +6,7 @@ import {
   Phone,
   PhoneOff,
   PictureInPicture2,
+  Stadium,
   Volume2,
   VolumeOff,
 } from "lucide-react";
@@ -42,7 +43,7 @@ export function ProxVoiceHeaderControl({
         className={`relative toolbar-icon-btn ${connected ? "toolbar-active" : ""}`}
         title={connected ? "Forum live" : "Forum"}
       >
-        <Phone
+        <Stadium
           className={`h-3 w-3 ${connected ? "toolbar-icon-active" : ""}`}
           style={
             connected

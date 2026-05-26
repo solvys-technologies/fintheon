@@ -1876,6 +1876,21 @@ html[data-zen-mode="true"] button[aria-label] {
   overflow: hidden;
 }
 
+.fintheon-toast-watch {
+  border-color: color-mix(in srgb, var(--fintheon-accent) 46%, transparent);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--fintheon-accent) 13%, transparent),
+      transparent 38%
+    ),
+    var(--fintheon-overlay-surface);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--fintheon-accent) 12%, transparent),
+    0 18px 48px rgba(0, 0, 0, 0.46),
+    0 0 26px color-mix(in srgb, var(--fintheon-accent) 13%, transparent);
+}
+
 .fintheon-modal-surface {
   border-radius: 8px;
   overflow: hidden;
@@ -3505,11 +3520,37 @@ html[data-zen-mode="true"] button[aria-label] {
 }
 
 .fintheon-footer-surface {
-  background: color-mix(
-    in srgb,
-    var(--fintheon-surface) 22%,
-    transparent
-  ) !important;
+  background: var(--fintheon-surface) !important;
+}
+
+.fintheon-desk-brief-markdown {
+  --tw-prose-body: color-mix(in srgb, var(--fintheon-text) 64%, transparent);
+}
+
+.fintheon-desk-brief-markdown h1,
+.fintheon-desk-brief-markdown h2,
+.fintheon-desk-brief-markdown h3,
+.fintheon-desk-brief-markdown strong {
+  color: var(--fintheon-accent);
+}
+
+.fintheon-desk-brief-markdown p,
+.fintheon-desk-brief-markdown li {
+  margin-top: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.fintheon-brief-time-token {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--fintheon-accent) 20%, transparent);
+  border-radius: 4px;
+  padding: 0 0.28rem;
+  color: var(--fintheon-accent);
+  background: color-mix(in srgb, var(--fintheon-accent) 6%, transparent);
+  font-family: var(--font-data, monospace);
+  font-size: 0.86em;
+  line-height: 1.45;
 }
 
 [data-fintheon-surface-theme="frosted"] .fintheon-side-surface,
