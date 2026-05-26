@@ -9,6 +9,21 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-26T10:57:00-04:00",
+    agent: "codex",
+    summary:
+      "Desk prototype fix patch: restored the page-one daily brief to the real MDB/ADB/PMDB feed, moved queued Desk Plan events into a second-page Briefing view beside Map/Calendar, kept the Desk Plan widget chrome with an Eastern date row, and removed the duplicate embedded DayCard title.",
+    files: [
+      "frontend/components/desk/DeskDailyBriefingPanel.tsx",
+      "frontend/components/desk/DeskDashboardPrototype.tsx",
+      "frontend/components/desk/DeskBriefingPanel.tsx",
+      "frontend/components/desk/DeskPlanWidget.tsx",
+      "frontend/components/desk/DeskSprintMapCalendar.tsx",
+      "frontend/components/narrative/DayCard.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-26T10:32:00-04:00",
     agent: "codex",
     summary:

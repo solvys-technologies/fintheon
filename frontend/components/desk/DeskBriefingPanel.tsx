@@ -14,11 +14,11 @@ const MULTI_REFETCH_EVENT = "fintheon:day-plan-multi-refetch";
 export function DeskBriefingPanel({
   plans,
   isLoading,
-  error,
+  error = null,
 }: {
   plans: DayPlan[];
   isLoading: boolean;
-  error: string | null;
+  error?: string | null;
 }) {
   const queuedEvents = buildQueuedDeskEvents(plans);
   const groups = groupQueuedDeskEvents(queuedEvents);
@@ -31,7 +31,7 @@ export function DeskBriefingPanel({
   };
 
   return (
-    <section className="flex min-h-0 flex-col overflow-hidden px-2 py-1">
+    <section className="flex h-full min-h-0 flex-col overflow-hidden px-2 py-1">
       <KanbanTitle
         title="Desk Briefing"
         tone="gold"

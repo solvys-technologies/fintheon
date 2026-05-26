@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { BookOpen } from "lucide-react";
 import { useToast } from "../../contexts/ToastContext";
 import { DAY_PLAN_REFETCH_EVENT } from "../../hooks/useDayPlan";
@@ -12,6 +12,7 @@ const MULTI_REFETCH_EVENT = "fintheon:day-plan-multi-refetch";
 export function DeskPlanWidget() {
   const { addToast } = useToast();
   const [isAdvancing, setIsAdvancing] = useState(false);
+  const deskDateLabel = useMemo(() => formatDeskDate(new Date()), []);
 
   const advanceDeskPlan = useCallback(async () => {
     if (isAdvancing) return;
@@ -46,21 +47,36 @@ export function DeskPlanWidget() {
         title=""
         tone="gold"
         headerRight={
-          <div className="ml-auto flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/62">
-              <BookOpen className="h-3 w-3" />
-              Desk Plan
+          <div className="ml-auto flex flex-col items-end gap-0.5">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/62">
+                <BookOpen className="h-3 w-3" />
+                Desk Plan
+              </span>
+              <DeskPlanAdvanceButton
+                isLoading={isAdvancing}
+                onClick={advanceDeskPlan}
+              />
+            </div>
+            <span className="font-mono text-[9px] text-[var(--fintheon-muted)]/48">
+              {deskDateLabel}
             </span>
-            <DeskPlanAdvanceButton
-              isLoading={isAdvancing}
-              onClick={advanceDeskPlan}
-            />
           </div>
         }
       />
       <div className="relative mt-2 min-h-0 flex-1 overflow-y-auto pr-1">
-        <DayCard bare />
+        <DayCard bare hideHeader />
       </div>
     </section>
   );
+}
+
+function formatDeskDate(date: Date) {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
 }

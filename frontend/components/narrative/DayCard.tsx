@@ -37,6 +37,7 @@ interface DayCardProps {
   id?: string;
   className?: string;
   bare?: boolean;
+  hideHeader?: boolean;
   hideStreak?: boolean;
 }
 
@@ -120,6 +121,7 @@ export function DayCard({
   id = "day-card-anchor",
   className,
   bare,
+  hideHeader,
   hideStreak,
 }: DayCardProps) {
   const { data: todayData, isLoading: todayLoading } = useDayPlan();
@@ -242,40 +244,42 @@ export function DayCard({
       aria-label="Day card"
       data-tour-target="day-card"
     >
-      <header className="flex items-center gap-3 mb-1">
-        <div className="min-w-0">
-          <div className="flex items-baseline gap-2">
-            <span
-              className="text-[11.5px] font-semibold uppercase tracking-[0.2em]"
-              style={{
-                color: "var(--fintheon-accent)",
-                fontFamily: "var(--font-heading)",
-              }}
-            >
-              Desk Plan
-            </span>
-            {plan?.sourceBriefId && (
+      {!hideHeader && (
+        <header className="flex items-center gap-3 mb-1">
+          <div className="min-w-0">
+            <div className="flex items-baseline gap-2">
               <span
-                className="text-[9px] uppercase tracking-widest"
-                style={{ color: "var(--fintheon-muted, #908774)" }}
+                className="text-[11.5px] font-semibold uppercase tracking-[0.2em]"
+                style={{
+                  color: "var(--fintheon-accent)",
+                  fontFamily: "var(--font-heading)",
+                }}
               >
-                brief
+                Desk Plan
+              </span>
+              {plan?.sourceBriefId && (
+                <span
+                  className="text-[9px] uppercase tracking-widest"
+                  style={{ color: "var(--fintheon-muted, #908774)" }}
+                >
+                  brief
+                </span>
+              )}
+            </div>
+            {!hideStreak && dateLabel && (
+              <span
+                className="mt-0.5 block text-[10.5px]"
+                style={{
+                  color: "var(--fintheon-muted, #908774)",
+                  fontFamily: "var(--font-data, monospace)",
+                }}
+              >
+                {dateLabel}
               </span>
             )}
           </div>
-          {!hideStreak && dateLabel && (
-            <span
-              className="mt-0.5 block text-[10.5px]"
-              style={{
-                color: "var(--fintheon-muted, #908774)",
-                fontFamily: "var(--font-data, monospace)",
-              }}
-            >
-              {dateLabel}
-            </span>
-          )}
-        </div>
-      </header>
+        </header>
+      )}
 
       <p
         className="text-[13.5px] leading-relaxed mb-3"
