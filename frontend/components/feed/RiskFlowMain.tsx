@@ -11,7 +11,7 @@
 //   same Ask AI catalyst-to-chat callback used by Strategium mini cards.
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { EconCountdownModal } from "./EconCountdownModal";
-import { Bell, BellOff } from "lucide-react";
+import { Bell, BellOff, RadioTower } from "lucide-react";
 import { CircleQuarters, MeterToShimmer } from "../icon-bank/UnicodeSpinners";
 import { Loader2 } from "lucide-react";
 import { withViewTransition } from "../../lib/view-transition";
@@ -194,14 +194,18 @@ export function RiskFlowMain({ onChatAlert }: RiskFlowMainProps) {
       className="relative h-full overflow-y-auto px-0 pt-0 pb-0"
     >
       <EconCountdownModal />
-      <div className="flex items-center justify-between mb-2 mt-1 px-3">
-        <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.12em]">
-          <span className="text-[var(--fintheon-accent)] font-semibold tracking-[0.15em]">
-            RiskFlow
-          </span>
-          <span className="flex items-center gap-1.5">
+      <header className="consilium-tab-bar riskflow-main-header grid shrink-0 grid-cols-[15.5rem_minmax(0,1fr)_15.5rem] items-center gap-3 px-4 pt-3 pb-1.5">
+        <div className="riskflow-main-header__side flex w-[15.5rem] items-center gap-3">
+          <h2
+            className="consilium-tab-bar__title mr-0 flex items-center gap-1.5 text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
+            style={{ fontFamily: "var(--font-heading, Roboto, sans-serif)" }}
+          >
+            <RadioTower size={14} />
+            <span>RiskFlow</span>
+          </h2>
+          <span className="flex h-7 items-center gap-1.5 rounded-md border border-transparent px-2 text-[10px] uppercase tracking-[0.14em] text-zinc-500">
             <span
-              className={`w-1.5 h-1.5 rounded-full ${sourceStatus.xHomeTimeline ? "bg-emerald-400" : "bg-zinc-600"}`}
+              className={`h-1.5 w-1.5 rounded-full ${sourceStatus.xHomeTimeline ? "bg-emerald-400" : "bg-zinc-600"}`}
             />
             <span
               className={
@@ -215,91 +219,95 @@ export function RiskFlowMain({ onChatAlert }: RiskFlowMainProps) {
           </span>
           <span
             aria-hidden={!refreshing}
+            className="inline-flex min-w-[60px] items-center"
             style={{
               opacity: refreshing ? 1 : 0,
               transition: "opacity 180ms ease",
-              minWidth: 60,
             }}
           >
             <MeterToShimmer active={refreshing} size={11} cells={6} />
           </span>
         </div>
-        <div className="flex items-center gap-1">
+
+        <div className="flex min-w-0 items-center gap-2">
+          <PriorityFilterMenu
+            selected={showProposals ? new Set() : severitySet}
+            onToggle={(s) =>
+              withViewTransition(() => {
+                setShowProposals(false);
+                toggleSeverity(s);
+              })
+            }
+            onClear={() =>
+              withViewTransition(() => {
+                setShowProposals(false);
+                clearSeverities();
+              })
+            }
+            counts={{
+              critical: critCount,
+              high: highCount,
+              medium: medCount,
+              low: lowCount,
+            }}
+          />
+          <SourceFilterMenu
+            selected={showProposals ? new Set() : bucketSet}
+            onToggle={(b) =>
+              withViewTransition(() => {
+                setShowProposals(false);
+                toggleBucket(b);
+              })
+            }
+            onClear={() =>
+              withViewTransition(() => {
+                setShowProposals(false);
+                clearBuckets();
+              })
+            }
+            counts={bucketCounts}
+          />
+          <button
+            onClick={() =>
+              withViewTransition(() => setShowProposals((v) => !v))
+            }
+            className={`h-7 rounded-md border px-3 text-[10px] font-medium uppercase tracking-[0.12em] transition-colors ${
+              showProposals
+                ? "border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
+                : "border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70"
+            }`}
+          >
+            Proposals{proposalCount > 0 ? ` (${proposalCount})` : ""}
+          </button>
+        </div>
+
+        <div className="riskflow-main-header__side flex w-[15.5rem] items-center justify-end gap-1.5">
           <button
             type="button"
             onClick={() => {
               void handleKickstart();
             }}
             disabled={kickstarting}
-            className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40 flex items-center justify-center w-6 h-6"
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-zinc-500 transition-colors hover:border-[var(--fintheon-accent)]/24 hover:text-[var(--fintheon-accent)] disabled:opacity-40"
             title="Kickstart ingestion"
           >
             <CircleQuarters active={kickstarting} size={14} />
           </button>
           <button
             onClick={requestNotifications}
-            className="flex items-center gap-2 text-xs text-gray-400 hover:text-[var(--fintheon-accent)] transition-colors px-2 py-1"
+            className="flex h-7 items-center gap-1.5 rounded-md border border-transparent px-3 text-xs font-medium text-[var(--fintheon-text)]/40 transition-colors hover:border-[var(--fintheon-accent)]/24 hover:text-[var(--fintheon-accent)]"
           >
             {notificationsEnabled ? (
-              <Bell className="w-3.5 h-3.5" />
+              <Bell className="h-3.5 w-3.5" />
             ) : (
-              <BellOff className="w-3.5 h-3.5" />
+              <BellOff className="h-3.5 w-3.5" />
             )}
-            {notificationsEnabled ? "Notifications On" : "Notifications"}
+            <span className="fintheon-zen-label">
+              {notificationsEnabled ? "Notifications On" : "Notifications"}
+            </span>
           </button>
         </div>
-      </div>
-
-      {/* Filter row: Priority popover + Source bucket popover + Proposals tab */}
-      <div className="flex items-center gap-2 mb-3 px-3">
-        <PriorityFilterMenu
-          selected={showProposals ? new Set() : severitySet}
-          onToggle={(s) =>
-            withViewTransition(() => {
-              setShowProposals(false);
-              toggleSeverity(s);
-            })
-          }
-          onClear={() =>
-            withViewTransition(() => {
-              setShowProposals(false);
-              clearSeverities();
-            })
-          }
-          counts={{
-            critical: critCount,
-            high: highCount,
-            medium: medCount,
-            low: lowCount,
-          }}
-        />
-        <SourceFilterMenu
-          selected={showProposals ? new Set() : bucketSet}
-          onToggle={(b) =>
-            withViewTransition(() => {
-              setShowProposals(false);
-              toggleBucket(b);
-            })
-          }
-          onClear={() =>
-            withViewTransition(() => {
-              setShowProposals(false);
-              clearBuckets();
-            })
-          }
-          counts={bucketCounts}
-        />
-        <button
-          onClick={() => withViewTransition(() => setShowProposals((v) => !v))}
-          className={`text-[10px] px-2.5 py-1 rounded transition-colors border ${
-            showProposals
-              ? "bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] border-[var(--fintheon-accent)]/40"
-              : "text-zinc-500 hover:text-[var(--fintheon-accent)] border-transparent"
-          }`}
-        >
-          Proposals{proposalCount > 0 ? ` (${proposalCount})` : ""}
-        </button>
-      </div>
+      </header>
 
       <div>
         {items.length === 0 ? (
