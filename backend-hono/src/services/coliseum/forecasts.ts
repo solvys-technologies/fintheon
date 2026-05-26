@@ -1,5 +1,6 @@
 import { getColiseumClient } from "./db.js";
 import { resolveColiseumDeskId } from "./desks.js";
+import { canPublish } from "./permissions.js";
 import type {
   DeskForecast,
   DeskForecastInput,
@@ -79,6 +80,8 @@ export async function publishForecast(input: {
   actorId: string;
 }): Promise<DeskForecast> {
   const forecast = await readForecast(input.id);
+  const permitted = await canPublish(input.actorId, forecast.deskId);
+  if (!permitted) throw new Error("Desk manager permission required.");
   if (forecast.catalysts.length < 3) {
     throw new Error("Publish requires at least 3 RiskFlow catalysts.");
   }
@@ -107,6 +110,49 @@ export async function updateForecastStatus(
     .eq("id", id);
   if (error) throw new Error(`Forecast status failed: ${error.message}`);
   return readForecast(id);
+}
+
+export async function addCatalyst(
+  forecastId: string,
+  riskflowItemId: string,
+): Promise<void> {
+  const sb = getColiseumClient();
+  const { error } = await sb.from("coliseum_forecast_catalysts").insert({
+    forecast_id: forecastId,
+    riskflow_item_id: riskflowItemId,
+  });
+  if (error) throw new Error(`Add catalyst failed: ${error.message}`);
+}
+
+export async function addMarketRef(
+  forecastId: string,
+  ref: MarketReferenceInput,
+): Promise<ForecastMarketReference> {
+  const sb = getColiseumClient();
+  const { data, error } = await sb
+    .from("coliseum_forecast_market_refs")
+    .insert({
+      forecast_id: forecastId,
+      venue: ref.venue,
+      market_title: ref.marketTitle,
+      market_url: ref.marketUrl,
+      price_or_odds: ref.priceOrOdds ?? null,
+      expiry: ref.expiry ?? null,
+      fetched_at: ref.fetchedAt ?? new Date().toISOString(),
+    })
+    .select("*")
+    .single();
+  if (error) throw new Error(`Add market ref failed: ${error.message}`);
+  return {
+    id: String(data.id),
+    venue: String(data.venue),
+    marketTitle: String(data.market_title),
+    marketUrl: String(data.market_url),
+    priceOrOdds: data.price_or_odds != null ? String(data.price_or_odds) : null,
+    expiry: data.expiry ? String(data.expiry) : null,
+    fetchedAt: String(data.fetched_at),
+    createdAt: String(data.created_at),
+  };
 }
 
 async function replaceForecastChildren(
