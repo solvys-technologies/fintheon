@@ -6,6 +6,8 @@ import {
 } from "../../services/coliseum/agent-style.js";
 import { resolveColiseumDeskId } from "../../services/coliseum/desks.js";
 import {
+  addCatalyst,
+  addMarketRef,
   createDraftForecast,
   listForecasts,
   publishForecast,
@@ -19,7 +21,7 @@ import {
 import { readDeskProfile, saveDeskProfile } from "../../services/coliseum/profiles.js";
 import { runForecastMonitor } from "../../services/coliseum/thesis-monitor.js";
 import { isAuthedActor } from "../../services/coliseum/db.js";
-import { deskAgentStyleSchema, deskProfileSchema, forecastSchema } from "../../services/coliseum/validation.js";
+import { deskAgentStyleSchema, deskProfileSchema, forecastSchema, marketReferenceSchema } from "../../services/coliseum/validation.js";
 
 export function createColiseumRoutes(): Hono {
   const app = new Hono();
@@ -133,6 +135,32 @@ export function createColiseumRoutes(): Hono {
       await requireCanPublish(current.deskId, userId);
       const result = await runForecastMonitor(current.id);
       return c.json(result);
+    }),
+  );
+
+  app.post("/forecasts/:id/catalysts", async (c) =>
+    handle(c, async () => {
+      const userId = requireActor(c);
+      const current = await readForecast(c.req.param("id"));
+      await requireCanDraft(current.deskId, userId);
+      const body = (await c.req.json()) as { catalystId?: unknown };
+      if (typeof body.catalystId !== "string" || !body.catalystId.trim()) {
+        return c.json({ error: "catalystId is required" }, 400);
+      }
+      await addCatalyst(current.id, body.catalystId.trim());
+      return c.json({ ok: true });
+    }),
+  );
+
+  app.post("/forecasts/:id/market-refs", async (c) =>
+    handle(c, async () => {
+      const userId = requireActor(c);
+      const current = await readForecast(c.req.param("id"));
+      await requireCanDraft(current.deskId, userId);
+      const parsed = marketReferenceSchema.safeParse(await c.req.json());
+      if (!parsed.success) return c.json({ error: parsed.error.message }, 400);
+      const ref = await addMarketRef(current.id, parsed.data);
+      return c.json({ ref });
     }),
   );
 

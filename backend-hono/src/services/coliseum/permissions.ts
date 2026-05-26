@@ -48,6 +48,15 @@ export async function requireCanPublish(
   return permission;
 }
 
+export async function canPublish(
+  userId: string,
+  deskId: string,
+): Promise<boolean> {
+  if (!isAuthedActor(userId)) return false;
+  const role = await readMembershipRole(deskId, userId);
+  return role === "owner" || role === "manager";
+}
+
 async function readMembershipRole(
   deskId: string,
   userId: string,
