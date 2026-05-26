@@ -1,4 +1,5 @@
 import { getSupabaseClient } from "../../config/supabase.js";
+import { ensureDeskVault } from "../file-room/paths.js";
 import type { NarrativeDesk } from "./types.js";
 
 const DEFAULT_DESK = {
@@ -26,6 +27,7 @@ export async function ensureDefaultNarrativeDesk(
 
   if (error) throw new Error(`Default desk unavailable: ${error.message}`);
   const desk = toDesk(data);
+  await ensureDeskVault(desk);
   if (createdBy) await ensureDeskMembership(desk.id, createdBy, "owner");
   return desk;
 }
@@ -46,7 +48,9 @@ export async function resolveNarrativeDesk(
     .single();
 
   if (error) throw new Error(`Desk not found: ${error.message}`);
-  return toDesk(data);
+  const desk = toDesk(data);
+  await ensureDeskVault(desk);
+  return desk;
 }
 
 export async function updateNarrativeDeskMap(params: {

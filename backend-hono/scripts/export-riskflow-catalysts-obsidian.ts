@@ -71,12 +71,15 @@ function arg(name: string): string | null {
 }
 
 function vaultPath(): string {
-  const explicit = arg("vault") ?? process.env.OBSIDIAN_CATALYST_VAULT_PATH;
+  const explicit =
+    arg("vault") ??
+    process.env.OBSIDIAN_RISKFLOW_VAULT_PATH ??
+    process.env.OBSIDIAN_CATALYST_VAULT_PATH;
   if (explicit) return resolve(explicit);
   if (process.env.OBSIDIAN_VAULT_PATH) {
-    return resolve(process.env.OBSIDIAN_VAULT_PATH, "Fintheon Catalyst Vault");
+    return resolve(process.env.OBSIDIAN_VAULT_PATH, "RiskFlow Main Vault");
   }
-  return resolve(homedir(), "Documents", "Obsidian", "Fintheon-Catalyst-Vault");
+  return resolve(homedir(), "Documents", "Obsidian", "RiskFlow Main Vault");
 }
 
 function limitValue(): number | null {
@@ -359,13 +362,13 @@ async function writeIndexes(
     join(root, "Index.md"),
     [
       frontmatter({
-        type: "riskflow-catalyst-vault-index",
+        type: "riskflow-main-vault-index",
         generated_at: new Date().toISOString(),
         total_catalysts: catalysts.length,
-        tags: ["fintheon", "riskflow", "catalyst-vault"],
+        tags: ["fintheon", "riskflow", "main-vault"],
       }),
       "",
-      "# Fintheon Catalyst Vault",
+      "# RiskFlow Main Vault",
       "",
       `Catalysts exported: ${catalysts.length}`,
       "",
@@ -458,7 +461,7 @@ async function writeNarrativeBuilder(
       "",
       "# Narrative Builder",
       "",
-      "This vault is the default, ever-growing RiskFlow headline database for NF-Workspace sessions. Raw headline notes live under `Catalysts/`; human narrative work should live under `Narratives/Drafts/` so future exports can refresh indexes without overwriting your thesis notes.",
+      "This RiskFlow Main vault is the default, ever-growing headline database for NF-Workspace sessions. Raw headline notes live under `Catalysts/`; human narrative work should live under `Narratives/Drafts/` so future exports can refresh indexes without overwriting your thesis notes.",
       "",
       "## Workflow",
       "",

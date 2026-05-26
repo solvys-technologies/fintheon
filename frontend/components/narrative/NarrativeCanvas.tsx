@@ -51,6 +51,7 @@ import {
   type NarrativeSurfaceMode,
 } from "./narrative-surface-options";
 import { useNarrativeAgentActions } from "./useNarrativeAgentActions";
+import { ALL_NARRATIVES_SLUG } from "./narrative-selection";
 
 interface NarrativeCanvasProps {
   zoomLevel?: ZoomLevel;
@@ -89,6 +90,7 @@ export function NarrativeCanvas({
   const [requestedChatThreadId, setRequestedChatThreadId] = useState<
     string | null
   >(null);
+  const [chatContextId, setChatContextId] = useState<string | null>(null);
   const [response, setResponse] = useState<SensemakingResponse | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -220,11 +222,6 @@ export function NarrativeCanvas({
 
   const handleCreateSession = useCallback(
     async (payload: CreateNarrativeSessionPayload) => {
-      if (payload.catalystIds.length < 3) {
-        setValidationMessage("[SELECT 3 CATALYSTS]");
-        return;
-      }
-
       setIsSubmitting(true);
       setValidationMessage(null);
       try {
@@ -233,7 +230,7 @@ export function NarrativeCanvas({
         setResponse(bundle.response);
         setIsResearchRailOpen(true);
         setSessions((current) => [
-          toSummary(bundle.session, payload.catalystIds.length),
+          toSummary(bundle.session, bundle.session.catalystIds?.length ?? 0),
           ...current,
         ]);
       } catch (err) {
@@ -449,6 +446,14 @@ export function NarrativeCanvas({
     },
     [activeSession?.id, handleOpenSession],
   );
+  const handleChatContextChange = useCallback(
+    async (id: string) => {
+      setChatContextId(id);
+      if (id === ALL_NARRATIVES_SLUG) return;
+      await handleOpenSession(id);
+    },
+    [handleOpenSession],
+  );
   const hasWorkspaceIvDeck = Boolean(
     response &&
     (response.anchorCatalysts.length > 0 ||
@@ -518,6 +523,7 @@ export function NarrativeCanvas({
           color: session.color,
         }))
     : [];
+  const chatActiveWorkspaceId = chatContextId ?? activeSession?.id ?? null;
   useNarrativeAgentActions({
     activeSession,
     setActiveSession,
@@ -569,8 +575,8 @@ export function NarrativeCanvas({
       <ChatInterface
         surfaceId="narrativeflow"
         workspaceOptions={chatWorkspaceOptions}
-        activeWorkspaceId={activeSession.id ?? null}
-        onWorkspaceChange={handleOpenSession}
+        activeWorkspaceId={chatActiveWorkspaceId}
+        onWorkspaceChange={handleChatContextChange}
         workspaceSelectorLabel="Attach Narrative"
         requestedConversationId={requestedChatThreadId}
         emptyState={<NarrativeFlowWorkspaceGreeting session={activeSession} />}

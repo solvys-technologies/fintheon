@@ -8,6 +8,7 @@ import { createClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
+import { enqueueRiskFlowObsidianFunnel } from "../src/services/riskflow/obsidian-funnel.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: resolve(__dirname, "..", ".env") });
@@ -42,31 +43,36 @@ async function main() {
       }
 
       let written = 0;
+      const writtenRows: Record<string, unknown>[] = [];
       for (const r of raw) {
-        const { error } = await sb.from("scored_riskflow_items").upsert(
-          {
-            tweet_id: r.tweet_id,
-            headline: r.headline || r.body || "",
-            source: r.source || "",
-            symbols: r.symbols || [],
-            tags: r.tags || [],
-            is_breaking: r.is_breaking || false,
-            urgency: r.urgency || "normal",
-            published_at: r.published_at || new Date().toISOString(),
-            image_url: r.image_url ?? null,
-            video_url: r.video_url ?? null,
-            sentiment: "neutral",
-            iv_score: 3,
-            macro_level: 2,
-            scored_by: "passthrough-worker",
-            analyzed_at: new Date().toISOString(),
-          },
-          { onConflict: "tweet_id", ignoreDuplicates: true },
-        );
-        if (!error) written++;
+        const row = {
+          tweet_id: r.tweet_id,
+          headline: r.headline || r.body || "",
+          source: r.source || "",
+          symbols: r.symbols || [],
+          tags: r.tags || [],
+          is_breaking: r.is_breaking || false,
+          urgency: r.urgency || "normal",
+          published_at: r.published_at || new Date().toISOString(),
+          image_url: r.image_url ?? null,
+          video_url: r.video_url ?? null,
+          sentiment: "neutral",
+          iv_score: 3,
+          macro_level: 2,
+          scored_by: "passthrough-worker",
+          analyzed_at: new Date().toISOString(),
+        };
+        const { error } = await sb
+          .from("scored_riskflow_items")
+          .upsert(row, { onConflict: "tweet_id", ignoreDuplicates: true });
+        if (!error) {
+          written++;
+          writtenRows.push(row);
+        }
       }
 
       if (written > 0) {
+        enqueueRiskFlowObsidianFunnel(writtenRows as any[]);
         log(`Scored ${written} items`);
       }
     } catch (err) {

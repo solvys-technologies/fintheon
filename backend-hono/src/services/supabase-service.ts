@@ -18,6 +18,7 @@ import {
   recordBlockedBeforeFeed,
   recordLeakEvent,
 } from "./riskflow/ingest-ledger.js";
+import { enqueueRiskFlowObsidianFunnel } from "./riskflow/obsidian-funnel.js";
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -370,6 +371,7 @@ export async function writeScoredItems(
         `;
         written++;
       }
+      enqueueRiskFlowObsidianFunnel(items);
       return written;
     } catch (err) {
       console.error(
@@ -400,6 +402,7 @@ export async function writeScoredItems(
     console.error("[Supabase] writeScoredItems client error:", error.message);
     return 0;
   }
+  enqueueRiskFlowObsidianFunnel(items);
   return data?.length ?? 0;
 }
 

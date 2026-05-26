@@ -38,6 +38,10 @@ import { SKILL_PREFIXES } from "../lib/skillPrefixes";
 import QuickFintheonModal from "./analysis/QuickFintheonModal";
 import { useFeatureFlags } from "../hooks/useFeatureFlags";
 import { consumePendingChatPrompt } from "../lib/desk-week-plan";
+import {
+  ALL_NARRATIVES_LABEL,
+  ALL_NARRATIVES_SLUG,
+} from "./narrative/narrative-selection";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -415,10 +419,21 @@ function ChatInterfaceInner({
     [conversationId],
   );
   const isNarrativeFlowSurface = surfaceId === "narrativeflow";
+  const narrativeWorkspaceOptions = isNarrativeFlowSurface
+    ? [
+        {
+          id: ALL_NARRATIVES_SLUG,
+          title: ALL_NARRATIVES_LABEL,
+          color: "var(--fintheon-accent)",
+          status: "context",
+        },
+        ...workspaceOptions,
+      ]
+    : workspaceOptions;
   const workspaceSlot =
     isNarrativeFlowSurface && workspaceOptions.length > 0 ? (
       <ChatWorkspaceSelector
-        options={workspaceOptions}
+        options={narrativeWorkspaceOptions}
         activeId={activeWorkspaceId}
         onSelect={onWorkspaceChange}
         label={workspaceSelectorLabel}
@@ -566,6 +581,20 @@ function buildWorkspaceContext(
   workspaceId: string | null | undefined,
 ) {
   if (!workspaceId) return null;
+  if (workspaceId === ALL_NARRATIVES_SLUG) {
+    return {
+      id: ALL_NARRATIVES_SLUG,
+      title: ALL_NARRATIVES_LABEL,
+      type: "narrative-workspace-group",
+      surfaceId,
+      narratives: options.map((item) => ({
+        id: item.id,
+        title: item.title,
+        status: item.status,
+        color: item.color,
+      })),
+    };
+  }
   const workspace = options.find((item) => item.id === workspaceId);
   return {
     id: workspaceId,
@@ -590,7 +619,8 @@ function ChatWorkspaceSelector({
 }) {
   const [open, setOpen] = useState(false);
   const active = options.find((item) => item.id === activeId) ?? options[0];
-  const triggerText = label === "Workspace" ? active.title : label;
+  const triggerText = active.title;
+  const activeColor = active.color ?? "rgba(199,159,74,0.72)";
 
   useEffect(() => {
     if (!open) return;
@@ -623,10 +653,12 @@ function ChatWorkspaceSelector({
         aria-expanded={open}
         aria-label={label}
       >
-        <span
-          className="h-2 w-2 shrink-0 rounded-full"
-          style={{ backgroundColor: active.color ?? "rgba(199,159,74,0.72)" }}
-        />
+        <span className="grid h-5 w-5 shrink-0 place-items-center rounded-[5px] border border-[var(--fintheon-accent)]/12 bg-black/20">
+          <span
+            className="h-2.5 w-2.5 rounded-[3px]"
+            style={{ backgroundColor: activeColor }}
+          />
+        </span>
         <Layers size={14} />
         <span className="chat-workspace-selector-trigger__label min-w-0 truncate">
           {triggerText}
@@ -635,7 +667,7 @@ function ChatWorkspaceSelector({
       </button>
       {open ? (
         <div
-          className="absolute bottom-10 left-0 z-50 w-72 overflow-hidden rounded-md border border-[var(--fintheon-accent)]/16 bg-[#0d0a06] shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+          className="absolute bottom-10 left-0 z-50 w-72 overflow-hidden rounded-md border border-[var(--fintheon-accent)]/16 bg-[#0d0a06]"
           role="menu"
         >
           <div className="border-b border-[var(--fintheon-accent)]/10 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/70">
@@ -656,16 +688,33 @@ function ChatWorkspaceSelector({
                   }}
                   className={`flex w-full items-center gap-2 rounded-[4px] px-2 py-2 text-left transition ${
                     selected
-                      ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+                      ? "text-[var(--fintheon-accent)]"
                       : "text-[var(--fintheon-text)]/74 hover:bg-[var(--fintheon-accent)]/7 hover:text-[var(--fintheon-text)]"
                   }`}
+                  style={
+                    selected
+                      ? {
+                          color:
+                            item.id === ALL_NARRATIVES_SLUG
+                              ? "var(--fintheon-accent)"
+                              : (item.color ?? "var(--fintheon-accent)"),
+                        }
+                      : undefined
+                  }
                 >
-                  <span
-                    className="h-2 w-2 shrink-0 rounded-full"
-                    style={{
-                      backgroundColor: item.color ?? "rgba(199,159,74,0.64)",
-                    }}
-                  />
+                  {selected ? (
+                    <Check size={12} className="shrink-0" />
+                  ) : (
+                    <span className="grid h-5 w-5 shrink-0 place-items-center rounded-[5px] border border-[var(--fintheon-accent)]/12 bg-black/20">
+                      <span
+                        className="h-2.5 w-2.5 rounded-[3px]"
+                        style={{
+                          backgroundColor:
+                            item.color ?? "rgba(199,159,74,0.64)",
+                        }}
+                      />
+                    </span>
+                  )}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[12px] font-medium">
                       {item.title}
@@ -676,7 +725,6 @@ function ChatWorkspaceSelector({
                       </span>
                     ) : null}
                   </span>
-                  {selected ? <Check size={12} className="shrink-0" /> : null}
                 </button>
               );
             })}

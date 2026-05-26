@@ -9,6 +9,50 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-25T23:03:24-04:00",
+    agent: "codex",
+    summary:
+      "NarrativeFlow audit fix: active workspace rails now default to attached anchor catalysts and desk activity favors anchors before related catalysts, keeping the first visible read tied to the approved build.",
+    files: [
+      "frontend/components/narrative/NarrativeFlowTab.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-25T23:00:58-04:00",
+    agent: "codex",
+    summary:
+      "Added the two-tier Obsidian vault path: scored RiskFlow headlines funnel into a RiskFlow Main vault, desk records issue Desk Vault folders, NarrativeFlow workspace/tag notes sync into desk vaults, and context mentions can cite both vault tiers.",
+    files: [
+      "backend-hono/src/services/obsidian-vaults/paths.ts",
+      "backend-hono/src/services/riskflow/obsidian-funnel.ts",
+      "backend-hono/src/services/context-mentions/vault-notes.ts",
+      "backend-hono/src/services/file-room/paths.ts",
+      "backend-hono/src/services/narrative-sessions/vault-sync.ts",
+      "backend-hono/src/services/supabase-service.ts",
+      "frontend/components/narrative/NarrativeInputBar.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-25T22:51:46-04:00",
+    agent: "codex",
+    summary:
+      "Fixed NarrativeFlow composer intake: greeting sends now validate/build real sessions directly, long prompts auto-grow, catalyst-required hover guidance and attach glow are visible, narrative selectors use single/all selection with user-colored swatches, and the Fileroom section icon import no longer blocks builds.",
+    files: [
+      "backend-hono/src/routes/narrative/sessions/validation.ts",
+      "frontend/components/ChatInterface.tsx",
+      "frontend/components/narrative/NarrativeCanvas.tsx",
+      "frontend/components/narrative/NarrativeFlowLanding.tsx",
+      "frontend/components/narrative/NarrativeInputBar.tsx",
+      "frontend/components/narrative/NarrativeSensemakingComposer.tsx",
+      "frontend/components/narrative/narrative-selection.ts",
+      "frontend/components/memory/FileRoomSectionList.tsx",
+      "frontend/hooks/useNarrativeSituationMap.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-25T20:38:00-04:00",
     agent: "codex",
     summary:

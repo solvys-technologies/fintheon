@@ -2441,7 +2441,7 @@ html[data-zen-mode="true"] button[aria-label] {
 }
 
 .narrative-chat-drawer-motion {
-  animation: narrative-drawer-rise 220ms var(--t-panel-ease, ease-out) both;
+  transform-origin: bottom center;
 }
 
 .narrative-chat-drawer-motion :where(button, article, [role="button"], input) {
@@ -3083,24 +3083,39 @@ html[data-zen-mode="true"] button[aria-label] {
 .fintheon-chat-input-drawer {
   position: relative;
   left: auto;
-  width: 100%;
-  max-width: 100%;
+  width: var(--fintheon-chat-drawer-width, 92%);
+  max-width: var(--fintheon-chat-drawer-width, 92%);
   transform: none;
   margin-inline: auto;
   margin-bottom: -1px;
   overflow: hidden;
   padding-bottom: 4px;
+  max-height: var(--fintheon-chat-drawer-max-height, 280px);
   border-radius: 8px 8px 0 0;
-  background: var(--fintheon-overlay-surface);
+  background: color-mix(
+    in srgb,
+    var(--fintheon-surface) 86%,
+    var(--fintheon-bg)
+  );
   border: 1px solid color-mix(in srgb, var(--fintheon-accent) 10%, transparent);
   border-bottom-color: color-mix(
     in srgb,
     var(--fintheon-accent) 16%,
     transparent
   );
-  backdrop-filter: blur(20px) saturate(1.25);
-  -webkit-backdrop-filter: blur(20px) saturate(1.25);
   box-shadow: none;
+  transition:
+    max-height 300ms var(--t-panel-ease, ease-out),
+    transform 300ms var(--t-panel-ease, ease-out),
+    opacity 240ms ease,
+    border-color 220ms ease,
+    padding 300ms var(--t-panel-ease, ease-out),
+    margin-bottom 300ms var(--t-panel-ease, ease-out);
+}
+
+.fintheon-chat-input-drawer.t-panel-slide,
+.fintheon-chat-input-drawer.t-panel-slide[data-open="true"] {
+  filter: none;
 }
 
 .fintheon-chat-input-drawer[data-composer-surface-portal="true"] {
@@ -3114,16 +3129,17 @@ html[data-zen-mode="true"] button[aria-label] {
   content: "";
   display: block;
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--fintheon-accent) 18%, transparent) 22%,
-    color-mix(in srgb, var(--fintheon-accent) 12%, transparent) 78%,
-    transparent
-  );
+  background: color-mix(in srgb, var(--fintheon-accent) 14%, transparent);
+  opacity: 1;
+  transition:
+    height 240ms ease,
+    opacity 200ms ease;
 }
 
 .fintheon-chat-input-drawer[aria-hidden="true"] {
+  max-height: 0 !important;
+  opacity: 0;
+  transform: translateY(8px);
   margin-bottom: 0;
   border-width: 0;
   padding-top: 0 !important;
@@ -3132,6 +3148,7 @@ html[data-zen-mode="true"] button[aria-label] {
 
 .fintheon-chat-input-drawer[aria-hidden="true"]::before {
   height: 0;
+  opacity: 0;
 }
 
 .fintheon-chat-input-drawer--peek {

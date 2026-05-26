@@ -513,7 +513,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     {
       id: "tradingview",
       label: "TradingView",
-      url: "https://www.tradingview.com/chart",
+      url: "https://www.tradingview.com/chart/?symbol=CME_MINI%3ANQ1%21",
       builtin: true,
     },
     {

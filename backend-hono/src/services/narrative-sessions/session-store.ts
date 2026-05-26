@@ -17,6 +17,7 @@ import {
   buildSessionTitle,
   generateSessionArtifacts,
 } from "./session-generator.js";
+import { enqueueNarrativeSessionVaultSync } from "./vault-sync.js";
 import type {
   NarrativeSession,
   NarrativeSessionDetail,
@@ -89,9 +90,16 @@ export async function createNarrativeSession(params: {
 
   if (error) throw new Error(`Session create failed: ${error.message}`);
   const session = toSession(data);
+  const selectedCatalystIds =
+    params.catalystIds.length > 0
+      ? params.catalystIds
+      : generated.sensemaking.anchorCatalysts.map((item) => item.id);
   await attachSessionCatalysts({
     sessionId: session.id,
-    catalysts: params.catalystIds.map((riskflowItemId) => ({ riskflowItemId })),
+    catalysts: selectedCatalystIds.map((riskflowItemId) => ({
+      riskflowItemId,
+      role: params.catalystIds.length > 0 ? "anchor" : "agent-selected",
+    })),
     actorId: params.actorId,
   });
   await Promise.all([
@@ -126,14 +134,16 @@ export async function createNarrativeSession(params: {
     agentName: "NarrativeFlow",
     eventType: "session-generated",
     summary: "Generated initial flow, timeline, and docs artifacts.",
-    payload: { catalystCount: params.catalystIds.length },
+    payload: { catalystCount: selectedCatalystIds.length },
   });
   await addSessionLinks(session.id, params.links ?? []);
   await addSessionTags(
     session.id,
     buildTags(params.tags, generated.sensemaking.narrativeGroups),
   );
-  return getNarrativeSessionDetail(session.id);
+  const detail = await getNarrativeSessionDetail(session.id);
+  enqueueNarrativeSessionVaultSync(detail);
+  return detail;
 }
 
 export async function getNarrativeSessionDetail(
@@ -205,7 +215,9 @@ export async function updateNarrativeSession(params: {
     .update(patch)
     .eq("id", params.sessionId);
   if (error) throw new Error(`Session update failed: ${error.message}`);
-  return getNarrativeSessionDetail(params.sessionId);
+  const detail = await getNarrativeSessionDetail(params.sessionId);
+  enqueueNarrativeSessionVaultSync(detail);
+  return detail;
 }
 
 export async function deleteNarrativeSession(

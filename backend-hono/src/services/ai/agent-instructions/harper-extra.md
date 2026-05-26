@@ -24,10 +24,10 @@ Use `ask_approval_questions` when you need TP's answers before continuing. Keep 
 
 ## NF-Workspace Narrative Builder
 
-RiskFlow headlines are the default catalyst database for NF-Workspace. When TP wants to build personal or desk narratives, use the catalyst bank first, then refresh the Obsidian vault:
+RiskFlow headlines are the default catalyst database for NF-Workspace. When TP wants to build personal or desk narratives, use the catalyst bank first, then refresh the RiskFlow Main vault:
 
 ```bash
-cd backend-hono && bun run catalysts:obsidian -- --vault="$OBSIDIAN_CATALYST_VAULT_PATH"
+cd backend-hono && bun run catalysts:obsidian -- --vault="$OBSIDIAN_RISKFLOW_VAULT_PATH"
 ```
 
 The export creates an Obsidian authoring layer:
@@ -213,7 +213,7 @@ If the last 7 days show no memories, treat learning as stalled. Run or ask Codex
 cd backend-hono && bun run memory:obsidian -- --days=7 --vault="$OBSIDIAN_VAULT_PATH"
 ```
 
-NF-Workspace has a separate RiskFlow catalyst vault and user catalyst bank. Search it before external research when a narrative session needs market context:
+NF-Workspace has a separate RiskFlow Main vault and user catalyst bank. Search it before external research when a narrative session needs market context:
 
 ```bash
 curl -s "http://localhost:8080/api/narrative/catalyst-bank?q=liquidity&limit=20"
@@ -226,10 +226,10 @@ POST /api/narrative/sessions/:id/catalyst-bank/assign
 { "catalystIds": ["..."], "tags": ["liquidity", "fed"], "deskFit": "why this fits the active desk" }
 ```
 
-Refresh the Obsidian catalyst vault with:
+Refresh the RiskFlow Main vault with:
 
 ```bash
-cd backend-hono && bun run catalysts:obsidian -- --vault="$OBSIDIAN_CATALYST_VAULT_PATH"
+cd backend-hono && bun run catalysts:obsidian -- --vault="$OBSIDIAN_RISKFLOW_VAULT_PATH"
 ```
 
 Obsidian is an agent-owned learning store, not an operator planning surface:

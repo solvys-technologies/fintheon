@@ -31,6 +31,8 @@ export function formatItemMeta(item: FileRoomItem): string {
 export function sectionLabel(id: string): string {
   if (id === "agentic-memos") return "Memo";
   if (id === "weekly-tribune") return "Tribune";
+  if (id === "narrative-tags") return "Tags";
+  if (id === "narrative-workspaces") return "Workspace";
   if (id === "narrative-summaries") return "Narrative";
   if (id === "chart-evidence") return "Chart";
   if (id === "agent-souls") return "SOUL";

@@ -23,7 +23,7 @@ export const createSessionSchema = z.object({
   deskId: z.string().trim().min(1).optional(),
   title: z.string().trim().min(1).max(160).optional(),
   color: colorSchema,
-  query: z.string().trim().max(1200).default(""),
+  query: z.string().trim().max(12000).default(""),
   reasoningLevel: z
     .enum(["quick", "standard", "deep", "max"])
     .default("standard"),

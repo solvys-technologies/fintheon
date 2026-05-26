@@ -36,14 +36,19 @@ import { useHarperProvider } from "../chat/ProviderDropdown";
 import { useMcpConnectors } from "../../hooks/useMcpConnectors";
 import { SKILLS } from "../../lib/skills";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
-import { mentionToken, type ContextMention } from "../../lib/context-mentions";
+import {
+  formatMentionContext,
+  mentionToken,
+  type ContextMention,
+} from "../../lib/context-mentions";
 import { NarrativeCaoWolfAvatar } from "./NarrativeCaoWolfAvatar";
 import type { NarrativeHeadlineOption } from "./sensemaking-types";
-
-interface NarrativeChip {
-  slug: string;
-  label: string;
-}
+import {
+  ALL_NARRATIVES_SLUG,
+  hasAllNarratives,
+  selectedNarrativeLabel,
+  type NarrativeSelectionChip,
+} from "./narrative-selection";
 
 interface NarrativeContextStats {
   messageCount: number;
@@ -61,7 +66,7 @@ interface NarrativeInputBarProps {
   minHeadlines?: number;
   submitLabel?: string;
   attachLabel?: string;
-  narrativeChips?: NarrativeChip[];
+  narrativeChips?: NarrativeSelectionChip[];
   selectedNarrativeSlugs?: Set<string>;
   reasoningLevel: ReasoningLevel;
   queue: QueuedMessage[];
@@ -70,7 +75,7 @@ interface NarrativeInputBarProps {
   onOpenDrawer: () => void;
   onCloseDrawer?: () => void;
   onRemoveHeadline: (id: string) => void;
-  onSubmit: () => void;
+  onSubmit: (contextSuffix?: string) => void;
   onQueueMessage: (text: string) => void;
   onEditQueue: (id: string, text: string) => void;
   onRemoveQueue: (id: string) => void;
@@ -139,11 +144,13 @@ export function NarrativeInputBar({
   const [focused, setFocused] = useState(false);
   const [showToolboxModal, setShowToolboxModal] = useState(false);
   const [showNarrativeMenu, setShowNarrativeMenu] = useState(false);
+  const [showCatalystHint, setShowCatalystHint] = useState(false);
   const [showProviderModal, setShowProviderModal] = useState(false);
   const [providerAnchorRect, setProviderAnchorRect] = useState<DOMRect | null>(
     null,
   );
   const narrativeMenuRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [selectedMentions, setSelectedMentions] = useState<ContextMention[]>(
     [],
@@ -157,9 +164,14 @@ export function NarrativeInputBar({
   const catalystCount = attachedHeadlines.length;
   const catalystReady = catalystCount >= minHeadlines;
   const draftReady = query.trim().length > 0;
-  const canSubmit = catalystReady && draftReady && !isSubmitting;
+  const shouldPromptForCatalysts = draftReady && !catalystReady;
+  const canSubmit = draftReady && !isSubmitting;
   const canQueue = catalystReady && isSubmitting && draftReady;
-  const selectedNarrativeCount = selectedNarrativeSlugs?.size ?? 0;
+  const triggerNarrativeLabel = selectedNarrativeLabel(
+    narrativeChips,
+    selectedNarrativeSlugs,
+  );
+  const isAllNarrativesSelected = hasAllNarratives(selectedNarrativeSlugs);
   const hasNarrativeSelector =
     narrativeChips.length > 0 && Boolean(onToggleNarrative);
   const wrapperClass = isOpener
@@ -178,13 +190,27 @@ export function NarrativeInputBar({
       ? "Add a catalyst or instruction..."
       : "Ask how these catalysts connect...";
 
+  function resizeTextarea(node = textareaRef.current) {
+    if (!node) return;
+    node.style.height = "auto";
+    const nextHeight = Math.min(Math.max(node.scrollHeight, 52), 260);
+    node.style.height = `${nextHeight}px`;
+    node.style.overflowY = node.scrollHeight > 260 ? "auto" : "hidden";
+  }
+
   function handleAction() {
+    const contextSuffix = formatMentionContext(selectedMentions);
     if (canQueue) {
-      onQueueMessage(query);
+      onQueueMessage(`${query}${contextSuffix}`);
       onQueryChange("");
+      setSelectedMentions([]);
       return;
     }
-    if (canSubmit) onSubmit();
+    if (shouldPromptForCatalysts) setShowCatalystHint(true);
+    if (canSubmit) {
+      onSubmit(contextSuffix);
+      setSelectedMentions([]);
+    }
   }
 
   function openProviderModal(event: ReactMouseEvent<HTMLButtonElement>) {
@@ -195,6 +221,14 @@ export function NarrativeInputBar({
     setProviderAnchorRect(event.currentTarget.getBoundingClientRect());
     setShowProviderModal(true);
   }
+
+  useEffect(() => {
+    resizeTextarea();
+  }, [query]);
+
+  useEffect(() => {
+    if (!shouldPromptForCatalysts) setShowCatalystHint(false);
+  }, [shouldPromptForCatalysts]);
 
   useEffect(() => {
     if (!showNarrativeMenu) return;
@@ -334,13 +368,18 @@ export function NarrativeInputBar({
             ) : null}
 
             <textarea
+              ref={textareaRef}
               value={query}
               onChange={(event) => {
                 if (showToolboxModal) setShowToolboxModal(false);
                 setMentionQuery(getMentionQuery(event.target.value));
+                resizeTextarea(event.currentTarget);
                 onQueryChange(event.target.value);
               }}
-              onPaste={onPaste}
+              onPaste={(event) => {
+                onPaste?.(event);
+                window.requestAnimationFrame(() => resizeTextarea());
+              }}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
               onKeyDown={(event) => {
@@ -351,7 +390,7 @@ export function NarrativeInputBar({
               }}
               placeholder={placeholder}
               rows={rows}
-              className="max-h-[150px] min-h-[52px] w-full resize-none bg-transparent px-4 py-3 text-[13px] leading-6 text-[var(--fintheon-text)] outline-none placeholder:text-[var(--fintheon-muted)]/60"
+              className="max-h-[260px] min-h-[52px] w-full resize-none overflow-y-hidden bg-transparent px-4 py-3 text-[13px] leading-6 text-[var(--fintheon-text)] outline-none placeholder:text-[var(--fintheon-muted)]/60"
             />
 
             <div className="flex flex-wrap items-center justify-between gap-2 px-3 pb-3">
@@ -367,7 +406,9 @@ export function NarrativeInputBar({
                   className={`narrative-icon-button flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
                     riskFlowDrawerOpen
                       ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
-                      : "text-zinc-500 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
+                      : shouldPromptForCatalysts
+                        ? "border border-[var(--fintheon-accent)]/22 bg-[var(--fintheon-accent)]/8 text-[var(--fintheon-accent)]"
+                        : "text-zinc-500 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
                   }`}
                   title={attachLabel}
                 >
@@ -395,12 +436,7 @@ export function NarrativeInputBar({
                       <GitBranch size={13} />
                       {!isOverlay ? (
                         <span className="max-w-[112px] truncate">
-                          Select Narrative
-                        </span>
-                      ) : null}
-                      {selectedNarrativeCount > 0 ? (
-                        <span className="rounded-sm bg-[var(--fintheon-accent)]/12 px-1 text-[9px] text-[var(--fintheon-accent)]">
-                          {selectedNarrativeCount}
+                          {triggerNarrativeLabel ?? "Select Narrative"}
                         </span>
                       ) : null}
                       <ChevronDown size={10} className="opacity-55" />
@@ -408,7 +444,7 @@ export function NarrativeInputBar({
                     {showNarrativeMenu ? (
                       <div
                         role="menu"
-                        className="absolute bottom-10 left-0 z-50 w-64 overflow-hidden rounded-md border border-[var(--fintheon-accent)]/16 bg-[#0d0a06] shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+                        className="absolute bottom-10 left-0 z-50 w-64 overflow-hidden rounded-md border border-[var(--fintheon-accent)]/16 bg-[#0d0a06]"
                       >
                         <div className="border-b border-[var(--fintheon-accent)]/10 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/70">
                           Select Narrative
@@ -416,27 +452,50 @@ export function NarrativeInputBar({
                         <div className="max-h-56 overflow-y-auto p-1">
                           {narrativeChips.map((chip) => {
                             const selected =
-                              selectedNarrativeSlugs?.has(chip.slug) ?? false;
+                              selectedNarrativeSlugs?.has(chip.slug) ??
+                              (chip.slug === ALL_NARRATIVES_SLUG &&
+                                isAllNarrativesSelected);
+                            const chipColor =
+                              chip.color ?? "var(--fintheon-accent)";
                             return (
                               <button
                                 key={chip.slug}
                                 type="button"
-                                role="menuitemcheckbox"
+                                role="menuitemradio"
                                 aria-checked={selected}
-                                onClick={() => onToggleNarrative?.(chip.slug)}
+                                onClick={() => {
+                                  onToggleNarrative?.(chip.slug);
+                                  setShowNarrativeMenu(false);
+                                }}
                                 className={`flex w-full items-center gap-2 rounded-[4px] px-2 py-2 text-left transition ${
                                   selected
-                                    ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+                                    ? "text-[var(--fintheon-accent)]"
                                     : "text-[var(--fintheon-text)]/74 hover:bg-[var(--fintheon-accent)]/7 hover:text-[var(--fintheon-text)]"
                                 }`}
+                                style={
+                                  selected
+                                    ? {
+                                        color:
+                                          chip.slug === ALL_NARRATIVES_SLUG
+                                            ? "var(--fintheon-accent)"
+                                            : chipColor,
+                                      }
+                                    : undefined
+                                }
                               >
-                                <GitBranch size={12} className="shrink-0" />
+                                {selected ? (
+                                  <Check size={12} className="shrink-0" />
+                                ) : (
+                                  <span className="grid h-5 w-5 shrink-0 place-items-center rounded-[5px] border border-[var(--fintheon-accent)]/12 bg-black/20">
+                                    <span
+                                      className="h-2.5 w-2.5 rounded-[3px]"
+                                      style={{ backgroundColor: chipColor }}
+                                    />
+                                  </span>
+                                )}
                                 <span className="min-w-0 flex-1 truncate text-[12px] font-medium">
                                   {chip.label}
                                 </span>
-                                {selected ? (
-                                  <Check size={12} className="shrink-0" />
-                                ) : null}
                               </button>
                             );
                           })}
@@ -487,23 +546,37 @@ export function NarrativeInputBar({
                   draftText={query}
                   queuedCount={queue.length}
                 />
-                <button
-                  type="button"
-                  onClick={handleAction}
-                  disabled={!canSubmit && !canQueue}
-                  className="fintheon-send-button inline-flex h-9 w-9 items-center justify-center rounded-full"
-                  title={
-                    canQueue
-                      ? "Queue narrative request"
-                      : (submitLabel ?? "Run narrative request")
-                  }
-                >
-                  {isSubmitting && !canQueue ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <ArrowUp size={16} strokeWidth={2.5} />
-                  )}
-                </button>
+                <div className="relative">
+                  {showCatalystHint && shouldPromptForCatalysts ? (
+                    <div className="pointer-events-none absolute bottom-11 right-0 z-50 w-56 rounded-md border border-[var(--fintheon-accent)]/20 bg-[#0d0a06] px-3 py-2 text-[11px] leading-4 text-[var(--fintheon-text)]/76">
+                      Attach {minHeadlines} RiskFlow catalyst
+                      {minHeadlines === 1 ? "" : "s"} to build this narrative.
+                    </div>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={handleAction}
+                    onFocus={() => setShowCatalystHint(true)}
+                    onBlur={() => setShowCatalystHint(false)}
+                    onMouseEnter={() => setShowCatalystHint(true)}
+                    onMouseLeave={() => setShowCatalystHint(false)}
+                    disabled={!canSubmit && !canQueue}
+                    className="fintheon-send-button inline-flex h-9 w-9 items-center justify-center rounded-full"
+                    title={
+                      shouldPromptForCatalysts
+                        ? "Attach RiskFlow catalysts"
+                        : canQueue
+                          ? "Queue narrative request"
+                          : (submitLabel ?? "Run narrative request")
+                    }
+                  >
+                    {isSubmitting && !canQueue ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <ArrowUp size={16} strokeWidth={2.5} />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

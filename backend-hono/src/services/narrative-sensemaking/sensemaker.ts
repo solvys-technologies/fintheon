@@ -16,6 +16,7 @@ export async function buildSensemakingMap(
 ): Promise<SensemakingResponse> {
   const { anchors, pool } = await readSensemakingCatalysts(
     request.attachedHeadlineIds,
+    request.query,
   );
   const anchorIds = new Set(anchors.map((item) => item.id));
   const related = pool

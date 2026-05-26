@@ -580,11 +580,13 @@ function buildDeskActivities(
   response: SensemakingResponse | null,
 ) {
   const title = session?.title ?? "active narrative";
-  const topCatalyst = response
-    ? [...response.anchorCatalysts, ...response.relatedCatalysts].sort(
-        (a, b) => b.ivScore - a.ivScore,
-      )[0]
+  const topAnchor = response
+    ? [...response.anchorCatalysts].sort((a, b) => b.ivScore - a.ivScore)[0]
     : null;
+  const topRelated = response
+    ? [...response.relatedCatalysts].sort((a, b) => b.ivScore - a.ivScore)[0]
+    : null;
+  const topCatalyst = topAnchor ?? topRelated;
   return [
     {
       id: "viewed",
@@ -625,8 +627,14 @@ function getSelectedNode(
   selectedNodeId: string | null,
 ): SensemakingTimelineNode | null {
   if (!response) return null;
+  const selected = response.timelineNodes.find(
+    (item) => item.id === selectedNodeId,
+  );
+  if (selected) return selected;
+
+  const anchorIds = new Set(response.anchorCatalysts.map((item) => item.id));
   return (
-    response.timelineNodes.find((item) => item.id === selectedNodeId) ??
+    response.timelineNodes.find((item) => anchorIds.has(item.catalystId)) ??
     response.timelineNodes[0] ??
     null
   );
