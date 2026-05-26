@@ -25,7 +25,7 @@ export function DeskRail() {
               </h1>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-1 rounded-md border border-[color-mix(in_srgb,var(--fintheon-accent)_12%,transparent)] bg-[color-mix(in_srgb,var(--fintheon-surface)_78%,var(--fintheon-bg))] p-1">
+          <div className="grid grid-cols-3 gap-1">
             <DeskRailTabButton
               icon={BookOpen}
               label="Plans"
@@ -78,10 +78,10 @@ function DeskRailTabButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex h-7 items-center justify-center gap-1.5 rounded-[4px] px-2 text-[10px] font-semibold transition-colors",
+        "inline-flex h-7 items-center justify-center gap-1.5 rounded-[4px] border px-2 text-[10px] font-semibold transition-colors",
         selected
-          ? "bg-[color-mix(in_srgb,var(--fintheon-accent)_10%,transparent)] text-[var(--fintheon-accent)]"
-          : "text-[color-mix(in_srgb,var(--fintheon-muted)_45%,transparent)] hover:bg-[color-mix(in_srgb,var(--fintheon-accent)_5%,transparent)] hover:text-[color-mix(in_srgb,var(--fintheon-text)_72%,transparent)]",
+          ? "border-[color-mix(in_srgb,var(--fintheon-accent)_34%,transparent)] bg-transparent text-[var(--fintheon-accent)]"
+          : "border-transparent bg-transparent text-[color-mix(in_srgb,var(--fintheon-muted)_45%,transparent)] hover:border-[color-mix(in_srgb,var(--fintheon-accent)_16%,transparent)] hover:text-[color-mix(in_srgb,var(--fintheon-text)_72%,transparent)]",
       )}
       aria-pressed={selected}
     >

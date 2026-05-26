@@ -50,6 +50,7 @@ import {
   verbalFlushMemory,
 } from "../../../services/cao-memory-flush.js";
 import { buildMacroWatchlistContext } from "../../../services/market-data/macro-watchlist.js";
+import { buildNarrativeFlowResearchProtocolBlock } from "../../../services/ai/agent-instructions/narrativeflow-research.js";
 
 // File attachment content part types
 type FileContentPart =
@@ -401,6 +402,19 @@ export async function handleChat(c: Context) {
       ? ((body as any).mcpServers as string[])
       : [];
     const hermesSurface = (body as any)?.surface as string | undefined;
+    const skillTag = extractSkillTag(message);
+    if (
+      hermesSurface === "narrativeflow" ||
+      skillTag === "NARRATIVEFLOW_RESEARCH"
+    ) {
+      prompt = `${buildNarrativeFlowResearchProtocolBlock()}\n\n${prompt}`;
+      cognition.step(
+        "context-build",
+        "NarrativeFlow research protocol",
+        "Watchlist-bound futures research workflow injected",
+      );
+    }
+
     if (
       hermesSurface === "arbitrumChamber" ||
       mcpActive.includes("arbitrumChamber")

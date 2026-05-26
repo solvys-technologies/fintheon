@@ -28,6 +28,10 @@ import {
   getAllProfiles,
   getHandoffTargets,
 } from "../../capability-registry/registry.js";
+import {
+  buildNarrativeFlowResearchProtocolBlock,
+  buildTradingViewWatchlistScopeBlock,
+} from "./narrativeflow-research.js";
 
 const ROLE_TO_SOUL_ID: Record<HermesAgentRole, SoulAgentId> = {
   "harper-cao": "harper",
@@ -321,6 +325,9 @@ export async function getAgentSystemPrompt(
   // 2.9. Capability awareness — what tools and data the agent has access to
   prompt += CAPABILITIES_BLOCK;
 
+  // 2.10. Watchlist scope — external catalysts are allowed, trading talk is not.
+  prompt += buildTradingViewWatchlistScopeBlock();
+
   // 3. Agent-specific philosophy block
   const philosophy = AGENT_PHILOSOPHY[role];
   if (philosophy) {
@@ -338,6 +345,9 @@ export async function getAgentSystemPrompt(
     const skillBlock = SKILL_INSTRUCTIONS[skillKey];
     if (skillBlock) {
       prompt += skillBlock;
+    }
+    if (skillKey === "NARRATIVEFLOW_RESEARCH") {
+      prompt += buildNarrativeFlowResearchProtocolBlock();
     }
   }
 

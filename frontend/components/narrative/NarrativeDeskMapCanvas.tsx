@@ -46,6 +46,13 @@ interface NarrativeDeskMapCanvasProps {
 }
 
 const uploadLimit = 8 * 1024 * 1024;
+type CanvasPresence = "enter" | "present" | "exit";
+type AnimatedSession = {
+  index: number;
+  presence: CanvasPresence;
+  revision: string;
+  session: NarrativeSessionSummary;
+};
 
 export function NarrativeDeskMapCanvas({
   sessions,
@@ -82,6 +89,7 @@ export function NarrativeDeskMapCanvas({
   } | null>(null);
   const canPan = canvasTool === "hand" || canvasTool === "select";
   const links = useMemo(() => buildDeskMapLinks(sessions), [sessions]);
+  const animatedSessions = useAnimatedSessions(sessions);
   const catalystTotal = sessions.reduce(
     (total, session) => total + session.catalystCount,
     0,
@@ -213,7 +221,9 @@ export function NarrativeDeskMapCanvas({
           transform: `translate3d(${offset.x}px, ${offset.y}px, 0) scale(${scale})`,
         }}
       >
-        {sessions.length === 0 ? <EmptyDeskMap desk={desk} /> : null}
+        {sessions.length === 0 && animatedSessions.length === 0 ? (
+          <EmptyDeskMap desk={desk} />
+        ) : null}
         <svg
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 h-full w-full opacity-40"
@@ -232,7 +242,7 @@ export function NarrativeDeskMapCanvas({
             />
           ))}
         </svg>
-        {sessions.map((session, index) => (
+        {animatedSessions.map(({ session, index, presence }) => (
           <NarrativeBubble
             key={session.id}
             session={session}
@@ -240,6 +250,7 @@ export function NarrativeDeskMapCanvas({
             active={session.id === activeSessionId}
             selected={selectedIds.has(session.id)}
             heatmapActive={heatmapActive}
+            presence={presence}
             onSelect={(event) => {
               if (
                 canvasTool === "multi-select" ||
@@ -276,6 +287,70 @@ export function NarrativeDeskMapCanvas({
       </div>
     </div>
   );
+}
+
+function useAnimatedSessions(
+  sessions: NarrativeSessionSummary[],
+): AnimatedSession[] {
+  const [animated, setAnimated] = useState<AnimatedSession[]>(() =>
+    sessions.map((session, index) => ({
+      index,
+      presence: "present",
+      revision: sessionRevision(session),
+      session,
+    })),
+  );
+
+  useEffect(() => {
+    setAnimated((current) => {
+      const currentById = new Map(
+        current.map((item) => [item.session.id, item]),
+      );
+      const nextIds = new Set(sessions.map((session) => session.id));
+      const next: AnimatedSession[] = sessions.map((session, index) => {
+        const revision = sessionRevision(session);
+        const existing = currentById.get(session.id);
+        const presence: CanvasPresence =
+          !existing || existing.revision !== revision ? "enter" : "present";
+        return {
+          index,
+          presence,
+          revision,
+          session,
+        };
+      });
+      current.forEach((item) => {
+        if (!nextIds.has(item.session.id) && item.presence !== "exit") {
+          next.push({ ...item, presence: "exit" });
+        }
+      });
+      return next;
+    });
+
+    const timer = window.setTimeout(() => {
+      setAnimated((current) =>
+        current
+          .filter((item) => item.presence !== "exit")
+          .map((item) =>
+            item.presence === "enter" ? { ...item, presence: "present" } : item,
+          ),
+      );
+    }, 360);
+
+    return () => window.clearTimeout(timer);
+  }, [sessions]);
+
+  return animated;
+}
+
+function sessionRevision(session: NarrativeSessionSummary): string {
+  return [
+    session.title,
+    session.status,
+    session.color,
+    session.catalystCount,
+    session.updatedAt,
+  ].join("|");
 }
 
 function DeskCover(props: {
@@ -387,6 +462,7 @@ function NarrativeBubble({
   active,
   selected,
   heatmapActive,
+  presence,
   onSelect,
 }: {
   session: NarrativeSessionSummary;
@@ -394,6 +470,7 @@ function NarrativeBubble({
   active: boolean;
   selected: boolean;
   heatmapActive: boolean;
+  presence: CanvasPresence;
   onSelect: (event: ReactMouseEvent<HTMLButtonElement>) => void;
 }) {
   const size = clamp(190 + session.catalystCount * 3, 190, 310);
@@ -404,6 +481,7 @@ function NarrativeBubble({
     <button
       type="button"
       onClick={onSelect}
+      data-presence={presence}
       className="narrative-deskmap-card narrative-fade-item group absolute -translate-x-1/2 -translate-y-1/2 text-left"
       style={{
         left: `${position.x}%`,

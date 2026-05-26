@@ -166,6 +166,8 @@ export async function buildMacroWatchlistContext(): Promise<string> {
       "## Live Macro Watchlist Performance",
       `Source: TradingView scanner, as of ${rows[0]?.asOf}.`,
       ...lines,
+      "Hard scope: trading analysis, directional calls, entries, stops, targets, invalidation, hedges, and tape impact must pertain only to this TradingView watchlist.",
+      "External drivers, companies, sectors, countries, policy actors, or crypto catalysts may be observed as evidence, but they are not trade targets unless they map back to one of these watched symbols.",
       "Use these prices before making any futures, rates, VIX, or cross-asset claims. If a watched price is missing, say it is unavailable.",
       "When writing front-end chat responses, mention watched symbols naturally as /NQ, $ES, VIX, DXY, US02Y, US10Y, or US30Y; Streamdown will convert them into hoverable market cards.",
       'To show clickable futures/rates pills in chat, include a fenced `market-ticker-strip` JSON block with optional symbols, e.g. {"title":"Macro tape","symbols":["NQ","ES","YM","GC","CL","VIX","US02Y","US10Y"]}.',

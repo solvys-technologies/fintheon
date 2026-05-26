@@ -10,7 +10,12 @@ import type { ContentBlock } from "@strands-agents/sdk";
 import { withCognition } from "../telemetry.js";
 import { createConversationManager } from "../memory-store.js";
 import { checkDeepSeekDirectHealth } from "../provider.js";
-import { getAgentSystemPrompt } from "../../ai/agent-instructions/index.js";
+import {
+  extractSkillTag,
+  getAgentSystemPrompt,
+} from "../../ai/agent-instructions/index.js";
+import { buildMacroWatchlistContext } from "../../market-data/macro-watchlist.js";
+import { buildNarrativeFlowResearchProtocolBlock } from "../../ai/agent-instructions/narrativeflow-research.js";
 import { getUserApiKey } from "../../ai/api-key-crypto.js";
 import { createLogger } from "../../../lib/logger.js";
 import { buildReleaseContext } from "../release-context.js";
@@ -167,11 +172,18 @@ ${prompt}`;
   const releaseContext = await buildReleaseContext(message);
   if (releaseContext) prompt = `${releaseContext}\n\n${prompt}`;
 
+  const macroContext = await buildMacroWatchlistContext();
+  if (macroContext) prompt = `${macroContext}\n\n${prompt}`;
+
   const narrativeFlowContext = buildNarrativeFlowPlanModeContext({
     surface: options.surface,
     workspace: options.workspace,
   });
   if (narrativeFlowContext) prompt = `${narrativeFlowContext}\n\n${prompt}`;
+
+  if (extractSkillTag(message) === "NARRATIVEFLOW_RESEARCH") {
+    prompt = `${buildNarrativeFlowResearchProtocolBlock()}\n\n${prompt}`;
+  }
 
   // [S23-T3] ArbitrumChamber awareness: when the user is on the ArbitrumChamber surface (or the connector is
   // explicitly active), inject the latest AgentDesk simulation with interpretation scaffolding so
@@ -295,6 +307,8 @@ The narrative has already been built, so chat can run naturally. Answer directly
 - use narrativeflow_show_internal_data before making product-state claims;
 - use narrativeflow_stage_edit for any workspace, docs, flow, timeline, DeskMap, or forecast write.
 
+Apply the NarrativeFlow research skill translation: attached catalysts and vault notes are evidence; confirmations, contradictions, and catalysts to watch going forward are the default research outputs; trade talk must resolve only to the TradingView watchlist.
+
 If the user asks for a material rewrite and the missing inputs would change the thesis, ask_approval_questions before staging the edit. Keep the Workspace chat mounted until approval is resolved; do not navigate to DeskMap, Forecasts, Coliseum, or Resolved before the approval question has been answered.`;
   }
 
@@ -304,7 +318,9 @@ The user is building a NarrativeFlow narrative that is not built yet.
 Default behavior: ask questions before continuing. First call ask_approval_questions with a compact plan-mode intake. Ask for:
 1. the core thesis or market question,
 2. the confirmation and invalidation evidence,
-3. the horizon, output format, and any desk constraints.
+3. the horizon, output format, watched symbols, and any desk constraints.
+
+Frame the intake as a futures research workflow: build a falsifiable watched-symbol thesis, identify attached or agent-selected RiskFlow catalysts, search for contradictions, then produce catalysts to watch going forward. External drivers are allowed as evidence, but trading analysis must remain limited to the TradingView watchlist.
 
 Do not call open_todo_drawer, narrativeflow_open_surface, narrativeflow_show_internal_data, or narrativeflow_stage_edit until those answers are received. After the answers, open_right_rail with surface="plan" to show the plan, then continue building the narrative.`;
 }

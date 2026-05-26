@@ -2601,8 +2601,30 @@ html[data-zen-mode="true"] button[aria-label] {
     transform 180ms var(--t-panel-ease, ease-out);
 }
 
+.narrative-deskmap-card[data-presence="enter"] {
+  animation: narrative-deskmap-card-in 340ms
+    var(--t-panel-ease, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+.narrative-deskmap-card[data-presence="exit"] {
+  pointer-events: none;
+  animation: narrative-deskmap-card-out 320ms
+    var(--t-motion-ease, cubic-bezier(0.4, 0, 0.2, 1)) both;
+}
+
 .narrative-deskmap-card:active {
   transform: translate(-50%, -50%) scale(0.99);
+}
+
+.narrative-situation-node[data-presence="enter"] {
+  animation: narrative-situation-card-in 340ms
+    var(--t-panel-ease, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+.narrative-situation-node[data-presence="exit"] {
+  pointer-events: none;
+  animation: narrative-situation-card-out 320ms
+    var(--t-motion-ease, cubic-bezier(0.4, 0, 0.2, 1)) both;
 }
 
 .narrative-manage-modal {
@@ -2699,6 +2721,50 @@ html[data-zen-mode="true"] button[aria-label] {
   }
 }
 
+@keyframes narrative-deskmap-card-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes narrative-deskmap-card-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -51%) scale(0.985);
+  }
+}
+
+@keyframes narrative-situation-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes narrative-situation-card-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+  }
+}
+
 @keyframes narrative-action-shimmer {
   to {
     transform: translateX(120%);
@@ -2730,6 +2796,7 @@ html[data-zen-mode="true"] button[aria-label] {
 @media (prefers-reduced-motion: reduce) {
   .narrative-analysis-panel,
   .narrative-fade-item,
+  .narrative-situation-node,
   .narrative-analysis-panel img,
   .narrative-work-drawer img,
   .narrative-flow-action-btn[data-active="true"]::after {

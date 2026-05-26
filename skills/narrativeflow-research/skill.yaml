@@ -1,0 +1,43 @@
+schema_version: 1
+id: fintheon.narrativeflow-research
+name: NarrativeFlow Research - Futures Catalyst IDE
+version: 0.1.0
+description: Futures-focused translation of Orchestra-style research skills for NarrativeFlow workspaces. Turns RiskFlow headlines, vault notes, and desk context into TradingView-watchlist-bound narrative research.
+entry_point: ./entry.ts
+soul: ../../backend-hono/src/services/ai/soul/harper.md
+tools:
+  - name: macro_narrative_builder
+    description: Convert a raw macro, policy, or theme idea into a falsifiable TradingView-watchlist thesis.
+    input_schema:
+      thesis: string
+      horizon: string?
+      context: string?
+  - name: futures_catalyst_review
+    description: Rank RiskFlow and vault catalysts by relevance to the TradingView watchlist.
+    input_schema:
+      query: string
+      catalyst_ids: string?
+      context: string?
+  - name: policy_headline_cycle
+    description: Track escalation, de-escalation, and bluff cadence in policy headlines against watchlist impact.
+    input_schema:
+      policy_theme: string
+      context: string?
+  - name: risk_on_risk_off_synthesis
+    description: Translate external drivers into risk-on or risk-off pressure for watched futures and macro instruments.
+    input_schema:
+      drivers: string
+      context: string?
+  - name: catalysts_to_watch_forward
+    description: Produce the next catalysts, tells, and invalidation points to watch going forward.
+    input_schema:
+      thesis: string
+      horizon: string?
+      context: string?
+permissions:
+  - read_market_data
+  - read_news
+  - write_notes
+authors:
+  - Priced In Capital
+license: Proprietary

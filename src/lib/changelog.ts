@@ -9,6 +9,42 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-25T23:21:48-04:00",
+    agent: "codex",
+    summary:
+      "Translated Orchestra-style research skills into NarrativeFlow's futures workflow: added a local NarrativeFlow Research skill pack, injected the watchlist-bound research protocol into agent prompts, constrained trading analysis to the TradingView watchlist while allowing external catalysts as drivers, and replaced weekly-memo framing with catalysts-to-watch-forward.",
+    files: [
+      "backend-hono/src/services/ai/agent-instructions/narrativeflow-research.ts",
+      "backend-hono/src/services/ai/agent-instructions/index.ts",
+      "backend-hono/src/services/ai/agent-instructions/skill-instructions.ts",
+      "backend-hono/src/services/ai/agent-instructions/harper-extra.md",
+      "backend-hono/src/services/market-data/macro-watchlist.ts",
+      "backend-hono/src/services/strands/agents/harper.ts",
+      "backend-hono/src/routes/ai/handlers/chat.ts",
+      "backend-hono/src/services/hermes-handler.ts",
+      "backend-hono/src/config/feature-flags.ts",
+      "frontend/lib/skillPrefixes.ts",
+      "skills/narrativeflow-research/skill.yaml",
+      "skills/narrativeflow-research/entry.ts",
+      ".claude/skills/narrativeflow-research/SKILL.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-25T23:15:19-04:00",
+    agent: "codex",
+    summary:
+      "Consilium polish follow-up: Desk Rail tabs no longer use selected background fills or boxed toolbar chrome, desk plan cards use severity-colored full borders with matching corner triangles instead of Kanban stripes, and NarrativeFlow workspace/situation-map cards now fade in and out when sessions or catalyst nodes are modified.",
+    files: [
+      "frontend/components/desk/DeskRail.tsx",
+      "frontend/components/desk/DeskPlansFeed.tsx",
+      "frontend/components/narrative/NarrativeDeskMapCanvas.tsx",
+      "frontend/components/narrative/NarrativeSituationMap.tsx",
+      "frontend/index.css",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-25T23:03:24-04:00",
     agent: "codex",
     summary:

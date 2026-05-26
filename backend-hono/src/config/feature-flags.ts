@@ -16,6 +16,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   psych_assist: { enabled: true },
   maintenance: { enabled: true },
   quick_fintheon: { enabled: true },
+  narrativeflow_research: { enabled: true },
   agentDesk: { enabled: true },
   chart_levels: { enabled: true },
 };
@@ -73,6 +74,8 @@ export function extractSkillFromMessage(message: string): string | null {
     maintenance: "maintenance",
     quickfintheon: "quick_fintheon",
     narrative: "narrative",
+    narrativeflow_research: "narrativeflow_research",
+    narrativeflowresearch: "narrativeflow_research",
     agentDesk: "agentDesk",
     chartlevels: "chart_levels",
   };

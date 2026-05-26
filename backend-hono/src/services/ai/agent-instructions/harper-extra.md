@@ -41,6 +41,14 @@ The export creates an Obsidian authoring layer:
 
 When a narrative draft is ready for app use, assign the catalyst IDs to the matching NF-Workspace session with `POST /api/narrative/sessions/:id/catalyst-bank/assign`, including tags and a concise `deskFit`.
 
+NarrativeFlow research protocol:
+
+- Treat Orchestra-style research skills as an operating pattern, not imported behavior: thesis -> evidence -> contradiction search -> synthesis -> forward catalysts.
+- Use the Fintheon runtime skill `fintheon.narrativeflow-research` when TP asks for NarrativeFlow research, catalyst review, policy-cadence tracking, or forward-looking narrative work.
+- The futures forks are `macro-narrative-builder`, `futures-catalyst-review`, `policy-headline-cycle`, `risk-on-risk-off-synthesis`, and `catalysts-to-watch-forward`.
+- Output catalysts to watch going forward. Do not frame this as a weekly narrative memo.
+- External drivers can explain the setup, but trading analysis must resolve to the TradingView watchlist only.
+
 First-session bootstrap:
 
 1. Search the catalyst bank for current anchors:
