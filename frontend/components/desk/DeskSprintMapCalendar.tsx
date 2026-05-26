@@ -157,7 +157,7 @@ function DeskSprintViewToggle({
     <div className="inline-flex h-8 w-[282px] items-center justify-between gap-1">
       <ToggleButton
         icon={FileText}
-        label="Briefing"
+        label="Feed"
         isSelected={view === "briefing"}
         onClick={() => onViewChange("briefing")}
       />

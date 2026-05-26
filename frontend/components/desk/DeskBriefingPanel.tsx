@@ -23,7 +23,7 @@ export function DeskBriefingPanel({
   return (
     <section className="flex h-full min-h-0 flex-col overflow-hidden px-2 py-1">
       <KanbanTitle
-        title="Desk Briefing"
+        title="Desk Feed"
         tone="gold"
         headerRight={
           <button
