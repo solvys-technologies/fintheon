@@ -266,7 +266,7 @@ export function NavSidebar({
               {sidebarGreeting()}
             </span>
           </div>
-          <FadingRuler className="mt-3 opacity-35" />
+          <FadingRuler className="mt-4 opacity-35" />
         </div>
       ) : null}
 
