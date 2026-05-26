@@ -486,7 +486,7 @@ export function NarrativeInputBar({
                                 {selected ? (
                                   <Check size={12} className="shrink-0" />
                                 ) : (
-                                  <span className="grid h-5 w-5 shrink-0 place-items-center rounded-[5px] border border-[var(--fintheon-accent)]/12 bg-black/20">
+                                  <span className="grid h-5 w-5 shrink-0 place-items-center rounded-[5px] bg-black/20">
                                     <span
                                       className="h-2.5 w-2.5 rounded-[3px]"
                                       style={{ backgroundColor: chipColor }}

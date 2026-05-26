@@ -128,6 +128,18 @@ export async function createNarrativeSession(params: {
       message: { role: "user", content: params.query },
       actorId: params.actorId,
     });
+    await addSessionMessage({
+      sessionId: session.id,
+      message: {
+        role: "assistant",
+        content: buildOpeningAssistantMessage(
+          title,
+          selectedCatalystIds.length,
+        ),
+        metadata: { source: "narrativeflow-session-open" },
+      },
+      actorId: params.actorId,
+    });
   }
   await addWorkEvent({
     sessionId: session.id,
@@ -313,6 +325,17 @@ function buildTags(
     source: "sensemaking",
   }));
   return [...(requested ?? []), ...generated];
+}
+
+function buildOpeningAssistantMessage(
+  title: string,
+  catalystCount: number,
+): string {
+  const catalystLine =
+    catalystCount > 0
+      ? `I attached ${catalystCount} chamber-scored catalyst${catalystCount === 1 ? "" : "s"} and built the first flow, timeline, and docs packet.`
+      : "I opened the workspace without forced attachments and built the first flow, timeline, and docs packet from the request.";
+  return `Opened ${title}. ${catalystLine} Keep this thread going with edits like "this catalyst is not relevant" or "tighten the ES/NQ impact" and I will revise the workspace.`;
 }
 
 function toJoinedDesk(value: unknown) {

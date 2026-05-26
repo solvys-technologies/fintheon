@@ -288,8 +288,44 @@ function normalizeSeverity(value: string): AlertSeverity {
 
 function deriveTitle(query: string, headlines: NarrativeHeadlineOption[]) {
   const trimmed = query.trim();
-  if (trimmed.length > 0) return trimmed.slice(0, 96);
-  return headlines[0]?.headline.slice(0, 96) ?? "Untitled narrative";
+  if (trimmed.length > 0) return toFormalNarrativeTitle(trimmed);
+  const headline = headlines[0]?.headline.trim();
+  return headline ? toFormalNarrativeTitle(headline) : "Untitled Narrative";
+}
+
+function toFormalNarrativeTitle(value: string): string {
+  const quoted = value.match(/['"]([^'"]{3,80})['"]/);
+  if (quoted?.[1]) return trimTitleWords(cleanTitleText(quoted[1]));
+
+  const tacoMatch = /\bTACO\b|Trump Always Chickens Out/i.test(value);
+  if (tacoMatch) return "Axios TACO Accord";
+
+  const lead = cleanTitleText(
+    value
+      .replace(/^(track|monitor|watch|analyze|build|create)\s+(the\s+)?/i, "")
+      .split(/[:.!?]/)[0] ?? value,
+  );
+  return trimTitleWords(lead || "Untitled Narrative");
+}
+
+function cleanTitleText(value: string): string {
+  return value
+    .replace(/\bnarrative\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^the\s+/i, "");
+}
+
+function trimTitleWords(value: string): string {
+  const words = value.split(/\s+/).filter(Boolean).slice(0, 5);
+  if (words.length === 0) return "Untitled Narrative";
+  return words
+    .map((word) =>
+      /^[A-Z0-9]{2,}$/.test(word)
+        ? word
+        : word.charAt(0).toUpperCase() + word.slice(1),
+    )
+    .join(" ");
 }
 function estimateLandingTokens(
   query: string,
