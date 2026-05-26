@@ -1,4 +1,4 @@
-import { Check, ChevronDown, RefreshCw, Search, SlidersHorizontal, Trash2 } from "lucide-react";
+import { Check, ChevronDown, Pencil, RefreshCw, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useState } from "react";
 import type { NarrativeWorkspaceSession } from "./NarrativeSessionWorkspace";
 import { NarrativeLinkedCatalystCard } from "./NarrativeLinkedCatalystCard";
@@ -30,7 +30,6 @@ export function NarrativeFlowTab({
   session,
   response,
   selectedNodeId,
-  themeCount = 0,
   onOrganize,
   onShowAll,
   onSelectNode,
@@ -43,8 +42,6 @@ export function NarrativeFlowTab({
   const [editControlsOpen, setEditControlsOpen] = useState(false);
   const [notableOpen, setNotableOpen] = useState(true);
   const [upcomingOpen, setUpcomingOpen] = useState(true);
-  const anchorCount = response?.anchorCatalysts.length ?? 0;
-  const relatedCount = response?.relatedCatalysts.length ?? 0;
   const notableCatalysts = response
     ? [...response.anchorCatalysts, ...response.relatedCatalysts]
         .filter((item) => item.id !== selectedCatalyst?.id)
@@ -79,12 +76,9 @@ export function NarrativeFlowTab({
           />
         </div>
 
-        <div className="grid grid-cols-4 gap-2">
-          <Metric label="Anchors" value={anchorCount} />
-          <Metric label="Related" value={relatedCount} divided />
-          <Metric label="Nodes" value={response?.timelineNodes.length ?? 0} divided />
-          <Metric label="Themes" value={themeCount} divided />
-        </div>
+        {selectedCatalyst ? (
+          <IvFusePanel catalyst={selectedCatalyst} response={response} />
+        ) : null}
 
         <div className="narrative-flow-organize-row mt-3 flex items-center justify-between gap-2">
           <div className="min-w-0">
@@ -115,6 +109,16 @@ export function NarrativeFlowTab({
             ) : null}
           </div>
           <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setEditControlsOpen((value) => !value)}
+              className="narrative-flow-filter-action narrative-fade-item grid h-7 w-7 place-items-center rounded-md bg-transparent text-[var(--fintheon-muted)] transition-colors hover:text-[var(--fintheon-accent)] focus-visible:outline-none"
+              aria-label="Edit narrative"
+              aria-expanded={editControlsOpen}
+              title="Edit narrative"
+            >
+              <Pencil size={13} strokeWidth={2} />
+            </button>
             <button
               type="button"
               onClick={onOrganize}
@@ -173,7 +177,6 @@ export function NarrativeFlowTab({
                 {response?.synthesisSummary ?? selectedCatalyst.summary}
               </p>
             ) : null}
-            <IvFusePanel catalyst={selectedCatalyst} response={response} />
             <div className="mt-3">
               <button
                 type="button"
@@ -532,44 +535,11 @@ function buildDeskActivities(
   ];
 }
 
-function Metric({
-  label,
-  value,
-  divided = false,
-}: {
-  label: string;
-  value: number;
-  divided?: boolean;
-}) {
-  return (
-    <div className="relative px-2 py-2">
-      {divided ? <VerticalDivider /> : null}
-      <p className="font-mono text-sm tabular-nums text-[var(--fintheon-text)]">{value}</p>
-      <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]">
-        {label}
-      </p>
-    </div>
-  );
-}
-
 function Chip({ children }: { children: string }) {
   return (
     <span className="rounded bg-[var(--fintheon-accent)]/7 px-1.5 py-0.5 text-[10px] uppercase tracking-[0.1em] text-[var(--fintheon-accent)]/75">
       {children}
     </span>
-  );
-}
-
-function VerticalDivider() {
-  return (
-    <span
-      aria-hidden="true"
-      className="pointer-events-none absolute bottom-2 left-0 top-2 w-px"
-      style={{
-        background:
-          "linear-gradient(to bottom, transparent, rgba(199,159,74,0.18), transparent)",
-      }}
-    />
   );
 }
 

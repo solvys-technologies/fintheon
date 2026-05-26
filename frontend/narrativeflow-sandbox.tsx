@@ -63,8 +63,8 @@ function NarrativeFlowSandbox() {
   }
 
   return (
-    <div className="narrativeflow-sandbox-shell dark relative h-screen overflow-hidden bg-[var(--fintheon-bg)] text-[var(--fintheon-text)]">
-      <div className="consilium-tab-bar absolute inset-x-0 top-0 flex items-center gap-0.5 px-4 pb-1.5 pt-3">
+    <div className="narrativeflow-sandbox-shell dark flex h-screen flex-col overflow-hidden bg-[var(--fintheon-bg)] text-[var(--fintheon-text)]">
+      <div className="consilium-tab-bar shrink-0 flex items-center gap-0.5 px-4 pb-1.5 pt-3">
         <h2 className="consilium-tab-bar__title mr-3 flex items-center gap-1.5 text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)]">
           <Landmark size={14} />
           <span>Consilium</span>
@@ -99,9 +99,9 @@ function NarrativeFlowSandbox() {
           onToggleResearchRail={() => window.dispatchEvent(new Event("fintheon:narrative-research-rail-toggle"))}
         />
       </div>
-      <main className="flex h-full min-h-0 overflow-hidden">
+      <main className="flex min-h-0 flex-1 overflow-hidden">
         <section
-          className="min-w-0 transition-[flex-basis] duration-300 ease-out"
+          className="min-h-0 min-w-0 overflow-hidden transition-[flex-basis] duration-300 ease-out"
           style={{ flexBasis: showChart ? "50%" : "100%" }}
         >
           <NarrativeCanvas

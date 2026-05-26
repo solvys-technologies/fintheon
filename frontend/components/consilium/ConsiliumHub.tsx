@@ -685,7 +685,7 @@ export function ConsiliumHub() {
   return (
     <div className="flex h-full flex-col bg-transparent">
       {/* Tab bar: Sanctum dropdown + regular tabs + Desk rail toggle */}
-      <div className="consilium-tab-bar flex items-center gap-0.5 px-4 pt-3 pb-1.5">
+      <div className="consilium-tab-bar flex shrink-0 items-center gap-0.5 px-4 pt-3 pb-1.5">
         <h2
           className="consilium-tab-bar__title mr-3 flex items-center gap-1.5 text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
           style={{ fontFamily: "var(--font-heading, Roboto, sans-serif)" }}

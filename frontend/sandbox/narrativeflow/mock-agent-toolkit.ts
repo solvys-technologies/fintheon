@@ -41,31 +41,23 @@ export function buildCognitionSteps(input: {
         { text: "Pressure-test second-order market impacts", issueType: "risk", priority: "P1" },
       ],
     }),
-    step(now + 1, "narrativeflow_open_surface", {
+    step(now + 1, "open_right_rail", {
+      title: "NarrativeFlow Plan Mode",
+      surface: "plan",
+      markdown: planModeMarkdown(input.workspaceTitle, input.workspaceId),
+    }),
+    step(now + 2, "narrativeflow_open_surface", {
       surface: "workspace",
       sessionId: input.workspaceId,
     }),
-    step(now + 2, "narrativeflow_show_internal_data", {
+    step(now + 3, "narrativeflow_show_internal_data", {
       title: "NarrativeFlow Internal Data",
       surface: "workspace",
       dataKind: "catalysts",
       markdown: internalDataMarkdown(input.workspaceTitle, input.workspaceId),
     }),
-    step(now + 3, "narrativeflow_open_surface", {
-      surface: "map",
-      sessionId: input.workspaceId,
-      focus: "DeskMap",
-    }),
-    step(now + 4, "narrativeflow_open_surface", {
-      surface: "forecasts",
-      focus: "Forecast draft review",
-    }),
-    step(now + 5, "narrativeflow_open_surface", {
-      surface: "workspace",
-      sessionId: input.workspaceId,
-    }),
-    step(now + 6, "narrativeflow_stage_edit", editPayload),
-    step(now + 7, "approval_questions", {
+    step(now + 4, "narrativeflow_stage_edit", editPayload),
+    step(now + 5, "approval_questions", {
       actionId: approvalActionId,
       title: "Approve NarrativeFlow edit",
       summary: "Apply Harper's Energy & Infrastructure Crisis workspace edit.",
@@ -98,7 +90,7 @@ export function resolveMockNarrativeApproval(
 export function buildAssistantText(input: { workspaceTitle: string }) {
   return [
     `I staged an approved-write edit for **${input.workspaceTitle}** instead of mutating the workspace silently.`,
-    "I opened the work queue, surfaced internal catalyst data, touched Workspace, DeskMap, and Forecasts, then asked for approval before applying the edit.",
+    "I opened Plan Mode, queued the visible work, surfaced internal catalyst data, and asked for approval before applying the edit.",
     "For the Energy & Infrastructure Crisis, I am tracking three lanes: grid bottlenecks, power-demand shock, and financing/permitting stress.",
   ].join("\n\n");
 }
@@ -178,6 +170,10 @@ function dispatchApprovedEdit(
 
 function internalDataMarkdown(workspaceTitle: string, workspaceId: string | null) {
   return `Active workspace: **${workspaceTitle}**\n\nAttached catalyst reads:\n${getWorkspaceCatalystLines(workspaceId)}\n\nAvailable agent UI tools: to-do drawer, approval questions, right rail reports, all NarrativeFlow surfaces, and approval-gated workspace edits.`;
+}
+
+function planModeMarkdown(workspaceTitle: string, workspaceId: string | null) {
+  return `## Plan Mode\n\n**Workspace:** ${workspaceTitle}\n\n1. Anchor the thesis around grid reserve pressure, AI load growth, transformer scarcity, and financing stress.\n2. Separate confirmation evidence from invalidation evidence before editing the workspace.\n3. Keep the approval gate open for the proposed title/artifact change.\n\nCatalyst focus:\n${getWorkspaceCatalystLines(workspaceId)}`;
 }
 
 function getWorkspaceCatalystLines(sessionId: string | null) {

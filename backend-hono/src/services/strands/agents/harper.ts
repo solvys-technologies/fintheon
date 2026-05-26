@@ -40,6 +40,7 @@ export interface HarperChatOptions {
   activeConnectors?: string[];
   /** [S23-T3] Active Consilium surface — auto-enables surface-specific context injection (e.g. "arbitrumChamber"). */
   surface?: string;
+  workspace?: Record<string, unknown>;
   userContext?: UserContext;
   /** AI provider override: DeepSeek direct or OpenCode Go utility path. */
   provider?: HarperProvider;
@@ -165,6 +166,12 @@ ${prompt}`;
   const releaseContext = await buildReleaseContext(message);
   if (releaseContext) prompt = `${releaseContext}\n\n${prompt}`;
 
+  const narrativeFlowContext = buildNarrativeFlowPlanModeContext({
+    surface: options.surface,
+    workspace: options.workspace,
+  });
+  if (narrativeFlowContext) prompt = `${narrativeFlowContext}\n\n${prompt}`;
+
   // [S23-T3] ArbitrumChamber awareness: when the user is on the ArbitrumChamber surface (or the connector is
   // explicitly active), inject the latest AgentDesk simulation with interpretation scaffolding so
   // Harper reads her own output as ground truth instead of treating it as debug noise.
@@ -267,4 +274,40 @@ ${prompt}`;
     "X-Hermes-Agent": "harper",
     ...responseHeaders,
   });
+}
+
+function buildNarrativeFlowPlanModeContext(input: {
+  surface?: string;
+  workspace?: Record<string, unknown>;
+}): string | null {
+  if (input.surface !== "narrativeflow") return null;
+
+  const workspaceId = stringValue(input.workspace?.id);
+  const workspaceTitle = stringValue(input.workspace?.title);
+  if (workspaceId) {
+    return `[NarrativeFlow Workspace Mode]
+Active narrative workspace: ${workspaceTitle ?? workspaceId}
+
+The narrative has already been built, so chat can run naturally. Answer directly, use the NarrativeFlow UI tools when useful, and keep work visible:
+- use open_todo_drawer for execution steps;
+- use open_right_rail with surface="plan" for plan-mode workbench notes;
+- use narrativeflow_show_internal_data before making product-state claims;
+- use narrativeflow_stage_edit for any workspace, docs, flow, timeline, DeskMap, or forecast write.
+
+If the user asks for a material rewrite and the missing inputs would change the thesis, ask_approval_questions before staging the edit. Keep the Workspace chat mounted until approval is resolved; do not navigate to DeskMap, Forecasts, Coliseum, or Resolved before the approval question has been answered.`;
+  }
+
+  return `[NarrativeFlow Intake Mode]
+The user is building a NarrativeFlow narrative that is not built yet.
+
+Default behavior: ask questions before continuing. First call ask_approval_questions with a compact plan-mode intake. Ask for:
+1. the core thesis or market question,
+2. the confirmation and invalidation evidence,
+3. the horizon, output format, and any desk constraints.
+
+Do not call open_todo_drawer, narrativeflow_open_surface, narrativeflow_show_internal_data, or narrativeflow_stage_edit until those answers are received. After the answers, open_right_rail with surface="plan" to show the plan, then continue building the narrative.`;
+}
+
+function stringValue(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value : null;
 }

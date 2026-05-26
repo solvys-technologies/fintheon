@@ -9,6 +9,57 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-25T20:38:00-04:00",
+    agent: "codex",
+    summary:
+      "v6.7.28 deploy: NarrativeFlow now starts narrative builds with plan-mode intake and approve/deny deliberation, chat drawers attach to the composer, Consilium content clears the toolbar, and the active rail puts IV fuse KPIs first.",
+    files: [
+      "backend-hono/src/routes/harper/index.ts",
+      "backend-hono/src/services/strands/agents/harper.ts",
+      "frontend/components/narrative/NarrativeFlowLanding.tsx",
+      "frontend/components/chat/composer/RepoChatComposer.tsx",
+      "frontend/components/narrative/NarrativeFlowTab.tsx",
+      "package.json",
+      "mobile/package.json",
+      "scripts/fintheon-setup.sh",
+      "scripts/fintheon-update.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-25T13:05:00-04:00",
+    agent: "codex",
+    summary:
+      "Refined NarrativeFlow active-narrative rail: removed the divided count KPI strip, moved the IV fuse and desk-plan rows to the top of the rail, and added a real pencil edit affordance immediately left of the right-aligned Organize control.",
+    files: [
+      "frontend/components/narrative/NarrativeFlowTab.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-25T12:49:00-04:00",
+    agent: "codex",
+    summary:
+      "Globalized the Consilium toolbar spacing invariant and converted canonical chat composer surfaces from body-portaled popups into composer-attached drawers that sit flush against the input seam.",
+    files: [
+      "frontend/components/chat/composer/RepoChatComposer.tsx",
+      "frontend/index.css",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-25T12:35:00-04:00",
+    agent: "codex",
+    summary:
+      "Fixed NarrativeFlow tri-panel toolbar occlusion: the Consilium toolbar now reserves vertical layout space in the sandbox and production wrapper, so workspace content starts below the gradient header instead of rendering underneath it.",
+    files: [
+      "frontend/narrativeflow-sandbox.tsx",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/index.css",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-25T12:18:00-04:00",
     agent: "codex",
     summary:

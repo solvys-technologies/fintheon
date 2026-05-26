@@ -482,6 +482,7 @@ export function createHarperRoutes() {
           riskFlowContext: body.riskFlowContext,
           activeConnectors: body.activeConnectors,
           surface: body.surface,
+          workspace: body.workspace,
           userContext: body.userContext,
           provider: body.provider,
           model: body.model,
