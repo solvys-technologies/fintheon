@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { normalizeCatalystId } from "../narrative-sensemaking/catalyst-reader.js";
 import {
@@ -44,7 +45,7 @@ export async function listNarrativeSessions(params: {
     .order("updated_at", { ascending: false });
 
   if (error) throw new Error(`Session list failed: ${error.message}`);
-  return (data ?? []).map(toSession);
+  return attachCatalystCounts(sb, (data ?? []).map(toSession));
 }
 
 export async function createNarrativeSession(params: {
@@ -338,6 +339,32 @@ function buildOpeningAssistantMessage(
   return `Opened ${title}. ${catalystLine} Keep this thread going with edits like "this catalyst is not relevant" or "tighten the ES/NQ impact" and I will revise the workspace.`;
 }
 
+async function attachCatalystCounts(
+  sb: SupabaseClient,
+  sessions: NarrativeSession[],
+): Promise<NarrativeSession[]> {
+  if (sessions.length === 0) return sessions;
+
+  const ids = sessions.map((session) => session.id);
+  const { data, error } = await sb
+    .from("narrative_session_catalysts")
+    .select("session_id")
+    .in("session_id", ids);
+
+  if (error) throw new Error(`Session catalyst count failed: ${error.message}`);
+
+  const counts = new Map<string, number>();
+  for (const row of data ?? []) {
+    const sessionId = String(row.session_id);
+    counts.set(sessionId, (counts.get(sessionId) ?? 0) + 1);
+  }
+
+  return sessions.map((session) => ({
+    ...session,
+    catalystCount: counts.get(session.id) ?? 0,
+  }));
+}
+
 function toJoinedDesk(value: unknown) {
   const row = Array.isArray(value) ? value[0] : value;
   if (!row || typeof row !== "object") return null;
@@ -365,6 +392,8 @@ function toSession(row: Record<string, unknown>): NarrativeSession {
     coverImageUpdatedAt: row.cover_image_updated_at
       ? String(row.cover_image_updated_at)
       : null,
+    catalystCount:
+      typeof row.catalyst_count === "number" ? row.catalyst_count : undefined,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };

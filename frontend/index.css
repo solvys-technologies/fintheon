@@ -458,34 +458,49 @@ html[data-zen-mode="true"] button[aria-label] {
  *   organic cadence (not the regular 50% oscillation used on fuses). */
 @keyframes cognition-thought-shimmer {
   0% {
-    opacity: 0.55;
-  }
-  17% {
-    opacity: 0.82;
-  }
-  34% {
-    opacity: 0.6;
-  }
-  52% {
-    opacity: 0.95;
-  }
-  71% {
-    opacity: 0.7;
-  }
-  88% {
-    opacity: 0.88;
+    background-position: 140% 50%;
   }
   100% {
-    opacity: 0.55;
+    background-position: -40% 50%;
   }
 }
 .cognition-thought-shimmer {
-  animation: cognition-thought-shimmer 6.8s ease-in-out infinite;
+  background-image: linear-gradient(
+    90deg,
+    color-mix(
+        in srgb,
+        var(--fintheon-primary, var(--fintheon-accent)) 58%,
+        transparent
+      )
+      0%,
+    var(--fintheon-primary, var(--fintheon-accent)) 42%,
+    color-mix(
+        in srgb,
+        var(--fintheon-text, #f0ead6) 72%,
+        var(--fintheon-primary, var(--fintheon-accent))
+      )
+      50%,
+    var(--fintheon-primary, var(--fintheon-accent)) 58%,
+    color-mix(
+        in srgb,
+        var(--fintheon-primary, var(--fintheon-accent)) 58%,
+        transparent
+      )
+      100%
+  );
+  background-size: 220% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: cognition-thought-shimmer 5s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .cognition-thought-shimmer {
     animation: none;
-    opacity: 0.78;
+    background: none;
+    color: var(--fintheon-primary, var(--fintheon-accent));
+    -webkit-text-fill-color: currentColor;
   }
 }
 
@@ -1885,6 +1900,14 @@ html[data-zen-mode="true"] button[aria-label] {
   position: fixed;
 }
 
+.fintheon-market-ticker-card {
+  background: color-mix(
+    in srgb,
+    var(--fintheon-overlay-surface) 70%,
+    transparent
+  );
+}
+
 .fintheon-liquid-surface {
   border-radius: 8px;
   overflow: hidden;
@@ -2885,7 +2908,7 @@ html[data-zen-mode="true"] button[aria-label] {
   padding: 4px 9px;
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.07), transparent 42%),
-    rgba(5, 4, 2, 0.63);
+    rgba(5, 4, 2, 0.44);
   color: var(--fintheon-text);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 10px;
@@ -2902,7 +2925,7 @@ html[data-zen-mode="true"] button[aria-label] {
   border-color: color-mix(in srgb, var(--fintheon-accent) 38%, transparent);
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.1), transparent 42%),
-    rgba(199, 159, 74, 0.08);
+    rgba(199, 159, 74, 0.056);
 }
 
 .fintheon-ticker-pill[data-direction="up"] span:last-child {

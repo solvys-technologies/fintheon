@@ -91,7 +91,13 @@ export function MarketTickerStripSlot({
 
   return (
     <SlotReveal>
-      <SlotShell label={data?.title ?? "daily performance"}>
+      <SlotShell
+        label={data?.title ?? "5d performance"}
+        style={{
+          background: "rgba(10, 9, 5, 0.49)",
+          borderColor: "rgba(199, 159, 74, 0.105)",
+        }}
+      >
         {loading ? (
           <SlotSkeleton lines={1} />
         ) : quotes.length === 0 ? (

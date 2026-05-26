@@ -68,12 +68,22 @@ interface StreamdownChatProps {
   className?: string;
 }
 
+function normalizeInlineSlotBlocks(content: string): string {
+  return content.replace(
+    /(^|\n)([ \t]*)(market-ticker-strip|ticker-badges)\s+(\{[^\n]*\})(?=\n|$)/g,
+    (_match, prefix: string, indent: string, language: string, body: string) =>
+      `${prefix}${indent}\`\`\`${language}\n${body}\n${indent}\`\`\``,
+  );
+}
+
 export function StreamdownChat({
   content,
   streaming = false,
   className,
 }: StreamdownChatProps) {
-  const enhancedContent = enhanceTickerMentions(content);
+  const enhancedContent = enhanceTickerMentions(
+    normalizeInlineSlotBlocks(content),
+  );
   return (
     <Streamdown
       className={className}

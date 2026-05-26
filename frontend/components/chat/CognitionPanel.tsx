@@ -96,6 +96,14 @@ function isToolStep(step: CognitionStep): boolean {
   );
 }
 
+function currentStepPhrase(step: CognitionStep): string {
+  const detail = parseDetail(step.detail);
+  const label = step.label?.trim();
+  if (label && !label.startsWith("chat-ui:")) return label;
+  if (detail) return detail;
+  return stepLabel(step);
+}
+
 export function useCognitionStream(requestId: string | null) {
   const [steps, setSteps] = useState<CognitionStep[]>([]);
   const [done, setDone] = useState(false);
@@ -184,8 +192,15 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
 
   if (!requestId || steps.length === 0) return null;
 
+  const latestVisibleStep = [...steps]
+    .reverse()
+    .find((step) => step.kind !== "gateway-call");
   const currentPhrase =
-    isStreaming && !done ? THINKING_PHRASES[phraseIndex] : "Thought trail";
+    isStreaming && !done
+      ? latestVisibleStep
+        ? currentStepPhrase(latestVisibleStep)
+        : THINKING_PHRASES[phraseIndex]
+      : "Thought trail";
 
   return (
     <div className="overflow-hidden bg-transparent">
@@ -195,13 +210,13 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
         aria-expanded={!collapsed}
         title={collapsed ? "Show tool calls" : "Hide tool calls"}
       >
-        <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-          <BrailleSpinner size={9} />
+        <span className="flex h-[23px] w-[23px] shrink-0 items-center justify-center">
+          <BrailleSpinner size={10.35} />
         </span>
         <span className="min-w-0">
           <span
             className={
-              "block truncate text-[12px] font-medium text-[var(--fintheon-accent)]/78" +
+              "block truncate text-[13.8px] font-medium text-[var(--fintheon-accent)]/78" +
               (isStreaming && !done ? " cognition-thought-shimmer" : "")
             }
           >

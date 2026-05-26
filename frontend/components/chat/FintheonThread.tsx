@@ -236,11 +236,13 @@ export function FintheonThread({
           })}
 
           {/* Thinking indicator */}
-          <ThreadPrimitive.If running>
-            <div className="flex justify-start items-center">
-              <FintheonThinkingIndicator isThinking agentName={resolvedAgent} />
-            </div>
-          </ThreadPrimitive.If>
+          {!lastRequestId ? (
+            <ThreadPrimitive.If running>
+              <div className="flex justify-start items-center">
+                <FintheonThinkingIndicator isThinking />
+              </div>
+            </ThreadPrimitive.If>
+          ) : null}
 
           {/* Agent cognition panel */}
           {lastRequestId && !compact && (

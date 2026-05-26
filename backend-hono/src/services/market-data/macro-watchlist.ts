@@ -25,7 +25,10 @@ export interface MacroWatchQuote {
   open: number;
   rolling7dHigh: number | null;
   rolling7dLow: number | null;
+  rolling5dHigh: number | null;
+  rolling5dLow: number | null;
   sparkline: Array<{ time: number; close: number }>;
+  sparklineSpan: "5d" | "unavailable";
   historySource: "yahoo" | "unavailable";
   asOf: string;
 }
@@ -146,7 +149,10 @@ export async function fetchMacroWatchlist(): Promise<MacroWatchQuote[]> {
       open: row.open,
       rolling7dHigh: hist?.high ?? null,
       rolling7dLow: hist?.low ?? null,
+      rolling5dHigh: hist?.high ?? null,
+      rolling5dLow: hist?.low ?? null,
       sparkline: hist?.sparkline ?? [],
+      sparklineSpan: hist ? "5d" : "unavailable",
       historySource: hist ? "yahoo" : "unavailable",
       asOf,
     };
@@ -170,7 +176,7 @@ export async function buildMacroWatchlistContext(): Promise<string> {
       "External drivers, companies, sectors, countries, policy actors, or crypto catalysts may be observed as evidence, but they are not trade targets unless they map back to one of these watched symbols.",
       "Use these prices before making any futures, rates, VIX, or cross-asset claims. If a watched price is missing, say it is unavailable.",
       "When writing front-end chat responses, mention watched symbols naturally as /NQ, $ES, VIX, DXY, US02Y, US10Y, or US30Y; Streamdown will convert them into hoverable market cards.",
-      'To show clickable futures/rates pills in chat, include a fenced `market-ticker-strip` JSON block with optional symbols, e.g. {"title":"Macro tape","symbols":["NQ","ES","YM","GC","CL","VIX","US02Y","US10Y"]}.',
+      'To show clickable futures/rates pills in chat, include an exact fenced Streamdown block, never inline text: ```market-ticker-strip\n{"title":"Macro tape","symbols":["NQ","ES","YM","GC","CL","VIX","US02Y","US10Y"]}\n```.',
     ].join("\n");
   } catch {
     return "";
@@ -209,7 +215,7 @@ async function fetchYahooHistory(
 async function fetchYahooSymbolHistory(
   yahooSymbol: string,
 ): Promise<YahooHistory | null> {
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?range=7d&interval=1d`;
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?range=5d&interval=1d`;
   const res = await fetch(url, {
     signal: AbortSignal.timeout(8000),
     headers: {
