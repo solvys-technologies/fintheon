@@ -32,8 +32,7 @@ export interface ResolvedBlockerTarget {
   domains: string[];
 }
 
-export const BLOCKER_QUICK_TARGET_STORAGE_KEY =
-  "fintheon:blocker-quick-target";
+export const BLOCKER_QUICK_TARGET_STORAGE_KEY = "fintheon:blocker-quick-target";
 export const BLOCKER_CUSTOM_DOMAINS_STORAGE_KEY =
   "fintheon:blocker-custom-domains";
 export const DEFAULT_BLOCKER_PLATFORM_ID = "topstepx";
@@ -76,7 +75,9 @@ export function domainsFromUrl(rawUrl: string): string[] {
     return Array.from(new Set([normalized, `www.${normalized}`]));
   } catch {
     const normalized = normalizeDomain(rawUrl);
-    return normalized ? Array.from(new Set([normalized, `www.${normalized}`])) : [];
+    return normalized
+      ? Array.from(new Set([normalized, `www.${normalized}`]))
+      : [];
   }
 }
 
@@ -158,7 +159,10 @@ export function loadBlockerCustomDomains(): string[] {
 
 export function saveBlockerCustomDomains(domains: string[]) {
   const next = mergeDomainLists(domains);
-  localStorage.setItem(BLOCKER_CUSTOM_DOMAINS_STORAGE_KEY, JSON.stringify(next));
+  localStorage.setItem(
+    BLOCKER_CUSTOM_DOMAINS_STORAGE_KEY,
+    JSON.stringify(next),
+  );
   localStorage.setItem(
     BLOCKER_SETTINGS_VERSION_STORAGE_KEY,
     CURRENT_BLOCKER_SETTINGS_VERSION,
@@ -196,7 +200,9 @@ export function resolveBlockerTarget({
 export function sameDomainSet(left: string[], right: string[]) {
   const a = mergeDomainLists(left);
   const b = mergeDomainLists(right);
-  return a.length === b.length && a.every((domain, index) => domain === b[index]);
+  return (
+    a.length === b.length && a.every((domain, index) => domain === b[index])
+  );
 }
 
 export function domainSetsIntersect(left: string[], right: string[]) {

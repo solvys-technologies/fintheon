@@ -17,9 +17,7 @@ import { AgenticFeedbackControls } from "../shared/AgenticFeedbackControls";
 import { PriceRevealTag } from "./PriceRevealTag";
 import { formatEasternClockRange } from "../../lib/eastern-time-format";
 import type { DayPlanWindow, DriftKind } from "../../types/day-plan";
-import {
-  getDeskPlanLockoutDecision,
-} from "../../utils/day-plan-lockout";
+import { getDeskPlanLockoutDecision } from "../../utils/day-plan-lockout";
 
 const DRIFT_LABELS: Record<DriftKind | "in-window", string> = {
   "in-window": "in-window",
@@ -53,7 +51,9 @@ function fmtTradingWindow(w: DayPlanWindow): string {
   return range;
 }
 
-function isOvernightWindow(w: Pick<DayPlanWindow, "startTime" | "endTime">): boolean {
+function isOvernightWindow(
+  w: Pick<DayPlanWindow, "startTime" | "endTime">,
+): boolean {
   const start = minutesFromClock(w.startTime);
   const end = minutesFromClock(w.endTime);
   if (start == null || end == null) return false;
@@ -95,7 +95,10 @@ function currentEasternDateIso(): string {
   return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
-function defaultWindowIndex(planDate: string | undefined, windows: DayPlanWindow[]): number {
+function defaultWindowIndex(
+  planDate: string | undefined,
+  windows: DayPlanWindow[],
+): number {
   if (windows.length === 0) return 0;
   if (planDate !== currentEasternDateIso()) return 0;
   const now = currentEasternMinutes();
@@ -120,22 +123,17 @@ export function DayCard({
   hideStreak,
 }: DayCardProps) {
   const { data: todayData, isLoading: todayLoading } = useDayPlan();
-  const {
-    currentPlan: multiWeekPlan,
-    isLoading: multiWeekLoading,
-  } = useDayPlanMultiWeek();
+  const { currentPlan: multiWeekPlan, isLoading: multiWeekLoading } =
+    useDayPlanMultiWeek();
   const { data: drift } = useDriftStatus();
-  const {
-    lockoutAutoBlockOutsideTradingWindow,
-    lockoutAutoReleaseMinutes,
-  } = useSettings();
-  const {
-    state: lockoutState,
-    lockUntil: lockoutLockUntil,
-  } = useLockout();
+  const { lockoutAutoBlockOutsideTradingWindow, lockoutAutoReleaseMinutes } =
+    useSettings();
+  const { state: lockoutState, lockUntil: lockoutLockUntil } = useLockout();
 
   const [currentWindowIndex, setCurrentWindowIndex] = useState(0);
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(
+    () => new Set(),
+  );
   const autoLockKeyRef = useRef<string | null>(null);
 
   const plan = multiWeekPlan ?? todayData;
@@ -169,12 +167,27 @@ export function DayCard({
 
   const driftVisual: DriftKind | "in-window" = drift?.kind ?? "in-window";
 
-  const dateLabel = plan?.date ? (() => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const [y, m, d] = plan.date.split('-').map(Number);
-    const date = new Date(y, m - 1, d);
-    return `${months[date.getMonth()]} ${date.getDate()}`;
-  })() : null;
+  const dateLabel = plan?.date
+    ? (() => {
+        const months = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+        const [y, m, d] = plan.date.split("-").map(Number);
+        const date = new Date(y, m - 1, d);
+        return `${months[date.getMonth()]} ${date.getDate()}`;
+      })()
+    : null;
 
   const baseSurface = bare
     ? "relative"
@@ -291,7 +304,9 @@ export function DayCard({
           loading={isLoading}
           currentIndex={currentWindowIndex}
           totalWindows={windows.length}
-          onPrev={() => setCurrentWindowIndex((value) => Math.max(0, value - 1))}
+          onPrev={() =>
+            setCurrentWindowIndex((value) => Math.max(0, value - 1))
+          }
           onNext={() =>
             setCurrentWindowIndex((value) =>
               Math.min(windows.length - 1, value + 1),
@@ -329,12 +344,12 @@ export function DayCard({
         />
         {currentWindow?.econForecast?.otherNotableEvents &&
           currentWindow.econForecast.otherNotableEvents.length > 0 && (
-          <Row
-            label="Notable"
-            value={currentWindow.econForecast.otherNotableEvents.join(", ")}
-            loading={false}
-          />
-        )}
+            <Row
+              label="Notable"
+              value={currentWindow.econForecast.otherNotableEvents.join(", ")}
+              loading={false}
+            />
+          )}
         <GatedForecastRow
           label="Thesis"
           planDate={plan?.date}
@@ -352,37 +367,37 @@ export function DayCard({
       {drift && (
         <footer className="flex items-center justify-end pt-3">
           <div className="flex items-center gap-2">
+            <span
+              className="inline-flex items-center gap-1.5"
+              title={drift.message ?? undefined}
+              aria-label={`Drift ${DRIFT_LABELS[driftVisual]}${drift.message ? ` \u2014 ${drift.message}` : ""}`}
+            >
               <span
-                className="inline-flex items-center gap-1.5"
-                title={drift.message ?? undefined}
-                aria-label={`Drift ${DRIFT_LABELS[driftVisual]}${drift.message ? ` \u2014 ${drift.message}` : ""}`}
+                className="text-[10.5px] uppercase tracking-[0.16em]"
+                style={{
+                  color: "var(--fintheon-muted, #908774)",
+                  fontFamily: "var(--font-data, monospace)",
+                }}
               >
-                <span
-        className="text-[10.5px] uppercase tracking-[0.16em]"
-                  style={{
-                    color: "var(--fintheon-muted, #908774)",
-                    fontFamily: "var(--font-data, monospace)",
-                  }}
-                >
-                  Drift
-                </span>
-                <span
-                  aria-hidden
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: "50%",
-                    background: DRIFT_COLORS[driftVisual],
-                    display: "inline-block",
-                  }}
-                />
-                <span
-        className="text-[11.5px]"
-                  style={{ color: "var(--fintheon-text)" }}
-                >
-                  {DRIFT_LABELS[driftVisual]}
-                </span>
+                Drift
               </span>
+              <span
+                aria-hidden
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: DRIFT_COLORS[driftVisual],
+                  display: "inline-block",
+                }}
+              />
+              <span
+                className="text-[11.5px]"
+                style={{ color: "var(--fintheon-text)" }}
+              >
+                {DRIFT_LABELS[driftVisual]}
+              </span>
+            </span>
           </div>
         </footer>
       )}
@@ -505,9 +520,7 @@ function GatedForecastRow({
   detail?: (f: NonNullable<DayPlanWindow["econForecast"]>) => string;
 }) {
   if (loading || !window) {
-    return (
-      <Row label={label} value={"\u2014"} loading />
-    );
+    return <Row label={label} value={"\u2014"} loading />;
   }
 
   const tone: ScenarioTone = scenario
@@ -572,11 +585,7 @@ function GatedForecastRow({
           >
             {window.econForecast ? (
               <span className="inline-flex items-center gap-1">
-                {tone !== "neutral" && (
-                  <Chevron
-                    bullish={tone === "bullish"}
-                  />
-                )}
+                {tone !== "neutral" && <Chevron bullish={tone === "bullish"} />}
                 <span>{renderValue(window.econForecast)}</span>
               </span>
             ) : (
@@ -628,9 +637,7 @@ function Chevron({ bullish }: { bullish: boolean }) {
       height="10"
       viewBox="0 0 10 10"
       style={{
-        color: bullish
-          ? "var(--fintheon-bullish)"
-          : "var(--fintheon-bearish)",
+        color: bullish ? "var(--fintheon-bullish)" : "var(--fintheon-bearish)",
         transform: bullish ? "rotate(0deg)" : "rotate(180deg)",
         flexShrink: 0,
       }}

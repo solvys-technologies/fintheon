@@ -32,7 +32,7 @@ export function ChatQuestionApprovalDrawer({
   const total = questionnaire?.questions.length ?? 0;
   const canGoBack = index > 0;
   const canGoNext = index < total - 1;
-  const currentValue = question ? answers[question.id] ?? "" : "";
+  const currentValue = question ? (answers[question.id] ?? "") : "";
   const isRequiredMissing = !!question?.required && !currentValue.trim();
   const compiledAnswers = useMemo(() => {
     if (!questionnaire) return [];
@@ -114,7 +114,9 @@ export function ChatQuestionApprovalDrawer({
             {canGoNext ? (
               <button
                 type="button"
-                onClick={() => setIndex((value) => Math.min(total - 1, value + 1))}
+                onClick={() =>
+                  setIndex((value) => Math.min(total - 1, value + 1))
+                }
                 disabled={isRequiredMissing || isSubmitting}
                 className="flex items-center gap-1 rounded-md border border-[var(--fintheon-accent)]/26 px-2.5 py-1.5 text-[10px] uppercase tracking-[0.1em] text-[var(--fintheon-accent)] disabled:opacity-35"
               >

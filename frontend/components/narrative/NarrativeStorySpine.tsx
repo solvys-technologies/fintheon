@@ -25,7 +25,10 @@ export function NarrativeStorySpine({
   onRefresh,
 }: NarrativeStorySpineProps) {
   return (
-    <aside className="t-panel-slide min-h-0 overflow-hidden rounded-md border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-surface)]" data-open="true">
+    <aside
+      className="t-panel-slide min-h-0 overflow-hidden rounded-md border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-surface)]"
+      data-open="true"
+    >
       <div className="flex items-center justify-between border-b border-[var(--fintheon-accent)]/10 px-3 py-2">
         <div>
           <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--fintheon-accent)]/70">
@@ -47,7 +50,12 @@ export function NarrativeStorySpine({
 
       <div className="max-h-full space-y-2 overflow-y-auto p-2">
         {isLoading ? <StateLine text="[LOADING...]" /> : null}
-        {error ? <StateLine text={`[ERROR: ${error}]`} icon={<AlertTriangle size={14} />} /> : null}
+        {error ? (
+          <StateLine
+            text={`[ERROR: ${error}]`}
+            icon={<AlertTriangle size={14} />}
+          />
+        ) : null}
         {!isLoading && hypotheses.length === 0 ? (
           <StateLine text="[NO LIVE STORIES]" />
         ) : null}
@@ -68,7 +76,11 @@ export function NarrativeStorySpine({
               <div className="flex items-start gap-2">
                 <CircleDot
                   size={15}
-                  className={isSelected ? "text-[var(--fintheon-accent)]" : "text-[var(--fintheon-muted)]"}
+                  className={
+                    isSelected
+                      ? "text-[var(--fintheon-accent)]"
+                      : "text-[var(--fintheon-muted)]"
+                  }
                 />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-[var(--fintheon-text)]">
@@ -82,7 +94,9 @@ export function NarrativeStorySpine({
               <div className="mt-3 flex items-center justify-between text-[10px] uppercase tracking-[0.14em] text-[var(--fintheon-muted)]">
                 <span>{Math.round(hypothesis.confidence * 100)} conf</span>
                 <span>{hypothesis.evidence.length} evidence</span>
-                <span>{hypothesis.routingDecision.status.replace("_", " ")}</span>
+                <span>
+                  {hypothesis.routingDecision.status.replace("_", " ")}
+                </span>
               </div>
             </button>
           );

@@ -43,7 +43,10 @@ export class FileRoomService {
     return json.fileRoom;
   }
 
-  async getItem(id: string, deskId = "priced-in-capital"): Promise<FileRoomItemDetail> {
+  async getItem(
+    id: string,
+    deskId = "priced-in-capital",
+  ): Promise<FileRoomItemDetail> {
     const params = new URLSearchParams({ id, deskId });
     const json = await this.client.get<{ item: FileRoomItemDetail }>(
       `/api/file-room/item?${params}`,

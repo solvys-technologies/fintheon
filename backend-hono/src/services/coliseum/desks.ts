@@ -15,7 +15,9 @@ export async function resolveColiseumDeskId(
   return deskId;
 }
 
-export async function readDeskCreatedBy(deskId: string): Promise<string | null> {
+export async function readDeskCreatedBy(
+  deskId: string,
+): Promise<string | null> {
   const sb = getColiseumClient();
   const { data, error } = await sb
     .from("narrative_desks")

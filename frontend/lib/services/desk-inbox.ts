@@ -52,7 +52,10 @@ export class DeskInboxService {
     return json.item;
   }
 
-  async approve(id: string, deskId = "priced-in-capital"): Promise<DeskInboxItem> {
+  async approve(
+    id: string,
+    deskId = "priced-in-capital",
+  ): Promise<DeskInboxItem> {
     return this.decide(id, "approve", deskId);
   }
 
@@ -64,7 +67,10 @@ export class DeskInboxService {
     return this.decide(id, "request-changes", deskId, note);
   }
 
-  async dismiss(id: string, deskId = "priced-in-capital"): Promise<DeskInboxItem> {
+  async dismiss(
+    id: string,
+    deskId = "priced-in-capital",
+  ): Promise<DeskInboxItem> {
     return this.decide(id, "dismiss", deskId);
   }
 

@@ -34,7 +34,13 @@ function PnLSparkline({ pnl }: { pnl: number }) {
   return (
     <svg width={40} height={24} viewBox="0 0 40 24" className="shrink-0">
       <defs>
-        <linearGradient id={`spark-${isPos ? "pos" : "neg"}`} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient
+          id={`spark-${isPos ? "pos" : "neg"}`}
+          x1="0"
+          y1="0"
+          x2="0"
+          y2="1"
+        >
           <stop offset="0%" stopColor={color} stopOpacity={0.35} />
           <stop offset="100%" stopColor={color} stopOpacity={0.02} />
         </linearGradient>
@@ -55,7 +61,10 @@ function PnLSparkline({ pnl }: { pnl: number }) {
   );
 }
 
-export function SessionHistoryRow({ entry, isAgentView }: SessionHistoryRowProps) {
+export function SessionHistoryRow({
+  entry,
+  isAgentView,
+}: SessionHistoryRowProps) {
   const [expanded, setExpanded] = useState(false);
 
   const pnl = entry.totalPnl ?? 0;
@@ -110,7 +119,11 @@ export function SessionHistoryRow({ entry, isAgentView }: SessionHistoryRowProps
 
         {/* Win% */}
         <span className="text-[11px] font-mono text-(--fintheon-muted) w-[36px] shrink-0 tabular-nums">
-          {isAgentView ? (entry.acceptedCount != null ? `${entry.acceptedCount}ac` : "—") : winPct}
+          {isAgentView
+            ? entry.acceptedCount != null
+              ? `${entry.acceptedCount}ac`
+              : "—"
+            : winPct}
         </span>
 
         {/* ER */}
@@ -135,10 +148,14 @@ export function SessionHistoryRow({ entry, isAgentView }: SessionHistoryRowProps
               {entry.notes}
             </p>
           ) : (
-            <p className="text-[11px] text-(--fintheon-muted) italic">No notes recorded</p>
+            <p className="text-[11px] text-(--fintheon-muted) italic">
+              No notes recorded
+            </p>
           )}
           {isAgentView && entry.agentName && (
-            <p className="text-[10px] text-(--fintheon-accent) mt-1">{entry.agentName}</p>
+            <p className="text-[10px] text-(--fintheon-accent) mt-1">
+              {entry.agentName}
+            </p>
           )}
         </div>
       )}

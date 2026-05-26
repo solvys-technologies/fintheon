@@ -164,8 +164,8 @@ function AuthGate() {
                             <ProxVoiceProvider>
                               <ERProvider>
                                 <div className="dark">
-                                <VoiceRimFrame />
-                                <style>{`
+                                  <VoiceRimFrame />
+                                  <style>{`
                   * {
                     scrollbar-width: thin;
                     scrollbar-color: var(--fintheon-accent) var(--fintheon-surface);
@@ -200,15 +200,15 @@ function AuthGate() {
                     pointer-events: none;
                   }
                                 `}</style>
-                                <ApiErrorToastBridge />
-                                <AiCreditToastBridge />
-                                <DeskPlanPlannerToastBridge />
-                                <VersionChecker />
-                                <MainLayout />
-                                <ConsulControlLayer />
-                                <NotificationContainer />
-                                <ToastContainer />
-                                <PreMarketReminder />
+                                  <ApiErrorToastBridge />
+                                  <AiCreditToastBridge />
+                                  <DeskPlanPlannerToastBridge />
+                                  <VersionChecker />
+                                  <MainLayout />
+                                  <ConsulControlLayer />
+                                  <NotificationContainer />
+                                  <ToastContainer />
+                                  <PreMarketReminder />
                                 </div>
                               </ERProvider>
                             </ProxVoiceProvider>

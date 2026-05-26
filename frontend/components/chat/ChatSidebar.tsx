@@ -234,15 +234,11 @@ function ChatSidebarInner({
     [],
   );
 
-  const {
-    questionnaire,
-    answerWidgets,
-    isSubmittingAnswers,
-    submitAnswers,
-  } = useChatUiActions(lastRequestId, {
-    onTodoDrawer: handleTodoUiAction,
-    onRightRail: handleRightRailUiAction,
-  });
+  const { questionnaire, answerWidgets, isSubmittingAnswers, submitAnswers } =
+    useChatUiActions(lastRequestId, {
+      onTodoDrawer: handleTodoUiAction,
+      onRightRail: handleRightRailUiAction,
+    });
 
   useEffect(() => {
     setApprovalDrawerCollapsed(false);
@@ -497,7 +493,9 @@ function ChatSidebarInner({
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <button
-                onClick={() => handleSend(`Begin this plan:\n\n${planMarkdown}`)}
+                onClick={() =>
+                  handleSend(`Begin this plan:\n\n${planMarkdown}`)
+                }
                 className="rounded border border-[var(--fintheon-accent)]/25 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--fintheon-accent)] transition-colors hover:bg-[var(--fintheon-accent)]/10"
                 title="Begin this plan"
               >
@@ -590,8 +588,7 @@ export function ChatSidebar({ compact = true }: { compact?: boolean } = {}) {
       browser: "browser.md",
     };
     const onAgentRail = (event: Event) => {
-      const detail =
-        (event as CustomEvent<AgentRailEventDetail>).detail ?? {};
+      const detail = (event as CustomEvent<AgentRailEventDetail>).detail ?? {};
       if (detail.open === false) {
         setMode("work");
         return;

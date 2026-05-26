@@ -1,10 +1,6 @@
 // [codex 2026-05-23] Real composer queue controller shared by main and sidebar chat.
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  loadQueue,
-  saveQueue,
-  type QueuedMessage,
-} from "../MessageQueue";
+import { loadQueue, saveQueue, type QueuedMessage } from "../MessageQueue";
 
 interface UseMessageQueueArgs {
   isRunning: boolean;
@@ -25,7 +21,9 @@ export function useMessageQueue({
   sendNow,
   storageKey,
 }: UseMessageQueueArgs) {
-  const [queue, setQueue] = useState<QueuedMessage[]>(() => loadQueue(storageKey));
+  const [queue, setQueue] = useState<QueuedMessage[]>(() =>
+    loadQueue(storageKey),
+  );
   const shouldDrainRef = useRef(false);
   const queueRef = useRef(queue);
   const waitingForCompletionRef = useRef(false);

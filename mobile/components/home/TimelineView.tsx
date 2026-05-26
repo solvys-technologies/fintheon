@@ -87,7 +87,8 @@ function TimelineEntry({ catalyst }: { catalyst: Catalyst }) {
             width: 6,
             height: 6,
             borderRadius: 3,
-            background: sentimentDot[catalyst.sentiment] ?? "var(--text-disabled)",
+            background:
+              sentimentDot[catalyst.sentiment] ?? "var(--text-disabled)",
           }}
         />
         <div
@@ -148,27 +149,33 @@ function TimelineEntry({ catalyst }: { catalyst: Catalyst }) {
 export function TimelineView() {
   const { catalysts, isLoading } = useCatalysts();
   const [activeThread, setActiveThread] = useState<string | null>(null);
-  const [severityFilter, setSeverityFilter] = useState<Set<string>>(new Set(["high"]));
+  const [severityFilter, setSeverityFilter] = useState<Set<string>>(
+    new Set(["high"]),
+  );
   const [timeRange, setTimeRange] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
 
   const filtered = useMemo(() => {
     const cutoff = getTimeRangeCutoff(timeRange);
-    return catalysts.filter((c) => {
-      if (activeThread) {
-        const threads = c.narrativeThreads ?? (c.narrative ? [c.narrative] : []);
-        if (!threads.includes(activeThread)) return false;
-      }
-      if (severityFilter.size > 0 && !severityFilter.has(c.severity)) return false;
-      if (cutoff) {
-        const ts = c.createdAt || c.date;
-        if (ts) {
-          const cardDate = new Date(ts.includes("T") ? ts : ts + "T23:59:59");
-          if (cardDate < cutoff) return false;
+    return catalysts
+      .filter((c) => {
+        if (activeThread) {
+          const threads =
+            c.narrativeThreads ?? (c.narrative ? [c.narrative] : []);
+          if (!threads.includes(activeThread)) return false;
         }
-      }
-      return true;
-    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        if (severityFilter.size > 0 && !severityFilter.has(c.severity))
+          return false;
+        if (cutoff) {
+          const ts = c.createdAt || c.date;
+          if (ts) {
+            const cardDate = new Date(ts.includes("T") ? ts : ts + "T23:59:59");
+            if (cardDate < cutoff) return false;
+          }
+        }
+        return true;
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [catalysts, activeThread, severityFilter, timeRange]);
 
   const toggleSeverity = (sev: string) => {
@@ -205,9 +212,18 @@ export function TimelineView() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", padding: "16px 20px" }}>
+    <div
+      style={{ display: "flex", flexDirection: "column", padding: "16px 20px" }}
+    >
       {/* Header with filter toggle */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 10,
+        }}
+      >
         <span
           style={{
             fontFamily: "var(--font-data)",
@@ -254,12 +270,24 @@ export function TimelineView() {
 
       {/* Filter bar */}
       {showFilters && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            marginBottom: 12,
+          }}
+        >
           {/* Severity pills */}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {(["high", "medium", "low"] as const).map((sev) => {
               const active = severityFilter.has(sev);
-              const label = sev === "high" ? "Critical" : sev === "medium" ? "Medium" : "Low";
+              const label =
+                sev === "high"
+                  ? "Critical"
+                  : sev === "medium"
+                    ? "Medium"
+                    : "Low";
               const dotColor = SEVERITY_COLOR[sev];
               return (
                 <button
@@ -282,7 +310,14 @@ export function TimelineView() {
                     WebkitTapHighlightColor: "transparent",
                   }}
                 >
-                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: active ? dotColor : `${dotColor}40` }} />
+                  <span
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: "50%",
+                      background: active ? dotColor : `${dotColor}40`,
+                    }}
+                  />
                   {label}
                 </button>
               );
@@ -299,11 +334,17 @@ export function TimelineView() {
                   padding: "3px 8px",
                   borderRadius: 4,
                   border: `1px solid ${timeRange === tr.key ? "var(--accent)" : "var(--border)"}`,
-                  background: timeRange === tr.key ? "var(--accent-subtle, rgba(212,175,55,0.12))" : "transparent",
+                  background:
+                    timeRange === tr.key
+                      ? "var(--accent-subtle, rgba(212,175,55,0.12))"
+                      : "transparent",
                   fontFamily: "var(--font-data)",
                   fontSize: 9,
                   letterSpacing: "0.06em",
-                  color: timeRange === tr.key ? "var(--accent)" : "var(--text-disabled)",
+                  color:
+                    timeRange === tr.key
+                      ? "var(--accent)"
+                      : "var(--text-disabled)",
                   cursor: "pointer",
                   WebkitTapHighlightColor: "transparent",
                 }}
@@ -329,7 +370,9 @@ export function TimelineView() {
                 padding: "3px 8px",
                 borderRadius: 4,
                 border: `1px solid ${!activeThread ? "var(--accent)" : "var(--border)"}`,
-                background: !activeThread ? "var(--accent-subtle, rgba(212,175,55,0.12))" : "transparent",
+                background: !activeThread
+                  ? "var(--accent-subtle, rgba(212,175,55,0.12))"
+                  : "transparent",
                 fontFamily: "var(--font-data)",
                 fontSize: 8,
                 letterSpacing: "0.04em",
@@ -344,16 +387,24 @@ export function TimelineView() {
             {NARRATIVE_THREADS.map((t) => (
               <button
                 key={t.slug}
-                onClick={() => setActiveThread(activeThread === t.slug ? null : t.slug)}
+                onClick={() =>
+                  setActiveThread(activeThread === t.slug ? null : t.slug)
+                }
                 style={{
                   padding: "3px 8px",
                   borderRadius: 4,
                   border: `1px solid ${activeThread === t.slug ? "var(--accent)" : "var(--border)"}`,
-                  background: activeThread === t.slug ? "var(--accent-subtle, rgba(212,175,55,0.12))" : "transparent",
+                  background:
+                    activeThread === t.slug
+                      ? "var(--accent-subtle, rgba(212,175,55,0.12))"
+                      : "transparent",
                   fontFamily: "var(--font-data)",
                   fontSize: 8,
                   letterSpacing: "0.04em",
-                  color: activeThread === t.slug ? "var(--accent)" : "var(--text-disabled)",
+                  color:
+                    activeThread === t.slug
+                      ? "var(--accent)"
+                      : "var(--text-disabled)",
                   whiteSpace: "nowrap",
                   cursor: "pointer",
                   WebkitTapHighlightColor: "transparent",

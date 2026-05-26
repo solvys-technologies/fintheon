@@ -210,7 +210,10 @@ export async function fetchInstrumentBars(
 export async function fetchTvQuotes(
   instruments: string[] = ["/NQ", "/ES", "/YM"],
 ): Promise<TvQuoteSnapshot[]> {
-  const byMarket = new Map<ScannerMarket, { scanSymbol: string; inst: string }[]>();
+  const byMarket = new Map<
+    ScannerMarket,
+    { scanSymbol: string; inst: string }[]
+  >();
   for (const inst of instruments) {
     const info = SYMBOL_MAP[inst.toUpperCase()];
     if (info) {
@@ -227,7 +230,9 @@ export async function fetchTvQuotes(
     try {
       const scanSymbols = symbols.map((s) => s.scanSymbol);
       const rows = await quotes(scanSymbols, market);
-      const lookup = new Map(symbols.map((s) => [s.scanSymbol, s.inst] as const));
+      const lookup = new Map(
+        symbols.map((s) => [s.scanSymbol, s.inst] as const),
+      );
       for (const r of rows) {
         const inst = lookup.get(r.symbol) ?? r.symbol;
         results.push({

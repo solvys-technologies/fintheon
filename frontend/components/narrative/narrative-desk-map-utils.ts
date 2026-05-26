@@ -57,8 +57,14 @@ export function buildImagePrompt(
   desk: DeskMapDesk | null,
   sessions: NarrativeSessionSummary[],
 ): string {
-  const titles = sessions.slice(0, 5).map((session) => session.title).join(" / ");
-  return `${desk?.name ?? "Trading Desk"} active narrative map${titles ? ` | ${titles}` : ""}`.slice(0, 900);
+  const titles = sessions
+    .slice(0, 5)
+    .map((session) => session.title)
+    .join(" / ");
+  return `${desk?.name ?? "Trading Desk"} active narrative map${titles ? ` | ${titles}` : ""}`.slice(
+    0,
+    900,
+  );
 }
 
 export function buildGeneratedImage(
@@ -67,7 +73,10 @@ export function buildGeneratedImage(
 ): string {
   const prompt = buildImagePrompt(desk, sessions);
   const color = desk?.color ?? "#c79f4a";
-  const hash = Array.from(prompt + Date.now()).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const hash = Array.from(prompt + Date.now()).reduce(
+    (acc, char) => acc + char.charCodeAt(0),
+    0,
+  );
   const title = escapeXml(prompt.split("|")[0]?.trim() || "DeskMap");
   const accent = hexToRgba(color, 0.6);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 520"><rect width="1600" height="520" fill="#050402"/><filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".72" numOctaves="4"/></filter><rect width="1600" height="520" opacity=".12" filter="url(#n)"/><circle cx="${240 + (hash % 340)}" cy="${130 + (hash % 150)}" r="240" fill="${accent}"/><path d="M80 360 C360 220 600 430 860 260 S1190 170 1510 335" fill="none" stroke="${accent}" stroke-width="5" opacity=".35"/><text x="72" y="112" fill="rgba(240,234,214,.86)" font-family="Inter,system-ui,sans-serif" font-size="42" font-weight="650">${title}</text></svg>`;
@@ -100,5 +109,9 @@ function focusKey(deskId: string | undefined): string {
 }
 
 function escapeXml(value: string): string {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

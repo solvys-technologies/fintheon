@@ -242,7 +242,9 @@ export function PromptBox({
   const [showAttach, setShowAttach] = useState(false);
   const [slashQuery, setSlashQuery] = useState<string | null>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const [selectedMentions, setSelectedMentions] = useState<ContextMention[]>([]);
+  const [selectedMentions, setSelectedMentions] = useState<ContextMention[]>(
+    [],
+  );
   const [fullSizeImage, setFullSizeImage] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
   const activeDrawer =
@@ -255,8 +257,8 @@ export function PromptBox({
           : approvalDrawerOpen
             ? "approval"
             : workDrawerOpen
-            ? "work"
-            : null;
+              ? "work"
+              : null;
   const hasInlineDrawer = activeDrawer !== null;
   const hasDrawerPreview = !hasInlineDrawer && !!drawerPeekSlot;
   // IME composition state — blocks Enter-to-send while a candidate is being composed.
@@ -489,13 +491,13 @@ export function PromptBox({
 
   return (
     <>
-    <RepoChatComposer
-      format={compact ? "compact" : "full"}
-      className="px-4 pb-4 pt-3"
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-    >
+      <RepoChatComposer
+        format={compact ? "compact" : "full"}
+        className="px-4 pb-4 pt-3"
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
         {/* Active skill badge */}
         {activeSkill && (
           <div className="mb-2">
@@ -830,7 +832,7 @@ export function PromptBox({
             </div>
           </div>
         </div>
-    </RepoChatComposer>
+      </RepoChatComposer>
 
       {/* Full-size image dialog (native <dialog>) */}
       <dialog

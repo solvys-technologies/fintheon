@@ -125,10 +125,15 @@ function formatEtDate(date: Date, options: Intl.DateTimeFormatOptions): string {
 }
 
 function cleanTitle(title: string): string {
-  return title.replace(/^\s*([A-Z]{2,3}|USA|United States)\s*[-:]\s*/i, "").trim();
+  return title
+    .replace(/^\s*([A-Z]{2,3}|USA|United States)\s*[-:]\s*/i, "")
+    .trim();
 }
 
-function extractField(description: string | null, label: string): string | null {
+function extractField(
+  description: string | null,
+  label: string,
+): string | null {
   if (!description) return null;
   const match = description.match(
     new RegExp(`${label}\\s*[:：]\\s*([^\\n|]+)`, "i"),

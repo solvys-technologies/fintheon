@@ -13,7 +13,10 @@ import { readEconPrints } from "../supabase-service.js";
 import { getFeed } from "../riskflow/feed-service.js";
 import { getCurrentRegime } from "../regime/regime-service.js";
 import { createLogger } from "../../lib/logger.js";
-import type { EconForecast, EconForecastScenario } from "../../types/day-plan.js";
+import type {
+  EconForecast,
+  EconForecastScenario,
+} from "../../types/day-plan.js";
 import { redeliberateEconForecast } from "./econ-forecast-redeliberation.js";
 
 const log = createLogger("EconForecast");
@@ -206,7 +209,9 @@ async function buildPrompt(input: EconForecastInput): Promise<{
   prompt: string;
   systemPrompt: string;
 }> {
-  const systemPrompt = input.isSpeech ? SPEECH_SYSTEM_PROMPT : ECON_SYSTEM_PROMPT;
+  const systemPrompt = input.isSpeech
+    ? SPEECH_SYSTEM_PROMPT
+    : ECON_SYSTEM_PROMPT;
 
   const lines: string[] = [];
   lines.push(`Event: ${input.eventName}`);
@@ -228,7 +233,9 @@ async function buildPrompt(input: EconForecastInput): Promise<{
           const actual = p.actual_value != null ? p.actual_value : "N/A";
           const forecast = p.forecast_value != null ? p.forecast_value : "N/A";
           const previous = p.previous_value != null ? p.previous_value : "N/A";
-          const printedAt = p.printed_at ? new Date(p.printed_at).toISOString().slice(0, 10) : "?";
+          const printedAt = p.printed_at
+            ? new Date(p.printed_at).toISOString().slice(0, 10)
+            : "?";
           lines.push(
             `  ${printedAt}: Actual ${actual} vs Forecast ${forecast} (Prev ${previous})`,
           );
@@ -240,7 +247,9 @@ async function buildPrompt(input: EconForecastInput): Promise<{
   }
   try {
     const [feed, regime] = await Promise.all([
-      getFeed("econ-forecast", { limit: 8 }).catch(() => ({ items: [] } as never)),
+      getFeed("econ-forecast", { limit: 8 }).catch(
+        () => ({ items: [] }) as never,
+      ),
       getCurrentRegime().catch(() => null),
     ]);
     if (regime?.regime) lines.push(`Current macro regime: ${regime.regime}`);
@@ -297,7 +306,9 @@ function parseForecastResponse(
       beat.probability = 100 - miss.probability;
     }
 
-    const otherNotableEvents: string[] = Array.isArray(parsed.otherNotableEvents)
+    const otherNotableEvents: string[] = Array.isArray(
+      parsed.otherNotableEvents,
+    )
       ? parsed.otherNotableEvents.map(String)
       : [];
 
@@ -330,9 +341,7 @@ function buildFallbackForecast(input: EconForecastInput): EconForecast {
   const isSpeech = input.isSpeech;
 
   return {
-    forecast: isSpeech
-      ? "none"
-      : input.forecast ?? input.previous ?? "N/A",
+    forecast: isSpeech ? "none" : (input.forecast ?? input.previous ?? "N/A"),
     miss: {
       description: isSpeech
         ? "Dovish surprise — more accommodation signaled"
@@ -368,6 +377,7 @@ export function isSpeechEvent(event: {
   if (cat === "speaker" || cat === "speech") return true;
 
   const name = (event.name ?? "").toLowerCase();
-  const speechKeywords = /\b(speech|speaks?|speaking|remarks|testimony|testifies|testifying|press conference|statement|briefing|fomc member|mpc member)\b/i;
+  const speechKeywords =
+    /\b(speech|speaks?|speaking|remarks|testimony|testifies|testifying|press conference|statement|briefing|fomc member|mpc member)\b/i;
   return speechKeywords.test(name);
 }

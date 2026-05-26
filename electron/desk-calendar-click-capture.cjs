@@ -37,11 +37,17 @@ function resolveEventTitle(event) {
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
-  return lines.find((line) => !isCountryLabel(line)) || event.eventName || "TradingView event";
+  return (
+    lines.find((line) => !isCountryLabel(line)) ||
+    event.eventName ||
+    "TradingView event"
+  );
 }
 
 function isCountryLabel(value) {
-  return /^(us|usa|nz|au|jp|gb|uk|eu|ca|cn|ch)$/i.test(String(value || "").trim());
+  return /^(us|usa|nz|au|jp|gb|uk|eu|ca|cn|ch)$/i.test(
+    String(value || "").trim(),
+  );
 }
 
 async function handleCapturedClick({ win, apiBase, payload }) {
@@ -115,7 +121,10 @@ function stableUid(event) {
 }
 
 function formatIcsDate(date) {
-  return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+  return date
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}Z$/, "Z");
 }
 
 function escapeIcs(value) {

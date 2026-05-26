@@ -53,7 +53,8 @@ function windowToItem(plan: DayPlan, window: DayPlanWindow): DeskPlanFeedItem {
     timeRange: `${formatClock(startTime)}-${formatClock(endTime)}`,
     title: window.eventName ?? plan.eventName ?? "Desk session",
     forecast: forecast?.forecast ?? "Forecast pending",
-    prediction: forecast?.aiPrediction ?? plan.deskTheme ?? "Awaiting desk read.",
+    prediction:
+      forecast?.aiPrediction ?? plan.deskTheme ?? "Awaiting desk read.",
     country: window.eventCountry ?? forecast?.eventCountry ?? "Desk",
     probability: scenario?.probability ?? null,
     direction: scenario?.isBullishForEquities

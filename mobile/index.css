@@ -230,7 +230,8 @@ button:hover .fintheon-hover-icon__glyph,
 }
 .dm-loader__fallback {
   fill: currentColor;
-  animation: dm-fallback-pulse var(--dm-loader-duration, 1625ms) ease-in-out infinite;
+  animation: dm-fallback-pulse var(--dm-loader-duration, 1625ms) ease-in-out
+    infinite;
 }
 .dm-loader__check {
   width: 100%;
@@ -251,13 +252,29 @@ button:hover .fintheon-hover-icon__glyph,
   white-space: nowrap;
 }
 @keyframes dm-check-fade {
-  0% { opacity: 0; transform: scale(0.72); }
-  34% { opacity: 1; transform: scale(1.04); }
-  100% { opacity: 0.82; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  34% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+  100% {
+    opacity: 0.82;
+    transform: scale(1);
+  }
 }
 @keyframes dm-fallback-pulse {
-  0%, 100% { opacity: 0.34; transform: rotate(0deg) scale(0.92); }
-  50% { opacity: 1; transform: rotate(180deg) scale(1); }
+  0%,
+  100% {
+    opacity: 0.34;
+    transform: rotate(0deg) scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: rotate(180deg) scale(1);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .fintheon-hover-icon__glyph,
@@ -318,8 +335,16 @@ button:hover .fintheon-hover-icon__glyph,
   animation: citation-shimmer 2600ms ease-in-out infinite;
 }
 @keyframes citation-shimmer {
-  0%, 62%, 100% { opacity: 0; transform: translate(-8px, 8px); }
-  28% { opacity: 0.9; transform: translate(16px, -10px); }
+  0%,
+  62%,
+  100% {
+    opacity: 0;
+    transform: translate(-8px, 8px);
+  }
+  28% {
+    opacity: 0.9;
+    transform: translate(16px, -10px);
+  }
 }
 
 /* ── Safe Area Padding (notch devices) ── */
@@ -418,7 +443,9 @@ select {
 
 .t-digit {
   display: inline-block;
-  transition: transform 200ms ease, opacity 200ms ease;
+  transition:
+    transform 200ms ease,
+    opacity 200ms ease;
 }
 
 .t-digit-group.is-animating .t-digit {

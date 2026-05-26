@@ -103,6 +103,7 @@ export async function publishColiseumForecast(
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, init);
   const data = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(data?.error ?? `Coliseum ${response.status}`);
+  if (!response.ok)
+    throw new Error(data?.error ?? `Coliseum ${response.status}`);
   return data as T;
 }

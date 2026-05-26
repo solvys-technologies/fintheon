@@ -32,7 +32,11 @@ export function PerformanceJournal() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [accountSize, setAccountSize] = useState<number>(() => {
-    try { return Number(localStorage.getItem("fintheon:account-size")) || 0; } catch { return 0; }
+    try {
+      return Number(localStorage.getItem("fintheon:account-size")) || 0;
+    } catch {
+      return 0;
+    }
   });
 
   const fetchData = useCallback(async () => {
@@ -296,7 +300,9 @@ export function PerformanceJournal() {
           onClose={() => setShowAddAccount(false)}
           onSave={(size) => {
             setAccountSize(size);
-            try { localStorage.setItem("fintheon:account-size", String(size)); } catch {}
+            try {
+              localStorage.setItem("fintheon:account-size", String(size));
+            } catch {}
             setShowAddAccount(false);
           }}
           initialSize={accountSize}

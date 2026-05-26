@@ -44,7 +44,8 @@ export async function requireCanPublish(
   userId: string | null,
 ): Promise<PermissionResult> {
   const permission = await readDeskPermission(deskId, userId);
-  if (!permission.canPublish) throw new Error("Desk manager permission required.");
+  if (!permission.canPublish)
+    throw new Error("Desk manager permission required.");
   return permission;
 }
 

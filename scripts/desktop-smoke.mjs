@@ -30,14 +30,17 @@ async function main() {
   const queueBefore = await readQueueStatus();
   let queueAfter = null;
   if (process.env.FINTHEON_DESKTOP_SMOKE_CLICK === "1") {
-    await evaluate(calendarTarget.webSocketDebuggerUrl, `
+    await evaluate(
+      calendarTarget.webSocketDebuggerUrl,
+      `
       (() => {
         const el = document.querySelector(${JSON.stringify(BUTTON_SELECTOR)});
         if (!el) return false;
         el.click();
         return true;
       })()
-    `);
+    `,
+    );
     await sleep(1800);
     queueAfter = await readQueueStatus();
     if (!queueAfter || queueAfter.count < queueBefore.count) {
@@ -62,7 +65,9 @@ async function main() {
 }
 
 async function findButton(webSocketDebuggerUrl) {
-  return evaluate(webSocketDebuggerUrl, `
+  return evaluate(
+    webSocketDebuggerUrl,
+    `
     (() => {
       const el = document.querySelector(${JSON.stringify(BUTTON_SELECTOR)});
       if (!el) return { present: false };
@@ -78,11 +83,14 @@ async function findButton(webSocketDebuggerUrl) {
         }
       };
     })()
-  `);
+  `,
+  );
 }
 
 async function expandCalendarItem(webSocketDebuggerUrl) {
-  const rect = await evaluate(webSocketDebuggerUrl, `
+  const rect = await evaluate(
+    webSocketDebuggerUrl,
+    `
     (() => {
       const items = [...document.querySelectorAll('[data-name="economic-calendar-item"]')];
       const item = items.find((node) => node.querySelector("time[datetime]")) || items[0];
@@ -92,7 +100,8 @@ async function expandCalendarItem(webSocketDebuggerUrl) {
       const box = title.getBoundingClientRect();
       return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
     })()
-  `);
+  `,
+  );
   if (!rect) return false;
   await dispatchMouseClick(webSocketDebuggerUrl, rect);
   return true;

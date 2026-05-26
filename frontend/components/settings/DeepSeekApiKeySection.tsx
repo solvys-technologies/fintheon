@@ -226,7 +226,9 @@ export function DeepSeekApiKeySection() {
           <div className="flex min-w-[180px] flex-col items-end gap-1 text-right">
             <SettingsActionStatus
               label={openCodeGoMaskedKey ? "Key Set" : "No Key"}
-              detail={openCodeGoBaseUrl || openCodeGoMaskedKey || "No key configured"}
+              detail={
+                openCodeGoBaseUrl || openCodeGoMaskedKey || "No key configured"
+              }
               tone={openCodeGoMaskedKey ? "success" : "muted"}
             />
             {openCodeGoMaskedKey && (
@@ -263,9 +265,15 @@ export function DeepSeekApiKeySection() {
       </div>
 
       <div className="mt-2 flex justify-end">
-        {error && <SettingsActionStatus label="Key Error" detail={error} tone="error" />}
+        {error && (
+          <SettingsActionStatus label="Key Error" detail={error} tone="error" />
+        )}
         {success && (
-          <SettingsActionStatus label="Key Saved" detail={success} tone="success" />
+          <SettingsActionStatus
+            label="Key Saved"
+            detail={success}
+            tone="success"
+          />
         )}
       </div>
     </section>

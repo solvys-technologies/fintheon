@@ -10,7 +10,9 @@ type MarketImpactRecord = {
   asOf?: unknown;
 };
 
-const FUTURES_LEGS: Array<[label: string, key: keyof Pick<MarketImpactRecord, "nq" | "es" | "ym">]> = [
+const FUTURES_LEGS: Array<
+  [label: string, key: keyof Pick<MarketImpactRecord, "nq" | "es" | "ym">]
+> = [
   ["NQ", "nq"],
   ["ES", "es"],
   ["YM", "ym"],
@@ -25,9 +27,9 @@ export function formatMarketImpact(value: unknown): string | null {
   if (!isRecord(value)) return null;
 
   const impact = value as MarketImpactRecord;
-  const legs = FUTURES_LEGS
-    .map(([label, key]) => formatImpactLeg(label, impact[key]))
-    .filter((part): part is string => Boolean(part));
+  const legs = FUTURES_LEGS.map(([label, key]) =>
+    formatImpactLeg(label, impact[key]),
+  ).filter((part): part is string => Boolean(part));
   const asOf = formatAsOf(impact.asOf);
 
   if (legs.length === 0) return null;
@@ -40,7 +42,7 @@ export function safeNarrativeText(
 ): string | null {
   if (typeof value === "string" || typeof value === "number") {
     const text = String(value).trim();
-    return text.length > 0 ? text : fallback ?? null;
+    return text.length > 0 ? text : (fallback ?? null);
   }
 
   if (value == null || typeof value === "boolean") {
@@ -84,7 +86,12 @@ function formatSigned(value: number): string {
 }
 
 function numberFromUnknown(value: unknown): number | null {
-  const numeric = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
+  const numeric =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value)
+        : NaN;
   return Number.isFinite(numeric) ? numeric : null;
 }
 

@@ -28,7 +28,9 @@ export function NarrativeSessionDrawer({
   onManageSession,
 }: NarrativeSessionDrawerProps) {
   const [archiveOpen, setArchiveOpen] = useState(false);
-  const [expandedSessionId, setExpandedSessionId] = useState<string | null>(activeSessionId);
+  const [expandedSessionId, setExpandedSessionId] = useState<string | null>(
+    activeSessionId,
+  );
   const activeSessions = useMemo(
     () => sessions.filter((session) => session.status !== "archived"),
     [sessions],
@@ -77,7 +79,11 @@ export function NarrativeSessionDrawer({
                     session={session}
                     isActive={session.id === activeSessionId}
                     isExpanded={expandedSessionId === session.id}
-                    onExpand={(id) => setExpandedSessionId((current) => (current === id ? null : id))}
+                    onExpand={(id) =>
+                      setExpandedSessionId((current) =>
+                        current === id ? null : id,
+                      )
+                    }
                     onOpenSession={onOpenSession}
                     onOpenThread={onOpenThread}
                     onRenameSession={onRenameSession}
@@ -97,7 +103,10 @@ export function NarrativeSessionDrawer({
                 className="grid h-6 w-6 place-items-center rounded-[4px] text-[var(--fintheon-muted)] transition hover:text-[var(--fintheon-accent)]"
                 title={archiveOpen ? "Collapse archive" : "Expand archive"}
               >
-                <ChevronDown size={13} className={`transition ${archiveOpen ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  size={13}
+                  className={`transition ${archiveOpen ? "rotate-180" : ""}`}
+                />
               </button>
             }
           >
@@ -112,7 +121,11 @@ export function NarrativeSessionDrawer({
                       session={session}
                       isActive={session.id === activeSessionId}
                       isExpanded={expandedSessionId === session.id}
-                      onExpand={(id) => setExpandedSessionId((current) => (current === id ? null : id))}
+                      onExpand={(id) =>
+                        setExpandedSessionId((current) =>
+                          current === id ? null : id,
+                        )
+                      }
                       onOpenSession={onOpenSession}
                       onOpenThread={onOpenThread}
                       onRenameSession={onRenameSession}
@@ -150,7 +163,15 @@ function DrawerHeader({ onClose }: { onClose: () => void }) {
   );
 }
 
-function DrawerSection({ label, action, children }: { label: string; action?: ReactNode; children: ReactNode }) {
+function DrawerSection({
+  label,
+  action,
+  children,
+}: {
+  label: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <section className="mb-4">
       <div className="mb-1 flex items-center justify-between gap-2 px-2 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--fintheon-muted)]/55 fading-ruler-bottom">
@@ -163,5 +184,9 @@ function DrawerSection({ label, action, children }: { label: string; action?: Re
 }
 
 function EmptyState({ children }: { children: ReactNode }) {
-  return <div className="px-2 py-3 text-xs leading-5 text-[var(--fintheon-muted)]">{children}</div>;
+  return (
+    <div className="px-2 py-3 text-xs leading-5 text-[var(--fintheon-muted)]">
+      {children}
+    </div>
+  );
 }

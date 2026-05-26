@@ -139,12 +139,11 @@ export function UsageRing({
   const estimatedTokens = (stats?.estimatedTokens ?? 0) + draftTokens;
   const compactionTokens = 120_000;
   const contextRatio = clampRatio(estimatedTokens / compactionTokens);
-  const budgetRatio = budget?.capUsd ? clampRatio(budget.usedUsd / budget.capUsd) : 0;
+  const budgetRatio = budget?.capUsd
+    ? clampRatio(budget.usedUsd / budget.capUsd)
+    : 0;
   const shouldShow =
-    contextRatio >= 0.8 ||
-    pct >= 70 ||
-    budgetRatio >= 0.7 ||
-    queuedCount > 3;
+    contextRatio >= 0.8 || pct >= 70 || budgetRatio >= 0.7 || queuedCount > 3;
 
   if (!shouldShow) return null;
 
@@ -158,7 +157,9 @@ export function UsageRing({
   const ringColor =
     pct >= 90 ? "#EF4444" : pct >= 70 ? "#F59E0B" : "var(--fintheon-accent)";
   const label = formatTokens(estimatedTokens);
-  const remainingUsd = budget ? Math.max(0, budget.capUsd - budget.usedUsd) : null;
+  const remainingUsd = budget
+    ? Math.max(0, budget.capUsd - budget.usedUsd)
+    : null;
   const dailyUsage = data
     ? `${data.requestCount}/${data.dailyCap} requests · resets in ${formatCountdown(countdown)}`
     : "Daily usage unavailable";
@@ -245,14 +246,20 @@ export function UsageRing({
               <TooltipMetric
                 label="Balance"
                 value={`${formatUsd(remainingUsd ?? 0)} left`}
-                ratio={remainingUsd == null || budget.capUsd <= 0 ? 0 : remainingUsd / budget.capUsd}
+                ratio={
+                  remainingUsd == null || budget.capUsd <= 0
+                    ? 0
+                    : remainingUsd / budget.capUsd
+                }
               />
             ) : null}
           </div>
           <div className="mt-2 flex items-center justify-between gap-3 border-t border-zinc-800 pt-1.5 text-zinc-500">
             <span>Cost</span>
             <span className="font-mono text-zinc-300">
-              {budget ? `${formatUsd(budget.usedUsd)} / ${formatUsd(budget.capUsd)}` : "unavailable"}
+              {budget
+                ? `${formatUsd(budget.usedUsd)} / ${formatUsd(budget.capUsd)}`
+                : "unavailable"}
             </span>
           </div>
           <div className="mt-1 text-zinc-600">

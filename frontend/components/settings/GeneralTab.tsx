@@ -180,11 +180,16 @@ export function GeneralTab({
                     <CreditCard className="h-5 w-5 text-[var(--fintheon-accent)]/70" />
                   </div>
                   <div>
-                    <p className="text-sm text-[var(--fintheon-text)]">.... .... .... 4242</p>
+                    <p className="text-sm text-[var(--fintheon-text)]">
+                      .... .... .... 4242
+                    </p>
                     <p className="text-xs text-gray-500">Expires 12/2027</p>
                   </div>
                 </div>
-                <button type="button" className="fintheon-action-link text-right text-[11px] font-semibold uppercase tracking-[0.12em]">
+                <button
+                  type="button"
+                  className="fintheon-action-link text-right text-[11px] font-semibold uppercase tracking-[0.12em]"
+                >
                   Update
                 </button>
               </div>
@@ -206,7 +211,9 @@ export function GeneralTab({
                   className="flex items-center justify-between px-1 py-3 transition-opacity duration-200 hover:opacity-80"
                 >
                   <div>
-                    <p className="text-sm text-[var(--fintheon-text)]">{invoice.date}</p>
+                    <p className="text-sm text-[var(--fintheon-text)]">
+                      {invoice.date}
+                    </p>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-right">

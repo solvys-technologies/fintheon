@@ -53,7 +53,10 @@ interface HubNodeData {
   timeSpan: string;
 }
 
-const nodeTypes: NodeTypes = { catalyst: CatalystFlowNode, hub: NarrativeHubFlowNode };
+const nodeTypes: NodeTypes = {
+  catalyst: CatalystFlowNode,
+  hub: NarrativeHubFlowNode,
+};
 
 export function NarrativeSensemakingMap(props: NarrativeSensemakingMapProps) {
   return (
@@ -83,7 +86,8 @@ function NarrativeSensemakingMapInner({
             Attach RiskFlow headlines to start.
           </p>
           <p className="mt-2 text-xs leading-5 text-[var(--fintheon-muted)]">
-            NarrativeFlow will build a chronological map from anchored catalysts and related notable events.
+            NarrativeFlow will build a chronological map from anchored catalysts
+            and related notable events.
           </p>
         </div>
       </div>
@@ -134,7 +138,8 @@ function buildFlow(
     },
   }));
   const catalystNodes = response.timelineNodes.map((node, index) => {
-    const catalyst = catalystsById.get(node.catalystId) ?? fallbackCatalyst(node);
+    const catalyst =
+      catalystsById.get(node.catalystId) ?? fallbackCatalyst(node);
     return {
       id: node.id,
       type: "catalyst",
@@ -179,7 +184,10 @@ function buildFlow(
     })),
   );
 
-  return { nodes: [...hubs, ...catalystNodes], edges: [...membershipEdges, ...timelineEdges] };
+  return {
+    nodes: [...hubs, ...catalystNodes],
+    edges: [...membershipEdges, ...timelineEdges],
+  };
 }
 
 function CatalystFlowNode({
@@ -245,7 +253,8 @@ function getPosition(
   orientation: SensemakingOrientation,
 ) {
   const lane = lanes.get(node.narrativeIds[0] ?? "unthreaded") ?? 0;
-  if (orientation === "vertical") return { x: 260 + lane * 340, y: 240 + index * 210 };
+  if (orientation === "vertical")
+    return { x: 260 + lane * 340, y: 240 + index * 210 };
   return { x: 340 + index * 350, y: 220 + lane * 210 };
 }
 
@@ -254,9 +263,14 @@ function getHubPosition(index: number, orientation: SensemakingOrientation) {
   return { x: 0, y: index * 210 };
 }
 
-function catalystMap(response: SensemakingResponse): Map<string, SensemakingCatalyst> {
+function catalystMap(
+  response: SensemakingResponse,
+): Map<string, SensemakingCatalyst> {
   return new Map(
-    [...response.anchorCatalysts, ...response.relatedCatalysts].map((item) => [item.id, item]),
+    [...response.anchorCatalysts, ...response.relatedCatalysts].map((item) => [
+      item.id,
+      item,
+    ]),
   );
 }
 

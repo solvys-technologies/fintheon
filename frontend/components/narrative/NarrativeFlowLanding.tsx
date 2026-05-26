@@ -79,7 +79,9 @@ export function NarrativeFlowLanding({
   const [selectedNarratives, setSelectedNarratives] = useState<Set<string>>(
     () => new Set(DEFAULT_NARRATIVE_SESSION_CHIPS.map((item) => item.slug)),
   );
-  const [validationMessage, setValidationMessage] = useState<string | null>(null);
+  const [validationMessage, setValidationMessage] = useState<string | null>(
+    null,
+  );
   const [isGreetingReady, setIsGreetingReady] = useState(false);
   const [isGreetingLeaving, setIsGreetingLeaving] = useState(false);
   const [isCaoWolfEnabled, setIsCaoWolfEnabled] = useState(true);
@@ -232,7 +234,10 @@ export function NarrativeFlowLanding({
     onCreateSession({
       ...planDraft,
       query: enrichedQuery,
-      title: deriveTitle(planAnswers.thesis || planDraft.query, attachedHeadlines),
+      title: deriveTitle(
+        planAnswers.thesis || planDraft.query,
+        attachedHeadlines,
+      ),
     });
     setPlanDraft(null);
     setQuery("");
@@ -348,9 +353,7 @@ export function NarrativeFlowLanding({
             onToggleNarrative={toggleNarrative}
           />
         ) : null}
-
       </div>
-
     </div>
   );
 }

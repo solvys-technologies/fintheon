@@ -5,13 +5,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
-import {
-  Clock,
-  FileText,
-  GitBranch,
-  Tv,
-  type LucideIcon,
-} from "lucide-react";
+import { Clock, FileText, GitBranch, Tv, type LucideIcon } from "lucide-react";
 import { NarrativeDocsTab } from "./NarrativeDocsTab";
 import { NarrativeFlowTab } from "./NarrativeFlowTab";
 import { NarrativeTimelineTab } from "./NarrativeTimelineTab";
@@ -163,7 +157,9 @@ export function NarrativeWorkDrawer({
         />
         <div
           className="grid h-8 min-w-0 flex-1 overflow-hidden rounded-[9px] bg-transparent"
-          style={{ gridTemplateColumns: `repeat(${visibleTabs.length}, minmax(0, 1fr))` }}
+          style={{
+            gridTemplateColumns: `repeat(${visibleTabs.length}, minmax(0, 1fr))`,
+          }}
         >
           {visibleTabs.map((tab, index) => {
             const Icon = tab.icon;
@@ -212,7 +208,9 @@ export function NarrativeWorkDrawer({
         </div>
       </div>
 
-      <div className={`min-h-0 flex-1 ${activeTab === "canvas" ? "overflow-hidden p-0" : "overflow-y-auto p-3"}`}>
+      <div
+        className={`min-h-0 flex-1 ${activeTab === "canvas" ? "overflow-hidden p-0" : "overflow-y-auto p-3"}`}
+      >
         {activeTab === "canvas" ? canvasSlot : null}
         {activeTab === "flow" ? (
           <NarrativeFlowTab

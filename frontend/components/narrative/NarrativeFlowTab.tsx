@@ -1,4 +1,12 @@
-import { Check, ChevronDown, Pencil, RefreshCw, Search, SlidersHorizontal, Trash2 } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Pencil,
+  RefreshCw,
+  Search,
+  SlidersHorizontal,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import type { NarrativeWorkspaceSession } from "./NarrativeSessionWorkspace";
 import { NarrativeLinkedCatalystCard } from "./NarrativeLinkedCatalystCard";
@@ -36,9 +44,14 @@ export function NarrativeFlowTab({
   onQuickAction,
 }: NarrativeFlowTabProps) {
   const selectedNode = getSelectedNode(response, selectedNodeId);
-  const selectedCatalyst = getCatalyst(response, selectedNode?.catalystId ?? null);
+  const selectedCatalyst = getCatalyst(
+    response,
+    selectedNode?.catalystId ?? null,
+  );
   const [synthesisOpen, setSynthesisOpen] = useState(false);
-  const [activeQuickAction, setActiveQuickAction] = useState<string | null>(null);
+  const [activeQuickAction, setActiveQuickAction] = useState<string | null>(
+    null,
+  );
   const [editControlsOpen, setEditControlsOpen] = useState(false);
   const [notableOpen, setNotableOpen] = useState(true);
   const [upcomingOpen, setUpcomingOpen] = useState(true);
@@ -48,8 +61,13 @@ export function NarrativeFlowTab({
         .sort((a, b) => b.ivScore - a.ivScore)
         .slice(0, 3)
     : [];
-  const upcomingCatalysts = buildPossibleUpcomingCatalysts(response, selectedCatalyst);
-  const forecastWatchLabel = formatForecastWatch(response?.forecast?.confidence ?? null);
+  const upcomingCatalysts = buildPossibleUpcomingCatalysts(
+    response,
+    selectedCatalyst,
+  );
+  const forecastWatchLabel = formatForecastWatch(
+    response?.forecast?.confidence ?? null,
+  );
 
   return (
     <div className="space-y-3">
@@ -66,12 +84,16 @@ export function NarrativeFlowTab({
               aria-expanded={editControlsOpen}
               title="Show narrative edit controls"
             >
-              {session?.title ?? selectedCatalyst?.narrativeThreads[0] ?? "Unloaded session"}
+              {session?.title ??
+                selectedCatalyst?.narrativeThreads[0] ??
+                "Unloaded session"}
             </button>
           </div>
           <span
             className="h-6 w-6 shrink-0 rounded-full"
-            style={{ backgroundColor: session?.color ?? "rgba(199,159,74,0.24)" }}
+            style={{
+              backgroundColor: session?.color ?? "rgba(199,159,74,0.24)",
+            }}
             aria-label="Narrative color"
           />
         </div>
@@ -83,7 +105,10 @@ export function NarrativeFlowTab({
         <div className="narrative-flow-organize-row mt-3 flex items-center justify-between gap-2">
           <div className="min-w-0">
             {editControlsOpen ? (
-              <div className="narrative-fade-item flex items-center gap-1.5" aria-label="Narrative edit controls">
+              <div
+                className="narrative-fade-item flex items-center gap-1.5"
+                aria-label="Narrative edit controls"
+              >
                 <button
                   type="button"
                   onClick={() => setEditControlsOpen(false)}
@@ -91,14 +116,22 @@ export function NarrativeFlowTab({
                   title="Save changes"
                   aria-label="Save changes"
                 >
-                  <span className="inline-flex items-center -space-x-1" aria-hidden="true">
+                  <span
+                    className="inline-flex items-center -space-x-1"
+                    aria-hidden="true"
+                  >
                     <Check size={12} />
                     <Check size={12} />
                   </span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => onQuickAction?.("Delete narrative", selectedCatalyst?.id ?? null)}
+                  onClick={() =>
+                    onQuickAction?.(
+                      "Delete narrative",
+                      selectedCatalyst?.id ?? null,
+                    )
+                  }
                   className="narrative-flow-filter-action grid h-7 w-7 place-items-center rounded-md bg-transparent text-[var(--fintheon-muted)] transition-colors hover:text-red-300 focus-visible:outline-none"
                   title="Delete narrative"
                   aria-label="Delete narrative"
@@ -152,7 +185,9 @@ export function NarrativeFlowTab({
               onSelectNode={onSelectNode}
             />
             <div className="mb-2 flex flex-wrap items-center gap-1.5">
-              <Chip>{selectedCatalyst.role === "anchor" ? "MAJOR" : "DEVELOPMENT"}</Chip>
+              <Chip>
+                {selectedCatalyst.role === "anchor" ? "MAJOR" : "DEVELOPMENT"}
+              </Chip>
               <Chip>{selectedCatalyst.category}</Chip>
               <Chip>{selectedCatalyst.sentiment}</Chip>
             </div>
@@ -185,7 +220,10 @@ export function NarrativeFlowTab({
                 aria-expanded={notableOpen}
               >
                 <span>Notable Catalysts</span>
-                <ChevronDown size={12} className={`shrink-0 transition ${notableOpen ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  size={12}
+                  className={`shrink-0 transition ${notableOpen ? "rotate-180" : ""}`}
+                />
               </button>
               {notableOpen ? (
                 <div className="space-y-2">
@@ -213,7 +251,9 @@ export function NarrativeFlowTab({
                     onQuickAction?.(action.label, selectedCatalyst.id);
                   }}
                   className="narrative-flow-action-btn relative inline-flex min-w-0 items-center justify-center gap-1 overflow-hidden px-1.5 py-1.5 text-center text-[10px] uppercase tracking-[0.1em] text-[var(--fintheon-muted)] transition hover:text-[var(--fintheon-accent)]"
-                  data-active={activeQuickAction === action.label ? "true" : "false"}
+                  data-active={
+                    activeQuickAction === action.label ? "true" : "false"
+                  }
                   aria-pressed={activeQuickAction === action.label}
                 >
                   <action.icon size={10} />
@@ -239,16 +279,24 @@ export function NarrativeFlowTab({
           <span>Possible Upcoming Catalysts</span>
           <span className="inline-flex items-center gap-2">
             <span>{forecastWatchLabel}</span>
-            <ChevronDown size={12} className={`shrink-0 transition ${upcomingOpen ? "rotate-180" : ""}`} />
+            <ChevronDown
+              size={12}
+              className={`shrink-0 transition ${upcomingOpen ? "rotate-180" : ""}`}
+            />
           </span>
         </button>
         {upcomingOpen ? (
           <div className="space-y-2">
             {upcomingCatalysts.length > 0 ? (
               upcomingCatalysts.map((catalyst) => (
-                <article key={catalyst.id} className="fading-ruler-bottom px-2 pb-3 pt-2">
+                <article
+                  key={catalyst.id}
+                  className="fading-ruler-bottom px-2 pb-3 pt-2"
+                >
                   <div className="mb-1 flex items-center justify-between gap-2 text-[10px] text-[var(--fintheon-muted)]">
-                    <span className="uppercase tracking-[0.12em]">{catalyst.horizon}</span>
+                    <span className="uppercase tracking-[0.12em]">
+                      {catalyst.horizon}
+                    </span>
                     <span>{catalyst.source}</span>
                   </div>
                   <p className="text-xs leading-5 text-[var(--fintheon-text)]/85">
@@ -261,7 +309,8 @@ export function NarrativeFlowTab({
               ))
             ) : (
               <p className="fading-ruler-bottom px-2 pb-3 pt-2 text-xs leading-5 text-[var(--fintheon-muted)]">
-                Upcoming catalyst watchpoints will appear after the desk attaches narrative catalysts.
+                Upcoming catalyst watchpoints will appear after the desk
+                attaches narrative catalysts.
               </p>
             )}
           </div>
@@ -283,7 +332,8 @@ function IvFusePanel({
     ? [...response.anchorCatalysts, ...response.relatedCatalysts]
     : [catalyst];
   const composite = catalysts.length
-    ? catalysts.reduce((total, item) => total + item.ivScore, 0) / catalysts.length
+    ? catalysts.reduce((total, item) => total + item.ivScore, 0) /
+      catalysts.length
     : catalyst.ivScore;
   const daysExpected = estimateDaysExpected(catalyst);
   const stability = estimateSentimentStability(catalysts);
@@ -339,7 +389,9 @@ function DeskActivitySection({
   response: SensemakingResponse | null;
 }) {
   const activities = buildDeskActivities(session, response);
-  const hasDeskmateUpdate = activities.some((activity) => activity.kind === "update");
+  const hasDeskmateUpdate = activities.some(
+    (activity) => activity.kind === "update",
+  );
 
   return (
     <section className="narrative-fade-item px-3 py-3">
@@ -393,7 +445,9 @@ function buildPossibleUpcomingCatalysts(
     ...response.anchorCatalysts,
     ...response.relatedCatalysts,
   ].filter(Boolean) as SensemakingCatalyst[];
-  const unique = Array.from(new Map(candidates.map((catalyst) => [catalyst.id, catalyst])).values())
+  const unique = Array.from(
+    new Map(candidates.map((catalyst) => [catalyst.id, catalyst])).values(),
+  )
     .sort((a, b) => b.ivScore - a.ivScore)
     .slice(0, 3);
   return unique.map((catalyst, index) => {
@@ -409,7 +463,8 @@ function buildPossibleUpcomingCatalysts(
 }
 
 function getCatalystWatch(catalyst: SensemakingCatalyst) {
-  const text = `${catalyst.category} ${catalyst.headline} ${catalyst.summary}`.toLowerCase();
+  const text =
+    `${catalyst.category} ${catalyst.headline} ${catalyst.summary}`.toLowerCase();
   if (/\b(payroll|labor|claims|employment|jobs|wage)\b/.test(text)) {
     return {
       title: "Labor confirmation or reversal",
@@ -425,13 +480,15 @@ function getCatalystWatch(catalyst: SensemakingCatalyst) {
   if (/\b(fed|rate|cut|fomc|terminal|monetary)\b/.test(text)) {
     return {
       title: "Fed reaction-function repricing",
-      detail: "Watch speaker guidance and rate-path pricing for confirmation that the current narrative still owns the desk tape.",
+      detail:
+        "Watch speaker guidance and rate-path pricing for confirmation that the current narrative still owns the desk tape.",
     };
   }
   if (/\b(auction|term|premium|duration|treasury|yield)\b/.test(text)) {
     return {
       title: "Rates pressure test",
-      detail: "Watch duration supply, auction tails, and term-premium pressure for a fresh stress point in the narrative.",
+      detail:
+        "Watch duration supply, auction tails, and term-premium pressure for a fresh stress point in the narrative.",
     };
   }
   return {
@@ -441,25 +498,39 @@ function getCatalystWatch(catalyst: SensemakingCatalyst) {
 }
 
 function summarizeMarketImplication(catalyst: SensemakingCatalyst) {
-  const text = `${catalyst.category} ${catalyst.headline} ${catalyst.summary}`.toLowerCase();
+  const text =
+    `${catalyst.category} ${catalyst.headline} ${catalyst.summary}`.toLowerCase();
   if (/\b(fed|rate|cut|fomc|terminal|monetary)\b/.test(text)) {
-    return limitMarketSummary("Fed optionality keeps cuts priced, but inflation uncertainty still caps duration and equity upside.");
+    return limitMarketSummary(
+      "Fed optionality keeps cuts priced, but inflation uncertainty still caps duration and equity upside.",
+    );
   }
   if (/\b(payroll|labor|claims|employment|jobs|wage)\b/.test(text)) {
-    return limitMarketSummary("Softer labor supports the cut path, but markets need confirmation before extending the risk rally.");
+    return limitMarketSummary(
+      "Softer labor supports the cut path, but markets need confirmation before extending the risk rally.",
+    );
   }
   if (/\b(cpi|inflation|shelter|services|price)\b/.test(text)) {
-    return limitMarketSummary("Inflation breadth is the swing factor; a sticky print would pressure cuts, duration, and equity multiples.");
+    return limitMarketSummary(
+      "Inflation breadth is the swing factor; a sticky print would pressure cuts, duration, and equity multiples.",
+    );
   }
   if (/\b(auction|term|premium|duration|treasury|yield)\b/.test(text)) {
-    return limitMarketSummary("Rates remain the pressure point; term-premium stress can mute equity upside even if growth holds.");
+    return limitMarketSummary(
+      "Rates remain the pressure point; term-premium stress can mute equity upside even if growth holds.",
+    );
   }
-  return limitMarketSummary("Adds confirmation to the active narrative and keeps markets focused on the next validation tape.");
+  return limitMarketSummary(
+    "Adds confirmation to the active narrative and keeps markets focused on the next validation tape.",
+  );
 }
 
 function limitMarketSummary(value: string) {
   if (value.length < 200) return value;
-  return `${value.slice(0, 196).trimEnd().replace(/[,\s]+$/, "")}...`;
+  return `${value
+    .slice(0, 196)
+    .trimEnd()
+    .replace(/[,\s]+$/, "")}...`;
 }
 
 function formatForecastWatch(confidence: number | null) {
@@ -492,10 +563,14 @@ function estimateSentimentStability(catalysts: SensemakingCatalyst[]) {
 
 function estimateBias(catalysts: SensemakingCatalyst[]) {
   const text = catalysts
-    .map((catalyst) => `${catalyst.sentiment} ${catalyst.category} ${catalyst.headline}`)
+    .map(
+      (catalyst) =>
+        `${catalyst.sentiment} ${catalyst.category} ${catalyst.headline}`,
+    )
     .join(" ")
     .toLowerCase();
-  if (/\b(hawkish|inflation|terminal|yield|premium|sticky)\b/.test(text)) return "Hawkish";
+  if (/\b(hawkish|inflation|terminal|yield|premium|sticky)\b/.test(text))
+    return "Hawkish";
   if (/\b(dovish|cut|soft|labor|slack|reversal)\b/.test(text)) return "Dovish";
   return "Neutral";
 }
@@ -506,7 +581,9 @@ function buildDeskActivities(
 ) {
   const title = session?.title ?? "active narrative";
   const topCatalyst = response
-    ? [...response.anchorCatalysts, ...response.relatedCatalysts].sort((a, b) => b.ivScore - a.ivScore)[0]
+    ? [...response.anchorCatalysts, ...response.relatedCatalysts].sort(
+        (a, b) => b.ivScore - a.ivScore,
+      )[0]
     : null;
   return [
     {
@@ -548,7 +625,11 @@ function getSelectedNode(
   selectedNodeId: string | null,
 ): SensemakingTimelineNode | null {
   if (!response) return null;
-  return response.timelineNodes.find((item) => item.id === selectedNodeId) ?? response.timelineNodes[0] ?? null;
+  return (
+    response.timelineNodes.find((item) => item.id === selectedNodeId) ??
+    response.timelineNodes[0] ??
+    null
+  );
 }
 
 function getCatalyst(
@@ -556,7 +637,11 @@ function getCatalyst(
   catalystId: string | null,
 ): SensemakingCatalyst | null {
   if (!response || !catalystId) return null;
-  return [...response.anchorCatalysts, ...response.relatedCatalysts].find((item) => item.id === catalystId) ?? null;
+  return (
+    [...response.anchorCatalysts, ...response.relatedCatalysts].find(
+      (item) => item.id === catalystId,
+    ) ?? null
+  );
 }
 
 function formatDateTime(value: string): string {

@@ -1,8 +1,4 @@
-import {
-  ChevronDown,
-  PanelRightOpen,
-  Users,
-} from "lucide-react";
+import { ChevronDown, PanelRightOpen, Users } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { PanelIcon } from "../layout/PanelToggleGroup";
 import {
@@ -161,7 +157,10 @@ function AnalysisChoice({
           : "text-[color-mix(in_srgb,var(--fintheon-text)_54%,transparent)] hover:bg-[color-mix(in_srgb,var(--fintheon-accent)_5%,transparent)] hover:text-[color-mix(in_srgb,var(--fintheon-text)_82%,transparent)]"
       }`}
     >
-      <Icon size={14} className="mt-0.5 shrink-0 transition-transform duration-200 group-hover:scale-105" />
+      <Icon
+        size={14}
+        className="mt-0.5 shrink-0 transition-transform duration-200 group-hover:scale-105"
+      />
       <span className="min-w-0">
         <span className="block text-[11px] font-semibold uppercase tracking-[0.12em]">
           {label}

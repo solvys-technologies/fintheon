@@ -55,7 +55,9 @@ const RENDERERS: CustomRenderer[] = SLOT_LANGUAGES.map((language) => ({
 }));
 const ALLOWED_TAGS = { "market-ticker": ["symbol"] };
 const COMPONENTS = {
-  "market-ticker": MarketTickerMention as ComponentType<Record<string, unknown>>,
+  "market-ticker": MarketTickerMention as ComponentType<
+    Record<string, unknown>
+  >,
 };
 const LITERAL_TAG_CONTENT = ["market-ticker"];
 const PLUGINS = { renderers: RENDERERS };

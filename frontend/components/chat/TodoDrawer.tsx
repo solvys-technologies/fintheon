@@ -47,10 +47,7 @@ const TODO_STATUS_COLOR = "var(--fintheon-secondary, var(--fintheon-muted))";
 
 function TodoHeaderGlyph() {
   return (
-    <span
-      className="fintheon-todo-header-glyph"
-      aria-hidden="true"
-    >
+    <span className="fintheon-todo-header-glyph" aria-hidden="true">
       <CheckCircle2 size={13} strokeWidth={2.3} />
       <span />
       <Circle size={8} strokeWidth={2.2} />
@@ -86,12 +83,7 @@ function StageIcon({ stage }: { stage: TodoStage }) {
     );
   }
   if (stage === "awaiting_review" || stage === "in_progress") {
-    return (
-      <BrailleSpinner
-        size={8}
-        color={TODO_STATUS_COLOR}
-      />
-    );
+    return <BrailleSpinner size={8} color={TODO_STATUS_COLOR} />;
   }
   return (
     <Circle
@@ -142,9 +134,7 @@ export function TodoDrawer({
           "color-mix(in srgb, var(--fintheon-accent) 18%, transparent)",
       }}
     >
-      <div
-        className="overflow-hidden"
-      >
+      <div className="overflow-hidden">
         <div className="flex items-center justify-between border-b border-[var(--fintheon-accent)]/10 px-3 py-2">
           <div className="flex min-w-0 items-center gap-2">
             <TodoHeaderGlyph />
@@ -164,92 +154,102 @@ export function TodoDrawer({
 
         <div className="overflow-y-auto" style={{ maxHeight: "155px" }}>
           {hasTodos && (
-          <div className="border-b border-[var(--fintheon-accent)]/8 py-1.5">
-            <div className="pb-0.5">
+            <div className="border-b border-[var(--fintheon-accent)]/8 py-1.5">
+              <div className="pb-0.5">
                 {todos.map((todo, index) => {
-                  const stage = getTodoStage(todo, approvalPending, agentActive);
+                  const stage = getTodoStage(
+                    todo,
+                    approvalPending,
+                    agentActive,
+                  );
                   const typeLabel = issueTypeLabel(todo.issueTrackingType);
                   return (
-                  <div
-                    key={todo.id}
-                    className="fintheon-todo-stage-row group grid grid-cols-[18px_1.45rem_minmax(0,1fr)_16px] items-start gap-2 px-3 py-1.5 transition-colors hover:bg-[var(--fintheon-accent)]/5"
-                    data-issue-type={todo.issueTrackingType ?? "task"}
-                    data-stage={stage}
-                  >
-                    <button
-                      key={`${todo.id}-${stage}`}
-                      onClick={() => onToggleTodo(todo.id)}
-                      className="fintheon-todo-stage-icon mt-0.5 shrink-0 transition-[color,transform,opacity] duration-200 hover:scale-110"
-                      title={`${typeLabel} ${stageLabel(stage)}`}
-                      aria-label={`${typeLabel} ${stageLabel(stage)}: ${todo.text}`}
+                    <div
+                      key={todo.id}
+                      className="fintheon-todo-stage-row group grid grid-cols-[18px_1.45rem_minmax(0,1fr)_16px] items-start gap-2 px-3 py-1.5 transition-colors hover:bg-[var(--fintheon-accent)]/5"
+                      data-issue-type={todo.issueTrackingType ?? "task"}
+                      data-stage={stage}
                     >
-                      <StageIcon stage={stage} />
-                    </button>
-                    <span className="text-right text-[13px] leading-5 text-[var(--fintheon-text)]/42">
-                      {index + 1}.
-                    </span>
-                    <span
-                      className={`min-w-0 text-[13px] leading-5 ${
-                        stage === "complete"
-                          ? "text-[var(--fintheon-text)]/48"
-                          : "text-[var(--fintheon-text)]/82"
-                      }`}
-                    >
-                      <span
-                        className={stage === "complete" ? "line-through" : ""}
+                      <button
+                        key={`${todo.id}-${stage}`}
+                        onClick={() => onToggleTodo(todo.id)}
+                        className="fintheon-todo-stage-icon mt-0.5 shrink-0 transition-[color,transform,opacity] duration-200 hover:scale-110"
+                        title={`${typeLabel} ${stageLabel(stage)}`}
+                        aria-label={`${typeLabel} ${stageLabel(stage)}: ${todo.text}`}
                       >
-                        {todo.text}
+                        <StageIcon stage={stage} />
+                      </button>
+                      <span className="text-right text-[13px] leading-5 text-[var(--fintheon-text)]/42">
+                        {index + 1}.
                       </span>
-                    </span>
-                    <button
-                      onClick={() => onRemoveTodo(todo.id)}
-                      className="mt-0.5 opacity-0 text-[var(--fintheon-text)]/30 transition-all hover:text-[var(--fintheon-accent)]/60 group-hover:opacity-100"
-                      title="Remove task"
-                    >
-                      <X size={11} />
-                    </button>
-                  </div>
+                      <span
+                        className={`min-w-0 text-[13px] leading-5 ${
+                          stage === "complete"
+                            ? "text-[var(--fintheon-text)]/48"
+                            : "text-[var(--fintheon-text)]/82"
+                        }`}
+                      >
+                        <span
+                          className={stage === "complete" ? "line-through" : ""}
+                        >
+                          {todo.text}
+                        </span>
+                      </span>
+                      <button
+                        onClick={() => onRemoveTodo(todo.id)}
+                        className="mt-0.5 opacity-0 text-[var(--fintheon-text)]/30 transition-all hover:text-[var(--fintheon-accent)]/60 group-hover:opacity-100"
+                        title="Remove task"
+                      >
+                        <X size={11} />
+                      </button>
+                    </div>
                   );
                 })}
+              </div>
             </div>
-          </div>
           )}
 
           {/* ── Queue section ─────────────────────────────────────────── */}
           {hasQueue && (
-          <div>
-            <button
-              onClick={() => setQueueOpen((v) => !v)}
-              className="w-full flex items-center gap-1.5 px-3 py-2 hover:bg-[var(--fintheon-accent)]/5 transition-colors"
-            >
-              {queueOpen ? (
-                <ChevronDown size={11} className="text-[var(--fintheon-accent)]/50" />
-              ) : (
-                <ChevronRight size={11} className="text-[var(--fintheon-accent)]/50" />
-              )}
-              <span className="text-[10px] font-medium uppercase tracking-widest text-[var(--fintheon-text)]/40">
-                Queue
-              </span>
-              {queue.length > 0 && (
-                <span className="ml-1 text-[9px] text-[var(--fintheon-accent)]/60 bg-[var(--fintheon-accent)]/10 px-1.5 py-0.5 rounded-full">
-                  {queue.length}
+            <div>
+              <button
+                onClick={() => setQueueOpen((v) => !v)}
+                className="w-full flex items-center gap-1.5 px-3 py-2 hover:bg-[var(--fintheon-accent)]/5 transition-colors"
+              >
+                {queueOpen ? (
+                  <ChevronDown
+                    size={11}
+                    className="text-[var(--fintheon-accent)]/50"
+                  />
+                ) : (
+                  <ChevronRight
+                    size={11}
+                    className="text-[var(--fintheon-accent)]/50"
+                  />
+                )}
+                <span className="text-[10px] font-medium uppercase tracking-widest text-[var(--fintheon-text)]/40">
+                  Queue
                 </span>
-              )}
-            </button>
+                {queue.length > 0 && (
+                  <span className="ml-1 text-[9px] text-[var(--fintheon-accent)]/60 bg-[var(--fintheon-accent)]/10 px-1.5 py-0.5 rounded-full">
+                    {queue.length}
+                  </span>
+                )}
+              </button>
 
-            {queueOpen && (
-              <div className="px-3 pb-3">
-                <MessageQueue
-                  queue={queue}
-                  onEdit={onEditQueue}
-                  onRemove={onRemoveQueue}
-                  onReorder={onReorderQueue}
-                  onSendOne={onSendQueueOne}
-                  onSendAll={onSendQueueAll}
-                />
-              </div>
-            )}
-          </div>
+              {queueOpen && (
+                <div className="px-3 pb-3">
+                  <MessageQueue
+                    queue={queue}
+                    onEdit={onEditQueue}
+                    onRemove={onRemoveQueue}
+                    onReorder={onReorderQueue}
+                    onSendOne={onSendQueueOne}
+                    onSendAll={onSendQueueAll}
+                  />
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>

@@ -67,7 +67,9 @@ export function buildSprintSegments(plans: DayPlan[]): SprintSegment[] {
   );
 }
 
-export function parseClockMinutes(clock: string | null | undefined): number | null {
+export function parseClockMinutes(
+  clock: string | null | undefined,
+): number | null {
   if (!clock) return null;
   const [hours, minutes] = clock.split(":").map(Number);
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;

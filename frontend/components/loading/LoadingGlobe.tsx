@@ -68,7 +68,12 @@ export function LoadingGlobe({
     const shotLayer = new THREE.Group();
     const activeShots: ActiveShot[] = [];
     scene.add(globe);
-    globe.add(makeGlobeBody(bgColor), countryFillLayer, countryLayer, shotLayer);
+    globe.add(
+      makeGlobeBody(bgColor),
+      countryFillLayer,
+      countryLayer,
+      shotLayer,
+    );
     addDitherAndGrid({ globe, scene, primaryColor, starGold, density });
 
     const successRing = new THREE.Mesh(
@@ -125,20 +130,27 @@ export function LoadingGlobe({
       updateShots(activeShots, delta, shotLayer);
       const starPulse = getStarPulse(elapsed);
       updateNamedObject(scene, "starfield", (object) => {
-        const material = (object as THREE.Points).material as THREE.PointsMaterial;
+        const material = (object as THREE.Points)
+          .material as THREE.PointsMaterial;
         material.opacity = 0.065 + starPulse * 0.105;
         material.size = 0.011 + starPulse * 0.004;
         object.rotation.z += 0.00008 * delta * 60;
       });
 
-      const targetSpeed = targetSpeedForPhase(phaseRef.current, elapsed, state.authUntil);
+      const targetSpeed = targetSpeedForPhase(
+        phaseRef.current,
+        elapsed,
+        state.authUntil,
+      );
       state.speed += (targetSpeed - state.speed) * 0.055;
       state.authPulse = Math.max(0, state.authPulse - 0.018 * delta * 60);
       globe.rotation.y += 0.0028 * state.speed * delta * 60;
       globe.rotation.x = Math.sin(elapsed * 0.35) * 0.045;
       successRing.material.opacity = state.authPulse * 0.42;
       successRing.scale.setScalar(1 + (1 - state.authPulse) * 0.16);
-      camera.position.z += ((phaseRef.current === "ready" ? 2.05 : 4.3) - camera.position.z) * 0.028;
+      camera.position.z +=
+        ((phaseRef.current === "ready" ? 2.05 : 4.3) - camera.position.z) *
+        0.028;
 
       renderer.render(scene, camera);
       frame = window.requestAnimationFrame(animate);

@@ -309,13 +309,23 @@ export function planDay(
 ): PlannedDay {
   const iso = date.toISOString().slice(0, 10);
   const plans = buildPlannedDays(iso, events);
-  return plans[0] ?? {
-    date: iso,
-    day: DAY_LABELS[date.getUTCDay()] ?? "?",
-    windows: [{ windowIndex: 0, startTime: "09:30", endTime: "11:00", eventName: null, ivScore: null }],
-    dominantEvent: null,
-    ivScore: null,
-  };
+  return (
+    plans[0] ?? {
+      date: iso,
+      day: DAY_LABELS[date.getUTCDay()] ?? "?",
+      windows: [
+        {
+          windowIndex: 0,
+          startTime: "09:30",
+          endTime: "11:00",
+          eventName: null,
+          ivScore: null,
+        },
+      ],
+      dominantEvent: null,
+      ivScore: null,
+    }
+  );
 }
 
 // ── Internals ───────────────────────────────────────────────────────────────
@@ -475,7 +485,8 @@ function isNotableEvent(event: {
 }): boolean {
   const type = plannedWindowTypeForEvent(event);
   if (type === "holiday") return false;
-  if (type === "speech" || type === "pool_call" || type === "summit") return true;
+  if (type === "speech" || type === "pool_call" || type === "summit")
+    return true;
   if (impactWeight(event.impact ?? "low") >= 2) return true;
   return isWatchlistEventName(event.name);
 }
@@ -493,7 +504,8 @@ function shouldAllowFullSession(event: {
   name?: string | null;
 }): boolean {
   const type = plannedWindowTypeForEvent(event);
-  if (type === "speech" || type === "pool_call" || type === "summit") return true;
+  if (type === "speech" || type === "pool_call" || type === "summit")
+    return true;
   if (type === "cross_border_macro" || type === "earnings") return true;
   const country = (event.country ?? "").toUpperCase().trim();
   return OBSERVED_COUNTRIES.has(country) && country !== "US";
@@ -561,11 +573,7 @@ function bandAroundPrint(
   const endLimit = allowFullSession ? FULL_SESSION_END_MIN : ACTIONABLE_END_MIN;
   if (total < startLimit || total > endLimit) return null;
 
-  const start = clampMinutes(
-    total - PRINT_BAND_MIN,
-    startLimit,
-    endLimit - 30,
-  );
+  const start = clampMinutes(total - PRINT_BAND_MIN, startLimit, endLimit - 30);
   const end = clampMinutes(total + PRINT_BAND_MIN, start + 30, endLimit);
   return { start: minutesToHHMM(start), end: minutesToHHMM(end) };
 }

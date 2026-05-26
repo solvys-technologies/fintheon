@@ -75,8 +75,7 @@ const TAB_LABELS: Record<NavTab, string> = {
 
 type LayoutOption = "tickers-only" | "combined";
 
-const TOOLBAR_PILL_CLASS =
-  "flex items-center gap-0.5 h-8 rounded-md px-1";
+const TOOLBAR_PILL_CLASS = "flex items-center gap-0.5 h-8 rounded-md px-1";
 
 function activeIconStyle(color: string) {
   return { "--toolbar-icon-active-color": color } as React.CSSProperties;
@@ -131,12 +130,8 @@ export function TopHeader({
 }: TopHeaderProps) {
   const { tier } = useAuth();
   const backend = useBackend();
-  const {
-    selectedSymbol,
-    traderName,
-    alertConfig,
-    proposerIframeSources,
-  } = useSettings();
+  const { selectedSymbol, traderName, alertConfig, proposerIframeSources } =
+    useSettings();
   const { addToast } = useToast();
   const instanceName =
     import.meta.env.VITE_FINTHEON_INSTANCE_NAME || "Fintheon";
@@ -532,7 +527,9 @@ export function TopHeader({
           {(compactLevel < 2 || topStepXEnabled) && (
             <div className={TOOLBAR_PILL_CLASS}>
               {compactLevel < 1 && <ProxVoiceHeaderControl />}
-              {compactLevel < 1 && topStepXEnabled && <FadingRuler orientation="vertical" className="mx-0.5" />}
+              {compactLevel < 1 && topStepXEnabled && (
+                <FadingRuler orientation="vertical" className="mx-0.5" />
+              )}
               {topStepXEnabled && (
                 <button
                   onClick={toggleManualDnd}
@@ -551,7 +548,11 @@ export function TopHeader({
                   )}
                 </button>
               )}
-              {((compactLevel < 1 && topStepXEnabled) || (compactLevel < 2 && topStepXEnabled)) && compactLevel < 2 && <FadingRuler orientation="vertical" className="mx-0.5" />}
+              {((compactLevel < 1 && topStepXEnabled) ||
+                (compactLevel < 2 && topStepXEnabled)) &&
+                compactLevel < 2 && (
+                  <FadingRuler orientation="vertical" className="mx-0.5" />
+                )}
               {compactLevel < 2 && (
                 <button
                   onClick={handleQuickClock}
@@ -563,11 +564,15 @@ export function TopHeader({
                   />
                 </button>
               )}
-              {compactLevel < 2 && <FadingRuler orientation="vertical" className="mx-0.5" />}
+              {compactLevel < 2 && (
+                <FadingRuler orientation="vertical" className="mx-0.5" />
+              )}
               {compactLevel < 2 && (
                 <button
                   onClick={handleQuickPlatformBlock}
-                  disabled={platformBlockerState.loading || !platformBlockerState.target}
+                  disabled={
+                    platformBlockerState.loading || !platformBlockerState.target
+                  }
                   className={`toolbar-icon-btn ${
                     platformBlockerState.activeForTarget ? "toolbar-active" : ""
                   }`}
@@ -686,7 +691,11 @@ export function TopHeader({
                 ) : (
                   <Monitor className="w-3 h-3" />
                 )}
-                {compactLevel < 1 && <span className="fintheon-zen-label">{selectedPlatformLabel}</span>}
+                {compactLevel < 1 && (
+                  <span className="fintheon-zen-label">
+                    {selectedPlatformLabel}
+                  </span>
+                )}
                 <ChevronDown
                   className={`w-3 h-3 transition-transform ${showPlatformDropdown ? "rotate-180" : ""}`}
                 />
@@ -777,20 +786,22 @@ export function TopHeader({
                 onClick={onTopStepXDisable}
                 className={`toolbar-icon-btn ${topStepXEnabled ? "toolbar-active" : ""}`}
                 title={
-                  topStepXEnabled ? "Hide iFrame layouts" : "Show iFrame layouts"
+                  topStepXEnabled
+                    ? "Hide iFrame layouts"
+                    : "Show iFrame layouts"
                 }
               >
                 <Power
                   className={`w-3 h-3 ${topStepXEnabled ? "toolbar-icon-active" : ""}`}
                   style={
-                    topStepXEnabled
-                      ? activeIconStyle("#34d399")
-                      : undefined
+                    topStepXEnabled ? activeIconStyle("#34d399") : undefined
                   }
                 />
               </button>
             )}
-            {onTopStepXDisable && <FadingRuler orientation="vertical" className="mx-0.5" />}
+            {onTopStepXDisable && (
+              <FadingRuler orientation="vertical" className="mx-0.5" />
+            )}
             <button
               ref={bulletinBtnRef}
               onClick={() => setShowBulletin(!showBulletin)}
@@ -818,7 +829,9 @@ export function TopHeader({
                 />
               </button>
             )}
-            {onChatToggle && <FadingRuler orientation="vertical" className="mx-0.5" />}
+            {onChatToggle && (
+              <FadingRuler orientation="vertical" className="mx-0.5" />
+            )}
             <HeaderVoiceControl
               compact={topStepXEnabled && layoutOption === "tickers-only"}
             />

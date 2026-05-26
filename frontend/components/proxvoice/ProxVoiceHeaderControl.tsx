@@ -71,7 +71,11 @@ export function ProxVoiceHeaderControl({
             }`}
             title={connected ? "Disconnect" : "Connect"}
           >
-            {connected ? <PhoneOff className="h-3 w-3" /> : <Phone className="h-3 w-3" />}
+            {connected ? (
+              <PhoneOff className="h-3 w-3" />
+            ) : (
+              <Phone className="h-3 w-3" />
+            )}
           </button>
           <button
             onClick={() => void voice.toggleMute()}
@@ -79,7 +83,11 @@ export function ProxVoiceHeaderControl({
             className="fintheon-action-link rounded-md p-1.5 text-[var(--fintheon-text)]/55 disabled:text-zinc-700"
             title={voice.muted ? "Unmute" : "Mute"}
           >
-            {voice.muted ? <MicOff className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
+            {voice.muted ? (
+              <MicOff className="h-3 w-3" />
+            ) : (
+              <Mic className="h-3 w-3" />
+            )}
           </button>
           <button
             onClick={voice.toggleDeafen}
@@ -87,7 +95,11 @@ export function ProxVoiceHeaderControl({
             className="fintheon-action-link rounded-md p-1.5 text-[var(--fintheon-text)]/55 disabled:text-zinc-700"
             title={voice.deafened ? "Undeafen" : "Deafen"}
           >
-            {voice.deafened ? <VolumeOff className="h-3 w-3" /> : <Volume2 className="h-3 w-3" />}
+            {voice.deafened ? (
+              <VolumeOff className="h-3 w-3" />
+            ) : (
+              <Volume2 className="h-3 w-3" />
+            )}
           </button>
           <button
             onClick={() => setPanelOpen((v) => !v)}

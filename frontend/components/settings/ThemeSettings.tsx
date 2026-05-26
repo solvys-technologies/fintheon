@@ -5,7 +5,10 @@ import { DEFAULT_THEME, type ThemeConfig } from "../../lib/theme";
 import { DEFAULT_FONT_THEME } from "../../lib/font-theme";
 import type { FontTheme } from "../../lib/font-theme";
 import { getAccessToken } from "../../lib/supabase";
-import { DotMatrixLoader, DotMatrixSuccess } from "../icon-bank/DotMatrixLoader";
+import {
+  DotMatrixLoader,
+  DotMatrixSuccess,
+} from "../icon-bank/DotMatrixLoader";
 import { SettingsActionStatus } from "./SettingsActionStatus";
 
 interface ThemeProfile {
@@ -67,7 +70,9 @@ async function saveProfiles(profiles: ThemeProfile[]) {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ settings: { appearance: { savedThemes: profiles } } }),
+      body: JSON.stringify({
+        settings: { appearance: { savedThemes: profiles } },
+      }),
     });
   } catch {
     /* local theme saving should never block UI */
@@ -152,7 +157,10 @@ export function ThemeSettings() {
 
   const handleSaveProfile = async () => {
     const name = profileName.trim() || theme.label || "Custom Theme";
-    const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const id = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
     const nextTheme = { ...theme, name: id || "custom", label: name };
     const next = [
       { id: nextTheme.name, name, theme: nextTheme },
@@ -226,7 +234,13 @@ export function ThemeSettings() {
               theme={preset}
               label={preset.label}
               detail="solid"
-              onSelect={() => setTheme({ ...preset, glassVariant: theme.glassVariant, glassEnabled: theme.glassEnabled })}
+              onSelect={() =>
+                setTheme({
+                  ...preset,
+                  glassVariant: theme.glassVariant,
+                  glassEnabled: theme.glassEnabled,
+                })
+              }
             />
           ))}
         </div>
@@ -334,14 +348,18 @@ export function ThemeSettings() {
               label="Frosted Glass"
               enabled={theme.glassVariant === "frosted"}
               onToggle={() =>
-                setGlassVariant(theme.glassVariant === "frosted" ? "solid" : "frosted")
+                setGlassVariant(
+                  theme.glassVariant === "frosted" ? "solid" : "frosted",
+                )
               }
             />
             <EffectToggle
               label="Liquid Glass"
               enabled={theme.glassVariant === "liquid"}
               onToggle={() =>
-                setGlassVariant(theme.glassVariant === "liquid" ? "solid" : "liquid")
+                setGlassVariant(
+                  theme.glassVariant === "liquid" ? "solid" : "liquid",
+                )
               }
             />
           </div>
@@ -400,12 +418,20 @@ function ThemeTile({
       {(onRename || onDelete) && (
         <div className="mt-2 flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
           {onRename && (
-            <button onClick={onRename} className="fintheon-icon-button" title="Rename theme">
+            <button
+              onClick={onRename}
+              className="fintheon-icon-button"
+              title="Rename theme"
+            >
               <Pencil className="h-3.5 w-3.5" />
             </button>
           )}
           {onDelete && (
-            <button onClick={onDelete} className="fintheon-icon-button text-red-400" title="Delete theme">
+            <button
+              onClick={onDelete}
+              className="fintheon-icon-button text-red-400"
+              title="Delete theme"
+            >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
           )}
@@ -418,11 +444,18 @@ function ThemeTile({
 function ThemePreview({ theme }: { theme: ThemeConfig }) {
   return (
     <div className="flex h-4 overflow-hidden rounded-sm">
-      {[theme.primary ?? theme.accent, theme.secondary ?? theme.muted, theme.accent, theme.border].map(
-        (color, index) => (
-          <span key={`${color}-${index}`} className="flex-1" style={{ backgroundColor: color }} />
-        ),
-      )}
+      {[
+        theme.primary ?? theme.accent,
+        theme.secondary ?? theme.muted,
+        theme.accent,
+        theme.border,
+      ].map((color, index) => (
+        <span
+          key={`${color}-${index}`}
+          className="flex-1"
+          style={{ backgroundColor: color }}
+        />
+      ))}
     </div>
   );
 }
@@ -480,8 +513,12 @@ function ColorToken({
   return (
     <div className="relative flex items-center justify-between gap-3 py-2 text-right">
       <div className="min-w-0 text-right">
-        <p className="text-[11px] font-medium text-[var(--fintheon-text)]">{field.label}</p>
-        <p className="mt-0.5 text-[10px] text-[var(--fintheon-text)]/35">{field.detail}</p>
+        <p className="text-[11px] font-medium text-[var(--fintheon-text)]">
+          {field.label}
+        </p>
+        <p className="mt-0.5 text-[10px] text-[var(--fintheon-text)]/35">
+          {field.detail}
+        </p>
       </div>
       <button
         type="button"
@@ -528,7 +565,9 @@ function FontDropdown({
         onClick={() => setOpen(!open)}
         className="flex h-10 w-full items-center justify-between rounded-md bg-[var(--fintheon-surface)] px-3 text-right text-sm text-[var(--fintheon-text)]"
       >
-        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown
+          className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
+        />
         <span>{fontTheme.label}</span>
       </button>
       {open && (
@@ -543,10 +582,16 @@ function FontDropdown({
               }}
               className="w-full rounded-[4px] px-3 py-2 text-right transition hover:bg-white/5"
             >
-              <span className="block text-[12px] text-[var(--fintheon-text)]" style={{ fontFamily: item.fontHeading }}>
+              <span
+                className="block text-[12px] text-[var(--fintheon-text)]"
+                style={{ fontFamily: item.fontHeading }}
+              >
                 {item.label}
               </span>
-              <span className="mt-1 block text-[10px] text-[var(--fintheon-text)]/42" style={{ fontFamily: item.fontBody }}>
+              <span
+                className="mt-1 block text-[10px] text-[var(--fintheon-text)]/42"
+                style={{ fontFamily: item.fontBody }}
+              >
                 The market writes in this voice.
               </span>
             </button>
@@ -577,7 +622,9 @@ function EffectToggle({
       className="flex items-center justify-between gap-3 py-2 text-right"
     >
       <span className="flex min-w-0 items-center gap-1.5 text-[12px] text-[var(--fintheon-text)]">
-        {icon ? <span className="shrink-0 text-[var(--fintheon-accent)]">{icon}</span> : null}
+        {icon ? (
+          <span className="shrink-0 text-[var(--fintheon-accent)]">{icon}</span>
+        ) : null}
         <span className="truncate">{label}</span>
       </span>
       <span

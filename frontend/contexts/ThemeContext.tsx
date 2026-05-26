@@ -105,7 +105,10 @@ function applyThemeToDOM(theme: ThemeConfig, mode?: ThemeMode) {
   root.dataset.fintheonSurfaceTheme = theme.glassVariant ?? "solid";
   if (body) body.dataset.fintheonSurfaceTheme = theme.glassVariant ?? "solid";
   root.style.setProperty("--fintheon-primary", theme.primary ?? theme.accent);
-  root.style.setProperty("--fintheon-secondary", theme.secondary ?? theme.muted);
+  root.style.setProperty(
+    "--fintheon-secondary",
+    theme.secondary ?? theme.muted,
+  );
   root.style.setProperty("--fintheon-accent", theme.accent);
   root.style.setProperty("--fintheon-bg", bg);
   root.style.setProperty("--fintheon-text", text);
@@ -115,9 +118,15 @@ function applyThemeToDOM(theme: ThemeConfig, mode?: ThemeMode) {
   root.style.setProperty("--fintheon-border", border);
   root.style.setProperty("--fintheon-muted", muted);
   root.style.setProperty("--fintheon-severe", theme.severe ?? "#EF4444");
-  root.style.setProperty("--fintheon-neutral-severe", theme.neutralSevere ?? "#F59E0B");
+  root.style.setProperty(
+    "--fintheon-neutral-severe",
+    theme.neutralSevere ?? "#F59E0B",
+  );
   root.style.setProperty("--fintheon-neutral", theme.neutral ?? "#6B7280");
-  root.style.setProperty("--fintheon-low-neutral", theme.lowNeutral ?? "#3B82F6");
+  root.style.setProperty(
+    "--fintheon-low-neutral",
+    theme.lowNeutral ?? "#3B82F6",
+  );
   root.style.setProperty("--fintheon-low", theme.low ?? "#34D399");
   root.style.setProperty("--accent", theme.accent);
   root.style.setProperty("--accent-subtle", `${theme.accent}1f`);
@@ -263,7 +272,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const data = res.ok ? await res.json() : null;
         const remote = data?.settings;
         if (remote?.appearance) {
-          const { colorTheme, fontThemeId, pompaMode, themeMode, zenModeEnabled: remoteZenMode, zenMode } = remote.appearance;
+          const {
+            colorTheme,
+            fontThemeId,
+            pompaMode,
+            themeMode,
+            zenModeEnabled: remoteZenMode,
+            zenMode,
+          } = remote.appearance;
           const remoteMode = themeMode === "light" ? "light" : mode;
           if (themeMode === "light" || themeMode === "dark") {
             setModeState(themeMode);

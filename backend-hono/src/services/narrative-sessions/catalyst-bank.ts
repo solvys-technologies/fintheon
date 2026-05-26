@@ -130,7 +130,10 @@ export async function searchCatalystBank(
 
 export async function assignCatalystsToBankAndSession(
   input: CatalystBankAssignmentInput,
-): Promise<{ session: NarrativeSessionDetail; bankRows: Record<string, unknown>[] }> {
+): Promise<{
+  session: NarrativeSessionDetail;
+  bankRows: Record<string, unknown>[];
+}> {
   const sb = getSupabaseClient();
   if (!sb) throw new Error("Supabase is not configured");
 
@@ -275,12 +278,15 @@ async function readNarrativeAssignments(
 
 async function readSessionLookup(sessionIds: string[]) {
   const sb = getSupabaseClient();
-  const map = new Map<string, {
-    title: string;
-    deskId: string | null;
-    deskName: string | null;
-    deskSlug: string | null;
-  }>();
+  const map = new Map<
+    string,
+    {
+      title: string;
+      deskId: string | null;
+      deskName: string | null;
+      deskSlug: string | null;
+    }
+  >();
   if (!sb || sessionIds.length === 0) return map;
   const { data } = await sb
     .from("narrative_sessions")
@@ -322,7 +328,9 @@ async function readUserBankEntries(
     list.push({
       userId: String(row.user_id),
       deskId: row.desk_id ? String(row.desk_id) : null,
-      sessionId: row.narrative_session_id ? String(row.narrative_session_id) : null,
+      sessionId: row.narrative_session_id
+        ? String(row.narrative_session_id)
+        : null,
       role: String(row.role ?? "candidate"),
       tags: Array.isArray(row.tags) ? row.tags.map(String) : [],
       deskFit: row.desk_fit ? String(row.desk_fit) : null,
@@ -402,7 +410,8 @@ function matchesSearch(
 ): boolean {
   const q = params.q?.trim().toLowerCase();
   const tag = params.tag?.trim().toLowerCase();
-  if (tag && !item.tags.some((value) => value.toLowerCase() === tag)) return false;
+  if (tag && !item.tags.some((value) => value.toLowerCase() === tag))
+    return false;
   if (!q) return true;
   return [
     item.headline,
@@ -421,7 +430,9 @@ function matchesSearch(
 function sanitizeTags(tags: string[]): string[] {
   return Array.from(
     new Set(
-      tags.map((tag) => tag.trim().toLowerCase()).filter((tag) => tag.length > 0),
+      tags
+        .map((tag) => tag.trim().toLowerCase())
+        .filter((tag) => tag.length > 0),
     ),
   ).slice(0, 24);
 }

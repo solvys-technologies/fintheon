@@ -199,7 +199,10 @@ export function NarrativeFloatingToolbar({
                     : "text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)] hover:bg-[var(--fintheon-surface)]/60"
                 }`}
               >
-                <Icon className="h-3.5 w-3.5" strokeWidth={active ? 2.5 : 1.5} />
+                <Icon
+                  className="h-3.5 w-3.5"
+                  strokeWidth={active ? 2.5 : 1.5}
+                />
               </button>
               {hoveredId === t.id && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none">
@@ -246,11 +249,17 @@ export function NarrativeFloatingToolbar({
                     : "text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)] hover:bg-[var(--fintheon-surface)]/60"
                 }`}
               >
-                <Icon className="h-3.5 w-3.5" strokeWidth={active ? 2.5 : 1.5} />
+                <Icon
+                  className="h-3.5 w-3.5"
+                  strokeWidth={active ? 2.5 : 1.5}
+                />
               </button>
               {/* Sanctum dropdown */}
               {a.id === "sanctum" && sanctumOpen && (
-                <div className="t-dropdown is-open absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 min-w-[170px] rounded-lg border border-[var(--fintheon-border)]/20 bg-[var(--fintheon-bg)] overflow-hidden" data-origin="bottom-center">
+                <div
+                  className="t-dropdown is-open absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 min-w-[170px] rounded-lg border border-[var(--fintheon-border)]/20 bg-[var(--fintheon-bg)] overflow-hidden"
+                  data-origin="bottom-center"
+                >
                   {[
                     { label: "Workspace", page: 0 },
                     { label: "Forecasts", page: 1 },
@@ -305,7 +314,10 @@ export function NarrativeFloatingToolbar({
             {Math.round(scale * 100)}%
           </button>
           {zoomOpen && (
-            <div className="t-dropdown is-open absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 min-w-[130px] rounded-lg border border-[var(--fintheon-border)]/20 bg-[var(--fintheon-bg)] overflow-hidden" data-origin="bottom-center">
+            <div
+              className="t-dropdown is-open absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 min-w-[130px] rounded-lg border border-[var(--fintheon-border)]/20 bg-[var(--fintheon-bg)] overflow-hidden"
+              data-origin="bottom-center"
+            >
               {ZOOM_PRESETS.map((z) => (
                 <button
                   key={z.label}

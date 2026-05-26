@@ -31,26 +31,34 @@ export function WeeklyDeskPlanSlot({
   code,
   isIncomplete,
 }: CustomRendererProps) {
-  const [status, setStatus] = useState<"idle" | "approving" | "approved" | "denied" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "approving" | "approved" | "denied" | "error"
+  >("idle");
   const parsed = parseSlotBody<z.infer<typeof WeeklyDeskPlanSchema>>(
     code,
     isIncomplete,
   );
-  if (parsed.status === "pending") return <SlotSkeleton label="weekly desk plan" lines={5} />;
-  if (parsed.status === "error") return <SlotError label="weekly desk plan" reason={parsed.reason} />;
+  if (parsed.status === "pending")
+    return <SlotSkeleton label="weekly desk plan" lines={5} />;
+  if (parsed.status === "error")
+    return <SlotError label="weekly desk plan" reason={parsed.reason} />;
   const validated = WeeklyDeskPlanSchema.safeParse(parsed.data);
-  if (!validated.success) return <SlotError label="weekly desk plan" reason="Schema mismatch" />;
+  if (!validated.success)
+    return <SlotError label="weekly desk plan" reason="Schema mismatch" />;
 
   const approve = async () => {
     setStatus("approving");
     try {
-      const response = await fetch(`${API_BASE}/api/desk/calendar/approve-week`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          eventIds: validated.data.events.map((event) => event.id),
-        }),
-      });
+      const response = await fetch(
+        `${API_BASE}/api/desk/calendar/approve-week`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventIds: validated.data.events.map((event) => event.id),
+          }),
+        },
+      );
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       window.dispatchEvent(new Event(DAY_PLAN_REFETCH_EVENT));
       window.dispatchEvent(new Event(DAY_PLAN_MULTI_REFETCH_EVENT));
@@ -116,11 +124,21 @@ function WeekTable({ events }: { events: DeskWeekPlanEvent[] }) {
             key={event.id}
             className="grid grid-cols-[58px_1fr_72px_108px_92px] gap-2 border-b border-[var(--fintheon-accent)]/[0.055] py-2 text-[11px]"
           >
-            <span className="font-mono text-[var(--fintheon-accent)]/75">{event.day}</span>
-            <span className="min-w-0 truncate text-[var(--fintheon-text)]/82">{event.title}</span>
-            <span className="font-mono text-[var(--fintheon-text)]/62">{event.eventTime}</span>
-            <span className="font-mono text-[var(--fintheon-text)]/62">{event.window}</span>
-            <span className="truncate font-mono text-[var(--fintheon-accent)]/70">{event.forecast}</span>
+            <span className="font-mono text-[var(--fintheon-accent)]/75">
+              {event.day}
+            </span>
+            <span className="min-w-0 truncate text-[var(--fintheon-text)]/82">
+              {event.title}
+            </span>
+            <span className="font-mono text-[var(--fintheon-text)]/62">
+              {event.eventTime}
+            </span>
+            <span className="font-mono text-[var(--fintheon-text)]/62">
+              {event.window}
+            </span>
+            <span className="truncate font-mono text-[var(--fintheon-accent)]/70">
+              {event.forecast}
+            </span>
           </div>
         ))}
       </div>

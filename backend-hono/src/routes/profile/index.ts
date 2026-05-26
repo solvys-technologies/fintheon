@@ -117,9 +117,13 @@ export function createProfileRoutes(): Hono {
       socialLinks?: unknown;
     };
     const displayName =
-      typeof body.displayName === "string" ? body.displayName.trim().slice(0, 32) : undefined;
+      typeof body.displayName === "string"
+        ? body.displayName.trim().slice(0, 32)
+        : undefined;
     const avatarUrl =
-      typeof body.avatarUrl === "string" ? body.avatarUrl.trim().slice(0, 500_000) : undefined;
+      typeof body.avatarUrl === "string"
+        ? body.avatarUrl.trim().slice(0, 500_000)
+        : undefined;
     if (displayName || avatarUrl !== undefined) {
       await updateProfile(supabaseUid, {
         ...(displayName ? { display_name: displayName } : {}),
@@ -130,14 +134,18 @@ export function createProfileRoutes(): Hono {
     const nextState = {
       ...existing,
       ...(avatarUrl !== undefined ? { avatarUrl } : {}),
-      ...(typeof body.bio === "string" ? { bio: body.bio.trim().slice(0, 180) } : {}),
+      ...(typeof body.bio === "string"
+        ? { bio: body.bio.trim().slice(0, 180) }
+        : {}),
       ...(typeof body.position === "string"
         ? { position: body.position.trim().slice(0, 48) }
         : {}),
       ...(typeof body.broker === "string"
         ? { broker: body.broker.trim().slice(0, 48) }
         : {}),
-      ...(body.socialLinks ? { socialLinks: normalizeSocialLinks(body.socialLinks) } : {}),
+      ...(body.socialLinks
+        ? { socialLinks: normalizeSocialLinks(body.socialLinks) }
+        : {}),
     };
     await upsertAppState(supabaseUid, nextState);
     const profile = await getPublicVoiceProfile({ userId: supabaseUid, email });

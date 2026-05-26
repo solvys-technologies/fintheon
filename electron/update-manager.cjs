@@ -7,7 +7,9 @@ const REPO = "solvys-technologies/fintheon";
 const UPDATE_DIR = "updates";
 
 function normalizeVersion(version) {
-  return String(version || "").replace(/^v/, "").trim();
+  return String(version || "")
+    .replace(/^v/, "")
+    .trim();
 }
 
 function isNewerThan(candidate, current) {
@@ -123,7 +125,8 @@ function createUpdateManager({
       "scripts",
       "fintheon-install-update.sh",
     );
-    if (!fs.existsSync(sourcePath) && fs.existsSync(targetPath)) return targetPath;
+    if (!fs.existsSync(sourcePath) && fs.existsSync(targetPath))
+      return targetPath;
     if (!fs.existsSync(sourcePath)) return null;
     fs.copyFileSync(sourcePath, targetPath);
     fs.chmodSync(targetPath, 0o755);
@@ -214,7 +217,12 @@ function createUpdateManager({
     fs.mkdirSync(paths.updateDir, { recursive: true });
     fs.rmSync(paths.tempPath, { force: true });
     if (isUsableFile(paths.dmgPath)) {
-      return { version, tag, assetName: paths.assetName, dmgPath: paths.dmgPath };
+      return {
+        version,
+        tag,
+        assetName: paths.assetName,
+        dmgPath: paths.dmgPath,
+      };
     }
 
     const ghAuth = await runProcess("gh", ["auth", "status"]);
@@ -233,7 +241,12 @@ function createUpdateManager({
       "--clobber",
     ]);
     if (download.ok && isUsableFile(paths.dmgPath)) {
-      return { version, tag, assetName: paths.assetName, dmgPath: paths.dmgPath };
+      return {
+        version,
+        tag,
+        assetName: paths.assetName,
+        dmgPath: paths.dmgPath,
+      };
     }
 
     const assetApi = await runProcess("gh", [
@@ -251,12 +264,11 @@ function createUpdateManager({
     if (!assetApi.ok || !apiUrl) throw new Error("release asset not found");
 
     const out = fs.createWriteStream(paths.tempPath);
-    const apiDownload = await runProcess("gh", [
-      "api",
-      apiUrl,
-      "-H",
-      "Accept: application/octet-stream",
-    ], { stdoutFile: out });
+    const apiDownload = await runProcess(
+      "gh",
+      ["api", apiUrl, "-H", "Accept: application/octet-stream"],
+      { stdoutFile: out },
+    );
     await new Promise((resolveStream) => out.end(resolveStream));
     if (!apiDownload.ok || !isUsableFile(paths.tempPath)) {
       fs.rmSync(paths.tempPath, { force: true });

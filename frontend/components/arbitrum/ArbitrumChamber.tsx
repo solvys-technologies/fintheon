@@ -134,7 +134,8 @@ function ConfidencePair({
 export function ArbitrumChamber(props: ArbitrumChamberProps) {
   const { onSynthesisComplete } = props;
   const { selectedInstrument, setSelectedInstrument } = useSettings();
-  const { verdict, isLoading, error, refresh } = useArbitrumLatest(selectedInstrument);
+  const { verdict, isLoading, error, refresh } =
+    useArbitrumLatest(selectedInstrument);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [openSummaryRoles, setOpenSummaryRoles] = useState<
     ArbitrumSeat["role"][]
@@ -238,8 +239,30 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
             className="text-[9px] uppercase tracking-wider bg-transparent border border-[var(--fintheon-accent)]/20 rounded px-1.5 py-0.5 text-[var(--fintheon-text)]/60 focus:outline-none focus:border-[var(--fintheon-accent)]/50"
             style={{ fontFamily: "var(--font-data, monospace)" }}
           >
-            {["/NQ","/ES","/YM","/RTY","/CL","/GC","/ZB","/ZN","/ZT","/BTC","/ETH","/6E","/6J","/6B","/6A","/6C","/6S"].map((s) => (
-              <option key={s} value={s} className="bg-[var(--fintheon-bg)] text-[var(--fintheon-text)]">
+            {[
+              "/NQ",
+              "/ES",
+              "/YM",
+              "/RTY",
+              "/CL",
+              "/GC",
+              "/ZB",
+              "/ZN",
+              "/ZT",
+              "/BTC",
+              "/ETH",
+              "/6E",
+              "/6J",
+              "/6B",
+              "/6A",
+              "/6C",
+              "/6S",
+            ].map((s) => (
+              <option
+                key={s}
+                value={s}
+                className="bg-[var(--fintheon-bg)] text-[var(--fintheon-text)]"
+              >
                 {s}
               </option>
             ))}
@@ -270,9 +293,7 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
             key={`${verdict?.id ?? "empty"}-${seat.role}-${i}`}
             className="min-w-0"
           >
-            {i > 0 && (
-              <FadingRuler className="my-1 md:hidden" />
-            )}
+            {i > 0 && <FadingRuler className="my-1 md:hidden" />}
             {hasRealSeats ? (
               <SeatCard
                 seat={seat}
@@ -308,7 +329,11 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
         <div className="bg-transparent p-3 text-xs text-[var(--fintheon-text)]/55">
           <FadingRuler className="mb-3" />
           {isLoading ? (
-            <DotMatrixLoader variant="pyramid" size={24} label="Loading chamber read" />
+            <DotMatrixLoader
+              variant="pyramid"
+              size={24}
+              label="Loading chamber read"
+            />
           ) : error ? (
             <div className="flex flex-col gap-1.5">
               <span>Chamber unreachable ({error})</span>

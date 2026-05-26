@@ -1,10 +1,6 @@
 // [claude-code 2026-03-06] Tool call/result part renderer with per-tool formatting
 import { useState, useEffect } from "react";
-import {
-  ChevronDown,
-  Check,
-  AlertCircle,
-} from "lucide-react";
+import { ChevronDown, Check, AlertCircle } from "lucide-react";
 import { BrailleSpinner } from "../primitive/BrailleSpinner";
 import { RichTextRenderer } from "../../shared/RichTextRenderer";
 import {
@@ -38,11 +34,23 @@ const TOOL_PHRASES: Record<string, string[]> = {
   edit: ["Editing file...", "Applying changes...", "Modifying code..."],
   grep: ["Searching codebase...", "Finding patterns...", "Indexing results..."],
   glob: ["Exploring files...", "Discovering paths...", "Listing matches..."],
-  web_search: ["Searching the web...", "Scanning sources...", "Retrieving insights..."],
+  web_search: [
+    "Searching the web...",
+    "Scanning sources...",
+    "Retrieving insights...",
+  ],
   code_exec: ["Running code...", "Executing logic...", "Computing result..."],
   browser: ["Navigating page...", "Loading browser...", "Rendering content..."],
-  research: ["Gathering data...", "Analyzing findings...", "Synthesizing research..."],
-  market_scanner: ["Scanning markets...", "Pulling tick data...", "Mapping flows..."],
+  research: [
+    "Gathering data...",
+    "Analyzing findings...",
+    "Synthesizing research...",
+  ],
+  market_scanner: [
+    "Scanning markets...",
+    "Pulling tick data...",
+    "Mapping flows...",
+  ],
   default: ["Processing...", "Working on it...", "One moment..."],
 };
 
@@ -106,7 +114,7 @@ function ToolCallCard({ part, result }: ToolCallPartProps) {
   return (
     <div
       className="mb-1.5 overflow-hidden rounded-xl bg-[#0b0b09] transition-colors duration-300"
-        style={{
+      style={{
         border: "1px solid rgba(199,159,74,0.15)",
       }}
     >
@@ -120,18 +128,20 @@ function ToolCallCard({ part, result }: ToolCallPartProps) {
           title={toolName}
         />
         {isRunning && <BrailleSpinner size={8} gap={2} />}
-        {isDone && (
-          <Check size={13} className="text-green-500 flex-shrink-0" />
-        )}
+        {isDone && <Check size={13} className="text-green-500 flex-shrink-0" />}
         {isError && (
           <AlertCircle size={13} className="text-red-500 flex-shrink-0" />
         )}
         <span className="flex-1 text-xs text-zinc-400">{headerLabel}</span>
-        {expanded ? <ChevronDown size={13} className="text-gray-500 flex-shrink-0" /> : null}
+        {expanded ? (
+          <ChevronDown size={13} className="text-gray-500 flex-shrink-0" />
+        ) : null}
       </button>
       <div
         className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
-          expanded && output ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+          expanded && output
+            ? "grid-rows-[1fr] opacity-100"
+            : "grid-rows-[0fr] opacity-0"
         }`}
       >
         <div className="min-h-0 overflow-hidden">

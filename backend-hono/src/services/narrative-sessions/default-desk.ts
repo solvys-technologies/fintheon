@@ -58,10 +58,15 @@ export async function updateNarrativeDeskMap(params: {
   const sb = getSupabaseClient();
   if (!sb) throw new Error("Supabase is not configured");
 
-  const desk = await resolveNarrativeDesk(params.deskId ?? null, params.actorId);
+  const desk = await resolveNarrativeDesk(
+    params.deskId ?? null,
+    params.actorId,
+  );
   const patch: Record<string, unknown> = {};
-  if (params.mapImageUrl !== undefined) patch.map_image_url = params.mapImageUrl;
-  if (params.mapImagePrompt !== undefined) patch.map_image_prompt = params.mapImagePrompt;
+  if (params.mapImageUrl !== undefined)
+    patch.map_image_url = params.mapImageUrl;
+  if (params.mapImagePrompt !== undefined)
+    patch.map_image_prompt = params.mapImagePrompt;
   if (params.mapImageUrl !== undefined || params.mapImagePrompt !== undefined) {
     patch.map_image_updated_at = new Date().toISOString();
   }
@@ -105,5 +110,6 @@ async function ensureDeskMembership(
   const { error } = await sb
     .from("narrative_desk_members")
     .upsert({ desk_id: deskId, user_id: userId, role });
-  if (error) throw new Error(`Default desk membership failed: ${error.message}`);
+  if (error)
+    throw new Error(`Default desk membership failed: ${error.message}`);
 }

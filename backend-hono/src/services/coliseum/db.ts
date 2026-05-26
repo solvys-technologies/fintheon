@@ -12,7 +12,9 @@ export function isLocalDevActor(userId: string | null): boolean {
   return userId === "local-user";
 }
 
-export function isAuthedActor(userId: string | null | undefined): userId is string {
+export function isAuthedActor(
+  userId: string | null | undefined,
+): userId is string {
   return Boolean(userId && userId !== "anonymous" && userId !== "anon");
 }
 

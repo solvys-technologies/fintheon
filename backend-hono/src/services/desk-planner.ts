@@ -111,9 +111,9 @@ async function tick(): Promise<void> {
  * brief-generator.ts after TWT (Weekly Tribune) is published. Generates day
  * plans for the specified number of weeks ahead using the window scheduler.
  */
-export async function triggerWeekPlan(
-  options?: { weekCount?: number },
-): Promise<void> {
+export async function triggerWeekPlan(options?: {
+  weekCount?: number;
+}): Promise<void> {
   log.info("triggerWeekPlan skipped — Desk Plans are user-controlled", {
     requestedWeeks: options?.weekCount ?? 4,
   });
@@ -203,7 +203,9 @@ const DEFAULT_INSTRUMENT = "/NQ";
 export function startDeskPlanCron(): void {
   if (running) return;
   if (process.env.DESK_PLAN_CRON_ENABLED !== "true") {
-    log.info("Disabled by default; set DESK_PLAN_CRON_ENABLED=true to allow legacy countdown cache generation");
+    log.info(
+      "Disabled by default; set DESK_PLAN_CRON_ENABLED=true to allow legacy countdown cache generation",
+    );
     return;
   }
 
@@ -228,7 +230,9 @@ export function startDeskPlanCron(): void {
     },
     { timezone: "America/New_York" },
   );
-  log.info(`Pre-session price cron registered (${PRE_SESSION_SCHEDULE} America/New_York)`);
+  log.info(
+    `Pre-session price cron registered (${PRE_SESSION_SCHEDULE} America/New_York)`,
+  );
 }
 
 export function stopDeskPlanCron(): void {

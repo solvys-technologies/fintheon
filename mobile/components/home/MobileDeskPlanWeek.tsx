@@ -88,11 +88,25 @@ export function MobileDeskPlanWeek() {
           Desk Plans
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button type="button" onClick={() => setWeekIndex((i) => Math.max(0, i - 1))} disabled={weekIndex === 0} style={navButtonStyle}>
+          <button
+            type="button"
+            onClick={() => setWeekIndex((i) => Math.max(0, i - 1))}
+            disabled={weekIndex === 0}
+            style={navButtonStyle}
+          >
             Prev
           </button>
-          <span style={weekCounterStyle}>{weeks.length ? `${weekIndex + 1}/${weeks.length}` : "--"}</span>
-          <button type="button" onClick={() => setWeekIndex((i) => Math.min(weeks.length - 1, i + 1))} disabled={weekIndex >= weeks.length - 1} style={navButtonStyle}>
+          <span style={weekCounterStyle}>
+            {weeks.length ? `${weekIndex + 1}/${weeks.length}` : "--"}
+          </span>
+          <button
+            type="button"
+            onClick={() =>
+              setWeekIndex((i) => Math.min(weeks.length - 1, i + 1))
+            }
+            disabled={weekIndex >= weeks.length - 1}
+            style={navButtonStyle}
+          >
             Next
           </button>
         </div>
@@ -125,14 +139,19 @@ export function MobileDeskPlanWeek() {
                     <button
                       key={plan.id}
                       type="button"
-                      onClick={() => setOpenId((id) => (id === plan.id ? null : plan.id))}
+                      onClick={() =>
+                        setOpenId((id) => (id === plan.id ? null : plan.id))
+                      }
                       style={planButtonStyle}
                     >
-                      <span style={planTitleStyle}>{plan.eventName ?? plan.deskTheme ?? "Desk session"}</span>
+                      <span style={planTitleStyle}>
+                        {plan.eventName ?? plan.deskTheme ?? "Desk session"}
+                      </span>
                       <span style={planMetaStyle}>{shortWindow(plan)}</span>
                       {openId === plan.id && (
                         <span style={planForecastStyle}>
-                          {plan.windows?.[0]?.econForecast?.aiPrediction ?? "Forecast pending."}
+                          {plan.windows?.[0]?.econForecast?.aiPrediction ??
+                            "Forecast pending."}
                         </span>
                       )}
                     </button>

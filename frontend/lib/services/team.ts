@@ -95,5 +95,4 @@ export class PeersService {
   }> {
     return this.client.post(`/api/peers/desks/${deskId}/assign`, { peerId });
   }
-
 }

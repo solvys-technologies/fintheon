@@ -40,7 +40,9 @@ export async function putSessionArtifact(params: {
       version,
       created_by: params.createdBy,
     })
-    .select("id, session_id, artifact_type, payload, version, created_by, created_at")
+    .select(
+      "id, session_id, artifact_type, payload, version, created_by, created_at",
+    )
     .single();
 
   if (error) throw new Error(`Artifact save failed: ${error.message}`);
@@ -55,7 +57,9 @@ export async function readSessionArtifacts(
 
   const { data, error } = await sb
     .from("narrative_session_artifacts")
-    .select("id, session_id, artifact_type, payload, version, created_by, created_at")
+    .select(
+      "id, session_id, artifact_type, payload, version, created_by, created_at",
+    )
     .eq("session_id", sessionId)
     .order("artifact_type", { ascending: true })
     .order("version", { ascending: false });

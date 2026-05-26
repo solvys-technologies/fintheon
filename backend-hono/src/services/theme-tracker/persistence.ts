@@ -24,7 +24,11 @@ export function listThemes(status?: ThemeStatus): Theme[] {
 export function updateTheme(id: string, updates: Partial<Theme>): Theme | null {
   const existing = store.get(id);
   if (!existing) return null;
-  const updated = { ...existing, ...updates, updatedAt: new Date().toISOString() };
+  const updated = {
+    ...existing,
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
   store.set(id, updated);
   return updated;
 }

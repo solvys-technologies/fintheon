@@ -37,12 +37,14 @@ export function FileRoomPanel() {
       const items = next.sections.flatMap((section) => section.items);
       setFileRoom(next);
       setExpandedIds((current) =>
-        current.size ? current : new Set(next.sections.map((section) => section.id)),
+        current.size
+          ? current
+          : new Set(next.sections.map((section) => section.id)),
       );
       setSelectedId((current) =>
         current && items.some((item) => item.id === current)
           ? current
-          : items[0]?.id ?? null,
+          : (items[0]?.id ?? null),
       );
     } catch (err) {
       setFileRoom(null);
@@ -85,8 +87,10 @@ export function FileRoomPanel() {
   );
 
   const totalCount =
-    fileRoom?.sections.reduce((sum, section) => sum + section.items.length, 0) ??
-    0;
+    fileRoom?.sections.reduce(
+      (sum, section) => sum + section.items.length,
+      0,
+    ) ?? 0;
 
   return (
     <div className="grid h-full grid-cols-[minmax(360px,430px)_1fr] bg-[var(--fintheon-bg)] text-[var(--fintheon-text)]">

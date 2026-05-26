@@ -24,9 +24,18 @@ export function createChartEvidenceRoutes(): Hono {
   });
 
   app.post("/requests", async (c) => {
-    const parsed = requestSchema.safeParse(await c.req.json().catch(() => ({})));
+    const parsed = requestSchema.safeParse(
+      await c.req.json().catch(() => ({})),
+    );
     if (!parsed.success) {
-      return c.json({ ok: false, error: "Invalid chart request", details: parsed.error.flatten() }, 400);
+      return c.json(
+        {
+          ok: false,
+          error: "Invalid chart request",
+          details: parsed.error.flatten(),
+        },
+        400,
+      );
     }
     const request = await createChartEvidenceRequest(parsed.data);
     return c.json({ ok: true, request }, 201);

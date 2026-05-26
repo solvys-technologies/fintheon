@@ -48,7 +48,9 @@ function getBlockerApi(): BlockerApi | null {
 }
 
 function getLockoutApi(): LockoutElectronApi | null {
-  const e = window as unknown as { electron?: { lockout?: LockoutElectronApi } };
+  const e = window as unknown as {
+    electron?: { lockout?: LockoutElectronApi };
+  };
   return e.electron?.lockout ?? null;
 }
 
@@ -321,11 +323,14 @@ export function useLockout(pollMs = 5000) {
   const lockUntilDeskSession = useCallback(async (): Promise<LockoutState> => {
     try {
       await ensureAccessibilityPermission();
-      const res = await fetch(`${API_BASE}/api/lockout/lock-until-desk-session`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
+      const res = await fetch(
+        `${API_BASE}/api/lockout/lock-until-desk-session`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
       const data = await res.json();
       if (res.ok) {
         await ensureSelectedPlatformBlocked();

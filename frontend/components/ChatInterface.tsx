@@ -104,7 +104,9 @@ function ChatInterfaceInner({
   const [hasChatStarted, setHasChatStarted] = useState(false);
   const [artifactWidth, setArtifactWidth] = useState(() => {
     try {
-      return Number(localStorage.getItem("fintheon:chat-artifact-width")) || 390;
+      return (
+        Number(localStorage.getItem("fintheon:chat-artifact-width")) || 390
+      );
     } catch {
       return 390;
     }
@@ -197,7 +199,8 @@ function ChatInterfaceInner({
   }, [activeWorkspaceId, isRunning, threadMessages.length]);
 
   useEffect(() => {
-    if (!requestedConversationId || requestedConversationId === conversationId) return;
+    if (!requestedConversationId || requestedConversationId === conversationId)
+      return;
     setConversationId(requestedConversationId);
     setHasChatStarted(true);
   }, [conversationId, requestedConversationId, setConversationId]);
@@ -222,7 +225,10 @@ function ChatInterfaceInner({
 
   useEffect(() => {
     try {
-      localStorage.setItem("fintheon:chat-artifact-width", String(artifactWidth));
+      localStorage.setItem(
+        "fintheon:chat-artifact-width",
+        String(artifactWidth),
+      );
     } catch {
       /* ignore */
     }
@@ -304,15 +310,11 @@ function ChatInterfaceInner({
     [],
   );
 
-  const {
-    questionnaire,
-    answerWidgets,
-    isSubmittingAnswers,
-    submitAnswers,
-  } = useChatUiActions(lastRequestId, {
-    onTodoDrawer: handleTodoUiAction,
-    onRightRail: handleRightRailUiAction,
-  });
+  const { questionnaire, answerWidgets, isSubmittingAnswers, submitAnswers } =
+    useChatUiActions(lastRequestId, {
+      onTodoDrawer: handleTodoUiAction,
+      onRightRail: handleRightRailUiAction,
+    });
 
   useEffect(() => {
     setApprovalDrawerCollapsed(false);
@@ -325,7 +327,10 @@ function ChatInterfaceInner({
     threadMessages.length === 0 &&
     !isRunning;
   const workDrawerOpen =
-    showTodoDrawer && hasWorkDrawerContent && !questionnaire && !introCenteredMode;
+    showTodoDrawer &&
+    hasWorkDrawerContent &&
+    !questionnaire &&
+    !introCenteredMode;
   const collapseTodoDrawer = useCallback(() => setShowTodoDrawer(false), []);
   useAutoCollapseDrawer({
     isOpen: workDrawerOpen,
@@ -338,9 +343,7 @@ function ChatInterfaceInner({
     pendingTodoCount > 0
       ? `${pendingTodoCount} open to-do${pendingTodoCount === 1 ? "" : "s"}`
       : null,
-    doneTodoCount > 0
-      ? `${doneTodoCount} complete`
-      : null,
+    doneTodoCount > 0 ? `${doneTodoCount} complete` : null,
     queue.length > 0
       ? `${queue.length} queued message${queue.length === 1 ? "" : "s"}`
       : null,
@@ -379,9 +382,7 @@ function ChatInterfaceInner({
       ? 230
       : 116;
   const composerIsCentered =
-    introCenteredMode &&
-    !approvalDrawerOpen &&
-    !workDrawerOpen;
+    introCenteredMode && !approvalDrawerOpen && !workDrawerOpen;
   const composerInset = composerIsCentered ? 48 : composerBottomInset;
 
   const handleNewChat = useCallback(() => {
@@ -459,9 +460,7 @@ function ChatInterfaceInner({
           />
           <div
             className={`pointer-events-none absolute inset-x-0 z-30 ${
-              composerIsCentered
-                ? "top-1/2 translate-y-8"
-                : "bottom-0"
+              composerIsCentered ? "top-1/2 translate-y-8" : "bottom-0"
             }`}
           >
             <FintheonComposer
@@ -663,7 +662,9 @@ function ChatWorkspaceSelector({
                 >
                   <span
                     className="h-2 w-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: item.color ?? "rgba(199,159,74,0.64)" }}
+                    style={{
+                      backgroundColor: item.color ?? "rgba(199,159,74,0.64)",
+                    }}
                   />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[12px] font-medium">

@@ -4,7 +4,11 @@
 //   Miss/Beat rows show bullish (green up) or bearish (red down) chevron arrows.
 
 import { useEffect, useState, useCallback } from "react";
-import type { DayPlan, DayPlanWindow, EconForecastScenario } from "../../types/day-plan";
+import type {
+  DayPlan,
+  DayPlanWindow,
+  EconForecastScenario,
+} from "../../types/day-plan";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -58,9 +62,7 @@ function ChevronIcon({ bullish }: { bullish: boolean }) {
       height="10"
       viewBox="0 0 10 10"
       style={{
-        color: bullish
-          ? "var(--fintheon-bullish)"
-          : "var(--fintheon-bearish)",
+        color: bullish ? "var(--fintheon-bullish)" : "var(--fintheon-bearish)",
         transform: bullish ? "rotate(0deg)" : "rotate(180deg)",
         flexShrink: 0,
         display: "inline-block",
@@ -292,13 +294,17 @@ export function MobileDeskPlan() {
               <EconScenarioRow
                 label="Miss"
                 window={dayWindow}
-                renderValue={(f) => `${f.miss.description} (${f.miss.probability}%)`}
+                renderValue={(f) =>
+                  `${f.miss.description} (${f.miss.probability}%)`
+                }
                 scenario={forecast.miss}
               />
               <EconScenarioRow
                 label="Beat"
                 window={dayWindow}
-                renderValue={(f) => `${f.beat.description} (${f.beat.probability}%)`}
+                renderValue={(f) =>
+                  `${f.beat.description} (${f.beat.probability}%)`
+                }
                 scenario={forecast.beat}
               />
               {forecast.otherNotableEvents.length > 0 && (
@@ -462,7 +468,9 @@ function EconScenarioRow({
 }) {
   const { revealed, countdown } = useEconReveal(w.startTime);
   const forecast = w.econForecast;
-  const tone: ScenarioTone = scenario.isBullishForEquities ? "bullish" : "bearish";
+  const tone: ScenarioTone = scenario.isBullishForEquities
+    ? "bullish"
+    : "bearish";
 
   if (!revealed) {
     return (

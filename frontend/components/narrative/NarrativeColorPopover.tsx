@@ -5,9 +5,19 @@ interface NarrativeColorPopoverProps {
   onChange: (color: string) => void;
 }
 
-const SWATCHES = ["#c79f4a", "#34D399", "#FBBF24", "#A78BFA", "#14B8A6", "#F97316"];
+const SWATCHES = [
+  "#c79f4a",
+  "#34D399",
+  "#FBBF24",
+  "#A78BFA",
+  "#14B8A6",
+  "#F97316",
+];
 
-export function NarrativeColorPopover({ color, onChange }: NarrativeColorPopoverProps) {
+export function NarrativeColorPopover({
+  color,
+  onChange,
+}: NarrativeColorPopoverProps) {
   return (
     <div className="w-44 rounded-md border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)] px-3 py-2">
       <div className="mb-2 text-[9px] uppercase tracking-[0.18em] text-[var(--fintheon-muted)]">

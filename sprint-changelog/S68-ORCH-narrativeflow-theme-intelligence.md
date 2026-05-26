@@ -49,6 +49,7 @@ Branch: `sprint/S68`
 **What to do**: Replace the existing Regime Tracker system with a Theme Tracker. This is the foundation — everything else consumes its API.
 
 The Theme Tracker manages a set of active themes, each with:
+
 - IPV (Impact Probability Value) score
 - Associated catalysts
 - Drift state (computed by T2)
@@ -56,6 +57,7 @@ The Theme Tracker manages a set of active themes, each with:
 - Historical trajectory data
 
 **Backend**:
+
 - Create `backend-hono/src/services/theme-tracker/` with types, tracker logic, persistence
 - Create `backend-hono/src/routes/themes/` with API:
   - `GET /api/themes` — List all active themes with IPV + status
@@ -68,6 +70,7 @@ The Theme Tracker manages a set of active themes, each with:
 - Migrate existing regime data to theme model if applicable
 
 **Frontend**:
+
 - Create `frontend/hooks/useThemes.ts` — Theme data hook
 - Update `frontend/components/regimes/` to read from Theme Tracker API instead of regime data
 - Theme status badges component (Active=gold, Decaying=amber, Resolved=muted)
@@ -81,6 +84,7 @@ Branch: `sprint/S68`
 **What to do**: Build a Catalyst Drift model that tracks how a theme's narrative shifts over time. Drift measures the divergence between a theme's current IPV and its historical trajectory.
 
 **Backend**:
+
 - Create `backend-hono/src/services/catalyst-drift/` with:
   - Drift calculation: compare current IPV against trailing N-period average
   - Drift magnitude (0-1 scale) and direction (positive/negative)
@@ -88,6 +92,7 @@ Branch: `sprint/S68`
   - `GET /api/themes/:id/drift` endpoint (wired into T1 routes)
 
 **Frontend**:
+
 - Create `frontend/components/narrative/DriftBubble.tsx` — Visual bubble component
   - Color-coded by direction (gold=positive, red=negative, gray=neutral)
   - Size proportional to confidence
@@ -105,6 +110,7 @@ Branch: `sprint/S68`
 **What to do**: Refactor the NarrativeFlow surface (NarrativeCanvas.tsx) from a general narrative display to an impact-intelligence-focused surface. This is the main user-facing deliverable.
 
 **Changes to NarrativeCanvas.tsx**:
+
 - Reorganize catalyst cards by theme impact (highest IPV first)
 - Add IPV display to each theme section header
 - Integrate drift indicators into the narrative flow
@@ -112,11 +118,13 @@ Branch: `sprint/S68`
 - Streamline visual hierarchy: theme header > IPV summary > catalyst list > drift indicator
 
 **Changes to Sanctum.tsx**:
+
 - Update NarrativeFlow page to use new impact-intelligence layout
 - Ensure theme data flows from Theme Tracker (T1) through to canvas
 - Add filter controls: show all / active only / by theme
 
 **New components**:
+
 - `frontend/components/narrative/ThemeHeader.tsx` — Theme section header with IPV + drift + status
 - `frontend/components/narrative/ThemeCatalystGroup.tsx` — Grouped catalyst list per theme
 - `frontend/components/narrative/NarrativeFlowFilterBar.tsx` — Filter controls
@@ -130,12 +138,14 @@ Branch: `sprint/S68`
 **What to do**: Fix NarrativeMap pan/zoom state persistence and integrate with Sanctum navigation.
 
 **Pan persistence**:
+
 - Save camera state (x, y, scale) to localStorage when user navigates away
 - Restore camera state when user returns to NarrativeFlow
 - Add "reset view" button to return to default camera position
 - Camera state key: `narrativeflow:camera:{symbol}`
 
 **Sanctum nav integration**:
+
 - Ensure NarrativeFlow page is properly wired in Sanctum page switching
 - Add smooth transition when switching between NarrativeFlow and other Sanctum pages
 - Ensure NarrativeMap force canvas and NarrativeCanvas bubble canvas share state correctly
@@ -244,11 +254,11 @@ This file is your single entry point for the S68 NarrativeFlow sprint.
 
 ## Linear Issues
 
-| Issue | Title | Points |
-| ----- | ----- | ------ |
-| SOL-115 | S68-ORCH: NarrativeFlow Theme Intelligence | — |
-| SOL-120 | S68-T1: Replace Regime Tracker with Theme Tracker | 8 |
-| SOL-119 | S68-T2: Catalyst Drift model + drift bubble UI | 5 |
-| SOL-118 | S68-T3: NarrativeFlow surface refactor to impact intelligence | 8 |
-| SOL-117 | S68-T4: NarrativeMap pan persistence + Sanctum nav | 5 |
-| SOL-116 | S68-T5: NarrativeFlow canvas polish + micro-interactions | 3 |
+| Issue   | Title                                                         | Points |
+| ------- | ------------------------------------------------------------- | ------ |
+| SOL-115 | S68-ORCH: NarrativeFlow Theme Intelligence                    | —      |
+| SOL-120 | S68-T1: Replace Regime Tracker with Theme Tracker             | 8      |
+| SOL-119 | S68-T2: Catalyst Drift model + drift bubble UI                | 5      |
+| SOL-118 | S68-T3: NarrativeFlow surface refactor to impact intelligence | 8      |
+| SOL-117 | S68-T4: NarrativeMap pan persistence + Sanctum nav            | 5      |
+| SOL-116 | S68-T5: NarrativeFlow canvas polish + micro-interactions      | 3      |

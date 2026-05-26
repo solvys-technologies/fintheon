@@ -84,10 +84,7 @@ import { createPolymarketRoutes } from "./polymarket/index.js";
 import { createRelayRoutes } from "./relay.js";
 import { createRelayQuickRoutes } from "./relay-quick.js";
 import { createPreviewRoutes } from "./preview.js";
-import {
-  createWebPushPublicRoutes,
-  createWebPushRoutes,
-} from "./web-push.js";
+import { createWebPushPublicRoutes, createWebPushRoutes } from "./web-push.js";
 import { createOracleRoutes } from "./oracle.js";
 import { createMeRoutes } from "./me/index.js";
 import { createMaintenanceRoutes } from "./maintenance.js";

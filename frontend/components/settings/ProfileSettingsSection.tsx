@@ -64,15 +64,18 @@ export function ProfileSettingsSection({
 
   useEffect(() => {
     let cancelled = false;
-    backend.proxVoice.getProfile().then((res) => {
-      if (cancelled) return;
-      setTraderName(res.profile.displayName);
-      setAvatarUrl(res.profile.avatarUrl);
-      setBio(res.profile.bio ?? "");
-      setPosition(res.profile.position ?? "");
-      setBroker(res.profile.broker ?? "");
-      setSocialLinks(res.profile.socialLinks);
-    }).catch(() => {});
+    backend.proxVoice
+      .getProfile()
+      .then((res) => {
+        if (cancelled) return;
+        setTraderName(res.profile.displayName);
+        setAvatarUrl(res.profile.avatarUrl);
+        setBio(res.profile.bio ?? "");
+        setPosition(res.profile.position ?? "");
+        setBroker(res.profile.broker ?? "");
+        setSocialLinks(res.profile.socialLinks);
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -151,7 +154,9 @@ export function ProfileSettingsSection({
             type="file"
             accept="image/*"
             className="hidden"
-            onChange={(event) => void chooseAvatar(event.target.files?.[0] ?? null)}
+            onChange={(event) =>
+              void chooseAvatar(event.target.files?.[0] ?? null)
+            }
           />
           <button
             type="button"
@@ -248,7 +253,11 @@ export function ProfileSettingsSection({
       <div className="flex justify-end">
         <button
           type="button"
-          onClick={() => signOut().then(signIn).catch(() => {})}
+          onClick={() =>
+            signOut()
+              .then(signIn)
+              .catch(() => {})
+          }
           className="fintheon-action-link text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-text)]/45"
         >
           Switch Account

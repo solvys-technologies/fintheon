@@ -33,16 +33,28 @@ export function createDeskInboxRoutes(): Hono {
   const app = new Hono();
 
   app.get("/", async (c) => {
-    const parsed = querySchema.safeParse({ deskId: c.req.query("deskId") || undefined });
-    if (!parsed.success) return c.json({ ok: false, error: "Invalid inbox query" }, 400);
+    const parsed = querySchema.safeParse({
+      deskId: c.req.query("deskId") || undefined,
+    });
+    if (!parsed.success)
+      return c.json({ ok: false, error: "Invalid inbox query" }, 400);
     const items = await listInboxItems(parsed.data.deskId);
     return c.json({ ok: true, items, count: items.length });
   });
 
   app.post("/memo-drafts", async (c) => {
-    const parsed = memoDraftSchema.safeParse(await c.req.json().catch(() => ({})));
+    const parsed = memoDraftSchema.safeParse(
+      await c.req.json().catch(() => ({})),
+    );
     if (!parsed.success) {
-      return c.json({ ok: false, error: "Invalid memo draft", details: parsed.error.flatten() }, 400);
+      return c.json(
+        {
+          ok: false,
+          error: "Invalid memo draft",
+          details: parsed.error.flatten(),
+        },
+        400,
+      );
     }
     const item = await createMemoDraft(parsed.data);
     return c.json({ ok: true, item }, 201);
@@ -50,28 +62,38 @@ export function createDeskInboxRoutes(): Hono {
 
   app.post("/analysis-block/run", async (c) => {
     const parsed = querySchema.safeParse(await c.req.json().catch(() => ({})));
-    if (!parsed.success) return c.json({ ok: false, error: "Invalid analysis request" }, 400);
+    if (!parsed.success)
+      return c.json({ ok: false, error: "Invalid analysis request" }, 400);
     const result = await runAgenticAnalysisBlock(parsed.data.deskId);
     return c.json({ ok: true, result });
   });
 
   app.post("/:id/approve", async (c) => {
     const decision = await parseDecision(c);
-    const item = await approveInboxItem({ id: c.req.param("id"), note: decision.note }, decision.deskId);
+    const item = await approveInboxItem(
+      { id: c.req.param("id"), note: decision.note },
+      decision.deskId,
+    );
     if (!item) return c.json({ ok: false, error: "Inbox item not found" }, 404);
     return c.json({ ok: true, item });
   });
 
   app.post("/:id/request-changes", async (c) => {
     const decision = await parseDecision(c);
-    const item = await requestInboxChanges({ id: c.req.param("id"), note: decision.note }, decision.deskId);
+    const item = await requestInboxChanges(
+      { id: c.req.param("id"), note: decision.note },
+      decision.deskId,
+    );
     if (!item) return c.json({ ok: false, error: "Inbox item not found" }, 404);
     return c.json({ ok: true, item });
   });
 
   app.post("/:id/dismiss", async (c) => {
     const decision = await parseDecision(c);
-    const item = await dismissInboxItem({ id: c.req.param("id"), note: decision.note }, decision.deskId);
+    const item = await dismissInboxItem(
+      { id: c.req.param("id"), note: decision.note },
+      decision.deskId,
+    );
     if (!item) return c.json({ ok: false, error: "Inbox item not found" }, 404);
     return c.json({ ok: true, item });
   });

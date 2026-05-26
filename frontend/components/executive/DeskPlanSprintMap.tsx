@@ -26,8 +26,14 @@ export function DeskPlanSprintMap() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const sortedPlans = useMemo(() => sortPlans(allPlans), [allPlans]);
-  const calendarDays = useMemo(() => buildCalendarDays(sortedPlans), [sortedPlans]);
-  const segments = useMemo(() => buildSprintSegments(sortedPlans), [sortedPlans]);
+  const calendarDays = useMemo(
+    () => buildCalendarDays(sortedPlans),
+    [sortedPlans],
+  );
+  const segments = useMemo(
+    () => buildSprintSegments(sortedPlans),
+    [sortedPlans],
+  );
   const [segmentIndex, setSegmentIndex] = useState(0);
   const focusedDate = segments[segmentIndex]?.date ?? null;
   const windowCount = sortedPlans.reduce(

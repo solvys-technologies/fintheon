@@ -45,12 +45,18 @@ export function sectionRoot(
   return join(deskRoot(deskId), SECTION_FOLDERS[sectionId]);
 }
 
-export async function ensureDeskFolders(deskId = DEFAULT_DESK_ID): Promise<void> {
+export async function ensureDeskFolders(
+  deskId = DEFAULT_DESK_ID,
+): Promise<void> {
   await mkdir(deskRoot(deskId), { recursive: true });
   await Promise.all(
     Object.keys(SECTION_FOLDERS)
       .filter((id) => id !== "agent-souls")
-      .map((id) => mkdir(sectionRoot(deskId, id as FileRoomSectionId), { recursive: true })),
+      .map((id) =>
+        mkdir(sectionRoot(deskId, id as FileRoomSectionId), {
+          recursive: true,
+        }),
+      ),
   );
 }
 

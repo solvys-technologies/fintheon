@@ -29,7 +29,9 @@ function readSaved(): TodoItem[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const saved = JSON.parse(raw) as TodoItem[];
-      const filtered = saved.filter((item) => !item.id.startsWith("todo_seed_"));
+      const filtered = saved.filter(
+        (item) => !item.id.startsWith("todo_seed_"),
+      );
       if (filtered.length !== saved.length) persist(filtered);
       return filtered;
     }

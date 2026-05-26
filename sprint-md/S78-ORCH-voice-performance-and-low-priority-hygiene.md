@@ -6,13 +6,13 @@ Lowest. This sprint contains useful but least urgent catch-up items.
 
 ## Tracks
 
-| Track | Linear | Owner | Scope |
-| --- | --- | --- | --- |
-| S78-T1 | SOL-66 | Sam | Voice engine + consul-control integration review |
-| S78-T2 | SOL-67 | Sam | Voice chat newest OpenAI STT model |
-| S78-T3 | SOL-60 | Sha | Performance tab review + refine or strip |
-| S78-T4 | SOL-76 | Sha | Empty predictions surface guard |
-| S78-T5 | SOL-77 | Sam | Route logging hygiene |
+| Track  | Linear | Owner | Scope                                            |
+| ------ | ------ | ----- | ------------------------------------------------ |
+| S78-T1 | SOL-66 | Sam   | Voice engine + consul-control integration review |
+| S78-T2 | SOL-67 | Sam   | Voice chat newest OpenAI STT model               |
+| S78-T3 | SOL-60 | Sha   | Performance tab review + refine or strip         |
+| S78-T4 | SOL-76 | Sha   | Empty predictions surface guard                  |
+| S78-T5 | SOL-77 | Sam   | Route logging hygiene                            |
 
 ## References
 

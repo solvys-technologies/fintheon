@@ -26,9 +26,15 @@ export function NarrativeCoverHeader({
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const coverUrl = session?.coverImageUrl ?? null;
-  const coverPrompt = useMemo(() => buildNarrativeCoverPrompt(session, response), [session, response]);
+  const coverPrompt = useMemo(
+    () => buildNarrativeCoverPrompt(session, response),
+    [session, response],
+  );
 
-  async function applyCover(coverImageUrl: string | null, coverImagePrompt: string | null) {
+  async function applyCover(
+    coverImageUrl: string | null,
+    coverImagePrompt: string | null,
+  ) {
     setError(null);
     try {
       await onCoverChange?.({ coverImageUrl, coverImagePrompt });
@@ -55,7 +61,14 @@ export function NarrativeCoverHeader({
 
   function generateCover() {
     const seed = `${session?.id ?? "narrative"}:${Date.now()}`;
-    applyCover(buildGeneratedNarrativeCover(coverPrompt, session?.color ?? "#c79f4a", seed), coverPrompt);
+    applyCover(
+      buildGeneratedNarrativeCover(
+        coverPrompt,
+        session?.color ?? "#c79f4a",
+        seed,
+      ),
+      coverPrompt,
+    );
   }
 
   return (
@@ -99,7 +112,10 @@ export function NarrativeCoverHeader({
           <span className="px-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/72">
             Edit narrative
           </span>
-          <CoverButton title="Change cover" onClick={() => inputRef.current?.click()}>
+          <CoverButton
+            title="Change cover"
+            onClick={() => inputRef.current?.click()}
+          >
             <ImagePlus size={14} />
             <span>Change Cover</span>
           </CoverButton>
@@ -111,7 +127,10 @@ export function NarrativeCoverHeader({
             <span>{coverUrl ? "Regenerate" : "Generate"}</span>
           </CoverButton>
           {coverUrl ? (
-            <CoverButton title="Remove cover" onClick={() => applyCover(null, null)}>
+            <CoverButton
+              title="Remove cover"
+              onClick={() => applyCover(null, null)}
+            >
               <Trash2 size={14} />
               <span>Remove</span>
             </CoverButton>
@@ -172,7 +191,8 @@ export function buildNarrativeCoverPrompt(
   response: SensemakingResponse | null,
 ): string {
   const title = session?.title ?? "Narrative session";
-  const summary = response?.synthesisSummary || session?.synthesis || session?.report || "";
+  const summary =
+    response?.synthesisSummary || session?.synthesis || session?.report || "";
   const catalysts = response?.anchorCatalysts
     ?.slice(0, 3)
     .map((item) => item.headline)
@@ -180,8 +200,15 @@ export function buildNarrativeCoverPrompt(
   return [title, summary, catalysts].filter(Boolean).join(" | ").slice(0, 900);
 }
 
-export function buildGeneratedNarrativeCover(prompt: string, color: string, seed: string): string {
-  const hash = Array.from(seed + prompt).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+export function buildGeneratedNarrativeCover(
+  prompt: string,
+  color: string,
+  seed: string,
+): string {
+  const hash = Array.from(seed + prompt).reduce(
+    (acc, char) => acc + char.charCodeAt(0),
+    0,
+  );
   const accent = hexToRgba(color, 0.72);
   const title = escapeXml(prompt.split("|")[0]?.trim() || "Narrative");
   const hue = hash % 360;

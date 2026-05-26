@@ -103,7 +103,9 @@ function shouldShowOnThisSurface(
   if (prefs.econOnlyMode && category !== "econ_alerts") return false;
   if (prefs.criticalOnly) return false;
   if (prefs.manualDnd) return false;
-  return severityRank(notification.severity) >= severityRank(prefs.severityThreshold);
+  return (
+    severityRank(notification.severity) >= severityRank(prefs.severityThreshold)
+  );
 }
 
 interface NotificationToastProps {
@@ -220,17 +222,13 @@ export function NotificationToast({
         maxWidth: "380px",
       }}
     >
-      <div
-        className="fintheon-toast-surface"
-      >
+      <div className="fintheon-toast-surface">
         <div
           className="flex items-start justify-between"
           style={{ padding: "10px 12px" }}
         >
           <div className="flex items-start gap-2 flex-1 min-w-0">
-            <span
-              className="fintheon-toast-badge inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest flex-shrink-0 mt-0.5"
-            >
+            <span className="fintheon-toast-badge inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest flex-shrink-0 mt-0.5">
               {severityConfig.label}
             </span>
             <div className="flex-1 min-w-0">
@@ -344,7 +342,9 @@ export function NotificationContainer() {
           )
           .map((item: any) => ({
             id: item.id.toString(),
-            type: categoryToToastType(String(item.category ?? item.type ?? "system")),
+            type: categoryToToastType(
+              String(item.category ?? item.type ?? "system"),
+            ),
             category: String(item.category ?? item.type ?? "system"),
             severity: item.severity as any,
             title: item.title,

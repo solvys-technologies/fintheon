@@ -38,10 +38,7 @@ export function RepoChatComposer({
       style={style}
       {...props}
     >
-      <div
-        className="fintheon-repo-chat-composer__inner"
-        style={innerStyle}
-      >
+      <div className="fintheon-repo-chat-composer__inner" style={innerStyle}>
         {children}
       </div>
     </div>

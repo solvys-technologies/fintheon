@@ -244,9 +244,12 @@ export function MainDashboard({
     try {
       const apiBase = API_BASE.replace(/\/$/, "");
       const feedRefreshPromise = refresh().catch(() => {});
-      const ensureRes = await fetch(`${apiBase}/api/data/brief/ensure-current`, {
-        method: "POST",
-      });
+      const ensureRes = await fetch(
+        `${apiBase}/api/data/brief/ensure-current`,
+        {
+          method: "POST",
+        },
+      );
       if (!ensureRes.ok) throw new Error(`HTTP ${ensureRes.status}`);
       const ensured = (await ensureRes.json().catch(() => null)) as {
         content?: string;
@@ -255,7 +258,8 @@ export function MainDashboard({
       } | null;
       if (ensured?.content) {
         setNtnText(ensured.content);
-        if (ensured.briefType) setBriefLabel(briefTypeToLabel(ensured.briefType));
+        if (ensured.briefType)
+          setBriefLabel(briefTypeToLabel(ensured.briefType));
         addToast(
           ensured.generated ? "Brief generated" : "Brief is current",
           "success",

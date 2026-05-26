@@ -24,11 +24,15 @@ export interface UseUnifiedApprovalResult {
   pendingApproval: PendingApproval | null;
   isPending: boolean;
   error: string | null;
-  sendDecision: (approvalId: string, decision: "approved" | "denied") => Promise<void>;
+  sendDecision: (
+    approvalId: string,
+    decision: "approved" | "denied",
+  ) => Promise<void>;
 }
 
 export function useUnifiedApproval(): UseUnifiedApprovalResult {
-  const [pendingApproval, setPendingApproval] = useState<PendingApproval | null>(null);
+  const [pendingApproval, setPendingApproval] =
+    useState<PendingApproval | null>(null);
   const [error, setError] = useState<string | null>(null);
   const esRef = useRef<EventSource | null>(null);
 
@@ -115,9 +119,13 @@ export function useUnifiedApproval(): UseUnifiedApprovalResult {
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to send decision");
+        setError(
+          err instanceof Error ? err.message : "Failed to send decision",
+        );
         setPendingApproval((prev) =>
-          prev?.approvalId === approvalId ? { ...prev, status: "pending" } : prev,
+          prev?.approvalId === approvalId
+            ? { ...prev, status: "pending" }
+            : prev,
         );
       }
     },

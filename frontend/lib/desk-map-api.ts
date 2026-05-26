@@ -11,7 +11,9 @@ export interface DeskMapDesk {
 }
 
 export async function fetchDeskMap(): Promise<DeskMapDesk> {
-  const data = await requestJson<{ desk?: Partial<DeskMapDesk> }>("/api/narrative/desk-map");
+  const data = await requestJson<{ desk?: Partial<DeskMapDesk> }>(
+    "/api/narrative/desk-map",
+  );
   return normalizeDesk(data.desk);
 }
 
@@ -19,11 +21,14 @@ export async function updateDeskMapImage(input: {
   mapImageUrl: string | null;
   mapImagePrompt: string | null;
 }): Promise<DeskMapDesk> {
-  const data = await requestJson<{ desk?: Partial<DeskMapDesk> }>("/api/narrative/desk-map", {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
+  const data = await requestJson<{ desk?: Partial<DeskMapDesk> }>(
+    "/api/narrative/desk-map",
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    },
+  );
   return normalizeDesk(data.desk);
 }
 

@@ -50,18 +50,18 @@ PsychAssist monitors trader emotional regulation (ER) via tilt detection. When t
 
 ## Lockout UX Requirements
 
-| Requirement | Expected Behavior | Check |
-|-------------|------------------|-------|
-| Trigger | Lockout activates when ER score > threshold | [ ] |
-| Visual indicator | Clear lockout state visible in CompactERMonitor | [ ] |
-| Nametag | Trader nametag shows lockout psych state | [ ] |
-| Waveform | Lockout distinct on waveform canvas | [ ] |
-| Sound | Healing bowl sound on tilt threshold crossing | [ ] |
-| Not permanent | Auto-resets after cooldown period | [ ] |
-| Manual reset | User can manually clear lockout | [ ] |
-| History | Lockout/unlock events logged in thread history | [ ] |
-| No false positives | Normal ER range does not trigger lockout | [ ] |
-| No false negatives | High ER score reliably triggers lockout | [ ] |
+| Requirement        | Expected Behavior                               | Check |
+| ------------------ | ----------------------------------------------- | ----- |
+| Trigger            | Lockout activates when ER score > threshold     | [ ]   |
+| Visual indicator   | Clear lockout state visible in CompactERMonitor | [ ]   |
+| Nametag            | Trader nametag shows lockout psych state        | [ ]   |
+| Waveform           | Lockout distinct on waveform canvas             | [ ]   |
+| Sound              | Healing bowl sound on tilt threshold crossing   | [ ]   |
+| Not permanent      | Auto-resets after cooldown period               | [ ]   |
+| Manual reset       | User can manually clear lockout                 | [ ]   |
+| History            | Lockout/unlock events logged in thread history  | [ ]   |
+| No false positives | Normal ER range does not trigger lockout        | [ ]   |
+| No false negatives | High ER score reliably triggers lockout         | [ ]   |
 
 ## Solvys Feels — Aesthetic Rules
 

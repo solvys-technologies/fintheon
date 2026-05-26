@@ -55,7 +55,10 @@ function CatalystDetailModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-[#050402]/60" />
-      <div ref={ref} className="fintheon-modal-surface relative max-w-lg w-full">
+      <div
+        ref={ref}
+        className="fintheon-modal-surface relative max-w-lg w-full"
+      >
         <div className="px-5 pt-4 pb-3">
           <div className="flex items-start justify-between gap-3 mb-3">
             <h3 className="text-sm font-semibold text-[var(--fintheon-text)] leading-snug">
@@ -66,7 +69,12 @@ function CatalystDetailModal({
               className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <path
+                  d="M2 2l8 8M10 2l-8 8"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
               </svg>
             </button>
           </div>
@@ -79,22 +87,30 @@ function CatalystDetailModal({
 
           <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[10px]">
             <span className="text-[var(--fintheon-muted)]/50">Source:</span>
-            <span className="text-[var(--fintheon-text)]/80">{catalystSourceLabel(catalyst)}</span>
+            <span className="text-[var(--fintheon-text)]/80">
+              {catalystSourceLabel(catalyst)}
+            </span>
 
             <span className="text-[var(--fintheon-muted)]/50">Date:</span>
-            <span className="text-[var(--fintheon-text)]/80">{timeAgo(catalyst.date)}</span>
+            <span className="text-[var(--fintheon-text)]/80">
+              {timeAgo(catalyst.date)}
+            </span>
 
             {catalyst.directionBias && (
               <>
                 <span className="text-[var(--fintheon-muted)]/50">Bias:</span>
-                <span className="text-[var(--fintheon-text)]/80 capitalize">{catalyst.directionBias}</span>
+                <span className="text-[var(--fintheon-text)]/80 capitalize">
+                  {catalyst.directionBias}
+                </span>
               </>
             )}
 
             {catalyst.narrative && (
               <>
                 <span className="text-[var(--fintheon-muted)]/50">Thread:</span>
-                <span className="text-[var(--fintheon-text)]/80">{catalyst.narrative}</span>
+                <span className="text-[var(--fintheon-text)]/80">
+                  {catalyst.narrative}
+                </span>
               </>
             )}
           </div>
@@ -214,7 +230,9 @@ export default function CatalystCard({
           </div>
         )}
       </div>
-      {detailOpen && <CatalystDetailModal catalyst={catalyst} onClose={handleCloseDetail} />}
+      {detailOpen && (
+        <CatalystDetailModal catalyst={catalyst} onClose={handleCloseDetail} />
+      )}
     </>
   );
 }

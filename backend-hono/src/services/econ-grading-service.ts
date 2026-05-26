@@ -44,7 +44,8 @@ function gradeForecastAgainstActual(
     };
   }
 
-  const beatBias = (forecast.beatProbability ?? 0) - (forecast.missProbability ?? 0);
+  const beatBias =
+    (forecast.beatProbability ?? 0) - (forecast.missProbability ?? 0);
   const wasBeat = actual.deviation != null && actual.deviation > 0;
   const wasMiss = actual.deviation != null && actual.deviation < 0;
   const wasInLine = actual.deviation === 0;
@@ -65,7 +66,9 @@ function gradeForecastAgainstActual(
   };
 }
 
-export async function getGradedStreak(userId: string): Promise<GradedStreakResponse> {
+export async function getGradedStreak(
+  userId: string,
+): Promise<GradedStreakResponse> {
   const sb = getSupabaseClient();
   if (!sb) {
     return { streakAtClose: 0, last30: [] };
@@ -139,13 +142,18 @@ export async function getGradedStreak(userId: string): Promise<GradedStreakRespo
 
             const grade = gradeForecastAgainstActual(
               {
-                missProbability: (forecast.miss as Record<string, unknown>)?.probability as number,
-                beatProbability: (forecast.beat as Record<string, unknown>)?.probability as number,
+                missProbability: (forecast.miss as Record<string, unknown>)
+                  ?.probability as number,
+                beatProbability: (forecast.beat as Record<string, unknown>)
+                  ?.probability as number,
                 aiPrediction: forecast.aiPrediction as string,
               },
               {
                 actualValue: events[0].actual as string,
-                deviation: deviation != null && !isNaN(deviation) ? deviation : undefined,
+                deviation:
+                  deviation != null && !isNaN(deviation)
+                    ? deviation
+                    : undefined,
               },
             );
             analysisCorrect = grade.analysisCorrect;

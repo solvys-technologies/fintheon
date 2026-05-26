@@ -37,17 +37,31 @@ function initials(name: string) {
     .join("");
 }
 
-export function ProxVoicePanel({ open, onClose, anchorRect }: ProxVoicePanelProps) {
+export function ProxVoicePanel({
+  open,
+  onClose,
+  anchorRect,
+}: ProxVoicePanelProps) {
   const voice = useProxVoice();
   const { alerts } = useRiskFlow();
   const [tab, setTab] = useState<TabId>("voice");
   const [profile, setProfile] = useState<ProxVoiceProfile | null>(null);
-  const [position, setPosition] = useState<{ top: number; right: number } | null>(null);
-  const [drag, setDrag] = useState<{ x: number; y: number; top: number; right: number } | null>(null);
+  const [position, setPosition] = useState<{
+    top: number;
+    right: number;
+  } | null>(null);
+  const [drag, setDrag] = useState<{
+    x: number;
+    y: number;
+    top: number;
+    right: number;
+  } | null>(null);
   if (!open || !anchorRect) return null;
 
   const signals = alerts
-    .filter((alert) => (alert.ivScore ?? 0) >= 7 || alert.severity === "critical")
+    .filter(
+      (alert) => (alert.ivScore ?? 0) >= 7 || alert.severity === "critical",
+    )
     .slice(0, 8);
   const top = Math.min(anchorRect.bottom + 8, window.innerHeight - 520);
   const right = Math.max(12, window.innerWidth - anchorRect.right);
@@ -85,7 +99,10 @@ export function ProxVoicePanel({ open, onClose, anchorRect }: ProxVoicePanelProp
               Forum
             </span>
           </div>
-          <button onClick={onClose} className="text-xs text-[var(--fintheon-text)]/45">
+          <button
+            onClick={onClose}
+            className="text-xs text-[var(--fintheon-text)]/45"
+          >
             Close
           </button>
         </div>
@@ -115,16 +132,35 @@ export function ProxVoicePanel({ open, onClose, anchorRect }: ProxVoicePanelProp
                       ? "Connecting to the floor."
                       : "Voice is idle."}
                 </p>
-                {voice.error && <p className="mt-2 text-xs text-red-300">{voice.error}</p>}
+                {voice.error && (
+                  <p className="mt-2 text-xs text-red-300">{voice.error}</p>
+                )}
               </div>
               <div className="grid grid-cols-3 gap-2">
-                <button onClick={() => void voice.toggleMute()} className="fintheon-action-link rounded-md bg-[var(--fintheon-bg)] px-3 py-2 text-xs">
-                  {voice.muted ? <MicOff className="mx-auto h-4 w-4" /> : <Mic className="mx-auto h-4 w-4" />}
+                <button
+                  onClick={() => void voice.toggleMute()}
+                  className="fintheon-action-link rounded-md bg-[var(--fintheon-bg)] px-3 py-2 text-xs"
+                >
+                  {voice.muted ? (
+                    <MicOff className="mx-auto h-4 w-4" />
+                  ) : (
+                    <Mic className="mx-auto h-4 w-4" />
+                  )}
                 </button>
-                <button onClick={voice.toggleDeafen} className="fintheon-action-link rounded-md bg-[var(--fintheon-bg)] px-3 py-2 text-xs">
-                  {voice.deafened ? <VolumeOff className="mx-auto h-4 w-4" /> : <Volume2 className="mx-auto h-4 w-4" />}
+                <button
+                  onClick={voice.toggleDeafen}
+                  className="fintheon-action-link rounded-md bg-[var(--fintheon-bg)] px-3 py-2 text-xs"
+                >
+                  {voice.deafened ? (
+                    <VolumeOff className="mx-auto h-4 w-4" />
+                  ) : (
+                    <Volume2 className="mx-auto h-4 w-4" />
+                  )}
                 </button>
-                <button onClick={voice.disconnect} className="fintheon-action-link rounded-md bg-[var(--fintheon-bg)] px-3 py-2 text-xs text-red-300">
+                <button
+                  onClick={voice.disconnect}
+                  className="fintheon-action-link rounded-md bg-[var(--fintheon-bg)] px-3 py-2 text-xs text-red-300"
+                >
                   <PhoneOff className="mx-auto h-4 w-4" />
                 </button>
               </div>
@@ -135,15 +171,25 @@ export function ProxVoicePanel({ open, onClose, anchorRect }: ProxVoicePanelProp
               {voice.participants.map((participant) => (
                 <button
                   key={participant.identity}
-                  onClick={() => participant.profile && setProfile(participant.profile)}
+                  onClick={() =>
+                    participant.profile && setProfile(participant.profile)
+                  }
                   className={`proxvoice-pill-shimmer flex flex-col items-center gap-1 rounded-md bg-[var(--fintheon-bg)] p-2 transition-all duration-300 hover:opacity-80 ${
-                    participant.leaving ? "opacity-0" : "fintheon-fade-in opacity-100"
+                    participant.leaving
+                      ? "opacity-0"
+                      : "fintheon-fade-in opacity-100"
                   }`}
                 >
                   {participant.profile?.avatarUrl ? (
-                    <img src={participant.profile.avatarUrl} alt="" className={`h-10 w-10 rounded-full object-cover ${participant.isSpeaking ? "proxvoice-speaking-ring" : ""}`} />
+                    <img
+                      src={participant.profile.avatarUrl}
+                      alt=""
+                      className={`h-10 w-10 rounded-full object-cover ${participant.isSpeaking ? "proxvoice-speaking-ring" : ""}`}
+                    />
                   ) : (
-                    <span className={`flex h-10 w-10 items-center justify-center rounded-full bg-[var(--fintheon-surface)] text-[10px] text-[var(--fintheon-accent)] ${participant.isSpeaking ? "proxvoice-speaking-ring" : ""}`}>
+                    <span
+                      className={`flex h-10 w-10 items-center justify-center rounded-full bg-[var(--fintheon-surface)] text-[10px] text-[var(--fintheon-accent)] ${participant.isSpeaking ? "proxvoice-speaking-ring" : ""}`}
+                    >
                       {initials(participant.name) || "FT"}
                     </span>
                   )}
@@ -175,11 +221,16 @@ export function ProxVoicePanel({ open, onClose, anchorRect }: ProxVoicePanelProp
           {tab === "signals" && (
             <div className="space-y-2">
               {signals.map((alert) => (
-                <article key={alert.id} className="fintheon-fade-divider rounded-md bg-[var(--fintheon-bg)] p-2">
+                <article
+                  key={alert.id}
+                  className="fintheon-fade-divider rounded-md bg-[var(--fintheon-bg)] p-2"
+                >
                   <div className="flex items-center gap-2 text-[10px] text-[var(--fintheon-accent)]/75">
                     <Zap className="h-3 w-3" />
                     <span>IV {(alert.ivScore ?? 0).toFixed(1)}</span>
-                    <span className="text-[var(--fintheon-text)]/35">{timeAgo(alert.publishedAt)}</span>
+                    <span className="text-[var(--fintheon-text)]/35">
+                      {timeAgo(alert.publishedAt)}
+                    </span>
                   </div>
                   <p className="mt-1 line-clamp-2 text-xs text-[var(--fintheon-text)]/75">
                     {alert.headline}

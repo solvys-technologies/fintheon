@@ -37,17 +37,14 @@ const editTypeSchema = z.enum([
   "resolved_note",
 ]);
 
-const editSurfaceSchema = z.enum([
-  "workspace",
-  "forecasts",
-  "resolved",
-  "map",
-]);
+const editSurfaceSchema = z.enum(["workspace", "forecasts", "resolved", "map"]);
 
-const patchSchema = z.record(z.string(), z.unknown()).refine(
-  (value) => Object.keys(value).length > 0,
-  "Patch must include at least one field.",
-);
+const patchSchema = z
+  .record(z.string(), z.unknown())
+  .refine(
+    (value) => Object.keys(value).length > 0,
+    "Patch must include at least one field.",
+  );
 
 function makeOperationId(): string {
   return `nf-edit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

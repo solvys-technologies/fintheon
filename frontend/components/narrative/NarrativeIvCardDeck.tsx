@@ -40,7 +40,9 @@ export function NarrativeIvCardDeck({
   const { data } = useIVScoreData();
   const cards = buildCards(response);
   const compositeNodeId =
-    response?.timelineNodes[0]?.id ?? cards.find((card) => card.nodeId)?.nodeId ?? null;
+    response?.timelineNodes[0]?.id ??
+    cards.find((card) => card.nodeId)?.nodeId ??
+    null;
   const [expanded, setExpanded] = useState(false);
   const [position, setPosition] = useState({ x: 12, y: 58 });
   const [ratingQueued, setRatingQueued] = useState(false);
@@ -117,14 +119,20 @@ export function NarrativeIvCardDeck({
         <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--fintheon-text)]">
           Chamber
         </span>
-        <ChevronDown size={12} className={`text-[var(--fintheon-muted)] transition ${expanded ? "rotate-180" : ""}`} />
+        <ChevronDown
+          size={12}
+          className={`text-[var(--fintheon-muted)] transition ${expanded ? "rotate-180" : ""}`}
+        />
       </button>
 
       <div className="narrative-chamber-panel overflow-hidden">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="mb-1 flex items-center gap-2">
-              <ArbitrumGlyph size={18} className="text-[var(--fintheon-accent)]" />
+              <ArbitrumGlyph
+                size={18}
+                className="text-[var(--fintheon-accent)]"
+              />
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--fintheon-accent)]">
                 Chamber
               </p>
@@ -139,9 +147,20 @@ export function NarrativeIvCardDeck({
         </div>
 
         <div className="mt-5 grid grid-cols-3 gap-5">
-          <ChamberMetric label="Chamber Fuse" value={chamber.chamberFuse} suffix="/10" />
-          <ChamberMetric label="30D Catalysts" value={chamber.recentCatalystCount} />
-          <ChamberMetric label="Composite IV" value={chamber.compositeIv} suffix="/10" />
+          <ChamberMetric
+            label="Chamber Fuse"
+            value={chamber.chamberFuse}
+            suffix="/10"
+          />
+          <ChamberMetric
+            label="30D Catalysts"
+            value={chamber.recentCatalystCount}
+          />
+          <ChamberMetric
+            label="Composite IV"
+            value={chamber.compositeIv}
+            suffix="/10"
+          />
         </div>
 
         <div className="mt-5 grid grid-cols-[1fr_1.2fr] gap-5">
@@ -163,7 +182,9 @@ export function NarrativeIvCardDeck({
                     {item.description}
                   </span>
                 </span>
-                <span className="font-mono text-sm text-[var(--fintheon-accent)]">{item.score.toFixed(1)}</span>
+                <span className="font-mono text-sm text-[var(--fintheon-accent)]">
+                  {item.score.toFixed(1)}
+                </span>
               </button>
             ))}
           </div>
@@ -173,7 +194,8 @@ export function NarrativeIvCardDeck({
               aria-hidden="true"
               className="pointer-events-none absolute bottom-0 left-0 top-0 w-px"
               style={{
-                background: "linear-gradient(to bottom, transparent, rgba(199,159,74,0.22), transparent)",
+                background:
+                  "linear-gradient(to bottom, transparent, rgba(199,159,74,0.22), transparent)",
               }}
             />
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--fintheon-accent)]/80">
@@ -225,7 +247,9 @@ function ChamberMetric({
     <div className="relative">
       <p className="font-mono text-2xl tabular-nums text-[var(--fintheon-text)]">
         {Number.isInteger(value) ? value : value.toFixed(1)}
-        <span className="ml-1 text-xs text-[var(--fintheon-muted)]">{suffix}</span>
+        <span className="ml-1 text-xs text-[var(--fintheon-muted)]">
+          {suffix}
+        </span>
       </p>
       <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-[var(--fintheon-muted)]">
         {label}
@@ -249,15 +273,18 @@ function buildChamberSummary(
   const ivSource = recentCatalysts.length > 0 ? recentCatalysts : catalysts;
   const compositeIv =
     ivSource.length > 0
-      ? ivSource.reduce((total, catalyst) => total + catalyst.ivScore, 0) / ivSource.length
-      : data?.score ?? 0;
+      ? ivSource.reduce((total, catalyst) => total + catalyst.ivScore, 0) /
+        ivSource.length
+      : (data?.score ?? 0);
   const chamberFuse = data?.score ?? compositeIv;
   const chamberItems = [
     {
       id: "chamber-fuse",
       label: "Chamber fuse",
       score: chamberFuse,
-      description: data?.prediction?.scenarios?.[0]?.label ?? "Narrative rating from Chamber",
+      description:
+        data?.prediction?.scenarios?.[0]?.label ??
+        "Narrative rating from Chamber",
       nodeId: response?.timelineNodes[0]?.id ?? null,
     },
     ...cards.slice(0, 2).map((card) => ({
@@ -302,7 +329,10 @@ function buildCards(response: SensemakingResponse | null): NarrativeIvCard[] {
         items.length;
       return {
         id: category,
-        label: category === "macroeconomic" ? "Upcoming Related Events" : getCategoryLabel(category),
+        label:
+          category === "macroeconomic"
+            ? "Upcoming Related Events"
+            : getCategoryLabel(category),
         score,
         confidence,
         count: items.length,

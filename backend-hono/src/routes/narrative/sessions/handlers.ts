@@ -3,7 +3,11 @@ import {
   isNarrativeArtifactType,
   putSessionArtifact,
 } from "../../../services/narrative-sessions/artifact-store.js";
-import { addSessionLinks, addSessionMessage, readSessionWorkEvents } from "../../../services/narrative-sessions/history-store.js";
+import {
+  addSessionLinks,
+  addSessionMessage,
+  readSessionWorkEvents,
+} from "../../../services/narrative-sessions/history-store.js";
 import {
   attachSessionCatalysts,
   createNarrativeSession,
@@ -180,7 +184,8 @@ export async function handlePutArtifact(c: Context): Promise<Response> {
       payload: parsed.data.payload,
       createdBy: getActorId(c),
     });
-    if (artifactType === "docs") await addSessionLinks(sessionId, extractLinks(parsed.data.payload));
+    if (artifactType === "docs")
+      await addSessionLinks(sessionId, extractLinks(parsed.data.payload));
     return c.json({ artifact });
   } catch (err) {
     return handleSessionError(c, err);
@@ -217,7 +222,8 @@ function normalizeCatalystBody(data: {
 }
 
 function handleSessionError(c: Context, err: unknown): Response {
-  const message = err instanceof Error ? err.message : "Narrative session failed";
+  const message =
+    err instanceof Error ? err.message : "Narrative session failed";
   const status = message.includes("not configured") ? 503 : 500;
   console.error("[NarrativeSessions]", message);
   return c.json({ error: message }, status);
@@ -226,12 +232,17 @@ function handleSessionError(c: Context, err: unknown): Response {
 function extractLinks(payload: Record<string, unknown>): SessionLinkInput[] {
   const links = Array.isArray(payload.links) ? payload.links : [];
   return links
-    .filter((link): link is Record<string, unknown> => Boolean(link && typeof link === "object"))
+    .filter((link): link is Record<string, unknown> =>
+      Boolean(link && typeof link === "object"),
+    )
     .map((link) => ({
       url: String(link.url ?? ""),
       title: link.title ? String(link.title) : null,
       source: link.source ? String(link.source) : "docs",
       summary: link.summary ? String(link.summary) : null,
     }))
-    .filter((link) => link.url.startsWith("http://") || link.url.startsWith("https://"));
+    .filter(
+      (link) =>
+        link.url.startsWith("http://") || link.url.startsWith("https://"),
+    );
 }

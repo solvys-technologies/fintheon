@@ -172,9 +172,7 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
 
   const toolSteps = useMemo(
     () =>
-      steps.filter(
-        (step) => isToolStep(step) && step.kind !== "gateway-call",
-      ),
+      steps.filter((step) => isToolStep(step) && step.kind !== "gateway-call"),
     [steps],
   );
 
@@ -214,7 +212,9 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
 
       <div
         className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
-          collapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
+          collapsed
+            ? "grid-rows-[0fr] opacity-0"
+            : "grid-rows-[1fr] opacity-100"
         }`}
       >
         <div className="min-h-0 overflow-hidden">

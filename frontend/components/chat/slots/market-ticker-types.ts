@@ -12,7 +12,9 @@ export const MarketTickerQuoteSchema = z.object({
   open: z.number(),
   rolling7dHigh: z.number().nullable().optional(),
   rolling7dLow: z.number().nullable().optional(),
-  sparkline: z.array(z.object({ time: z.number(), close: z.number() })).default([]),
+  sparkline: z
+    .array(z.object({ time: z.number(), close: z.number() }))
+    .default([]),
   historySource: z.enum(["yahoo", "unavailable"]).optional(),
   asOf: z.string(),
 });

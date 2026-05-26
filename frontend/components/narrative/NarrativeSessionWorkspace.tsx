@@ -65,7 +65,14 @@ interface NarrativeSessionWorkspaceProps {
   children: ReactNode;
 }
 
-const narrativeSwatches = ["#c79f4a", "#34D399", "#FBBF24", "#A78BFA", "#14B8A6", "#F97316"];
+const narrativeSwatches = [
+  "#c79f4a",
+  "#34D399",
+  "#FBBF24",
+  "#A78BFA",
+  "#14B8A6",
+  "#F97316",
+];
 
 export function NarrativeSessionWorkspace({
   session,
@@ -108,12 +115,17 @@ export function NarrativeSessionWorkspace({
     onRename(draftTitle.trim() || title, color);
   }
 
-  async function applyCover(coverImageUrl: string | null, coverImagePrompt: string | null) {
+  async function applyCover(
+    coverImageUrl: string | null,
+    coverImagePrompt: string | null,
+  ) {
     setCoverError(null);
     try {
       await onCoverChange?.({ coverImageUrl, coverImagePrompt });
     } catch (err) {
-      setCoverError(err instanceof Error ? err.message : "Cover update failed.");
+      setCoverError(
+        err instanceof Error ? err.message : "Cover update failed.",
+      );
     }
   }
 
@@ -137,12 +149,18 @@ export function NarrativeSessionWorkspace({
     const coverPrompt = buildNarrativeCoverPrompt(session, response);
     const seed = `${session?.id ?? "narrative"}:${Date.now()}`;
     applyCover(
-      buildGeneratedNarrativeCover(coverPrompt, session?.color ?? "#c79f4a", seed),
+      buildGeneratedNarrativeCover(
+        coverPrompt,
+        session?.color ?? "#c79f4a",
+        seed,
+      ),
       coverPrompt,
     );
   }
 
-  const titleWidthClass = railCanvas ? "max-w-[calc(100%-24px)]" : "max-w-[calc(100%-280px)]";
+  const titleWidthClass = railCanvas
+    ? "max-w-[calc(100%-24px)]"
+    : "max-w-[calc(100%-280px)]";
   const narrativeChrome = (
     <>
       <NarrativeCoverHeader
@@ -184,7 +202,9 @@ export function NarrativeSessionWorkspace({
         >
           <span
             className="h-3 w-3 rounded-full shadow-[0_0_12px_rgba(199,159,74,0.36)]"
-            style={{ backgroundColor: session?.color ?? "rgba(199,159,74,0.44)" }}
+            style={{
+              backgroundColor: session?.color ?? "rgba(199,159,74,0.44)",
+            }}
             aria-hidden="true"
           />
         </button>
@@ -195,14 +215,17 @@ export function NarrativeSessionWorkspace({
             onClick={(event) => event.stopPropagation()}
           >
             {narrativeSwatches.map((swatch) => {
-              const isSelected = swatch.toLowerCase() === (session?.color ?? "").toLowerCase();
+              const isSelected =
+                swatch.toLowerCase() === (session?.color ?? "").toLowerCase();
               return (
                 <button
                   key={swatch}
                   type="button"
                   onClick={() => commitColor(swatch)}
                   className={`h-[18px] w-[18px] rounded-sm transition hover:-translate-y-px ${
-                    isSelected ? "ring-1 ring-[var(--fintheon-text)]/70" : "opacity-80 hover:opacity-100"
+                    isSelected
+                      ? "ring-1 ring-[var(--fintheon-text)]/70"
+                      : "opacity-80 hover:opacity-100"
                   }`}
                   style={{ backgroundColor: swatch }}
                   title={swatch}
@@ -236,21 +259,36 @@ export function NarrativeSessionWorkspace({
             className="narrative-cover-inline-controls flex shrink-0 items-center gap-1"
             onClick={(event) => event.stopPropagation()}
           >
-            <InlineCoverButton title="Change cover" onClick={() => coverInputRef.current?.click()}>
+            <InlineCoverButton
+              title="Change cover"
+              onClick={() => coverInputRef.current?.click()}
+            >
               <ImagePlus size={13} />
             </InlineCoverButton>
             <InlineCoverButton
-              title={session?.coverImageUrl ? "Regenerate cover" : "Generate cover"}
+              title={
+                session?.coverImageUrl ? "Regenerate cover" : "Generate cover"
+              }
               onClick={generateCover}
             >
-              {session?.coverImageUrl ? <RefreshCw size={13} /> : <Sparkles size={13} />}
+              {session?.coverImageUrl ? (
+                <RefreshCw size={13} />
+              ) : (
+                <Sparkles size={13} />
+              )}
             </InlineCoverButton>
             {session?.coverImageUrl ? (
-              <InlineCoverButton title="Remove cover" onClick={() => applyCover(null, null)}>
+              <InlineCoverButton
+                title="Remove cover"
+                onClick={() => applyCover(null, null)}
+              >
                 <Trash2 size={13} />
               </InlineCoverButton>
             ) : null}
-            <InlineCoverButton title="Close edit controls" onClick={() => setEditControlsOpen(false)}>
+            <InlineCoverButton
+              title="Close edit controls"
+              onClick={() => setEditControlsOpen(false)}
+            >
               <X size={13} />
             </InlineCoverButton>
           </div>

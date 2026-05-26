@@ -209,8 +209,7 @@ const SettingsContext = createContext<SettingsContextType | undefined>(
 
 const STORAGE_KEY = "fintheon:settings";
 const PREFERENCES_STORAGE_KEY = "fintheon:preferences";
-const LOCKOUT_AUTO_BLOCK_EXPLICIT_KEY =
-  "fintheon:lockout-auto-block-explicit";
+const LOCKOUT_AUTO_BLOCK_EXPLICIT_KEY = "fintheon:lockout-auto-block-explicit";
 // [claude-code 2026-04-18] Must be absolute: under Electron file:// a relative "/api/settings"
 //   resolves against the file protocol and throws ERR_FILE_NOT_FOUND, so both load+save silently
 //   no-op and settings never round-trip to Supabase until a reload on localhost.
@@ -578,8 +577,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [persistentLockout, setPersistentLockout] = useState<boolean>(() =>
     loadFromStorage("persistentLockout", false),
   );
-  const [selectedInstrument, setSelectedInstrumentValue] = useState<string>(() =>
-    loadFromStorage("selectedInstrument", "/NQ"),
+  const [selectedInstrument, setSelectedInstrumentValue] = useState<string>(
+    () => loadFromStorage("selectedInstrument", "/NQ"),
   );
   const [lockoutPermission, setLockoutPermission] = useState<
     "prompt" | "granted" | "denied"
@@ -908,11 +907,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const el = (window as any).electron;
     if (el?.lockout?.checkAccessibility) {
-      el.lockout.checkAccessibility().then((result: { granted: boolean }) => {
-        if (result && typeof result.granted === "boolean") {
-          setLockoutPermission(result.granted ? "granted" : "denied");
-        }
-      }).catch(() => {});
+      el.lockout
+        .checkAccessibility()
+        .then((result: { granted: boolean }) => {
+          if (result && typeof result.granted === "boolean") {
+            setLockoutPermission(result.granted ? "granted" : "denied");
+          }
+        })
+        .catch(() => {});
     }
   }, []);
 

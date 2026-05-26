@@ -56,7 +56,8 @@ function NarrativeSituationMapInner({
 
   if (isLoading) return <MapState label="Loading situation map" isLoading />;
   if (error) return <MapState label={error} />;
-  if (!map || nodes.length === 0) return <MapState label="No desk catalysts mapped yet." />;
+  if (!map || nodes.length === 0)
+    return <MapState label="No desk catalysts mapped yet." />;
 
   return (
     <section className="relative h-full min-h-[440px] overflow-hidden bg-[var(--fintheon-bg)]">
@@ -65,7 +66,8 @@ function NarrativeSituationMapInner({
           Situation Map
         </p>
         <p className="mt-1 font-mono text-[11px] text-[var(--fintheon-muted)]">
-          {map.nodes.filter((node) => node.kind === "catalyst").length} catalysts · {map.edges.length} links
+          {map.nodes.filter((node) => node.kind === "catalyst").length}{" "}
+          catalysts · {map.edges.length} links
         </p>
       </div>
 
@@ -74,7 +76,10 @@ function NarrativeSituationMapInner({
         edges={edges}
         nodeTypes={nodeTypes}
         onNodeClick={(_, node) => {
-          const catalystId = node.data.kind === "catalyst" ? String(node.id).replace("catalyst-", "") : "";
+          const catalystId =
+            node.data.kind === "catalyst"
+              ? String(node.id).replace("catalyst-", "")
+              : "";
           if (catalystId) onSelectCatalyst?.(catalystId);
         }}
         fitView
@@ -109,7 +114,7 @@ function SituationNode({ data }: NodeProps & { data: MapNodeData }) {
           style={{ backgroundColor: data.color }}
         />
         <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]">
-          {isNarrative ? "Narrative" : data.conflictLabel ?? "Catalyst"}
+          {isNarrative ? "Narrative" : (data.conflictLabel ?? "Catalyst")}
         </span>
       </div>
       <p className="line-clamp-3 text-sm font-medium leading-5 text-[var(--fintheon-text)]">
@@ -138,7 +143,10 @@ function MapState({
     <div className="flex h-full min-h-[360px] items-center justify-center bg-[var(--fintheon-bg)]">
       <div className="flex items-center gap-2 text-xs text-[var(--fintheon-muted)]">
         {isLoading ? (
-          <Loader2 size={14} className="animate-spin text-[var(--fintheon-accent)]" />
+          <Loader2
+            size={14}
+            className="animate-spin text-[var(--fintheon-accent)]"
+          />
         ) : (
           <Network size={14} className="text-[var(--fintheon-accent)]" />
         )}
@@ -148,9 +156,10 @@ function MapState({
   );
 }
 
-function buildFlow(
-  map: NarrativeSituationMapResponse | null,
-): { nodes: Node<MapNodeData>[]; edges: Edge[] } {
+function buildFlow(map: NarrativeSituationMapResponse | null): {
+  nodes: Node<MapNodeData>[];
+  edges: Edge[];
+} {
   if (!map) return { nodes: [], edges: [] };
   return {
     nodes: map.nodes.map((node, index) => ({
@@ -184,7 +193,9 @@ function toEdge(edge: SituationMapEdge): Edge {
     type: "smoothstep",
     markerEnd: { type: MarkerType.ArrowClosed, color: "#c79f4a" },
     style: {
-      stroke: isRelationship ? "rgba(240,234,214,0.24)" : "rgba(199,159,74,0.38)",
+      stroke: isRelationship
+        ? "rgba(240,234,214,0.24)"
+        : "rgba(199,159,74,0.38)",
       strokeDasharray: isRelationship ? "5 5" : undefined,
     },
     labelStyle: { fill: "#c79f4a", fontSize: 10 },
@@ -197,6 +208,11 @@ function getPosition(
   nodes: SituationMapNode[],
 ) {
   if (node.kind === "narrative") return { x: 0, y: index * 180 };
-  const catalystIndex = nodes.slice(0, index).filter((item) => item.kind === "catalyst").length;
-  return { x: 360 + (catalystIndex % 3) * 310, y: Math.floor(catalystIndex / 3) * 190 };
+  const catalystIndex = nodes
+    .slice(0, index)
+    .filter((item) => item.kind === "catalyst").length;
+  return {
+    x: 360 + (catalystIndex % 3) * 310,
+    y: Math.floor(catalystIndex / 3) * 190,
+  };
 }

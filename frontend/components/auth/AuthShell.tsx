@@ -87,9 +87,11 @@ const panelStyle: React.CSSProperties = {
   justifyItems: "center",
   width: "min(340px, calc(100vw - 48px))",
   padding: "16px 16px 18px",
-  border: "1px solid color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 18%, transparent)",
+  border:
+    "1px solid color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 18%, transparent)",
   borderRadius: 8,
-  background: "color-mix(in srgb, var(--fintheon-surface, #0a0905) 83%, transparent)",
+  background:
+    "color-mix(in srgb, var(--fintheon-surface, #0a0905) 83%, transparent)",
   backdropFilter: "blur(18px) saturate(1.18)",
   WebkitBackdropFilter: "blur(18px) saturate(1.18)",
   overflow: "hidden",

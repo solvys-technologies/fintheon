@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNarrative } from "../../contexts/NarrativeContext";
 import type { BubbleState } from "../../lib/narrative-physics";
-import { initBubble, stepPhysics, triggerRopeSwing } from "../../lib/narrative-physics";
+import {
+  initBubble,
+  stepPhysics,
+  triggerRopeSwing,
+} from "../../lib/narrative-physics";
 import {
   clearCanvas,
   drawNarrativeCard,
@@ -10,7 +14,13 @@ import {
   drawZoneBackgrounds,
   drawZoneLabels,
 } from "../../lib/narrative-canvas-renderer";
-import { clampScale, fitToView, getZoomConfig, screenToWorld, type CameraState } from "../../lib/narrative-zoom";
+import {
+  clampScale,
+  fitToView,
+  getZoomConfig,
+  screenToWorld,
+  type CameraState,
+} from "../../lib/narrative-zoom";
 import type { ZoomLevel } from "../../lib/narrative-types";
 
 const CAMERA_KEY = "narrativeflow:bubble-camera";
@@ -49,7 +59,9 @@ export function NarrativeAmbientCanvas({
     if (!canvas) return;
     const w = canvas.width / (window.devicePixelRatio || 1);
     const h = canvas.height / (window.devicePixelRatio || 1);
-    const existing = new Map(bubblesRef.current.map((bubble) => [bubble.id, bubble]));
+    const existing = new Map(
+      bubblesRef.current.map((bubble) => [bubble.id, bubble]),
+    );
     bubblesRef.current = activeLanes.map((lane, index) => {
       const previous = existing.get(lane.id);
       if (previous) {
@@ -90,7 +102,13 @@ export function NarrativeAmbientCanvas({
       drawZoneBackgrounds(ctx!, w / cam.scale, h / cam.scale);
       drawZoneLabels(ctx!, w / cam.scale, h / cam.scale);
       drawTimeDividers(ctx!, w / cam.scale, h / cam.scale, zoomConfig);
-      drawRopes(ctx!, bubblesRef.current, state.ropes, time, zoomConfig.showRopes);
+      drawRopes(
+        ctx!,
+        bubblesRef.current,
+        state.ropes,
+        time,
+        zoomConfig.showRopes,
+      );
       const laneMap = new Map(state.lanes.map((lane) => [lane.id, lane]));
       for (const bubble of bubblesRef.current) {
         const lane = laneMap.get(bubble.id);
@@ -110,7 +128,13 @@ export function NarrativeAmbientCanvas({
 
     frameRef.current = requestAnimationFrame(render);
     return () => cancelAnimationFrame(frameRef.current);
-  }, [hoveredLaneId, state.lanes, state.ropes, state.selectedLaneId, zoomConfig]);
+  }, [
+    hoveredLaneId,
+    state.lanes,
+    state.ropes,
+    state.selectedLaneId,
+    zoomConfig,
+  ]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -141,7 +165,11 @@ export function NarrativeAmbientCanvas({
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return null;
     const cam = cameraRef.current;
-    const world = screenToWorld(clientX - rect.left - cam.x, clientY - rect.top - cam.y, { ...cam, x: 0, y: 0 });
+    const world = screenToWorld(
+      clientX - rect.left - cam.x,
+      clientY - rect.top - cam.y,
+      { ...cam, x: 0, y: 0 },
+    );
     return (
       bubblesRef.current.find(
         (bubble) =>
@@ -191,7 +219,10 @@ export function NarrativeAmbientCanvas({
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
       const cam = cameraRef.current;
-      const scale = clampScale(cam.scale * (event.deltaY > 0 ? 0.9 : 1.1), zoomConfig);
+      const scale = clampScale(
+        cam.scale * (event.deltaY > 0 ? 0.9 : 1.1),
+        zoomConfig,
+      );
       const mx = event.clientX - rect.left;
       const my = event.clientY - rect.top;
       animateCamera(cameraRef, {
@@ -205,7 +236,11 @@ export function NarrativeAmbientCanvas({
 
   const handleDoubleClick = useCallback(() => {
     const next =
-      effectiveZoom === "year" ? "quarter" : effectiveZoom === "quarter" ? "month" : "week";
+      effectiveZoom === "year"
+        ? "quarter"
+        : effectiveZoom === "quarter"
+          ? "month"
+          : "week";
     dispatch({ type: "SET_ZOOM", level: next });
   }, [dispatch, effectiveZoom]);
 
@@ -237,7 +272,12 @@ export function NarrativeAmbientCanvas({
 function drawRopes(
   ctx: CanvasRenderingContext2D,
   bubbles: BubbleState[],
-  ropes: { id: string; fromId: string; toId: string; polarity: "reinforcing" | "contradicting" }[],
+  ropes: {
+    id: string;
+    fromId: string;
+    toId: string;
+    polarity: "reinforcing" | "contradicting";
+  }[],
   time: number,
   shouldShow: boolean,
 ) {
@@ -246,11 +286,23 @@ function drawRopes(
     const from = bubbles.find((bubble) => bubble.id === rope.fromId);
     const to = bubbles.find((bubble) => bubble.id === rope.toId);
     if (!from || !to) continue;
-    drawRope(ctx, from.x + from.width / 2, from.y + from.height / 2, to.x + to.width / 2, to.y + to.height / 2, rope.polarity, rope.id, time);
+    drawRope(
+      ctx,
+      from.x + from.width / 2,
+      from.y + from.height / 2,
+      to.x + to.width / 2,
+      to.y + to.height / 2,
+      rope.polarity,
+      rope.id,
+      time,
+    );
   }
 }
 
-function animateCamera(cameraRef: React.MutableRefObject<CameraState>, target: CameraState) {
+function animateCamera(
+  cameraRef: React.MutableRefObject<CameraState>,
+  target: CameraState,
+) {
   const start = { ...cameraRef.current };
   const startTime = performance.now();
   function tick(now: number) {

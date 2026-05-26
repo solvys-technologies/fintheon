@@ -191,7 +191,11 @@ export function ERProvider({ children }: ERProviderProps) {
     setInterventionLevel(newLevel);
 
     // Only trigger lockout on first crossing; respect manual dismiss until score recovers
-    if (newLevel === "lockout" && !isLockedOut && !lockoutDismissedRef.current) {
+    if (
+      newLevel === "lockout" &&
+      !isLockedOut &&
+      !lockoutDismissedRef.current
+    ) {
       setIsLockedOut(true);
       if (lockoutTimerRef.current) clearTimeout(lockoutTimerRef.current);
       lockoutTimerRef.current = setTimeout(() => {

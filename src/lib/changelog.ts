@@ -1615,9 +1615,7 @@ export const changelog: ChangelogEntry[] = [
     agent: "claude-code",
     summary:
       "S68 shipped: Theme Tracker (T1), Catalyst Drift (T2), NarrativeFlow impact-intelligence surface (T3), NarrativeMap pan persistence (T4), Canvas polish + micro-interactions (T5). Archived to sprint-changelog/. 5 tracks, 37 files. Deployed v6.5.0 to all 3 targets.",
-    files: [
-      "sprint-changelog/S68-ORCH-narrativeflow-theme-intelligence.md",
-    ],
+    files: ["sprint-changelog/S68-ORCH-narrativeflow-theme-intelligence.md"],
   },
   {
     date: "2026-05-16T21:30:00-04:00",
@@ -1704,10 +1702,7 @@ export const changelog: ChangelogEntry[] = [
     agent: "claude-code",
     summary:
       "fix: removed LockScreen overlay from App.tsx — lockout should block trading apps only, not Fintheon itself (post-session analysis now accessible). Removed borders from .toolbar-icon-btn — FadingRuler vertical separators handle visual division in pill groups.",
-    files: [
-      "frontend/App.tsx",
-      "frontend/index.css",
-    ],
+    files: ["frontend/App.tsx", "frontend/index.css"],
   },
   {
     date: "2026-05-15T13:33:00-04:00",

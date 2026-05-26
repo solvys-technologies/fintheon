@@ -84,6 +84,7 @@ Starting point for measurement: IV scoring widget uses `h-8` (32px) with `px-3` 
 **Agentic Scoring Breakdown (IVScoreCard expanded)**
 
 The popup (currently ~300-595 in IVScoreCard.tsx) gets restructured:
+
 - Title: "Agentic Scoring Breakdown" (was "Blended IV Score")
 - Remove: "Rationale" section (lines 416-427) and the Arbitrum chamber reading text
 - Keep: Component fuse bars (VIX, Headlines, AgentDesk), points range, systemic risk overlay, prediction
@@ -130,10 +131,15 @@ GET /api/riskflow/risk-signals/estimated-drift?signalId={id}
 ```
 
 **Response:**
+
 ```typescript
 {
   signalId: string;
-  persistenceCategory: "1_session" | "2_sessions" | "1_day" | "2_days" | "1_week";
+  persistenceCategory: "1_session" |
+    "2_sessions" |
+    "1_day" |
+    "2_days" |
+    "1_week";
   label: string; // "1 session" | "2 sessions" | "1 day" | "2 days" | "1 week"
   decayBaseMinutes: number;
 }
@@ -148,6 +154,7 @@ GET /api/day-plan/streak/graded
 ```
 
 **Response (extends StreakResponse):**
+
 ```typescript
 {
   streakAtClose: number;

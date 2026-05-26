@@ -96,6 +96,7 @@ cd mobile && npx tsc --noEmit && rm -rf dist && npx vite build
 ```
 
 T5 runs full integration:
+
 - tsc + vite build on frontend
 - tsc + vite build on mobile
 - bun build on backend

@@ -124,6 +124,7 @@ function SectionIcon({ id }: { id: string }) {
   const className =
     "shrink-0 text-[color-mix(in_srgb,var(--fintheon-accent)_62%,transparent)]";
   if (id === "agent-souls") return <Bot size={15} className={className} />;
-  if (id === "chart-evidence") return <ChartCandlestick size={15} className={className} />;
+  if (id === "chart-evidence")
+    return <ChartCandlestick size={15} className={className} />;
   return <FileText size={15} className={className} />;
 }

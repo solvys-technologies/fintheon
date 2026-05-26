@@ -1,5 +1,14 @@
 import { useState } from "react";
-import { Mic, MicOff, PhoneOff, Stadium, Users, Volume2, VolumeOff, Zap } from "lucide-react";
+import {
+  Mic,
+  MicOff,
+  PhoneOff,
+  Stadium,
+  Users,
+  Volume2,
+  VolumeOff,
+  Zap,
+} from "lucide-react";
 import { useProxVoice } from "../../contexts/ProxVoiceContext";
 import { DraggableProfilePopup } from "./DraggableProfilePopup";
 import { RiskSignalCards } from "../narrative/RiskSignalCards";
@@ -40,7 +49,7 @@ export function ProxVoiceForum() {
         <section className="relative min-h-0 overflow-y-auto rounded-md p-4 pb-24">
           <div className="fintheon-fade-divider mb-4 flex items-center justify-between gap-2 pb-1 text-xs text-[var(--fintheon-text)]/55">
             <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-[var(--fintheon-accent)]" />
+              <Users className="h-4 w-4 text-[var(--fintheon-accent)]" />
               <span>Floor Audience</span>
             </div>
           </div>
@@ -49,12 +58,16 @@ export function ProxVoiceForum() {
               <div
                 key={participant.identity}
                 className={`rounded-md bg-[var(--fintheon-bg)] p-3 transition-all duration-300 hover:opacity-85 ${
-                  participant.leaving ? "opacity-0" : "fintheon-fade-in opacity-100"
+                  participant.leaving
+                    ? "opacity-0"
+                    : "fintheon-fade-in opacity-100"
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => participant.profile && setProfile(participant.profile)}
+                    onClick={() =>
+                      participant.profile && setProfile(participant.profile)
+                    }
                     className={`h-10 w-10 rounded-full transition-opacity duration-200 hover:opacity-75 ${
                       participant.isSpeaking ? "proxvoice-speaking-ring" : ""
                     }`}
@@ -101,7 +114,11 @@ export function ProxVoiceForum() {
                     title={participant.isLocal ? "Mute mic" : "Mute output"}
                   >
                     {participant.isLocal ? (
-                      voice.muted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />
+                      voice.muted ? (
+                        <MicOff className="h-3.5 w-3.5" />
+                      ) : (
+                        <Mic className="h-3.5 w-3.5" />
+                      )
                     ) : participant.outputMuted ? (
                       <VolumeOff className="h-3.5 w-3.5" />
                     ) : (
@@ -120,19 +137,38 @@ export function ProxVoiceForum() {
           <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-md bg-[var(--fintheon-bg)] px-3 py-2 fintheon-fade-in">
             <button
               onClick={() =>
-                voice.state === "connected" ? voice.disconnect() : void voice.connect()
+                voice.state === "connected"
+                  ? voice.disconnect()
+                  : void voice.connect()
               }
               className="fintheon-action-link px-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
             >
               {voice.state === "connected" ? "Leave" : "Join"}
             </button>
-            <button onClick={() => void voice.toggleMute()} className="fintheon-action-link px-2">
-              {voice.muted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            <button
+              onClick={() => void voice.toggleMute()}
+              className="fintheon-action-link px-2"
+            >
+              {voice.muted ? (
+                <MicOff className="h-4 w-4" />
+              ) : (
+                <Mic className="h-4 w-4" />
+              )}
             </button>
-            <button onClick={voice.toggleDeafen} className="fintheon-action-link px-2">
-              {voice.deafened ? <VolumeOff className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            <button
+              onClick={voice.toggleDeafen}
+              className="fintheon-action-link px-2"
+            >
+              {voice.deafened ? (
+                <VolumeOff className="h-4 w-4" />
+              ) : (
+                <Volume2 className="h-4 w-4" />
+              )}
             </button>
-            <button onClick={voice.disconnect} className="fintheon-action-link px-2 text-red-400">
+            <button
+              onClick={voice.disconnect}
+              className="fintheon-action-link px-2 text-red-400"
+            >
               <PhoneOff className="h-4 w-4" />
             </button>
           </div>

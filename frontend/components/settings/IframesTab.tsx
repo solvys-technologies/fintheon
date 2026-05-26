@@ -271,7 +271,8 @@ export function IframesTab({
               </p>
               <button
                 onClick={() =>
-                  iframeUrls.boardroom && window.open(iframeUrls.boardroom, "_blank")
+                  iframeUrls.boardroom &&
+                  window.open(iframeUrls.boardroom, "_blank")
                 }
                 disabled={!iframeUrls.boardroom}
                 className="text-[11px] font-medium text-[var(--fintheon-accent)] hover:underline"

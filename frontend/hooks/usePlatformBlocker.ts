@@ -33,8 +33,8 @@ const DEFAULT_STATUS: BlockerStatus = {
 
 export function usePlatformBlocker(selectedPlatform: TradingPlatform) {
   const { proposerIframeSources } = useSettings();
-  const [quickTarget, setQuickTarget] = useState<BlockerQuickTarget | null>(() =>
-    loadBlockerQuickTarget(),
+  const [quickTarget, setQuickTarget] = useState<BlockerQuickTarget | null>(
+    () => loadBlockerQuickTarget(),
   );
   const [customDomains, setCustomDomains] = useState<string[]>(() =>
     loadBlockerCustomDomains(),
@@ -101,7 +101,10 @@ export function usePlatformBlocker(selectedPlatform: TradingPlatform) {
       "fintheon:blocker-custom-domains-updated",
       handleCustomDomainsUpdate,
     );
-    window.addEventListener("fintheon:blocker-state-updated", handleStateUpdate);
+    window.addEventListener(
+      "fintheon:blocker-state-updated",
+      handleStateUpdate,
+    );
     window.addEventListener("storage", handleTargetUpdate);
     window.addEventListener("storage", handleCustomDomainsUpdate);
     return () => {

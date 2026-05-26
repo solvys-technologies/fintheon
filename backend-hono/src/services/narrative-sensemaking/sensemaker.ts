@@ -44,7 +44,11 @@ export async function buildSensemakingMap(
       request.reasoningLevel ?? "standard",
     ),
     forecast: buildForecast(anchors, related),
-    mermaidSource: buildMermaid(timelineNodes, timelineEdges, request.orientation),
+    mermaidSource: buildMermaid(
+      timelineNodes,
+      timelineEdges,
+      request.orientation,
+    ),
     generatedAt: new Date().toISOString(),
   };
 }
@@ -57,7 +61,10 @@ function scoreRelatedCatalyst(
   const reasons = new Set<string>();
 
   for (const anchor of anchors) {
-    const sharedNarratives = intersect(catalyst.narrativeThreads, anchor.narrativeThreads);
+    const sharedNarratives = intersect(
+      catalyst.narrativeThreads,
+      anchor.narrativeThreads,
+    );
     const sharedSymbols = intersect(catalyst.symbols, anchor.symbols);
     const sharedTags = intersect(catalyst.tags, anchor.tags);
 
@@ -87,11 +94,15 @@ function scoreRelatedCatalyst(
     ...catalyst,
     relationScore: Math.min(score, 100),
     relationReason:
-      reasons.size > 0 ? Array.from(reasons).slice(0, 3).join(" · ") : "nearby RiskFlow catalyst",
+      reasons.size > 0
+        ? Array.from(reasons).slice(0, 3).join(" · ")
+        : "nearby RiskFlow catalyst",
   };
 }
 
-function toTimelineNode(catalyst: SensemakingCatalyst): SensemakingTimelineNode {
+function toTimelineNode(
+  catalyst: SensemakingCatalyst,
+): SensemakingTimelineNode {
   return {
     id: `node-${normalizeCatalystId(catalyst.id)}`,
     catalystId: catalyst.id,
@@ -121,7 +132,10 @@ function buildNarrativeGroups(
 ): SensemakingNarrativeGroup[] {
   const groups = new Map<string, SensemakingCatalyst[]>();
   for (const catalyst of catalysts) {
-    const ids = catalyst.narrativeThreads.length > 0 ? catalyst.narrativeThreads : [catalyst.category];
+    const ids =
+      catalyst.narrativeThreads.length > 0
+        ? catalyst.narrativeThreads
+        : [catalyst.category];
     for (const id of ids) groups.set(id, [...(groups.get(id) ?? []), catalyst]);
   }
 
@@ -141,8 +155,12 @@ function buildSummary(
   groups: SensemakingNarrativeGroup[],
   reasoningLevel: SensemakingRequest["reasoningLevel"],
 ): string {
-  if (anchors.length === 0) return "Attach at least one RiskFlow headline to build a narrative map.";
-  const groupNames = groups.slice(0, 4).map((group) => group.title).join(", ");
+  if (anchors.length === 0)
+    return "Attach at least one RiskFlow headline to build a narrative map.";
+  const groupNames = groups
+    .slice(0, 4)
+    .map((group) => group.title)
+    .join(", ");
   return `${anchors.length} attached headline${anchors.length === 1 ? "" : "s"} connect to ${related.length} related catalyst${related.length === 1 ? "" : "s"} across ${groupNames || "the same RiskFlow window"}. Intelligence level is ${reasoningLevel ?? "standard"}; the query focus is "${query || "market outcome"}", so the map orders evidence by time and separates anchors from surrounding notable events.`;
 }
 
@@ -152,7 +170,9 @@ function buildForecast(
 ) {
   const evidenceCount = anchors.length + related.length;
   if (anchors.length === 0 || evidenceCount < 4) return null;
-  const topSymbols = mode([...anchors, ...related].flatMap((item) => item.symbols));
+  const topSymbols = mode(
+    [...anchors, ...related].flatMap((item) => item.symbols),
+  );
   const confidence = Math.min(0.82, 0.35 + evidenceCount * 0.05);
   return {
     confidence: Number(confidence.toFixed(2)),
@@ -171,10 +191,14 @@ function buildMermaid(
   const dir = orientation === "horizontal" ? "LR" : "TD";
   const lines = [`flowchart ${dir}`];
   for (const node of nodes) {
-    lines.push(`  ${safeNodeId(node.id)}["${escapeMermaid(`${node.timeLabel} · ${node.title}`)}"]`);
+    lines.push(
+      `  ${safeNodeId(node.id)}["${escapeMermaid(`${node.timeLabel} · ${node.title}`)}"]`,
+    );
   }
   for (const edge of edges) {
-    lines.push(`  ${safeNodeId(edge.source)} -->|"${escapeMermaid(edge.label)}"| ${safeNodeId(edge.target)}`);
+    lines.push(
+      `  ${safeNodeId(edge.source)} -->|"${escapeMermaid(edge.label)}"| ${safeNodeId(edge.target)}`,
+    );
   }
   return lines.join("\n");
 }
@@ -185,23 +209,34 @@ function intersect(a: string[], b: string[]): string[] {
 }
 
 function isSameWeek(a: string, b: string): boolean {
-  return Math.abs(new Date(a).getTime() - new Date(b).getTime()) <= 7 * 86400000;
+  return (
+    Math.abs(new Date(a).getTime() - new Date(b).getTime()) <= 7 * 86400000
+  );
 }
 
 function sortByTime(a: SensemakingCatalyst, b: SensemakingCatalyst): number {
   return new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime();
 }
 
-function sortByRelationThenTime(a: SensemakingCatalyst, b: SensemakingCatalyst): number {
+function sortByRelationThenTime(
+  a: SensemakingCatalyst,
+  b: SensemakingCatalyst,
+): number {
   return b.relationScore - a.relationScore || sortByTime(a, b);
 }
 
 function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(value));
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(new Date(value));
 }
 
 function timeDelta(a: string, b: string): string {
-  const days = Math.max(0, Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000));
+  const days = Math.max(
+    0,
+    Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000),
+  );
   return days === 0 ? "same day" : `${days}d`;
 }
 
@@ -211,13 +246,18 @@ function buildTimeSpan(items: SensemakingCatalyst[]): string {
 }
 
 function titleize(value: string): string {
-  return value.replace(/[-_]/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+  return value
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function mode(values: string[]): string | null {
   const counts = new Map<string, number>();
-  for (const value of values.filter(Boolean)) counts.set(value, (counts.get(value) ?? 0) + 1);
-  return Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  for (const value of values.filter(Boolean))
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  return (
+    Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
+  );
 }
 
 function safeNodeId(value: string): string {

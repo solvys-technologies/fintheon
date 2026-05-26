@@ -118,7 +118,11 @@ async function main() {
   const workspaces = [
     { name: "root", dir: ROOT },
     { name: "frontend", dir: FRONTEND_DIR },
-    { name: "backend-hono", dir: BACKEND_DIR, args: ["install", "--omit=peer"] },
+    {
+      name: "backend-hono",
+      dir: BACKEND_DIR,
+      args: ["install", "--omit=peer"],
+    },
     { name: "mobile", dir: MOBILE_DIR },
   ];
 

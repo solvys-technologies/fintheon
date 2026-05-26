@@ -11,31 +11,29 @@ interface UnifiedApprovalPipelineProps {
 
 type ApprovalStatus = "pending" | "approved" | "denied" | "expired" | "error";
 
-const STATUS_STYLES: Record<
-  ApprovalStatus,
-  { badge: string; label: string }
-> = {
-  pending: {
-    badge: "text-amber-400 border-amber-400/40 bg-amber-400/10",
-    label: "pending",
-  },
-  approved: {
-    badge: "text-[#c79f4a] border-[#c79f4a]/40 bg-[#c79f4a]/10",
-    label: "approved",
-  },
-  denied: {
-    badge: "text-red-400 border-red-400/40 bg-red-400/10",
-    label: "denied",
-  },
-  expired: {
-    badge: "text-[#f0ead6]/30 border-[#f0ead6]/15 bg-[#f0ead6]/5",
-    label: "expired",
-  },
-  error: {
-    badge: "text-red-400 border-red-400/40 bg-red-400/10",
-    label: "error",
-  },
-};
+const STATUS_STYLES: Record<ApprovalStatus, { badge: string; label: string }> =
+  {
+    pending: {
+      badge: "text-amber-400 border-amber-400/40 bg-amber-400/10",
+      label: "pending",
+    },
+    approved: {
+      badge: "text-[#c79f4a] border-[#c79f4a]/40 bg-[#c79f4a]/10",
+      label: "approved",
+    },
+    denied: {
+      badge: "text-red-400 border-red-400/40 bg-red-400/10",
+      label: "denied",
+    },
+    expired: {
+      badge: "text-[#f0ead6]/30 border-[#f0ead6]/15 bg-[#f0ead6]/5",
+      label: "expired",
+    },
+    error: {
+      badge: "text-red-400 border-red-400/40 bg-red-400/10",
+      label: "error",
+    },
+  };
 
 function StatusBadge({ status }: { status: ApprovalStatus }) {
   const { badge, label } = STATUS_STYLES[status];

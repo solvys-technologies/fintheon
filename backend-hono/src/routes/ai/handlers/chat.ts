@@ -61,11 +61,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function buildConversationMetadata(input: {
-  metadata?: Record<string, unknown>;
-  workspace?: Record<string, unknown>;
-  surface?: string;
-} | null): Record<string, unknown> | undefined {
+function buildConversationMetadata(
+  input: {
+    metadata?: Record<string, unknown>;
+    workspace?: Record<string, unknown>;
+    surface?: string;
+  } | null,
+): Record<string, unknown> | undefined {
   if (!input) return undefined;
   const metadata = isRecord(input.metadata) ? { ...input.metadata } : {};
   if (isRecord(input.workspace)) metadata.workspace = input.workspace;

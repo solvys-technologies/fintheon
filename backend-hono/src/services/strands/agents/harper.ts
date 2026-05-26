@@ -153,7 +153,8 @@ export async function streamHarperChat(
     prompt = `[RiskFlow Context]\n${options.riskFlowContext}\n\n${prompt}`;
   }
 
-  const level = options.reasoningLevel ?? (options.thinkHarder ? "deep" : "standard");
+  const level =
+    options.reasoningLevel ?? (options.thinkHarder ? "deep" : "standard");
   prompt = `[Intelligence Level: ${level}]
 Use the selected level to choose inspection depth, tool aggression, and verification:
 - quick: answer directly unless a tool is required.

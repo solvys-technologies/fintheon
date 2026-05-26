@@ -20,9 +20,11 @@ const STATUS_LABELS: Record<ThemeStatus, string> = {
 export function ThemeStatusBadge({ status }: ThemeStatusBadgeProps) {
   const color = STATUS_COLORS[status];
   const dotColor =
-    status === "Active" ? "var(--fintheon-accent)" :
-    status === "Decaying" ? "#f59e0b" :
-    "var(--fintheon-muted)";
+    status === "Active"
+      ? "var(--fintheon-accent)"
+      : status === "Decaying"
+        ? "#f59e0b"
+        : "var(--fintheon-muted)";
 
   return (
     <span
@@ -37,7 +39,9 @@ export function ThemeStatusBadge({ status }: ThemeStatusBadgeProps) {
         className="w-1.5 h-1.5 rounded-full"
         style={{
           backgroundColor: dotColor,
-          ...(status === "Active" ? { animation: "pulse 2s ease-in-out infinite" } : {}),
+          ...(status === "Active"
+            ? { animation: "pulse 2s ease-in-out infinite" }
+            : {}),
         }}
       />
       {STATUS_LABELS[status]}

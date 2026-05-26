@@ -32,9 +32,7 @@ export function DeskPlanCalendarBoard({
         <section
           key={day.date}
           className={`fintheon-liquid-surface min-h-[260px] p-3 transition ${
-            focusedDate === day.date
-              ? "border-[var(--fintheon-accent)]/25"
-              : ""
+            focusedDate === day.date ? "border-[var(--fintheon-accent)]/25" : ""
           }`}
         >
           <div
@@ -68,7 +66,9 @@ export function DeskPlanCalendarBoard({
                   deletingId={deletingId}
                   onDelete={onDelete}
                   onToggle={() =>
-                    setExpandedId((current) => (current === plan.id ? null : plan.id))
+                    setExpandedId((current) =>
+                      current === plan.id ? null : plan.id,
+                    )
                   }
                 />
               ))
@@ -118,8 +118,16 @@ function CalendarPlanCard({
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <DeletePlanButton plan={plan} deletingId={deletingId} onDelete={onDelete} />
-          {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          <DeletePlanButton
+            plan={plan}
+            deletingId={deletingId}
+            onDelete={onDelete}
+          />
+          {isExpanded ? (
+            <ChevronUp className="h-3 w-3" />
+          ) : (
+            <ChevronDown className="h-3 w-3" />
+          )}
         </div>
       </div>
       {isExpanded ? <WindowList plan={plan} /> : null}
@@ -144,7 +152,9 @@ function WindowList({ plan }: { plan: DayPlan }) {
             {formatEasternClockRange(window.startTime, window.endTime)}
           </p>
           <p className="mt-1 text-[10px] leading-relaxed text-[var(--fintheon-text)]/60">
-            {window.econForecast?.aiPrediction ?? window.eventName ?? "Forecast pending."}
+            {window.econForecast?.aiPrediction ??
+              window.eventName ??
+              "Forecast pending."}
           </p>
         </li>
       ))}

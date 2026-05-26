@@ -43,8 +43,16 @@ export async function approveInboxItem(
   const updated = touch({ ...current, status: "approved" });
   const root = await inboxRoot(deskId);
   const approvedRoot = await approvedMemoRoot(deskId);
-  await writeFile(join(root, memoFilename(updated.id)), encodeInboxItem(updated), "utf8");
-  await writeFile(join(approvedRoot, memoFilename(updated.id)), encodeInboxItem(updated), "utf8");
+  await writeFile(
+    join(root, memoFilename(updated.id)),
+    encodeInboxItem(updated),
+    "utf8",
+  );
+  await writeFile(
+    join(approvedRoot, memoFilename(updated.id)),
+    encodeInboxItem(updated),
+    "utf8",
+  );
   return updated;
 }
 
@@ -55,8 +63,13 @@ export async function requestInboxChanges(
   const current = await readInboxItem(decision.id, deskId);
   if (!current) return null;
   const note = decision.note?.trim();
-  const body = note ? `${current.body}\n\n## Requested Changes\n${note}` : current.body;
-  return writeUpdatedItem({ ...current, status: "changes_requested", body }, deskId);
+  const body = note
+    ? `${current.body}\n\n## Requested Changes\n${note}`
+    : current.body;
+  return writeUpdatedItem(
+    { ...current, status: "changes_requested", body },
+    deskId,
+  );
 }
 
 export async function dismissInboxItem(
@@ -83,7 +96,9 @@ async function readInboxItem(
   deskId: string,
 ): Promise<DeskInboxItem | null> {
   const root = await inboxRoot(deskId);
-  const raw = await readFile(join(root, memoFilename(id)), "utf8").catch(() => null);
+  const raw = await readFile(join(root, memoFilename(id)), "utf8").catch(
+    () => null,
+  );
   if (!raw) return null;
   return decodeInboxItem(raw, id);
 }
@@ -94,7 +109,11 @@ async function writeUpdatedItem(
 ): Promise<DeskInboxItem> {
   const updated = touch(item);
   const root = await inboxRoot(deskId);
-  await writeFile(join(root, memoFilename(updated.id)), encodeInboxItem(updated), "utf8");
+  await writeFile(
+    join(root, memoFilename(updated.id)),
+    encodeInboxItem(updated),
+    "utf8",
+  );
   return updated;
 }
 

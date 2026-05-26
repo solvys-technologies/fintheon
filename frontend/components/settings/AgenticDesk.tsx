@@ -79,7 +79,10 @@ export function AgenticDesk() {
       setTimeout(() => setStyleStatus(null), 1600);
     } catch (err) {
       setStyleStatus("Save Failed");
-      addToast(err instanceof Error ? err.message : "Desk style failed", "error");
+      addToast(
+        err instanceof Error ? err.message : "Desk style failed",
+        "error",
+      );
     }
   }, [addToast, style]);
 
@@ -208,17 +211,43 @@ function DeskStyleEditor({
         </div>
       </div>
       <div className="grid gap-2 md:grid-cols-2">
-        <StyleField label="Bias" value={style.houseBias ?? ""} onChange={(houseBias) => onChange({ ...style, houseBias })} />
-        <StyleField label="Risk" value={style.riskPosture ?? ""} onChange={(riskPosture) => onChange({ ...style, riskPosture })} />
-        <StyleField label="Horizon" value={style.timeHorizon ?? ""} onChange={(timeHorizon) => onChange({ ...style, timeHorizon })} />
-        <StyleField label="Evidence" value={style.preferredEvidenceSources.join(", ")} onChange={(value) => onChange({ ...style, preferredEvidenceSources: toList(value) })} />
+        <StyleField
+          label="Bias"
+          value={style.houseBias ?? ""}
+          onChange={(houseBias) => onChange({ ...style, houseBias })}
+        />
+        <StyleField
+          label="Risk"
+          value={style.riskPosture ?? ""}
+          onChange={(riskPosture) => onChange({ ...style, riskPosture })}
+        />
+        <StyleField
+          label="Horizon"
+          value={style.timeHorizon ?? ""}
+          onChange={(timeHorizon) => onChange({ ...style, timeHorizon })}
+        />
+        <StyleField
+          label="Evidence"
+          value={style.preferredEvidenceSources.join(", ")}
+          onChange={(value) =>
+            onChange({ ...style, preferredEvidenceSources: toList(value) })
+          }
+        />
       </div>
-      <StyleField label="Forbidden" value={style.forbiddenClaims.join(", ")} onChange={(value) => onChange({ ...style, forbiddenClaims: toList(value) })} />
+      <StyleField
+        label="Forbidden"
+        value={style.forbiddenClaims.join(", ")}
+        onChange={(value) =>
+          onChange({ ...style, forbiddenClaims: toList(value) })
+        }
+      />
       <label className="mt-2 block text-right text-[10px] uppercase tracking-[0.12em] text-gray-500">
         Instruction
         <textarea
           value={style.customInstruction ?? ""}
-          onChange={(event) => onChange({ ...style, customInstruction: event.target.value })}
+          onChange={(event) =>
+            onChange({ ...style, customInstruction: event.target.value })
+          }
           maxLength={600}
           className="mt-1 min-h-20 w-full resize-y rounded-[4px] border border-[var(--fintheon-accent)]/15 bg-[#070704] px-3 py-2 text-right text-[12px] normal-case leading-5 tracking-normal text-white outline-none focus:border-[var(--fintheon-accent)]/40"
         />
@@ -249,7 +278,10 @@ function StyleField({
 }
 
 function toList(value: string): string[] {
-  return value.split(",").map((item) => item.trim()).filter(Boolean);
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function defaultDeskStyle(): DeskAgentStyle {

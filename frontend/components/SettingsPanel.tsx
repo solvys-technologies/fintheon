@@ -450,7 +450,9 @@ export function SettingsPage() {
           devAuthenticated ? (
             <HermesAdminTab />
           ) : (
-            <DevPasswordGate onAuthenticated={() => setDevAuthenticated(true)} />
+            <DevPasswordGate
+              onAuthenticated={() => setDevAuthenticated(true)}
+            />
           ),
         );
       case "appearance":
@@ -547,7 +549,8 @@ export function SettingsPage() {
               <div className="flex items-center gap-2">
                 {(() => {
                   const Icon =
-                    orderedTabs.find((t) => t.id === activeTab)?.icon ?? Settings;
+                    orderedTabs.find((t) => t.id === activeTab)?.icon ??
+                    Settings;
                   return (
                     <Icon className="w-4 h-4 text-[var(--fintheon-accent)]/60" />
                   );

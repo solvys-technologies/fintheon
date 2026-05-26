@@ -104,7 +104,9 @@ function matchesValidationRule(
 function hasFreshEvidenceSupport(evidence: RiskFlowEvidence[]): boolean {
   const cutoff = Date.now() - 72 * 60 * 60 * 1000;
   const freshHighIv = evidence.filter((item) => {
-    const timestamp = item.publishedAt ? new Date(item.publishedAt).getTime() : 0;
+    const timestamp = item.publishedAt
+      ? new Date(item.publishedAt).getTime()
+      : 0;
     return timestamp >= cutoff && item.ivScore >= 7;
   });
   return freshHighIv.length >= 2;

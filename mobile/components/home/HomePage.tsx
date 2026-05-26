@@ -336,7 +336,6 @@ export function HomePage() {
           <motion.div variants={item} style={{ flex: 1 }}>
             <BriefingCard />
           </motion.div>
-
         </motion.div>
       </SnapPage>
 

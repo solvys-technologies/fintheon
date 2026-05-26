@@ -211,9 +211,14 @@ export function FintheonToolboxModal({
                         <span className="text-[11px] font-medium text-[#f0ead6]/78">
                           {skill.label}
                         </span>
-                        {isActive && <Check size={10} style={{ color: skill.color }} />}
+                        {isActive && (
+                          <Check size={10} style={{ color: skill.color }} />
+                        )}
                         {disabled && (
-                          <AlertTriangle size={10} className="text-yellow-500/60" />
+                          <AlertTriangle
+                            size={10}
+                            className="text-yellow-500/60"
+                          />
                         )}
                       </span>
                       <span className="mt-0.5 block truncate text-[10px] text-[#f0ead6]/36">
@@ -254,7 +259,9 @@ export function FintheonToolboxModal({
                     <ConnectorToggle
                       checked={isActive}
                       disabled={!canToggle}
-                      onChange={(checked) => onToggleConnector(server.id, checked)}
+                      onChange={(checked) =>
+                        onToggleConnector(server.id, checked)
+                      }
                     />
                   </button>
                 );

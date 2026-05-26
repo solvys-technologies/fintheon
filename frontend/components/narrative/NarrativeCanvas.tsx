@@ -1,9 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
   Clock,
@@ -66,7 +61,14 @@ interface NarrativeCanvasProps {
   surfaceModeOverride?: NarrativeSurfaceMode | null;
 }
 
-const NARRATIVE_SWATCHES = ["#c79f4a", "#34D399", "#FBBF24", "#A78BFA", "#14B8A6", "#F97316"];
+const NARRATIVE_SWATCHES = [
+  "#c79f4a",
+  "#34D399",
+  "#FBBF24",
+  "#A78BFA",
+  "#14B8A6",
+  "#F97316",
+];
 const researchRailKey = "narrativeflow:research-rail-open";
 
 export function NarrativeCanvas({
@@ -76,18 +78,27 @@ export function NarrativeCanvas({
   surfaceModeOverride = null,
 }: NarrativeCanvasProps) {
   const [sessions, setSessions] = useState<NarrativeSessionSummary[]>([]);
-  const [activeSession, setActiveSession] = useState<NarrativeWorkspaceSession | null>(null);
-  const [orientation, setOrientation] = useState<SensemakingOrientation>("horizontal");
+  const [activeSession, setActiveSession] =
+    useState<NarrativeWorkspaceSession | null>(null);
+  const [orientation, setOrientation] =
+    useState<SensemakingOrientation>("horizontal");
   const [renderMode, setRenderMode] = useState<SensemakingRenderMode>("flow");
-  const [surfaceMode, setSurfaceMode] = useState<NarrativeSurfaceMode>("workspace");
+  const [surfaceMode, setSurfaceMode] =
+    useState<NarrativeSurfaceMode>("workspace");
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [requestedChatThreadId, setRequestedChatThreadId] = useState<string | null>(null);
+  const [requestedChatThreadId, setRequestedChatThreadId] = useState<
+    string | null
+  >(null);
   const [response, setResponse] = useState<SensemakingResponse | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [validationMessage, setValidationMessage] = useState<string | null>(null);
-  const [headerActionsHost, setHeaderActionsHost] = useState<HTMLElement | null>(null);
-  const [managedSession, setManagedSession] = useState<NarrativeSessionSummary | null>(null);
+  const [validationMessage, setValidationMessage] = useState<string | null>(
+    null,
+  );
+  const [headerActionsHost, setHeaderActionsHost] =
+    useState<HTMLElement | null>(null);
+  const [managedSession, setManagedSession] =
+    useState<NarrativeSessionSummary | null>(null);
   const [managementBusy, setManagementBusy] = useState(false);
   const [isResearchRailOpen, setIsResearchRailOpen] = useState(() => {
     try {
@@ -117,7 +128,9 @@ export function NarrativeCanvas({
         if (!cancelled) {
           setSessions([]);
           setValidationMessage(
-            err instanceof Error ? err.message : "Narrative sessions failed to load.",
+            err instanceof Error
+              ? err.message
+              : "Narrative sessions failed to load.",
           );
         }
       });
@@ -161,7 +174,9 @@ export function NarrativeCanvas({
 
   useEffect(() => {
     const syncHeaderHost = () => {
-      setHeaderActionsHost(document.getElementById("narrativeflow-header-actions"));
+      setHeaderActionsHost(
+        document.getElementById("narrativeflow-header-actions"),
+      );
     };
     syncHeaderHost();
     const frame = requestAnimationFrame(syncHeaderHost);
@@ -172,9 +187,15 @@ export function NarrativeCanvas({
     const toggleResearchRail = () => {
       setIsResearchRailOpen((value) => !value);
     };
-    window.addEventListener("fintheon:narrative-research-rail-toggle", toggleResearchRail);
+    window.addEventListener(
+      "fintheon:narrative-research-rail-toggle",
+      toggleResearchRail,
+    );
     return () => {
-      window.removeEventListener("fintheon:narrative-research-rail-toggle", toggleResearchRail);
+      window.removeEventListener(
+        "fintheon:narrative-research-rail-toggle",
+        toggleResearchRail,
+      );
     };
   }, []);
 
@@ -187,35 +208,44 @@ export function NarrativeCanvas({
     window.dispatchEvent(
       new CustomEvent("fintheon:narrative-research-rail-state", {
         detail: {
-          open: surfaceMode === "workspace" && Boolean(activeSession) && isResearchRailOpen,
+          open:
+            surfaceMode === "workspace" &&
+            Boolean(activeSession) &&
+            isResearchRailOpen,
           available: Boolean(activeSession && surfaceMode === "workspace"),
         },
       }),
     );
   }, [activeSession, isResearchRailOpen, surfaceMode]);
 
-  const handleCreateSession = useCallback(async (payload: CreateNarrativeSessionPayload) => {
-    if (payload.catalystIds.length < 3) {
-      setValidationMessage("[SELECT 3 CATALYSTS]");
-      return;
-    }
+  const handleCreateSession = useCallback(
+    async (payload: CreateNarrativeSessionPayload) => {
+      if (payload.catalystIds.length < 3) {
+        setValidationMessage("[SELECT 3 CATALYSTS]");
+        return;
+      }
 
-    setIsSubmitting(true);
-    setValidationMessage(null);
-    try {
-      const bundle = await createNarrativeSession(payload);
-      setActiveSession(bundle.session);
-      setResponse(bundle.response);
-      setIsResearchRailOpen(true);
-      setSessions((current) => [toSummary(bundle.session, payload.catalystIds.length), ...current]);
-    } catch (err) {
-      setValidationMessage(
-        err instanceof Error ? err.message : "Narrative session failed.",
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, []);
+      setIsSubmitting(true);
+      setValidationMessage(null);
+      try {
+        const bundle = await createNarrativeSession(payload);
+        setActiveSession(bundle.session);
+        setResponse(bundle.response);
+        setIsResearchRailOpen(true);
+        setSessions((current) => [
+          toSummary(bundle.session, payload.catalystIds.length),
+          ...current,
+        ]);
+      } catch (err) {
+        setValidationMessage(
+          err instanceof Error ? err.message : "Narrative session failed.",
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [],
+  );
 
   const handleOpenSession = useCallback(async (id: string) => {
     setIsSubmitting(true);
@@ -226,114 +256,153 @@ export function NarrativeCanvas({
       setResponse(bundle.response);
       setSurfaceMode("workspace");
     } catch (err) {
-      setValidationMessage(err instanceof Error ? err.message : "Narrative session failed.");
+      setValidationMessage(
+        err instanceof Error ? err.message : "Narrative session failed.",
+      );
     } finally {
       setIsSubmitting(false);
     }
   }, []);
 
-  const handleRenameSession = useCallback(async (id: string, title: string, color: string) => {
-    setSessions((current) =>
-      current.map((session) => (session.id === id ? { ...session, title, color } : session)),
-    );
-    if (activeSession?.id === id) {
-      setActiveSession((session) => (session ? { ...session, title, color } : session));
-    }
-    try {
-      const bundle = await updateNarrativeSession({ id, title, color });
-      setActiveSession(bundle.session);
-      setResponse(bundle.response);
-    } catch (err) {
-      setValidationMessage(err instanceof Error ? err.message : "Narrative rename failed.");
-    }
-  }, [activeSession?.id]);
-
-  const handleDeleteSession = useCallback(async (id: string) => {
-    setManagementBusy(true);
-    setValidationMessage(null);
-    try {
-      await deleteNarrativeSession(id);
-      setSessions((current) => current.filter((session) => session.id !== id));
-      if (activeSession?.id === id) {
-        setActiveSession(null);
-        setResponse(null);
-        setSurfaceMode("workspace");
-      }
-      setManagedSession(null);
-    } catch (err) {
-      setValidationMessage(err instanceof Error ? err.message : "Narrative delete failed.");
-    } finally {
-      setManagementBusy(false);
-    }
-  }, [activeSession?.id]);
-
-  const handleSessionStatus = useCallback(async (id: string, status: "active" | "archived") => {
-    setManagementBusy(true);
-    setValidationMessage(null);
-    const previous = sessions.find((session) => session.id === id);
-    setSessions((current) =>
-      current.map((session) => (session.id === id ? { ...session, status } : session)),
-    );
-    try {
-      const bundle = await updateNarrativeSession({ id, status });
+  const handleRenameSession = useCallback(
+    async (id: string, title: string, color: string) => {
       setSessions((current) =>
         current.map((session) =>
-          session.id === id
-            ? toSummary(bundle.session, previous?.catalystCount ?? bundle.session.catalystIds?.length ?? 0)
-            : session,
+          session.id === id ? { ...session, title, color } : session,
         ),
       );
-      if (status === "archived" && activeSession?.id === id) {
-        setActiveSession(null);
-        setResponse(null);
-        setSurfaceMode("workspace");
-      } else if (activeSession?.id === id) {
+      if (activeSession?.id === id) {
+        setActiveSession((session) =>
+          session ? { ...session, title, color } : session,
+        );
+      }
+      try {
+        const bundle = await updateNarrativeSession({ id, title, color });
         setActiveSession(bundle.session);
         setResponse(bundle.response);
+      } catch (err) {
+        setValidationMessage(
+          err instanceof Error ? err.message : "Narrative rename failed.",
+        );
       }
-      setManagedSession(null);
-    } catch (err) {
-      setSessions((current) =>
-        current.map((session) => (session.id === id && previous ? previous : session)),
-      );
-      setValidationMessage(err instanceof Error ? err.message : "Narrative archive failed.");
-    } finally {
-      setManagementBusy(false);
-    }
-  }, [activeSession?.id, sessions]);
+    },
+    [activeSession?.id],
+  );
 
-  const handleCoverChange = useCallback(async (cover: {
-    coverImageUrl: string | null;
-    coverImagePrompt: string | null;
-  }) => {
-    const id = activeSession?.id;
-    if (!id) {
-      setValidationMessage("Open a saved narrative session before changing the cover.");
-      return;
-    }
-    setActiveSession((session) =>
-      session
-        ? {
-            ...session,
-            coverImageUrl: cover.coverImageUrl,
-            coverImagePrompt: cover.coverImagePrompt,
-            coverImageUpdatedAt: new Date().toISOString(),
-          }
-        : session,
-    );
-    try {
-      const bundle = await updateNarrativeSession({
-        id,
-        coverImageUrl: cover.coverImageUrl,
-        coverImagePrompt: cover.coverImagePrompt,
-      });
-      setActiveSession(bundle.session);
-      setResponse(bundle.response);
-    } catch (err) {
-      setValidationMessage(err instanceof Error ? err.message : "Narrative cover failed.");
-      throw err;
-    }
-  }, [activeSession?.id]);
+  const handleDeleteSession = useCallback(
+    async (id: string) => {
+      setManagementBusy(true);
+      setValidationMessage(null);
+      try {
+        await deleteNarrativeSession(id);
+        setSessions((current) =>
+          current.filter((session) => session.id !== id),
+        );
+        if (activeSession?.id === id) {
+          setActiveSession(null);
+          setResponse(null);
+          setSurfaceMode("workspace");
+        }
+        setManagedSession(null);
+      } catch (err) {
+        setValidationMessage(
+          err instanceof Error ? err.message : "Narrative delete failed.",
+        );
+      } finally {
+        setManagementBusy(false);
+      }
+    },
+    [activeSession?.id],
+  );
+
+  const handleSessionStatus = useCallback(
+    async (id: string, status: "active" | "archived") => {
+      setManagementBusy(true);
+      setValidationMessage(null);
+      const previous = sessions.find((session) => session.id === id);
+      setSessions((current) =>
+        current.map((session) =>
+          session.id === id ? { ...session, status } : session,
+        ),
+      );
+      try {
+        const bundle = await updateNarrativeSession({ id, status });
+        setSessions((current) =>
+          current.map((session) =>
+            session.id === id
+              ? toSummary(
+                  bundle.session,
+                  previous?.catalystCount ??
+                    bundle.session.catalystIds?.length ??
+                    0,
+                )
+              : session,
+          ),
+        );
+        if (status === "archived" && activeSession?.id === id) {
+          setActiveSession(null);
+          setResponse(null);
+          setSurfaceMode("workspace");
+        } else if (activeSession?.id === id) {
+          setActiveSession(bundle.session);
+          setResponse(bundle.response);
+        }
+        setManagedSession(null);
+      } catch (err) {
+        setSessions((current) =>
+          current.map((session) =>
+            session.id === id && previous ? previous : session,
+          ),
+        );
+        setValidationMessage(
+          err instanceof Error ? err.message : "Narrative archive failed.",
+        );
+      } finally {
+        setManagementBusy(false);
+      }
+    },
+    [activeSession?.id, sessions],
+  );
+
+  const handleCoverChange = useCallback(
+    async (cover: {
+      coverImageUrl: string | null;
+      coverImagePrompt: string | null;
+    }) => {
+      const id = activeSession?.id;
+      if (!id) {
+        setValidationMessage(
+          "Open a saved narrative session before changing the cover.",
+        );
+        return;
+      }
+      setActiveSession((session) =>
+        session
+          ? {
+              ...session,
+              coverImageUrl: cover.coverImageUrl,
+              coverImagePrompt: cover.coverImagePrompt,
+              coverImageUpdatedAt: new Date().toISOString(),
+            }
+          : session,
+      );
+      try {
+        const bundle = await updateNarrativeSession({
+          id,
+          coverImageUrl: cover.coverImageUrl,
+          coverImagePrompt: cover.coverImagePrompt,
+        });
+        setActiveSession(bundle.session);
+        setResponse(bundle.response);
+      } catch (err) {
+        setValidationMessage(
+          err instanceof Error ? err.message : "Narrative cover failed.",
+        );
+        throw err;
+      }
+    },
+    [activeSession?.id],
+  );
 
   function handleReasoningLevelChange(level: ReasoningLevel) {
     setReasoningLevel(level);
@@ -350,30 +419,40 @@ export function NarrativeCanvas({
     setSurfaceMode("workspace");
     setIsHistoryOpen(false);
   };
-  const handleQuickAction = useCallback((action: string, catalystId: string | null) => {
-    const target = catalystId ? ` for catalyst ${catalystId}` : "";
-    window.dispatchEvent(
-      new CustomEvent("fintheon:send-chat-text", {
-        detail: { text: `${action} this major development${target}.` },
-      }),
-    );
-  }, []);
+  const handleQuickAction = useCallback(
+    (action: string, catalystId: string | null) => {
+      const target = catalystId ? ` for catalyst ${catalystId}` : "";
+      window.dispatchEvent(
+        new CustomEvent("fintheon:send-chat-text", {
+          detail: { text: `${action} this major development${target}.` },
+        }),
+      );
+    },
+    [],
+  );
   const openResearchRailForNode = useCallback((nodeId: string) => {
     setSelectedNodeId(nodeId);
     setIsResearchRailOpen(true);
   }, []);
-  const handleOpenSessionFromMap = useCallback(async (id: string) => {
-    await handleOpenSession(id);
-    setSurfaceMode("map");
-  }, [handleOpenSession]);
-  const handleOpenWorkspaceThread = useCallback(async (sessionId: string, threadId: string) => {
-    if (activeSession?.id !== sessionId) await handleOpenSession(sessionId);
-    setSurfaceMode("workspace");
-    setRequestedChatThreadId(threadId);
-  }, [activeSession?.id, handleOpenSession]);
+  const handleOpenSessionFromMap = useCallback(
+    async (id: string) => {
+      await handleOpenSession(id);
+      setSurfaceMode("map");
+    },
+    [handleOpenSession],
+  );
+  const handleOpenWorkspaceThread = useCallback(
+    async (sessionId: string, threadId: string) => {
+      if (activeSession?.id !== sessionId) await handleOpenSession(sessionId);
+      setSurfaceMode("workspace");
+      setRequestedChatThreadId(threadId);
+    },
+    [activeSession?.id, handleOpenSession],
+  );
   const hasWorkspaceIvDeck = Boolean(
     response &&
-      (response.anchorCatalysts.length > 0 || response.relatedCatalysts.length > 0),
+    (response.anchorCatalysts.length > 0 ||
+      response.relatedCatalysts.length > 0),
   );
   const railCanvas = activeSession ? (
     <div className="relative h-full min-h-0 overflow-hidden">
@@ -429,7 +508,9 @@ export function NarrativeCanvas({
         activeSessionSummary,
         ...sessions.filter((session) => session.id !== activeSession.id),
       ]
-        .filter((session): session is NarrativeSessionSummary => Boolean(session))
+        .filter((session): session is NarrativeSessionSummary =>
+          Boolean(session),
+        )
         .map((session) => ({
           id: session.id,
           title: session.title,
@@ -455,11 +536,7 @@ export function NarrativeCanvas({
       onToggleHistory={() => setIsHistoryOpen((value) => !value)}
     />
   );
-  const headerActions = (
-    <>
-      {chromeActions}
-    </>
-  );
+  const headerActions = <>{chromeActions}</>;
   const workspaceSurface = !activeSession ? (
     <NarrativeFlowLanding
       sessions={sessions}
@@ -478,7 +555,12 @@ export function NarrativeCanvas({
       isResearchRailOpen={surfaceMode === "workspace" && isResearchRailOpen}
       onSelectNode={openResearchRailForNode}
       onRename={(title, color) =>
-        activeSession.id && handleRenameSession(activeSession.id, title, color ?? activeSession.color ?? "#c79f4a")
+        activeSession.id &&
+        handleRenameSession(
+          activeSession.id,
+          title,
+          color ?? activeSession.color ?? "#c79f4a",
+        )
       }
       onCoverChange={handleCoverChange}
       onQuickAction={handleQuickAction}
@@ -500,14 +582,19 @@ export function NarrativeCanvas({
 
   return (
     <div className="relative h-full min-h-0 flex-1 overflow-hidden bg-[var(--fintheon-bg)]">
-      {headerActionsHost ? createPortal(headerActions, headerActionsHost) : null}
+      {headerActionsHost
+        ? createPortal(headerActions, headerActionsHost)
+        : null}
       {!headerActionsHost && surfaceMode === "workspace" && !activeSession ? (
         <div className="absolute right-3 top-3 z-50">{chromeActions}</div>
       ) : null}
 
       <NarrativeSessionDrawerPanel
         isOpen={isHistoryOpen}
-        isWorkspaceOpen={(surfaceMode === "workspace" || surfaceMode === "map") && Boolean(activeSession)}
+        isWorkspaceOpen={
+          (surfaceMode === "workspace" || surfaceMode === "map") &&
+          Boolean(activeSession)
+        }
         sessions={sessions}
         activeSessionId={activeSession?.id ?? null}
         onClose={() => setIsHistoryOpen(false)}
@@ -542,8 +629,7 @@ export function NarrativeCanvas({
         />
       ) : (
         workspaceSurface
-        )}
-
+      )}
     </div>
   );
 }
@@ -591,7 +677,8 @@ function NarrativeFlowWorkspaceGreeting({
           Build the narrative before the market names it.
         </h2>
         <p className="mx-auto mt-3 max-w-2xl text-[12px] leading-5 text-[var(--fintheon-muted)]/70">
-          {session.title ?? "Active narrative"} is open and ready for the next desk turn.
+          {session.title ?? "Active narrative"} is open and ready for the next
+          desk turn.
         </p>
       </div>
     </div>
@@ -754,7 +841,11 @@ function NarrativeSessionDrawer({
                   <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]">
                     <MessageSquareText size={12} />
                     <span>{entry.speaker}</span>
-                    <span>{entry.timestamp ? formatUpdatedAt(entry.timestamp) : "recent"}</span>
+                    <span>
+                      {entry.timestamp
+                        ? formatUpdatedAt(entry.timestamp)
+                        : "recent"}
+                    </span>
                   </div>
                   <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-[var(--fintheon-text)]/75">
                     {entry.text}
@@ -877,7 +968,9 @@ function NarrativeSessionDrawerRow({
                     type="button"
                     onClick={() => setColor(swatch)}
                     className={`h-[18px] w-[18px] rounded-sm transition hover:-translate-y-px ${
-                      isSelected ? "ring-1 ring-[var(--fintheon-text)]/70" : "opacity-80 hover:opacity-100"
+                      isSelected
+                        ? "ring-1 ring-[var(--fintheon-text)]/70"
+                        : "opacity-80 hover:opacity-100"
                     }`}
                     style={{ backgroundColor: swatch }}
                     title={swatch}

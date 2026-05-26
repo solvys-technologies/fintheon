@@ -177,7 +177,9 @@ function icsEventToDeskPlan(evt: ReturnType<typeof parseIcsEvents>[number]) {
   const country = inferCountry(evt.title, evt.description);
   return {
     date: formatInNewYork(start, "date"),
-    eventName: cleanEventTitle(resolveDeskEventTitle(evt.title, evt.description)),
+    eventName: cleanEventTitle(
+      resolveDeskEventTitle(evt.title, evt.description),
+    ),
     country,
     currency: currencyForCountry(country),
     category: inferCategory(evt.title, evt.description),
@@ -193,7 +195,10 @@ function icsEventToDeskPlan(evt: ReturnType<typeof parseIcsEvents>[number]) {
   };
 }
 
-function resolveDeskEventTitle(title: string, description: string | null): string {
+function resolveDeskEventTitle(
+  title: string,
+  description: string | null,
+): string {
   const cleaned = cleanEventTitle(title);
   if (cleaned && !isCountryOnly(cleaned)) return cleaned;
   const lines = (description ?? "")

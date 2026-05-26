@@ -21,7 +21,10 @@ export function LoadingStatusCard({
 }: LoadingStatusCardProps) {
   const [greetingIndex, setGreetingIndex] = useState(0);
   const [phraseIndex, setPhraseIndex] = useState(0);
-  const dots = useMemo(() => Array.from({ length: 24 }, (_, index) => index), []);
+  const dots = useMemo(
+    () => Array.from({ length: 24 }, (_, index) => index),
+    [],
+  );
 
   useEffect(() => {
     const greetingTimer = window.setInterval(
@@ -97,11 +100,15 @@ function cardStyle(compact: boolean, bare: boolean): CSSProperties {
     justifyItems: "center",
     gap: compact ? 7 : 9,
     width: "min(340px, calc(100vw - 48px))",
-    minWidth: compact ? "min(276px, calc(100vw - 48px))" : "min(300px, calc(100vw - 48px))",
+    minWidth: compact
+      ? "min(276px, calc(100vw - 48px))"
+      : "min(300px, calc(100vw - 48px))",
     padding: compact ? "12px 13px" : "13.2px 14px",
-    border: "1px solid color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 18%, transparent)",
+    border:
+      "1px solid color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 18%, transparent)",
     borderRadius: 8,
-    background: "color-mix(in srgb, var(--fintheon-surface, #0a0905) 83%, transparent)",
+    background:
+      "color-mix(in srgb, var(--fintheon-surface, #0a0905) 83%, transparent)",
     backdropFilter: "blur(18px) saturate(1.18)",
     WebkitBackdropFilter: "blur(18px) saturate(1.18)",
     overflow: "hidden",
@@ -119,7 +126,8 @@ const brandStyle: CSSProperties = {
 
 const greetingStyle: CSSProperties = {
   minHeight: 16,
-  color: "color-mix(in srgb, var(--fintheon-muted, #6b6455) 70%, var(--fintheon-text, #f0ead6))",
+  color:
+    "color-mix(in srgb, var(--fintheon-muted, #6b6455) 70%, var(--fintheon-text, #f0ead6))",
   fontSize: 11,
   fontStyle: "italic",
   maxWidth: "100%",
@@ -127,7 +135,8 @@ const greetingStyle: CSSProperties = {
 
 const phraseStyle: CSSProperties = {
   minHeight: 15,
-  color: "color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 72%, var(--fintheon-text, #f0ead6))",
+  color:
+    "color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 72%, var(--fintheon-text, #f0ead6))",
   fontSize: 10,
   textTransform: "uppercase",
   letterSpacing: "0.2em",
@@ -151,5 +160,6 @@ const dotStyle: CSSProperties = {
   borderRadius: "50%",
   background: "var(--fintheon-primary, var(--fintheon-accent))",
   opacity: 0.16,
-  animation: "fintheon-loading-dot 2700ms cubic-bezier(0.16, 1, 0.3, 1) infinite",
+  animation:
+    "fintheon-loading-dot 2700ms cubic-bezier(0.16, 1, 0.3, 1) infinite",
 };

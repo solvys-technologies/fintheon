@@ -74,18 +74,14 @@ function ToastItem({
         maxWidth: "380px",
       }}
     >
-      <div
-        className="fintheon-toast-surface"
-      >
+      <div className="fintheon-toast-surface">
         <div
           className="flex items-start justify-between"
           style={{ padding: "10px 12px" }}
         >
           <div className="flex items-start" style={{ gap: "8px" }}>
             {cfg.label && (
-              <span
-                className="fintheon-toast-badge inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest flex-shrink-0 mt-0.5"
-              >
+              <span className="fintheon-toast-badge inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest flex-shrink-0 mt-0.5">
                 {cfg.label}
               </span>
             )}

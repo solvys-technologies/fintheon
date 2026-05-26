@@ -1,6 +1,10 @@
 import { GripHorizontal } from "lucide-react";
 import type { DayPlan } from "../../types/day-plan";
-import { formatClock, sprintOverlap, type SprintSegment } from "./DeskPlanMapUtils";
+import {
+  formatClock,
+  sprintOverlap,
+  type SprintSegment,
+} from "./DeskPlanMapUtils";
 
 export function DeskPlanRelativeScrubber({
   segments,
@@ -58,7 +62,9 @@ export function DeskPlanRelativeScrubber({
             min={0}
             max={Math.max(0, segments.length - 1)}
             value={segmentIndex}
-            onChange={(event) => onSegmentIndexChange(Number(event.target.value))}
+            onChange={(event) =>
+              onSegmentIndexChange(Number(event.target.value))
+            }
             className="absolute inset-x-0 top-0 h-6 w-full cursor-ew-resize opacity-0"
             aria-label="Scrub Desk Plan timeline"
           />

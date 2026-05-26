@@ -98,7 +98,7 @@ export async function generateDayPlan(
   }
 
   const [feedResponse, regimeState] = await Promise.all([
-    getFeed("system", { limit: 20 }).catch(() => ({ items: [] } as never)),
+    getFeed("system", { limit: 20 }).catch(() => ({ items: [] }) as never),
     getCurrentRegime().catch(() => null),
   ]);
 
@@ -106,11 +106,7 @@ export async function generateDayPlan(
   const eventName = planned.dominantEvent;
 
   // Build windows with econ forecasts
-  const windows = await buildWindows(
-    dateIso,
-    planned,
-    econEvents,
-  );
+  const windows = await buildWindows(dateIso, planned, econEvents);
 
   // Generate desk theme (no price references)
   const deskTheme = await generateDeskTheme({
@@ -170,10 +166,7 @@ function isStaleAgainstUpcomingEvents(
   );
   const plannedDominant = normalizeEventName(planned.dominantEvent);
   const existingNames = new Set(
-    [
-      existing.eventName,
-      ...existing.windows.map((window) => window.eventName),
-    ]
+    [existing.eventName, ...existing.windows.map((window) => window.eventName)]
       .map(normalizeEventName)
       .filter((name): name is string => Boolean(name)),
   );

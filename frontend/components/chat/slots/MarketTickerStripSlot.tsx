@@ -34,7 +34,8 @@ export function MarketTickerStripSlot({
   const [isClosingSelected, setIsClosingSelected] = useState(false);
   const [loading, setLoading] = useState(false);
   const validated = useMemo(
-    () => (parsed.status === "ok" ? TickerStripSchema.safeParse(parsed.data) : null),
+    () =>
+      parsed.status === "ok" ? TickerStripSchema.safeParse(parsed.data) : null,
     [parsed],
   );
   const data = validated?.success ? validated.data : null;
@@ -68,9 +69,12 @@ export function MarketTickerStripSlot({
     };
   }, [data]);
 
-  if (parsed.status === "pending") return <SlotSkeleton label="tickers" lines={2} />;
-  if (parsed.status === "error") return <SlotError label="tickers" reason={parsed.reason} />;
-  if (!validated?.success) return <SlotError label="tickers" reason="Schema mismatch" />;
+  if (parsed.status === "pending")
+    return <SlotSkeleton label="tickers" lines={2} />;
+  if (parsed.status === "error")
+    return <SlotError label="tickers" reason={parsed.reason} />;
+  if (!validated?.success)
+    return <SlotError label="tickers" reason="Schema mismatch" />;
 
   function openTicker(quote: MarketTickerQuote) {
     setIsClosingSelected(false);

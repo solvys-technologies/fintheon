@@ -76,9 +76,7 @@ export function BottomSheet({
                 cursor: "grab",
               }}
             >
-              <div
-                className="fintheon-glass-handle"
-              />
+              <div className="fintheon-glass-handle" />
             </div>
 
             {/* Title */}

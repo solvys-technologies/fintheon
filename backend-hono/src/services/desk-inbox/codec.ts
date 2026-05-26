@@ -5,7 +5,11 @@ import {
   stringifyMarkdown,
   summarizeMarkdown,
 } from "../file-room/markdown.js";
-import type { DeskInboxItem, DeskInboxStatus, MemoDraftInput } from "./types.js";
+import type {
+  DeskInboxItem,
+  DeskInboxStatus,
+  MemoDraftInput,
+} from "./types.js";
 
 export function encodeInboxItem(item: DeskInboxItem): string {
   return stringifyMarkdown(
@@ -27,7 +31,10 @@ export function encodeInboxItem(item: DeskInboxItem): string {
   );
 }
 
-export function decodeInboxItem(raw: string, fallbackId: string): DeskInboxItem {
+export function decodeInboxItem(
+  raw: string,
+  fallbackId: string,
+): DeskInboxItem {
   const parsed = parseMarkdown(raw);
   const frontmatter = parsed.frontmatter;
   return {
@@ -48,7 +55,10 @@ export function decodeInboxItem(raw: string, fallbackId: string): DeskInboxItem 
   };
 }
 
-export function draftFromInput(input: MemoDraftInput, id: string): DeskInboxItem {
+export function draftFromInput(
+  input: MemoDraftInput,
+  id: string,
+): DeskInboxItem {
   const now = new Date().toISOString();
   return {
     id,
@@ -69,7 +79,12 @@ export function draftFromInput(input: MemoDraftInput, id: string): DeskInboxItem
 }
 
 function normalizeStatus(value?: string): DeskInboxStatus {
-  if (value === "approved" || value === "changes_requested" || value === "dismissed") return value;
+  if (
+    value === "approved" ||
+    value === "changes_requested" ||
+    value === "dismissed"
+  )
+    return value;
   return "pending";
 }
 

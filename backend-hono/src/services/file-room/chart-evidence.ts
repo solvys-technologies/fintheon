@@ -88,7 +88,9 @@ export async function listChartEvidenceRequests(
           sourceUrl: parsed.frontmatter.sourceUrl,
           memoId: parsed.frontmatter.memoId,
           status:
-            parsed.frontmatter.status === "captured" ? "captured" : "pending_capture",
+            parsed.frontmatter.status === "captured"
+              ? "captured"
+              : "pending_capture",
           createdAt: parsed.frontmatter.createdAt || "",
           updatedAt: parsed.frontmatter.updatedAt || "",
         } satisfies ChartEvidenceItem;

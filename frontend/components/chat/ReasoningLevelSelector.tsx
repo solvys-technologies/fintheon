@@ -96,7 +96,10 @@ export function ReasoningLevelSelector({
                     <span className="inline-flex items-center gap-1.5 text-[9px] text-[var(--fintheon-text)]/30">
                       {level.budget}
                       {isActive ? (
-                        <Check size={10} className="text-[var(--fintheon-accent)]" />
+                        <Check
+                          size={10}
+                          className="text-[var(--fintheon-accent)]"
+                        />
                       ) : null}
                     </span>
                   </span>

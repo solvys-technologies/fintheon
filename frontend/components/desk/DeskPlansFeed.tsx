@@ -10,10 +10,7 @@ import {
 
 export function DeskPlansFeed() {
   const { allPlans, isLoading, error } = useDayPlanMultiWeek();
-  const items = useMemo(
-    () => buildUpcomingDeskPlanFeed(allPlans),
-    [allPlans],
-  );
+  const items = useMemo(() => buildUpcomingDeskPlanFeed(allPlans), [allPlans]);
 
   if (isLoading) {
     return (

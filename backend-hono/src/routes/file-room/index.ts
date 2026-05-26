@@ -26,8 +26,12 @@ export function createFileRoomRoutes(): Hono {
   app.get("/item", async (c) => {
     const itemId = c.req.query("id");
     if (!itemId) return c.json({ ok: false, error: "id is required" }, 400);
-    const item = await readFileRoomItem(itemId, c.req.query("deskId") || undefined);
-    if (!item) return c.json({ ok: false, error: "file room item not found" }, 404);
+    const item = await readFileRoomItem(
+      itemId,
+      c.req.query("deskId") || undefined,
+    );
+    if (!item)
+      return c.json({ ok: false, error: "file room item not found" }, 404);
     return c.json({ ok: true, item });
   });
 

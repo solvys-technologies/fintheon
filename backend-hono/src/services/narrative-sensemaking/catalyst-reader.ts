@@ -60,7 +60,9 @@ export async function readSensemakingCatalysts(ids: string[]) {
 
   const poolRows = (poolData ?? []) as CatalystRow[];
   const allIds = Array.from(
-    new Set([...anchorRows, ...poolRows].map((row) => row.tweet_id).filter(Boolean)),
+    new Set(
+      [...anchorRows, ...poolRows].map((row) => row.tweet_id).filter(Boolean),
+    ),
   );
   const links = await readNarrativeLinks(allIds);
 
@@ -71,7 +73,9 @@ export async function readSensemakingCatalysts(ids: string[]) {
   };
 }
 
-async function readNarrativeLinks(ids: string[]): Promise<Map<string, string[]>> {
+async function readNarrativeLinks(
+  ids: string[],
+): Promise<Map<string, string[]>> {
   const sb = getSupabaseClient();
   const links = new Map<string, string[]>();
   if (!sb || ids.length === 0) return links;
@@ -116,7 +120,8 @@ function toCatalyst(
     agentNote: row.agent_note ?? null,
     role,
     relationScore: role === "anchor" ? 100 : 0,
-    relationReason: role === "anchor" ? "Attached headline" : "Related catalyst",
+    relationReason:
+      role === "anchor" ? "Attached headline" : "Related catalyst",
   };
 }
 

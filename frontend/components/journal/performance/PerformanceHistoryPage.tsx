@@ -50,7 +50,9 @@ export function PerformanceHistoryPage({
           <span className="w-[84px] shrink-0">Date</span>
           <span className="w-[60px] shrink-0">P&amp;L</span>
           <span className="w-[44px] shrink-0">Duration</span>
-          <span className="w-[36px] shrink-0">{activeTab === "human" ? "Win%" : "Accept"}</span>
+          <span className="w-[36px] shrink-0">
+            {activeTab === "human" ? "Win%" : "Accept"}
+          </span>
           <span className="w-[32px] shrink-0">ER</span>
           <span className="ml-auto shrink-0">Curve</span>
         </div>

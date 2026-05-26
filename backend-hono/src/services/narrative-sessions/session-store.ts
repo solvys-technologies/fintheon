@@ -13,7 +13,10 @@ import {
   addWorkEvent,
   readSessionCollections,
 } from "./history-store.js";
-import { buildSessionTitle, generateSessionArtifacts } from "./session-generator.js";
+import {
+  buildSessionTitle,
+  generateSessionArtifacts,
+} from "./session-generator.js";
 import type {
   NarrativeSession,
   NarrativeSessionDetail,
@@ -29,7 +32,10 @@ export async function listNarrativeSessions(params: {
   const sb = getSupabaseClient();
   if (!sb) throw new Error("Supabase is not configured");
 
-  const desk = await resolveNarrativeDesk(params.deskId ?? null, params.actorId);
+  const desk = await resolveNarrativeDesk(
+    params.deskId ?? null,
+    params.actorId,
+  );
   const { data, error } = await sb
     .from("narrative_sessions")
     .select(sessionFields)
@@ -53,7 +59,10 @@ export async function createNarrativeSession(params: {
   const sb = getSupabaseClient();
   if (!sb) throw new Error("Supabase is not configured");
 
-  const desk = await resolveNarrativeDesk(params.deskId ?? null, params.actorId);
+  const desk = await resolveNarrativeDesk(
+    params.deskId ?? null,
+    params.actorId,
+  );
   const generated = await generateSessionArtifacts({
     catalystIds: params.catalystIds,
     query: params.query,
@@ -120,7 +129,10 @@ export async function createNarrativeSession(params: {
     payload: { catalystCount: params.catalystIds.length },
   });
   await addSessionLinks(session.id, params.links ?? []);
-  await addSessionTags(session.id, buildTags(params.tags, generated.sensemaking.narrativeGroups));
+  await addSessionTags(
+    session.id,
+    buildTags(params.tags, generated.sensemaking.narrativeGroups),
+  );
   return getNarrativeSessionDetail(session.id);
 }
 
@@ -130,10 +142,15 @@ export async function getNarrativeSessionDetail(
   const sb = getSupabaseClient();
   if (!sb) throw new Error("Supabase is not configured");
 
-  await sb.from("narrative_sessions").update({ last_opened_at: new Date().toISOString() }).eq("id", sessionId);
+  await sb
+    .from("narrative_sessions")
+    .update({ last_opened_at: new Date().toISOString() })
+    .eq("id", sessionId);
   const { data: sessionRow, error } = await sb
     .from("narrative_sessions")
-    .select(`${sessionFields}, narrative_desks(id, name, slug, color, map_image_url, map_image_prompt, map_image_updated_at, created_by, created_at, updated_at)`)
+    .select(
+      `${sessionFields}, narrative_desks(id, name, slug, color, map_image_url, map_image_prompt, map_image_updated_at, created_by, created_at, updated_at)`,
+    )
     .eq("id", sessionId)
     .single();
 
@@ -172,13 +189,21 @@ export async function updateNarrativeSession(params: {
   if (params.title) patch.title = params.title;
   if (params.color) patch.color = params.color;
   if (params.status) patch.status = params.status;
-  if (params.coverImageUrl !== undefined) patch.cover_image_url = params.coverImageUrl;
-  if (params.coverImagePrompt !== undefined) patch.cover_image_prompt = params.coverImagePrompt;
-  if (params.coverImageUrl !== undefined || params.coverImagePrompt !== undefined) {
+  if (params.coverImageUrl !== undefined)
+    patch.cover_image_url = params.coverImageUrl;
+  if (params.coverImagePrompt !== undefined)
+    patch.cover_image_prompt = params.coverImagePrompt;
+  if (
+    params.coverImageUrl !== undefined ||
+    params.coverImagePrompt !== undefined
+  ) {
     patch.cover_image_updated_at = new Date().toISOString();
   }
 
-  const { error } = await sb.from("narrative_sessions").update(patch).eq("id", params.sessionId);
+  const { error } = await sb
+    .from("narrative_sessions")
+    .update(patch)
+    .eq("id", params.sessionId);
   if (error) throw new Error(`Session update failed: ${error.message}`);
   return getNarrativeSessionDetail(params.sessionId);
 }
@@ -189,7 +214,10 @@ export async function deleteNarrativeSession(
   const sb = getSupabaseClient();
   if (!sb) throw new Error("Supabase is not configured");
 
-  const { error } = await sb.from("narrative_sessions").delete().eq("id", sessionId);
+  const { error } = await sb
+    .from("narrative_sessions")
+    .delete()
+    .eq("id", sessionId);
   if (error) throw new Error(`Session delete failed: ${error.message}`);
   return { id: sessionId, deleted: true };
 }
@@ -296,8 +324,12 @@ function toSession(row: Record<string, unknown>): NarrativeSession {
     lastOpenedAt: row.last_opened_at ? String(row.last_opened_at) : null,
     generatedAt: row.generated_at ? String(row.generated_at) : null,
     coverImageUrl: row.cover_image_url ? String(row.cover_image_url) : null,
-    coverImagePrompt: row.cover_image_prompt ? String(row.cover_image_prompt) : null,
-    coverImageUpdatedAt: row.cover_image_updated_at ? String(row.cover_image_updated_at) : null,
+    coverImagePrompt: row.cover_image_prompt
+      ? String(row.cover_image_prompt)
+      : null,
+    coverImageUpdatedAt: row.cover_image_updated_at
+      ? String(row.cover_image_updated_at)
+      : null,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };

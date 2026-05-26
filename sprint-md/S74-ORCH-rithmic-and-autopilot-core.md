@@ -6,13 +6,13 @@ Fourth. This sprint is the core execution and broker-readiness lane.
 
 ## Tracks
 
-| Track | Linear | Owner | Scope |
-| --- | --- | --- | --- |
-| S74-T1 | SOL-54 | Sam | Ship Rithmic gateway sidecar |
-| S74-T2 | SOL-55 | Sam | Fix GET /api/rithmic/status |
-| S74-T3 | SOL-56 | Sha | Rithmic SL/TP bracket orders |
-| S74-T4 | SOL-57 | Sha | Autopilot daily PnL + Rithmic risk state |
-| S74-T5 | SOL-58 | Sam | Autopilot signals real market snapshot |
+| Track  | Linear | Owner | Scope                                    |
+| ------ | ------ | ----- | ---------------------------------------- |
+| S74-T1 | SOL-54 | Sam   | Ship Rithmic gateway sidecar             |
+| S74-T2 | SOL-55 | Sam   | Fix GET /api/rithmic/status              |
+| S74-T3 | SOL-56 | Sha   | Rithmic SL/TP bracket orders             |
+| S74-T4 | SOL-57 | Sha   | Autopilot daily PnL + Rithmic risk state |
+| S74-T5 | SOL-58 | Sam   | Autopilot signals real market snapshot   |
 
 ## References
 

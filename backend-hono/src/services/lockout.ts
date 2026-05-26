@@ -140,7 +140,9 @@ export function lockUntilDeskSession(userId: string): LockoutState {
   }
 
   if (!earliestWindow) {
-    log.info("No upcoming desk plan windows, falling back to 30m lockout", { userId });
+    log.info("No upcoming desk plan windows, falling back to 30m lockout", {
+      userId,
+    });
     return setLockout(userId, true, DEFAULT_DURATION_MS, {
       reason: "desk_session",
       scheduledBy: "desk_plan",

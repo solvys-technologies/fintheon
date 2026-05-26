@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { useAuditLog, type AuditRecord, type AuditQueryFilters } from "../../hooks/useAuditLog";
+import {
+  useAuditLog,
+  type AuditRecord,
+  type AuditQueryFilters,
+} from "../../hooks/useAuditLog";
 
 interface AuditTrailViewerProps {
   limit?: number;
@@ -46,7 +50,9 @@ export function AuditTrailViewer({ limit = 20 }: AuditTrailViewerProps) {
   if (error) {
     return (
       <div className="rounded border border-red-500/20 bg-red-500/5 px-4 py-3 flex items-center justify-between">
-        <span className="text-red-400/80 text-sm">Failed to load audit trail</span>
+        <span className="text-red-400/80 text-sm">
+          Failed to load audit trail
+        </span>
         <button
           onClick={refetch}
           className="text-xs text-[#c79f4a] hover:underline transition-opacity"

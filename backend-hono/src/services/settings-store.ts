@@ -50,7 +50,7 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
   } catch (err: unknown) {
     // Table may not exist yet — graceful fallback
     const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes("does not exist") || msg.includes("column \"settings\"")) {
+    if (msg.includes("does not exist") || msg.includes('column "settings"')) {
       console.warn(
         "[SettingsStore] user_settings settings column unavailable, using memory fallback",
       );
@@ -86,7 +86,7 @@ export async function saveUserSettings(
     return merged;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes("does not exist") || msg.includes("column \"settings\"")) {
+    if (msg.includes("does not exist") || msg.includes('column "settings"')) {
       console.log("[SettingsStore] Ensuring user_settings settings column...");
       await sql`
         CREATE TABLE IF NOT EXISTS user_settings (

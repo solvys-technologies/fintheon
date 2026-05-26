@@ -1,6 +1,10 @@
 import { ExternalLink, X } from "lucide-react";
 import type { MarketTickerQuote } from "./market-ticker-types";
-import { formatPrice, formatSigned, formatSignedPct } from "./market-ticker-types";
+import {
+  formatPrice,
+  formatSigned,
+  formatSignedPct,
+} from "./market-ticker-types";
 
 export function MarketTickerCard({
   quote,
@@ -27,8 +31,13 @@ export function MarketTickerCard({
           <p className="mt-1 text-2xl font-semibold text-[var(--fintheon-text)]">
             {formatPrice(quote.price)}
           </p>
-          <p className={positive ? "text-xs text-emerald-300" : "text-xs text-red-300"}>
-            {formatSigned(quote.change)} ({formatSignedPct(quote.changePercent)})
+          <p
+            className={
+              positive ? "text-xs text-emerald-300" : "text-xs text-red-300"
+            }
+          >
+            {formatSigned(quote.change)} ({formatSignedPct(quote.changePercent)}
+            )
           </p>
         </div>
         {onClose ? (
@@ -47,14 +56,18 @@ export function MarketTickerCard({
 
       <div className="mt-3 grid grid-cols-2 gap-2 text-[10px]">
         <Metric label="Open" value={formatPrice(quote.open)} />
-        <Metric label="Day range" value={`${formatPrice(quote.low)}-${formatPrice(quote.high)}`} />
+        <Metric
+          label="Day range"
+          value={`${formatPrice(quote.low)}-${formatPrice(quote.high)}`}
+        />
         <Metric label="7D high" value={nullablePrice(quote.rolling7dHigh)} />
         <Metric label="7D low" value={nullablePrice(quote.rolling7dLow)} />
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-2">
         <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]/50">
-          Live TV scanner · 7D {quote.historySource === "yahoo" ? "Yahoo" : "unverified"}
+          Live TV scanner · 7D{" "}
+          {quote.historySource === "yahoo" ? "Yahoo" : "unverified"}
         </span>
         <a
           href={tvUrl}
@@ -94,7 +107,8 @@ function Sparkline({
   const line = points
     .map((point, index) => {
       const x = pad + (index / (points.length - 1)) * (width - pad * 2);
-      const y = height - pad - ((point.close - min) / span) * (height - pad * 2);
+      const y =
+        height - pad - ((point.close - min) / span) * (height - pad * 2);
       return `${x.toFixed(2)},${y.toFixed(2)}`;
     })
     .join(" ");
@@ -102,7 +116,10 @@ function Sparkline({
   const color = positive ? "#34d399" : "#ef4444";
   const gradientId = `ticker-gradient-${quote.label}`;
   return (
-    <svg className="mt-3 h-[74px] w-full overflow-visible" viewBox={`0 0 ${width} ${height}`}>
+    <svg
+      className="mt-3 h-[74px] w-full overflow-visible"
+      viewBox={`0 0 ${width} ${height}`}
+    >
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity="0.34" />
@@ -110,7 +127,13 @@ function Sparkline({
         </linearGradient>
       </defs>
       <polyline points={area} fill={`url(#${gradientId})`} stroke="none" />
-      <polyline points={line} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" />
+      <polyline
+        points={line}
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }

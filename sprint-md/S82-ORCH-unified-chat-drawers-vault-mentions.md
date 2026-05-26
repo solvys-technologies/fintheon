@@ -15,11 +15,11 @@ S82 repairs the chat-input drawer system across Consilium, NarrativeFlow, RiskFl
 
 ## Assignment Matrix
 
-| Issue | Brief | Owner | Execution path | Cycle | Project | Initiative |
-| --- | --- | --- | --- | --- | --- | --- |
-| SOL-185 / S82-T1 | @sprint-md/S82-T1-composer-drawer-contract.md | local Solvys Agent | OpenCode local | not exposed by connector | Fintheon Closed Beta | Closed Beta |
-| SOL-186 / S82-T2 | @sprint-md/S82-T2-econ-calendar-header-fade.md | local Solvys Agent | OpenCode local | not exposed by connector | Fintheon Closed Beta | Closed Beta |
-| SOL-187 / S82-T3 | @sprint-md/S82-T3-vault-mention-inventory.md | local Solvys Agent | OpenCode local | not exposed by connector | Fintheon Closed Beta | Closed Beta |
+| Issue            | Brief                                           | Owner              | Execution path | Cycle                    | Project              | Initiative  |
+| ---------------- | ----------------------------------------------- | ------------------ | -------------- | ------------------------ | -------------------- | ----------- |
+| SOL-185 / S82-T1 | @sprint-md/S82-T1-composer-drawer-contract.md   | local Solvys Agent | OpenCode local | not exposed by connector | Fintheon Closed Beta | Closed Beta |
+| SOL-186 / S82-T2 | @sprint-md/S82-T2-econ-calendar-header-fade.md  | local Solvys Agent | OpenCode local | not exposed by connector | Fintheon Closed Beta | Closed Beta |
+| SOL-187 / S82-T3 | @sprint-md/S82-T3-vault-mention-inventory.md    | local Solvys Agent | OpenCode local | not exposed by connector | Fintheon Closed Beta | Closed Beta |
 | SOL-188 / S82-T4 | @sprint-md/S82-T4-deskmap-workspace-identity.md | local Solvys Agent | OpenCode local | not exposed by connector | Fintheon Closed Beta | Closed Beta |
 
 ## Wave Sequence

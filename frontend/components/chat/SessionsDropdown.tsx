@@ -313,7 +313,6 @@ export function SessionsDropdown({
             );
           })}
       </div>
-
     </div>
   );
 }

@@ -34,7 +34,9 @@ export function DeskBlockOverlay({
       </div>
       <section style={panelStyle(contentVisible)}>
         <div style={eyebrowStyle}>Jump to NarrativeFlow</div>
-        <div style={messageStyle}>Desk Block Enabled. See you next Session!</div>
+        <div style={messageStyle}>
+          Desk Block Enabled. See you next Session!
+        </div>
         {countdown ? <div style={countdownStyle}>{countdown}</div> : null}
         <button
           type="button"
@@ -77,7 +79,8 @@ function globeStyle(visible: boolean): CSSProperties {
     inset: "-8vmin",
     opacity: visible ? 0.78 : 0,
     transform: visible ? "scale(1)" : "scale(0.98)",
-    transition: "opacity 720ms ease, transform 900ms cubic-bezier(0.16, 1, 0.3, 1)",
+    transition:
+      "opacity 720ms ease, transform 900ms cubic-bezier(0.16, 1, 0.3, 1)",
   };
 }
 
@@ -90,7 +93,8 @@ function panelStyle(visible: boolean): CSSProperties {
     gap: 12,
     width: "min(390px, calc(100vw - 44px))",
     padding: "16px 18px 18px",
-    border: "1px solid color-mix(in srgb, var(--fintheon-accent, #c79f4a) 20%, transparent)",
+    border:
+      "1px solid color-mix(in srgb, var(--fintheon-accent, #c79f4a) 20%, transparent)",
     borderRadius: 8,
     background: "rgba(0, 0, 0, 0.72)",
     backdropFilter: "blur(16px) saturate(1.12)",
@@ -98,7 +102,8 @@ function panelStyle(visible: boolean): CSSProperties {
     textAlign: "center",
     opacity: visible ? 1 : 0,
     transform: visible ? "translateY(0)" : "translateY(8px)",
-    transition: "opacity 520ms ease 100ms, transform 620ms cubic-bezier(0.16, 1, 0.3, 1) 100ms",
+    transition:
+      "opacity 520ms ease 100ms, transform 620ms cubic-bezier(0.16, 1, 0.3, 1) 100ms",
   };
 }
 
@@ -113,7 +118,8 @@ const scanlineStyle: CSSProperties = {
 };
 
 const eyebrowStyle: CSSProperties = {
-  color: "color-mix(in srgb, var(--fintheon-muted, #6b6455) 76%, var(--fintheon-text, #f0ead6))",
+  color:
+    "color-mix(in srgb, var(--fintheon-muted, #6b6455) 76%, var(--fintheon-text, #f0ead6))",
   fontSize: 10,
   fontWeight: 700,
   letterSpacing: "0.22em",
@@ -137,9 +143,11 @@ const countdownStyle: CSSProperties = {
 
 const buttonStyle: CSSProperties = {
   marginTop: 2,
-  border: "1px solid color-mix(in srgb, var(--fintheon-accent, #c79f4a) 32%, transparent)",
+  border:
+    "1px solid color-mix(in srgb, var(--fintheon-accent, #c79f4a) 32%, transparent)",
   borderRadius: 6,
-  background: "color-mix(in srgb, var(--fintheon-accent, #c79f4a) 17%, transparent)",
+  background:
+    "color-mix(in srgb, var(--fintheon-accent, #c79f4a) 17%, transparent)",
   color: "var(--fintheon-accent, #c79f4a)",
   cursor: "pointer",
   fontSize: 11,

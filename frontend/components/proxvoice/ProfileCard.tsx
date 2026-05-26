@@ -1,7 +1,10 @@
 import { MessageCircle, Rss, Send } from "lucide-react";
 import type { ComponentType } from "react";
 import { XLogo } from "../../lib/shared-icons";
-import type { ProxVoiceProfile, ProxVoiceSocialLinks } from "../../lib/services";
+import type {
+  ProxVoiceProfile,
+  ProxVoiceSocialLinks,
+} from "../../lib/services";
 
 interface ProfileCardProps {
   profile: ProxVoiceProfile;
@@ -33,13 +36,20 @@ function socialHref(key: keyof ProxVoiceSocialLinks, handle: string) {
   const safe = handle.replace(/^@+/, "");
   if (key === "x") return `https://x.com/${safe}`;
   if (key === "substack") {
-    return safe.includes(".") ? `https://${safe}` : `https://${safe}.substack.com`;
+    return safe.includes(".")
+      ? `https://${safe}`
+      : `https://${safe}.substack.com`;
   }
   if (key === "telegram") return `https://t.me/${safe}`;
   return undefined;
 }
 
-export function ProfileCard({ profile, mobile = false, onClose, compact = false }: ProfileCardProps) {
+export function ProfileCard({
+  profile,
+  mobile = false,
+  onClose,
+  compact = false,
+}: ProfileCardProps) {
   const socials = SOCIALS.filter(({ key }) => profile.socialLinks[key]);
   return (
     <section

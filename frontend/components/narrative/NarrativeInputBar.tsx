@@ -36,10 +36,7 @@ import { useHarperProvider } from "../chat/ProviderDropdown";
 import { useMcpConnectors } from "../../hooks/useMcpConnectors";
 import { SKILLS } from "../../lib/skills";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
-import {
-  mentionToken,
-  type ContextMention,
-} from "../../lib/context-mentions";
+import { mentionToken, type ContextMention } from "../../lib/context-mentions";
 import { NarrativeCaoWolfAvatar } from "./NarrativeCaoWolfAvatar";
 import type { NarrativeHeadlineOption } from "./sensemaking-types";
 
@@ -148,7 +145,9 @@ export function NarrativeInputBar({
   );
   const narrativeMenuRef = useRef<HTMLDivElement>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const [selectedMentions, setSelectedMentions] = useState<ContextMention[]>([]);
+  const [selectedMentions, setSelectedMentions] = useState<ContextMention[]>(
+    [],
+  );
   const { servers, activeIds, toggle: toggleConnector } = useMcpConnectors();
   const { provider, setProvider } = useHarperProvider();
   const isOpener = mode === "opener";
@@ -217,300 +216,306 @@ export function NarrativeInputBar({
 
   return (
     <>
-    <div className={`${hostClass} narrative-chat-motion`}>
-      {shouldShowCaoWolf ? (
-        <NarrativeCaoWolfAvatar runKey={caoWolfRunKey} />
-      ) : null}
-      <RepoChatComposer
-        format={isOverlay ? "compact" : "full"}
-        maxWidth={composerMaxWidth}
-        className="pointer-events-auto w-full"
-      >
-        <FintheonAttachPopup
-          open={
-            riskFlowDrawerOpen &&
-            !showToolboxModal &&
-            mentionQuery === null &&
-            queue.length === 0
-          }
-          initialTab="riskflow"
-          onClose={onCloseDrawer ?? onOpenDrawer}
-          riskflowAlerts={riskflowAlerts}
-          onAttachHeadlines={onAttachHeadlines}
-        />
-
-        {queue.length > 0 ? (
-          <RepoChatComposerSurface
-            open
-            maxHeight="340px"
-            className="px-3 py-2"
-          >
-            <MessageQueue
-              queue={queue}
-              onEdit={onEditQueue}
-              onRemove={onRemoveQueue}
-              onReorder={onReorderQueue}
-              onSendOne={onSendQueueOne}
-              onSendAll={onSendQueueAll}
-              storageKey="fintheon:narrative-message-queue"
-            />
-          </RepoChatComposerSurface>
+      <div className={`${hostClass} narrative-chat-motion`}>
+        {shouldShowCaoWolf ? (
+          <NarrativeCaoWolfAvatar runKey={caoWolfRunKey} />
         ) : null}
-
-        {validationMessage ? (
-          <div className="pointer-events-auto mb-2 rounded-md border border-red-500/25 bg-red-500/10 px-3 py-2 text-xs text-red-200">
-            {validationMessage}
-          </div>
-        ) : null}
-
-        <FintheonToolboxModal
-          open={showToolboxModal}
-          onClose={() => setShowToolboxModal(false)}
-          skills={SKILLS}
-          activeSkill={null}
-          onSelectSkill={() => undefined}
-          disabledSkills={{}}
-          servers={servers}
-          activeIds={activeIds}
-          onToggleConnector={toggleConnector}
-        />
-
-        <ContextMentionDrawer
-          open={mentionQuery !== null}
-          query={mentionQuery ?? ""}
-          selected={selectedMentions}
-          onClose={() => setMentionQuery(null)}
-          onSelect={(item) => {
-            setSelectedMentions((current) =>
-              current.some((mention) => mention.id === item.id)
-                ? current
-                : [...current, item],
-            );
-            onQueryChange(replaceMentionQuery(query, item));
-            setMentionQuery(null);
-          }}
-        />
-
-        <div
-            className={`fintheon-composer-input narrative-composer-shell relative flex flex-col rounded-2xl border backdrop-blur-xl transition ${
-            showToolboxModal ||
-            mentionQuery !== null ||
-            queue.length > 0 ||
-            riskFlowDrawerOpen
-              ? "fintheon-composer-input--drawer-open"
-              : ""
-          } ${
-            focused
-              ? "border-[var(--fintheon-accent)]/55"
-              : query
-                ? "border-[var(--fintheon-accent)]/40"
-                : "border-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/25"
-          }`}
-          style={{
-            background:
-              focused || query
-                ? "rgba(13,12,9,0.98)"
-                : "transparent",
-            transition: "border-color 0.2s ease, background 0.2s ease",
-          }}
+        <RepoChatComposer
+          format={isOverlay ? "compact" : "full"}
+          maxWidth={composerMaxWidth}
+          className="pointer-events-auto w-full"
         >
-          {attachedHeadlines.length > 0 ? (
-            <div className="flex gap-2 overflow-x-auto px-3 pt-3">
-              {attachedHeadlines.map((item) => (
-                <span
-                  key={item.id}
-                  className="narrative-chip-motion inline-flex max-w-[240px] shrink-0 items-center gap-2 rounded-md border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-accent)]/8 px-2 py-1 text-[11px] text-[var(--fintheon-accent)]"
-                >
-                  <GitBranch size={12} />
-                  <span className="truncate">{item.headline}</span>
-                  <button
-                    type="button"
-                    onClick={() => onRemoveHeadline(item.id)}
-                    className="text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]"
-                    title="Remove headline"
-                  >
-                    <X size={12} />
-                  </button>
-                </span>
-              ))}
+          <FintheonAttachPopup
+            open={
+              riskFlowDrawerOpen &&
+              !showToolboxModal &&
+              mentionQuery === null &&
+              queue.length === 0
+            }
+            initialTab="riskflow"
+            onClose={onCloseDrawer ?? onOpenDrawer}
+            riskflowAlerts={riskflowAlerts}
+            onAttachHeadlines={onAttachHeadlines}
+          />
+
+          {queue.length > 0 ? (
+            <RepoChatComposerSurface
+              open
+              maxHeight="340px"
+              className="px-3 py-2"
+            >
+              <MessageQueue
+                queue={queue}
+                onEdit={onEditQueue}
+                onRemove={onRemoveQueue}
+                onReorder={onReorderQueue}
+                onSendOne={onSendQueueOne}
+                onSendAll={onSendQueueAll}
+                storageKey="fintheon:narrative-message-queue"
+              />
+            </RepoChatComposerSurface>
+          ) : null}
+
+          {validationMessage ? (
+            <div className="pointer-events-auto mb-2 rounded-md border border-red-500/25 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+              {validationMessage}
             </div>
           ) : null}
 
-          <textarea
-            value={query}
-            onChange={(event) => {
-              if (showToolboxModal) setShowToolboxModal(false);
-              setMentionQuery(getMentionQuery(event.target.value));
-              onQueryChange(event.target.value);
-            }}
-            onPaste={onPaste}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                handleAction();
-              }
-            }}
-            placeholder={placeholder}
-            rows={rows}
-            className="max-h-[150px] min-h-[52px] w-full resize-none bg-transparent px-4 py-3 text-[13px] leading-6 text-[var(--fintheon-text)] outline-none placeholder:text-[var(--fintheon-muted)]/60"
+          <FintheonToolboxModal
+            open={showToolboxModal}
+            onClose={() => setShowToolboxModal(false)}
+            skills={SKILLS}
+            activeSkill={null}
+            onSelectSkill={() => undefined}
+            disabledSkills={{}}
+            servers={servers}
+            activeIds={activeIds}
+            onToggleConnector={toggleConnector}
           />
 
-          <div className="flex flex-wrap items-center justify-between gap-2 px-3 pb-3">
-            <div className="flex min-w-0 items-center gap-1">
-              <button
-                type="button"
+          <ContextMentionDrawer
+            open={mentionQuery !== null}
+            query={mentionQuery ?? ""}
+            selected={selectedMentions}
+            onClose={() => setMentionQuery(null)}
+            onSelect={(item) => {
+              setSelectedMentions((current) =>
+                current.some((mention) => mention.id === item.id)
+                  ? current
+                  : [...current, item],
+              );
+              onQueryChange(replaceMentionQuery(query, item));
+              setMentionQuery(null);
+            }}
+          />
+
+          <div
+            className={`fintheon-composer-input narrative-composer-shell relative flex flex-col rounded-2xl border backdrop-blur-xl transition ${
+              showToolboxModal ||
+              mentionQuery !== null ||
+              queue.length > 0 ||
+              riskFlowDrawerOpen
+                ? "fintheon-composer-input--drawer-open"
+                : ""
+            } ${
+              focused
+                ? "border-[var(--fintheon-accent)]/55"
+                : query
+                  ? "border-[var(--fintheon-accent)]/40"
+                  : "border-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/25"
+            }`}
+            style={{
+              background:
+                focused || query ? "rgba(13,12,9,0.98)" : "transparent",
+              transition: "border-color 0.2s ease, background 0.2s ease",
+            }}
+          >
+            {attachedHeadlines.length > 0 ? (
+              <div className="flex gap-2 overflow-x-auto px-3 pt-3">
+                {attachedHeadlines.map((item) => (
+                  <span
+                    key={item.id}
+                    className="narrative-chip-motion inline-flex max-w-[240px] shrink-0 items-center gap-2 rounded-md border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-accent)]/8 px-2 py-1 text-[11px] text-[var(--fintheon-accent)]"
+                  >
+                    <GitBranch size={12} />
+                    <span className="truncate">{item.headline}</span>
+                    <button
+                      type="button"
+                      onClick={() => onRemoveHeadline(item.id)}
+                      className="text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]"
+                      title="Remove headline"
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            ) : null}
+
+            <textarea
+              value={query}
+              onChange={(event) => {
+                if (showToolboxModal) setShowToolboxModal(false);
+                setMentionQuery(getMentionQuery(event.target.value));
+                onQueryChange(event.target.value);
+              }}
+              onPaste={onPaste}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  handleAction();
+                }
+              }}
+              placeholder={placeholder}
+              rows={rows}
+              className="max-h-[150px] min-h-[52px] w-full resize-none bg-transparent px-4 py-3 text-[13px] leading-6 text-[var(--fintheon-text)] outline-none placeholder:text-[var(--fintheon-muted)]/60"
+            />
+
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 pb-3">
+              <div className="flex min-w-0 items-center gap-1">
+                <button
+                  type="button"
                   onClick={() => {
                     if (showToolboxModal) setShowToolboxModal(false);
                     if (showNarrativeMenu) setShowNarrativeMenu(false);
                     onOpenDrawer();
                   }}
-                aria-pressed={riskFlowDrawerOpen}
-                className={`narrative-icon-button flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-                  riskFlowDrawerOpen
-                    ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
-                    : "text-zinc-500 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
-                }`}
-                title={attachLabel}
-              >
-                {isOpener ? <Paperclip size={15} /> : <Plus size={15} />}
-              </button>
-              {hasNarrativeSelector ? (
-                <div ref={narrativeMenuRef} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (showToolboxModal) setShowToolboxModal(false);
-                      if (riskFlowDrawerOpen) (onCloseDrawer ?? onOpenDrawer)();
-                      setShowNarrativeMenu((open) => !open);
-                    }}
-                    aria-haspopup="menu"
-                    aria-expanded={showNarrativeMenu}
-                    className={`narrative-icon-button flex h-8 items-center gap-1.5 rounded-lg px-2 text-[10px] transition-colors ${
-                      showNarrativeMenu
-                        ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
-                        : "text-zinc-500 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
-                    }`}
-                    title="Select Narrative"
-                  >
-                    <GitBranch size={13} />
-                    {!isOverlay ? (
-                      <span className="max-w-[112px] truncate">
-                        Select Narrative
-                      </span>
-                    ) : null}
-                    {selectedNarrativeCount > 0 ? (
-                      <span className="rounded-sm bg-[var(--fintheon-accent)]/12 px-1 text-[9px] text-[var(--fintheon-accent)]">
-                        {selectedNarrativeCount}
-                      </span>
-                    ) : null}
-                    <ChevronDown size={10} className="opacity-55" />
-                  </button>
-                  {showNarrativeMenu ? (
-                    <div
-                      role="menu"
-                      className="absolute bottom-10 left-0 z-50 w-64 overflow-hidden rounded-md border border-[var(--fintheon-accent)]/16 bg-[#0d0a06] shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
-                    >
-                      <div className="border-b border-[var(--fintheon-accent)]/10 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/70">
-                        Select Narrative
-                      </div>
-                      <div className="max-h-56 overflow-y-auto p-1">
-                        {narrativeChips.map((chip) => {
-                          const selected = selectedNarrativeSlugs?.has(chip.slug) ?? false;
-                          return (
-                            <button
-                              key={chip.slug}
-                              type="button"
-                              role="menuitemcheckbox"
-                              aria-checked={selected}
-                              onClick={() => onToggleNarrative?.(chip.slug)}
-                              className={`flex w-full items-center gap-2 rounded-[4px] px-2 py-2 text-left transition ${
-                                selected
-                                  ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
-                                  : "text-[var(--fintheon-text)]/74 hover:bg-[var(--fintheon-accent)]/7 hover:text-[var(--fintheon-text)]"
-                              }`}
-                            >
-                              <GitBranch size={12} className="shrink-0" />
-                              <span className="min-w-0 flex-1 truncate text-[12px] font-medium">
-                                {chip.label}
-                              </span>
-                              {selected ? <Check size={12} className="shrink-0" /> : null}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-              {!isOverlay ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (showNarrativeMenu) setShowNarrativeMenu(false);
-                    if (!showToolboxModal && riskFlowDrawerOpen) {
-                      (onCloseDrawer ?? onOpenDrawer)();
-                    }
-                    setShowToolboxModal((open) => !open);
-                  }}
-                  aria-pressed={showToolboxModal}
-                  className={`narrative-icon-button relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-                    showToolboxModal
+                  aria-pressed={riskFlowDrawerOpen}
+                  className={`narrative-icon-button flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                    riskFlowDrawerOpen
                       ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
                       : "text-zinc-500 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
                   }`}
-                  title="Skills and connectors"
+                  title={attachLabel}
                 >
-                  <Plug size={14} />
-                  {(activeIds.length > 0 || selectedNarrativeSlugs?.size) ? (
-                    <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[var(--fintheon-accent)]" />
-                  ) : null}
+                  {isOpener ? <Paperclip size={15} /> : <Plus size={15} />}
                 </button>
-              ) : null}
-            </div>
+                {hasNarrativeSelector ? (
+                  <div ref={narrativeMenuRef} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (showToolboxModal) setShowToolboxModal(false);
+                        if (riskFlowDrawerOpen)
+                          (onCloseDrawer ?? onOpenDrawer)();
+                        setShowNarrativeMenu((open) => !open);
+                      }}
+                      aria-haspopup="menu"
+                      aria-expanded={showNarrativeMenu}
+                      className={`narrative-icon-button flex h-8 items-center gap-1.5 rounded-lg px-2 text-[10px] transition-colors ${
+                        showNarrativeMenu
+                          ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+                          : "text-zinc-500 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
+                      }`}
+                      title="Select Narrative"
+                    >
+                      <GitBranch size={13} />
+                      {!isOverlay ? (
+                        <span className="max-w-[112px] truncate">
+                          Select Narrative
+                        </span>
+                      ) : null}
+                      {selectedNarrativeCount > 0 ? (
+                        <span className="rounded-sm bg-[var(--fintheon-accent)]/12 px-1 text-[9px] text-[var(--fintheon-accent)]">
+                          {selectedNarrativeCount}
+                        </span>
+                      ) : null}
+                      <ChevronDown size={10} className="opacity-55" />
+                    </button>
+                    {showNarrativeMenu ? (
+                      <div
+                        role="menu"
+                        className="absolute bottom-10 left-0 z-50 w-64 overflow-hidden rounded-md border border-[var(--fintheon-accent)]/16 bg-[#0d0a06] shadow-[0_18px_50px_rgba(0,0,0,0.5)]"
+                      >
+                        <div className="border-b border-[var(--fintheon-accent)]/10 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/70">
+                          Select Narrative
+                        </div>
+                        <div className="max-h-56 overflow-y-auto p-1">
+                          {narrativeChips.map((chip) => {
+                            const selected =
+                              selectedNarrativeSlugs?.has(chip.slug) ?? false;
+                            return (
+                              <button
+                                key={chip.slug}
+                                type="button"
+                                role="menuitemcheckbox"
+                                aria-checked={selected}
+                                onClick={() => onToggleNarrative?.(chip.slug)}
+                                className={`flex w-full items-center gap-2 rounded-[4px] px-2 py-2 text-left transition ${
+                                  selected
+                                    ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+                                    : "text-[var(--fintheon-text)]/74 hover:bg-[var(--fintheon-accent)]/7 hover:text-[var(--fintheon-text)]"
+                                }`}
+                              >
+                                <GitBranch size={12} className="shrink-0" />
+                                <span className="min-w-0 flex-1 truncate text-[12px] font-medium">
+                                  {chip.label}
+                                </span>
+                                {selected ? (
+                                  <Check size={12} className="shrink-0" />
+                                ) : null}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+                {!isOverlay ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (showNarrativeMenu) setShowNarrativeMenu(false);
+                      if (!showToolboxModal && riskFlowDrawerOpen) {
+                        (onCloseDrawer ?? onOpenDrawer)();
+                      }
+                      setShowToolboxModal((open) => !open);
+                    }}
+                    aria-pressed={showToolboxModal}
+                    className={`narrative-icon-button relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                      showToolboxModal
+                        ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+                        : "text-zinc-500 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
+                    }`}
+                    title="Skills and connectors"
+                  >
+                    <Plug size={14} />
+                    {activeIds.length > 0 || selectedNarrativeSlugs?.size ? (
+                      <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[var(--fintheon-accent)]" />
+                    ) : null}
+                  </button>
+                ) : null}
+              </div>
 
-            <div className="flex min-w-0 items-center gap-1">
-              <FintheonProviderTrigger
-                provider={provider}
-                compact={isOverlay}
-                onClick={openProviderModal}
-              />
-              <ReasoningLevelSelector
-                value={reasoningLevel}
-                onChange={onReasoningLevelChange}
-                compact={isOverlay}
-              />
-              <UsageRing
-                stats={contextStats}
-                draftText={query}
-                queuedCount={queue.length}
-              />
-              <button
-                type="button"
-                onClick={handleAction}
-                disabled={!canSubmit && !canQueue}
-                className="fintheon-send-button inline-flex h-9 w-9 items-center justify-center rounded-full"
-                title={canQueue ? "Queue narrative request" : (submitLabel ?? "Run narrative request")}
-              >
-                {isSubmitting && !canQueue ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <ArrowUp size={16} strokeWidth={2.5} />
-                )}
-              </button>
+              <div className="flex min-w-0 items-center gap-1">
+                <FintheonProviderTrigger
+                  provider={provider}
+                  compact={isOverlay}
+                  onClick={openProviderModal}
+                />
+                <ReasoningLevelSelector
+                  value={reasoningLevel}
+                  onChange={onReasoningLevelChange}
+                  compact={isOverlay}
+                />
+                <UsageRing
+                  stats={contextStats}
+                  draftText={query}
+                  queuedCount={queue.length}
+                />
+                <button
+                  type="button"
+                  onClick={handleAction}
+                  disabled={!canSubmit && !canQueue}
+                  className="fintheon-send-button inline-flex h-9 w-9 items-center justify-center rounded-full"
+                  title={
+                    canQueue
+                      ? "Queue narrative request"
+                      : (submitLabel ?? "Run narrative request")
+                  }
+                >
+                  {isSubmitting && !canQueue ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <ArrowUp size={16} strokeWidth={2.5} />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </RepoChatComposer>
-    </div>
-    <FintheonProviderModal
-      open={showProviderModal}
-      onClose={() => setShowProviderModal(false)}
-      provider={provider}
-      onChange={setProvider}
-      anchorRect={providerAnchorRect}
-    />
+        </RepoChatComposer>
+      </div>
+      <FintheonProviderModal
+        open={showProviderModal}
+        onClose={() => setShowProviderModal(false)}
+        provider={provider}
+        onChange={setProvider}
+        anchorRect={providerAnchorRect}
+      />
     </>
   );
 }

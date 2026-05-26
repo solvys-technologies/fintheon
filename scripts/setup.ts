@@ -122,7 +122,11 @@ async function installDependencies() {
   const workspaces = [
     { name: "root", dir: ROOT },
     { name: "frontend", dir: FRONTEND_DIR },
-    { name: "backend-hono", dir: BACKEND_DIR, args: ["install", "--omit=peer"] },
+    {
+      name: "backend-hono",
+      dir: BACKEND_DIR,
+      args: ["install", "--omit=peer"],
+    },
   ];
 
   for (const ws of workspaces) {

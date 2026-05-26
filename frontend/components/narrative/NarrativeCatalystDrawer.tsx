@@ -72,7 +72,9 @@ export function NarrativeCatalystDrawer({
 
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
           {isLoading ? <DrawerState text="Loading RiskFlow" /> : null}
-          {!isLoading && filtered.length === 0 ? <DrawerState text="No catalysts" /> : null}
+          {!isLoading && filtered.length === 0 ? (
+            <DrawerState text="No catalysts" />
+          ) : null}
           {relatedCatalysts.length > 0 ? (
             <section className="space-y-2">
               <p className="px-1 text-[10px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/70">
@@ -169,5 +171,8 @@ function toOption(item: SensemakingCatalyst): NarrativeHeadlineOption {
 }
 
 function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(value));
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(new Date(value));
 }

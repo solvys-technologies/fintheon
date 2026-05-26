@@ -96,9 +96,7 @@ export function createOllamaFallbackModel(
   });
 }
 
-export async function createChainModel(
-  options?: StrandsModelOptions,
-): Promise<{
+export async function createChainModel(options?: StrandsModelOptions): Promise<{
   model: OpenAIModel;
   provider: "deepseek-direct" | "deepseek-oc-api" | "ollama-qwen";
 }> {

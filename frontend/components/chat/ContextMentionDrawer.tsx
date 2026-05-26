@@ -64,7 +64,8 @@ export function ContextMentionDrawer({
         if (!cancelled) setItems(next);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Mentions unavailable");
+        if (!cancelled)
+          setError(err instanceof Error ? err.message : "Mentions unavailable");
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
@@ -151,7 +152,8 @@ function MentionIcon({ item }: { item: ContextMention }) {
   const className =
     "mt-0.5 shrink-0 text-[color-mix(in_srgb,var(--fintheon-accent)_55%,transparent)]";
   if (item.type === "memo") return <Scroll size={13} className={className} />;
-  if (item.type === "chart") return <ChartCandlestick size={13} className={className} />;
+  if (item.type === "chart")
+    return <ChartCandlestick size={13} className={className} />;
   if (item.type === "agent") return <Bot size={13} className={className} />;
   if (item.type === "document" || item.type === "vault")
     return <FileText size={13} className={className} />;

@@ -46,7 +46,9 @@ export function useNarrativeOrchestra({
         ...current,
         source: "fallback",
         fallbackReason:
-          err instanceof Error ? err.message : "Narrative Orchestra unavailable.",
+          err instanceof Error
+            ? err.message
+            : "Narrative Orchestra unavailable.",
       }));
       setError(err instanceof Error ? err.message : "Projection unavailable");
     } finally {

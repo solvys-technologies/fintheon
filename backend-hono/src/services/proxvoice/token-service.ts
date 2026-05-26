@@ -23,9 +23,12 @@ export async function getPublicVoiceProfile(req: {
   const profile = await getOrCreateProfile(req.userId, req.email);
   const appState = (await getAppState(req.userId)) ?? {};
   const socialLinks = normalizeSocialLinks(appState.socialLinks);
-  const bio = typeof appState.bio === "string" ? appState.bio.slice(0, 180) : null;
+  const bio =
+    typeof appState.bio === "string" ? appState.bio.slice(0, 180) : null;
   const position =
-    typeof appState.position === "string" ? appState.position.slice(0, 48) : null;
+    typeof appState.position === "string"
+      ? appState.position.slice(0, 48)
+      : null;
   const broker =
     typeof appState.broker === "string" ? appState.broker.slice(0, 48) : null;
   return {
@@ -68,5 +71,9 @@ export async function createProxVoiceToken(req: {
     canPublishData: true,
   });
   updatePresence({ profile, surface: "fintheon" });
-  return { token: await token.toJwt(), url: resolveLiveKitUrl(), roomName: PROXVOICE_ROOM };
+  return {
+    token: await token.toJwt(),
+    url: resolveLiveKitUrl(),
+    roomName: PROXVOICE_ROOM,
+  };
 }

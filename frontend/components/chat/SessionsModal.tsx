@@ -155,15 +155,18 @@ export function SessionsModal({
     item?.scrollIntoView({ block: "nearest" });
   }, [selectedIndex]);
 
-  const handleDelete = useCallback(async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await backend.ai.archiveConversation(id);
-      setSessions((prev) => prev.filter((s) => s.id !== id));
-    } catch {
-      /* ignore */
-    }
-  }, [backend]);
+  const handleDelete = useCallback(
+    async (id: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      try {
+        await backend.ai.archiveConversation(id);
+        setSessions((prev) => prev.filter((s) => s.id !== id));
+      } catch {
+        /* ignore */
+      }
+    },
+    [backend],
+  );
 
   if (!isOpen) return null;
 

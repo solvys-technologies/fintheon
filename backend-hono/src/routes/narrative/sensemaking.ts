@@ -7,7 +7,9 @@ const sensemakingBodySchema = z.object({
   attachedHeadlineIds: z.array(z.string().trim().min(1)).min(1).max(12),
   orientation: z.enum(["horizontal", "vertical"]).default("horizontal"),
   renderMode: z.enum(["flow", "mermaid"]).default("flow"),
-  reasoningLevel: z.enum(["quick", "standard", "deep", "max"]).default("standard"),
+  reasoningLevel: z
+    .enum(["quick", "standard", "deep", "max"])
+    .default("standard"),
 });
 
 export async function createNarrativeSensemaking(c: Context) {
