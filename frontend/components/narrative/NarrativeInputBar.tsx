@@ -206,7 +206,9 @@ export function NarrativeInputBar({
   return (
     <>
       <div className={`${hostClass} narrative-chat-motion`}>
-        {caoWolfEnabled ? <NarrativeCaoWolfAvatar runKey={caoWolfRunKey} /> : null}
+        {caoWolfEnabled ? (
+          <NarrativeCaoWolfAvatar runKey={caoWolfRunKey} />
+        ) : null}
         <PromptBox
           value={query}
           onValueChange={onQueryChange}
@@ -269,7 +271,11 @@ export function NarrativeInputBar({
           contextStats={contextStats}
           workDrawerOpen={queue.length > 0}
           workDrawerSlot={
-            <RepoChatComposerSurface open maxHeight="340px" className="px-3 py-2">
+            <RepoChatComposerSurface
+              open
+              maxHeight="340px"
+              className="px-3 py-2"
+            >
               <MessageQueue
                 queue={queue}
                 onEdit={onEditQueue}
