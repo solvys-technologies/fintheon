@@ -4,6 +4,7 @@ import { formatEasternClockRange } from "../../lib/eastern-time-format";
 import { cn } from "../../lib/utils";
 import { FadingRuler } from "../shared/FadingRuler";
 import type { DayPlan, DayPlanWindow } from "../../types/day-plan";
+import { DeskPlanInlineWidget } from "../desk/DeskPlanInlineWidget";
 import { EmptyTimeline } from "./DeskPlanMapEmptyStates";
 import {
   formatClock,
@@ -13,7 +14,7 @@ import {
 import { DeletePlanButton } from "./DeskPlanDeleteButton";
 
 const POP_OUT_CARD =
-  "fintheon-liquid-surface relative overflow-hidden transition-[transform,border-color,background-color,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform hover:-translate-y-0.5 hover:scale-[1.006] active:translate-y-0 active:scale-[0.995]";
+  "desk-sprint-event-card relative overflow-hidden transition-[transform,border-color,background-color,box-shadow,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform hover:-translate-y-0.5 hover:scale-[1.006] active:translate-y-0 active:scale-[0.995]";
 
 interface SprintBlockItem {
   plan: DayPlan;
@@ -107,7 +108,13 @@ function SprintDayRow({
   onDelete: (plan: DayPlan) => void;
   onToggle: (blockId: string) => void;
 }) {
-  const rowHeight = Math.max(62, row.blocks.length * 38 + 14);
+  const hasExpandedBlock = row.blocks.some(
+    (item) => `${item.plan.id}-${item.window.id}` === expandedId,
+  );
+  const rowHeight = Math.max(
+    62,
+    row.blocks.length * 42 + 14 + (hasExpandedBlock ? 172 : 0),
+  );
   return (
     <div
       className="relative grid grid-cols-[62px_1fr] gap-2 py-2"
@@ -138,7 +145,7 @@ function SprintDayRow({
                 plan={item.plan}
                 window={item.window}
                 overlap={item.overlap}
-                top={index * 38}
+                top={index * 42}
                 isExpanded={expandedId === blockId}
                 deletingId={deletingId}
                 onDelete={onDelete}
@@ -172,6 +179,10 @@ function SprintBlock({
   onToggle: () => void;
 }) {
   const tone = getWindowTone(window);
+  const visualWidth = isExpanded
+    ? Math.min(72, Math.max(44, overlap.width))
+    : Math.min(overlap.width, 92);
+  const visualLeft = Math.max(0, Math.min(overlap.left, 100 - visualWidth));
   return (
     <div
       role="button"
@@ -180,12 +191,18 @@ function SprintBlock({
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") onToggle();
       }}
-      className={cn(POP_OUT_CARD, "absolute min-w-[138px] p-2 text-left")}
+      data-expanded={isExpanded ? "true" : "false"}
+      className={cn(
+        POP_OUT_CARD,
+        "absolute min-w-[138px] p-2 text-left",
+        isExpanded && "z-30",
+      )}
       style={{
-        left: `min(${overlap.left}%, calc(100% - 138px))`,
+        left: `${visualLeft}%`,
         top,
-        width: `${Math.min(overlap.width, 92)}%`,
+        width: `${visualWidth}%`,
         borderColor: tone.color,
+        ["--desk-event-tone" as string]: tone.color,
       }}
     >
       <span
@@ -218,13 +235,7 @@ function SprintBlock({
           )}
         </div>
       </div>
-      {isExpanded ? (
-        <p className="mt-2 text-[9px] leading-relaxed text-[var(--fintheon-text)]/62">
-          {window.econForecast?.aiPrediction ??
-            plan.deskTheme ??
-            "Awaiting agent forecast."}
-        </p>
-      ) : null}
+      <DeskPlanInlineWidget plan={plan} window={window} isOpen={isExpanded} />
     </div>
   );
 }
