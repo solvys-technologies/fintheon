@@ -261,7 +261,7 @@ function formatBriefTime(iso: string) {
 
 function prepareDeskBriefMarkdown(text: string) {
   return text.replace(
-    /(^|\n)(\s*(?:[-*]\s*)?)(\d{1,2}:\d{2})(?=:)/g,
+    /(^|\n)(\s*(?:[-*]\s*)?)(\d{1,2}:\d{2}):/g,
     (_match, prefix: string, lead: string, time: string) =>
       `${prefix}${lead}<brief-time>${time}</brief-time>`,
   );

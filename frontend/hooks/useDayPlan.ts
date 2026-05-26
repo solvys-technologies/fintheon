@@ -36,7 +36,10 @@ export function useDayPlan() {
           setIsLoading(false);
         }
       } catch {
-        // Silently retry on next poll
+        if (!cancelled) {
+          setError("Network error");
+          setIsLoading(false);
+        }
       }
     }
 
