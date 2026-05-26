@@ -9,6 +9,21 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-26T01:55:00-04:00",
+    agent: "codex",
+    summary:
+      "v7.0.1 unification deploy: captured the completed NarrativeFlow/CAO chat unification, Fileroom-grounded agent memory, global Supabase-backed server secret vault, ProxVoice global config, futures-watchlist research constraints, selected-state visual cleanup, and installer/update pointers for the v7 release line.",
+    files: [
+      "package.json",
+      "mobile/package.json",
+      "scripts/fintheon-setup.sh",
+      "scripts/fintheon-update.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-26T00:56:00-04:00",
     agent: "codex",
     summary:
