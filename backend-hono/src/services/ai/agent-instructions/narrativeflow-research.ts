@@ -34,6 +34,7 @@ Futures-specific forks:
 - catalysts-to-watch-forward: Name the next catalysts, tells, and breakpoints to monitor going forward.
 
 Required output discipline:
+- Start with a brief text acknowledgement before calling NarrativeFlow UI tools or filling any rail.
 - Start with the watched-symbol read.
 - Cite attached catalysts and vault notes when present.
 - Mark external drivers as drivers, not trade targets.

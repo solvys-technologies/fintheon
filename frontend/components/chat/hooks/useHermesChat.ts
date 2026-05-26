@@ -31,6 +31,7 @@ export interface HermesWorkspaceContext {
   type?: string;
   status?: string;
   color?: string;
+  hasArtifacts?: boolean;
   surfaceId?: string;
 }
 

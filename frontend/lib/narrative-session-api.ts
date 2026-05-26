@@ -20,6 +20,7 @@ export interface CreateNarrativeSessionPayload {
   narrativeSlugs: string[];
   title: string;
   color: string;
+  deferArtifacts?: boolean;
   reasoningLevel?: ReasoningLevel;
 }
 
@@ -50,6 +51,7 @@ export async function createNarrativeSession(
         catalystIds: payload.catalystIds,
         title: payload.title,
         color: payload.color,
+        deferArtifacts: payload.deferArtifacts,
         reasoningLevel: payload.reasoningLevel,
         tags: payload.narrativeSlugs.map((tag) => ({
           tag,

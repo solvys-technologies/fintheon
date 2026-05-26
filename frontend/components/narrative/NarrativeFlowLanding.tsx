@@ -13,7 +13,6 @@ import {
   NO_NARRATIVE_LABEL,
   NO_NARRATIVE_SLUG,
   selectedNarrativeColor as colorForNarrative,
-  selectedNarrativeTags,
   type NarrativeSelectionChip,
 } from "./narrative-selection";
 
@@ -23,6 +22,7 @@ export interface NarrativeCreateSessionInput {
   narrativeSlugs: string[];
   title: string;
   color: string;
+  deferArtifacts?: boolean;
   reasoningLevel?: ReasoningLevel;
 }
 
@@ -32,6 +32,11 @@ interface NarrativeFlowLandingProps {
   statusMessage?: string | null;
   reasoningLevel: ReasoningLevel;
   onCreateSession: (input: NarrativeCreateSessionInput) => void;
+  onOpenSessionChat: (input: {
+    sessionId: string;
+    message: string;
+    reasoningLevel?: ReasoningLevel;
+  }) => void;
   onReasoningLevelChange: (level: ReasoningLevel) => void;
 }
 
@@ -44,6 +49,7 @@ export function NarrativeFlowLanding({
   statusMessage = null,
   reasoningLevel,
   onCreateSession,
+  onOpenSessionChat,
   onReasoningLevelChange,
 }: NarrativeFlowLandingProps) {
   const { headlines } = useNarrativeRiskFlowHeadlines();
@@ -169,17 +175,33 @@ export function NarrativeFlowLanding({
 
   function submitSessionWithQuery(nextQuery: string, contextSuffix = "") {
     const enrichedQuery = `${nextQuery}${contextSuffix}`;
+    const selectedSessionId = selectedExistingSessionId(
+      sessions,
+      selectedNarratives,
+    );
     setIsGreetingLeaving(true);
+    if (selectedSessionId) {
+      onOpenSessionChat({
+        sessionId: selectedSessionId,
+        message: enrichedQuery,
+        reasoningLevel,
+      });
+      setQuery("");
+      setValidationMessage(null);
+      setIsPickerOpen(false);
+      return;
+    }
     onCreateSession({
       query: enrichedQuery,
       catalystIds: Array.from(selectedIds),
-      narrativeSlugs: selectedNarrativeTags(narrativeChips, selectedNarratives),
+      narrativeSlugs: [],
       title: deriveTitle(nextQuery, attachedHeadlines),
       color: colorForNarrative(
         narrativeChips,
         selectedNarratives,
         DEFAULT_COLOR,
       ),
+      deferArtifacts: true,
       reasoningLevel,
     });
     setQuery("");
@@ -333,4 +355,14 @@ function estimateLandingTokens(
 ): number {
   const text = `${query}\n${headlines.map((item) => item.headline).join("\n")}`;
   return Math.ceil(text.length / 4);
+}
+
+function selectedExistingSessionId(
+  sessions: NarrativeSessionSummary[],
+  selectedNarratives: Set<string>,
+): string | null {
+  const sessionIds = new Set(sessions.map((session) => session.id));
+  return (
+    Array.from(selectedNarratives).find((slug) => sessionIds.has(slug)) ?? null
+  );
 }

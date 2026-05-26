@@ -9,7 +9,10 @@ import {
   StickyNote,
   X,
 } from "lucide-react";
-import ChatInterface, { type ChatWorkspaceOption } from "../ChatInterface";
+import ChatInterface, {
+  type ChatInitialMessageRequest,
+  type ChatWorkspaceOption,
+} from "../ChatInterface";
 import {
   normalizeReasoningLevel,
   type ReasoningLevel,
@@ -90,6 +93,8 @@ export function NarrativeCanvas({
   const [requestedChatThreadId, setRequestedChatThreadId] = useState<
     string | null
   >(null);
+  const [initialChatMessage, setInitialChatMessage] =
+    useState<ChatInitialMessageRequest | null>(null);
   const [chatContextId, setChatContextId] = useState<string | null>(null);
   const [response, setResponse] = useState<SensemakingResponse | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -228,7 +233,15 @@ export function NarrativeCanvas({
         const bundle = await createNarrativeSession(payload);
         setActiveSession(bundle.session);
         setResponse(bundle.response);
+        setChatContextId(bundle.session.id ?? null);
         setIsResearchRailOpen(true);
+        if (payload.query.trim() && bundle.session.id) {
+          setInitialChatMessage({
+            id: `opener:${bundle.session.id}:${Date.now()}`,
+            text: payload.query,
+            resetConversation: true,
+          });
+        }
         setSessions((current) => [
           toSummary(bundle.session, bundle.session.catalystIds?.length ?? 0),
           ...current,
@@ -454,6 +467,33 @@ export function NarrativeCanvas({
     },
     [handleOpenSession],
   );
+  const handleOpenSessionChat = useCallback(
+    async (input: {
+      sessionId: string;
+      message: string;
+      reasoningLevel?: ReasoningLevel;
+    }) => {
+      setIsSubmitting(true);
+      setValidationMessage(null);
+      try {
+        await handleOpenSession(input.sessionId);
+        setChatContextId(input.sessionId);
+        setIsResearchRailOpen(true);
+        setInitialChatMessage({
+          id: `existing:${input.sessionId}:${Date.now()}`,
+          text: input.message,
+          resetConversation: true,
+        });
+      } catch (err) {
+        setValidationMessage(
+          err instanceof Error ? err.message : "Narrative session failed.",
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [handleOpenSession],
+  );
   const hasWorkspaceIvDeck = Boolean(
     response &&
     (response.anchorCatalysts.length > 0 ||
@@ -521,6 +561,8 @@ export function NarrativeCanvas({
           title: session.title,
           status: session.status,
           color: session.color,
+          hasArtifacts:
+            session.id === activeSession?.id ? Boolean(response) : undefined,
         }))
     : [];
   const chatActiveWorkspaceId = chatContextId ?? activeSession?.id ?? null;
@@ -551,6 +593,7 @@ export function NarrativeCanvas({
       reasoningLevel={reasoningLevel}
       onReasoningLevelChange={handleReasoningLevelChange}
       onCreateSession={handleCreateSession}
+      onOpenSessionChat={handleOpenSessionChat}
     />
   ) : (
     <NarrativeSessionWorkspace
@@ -579,6 +622,12 @@ export function NarrativeCanvas({
         onWorkspaceChange={handleChatContextChange}
         workspaceSelectorLabel="Attach Narrative"
         requestedConversationId={requestedChatThreadId}
+        initialMessageRequest={initialChatMessage}
+        onInitialMessageHandled={(id) =>
+          setInitialChatMessage((current) =>
+            current?.id === id ? null : current,
+          )
+        }
         emptyState={<NarrativeFlowWorkspaceGreeting session={activeSession} />}
         composerPlacement="center-until-start"
         hideHeader

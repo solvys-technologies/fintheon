@@ -12,9 +12,9 @@ export interface TourStep {
 
 export const TOUR_STEPS: TourStep[] = [
   {
-    title: "Dashboard",
+    title: "Desk",
     description:
-      "Your command center. KPIs, calendar, and RiskFlow at a glance.",
+      "Briefing, Desk Plan, Risk Signals, and Sprint Map in one work surface.",
     nav: "dashboard",
     selector: 'button[data-tour-target="dashboard"]',
     position: "right",

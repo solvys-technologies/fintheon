@@ -53,6 +53,7 @@ export async function createNarrativeSession(params: {
   title?: string | null;
   color?: string | null;
   query: string;
+  deferArtifacts?: boolean;
   catalystIds: string[];
   actorId: string | null;
   links?: SessionLinkInput[];
@@ -65,13 +66,15 @@ export async function createNarrativeSession(params: {
     params.deskId ?? null,
     params.actorId,
   );
-  const generated = await generateSessionArtifacts({
-    catalystIds: params.catalystIds,
-    query: params.query,
-  });
+  const generated = params.deferArtifacts
+    ? null
+    : await generateSessionArtifacts({
+        catalystIds: params.catalystIds,
+        query: params.query,
+      });
   const title = buildSessionTitle({
     requestedTitle: params.title,
-    generatedHeadline: generated.sensemaking.anchorCatalysts[0]?.headline,
+    generatedHeadline: generated?.sensemaking.anchorCatalysts[0]?.headline,
   });
   const now = new Date().toISOString();
   const { data, error } = await sb
@@ -84,7 +87,7 @@ export async function createNarrativeSession(params: {
       created_by: params.actorId,
       updated_by: params.actorId,
       last_opened_at: now,
-      generated_at: generated.sensemaking.generatedAt,
+      generated_at: generated?.sensemaking.generatedAt ?? now,
     })
     .select(sessionFields)
     .single();
@@ -92,7 +95,7 @@ export async function createNarrativeSession(params: {
   if (error) throw new Error(`Session create failed: ${error.message}`);
   const session = toSession(data);
   const selectedCatalystIds =
-    params.catalystIds.length > 0
+    params.catalystIds.length > 0 || !generated
       ? params.catalystIds
       : generated.sensemaking.anchorCatalysts.map((item) => item.id);
   await attachSessionCatalysts({
@@ -103,27 +106,29 @@ export async function createNarrativeSession(params: {
     })),
     actorId: params.actorId,
   });
-  await Promise.all([
-    putSessionArtifact({
-      sessionId: session.id,
-      artifactType: "flow",
-      payload: generated.flow,
-      createdBy: params.actorId,
-    }),
-    putSessionArtifact({
-      sessionId: session.id,
-      artifactType: "timeline",
-      payload: generated.timeline,
-      createdBy: params.actorId,
-    }),
-    putSessionArtifact({
-      sessionId: session.id,
-      artifactType: "docs",
-      payload: generated.docs,
-      createdBy: params.actorId,
-    }),
-  ]);
-  if (params.query.trim()) {
+  if (generated) {
+    await Promise.all([
+      putSessionArtifact({
+        sessionId: session.id,
+        artifactType: "flow",
+        payload: generated.flow,
+        createdBy: params.actorId,
+      }),
+      putSessionArtifact({
+        sessionId: session.id,
+        artifactType: "timeline",
+        payload: generated.timeline,
+        createdBy: params.actorId,
+      }),
+      putSessionArtifact({
+        sessionId: session.id,
+        artifactType: "docs",
+        payload: generated.docs,
+        createdBy: params.actorId,
+      }),
+    ]);
+  }
+  if (params.query.trim() && !params.deferArtifacts) {
     await addSessionMessage({
       sessionId: session.id,
       message: { role: "user", content: params.query },
@@ -145,14 +150,16 @@ export async function createNarrativeSession(params: {
   await addWorkEvent({
     sessionId: session.id,
     agentName: "NarrativeFlow",
-    eventType: "session-generated",
-    summary: "Generated initial flow, timeline, and docs artifacts.",
+    eventType: generated ? "session-generated" : "workspace-opened",
+    summary: generated
+      ? "Generated initial flow, timeline, and docs artifacts."
+      : "Opened workspace shell and handed the first turn to NarrativeFlow AI.",
     payload: { catalystCount: selectedCatalystIds.length },
   });
   await addSessionLinks(session.id, params.links ?? []);
   await addSessionTags(
     session.id,
-    buildTags(params.tags, generated.sensemaking.narrativeGroups),
+    buildTags(params.tags, generated?.sensemaking.narrativeGroups ?? []),
   );
   const detail = await getNarrativeSessionDetail(session.id);
   enqueueNarrativeSessionVaultSync(detail);

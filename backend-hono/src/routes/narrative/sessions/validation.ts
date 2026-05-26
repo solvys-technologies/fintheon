@@ -24,6 +24,7 @@ export const createSessionSchema = z.object({
   title: z.string().trim().min(1).max(160).optional(),
   color: colorSchema,
   query: z.string().trim().max(12000).default(""),
+  deferArtifacts: z.boolean().default(false),
   reasoningLevel: z
     .enum(["quick", "standard", "deep", "max"])
     .default("standard"),

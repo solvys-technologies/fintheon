@@ -50,6 +50,13 @@ export interface ChatWorkspaceOption {
   title: string;
   status?: string;
   color?: string;
+  hasArtifacts?: boolean;
+}
+
+export interface ChatInitialMessageRequest {
+  id: string;
+  text: string;
+  resetConversation?: boolean;
 }
 
 type ChatComposerPlacement = "bottom" | "center-until-start";
@@ -71,6 +78,8 @@ function ChatInterfaceInner({
   onWorkspaceChange,
   workspaceSelectorLabel = "Workspace",
   requestedConversationId = null,
+  initialMessageRequest = null,
+  onInitialMessageHandled,
   emptyState,
   composerPlacement = "bottom",
   hideHeader = false,
@@ -91,6 +100,8 @@ function ChatInterfaceInner({
   onWorkspaceChange?: (workspaceId: string) => void;
   workspaceSelectorLabel?: string;
   requestedConversationId?: string | null;
+  initialMessageRequest?: ChatInitialMessageRequest | null;
+  onInitialMessageHandled?: (id: string) => void;
   emptyState?: ReactNode;
   composerPlacement?: ChatComposerPlacement;
   hideHeader?: boolean;
@@ -139,7 +150,10 @@ function ChatInterfaceInner({
   const [approvalDrawerCollapsed, setApprovalDrawerCollapsed] = useState(false);
   const previousWorkItemCountRef = useRef(0);
   const hasMountedWorkDrawerRef = useRef(false);
+  const handledInitialMessageIdsRef = useRef<Set<string>>(new Set());
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [queuedInitialMessage, setQueuedInitialMessage] =
+    useState<ChatInitialMessageRequest | null>(null);
 
   // Todo list state — persisted to localStorage
   const { todos, addTodo, toggleTodo, removeTodo } = useTodoList();
@@ -150,6 +164,16 @@ function ChatInterfaceInner({
       runtime.append({ role: "user", content: [{ type: "text", text: msg }] });
     },
     [runtime],
+  );
+  const sendInitialMessage = useCallback(
+    (request: ChatInitialMessageRequest) => {
+      const text = request.text.trim();
+      if (!text) return;
+      setHasChatStarted(true);
+      runtime.append({ role: "user", content: [{ type: "text", text }] });
+      onInitialMessageHandled?.(request.id);
+    },
+    [onInitialMessageHandled, runtime],
   );
 
   const {
@@ -208,6 +232,35 @@ function ChatInterfaceInner({
     setConversationId(requestedConversationId);
     setHasChatStarted(true);
   }, [conversationId, requestedConversationId, setConversationId]);
+
+  useEffect(() => {
+    if (!initialMessageRequest?.text.trim()) return;
+    if (handledInitialMessageIdsRef.current.has(initialMessageRequest.id))
+      return;
+    if (initialMessageRequest.resetConversation && conversationId) {
+      handledInitialMessageIdsRef.current.add(initialMessageRequest.id);
+      setQueuedInitialMessage(initialMessageRequest);
+      clearConversationId();
+      return;
+    }
+
+    handledInitialMessageIdsRef.current.add(initialMessageRequest.id);
+    sendInitialMessage(initialMessageRequest);
+  }, [
+    clearConversationId,
+    conversationId,
+    initialMessageRequest,
+    sendInitialMessage,
+  ]);
+
+  useEffect(() => {
+    if (!queuedInitialMessage || conversationId) return;
+    const frame = window.requestAnimationFrame(() => {
+      sendInitialMessage(queuedInitialMessage);
+      setQueuedInitialMessage(null);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [conversationId, queuedInitialMessage, sendInitialMessage]);
 
   useEffect(() => {
     const previousCount = previousWorkItemCountRef.current;
@@ -592,6 +645,7 @@ function buildWorkspaceContext(
         title: item.title,
         status: item.status,
         color: item.color,
+        hasArtifacts: item.hasArtifacts,
       })),
     };
   }
@@ -601,6 +655,7 @@ function buildWorkspaceContext(
     title: workspace?.title ?? "Workspace",
     status: workspace?.status,
     color: workspace?.color,
+    hasArtifacts: workspace?.hasArtifacts,
     type: "narrative-workspace",
     surfaceId,
   };
@@ -742,6 +797,8 @@ export default function ChatInterface({
   onWorkspaceChange,
   workspaceSelectorLabel = "Workspace",
   requestedConversationId = null,
+  initialMessageRequest = null,
+  onInitialMessageHandled,
   emptyState,
   composerPlacement = "bottom",
   hideHeader = false,
@@ -752,6 +809,8 @@ export default function ChatInterface({
   onWorkspaceChange?: (workspaceId: string) => void;
   workspaceSelectorLabel?: string;
   requestedConversationId?: string | null;
+  initialMessageRequest?: ChatInitialMessageRequest | null;
+  onInitialMessageHandled?: (id: string) => void;
   emptyState?: ReactNode;
   composerPlacement?: ChatComposerPlacement;
   hideHeader?: boolean;
@@ -812,6 +871,8 @@ export default function ChatInterface({
         onWorkspaceChange={onWorkspaceChange}
         workspaceSelectorLabel={workspaceSelectorLabel}
         requestedConversationId={requestedConversationId}
+        initialMessageRequest={initialMessageRequest}
+        onInitialMessageHandled={onInitialMessageHandled}
         emptyState={emptyState}
         composerPlacement={composerPlacement}
         hideHeader={hideHeader}
