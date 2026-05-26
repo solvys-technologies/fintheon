@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useDayPlanMultiWeek } from "../../hooks/useDayPlanWeek";
 import { DeskBriefingPanel } from "./DeskBriefingPanel";
 import { DeskPlanWidget } from "./DeskPlanWidget";
 import { DeskRiskSignalsPanel } from "./DeskRiskSignalsPanel";
@@ -13,6 +14,7 @@ interface DeskDashboardPrototypeProps {
 export function DeskDashboardPrototype({
   onNavigateTab,
 }: DeskDashboardPrototypeProps) {
+  const { allPlans, isLoading, error } = useDayPlanMultiWeek();
   const [activePage, setActivePage] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -59,7 +61,11 @@ export function DeskDashboardPrototype({
           className="h-full min-h-0 snap-start overflow-hidden px-3 py-3"
         >
           <div className="grid h-full min-h-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)]">
-            <DeskBriefingPanel />
+            <DeskBriefingPanel
+              plans={allPlans}
+              isLoading={isLoading}
+              error={error}
+            />
             <div className="grid min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,0.92fr)] gap-4">
               <DeskPlanWidget />
               <DeskRiskSignalsPanel onNavigateTab={onNavigateTab} />
@@ -70,7 +76,7 @@ export function DeskDashboardPrototype({
           data-desk-page="1"
           className="h-full min-h-0 snap-start overflow-hidden px-2 py-2"
         >
-          <DeskSprintMapCalendar />
+          <DeskSprintMapCalendar plans={allPlans} isLoading={isLoading} />
         </section>
       </div>
       <DeskPrototypePager activePage={activePage} onSelect={scrollToPage} />

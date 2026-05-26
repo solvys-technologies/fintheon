@@ -1,7 +1,6 @@
 import { CalendarDays, Route } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { DAY_PLAN_REFETCH_EVENT } from "../../hooks/useDayPlan";
-import { useDayPlanMultiWeek } from "../../hooks/useDayPlanWeek";
 import type { DayPlan } from "../../types/day-plan";
 import { DeskPlanCalendarBoard } from "../executive/DeskPlanCalendarBoard";
 import { DeskPlanRelativeScrubber } from "../executive/DeskPlanRelativeScrubber";
@@ -19,12 +18,17 @@ type DeskMapView = "map" | "calendar";
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const MULTI_REFETCH_EVENT = "fintheon:day-plan-multi-refetch";
 
-export function DeskSprintMapCalendar() {
-  const { allPlans, isLoading } = useDayPlanMultiWeek();
+export function DeskSprintMapCalendar({
+  plans,
+  isLoading,
+}: {
+  plans: DayPlan[];
+  isLoading: boolean;
+}) {
   const [view, setView] = useState<DeskMapView>("map");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
-  const sortedPlans = useMemo(() => sortPlans(allPlans), [allPlans]);
+  const sortedPlans = useMemo(() => sortPlans(plans), [plans]);
   const calendarDays = useMemo(
     () => buildCalendarDays(sortedPlans),
     [sortedPlans],
