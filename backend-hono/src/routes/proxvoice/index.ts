@@ -4,6 +4,7 @@ import {
   createProxVoiceToken,
   getPublicVoiceProfile,
 } from "../../services/proxvoice/token-service.js";
+import { getProxVoiceStatus } from "../../services/proxvoice/global-config.js";
 import {
   listPresence,
   updatePresence,
@@ -17,6 +18,10 @@ function getUser(c: Context) {
 
 export function createProxVoiceRoutes(): Hono {
   const router = new Hono();
+
+  router.get("/status", async (c) => {
+    return c.json(await getProxVoiceStatus());
+  });
 
   router.post("/token", async (c) => {
     const { userId, email } = getUser(c);

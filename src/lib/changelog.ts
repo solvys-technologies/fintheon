@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-25T23:29:16-04:00",
+    agent: "codex",
+    summary:
+      "Made ProxVoice/Forum token generation global: LiveKit credentials now resolve from the backend server_secrets vault with local env values persisted into that vault, the token route no longer depends on one user's local config, and a safe ProxVoice status endpoint reports configured/source state without exposing secrets.",
+    files: [
+      "backend-hono/src/services/proxvoice/global-config.ts",
+      "backend-hono/src/services/proxvoice/token-service.ts",
+      "backend-hono/src/routes/proxvoice/index.ts",
+      "backend-hono/.env.example",
+      "supabase/migrations/20260526000000_server_secrets_global_vault.sql",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-25T23:21:48-04:00",
     agent: "codex",
     summary:

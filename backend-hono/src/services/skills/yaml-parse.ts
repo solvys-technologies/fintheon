@@ -86,7 +86,8 @@ function prepLines(raw: string): YamlLine[] {
   return out;
 }
 
-function coerceScalar(raw: string): string | number | boolean {
+function coerceScalar(raw: string): unknown {
+  if (raw === "[]") return [];
   if (
     (raw.startsWith('"') && raw.endsWith('"')) ||
     (raw.startsWith("'") && raw.endsWith("'"))
