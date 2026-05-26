@@ -2,18 +2,20 @@
 // [claude-code 2026-03-20] Read version from package.json, added GET /api/version base route
 import { Hono } from "hono";
 import { readFileSync } from "fs";
-import { resolve } from "path";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
 
 const REPO = "solvys-technologies/fintheon";
 const GITHUB_API = `https://api.github.com/repos/${REPO}/releases`;
+const ROUTE_DIR = dirname(fileURLToPath(import.meta.url));
 
 // Read version from root package.json at startup. The packaged Fly image only
 // contains backend-hono/package.json at /app/package.json, while local runs can
 // still resolve the monorepo root one level higher.
 let PKG_VERSION = "1.0.0";
 for (const packagePath of [
-  resolve(__dirname, "..", "..", "..", "..", "package.json"),
-  resolve(__dirname, "..", "..", "..", "package.json"),
+  resolve(ROUTE_DIR, "..", "..", "..", "..", "package.json"),
+  resolve(ROUTE_DIR, "..", "..", "..", "package.json"),
 ]) {
   try {
     const pkg = JSON.parse(readFileSync(packagePath, "utf-8"));
