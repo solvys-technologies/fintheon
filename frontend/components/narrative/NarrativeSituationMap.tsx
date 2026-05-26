@@ -12,7 +12,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Loader2, Network } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   NarrativeSituationMapResponse,
   SituationMapEdge,
@@ -34,9 +34,15 @@ interface MapNodeData {
   kind: "narrative" | "catalyst";
   confidence?: number;
   conflictLabel?: string;
+  presence?: CanvasPresence;
 }
 
 const nodeTypes: NodeTypes = { situation: SituationNode };
+type CanvasPresence = "enter" | "present" | "exit";
+type AnimatedSituationNode = SituationMapNode & {
+  presence: CanvasPresence;
+  revision: string;
+};
 
 export function NarrativeSituationMap(props: NarrativeSituationMapProps) {
   return (
@@ -52,11 +58,17 @@ function NarrativeSituationMapInner({
   error = null,
   onSelectCatalyst,
 }: NarrativeSituationMapProps) {
-  const { nodes, edges } = useMemo(() => buildFlow(map), [map]);
+  const sourceNodes = useMemo(() => map?.nodes ?? [], [map]);
+  const animatedNodes = useAnimatedSituationNodes(sourceNodes);
+  const { nodes, edges } = useMemo(
+    () => buildFlow(map, animatedNodes),
+    [animatedNodes, map],
+  );
 
   if (isLoading) return <MapState label="Loading situation map" isLoading />;
   if (error) return <MapState label={error} />;
-  if (!map || nodes.length === 0) return <MapState label="No desk catalysts mapped yet." />;
+  if (!map || (nodes.length === 0 && animatedNodes.length === 0))
+    return <MapState label="No desk catalysts mapped yet." />;
 
   return (
     <section className="relative h-full min-h-[440px] overflow-hidden bg-[var(--fintheon-bg)]">
@@ -65,7 +77,8 @@ function NarrativeSituationMapInner({
           Situation Map
         </p>
         <p className="mt-1 font-mono text-[11px] text-[var(--fintheon-muted)]">
-          {map.nodes.filter((node) => node.kind === "catalyst").length} catalysts · {map.edges.length} links
+          {map.nodes.filter((node) => node.kind === "catalyst").length}{" "}
+          catalysts · {map.edges.length} links
         </p>
       </div>
 
@@ -74,7 +87,10 @@ function NarrativeSituationMapInner({
         edges={edges}
         nodeTypes={nodeTypes}
         onNodeClick={(_, node) => {
-          const catalystId = node.data.kind === "catalyst" ? String(node.id).replace("catalyst-", "") : "";
+          const catalystId =
+            node.data.kind === "catalyst"
+              ? String(node.id).replace("catalyst-", "")
+              : "";
           if (catalystId) onSelectCatalyst?.(catalystId);
         }}
         fitView
@@ -94,7 +110,8 @@ function SituationNode({ data }: NodeProps & { data: MapNodeData }) {
   const isNarrative = data.kind === "narrative";
   return (
     <article
-      className={`w-[248px] rounded-md border p-3 ${
+      data-presence={data.presence ?? "present"}
+      className={`narrative-situation-node w-[248px] rounded-md border p-3 ${
         isNarrative
           ? "border-[var(--fintheon-accent)]/45 bg-[var(--fintheon-accent)]/10"
           : "border-[var(--fintheon-accent)]/14 bg-[var(--fintheon-surface)]/88"
@@ -109,7 +126,7 @@ function SituationNode({ data }: NodeProps & { data: MapNodeData }) {
           style={{ backgroundColor: data.color }}
         />
         <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]">
-          {isNarrative ? "Narrative" : data.conflictLabel ?? "Catalyst"}
+          {isNarrative ? "Narrative" : (data.conflictLabel ?? "Catalyst")}
         </span>
       </div>
       <p className="line-clamp-3 text-sm font-medium leading-5 text-[var(--fintheon-text)]">
@@ -138,7 +155,10 @@ function MapState({
     <div className="flex h-full min-h-[360px] items-center justify-center bg-[var(--fintheon-bg)]">
       <div className="flex items-center gap-2 text-xs text-[var(--fintheon-muted)]">
         {isLoading ? (
-          <Loader2 size={14} className="animate-spin text-[var(--fintheon-accent)]" />
+          <Loader2
+            size={14}
+            className="animate-spin text-[var(--fintheon-accent)]"
+          />
         ) : (
           <Network size={14} className="text-[var(--fintheon-accent)]" />
         )}
@@ -148,22 +168,87 @@ function MapState({
   );
 }
 
+function useAnimatedSituationNodes(
+  nodes: SituationMapNode[],
+): AnimatedSituationNode[] {
+  const [animated, setAnimated] = useState<AnimatedSituationNode[]>(() =>
+    nodes.map((node) => ({
+      ...node,
+      presence: "present",
+      revision: situationNodeRevision(node),
+    })),
+  );
+
+  useEffect(() => {
+    setAnimated((current) => {
+      const currentById = new Map(current.map((node) => [node.id, node]));
+      const nextIds = new Set(nodes.map((node) => node.id));
+      const next: AnimatedSituationNode[] = nodes.map((node) => {
+        const revision = situationNodeRevision(node);
+        const existing = currentById.get(node.id);
+        const presence: CanvasPresence =
+          !existing || existing.revision !== revision ? "enter" : "present";
+        return {
+          ...node,
+          presence,
+          revision,
+        };
+      });
+      current.forEach((node) => {
+        if (!nextIds.has(node.id) && node.presence !== "exit") {
+          next.push({ ...node, presence: "exit" });
+        }
+      });
+      return next;
+    });
+
+    const timer = window.setTimeout(() => {
+      setAnimated((current) =>
+        current
+          .filter((node) => node.presence !== "exit")
+          .map((node) =>
+            node.presence === "enter" ? { ...node, presence: "present" } : node,
+          ),
+      );
+    }, 360);
+
+    return () => window.clearTimeout(timer);
+  }, [nodes]);
+
+  return animated;
+}
+
+function situationNodeRevision(node: SituationMapNode): string {
+  return [
+    node.label,
+    node.summary,
+    node.color,
+    node.kind,
+    node.confidence ?? "",
+    node.conflictLabel ?? "",
+  ].join("|");
+}
+
 function buildFlow(
   map: NarrativeSituationMapResponse | null,
-): { nodes: Node<MapNodeData>[]; edges: Edge[] } {
+  animatedNodes: AnimatedSituationNode[],
+): {
+  nodes: Node<MapNodeData>[];
+  edges: Edge[];
+} {
   if (!map) return { nodes: [], edges: [] };
   return {
-    nodes: map.nodes.map((node, index) => ({
+    nodes: animatedNodes.map((node, index) => ({
       id: node.id,
       type: "situation",
-      position: getPosition(node, index, map.nodes),
+      position: getPosition(node, index, animatedNodes),
       data: toNodeData(node),
     })),
     edges: map.edges.map(toEdge),
   };
 }
 
-function toNodeData(node: SituationMapNode): MapNodeData {
+function toNodeData(node: AnimatedSituationNode): MapNodeData {
   return {
     label: node.label,
     summary: node.summary,
@@ -171,6 +256,7 @@ function toNodeData(node: SituationMapNode): MapNodeData {
     kind: node.kind,
     confidence: node.confidence,
     conflictLabel: node.conflictLabel,
+    presence: node.presence,
   };
 }
 
@@ -184,7 +270,9 @@ function toEdge(edge: SituationMapEdge): Edge {
     type: "smoothstep",
     markerEnd: { type: MarkerType.ArrowClosed, color: "#c79f4a" },
     style: {
-      stroke: isRelationship ? "rgba(240,234,214,0.24)" : "rgba(199,159,74,0.38)",
+      stroke: isRelationship
+        ? "rgba(240,234,214,0.24)"
+        : "rgba(199,159,74,0.38)",
       strokeDasharray: isRelationship ? "5 5" : undefined,
     },
     labelStyle: { fill: "#c79f4a", fontSize: 10 },
@@ -197,6 +285,11 @@ function getPosition(
   nodes: SituationMapNode[],
 ) {
   if (node.kind === "narrative") return { x: 0, y: index * 180 };
-  const catalystIndex = nodes.slice(0, index).filter((item) => item.kind === "catalyst").length;
-  return { x: 360 + (catalystIndex % 3) * 310, y: Math.floor(catalystIndex / 3) * 190 };
+  const catalystIndex = nodes
+    .slice(0, index)
+    .filter((item) => item.kind === "catalyst").length;
+  return {
+    x: 360 + (catalystIndex % 3) * 310,
+    y: Math.floor(catalystIndex / 3) * 190,
+  };
 }

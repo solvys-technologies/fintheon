@@ -34,7 +34,12 @@ export function addDitherAndGrid({
     blending: THREE.AdditiveBlending,
   });
   const dotCount = Math.floor(11800 * density);
-  globe.add(new THREE.Points(makeDitherGeometry(dotCount, 1, 0.009, primaryColor), dotMaterial));
+  globe.add(
+    new THREE.Points(
+      makeDitherGeometry(dotCount, 1, 0.009, primaryColor),
+      dotMaterial,
+    ),
+  );
 
   const lineMaterial = new THREE.LineBasicMaterial({
     color: primaryColor,
@@ -45,8 +50,9 @@ export function addDitherAndGrid({
   [-0.72, -0.5, -0.25, 0, 0.25, 0.5, 0.72].forEach((y) =>
     globe.add(new THREE.Line(makeLatitudeGeometry(y), lineMaterial)),
   );
-  Array.from({ length: 12 }, (_, index) => (index / 12) * Math.PI).forEach((angle) =>
-    globe.add(new THREE.Line(makeMeridianGeometry(angle), lineMaterial)),
+  Array.from({ length: 12 }, (_, index) => (index / 12) * Math.PI).forEach(
+    (angle) =>
+      globe.add(new THREE.Line(makeMeridianGeometry(angle), lineMaterial)),
   );
   globe.add(makeAura(primaryColor));
 
@@ -59,7 +65,10 @@ export function addDitherAndGrid({
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   });
-  const starfield = new THREE.Points(makeStarfieldGeometry(190, starGold), starMaterial);
+  const starfield = new THREE.Points(
+    makeStarfieldGeometry(190, starGold),
+    starMaterial,
+  );
   starfield.name = "starfield";
   scene.add(starfield);
 }
@@ -91,7 +100,13 @@ export async function loadCountries({
     });
     geojson.features?.forEach((feature) => {
       if (!feature.geometry || isDisposed()) return;
-      drawCountryGeometry({ geometry: feature.geometry, outlineMaterial, fillMaterial, countryLayer, countryFillLayer });
+      drawCountryGeometry({
+        geometry: feature.geometry,
+        outlineMaterial,
+        fillMaterial,
+        countryLayer,
+        countryFillLayer,
+      });
     });
   } catch {}
 }
@@ -130,7 +145,12 @@ export function spawnShot(
   });
   const line = new THREE.Line(geometry, material);
   shotLayer.add(line);
-  activeShots.push({ line, points, age: 0, duration: 2.85 + Math.random() * 0.75 });
+  activeShots.push({
+    line,
+    points,
+    age: 0,
+    duration: 2.85 + Math.random() * 0.75,
+  });
 }
 
 export function updateShots(
@@ -142,7 +162,10 @@ export function updateShots(
     const shot = activeShots[i];
     shot.age += delta;
     const progress = Math.min(1, shot.age / shot.duration);
-    const pointIndex = Math.max(1, Math.floor(progress * (shot.points.length - 1)));
+    const pointIndex = Math.max(
+      1,
+      Math.floor(progress * (shot.points.length - 1)),
+    );
     shot.line.geometry.setDrawRange(0, pointIndex + 1);
     (shot.line.material as THREE.LineBasicMaterial).opacity =
       0.78 * (1 - Math.max(0, progress - 0.72) / 0.28);
@@ -154,7 +177,10 @@ export function updateShots(
   }
 }
 
-export function disposeShots(activeShots: ActiveShot[], shotLayer: THREE.Group) {
+export function disposeShots(
+  activeShots: ActiveShot[],
+  shotLayer: THREE.Group,
+) {
   activeShots.forEach((shot) => {
     shotLayer.remove(shot.line);
     shot.line.geometry.dispose();

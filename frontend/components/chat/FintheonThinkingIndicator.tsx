@@ -23,13 +23,11 @@ const THINKING_PHRASES = [
 interface FintheonThinkingIndicatorProps {
   isThinking: boolean;
   thinkingContent?: string;
-  agentName?: string;
 }
 
 export function FintheonThinkingIndicator({
   isThinking,
   thinkingContent,
-  agentName,
 }: FintheonThinkingIndicatorProps) {
   const [phrase, setPhrase] = useState(THINKING_PHRASES[0]);
   const [expanded, setExpanded] = useState(false);
@@ -68,11 +66,6 @@ export function FintheonThinkingIndicator({
             >
               {phrase}
             </span>
-            {agentName && (
-              <span className="text-[10px] text-zinc-500 whitespace-nowrap">
-                ({agentName})
-              </span>
-            )}
           </div>
 
           {thinkingContent && (

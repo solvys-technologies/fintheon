@@ -45,17 +45,16 @@ export async function assembleSimulationContext(
     econResult,
     upcomingResult,
     antilagResult,
-  ] =
-    await Promise.allSettled([
-      fetchVix ? fetchVIX().then((r) => r.vix.value) : Promise.resolve(null),
-      fetchFred
-        ? fetchFredIndicators()
-        : Promise.resolve(getCachedFredIndicators()),
-      fetchRiskFlow ? fetchRiskFlowHeadlines() : Promise.resolve([]),
-      fetchEconHistory ? fetchEconPrintHistory() : Promise.resolve([]),
-      fetchUpcomingEcon ? fetchUpcomingEconEvents() : Promise.resolve([]),
-      getAntilagSummary(),
-    ]);
+  ] = await Promise.allSettled([
+    fetchVix ? fetchVIX().then((r) => r.vix.value) : Promise.resolve(null),
+    fetchFred
+      ? fetchFredIndicators()
+      : Promise.resolve(getCachedFredIndicators()),
+    fetchRiskFlow ? fetchRiskFlowHeadlines() : Promise.resolve([]),
+    fetchEconHistory ? fetchEconPrintHistory() : Promise.resolve([]),
+    fetchUpcomingEcon ? fetchUpcomingEconEvents() : Promise.resolve([]),
+    getAntilagSummary(),
+  ]);
 
   const vixLevel = vixResult.status === "fulfilled" ? vixResult.value : null;
   const fredIndicators =

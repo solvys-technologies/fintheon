@@ -77,48 +77,51 @@ export function PsychTableSlot({ code, isIncomplete }: CustomRendererProps) {
         style={{ padding: "10px 4px" }}
       >
         <div style={{ overflowX: "auto" }}>
-        <div role="table" style={{ display: "flex", flexDirection: "column", minWidth: 280 }}>
           <div
-            role="row"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1px 70px 1px 90px 1px 80px",
-              alignItems: "center",
-              padding: "0 8px 6px",
-            }}
+            role="table"
+            style={{ display: "flex", flexDirection: "column", minWidth: 280 }}
           >
-            <span style={{ ...HEAD, textAlign: "left" }}>Session</span>
-            <div style={FADING_RULE_V} />
-            <span style={HEAD}>ER</span>
-            <div style={FADING_RULE_V} />
-            <span style={HEAD}>Discipline</span>
-            <div style={FADING_RULE_V} />
-            <span style={HEAD}>Infractions</span>
-          </div>
-          {rows.map((r, i) => (
             <div
-              key={i}
               role="row"
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1px 70px 1px 90px 1px 80px",
                 alignItems: "center",
-                borderTop:
-                  i === 0 ? "none" : "1px solid rgba(199, 159, 74, 0.08)",
+                padding: "0 8px 6px",
               }}
             >
-              <span style={LABEL_CELL}>{r.label}</span>
+              <span style={{ ...HEAD, textAlign: "left" }}>Session</span>
               <div style={FADING_RULE_V} />
-              <span style={{ ...CELL, color: colorForEr(r.er) }}>
-                {r.er.toFixed(1)}
-              </span>
+              <span style={HEAD}>ER</span>
               <div style={FADING_RULE_V} />
-              <span style={CELL}>{r.discipline.toFixed(1)}</span>
+              <span style={HEAD}>Discipline</span>
               <div style={FADING_RULE_V} />
-              <span style={CELL}>{r.infractions}</span>
+              <span style={HEAD}>Infractions</span>
             </div>
-          ))}
-        </div>
+            {rows.map((r, i) => (
+              <div
+                key={i}
+                role="row"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1px 70px 1px 90px 1px 80px",
+                  alignItems: "center",
+                  borderTop:
+                    i === 0 ? "none" : "1px solid rgba(199, 159, 74, 0.08)",
+                }}
+              >
+                <span style={LABEL_CELL}>{r.label}</span>
+                <div style={FADING_RULE_V} />
+                <span style={{ ...CELL, color: colorForEr(r.er) }}>
+                  {r.er.toFixed(1)}
+                </span>
+                <div style={FADING_RULE_V} />
+                <span style={CELL}>{r.discipline.toFixed(1)}</span>
+                <div style={FADING_RULE_V} />
+                <span style={CELL}>{r.infractions}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </SlotShell>
     </SlotReveal>

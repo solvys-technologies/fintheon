@@ -29,7 +29,9 @@ import type {
 const FILE_CAP = 80;
 const FILE_EXTENSIONS = new Set([".md", ".pdf", ".url", ".webloc", ".json"]);
 
-export async function listFileRoom(deskId = DEFAULT_DESK_ID): Promise<FileRoomIndex> {
+export async function listFileRoom(
+  deskId = DEFAULT_DESK_ID,
+): Promise<FileRoomIndex> {
   const safeDeskId = sanitizeDeskId(deskId);
   await ensureDeskFolders(safeDeskId);
   const sections = await Promise.all(
@@ -49,11 +51,17 @@ export async function readFileRoomItem(
   deskId = DEFAULT_DESK_ID,
 ): Promise<FileRoomItemDetail | null> {
   const safeDeskId = sanitizeDeskId(deskId);
-  if (itemId.startsWith("agent-souls:")) return readSoulDetail(safeDeskId, itemId);
+  if (itemId.startsWith("agent-souls:"))
+    return readSoulDetail(safeDeskId, itemId);
   const index = await listFileRoom(safeDeskId);
-  const item = index.sections.flatMap((section) => section.items).find((entry) => entry.id === itemId);
+  const item = index.sections
+    .flatMap((section) => section.items)
+    .find((entry) => entry.id === itemId);
   if (!item) return null;
-  const raw = await readFile(join(deskRoot(safeDeskId), item.path), "utf8").catch(() => "");
+  const raw = await readFile(
+    join(deskRoot(safeDeskId), item.path),
+    "utf8",
+  ).catch(() => "");
   return { ...item, content: raw };
 }
 
@@ -92,9 +100,10 @@ async function readItem(
   const meta = await stat(path).catch(() => null);
   if (!meta?.isFile()) return null;
   const ext = extname(path).toLowerCase();
-  const raw = ext === ".md" || ext === ".url" || ext === ".json"
-    ? await readFile(path, "utf8").catch(() => "")
-    : "";
+  const raw =
+    ext === ".md" || ext === ".url" || ext === ".json"
+      ? await readFile(path, "utf8").catch(() => "")
+      : "";
   const parsed = parseMarkdown(raw);
   const rel = relative(deskRoot(deskId), path);
   return {
@@ -104,8 +113,12 @@ async function readItem(
     title: parsed.frontmatter.title || basename(path, ext),
     kind: inferKind(ext, sectionId, raw),
     path: rel,
-    summary: parsed.frontmatter.summary || summarizeMarkdown(parsed.body || raw),
-    excerpt: ext === ".md" ? boundedExcerpt(parsed.body) : boundedExcerpt(raw || basename(path)),
+    summary:
+      parsed.frontmatter.summary || summarizeMarkdown(parsed.body || raw),
+    excerpt:
+      ext === ".md"
+        ? boundedExcerpt(parsed.body)
+        : boundedExcerpt(raw || basename(path)),
     tags: splitList(parsed.frontmatter.tags),
     tickers: splitList(parsed.frontmatter.tickers),
     sourceRefs: splitList(parsed.frontmatter.sourceRefs),
@@ -122,12 +135,20 @@ async function collectFiles(root: string): Promise<string[]> {
     if (entry.name === "Inbox") continue;
     const full = join(root, entry.name);
     if (entry.isDirectory()) out.push(...(await collectFiles(full)));
-    if (entry.isFile() && FILE_EXTENSIONS.has(extname(entry.name).toLowerCase())) out.push(full);
+    if (
+      entry.isFile() &&
+      FILE_EXTENSIONS.has(extname(entry.name).toLowerCase())
+    )
+      out.push(full);
   }
   return out;
 }
 
-function inferKind(ext: string, sectionId: FileRoomSectionId, raw: string): FileRoomItem["kind"] {
+function inferKind(
+  ext: string,
+  sectionId: FileRoomSectionId,
+  raw: string,
+): FileRoomItem["kind"] {
   if (sectionId === "chart-evidence") return "chart";
   if (ext === ".pdf") return "pdf";
   if (raw.includes("notion.so") || raw.includes("notion.site")) return "notion";

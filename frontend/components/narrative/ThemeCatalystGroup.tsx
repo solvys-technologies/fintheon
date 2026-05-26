@@ -34,8 +34,7 @@ export function ThemeCatalystGroup({
     () =>
       [...catalysts].sort(
         (a, b) =>
-          (SEVERITY_RANK[b.severity] ?? 0) -
-          (SEVERITY_RANK[a.severity] ?? 0),
+          (SEVERITY_RANK[b.severity] ?? 0) - (SEVERITY_RANK[a.severity] ?? 0),
       ),
     [catalysts],
   );
@@ -53,7 +52,9 @@ export function ThemeCatalystGroup({
           ? "1px solid rgba(199,159,74,0.25)"
           : "1px solid rgba(199,159,74,0.12)",
         transition: "border-color 0.15s ease, box-shadow 0.15s ease",
-        boxShadow: isHovered ? "0 4px 20px rgba(0,0,0,0.3)" : "0 0 0 transparent",
+        boxShadow: isHovered
+          ? "0 4px 20px rgba(0,0,0,0.3)"
+          : "0 0 0 transparent",
       }}
     >
       <ThemeHeader

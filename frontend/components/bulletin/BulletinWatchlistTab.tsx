@@ -1,5 +1,18 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { Bell, Eye, EyeOff, Loader2, RefreshCcw, ShieldOff } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  Bell,
+  Eye,
+  EyeOff,
+  Loader2,
+  RefreshCcw,
+  ShieldOff,
+} from "lucide-react";
 import { useBackend } from "../../lib/backend";
 import { FadingRuler } from "../shared/FadingRuler";
 import {
@@ -21,8 +34,8 @@ export function BulletinWatchlistTab() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [isZenMode, setIsZenMode] = useState(readZenMode);
-  const [enabledNarratives, setEnabledNarratives] = useState<Set<string>>(
-    () => readEnabledNarratives(),
+  const [enabledNarratives, setEnabledNarratives] = useState<Set<string>>(() =>
+    readEnabledNarratives(),
   );
 
   const refresh = useCallback(async () => {
@@ -49,7 +62,8 @@ export function BulletinWatchlistTab() {
     };
     window.addEventListener("fintheon:zen-mode-change", handler);
     setIsZenMode(readZenMode());
-    return () => window.removeEventListener("fintheon:zen-mode-change", handler);
+    return () =>
+      window.removeEventListener("fintheon:zen-mode-change", handler);
   }, []);
 
   const enriched = useMemo(() => posts.map(enrichPost), [posts]);
@@ -107,7 +121,9 @@ export function BulletinWatchlistTab() {
               style={{
                 borderColor: `${narrative.color}44`,
                 color: narrative.color,
-                backgroundColor: isEnabled ? `${narrative.color}12` : "transparent",
+                backgroundColor: isEnabled
+                  ? `${narrative.color}12`
+                  : "transparent",
               }}
             >
               {isEnabled ? <Eye size={10} /> : <EyeOff size={10} />}
@@ -121,10 +137,14 @@ export function BulletinWatchlistTab() {
         <div
           data-bulletin-watchlist-blocked-count={blocked}
           className="flex items-center gap-2 rounded-md border px-2.5 py-2 text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]"
-          style={{ borderColor: "color-mix(in srgb, var(--fintheon-accent) 14%, transparent)" }}
+          style={{
+            borderColor:
+              "color-mix(in srgb, var(--fintheon-accent) 14%, transparent)",
+          }}
         >
           <ShieldOff size={12} className="text-[var(--fintheon-accent)]/70" />
-          {blocked} note{blocked === 1 ? "" : "s"} blocked by Zen narrative filter
+          {blocked} note{blocked === 1 ? "" : "s"} blocked by Zen narrative
+          filter
         </div>
       ) : null}
 
@@ -149,12 +169,30 @@ function WatchlistBody({
   hasError: boolean;
   isZenMode: boolean;
 }) {
-  if (isLoading) return <StateRow icon={<Loader2 size={13} className="animate-spin" />} text="Loading bulletins" />;
-  if (hasError) return <StateRow icon={<ShieldOff size={13} />} text="Bulletins unavailable" />;
-  if (posts.length === 0) return <StateRow icon={<Bell size={13} />} text={isZenMode ? "No visible narratives" : "No bulletin notes"} />;
+  if (isLoading)
+    return (
+      <StateRow
+        icon={<Loader2 size={13} className="animate-spin" />}
+        text="Loading bulletins"
+      />
+    );
+  if (hasError)
+    return (
+      <StateRow icon={<ShieldOff size={13} />} text="Bulletins unavailable" />
+    );
+  if (posts.length === 0)
+    return (
+      <StateRow
+        icon={<Bell size={13} />}
+        text={isZenMode ? "No visible narratives" : "No bulletin notes"}
+      />
+    );
 
   return (
-    <div className="space-y-1" data-bulletin-watchlist-visible-count={posts.length}>
+    <div
+      className="space-y-1"
+      data-bulletin-watchlist-visible-count={posts.length}
+    >
       {posts.slice(0, 12).map((post, index) => (
         <div key={post.id}>
           {index > 0 ? <FadingRuler /> : null}
@@ -164,7 +202,9 @@ function WatchlistBody({
                 {post.narratives.slice(0, 3).map((slug) => (
                   <NarrativeChip key={slug} slug={slug} />
                 ))}
-                {post.narratives.length === 0 ? <NarrativeChip slug="unthreaded" /> : null}
+                {post.narratives.length === 0 ? (
+                  <NarrativeChip slug="unthreaded" />
+                ) : null}
               </div>
               <span className="shrink-0 font-mono text-[9px] text-[var(--fintheon-muted)]/60">
                 {formatBulletinTime(post.createdAt)}
@@ -189,7 +229,11 @@ function NarrativeChip({ slug }: { slug: string }) {
   return (
     <span
       className="rounded border px-1.5 py-0.5 text-[8px] uppercase tracking-[0.1em]"
-      style={{ borderColor: `${color}33`, color, backgroundColor: `${color}10` }}
+      style={{
+        borderColor: `${color}33`,
+        color,
+        backgroundColor: `${color}10`,
+      }}
     >
       {narrative?.title ?? "Unthreaded"}
     </span>

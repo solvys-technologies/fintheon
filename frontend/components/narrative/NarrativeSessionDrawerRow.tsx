@@ -24,7 +24,14 @@ interface NarrativeSessionDrawerRowProps {
   onManageSession: (session: NarrativeSessionSummary) => void;
 }
 
-const swatches = ["#c79f4a", "#34D399", "#FBBF24", "#A78BFA", "#14B8A6", "#F97316"];
+const swatches = [
+  "#c79f4a",
+  "#34D399",
+  "#FBBF24",
+  "#A78BFA",
+  "#14B8A6",
+  "#F97316",
+];
 
 export function NarrativeSessionDrawerRow({
   session,
@@ -56,7 +63,9 @@ export function NarrativeSessionDrawerRow({
       .catch((err) => {
         if (!cancelled) {
           setThreads([]);
-          setThreadError(err instanceof Error ? err.message : "Thread load failed.");
+          setThreadError(
+            err instanceof Error ? err.message : "Thread load failed.",
+          );
         }
       })
       .finally(() => {
@@ -79,14 +88,19 @@ export function NarrativeSessionDrawerRow({
   }
 
   return (
-    <article className={`narrative-session-row group p-2 transition duration-150 hover:translate-x-0.5 ${isActive ? "text-[var(--fintheon-accent)]" : ""}`}>
+    <article
+      className={`narrative-session-row group p-2 transition duration-150 hover:translate-x-0.5 ${isActive ? "text-[var(--fintheon-accent)]" : ""}`}
+    >
       <div className="flex items-start gap-2">
         <button
           type="button"
           onClick={handleOpenWorkspace}
           className="flex min-w-0 flex-1 items-start gap-2 text-left"
         >
-          <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: session.color }} />
+          <span
+            className="mt-1 h-2.5 w-2.5 shrink-0 rounded-sm"
+            style={{ backgroundColor: session.color }}
+          />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-xs font-medium text-[var(--fintheon-text)]">
               {session.title}
@@ -97,20 +111,51 @@ export function NarrativeSessionDrawerRow({
               {isArchived ? <span>Archived</span> : null}
             </span>
           </span>
-          <ChevronDown size={13} className={`mt-0.5 shrink-0 transition ${isExpanded ? "rotate-180 text-[var(--fintheon-accent)]" : "text-[var(--fintheon-muted)]/60"}`} />
+          <ChevronDown
+            size={13}
+            className={`mt-0.5 shrink-0 transition ${isExpanded ? "rotate-180 text-[var(--fintheon-accent)]" : "text-[var(--fintheon-muted)]/60"}`}
+          />
         </button>
-        <button type="button" onClick={() => setIsEditing((current) => !current)} className="row-action" title="Rename narrative">
+        <button
+          type="button"
+          onClick={() => setIsEditing((current) => !current)}
+          className="row-action"
+          title="Rename narrative"
+        >
           <Edit3 size={13} />
         </button>
-        <button type="button" onClick={() => onManageSession(session)} className="row-action" title={isArchived ? "Restore or delete narrative" : "Archive or delete narrative"}>
+        <button
+          type="button"
+          onClick={() => onManageSession(session)}
+          className="row-action"
+          title={
+            isArchived
+              ? "Restore or delete narrative"
+              : "Archive or delete narrative"
+          }
+        >
           {isArchived ? <RotateCcw size={13} /> : <Inbox size={13} />}
         </button>
-        <button type="button" onClick={() => onManageSession(session)} className="row-action text-red-300/60 hover:text-red-300" title="Delete narrative">
+        <button
+          type="button"
+          onClick={() => onManageSession(session)}
+          className="row-action text-red-300/60 hover:text-red-300"
+          title="Delete narrative"
+        >
           <Trash2 size={13} />
         </button>
       </div>
 
-      {isEditing ? <RenamePanel color={color} title={title} setColor={setColor} setTitle={setTitle} commitRename={commitRename} onCancel={() => setIsEditing(false)} /> : null}
+      {isEditing ? (
+        <RenamePanel
+          color={color}
+          title={title}
+          setColor={setColor}
+          setTitle={setTitle}
+          commitRename={commitRename}
+          onCancel={() => setIsEditing(false)}
+        />
+      ) : null}
       {isExpanded ? (
         <ThreadList
           threads={threads}
@@ -164,7 +209,11 @@ function RenamePanel({
             />
           ))}
         </div>
-        <button type="button" onClick={commitRename} className="h-7 rounded-[4px] px-2 text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-accent)] transition hover:-translate-y-px">
+        <button
+          type="button"
+          onClick={commitRename}
+          className="h-7 rounded-[4px] px-2 text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-accent)] transition hover:-translate-y-px"
+        >
           Apply
         </button>
       </div>
@@ -183,11 +232,15 @@ function ThreadList({
   error: string | null;
   onOpenThread: (id: string) => void;
 }) {
-  const copy = error ?? (isLoading ? "Loading workspace chats..." : "No chat threads stored yet.");
+  const copy =
+    error ??
+    (isLoading ? "Loading workspace chats..." : "No chat threads stored yet.");
   return (
     <div className="ml-4 mt-2 space-y-1 border-l border-[var(--fintheon-accent)]/12 pl-3">
       {threads.length === 0 ? (
-        <p className="py-1 text-[11px] leading-4 text-[var(--fintheon-muted)]/70">{copy}</p>
+        <p className="py-1 text-[11px] leading-4 text-[var(--fintheon-muted)]/70">
+          {copy}
+        </p>
       ) : (
         threads.map((thread) => (
           <button
@@ -198,9 +251,12 @@ function ThreadList({
           >
             <MessageSquareText size={12} className="mt-0.5 shrink-0" />
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[11px] text-[var(--fintheon-text)]">{thread.title}</span>
+              <span className="block truncate text-[11px] text-[var(--fintheon-text)]">
+                {thread.title}
+              </span>
               <span className="mt-0.5 block font-mono text-[9px] uppercase tracking-[0.12em]">
-                {thread.messageCount} messages · {formatUpdatedAt(thread.lastMessageAt)}
+                {thread.messageCount} messages ·{" "}
+                {formatUpdatedAt(thread.lastMessageAt)}
               </span>
             </span>
           </button>

@@ -5,7 +5,13 @@
 // [claude-code 2026-03-20] S3:T4c: Linked Strategium ↔ RiskFlow collapse — both expand/collapse together
 // [claude-code 2026-03-22] Replaced "The Tape" in Castra with RiskFlowMini (same as non-iFrame Strategium)
 // [claude-code 2026-03-31] S12-T2: Added Documents tab (TipTap editor)
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { ChevronLeft } from "lucide-react";
 import type { IVScoreResponse } from "../../types/market-data";
 import { TopHeader } from "./TopHeader";
@@ -452,11 +458,7 @@ function MainLayoutInner() {
 
   const backend = useBackend();
   const { isAuthenticated } = useAuth();
-  const {
-    alerts: riskFlowAlerts,
-    isSeen,
-    freshAlertId,
-  } = useRiskFlow();
+  const { alerts: riskFlowAlerts, isSeen, freshAlertId } = useRiskFlow();
   const { addToast } = useToast();
   const lastZenNewsToastRef = useRef<string | null>(null);
   useKeyboardShortcuts({
@@ -605,7 +607,9 @@ function MainLayoutInner() {
     );
 
     return () => {
-      document.documentElement.dataset.zenMode = zenModeEnabled ? "true" : "false";
+      document.documentElement.dataset.zenMode = zenModeEnabled
+        ? "true"
+        : "false";
       document.body.dataset.fintheonZenMode = "false";
       document.body.classList.remove("fintheon-zen-mode");
       window.dispatchEvent(

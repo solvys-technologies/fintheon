@@ -270,9 +270,7 @@ export function NotificationsTab({
                     {sound.type}
                   </span>
                 </div>
-                <p className="text-[10px] text-gray-500">
-                  {sound.description}
-                </p>
+                <p className="text-[10px] text-gray-500">{sound.description}</p>
               </div>
               <button
                 onClick={(e) => {

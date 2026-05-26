@@ -76,15 +76,19 @@ export function ProxVoiceProvider({ children }: { children: React.ReactNode }) {
   const [outputMuted, setOutputMuted] = useState<Set<string>>(new Set());
   const [participants, setParticipants] = useState<ProxVoiceParticipant[]>([]);
   const [presence, setPresence] = useState<ProxVoicePresence[]>([]);
-  const previousParticipants = useRef<Map<string, ProxVoiceParticipant>>(new Map());
+  const previousParticipants = useRef<Map<string, ProxVoiceParticipant>>(
+    new Map(),
+  );
 
   const refreshParticipants = useCallback(() => {
     const room = roomRef.current;
     if (!room) {
-      const leaving = Array.from(previousParticipants.current.values()).map((participant) => ({
-        ...participant,
-        leaving: true,
-      }));
+      const leaving = Array.from(previousParticipants.current.values()).map(
+        (participant) => ({
+          ...participant,
+          leaving: true,
+        }),
+      );
       setParticipants(leaving);
       window.setTimeout(() => setParticipants([]), 260);
       return;
@@ -94,7 +98,8 @@ export function ProxVoiceProvider({ children }: { children: React.ReactNode }) {
       room.localParticipant,
       ...Array.from(room.remoteParticipants.values()),
     ];
-    const mapped: ProxVoiceParticipant[] = allParticipants.map((participant) => ({
+    const mapped: ProxVoiceParticipant[] = allParticipants.map(
+      (participant) => ({
         identity: participant.identity,
         name: participant.name || participant.identity,
         isLocal: participant.identity === room.localParticipant.identity,
@@ -103,7 +108,8 @@ export function ProxVoiceProvider({ children }: { children: React.ReactNode }) {
         outputMuted: outputMuted.has(participant.identity),
         leaving: false,
         profile: parseProfile(participant),
-      }));
+      }),
+    );
     const nextIds = new Set(mapped.map((participant) => participant.identity));
     const leaving = Array.from(previousParticipants.current.values())
       .filter((participant) => !nextIds.has(participant.identity))
@@ -115,7 +121,9 @@ export function ProxVoiceProvider({ children }: { children: React.ReactNode }) {
     setParticipants(merged);
     if (leaving.length > 0) {
       window.setTimeout(() => {
-        setParticipants((current) => current.filter((participant) => !participant.leaving));
+        setParticipants((current) =>
+          current.filter((participant) => !participant.leaving),
+        );
       }, 260);
     }
   }, [outputMuted]);
@@ -135,7 +143,13 @@ export function ProxVoiceProvider({ children }: { children: React.ReactNode }) {
       });
       await refreshPresence();
     },
-    [backend.proxVoice, deafened, muted, refreshPresence, selectedSymbol.symbol],
+    [
+      backend.proxVoice,
+      deafened,
+      muted,
+      refreshPresence,
+      selectedSymbol.symbol,
+    ],
   );
 
   const disconnect = useCallback(() => {
@@ -158,16 +172,19 @@ export function ProxVoiceProvider({ children }: { children: React.ReactNode }) {
       const credentials = await backend.proxVoice.token();
       const room = new Room({ adaptiveStream: true, dynacast: true });
       roomRef.current = room;
-      room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, _pub, participant) => {
-        if (track.source !== Track.Source.Microphone) return;
-        const el = track.attach() as HTMLAudioElement;
-        el.autoplay = true;
-        el.muted = deafened || outputMuted.has(participant.identity);
-        const trackId = track.sid ?? `${Date.now()}-${audioEls.current.size}`;
-        audioEls.current.set(trackId, el);
-        audioIdentity.current.set(trackId, participant.identity);
-        document.body.appendChild(el);
-      });
+      room.on(
+        RoomEvent.TrackSubscribed,
+        (track: RemoteTrack, _pub, participant) => {
+          if (track.source !== Track.Source.Microphone) return;
+          const el = track.attach() as HTMLAudioElement;
+          el.autoplay = true;
+          el.muted = deafened || outputMuted.has(participant.identity);
+          const trackId = track.sid ?? `${Date.now()}-${audioEls.current.size}`;
+          audioEls.current.set(trackId, el);
+          audioIdentity.current.set(trackId, participant.identity);
+          document.body.appendChild(el);
+        },
+      );
       room.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
         track.detach().forEach((el) => el.remove());
         if (track.sid) {
@@ -204,7 +221,13 @@ export function ProxVoiceProvider({ children }: { children: React.ReactNode }) {
       setState("error");
       disconnect();
     }
-  }, [backend.proxVoice, deafened, disconnect, refreshParticipants, syncPresence]);
+  }, [
+    backend.proxVoice,
+    deafened,
+    disconnect,
+    refreshParticipants,
+    syncPresence,
+  ]);
 
   const toggleMute = useCallback(async () => {
     const next = !muted;
@@ -227,7 +250,8 @@ export function ProxVoiceProvider({ children }: { children: React.ReactNode }) {
       if (next.has(identity)) next.delete(identity);
       else next.add(identity);
       for (const [trackId, el] of audioEls.current.entries()) {
-        if (audioIdentity.current.get(trackId) === identity) el.muted = next.has(identity);
+        if (audioIdentity.current.get(trackId) === identity)
+          el.muted = next.has(identity);
       }
       return next;
     });
@@ -285,6 +309,7 @@ export function ProxVoiceProvider({ children }: { children: React.ReactNode }) {
 
 export function useProxVoice() {
   const ctx = useContext(ProxVoiceContext);
-  if (!ctx) throw new Error("useProxVoice must be used within ProxVoiceProvider");
+  if (!ctx)
+    throw new Error("useProxVoice must be used within ProxVoiceProvider");
   return ctx;
 }

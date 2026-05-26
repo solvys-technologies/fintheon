@@ -105,6 +105,10 @@ function replaceMentionQuery(value: string, item: ContextMention): string {
 export interface PromptBoxProps {
   onSend: (message: string, images?: string[]) => void;
   onStop?: () => void;
+  value?: string;
+  onValueChange?: (value: string) => void;
+  canSend?: (message: string, images: string[]) => boolean;
+  onPaste?: (event: ClipboardEvent<HTMLTextAreaElement>) => void;
   isProcessing?: boolean;
   placeholder?: string;
   thinkHarder: boolean;
@@ -140,6 +144,7 @@ export interface PromptBoxProps {
   toolsSlot?: ReactNode;
   providerSlot?: ReactNode;
   workspaceSlot?: ReactNode;
+  leftToolbarSlot?: ReactNode;
   // S60-T3: Modal-aware toolbox triggers (composer toolbar)
   pluginSlot?: ReactNode;
   mcpSlot?: ReactNode;
@@ -164,6 +169,9 @@ export interface PromptBoxProps {
   // Headline attachment (multi-select from scored feed items)
   showAttachSelector?: boolean;
   attachSelectorTitle?: string;
+  attachInitialTab?: "docs" | "media" | "riskflow";
+  attachOpen?: boolean;
+  onAttachOpenChange?: (open: boolean) => void;
   headlineAlerts?: RiskFlowAlert[];
   headlineChips?: HeadlineChip[];
   onHeadlineToggle?: (chip: HeadlineChip) => void;
@@ -183,6 +191,10 @@ export interface PromptBoxProps {
 export function PromptBox({
   onSend,
   onStop,
+  value,
+  onValueChange,
+  canSend,
+  onPaste: externalOnPaste,
   isProcessing = false,
   placeholder = "Message your analysts...",
   thinkHarder,
@@ -209,6 +221,7 @@ export function PromptBox({
   toolsSlot,
   providerSlot,
   workspaceSlot,
+  leftToolbarSlot,
   pluginSlot,
   mcpSlot,
   toolboxDrawerSlot,
@@ -219,6 +232,9 @@ export function PromptBox({
   onRiskFlowPick,
   showAttachSelector = true,
   attachSelectorTitle = "Attach",
+  attachInitialTab = "media",
+  attachOpen,
+  onAttachOpenChange,
   headlineAlerts,
   headlineChips,
   onHeadlineToggle,
@@ -237,26 +253,46 @@ export function PromptBox({
   drawerPeekSlot,
 }: PromptBoxProps) {
   const [text, setText] = useState("");
+  const isControlled = value !== undefined;
+  const draftText = value ?? text;
+  const setDraftText = useCallback(
+    (next: string | ((current: string) => string)) => {
+      const resolved = typeof next === "function" ? next(draftText) : next;
+      if (!isControlled) setText(resolved);
+      onValueChange?.(resolved);
+    },
+    [draftText, isControlled, onValueChange],
+  );
   const [images, setImages] = useState<string[]>([]);
   const [vanishing, setVanishing] = useState(false);
   const [showAttach, setShowAttach] = useState(false);
+  const isAttachOpen = attachOpen ?? showAttach;
+  const setAttachOpen = useCallback(
+    (open: boolean) => {
+      if (attachOpen === undefined) setShowAttach(open);
+      onAttachOpenChange?.(open);
+    },
+    [attachOpen, onAttachOpenChange],
+  );
   const [slashQuery, setSlashQuery] = useState<string | null>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const [selectedMentions, setSelectedMentions] = useState<ContextMention[]>([]);
+  const [selectedMentions, setSelectedMentions] = useState<ContextMention[]>(
+    [],
+  );
   const [fullSizeImage, setFullSizeImage] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
   const activeDrawer =
     mentionQuery !== null
       ? "mentions"
-      : showAttachSelector && showAttach
+      : showAttachSelector && isAttachOpen
         ? "attach"
         : toolboxOpen
           ? "skills-connectors"
           : approvalDrawerOpen
             ? "approval"
             : workDrawerOpen
-            ? "work"
-            : null;
+              ? "work"
+              : null;
   const hasInlineDrawer = activeDrawer !== null;
   const hasDrawerPreview = !hasInlineDrawer && !!drawerPeekSlot;
   // IME composition state — blocks Enter-to-send while a candidate is being composed.
@@ -265,19 +301,20 @@ export function PromptBox({
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
-    if (toolboxOpen) setShowAttach(false);
-  }, [toolboxOpen]);
+    if (toolboxOpen) setAttachOpen(false);
+  }, [setAttachOpen, toolboxOpen]);
 
   useEffect(() => {
-    if (approvalDrawerOpen) setShowAttach(false);
-  }, [approvalDrawerOpen]);
+    if (approvalDrawerOpen) setAttachOpen(false);
+  }, [approvalDrawerOpen, setAttachOpen]);
 
   useEffect(() => {
-    if (!showAttachSelector) setShowAttach(false);
-  }, [showAttachSelector]);
+    if (!showAttachSelector) setAttachOpen(false);
+  }, [setAttachOpen, showAttachSelector]);
 
   /* Draft persistence — load on mount */
   useEffect(() => {
+    if (isControlled) return;
     const draft = localStorage.getItem(draftKey);
     if (draft) setText(draft);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -285,12 +322,13 @@ export function PromptBox({
 
   /* Draft persistence — save on change */
   useEffect(() => {
-    if (text) {
-      localStorage.setItem(draftKey, text);
+    if (isControlled) return;
+    if (draftText) {
+      localStorage.setItem(draftKey, draftText);
     } else {
       localStorage.removeItem(draftKey);
     }
-  }, [text, draftKey]);
+  }, [draftText, draftKey, isControlled]);
 
   const resizeTextarea = useCallback(() => {
     const el = textareaRef.current;
@@ -305,15 +343,15 @@ export function PromptBox({
   /* Auto-resize textarea */
   useLayoutEffect(() => {
     resizeTextarea();
-  }, [resizeTextarea, text, images.length, headlineChips?.length]);
+  }, [resizeTextarea, draftText, images.length, headlineChips?.length]);
 
   /* S38-T1: Sync recalled history text into textarea */
   useEffect(() => {
     if (recallText !== null && recallText !== undefined) {
-      setText(recallText);
+      setDraftText(recallText);
       onRecallConsumed?.();
     }
-  }, [recallText]);
+  }, [onRecallConsumed, recallText, setDraftText]);
 
   /* Full-size image dialog */
   useEffect(() => {
@@ -324,15 +362,16 @@ export function PromptBox({
 
   /* Send with vanish animation */
   const handleSend = useCallback(() => {
-    const draftText = textareaRef.current?.value ?? text;
-    const msg = draftText.trim();
+    const nextDraftText = textareaRef.current?.value ?? draftText;
+    const msg = nextDraftText.trim();
     if (!msg && images.length === 0) return;
+    if (canSend && !canSend(msg, images)) return;
 
     onSend(
       `${msg}${formatMentionContext(selectedMentions)}`,
       images.length > 0 ? images : undefined,
     );
-    setText("");
+    setDraftText("");
     setImages([]);
     setMentionQuery(null);
     setSelectedMentions([]);
@@ -347,7 +386,15 @@ export function PromptBox({
     // movement/unmount of the composer cannot swallow the message submit.
     setVanishing(true);
     window.setTimeout(() => setVanishing(false), 260);
-  }, [text, images, onSend, draftKey, selectedMentions]);
+  }, [
+    canSend,
+    draftKey,
+    draftText,
+    images,
+    onSend,
+    selectedMentions,
+    setDraftText,
+  ]);
 
   /* Keyboard shortcuts */
   const lastSpaceRef = useRef(0);
@@ -358,7 +405,7 @@ export function PromptBox({
       // (Chromium also sets e.keyCode === 229 during composition; we keep a ref for safety.)
       if (isComposingRef.current || e.nativeEvent.isComposing) return;
       e.preventDefault();
-      if (isProcessing && !text.trim() && images.length === 0 && onStop) {
+      if (isProcessing && !draftText.trim() && images.length === 0 && onStop) {
         onStop();
       } else {
         handleSend();
@@ -374,7 +421,7 @@ export function PromptBox({
       lastSpaceRef.current = now;
     }
     // S38-T1: Arrow history navigation
-    if (e.key === "ArrowUp" && !text.trim() && onHistoryUp) {
+    if (e.key === "ArrowUp" && !draftText.trim() && onHistoryUp) {
       e.preventDefault();
       onHistoryUp();
     }
@@ -391,6 +438,7 @@ export function PromptBox({
   /* Paste image support */
   const pasteWarnedRef = useRef(false);
   const handlePaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
+    externalOnPaste?.(e);
     const items = e.clipboardData?.items;
     if (!items) return;
     let handledImage = false;
@@ -437,9 +485,9 @@ export function PromptBox({
     (skillId: string) => {
       onSelectSkill(skillId);
       setSlashQuery(null);
-      setText("");
+      setDraftText("");
     },
-    [onSelectSkill],
+    [onSelectSkill, setDraftText],
   );
 
   const micListening = voiceState === "listening";
@@ -447,29 +495,32 @@ export function PromptBox({
   /* RiskFlow drag-drop */
   const [dragOver, setDragOver] = useState(false);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    const json = e.dataTransfer.getData("application/x-riskflow");
-    if (!json) return;
-    try {
-      const data = JSON.parse(json) as {
-        headline?: string;
-        summary?: string;
-        ticker?: string;
-        direction?: string;
-        source?: string;
-        ivScore?: number;
-        publishedAt?: string;
-      };
-      const preview = buildRiskFlowPreview(data);
-      if (preview) {
-        setText((prev) => (prev ? `${prev}\n\n${preview}` : preview));
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragOver(false);
+      const json = e.dataTransfer.getData("application/x-riskflow");
+      if (!json) return;
+      try {
+        const data = JSON.parse(json) as {
+          headline?: string;
+          summary?: string;
+          ticker?: string;
+          direction?: string;
+          source?: string;
+          ivScore?: number;
+          publishedAt?: string;
+        };
+        const preview = buildRiskFlowPreview(data);
+        if (preview) {
+          setDraftText((prev) => (prev ? `${prev}\n\n${preview}` : preview));
+        }
+      } catch {
+        // Not valid riskflow data — ignore
       }
-    } catch {
-      // Not valid riskflow data — ignore
-    }
-  }, []);
+    },
+    [setDraftText],
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     if (e.dataTransfer.types.includes("application/x-riskflow")) {
@@ -489,13 +540,13 @@ export function PromptBox({
 
   return (
     <>
-    <RepoChatComposer
-      format={compact ? "compact" : "full"}
-      className="px-4 pb-4 pt-3"
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-    >
+      <RepoChatComposer
+        format={compact ? "compact" : "full"}
+        className="px-4 pb-4 pt-3"
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
         {/* Active skill badge */}
         {activeSkill && (
           <div className="mb-2">
@@ -524,7 +575,7 @@ export function PromptBox({
           </div>
         )}
 
-        {!showAttach && !toolboxOpen && mentionQuery === null
+        {!isAttachOpen && !toolboxOpen && mentionQuery === null
           ? approvalDrawerOpen
             ? approvalDrawerSlot
             : workDrawerSlot
@@ -535,13 +586,14 @@ export function PromptBox({
         {/* Attach panel */}
         {showAttachSelector ? (
           <FintheonAttachPopup
-            open={showAttach}
-            onClose={() => setShowAttach(false)}
+            open={isAttachOpen}
+            onClose={() => setAttachOpen(false)}
+            initialTab={attachInitialTab}
             onAttachImage={handleAttachImage}
             onAttachDocument={({ filename, text }) => {
               const attached = `\n\n[Attached Document: ${filename}]\n${text}`;
-              setText((prev) => `${prev}${attached}`);
-              setShowAttach(false);
+              setDraftText((prev) => `${prev}${attached}`);
+              setAttachOpen(false);
             }}
             riskflowAlerts={headlineAlerts}
             onAttachHeadlines={(items: HeadlineAttachment[]) => {
@@ -570,7 +622,7 @@ export function PromptBox({
                 ? current
                 : [...current, item],
             );
-            setText((current) => replaceMentionQuery(current, item));
+            setDraftText((current) => replaceMentionQuery(current, item));
             setMentionQuery(null);
           }}
         />
@@ -663,14 +715,15 @@ export function PromptBox({
               : "",
             focused
               ? "border-[var(--fintheon-accent)]/55"
-              : text
+              : draftText
                 ? "border-[var(--fintheon-accent)]/40"
                 : "border-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/25",
             disabled ? "opacity-50 pointer-events-none" : "",
             vanishing ? "animate-prompt-vanish" : "",
           ].join(" ")}
           style={{
-            background: focused || text ? "rgba(13,12,9,0.98)" : "transparent",
+            background:
+              focused || draftText ? "rgba(13,12,9,0.98)" : "transparent",
             transition: "border-color 0.2s ease, background 0.2s ease",
           }}
         >
@@ -688,16 +741,16 @@ export function PromptBox({
           {/* Textarea */}
           <textarea
             ref={textareaRef}
-            value={text}
+            value={draftText}
             onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
               const val = e.target.value;
-              setText(val);
+              setDraftText(val);
               window.requestAnimationFrame(resizeTextarea);
               setMentionQuery(getMentionQuery(val));
               // Auto-dismiss the attach popup once the user starts composing a message —
               // otherwise the popup hangs over the input and blocks the first word or two.
               if (val.length > 0) {
-                if (showAttach) setShowAttach(false);
+                if (isAttachOpen) setAttachOpen(false);
                 onInputActivity?.();
               }
               // Slash-command detection
@@ -748,13 +801,13 @@ export function PromptBox({
                 <button
                   type="button"
                   onClick={() => {
-                    const nextOpen = !showAttach;
+                    const nextOpen = !isAttachOpen;
                     if (nextOpen) onInputActivity?.();
-                    setShowAttach(nextOpen);
+                    setAttachOpen(nextOpen);
                   }}
-                  aria-pressed={showAttach}
+                  aria-pressed={isAttachOpen}
                   className={`flex items-center justify-center rounded-lg transition-colors ${
-                    showAttach
+                    isAttachOpen
                       ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
                       : "text-zinc-500 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
                   }`}
@@ -770,6 +823,8 @@ export function PromptBox({
 
               {/* Secondary toolbox trigger */}
               {mcpSlot}
+
+              {leftToolbarSlot}
 
               {/* Workspace selector */}
               {workspaceSlot}
@@ -797,31 +852,36 @@ export function PromptBox({
               {personaSlot}
               <UsageRing
                 stats={contextStats}
-                draftText={text}
+                draftText={draftText}
                 queuedCount={queueCount}
               />
               <button
                 type="button"
                 onClick={
-                  isProcessing && !text.trim() && images.length === 0 && onStop
+                  isProcessing &&
+                  !draftText.trim() &&
+                  images.length === 0 &&
+                  onStop
                     ? onStop
                     : handleSend
                 }
-                disabled={!text.trim() && images.length === 0 && !isProcessing}
+                disabled={
+                  !draftText.trim() && images.length === 0 && !isProcessing
+                }
                 className="fintheon-send-button flex items-center justify-center rounded-full"
                 style={{
                   width: "34px",
                   height: "34px",
                 }}
                 title={
-                  isProcessing && (text.trim() || images.length > 0)
+                  isProcessing && (draftText.trim() || images.length > 0)
                     ? "Queue message"
                     : isProcessing
                       ? "Stop"
                       : "Send"
                 }
               >
-                {isProcessing && !text.trim() && images.length === 0 ? (
+                {isProcessing && !draftText.trim() && images.length === 0 ? (
                   <Square size={12} fill="currentColor" />
                 ) : (
                   <ArrowUp size={16} strokeWidth={2.5} />
@@ -830,7 +890,7 @@ export function PromptBox({
             </div>
           </div>
         </div>
-    </RepoChatComposer>
+      </RepoChatComposer>
 
       {/* Full-size image dialog (native <dialog>) */}
       <dialog

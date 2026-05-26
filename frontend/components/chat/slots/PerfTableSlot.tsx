@@ -81,70 +81,73 @@ export function PerfTableSlot({ code, isIncomplete }: CustomRendererProps) {
     <SlotReveal>
       <SlotShell label={label} style={{ padding: "10px 4px" }}>
         <div style={{ overflowX: "auto" }}>
-        <div role="table" style={{ display: "flex", flexDirection: "column", minWidth: 280 }}>
           <div
-            role="row"
-            style={{
-              display: "grid",
-              gridTemplateColumns: columns,
-              alignItems: "center",
-              padding: "0 8px 6px",
-            }}
+            role="table"
+            style={{ display: "flex", flexDirection: "column", minWidth: 280 }}
           >
-            <span style={{ ...HEAD, textAlign: "left" }}>Symbol</span>
-            <div style={FADING_RULE_V} />
-            <span style={HEAD}>PnL</span>
-            <div style={FADING_RULE_V} />
-            <span style={HEAD}>Trades</span>
-            <div style={FADING_RULE_V} />
-            <span style={HEAD}>Win %</span>
-            {hasAvgR && (
-              <>
-                <div style={FADING_RULE_V} />
-                <span style={HEAD}>Avg R</span>
-              </>
-            )}
-          </div>
-          {rows.map((r, i) => (
             <div
-              key={i}
               role="row"
               style={{
                 display: "grid",
                 gridTemplateColumns: columns,
                 alignItems: "center",
-                borderTop:
-                  i === 0 ? "none" : "1px solid rgba(199, 159, 74, 0.08)",
+                padding: "0 8px 6px",
               }}
             >
-              <span style={LABEL_CELL}>{r.label}</span>
+              <span style={{ ...HEAD, textAlign: "left" }}>Symbol</span>
               <div style={FADING_RULE_V} />
-              <span
-                style={{
-                  ...CELL,
-                  color:
-                    r.pnl >= 0
-                      ? DEFAULT_TRADE_COLORS.bullishColor
-                      : DEFAULT_TRADE_COLORS.bearishColor,
-                }}
-              >
-                {fmtPnl(r.pnl)}
-              </span>
+              <span style={HEAD}>PnL</span>
               <div style={FADING_RULE_V} />
-              <span style={CELL}>{r.trades}</span>
+              <span style={HEAD}>Trades</span>
               <div style={FADING_RULE_V} />
-              <span style={CELL}>{Math.round(r.win_rate * 100)}%</span>
+              <span style={HEAD}>Win %</span>
               {hasAvgR && (
                 <>
                   <div style={FADING_RULE_V} />
-                  <span style={CELL}>
-                    {r.avg_r !== undefined ? r.avg_r.toFixed(2) : "—"}
-                  </span>
+                  <span style={HEAD}>Avg R</span>
                 </>
               )}
             </div>
-          ))}
-        </div>
+            {rows.map((r, i) => (
+              <div
+                key={i}
+                role="row"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: columns,
+                  alignItems: "center",
+                  borderTop:
+                    i === 0 ? "none" : "1px solid rgba(199, 159, 74, 0.08)",
+                }}
+              >
+                <span style={LABEL_CELL}>{r.label}</span>
+                <div style={FADING_RULE_V} />
+                <span
+                  style={{
+                    ...CELL,
+                    color:
+                      r.pnl >= 0
+                        ? DEFAULT_TRADE_COLORS.bullishColor
+                        : DEFAULT_TRADE_COLORS.bearishColor,
+                  }}
+                >
+                  {fmtPnl(r.pnl)}
+                </span>
+                <div style={FADING_RULE_V} />
+                <span style={CELL}>{r.trades}</span>
+                <div style={FADING_RULE_V} />
+                <span style={CELL}>{Math.round(r.win_rate * 100)}%</span>
+                {hasAvgR && (
+                  <>
+                    <div style={FADING_RULE_V} />
+                    <span style={CELL}>
+                      {r.avg_r !== undefined ? r.avg_r.toFixed(2) : "—"}
+                    </span>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </SlotShell>
     </SlotReveal>

@@ -281,11 +281,15 @@ export function ConsiliumHub() {
   useEffect(() => {
     const handler = (event: Event) => {
       const detail = (event as CustomEvent<{ open?: boolean }>).detail;
-      if (typeof detail?.open === "boolean") setAnalysisResearchOpen(detail.open);
+      if (typeof detail?.open === "boolean")
+        setAnalysisResearchOpen(detail.open);
     };
     window.addEventListener("fintheon:narrative-research-rail-state", handler);
     return () =>
-      window.removeEventListener("fintheon:narrative-research-rail-state", handler);
+      window.removeEventListener(
+        "fintheon:narrative-research-rail-state",
+        handler,
+      );
   }, []);
 
   useEffect(() => {
@@ -1003,7 +1007,9 @@ export function ConsiliumHub() {
               : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
           }`}
           title={showChart ? "Hide TradingView rail" : "Show TradingView rail"}
-          aria-label={showChart ? "Hide TradingView rail" : "Show TradingView rail"}
+          aria-label={
+            showChart ? "Hide TradingView rail" : "Show TradingView rail"
+          }
         >
           <LineChart size={14} />
         </button>
@@ -1055,110 +1061,114 @@ export function ConsiliumHub() {
                 className="h-full w-full"
                 style={{
                   opacity: transitioning ? 0 : 1,
-                  transform: transitioning ? "translateY(6px)" : "translateY(0)",
+                  transform: transitioning
+                    ? "translateY(6px)"
+                    : "translateY(0)",
                   transition:
                     "opacity 220ms var(--ease-spring), transform 220ms var(--ease-spring)",
                 }}
               >
-          {/* Sanctum sub-views — shared NarrativeProvider so seeds carry across views */}
-          {displayedTab === "sanctum" && (
-            <NarrativeProvider>
-              {displayedSubView === "narratives" && (
-                <NarrativeCanvas
-                  themes={flowThemes}
-                  isLoading={flowThemesLoading}
-                  chartMode={showChart}
-                />
-              )}
-              {displayedSubView === "arbitrumChamber" && (
-                <SanctumWithNarratives
-                  data={agentDeskData}
-                  onRun={handleRunAgentDesk}
-                  riskflowItems={riskflowItems}
-                  macroContext={macroContext}
-                  selectedSymbol={selectedSymbol.symbol}
-                  chartMode={showChart}
-                  onSynthesisComplete={reloadLatestReport}
-                  revisionStatus={revisionStatus}
-                  revisionChecking={revisionChecking}
-                />
-              )}
-              {displayedSubView === "timeline" && <TimelinePanel />}
-            </NarrativeProvider>
-          )}
-
-          {/* Chat — always mounted so streams survive tab switches */}
-          <div
-            className="h-full w-full"
-            style={{ display: displayedTab === "chat" ? "block" : "none" }}
-          >
-            <ChatSidebar compact={false} />
-          </div>
-
-          {/* Imperium sub-views */}
-          {displayedTab === "boardroom" && (
-            <>
-              {displayedBoardroomSub === "forum" && <ProxVoiceForum />}
-              {displayedBoardroomSub === "agentic-chat" && (
-                <div className="flex h-full">
-                  <div className="flex-1 min-w-0">
-                    <AgentChattr
-                      headerSlot={
-                        !showHarperFeed ? (
-                          <button
-                            onClick={() => setShowHarperFeed(true)}
-                            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-medium text-[var(--fintheon-accent)]/50 border border-[var(--fintheon-accent)]/15 hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/30 transition-all"
-                            title="Show Harper Activity"
-                          >
-                            <PanelRightOpen size={12} />
-                            Activity
-                          </button>
-                        ) : undefined
-                      }
-                    />
-                  </div>
-                  {/* Harper Activity sidebar — matches Debate/Proposals collapsible pattern */}
-                  <div
-                    className={`flex-shrink-0 overflow-hidden border-l border-[var(--fintheon-accent)]/10 ${
-                      showHarperFeed ? "w-80" : "w-0 border-l-0"
-                    }`}
-                    style={{
-                      transition:
-                        "width 280ms var(--ease-spring), border-width 280ms",
-                    }}
-                  >
-                    <div
-                      className="w-80 h-full overflow-hidden bg-[var(--fintheon-bg)]"
-                      style={{
-                        opacity: showHarperFeed ? 1 : 0,
-                        transition: "opacity 200ms ease 80ms",
-                      }}
-                    >
-                      <HarperActivityFeed
-                        onCollapse={() => setShowHarperFeed(false)}
+                {/* Sanctum sub-views — shared NarrativeProvider so seeds carry across views */}
+                {displayedTab === "sanctum" && (
+                  <NarrativeProvider>
+                    {displayedSubView === "narratives" && (
+                      <NarrativeCanvas
+                        themes={flowThemes}
+                        isLoading={flowThemesLoading}
+                        chartMode={showChart}
                       />
-                    </div>
-                  </div>
-                </div>
-              )}
-              {displayedBoardroomSub === "research" && (
-                <EmbeddedBrowserFrame
-                  title="Research"
-                  src={iframeUrls.research || ""}
-                  className="w-full h-full"
-                />
-              )}
-            </>
-          )}
+                    )}
+                    {displayedSubView === "arbitrumChamber" && (
+                      <SanctumWithNarratives
+                        data={agentDeskData}
+                        onRun={handleRunAgentDesk}
+                        riskflowItems={riskflowItems}
+                        macroContext={macroContext}
+                        selectedSymbol={selectedSymbol.symbol}
+                        chartMode={showChart}
+                        onSynthesisComplete={reloadLatestReport}
+                        revisionStatus={revisionStatus}
+                        revisionChecking={revisionChecking}
+                      />
+                    )}
+                    {displayedSubView === "timeline" && <TimelinePanel />}
+                  </NarrativeProvider>
+                )}
 
-          {/* Apparatus sub-views */}
-          {displayedTab === "apparatus" && (
-            <>
-              {displayedApparatusSub === "desk" && <ApparatusFlowMap />}
-              {displayedApparatusSub === "fileroom" && <FileRoomPanel />}
-              {displayedApparatusSub === "lounge" && <AgentLounge />}
-            </>
-          )}
+                {/* Chat — always mounted so streams survive tab switches */}
+                <div
+                  className="h-full w-full"
+                  style={{
+                    display: displayedTab === "chat" ? "block" : "none",
+                  }}
+                >
+                  <ChatSidebar compact={false} />
+                </div>
+
+                {/* Imperium sub-views */}
+                {displayedTab === "boardroom" && (
+                  <>
+                    {displayedBoardroomSub === "forum" && <ProxVoiceForum />}
+                    {displayedBoardroomSub === "agentic-chat" && (
+                      <div className="flex h-full">
+                        <div className="flex-1 min-w-0">
+                          <AgentChattr
+                            headerSlot={
+                              !showHarperFeed ? (
+                                <button
+                                  onClick={() => setShowHarperFeed(true)}
+                                  className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-medium text-[var(--fintheon-accent)]/50 border border-[var(--fintheon-accent)]/15 hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/30 transition-all"
+                                  title="Show Harper Activity"
+                                >
+                                  <PanelRightOpen size={12} />
+                                  Activity
+                                </button>
+                              ) : undefined
+                            }
+                          />
+                        </div>
+                        {/* Harper Activity sidebar — matches Debate/Proposals collapsible pattern */}
+                        <div
+                          className={`flex-shrink-0 overflow-hidden border-l border-[var(--fintheon-accent)]/10 ${
+                            showHarperFeed ? "w-80" : "w-0 border-l-0"
+                          }`}
+                          style={{
+                            transition:
+                              "width 280ms var(--ease-spring), border-width 280ms",
+                          }}
+                        >
+                          <div
+                            className="w-80 h-full overflow-hidden bg-[var(--fintheon-bg)]"
+                            style={{
+                              opacity: showHarperFeed ? 1 : 0,
+                              transition: "opacity 200ms ease 80ms",
+                            }}
+                          >
+                            <HarperActivityFeed
+                              onCollapse={() => setShowHarperFeed(false)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {displayedBoardroomSub === "research" && (
+                      <EmbeddedBrowserFrame
+                        title="Research"
+                        src={iframeUrls.research || ""}
+                        className="w-full h-full"
+                      />
+                    )}
+                  </>
+                )}
+
+                {/* Apparatus sub-views */}
+                {displayedTab === "apparatus" && (
+                  <>
+                    {displayedApparatusSub === "desk" && <ApparatusFlowMap />}
+                    {displayedApparatusSub === "fileroom" && <FileRoomPanel />}
+                    {displayedApparatusSub === "lounge" && <AgentLounge />}
+                  </>
+                )}
               </div>
             </div>
             <TradingViewQuickRail

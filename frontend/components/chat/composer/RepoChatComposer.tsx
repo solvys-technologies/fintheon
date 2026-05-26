@@ -1,4 +1,10 @@
-import { type CSSProperties, type HTMLAttributes, type ReactNode } from "react";
+import {
+  useEffect,
+  useState,
+  type CSSProperties,
+  type HTMLAttributes,
+  type ReactNode,
+} from "react";
 
 export type RepoChatComposerFormat = "full" | "compact";
 export type RepoChatComposerSurface = "drawer";
@@ -28,7 +34,7 @@ export function RepoChatComposer({
   const innerStyle = {
     "--fintheon-chat-composer-max":
       maxWidth ?? (format === "compact" ? "32rem" : "56rem"),
-    "--fintheon-chat-drawer-width": "90%",
+    "--fintheon-chat-drawer-width": "92%",
   } as CSSProperties;
 
   return (
@@ -38,10 +44,7 @@ export function RepoChatComposer({
       style={style}
       {...props}
     >
-      <div
-        className="fintheon-repo-chat-composer__inner"
-        style={innerStyle}
-      >
+      <div className="fintheon-repo-chat-composer__inner" style={innerStyle}>
         {children}
       </div>
     </div>
@@ -57,18 +60,35 @@ export function RepoChatComposerSurface({
   style,
   ...props
 }: RepoChatComposerSurfaceProps) {
-  if (!open) return null;
+  const [shouldRender, setShouldRender] = useState(open);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setShouldRender(true);
+      const frame = requestAnimationFrame(() => setIsVisible(true));
+      return () => cancelAnimationFrame(frame);
+    }
+
+    setIsVisible(false);
+    const timer = window.setTimeout(() => setShouldRender(false), 280);
+    return () => window.clearTimeout(timer);
+  }, [open]);
+
+  if (!shouldRender) return null;
 
   return (
     <div
-      aria-hidden={!open}
+      aria-hidden={!isVisible}
       data-composer-surface={kind}
-      data-open="true"
-      className={`fintheon-chat-input-drawer narrative-chat-drawer-motion t-panel-slide transition-all duration-300 pointer-events-auto ${className}`}
-      style={{
-        ...style,
-        maxHeight,
-      }}
+      data-open={isVisible ? "true" : "false"}
+      className={`fintheon-chat-input-drawer narrative-chat-drawer-motion t-panel-slide ${isVisible ? "pointer-events-auto" : "pointer-events-none"} ${className}`}
+      style={
+        {
+          ...style,
+          "--fintheon-chat-drawer-max-height": maxHeight,
+        } as CSSProperties
+      }
       {...props}
     >
       {children}

@@ -4,6 +4,7 @@ import type { QueuedMessage } from "../chat/MessageQueue";
 import type { ReasoningLevel } from "../chat/reasoning";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import type { NarrativeHeadlineOption } from "./sensemaking-types";
+import type { NarrativeSelectionChip } from "./narrative-selection";
 
 interface NarrativeSensemakingComposerProps {
   query: string;
@@ -16,7 +17,7 @@ interface NarrativeSensemakingComposerProps {
   minHeadlines?: number;
   submitLabel?: string;
   attachLabel?: string;
-  narrativeChips?: NarrativeChip[];
+  narrativeChips?: NarrativeSelectionChip[];
   selectedNarrativeSlugs?: Set<string>;
   contextStats?: {
     messageCount: number;
@@ -28,7 +29,7 @@ interface NarrativeSensemakingComposerProps {
   onOpenDrawer: () => void;
   onCloseDrawer?: () => void;
   onRemoveHeadline: (id: string) => void;
-  onSubmit: () => void;
+  onSubmit: (message: string) => void;
   onQueueMessage: (text: string) => void;
   onEditQueue: (id: string, text: string) => void;
   onRemoveQueue: (id: string) => void;
@@ -73,9 +74,4 @@ function estimateTokens(
     .map((item) => `${item.headline} ${item.summary ?? ""}`)
     .join("\n");
   return Math.ceil(`${query}\n${headlineText}`.length / 4);
-}
-
-interface NarrativeChip {
-  slug: string;
-  label: string;
 }

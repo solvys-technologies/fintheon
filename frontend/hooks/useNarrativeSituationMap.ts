@@ -2,12 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-export const DEFAULT_NARRATIVE_SESSION_CHIPS = [
-  { slug: "rate-cut-cycle", label: "Rate Cut Cycle" },
-  { slug: "price-stability", label: "Price Stability" },
-  { slug: "maximum-employment", label: "Max Employment" },
-];
-
 export type SituationConflictLabel =
   | "confirming"
   | "conflicting"

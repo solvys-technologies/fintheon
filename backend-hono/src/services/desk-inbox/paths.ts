@@ -15,7 +15,9 @@ export async function inboxRoot(deskId = DEFAULT_DESK_ID): Promise<string> {
   return root;
 }
 
-export async function approvedMemoRoot(deskId = DEFAULT_DESK_ID): Promise<string> {
+export async function approvedMemoRoot(
+  deskId = DEFAULT_DESK_ID,
+): Promise<string> {
   const safeDeskId = sanitizeDeskId(deskId);
   await ensureDeskFolders(safeDeskId);
   const root = sectionRoot(safeDeskId, "agentic-memos");

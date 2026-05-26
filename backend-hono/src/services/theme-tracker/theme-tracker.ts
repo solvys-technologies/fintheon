@@ -51,18 +51,14 @@ export function transitionStatus(theme: Theme, now = Date.now()): ThemeStatus {
     theme.catalystIds.length > 0
       ? new Date(theme.updatedAt).getTime()
       : new Date(theme.createdAt).getTime();
-  const hoursSinceLastCatalyst =
-    (now - lastCatalystTime) / (1000 * 60 * 60);
+  const hoursSinceLastCatalyst = (now - lastCatalystTime) / (1000 * 60 * 60);
 
   if (hoursSinceLastCatalyst < DECAY_GRACE_PERIOD_HOURS) {
     return theme.status === "Resolved" ? "Resolved" : "Active";
   }
 
   const decayHours = hoursSinceLastCatalyst - DECAY_GRACE_PERIOD_HOURS;
-  const decayedIvp = Math.max(
-    theme.ipv - decayHours * DECAY_RATE_PER_HOUR,
-    0,
-  );
+  const decayedIvp = Math.max(theme.ipv - decayHours * DECAY_RATE_PER_HOUR, 0);
 
   if (decayedIvp <= RESOLVE_IPV_THRESHOLD) return "Resolved";
   if (decayedIvp <= DECAY_IPV_THRESHOLD) return "Decaying";

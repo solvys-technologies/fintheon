@@ -43,9 +43,7 @@ export function NextSessionScenariosStrip({
     >
       {scenarios.map((scenario, index) => (
         <div key={scenario.label} className="contents">
-          {index > 0 && (
-            <FadingRuler className="my-0.5" />
-          )}
+          {index > 0 && <FadingRuler className="my-0.5" />}
           <div className="grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)_2.5rem] items-center gap-2 px-1.5 py-0.5">
             <span className="truncate text-[9px] uppercase tracking-[0.16em] text-[var(--fintheon-text)]/55">
               {scenario.label}

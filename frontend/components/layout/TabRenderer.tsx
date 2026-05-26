@@ -176,7 +176,11 @@ function DeskNarrativeMapSurface() {
       .catch((err) => {
         if (cancelled) return;
         setSessions([]);
-        setError(err instanceof Error ? err.message : "Narrative sessions failed to load.");
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Narrative sessions failed to load.",
+        );
       });
     return () => {
       cancelled = true;

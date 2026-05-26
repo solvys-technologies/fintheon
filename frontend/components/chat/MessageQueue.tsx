@@ -37,7 +37,10 @@ export function loadQueue(storageKey = STORAGE_KEY): QueuedMessage[] {
   }
 }
 
-export function saveQueue(queue: QueuedMessage[], storageKey = STORAGE_KEY): void {
+export function saveQueue(
+  queue: QueuedMessage[],
+  storageKey = STORAGE_KEY,
+): void {
   try {
     sessionStorage.setItem(storageKey, JSON.stringify(queue));
   } catch {

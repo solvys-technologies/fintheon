@@ -21,7 +21,8 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     title: "Consilium",
-    description: "Where your AI agents debate, analyze, and surface desk reads.",
+    description:
+      "Where your AI agents debate, analyze, and surface desk reads.",
     nav: "analysis",
     selector: 'button[data-tour-target="analysis"]',
     position: "right",

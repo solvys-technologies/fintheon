@@ -3,7 +3,11 @@ import {
   isNarrativeArtifactType,
   putSessionArtifact,
 } from "../../../services/narrative-sessions/artifact-store.js";
-import { addSessionLinks, addSessionMessage, readSessionWorkEvents } from "../../../services/narrative-sessions/history-store.js";
+import {
+  addSessionLinks,
+  addSessionMessage,
+  readSessionWorkEvents,
+} from "../../../services/narrative-sessions/history-store.js";
 import {
   attachSessionCatalysts,
   createNarrativeSession,
@@ -14,6 +18,7 @@ import {
   replaceSessionCatalysts,
   updateNarrativeSession,
 } from "../../../services/narrative-sessions/session-store.js";
+import { enqueueNarrativeSessionVaultSync } from "../../../services/narrative-sessions/vault-sync.js";
 import type { SessionLinkInput } from "../../../services/narrative-sessions/types.js";
 import {
   artifactSchema,
@@ -40,13 +45,6 @@ export async function handleCreateSession(c: Context): Promise<Response> {
   if (!parsed.success) return validationError(c, parsed.error.issues);
 
   const catalystIds = Array.from(new Set(parsed.data.catalystIds));
-  if (catalystIds.length < 3) {
-    return c.json(
-      { error: "Attach at least 3 RiskFlow catalysts to begin." },
-      400,
-    );
-  }
-
   try {
     const session = await createNarrativeSession({
       ...parsed.data,
@@ -104,6 +102,7 @@ export async function handleAttachCatalysts(c: Context): Promise<Response> {
       catalysts,
       actorId: getActorId(c),
     });
+    syncSessionVault(c.req.param("id"));
     return c.json({ catalysts: rows });
   } catch (err) {
     return handleSessionError(c, err);
@@ -121,6 +120,7 @@ export async function handleReplaceCatalysts(c: Context): Promise<Response> {
       catalysts,
       actorId: getActorId(c),
     });
+    syncSessionVault(c.req.param("id"));
     return c.json({ catalysts: rows });
   } catch (err) {
     return handleSessionError(c, err);
@@ -133,6 +133,7 @@ export async function handleRemoveCatalyst(c: Context): Promise<Response> {
       sessionId: c.req.param("id"),
       riskflowItemId: c.req.param("riskflowItemId"),
     });
+    syncSessionVault(c.req.param("id"));
     return c.json(result);
   } catch (err) {
     return handleSessionError(c, err);
@@ -149,6 +150,7 @@ export async function handleAddMessage(c: Context): Promise<Response> {
       message: parsed.data,
       actorId: getActorId(c),
     });
+    syncSessionVault(c.req.param("id"));
     return c.json({ message }, 201);
   } catch (err) {
     return handleSessionError(c, err);
@@ -180,7 +182,9 @@ export async function handlePutArtifact(c: Context): Promise<Response> {
       payload: parsed.data.payload,
       createdBy: getActorId(c),
     });
-    if (artifactType === "docs") await addSessionLinks(sessionId, extractLinks(parsed.data.payload));
+    if (artifactType === "docs")
+      await addSessionLinks(sessionId, extractLinks(parsed.data.payload));
+    syncSessionVault(sessionId);
     return c.json({ artifact });
   } catch (err) {
     return handleSessionError(c, err);
@@ -217,21 +221,39 @@ function normalizeCatalystBody(data: {
 }
 
 function handleSessionError(c: Context, err: unknown): Response {
-  const message = err instanceof Error ? err.message : "Narrative session failed";
+  const message =
+    err instanceof Error ? err.message : "Narrative session failed";
   const status = message.includes("not configured") ? 503 : 500;
   console.error("[NarrativeSessions]", message);
   return c.json({ error: message }, status);
 }
 
+function syncSessionVault(sessionId: string): void {
+  void getNarrativeSessionDetail(sessionId)
+    .then(enqueueNarrativeSessionVaultSync)
+    .catch((error) =>
+      console.warn(
+        `[NarrativeSessions] desk vault sync skipped: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      ),
+    );
+}
+
 function extractLinks(payload: Record<string, unknown>): SessionLinkInput[] {
   const links = Array.isArray(payload.links) ? payload.links : [];
   return links
-    .filter((link): link is Record<string, unknown> => Boolean(link && typeof link === "object"))
+    .filter((link): link is Record<string, unknown> =>
+      Boolean(link && typeof link === "object"),
+    )
     .map((link) => ({
       url: String(link.url ?? ""),
       title: link.title ? String(link.title) : null,
       source: link.source ? String(link.source) : "docs",
       summary: link.summary ? String(link.summary) : null,
     }))
-    .filter((link) => link.url.startsWith("http://") || link.url.startsWith("https://"));
+    .filter(
+      (link) =>
+        link.url.startsWith("http://") || link.url.startsWith("https://"),
+    );
 }

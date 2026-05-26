@@ -418,7 +418,6 @@ export function Sanctum({
               )}
             </div>
           )}
-
         </div>
         {/* Scroll-lock page indicators */}
         {visiblePages.length > 1 && (

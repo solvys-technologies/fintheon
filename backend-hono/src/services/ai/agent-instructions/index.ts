@@ -28,6 +28,14 @@ import {
   getAllProfiles,
   getHandoffTargets,
 } from "../../capability-registry/registry.js";
+import {
+  buildNarrativeFlowResearchProtocolBlock,
+  buildTradingViewWatchlistScopeBlock,
+} from "./narrativeflow-research.js";
+import {
+  ensureAgentPromptVault,
+  renderFileroomPromptLayer,
+} from "./fileroom-prompt-vault.js";
 
 const ROLE_TO_SOUL_ID: Record<HermesAgentRole, SoulAgentId> = {
   "harper-cao": "harper",
@@ -183,10 +191,10 @@ If backtested or historical data exists for the setup, convert the reflection in
 Check learning velocity with GET /api/agent/learning/summary?days=7. If the last 7 days show no memories, treat learning as stalled and ask Harper or another Fintheon agent to run the Obsidian export review:
 cd backend-hono && bun run memory:obsidian -- --days=7 --vault="$OBSIDIAN_VAULT_PATH"
 
-Refresh the RiskFlow catalyst vault when NF-Workspace catalyst recall feels stale:
-cd backend-hono && bun run catalysts:obsidian -- --vault="$OBSIDIAN_CATALYST_VAULT_PATH"
+Refresh the RiskFlow Main vault when NF-Workspace catalyst recall feels stale:
+cd backend-hono && bun run catalysts:obsidian -- --vault="$OBSIDIAN_RISKFLOW_VAULT_PATH"
 
-The catalyst vault is also TP's narrative authoring substrate. After export, agents should use:
+The RiskFlow Main vault is also TP's narrative authoring substrate. After export, agents should use:
 - \`Catalysts/\` as the durable headline database.
 - \`Narrative Builder/Start Here.md\` as the operating guide.
 - \`Templates/Narrative Brief.md\` to help TP and desk traders draft their own narratives.
@@ -194,6 +202,23 @@ The catalyst vault is also TP's narrative authoring substrate. After export, age
 - \`Narratives/Drafts/\` for human-written narrative notes; do not overwrite those drafts from exports.
 
 Your learnings will be recalled in future contexts to improve your performance. Do not store secrets, raw credentials, or private account data.
+`;
+
+const FILEROOM_MEMORY_UPDATE_BLOCK = `
+
+## User-Directed Memory Updates
+When the user says "update your memory", "remember this", "update your SOUL", "update your system prompt", "save this for next time", or a similar phrase, treat it as an instruction to persist the lesson into your Fileroom operating files.
+Use POST /api/agent/learning with topic "user-directed-memory-update", memoryType "reflect_finding" or "learned_pattern", and include enough context for the future relationship, not just a shallow note.
+Those writes update your Fileroom Reflections, Growth Addendum, active System Prompt Streamdown, and relationship-memory section in SOUL.md for future runs.
+`;
+
+const RISK_EVENT_SCALPER_BLOCK = `
+
+## Default Desk Stance
+You were hired by Risk Event scalpers. Unless the user explicitly changes horizon, gear every analysis, desk plan, briefing, and agentic desk action toward scalpable risk-event decisions.
+Default thinking: what changed, what the tape priced, who is trapped, what reprices next, where the scalp invalidates, and what catalyst/time window matters now.
+Educate yourself after each meaningful miss or new pattern so you become a legendary risk-event analyst, not a generic market commentator.
+Do not reflexively answer "You're right." If the user is right, absorb the correction and move. Use sharp Wall Street desk language when appropriate; profanity is allowed when it adds desk realism, but never aim it at the user.
 `;
 
 const CAPABILITIES_BLOCK = `
@@ -208,7 +233,7 @@ You have access to the following live data sources and tools. Do NOT say "awaiti
 - **RiskFlow Feed**: Live news headlines with macro-level scoring (HIGH/MED/LOW) and sentiment are injected at the end of this prompt when available. Reference them by name when discussing current market conditions, narratives, or risk events.
 - **NarrativeFlow / Catalysts**: Promoted RiskFlow items with narrative thread assignments — use \`run_command\` to query the backend API: \`curl -s http://localhost:8080/api/narrative/catalysts\`
 - **NF-Workspace Catalyst Bank**: Default catalyst database for NarrativeFlow sessions — search \`curl -s "http://localhost:8080/api/narrative/catalyst-bank?q=tariff&limit=20"\`; assign to a workspace with \`POST /api/narrative/sessions/:id/catalyst-bank/assign\` using \`{ "catalystIds": [...], "tags": ["fed", "inflation"], "deskFit": "why this fits the desk" }\`.
-- **Obsidian Catalyst Vault / Narrative Builder**: Refresh with \`cd backend-hono && bun run catalysts:obsidian -- --vault="$OBSIDIAN_CATALYST_VAULT_PATH"\`. Use \`Narrative Builder/Start Here.md\`, \`Templates/Narrative Brief.md\`, \`Trader Banks/\`, and \`Desk Workspaces/\` to help TP and desk traders build their own narratives from the stored headline database.
+- **RiskFlow Main Vault / Narrative Builder**: Refresh with \`cd backend-hono && bun run catalysts:obsidian -- --vault="$OBSIDIAN_RISKFLOW_VAULT_PATH"\`. Use \`Narrative Builder/Start Here.md\`, \`Templates/Narrative Brief.md\`, \`Trader Banks/\`, and \`Desk Workspaces/\` to help TP and desk traders build their own narratives from the stored headline database.
 - **Economic Calendar**: \`curl -s http://localhost:8080/api/data/econ-events\`
 - **Daily Briefs**: \`curl -s http://localhost:8080/api/data/briefs/latest\`
 - **Supabase DB**: scored_riskflow_items, narrative_threads, econ_events tables — query via backend API endpoints
@@ -276,6 +301,7 @@ export async function getAgentSystemPrompt(
   const soulId = ROLE_TO_SOUL_ID[role];
   if (soulId) {
     try {
+      await ensureAgentPromptVault(soulId);
       const soul = await loadSoul(soulId);
       prompt = renderSoulPrompt(soul);
     } catch (err) {
@@ -317,9 +343,14 @@ export async function getAgentSystemPrompt(
 
   // 2.8. Self-learning loop — reflect and store learnings
   prompt += SELF_LEARNING_BLOCK;
+  prompt += FILEROOM_MEMORY_UPDATE_BLOCK;
+  prompt += RISK_EVENT_SCALPER_BLOCK;
 
   // 2.9. Capability awareness — what tools and data the agent has access to
   prompt += CAPABILITIES_BLOCK;
+
+  // 2.10. Watchlist scope — external catalysts are allowed, trading talk is not.
+  prompt += buildTradingViewWatchlistScopeBlock();
 
   // 3. Agent-specific philosophy block
   const philosophy = AGENT_PHILOSOPHY[role];
@@ -339,6 +370,9 @@ export async function getAgentSystemPrompt(
     if (skillBlock) {
       prompt += skillBlock;
     }
+    if (skillKey === "NARRATIVEFLOW_RESEARCH") {
+      prompt += buildNarrativeFlowResearchProtocolBlock();
+    }
   }
 
   // 6. Deep analysis block
@@ -346,10 +380,18 @@ export async function getAgentSystemPrompt(
     prompt += DEEP_ANALYSIS_BLOCK;
   }
 
+  if (soulId) {
+    prompt += await renderFileroomPromptLayer(soulId);
+  }
+
   // Cache the compiled prompt
   promptCache.set(cacheKey, { prompt, expiresAt: Date.now() + CACHE_TTL_MS });
 
   return prompt;
+}
+
+export function clearAgentSystemPromptCache(): void {
+  promptCache.clear();
 }
 
 /**

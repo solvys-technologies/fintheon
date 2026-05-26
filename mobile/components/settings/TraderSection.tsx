@@ -7,11 +7,32 @@
 import { useSettings } from "../../contexts/SettingsContext";
 
 const SUPPORTED_INSTRUMENTS = [
-  "/NQ", "/ES", "/YM", "/RTY", "/MNQ", "/MES", "/MYM", "/M2K",
-  "/CL", "/GC", "/SI", "/NG", "/MCL", "/MGC", "/SIL",
-  "/ZB", "/ZN", "/ZT",
-  "/BTC", "/ETH",
-  "/6E", "/6J", "/6B", "/6A", "/6C", "/6S",
+  "/NQ",
+  "/ES",
+  "/YM",
+  "/RTY",
+  "/MNQ",
+  "/MES",
+  "/MYM",
+  "/M2K",
+  "/CL",
+  "/GC",
+  "/SI",
+  "/NG",
+  "/MCL",
+  "/MGC",
+  "/SIL",
+  "/ZB",
+  "/ZN",
+  "/ZT",
+  "/BTC",
+  "/ETH",
+  "/6E",
+  "/6J",
+  "/6B",
+  "/6A",
+  "/6C",
+  "/6S",
 ];
 
 export function TraderSection() {
@@ -33,12 +54,15 @@ export function TraderSection() {
       <FieldLabel value="INSTRUMENT">
         <select
           value={settings.selectedInstrument}
-          onChange={(e) => updateSettings({ selectedInstrument: e.target.value })}
+          onChange={(e) =>
+            updateSettings({ selectedInstrument: e.target.value })
+          }
           style={{
             width: "100%",
             padding: "12px 14px",
             background: "color-mix(in srgb, var(--accent) 2%, transparent)",
-            border: "1px solid color-mix(in srgb, var(--accent) 12%, transparent)",
+            border:
+              "1px solid color-mix(in srgb, var(--accent) 12%, transparent)",
             borderRadius: 10,
             color: "var(--text-primary)",
             fontFamily: "var(--font-data)",

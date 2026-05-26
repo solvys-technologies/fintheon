@@ -9,6 +9,143 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-26T01:55:00-04:00",
+    agent: "codex",
+    summary:
+      "v7.0.1 unification deploy: captured the completed NarrativeFlow/CAO chat unification, Fileroom-grounded agent memory, global Supabase-backed server secret vault, ProxVoice global config, futures-watchlist research constraints, selected-state visual cleanup, and installer/update pointers for the v7 release line.",
+    files: [
+      "package.json",
+      "mobile/package.json",
+      "scripts/fintheon-setup.sh",
+      "scripts/fintheon-update.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-26T00:56:00-04:00",
+    agent: "codex",
+    summary:
+      "Reworked CAO/chat architecture around Fileroom-grounded agent memory: removed NarrativeFlow hidden opener auto-sends, added Fileroom SOUL/System Prompt/Reflection/Growth/GEPA Streamdowns, wired learning and REFLECT writes into those files, made user-directed memory phrases append relationship memory to SOUL.md, unified NarrativeFlow onto the repo-owned composer, fixed ticker-strip Streamdown recovery with 5D sparklines, and cleaned up the thinking row shimmer/state.",
+    files: [
+      "backend-hono/src/services/ai/agent-instructions/fileroom-prompt-vault.ts",
+      "backend-hono/src/services/ai/agent-instructions/index.ts",
+      "backend-hono/src/services/strands/agents/harper.ts",
+      "backend-hono/src/routes/agent-learning/index.ts",
+      "backend-hono/src/services/autoresearch/reflect-engine.ts",
+      "frontend/components/ui/chatgpt-prompt-input.tsx",
+      "frontend/components/narrative/NarrativeInputBar.tsx",
+      "frontend/components/chat/CognitionPanel.tsx",
+      "frontend/components/chat/slots/StreamdownChat.tsx",
+      "frontend/index.css",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-25T23:29:16-04:00",
+    agent: "codex",
+    summary:
+      "Made ProxVoice/Forum token generation global: LiveKit credentials now resolve from the backend server_secrets vault with local env values persisted into that vault, the token route no longer depends on one user's local config, and a safe ProxVoice status endpoint reports configured/source state without exposing secrets.",
+    files: [
+      "backend-hono/src/services/proxvoice/global-config.ts",
+      "backend-hono/src/services/proxvoice/token-service.ts",
+      "backend-hono/src/routes/proxvoice/index.ts",
+      "backend-hono/.env.example",
+      "supabase/migrations/20260526000000_server_secrets_global_vault.sql",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-25T23:21:48-04:00",
+    agent: "codex",
+    summary:
+      "Translated Orchestra-style research skills into NarrativeFlow's futures workflow: added a local NarrativeFlow Research skill pack, injected the watchlist-bound research protocol into agent prompts, constrained trading analysis to the TradingView watchlist while allowing external catalysts as drivers, and replaced weekly-memo framing with catalysts-to-watch-forward.",
+    files: [
+      "backend-hono/src/services/ai/agent-instructions/narrativeflow-research.ts",
+      "backend-hono/src/services/ai/agent-instructions/index.ts",
+      "backend-hono/src/services/ai/agent-instructions/skill-instructions.ts",
+      "backend-hono/src/services/ai/agent-instructions/harper-extra.md",
+      "backend-hono/src/services/market-data/macro-watchlist.ts",
+      "backend-hono/src/services/strands/agents/harper.ts",
+      "backend-hono/src/routes/ai/handlers/chat.ts",
+      "backend-hono/src/services/hermes-handler.ts",
+      "backend-hono/src/config/feature-flags.ts",
+      "frontend/lib/skillPrefixes.ts",
+      "skills/narrativeflow-research/skill.yaml",
+      "skills/narrativeflow-research/entry.ts",
+      ".claude/skills/narrativeflow-research/SKILL.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-25T23:15:19-04:00",
+    agent: "codex",
+    summary:
+      "Consilium polish follow-up: Desk Rail tabs no longer use selected background fills or boxed toolbar chrome, desk plan cards use severity-colored full borders with matching corner triangles instead of Kanban stripes, and NarrativeFlow workspace/situation-map cards now fade in and out when sessions or catalyst nodes are modified.",
+    files: [
+      "frontend/components/desk/DeskRail.tsx",
+      "frontend/components/desk/DeskPlansFeed.tsx",
+      "frontend/components/narrative/NarrativeDeskMapCanvas.tsx",
+      "frontend/components/narrative/NarrativeSituationMap.tsx",
+      "frontend/index.css",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-25T23:03:24-04:00",
+    agent: "codex",
+    summary:
+      "NarrativeFlow audit fix: active workspace rails now default to attached anchor catalysts and desk activity favors anchors before related catalysts, keeping the first visible read tied to the approved build.",
+    files: [
+      "frontend/components/narrative/NarrativeFlowTab.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-25T23:00:58-04:00",
+    agent: "codex",
+    summary:
+      "Added the two-tier Obsidian vault path: scored RiskFlow headlines funnel into a RiskFlow Main vault, desk records issue Desk Vault folders, NarrativeFlow workspace/tag notes sync into desk vaults, and context mentions can cite both vault tiers.",
+    files: [
+      "backend-hono/src/services/obsidian-vaults/paths.ts",
+      "backend-hono/src/services/riskflow/obsidian-funnel.ts",
+      "backend-hono/src/services/context-mentions/vault-notes.ts",
+      "backend-hono/src/services/file-room/paths.ts",
+      "backend-hono/src/services/narrative-sessions/vault-sync.ts",
+      "backend-hono/src/services/supabase-service.ts",
+      "frontend/components/narrative/NarrativeInputBar.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-25T22:51:46-04:00",
+    agent: "codex",
+    summary:
+      "Fixed NarrativeFlow composer intake: greeting sends now build real sessions directly, narrative/headline attachments are optional with agent-selected RiskFlow anchors, long prompts auto-grow, catalyst-required hover guidance remains available for required contexts, narrative selectors use none/single/all selection with user-colored swatches, chat composer drawers slide open/closed through shared chrome, Consilium chart rails now open NQ futures instead of QQQ, and the Fileroom section icon import no longer blocks builds.",
+    files: [
+      "backend-hono/src/routes/narrative/sessions/validation.ts",
+      "backend-hono/src/routes/narrative/sessions/handlers.ts",
+      "backend-hono/src/services/narrative-sensemaking/catalyst-reader.ts",
+      "backend-hono/src/services/narrative-sensemaking/sensemaker.ts",
+      "backend-hono/src/services/narrative-sessions/session-store.ts",
+      "frontend/components/ChatInterface.tsx",
+      "frontend/components/chat/composer/RepoChatComposer.tsx",
+      "frontend/components/narrative/NarrativeCanvas.tsx",
+      "frontend/components/narrative/NarrativeFlowLanding.tsx",
+      "frontend/components/narrative/NarrativeInputBar.tsx",
+      "frontend/components/narrative/NarrativeSensemakingComposer.tsx",
+      "frontend/components/narrative/SanctumChart.tsx",
+      "frontend/components/narrative/CatalystModal.tsx",
+      "frontend/components/narrative/narrative-selection.ts",
+      "frontend/components/memory/FileRoomSectionList.tsx",
+      "frontend/contexts/SettingsContext.tsx",
+      "frontend/hooks/useNarrativeSituationMap.ts",
+      "frontend/index.css",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-25T20:38:00-04:00",
     agent: "codex",
     summary:
@@ -1615,9 +1752,7 @@ export const changelog: ChangelogEntry[] = [
     agent: "claude-code",
     summary:
       "S68 shipped: Theme Tracker (T1), Catalyst Drift (T2), NarrativeFlow impact-intelligence surface (T3), NarrativeMap pan persistence (T4), Canvas polish + micro-interactions (T5). Archived to sprint-changelog/. 5 tracks, 37 files. Deployed v6.5.0 to all 3 targets.",
-    files: [
-      "sprint-changelog/S68-ORCH-narrativeflow-theme-intelligence.md",
-    ],
+    files: ["sprint-changelog/S68-ORCH-narrativeflow-theme-intelligence.md"],
   },
   {
     date: "2026-05-16T21:30:00-04:00",
@@ -1704,10 +1839,7 @@ export const changelog: ChangelogEntry[] = [
     agent: "claude-code",
     summary:
       "fix: removed LockScreen overlay from App.tsx — lockout should block trading apps only, not Fintheon itself (post-session analysis now accessible). Removed borders from .toolbar-icon-btn — FadingRuler vertical separators handle visual division in pill groups.",
-    files: [
-      "frontend/App.tsx",
-      "frontend/index.css",
-    ],
+    files: ["frontend/App.tsx", "frontend/index.css"],
   },
   {
     date: "2026-05-15T13:33:00-04:00",

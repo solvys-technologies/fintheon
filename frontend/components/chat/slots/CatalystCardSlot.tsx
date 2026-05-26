@@ -91,7 +91,9 @@ export function CatalystCardSlot({ code, isIncomplete }: CustomRendererProps) {
           IV · {d.iv_context}
         </div>
       )}
-      <div style={{ display: "flex", gap: 8, marginTop: 4, alignItems: "center" }}>
+      <div
+        style={{ display: "flex", gap: 8, marginTop: 4, alignItems: "center" }}
+      >
         {d.source && (
           <div
             style={{

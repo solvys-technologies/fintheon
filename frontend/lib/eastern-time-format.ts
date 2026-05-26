@@ -53,7 +53,11 @@ export function installEasternTimeFormatOverride(): void {
     locales?: Intl.LocalesArgument,
     options?: Intl.DateTimeFormatOptions,
   ) {
-    return originalString.call(this, locales || "en-US", withEastern12h(options));
+    return originalString.call(
+      this,
+      locales || "en-US",
+      withEastern12h(options),
+    );
   };
 
   proto.__fintheonEasternTimeOverride = true;

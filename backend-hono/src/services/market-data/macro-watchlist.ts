@@ -25,23 +25,86 @@ export interface MacroWatchQuote {
   open: number;
   rolling7dHigh: number | null;
   rolling7dLow: number | null;
+  rolling5dHigh: number | null;
+  rolling5dLow: number | null;
   sparkline: Array<{ time: number; close: number }>;
+  sparklineSpan: "5d" | "unavailable";
   historySource: "yahoo" | "unavailable";
   asOf: string;
 }
 
 export const MACRO_WATCHLIST: MacroWatchSymbol[] = [
-  { label: "NQ", tvSymbol: "CME_MINI:NQ1!", yahooSymbol: "NQ=F", market: "futures", group: "equity" },
-  { label: "ES", tvSymbol: "CME_MINI:ES1!", yahooSymbol: "ES=F", market: "futures", group: "equity" },
-  { label: "YM", tvSymbol: "CBOT_MINI:YM1!", yahooSymbol: "YM=F", market: "futures", group: "equity" },
-  { label: "RTY", tvSymbol: "CME_MINI:RTY1!", yahooSymbol: "RTY=F", market: "futures", group: "equity" },
-  { label: "GC", tvSymbol: "COMEX:GC1!", yahooSymbol: "GC=F", market: "futures", group: "commodity" },
-  { label: "CL", tvSymbol: "NYMEX:CL1!", yahooSymbol: "CL=F", market: "futures", group: "commodity" },
-  { label: "VIX", tvSymbol: "TVC:VIX", yahooSymbol: "^VIX", market: "america", group: "vol" },
-  { label: "DXY", tvSymbol: "TVC:DXY", yahooSymbol: "DX-Y.NYB", market: "america", group: "currency" },
+  {
+    label: "NQ",
+    tvSymbol: "CME_MINI:NQ1!",
+    yahooSymbol: "NQ=F",
+    market: "futures",
+    group: "equity",
+  },
+  {
+    label: "ES",
+    tvSymbol: "CME_MINI:ES1!",
+    yahooSymbol: "ES=F",
+    market: "futures",
+    group: "equity",
+  },
+  {
+    label: "YM",
+    tvSymbol: "CBOT_MINI:YM1!",
+    yahooSymbol: "YM=F",
+    market: "futures",
+    group: "equity",
+  },
+  {
+    label: "RTY",
+    tvSymbol: "CME_MINI:RTY1!",
+    yahooSymbol: "RTY=F",
+    market: "futures",
+    group: "equity",
+  },
+  {
+    label: "GC",
+    tvSymbol: "COMEX:GC1!",
+    yahooSymbol: "GC=F",
+    market: "futures",
+    group: "commodity",
+  },
+  {
+    label: "CL",
+    tvSymbol: "NYMEX:CL1!",
+    yahooSymbol: "CL=F",
+    market: "futures",
+    group: "commodity",
+  },
+  {
+    label: "VIX",
+    tvSymbol: "TVC:VIX",
+    yahooSymbol: "^VIX",
+    market: "america",
+    group: "vol",
+  },
+  {
+    label: "DXY",
+    tvSymbol: "TVC:DXY",
+    yahooSymbol: "DX-Y.NYB",
+    market: "america",
+    group: "currency",
+  },
   { label: "US02Y", tvSymbol: "TVC:US02Y", market: "global", group: "rates" },
-  { label: "US10Y", tvSymbol: "TVC:US10Y", yahooSymbol: "^TNX", market: "global", group: "rates" },
-  { label: "US30Y", tvSymbol: "TVC:US30Y", yahooSymbol: "^TYX", market: "global", group: "rates" },
+  {
+    label: "US10Y",
+    tvSymbol: "TVC:US10Y",
+    yahooSymbol: "^TNX",
+    market: "global",
+    group: "rates",
+  },
+  {
+    label: "US30Y",
+    tvSymbol: "TVC:US30Y",
+    yahooSymbol: "^TYX",
+    market: "global",
+    group: "rates",
+  },
 ];
 
 export async function fetchMacroWatchlist(): Promise<MacroWatchQuote[]> {
@@ -86,7 +149,10 @@ export async function fetchMacroWatchlist(): Promise<MacroWatchQuote[]> {
       open: row.open,
       rolling7dHigh: hist?.high ?? null,
       rolling7dLow: hist?.low ?? null,
+      rolling5dHigh: hist?.high ?? null,
+      rolling5dLow: hist?.low ?? null,
       sparkline: hist?.sparkline ?? [],
+      sparklineSpan: hist ? "5d" : "unavailable",
       historySource: hist ? "yahoo" : "unavailable",
       asOf,
     };
@@ -106,9 +172,11 @@ export async function buildMacroWatchlistContext(): Promise<string> {
       "## Live Macro Watchlist Performance",
       `Source: TradingView scanner, as of ${rows[0]?.asOf}.`,
       ...lines,
+      "Hard scope: trading analysis, directional calls, entries, stops, targets, invalidation, hedges, and tape impact must pertain only to this TradingView watchlist.",
+      "External drivers, companies, sectors, countries, policy actors, or crypto catalysts may be observed as evidence, but they are not trade targets unless they map back to one of these watched symbols.",
       "Use these prices before making any futures, rates, VIX, or cross-asset claims. If a watched price is missing, say it is unavailable.",
       "When writing front-end chat responses, mention watched symbols naturally as /NQ, $ES, VIX, DXY, US02Y, US10Y, or US30Y; Streamdown will convert them into hoverable market cards.",
-      "To show clickable futures/rates pills in chat, include a fenced `market-ticker-strip` JSON block with optional symbols, e.g. {\"title\":\"Macro tape\",\"symbols\":[\"NQ\",\"ES\",\"YM\",\"GC\",\"CL\",\"VIX\",\"US02Y\",\"US10Y\"]}.",
+      'To show clickable futures/rates pills in chat, include an exact fenced Streamdown block, never inline text: ```market-ticker-strip\n{"title":"Macro tape","symbols":["NQ","ES","YM","GC","CL","VIX","US02Y","US10Y"]}\n```.',
     ].join("\n");
   } catch {
     return "";
@@ -139,13 +207,15 @@ async function fetchYahooHistory(
       return history ? ([symbol.label, history] as const) : null;
     }),
   );
-  return new Map(rows.filter((row): row is [string, YahooHistory] => Boolean(row)));
+  return new Map(
+    rows.filter((row): row is [string, YahooHistory] => Boolean(row)),
+  );
 }
 
 async function fetchYahooSymbolHistory(
   yahooSymbol: string,
 ): Promise<YahooHistory | null> {
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?range=7d&interval=1d`;
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?range=5d&interval=1d`;
   const res = await fetch(url, {
     signal: AbortSignal.timeout(8000),
     headers: {

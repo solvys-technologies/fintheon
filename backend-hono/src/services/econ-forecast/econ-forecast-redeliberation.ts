@@ -92,7 +92,8 @@ function applyRedeliberation(
     parsed.beatProbability ?? forecast.beat.probability,
   );
   const total = missProbability + beatProbability;
-  const normalizedMiss = total > 0 ? Math.round((missProbability / total) * 100) : 50;
+  const normalizedMiss =
+    total > 0 ? Math.round((missProbability / total) * 100) : 50;
 
   return {
     ...forecast,
@@ -152,7 +153,9 @@ function buildRedeliberationPrompt(
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
-      reject(new Error(`Forecast redeliberation timed out after ${timeoutMs}ms`));
+      reject(
+        new Error(`Forecast redeliberation timed out after ${timeoutMs}ms`),
+      );
     }, timeoutMs);
     promise.then(
       (value) => {

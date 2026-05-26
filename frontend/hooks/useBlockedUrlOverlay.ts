@@ -23,8 +23,8 @@ interface CheckedBlockState {
 
 export function useBlockedUrlOverlay(activeUrl: string): BlockerOverlayResult {
   const { proposerIframeSources } = useSettings();
-  const [quickTarget, setQuickTarget] = useState<BlockerQuickTarget | null>(() =>
-    loadBlockerQuickTarget(),
+  const [quickTarget, setQuickTarget] = useState<BlockerQuickTarget | null>(
+    () => loadBlockerQuickTarget(),
   );
   const [customDomains, setCustomDomains] = useState<string[]>(() =>
     loadBlockerCustomDomains(),
@@ -89,13 +89,28 @@ export function useBlockedUrlOverlay(activeUrl: string): BlockerOverlayResult {
       void checkBlocker();
     };
     window.addEventListener("fintheon:blocker-state-updated", refreshTargets);
-    window.addEventListener("fintheon:blocker-quick-target-updated", refreshTargets);
-    window.addEventListener("fintheon:blocker-custom-domains-updated", refreshTargets);
+    window.addEventListener(
+      "fintheon:blocker-quick-target-updated",
+      refreshTargets,
+    );
+    window.addEventListener(
+      "fintheon:blocker-custom-domains-updated",
+      refreshTargets,
+    );
     window.addEventListener("storage", refreshTargets);
     return () => {
-      window.removeEventListener("fintheon:blocker-state-updated", refreshTargets);
-      window.removeEventListener("fintheon:blocker-quick-target-updated", refreshTargets);
-      window.removeEventListener("fintheon:blocker-custom-domains-updated", refreshTargets);
+      window.removeEventListener(
+        "fintheon:blocker-state-updated",
+        refreshTargets,
+      );
+      window.removeEventListener(
+        "fintheon:blocker-quick-target-updated",
+        refreshTargets,
+      );
+      window.removeEventListener(
+        "fintheon:blocker-custom-domains-updated",
+        refreshTargets,
+      );
       window.removeEventListener("storage", refreshTargets);
     };
   }, [checkBlocker]);

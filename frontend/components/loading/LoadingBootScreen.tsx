@@ -13,7 +13,10 @@ export function LoadingBootScreen({
 }: LoadingBootScreenProps) {
   return (
     <div style={shellStyle}>
-      <LoadingGlobe phase="idle" style={{ position: "absolute", inset: "-6vmin" }} />
+      <LoadingGlobe
+        phase="idle"
+        style={{ position: "absolute", inset: "-6vmin" }}
+      />
       <div style={scanlineStyle} />
       <div style={contentStyle}>
         <LoadingStatusCard phrase={phrase} compact={compact} />

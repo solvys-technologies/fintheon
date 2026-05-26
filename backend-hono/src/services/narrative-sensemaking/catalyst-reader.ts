@@ -24,22 +24,26 @@ export function normalizeCatalystId(id: string): string {
   return id.replace(/^(rf-)?backend-/, "");
 }
 
-export async function readSensemakingCatalysts(ids: string[]) {
+export async function readSensemakingCatalysts(ids: string[], query = "") {
   const sb = getSupabaseClient();
   if (!sb) return { anchors: [], pool: [], links: new Map<string, string[]>() };
 
   const anchorIds = Array.from(new Set(ids.map(normalizeCatalystId)));
-  const { data: anchorsData, error: anchorsError } = await sb
-    .from("scored_riskflow_items")
-    .select(SELECT_FIELDS)
-    .in("tweet_id", anchorIds);
+  let anchorRows: CatalystRow[] = [];
 
-  if (anchorsError) {
-    console.warn("[NarrativeSensemaking] anchor read failed", anchorsError);
-    return { anchors: [], pool: [], links: new Map<string, string[]>() };
+  if (anchorIds.length > 0) {
+    const { data: anchorsData, error: anchorsError } = await sb
+      .from("scored_riskflow_items")
+      .select(SELECT_FIELDS)
+      .in("tweet_id", anchorIds);
+
+    if (anchorsError) {
+      console.warn("[NarrativeSensemaking] anchor read failed", anchorsError);
+      return { anchors: [], pool: [], links: new Map<string, string[]>() };
+    }
+    anchorRows = (anchorsData ?? []) as CatalystRow[];
   }
 
-  const anchorRows = (anchorsData ?? []) as CatalystRow[];
   const windowRange = getWindowRange(anchorRows);
   let poolQuery = sb
     .from("scored_riskflow_items")
@@ -58,9 +62,16 @@ export async function readSensemakingCatalysts(ids: string[]) {
     console.warn("[NarrativeSensemaking] related pool read failed", poolError);
   }
 
-  const poolRows = (poolData ?? []) as CatalystRow[];
+  let poolRows = (poolData ?? []) as CatalystRow[];
+  if (anchorRows.length === 0) {
+    anchorRows = selectRelevantAnchors(poolRows, query);
+    const selectedIds = new Set(anchorRows.map((row) => row.tweet_id));
+    poolRows = poolRows.filter((row) => !selectedIds.has(row.tweet_id));
+  }
   const allIds = Array.from(
-    new Set([...anchorRows, ...poolRows].map((row) => row.tweet_id).filter(Boolean)),
+    new Set(
+      [...anchorRows, ...poolRows].map((row) => row.tweet_id).filter(Boolean),
+    ),
   );
   const links = await readNarrativeLinks(allIds);
 
@@ -71,7 +82,9 @@ export async function readSensemakingCatalysts(ids: string[]) {
   };
 }
 
-async function readNarrativeLinks(ids: string[]): Promise<Map<string, string[]>> {
+async function readNarrativeLinks(
+  ids: string[],
+): Promise<Map<string, string[]>> {
   const sb = getSupabaseClient();
   const links = new Map<string, string[]>();
   if (!sb || ids.length === 0) return links;
@@ -116,8 +129,74 @@ function toCatalyst(
     agentNote: row.agent_note ?? null,
     role,
     relationScore: role === "anchor" ? 100 : 0,
-    relationReason: role === "anchor" ? "Attached headline" : "Related catalyst",
+    relationReason:
+      role === "anchor" ? "Attached headline" : "Related catalyst",
   };
+}
+
+function selectRelevantAnchors(rows: CatalystRow[], query: string) {
+  if (rows.length === 0) return [];
+  const terms = searchTerms(query);
+  const scored = rows.map((row) => ({
+    row,
+    score: scoreCatalystRow(row, terms),
+  }));
+  const ranked = scored
+    .filter((item) => item.score > 0 || terms.length === 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      const ivDelta = (b.row.iv_score ?? 0) - (a.row.iv_score ?? 0);
+      if (ivDelta !== 0) return ivDelta;
+      return (
+        new Date(b.row.published_at ?? 0).getTime() -
+        new Date(a.row.published_at ?? 0).getTime()
+      );
+    });
+  return ranked.slice(0, 3).map((item) => item.row);
+}
+
+function scoreCatalystRow(row: CatalystRow, terms: string[]): number {
+  const text = [
+    row.headline,
+    row.body,
+    row.source,
+    ...(row.symbols ?? []),
+    ...(row.tags ?? []),
+  ]
+    .join(" ")
+    .toLowerCase();
+  const termScore = terms.reduce(
+    (score, term) => score + (text.includes(term) ? 12 : 0),
+    0,
+  );
+  return termScore + Math.min(row.iv_score ?? 0, 10);
+}
+
+function searchTerms(query: string): string[] {
+  const stopwords = new Set([
+    "the",
+    "and",
+    "for",
+    "with",
+    "that",
+    "this",
+    "from",
+    "into",
+    "what",
+    "when",
+    "where",
+    "narrative",
+    "impact",
+    "probability",
+  ]);
+  return Array.from(
+    new Set(
+      query
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter((term) => term.length > 2 && !stopwords.has(term)),
+    ),
+  ).slice(0, 12);
 }
 
 function getWindowRange(rows: CatalystRow[]) {

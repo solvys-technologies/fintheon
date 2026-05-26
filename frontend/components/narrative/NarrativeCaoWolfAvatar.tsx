@@ -12,15 +12,15 @@ export function NarrativeCaoWolfAvatar({
 
   useEffect(() => {
     const root = rootRef.current;
-    const host = root?.closest(".narrative-cao-wolf-composer-host") as
-      | HTMLElement
-      | null;
+    const host = root?.closest(
+      ".narrative-cao-wolf-composer-host",
+    ) as HTMLElement | null;
     if (!root || !host) return;
     const composerHost = host;
 
-    const input = host.querySelector(".fintheon-composer-input") as
-      | HTMLElement
-      | null;
+    const input = host.querySelector(
+      ".fintheon-composer-input",
+    ) as HTMLElement | null;
     if (!input) return;
 
     function syncComposerHeight() {
@@ -45,11 +45,7 @@ export function NarrativeCaoWolfAvatar({
   }, []);
 
   return (
-    <div
-      ref={rootRef}
-      className="narrative-cao-wolf-layer"
-      aria-hidden="true"
-    >
+    <div ref={rootRef} className="narrative-cao-wolf-layer" aria-hidden="true">
       <Fragment key={runKey}>
         <div className="cao-elevator">
           <div className="cao-elevator-readout">8:18</div>
@@ -75,7 +71,12 @@ export function NarrativeCaoWolfAvatar({
         </div>
         <div className="cao-case-open-arm" />
         <div className="cao-impact">
-          <span /><span /><span /><span /><span /><span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
         </div>
         <div className="cao-peek">
           <div className="cao-peek-profile">

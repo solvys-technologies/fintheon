@@ -99,9 +99,7 @@ interface ArbitrumLatestState {
   refresh: () => Promise<void>;
 }
 
-export function useArbitrumLatest(
-  instrument?: string,
-): ArbitrumLatestState {
+export function useArbitrumLatest(instrument?: string): ArbitrumLatestState {
   const [verdict, setVerdict] = useState<ArbitrumVerdict | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -112,7 +110,8 @@ export function useArbitrumLatest(
   const fetchLatest = useCallback(async () => {
     try {
       const params = new URLSearchParams();
-      if (instrumentRef.current) params.set("instrument", instrumentRef.current);
+      if (instrumentRef.current)
+        params.set("instrument", instrumentRef.current);
       const query = params.toString();
       const url = `${API_BASE}/api/arbitrum/latest${query ? `?${query}` : ""}`;
       const res = await fetch(url);

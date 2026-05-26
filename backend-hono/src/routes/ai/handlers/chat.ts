@@ -50,6 +50,7 @@ import {
   verbalFlushMemory,
 } from "../../../services/cao-memory-flush.js";
 import { buildMacroWatchlistContext } from "../../../services/market-data/macro-watchlist.js";
+import { buildNarrativeFlowResearchProtocolBlock } from "../../../services/ai/agent-instructions/narrativeflow-research.js";
 
 // File attachment content part types
 type FileContentPart =
@@ -61,11 +62,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function buildConversationMetadata(input: {
-  metadata?: Record<string, unknown>;
-  workspace?: Record<string, unknown>;
-  surface?: string;
-} | null): Record<string, unknown> | undefined {
+function buildConversationMetadata(
+  input: {
+    metadata?: Record<string, unknown>;
+    workspace?: Record<string, unknown>;
+    surface?: string;
+  } | null,
+): Record<string, unknown> | undefined {
   if (!input) return undefined;
   const metadata = isRecord(input.metadata) ? { ...input.metadata } : {};
   if (isRecord(input.workspace)) metadata.workspace = input.workspace;
@@ -399,6 +402,19 @@ export async function handleChat(c: Context) {
       ? ((body as any).mcpServers as string[])
       : [];
     const hermesSurface = (body as any)?.surface as string | undefined;
+    const skillTag = extractSkillTag(message);
+    if (
+      hermesSurface === "narrativeflow" ||
+      skillTag === "NARRATIVEFLOW_RESEARCH"
+    ) {
+      prompt = `${buildNarrativeFlowResearchProtocolBlock()}\n\n${prompt}`;
+      cognition.step(
+        "context-build",
+        "NarrativeFlow research protocol",
+        "Watchlist-bound futures research workflow injected",
+      );
+    }
+
     if (
       hermesSurface === "arbitrumChamber" ||
       mcpActive.includes("arbitrumChamber")

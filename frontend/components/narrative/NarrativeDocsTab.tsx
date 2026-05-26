@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+} from "react";
 import {
   ChevronRight,
   ExternalLink,
@@ -56,11 +63,16 @@ export function NarrativeDocsTab({ session, response }: NarrativeDocsTabProps) {
     links: true,
     narratives: true,
   });
-  const [previewLink, setPreviewLink] = useState<NarrativeWorkspaceLink | null>(null);
+  const [previewLink, setPreviewLink] = useState<NarrativeWorkspaceLink | null>(
+    null,
+  );
   const [uploadedPdfs, setUploadedPdfs] = useState<WorkspacePdf[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const storageKey = `narrativeflow:workspace-pdfs:${session?.id ?? "draft"}`;
-  const report = session?.report ?? response?.forecast?.rationale ?? response?.synthesisSummary;
+  const report =
+    session?.report ??
+    response?.forecast?.rationale ??
+    response?.synthesisSummary;
   const synthesis = session?.synthesis ?? response?.synthesisSummary;
   const links = session?.webLinks ?? [];
   const catalysts = response
@@ -84,7 +96,8 @@ export function NarrativeDocsTab({ session, response }: NarrativeDocsTabProps) {
     try {
       window.localStorage.setItem(storageKey, JSON.stringify(uploadedPdfs));
     } catch {
-      if (uploadedPdfs.length > 0) setUploadError("PDF added, but browser storage is full.");
+      if (uploadedPdfs.length > 0)
+        setUploadError("PDF added, but browser storage is full.");
     }
   }, [storageKey, uploadedPdfs]);
 
@@ -95,7 +108,11 @@ export function NarrativeDocsTab({ session, response }: NarrativeDocsTabProps) {
   async function handlePdfUpload(event: ChangeEvent<HTMLInputElement>) {
     setUploadError(null);
     const files = Array.from(event.target.files ?? []);
-    const pdfs = files.filter((file) => file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf"));
+    const pdfs = files.filter(
+      (file) =>
+        file.type === "application/pdf" ||
+        file.name.toLowerCase().endsWith(".pdf"),
+    );
     const oversized = pdfs.find((file) => file.size > maxLocalPdfBytes);
     if (oversized) {
       setUploadError(`${oversized.name} is larger than 8 MB.`);
@@ -141,7 +158,8 @@ export function NarrativeDocsTab({ session, response }: NarrativeDocsTabProps) {
               {session?.title ?? "Narrative Workspace"}
             </h3>
             <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-[var(--fintheon-muted)]">
-              FileRoom, user uploads, and agent-generated notes for this narrative.
+              FileRoom, user uploads, and agent-generated notes for this
+              narrative.
             </p>
           </div>
           <button
@@ -164,10 +182,16 @@ export function NarrativeDocsTab({ session, response }: NarrativeDocsTabProps) {
 
         <div className="relative z-10 mt-3 space-y-1.5">
           {memoFiles.map((memo) => (
-            <MemoRow key={memo.id} memo={memo} onRemove={memo.pdfId ? removePdf : undefined} />
+            <MemoRow
+              key={memo.id}
+              memo={memo}
+              onRemove={memo.pdfId ? removePdf : undefined}
+            />
           ))}
           {uploadError ? (
-            <p className="px-2 py-1 text-[10px] text-red-300/85">{uploadError}</p>
+            <p className="px-2 py-1 text-[10px] text-red-300/85">
+              {uploadError}
+            </p>
           ) : null}
         </div>
       </section>
@@ -194,15 +218,23 @@ export function NarrativeDocsTab({ session, response }: NarrativeDocsTabProps) {
             </button>
           </div>
           <p className="text-xs leading-5 text-[var(--fintheon-text)]/88">
-            {report ?? "No quick brief is attached to this narrative session yet."}
+            {report ??
+              "No quick brief is attached to this narrative session yet."}
           </p>
           <p className="text-[11px] leading-4 text-[var(--fintheon-muted)]">
-            {synthesis ?? "The desk is building a plain-language summary for this narrative."}
+            {synthesis ??
+              "The desk is building a plain-language summary for this narrative."}
           </p>
         </div>
       </FolderSection>
 
-      <FolderSection id="links" label="Web Links" count={links.length} open={openFolders.links} onToggle={toggleFolder}>
+      <FolderSection
+        id="links"
+        label="Web Links"
+        count={links.length}
+        open={openFolders.links}
+        onToggle={toggleFolder}
+      >
         <div className="space-y-1.5 px-2 pb-3 pt-1">
           {links.length > 0 ? (
             links.map((link) => (
@@ -229,7 +261,11 @@ export function NarrativeDocsTab({ session, response }: NarrativeDocsTabProps) {
         <div className="space-y-1.5 px-2 pb-3 pt-1">
           {response?.narrativeGroups.length ? (
             response.narrativeGroups.map((group) => (
-              <NarrativeFolderRow key={group.id} group={group} catalysts={catalysts} />
+              <NarrativeFolderRow
+                key={group.id}
+                group={group}
+                catalysts={catalysts}
+              />
             ))
           ) : (
             <EmptyFolder label="Related narrative folders will appear after synthesis." />
@@ -247,10 +283,18 @@ function MemoRow({
   memo: MemoFile;
   onRemove?: (id: string) => void;
 }) {
-  const Icon = memo.kind === "pdf" ? Paperclip : memo.kind === "agent" ? Network : FileText;
+  const Icon =
+    memo.kind === "pdf"
+      ? Paperclip
+      : memo.kind === "agent"
+        ? Network
+        : FileText;
   const content = (
     <>
-      <Icon size={14} className="mt-0.5 shrink-0 text-[var(--fintheon-accent)]/76" />
+      <Icon
+        size={14}
+        className="mt-0.5 shrink-0 text-[var(--fintheon-accent)]/76"
+      />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[12px] font-semibold text-[var(--fintheon-text)]">
           {memo.title}
@@ -264,7 +308,12 @@ function MemoRow({
   return (
     <div className="narrative-file-row flex items-center gap-2 px-2 py-2">
       {memo.href ? (
-        <a href={memo.href} target="_blank" rel="noreferrer" className="flex min-w-0 flex-1 items-start gap-2">
+        <a
+          href={memo.href}
+          target="_blank"
+          rel="noreferrer"
+          className="flex min-w-0 flex-1 items-start gap-2"
+        >
           {content}
         </a>
       ) : (
@@ -307,12 +356,20 @@ function FolderSection({
         className="flex w-full items-center gap-2 px-2 py-2 text-left text-[var(--fintheon-text)] transition hover:text-[var(--fintheon-accent)]"
         aria-expanded={open}
       >
-        <ChevronRight size={13} className={`shrink-0 transition-transform ${open ? "rotate-90" : ""}`} />
-        <Layers size={14} className={open ? "text-[var(--fintheon-accent)]" : ""} />
+        <ChevronRight
+          size={13}
+          className={`shrink-0 transition-transform ${open ? "rotate-90" : ""}`}
+        />
+        <Layers
+          size={14}
+          className={open ? "text-[var(--fintheon-accent)]" : ""}
+        />
         <span className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.15em]">
           {label}
         </span>
-        <span className="font-mono text-[10px] text-[var(--fintheon-muted)]">{count}</span>
+        <span className="font-mono text-[10px] text-[var(--fintheon-muted)]">
+          {count}
+        </span>
       </button>
       {open ? children : null}
     </section>
@@ -326,14 +383,23 @@ function NarrativeFolderRow({
   group: SensemakingNarrativeGroup;
   catalysts: SensemakingCatalyst[];
 }) {
-  const groupCatalysts = catalysts.filter((catalyst) => group.catalystIds.includes(catalyst.id));
+  const groupCatalysts = catalysts.filter((catalyst) =>
+    group.catalystIds.includes(catalyst.id),
+  );
   return (
     <article className="narrative-file-row px-2 py-2">
       <div className="flex items-start gap-2">
-        <Network size={14} className="mt-0.5 shrink-0 text-[var(--fintheon-accent)]/76" />
+        <Network
+          size={14}
+          className="mt-0.5 shrink-0 text-[var(--fintheon-accent)]/76"
+        />
         <div className="min-w-0">
-          <p className="truncate text-[12px] font-semibold text-[var(--fintheon-text)]">{group.title}</p>
-          <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-[var(--fintheon-muted)]">{group.summary}</p>
+          <p className="truncate text-[12px] font-semibold text-[var(--fintheon-text)]">
+            {group.title}
+          </p>
+          <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-[var(--fintheon-muted)]">
+            {group.summary}
+          </p>
           <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--fintheon-accent)]/64">
             {groupCatalysts.length} files / {group.timeSpan}
           </p>
@@ -393,13 +459,23 @@ function DocLink({
       className="narrative-file-row flex w-full items-center justify-between gap-3 px-2 py-2 text-left text-xs text-[var(--fintheon-text)]/86 transition"
     >
       <span className="min-w-0 flex items-center gap-2">
-        <Link2 size={13} className="shrink-0 text-[var(--fintheon-accent)]/72" />
+        <Link2
+          size={13}
+          className="shrink-0 text-[var(--fintheon-accent)]/72"
+        />
         <span className="min-w-0">
           <span className="block truncate">{title}</span>
-          {link.source ? <span className="block truncate text-[10px] uppercase tracking-[0.1em] text-[var(--fintheon-muted)]">{link.source}</span> : null}
+          {link.source ? (
+            <span className="block truncate text-[10px] uppercase tracking-[0.1em] text-[var(--fintheon-muted)]">
+              {link.source}
+            </span>
+          ) : null}
         </span>
       </span>
-      <ExternalLink size={12} className="shrink-0 text-[var(--fintheon-accent)]/70" />
+      <ExternalLink
+        size={12}
+        className="shrink-0 text-[var(--fintheon-accent)]/70"
+      />
     </button>
   );
 }
@@ -421,22 +497,29 @@ function buildMemoFiles({
   response: SensemakingResponse | null;
   uploadedPdfs: WorkspacePdf[];
 }): MemoFile[] {
-  const report = session?.report ?? response?.forecast?.rationale ?? response?.synthesisSummary;
+  const report =
+    session?.report ??
+    response?.forecast?.rationale ??
+    response?.synthesisSummary;
   const files = [
     {
       id: "fileroom-brief",
       kind: "fileroom" as const,
       title: report ? "Desk brief from FileRoom" : "FileRoom brief pending",
       source: "FileRoom",
-      timeLabel: formatGeneratedAt(session?.generatedAt ?? response?.generatedAt),
+      timeLabel: formatGeneratedAt(
+        session?.generatedAt ?? response?.generatedAt,
+      ),
     },
-    ...((session?.workEvents ?? []).slice(0, 3).map((event) => ({
+    ...(session?.workEvents ?? []).slice(0, 3).map((event) => ({
       id: event.id,
       kind: "agent" as const,
       title: event.summary,
       source: event.agent,
-      timeLabel: event.timestamp ? formatGeneratedAt(event.timestamp) : "recent",
-    }))),
+      timeLabel: event.timestamp
+        ? formatGeneratedAt(event.timestamp)
+        : "recent",
+    })),
     ...uploadedPdfs.map((file) => ({
       id: file.id,
       kind: "pdf" as const,
@@ -468,10 +551,18 @@ function printQuickShare({
   response: SensemakingResponse | null;
   links: NarrativeWorkspaceLink[];
 }) {
-  const win = window.open("", "_blank", "noopener,noreferrer,width=900,height=1100");
+  const win = window.open(
+    "",
+    "_blank",
+    "noopener,noreferrer,width=900,height=1100",
+  );
   if (!win) return;
-  const catalysts = response ? [...response.anchorCatalysts, ...response.relatedCatalysts] : [];
-  win.document.write(buildPrintableDoc({ session, response, links, catalysts }));
+  const catalysts = response
+    ? [...response.anchorCatalysts, ...response.relatedCatalysts]
+    : [];
+  win.document.write(
+    buildPrintableDoc({ session, response, links, catalysts }),
+  );
   win.document.close();
   win.focus();
   window.setTimeout(() => win.print(), 250);
@@ -488,8 +579,14 @@ function buildPrintableDoc({
   links: NarrativeWorkspaceLink[];
   catalysts: SensemakingCatalyst[];
 }) {
-  const title = escapeHtml(session?.title ?? response?.anchorCatalysts[0]?.headline ?? "Narrative Brief");
-  const synthesis = escapeHtml(session?.synthesis ?? response?.synthesisSummary ?? "Synthesis pending.");
+  const title = escapeHtml(
+    session?.title ??
+      response?.anchorCatalysts[0]?.headline ??
+      "Narrative Brief",
+  );
+  const synthesis = escapeHtml(
+    session?.synthesis ?? response?.synthesisSummary ?? "Synthesis pending.",
+  );
   const catalystRows = catalysts
     .slice(0, 12)
     .map(
@@ -498,7 +595,10 @@ function buildPrintableDoc({
     )
     .join("");
   const linkRows = links
-    .map((link) => `<li><a href="${escapeHtml(link.href)}">${escapeHtml(titleWebLink(link))}</a></li>`)
+    .map(
+      (link) =>
+        `<li><a href="${escapeHtml(link.href)}">${escapeHtml(titleWebLink(link))}</a></li>`,
+    )
     .join("");
   return `<!doctype html><html><head><title>${title}</title><style>
     body{background:#050402;color:#f0ead6;font:14px/1.55 -apple-system,BlinkMacSystemFont,"Inter",sans-serif;margin:48px}
@@ -526,15 +626,13 @@ function formatBytes(value: number) {
 function titleWebLink(link: NarrativeWorkspaceLink) {
   const label = link.label.trim();
   if (label && !looksLikeUrl(label)) return compactLinkTitle(label);
-  if (link.source && !looksLikeUrl(link.source)) return compactLinkTitle(link.source);
+  if (link.source && !looksLikeUrl(link.source))
+    return compactLinkTitle(link.source);
   return summarizeUrl(link.href);
 }
 
 function compactLinkTitle(value: string) {
-  const cleaned = value
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  const cleaned = value.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
   const words = cleaned.split(" ").filter(Boolean);
   if (words.length <= 7) return cleaned;
   return words.slice(0, 4).join(" ");
@@ -567,7 +665,11 @@ function summarizeUrl(value: string) {
 }
 
 function looksLikeUrl(value: string) {
-  return /^https?:\/\//i.test(value) || /^www\./i.test(value) || /^[a-z0-9.-]+\.[a-z]{2,}/i.test(value);
+  return (
+    /^https?:\/\//i.test(value) ||
+    /^www\./i.test(value) ||
+    /^[a-z0-9.-]+\.[a-z]{2,}/i.test(value)
+  );
 }
 
 function titleCase(value: string) {

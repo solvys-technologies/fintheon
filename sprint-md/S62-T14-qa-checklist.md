@@ -64,11 +64,13 @@ The `S62-T14-qa-checklist.md` should use this structure:
 # S62-T14 — Pre-Release QA Checklist
 
 ## Build
+
 - [ ] Frontend: `npx vite build`
 - [ ] Backend: `cd backend-hono && bun run build`
 - [ ] Type check: `npx tsc --noEmit --project frontend/tsconfig.json`
 
 ## Endpoint Smoke
+
 - [ ] Health: `curl -s http://localhost:8080/api/health`
 - [ ] Auth status
 - [ ] CAO chat
@@ -77,6 +79,7 @@ The `S62-T14-qa-checklist.md` should use this structure:
 - [ ] Arbitrum chamber
 
 ## UI Surface Smoke
+
 - [ ] Consilium loads
 - [ ] Sanctum 3-page chamber loads
 - [ ] Chat drawer opens/closes
@@ -85,11 +88,13 @@ The `S62-T14-qa-checklist.md` should use this structure:
 - [ ] Agent Desk panel loads
 
 ## Visual Regression
+
 - [ ] Palette audit (BG #050402, Accent #c79f4a, Text #f0ead6)
 - [ ] Frosted-glass surfaces present where appropriate
 - [ ] No gradients, sparkles, or Kanban borders
 
 ## Electron Smoke
+
 - [ ] Window creates
 - [ ] Webview loads
 - [ ] Popup allowlist
@@ -98,7 +103,8 @@ The `S62-T14-qa-checklist.md` should use this structure:
 
 ## Notes / Findings
 ```
-```
+
+````
 
 ## Acceptance Criteria
 
@@ -120,7 +126,7 @@ npx tsc --noEmit --project frontend/tsconfig.json
 
 # Health
 curl -s http://localhost:8080/api/health
-```
+````
 
 ## Commit Format
 

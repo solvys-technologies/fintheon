@@ -19,7 +19,11 @@ interface NarrativeSessionHistoryProps {
   onRenameSession: (id: string, title: string, color: string) => void;
 }
 
-const DEFAULT_NARRATIVES = ["Rate Cut Cycle", "Price Stability", "Max Employment"];
+const DEFAULT_NARRATIVES = [
+  "Rate Cut Cycle",
+  "Price Stability",
+  "Max Employment",
+];
 
 export function NarrativeSessionHistory({
   sessions,
@@ -152,7 +156,10 @@ function SessionRow({
       {!isLast ? (
         <div
           className="mx-1 h-px bg-[var(--fintheon-accent)]/20"
-          style={{ maskImage: "linear-gradient(to right, transparent, black 18%, black 82%, transparent)" }}
+          style={{
+            maskImage:
+              "linear-gradient(to right, transparent, black 18%, black 82%, transparent)",
+          }}
         />
       ) : null}
     </div>

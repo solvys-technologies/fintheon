@@ -36,7 +36,9 @@ function toThread(value: Record<string, unknown>): NarrativeChatThread {
     id: String(value.id ?? ""),
     title: String(value.title ?? "Untitled chat"),
     messageCount: toNumber(value.messageCount ?? value.message_count),
-    lastMessageAt: String(value.lastMessageAt ?? value.last_message_at ?? value.updatedAt ?? ""),
+    lastMessageAt: String(
+      value.lastMessageAt ?? value.last_message_at ?? value.updatedAt ?? "",
+    ),
     model: value.model ? String(value.model) : undefined,
   };
 }

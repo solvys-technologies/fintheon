@@ -92,7 +92,8 @@ function mapCatalystsToHypotheses(
   const catalystHypothesisIds: Record<string, string> = {};
 
   for (const theme of input.themes) {
-    const hypothesisId = hypothesisByTheme.get(theme.id) ?? `hypothesis:${theme.id}`;
+    const hypothesisId =
+      hypothesisByTheme.get(theme.id) ?? `hypothesis:${theme.id}`;
     for (const catalystId of theme.catalystIds) {
       catalystHypothesisIds[catalystId] = hypothesisId;
     }
@@ -100,7 +101,9 @@ function mapCatalystsToHypotheses(
 
   for (const source of input.riskflowCatalysts) {
     const sourceId = getSourceId(source);
-    const explicitHypothesisId = getString(source.price_brain_score?.hypothesisId);
+    const explicitHypothesisId = getString(
+      source.price_brain_score?.hypothesisId,
+    );
     if (sourceId && explicitHypothesisId) {
       catalystHypothesisIds[sourceId] = explicitHypothesisId;
     }
@@ -143,7 +146,9 @@ function inferEvidenceStance(
   if (explicit) return normalizeStance(explicit);
 
   const headline = source.headline?.toLowerCase() ?? "";
-  if (/\b(denies|walks back|reverses|contradicts|refutes|false)\b/.test(headline)) {
+  if (
+    /\b(denies|walks back|reverses|contradicts|refutes|false)\b/.test(headline)
+  ) {
     return "contradicts";
   }
 
@@ -177,10 +182,13 @@ function inferEvidenceConfidence(source: RiskFlowEvidenceSource): number {
 function groupEvidenceByHypothesis(
   evidence: NarrativeEvidence[],
 ): Record<string, NarrativeEvidence[]> {
-  return evidence.reduce<Record<string, NarrativeEvidence[]>>((groups, item) => {
-    groups[item.hypothesisId] = [...(groups[item.hypothesisId] ?? []), item];
-    return groups;
-  }, {});
+  return evidence.reduce<Record<string, NarrativeEvidence[]>>(
+    (groups, item) => {
+      groups[item.hypothesisId] = [...(groups[item.hypothesisId] ?? []), item];
+      return groups;
+    },
+    {},
+  );
 }
 
 function getSourceId(source: RiskFlowEvidenceSource): string | undefined {

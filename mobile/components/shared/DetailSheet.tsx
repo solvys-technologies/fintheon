@@ -118,9 +118,7 @@ export function DetailSheet({
               whileTap={{ scale: 1.08 }}
               transition={{ type: "spring", stiffness: 500, damping: 28 }}
             >
-              <div
-                className="fintheon-glass-handle"
-              />
+              <div className="fintheon-glass-handle" />
             </motion.div>
 
             {/* Content region — scrolls, safe-area bottom inset */}

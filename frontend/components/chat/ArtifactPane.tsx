@@ -1,10 +1,21 @@
 import { useCallback, useState } from "react";
-import { Columns3, FileCode2, PanelRightClose, Play, ScanEye } from "lucide-react";
+import {
+  Columns3,
+  FileCode2,
+  PanelRightClose,
+  Play,
+  ScanEye,
+} from "lucide-react";
 import type { Citation } from "./CitationChip";
 import { StreamdownChat } from "./slots";
 
 export interface ArtifactPaneProps {
-  artifactType?: "citation" | "browser" | "tradingview" | "report" | "narrative";
+  artifactType?:
+    | "citation"
+    | "browser"
+    | "tradingview"
+    | "report"
+    | "narrative";
   variant?: "pane" | "modal" | "sheet";
   tradingViewConfig?: { symbol: string; timeframe?: string };
   browserSessionId?: string;
@@ -44,7 +55,10 @@ export function ArtifactPane({
       const startX = event.clientX;
       const startWidth = width;
       const onMove = (moveEvent: PointerEvent) => {
-        const next = Math.min(720, Math.max(300, startWidth - (moveEvent.clientX - startX)));
+        const next = Math.min(
+          720,
+          Math.max(300, startWidth - (moveEvent.clientX - startX)),
+        );
         onWidthChange?.(next);
       };
       const onUp = () => {

@@ -577,7 +577,11 @@ export function IVScoreCard({
                   {[
                     { range: "0-2", label: "Calm Seas", color: "#22c55e" },
                     { range: "2-4", label: "Light Winds", color: "#34d399" },
-                    { range: "4-6", label: "Gathering Storm", color: "#eab308" },
+                    {
+                      range: "4-6",
+                      label: "Gathering Storm",
+                      color: "#eab308",
+                    },
                     { range: "6-8", label: "Tipping Point", color: "#f97316" },
                     { range: "8-10", label: "Shit Show", color: "#ef4444" },
                   ].map((item) => (

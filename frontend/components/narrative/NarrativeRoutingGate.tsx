@@ -102,7 +102,10 @@ export function NarrativeRoutingGate({
   }
 
   return (
-    <section className="t-panel-slide rounded-md border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-surface)] p-3" data-open="true">
+    <section
+      className="t-panel-slide rounded-md border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-surface)] p-3"
+      data-open="true"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--fintheon-accent)]/70">

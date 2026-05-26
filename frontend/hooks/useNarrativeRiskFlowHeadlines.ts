@@ -54,7 +54,9 @@ export function useNarrativeRiskFlowHeadlines(): NarrativeRiskFlowHeadlinesState
   return { headlines, isLoading, error, refetch };
 }
 
-function mapRiskFlowItems(items: Array<Record<string, unknown>>): NarrativeHeadlineOption[] {
+function mapRiskFlowItems(
+  items: Array<Record<string, unknown>>,
+): NarrativeHeadlineOption[] {
   return items
     .map((item) => ({
       id: String(item.id ?? item.tweet_id ?? ""),
@@ -62,7 +64,9 @@ function mapRiskFlowItems(items: Array<Record<string, unknown>>): NarrativeHeadl
       summary: String(item.body ?? item.summary ?? item.content ?? ""),
       source: String(item.source ?? "RiskFlow"),
       severity: String(item.severity ?? item.impact ?? "medium"),
-      publishedAt: String(item.publishedAt ?? item.published_at ?? new Date().toISOString()),
+      publishedAt: String(
+        item.publishedAt ?? item.published_at ?? new Date().toISOString(),
+      ),
       ivScore: toOptionalNumber(item.ivScore ?? item.iv_score ?? item.ivImpact),
       macroLevel: toOptionalNumber(item.macroLevel ?? item.macro_level),
       symbols: Array.isArray(item.symbols) ? item.symbols.map(String) : [],

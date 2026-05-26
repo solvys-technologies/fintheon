@@ -15,7 +15,9 @@ import {
 
 function prefersReducedMotion(): boolean {
   if (typeof window === "undefined") return false;
-  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  return (
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
+  );
 }
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
@@ -236,7 +238,11 @@ function CountdownCard({ card, msUntil }: CountdownCardProps) {
         backgroundColor: "#050402",
         border: "1px solid var(--fintheon-accent)",
         opacity: reduced ? 1 : visible ? 1 : 0,
-        transform: reduced ? "none" : visible ? "translateY(0)" : "translateY(8px)",
+        transform: reduced
+          ? "none"
+          : visible
+            ? "translateY(0)"
+            : "translateY(8px)",
         transition: reduced
           ? "none"
           : "opacity var(--t-panel-open-dur) var(--t-panel-ease), transform var(--t-panel-open-dur) var(--t-panel-ease)",

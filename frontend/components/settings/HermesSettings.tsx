@@ -3,11 +3,7 @@
 // [claude-code 2026-03-22] Show per-service diagnostics from SystemStatusContext + Hermes verification status
 import { useState, useCallback, useEffect } from "react";
 import type { ReactNode } from "react";
-import {
-  RefreshCw,
-  Power,
-  Loader2,
-} from "lucide-react";
+import { RefreshCw, Power, Loader2 } from "lucide-react";
 import { useGateway } from "../../contexts/GatewayContext";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";

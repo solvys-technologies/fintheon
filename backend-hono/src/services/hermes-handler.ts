@@ -23,6 +23,8 @@ import {
   buildReflectContext,
 } from "./ai/agent-instructions/index.js";
 import { buildThoughtBankPromptBlock } from "./ai/agent-instructions/thought-bank-awareness.js";
+import { buildNarrativeFlowResearchProtocolBlock } from "./ai/agent-instructions/narrativeflow-research.js";
+import { buildMacroWatchlistContext } from "./market-data/macro-watchlist.js";
 // [claude-code 2026-04-17] S23-T4: HermesChatRequest now accepts userId + surface so per-user agent_context_bank memories and ArbitrumChamber surface context can be injected when available.
 import { getContextForAgent } from "./agent-context-bank-service.js";
 import type { AgentMemoryEntry } from "./agent-context-bank-service.js";
@@ -75,6 +77,8 @@ export interface HermesChatResponse {
       dossier: boolean;
       memoryBank: boolean;
       thoughtBank: boolean;
+      watchlist?: boolean;
+      narrativeFlowResearch?: boolean;
       reflect?: boolean;
     };
   };
@@ -602,6 +606,11 @@ export async function handleHermesChat(
   });
   // Inject live scored catalysts so agents can reference real-time data
   const feedContext = await buildFeedContext();
+  const macroContext = await buildMacroWatchlistContext();
+  const narrativeFlowResearchContext =
+    request.surface === "narrativeflow" || skillTag === "NARRATIVEFLOW_RESEARCH"
+      ? buildNarrativeFlowResearchProtocolBlock()
+      : "";
   // Agent context bank — persistent memories from Supabase
   const contextBankAgentId =
     ROLE_TO_CONTEXT_BANK_ID[agentInfo.agent] ?? "harper";
@@ -619,7 +628,13 @@ export async function handleHermesChat(
   const agentDisplayName = BOARDROOM_AGENT_NAMES[agentInfo.agent] ?? "Harper";
   const thoughtBankBlock = await buildThoughtBankPromptBlock(agentDisplayName);
   const systemPrompt =
-    basePrompt + feedContext + memoryBank + reflectContext + thoughtBankBlock;
+    basePrompt +
+    feedContext +
+    macroContext +
+    narrativeFlowResearchContext +
+    memoryBank +
+    reflectContext +
+    thoughtBankBlock;
 
   // Context-injection audit — captured once per request, returned on the response
   // so the frontend can render a 4-dot badge showing which blocks were live.
@@ -628,6 +643,8 @@ export async function handleHermesChat(
     dossier: basePrompt.trim().length > 0,
     memoryBank: memoryBank.trim().length > 0,
     thoughtBank: thoughtBankBlock.trim().length > 0,
+    watchlist: macroContext.trim().length > 0,
+    narrativeFlowResearch: narrativeFlowResearchContext.trim().length > 0,
     reflect:
       agentInfo.agent === "harper-cao"
         ? reflectContext.trim().length > 0

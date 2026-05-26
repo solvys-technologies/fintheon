@@ -38,14 +38,14 @@ Build Fintheon's answer to file-backed agent memory: the vault/file base is the 
 
 ## Assignment Matrix
 
-| Issue | Linear | Brief | Owner | Execution path | Cycle | Project | Initiative |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| S83-ORCH | SOL-189 | @sprint-md/S83-ORCH-vault-file-room-agentic-inbox.md | TP | planning/runbook | Beta Closed | Beta -- Agent desk & governance | Beta Closed |
-| S83-T1 | SOL-190 | @sprint-md/S83-T1-file-room-vault-index.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Beta -- Agent desk & governance | Beta Closed |
-| S83-T2 | SOL-191 | @sprint-md/S83-T2-desk-rail-inbox.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Beta -- Agent desk & governance | Beta Closed |
-| S83-T3 | SOL-192 | @sprint-md/S83-T3-cao-memo-drift-engine.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Beta -- Agent desk & governance | Beta Closed |
-| S83-T4 | SOL-193 | @sprint-md/S83-T4-chart-evidence-capture.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Beta -- Agent desk & governance | Beta Closed |
-| S83-T5 | SOL-194 | @sprint-md/S83-T5-5pm-agentic-analysis-block.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Beta -- Agent desk & governance | Beta Closed |
+| Issue    | Linear  | Brief                                                | Owner    | Execution path                       | Cycle       | Project                         | Initiative  |
+| -------- | ------- | ---------------------------------------------------- | -------- | ------------------------------------ | ----------- | ------------------------------- | ----------- |
+| S83-ORCH | SOL-189 | @sprint-md/S83-ORCH-vault-file-room-agentic-inbox.md | TP       | planning/runbook                     | Beta Closed | Beta -- Agent desk & governance | Beta Closed |
+| S83-T1   | SOL-190 | @sprint-md/S83-T1-file-room-vault-index.md           | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Beta -- Agent desk & governance | Beta Closed |
+| S83-T2   | SOL-191 | @sprint-md/S83-T2-desk-rail-inbox.md                 | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Beta -- Agent desk & governance | Beta Closed |
+| S83-T3   | SOL-192 | @sprint-md/S83-T3-cao-memo-drift-engine.md           | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Beta -- Agent desk & governance | Beta Closed |
+| S83-T4   | SOL-193 | @sprint-md/S83-T4-chart-evidence-capture.md          | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Beta -- Agent desk & governance | Beta Closed |
+| S83-T5   | SOL-194 | @sprint-md/S83-T5-5pm-agentic-analysis-block.md      | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Beta -- Agent desk & governance | Beta Closed |
 
 ## Wave Sequence
 

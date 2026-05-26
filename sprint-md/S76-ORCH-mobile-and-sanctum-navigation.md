@@ -6,13 +6,13 @@ Sixth. This sprint groups mobile release polish with Sanctum/Narrative navigatio
 
 ## Tracks
 
-| Track | Linear | Owner | Scope |
-| --- | --- | --- | --- |
-| S76-T1 | SOL-42 | Sam | Mobile CAO chat stream, bubbles, caret |
-| S76-T2 | SOL-43 | Sam | Mobile push notifications |
-| S76-T3 | SOL-44 | Sha | Deprecate LiveKit/Bulletin legacy after Fluxer confirmation |
-| S76-T4 | SOL-53 | Sha | Mobile home ticker row alignment + copy |
-| S76-T5 | SOL-38 | Sam | NarrativeMap pan persistence + Sanctum nav |
+| Track  | Linear | Owner | Scope                                                       |
+| ------ | ------ | ----- | ----------------------------------------------------------- |
+| S76-T1 | SOL-42 | Sam   | Mobile CAO chat stream, bubbles, caret                      |
+| S76-T2 | SOL-43 | Sam   | Mobile push notifications                                   |
+| S76-T3 | SOL-44 | Sha   | Deprecate LiveKit/Bulletin legacy after Fluxer confirmation |
+| S76-T4 | SOL-53 | Sha   | Mobile home ticker row alignment + copy                     |
+| S76-T5 | SOL-38 | Sam   | NarrativeMap pan persistence + Sanctum nav                  |
 
 ## References
 

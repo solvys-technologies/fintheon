@@ -6,13 +6,13 @@ Highest. This sprint contains the user-facing surfaces that should be stabilized
 
 ## Tracks
 
-| Track | Linear | Owner | Scope |
-| --- | --- | --- | --- |
-| S71-T1 | SOL-144 | Sam | NarrativeFlow full catalyst map + narrative boundaries |
-| S71-T2 | SOL-137 | Sam | PsychAssist reliability + scoring layout corrections |
-| S71-T3 | SOL-138 | Sha | Lockout enforcement parity across surfaces |
-| S71-T4 | SOL-139 | Sha | Bulletin tabs anti-lag + catalyst + event pass |
-| S71-T5 | SOL-140 | Sam | Sidebar chat composer overflow hardening |
+| Track  | Linear  | Owner | Scope                                                  |
+| ------ | ------- | ----- | ------------------------------------------------------ |
+| S71-T1 | SOL-144 | Sam   | NarrativeFlow full catalyst map + narrative boundaries |
+| S71-T2 | SOL-137 | Sam   | PsychAssist reliability + scoring layout corrections   |
+| S71-T3 | SOL-138 | Sha   | Lockout enforcement parity across surfaces             |
+| S71-T4 | SOL-139 | Sha   | Bulletin tabs anti-lag + catalyst + event pass         |
+| S71-T5 | SOL-140 | Sam   | Sidebar chat composer overflow hardening               |
 
 ## References
 

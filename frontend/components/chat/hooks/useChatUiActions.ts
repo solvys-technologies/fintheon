@@ -188,9 +188,7 @@ export function useChatUiActions(
             title: String(detail.title ?? "Harper needs approval"),
             summary:
               typeof detail.summary === "string" ? detail.summary : undefined,
-            questions: Array.isArray(detail.questions)
-              ? detail.questions
-              : [],
+            questions: Array.isArray(detail.questions) ? detail.questions : [],
           });
         }
       } catch {

@@ -35,8 +35,11 @@ export function NarrativeTimelineTab({
 }: NarrativeTimelineTabProps) {
   const rows = buildRows(response, conflictLabels);
   const groups = groupRowsByDate(rows);
-  const anchorCount = rows.filter((row) => row.catalyst.role === "anchor").length;
-  const selectedRow = rows.find((row) => row.nodeId === selectedNodeId) ?? rows[0];
+  const anchorCount = rows.filter(
+    (row) => row.catalyst.role === "anchor",
+  ).length;
+  const selectedRow =
+    rows.find((row) => row.nodeId === selectedNodeId) ?? rows[0];
   const focusedTitle =
     selectedRow?.catalyst.narrativeThreads[0]?.replaceAll("-", " ") ??
     response?.narrativeGroups[0]?.title ??
@@ -69,7 +72,11 @@ export function NarrativeTimelineTab({
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <MiniChip>{`${anchorCount} anchors`}</MiniChip>
           <MiniChip>{`${rows.length - anchorCount} related`}</MiniChip>
-          <MiniChip>{response?.forecast ? `${Math.round(response.forecast.confidence * 100)}% watch` : "watchlist"}</MiniChip>
+          <MiniChip>
+            {response?.forecast
+              ? `${Math.round(response.forecast.confidence * 100)}% watch`
+              : "watchlist"}
+          </MiniChip>
         </div>
       </header>
 
@@ -134,7 +141,9 @@ function TimelineEventRow({
   return (
     <article
       className="narrative-fade-item group relative grid grid-cols-[16px_minmax(0,1fr)] gap-3"
-      style={{ "--narrative-fade-delay": `${staggerIndex * 45}ms` } as CSSProperties}
+      style={
+        { "--narrative-fade-delay": `${staggerIndex * 45}ms` } as CSSProperties
+      }
     >
       <span
         aria-hidden="true"
@@ -148,14 +157,18 @@ function TimelineEventRow({
         type="button"
         onClick={() => row.nodeId && onSelectNode?.(row.nodeId)}
         className={`fading-ruler-bottom w-full pb-3 text-left transition hover:translate-x-0.5 ${
-          isSelected ? "text-[var(--fintheon-text)]" : "text-[var(--fintheon-muted)]"
+          isSelected
+            ? "text-[var(--fintheon-text)]"
+            : "text-[var(--fintheon-muted)]"
         }`}
       >
         <div className="mb-2 flex items-center justify-between gap-2">
           <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]/70">
             {formatTime(row.catalyst.publishedAt)}
           </span>
-          <span className={`shrink-0 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.1em] ${conflictClass(row.conflict)}`}>
+          <span
+            className={`shrink-0 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.1em] ${conflictClass(row.conflict)}`}
+          >
             {row.conflict}
           </span>
         </div>
@@ -174,7 +187,9 @@ function TimelineEventRow({
           {summary}
         </p>
         <div className="mt-2 flex flex-wrap gap-1.5">
-          <MiniChip>{row.catalyst.role === "anchor" ? "main" : "catalyst"}</MiniChip>
+          <MiniChip>
+            {row.catalyst.role === "anchor" ? "main" : "catalyst"}
+          </MiniChip>
           <MiniChip>{`IV ${row.catalyst.ivScore.toFixed(1)}`}</MiniChip>
           {row.catalyst.symbols.slice(0, 2).map((symbol) => (
             <MiniChip key={symbol}>{symbol}</MiniChip>
@@ -198,9 +213,15 @@ function buildRows(
   conflictLabels: Record<string, string>,
 ): TimelineRow[] {
   if (!response) return [];
-  const nodeByCatalyst = new Map(response.timelineNodes.map((node) => [node.catalystId, node.id]));
+  const nodeByCatalyst = new Map(
+    response.timelineNodes.map((node) => [node.catalystId, node.id]),
+  );
   return [...response.anchorCatalysts, ...response.relatedCatalysts]
-    .sort((left, right) => new Date(left.publishedAt).getTime() - new Date(right.publishedAt).getTime())
+    .sort(
+      (left, right) =>
+        new Date(left.publishedAt).getTime() -
+        new Date(right.publishedAt).getTime(),
+    )
     .map((catalyst) => ({
       catalyst,
       nodeId: nodeByCatalyst.get(catalyst.id) ?? null,

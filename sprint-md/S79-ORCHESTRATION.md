@@ -24,24 +24,24 @@ NarrativeFlow needs a product reset. The opener should be centered and sparse: c
 
 ## Track Definition
 
-| Track | Title | Owner | Complexity | File Ownership |
-| --- | --- | --- | --- | --- |
-| S79-T1 | Narrative Desk Session Data | local Solvys Agent | High | `supabase/migrations/**`, `backend-hono/src/services/narrative-sessions/**`, `backend-hono/src/routes/narrative/sessions/**`, route mount |
-| S79-T2 | Narrative Opener and RiskFlow Picker | Codex Cloud | Medium | opener/history/picker/color components, composer, RiskFlow headline hook |
-| S79-T3 | Loaded Session Workspace | Codex Cloud | Medium | workspace/drawer/tabs/detail components |
-| S79-T4 | Agent Classification and Situation Map | local Solvys Agent | High | classification services/routes, situation map hook/component |
-| S79-T5 | NarrativeFlow Unification and Validation | TP acceptance, local Solvys Agent execution | High | `NarrativeCanvas.tsx`, shared contracts, changelog, validation |
+| Track  | Title                                    | Owner                                       | Complexity | File Ownership                                                                                                                            |
+| ------ | ---------------------------------------- | ------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| S79-T1 | Narrative Desk Session Data              | local Solvys Agent                          | High       | `supabase/migrations/**`, `backend-hono/src/services/narrative-sessions/**`, `backend-hono/src/routes/narrative/sessions/**`, route mount |
+| S79-T2 | Narrative Opener and RiskFlow Picker     | Codex Cloud                                 | Medium     | opener/history/picker/color components, composer, RiskFlow headline hook                                                                  |
+| S79-T3 | Loaded Session Workspace                 | Codex Cloud                                 | Medium     | workspace/drawer/tabs/detail components                                                                                                   |
+| S79-T4 | Agent Classification and Situation Map   | local Solvys Agent                          | High       | classification services/routes, situation map hook/component                                                                              |
+| S79-T5 | NarrativeFlow Unification and Validation | TP acceptance, local Solvys Agent execution | High       | `NarrativeCanvas.tsx`, shared contracts, changelog, validation                                                                            |
 
 ## Assignment Matrix
 
-| Issue | Linear | Brief | Owner | Execution path | Cycle | Project | Initiative |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| S79-ORCH | SOL-171 | @sprint-md/S79-ORCHESTRATION.md | TP | planning/runbook | Cycle 8 - Beta Closed | Beta -- Sanctum & Arbitrum UX | Beta Closed |
-| S79-T1 | SOL-172 | @sprint-md/S79-T1-narrative-desk-session-data.md | local Solvys Agent | local watcher or direct local implementation | Cycle 8 - Beta Closed | Beta -- Sanctum & Arbitrum UX | Beta Closed |
-| S79-T2 | SOL-173 | @sprint-md/S79-T2-narrative-opener-and-riskflow-picker.md | Codex Cloud | Linear delegate | Cycle 8 - Beta Closed | Beta -- Sanctum & Arbitrum UX | Beta Closed |
-| S79-T3 | SOL-174 | @sprint-md/S79-T3-loaded-session-workspace.md | Codex Cloud | Linear delegate | Cycle 8 - Beta Closed | Beta -- Sanctum & Arbitrum UX | Beta Closed |
-| S79-T4 | SOL-175 | @sprint-md/S79-T4-agent-classification-and-situation-map.md | local Solvys Agent | local watcher or direct local implementation | Cycle 8 - Beta Closed | Beta -- Sanctum & Arbitrum UX | Beta Closed |
-| S79-T5 | SOL-176 | @sprint-md/S79-T5-unification-validation.md | TP acceptance, local Solvys Agent execution | unification/validation | Cycle 8 - Beta Closed | Beta -- Sanctum & Arbitrum UX | Beta Closed |
+| Issue    | Linear  | Brief                                                       | Owner                                       | Execution path                               | Cycle                 | Project                       | Initiative  |
+| -------- | ------- | ----------------------------------------------------------- | ------------------------------------------- | -------------------------------------------- | --------------------- | ----------------------------- | ----------- |
+| S79-ORCH | SOL-171 | @sprint-md/S79-ORCHESTRATION.md                             | TP                                          | planning/runbook                             | Cycle 8 - Beta Closed | Beta -- Sanctum & Arbitrum UX | Beta Closed |
+| S79-T1   | SOL-172 | @sprint-md/S79-T1-narrative-desk-session-data.md            | local Solvys Agent                          | local watcher or direct local implementation | Cycle 8 - Beta Closed | Beta -- Sanctum & Arbitrum UX | Beta Closed |
+| S79-T2   | SOL-173 | @sprint-md/S79-T2-narrative-opener-and-riskflow-picker.md   | Codex Cloud                                 | Linear delegate                              | Cycle 8 - Beta Closed | Beta -- Sanctum & Arbitrum UX | Beta Closed |
+| S79-T3   | SOL-174 | @sprint-md/S79-T3-loaded-session-workspace.md               | Codex Cloud                                 | Linear delegate                              | Cycle 8 - Beta Closed | Beta -- Sanctum & Arbitrum UX | Beta Closed |
+| S79-T4   | SOL-175 | @sprint-md/S79-T4-agent-classification-and-situation-map.md | local Solvys Agent                          | local watcher or direct local implementation | Cycle 8 - Beta Closed | Beta -- Sanctum & Arbitrum UX | Beta Closed |
+| S79-T5   | SOL-176 | @sprint-md/S79-T5-unification-validation.md                 | TP acceptance, local Solvys Agent execution | unification/validation                       | Cycle 8 - Beta Closed | Beta -- Sanctum & Arbitrum UX | Beta Closed |
 
 ## Wave Sequence
 

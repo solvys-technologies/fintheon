@@ -59,7 +59,9 @@ const memoryEvents: AntilagEvent[] = [];
 
 export function classifyInstrument(instrument: string): AntilagInstrumentClass {
   const normalized = normalizeInstrument(instrument);
-  if (["NQ", "MNQ", "ES", "MES", "YM", "MYM", "RTY", "M2K"].includes(normalized))
+  if (
+    ["NQ", "MNQ", "ES", "MES", "YM", "MYM", "RTY", "M2K"].includes(normalized)
+  )
     return "equity-index";
   if (["ZT", "ZN", "ZB", "UB", "US02Y", "US10Y", "US30Y"].includes(normalized))
     return "treasury";
@@ -119,12 +121,16 @@ export async function recordTradingViewAntilagAlert(opts: {
   return { recorded: true, event };
 }
 
-export async function listAntilagTimes(opts: {
-  instrument?: string;
-  now?: Date;
-} = {}): Promise<AntilagEvent[]> {
+export async function listAntilagTimes(
+  opts: {
+    instrument?: string;
+    now?: Date;
+  } = {},
+): Promise<AntilagEvent[]> {
   const activeDates = activeBusinessDates(opts.now);
-  const instrument = opts.instrument ? normalizeInstrument(opts.instrument) : null;
+  const instrument = opts.instrument
+    ? normalizeInstrument(opts.instrument)
+    : null;
   const sb = getSupabaseClient();
   if (!sb) return filterMemoryEvents(activeDates, instrument);
 
@@ -141,13 +147,19 @@ export async function listAntilagTimes(opts: {
   return (data ?? []).map(rowToEvent);
 }
 
-export async function getAntilagSummary(now = new Date()): Promise<AntilagSummary> {
+export async function getAntilagSummary(
+  now = new Date(),
+): Promise<AntilagSummary> {
   const dates = activeBusinessDates(now);
   const events = await listAntilagTimes({ now });
-  const instruments = [...new Set(events.map((event) => event.instrument))].sort();
+  const instruments = [
+    ...new Set(events.map((event) => event.instrument)),
+  ].sort();
   const mixCounts = new Map<string, number>();
   for (const event of events) {
-    const mix = BAROMETERS.filter((key) => event.barometers[key]?.spiked).join("+");
+    const mix = BAROMETERS.filter((key) => event.barometers[key]?.spiked).join(
+      "+",
+    );
     mixCounts.set(mix || "none", (mixCounts.get(mix || "none") ?? 0) + 1);
   }
   return {
@@ -166,7 +178,8 @@ function parsePayload(
   payload: AntilagPayload,
 ): { event: AntilagEvent } | { reason: string } {
   const instrument = normalizeInstrument(payload.instrument ?? "");
-  if (instrument !== "NQ") return { reason: "Only NQ Antilag alerts are auto-recorded" };
+  if (instrument !== "NQ")
+    return { reason: "Only NQ Antilag alerts are auto-recorded" };
 
   const nqSpiked = Boolean(payload.nq?.spiked ?? payload.nqSpiked);
   if (!nqSpiked) return { reason: "NQ spike is required" };
@@ -201,7 +214,10 @@ function parsePayload(
 
 function normalizeBarometers(input: Record<string, AntilagBarometerState>) {
   return Object.fromEntries(
-    BAROMETERS.map((key) => [key, { ...input[key], spiked: Boolean(input[key]?.spiked) }]),
+    BAROMETERS.map((key) => [
+      key,
+      { ...input[key], spiked: Boolean(input[key]?.spiked) },
+    ]),
   ) as Record<string, AntilagBarometerState>;
 }
 

@@ -72,7 +72,9 @@ function legacyWithCategory(
   category: NotificationCategory,
   enabled: boolean,
 ): LegacyNotificationPrefs {
-  if (!LEGACY_NOTIFICATION_KEYS.has(category as keyof LegacyNotificationPrefs)) {
+  if (
+    !LEGACY_NOTIFICATION_KEYS.has(category as keyof LegacyNotificationPrefs)
+  ) {
     return prefs;
   }
   return {
@@ -82,11 +84,14 @@ function legacyWithCategory(
 }
 
 export function NotificationsSection() {
-  const { settings, updateSettings, preferences, setPreferences } = useSettings();
+  const { settings, updateSettings, preferences, setPreferences } =
+    useSettings();
   const push = usePushNotifications();
   const notifPrefs = settings.notificationPrefs;
   const sharedNotifications = preferences.notifications;
-  const blockedCategories = new Set(sharedNotifications.blockedCategories ?? []);
+  const blockedCategories = new Set(
+    sharedNotifications.blockedCategories ?? [],
+  );
   const masterEnabled =
     push.isSubscribed || sharedNotifications.deliveryChannels.push;
   const [deliveryOpen, setDeliveryOpen] = useState(true);
@@ -127,31 +132,31 @@ export function NotificationsSection() {
 
       if (channel !== "push") return;
       if (enabled) {
-      await push.disable();
-      const nextPrefs = { ...notifPrefs, pushEnabled: false };
-      updateSettings({
-        notificationPrefs: nextPrefs,
-      });
-      return;
-    }
-    const result = await push.enable();
-    if (result.ok) {
-      const nextPrefs = { ...notifPrefs, pushEnabled: true };
-      updateSettings({ notificationPrefs: nextPrefs });
-    } else if (result.reason !== "permission-denied") {
-      void setPreferences({
-        notifications: {
-          ...sharedNotifications,
-          deliveryChannels: {
-            ...sharedNotifications.deliveryChannels,
-            push: false,
+        await push.disable();
+        const nextPrefs = { ...notifPrefs, pushEnabled: false };
+        updateSettings({
+          notificationPrefs: nextPrefs,
+        });
+        return;
+      }
+      const result = await push.enable();
+      if (result.ok) {
+        const nextPrefs = { ...notifPrefs, pushEnabled: true };
+        updateSettings({ notificationPrefs: nextPrefs });
+      } else if (result.reason !== "permission-denied") {
+        void setPreferences({
+          notifications: {
+            ...sharedNotifications,
+            deliveryChannels: {
+              ...sharedNotifications.deliveryChannels,
+              push: false,
+            },
           },
-        },
-      });
-      updateSettings({
-        notificationPrefs: { ...notifPrefs, pushEnabled: false },
-      });
-    }
+        });
+        updateSettings({
+          notificationPrefs: { ...notifPrefs, pushEnabled: false },
+        });
+      }
     },
     [push, notifPrefs, updateSettings, sharedNotifications, setPreferences],
   );
@@ -209,7 +214,10 @@ export function NotificationsSection() {
         notifications: nextNotifications,
       });
       if (push.isSubscribed) {
-        push.syncCategories(categoriesFromNotifications(nextNotifications), value);
+        push.syncCategories(
+          categoriesFromNotifications(nextNotifications),
+          value,
+        );
       }
     },
     [notifPrefs, updateSettings, push, sharedNotifications, setPreferences],

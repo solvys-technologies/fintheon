@@ -37,7 +37,6 @@ const ALL_INSTRUMENTS = [
   "DXY",
   "BTC",
   "SPY",
-  "QQQ",
   "IWM",
   "TLT",
   "GLD",

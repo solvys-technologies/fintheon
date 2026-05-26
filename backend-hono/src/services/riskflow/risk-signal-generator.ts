@@ -45,8 +45,7 @@ async function fetchHighSeverityCatalysts(): Promise<CatalystCandidate[]> {
     if (!sb) return [];
 
     const cutoff = new Date(
-      Date.now() -
-        RISK_SIGNAL_SOURCE_WINDOW.catalystsHours * 60 * 60 * 1000,
+      Date.now() - RISK_SIGNAL_SOURCE_WINDOW.catalystsHours * 60 * 60 * 1000,
     ).toISOString();
     const { data } = await sb
       .from("scored_riskflow_items")
@@ -64,9 +63,7 @@ async function fetchHighSeverityCatalysts(): Promise<CatalystCandidate[]> {
         macroLevel: Number(r.macro_level ?? 0),
         publishedAt: String(r.published_at ?? ""),
       }))
-      .filter(
-        (r) => r.headline && (r.ivScore >= 6.5 || r.macroLevel >= 2),
-      )
+      .filter((r) => r.headline && (r.ivScore >= 6.5 || r.macroLevel >= 2))
       .slice(0, 25);
   } catch (err) {
     log.warn("Failed to fetch catalysts for risk signals", {
@@ -92,8 +89,7 @@ function getSystemicContext(): string {
 
 function formatCatalysts(catalysts: CatalystCandidate[]): string[] {
   return catalysts.map(
-    (r) =>
-      `[IV ${r.ivScore} ${r.sentiment} ML${r.macroLevel}] ${r.headline}`,
+    (r) => `[IV ${r.ivScore} ${r.sentiment} ML${r.macroLevel}] ${r.headline}`,
   );
 }
 

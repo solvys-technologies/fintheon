@@ -65,8 +65,7 @@ html *::-webkit-scrollbar {
   );
   --fintheon-overlay-surface: color-mix(
     in srgb,
-    color-mix(in srgb, var(--fintheon-accent) 7%, rgba(17, 16, 14, 0.98))
-      90%,
+    color-mix(in srgb, var(--fintheon-accent) 7%, rgba(17, 16, 14, 0.98)) 90%,
     black 10%
   );
   --fintheon-overlay-border: color-mix(
@@ -246,7 +245,10 @@ button:hover .fintheon-hover-icon__glyph,
   align-items: center;
   justify-content: center;
   gap: 0.45em;
-  color: var(--dm-loader-color, var(--fintheon-primary, var(--fintheon-accent)));
+  color: var(
+    --dm-loader-color,
+    var(--fintheon-primary, var(--fintheon-accent))
+  );
   vertical-align: middle;
   flex-shrink: 0;
 }
@@ -278,7 +280,8 @@ button:hover .fintheon-hover-icon__glyph,
 }
 .dm-loader__fallback {
   fill: currentColor;
-  animation: dm-fallback-pulse var(--dm-loader-duration, 1625ms) ease-in-out infinite;
+  animation: dm-fallback-pulse var(--dm-loader-duration, 1625ms) ease-in-out
+    infinite;
 }
 .dm-loader__check {
   width: 100%;
@@ -299,13 +302,29 @@ button:hover .fintheon-hover-icon__glyph,
   white-space: nowrap;
 }
 @keyframes dm-check-fade {
-  0% { opacity: 0; transform: scale(0.72); }
-  34% { opacity: 1; transform: scale(1.04); }
-  100% { opacity: 0.82; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  34% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+  100% {
+    opacity: 0.82;
+    transform: scale(1);
+  }
 }
 @keyframes dm-fallback-pulse {
-  0%, 100% { opacity: 0.34; transform: rotate(0deg) scale(0.92); }
-  50% { opacity: 1; transform: rotate(180deg) scale(1); }
+  0%,
+  100% {
+    opacity: 0.34;
+    transform: rotate(0deg) scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: rotate(180deg) scale(1);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .fintheon-hover-icon__glyph,
@@ -373,8 +392,16 @@ html[data-zen-mode="true"] button[aria-label] {
   animation: citation-shimmer 2600ms ease-in-out infinite;
 }
 @keyframes citation-shimmer {
-  0%, 62%, 100% { opacity: 0; transform: translate(-8px, 8px); }
-  28% { opacity: 0.9; transform: translate(16px, -10px); }
+  0%,
+  62%,
+  100% {
+    opacity: 0;
+    transform: translate(-8px, 8px);
+  }
+  28% {
+    opacity: 0.9;
+    transform: translate(16px, -10px);
+  }
 }
 
 /* [claude-code 2026-04-28] S48-T3: CountdownFuse state-machine keyframes.
@@ -431,34 +458,49 @@ html[data-zen-mode="true"] button[aria-label] {
  *   organic cadence (not the regular 50% oscillation used on fuses). */
 @keyframes cognition-thought-shimmer {
   0% {
-    opacity: 0.55;
-  }
-  17% {
-    opacity: 0.82;
-  }
-  34% {
-    opacity: 0.6;
-  }
-  52% {
-    opacity: 0.95;
-  }
-  71% {
-    opacity: 0.7;
-  }
-  88% {
-    opacity: 0.88;
+    background-position: 140% 50%;
   }
   100% {
-    opacity: 0.55;
+    background-position: -40% 50%;
   }
 }
 .cognition-thought-shimmer {
-  animation: cognition-thought-shimmer 6.8s ease-in-out infinite;
+  background-image: linear-gradient(
+    90deg,
+    color-mix(
+        in srgb,
+        var(--fintheon-primary, var(--fintheon-accent)) 58%,
+        transparent
+      )
+      0%,
+    var(--fintheon-primary, var(--fintheon-accent)) 42%,
+    color-mix(
+        in srgb,
+        var(--fintheon-text, #f0ead6) 72%,
+        var(--fintheon-primary, var(--fintheon-accent))
+      )
+      50%,
+    var(--fintheon-primary, var(--fintheon-accent)) 58%,
+    color-mix(
+        in srgb,
+        var(--fintheon-primary, var(--fintheon-accent)) 58%,
+        transparent
+      )
+      100%
+  );
+  background-size: 220% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: cognition-thought-shimmer 5s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .cognition-thought-shimmer {
     animation: none;
-    opacity: 0.78;
+    background: none;
+    color: var(--fintheon-primary, var(--fintheon-accent));
+    -webkit-text-fill-color: currentColor;
   }
 }
 
@@ -1299,8 +1341,13 @@ html[data-zen-mode="true"] button[aria-label] {
 
 /* [claude-code 2026-05-16] S68-T2: Catalyst drift bubble pulse — opacity-based (no box-shadow per Solvys rules) */
 @keyframes drift-pulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 /* NarrativeFlow — SVG rope draw-in animation */
@@ -1768,11 +1815,17 @@ html[data-zen-mode="true"] button[aria-label] {
   overflow: hidden;
 }
 .desk-plan-lock-btn::after {
-  content: '';
+  content: "";
   position: absolute;
-  top: 0; left: -100%; width: 100%; height: 100%;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
   background: linear-gradient(
-    90deg, transparent 0%, rgba(199,159,74,0.18) 50%, transparent 100%
+    90deg,
+    transparent 0%,
+    rgba(199, 159, 74, 0.18) 50%,
+    transparent 100%
   );
   opacity: 0;
   transition: none;
@@ -1780,7 +1833,9 @@ html[data-zen-mode="true"] button[aria-label] {
 .desk-plan-lock-btn.shimmering::after {
   left: 100%;
   opacity: 1;
-  transition: left 0.55s ease-in-out, opacity 0.15s;
+  transition:
+    left 0.55s ease-in-out,
+    opacity 0.15s;
 }
 
 /* Shared Zen/RiskFlow glass chrome for toasts and pop-up surfaces. */
@@ -1845,6 +1900,14 @@ html[data-zen-mode="true"] button[aria-label] {
   position: fixed;
 }
 
+.fintheon-market-ticker-card {
+  background: color-mix(
+    in srgb,
+    var(--fintheon-overlay-surface) 70%,
+    transparent
+  );
+}
+
 .fintheon-liquid-surface {
   border-radius: 8px;
   overflow: hidden;
@@ -1875,13 +1938,12 @@ html[data-zen-mode="true"] button[aria-label] {
   flex-shrink: 0;
   z-index: 80;
   overflow: visible;
-  background:
-    linear-gradient(
-      to bottom,
-      color-mix(in srgb, var(--fintheon-accent) 5%, transparent) 0%,
-      color-mix(in srgb, var(--fintheon-accent) 2.5%, transparent) 42%,
-      transparent 100%
-    );
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--fintheon-accent) 5%, transparent) 0%,
+    color-mix(in srgb, var(--fintheon-accent) 2.5%, transparent) 42%,
+    transparent 100%
+  );
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.34);
   backdrop-filter: blur(4px) saturate(1.05);
   -webkit-backdrop-filter: blur(4px) saturate(1.05);
@@ -1935,7 +1997,8 @@ html[data-zen-mode="true"] button[aria-label] {
 }
 
 .narrative-analysis-panel {
-  animation: narrative-analysis-panel-in 220ms var(--t-panel-ease, ease-out) both;
+  animation: narrative-analysis-panel-in 220ms var(--t-panel-ease, ease-out)
+    both;
 }
 
 .fading-ruler-bottom {
@@ -1957,9 +2020,13 @@ html[data-zen-mode="true"] button[aria-label] {
 .narrative-linked-catalyst-card,
 .narrative-chat-motion :where(button, textarea, [role="button"]),
 .narrative-floating-toolbar :where(button, [role="button"]) {
-  transition-property: opacity, transform, border-color, background-color, color;
+  transition-property:
+    opacity, transform, border-color, background-color, color;
   transition-duration: 180ms;
-  transition-timing-function: var(--t-motion-ease, cubic-bezier(0.4, 0, 0.2, 1));
+  transition-timing-function: var(
+    --t-motion-ease,
+    cubic-bezier(0.4, 0, 0.2, 1)
+  );
 }
 
 .narrative-fade-item {
@@ -1994,7 +2061,8 @@ html[data-zen-mode="true"] button[aria-label] {
   inset-block: 1px;
   left: 15%;
   right: 15%;
-  border: 1px solid color-mix(in srgb, var(--fintheon-accent) 54%, rgba(255, 255, 255, 0.28));
+  border: 1px solid
+    color-mix(in srgb, var(--fintheon-accent) 54%, rgba(255, 255, 255, 0.28));
   border-radius: 7px;
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.08),
@@ -2029,7 +2097,12 @@ html[data-zen-mode="true"] button[aria-label] {
   left: -2px;
   top: 5px;
   width: 1px;
-  background: linear-gradient(to bottom, transparent, rgba(199, 159, 74, 0.18), transparent);
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(199, 159, 74, 0.18),
+    transparent
+  );
 }
 
 .narrative-iv-deck {
@@ -2078,7 +2151,11 @@ html[data-zen-mode="true"] button[aria-label] {
   transform: scale(0.82);
   transform-origin: left top;
   background:
-    radial-gradient(circle at 18% 10%, rgba(199, 159, 74, 0.12), transparent 36%),
+    radial-gradient(
+      circle at 18% 10%,
+      rgba(199, 159, 74, 0.12),
+      transparent 36%
+    ),
     color-mix(in srgb, var(--fintheon-bg) 78%, rgba(199, 159, 74, 0.08));
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.34);
   padding: 18px;
@@ -2098,14 +2175,19 @@ html[data-zen-mode="true"] button[aria-label] {
 }
 
 .narrative-iv-card {
-  border: 1px solid color-mix(in srgb, var(--narrative-iv-color) 26%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--narrative-iv-color) 26%, transparent);
   background: color-mix(in srgb, var(--fintheon-surface) 64%, transparent);
 }
 
 .narrative-iv-card:hover,
 .narrative-iv-card.is-active {
   border-color: color-mix(in srgb, var(--narrative-iv-color) 48%, transparent);
-  background: color-mix(in srgb, var(--narrative-iv-color) 8%, var(--fintheon-surface) 92%);
+  background: color-mix(
+    in srgb,
+    var(--narrative-iv-color) 8%,
+    var(--fintheon-surface) 92%
+  );
   opacity: 0.98;
   transform: translateY(-1px);
 }
@@ -2140,8 +2222,16 @@ html[data-zen-mode="true"] button[aria-label] {
   padding: 0.75rem;
   overflow: hidden;
   background:
-    radial-gradient(circle at 88% 10%, color-mix(in srgb, var(--fintheon-accent) 14%, transparent), transparent 34%),
-    linear-gradient(135deg, color-mix(in srgb, var(--fintheon-accent) 8%, transparent), transparent 45%),
+    radial-gradient(
+      circle at 88% 10%,
+      color-mix(in srgb, var(--fintheon-accent) 14%, transparent),
+      transparent 34%
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--fintheon-accent) 8%, transparent),
+      transparent 45%
+    ),
     color-mix(in srgb, var(--fintheon-surface) 22%, transparent);
 }
 
@@ -2151,8 +2241,15 @@ html[data-zen-mode="true"] button[aria-label] {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(color-mix(in srgb, var(--fintheon-accent) 6%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--fintheon-accent) 5%, transparent) 1px, transparent 1px);
+    linear-gradient(
+      color-mix(in srgb, var(--fintheon-accent) 6%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--fintheon-accent) 5%, transparent) 1px,
+      transparent 1px
+    );
   background-size: 28px 28px;
   mask-image: linear-gradient(to bottom, black, transparent 78%);
   opacity: 0.45;
@@ -2293,7 +2390,8 @@ html[data-zen-mode="true"] button[aria-label] {
 
 .narrative-flow-action-btn[data-active="true"] {
   color: var(--fintheon-accent);
-  text-shadow: 0 0 12px color-mix(in srgb, var(--fintheon-accent) 34%, transparent);
+  text-shadow: 0 0 12px
+    color-mix(in srgb, var(--fintheon-accent) 34%, transparent);
 }
 
 .narrative-flow-action-btn[data-active="true"]::after {
@@ -2342,7 +2440,8 @@ html[data-zen-mode="true"] button[aria-label] {
 .narrative-toolbar-button:focus-visible {
   outline: none;
   color: var(--fintheon-accent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--fintheon-accent) 35%, transparent);
+  box-shadow: 0 0 0 1px
+    color-mix(in srgb, var(--fintheon-accent) 35%, transparent);
 }
 
 .narrative-icon-button:active,
@@ -2365,7 +2464,7 @@ html[data-zen-mode="true"] button[aria-label] {
 }
 
 .narrative-chat-drawer-motion {
-  animation: narrative-drawer-rise 220ms var(--t-panel-ease, ease-out) both;
+  transform-origin: bottom center;
 }
 
 .narrative-chat-drawer-motion :where(button, article, [role="button"], input) {
@@ -2478,19 +2577,30 @@ html[data-zen-mode="true"] button[aria-label] {
 }
 
 .narrative-deskmap-cover__media {
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, rgba(0, 0, 0, 0.88) 38%, rgba(0, 0, 0, 0.24) 76%, transparent 100%);
-  mask-image: linear-gradient(to bottom, black 0%, rgba(0, 0, 0, 0.88) 38%, rgba(0, 0, 0, 0.24) 76%, transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    rgba(0, 0, 0, 0.88) 38%,
+    rgba(0, 0, 0, 0.24) 76%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    rgba(0, 0, 0, 0.88) 38%,
+    rgba(0, 0, 0, 0.24) 76%,
+    transparent 100%
+  );
 }
 
 .narrative-deskmap-cover__blend {
-  background:
-    linear-gradient(
-      to bottom,
-      color-mix(in srgb, var(--fintheon-accent) 7%, transparent) 0%,
-      color-mix(in srgb, var(--fintheon-accent) 4%, transparent) 34%,
-      color-mix(in srgb, var(--fintheon-accent) 1.5%, transparent) 68%,
-      transparent 100%
-    );
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--fintheon-accent) 7%, transparent) 0%,
+    color-mix(in srgb, var(--fintheon-accent) 4%, transparent) 34%,
+    color-mix(in srgb, var(--fintheon-accent) 1.5%, transparent) 68%,
+    transparent 100%
+  );
 }
 
 .narrative-old-map {
@@ -2514,8 +2624,30 @@ html[data-zen-mode="true"] button[aria-label] {
     transform 180ms var(--t-panel-ease, ease-out);
 }
 
+.narrative-deskmap-card[data-presence="enter"] {
+  animation: narrative-deskmap-card-in 340ms
+    var(--t-panel-ease, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+.narrative-deskmap-card[data-presence="exit"] {
+  pointer-events: none;
+  animation: narrative-deskmap-card-out 320ms
+    var(--t-motion-ease, cubic-bezier(0.4, 0, 0.2, 1)) both;
+}
+
 .narrative-deskmap-card:active {
   transform: translate(-50%, -50%) scale(0.99);
+}
+
+.narrative-situation-node[data-presence="enter"] {
+  animation: narrative-situation-card-in 340ms
+    var(--t-panel-ease, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+.narrative-situation-node[data-presence="exit"] {
+  pointer-events: none;
+  animation: narrative-situation-card-out 320ms
+    var(--t-motion-ease, cubic-bezier(0.4, 0, 0.2, 1)) both;
 }
 
 .narrative-manage-modal {
@@ -2612,6 +2744,50 @@ html[data-zen-mode="true"] button[aria-label] {
   }
 }
 
+@keyframes narrative-deskmap-card-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes narrative-deskmap-card-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -51%) scale(0.985);
+  }
+}
+
+@keyframes narrative-situation-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes narrative-situation-card-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+  }
+}
+
 @keyframes narrative-action-shimmer {
   to {
     transform: translateX(120%);
@@ -2643,6 +2819,7 @@ html[data-zen-mode="true"] button[aria-label] {
 @media (prefers-reduced-motion: reduce) {
   .narrative-analysis-panel,
   .narrative-fade-item,
+  .narrative-situation-node,
   .narrative-analysis-panel img,
   .narrative-work-drawer img,
   .narrative-flow-action-btn[data-active="true"]::after {
@@ -2731,12 +2908,15 @@ html[data-zen-mode="true"] button[aria-label] {
   padding: 4px 9px;
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.07), transparent 42%),
-    rgba(5, 4, 2, 0.63);
+    rgba(5, 4, 2, 0.44);
   color: var(--fintheon-text);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 10px;
   line-height: 1;
-  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
 }
 
 .fintheon-ticker-pill:hover,
@@ -2745,7 +2925,7 @@ html[data-zen-mode="true"] button[aria-label] {
   border-color: color-mix(in srgb, var(--fintheon-accent) 38%, transparent);
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.1), transparent 42%),
-    rgba(199, 159, 74, 0.08);
+    rgba(199, 159, 74, 0.056);
 }
 
 .fintheon-ticker-pill[data-direction="up"] span:last-child {
@@ -2852,7 +3032,12 @@ html[data-zen-mode="true"] button[aria-label] {
   inset: -45% auto -45% -90%;
   width: 55%;
   transform: rotate(20deg);
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.34), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.34),
+    transparent
+  );
   opacity: 0;
 }
 
@@ -2988,20 +3173,39 @@ html[data-zen-mode="true"] button[aria-label] {
 .fintheon-chat-input-drawer {
   position: relative;
   left: auto;
-  width: 100%;
-  max-width: 100%;
+  width: var(--fintheon-chat-drawer-width, 92%);
+  max-width: var(--fintheon-chat-drawer-width, 92%);
   transform: none;
   margin-inline: auto;
   margin-bottom: -1px;
   overflow: hidden;
   padding-bottom: 4px;
+  max-height: var(--fintheon-chat-drawer-max-height, 280px);
   border-radius: 8px 8px 0 0;
-  background: var(--fintheon-overlay-surface);
+  background: color-mix(
+    in srgb,
+    var(--fintheon-surface) 86%,
+    var(--fintheon-bg)
+  );
   border: 1px solid color-mix(in srgb, var(--fintheon-accent) 10%, transparent);
-  border-bottom-color: color-mix(in srgb, var(--fintheon-accent) 16%, transparent);
-  backdrop-filter: blur(20px) saturate(1.25);
-  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  border-bottom-color: color-mix(
+    in srgb,
+    var(--fintheon-accent) 16%,
+    transparent
+  );
   box-shadow: none;
+  transition:
+    max-height 300ms var(--t-panel-ease, ease-out),
+    transform 300ms var(--t-panel-ease, ease-out),
+    opacity 240ms ease,
+    border-color 220ms ease,
+    padding 300ms var(--t-panel-ease, ease-out),
+    margin-bottom 300ms var(--t-panel-ease, ease-out);
+}
+
+.fintheon-chat-input-drawer.t-panel-slide,
+.fintheon-chat-input-drawer.t-panel-slide[data-open="true"] {
+  filter: none;
 }
 
 .fintheon-chat-input-drawer[data-composer-surface-portal="true"] {
@@ -3015,16 +3219,17 @@ html[data-zen-mode="true"] button[aria-label] {
   content: "";
   display: block;
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--fintheon-accent) 18%, transparent) 22%,
-    color-mix(in srgb, var(--fintheon-accent) 12%, transparent) 78%,
-    transparent
-  );
+  background: color-mix(in srgb, var(--fintheon-accent) 14%, transparent);
+  opacity: 1;
+  transition:
+    height 240ms ease,
+    opacity 200ms ease;
 }
 
 .fintheon-chat-input-drawer[aria-hidden="true"] {
+  max-height: 0 !important;
+  opacity: 0;
+  transform: translateY(8px);
   margin-bottom: 0;
   border-width: 0;
   padding-top: 0 !important;
@@ -3033,6 +3238,7 @@ html[data-zen-mode="true"] button[aria-label] {
 
 .fintheon-chat-input-drawer[aria-hidden="true"]::before {
   height: 0;
+  opacity: 0;
 }
 
 .fintheon-chat-input-drawer--peek {
@@ -3053,11 +3259,7 @@ html[data-zen-mode="true"] button[aria-label] {
 }
 
 .fintheon-chat-input-drawer--peek:hover {
-  border-color: color-mix(
-    in srgb,
-    var(--fintheon-accent) 28%,
-    transparent
-  );
+  border-color: color-mix(in srgb, var(--fintheon-accent) 28%, transparent);
   background: color-mix(in srgb, var(--fintheon-accent) 5%, #0b0906 95%);
 }
 
@@ -3252,7 +3454,10 @@ html[data-zen-mode="true"] button[aria-label] {
 }
 
 .settings-pass-through .settings-soft-panel,
-.settings-pass-through :where(.rounded-md, .rounded-lg, .rounded-xl):not(input):not(textarea):not(select):not(.settings-field-shell):not(.settings-placeholder) {
+.settings-pass-through
+  :where(.rounded-md, .rounded-lg, .rounded-xl):not(input):not(textarea):not(
+    select
+  ):not(.settings-field-shell):not(.settings-placeholder) {
   border-color: transparent !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -3292,7 +3497,11 @@ html[data-zen-mode="true"] button[aria-label] {
 .settings-pass-through input:focus,
 .settings-pass-through textarea:focus,
 .settings-pass-through select:focus {
-  border-color: color-mix(in srgb, var(--fintheon-accent) 34%, transparent) !important;
+  border-color: color-mix(
+    in srgb,
+    var(--fintheon-accent) 34%,
+    transparent
+  ) !important;
 }
 
 .fintheon-footer-surface {
@@ -3306,7 +3515,11 @@ html[data-zen-mode="true"] button[aria-label] {
 [data-fintheon-surface-theme="frosted"] .fintheon-side-surface,
 [data-fintheon-surface-theme="frosted"] .fintheon-footer-surface {
   border-color: transparent !important;
-  background: color-mix(in srgb, var(--fintheon-surface) 74%, transparent) !important;
+  background: color-mix(
+    in srgb,
+    var(--fintheon-surface) 74%,
+    transparent
+  ) !important;
   backdrop-filter: blur(14px) saturate(1.08);
   -webkit-backdrop-filter: blur(14px) saturate(1.08);
   box-shadow: none !important;
@@ -3331,7 +3544,11 @@ html[data-zen-mode="true"] button[aria-label] {
 .theme-font-popover {
   border: 0 !important;
   background:
-    linear-gradient(180deg, color-mix(in srgb, white 5%, transparent), transparent 48%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, white 5%, transparent),
+      transparent 48%
+    ),
     color-mix(in srgb, #020202 86%, var(--fintheon-surface)) !important;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5) !important;
 }
@@ -3356,7 +3573,8 @@ html[data-zen-mode="true"] button[aria-label] {
 .proxvoice-speaking-ring {
   outline: 1px solid color-mix(in srgb, var(--fintheon-accent) 72%, transparent);
   outline-offset: 3px;
-  animation: proxvoice-speaking-pulse 1100ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: proxvoice-speaking-pulse 1100ms cubic-bezier(0.4, 0, 0.2, 1)
+    infinite;
 }
 
 @keyframes proxvoice-speaking-pulse {

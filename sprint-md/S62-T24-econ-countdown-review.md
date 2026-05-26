@@ -40,14 +40,14 @@ The econ countdown widget (`EconCountdownWidget.tsx`) lives in the top header an
 
 For each state in `EconCountdownWidget.tsx`, verify:
 
-| State | Expected Behavior | Check |
-|-------|------------------|-------|
-| Loading | Skeleton/spinner visible while fetching | [ ] |
-| Data | Live countdown timer, event name, time remaining | [ ] |
-| Empty | Graceful "no upcoming events" message | [ ] |
-| Error | Error message with retry affordance | [ ] |
-| Data → Empty | Clean transition when last event expires | [ ] |
-| Empty → Data | Widget re-renders when new events arrive | [ ] |
+| State        | Expected Behavior                                | Check |
+| ------------ | ------------------------------------------------ | ----- |
+| Loading      | Skeleton/spinner visible while fetching          | [ ]   |
+| Data         | Live countdown timer, event name, time remaining | [ ]   |
+| Empty        | Graceful "no upcoming events" message            | [ ]   |
+| Error        | Error message with retry affordance              | [ ]   |
+| Data → Empty | Clean transition when last event expires         | [ ]   |
+| Empty → Data | Widget re-renders when new events arrive         | [ ]   |
 
 ## Slot Alignment Checklist
 

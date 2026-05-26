@@ -9,7 +9,10 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { NarrativeProvider } from "./contexts/NarrativeContext";
 import { NarrativeCanvas } from "./components/narrative/NarrativeCanvas";
 import { NarrativeAnalysisDropdown } from "./components/consilium/NarrativeAnalysisDropdown";
-import { isNarrativeSurfaceMode, type NarrativeSurfaceMode } from "./components/narrative/narrative-surface-options";
+import {
+  isNarrativeSurfaceMode,
+  type NarrativeSurfaceMode,
+} from "./components/narrative/narrative-surface-options";
 import { installNarrativeFlowMockApi } from "./sandbox/narrativeflow/mock-api";
 import { mockThemes } from "./sandbox/narrativeflow/mock-data";
 import "./index.css";
@@ -26,7 +29,8 @@ interface NarrativeFlowSandboxMount extends HTMLDivElement {
 
 function NarrativeFlowSandbox() {
   const [analysisOpen, setAnalysisOpen] = useState(false);
-  const [surfaceMode, setSurfaceMode] = useState<NarrativeSurfaceMode>("workspace");
+  const [surfaceMode, setSurfaceMode] =
+    useState<NarrativeSurfaceMode>("workspace");
   const [showChart, setShowChart] = useState(false);
   const [researchRailOpen, setResearchRailOpen] = useState(true);
 
@@ -39,11 +43,23 @@ function NarrativeFlowSandbox() {
       const open = (event as CustomEvent<{ open?: boolean }>).detail?.open;
       if (typeof open === "boolean") setResearchRailOpen(open);
     };
-    window.addEventListener("fintheon:narrative-surface-state", handleSurfaceState);
-    window.addEventListener("fintheon:narrative-research-rail-state", handleResearchState);
+    window.addEventListener(
+      "fintheon:narrative-surface-state",
+      handleSurfaceState,
+    );
+    window.addEventListener(
+      "fintheon:narrative-research-rail-state",
+      handleResearchState,
+    );
     return () => {
-      window.removeEventListener("fintheon:narrative-surface-state", handleSurfaceState);
-      window.removeEventListener("fintheon:narrative-research-rail-state", handleResearchState);
+      window.removeEventListener(
+        "fintheon:narrative-surface-state",
+        handleSurfaceState,
+      );
+      window.removeEventListener(
+        "fintheon:narrative-research-rail-state",
+        handleResearchState,
+      );
     };
   }, []);
 
@@ -73,8 +89,14 @@ function NarrativeFlowSandbox() {
           NarrativeFlow
         </button>
         <div className="flex-1" />
-        <div id="narrativeflow-header-actions" className="flex items-center gap-1.5" />
-        <div id="narrativeflow-map-controls" className="flex items-center gap-1.5" />
+        <div
+          id="narrativeflow-header-actions"
+          className="flex items-center gap-1.5"
+        />
+        <div
+          id="narrativeflow-map-controls"
+          className="flex items-center gap-1.5"
+        />
         <button
           type="button"
           onClick={() => setShowChart((value) => !value)}
@@ -96,7 +118,11 @@ function NarrativeFlowSandbox() {
           onOpenChange={setAnalysisOpen}
           onSelectMode={selectSurface}
           onToggleDeskRail={() => undefined}
-          onToggleResearchRail={() => window.dispatchEvent(new Event("fintheon:narrative-research-rail-toggle"))}
+          onToggleResearchRail={() =>
+            window.dispatchEvent(
+              new Event("fintheon:narrative-research-rail-toggle"),
+            )
+          }
         />
       </div>
       <main className="flex min-h-0 flex-1 overflow-hidden">

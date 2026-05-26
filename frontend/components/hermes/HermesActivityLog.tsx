@@ -41,7 +41,10 @@ export function HermesActivityLog({ entries }: HermesActivityLogProps) {
   }
 
   return (
-    <div ref={listRef} className="overflow-y-auto h-full space-y-1 pr-1 text-right">
+    <div
+      ref={listRef}
+      className="overflow-y-auto h-full space-y-1 pr-1 text-right"
+    >
       {entries.map((entry) => (
         <div
           key={entry.id}

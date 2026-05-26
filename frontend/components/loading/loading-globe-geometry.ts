@@ -48,7 +48,9 @@ export function makeLatitudeGeometry(y: number) {
   for (let i = 0; i <= 128; i += 1) {
     const a = (i / 128) * Math.PI * 2;
     const radius = Math.sqrt(1 - y * y);
-    points.push(new THREE.Vector3(Math.cos(a) * radius, y, Math.sin(a) * radius));
+    points.push(
+      new THREE.Vector3(Math.cos(a) * radius, y, Math.sin(a) * radius),
+    );
   }
   return new THREE.BufferGeometry().setFromPoints(points);
 }
@@ -59,7 +61,11 @@ export function makeMeridianGeometry(angle: number) {
     const a = (i / 128) * Math.PI * 2;
     const ring = Math.sin(a);
     points.push(
-      new THREE.Vector3(ring * Math.cos(angle), Math.cos(a), ring * Math.sin(angle)),
+      new THREE.Vector3(
+        ring * Math.cos(angle),
+        Math.cos(a),
+        ring * Math.sin(angle),
+      ),
     );
   }
   return new THREE.BufferGeometry().setFromPoints(points);
@@ -110,7 +116,11 @@ export function drawCountryGeometry({
   countryFillLayer,
 }: DrawCountryGeometryOptions) {
   if (geometry.type === "Polygon") {
-    addCountryFillPolygon(geometry.coordinates as PolygonCoordinates, fillMaterial, countryFillLayer);
+    addCountryFillPolygon(
+      geometry.coordinates as PolygonCoordinates,
+      fillMaterial,
+      countryFillLayer,
+    );
     (geometry.coordinates as PolygonCoordinates).forEach((ring) =>
       addCountryRing(ring, outlineMaterial, countryLayer),
     );
@@ -119,7 +129,9 @@ export function drawCountryGeometry({
 
   (geometry.coordinates as PolygonCoordinates[]).forEach((polygon) => {
     addCountryFillPolygon(polygon, fillMaterial, countryFillLayer);
-    polygon.forEach((ring) => addCountryRing(ring, outlineMaterial, countryLayer));
+    polygon.forEach((ring) =>
+      addCountryRing(ring, outlineMaterial, countryLayer),
+    );
   });
 }
 
@@ -130,7 +142,10 @@ export function pickBeamPair(targets: BeamTarget[], maxAngle: number) {
   for (let attempt = 0; attempt < 24; attempt += 1) {
     const start = pickBeamTarget(targets);
     const end = pickBeamTarget(targets, start.name);
-    const angle = start.point.clone().normalize().angleTo(end.point.clone().normalize());
+    const angle = start.point
+      .clone()
+      .normalize()
+      .angleTo(end.point.clone().normalize());
     if (angle <= maxAngle) return { start, end };
     if (angle < bestAngle) {
       bestPair = { start, end };
@@ -141,7 +156,11 @@ export function pickBeamPair(targets: BeamTarget[], maxAngle: number) {
   return bestPair;
 }
 
-export function makeShotPoints(start: THREE.Vector3, end: THREE.Vector3, maxAngle: number) {
+export function makeShotPoints(
+  start: THREE.Vector3,
+  end: THREE.Vector3,
+  maxAngle: number,
+) {
   const points: THREE.Vector3[] = [];
   const startNormal = start.clone().normalize();
   const endNormal = end.clone().normalize();
@@ -157,24 +176,36 @@ export function makeShotPoints(start: THREE.Vector3, end: THREE.Vector3, maxAngl
         : startNormal
             .clone()
             .multiplyScalar(Math.sin((1 - t) * angle) / sinAngle)
-            .add(endNormal.clone().multiplyScalar(Math.sin(t * angle) / sinAngle));
-    points.push(point.normalize().multiplyScalar(1.012 + Math.sin(t * Math.PI) * 0.26));
+            .add(
+              endNormal.clone().multiplyScalar(Math.sin(t * angle) / sinAngle),
+            );
+    points.push(
+      point.normalize().multiplyScalar(1.012 + Math.sin(t * Math.PI) * 0.26),
+    );
   }
 
   return points;
 }
 
-function pickBeamTarget(targets: BeamTarget[], excludeName?: string): BeamPoint {
+function pickBeamTarget(
+  targets: BeamTarget[],
+  excludeName?: string,
+): BeamPoint {
   let target = targets[Math.floor(Math.random() * targets.length)];
   if (excludeName && targets.length > 1) {
-    while (target.name === excludeName) target = targets[Math.floor(Math.random() * targets.length)];
+    while (target.name === excludeName)
+      target = targets[Math.floor(Math.random() * targets.length)];
   }
 
   const jitterLon = (Math.random() - 0.5) * target.jitter;
   const jitterLat = (Math.random() - 0.5) * target.jitter * 0.72;
   return {
     name: target.name,
-    point: lonLatToVector(target.lon + jitterLon, target.lat + jitterLat, 1.012),
+    point: lonLatToVector(
+      target.lon + jitterLon,
+      target.lat + jitterLat,
+      1.012,
+    ),
   };
 }
 
@@ -183,9 +214,13 @@ function addCountryRing(
   material: THREE.LineBasicMaterial,
   countryLayer: THREE.Group,
 ) {
-  const points = coords.map((coord) => lonLatToVector(coord[0], coord[1], 0.992));
+  const points = coords.map((coord) =>
+    lonLatToVector(coord[0], coord[1], 0.992),
+  );
   if (points.length < 2) return;
-  countryLayer.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), material));
+  countryLayer.add(
+    new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), material),
+  );
 }
 
 function addCountryFillPolygon(
@@ -197,7 +232,9 @@ function addCountryFillPolygon(
   if (rings.length === 0) return;
 
   const outer = rings[0].map((coord) => new THREE.Vector2(coord[0], coord[1]));
-  const holes = rings.slice(1).map((ring) => ring.map((coord) => new THREE.Vector2(coord[0], coord[1])));
+  const holes = rings
+    .slice(1)
+    .map((ring) => ring.map((coord) => new THREE.Vector2(coord[0], coord[1])));
   const coords = rings.flat();
   const triangles = THREE.ShapeUtils.triangulateShape(outer, holes);
   if (!triangles.length) return;
@@ -212,7 +249,10 @@ function addCountryFillPolygon(
   }
 
   const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(positions, 3),
+  );
   countryFillLayer.add(new THREE.Mesh(geometry, material));
 }
 

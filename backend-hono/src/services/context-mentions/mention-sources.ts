@@ -1,13 +1,11 @@
 // [codex 2026-05-23] Safe mention inventory for chat drawers.
-import { readdir, readFile } from "node:fs/promises";
-import { join, relative } from "node:path";
-import { existsSync } from "node:fs";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { listDocuments } from "../documents/doc-store.js";
 import { listAllSkills } from "../skills/registry.js";
 import * as themeStore from "../theme-tracker/persistence.js";
 import { getFeed } from "../riskflow/feed-service.js";
 import { listFileRoom } from "../file-room/index.js";
+import { readVaultNotes } from "./vault-notes.js";
 
 export type MentionType =
   | "document"
@@ -64,7 +62,8 @@ const connectors = [
 ] as const;
 
 function matches(item: MentionItem, query: MentionQuery): boolean {
-  if (query.type && query.type !== "all" && item.type !== query.type) return false;
+  if (query.type && query.type !== "all" && item.type !== query.type)
+    return false;
   const needle = query.q?.trim().toLowerCase();
   if (!needle) return true;
   return `${item.label} ${item.subtitle} ${item.preview} ${item.tags.join(" ")}`
@@ -79,7 +78,9 @@ function sortMentions(a: MentionItem, b: MentionItem): number {
   return a.label.localeCompare(b.label);
 }
 
-export async function listMentions(query: MentionQuery): Promise<MentionItem[]> {
+export async function listMentions(
+  query: MentionQuery,
+): Promise<MentionItem[]> {
   const groups = await Promise.all([
     readDocuments(query),
     readSkills(),
@@ -89,7 +90,7 @@ export async function listMentions(query: MentionQuery): Promise<MentionItem[]> 
     readRiskFlow(),
     readInstruments(),
     readFileRoomMentions(query),
-    readVaultNotes(),
+    readVaultNotes(query),
   ]);
   return groups
     .flat()
@@ -208,31 +209,9 @@ async function readInstruments(): Promise<MentionItem[]> {
   }));
 }
 
-async function readVaultNotes(): Promise<MentionItem[]> {
-  const root = process.env.OBSIDIAN_VAULT_PATH;
-  if (!root || !existsSync(root)) return [];
-  const files = await collectMarkdown(root, 2, 40).catch(() => []);
-  return Promise.all(
-    files.map(async (file) => {
-      const raw = await readFile(file, "utf8").catch(() => "");
-      const title = raw.match(/^#\s+(.+)$/m)?.[1]?.trim() || file.split("/").pop() || "Vault note";
-      const rel = relative(root, file);
-      return {
-        id: `vault:${rel}`,
-        type: "vault" as const,
-        label: title,
-        subtitle: "Obsidian vault note",
-        preview: rel,
-        source: "obsidian",
-        referenceId: rel,
-        tags: ["vault", "memory"],
-        updatedAt: null,
-      };
-    }),
-  );
-}
-
-async function readFileRoomMentions(query: MentionQuery): Promise<MentionItem[]> {
+async function readFileRoomMentions(
+  query: MentionQuery,
+): Promise<MentionItem[]> {
   const fileRoom = await listFileRoom(query.deskId).catch(() => null);
   if (!fileRoom) return [];
   return fileRoom.sections.flatMap((section) =>
@@ -254,22 +233,6 @@ function mentionTypeForFileRoomSection(sectionId: string): MentionType {
   if (sectionId === "agentic-memos") return "memo";
   if (sectionId === "chart-evidence") return "chart";
   if (sectionId === "agent-souls") return "agent";
+  if (sectionId.startsWith("narrative-")) return "narrative";
   return "vault";
-}
-
-async function collectMarkdown(root: string, depth: number, cap: number): Promise<string[]> {
-  if (depth < 0 || cap <= 0) return [];
-  const entries = await readdir(root, { withFileTypes: true });
-  const out: string[] = [];
-  for (const entry of entries) {
-    if (out.length >= cap) break;
-    if (entry.name.startsWith(".")) continue;
-    const full = join(root, entry.name);
-    if (entry.isDirectory()) {
-      out.push(...(await collectMarkdown(full, depth - 1, cap - out.length)));
-    } else if (entry.isFile() && entry.name.endsWith(".md")) {
-      out.push(full);
-    }
-  }
-  return out;
 }

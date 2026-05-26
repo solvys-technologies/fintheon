@@ -24,7 +24,9 @@ export function socialUrl(key: keyof ProxVoiceSocialLinks, handle: string) {
   const safe = handle.replace(/^@+/, "").trim();
   if (key === "x") return `https://x.com/${safe}`;
   if (key === "substack") {
-    return safe.includes(".") ? `https://${safe}` : `https://${safe}.substack.com`;
+    return safe.includes(".")
+      ? `https://${safe}`
+      : `https://${safe}.substack.com`;
   }
   if (key === "telegram") return `https://t.me/${safe}`;
   return null;

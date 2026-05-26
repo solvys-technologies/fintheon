@@ -29,7 +29,8 @@ export async function handleApproveWeek(c: Context): Promise<Response> {
     return c.json({ ok: false, error: "invalid_payload" }, 400);
   }
   const supabase = getSupabaseClient();
-  if (!supabase) return c.json({ ok: false, error: "supabase_unavailable" }, 503);
+  if (!supabase)
+    return c.json({ ok: false, error: "supabase_unavailable" }, 503);
 
   let q = supabase
     .from(TABLE)
@@ -122,7 +123,9 @@ function cleanTitle(value: string): string {
 }
 
 function extractField(text: string | null, label: string): string | undefined {
-  const match = (text ?? "").match(new RegExp(`${label}\\s*:?\\s*([^\\n\\r]+)`, "i"));
+  const match = (text ?? "").match(
+    new RegExp(`${label}\\s*:?\\s*([^\\n\\r]+)`, "i"),
+  );
   return match?.[1]?.trim().slice(0, 80) || undefined;
 }
 
@@ -140,24 +143,28 @@ function inferCountry(title: string, description: string | null): string {
 
 function currencyForCountry(country: string): string {
   return (
-    {
-      US: "USD",
-      JP: "JPY",
-      UK: "GBP",
-      EU: "EUR",
-      CA: "CAD",
-      AU: "AUD",
-      NZ: "NZD",
-      CN: "CNY",
-    } as Record<string, string>
-  )[country] ?? "USD";
+    (
+      {
+        US: "USD",
+        JP: "JPY",
+        UK: "GBP",
+        EU: "EUR",
+        CA: "CAD",
+        AU: "AUD",
+        NZ: "NZD",
+        CN: "CNY",
+      } as Record<string, string>
+    )[country] ?? "USD"
+  );
 }
 
 function inferCategory(title: string, description: string | null): string {
   const text = `${title} ${description ?? ""}`.toLowerCase();
-  if (/\b(speech|speaks|testimony|press conference)\b/.test(text)) return "Speech";
+  if (/\b(speech|speaks|testimony|press conference)\b/.test(text))
+    return "Speech";
   if (/\b(cpi|inflation|ppi|pce)\b/.test(text)) return "Inflation";
-  if (/\b(payroll|employment|jobless|unemployment|nfp)\b/.test(text)) return "Employment";
+  if (/\b(payroll|employment|jobless|unemployment|nfp)\b/.test(text))
+    return "Employment";
   if (/\b(pmi|ism|retail|gdp)\b/.test(text)) return "Growth";
   return "Economic";
 }

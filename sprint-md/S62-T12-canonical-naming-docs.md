@@ -23,24 +23,24 @@ Project documentation must use consistent canonical feature names. The CLAUDE.md
 
 ## Canonical Name Reference (from CLAUDE.md)
 
-| Canonical | Legacy (flag if found) |
-|-----------|----------------------|
-| Consilium | — |
-| Sanctum | — |
-| Forum | — |
-| Apparatus | — |
-| Strategium | — |
-| Arbitrum | — |
-| ArbitrumChamber | — |
-| RiskFlow | Risk Feed, News Worker |
-| NarrativeFlow | — |
-| CAO chat | Ask Harp, TOTT |
-| PsychAssist | — |
-| MDB | — |
-| ADB | — |
-| PMDB | — |
-| TWT | — |
-| Agent Desk | MiroShark |
+| Canonical       | Legacy (flag if found) |
+| --------------- | ---------------------- |
+| Consilium       | —                      |
+| Sanctum         | —                      |
+| Forum           | —                      |
+| Apparatus       | —                      |
+| Strategium      | —                      |
+| Arbitrum        | —                      |
+| ArbitrumChamber | —                      |
+| RiskFlow        | Risk Feed, News Worker |
+| NarrativeFlow   | —                      |
+| CAO chat        | Ask Harp, TOTT         |
+| PsychAssist     | —                      |
+| MDB             | —                      |
+| ADB             | —                      |
+| PMDB            | —                      |
+| TWT             | —                      |
+| Agent Desk      | MiroShark              |
 
 ## Scope — Excluded (DO NOT TOUCH)
 
@@ -50,7 +50,7 @@ Project documentation must use consistent canonical feature names. The CLAUDE.md
 
 ## Implementation Steps
 
-1. Search all sprint-md/*.md for legacy names: `rg -i "ask harp\|tott\|news worker\|miroshark" sprint-md/ sprint-changelog/ docs/sprint-briefs/`
+1. Search all sprint-md/\*.md for legacy names: `rg -i "ask harp\|tott\|news worker\|miroshark" sprint-md/ sprint-changelog/ docs/sprint-briefs/`
 2. Search `src/lib/changelog.ts` for legacy names in summary strings
 3. For each legacy name found, determine if it's in a historical context (acceptable) or a current description (needs update)
 4. Update current descriptions to use canonical names

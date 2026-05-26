@@ -9,7 +9,9 @@ interface SplashScreenProps {
 }
 
 export default function SplashScreen({ isReady }: SplashScreenProps) {
-  const [phase, setPhase] = useState<"idle" | "zoom" | "black" | "reveal">("idle");
+  const [phase, setPhase] = useState<"idle" | "zoom" | "black" | "reveal">(
+    "idle",
+  );
   const [unmounted, setUnmounted] = useState(false);
 
   useEffect(() => {

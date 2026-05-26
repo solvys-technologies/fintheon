@@ -34,7 +34,10 @@ export default function DriftBubble({ drift, size = "md" }: DriftBubbleProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const color = DIRECTION_COLORS[drift.direction];
-  const radius = size === "sm" ? clampRadius(drift.magnitude) * 0.6 : clampRadius(drift.magnitude);
+  const radius =
+    size === "sm"
+      ? clampRadius(drift.magnitude) * 0.6
+      : clampRadius(drift.magnitude);
   const label = DIRECTION_LABELS[drift.direction];
 
   function handleEnter() {
@@ -59,7 +62,10 @@ export default function DriftBubble({ drift, size = "md" }: DriftBubbleProps) {
           height: radius * 2,
           backgroundColor: color,
           opacity: 0.4 + drift.confidence * 0.6,
-          animation: drift.magnitude > 0.5 ? "drift-pulse 2s ease-in-out infinite" : undefined,
+          animation:
+            drift.magnitude > 0.5
+              ? "drift-pulse 2s ease-in-out infinite"
+              : undefined,
         }}
       />
       {showTooltip && (
@@ -71,8 +77,10 @@ export default function DriftBubble({ drift, size = "md" }: DriftBubbleProps) {
             border: "1px solid rgba(199,159,74,0.25)",
           }}
         >
-          {label}<br />
-          Mag: {(drift.magnitude * 100).toFixed(0)}% &middot; Conf: {(drift.confidence * 100).toFixed(0)}%
+          {label}
+          <br />
+          Mag: {(drift.magnitude * 100).toFixed(0)}% &middot; Conf:{" "}
+          {(drift.confidence * 100).toFixed(0)}%
         </span>
       )}
     </span>

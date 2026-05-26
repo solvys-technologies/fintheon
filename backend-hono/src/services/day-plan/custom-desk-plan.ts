@@ -15,8 +15,16 @@ const TEAM_ID = "pic";
 export const CustomDeskPlanSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   eventName: z.string().min(2).max(180),
-  country: z.string().min(2).max(6).transform((value) => value.toUpperCase()),
-  currency: z.string().min(3).max(6).transform((value) => value.toUpperCase()),
+  country: z
+    .string()
+    .min(2)
+    .max(6)
+    .transform((value) => value.toUpperCase()),
+  currency: z
+    .string()
+    .min(3)
+    .max(6)
+    .transform((value) => value.toUpperCase()),
   category: z.string().min(2).max(40).default("Economic"),
   impact: z.enum(["low", "medium", "high"]).default("medium"),
   time: z.string().regex(/^\d{2}:\d{2}$/),
@@ -57,7 +65,8 @@ export async function addCustomDeskPlanEvent(
       )
       .select("id")
       .single();
-    if (error) log.warn("manual economic event upsert failed", { error: error.message });
+    if (error)
+      log.warn("manual economic event upsert failed", { error: error.message });
     eventId = data?.id ?? null;
   }
 
@@ -176,7 +185,8 @@ async function persistManualPlan(input: {
     rows = retry.data;
     winError = retry.error;
   }
-  if (winError) log.warn("manual window insert failed", { error: winError.message });
+  if (winError)
+    log.warn("manual window insert failed", { error: winError.message });
   return rowPlan(planRow, rows ?? [], input.windows);
 }
 
@@ -189,7 +199,8 @@ function inMemoryPlan(
     teamId: TEAM_ID,
     date: input.input.date,
     eventName: input.existing?.eventName ?? input.input.eventName,
-    deskTheme: input.existing?.deskTheme ?? `${input.input.currency} custom desk plan.`,
+    deskTheme:
+      input.existing?.deskTheme ?? `${input.input.currency} custom desk plan.`,
     generatedBy: "agentic-desk-manual",
     generatedAt: new Date().toISOString(),
     sourceBriefId: null,
@@ -219,17 +230,32 @@ function rowPlan(
     sourceBriefId: row.source_brief_id,
     institutionalPositioning: row.institutional_positioning ?? null,
     planVariant: row.plan_variant ?? null,
-    windows: (windowRows.length ? windowRows : fallback).map((window: any, index) => ({
-      id: window.id ?? `manual-w-${index}`,
-      dayPlanId: window.day_plan_id ?? row.id,
-      windowIndex: window.window_index ?? fallback[index]?.windowIndex ?? index,
-      startTime: String(window.start_time ?? fallback[index]?.startTime).slice(0, 5),
-      endTime: String(window.end_time ?? fallback[index]?.endTime).slice(0, 5),
-      eventName: window.event_name ?? fallback[index]?.eventName ?? row.event_name ?? null,
-      eventCountry:
-        window.econ_forecast?.eventCountry ?? fallback[index]?.eventCountry ?? null,
-      econForecast: window.econ_forecast ?? fallback[index]?.econForecast ?? null,
-    })),
+    windows: (windowRows.length ? windowRows : fallback).map(
+      (window: any, index) => ({
+        id: window.id ?? `manual-w-${index}`,
+        dayPlanId: window.day_plan_id ?? row.id,
+        windowIndex:
+          window.window_index ?? fallback[index]?.windowIndex ?? index,
+        startTime: String(
+          window.start_time ?? fallback[index]?.startTime,
+        ).slice(0, 5),
+        endTime: String(window.end_time ?? fallback[index]?.endTime).slice(
+          0,
+          5,
+        ),
+        eventName:
+          window.event_name ??
+          fallback[index]?.eventName ??
+          row.event_name ??
+          null,
+        eventCountry:
+          window.econ_forecast?.eventCountry ??
+          fallback[index]?.eventCountry ??
+          null,
+        econForecast:
+          window.econ_forecast ?? fallback[index]?.econForecast ?? null,
+      }),
+    ),
   };
 }
 

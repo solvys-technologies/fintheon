@@ -33,6 +33,7 @@ export interface NarrativeSession {
   coverImageUrl: string | null;
   coverImagePrompt: string | null;
   coverImageUpdatedAt: string | null;
+  catalystCount?: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -2,7 +2,10 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-const PROJECT_ROOT = resolve(new URL(".", import.meta.url).pathname, "../../../..");
+const PROJECT_ROOT = resolve(
+  new URL(".", import.meta.url).pathname,
+  "../../../..",
+);
 
 function shouldInjectReleaseContext(message: string): boolean {
   return /\b(latest|release|released|update|updates|version|changelog|demonstrate|show me where|what shipped)\b/i.test(

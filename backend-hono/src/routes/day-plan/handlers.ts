@@ -77,7 +77,9 @@ export async function handleGetWeek(c: Context): Promise<Response> {
   const toIso = planned[planned.length - 1]?.date;
   const persistedPlans =
     fromIso && toIso
-      ? (await readWeekPlans(TEAM_ID, fromIso, toIso)).filter(isUserControlledPlan)
+      ? (await readWeekPlans(TEAM_ID, fromIso, toIso)).filter(
+          isUserControlledPlan,
+        )
       : [];
   const persistedByDate = new Map(persistedPlans.map((p) => [p.date, p]));
 
@@ -101,7 +103,9 @@ export async function handleGetMultiWeek(c: Context): Promise<Response> {
   let result: DayPlan[][] = [];
 
   if (from && to) {
-    const plans = (await readWeekPlans(TEAM_ID, from, to)).filter(isUserControlledPlan);
+    const plans = (await readWeekPlans(TEAM_ID, from, to)).filter(
+      isUserControlledPlan,
+    );
     const byWeek = new Map<string, DayPlan[]>();
     for (const plan of plans) {
       const d = new Date(`${plan.date}T12:00:00Z`);
@@ -116,11 +120,16 @@ export async function handleGetMultiWeek(c: Context): Promise<Response> {
     result = [...byWeek.values()];
   } else {
     const weekCount = parseInt(c.req.query("weeks") ?? "4", 10);
-    const plannedWeeks = collectWeekGrids(new Date(), Math.max(1, Math.min(12, weekCount)));
+    const plannedWeeks = collectWeekGrids(
+      new Date(),
+      Math.max(1, Math.min(12, weekCount)),
+    );
     const allDates = plannedWeeks.flat();
     const fromIso = allDates[0] ?? new Date().toISOString().slice(0, 10);
     const toIso = allDates[allDates.length - 1] ?? fromIso;
-    const persisted = (await readWeekPlans(TEAM_ID, fromIso, toIso)).filter(isUserControlledPlan);
+    const persisted = (await readWeekPlans(TEAM_ID, fromIso, toIso)).filter(
+      isUserControlledPlan,
+    );
     const persistedByDate = new Map<string, DayPlan[]>();
     for (const p of persisted) {
       const list = persistedByDate.get(p.date) ?? [];
@@ -136,7 +145,9 @@ export async function handleGetMultiWeek(c: Context): Promise<Response> {
   return c.json({ weeks: result });
 }
 
-function isUserControlledPlan(plan: DayPlan | null | undefined): plan is DayPlan {
+function isUserControlledPlan(
+  plan: DayPlan | null | undefined,
+): plan is DayPlan {
   if (!plan) return false;
   return plan.generatedBy === "agentic-desk-manual";
 }

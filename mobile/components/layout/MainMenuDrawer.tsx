@@ -116,7 +116,14 @@ export function MainMenuDrawer({
   return (
     <AnimatePresence>
       {open && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 10, pointerEvents: "none" }}>
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10,
+            pointerEvents: "none",
+          }}
+        >
           {/* Drawer */}
           <motion.div
             ref={drawerRef}
@@ -170,13 +177,20 @@ export function MainMenuDrawer({
               <NavItem
                 icon={LayoutDashboard}
                 label="Desk"
-                onClick={() => { vibrate(6); onNavigate("dashboard"); onClose(); }}
+                onClick={() => {
+                  vibrate(6);
+                  onNavigate("dashboard");
+                  onClose();
+                }}
               />
 
               {/* Sanctum dropdown */}
               <div>
                 <button
-                  onClick={() => { vibrate(6); setSanctumOpen((v) => !v); }}
+                  onClick={() => {
+                    vibrate(6);
+                    setSanctumOpen((v) => !v);
+                  }}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -223,7 +237,11 @@ export function MainMenuDrawer({
                     >
                       {/* Timeline sub-item */}
                       <button
-                        onClick={() => { vibrate(6); onNavigate("timeline"); onClose(); }}
+                        onClick={() => {
+                          vibrate(6);
+                          onNavigate("timeline");
+                          onClose();
+                        }}
                         style={{
                           display: "flex",
                           alignItems: "center",
@@ -241,13 +259,21 @@ export function MainMenuDrawer({
                           letterSpacing: "0.03em",
                         }}
                       >
-                        <Clock size={14} strokeWidth={1.5} color="var(--text-secondary)" />
+                        <Clock
+                          size={14}
+                          strokeWidth={1.5}
+                          color="var(--text-secondary)"
+                        />
                         Timeline
                       </button>
 
                       {/* Arbitrum sub-item */}
                       <button
-                        onClick={() => { vibrate(6); onNavigate("arbitrum"); onClose(); }}
+                        onClick={() => {
+                          vibrate(6);
+                          onNavigate("arbitrum");
+                          onClose();
+                        }}
                         style={{
                           display: "flex",
                           alignItems: "center",
@@ -277,21 +303,33 @@ export function MainMenuDrawer({
               <NavItem
                 icon={Zap}
                 label="RiskFlow"
-                onClick={() => { vibrate(6); onNavigate("riskflow"); onClose(); }}
+                onClick={() => {
+                  vibrate(6);
+                  onNavigate("riskflow");
+                  onClose();
+                }}
               />
 
               {/* Calendar */}
               <NavItem
                 icon={Calendar}
                 label="Econ"
-                onClick={() => { vibrate(6); onNavigate("calendar"); onClose(); }}
+                onClick={() => {
+                  vibrate(6);
+                  onNavigate("calendar");
+                  onClose();
+                }}
               />
 
               {/* Chat */}
               <NavItem
                 icon={MessageCircle}
                 label="Chat"
-                onClick={() => { vibrate(6); onNavigate("chat"); onClose(); }}
+                onClick={() => {
+                  vibrate(6);
+                  onNavigate("chat");
+                  onClose();
+                }}
               />
             </div>
 
@@ -315,7 +353,10 @@ export function MainMenuDrawer({
                     key={item.id}
                     onClick={() => {
                       if (isHelp) {
-                        window.open("https://docs.pricedinresearch.io/fintheon", "_blank");
+                        window.open(
+                          "https://docs.pricedinresearch.io/fintheon",
+                          "_blank",
+                        );
                       } else {
                         onNavigate(item.id);
                       }
@@ -397,7 +438,10 @@ export function MainMenuDrawer({
                   type="button"
                   role="tab"
                   aria-selected={mode === "light"}
-                  onClick={() => { vibrate(6); setMode("light"); }}
+                  onClick={() => {
+                    vibrate(6);
+                    setMode("light");
+                  }}
                   style={modeSegmentStyle(mode === "light")}
                 >
                   <Sun size={13} strokeWidth={1.8} />
@@ -406,7 +450,10 @@ export function MainMenuDrawer({
                   type="button"
                   role="tab"
                   aria-selected={mode === "dark"}
-                  onClick={() => { vibrate(6); setMode("dark"); }}
+                  onClick={() => {
+                    vibrate(6);
+                    setMode("dark");
+                  }}
                   style={modeSegmentStyle(mode === "dark")}
                 >
                   <Moon size={13} strokeWidth={1.8} />
@@ -477,7 +524,11 @@ function NavItem({
   label,
   onClick,
 }: {
-  icon: React.ComponentType<{ size?: number; strokeWidth?: number; color?: string }>;
+  icon: React.ComponentType<{
+    size?: number;
+    strokeWidth?: number;
+    color?: string;
+  }>;
   label: string;
   onClick: () => void;
 }) {

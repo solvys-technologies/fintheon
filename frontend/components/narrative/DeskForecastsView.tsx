@@ -24,7 +24,8 @@ export function DeskForecastsView() {
         if (!cancelled) setForecasts(items);
       })
       .catch((err) => {
-        if (!cancelled) setStatus(err instanceof Error ? err.message : "Load failed.");
+        if (!cancelled)
+          setStatus(err instanceof Error ? err.message : "Load failed.");
       });
     return () => {
       cancelled = true;
@@ -33,9 +34,8 @@ export function DeskForecastsView() {
 
   useEffect(() => {
     const handler = (event: Event) => {
-      const forecast = (
-        event as CustomEvent<{ forecast?: ColiseumForecast }>
-      ).detail?.forecast;
+      const forecast = (event as CustomEvent<{ forecast?: ColiseumForecast }>)
+        .detail?.forecast;
       if (!forecast) return;
       setForecasts((current) => [
         forecast,
@@ -46,12 +46,16 @@ export function DeskForecastsView() {
     };
     window.addEventListener("fintheon:narrative-forecast-created", handler);
     return () => {
-      window.removeEventListener("fintheon:narrative-forecast-created", handler);
+      window.removeEventListener(
+        "fintheon:narrative-forecast-created",
+        handler,
+      );
     };
   }, []);
 
   const selectedHeadlines = useMemo(
-    () => headlines.filter((headline) => form.catalystIds.includes(headline.id)),
+    () =>
+      headlines.filter((headline) => form.catalystIds.includes(headline.id)),
     [form.catalystIds, headlines],
   );
 
@@ -112,30 +116,61 @@ export function DeskForecastsView() {
           </button>
         </div>
 
-        {status ? <p className="text-xs text-[var(--fintheon-muted)]">{status}</p> : null}
+        {status ? (
+          <p className="text-xs text-[var(--fintheon-muted)]">{status}</p>
+        ) : null}
 
         {isCreating ? (
-          <section className="fintheon-popover-surface t-panel-slide border border-[var(--fintheon-accent)]/14 bg-[var(--fintheon-panel)]/60 p-3" data-open="true">
+          <section
+            className="fintheon-popover-surface t-panel-slide border border-[var(--fintheon-accent)]/14 bg-[var(--fintheon-panel)]/60 p-3"
+            data-open="true"
+          >
             <div className="grid gap-2 md:grid-cols-2">
-              <Field label="Title" value={form.title} onChange={(title) => setForm({ ...form, title })} />
-              <Field label="Timeframe" value={form.timeframe} onChange={(timeframe) => setForm({ ...form, timeframe })} />
-              <Field label="Probability" value={form.probability} onChange={(probability) => setForm({ ...form, probability })} />
+              <Field
+                label="Title"
+                value={form.title}
+                onChange={(title) => setForm({ ...form, title })}
+              />
+              <Field
+                label="Timeframe"
+                value={form.timeframe}
+                onChange={(timeframe) => setForm({ ...form, timeframe })}
+              />
+              <Field
+                label="Probability"
+                value={form.probability}
+                onChange={(probability) => setForm({ ...form, probability })}
+              />
               <label className="text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]">
                 Direction
                 <select
                   value={form.direction}
-                  onChange={(event) => setForm({ ...form, direction: event.target.value })}
+                  onChange={(event) =>
+                    setForm({ ...form, direction: event.target.value })
+                  }
                   className="mt-1 h-9 w-full rounded-[4px] border border-[var(--fintheon-accent)]/14 bg-black/20 px-2 text-xs normal-case tracking-normal text-[var(--fintheon-text)] outline-none"
                 >
                   <option value="">None</option>
                   {DIRECTIONS.map((direction) => (
-                    <option key={direction} value={direction}>{direction}</option>
+                    <option key={direction} value={direction}>
+                      {direction}
+                    </option>
                   ))}
                 </select>
               </label>
             </div>
-            <TextArea label="Thesis" value={form.thesis} onChange={(thesis) => setForm({ ...form, thesis })} />
-            <TextArea label="Validation" value={form.validationRule} onChange={(validationRule) => setForm({ ...form, validationRule })} />
+            <TextArea
+              label="Thesis"
+              value={form.thesis}
+              onChange={(thesis) => setForm({ ...form, thesis })}
+            />
+            <TextArea
+              label="Validation"
+              value={form.validationRule}
+              onChange={(validationRule) =>
+                setForm({ ...form, validationRule })
+              }
+            />
             <div className="mt-3">
               <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]">
                 RiskFlow catalysts {selectedHeadlines.length}/3
@@ -147,10 +182,12 @@ export function DeskForecastsView() {
                     <button
                       key={headline.id}
                       type="button"
-                      onClick={() => setForm({
-                        ...form,
-                        catalystIds: toggleId(form.catalystIds, headline.id),
-                      })}
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          catalystIds: toggleId(form.catalystIds, headline.id),
+                        })
+                      }
                       className={`min-h-10 rounded-[4px] px-2 py-1 text-left text-[11px] leading-4 transition ${
                         isSelected
                           ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
@@ -179,11 +216,18 @@ export function DeskForecastsView() {
             <BetaState label="No forecasts yet." />
           ) : (
             forecasts.map((forecast) => (
-              <article key={forecast.id} className="group border border-[var(--fintheon-accent)]/12 bg-white/[0.025] p-3 transition-all duration-200 hover:-translate-y-px hover:border-[var(--fintheon-accent)]/22 hover:bg-[var(--fintheon-accent)]/[0.035]">
+              <article
+                key={forecast.id}
+                className="group border border-[var(--fintheon-accent)]/12 bg-white/[0.025] p-3 transition-all duration-200 hover:-translate-y-px hover:border-[var(--fintheon-accent)]/22 hover:bg-[var(--fintheon-accent)]/[0.035]"
+              >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <p className="text-sm text-[var(--fintheon-text)]">{forecast.title}</p>
-                    <p className="mt-1 text-xs leading-5 text-[var(--fintheon-muted)]">{forecast.thesis}</p>
+                    <p className="text-sm text-[var(--fintheon-text)]">
+                      {forecast.title}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-[var(--fintheon-muted)]">
+                      {forecast.thesis}
+                    </p>
                   </div>
                   <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--fintheon-accent)]">
                     {forecast.status.replace("_", " ")}
@@ -192,7 +236,9 @@ export function DeskForecastsView() {
                 <div className="mt-3 flex flex-wrap gap-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--fintheon-muted)]">
                   <span>{forecast.catalysts.length} catalysts</span>
                   <span>{forecast.timeframe}</span>
-                  {forecast.probability !== null ? <span>{forecast.probability}%</span> : null}
+                  {forecast.probability !== null ? (
+                    <span>{forecast.probability}%</span>
+                  ) : null}
                 </div>
                 {forecast.status === "draft" ? (
                   <button

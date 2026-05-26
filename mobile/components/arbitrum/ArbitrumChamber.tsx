@@ -37,7 +37,8 @@ const ROLE_DESCRIPTORS: Record<ArbitrumSeatRole, string> = {
   Skeptic: "Social Sentiment \u00B7 Headline Risk",
 };
 
-const EMPTY_COPY = "No fresh read \u2014 chamber convenes at 17:00 ET or on IV \u2265 8.5.";
+const EMPTY_COPY =
+  "No fresh read \u2014 chamber convenes at 17:00 ET or on IV \u2265 8.5.";
 
 function AgentSeatRow({
   seat,
@@ -61,10 +62,19 @@ function AgentSeatRow({
         cursor: hasRationale ? "pointer" : "default",
         WebkitTapHighlightColor: "transparent",
       }}
-      onClick={() => { if (hasRationale) onToggle(); }}
+      onClick={() => {
+        if (hasRationale) onToggle();
+      }}
     >
       <FadingRuler style={{ marginBottom: 10 }} />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 92px 16px", gap: 10, alignItems: "center" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 92px 16px",
+          gap: 10,
+          alignItems: "center",
+        }}
+      >
         <div style={{ flex: 1, minWidth: 0 }}>
           <span
             style={{
@@ -78,27 +88,37 @@ function AgentSeatRow({
           >
             {displayName}
           </span>
-          <p style={{
-            fontFamily: "var(--font-data)",
-            fontSize: 7,
-            color: "var(--text-disabled)",
-            letterSpacing: "0.04em",
-            marginTop: 2,
-            marginBottom: 0,
-            lineHeight: 1.3,
-          }}>
+          <p
+            style={{
+              fontFamily: "var(--font-data)",
+              fontSize: 7,
+              color: "var(--text-disabled)",
+              letterSpacing: "0.04em",
+              marginTop: 2,
+              marginBottom: 0,
+              lineHeight: 1.3,
+            }}
+          >
             {descriptor}
           </p>
         </div>
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-            <span style={{
-              fontFamily: "var(--font-data)",
-              fontSize: 8,
-              color: "var(--text-disabled)",
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-            }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: 3,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--font-data)",
+                fontSize: 8,
+                color: "var(--text-disabled)",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+              }}
+            >
               Fuse
             </span>
             <DigitGroup
@@ -131,14 +151,16 @@ function AgentSeatRow({
       {/* Expandable rationale */}
       {expanded && hasRationale && (
         <div style={{ marginTop: 10, paddingLeft: 4 }}>
-          <p style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 11,
-            color: "var(--text-secondary)",
-            lineHeight: 1.5,
-            margin: 0,
-            whiteSpace: "pre-wrap",
-          }}>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 11,
+              color: "var(--text-secondary)",
+              lineHeight: 1.5,
+              margin: 0,
+              whiteSpace: "pre-wrap",
+            }}
+          >
             {seat.rationale}
           </p>
         </div>
@@ -160,19 +182,34 @@ function ConfidencePair({
   ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 4 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 6,
+        paddingTop: 4,
+      }}
+    >
       {rows.map((row) => {
         const value = Math.max(0, Math.min(1, row.value));
         return (
           <div key={row.label}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-              <span style={{
-                fontFamily: "var(--font-data)",
-                fontSize: 8,
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-                color: "var(--text-disabled)",
-              }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: 3,
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "var(--font-data)",
+                  fontSize: 8,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: "var(--text-disabled)",
+                }}
+              >
                 {row.label}
               </span>
               <DigitGroup
@@ -199,8 +236,12 @@ function ConfidencePair({
 
 export function ArbitrumChamber() {
   const { settings, updateSettings } = useSettings();
-  const { verdict, isLoading, error, refresh } = useArbitrumLatest(settings.selectedInstrument);
-  const [expandedSeat, setExpandedSeat] = useState<ArbitrumSeatRole | null>(null);
+  const { verdict, isLoading, error, refresh } = useArbitrumLatest(
+    settings.selectedInstrument,
+  );
+  const [expandedSeat, setExpandedSeat] = useState<ArbitrumSeatRole | null>(
+    null,
+  );
   const [digestOpen, setDigestOpen] = useState(false);
 
   const seats: ArbitrumSeat[] = (() => {
@@ -224,25 +265,58 @@ export function ArbitrumChamber() {
   const hasRealSeats = (verdict?.seats?.length ?? 0) > 0;
   const chamberSummary = verdict?.digest_text ?? "";
 
-  const instrumentOptions = ["/NQ", "/ES", "/YM", "/RTY", "/CL", "/GC", "/ZB", "/ZN", "/ZT", "/BTC", "/ETH", "/6E", "/6J", "/6B"];
+  const instrumentOptions = [
+    "/NQ",
+    "/ES",
+    "/YM",
+    "/RTY",
+    "/CL",
+    "/GC",
+    "/ZB",
+    "/ZN",
+    "/ZT",
+    "/BTC",
+    "/ETH",
+    "/6E",
+    "/6J",
+    "/6B",
+  ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "16px 4px" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        padding: "16px 4px",
+      }}
+    >
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 12px",
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{
-            fontFamily: "var(--font-data)",
-            fontSize: 10,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "var(--text-secondary)",
-          }}>
+          <span
+            style={{
+              fontFamily: "var(--font-data)",
+              fontSize: 10,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "var(--text-secondary)",
+            }}
+          >
             Arbitrum Chamber
           </span>
           <select
             value={settings.selectedInstrument}
-            onChange={(e) => updateSettings({ selectedInstrument: e.target.value })}
+            onChange={(e) =>
+              updateSettings({ selectedInstrument: e.target.value })
+            }
             style={{
               fontFamily: "var(--font-data)",
               fontSize: 9,
@@ -257,31 +331,42 @@ export function ArbitrumChamber() {
             }}
           >
             {instrumentOptions.map((s) => (
-              <option key={s} value={s} style={{ background: "var(--surface)", color: "var(--text-primary)" }}>
+              <option
+                key={s}
+                value={s}
+                style={{
+                  background: "var(--surface)",
+                  color: "var(--text-primary)",
+                }}
+              >
                 {s}
               </option>
             ))}
           </select>
         </div>
         {verdict && (
-          <span style={{
-            fontFamily: "var(--font-data)",
-            fontSize: 8,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            color: "var(--text-disabled)",
-          }}>
+          <span
+            style={{
+              fontFamily: "var(--font-data)",
+              fontSize: 8,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "var(--text-disabled)",
+            }}
+          >
             {verdict.phase ?? "complete"}
           </span>
         )}
       </div>
 
       {/* Seat fuses */}
-      <div style={{
-        display: "flex",
-        flexDirection: "column",
-        padding: "0 12px",
-      }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          padding: "0 12px",
+        }}
+      >
         {hasRealSeats
           ? seats.map((seat) => (
               <AgentSeatRow
@@ -302,31 +387,37 @@ export function ArbitrumChamber() {
                 }}
               >
                 <FadingRuler style={{ marginBottom: 10 }} />
-                <span style={{
-                  fontFamily: "var(--font-data)",
-                  fontSize: 10,
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                  color: "var(--text-disabled)",
-                }}>
+                <span
+                  style={{
+                    fontFamily: "var(--font-data)",
+                    fontSize: 10,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                    color: "var(--text-disabled)",
+                  }}
+                >
                   {ROLE_DISPLAY_NAMES[seat.role] ?? seat.role}
                 </span>
-                <p style={{
-                  fontFamily: "var(--font-data)",
-                  fontSize: 7,
-                  color: "var(--text-disabled)",
-                  marginTop: 4,
-                  marginBottom: 0,
-                  lineHeight: 1.3,
-                }}>
+                <p
+                  style={{
+                    fontFamily: "var(--font-data)",
+                    fontSize: 7,
+                    color: "var(--text-disabled)",
+                    marginTop: 4,
+                    marginBottom: 0,
+                    lineHeight: 1.3,
+                  }}
+                >
                   {ROLE_DESCRIPTORS[seat.role] ?? ""}
                 </p>
-                <p style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 10,
-                  color: "var(--text-disabled)",
-                  marginTop: 8,
-                }}>
+                <p
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: 10,
+                    color: "var(--text-disabled)",
+                    marginTop: 8,
+                  }}
+                >
                   Awaiting seat\u2026
                 </p>
               </div>
@@ -345,13 +436,25 @@ export function ArbitrumChamber() {
 
       {/* Consensus + expandable chamber read */}
       {hasVerdict && (
-        <div style={{
-          margin: "0 12px",
-        }}>
+        <div
+          style={{
+            margin: "0 12px",
+          }}
+        >
           <FadingRuler style={{ marginBottom: 10 }} />
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              gap: 8,
+              marginBottom: 6,
+            }}
+          >
             <DigitGroup
-              value={(Math.max(0, Math.min(10, (verdict!.consensus_probability ?? 0) * 10))).toFixed(1)}
+              value={Math.max(
+                0,
+                Math.min(10, (verdict!.consensus_probability ?? 0) * 10),
+              ).toFixed(1)}
               style={{
                 fontFamily: "Doto, var(--font-data)",
                 fontSize: 24,
@@ -359,13 +462,15 @@ export function ArbitrumChamber() {
                 lineHeight: 1,
               }}
             />
-            <span style={{
-              fontFamily: "var(--font-data)",
-              fontSize: 9,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              color: "var(--text-secondary)",
-            }}>
+            <span
+              style={{
+                fontFamily: "var(--font-data)",
+                fontSize: 9,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: "var(--text-secondary)",
+              }}
+            >
               consensus score
             </span>
             {verdict!.dissent && (
@@ -394,31 +499,45 @@ export function ArbitrumChamber() {
             }}
           >
             Chamber Read
-            {digestOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            {digestOpen ? (
+              <ChevronDown size={14} />
+            ) : (
+              <ChevronRight size={14} />
+            )}
           </button>
           {digestOpen && chamberSummary && (
-            <p style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 12,
-              color: "var(--text-secondary)",
-              lineHeight: 1.5,
-              margin: 0,
-            }}>
+            <p
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 12,
+                color: "var(--text-secondary)",
+                lineHeight: 1.5,
+                margin: 0,
+              }}
+            >
               {chamberSummary}
             </p>
           )}
           {verdict && (
-            <div style={{
-              marginTop: 8,
-              fontFamily: "var(--font-data)",
-              fontSize: 8,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "var(--text-disabled)",
-            }}>
-              {new Date(verdict.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            <div
+              style={{
+                marginTop: 8,
+                fontFamily: "var(--font-data)",
+                fontSize: 8,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "var(--text-disabled)",
+              }}
+            >
+              {new Date(verdict.created_at).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
               {" \u00B7 "}
-              {new Date(verdict.created_at).toLocaleDateString([], { month: "short", day: "numeric" })}
+              {new Date(verdict.created_at).toLocaleDateString([], {
+                month: "short",
+                day: "numeric",
+              })}
             </div>
           )}
         </div>
@@ -428,14 +547,20 @@ export function ArbitrumChamber() {
       {!hasVerdict && (
         <div style={{ padding: "0 12px" }}>
           <FadingRuler style={{ marginBottom: 10 }} />
-          <div style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 11,
-            color: "var(--text-disabled)",
-            padding: 12,
-          }}>
+          <div
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 11,
+              color: "var(--text-disabled)",
+              padding: 12,
+            }}
+          >
             {isLoading ? (
-              <DotMatrixLoader variant="pyramid" size={24} label="Loading chamber read" />
+              <DotMatrixLoader
+                variant="pyramid"
+                size={24}
+                label="Loading chamber read"
+              />
             ) : error ? (
               `Chamber unreachable (${error})`
             ) : (

@@ -130,7 +130,9 @@ export function NarrativeCanvasChat({
               },
             });
           }
-          setResponse(`Added ${scored.length} event${scored.length === 1 ? "" : "s"} to NarrativeFlow.`);
+          setResponse(
+            `Added ${scored.length} event${scored.length === 1 ? "" : "s"} to NarrativeFlow.`,
+          );
         } else {
           setResponse("No scoreable events found. Add more market context.");
         }
@@ -226,7 +228,10 @@ export function NarrativeCanvasChat({
   return (
     <div className="narrative-canvas-chat narrative-fade-item pointer-events-auto relative flex w-full max-w-[56rem] flex-col items-stretch">
       {responseVisible && response ? (
-        <div className="narrative-canvas-chat__response t-panel-slide absolute bottom-full mb-2 flex w-full items-center gap-2 rounded-[6px] border border-[var(--fintheon-accent)]/15 px-3 py-2" data-open="true">
+        <div
+          className="narrative-canvas-chat__response t-panel-slide absolute bottom-full mb-2 flex w-full items-center gap-2 rounded-[6px] border border-[var(--fintheon-accent)]/15 px-3 py-2"
+          data-open="true"
+        >
           <p className="flex-1 text-[11px] leading-relaxed text-[var(--fintheon-text)]">
             {response}
           </p>
@@ -256,7 +261,8 @@ export function NarrativeCanvasChat({
         contextStats={{
           messageCount: attachedHeadlines.length,
           estimatedTokens: Math.ceil(
-            `${input}\n${attachedHeadlines.map((item) => item.headline).join("\n")}`.length / 4,
+            `${input}\n${attachedHeadlines.map((item) => item.headline).join("\n")}`
+              .length / 4,
           ),
           connectorCount: attachedHeadlines.length,
           activeSkillLabel: "Canvas",
@@ -274,7 +280,7 @@ export function NarrativeCanvasChat({
             onClearChip?.(id);
           }
         }}
-        onSubmit={() => submitText(input)}
+        onSubmit={(message) => submitText(message)}
         onQueueMessage={queue.addQueue}
         onEditQueue={queue.editQueue}
         onRemoveQueue={queue.removeQueue}

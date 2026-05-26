@@ -108,18 +108,9 @@ export function ChatCitationIcon({
           className="chat-citation-icon__side"
           d="M8 17 24 8l16 9v15L24 41 8 32Z"
         />
-        <path
-          className="chat-citation-icon__top"
-          d="M8 17 24 8l16 9-16 9Z"
-        />
-        <path
-          className="chat-citation-icon__front"
-          d="M8 17 24 26v15L8 32Z"
-        />
-        <path
-          className="chat-citation-icon__right"
-          d="M40 17 24 26v15l16-9Z"
-        />
+        <path className="chat-citation-icon__top" d="M8 17 24 8l16 9-16 9Z" />
+        <path className="chat-citation-icon__front" d="M8 17 24 26v15L8 32Z" />
+        <path className="chat-citation-icon__right" d="M40 17 24 26v15l16-9Z" />
         <path className="chat-citation-icon__edge" d="M8 17 24 26l16-9" />
         <path className="chat-citation-icon__edge" d="M24 26v15" />
         <rect
@@ -151,7 +142,11 @@ export function citationKindForTool(toolName: string): ChatCitationKind {
   if (name.includes("web") || name.includes("fetch") || name.includes("url"))
     return "web";
   if (name.includes("browser")) return "browser";
-  if (name.includes("bash") || name.includes("shell") || name.includes("command"))
+  if (
+    name.includes("bash") ||
+    name.includes("shell") ||
+    name.includes("command")
+  )
     return "shell";
   if (name.includes("file") || name.includes("read") || name.includes("write"))
     return "file";

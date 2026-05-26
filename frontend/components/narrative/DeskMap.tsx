@@ -115,7 +115,9 @@ export function DeskMap({
       return activeDeskSessions.filter((session) => session.catalystCount > 0);
     }
     if (workspaceSessionFilter === "active" && activeSessionId) {
-      return activeDeskSessions.filter((session) => session.id === activeSessionId);
+      return activeDeskSessions.filter(
+        (session) => session.id === activeSessionId,
+      );
     }
     return activeDeskSessions;
   }, [activeSessionId, workspaceSessionFilter, workspaceSessions]);
@@ -168,7 +170,9 @@ export function DeskMap({
       })
       .catch((err) => {
         if (!cancelled) {
-          setMapImageError(err instanceof Error ? err.message : "DeskMap unavailable.");
+          setMapImageError(
+            err instanceof Error ? err.message : "DeskMap unavailable.",
+          );
         }
       });
     return () => {
@@ -178,7 +182,9 @@ export function DeskMap({
 
   useEffect(() => {
     const syncHeaderHost = () => {
-      setHeaderMapControlsHost(document.getElementById("narrativeflow-map-controls"));
+      setHeaderMapControlsHost(
+        document.getElementById("narrativeflow-map-controls"),
+      );
     };
     syncHeaderHost();
     const frame = requestAnimationFrame(syncHeaderHost);
@@ -312,19 +318,24 @@ export function DeskMap({
     setEditingCard(card);
     setCatalystModalOpen(true);
   }, []);
-  const handleDeskMapImageChange = useCallback(async (input: {
-    mapImageUrl: string | null;
-    mapImagePrompt: string | null;
-  }) => {
-    setMapImageError(null);
-    try {
-      const nextDesk = await updateDeskMapImage(input);
-      setDesk(nextDesk);
-    } catch (err) {
-      setMapImageError(err instanceof Error ? err.message : "DeskMap image failed.");
-      throw err;
-    }
-  }, []);
+  const handleDeskMapImageChange = useCallback(
+    async (input: {
+      mapImageUrl: string | null;
+      mapImagePrompt: string | null;
+    }) => {
+      setMapImageError(null);
+      try {
+        const nextDesk = await updateDeskMapImage(input);
+        setDesk(nextDesk);
+      } catch (err) {
+        setMapImageError(
+          err instanceof Error ? err.message : "DeskMap image failed.",
+        );
+        throw err;
+      }
+    },
+    [],
+  );
   const mapFilterControls = !isWorkspaceScoped ? (
     <>
       <TimeframeFilterDropdown
@@ -339,9 +350,7 @@ export function DeskMap({
         catalysts={state.catalysts}
       />
     </>
-  ) : (
-    null
-  );
+  ) : null;
 
   return (
     <NarrativeHighlightProvider>
@@ -408,7 +417,12 @@ export function DeskMap({
               onToolChange={setCanvasTool}
               onImport={() => undefined}
               onToggleSanctum={(page?: number) => {
-                const mode = page === 1 ? "forecasts" : page === 2 ? "coliseum" : "workspace";
+                const mode =
+                  page === 1
+                    ? "forecasts"
+                    : page === 2
+                      ? "coliseum"
+                      : "workspace";
                 window.dispatchEvent(
                   new CustomEvent("fintheon:narrative-surface-change", {
                     detail: { mode },
@@ -446,7 +460,12 @@ export function DeskMap({
               onToolChange={setCanvasTool}
               onImport={() => undefined}
               onToggleSanctum={(page?: number) => {
-                const mode = page === 1 ? "forecasts" : page === 2 ? "coliseum" : "workspace";
+                const mode =
+                  page === 1
+                    ? "forecasts"
+                    : page === 2
+                      ? "coliseum"
+                      : "workspace";
                 window.dispatchEvent(
                   new CustomEvent("fintheon:narrative-surface-change", {
                     detail: { mode },
@@ -522,7 +541,9 @@ function WorkspaceNarrativesMap({
   onOpenSession?: (id: string) => void;
 }) {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
+  const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(
+    new Set(),
+  );
   const dragRef = useRef<{
     id: number;
     startX: number;
@@ -538,7 +559,9 @@ function WorkspaceNarrativesMap({
     sessions.slice(index + 1).map((next, offset) => ({
       id: `${session.id}-${next.id}`,
       from: SESSION_MAP_POSITIONS[index % SESSION_MAP_POSITIONS.length],
-      to: SESSION_MAP_POSITIONS[(index + offset + 1) % SESSION_MAP_POSITIONS.length],
+      to: SESSION_MAP_POSITIONS[
+        (index + offset + 1) % SESSION_MAP_POSITIONS.length
+      ],
     })),
   );
   const canPan = canvasTool === "hand" || canvasTool === "select";
@@ -628,97 +651,112 @@ function WorkspaceNarrativesMap({
                 Fresh DeskMap
               </p>
               <p className="mt-2 max-w-sm text-xs leading-5 text-[var(--fintheon-muted)]">
-                NF-Workspace sessions will appear here as the desk builds its map.
+                NF-Workspace sessions will appear here as the desk builds its
+                map.
               </p>
             </div>
           </div>
         ) : null}
-      <svg
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-35"
-        preserveAspectRatio="none"
-      >
-        {links.map((link) => (
-          <line
-            key={link.id}
-            x1={`${link.from.x}%`}
-            y1={`${link.from.y}%`}
-            x2={`${link.to.x}%`}
-            y2={`${link.to.y}%`}
-            stroke="rgba(20,184,166,0.28)"
-            strokeDasharray="3 6"
-            strokeWidth="1"
-          />
-        ))}
-      </svg>
-      {sessions.map((session, index) => {
-        const point = SESSION_MAP_POSITIONS[index % SESSION_MAP_POSITIONS.length];
-        const isActive = session.id === activeSessionId;
-        const isSelected = selectedSessionIds.has(session.id);
-        const size = Math.max(120, Math.min(230, 116 + session.catalystCount * 2));
-        const heat = heatmapActive ? Math.min(0.42, 0.12 + session.catalystCount / 80) : 0.16;
-        return (
-          <button
-            key={session.id}
-            type="button"
-            onPointerDown={() => {
-              clearHoldTimer();
-              holdRef.current.consumed = false;
-              holdRef.current.timer = setTimeout(() => {
-                toggleSessionSelection(session.id);
-                holdRef.current.consumed = true;
-              }, 420);
-            }}
-            onPointerUp={clearHoldTimer}
-            onPointerLeave={clearHoldTimer}
-            onClick={(event) => {
-              if (holdRef.current.consumed) {
-                holdRef.current.consumed = false;
-                return;
-              }
-              if (canvasTool === "multi-select" || event.shiftKey || event.metaKey) {
-                toggleSessionSelection(session.id);
-                return;
-              }
-              onOpenSession?.(session.id);
-            }}
-            className={`narrative-deskmap-card narrative-fade-item group absolute -translate-x-1/2 -translate-y-1/2 text-left transition duration-200 hover:scale-[1.02] ${
-              isSelected ? "text-[var(--fintheon-accent)]" : ""
-            }`}
-            style={{ left: `${point.x}%`, top: `${point.y}%`, width: size }}
-          >
-            <span
-              aria-hidden="true"
-              className={`absolute left-1/2 top-1/2 rounded-full transition duration-200 ${
-                isActive ? "opacity-30" : "opacity-12 group-hover:opacity-20"
-              }`}
-              style={{
-                width: size,
-                height: size,
-                transform: "translate(-50%, -50%)",
-                background: hexToRgba(session.color, Math.min(0.22, heat * 0.7)),
-                backdropFilter: "blur(12px) saturate(0.35)",
-                outline: isSelected
-                  ? "1px solid color-mix(in srgb, var(--fintheon-accent) 42%, transparent)"
-                  : "none",
-              }}
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 h-full w-full opacity-35"
+          preserveAspectRatio="none"
+        >
+          {links.map((link) => (
+            <line
+              key={link.id}
+              x1={`${link.from.x}%`}
+              y1={`${link.from.y}%`}
+              x2={`${link.to.x}%`}
+              y2={`${link.to.y}%`}
+              stroke="rgba(20,184,166,0.28)"
+              strokeDasharray="3 6"
+              strokeWidth="1"
             />
-            <span
-              className={`relative block max-w-[220px] text-[12px] font-semibold leading-4 ${
-                isActive
-                  ? "text-[var(--fintheon-accent)]"
-                  : "text-[var(--fintheon-text)]/80 group-hover:text-[var(--fintheon-accent)]"
+          ))}
+        </svg>
+        {sessions.map((session, index) => {
+          const point =
+            SESSION_MAP_POSITIONS[index % SESSION_MAP_POSITIONS.length];
+          const isActive = session.id === activeSessionId;
+          const isSelected = selectedSessionIds.has(session.id);
+          const size = Math.max(
+            120,
+            Math.min(230, 116 + session.catalystCount * 2),
+          );
+          const heat = heatmapActive
+            ? Math.min(0.42, 0.12 + session.catalystCount / 80)
+            : 0.16;
+          return (
+            <button
+              key={session.id}
+              type="button"
+              onPointerDown={() => {
+                clearHoldTimer();
+                holdRef.current.consumed = false;
+                holdRef.current.timer = setTimeout(() => {
+                  toggleSessionSelection(session.id);
+                  holdRef.current.consumed = true;
+                }, 420);
+              }}
+              onPointerUp={clearHoldTimer}
+              onPointerLeave={clearHoldTimer}
+              onClick={(event) => {
+                if (holdRef.current.consumed) {
+                  holdRef.current.consumed = false;
+                  return;
+                }
+                if (
+                  canvasTool === "multi-select" ||
+                  event.shiftKey ||
+                  event.metaKey
+                ) {
+                  toggleSessionSelection(session.id);
+                  return;
+                }
+                onOpenSession?.(session.id);
+              }}
+              className={`narrative-deskmap-card narrative-fade-item group absolute -translate-x-1/2 -translate-y-1/2 text-left transition duration-200 hover:scale-[1.02] ${
+                isSelected ? "text-[var(--fintheon-accent)]" : ""
               }`}
-              style={{ textShadow: "0 0 16px rgba(0,0,0,0.9)" }}
+              style={{ left: `${point.x}%`, top: `${point.y}%`, width: size }}
             >
-              {session.title}
-            </span>
-            <span className="relative mt-1 block font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]/55">
-              {session.catalystCount} catalysts · {session.deskLabel ?? "Workspace"}
-            </span>
-          </button>
-        );
-      })}
+              <span
+                aria-hidden="true"
+                className={`absolute left-1/2 top-1/2 rounded-full transition duration-200 ${
+                  isActive ? "opacity-30" : "opacity-12 group-hover:opacity-20"
+                }`}
+                style={{
+                  width: size,
+                  height: size,
+                  transform: "translate(-50%, -50%)",
+                  background: hexToRgba(
+                    session.color,
+                    Math.min(0.22, heat * 0.7),
+                  ),
+                  backdropFilter: "blur(12px) saturate(0.35)",
+                  outline: isSelected
+                    ? "1px solid color-mix(in srgb, var(--fintheon-accent) 42%, transparent)"
+                    : "none",
+                }}
+              />
+              <span
+                className={`relative block max-w-[220px] text-[12px] font-semibold leading-4 ${
+                  isActive
+                    ? "text-[var(--fintheon-accent)]"
+                    : "text-[var(--fintheon-text)]/80 group-hover:text-[var(--fintheon-accent)]"
+                }`}
+                style={{ textShadow: "0 0 16px rgba(0,0,0,0.9)" }}
+              >
+                {session.title}
+              </span>
+              <span className="relative mt-1 block font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]/55">
+                {session.catalystCount} catalysts ·{" "}
+                {session.deskLabel ?? "Workspace"}
+              </span>
+            </button>
+          );
+        })}
       </div>
       <div className="absolute left-3 top-[68px] z-30 pointer-events-none">
         <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--fintheon-accent)]/70">
@@ -758,12 +796,17 @@ function DeskMapImageControls({
   const [localError, setLocalError] = useState<string | null>(null);
   const hasImage = Boolean(desk?.mapImageUrl);
 
-  async function apply(input: { mapImageUrl: string | null; mapImagePrompt: string | null }) {
+  async function apply(input: {
+    mapImageUrl: string | null;
+    mapImagePrompt: string | null;
+  }) {
     setLocalError(null);
     try {
       await onImageChange(input);
     } catch (err) {
-      setLocalError(err instanceof Error ? err.message : "DeskMap image failed.");
+      setLocalError(
+        err instanceof Error ? err.message : "DeskMap image failed.",
+      );
     }
   }
 
@@ -791,7 +834,11 @@ function DeskMapImageControls({
     const prompt = buildDeskMapPrompt(desk, sessions);
     const seed = `${desk?.id ?? "desk"}:${sessions.length}:${Date.now()}`;
     apply({
-      mapImageUrl: buildGeneratedDeskMapImage(prompt, desk?.color ?? "#c79f4a", seed),
+      mapImageUrl: buildGeneratedDeskMapImage(
+        prompt,
+        desk?.color ?? "#c79f4a",
+        seed,
+      ),
       mapImagePrompt: prompt,
     });
   }
@@ -805,17 +852,27 @@ function DeskMapImageControls({
         className="hidden"
         onChange={(event) => handleUpload(event.target.files?.[0])}
       />
-      <IconControl title="Upload DeskMap image" onClick={() => inputRef.current?.click()}>
+      <IconControl
+        title="Upload DeskMap image"
+        onClick={() => inputRef.current?.click()}
+      >
         <ImagePlus size={14} />
       </IconControl>
       <IconControl
-        title={hasImage ? "Regenerate DeskMap image with CAO" : "Generate DeskMap image with CAO"}
+        title={
+          hasImage
+            ? "Regenerate DeskMap image with CAO"
+            : "Generate DeskMap image with CAO"
+        }
         onClick={generateImage}
       >
         {hasImage ? <RefreshCw size={14} /> : <Sparkles size={14} />}
       </IconControl>
       {hasImage ? (
-        <IconControl title="Remove DeskMap image" onClick={() => apply({ mapImageUrl: null, mapImagePrompt: null })}>
+        <IconControl
+          title="Remove DeskMap image"
+          onClick={() => apply({ mapImageUrl: null, mapImagePrompt: null })}
+        >
           <Trash2 size={14} />
         </IconControl>
       ) : null}
@@ -854,12 +911,25 @@ function buildDeskMapPrompt(
   desk: DeskMapDesk | null,
   sessions: NarrativeSessionSummary[],
 ): string {
-  const titles = sessions.slice(0, 6).map((session) => session.title).join(" / ");
-  return `${desk?.name ?? "Trading Desk"} DeskMap visual identity${titles ? ` | ${titles}` : ""}`.slice(0, 900);
+  const titles = sessions
+    .slice(0, 6)
+    .map((session) => session.title)
+    .join(" / ");
+  return `${desk?.name ?? "Trading Desk"} DeskMap visual identity${titles ? ` | ${titles}` : ""}`.slice(
+    0,
+    900,
+  );
 }
 
-function buildGeneratedDeskMapImage(prompt: string, color: string, seed: string): string {
-  const hash = Array.from(prompt + seed).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+function buildGeneratedDeskMapImage(
+  prompt: string,
+  color: string,
+  seed: string,
+): string {
+  const hash = Array.from(prompt + seed).reduce(
+    (acc, char) => acc + char.charCodeAt(0),
+    0,
+  );
   const hue = hash % 360;
   const accent = hexToRgba(color, 0.5);
   const title = escapeXml(prompt.split("|")[0]?.trim() || "DeskMap");

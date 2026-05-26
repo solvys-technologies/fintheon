@@ -61,7 +61,10 @@ export function PlanFeedbackBlock({ window }: PlanFeedbackBlockProps) {
     !submitted &&
     (action !== "faded" || !!reasonCode);
 
-  const tradingWindow = formatEasternClockRange(window.startTime, window.endTime);
+  const tradingWindow = formatEasternClockRange(
+    window.startTime,
+    window.endTime,
+  );
 
   const onSubmit = async () => {
     if (!canSubmit || !action) return;

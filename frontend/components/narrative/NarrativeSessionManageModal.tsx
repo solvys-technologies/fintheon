@@ -47,9 +47,9 @@ export function NarrativeSessionManageModal({
         </div>
 
         <p className="text-xs leading-5 text-[var(--fintheon-muted)]">
-          Deleting removes the workspace, chat artifacts, and its bubble from the map.
-          Moving it out of view keeps the narrative in the archive drawer and hides it
-          from active desk map surfaces.
+          Deleting removes the workspace, chat artifacts, and its bubble from
+          the map. Moving it out of view keeps the narrative in the archive
+          drawer and hides it from active desk map surfaces.
         </p>
 
         <div className="mt-4 grid gap-2">

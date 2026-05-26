@@ -8,8 +8,6 @@ interface PriceRevealTagProps {
   children: ReactNode;
 }
 
-export function PriceRevealTag({
-  children,
-}: PriceRevealTagProps) {
+export function PriceRevealTag({ children }: PriceRevealTagProps) {
   return <>{children}</>;
 }

@@ -68,7 +68,10 @@ export function enrichPost(post: BulletinPost): EnrichedPost {
   return { ...post, narratives: inferNarratives(post) };
 }
 
-export function isVisibleForZen(post: EnrichedPost, enabled: Set<string>): boolean {
+export function isVisibleForZen(
+  post: EnrichedPost,
+  enabled: Set<string>,
+): boolean {
   if (post.narratives.length === 0) return true;
   return post.narratives.some((slug) => enabled.has(slug));
 }
@@ -87,7 +90,10 @@ export function readEnabledNarratives(): Set<string> {
 }
 
 export function writeEnabledNarratives(value: Set<string>) {
-  localStorage.setItem(BULLETIN_WATCHLIST_STORAGE_KEY, JSON.stringify([...value]));
+  localStorage.setItem(
+    BULLETIN_WATCHLIST_STORAGE_KEY,
+    JSON.stringify([...value]),
+  );
 }
 
 export function readZenMode(): boolean {

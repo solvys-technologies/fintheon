@@ -43,7 +43,7 @@ export function NarrativeFlowFilterBar({
 
   const selectedThemeName =
     selectedThemeId && activeFilter === "theme"
-      ? themes.find((t) => t.id === selectedThemeId)?.name ?? "Select Theme"
+      ? (themes.find((t) => t.id === selectedThemeId)?.name ?? "Select Theme")
       : "Select Theme";
 
   return (

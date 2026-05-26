@@ -340,7 +340,9 @@ function matchesConversationScope(
   if (!workspaceId && !surface) return true;
   if (!metadata) return false;
   const workspace = metadata.workspace;
-  const metadataWorkspaceId = isRecord(workspace) ? String(workspace.id ?? "") : "";
+  const metadataWorkspaceId = isRecord(workspace)
+    ? String(workspace.id ?? "")
+    : "";
   const metadataSurface = String(metadata.surface ?? "");
   if (workspaceId && metadataWorkspaceId !== workspaceId) return false;
   if (surface && metadataSurface !== surface) return false;

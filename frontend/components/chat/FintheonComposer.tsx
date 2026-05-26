@@ -7,7 +7,13 @@
 // [claude-code 2026-04-21] Post-S35: removed relay dispatch; added Cmd+K palette, ↑↓ history,
 //   persona slash commands
 // [claude-code 2026-05-06] S60-T3: provider modal and toolbox wired to composer toolbar
-import { useEffect, useState, useCallback, useRef, type ReactNode } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  type ReactNode,
+} from "react";
 import { useThread, useThreadRuntime } from "@assistant-ui/react";
 import { Plug } from "lucide-react";
 import { PromptBox } from "../ui/chatgpt-prompt-input";

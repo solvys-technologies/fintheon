@@ -70,7 +70,9 @@ export function useAuditLog(filters?: AuditQueryFilters): UseAuditLogResult {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Failed to load audit log");
+        setError(
+          err instanceof Error ? err.message : "Failed to load audit log",
+        );
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);

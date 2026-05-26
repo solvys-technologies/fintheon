@@ -23,10 +23,7 @@ export function RiskSignalsRefreshButton({
   );
 }
 
-export function DeskPlanAdvanceButton({
-  isLoading,
-  onClick,
-}: IconButtonProps) {
+export function DeskPlanAdvanceButton({ isLoading, onClick }: IconButtonProps) {
   return (
     <button
       type="button"

@@ -11,6 +11,7 @@ import { createClient } from "@supabase/supabase-js";
 import { execFileSync } from "child_process";
 import { readFileSync, appendFileSync, mkdirSync } from "fs";
 import { join } from "path";
+import { enqueueRiskFlowObsidianFunnel } from "../src/services/riskflow/obsidian-funnel.js";
 
 const ONCE = process.argv.includes("--once");
 const BATCH_SIZE = 15;
@@ -126,6 +127,7 @@ Return ONLY a valid JSON array. No markdown, no explanation.`;
 async function writeScored(items: any[], rawItems: any[]): Promise<number> {
   const rawMap = new Map(rawItems.map((r) => [r.tweet_id, r]));
   let written = 0;
+  const writtenRows: Record<string, unknown>[] = [];
 
   for (const scored of items) {
     const raw = rawMap.get(scored.tweet_id);
@@ -158,9 +160,11 @@ async function writeScored(items: any[], rawItems: any[]): Promise<number> {
       log(`Write failed for ${scored.tweet_id}: ${error.message}`);
     } else {
       written++;
+      writtenRows.push(row);
     }
   }
 
+  enqueueRiskFlowObsidianFunnel(writtenRows as any[]);
   return written;
 }
 

@@ -32,7 +32,8 @@ export function DeskInboxFeed() {
     async (item: DeskInboxItem, action: "approve" | "request" | "dismiss") => {
       setActiveId(item.id);
       try {
-        if (action === "approve") await backend.deskInbox.approve(item.id, DEFAULT_DESK_ID);
+        if (action === "approve")
+          await backend.deskInbox.approve(item.id, DEFAULT_DESK_ID);
         if (action === "request") {
           await backend.deskInbox.requestChanges(
             item.id,
@@ -40,7 +41,8 @@ export function DeskInboxFeed() {
             DEFAULT_DESK_ID,
           );
         }
-        if (action === "dismiss") await backend.deskInbox.dismiss(item.id, DEFAULT_DESK_ID);
+        if (action === "dismiss")
+          await backend.deskInbox.dismiss(item.id, DEFAULT_DESK_ID);
         await load();
       } finally {
         setActiveId(null);
@@ -131,9 +133,24 @@ function MemoApprovalCard({
         <StreamdownChat content={item.body} />
       </div>
       <div className="mt-3 flex items-center gap-1.5">
-        <ActionButton icon={<Check size={11} />} label="Approve" disabled={isBusy} onClick={onApprove} />
-        <ActionButton icon={<RotateCcw size={11} />} label="Changes" disabled={isBusy} onClick={onRequest} />
-        <ActionButton icon={<X size={11} />} label="Dismiss" disabled={isBusy} onClick={onDismiss} />
+        <ActionButton
+          icon={<Check size={11} />}
+          label="Approve"
+          disabled={isBusy}
+          onClick={onApprove}
+        />
+        <ActionButton
+          icon={<RotateCcw size={11} />}
+          label="Changes"
+          disabled={isBusy}
+          onClick={onRequest}
+        />
+        <ActionButton
+          icon={<X size={11} />}
+          label="Dismiss"
+          disabled={isBusy}
+          onClick={onDismiss}
+        />
       </div>
     </article>
   );

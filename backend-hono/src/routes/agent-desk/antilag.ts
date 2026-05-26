@@ -21,7 +21,8 @@ async function handleTradingViewAlert(c: Context) {
   if (!body) return c.json({ error: "Invalid JSON payload" }, 400);
 
   const secretError = validateSecret(c, body);
-  if (secretError) return c.json({ error: secretError.message }, secretError.status);
+  if (secretError)
+    return c.json({ error: secretError.message }, secretError.status);
 
   const userId =
     (c.get("supabaseUid") as string | undefined) ??
@@ -56,7 +57,8 @@ function validateSecret(
     };
   }
 
-  const provided = c.req.header("x-antilag-secret") ?? String(body.secret ?? "");
+  const provided =
+    c.req.header("x-antilag-secret") ?? String(body.secret ?? "");
   if (provided !== expected) {
     return { status: 401, message: "Invalid Antilag webhook secret" };
   }

@@ -28,34 +28,43 @@ export interface NarrativeSessionBundle {
   response: SensemakingResponse | null;
 }
 
-export async function fetchNarrativeSessions(): Promise<NarrativeSessionSummary[]> {
-  const data = await requestJson<{ sessions?: RawSession[] }>("/api/narrative/sessions");
+export async function fetchNarrativeSessions(): Promise<
+  NarrativeSessionSummary[]
+> {
+  const data = await requestJson<{ sessions?: RawSession[] }>(
+    "/api/narrative/sessions",
+  );
   return (data.sessions ?? []).map(toSessionSummary);
 }
 
 export async function createNarrativeSession(
   payload: CreateNarrativeSessionPayload,
 ): Promise<NarrativeSessionBundle> {
-  const data = await requestJson<{ session?: RawSessionDetail }>("/api/narrative/sessions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      query: payload.query,
-      catalystIds: payload.catalystIds,
-      title: payload.title,
-      color: payload.color,
-      reasoningLevel: payload.reasoningLevel,
-      tags: payload.narrativeSlugs.map((tag) => ({
-        tag,
-        confidence: 1,
-        source: "human",
-      })),
-    }),
-  });
+  const data = await requestJson<{ session?: RawSessionDetail }>(
+    "/api/narrative/sessions",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: payload.query,
+        catalystIds: payload.catalystIds,
+        title: payload.title,
+        color: payload.color,
+        reasoningLevel: payload.reasoningLevel,
+        tags: payload.narrativeSlugs.map((tag) => ({
+          tag,
+          confidence: 1,
+          source: "human",
+        })),
+      }),
+    },
+  );
   return toSessionBundle(requireSession(data.session));
 }
 
-export async function fetchNarrativeSession(id: string): Promise<NarrativeSessionBundle> {
+export async function fetchNarrativeSession(
+  id: string,
+): Promise<NarrativeSessionBundle> {
   const data = await requestJson<{ session?: RawSessionDetail }>(
     `/api/narrative/sessions/${encodeURIComponent(id)}`,
   );
@@ -74,8 +83,10 @@ export async function updateNarrativeSession(input: {
   if (input.title !== undefined) body.title = input.title;
   if (input.color !== undefined) body.color = input.color;
   if (input.status !== undefined) body.status = input.status;
-  if (input.coverImageUrl !== undefined) body.coverImageUrl = input.coverImageUrl;
-  if (input.coverImagePrompt !== undefined) body.coverImagePrompt = input.coverImagePrompt;
+  if (input.coverImageUrl !== undefined)
+    body.coverImageUrl = input.coverImageUrl;
+  if (input.coverImagePrompt !== undefined)
+    body.coverImagePrompt = input.coverImagePrompt;
   const data = await requestJson<{ session?: RawSessionDetail }>(
     `/api/narrative/sessions/${encodeURIComponent(input.id)}`,
     {
@@ -101,17 +112,20 @@ export async function refineNarrativeSession(input: {
   renderMode: string;
   reasoningLevel?: ReasoningLevel;
 }): Promise<NarrativeSessionBundle> {
-  const response = await requestJson<SensemakingResponse>("/api/narrative/sensemaking", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      query: input.query,
-      attachedHeadlineIds: input.catalystIds,
-      orientation: input.orientation,
-      renderMode: input.renderMode,
-      reasoningLevel: input.reasoningLevel,
-    }),
-  });
+  const response = await requestJson<SensemakingResponse>(
+    "/api/narrative/sensemaking",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: input.query,
+        attachedHeadlineIds: input.catalystIds,
+        orientation: input.orientation,
+        renderMode: input.renderMode,
+        reasoningLevel: input.reasoningLevel,
+      }),
+    },
+  );
 
   await Promise.all([
     addNarrativeSessionMessage(input.sessionId, input.query),
@@ -141,13 +155,23 @@ export async function refineNarrativeSession(input: {
   return fetchNarrativeSession(input.sessionId);
 }
 
-async function addNarrativeSessionMessage(sessionId: string, content: string): Promise<void> {
+async function addNarrativeSessionMessage(
+  sessionId: string,
+  content: string,
+): Promise<void> {
   if (!content.trim()) return;
-  await requestJson(`/api/narrative/sessions/${encodeURIComponent(sessionId)}/messages`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ role: "user", content, metadata: { source: "workspace-composer" } }),
-  });
+  await requestJson(
+    `/api/narrative/sessions/${encodeURIComponent(sessionId)}/messages`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        role: "user",
+        content,
+        metadata: { source: "workspace-composer" },
+      }),
+    },
+  );
 }
 
 export async function saveNarrativeArtifact(
@@ -174,7 +198,9 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 
-function requireSession(session: RawSessionDetail | undefined): RawSessionDetail {
+function requireSession(
+  session: RawSessionDetail | undefined,
+): RawSessionDetail {
   if (!session) throw new Error("Narrative session response was empty");
   return session;
 }
@@ -183,7 +209,9 @@ function toSessionSummary(session: RawSession): NarrativeSessionSummary {
   return {
     id: String(session.id),
     title: String(session.title ?? "Untitled narrative"),
-    updatedAt: String(session.updatedAt ?? session.updated_at ?? new Date().toISOString()),
+    updatedAt: String(
+      session.updatedAt ?? session.updated_at ?? new Date().toISOString(),
+    ),
     catalystCount: toNumber(session.catalystCount ?? session.catalyst_count),
     color: String(session.color ?? "#c79f4a"),
     status: String(session.status ?? "active"),
@@ -201,16 +229,29 @@ function toSessionBundle(detail: RawSessionDetail): NarrativeSessionBundle {
       status: String(detail.status ?? "active"),
       color: String(detail.color ?? "#c79f4a"),
       generatedAt: String(
-        detail.generatedAt ?? detail.generated_at ?? response?.generatedAt ?? new Date().toISOString(),
+        detail.generatedAt ??
+          detail.generated_at ??
+          response?.generatedAt ??
+          new Date().toISOString(),
       ),
-      coverImageUrl: toOptionalString(detail.coverImageUrl ?? detail.cover_image_url),
-      coverImagePrompt: toOptionalString(detail.coverImagePrompt ?? detail.cover_image_prompt),
+      coverImageUrl: toOptionalString(
+        detail.coverImageUrl ?? detail.cover_image_url,
+      ),
+      coverImagePrompt: toOptionalString(
+        detail.coverImagePrompt ?? detail.cover_image_prompt,
+      ),
       coverImageUpdatedAt: toOptionalString(
         detail.coverImageUpdatedAt ?? detail.cover_image_updated_at,
       ),
       catalystIds: toCatalystIds(detail.catalysts),
-      report: readText(detail.artifacts?.docs?.payload, ["report", "summary", "title"]),
-      synthesis: response?.synthesisSummary ?? readText(detail.artifacts?.docs?.payload, ["summary"]),
+      report: readText(detail.artifacts?.docs?.payload, [
+        "report",
+        "summary",
+        "title",
+      ]),
+      synthesis:
+        response?.synthesisSummary ??
+        readText(detail.artifacts?.docs?.payload, ["summary"]),
       webLinks: toLinks(detail),
       workEvents: toWorkEvents(detail.workEvents ?? detail.work_events),
       transcript: toTranscript(detail.messages),
@@ -224,14 +265,22 @@ function toCatalystIds(value: unknown): string[] {
     .filter(Boolean);
 }
 
-function toSensemakingResponse(detail: RawSessionDetail): SensemakingResponse | null {
+function toSensemakingResponse(
+  detail: RawSessionDetail,
+): SensemakingResponse | null {
   const flow = detail.artifacts?.flow?.payload;
   if (!flow) return null;
   const timeline = detail.artifacts?.timeline?.payload;
   return {
-    anchorCatalysts: toArray(flow.anchorCatalysts) as unknown as SensemakingResponse["anchorCatalysts"],
-    relatedCatalysts: toArray(flow.relatedCatalysts) as unknown as SensemakingResponse["relatedCatalysts"],
-    narrativeGroups: toArray(flow.narrativeGroups) as unknown as SensemakingResponse["narrativeGroups"],
+    anchorCatalysts: toArray(
+      flow.anchorCatalysts,
+    ) as unknown as SensemakingResponse["anchorCatalysts"],
+    relatedCatalysts: toArray(
+      flow.relatedCatalysts,
+    ) as unknown as SensemakingResponse["relatedCatalysts"],
+    narrativeGroups: toArray(
+      flow.narrativeGroups,
+    ) as unknown as SensemakingResponse["narrativeGroups"],
     timelineNodes: toArray(
       timeline?.nodes ?? flow.timelineNodes,
     ) as unknown as SensemakingTimelineNode[],
@@ -247,7 +296,12 @@ function toSensemakingResponse(detail: RawSessionDetail): SensemakingResponse | 
         }
       : null,
     mermaidSource: String(flow.mermaidSource ?? ""),
-    generatedAt: String(flow.generatedAt ?? detail.generatedAt ?? detail.generated_at ?? new Date().toISOString()),
+    generatedAt: String(
+      flow.generatedAt ??
+        detail.generatedAt ??
+        detail.generated_at ??
+        new Date().toISOString(),
+    ),
   };
 }
 
@@ -257,12 +311,16 @@ function toLinks(detail: RawSessionDetail): NarrativeWorkspaceLink[] {
     href: String(link.url ?? link.href ?? ""),
     source: link.source ? String(link.source) : undefined,
   }));
-  const docLinks = toArray(detail.artifacts?.docs?.payload?.links).map((link) => ({
-    label: String(link.title ?? link.label ?? link.url ?? "Report link"),
-    href: String(link.url ?? link.href ?? ""),
-    source: link.source ? String(link.source) : undefined,
-  }));
-  return [...linkedRows, ...docLinks].filter((link) => link.href.startsWith("http"));
+  const docLinks = toArray(detail.artifacts?.docs?.payload?.links).map(
+    (link) => ({
+      label: String(link.title ?? link.label ?? link.url ?? "Report link"),
+      href: String(link.url ?? link.href ?? ""),
+      source: link.source ? String(link.source) : undefined,
+    }),
+  );
+  return [...linkedRows, ...docLinks].filter((link) =>
+    link.href.startsWith("http"),
+  );
 }
 
 function toWorkEvents(value: unknown): NarrativeAgentWorkEvent[] {
@@ -270,8 +328,12 @@ function toWorkEvents(value: unknown): NarrativeAgentWorkEvent[] {
     id: String(event.id ?? `work-${index}`),
     agent: String(event.agent ?? event.agent_name ?? "NarrativeFlow"),
     summary: String(event.summary ?? "Updated narrative workspace."),
-    status: event.status ? String(event.status) : String(event.event_type ?? "complete"),
-    timestamp: event.timestamp ? String(event.timestamp) : String(event.created_at ?? ""),
+    status: event.status
+      ? String(event.status)
+      : String(event.event_type ?? "complete"),
+    timestamp: event.timestamp
+      ? String(event.timestamp)
+      : String(event.created_at ?? ""),
   }));
 }
 
@@ -280,7 +342,9 @@ function toTranscript(value: unknown): NarrativeTranscriptEntry[] {
     id: String(entry.id ?? `message-${index}`),
     speaker: String(entry.speaker ?? entry.role ?? "desk"),
     text: String(entry.text ?? entry.content ?? ""),
-    timestamp: entry.timestamp ? String(entry.timestamp) : String(entry.created_at ?? ""),
+    timestamp: entry.timestamp
+      ? String(entry.timestamp)
+      : String(entry.created_at ?? ""),
   }));
 }
 

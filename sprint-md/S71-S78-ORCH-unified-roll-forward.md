@@ -8,16 +8,16 @@ index; each sprint ORCH remains the executable brief for its own work.
 
 ## Wave Order
 
-| Wave | Sprint | Priority | Gate |
-| --- | --- | --- | --- |
-| 1 | S71 | Critical surfaces | NarrativeFlow, PsychAssist, lockout, bulletin, composer stability pass |
-| 2 | S72 | Platform polish | Appearance, Refinement, PsychAssist, econ countdown polish |
-| 3 | S73 | Data parity | RiskFlow IV, econ ingest, brief generation, parity smoke |
-| 4 | S74 | Broker core | Rithmic gateway/status, bracket orders, autopilot risk state |
-| 5 | S75 | Execution ledger | Trading-service integration, positions API, journal streaks |
-| 6 | S76 | Mobile/Sanctum | Mobile CAO, push, ticker row, Sanctum navigation |
-| 7 | S77 | Agent Desk/release | Todo drawer, Agent Desk naming, modularity, QA checklist |
-| 8 | S78 | Voice/perf hygiene | Voice, STT, performance tab, empty predictions, route logs |
+| Wave | Sprint | Priority           | Gate                                                                   |
+| ---- | ------ | ------------------ | ---------------------------------------------------------------------- |
+| 1    | S71    | Critical surfaces  | NarrativeFlow, PsychAssist, lockout, bulletin, composer stability pass |
+| 2    | S72    | Platform polish    | Appearance, Refinement, PsychAssist, econ countdown polish             |
+| 3    | S73    | Data parity        | RiskFlow IV, econ ingest, brief generation, parity smoke               |
+| 4    | S74    | Broker core        | Rithmic gateway/status, bracket orders, autopilot risk state           |
+| 5    | S75    | Execution ledger   | Trading-service integration, positions API, journal streaks            |
+| 6    | S76    | Mobile/Sanctum     | Mobile CAO, push, ticker row, Sanctum navigation                       |
+| 7    | S77    | Agent Desk/release | Todo drawer, Agent Desk naming, modularity, QA checklist               |
+| 8    | S78    | Voice/perf hygiene | Voice, STT, performance tab, empty predictions, route logs             |
 
 ## Conflict Rules
 

@@ -10,25 +10,25 @@ import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
 
 /** Map Fintheon futures symbols to TradingView chart symbols. */
 const SYMBOL_MAP: Record<string, string> = {
-  "/MNQ": "NASDAQ:QQQ",
-  "/NQ": "NASDAQ:QQQ",
-  "/ES": "SP:SPX",
-  "/MES": "SP:SPX",
+  "/MNQ": "CME_MINI:NQ1!",
+  "/NQ": "CME_MINI:NQ1!",
+  "/ES": "CME_MINI:ES1!",
+  "/MES": "CME_MINI:ES1!",
   "/GC": "COMEX:GC1!",
   "/MGC": "COMEX:GC1!",
-  "/YM": "DJ:DJI",
-  "/RTY": "RUSSELL:RUT",
+  "/YM": "CBOT_MINI:YM1!",
+  "/RTY": "CME_MINI:RTY1!",
   "/CL": "NYMEX:CL1!",
-  MNQ: "NASDAQ:QQQ",
-  NQ: "NASDAQ:QQQ",
-  ES: "SP:SPX",
-  MES: "SP:SPX",
-  YM: "DJ:DJI",
-  RTY: "RUSSELL:RUT",
+  MNQ: "CME_MINI:NQ1!",
+  NQ: "CME_MINI:NQ1!",
+  ES: "CME_MINI:ES1!",
+  MES: "CME_MINI:ES1!",
+  YM: "CBOT_MINI:YM1!",
+  RTY: "CME_MINI:RTY1!",
 };
 
 function mapSymbol(sym: string): string {
-  return SYMBOL_MAP[sym] ?? SYMBOL_MAP[`/${sym}`] ?? "NASDAQ:QQQ";
+  return SYMBOL_MAP[sym] ?? SYMBOL_MAP[`/${sym}`] ?? "CME_MINI:NQ1!";
 }
 
 interface SanctumChartProps {

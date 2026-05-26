@@ -71,12 +71,15 @@ function arg(name: string): string | null {
 }
 
 function vaultPath(): string {
-  const explicit = arg("vault") ?? process.env.OBSIDIAN_CATALYST_VAULT_PATH;
+  const explicit =
+    arg("vault") ??
+    process.env.OBSIDIAN_RISKFLOW_VAULT_PATH ??
+    process.env.OBSIDIAN_CATALYST_VAULT_PATH;
   if (explicit) return resolve(explicit);
   if (process.env.OBSIDIAN_VAULT_PATH) {
-    return resolve(process.env.OBSIDIAN_VAULT_PATH, "Fintheon Catalyst Vault");
+    return resolve(process.env.OBSIDIAN_VAULT_PATH, "RiskFlow Main Vault");
   }
-  return resolve(homedir(), "Documents", "Obsidian", "Fintheon-Catalyst-Vault");
+  return resolve(homedir(), "Documents", "Obsidian", "RiskFlow Main Vault");
 }
 
 function limitValue(): number | null {
@@ -123,9 +126,11 @@ function safeText(value: unknown): string {
 }
 
 function yamlValue(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map((item) => JSON.stringify(item)).join(", ")}]`;
+  if (Array.isArray(value))
+    return `[${value.map((item) => JSON.stringify(item)).join(", ")}]`;
   if (value === null || value === undefined) return "null";
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (typeof value === "number" || typeof value === "boolean")
+    return String(value);
   return JSON.stringify(value);
 }
 
@@ -196,7 +201,9 @@ async function readRelations(
   return map;
 }
 
-async function readNarrativeDesks(client: pg.Client): Promise<NarrativeDeskRow[]> {
+async function readNarrativeDesks(
+  client: pg.Client,
+): Promise<NarrativeDeskRow[]> {
   try {
     const { rows } = await client.query<NarrativeDeskRow>(
       `SELECT id, name, slug, color, created_by
@@ -214,7 +221,9 @@ async function readNarrativeDesks(client: pg.Client): Promise<NarrativeDeskRow[]
   }
 }
 
-async function readCatalystBankRows(client: pg.Client): Promise<CatalystBankRow[]> {
+async function readCatalystBankRows(
+  client: pg.Client,
+): Promise<CatalystBankRow[]> {
   try {
     const { rows } = await client.query<CatalystBankRow>(
       `SELECT bank.user_id,
@@ -261,7 +270,11 @@ async function writeCatalystNote(
   const narrativeTitles = Array.from(
     new Set(relations.map((rel) => rel.session_title).filter(Boolean)),
   );
-  const relativePath = join("Catalysts", monthStamp(row.published_at), noteName(row));
+  const relativePath = join(
+    "Catalysts",
+    monthStamp(row.published_at),
+    noteName(row),
+  );
   const fullPath = join(root, relativePath);
   await mkdir(join(root, "Catalysts", monthStamp(row.published_at)), {
     recursive: true,
@@ -299,7 +312,9 @@ async function writeCatalystNote(
     "",
     row.agent_note ? "## Agent Note\n\n" + safeText(row.agent_note) + "\n" : "",
     row.market_impact
-      ? "## Market Impact\n\n```json\n" + JSON.stringify(row.market_impact, null, 2) + "\n```\n"
+      ? "## Market Impact\n\n```json\n" +
+        JSON.stringify(row.market_impact, null, 2) +
+        "\n```\n"
       : "",
     "## Desk And Narrative Assignments",
     "",
@@ -322,7 +337,9 @@ async function writeCatalystNote(
     "- Pull this note when an NF-Workspace session needs default RiskFlow catalyst context.",
     "- Assign it to a narrative session when it becomes anchor, supporting, confirming, conflicting, or watchlist evidence.",
     "- Add desk-fit tags in the user catalyst bank before presenting bespoke desk context.",
-  ].filter(Boolean).join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
   await writeFile(fullPath, body);
   return relativePath;
 }
@@ -345,13 +362,13 @@ async function writeIndexes(
     join(root, "Index.md"),
     [
       frontmatter({
-        type: "riskflow-catalyst-vault-index",
+        type: "riskflow-main-vault-index",
         generated_at: new Date().toISOString(),
         total_catalysts: catalysts.length,
-        tags: ["fintheon", "riskflow", "catalyst-vault"],
+        tags: ["fintheon", "riskflow", "main-vault"],
       }),
       "",
-      "# Fintheon Catalyst Vault",
+      "# RiskFlow Main Vault",
       "",
       `Catalysts exported: ${catalysts.length}`,
       "",
@@ -375,7 +392,8 @@ async function writeIndexes(
       byTag.set(key, [...(byTag.get(key) ?? []), note]);
     }
     for (const rel of relationsById.get(row.tweet_id) ?? []) {
-      if (rel.desk_slug) byDesk.set(rel.desk_slug, [...(byDesk.get(rel.desk_slug) ?? []), note]);
+      if (rel.desk_slug)
+        byDesk.set(rel.desk_slug, [...(byDesk.get(rel.desk_slug) ?? []), note]);
       if (rel.session_id) {
         const key = `${safeSlug(rel.session_title ?? rel.session_id)}-${rel.session_id}`;
         byNarrative.set(key, [...(byNarrative.get(key) ?? []), note]);
@@ -385,14 +403,28 @@ async function writeIndexes(
 
   await Promise.all([
     ...Array.from(byDesk.entries()).map(([slug, notes]) =>
-      writeLinkIndex(join(root, "Desks", `${slug}.md`), "Desk Catalyst Index", notes),
+      writeLinkIndex(
+        join(root, "Desks", `${slug}.md`),
+        "Desk Catalyst Index",
+        notes,
+      ),
     ),
     ...Array.from(byNarrative.entries()).map(([slug, notes]) =>
-      writeLinkIndex(join(root, "Narratives", `${slug}.md`), "Narrative Catalyst Index", notes),
+      writeLinkIndex(
+        join(root, "Narratives", `${slug}.md`),
+        "Narrative Catalyst Index",
+        notes,
+      ),
     ),
-    ...Array.from(byTag.entries()).slice(0, 200).map(([slug, notes]) =>
-      writeLinkIndex(join(root, "Tags", `${slug}.md`), "Catalyst Tag Index", notes),
-    ),
+    ...Array.from(byTag.entries())
+      .slice(0, 200)
+      .map(([slug, notes]) =>
+        writeLinkIndex(
+          join(root, "Tags", `${slug}.md`),
+          "Catalyst Tag Index",
+          notes,
+        ),
+      ),
   ]);
 }
 
@@ -429,7 +461,7 @@ async function writeNarrativeBuilder(
       "",
       "# Narrative Builder",
       "",
-      "This vault is the default, ever-growing RiskFlow headline database for NF-Workspace sessions. Raw headline notes live under `Catalysts/`; human narrative work should live under `Narratives/Drafts/` so future exports can refresh indexes without overwriting your thesis notes.",
+      "This RiskFlow Main vault is the default, ever-growing headline database for NF-Workspace sessions. Raw headline notes live under `Catalysts/`; human narrative work should live under `Narratives/Drafts/` so future exports can refresh indexes without overwriting your thesis notes.",
       "",
       "## Workflow",
       "",
@@ -457,24 +489,34 @@ async function writeNarrativeBuilder(
     ].join("\n"),
   );
 
-  await writeFile(join(root, "Narratives", "Drafts", "README.md"), [
-    frontmatter({
-      type: "narrative-drafts-readme",
-      generated_at: new Date().toISOString(),
-      tags: ["fintheon", "narrative-drafts"],
-    }),
-    "",
-    "# Narrative Drafts",
-    "",
-    "Create your own desk and trader narratives here. Export runs should not write draft notes in this folder except this README.",
-    "",
-    "Suggested filename: `YYYY-MM-DD-desk-symbol-thesis.md`.",
-    "",
-    "Start from [[Templates/Narrative Brief]].",
-  ].join("\n"));
+  await writeFile(
+    join(root, "Narratives", "Drafts", "README.md"),
+    [
+      frontmatter({
+        type: "narrative-drafts-readme",
+        generated_at: new Date().toISOString(),
+        tags: ["fintheon", "narrative-drafts"],
+      }),
+      "",
+      "# Narrative Drafts",
+      "",
+      "Create your own desk and trader narratives here. Export runs should not write draft notes in this folder except this README.",
+      "",
+      "Suggested filename: `YYYY-MM-DD-desk-symbol-thesis.md`.",
+      "",
+      "Start from [[Templates/Narrative Brief]].",
+    ].join("\n"),
+  );
 
   await writeTemplates(root, trader);
-  await writeTraderBanks(root, bankRows, catalysts, notePaths, traderSlug, trader);
+  await writeTraderBanks(
+    root,
+    bankRows,
+    catalysts,
+    notePaths,
+    traderSlug,
+    trader,
+  );
   await writeDeskWorkspaces(root, desks, bankRows, catalysts, notePaths);
 }
 
@@ -586,7 +628,9 @@ async function writeTraderBanks(
         const catalyst = catalystLookup.get(row.riskflow_item_id);
         const note = notePaths.get(row.riskflow_item_id);
         const label = safeText(catalyst?.headline) || row.riskflow_item_id;
-        const link = note ? `[[${note}|${label.replace(/\|/g, "/")}]]` : label.replace(/\|/g, "/");
+        const link = note
+          ? `[[${note}|${label.replace(/\|/g, "/")}]]`
+          : label.replace(/\|/g, "/");
         return `| ${link} | ${row.desk_name ?? row.desk_slug ?? "unassigned"} | ${row.role ?? "candidate"} | ${(row.tags ?? []).join(", ")} | ${row.desk_fit ?? ""} | ${row.status ?? "active"} |`;
       });
       await writeFile(
@@ -606,7 +650,9 @@ async function writeTraderBanks(
           "",
           "| Catalyst | Desk | Role | Tags | Desk Fit | Status |",
           "| --- | --- | --- | --- | --- | --- |",
-          ...(table.length > 0 ? table : ["| _No assigned catalysts yet._ |  |  |  |  |  |"]),
+          ...(table.length > 0
+            ? table
+            : ["| _No assigned catalysts yet._ |  |  |  |  |  |"]),
         ].join("\n"),
       );
     }),
@@ -658,7 +704,11 @@ async function writeDeskWorkspaces(
           "",
           "## Starter Catalyst Bank",
           "",
-          ...(starters.length > 0 ? starters : ["- No desk-specific catalyst assignments yet. Search `Index.md` or ask an agent to assign candidates."]),
+          ...(starters.length > 0
+            ? starters
+            : [
+                "- No desk-specific catalyst assignments yet. Search `Index.md` or ask an agent to assign candidates.",
+              ]),
           "",
           "## Draft Links",
           "",
@@ -695,12 +745,16 @@ async function writeLinkIndex(
 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL ?? process.env.NEON_DATABASE_URL;
-  if (!databaseUrl) throw new Error("DATABASE_URL or NEON_DATABASE_URL is required");
+  if (!databaseUrl)
+    throw new Error("DATABASE_URL or NEON_DATABASE_URL is required");
   const root = vaultPath();
   const client = new Client({ connectionString: databaseUrl });
   await client.connect();
   const catalysts = await readCatalysts(client);
-  const relationsById = await readRelations(client, catalysts.map((row) => row.tweet_id));
+  const relationsById = await readRelations(
+    client,
+    catalysts.map((row) => row.tweet_id),
+  );
   const [desks, bankRows] = await Promise.all([
     readNarrativeDesks(client),
     readCatalystBankRows(client),

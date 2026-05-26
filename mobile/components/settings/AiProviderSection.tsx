@@ -15,7 +15,9 @@ export function AiProviderSection({
 }: AiProviderSectionProps) {
   const [deepSeekKey, setDeepSeekKey] = useState("");
   const [hasDeepSeekKey, setHasDeepSeekKey] = useState(false);
-  const [maskedDeepSeekKey, setMaskedDeepSeekKey] = useState<string | null>(null);
+  const [maskedDeepSeekKey, setMaskedDeepSeekKey] = useState<string | null>(
+    null,
+  );
   const [message, setMessage] = useState<string | null>(null);
 
   const refreshDeepSeekKey = useCallback(async () => {

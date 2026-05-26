@@ -42,10 +42,7 @@ const IS_WIN = process.platform === "win32";
 
 // [claude-code 2026-05-13] Default blocked domains. Clean-slate blocker policy:
 // only the selected dropdown platform plus user-added domains should be blocked.
-const DEFAULT_BLOCKED_DOMAINS = [
-  "topstepx.com",
-  "www.topstepx.com",
-];
+const DEFAULT_BLOCKED_DOMAINS = ["topstepx.com", "www.topstepx.com"];
 const BLOCKED_DOMAINS_PATH = "fintheon-blocked-domains.json";
 const BLOCKED_DOMAINS_VERSION = 2;
 const BLOCKED_PAGE_URL =
@@ -87,11 +84,7 @@ function saveBlockedDomains(domains) {
     const p = path.join(app.getPath("userData"), BLOCKED_DOMAINS_PATH);
     fs.writeFileSync(
       p,
-      JSON.stringify(
-        { version: BLOCKED_DOMAINS_VERSION, domains },
-        null,
-        2,
-      ),
+      JSON.stringify({ version: BLOCKED_DOMAINS_VERSION, domains }, null, 2),
       "utf8",
     );
     return true;
@@ -695,7 +688,10 @@ async function startBackend() {
       }
       console.warn("[Electron] LaunchAgent loaded but backend is not healthy");
     } else {
-      console.warn("[Electron] Backend LaunchAgent unavailable:", launched.detail);
+      console.warn(
+        "[Electron] Backend LaunchAgent unavailable:",
+        launched.detail,
+      );
     }
   }
 
@@ -1484,7 +1480,9 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", () => {
-  console.log("[Electron] App quitting; backend engine remains managed by launchd");
+  console.log(
+    "[Electron] App quitting; backend engine remains managed by launchd",
+  );
 });
 
 ipcMain.handle("toggle-mini-widget", () => {

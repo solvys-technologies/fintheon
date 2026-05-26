@@ -62,7 +62,8 @@ export function readLoadingThemeColors(): LoadingThemeColors {
     text:
       style.getPropertyValue("--fintheon-text").trim() || FALLBACK_COLORS.text,
     muted:
-      style.getPropertyValue("--fintheon-muted").trim() || FALLBACK_COLORS.muted,
+      style.getPropertyValue("--fintheon-muted").trim() ||
+      FALLBACK_COLORS.muted,
   };
 }
 

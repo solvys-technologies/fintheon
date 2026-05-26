@@ -32,7 +32,10 @@ const METRIC: React.CSSProperties = {
   fontVariantNumeric: "tabular-nums",
 };
 
-export function BacktestResultSlot({ code, isIncomplete }: CustomRendererProps) {
+export function BacktestResultSlot({
+  code,
+  isIncomplete,
+}: CustomRendererProps) {
   const parsed = parseSlotBody<BacktestResultData>(code, isIncomplete);
   if (parsed.status === "pending")
     return <SlotSkeleton label="backtest" lines={3} />;
@@ -87,7 +90,9 @@ export function BacktestResultSlot({ code, isIncomplete }: CustomRendererProps) 
           <div style={FADING_RULE_V} />
           <div style={{ padding: "0 8px" }}>
             <div style={SUBLABEL}>Max DD</div>
-            <div style={{ ...METRIC, color: DEFAULT_TRADE_COLORS.bearishColor }}>
+            <div
+              style={{ ...METRIC, color: DEFAULT_TRADE_COLORS.bearishColor }}
+            >
               {d.max_dd.toFixed(2)}
             </div>
           </div>

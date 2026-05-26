@@ -77,7 +77,11 @@ export function DiffPreview({ before, after, label }: DiffPreviewProps) {
             }
           >
             <span className="select-none mr-2 opacity-60">
-              {line.type === "added" ? "+" : line.type === "removed" ? "-" : " "}
+              {line.type === "added"
+                ? "+"
+                : line.type === "removed"
+                  ? "-"
+                  : " "}
             </span>
             {line.text}
           </div>

@@ -35,7 +35,11 @@ export function DeskPlanSprintTimeline({
 
   const blocks = segment.plans.flatMap((plan) =>
     (plan.windows ?? [])
-      .map((window) => ({ plan, window, overlap: sprintOverlap(window.startTime, window.endTime, segment) }))
+      .map((window) => ({
+        plan,
+        window,
+        overlap: sprintOverlap(window.startTime, window.endTime, segment),
+      }))
       .filter((item) => item.overlap != null),
   );
 
@@ -74,7 +78,9 @@ export function DeskPlanSprintTimeline({
                     deletingId={deletingId}
                     onDelete={onDelete}
                     onToggle={() =>
-                      setExpandedId((current) => (current === blockId ? null : blockId))
+                      setExpandedId((current) =>
+                        current === blockId ? null : blockId,
+                      )
                     }
                   />
                   {index < blocks.length - 1 ? <SprintLaneDivider /> : null}
@@ -84,17 +90,13 @@ export function DeskPlanSprintTimeline({
           </div>
         )}
       </div>
-
     </div>
   );
 }
 
 function SprintLaneDivider() {
   return (
-    <div
-      aria-hidden="true"
-      className="grid grid-cols-[86px_1fr] gap-3"
-    >
+    <div aria-hidden="true" className="grid grid-cols-[86px_1fr] gap-3">
       <span />
       <FadingRuler className="opacity-30" />
     </div>
@@ -136,8 +138,14 @@ function SprintBlock({
           onKeyDown={(event) => {
             if (event.key === "Enter" || event.key === " ") onToggle();
           }}
-          className={cn(POP_OUT_CARD, "absolute top-2 min-w-[170px] p-3 text-left")}
-          style={{ left: `${overlap.left}%`, width: `${Math.min(overlap.width, 92)}%` }}
+          className={cn(
+            POP_OUT_CARD,
+            "absolute top-2 min-w-[170px] p-3 text-left",
+          )}
+          style={{
+            left: `${overlap.left}%`,
+            width: `${Math.min(overlap.width, 92)}%`,
+          }}
         >
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
@@ -149,13 +157,23 @@ function SprintBlock({
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-1">
-              <DeletePlanButton plan={plan} deletingId={deletingId} onDelete={onDelete} />
-              {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              <DeletePlanButton
+                plan={plan}
+                deletingId={deletingId}
+                onDelete={onDelete}
+              />
+              {isExpanded ? (
+                <ChevronUp className="h-3 w-3" />
+              ) : (
+                <ChevronDown className="h-3 w-3" />
+              )}
             </div>
           </div>
           {isExpanded ? (
             <p className="mt-3 text-[10px] leading-relaxed text-[var(--fintheon-text)]/62">
-              {window.econForecast?.aiPrediction ?? plan.deskTheme ?? "Awaiting agent forecast."}
+              {window.econForecast?.aiPrediction ??
+                plan.deskTheme ??
+                "Awaiting agent forecast."}
             </p>
           ) : null}
         </div>

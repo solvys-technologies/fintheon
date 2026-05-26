@@ -84,9 +84,11 @@ const panelStyle: CSSProperties = {
   justifyItems: "center",
   width: "min(316px, calc(100vw - 48px))",
   padding: "15px 14px 16px",
-  border: "1px solid color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 18%, transparent)",
+  border:
+    "1px solid color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 18%, transparent)",
   borderRadius: 8,
-  background: "color-mix(in srgb, var(--fintheon-surface, #0a0905) 83%, transparent)",
+  background:
+    "color-mix(in srgb, var(--fintheon-surface, #0a0905) 83%, transparent)",
   backdropFilter: "blur(18px) saturate(1.18)",
   WebkitBackdropFilter: "blur(18px) saturate(1.18)",
   overflow: "hidden",
@@ -100,7 +102,8 @@ const buttonStyle: CSSProperties = {
   textTransform: "uppercase",
   color: "var(--fintheon-text, #f0ead6)",
   background: "transparent",
-  border: "1px solid color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 24%, transparent)",
+  border:
+    "1px solid color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 24%, transparent)",
   borderRadius: 8,
   padding: "12px 16px",
 };

@@ -10,10 +10,7 @@ import {
 
 export function DeskPlansFeed() {
   const { allPlans, isLoading, error } = useDayPlanMultiWeek();
-  const items = useMemo(
-    () => buildUpcomingDeskPlanFeed(allPlans),
-    [allPlans],
-  );
+  const items = useMemo(() => buildUpcomingDeskPlanFeed(allPlans), [allPlans]);
 
   if (isLoading) {
     return (
@@ -61,11 +58,14 @@ export function DeskPlansFeed() {
 function DeskPlanFeedCard({ item }: { item: DeskPlanFeedItem }) {
   const tone = getTone(item);
   return (
-    <article className="group relative overflow-hidden rounded-md border border-[var(--fintheon-accent)]/16 bg-[var(--fintheon-surface)]/72 p-3 transition-[border-color,background-color,transform] duration-300 hover:-translate-y-0.5 hover:border-[var(--fintheon-accent)]/34 hover:bg-[var(--fintheon-accent)]/[0.055]">
+    <article
+      className="group relative overflow-hidden rounded-md border bg-[var(--fintheon-surface)]/72 p-3 transition-[border-color,background-color,transform] duration-300 hover:-translate-y-0.5 hover:bg-[var(--fintheon-accent)]/[0.035]"
+      style={{ borderColor: tone.color }}
+    >
       <span
         aria-hidden="true"
-        className="absolute inset-y-3 left-0 w-[2px] rounded-r"
-        style={{ backgroundColor: tone.color }}
+        className="absolute right-0 top-0 h-0 w-0 border-l-[17px] border-t-[17px] border-l-transparent"
+        style={{ borderTopColor: tone.color }}
       />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">

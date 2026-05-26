@@ -93,18 +93,23 @@ This is the integration pass. S79-T1 through T4 should produce persistence, open
 9. Add changelog entry to `src/lib/changelog.ts`.
 10. Run validations. Fix compile issues without broad refactors.
 11. Patch Sticky Bulletin Catalyst tab:
-   - replace the phrase-watch contents with a desk bulletin watchlist.
-   - include Desk Narrative toggles that mirror the narrative visibility controls.
-   - apply those toggles only while Trading Browser Zen mode is active.
-   - show an inline blocked-count status when Zen hides bulletin notes.
+
+- replace the phrase-watch contents with a desk bulletin watchlist.
+- include Desk Narrative toggles that mirror the narrative visibility controls.
+- apply those toggles only while Trading Browser Zen mode is active.
+- show an inline blocked-count status when Zen hides bulletin notes.
+
 12. Before completion, create two deterministic QA bulletin notes:
-   - `S79-T5 TEST FILTERED POPUP` attached to an enabled narrative and visible in the Catalyst watchlist.
-   - `S79-T5 TEST BLOCKED` attached only to a disabled narrative and blocked from the active list in Zen mode.
+
+- `S79-T5 TEST FILTERED POPUP` attached to an enabled narrative and visible in the Catalyst watchlist.
+- `S79-T5 TEST BLOCKED` attached only to a disabled narrative and blocked from the active list in Zen mode.
+
 13. Wire the quick access header lock to the platform blocker:
-   - use only the Electron runtime/webRequest blocker path.
-   - replace the blocker domain list with the selected platform or custom link target.
-   - do not schedule `/api/lockout/toggle` or system-wide hosts/resolver blocking from this header button.
-   - keep the target selectable inside Blocker settings.
+
+- use only the Electron runtime/webRequest blocker path.
+- replace the blocker domain list with the selected platform or custom link target.
+- do not schedule `/api/lockout/toggle` or system-wide hosts/resolver blocking from this header button.
+- keep the target selectable inside Blocker settings.
 
 ## Acceptance Criteria
 

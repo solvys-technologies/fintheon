@@ -16,10 +16,17 @@ import {
   requireCanDraft,
   requireCanPublish,
 } from "../../services/coliseum/permissions.js";
-import { readDeskProfile, saveDeskProfile } from "../../services/coliseum/profiles.js";
+import {
+  readDeskProfile,
+  saveDeskProfile,
+} from "../../services/coliseum/profiles.js";
 import { runForecastMonitor } from "../../services/coliseum/thesis-monitor.js";
 import { isAuthedActor } from "../../services/coliseum/db.js";
-import { deskAgentStyleSchema, deskProfileSchema, forecastSchema } from "../../services/coliseum/validation.js";
+import {
+  deskAgentStyleSchema,
+  deskProfileSchema,
+  forecastSchema,
+} from "../../services/coliseum/validation.js";
 
 export function createColiseumRoutes(): Hono {
   const app = new Hono();
@@ -159,7 +166,10 @@ async function handle(
   } catch (err) {
     if (isRouteError(err)) return c.json({ error: err.message }, err.status);
     const message = err instanceof Error ? err.message : String(err);
-    const status = message.includes("permission") || message.includes("membership") ? 403 : 500;
+    const status =
+      message.includes("permission") || message.includes("membership")
+        ? 403
+        : 500;
     return c.json({ error: message }, status);
   }
 }

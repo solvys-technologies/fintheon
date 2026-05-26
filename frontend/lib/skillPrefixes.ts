@@ -16,4 +16,6 @@ export const SKILL_PREFIXES: Record<string, string> = {
     "[SKILL:QUICKFINTHEON] Take a screenshot of the current Fintheon dashboard using Playwright, then analyze the chart. Provide: Bias (Bullish/Bearish/Neutral), Confidence %, Rationale, Entry 1, Entry 2, Stop Loss, Target. If Playwright screenshot fails, ask the user for a screenshot. Be concise and actionable like a SnapTrader.",
   narrative:
     "[SKILL:NARRATIVE] Analyze the current NarrativeFlow board state. Identify active narratives, recent catalysts, and suggest new connections or flag stale theses. Provide structured output for narrative health assessment.",
+  narrativeflow_research:
+    "[SKILL:NARRATIVEFLOW_RESEARCH] Run NarrativeFlow's futures research workflow: build a TradingView-watchlist thesis, review RiskFlow/vault catalysts, search confirmations and contradictions, synthesize risk-on/risk-off impact, and output catalysts to watch going forward. External drivers are evidence; trading analysis must stay inside the TradingView watchlist.",
 };

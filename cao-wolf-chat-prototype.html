@@ -1,7 +1,8 @@
 <!doctype html>
-<html lang="en"><head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Fintheon CAO Wolf Prototype</title>
     <style>
       :root {
@@ -32,12 +33,19 @@
         --briefcase-check-b: #4b535e;
         --iris: #b98536;
         --pupil: var(--black);
-        --avatar-theme-color: var(--fintheon-primary, var(--fintheon-accent, #c79f4a));
+        --avatar-theme-color: var(
+          --fintheon-primary,
+          var(--fintheon-accent, #c79f4a)
+        );
         --avatar-attire-accent: var(--avatar-theme-color);
         --avatar-ear-accent: var(--avatar-theme-color);
         --avatar-effect-accent: var(--avatar-theme-color);
         --avatar-floor-number: var(--avatar-theme-color);
-        --avatar-desk: color-mix(in srgb, var(--avatar-theme-color) 16%, #17130d);
+        --avatar-desk: color-mix(
+          in srgb,
+          var(--avatar-theme-color) 16%,
+          #17130d
+        );
       }
 
       * {
@@ -129,12 +137,7 @@
       .workspace-status {
         color: color-mix(in srgb, var(--fintheon-text) 36%, transparent);
         font-family:
-          ui-monospace,
-          "SFMono-Regular",
-          Menlo,
-          Monaco,
-          Consolas,
-          monospace;
+          ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
         font-size: 10px;
         letter-spacing: 0.12em;
         text-transform: uppercase;
@@ -189,7 +192,11 @@
         position: absolute;
         height: 1px;
         transform-origin: 0 50%;
-        background: color-mix(in srgb, var(--fintheon-primary) 26%, transparent);
+        background: color-mix(
+          in srgb,
+          var(--fintheon-primary) 26%,
+          transparent
+        );
       }
 
       .map-link.one {
@@ -400,12 +407,7 @@
         background: var(--black);
         color: var(--avatar-floor-number);
         font-family:
-          ui-monospace,
-          "SFMono-Regular",
-          Menlo,
-          Monaco,
-          Consolas,
-          monospace;
+          ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
         font-size: 11px;
         font-weight: 800;
         letter-spacing: 0.08em;
@@ -660,7 +662,8 @@
         height: 40px;
         border: 5px solid var(--black);
         background: var(--briefcase);
-        box-shadow: inset 0 -6px 0 color-mix(in srgb, var(--briefcase) 68%, #000);
+        box-shadow: inset 0 -6px 0
+          color-mix(in srgb, var(--briefcase) 68%, #000);
       }
 
       .carried-case::before,
@@ -807,7 +810,8 @@
         height: 44px;
         border: 5px solid var(--black);
         background: var(--briefcase);
-        box-shadow: inset 0 -7px 0 color-mix(in srgb, var(--briefcase) 64%, #000);
+        box-shadow: inset 0 -7px 0
+          color-mix(in srgb, var(--briefcase) 64%, #000);
         transform-origin: 0 50%;
         animation: swing-briefcase-wriggle 12.5s steps(9, end) infinite;
         z-index: 3;
@@ -1011,10 +1015,15 @@
         max-height: 0;
         margin: 0 auto;
         overflow: hidden;
-        border: 0 solid color-mix(in srgb, var(--fintheon-accent) 10%, transparent);
+        border: 0 solid
+          color-mix(in srgb, var(--fintheon-accent) 10%, transparent);
         border-bottom-color: transparent;
         border-radius: 14px 14px 0 0;
-        background: color-mix(in srgb, var(--fintheon-accent) 4%, rgba(7, 6, 4, 0.96));
+        background: color-mix(
+          in srgb,
+          var(--fintheon-accent) 4%,
+          rgba(7, 6, 4, 0.96)
+        );
         opacity: 0;
         transform: translateY(18px);
         transform-origin: bottom center;
@@ -1203,7 +1212,8 @@
 
       .drawer-trigger {
         min-height: 24px;
-        border: 1px solid color-mix(in srgb, var(--fintheon-accent) 14%, transparent);
+        border: 1px solid
+          color-mix(in srgb, var(--fintheon-accent) 14%, transparent);
         border-radius: 6px;
         background: transparent;
         color: color-mix(in srgb, var(--fintheon-text) 42%, transparent);
@@ -1216,7 +1226,11 @@
       }
 
       .drawer-trigger[aria-pressed="true"] {
-        border-color: color-mix(in srgb, var(--fintheon-accent) 42%, transparent);
+        border-color: color-mix(
+          in srgb,
+          var(--fintheon-accent) 42%,
+          transparent
+        );
         background: color-mix(in srgb, var(--fintheon-accent) 10%, transparent);
         color: var(--fintheon-primary);
       }
@@ -2241,7 +2255,10 @@
   </head>
   <body>
     <main class="prototype" data-surface="narrative-flow-workspace">
-      <section class="narrative-workspace" aria-label="NarrativeFlow workspace prototype">
+      <section
+        class="narrative-workspace"
+        aria-label="NarrativeFlow workspace prototype"
+      >
         <div class="workspace-main">
           <div class="workspace-cover" aria-hidden="true"></div>
           <div class="workspace-title">
@@ -2274,237 +2291,790 @@
           </div>
           <div class="greeting-screen" aria-hidden="true">
             <strong>Harper CAO</strong>
-            Greeting pass opens on the composer plane, then clears while the wolf keeps working at the desk.
+            Greeting pass opens on the composer plane, then clears while the
+            wolf keeps working at the desk.
           </div>
-      <section class="stage" aria-label="CAO wolf composer animation prototype">
-        <div class="door-pixels" aria-hidden="true">
-          <span></span><span></span><span></span><span></span>
-          <span></span><span></span><span></span><span></span>
-        </div>
-        <div class="door" aria-hidden="true">
-          <div class="door-frame"></div>
-          <div class="door-panel"></div>
-          <div class="floor-readout">8:18</div>
-        </div>
-        <div class="rubble" aria-hidden="true">
-          <span></span><span></span><span></span><span></span>
-          <span></span><span></span><span></span><span></span>
-        </div>
-        <div class="slam-design-backdrop" aria-hidden="true">
-          <svg viewBox="0 0 292 224" focusable="false">
-            <path class="slam-guide-arc" d="M94 190 C46 121 78 66 150 64 C213 64 229 116 198 166"></path>
-            <path class="slam-guide-floor" d="M16 207 H260"></path>
-            <path class="slam-guide-impact" d="M214 174 L256 174 M235 154 V197"></path>
-          </svg>
-        </div>
-        <div class="pit-table" aria-hidden="true"></div>
-        <div class="desk-occluder" aria-hidden="true"></div>
-        <div class="runner" aria-hidden="true">
-          <div class="wolf">
-            <svg viewBox="0 0 104 116">
-              <polygon points="21,24 26,8 30,2 35,8 38,24" fill="var(--wolf-fur)"></polygon>
-              <polygon points="49,24 53,10 57,5 61,10 64,24" fill="var(--wolf-fur)"></polygon>
-              <polygon points="28,20 30,10 32,20" fill="var(--avatar-ear-accent)"></polygon>
-              <polygon points="55,20 57,12 59,20" fill="var(--avatar-ear-accent)"></polygon>
-              <rect x="20" y="22" width="46" height="34" fill="var(--wolf-fur)"></rect>
-              <rect x="28" y="18" width="34" height="10" fill="var(--wolf-fur-hi)"></rect>
-              <rect x="58" y="30" width="24" height="16" fill="var(--wolf-fur)"></rect>
-              <rect x="78" y="34" width="11" height="9" fill="var(--black)"></rect>
-              <rect x="53" y="30" width="12" height="8" fill="var(--iris)"></rect>
-              <rect x="58" y="31" width="4" height="3" fill="var(--pupil)"></rect>
-              <rect x="37" y="31" width="15" height="4" fill="var(--black)"></rect>
-              <rect x="49" y="27" width="16" height="11" fill="transparent" stroke="var(--black)" stroke-width="4"></rect>
-              <rect x="67" y="30" width="15" height="9" fill="transparent" stroke="var(--black)" stroke-width="4"></rect>
-              <rect x="68" y="48" width="12" height="6" fill="var(--black)"></rect>
-              <rect x="30" y="56" width="36" height="42" fill="var(--suit)"></rect>
-              <rect x="33" y="58" width="12" height="22" fill="var(--shirt)"></rect>
-              <rect x="52" y="58" width="11" height="22" fill="var(--shirt)"></rect>
-              <rect x="45" y="58" width="7" height="36" fill="var(--avatar-attire-accent)"></rect>
-              <g class="back-arm">
-                <rect x="20" y="58" width="14" height="42" fill="var(--suit-hi)"></rect>
-                <rect x="18" y="96" width="18" height="10" fill="var(--wolf-fur)"></rect>
-              </g>
-              <g class="front-arm">
-                <rect x="66" y="58" width="14" height="42" fill="var(--suit-hi)"></rect>
-                <rect x="64" y="96" width="18" height="10" fill="var(--wolf-fur)"></rect>
-              </g>
-              <g class="back-limb">
-                <rect x="31" y="92" width="15" height="22" fill="var(--suit)"></rect>
-                <rect x="27" y="106" width="24" height="9" fill="var(--wolf-fur)"></rect>
-              </g>
-              <g class="front-limb">
-                <rect x="57" y="92" width="15" height="22" fill="var(--suit)"></rect>
-                <rect x="54" y="106" width="25" height="9" fill="var(--wolf-fur)"></rect>
-              </g>
-            </svg>
-          </div>
-          <div class="carried-case"><span class="case-grip"></span></div>
-        </div>
-        <div class="air-wolf" aria-hidden="true">
-          <svg viewBox="0 0 104 126">
-            <polygon points="21,24 26,8 30,2 35,8 38,24" fill="var(--wolf-fur)"></polygon>
-            <polygon points="49,24 53,10 57,5 61,10 64,24" fill="var(--wolf-fur)"></polygon>
-            <polygon points="28,20 30,10 32,20" fill="var(--avatar-ear-accent)"></polygon>
-            <polygon points="55,20 57,12 59,20" fill="var(--avatar-ear-accent)"></polygon>
-            <rect x="20" y="22" width="46" height="34" fill="var(--wolf-fur)"></rect>
-            <rect x="58" y="30" width="24" height="16" fill="var(--wolf-fur)"></rect>
-            <rect x="78" y="34" width="12" height="9" fill="var(--black)"></rect>
-            <rect x="53" y="30" width="12" height="8" fill="var(--iris)"></rect>
-            <rect x="58" y="31" width="4" height="3" fill="var(--pupil)"></rect>
-            <rect x="37" y="31" width="15" height="4" fill="var(--black)"></rect>
-            <rect x="49" y="27" width="16" height="11" fill="transparent" stroke="var(--black)" stroke-width="4"></rect>
-            <rect x="67" y="30" width="15" height="9" fill="transparent" stroke="var(--black)" stroke-width="4"></rect>
-            <rect x="30" y="56" width="36" height="42" fill="var(--suit)"></rect>
-            <rect x="33" y="58" width="12" height="22" fill="var(--shirt)"></rect>
-            <rect x="52" y="58" width="11" height="22" fill="var(--shirt)"></rect>
-            <rect x="45" y="58" width="7" height="36" fill="var(--avatar-attire-accent)"></rect>
-            <g class="throw-arm">
-              <rect x="18" y="56" width="14" height="48" fill="var(--suit-hi)"></rect>
-              <rect x="16" y="100" width="18" height="10" fill="var(--wolf-fur)"></rect>
-              <rect x="0" y="96" width="36" height="25" fill="var(--briefcase)" stroke="var(--black)" stroke-width="4"></rect>
-              <rect x="11" y="87" width="14" height="9" fill="transparent" stroke="var(--black)" stroke-width="4"></rect>
-              <rect x="13" y="100" width="10" height="5" fill="var(--briefcase-hi)"></rect>
-            </g>
-            <g class="front-arm">
-              <rect x="70" y="48" width="14" height="38" fill="var(--suit-hi)"></rect>
-              <rect x="68" y="82" width="18" height="10" fill="var(--wolf-fur)"></rect>
-            </g>
-            <rect x="30" y="93" width="15" height="23" fill="var(--suit)"></rect>
-            <rect x="60" y="93" width="15" height="23" fill="var(--suit)"></rect>
-            <rect x="26" y="110" width="25" height="9" fill="var(--wolf-fur)"></rect>
-            <rect x="57" y="110" width="25" height="9" fill="var(--wolf-fur)"></rect>
-          </svg>
-        </div>
-        <div class="slam-rig" aria-hidden="true">
-          <span class="swing-arm"></span>
-          <span class="swing-hand"></span>
-          <span class="swing-briefcase"></span>
-        </div>
-        <div class="slam-case" aria-hidden="true">
-          <span class="case-lid"></span>
-          <span class="case-laptop"></span>
-        </div>
-        <div class="case-open-arm" aria-hidden="true"></div>
-        <div class="impact" aria-hidden="true">
-          <span></span><span></span><span></span><span></span>
-          <span></span><span></span>
-        </div>
-        <div class="peek" aria-hidden="true">
-          <svg viewBox="0 0 104 116">
-            <polygon class="peek-ear peek-profile-ear" points="21,24 26,8 30,2 35,8 38,24" fill="var(--wolf-fur)"></polygon>
-            <polygon class="peek-ear peek-profile-ear" points="49,24 53,10 57,5 61,10 64,24" fill="var(--wolf-fur)"></polygon>
-            <polygon class="peek-ear peek-profile-ear" points="28,20 30,10 32,20" fill="var(--avatar-ear-accent)"></polygon>
-            <polygon class="peek-ear peek-profile-ear" points="55,20 57,12 59,20" fill="var(--avatar-ear-accent)"></polygon>
-            <rect class="peek-profile-face" x="20" y="22" width="46" height="34" fill="var(--wolf-fur)"></rect>
-            <rect class="peek-profile-face" x="28" y="18" width="34" height="10" fill="var(--wolf-fur-hi)"></rect>
-            <rect class="peek-snout" x="58" y="30" width="24" height="16" fill="var(--wolf-fur)"></rect>
-            <rect class="peek-snout" x="78" y="34" width="12" height="9" fill="var(--black)"></rect>
-            <rect class="peek-profile-face" x="53" y="30" width="12" height="8" fill="var(--iris)"></rect>
-            <rect class="peek-profile-face" x="58" y="31" width="4" height="3" fill="var(--pupil)"></rect>
-            <rect class="peek-profile-face" x="37" y="31" width="15" height="4" fill="var(--black)"></rect>
-            <rect class="peek-profile-face" x="49" y="27" width="16" height="11" fill="transparent" stroke="var(--black)" stroke-width="4"></rect>
-            <rect class="peek-profile-face" x="67" y="30" width="15" height="9" fill="transparent" stroke="var(--black)" stroke-width="4"></rect>
-            <rect class="peek-snout" x="68" y="48" width="12" height="6" fill="var(--black)"></rect>
-            <g class="peek-front-face">
-              <polygon class="peek-ear peek-front-ear" points="27,24 31,10 35,4 39,10 41,24" fill="var(--wolf-fur)"></polygon>
-              <polygon class="peek-ear peek-front-ear" points="63,24 65,10 69,4 73,10 77,24" fill="var(--wolf-fur)"></polygon>
-              <polygon class="peek-ear peek-front-ear" points="34,21 35,12 37,21" fill="var(--avatar-ear-accent)"></polygon>
-              <polygon class="peek-ear peek-front-ear" points="68,21 69,12 71,21" fill="var(--avatar-ear-accent)"></polygon>
-              <rect x="25" y="22" width="52" height="34" fill="var(--wolf-fur)"></rect>
-              <rect x="32" y="18" width="38" height="10" fill="var(--wolf-fur-hi)"></rect>
-              <rect x="31" y="27" width="20" height="14" fill="transparent" stroke="var(--black)" stroke-width="4"></rect>
-              <rect x="57" y="27" width="20" height="14" fill="transparent" stroke="var(--black)" stroke-width="4"></rect>
-              <rect x="36" y="31" width="10" height="8" fill="var(--iris)"></rect>
-              <rect x="62" y="31" width="10" height="8" fill="var(--iris)"></rect>
-              <rect x="41" y="32" width="3" height="3" fill="var(--pupil)"></rect>
-              <rect x="67" y="32" width="3" height="3" fill="var(--pupil)"></rect>
-              <rect x="22" y="31" width="9" height="4" fill="var(--black)"></rect>
-              <rect x="77" y="31" width="9" height="4" fill="var(--black)"></rect>
-            </g>
-            <rect x="28" y="56" width="40" height="38" fill="var(--suit)"></rect>
-            <rect x="32" y="58" width="12" height="24" fill="var(--shirt)"></rect>
-            <rect x="52" y="58" width="12" height="24" fill="var(--shirt)"></rect>
-            <rect x="45" y="58" width="7" height="36" fill="var(--avatar-attire-accent)"></rect>
-            <rect x="20" y="62" width="14" height="36" fill="var(--suit-hi)"></rect>
-            <rect x="66" y="62" width="14" height="36" fill="var(--suit-hi)"></rect>
-            <rect x="18" y="94" width="64" height="12" fill="var(--black)"></rect>
-          </svg>
-        </div>
-        <div class="laptop" aria-hidden="true">
-          <div class="laptop-lid"></div>
-          <div class="laptop-base"></div>
-        </div>
-      </section>
-      <section class="composer-shell narrative-canvas-chat" aria-label="NarrativeFlow composer mock">
-        <div class="fintheon-chat-composer-wrap">
-          <div class="fintheon-repo-chat-composer__inner">
-            <div
-              class="prototype-drawer"
-              data-active-drawer="none"
-              aria-hidden="true"
-            >
-              <div class="drawer-panel drawer-panel-catalysts">
-                <div class="drawer-kicker">
-                  <span>Attached catalysts</span>
-                  <span>Drawer above avatar</span>
-                </div>
-                <div class="drawer-rows">
-                  <div class="drawer-row">
-                    <span>Fed speakers reprice the front end into close</span>
-                    <em>Macro</em>
-                  </div>
-                  <div class="drawer-row">
-                    <span>Dollar liquidity pulse confirms risk appetite</span>
-                    <em>Flow</em>
-                  </div>
-                  <div class="drawer-row">
-                    <span>Semis breadth pulls the thesis into momentum</span>
-                    <em>Equity</em>
-                  </div>
-                </div>
+          <section
+            class="stage"
+            aria-label="CAO wolf composer animation prototype"
+          >
+            <div class="door-pixels" aria-hidden="true">
+              <span></span><span></span><span></span><span></span> <span></span
+              ><span></span><span></span><span></span>
+            </div>
+            <div class="door" aria-hidden="true">
+              <div class="door-frame"></div>
+              <div class="door-panel"></div>
+              <div class="floor-readout">8:18</div>
+            </div>
+            <div class="rubble" aria-hidden="true">
+              <span></span><span></span><span></span><span></span> <span></span
+              ><span></span><span></span><span></span>
+            </div>
+            <div class="slam-design-backdrop" aria-hidden="true">
+              <svg viewBox="0 0 292 224" focusable="false">
+                <path
+                  class="slam-guide-arc"
+                  d="M94 190 C46 121 78 66 150 64 C213 64 229 116 198 166"
+                ></path>
+                <path class="slam-guide-floor" d="M16 207 H260"></path>
+                <path
+                  class="slam-guide-impact"
+                  d="M214 174 L256 174 M235 154 V197"
+                ></path>
+              </svg>
+            </div>
+            <div class="pit-table" aria-hidden="true"></div>
+            <div class="desk-occluder" aria-hidden="true"></div>
+            <div class="runner" aria-hidden="true">
+              <div class="wolf">
+                <svg viewBox="0 0 104 116">
+                  <polygon
+                    points="21,24 26,8 30,2 35,8 38,24"
+                    fill="var(--wolf-fur)"
+                  ></polygon>
+                  <polygon
+                    points="49,24 53,10 57,5 61,10 64,24"
+                    fill="var(--wolf-fur)"
+                  ></polygon>
+                  <polygon
+                    points="28,20 30,10 32,20"
+                    fill="var(--avatar-ear-accent)"
+                  ></polygon>
+                  <polygon
+                    points="55,20 57,12 59,20"
+                    fill="var(--avatar-ear-accent)"
+                  ></polygon>
+                  <rect
+                    x="20"
+                    y="22"
+                    width="46"
+                    height="34"
+                    fill="var(--wolf-fur)"
+                  ></rect>
+                  <rect
+                    x="28"
+                    y="18"
+                    width="34"
+                    height="10"
+                    fill="var(--wolf-fur-hi)"
+                  ></rect>
+                  <rect
+                    x="58"
+                    y="30"
+                    width="24"
+                    height="16"
+                    fill="var(--wolf-fur)"
+                  ></rect>
+                  <rect
+                    x="78"
+                    y="34"
+                    width="11"
+                    height="9"
+                    fill="var(--black)"
+                  ></rect>
+                  <rect
+                    x="53"
+                    y="30"
+                    width="12"
+                    height="8"
+                    fill="var(--iris)"
+                  ></rect>
+                  <rect
+                    x="58"
+                    y="31"
+                    width="4"
+                    height="3"
+                    fill="var(--pupil)"
+                  ></rect>
+                  <rect
+                    x="37"
+                    y="31"
+                    width="15"
+                    height="4"
+                    fill="var(--black)"
+                  ></rect>
+                  <rect
+                    x="49"
+                    y="27"
+                    width="16"
+                    height="11"
+                    fill="transparent"
+                    stroke="var(--black)"
+                    stroke-width="4"
+                  ></rect>
+                  <rect
+                    x="67"
+                    y="30"
+                    width="15"
+                    height="9"
+                    fill="transparent"
+                    stroke="var(--black)"
+                    stroke-width="4"
+                  ></rect>
+                  <rect
+                    x="68"
+                    y="48"
+                    width="12"
+                    height="6"
+                    fill="var(--black)"
+                  ></rect>
+                  <rect
+                    x="30"
+                    y="56"
+                    width="36"
+                    height="42"
+                    fill="var(--suit)"
+                  ></rect>
+                  <rect
+                    x="33"
+                    y="58"
+                    width="12"
+                    height="22"
+                    fill="var(--shirt)"
+                  ></rect>
+                  <rect
+                    x="52"
+                    y="58"
+                    width="11"
+                    height="22"
+                    fill="var(--shirt)"
+                  ></rect>
+                  <rect
+                    x="45"
+                    y="58"
+                    width="7"
+                    height="36"
+                    fill="var(--avatar-attire-accent)"
+                  ></rect>
+                  <g class="back-arm">
+                    <rect
+                      x="20"
+                      y="58"
+                      width="14"
+                      height="42"
+                      fill="var(--suit-hi)"
+                    ></rect>
+                    <rect
+                      x="18"
+                      y="96"
+                      width="18"
+                      height="10"
+                      fill="var(--wolf-fur)"
+                    ></rect>
+                  </g>
+                  <g class="front-arm">
+                    <rect
+                      x="66"
+                      y="58"
+                      width="14"
+                      height="42"
+                      fill="var(--suit-hi)"
+                    ></rect>
+                    <rect
+                      x="64"
+                      y="96"
+                      width="18"
+                      height="10"
+                      fill="var(--wolf-fur)"
+                    ></rect>
+                  </g>
+                  <g class="back-limb">
+                    <rect
+                      x="31"
+                      y="92"
+                      width="15"
+                      height="22"
+                      fill="var(--suit)"
+                    ></rect>
+                    <rect
+                      x="27"
+                      y="106"
+                      width="24"
+                      height="9"
+                      fill="var(--wolf-fur)"
+                    ></rect>
+                  </g>
+                  <g class="front-limb">
+                    <rect
+                      x="57"
+                      y="92"
+                      width="15"
+                      height="22"
+                      fill="var(--suit)"
+                    ></rect>
+                    <rect
+                      x="54"
+                      y="106"
+                      width="25"
+                      height="9"
+                      fill="var(--wolf-fur)"
+                    ></rect>
+                  </g>
+                </svg>
               </div>
-              <div class="drawer-panel drawer-panel-queue">
-                <div class="drawer-kicker">
-                  <span>Greeting drawer</span>
-                  <span>Connected to input bar</span>
+              <div class="carried-case"><span class="case-grip"></span></div>
+            </div>
+            <div class="air-wolf" aria-hidden="true">
+              <svg viewBox="0 0 104 126">
+                <polygon
+                  points="21,24 26,8 30,2 35,8 38,24"
+                  fill="var(--wolf-fur)"
+                ></polygon>
+                <polygon
+                  points="49,24 53,10 57,5 61,10 64,24"
+                  fill="var(--wolf-fur)"
+                ></polygon>
+                <polygon
+                  points="28,20 30,10 32,20"
+                  fill="var(--avatar-ear-accent)"
+                ></polygon>
+                <polygon
+                  points="55,20 57,12 59,20"
+                  fill="var(--avatar-ear-accent)"
+                ></polygon>
+                <rect
+                  x="20"
+                  y="22"
+                  width="46"
+                  height="34"
+                  fill="var(--wolf-fur)"
+                ></rect>
+                <rect
+                  x="58"
+                  y="30"
+                  width="24"
+                  height="16"
+                  fill="var(--wolf-fur)"
+                ></rect>
+                <rect
+                  x="78"
+                  y="34"
+                  width="12"
+                  height="9"
+                  fill="var(--black)"
+                ></rect>
+                <rect
+                  x="53"
+                  y="30"
+                  width="12"
+                  height="8"
+                  fill="var(--iris)"
+                ></rect>
+                <rect
+                  x="58"
+                  y="31"
+                  width="4"
+                  height="3"
+                  fill="var(--pupil)"
+                ></rect>
+                <rect
+                  x="37"
+                  y="31"
+                  width="15"
+                  height="4"
+                  fill="var(--black)"
+                ></rect>
+                <rect
+                  x="49"
+                  y="27"
+                  width="16"
+                  height="11"
+                  fill="transparent"
+                  stroke="var(--black)"
+                  stroke-width="4"
+                ></rect>
+                <rect
+                  x="67"
+                  y="30"
+                  width="15"
+                  height="9"
+                  fill="transparent"
+                  stroke="var(--black)"
+                  stroke-width="4"
+                ></rect>
+                <rect
+                  x="30"
+                  y="56"
+                  width="36"
+                  height="42"
+                  fill="var(--suit)"
+                ></rect>
+                <rect
+                  x="33"
+                  y="58"
+                  width="12"
+                  height="22"
+                  fill="var(--shirt)"
+                ></rect>
+                <rect
+                  x="52"
+                  y="58"
+                  width="11"
+                  height="22"
+                  fill="var(--shirt)"
+                ></rect>
+                <rect
+                  x="45"
+                  y="58"
+                  width="7"
+                  height="36"
+                  fill="var(--avatar-attire-accent)"
+                ></rect>
+                <g class="throw-arm">
+                  <rect
+                    x="18"
+                    y="56"
+                    width="14"
+                    height="48"
+                    fill="var(--suit-hi)"
+                  ></rect>
+                  <rect
+                    x="16"
+                    y="100"
+                    width="18"
+                    height="10"
+                    fill="var(--wolf-fur)"
+                  ></rect>
+                  <rect
+                    x="0"
+                    y="96"
+                    width="36"
+                    height="25"
+                    fill="var(--briefcase)"
+                    stroke="var(--black)"
+                    stroke-width="4"
+                  ></rect>
+                  <rect
+                    x="11"
+                    y="87"
+                    width="14"
+                    height="9"
+                    fill="transparent"
+                    stroke="var(--black)"
+                    stroke-width="4"
+                  ></rect>
+                  <rect
+                    x="13"
+                    y="100"
+                    width="10"
+                    height="5"
+                    fill="var(--briefcase-hi)"
+                  ></rect>
+                </g>
+                <g class="front-arm">
+                  <rect
+                    x="70"
+                    y="48"
+                    width="14"
+                    height="38"
+                    fill="var(--suit-hi)"
+                  ></rect>
+                  <rect
+                    x="68"
+                    y="82"
+                    width="18"
+                    height="10"
+                    fill="var(--wolf-fur)"
+                  ></rect>
+                </g>
+                <rect
+                  x="30"
+                  y="93"
+                  width="15"
+                  height="23"
+                  fill="var(--suit)"
+                ></rect>
+                <rect
+                  x="60"
+                  y="93"
+                  width="15"
+                  height="23"
+                  fill="var(--suit)"
+                ></rect>
+                <rect
+                  x="26"
+                  y="110"
+                  width="25"
+                  height="9"
+                  fill="var(--wolf-fur)"
+                ></rect>
+                <rect
+                  x="57"
+                  y="110"
+                  width="25"
+                  height="9"
+                  fill="var(--wolf-fur)"
+                ></rect>
+              </svg>
+            </div>
+            <div class="slam-rig" aria-hidden="true">
+              <span class="swing-arm"></span>
+              <span class="swing-hand"></span>
+              <span class="swing-briefcase"></span>
+            </div>
+            <div class="slam-case" aria-hidden="true">
+              <span class="case-lid"></span>
+              <span class="case-laptop"></span>
+            </div>
+            <div class="case-open-arm" aria-hidden="true"></div>
+            <div class="impact" aria-hidden="true">
+              <span></span><span></span><span></span><span></span> <span></span
+              ><span></span>
+            </div>
+            <div class="peek" aria-hidden="true">
+              <svg viewBox="0 0 104 116">
+                <polygon
+                  class="peek-ear peek-profile-ear"
+                  points="21,24 26,8 30,2 35,8 38,24"
+                  fill="var(--wolf-fur)"
+                ></polygon>
+                <polygon
+                  class="peek-ear peek-profile-ear"
+                  points="49,24 53,10 57,5 61,10 64,24"
+                  fill="var(--wolf-fur)"
+                ></polygon>
+                <polygon
+                  class="peek-ear peek-profile-ear"
+                  points="28,20 30,10 32,20"
+                  fill="var(--avatar-ear-accent)"
+                ></polygon>
+                <polygon
+                  class="peek-ear peek-profile-ear"
+                  points="55,20 57,12 59,20"
+                  fill="var(--avatar-ear-accent)"
+                ></polygon>
+                <rect
+                  class="peek-profile-face"
+                  x="20"
+                  y="22"
+                  width="46"
+                  height="34"
+                  fill="var(--wolf-fur)"
+                ></rect>
+                <rect
+                  class="peek-profile-face"
+                  x="28"
+                  y="18"
+                  width="34"
+                  height="10"
+                  fill="var(--wolf-fur-hi)"
+                ></rect>
+                <rect
+                  class="peek-snout"
+                  x="58"
+                  y="30"
+                  width="24"
+                  height="16"
+                  fill="var(--wolf-fur)"
+                ></rect>
+                <rect
+                  class="peek-snout"
+                  x="78"
+                  y="34"
+                  width="12"
+                  height="9"
+                  fill="var(--black)"
+                ></rect>
+                <rect
+                  class="peek-profile-face"
+                  x="53"
+                  y="30"
+                  width="12"
+                  height="8"
+                  fill="var(--iris)"
+                ></rect>
+                <rect
+                  class="peek-profile-face"
+                  x="58"
+                  y="31"
+                  width="4"
+                  height="3"
+                  fill="var(--pupil)"
+                ></rect>
+                <rect
+                  class="peek-profile-face"
+                  x="37"
+                  y="31"
+                  width="15"
+                  height="4"
+                  fill="var(--black)"
+                ></rect>
+                <rect
+                  class="peek-profile-face"
+                  x="49"
+                  y="27"
+                  width="16"
+                  height="11"
+                  fill="transparent"
+                  stroke="var(--black)"
+                  stroke-width="4"
+                ></rect>
+                <rect
+                  class="peek-profile-face"
+                  x="67"
+                  y="30"
+                  width="15"
+                  height="9"
+                  fill="transparent"
+                  stroke="var(--black)"
+                  stroke-width="4"
+                ></rect>
+                <rect
+                  class="peek-snout"
+                  x="68"
+                  y="48"
+                  width="12"
+                  height="6"
+                  fill="var(--black)"
+                ></rect>
+                <g class="peek-front-face">
+                  <polygon
+                    class="peek-ear peek-front-ear"
+                    points="27,24 31,10 35,4 39,10 41,24"
+                    fill="var(--wolf-fur)"
+                  ></polygon>
+                  <polygon
+                    class="peek-ear peek-front-ear"
+                    points="63,24 65,10 69,4 73,10 77,24"
+                    fill="var(--wolf-fur)"
+                  ></polygon>
+                  <polygon
+                    class="peek-ear peek-front-ear"
+                    points="34,21 35,12 37,21"
+                    fill="var(--avatar-ear-accent)"
+                  ></polygon>
+                  <polygon
+                    class="peek-ear peek-front-ear"
+                    points="68,21 69,12 71,21"
+                    fill="var(--avatar-ear-accent)"
+                  ></polygon>
+                  <rect
+                    x="25"
+                    y="22"
+                    width="52"
+                    height="34"
+                    fill="var(--wolf-fur)"
+                  ></rect>
+                  <rect
+                    x="32"
+                    y="18"
+                    width="38"
+                    height="10"
+                    fill="var(--wolf-fur-hi)"
+                  ></rect>
+                  <rect
+                    x="31"
+                    y="27"
+                    width="20"
+                    height="14"
+                    fill="transparent"
+                    stroke="var(--black)"
+                    stroke-width="4"
+                  ></rect>
+                  <rect
+                    x="57"
+                    y="27"
+                    width="20"
+                    height="14"
+                    fill="transparent"
+                    stroke="var(--black)"
+                    stroke-width="4"
+                  ></rect>
+                  <rect
+                    x="36"
+                    y="31"
+                    width="10"
+                    height="8"
+                    fill="var(--iris)"
+                  ></rect>
+                  <rect
+                    x="62"
+                    y="31"
+                    width="10"
+                    height="8"
+                    fill="var(--iris)"
+                  ></rect>
+                  <rect
+                    x="41"
+                    y="32"
+                    width="3"
+                    height="3"
+                    fill="var(--pupil)"
+                  ></rect>
+                  <rect
+                    x="67"
+                    y="32"
+                    width="3"
+                    height="3"
+                    fill="var(--pupil)"
+                  ></rect>
+                  <rect
+                    x="22"
+                    y="31"
+                    width="9"
+                    height="4"
+                    fill="var(--black)"
+                  ></rect>
+                  <rect
+                    x="77"
+                    y="31"
+                    width="9"
+                    height="4"
+                    fill="var(--black)"
+                  ></rect>
+                </g>
+                <rect
+                  x="28"
+                  y="56"
+                  width="40"
+                  height="38"
+                  fill="var(--suit)"
+                ></rect>
+                <rect
+                  x="32"
+                  y="58"
+                  width="12"
+                  height="24"
+                  fill="var(--shirt)"
+                ></rect>
+                <rect
+                  x="52"
+                  y="58"
+                  width="12"
+                  height="24"
+                  fill="var(--shirt)"
+                ></rect>
+                <rect
+                  x="45"
+                  y="58"
+                  width="7"
+                  height="36"
+                  fill="var(--avatar-attire-accent)"
+                ></rect>
+                <rect
+                  x="20"
+                  y="62"
+                  width="14"
+                  height="36"
+                  fill="var(--suit-hi)"
+                ></rect>
+                <rect
+                  x="66"
+                  y="62"
+                  width="14"
+                  height="36"
+                  fill="var(--suit-hi)"
+                ></rect>
+                <rect
+                  x="18"
+                  y="94"
+                  width="64"
+                  height="12"
+                  fill="var(--black)"
+                ></rect>
+              </svg>
+            </div>
+            <div class="laptop" aria-hidden="true">
+              <div class="laptop-lid"></div>
+              <div class="laptop-base"></div>
+            </div>
+          </section>
+          <section
+            class="composer-shell narrative-canvas-chat"
+            aria-label="NarrativeFlow composer mock"
+          >
+            <div class="fintheon-chat-composer-wrap">
+              <div class="fintheon-repo-chat-composer__inner">
+                <div
+                  class="prototype-drawer"
+                  data-active-drawer="none"
+                  aria-hidden="true"
+                >
+                  <div class="drawer-panel drawer-panel-catalysts">
+                    <div class="drawer-kicker">
+                      <span>Attached catalysts</span>
+                      <span>Drawer above avatar</span>
+                    </div>
+                    <div class="drawer-rows">
+                      <div class="drawer-row">
+                        <span
+                          >Fed speakers reprice the front end into close</span
+                        >
+                        <em>Macro</em>
+                      </div>
+                      <div class="drawer-row">
+                        <span
+                          >Dollar liquidity pulse confirms risk appetite</span
+                        >
+                        <em>Flow</em>
+                      </div>
+                      <div class="drawer-row">
+                        <span
+                          >Semis breadth pulls the thesis into momentum</span
+                        >
+                        <em>Equity</em>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="drawer-panel drawer-panel-queue">
+                    <div class="drawer-kicker">
+                      <span>Greeting drawer</span>
+                      <span>Connected to input bar</span>
+                    </div>
+                    <div class="drawer-note">
+                      <span
+                        >The drawer owns the top layer when open, so it can
+                        slide in front of the seated CAO avatar without
+                        detaching from the composer.</span
+                      >
+                      <span
+                        >Use this state to test overlap before app
+                        integration.</span
+                      >
+                    </div>
+                  </div>
                 </div>
-                <div class="drawer-note">
-                  <span>The drawer owns the top layer when open, so it can slide in front of the seated CAO avatar without detaching from the composer.</span>
-                  <span>Use this state to test overlap before app integration.</span>
+                <div class="fintheon-composer-input" data-composer-input>
+                  <textarea
+                    class="composer-text"
+                    rows="1"
+                    placeholder="Ask how these catalysts connect..."
+                  ></textarea>
+                  <div class="composer-bottom">
+                    <div class="composer-status">
+                      <span class="status-dot"></span>
+                      <span>NarrativeFlow</span>
+                    </div>
+                    <div
+                      class="drawer-controls"
+                      aria-label="Drawer test controls"
+                    >
+                      <button
+                        class="drawer-trigger"
+                        type="button"
+                        data-drawer-trigger="catalysts"
+                        aria-pressed="false"
+                      >
+                        Catalysts
+                      </button>
+                      <button
+                        class="drawer-trigger"
+                        type="button"
+                        data-drawer-trigger="queue"
+                        aria-pressed="false"
+                      >
+                        Greeting
+                      </button>
+                    </div>
+                    <button class="fintheon-send-button" aria-label="Send">
+                      ↑
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="fintheon-composer-input" data-composer-input>
-              <textarea class="composer-text" rows="1" placeholder="Ask how these catalysts connect..."></textarea>
-              <div class="composer-bottom">
-                <div class="composer-status">
-                  <span class="status-dot"></span>
-                  <span>NarrativeFlow</span>
-                </div>
-                <div class="drawer-controls" aria-label="Drawer test controls">
-                  <button
-                    class="drawer-trigger"
-                    type="button"
-                    data-drawer-trigger="catalysts"
-                    aria-pressed="false"
-                  >
-                    Catalysts
-                  </button>
-                  <button
-                    class="drawer-trigger"
-                    type="button"
-                    data-drawer-trigger="queue"
-                    aria-pressed="false"
-                  >
-                    Greeting
-                  </button>
-                </div>
-                <button class="fintheon-send-button" aria-label="Send">↑</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+          </section>
         </div>
       </section>
     </main>

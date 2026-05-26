@@ -52,9 +52,32 @@ interface YamlLine {
 
 function prepLines(raw: string): YamlLine[] {
   const out: YamlLine[] = [];
-  for (const line of raw.split("\n")) {
+  const lines = raw.split("\n");
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) continue;
+    const block = trimmed.match(/^([A-Za-z0-9_-]+):\s*(\|[-+]?|>[-+]?)$/);
+    if (block) {
+      const indent = line.length - line.trimStart().length;
+      const parts: string[] = [];
+      for (index += 1; index < lines.length; index += 1) {
+        const next = lines[index];
+        const nextTrimmed = next.trim();
+        if (!nextTrimmed) continue;
+        const nextIndent = next.length - next.trimStart().length;
+        if (nextIndent <= indent) {
+          index -= 1;
+          break;
+        }
+        parts.push(nextTrimmed);
+      }
+      out.push({
+        indent,
+        content: `${block[1]}: ${JSON.stringify(parts.join(" "))}`,
+      });
+      continue;
+    }
     out.push({
       indent: line.length - line.trimStart().length,
       content: trimmed,
@@ -63,7 +86,8 @@ function prepLines(raw: string): YamlLine[] {
   return out;
 }
 
-function coerceScalar(raw: string): string | number | boolean {
+function coerceScalar(raw: string): unknown {
+  if (raw === "[]") return [];
   if (
     (raw.startsWith('"') && raw.endsWith('"')) ||
     (raw.startsWith("'") && raw.endsWith("'"))

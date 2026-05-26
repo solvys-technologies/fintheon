@@ -53,7 +53,9 @@ export function ClientHermesSettings() {
             </p>
           </div>
           <SettingsActionStatus
-            label={defaultProvider === "opencode-go" ? "OpenCode Go" : "Direct API"}
+            label={
+              defaultProvider === "opencode-go" ? "OpenCode Go" : "Direct API"
+            }
             detail="Current CAO chat provider"
             tone="success"
           />

@@ -6,7 +6,10 @@
 import { useEffect, useState } from "react";
 import { BookOpen, CalendarDays, Share2 } from "lucide-react";
 import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
-import { DotMatrixLoader, DotMatrixSuccess } from "../icon-bank/DotMatrixLoader";
+import {
+  DotMatrixLoader,
+  DotMatrixSuccess,
+} from "../icon-bank/DotMatrixLoader";
 import { useToast } from "../../contexts/ToastContext";
 import {
   buildWeeklyDeskPlanPrompt,
@@ -132,16 +135,24 @@ export function TradingViewCalendar() {
       const json = (await res.json()) as { events?: DeskCalendarQueueEvent[] };
       const events = json.events ?? [];
       if (events.length === 0) {
-        addToast("No queued events", "info", "Add TradingView catalysts first.");
+        addToast(
+          "No queued events",
+          "info",
+          "Add TradingView catalysts first.",
+        );
         return;
       }
       const prompt = buildWeeklyDeskPlanPrompt(toDeskWeekPlanEvents(events));
       storePendingChatPrompt(prompt);
       window.dispatchEvent(
-        new CustomEvent("fintheon:navigate-tab", { detail: { tab: "analysis" } }),
+        new CustomEvent("fintheon:navigate-tab", {
+          detail: { tab: "analysis" },
+        }),
       );
       window.dispatchEvent(
-        new CustomEvent("fintheon:send-chat-text", { detail: { text: prompt } }),
+        new CustomEvent("fintheon:send-chat-text", {
+          detail: { text: prompt },
+        }),
       );
       addToast("Week plan sent to CAO chat", "success");
     } catch (err) {

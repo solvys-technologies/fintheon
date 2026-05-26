@@ -6,13 +6,13 @@ Seventh. This sprint is release hygiene and Agent Desk cleanup after the core pr
 
 ## Tracks
 
-| Track | Linear | Owner | Scope |
-| --- | --- | --- | --- |
-| S77-T1 | SOL-62 | Sam | Chat Todo Drawer slide-out from composer |
-| S77-T2 | SOL-49 | Sam | MiroShark rename to Agent Desk |
-| S77-T3 | SOL-50 | Sha | Canonical naming docs |
-| S77-T4 | SOL-51 | Sha | Modularity pass for files over 300 lines |
-| S77-T5 | SOL-52 | Sam | Pre-release QA checklist |
+| Track  | Linear | Owner | Scope                                    |
+| ------ | ------ | ----- | ---------------------------------------- |
+| S77-T1 | SOL-62 | Sam   | Chat Todo Drawer slide-out from composer |
+| S77-T2 | SOL-49 | Sam   | MiroShark rename to Agent Desk           |
+| S77-T3 | SOL-50 | Sha   | Canonical naming docs                    |
+| S77-T4 | SOL-51 | Sha   | Modularity pass for files over 300 lines |
+| S77-T5 | SOL-52 | Sam   | Pre-release QA checklist                 |
 
 ## References
 

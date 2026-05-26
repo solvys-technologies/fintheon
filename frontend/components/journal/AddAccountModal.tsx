@@ -8,9 +8,17 @@ interface AddAccountModalProps {
   initialSize?: number;
 }
 
-export function AddAccountModal({ onClose, onSave, initialSize = 0 }: AddAccountModalProps) {
+export function AddAccountModal({
+  onClose,
+  onSave,
+  initialSize = 0,
+}: AddAccountModalProps) {
   const [broker, setBroker] = useState(() => {
-    try { return localStorage.getItem("fintheon:account-broker") ?? ""; } catch { return ""; }
+    try {
+      return localStorage.getItem("fintheon:account-broker") ?? "";
+    } catch {
+      return "";
+    }
   });
   const [size, setSize] = useState(initialSize > 0 ? String(initialSize) : "");
   const [screenshotName, setScreenshotName] = useState<string | null>(null);
@@ -20,7 +28,9 @@ export function AddAccountModal({ onClose, onSave, initialSize = 0 }: AddAccount
 
   const handleSave = () => {
     if (!canSave) return;
-    try { localStorage.setItem("fintheon:account-broker", broker); } catch {}
+    try {
+      localStorage.setItem("fintheon:account-broker", broker);
+    } catch {}
     onSave(parsedSize, broker || undefined);
   };
 
@@ -40,7 +50,9 @@ export function AddAccountModal({ onClose, onSave, initialSize = 0 }: AddAccount
       >
         {/* Header */}
         <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-(--fintheon-text)">Add Account</span>
+          <span className="text-sm font-semibold text-(--fintheon-text)">
+            Add Account
+          </span>
           <button
             onClick={onClose}
             className="p-1 rounded hover:bg-(--fintheon-accent)/10 transition-colors"
@@ -92,7 +104,12 @@ export function AddAccountModal({ onClose, onSave, initialSize = 0 }: AddAccount
             Baseline Screenshot
           </label>
           <label className="flex items-center justify-center gap-2 w-full border border-dashed border-(--fintheon-accent)/20 rounded-lg px-3 py-3 cursor-pointer hover:border-(--fintheon-accent)/40 transition-colors">
-            <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFile}
+            />
             <span className="text-[11px] text-(--fintheon-muted)">
               {screenshotName ?? "Click to attach (optional)"}
             </span>

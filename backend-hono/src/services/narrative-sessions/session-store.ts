@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { normalizeCatalystId } from "../narrative-sensemaking/catalyst-reader.js";
 import {
@@ -13,7 +14,11 @@ import {
   addWorkEvent,
   readSessionCollections,
 } from "./history-store.js";
-import { buildSessionTitle, generateSessionArtifacts } from "./session-generator.js";
+import {
+  buildSessionTitle,
+  generateSessionArtifacts,
+} from "./session-generator.js";
+import { enqueueNarrativeSessionVaultSync } from "./vault-sync.js";
 import type {
   NarrativeSession,
   NarrativeSessionDetail,
@@ -29,7 +34,10 @@ export async function listNarrativeSessions(params: {
   const sb = getSupabaseClient();
   if (!sb) throw new Error("Supabase is not configured");
 
-  const desk = await resolveNarrativeDesk(params.deskId ?? null, params.actorId);
+  const desk = await resolveNarrativeDesk(
+    params.deskId ?? null,
+    params.actorId,
+  );
   const { data, error } = await sb
     .from("narrative_sessions")
     .select(sessionFields)
@@ -37,7 +45,7 @@ export async function listNarrativeSessions(params: {
     .order("updated_at", { ascending: false });
 
   if (error) throw new Error(`Session list failed: ${error.message}`);
-  return (data ?? []).map(toSession);
+  return attachCatalystCounts(sb, (data ?? []).map(toSession));
 }
 
 export async function createNarrativeSession(params: {
@@ -53,7 +61,10 @@ export async function createNarrativeSession(params: {
   const sb = getSupabaseClient();
   if (!sb) throw new Error("Supabase is not configured");
 
-  const desk = await resolveNarrativeDesk(params.deskId ?? null, params.actorId);
+  const desk = await resolveNarrativeDesk(
+    params.deskId ?? null,
+    params.actorId,
+  );
   const generated = await generateSessionArtifacts({
     catalystIds: params.catalystIds,
     query: params.query,
@@ -80,9 +91,16 @@ export async function createNarrativeSession(params: {
 
   if (error) throw new Error(`Session create failed: ${error.message}`);
   const session = toSession(data);
+  const selectedCatalystIds =
+    params.catalystIds.length > 0
+      ? params.catalystIds
+      : generated.sensemaking.anchorCatalysts.map((item) => item.id);
   await attachSessionCatalysts({
     sessionId: session.id,
-    catalysts: params.catalystIds.map((riskflowItemId) => ({ riskflowItemId })),
+    catalysts: selectedCatalystIds.map((riskflowItemId) => ({
+      riskflowItemId,
+      role: params.catalystIds.length > 0 ? "anchor" : "agent-selected",
+    })),
     actorId: params.actorId,
   });
   await Promise.all([
@@ -111,17 +129,34 @@ export async function createNarrativeSession(params: {
       message: { role: "user", content: params.query },
       actorId: params.actorId,
     });
+    await addSessionMessage({
+      sessionId: session.id,
+      message: {
+        role: "assistant",
+        content: buildOpeningAssistantMessage(
+          title,
+          selectedCatalystIds.length,
+        ),
+        metadata: { source: "narrativeflow-session-open" },
+      },
+      actorId: params.actorId,
+    });
   }
   await addWorkEvent({
     sessionId: session.id,
     agentName: "NarrativeFlow",
     eventType: "session-generated",
     summary: "Generated initial flow, timeline, and docs artifacts.",
-    payload: { catalystCount: params.catalystIds.length },
+    payload: { catalystCount: selectedCatalystIds.length },
   });
   await addSessionLinks(session.id, params.links ?? []);
-  await addSessionTags(session.id, buildTags(params.tags, generated.sensemaking.narrativeGroups));
-  return getNarrativeSessionDetail(session.id);
+  await addSessionTags(
+    session.id,
+    buildTags(params.tags, generated.sensemaking.narrativeGroups),
+  );
+  const detail = await getNarrativeSessionDetail(session.id);
+  enqueueNarrativeSessionVaultSync(detail);
+  return detail;
 }
 
 export async function getNarrativeSessionDetail(
@@ -130,10 +165,15 @@ export async function getNarrativeSessionDetail(
   const sb = getSupabaseClient();
   if (!sb) throw new Error("Supabase is not configured");
 
-  await sb.from("narrative_sessions").update({ last_opened_at: new Date().toISOString() }).eq("id", sessionId);
+  await sb
+    .from("narrative_sessions")
+    .update({ last_opened_at: new Date().toISOString() })
+    .eq("id", sessionId);
   const { data: sessionRow, error } = await sb
     .from("narrative_sessions")
-    .select(`${sessionFields}, narrative_desks(id, name, slug, color, map_image_url, map_image_prompt, map_image_updated_at, created_by, created_at, updated_at)`)
+    .select(
+      `${sessionFields}, narrative_desks(id, name, slug, color, map_image_url, map_image_prompt, map_image_updated_at, created_by, created_at, updated_at)`,
+    )
     .eq("id", sessionId)
     .single();
 
@@ -172,15 +212,25 @@ export async function updateNarrativeSession(params: {
   if (params.title) patch.title = params.title;
   if (params.color) patch.color = params.color;
   if (params.status) patch.status = params.status;
-  if (params.coverImageUrl !== undefined) patch.cover_image_url = params.coverImageUrl;
-  if (params.coverImagePrompt !== undefined) patch.cover_image_prompt = params.coverImagePrompt;
-  if (params.coverImageUrl !== undefined || params.coverImagePrompt !== undefined) {
+  if (params.coverImageUrl !== undefined)
+    patch.cover_image_url = params.coverImageUrl;
+  if (params.coverImagePrompt !== undefined)
+    patch.cover_image_prompt = params.coverImagePrompt;
+  if (
+    params.coverImageUrl !== undefined ||
+    params.coverImagePrompt !== undefined
+  ) {
     patch.cover_image_updated_at = new Date().toISOString();
   }
 
-  const { error } = await sb.from("narrative_sessions").update(patch).eq("id", params.sessionId);
+  const { error } = await sb
+    .from("narrative_sessions")
+    .update(patch)
+    .eq("id", params.sessionId);
   if (error) throw new Error(`Session update failed: ${error.message}`);
-  return getNarrativeSessionDetail(params.sessionId);
+  const detail = await getNarrativeSessionDetail(params.sessionId);
+  enqueueNarrativeSessionVaultSync(detail);
+  return detail;
 }
 
 export async function deleteNarrativeSession(
@@ -189,7 +239,10 @@ export async function deleteNarrativeSession(
   const sb = getSupabaseClient();
   if (!sb) throw new Error("Supabase is not configured");
 
-  const { error } = await sb.from("narrative_sessions").delete().eq("id", sessionId);
+  const { error } = await sb
+    .from("narrative_sessions")
+    .delete()
+    .eq("id", sessionId);
   if (error) throw new Error(`Session delete failed: ${error.message}`);
   return { id: sessionId, deleted: true };
 }
@@ -275,6 +328,43 @@ function buildTags(
   return [...(requested ?? []), ...generated];
 }
 
+function buildOpeningAssistantMessage(
+  title: string,
+  catalystCount: number,
+): string {
+  const catalystLine =
+    catalystCount > 0
+      ? `I attached ${catalystCount} chamber-scored catalyst${catalystCount === 1 ? "" : "s"} and built the first flow, timeline, and docs packet.`
+      : "I opened the workspace without forced attachments and built the first flow, timeline, and docs packet from the request.";
+  return `Opened ${title}. ${catalystLine} Keep this thread going with edits like "this catalyst is not relevant" or "tighten the ES/NQ impact" and I will revise the workspace.`;
+}
+
+async function attachCatalystCounts(
+  sb: SupabaseClient,
+  sessions: NarrativeSession[],
+): Promise<NarrativeSession[]> {
+  if (sessions.length === 0) return sessions;
+
+  const ids = sessions.map((session) => session.id);
+  const { data, error } = await sb
+    .from("narrative_session_catalysts")
+    .select("session_id")
+    .in("session_id", ids);
+
+  if (error) throw new Error(`Session catalyst count failed: ${error.message}`);
+
+  const counts = new Map<string, number>();
+  for (const row of data ?? []) {
+    const sessionId = String(row.session_id);
+    counts.set(sessionId, (counts.get(sessionId) ?? 0) + 1);
+  }
+
+  return sessions.map((session) => ({
+    ...session,
+    catalystCount: counts.get(session.id) ?? 0,
+  }));
+}
+
 function toJoinedDesk(value: unknown) {
   const row = Array.isArray(value) ? value[0] : value;
   if (!row || typeof row !== "object") return null;
@@ -296,8 +386,14 @@ function toSession(row: Record<string, unknown>): NarrativeSession {
     lastOpenedAt: row.last_opened_at ? String(row.last_opened_at) : null,
     generatedAt: row.generated_at ? String(row.generated_at) : null,
     coverImageUrl: row.cover_image_url ? String(row.cover_image_url) : null,
-    coverImagePrompt: row.cover_image_prompt ? String(row.cover_image_prompt) : null,
-    coverImageUpdatedAt: row.cover_image_updated_at ? String(row.cover_image_updated_at) : null,
+    coverImagePrompt: row.cover_image_prompt
+      ? String(row.cover_image_prompt)
+      : null,
+    coverImageUpdatedAt: row.cover_image_updated_at
+      ? String(row.cover_image_updated_at)
+      : null,
+    catalystCount:
+      typeof row.catalyst_count === "number" ? row.catalyst_count : undefined,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };

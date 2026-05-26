@@ -53,7 +53,10 @@ export function ChatDrawerPeek({
           </span>
         </span>
       </span>
-      <span className="fintheon-chat-input-drawer-peek__action" aria-hidden="true">
+      <span
+        className="fintheon-chat-input-drawer-peek__action"
+        aria-hidden="true"
+      >
         <ChevronUp size={14} />
       </span>
     </button>

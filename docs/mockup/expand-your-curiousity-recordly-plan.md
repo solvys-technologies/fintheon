@@ -76,7 +76,6 @@ J-final-title.mp4
 
 If a block needs retakes, suffix `-take2`, `-take3`; keep the best take obvious.
 
-
 ## Canonical NarrativeFlow example session
 
 Use this as the staged research prompt for the live Fintheon/NarrativeFlow blocks. It is specific enough to demonstrate the new situational-awareness loop: source monitoring, sentiment-cycle detection, futures impact, volatility/equilibrium checks, cycle-break alerts, and weekly synthesis.
@@ -139,7 +138,6 @@ Weekly cadence: de-escalatory policy headline early week lifted risk appetite; e
 ### Safety / privacy note
 
 Treat this as staged demo content unless live data is intentionally loaded. Do not imply verified current Axios/FT/WSJ/Bloomberg reporting unless the app has actually fetched it during the session.
-
 
 ## Forum Chat visual layer
 
@@ -217,8 +215,6 @@ Hero clicks:
 - click the words `find original source later`.
 
 **Do not capture private chats, real tokens, accounts, or client data.** Stage fake receipts if needed.
-
-
 
 ## Block B2 — Market-open zoo insert / trading-browser composite
 

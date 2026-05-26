@@ -50,14 +50,14 @@ Linear tickets are required before agent pickup. Every issue must include its
 matching `@sprint-md/` constituent path. ORCH tickets are human/runbook context
 and should not be picked up by the watcher.
 
-| Issue | Title | Brief |
-| --- | --- | --- |
-| SOL-130 | S70-ORCH: NarrativeFlow Research Orchestra | @sprint-md/S70-ORCH-narrativeflow-research-orchestra.md |
-| SOL-131 | S70-T1: Narrative Orchestra Projection API | @sprint-md/S70-T1-narrative-orchestra-projection-api.md |
-| SOL-132 | S70-T2: Evidence Model + Corroboration Layer | @sprint-md/S70-T2-evidence-corroboration-layer.md |
-| SOL-133 | S70-T3: Agent Deliberation Bridge | @sprint-md/S70-T3-agent-deliberation-bridge.md |
-| SOL-134 | S70-T4: NarrativeFlow Surface Rebuild | @sprint-md/S70-T4-narrativeflow-surface-rebuild.md |
-| SOL-135 | S70-T5: Human Promotion + Review Controls | @sprint-md/S70-T5-human-promotion-review-controls.md |
+| Issue   | Title                                                  | Brief                                                         |
+| ------- | ------------------------------------------------------ | ------------------------------------------------------------- |
+| SOL-130 | S70-ORCH: NarrativeFlow Research Orchestra             | @sprint-md/S70-ORCH-narrativeflow-research-orchestra.md       |
+| SOL-131 | S70-T1: Narrative Orchestra Projection API             | @sprint-md/S70-T1-narrative-orchestra-projection-api.md       |
+| SOL-132 | S70-T2: Evidence Model + Corroboration Layer           | @sprint-md/S70-T2-evidence-corroboration-layer.md             |
+| SOL-133 | S70-T3: Agent Deliberation Bridge                      | @sprint-md/S70-T3-agent-deliberation-bridge.md                |
+| SOL-134 | S70-T4: NarrativeFlow Surface Rebuild                  | @sprint-md/S70-T4-narrativeflow-surface-rebuild.md            |
+| SOL-135 | S70-T5: Human Promotion + Review Controls              | @sprint-md/S70-T5-human-promotion-review-controls.md          |
 | SOL-136 | S70-T6: Unification, Validation, and Visual Tightening | @sprint-md/S70-T6-unification-validation-visual-tightening.md |
 
 ## Validation Gate

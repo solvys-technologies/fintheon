@@ -1,4 +1,5 @@
 import { getSupabaseClient } from "../../config/supabase.js";
+import { ensureDeskVault } from "../file-room/paths.js";
 import type { NarrativeDesk } from "./types.js";
 
 const DEFAULT_DESK = {
@@ -26,6 +27,7 @@ export async function ensureDefaultNarrativeDesk(
 
   if (error) throw new Error(`Default desk unavailable: ${error.message}`);
   const desk = toDesk(data);
+  await ensureDeskVault(desk);
   if (createdBy) await ensureDeskMembership(desk.id, createdBy, "owner");
   return desk;
 }
@@ -46,7 +48,9 @@ export async function resolveNarrativeDesk(
     .single();
 
   if (error) throw new Error(`Desk not found: ${error.message}`);
-  return toDesk(data);
+  const desk = toDesk(data);
+  await ensureDeskVault(desk);
+  return desk;
 }
 
 export async function updateNarrativeDeskMap(params: {
@@ -58,10 +62,15 @@ export async function updateNarrativeDeskMap(params: {
   const sb = getSupabaseClient();
   if (!sb) throw new Error("Supabase is not configured");
 
-  const desk = await resolveNarrativeDesk(params.deskId ?? null, params.actorId);
+  const desk = await resolveNarrativeDesk(
+    params.deskId ?? null,
+    params.actorId,
+  );
   const patch: Record<string, unknown> = {};
-  if (params.mapImageUrl !== undefined) patch.map_image_url = params.mapImageUrl;
-  if (params.mapImagePrompt !== undefined) patch.map_image_prompt = params.mapImagePrompt;
+  if (params.mapImageUrl !== undefined)
+    patch.map_image_url = params.mapImageUrl;
+  if (params.mapImagePrompt !== undefined)
+    patch.map_image_prompt = params.mapImagePrompt;
   if (params.mapImageUrl !== undefined || params.mapImagePrompt !== undefined) {
     patch.map_image_updated_at = new Date().toISOString();
   }
@@ -105,5 +114,6 @@ async function ensureDeskMembership(
   const { error } = await sb
     .from("narrative_desk_members")
     .upsert({ desk_id: deskId, user_id: userId, role });
-  if (error) throw new Error(`Default desk membership failed: ${error.message}`);
+  if (error)
+    throw new Error(`Default desk membership failed: ${error.message}`);
 }

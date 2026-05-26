@@ -13,7 +13,7 @@ set -eo pipefail
 
 # [claude-code 2026-04-18] Resolve install path: FINTHEON_ROOT env > ~/.fintheon/install-path > default
 FINTHEON_ROOT="${FINTHEON_ROOT:-$(cat "$HOME/.fintheon/install-path" 2>/dev/null || echo "$HOME/Documents/Codebases/fintheon")}"
-UPDATE_VERSION="6.7.28"
+UPDATE_VERSION="7.0.1"
 
 # ── Self-update bootstrap (v5.25.2) ──────────────────────────────────────────
 # Root cause fix: bash loads the entire script into memory at invocation, so
@@ -54,7 +54,10 @@ if [[ -z "${FINTHEON_SELFUPDATED:-}" ]] && [[ -d "$FINTHEON_ROOT/.git" ]]; then
   exec bash "$FINTHEON_ROOT/scripts/fintheon-update.sh" "$@"
 fi
 
-SUPABASE_DATABASE_URL="${SUPABASE_DATABASE_URL:-}"
+SUPABASE_DATABASE_URL="${SUPABASE_DATABASE_URL:-${DATABASE_URL:-}}"
+if [[ -z "$SUPABASE_DATABASE_URL" && -f "$FINTHEON_ROOT/scripts/setup.ts" ]]; then
+  SUPABASE_DATABASE_URL="$(node -e 'const fs=require("fs"); const text=fs.readFileSync(process.argv[1],"utf8"); const match=text.match(/FLY_DEPLOYED_SUPABASE_DATABASE_URL\s*=\s*[\r\n\s]*"([^"]+)"/); if (match) process.stdout.write(match[1]);' "$FINTHEON_ROOT/scripts/setup.ts" 2>/dev/null || true)"
+fi
 
 # ── Solvys Gold ANSI palette ──────────────────────────────────────────────────
 _R='\033[0m'
@@ -99,7 +102,7 @@ torch_banner "FINTHEON UPDATE v${UPDATE_VERSION}" "Priced In Capital"
 if [[ ! -d "$FINTHEON_ROOT/.git" ]]; then
   echo -e "  ${_RED}✗${_R} ${_CREAM}Fintheon not found at $FINTHEON_ROOT${_R}"
   echo '    Run the setup script first:'
-  echo '    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v6.7.28/scripts/fintheon-setup.sh)"'
+  echo '    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v7.0.1/scripts/fintheon-setup.sh)"'
   exit 1
 fi
 

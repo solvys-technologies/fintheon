@@ -13,7 +13,10 @@ export async function createDraftForecast(input: {
   forecast: DeskForecastInput;
 }): Promise<DeskForecast> {
   const sb = getColiseumClient();
-  const deskId = await resolveColiseumDeskId(input.forecast.deskId, input.actorId);
+  const deskId = await resolveColiseumDeskId(
+    input.forecast.deskId,
+    input.actorId,
+  );
   const { data, error } = await sb
     .from("coliseum_desk_forecasts")
     .insert({
@@ -115,15 +118,25 @@ async function replaceForecastChildren(
   marketReferences: MarketReferenceInput[],
 ): Promise<void> {
   const sb = getColiseumClient();
-  await sb.from("coliseum_forecast_catalysts").delete().eq("forecast_id", forecastId);
-  await sb.from("coliseum_forecast_market_refs").delete().eq("forecast_id", forecastId);
+  await sb
+    .from("coliseum_forecast_catalysts")
+    .delete()
+    .eq("forecast_id", forecastId);
+  await sb
+    .from("coliseum_forecast_market_refs")
+    .delete()
+    .eq("forecast_id", forecastId);
 
-  const catalystRows = Array.from(new Set(catalystIds)).map((riskflowItemId) => ({
-    forecast_id: forecastId,
-    riskflow_item_id: riskflowItemId,
-  }));
+  const catalystRows = Array.from(new Set(catalystIds)).map(
+    (riskflowItemId) => ({
+      forecast_id: forecastId,
+      riskflow_item_id: riskflowItemId,
+    }),
+  );
   if (catalystRows.length > 0) {
-    const { error } = await sb.from("coliseum_forecast_catalysts").insert(catalystRows);
+    const { error } = await sb
+      .from("coliseum_forecast_catalysts")
+      .insert(catalystRows);
     if (error) throw new Error(`Forecast catalysts failed: ${error.message}`);
   }
 
@@ -137,7 +150,9 @@ async function replaceForecastChildren(
     fetched_at: ref.fetchedAt ?? new Date().toISOString(),
   }));
   if (marketRows.length > 0) {
-    const { error } = await sb.from("coliseum_forecast_market_refs").insert(marketRows);
+    const { error } = await sb
+      .from("coliseum_forecast_market_refs")
+      .insert(marketRows);
     if (error) throw new Error(`Forecast market refs failed: ${error.message}`);
   }
 }

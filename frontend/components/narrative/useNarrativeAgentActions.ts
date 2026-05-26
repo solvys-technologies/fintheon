@@ -7,7 +7,10 @@ import {
   fetchNarrativeSession,
   saveNarrativeArtifact,
 } from "../../lib/narrative-session-api";
-import { isNarrativeSurfaceMode, type NarrativeSurfaceMode } from "./narrative-surface-options";
+import {
+  isNarrativeSurfaceMode,
+  type NarrativeSurfaceMode,
+} from "./narrative-surface-options";
 import type { NarrativeWorkspaceSession } from "./NarrativeSessionWorkspace";
 import type { SensemakingResponse } from "./sensemaking-types";
 
@@ -43,7 +46,9 @@ export function useNarrativeAgentActions(options: NarrativeAgentActionOptions) {
         return;
       }
       if (detail.action === "narrativeflow_stage_edit") {
-        options.setValidationMessage("Harper staged a NarrativeFlow edit for approval.");
+        options.setValidationMessage(
+          "Harper staged a NarrativeFlow edit for approval.",
+        );
         return;
       }
       if (detail.action === "narrativeflow_apply_approved_edit") {
@@ -52,7 +57,10 @@ export function useNarrativeAgentActions(options: NarrativeAgentActionOptions) {
     }
     window.addEventListener("fintheon:narrative-agent-action", handleAction);
     return () => {
-      window.removeEventListener("fintheon:narrative-agent-action", handleAction);
+      window.removeEventListener(
+        "fintheon:narrative-agent-action",
+        handleAction,
+      );
     };
   }, [options]);
 }
@@ -76,13 +84,16 @@ async function applyApprovedEdit(
 ) {
   const editType = stringValue(detail.editType);
   const patch = isRecord(detail.patch) ? detail.patch : {};
-  const targetId = stringValue(detail.targetId) ?? options.activeSession?.id ?? null;
+  const targetId =
+    stringValue(detail.targetId) ?? options.activeSession?.id ?? null;
   if (editType === "forecast_draft") {
     await createForecastDraft(options, patch);
     return;
   }
   if (!targetId) {
-    options.setValidationMessage("Open a NarrativeFlow workspace before applying this edit.");
+    options.setValidationMessage(
+      "Open a NarrativeFlow workspace before applying this edit.",
+    );
     return;
   }
   if (editType === "workspace_title") {
@@ -93,25 +104,41 @@ async function applyApprovedEdit(
       title,
       stringValue(patch.color) ?? options.activeSession?.color ?? "#c79f4a",
     );
-    options.setValidationMessage("Harper applied the approved workspace title edit.");
+    options.setValidationMessage(
+      "Harper applied the approved workspace title edit.",
+    );
     return;
   }
   if (editType === "workspace_docs" || editType === "workspace_summary") {
     await saveNarrativeArtifact(targetId, "docs", normalizeDocsPatch(patch));
-    await reloadSession(options, targetId, "Harper applied the approved Docs edit.");
+    await reloadSession(
+      options,
+      targetId,
+      "Harper applied the approved Docs edit.",
+    );
     return;
   }
   if (editType === "workspace_flow") {
     await saveNarrativeArtifact(targetId, "flow", unwrapPayload(patch));
-    await reloadSession(options, targetId, "Harper applied the approved Flow edit.");
+    await reloadSession(
+      options,
+      targetId,
+      "Harper applied the approved Flow edit.",
+    );
     return;
   }
   if (editType === "workspace_timeline") {
     await saveNarrativeArtifact(targetId, "timeline", unwrapPayload(patch));
-    await reloadSession(options, targetId, "Harper applied the approved Timeline edit.");
+    await reloadSession(
+      options,
+      targetId,
+      "Harper applied the approved Timeline edit.",
+    );
     return;
   }
-  options.setValidationMessage("Approved edit is staged in the rail; this surface is read-only in v1.");
+  options.setValidationMessage(
+    "Approved edit is staged in the rail; this surface is read-only in v1.",
+  );
 }
 
 async function createForecastDraft(
@@ -124,7 +151,9 @@ async function createForecastDraft(
     probability: numberValue(patch.probability),
     direction: stringValue(patch.direction),
     timeframe: stringValue(patch.timeframe) ?? "1-4 weeks",
-    validationRule: stringValue(patch.validationRule) ?? "Validate against incoming RiskFlow catalysts.",
+    validationRule:
+      stringValue(patch.validationRule) ??
+      "Validate against incoming RiskFlow catalysts.",
     catalystIds: stringArray(patch.catalystIds),
     marketReferences: [],
   });
@@ -159,7 +188,9 @@ function normalizeDocsPatch(patch: Record<string, unknown>) {
   };
 }
 
-function unwrapPayload(patch: Record<string, unknown>): Record<string, unknown> {
+function unwrapPayload(
+  patch: Record<string, unknown>,
+): Record<string, unknown> {
   return isRecord(patch.payload) ? patch.payload : patch;
 }
 

@@ -172,9 +172,7 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
         score > 0.5 ? "steadfast" : score < -0.5 ? "tilted" : "poised";
       setThreads((prev) =>
         prev.map((thread) =>
-          thread.id === activeThreadId
-            ? { ...thread, resonanceState }
-            : thread,
+          thread.id === activeThreadId ? { ...thread, resonanceState } : thread,
         ),
       );
     };

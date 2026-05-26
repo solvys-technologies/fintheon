@@ -1,10 +1,7 @@
 import type { FeedItem } from "../../types/riskflow.js";
 import { createLogger } from "../../lib/logger.js";
 import { getFeed } from "../riskflow/feed-service.js";
-import {
-  createMemoDraft,
-  hasMemoForSourceRefs,
-} from "../desk-inbox/index.js";
+import { createMemoDraft, hasMemoForSourceRefs } from "../desk-inbox/index.js";
 import type { DeskInboxItem } from "../desk-inbox/types.js";
 
 const log = createLogger("AgenticAnalysisBlock");
@@ -86,7 +83,10 @@ function singleItemCandidate(item: FeedItem): DriftCandidate {
 function clusterCandidates(items: FeedItem[]): DriftCandidate[] {
   const buckets = new Map<string, FeedItem[]>();
   for (const item of items) {
-    for (const key of [...(item.tags ?? []), ...(item.symbols ?? [])].slice(0, 8)) {
+    for (const key of [...(item.tags ?? []), ...(item.symbols ?? [])].slice(
+      0,
+      8,
+    )) {
       const normalized = key.toLowerCase();
       if (normalized.length < 2) continue;
       buckets.set(normalized, [...(buckets.get(normalized) ?? []), item]);
@@ -97,7 +97,8 @@ function clusterCandidates(items: FeedItem[]): DriftCandidate[] {
     .map(([key, bucket]) => {
       const sample = bucket.slice(0, 4);
       const avgScore =
-        sample.reduce((sum, item) => sum + (item.ivScore ?? 0), 0) / sample.length;
+        sample.reduce((sum, item) => sum + (item.ivScore ?? 0), 0) /
+        sample.length;
       return {
         title: `Harper memo: ${key.toUpperCase()} catalyst cluster`,
         summary: `${sample.length} related RiskFlow items are gaining traction around ${key}.`,
@@ -111,7 +112,10 @@ function clusterCandidates(items: FeedItem[]): DriftCandidate[] {
 
 function buildMemoBody(candidate: DriftCandidate): string {
   const rows = candidate.items
-    .map((item) => `| ${item.symbols?.[0] || "Macro"} | ${(item.ivScore ?? 0).toFixed(1)} | ${item.headline} |`)
+    .map(
+      (item) =>
+        `| ${item.symbols?.[0] || "Macro"} | ${(item.ivScore ?? 0).toFixed(1)} | ${item.headline} |`,
+    )
     .join("\n");
   return `# ${candidate.title}
 
@@ -128,5 +132,7 @@ Watch whether the second session confirms positioning drift. Harper should ask O
 }
 
 function normalizeTickers(values: string[] = []): string[] {
-  return [...new Set(values.map((value) => value.toUpperCase()).filter(Boolean))].slice(0, 8);
+  return [
+    ...new Set(values.map((value) => value.toUpperCase()).filter(Boolean)),
+  ].slice(0, 8);
 }

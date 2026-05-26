@@ -293,10 +293,9 @@ export async function generateTextViaClaude(
     });
     return chain.response;
   } catch (err) {
-    log.warn(
-      "AI chain failed — falling back to Claude CLI if available",
-      { error: err instanceof Error ? err.message : String(err) },
-    );
+    log.warn("AI chain failed — falling back to Claude CLI if available", {
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 
   if (!isAvailable()) {

@@ -37,9 +37,13 @@ export function DeskPlanCustomForm({
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [form, setForm] = useState(() => initialForm());
-  const country = COUNTRIES.find((item) => item.country === form.country) ?? COUNTRIES[0];
+  const country =
+    COUNTRIES.find((item) => item.country === form.country) ?? COUNTRIES[0];
   const filterOptions = useMemo(
-    () => ["ALL", ...countries.filter(Boolean).map((value) => value.toUpperCase())],
+    () => [
+      "ALL",
+      ...countries.filter(Boolean).map((value) => value.toUpperCase()),
+    ],
     [countries],
   );
 
@@ -80,7 +84,9 @@ export function DeskPlanCustomForm({
             const option = COUNTRIES.find((item) => item.country === value);
             return (
               <option key={value} value={value}>
-                {value === "ALL" ? "All" : `${option?.flag ?? ""} ${option?.currency ?? value}`}
+                {value === "ALL"
+                  ? "All"
+                  : `${option?.flag ?? ""} ${option?.currency ?? value}`}
               </option>
             );
           })}
@@ -106,23 +112,54 @@ export function DeskPlanCustomForm({
           <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--fintheon-accent)]">
             Custom Plan
           </span>
-          <button type="button" onClick={() => setIsOpen(false)} aria-label="Close">
+          <button
+            type="button"
+            onClick={() => setIsOpen(false)}
+            aria-label="Close"
+          >
             <X className="w-3 h-3 text-zinc-500" />
           </button>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <Field label="Event" value={form.eventName} onChange={(eventName) => setForm({ ...form, eventName })} wide />
-          <Field label="Date" type="date" value={form.date} onChange={(date) => setForm({ ...form, date })} />
-          <Field label="Print" type="time" value={form.time} onChange={(time) => setForm({ ...form, time })} />
-          <Field label="Start" type="time" value={form.startTime} onChange={(startTime) => setForm({ ...form, startTime })} />
-          <Field label="End" type="time" value={form.endTime} onChange={(endTime) => setForm({ ...form, endTime })} />
+          <Field
+            label="Event"
+            value={form.eventName}
+            onChange={(eventName) => setForm({ ...form, eventName })}
+            wide
+          />
+          <Field
+            label="Date"
+            type="date"
+            value={form.date}
+            onChange={(date) => setForm({ ...form, date })}
+          />
+          <Field
+            label="Print"
+            type="time"
+            value={form.time}
+            onChange={(time) => setForm({ ...form, time })}
+          />
+          <Field
+            label="Start"
+            type="time"
+            value={form.startTime}
+            onChange={(startTime) => setForm({ ...form, startTime })}
+          />
+          <Field
+            label="End"
+            type="time"
+            value={form.endTime}
+            onChange={(endTime) => setForm({ ...form, endTime })}
+          />
           <label className="min-w-0">
             <span className="mb-1 block text-[9px] uppercase tracking-[0.12em] text-zinc-500">
               Country
             </span>
             <select
               value={form.country}
-              onChange={(event) => setForm({ ...form, country: event.target.value })}
+              onChange={(event) =>
+                setForm({ ...form, country: event.target.value })
+              }
               className="h-8 w-full rounded border border-white/10 bg-black/40 px-2 text-[12px] text-[var(--fintheon-text)] outline-none"
             >
               {COUNTRIES.map((item) => (
@@ -132,12 +169,27 @@ export function DeskPlanCustomForm({
               ))}
             </select>
           </label>
-          <Field label="Forecast" value={form.forecast} onChange={(forecast) => setForm({ ...form, forecast })} />
-          <Field label="Prior" value={form.previous} onChange={(previous) => setForm({ ...form, previous })} />
-          <Field label="Detail" value={form.detail} onChange={(detail) => setForm({ ...form, detail })} wide />
+          <Field
+            label="Forecast"
+            value={form.forecast}
+            onChange={(forecast) => setForm({ ...form, forecast })}
+          />
+          <Field
+            label="Prior"
+            value={form.previous}
+            onChange={(previous) => setForm({ ...form, previous })}
+          />
+          <Field
+            label="Detail"
+            value={form.detail}
+            onChange={(detail) => setForm({ ...form, detail })}
+            wide
+          />
         </div>
         <div className="mt-3 flex items-center justify-between gap-2">
-          <span className="truncate text-[10px] text-zinc-500">{message ?? "Forecast generated by Agentic Desk"}</span>
+          <span className="truncate text-[10px] text-zinc-500">
+            {message ?? "Forecast generated by Agentic Desk"}
+          </span>
           <button
             type="button"
             onClick={submit}

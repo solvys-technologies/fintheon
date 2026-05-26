@@ -180,9 +180,7 @@ export function StickyBulletin({
         {/* Content area */}
         <div className="p-3 min-h-[200px] max-h-[420px] overflow-y-auto custom-scrollbar">
           {/* ═══ Section 1: Catalyst Watch ═══ */}
-          {b.activeSection === "idea" && (
-            <BulletinWatchlistTab />
-          )}
+          {b.activeSection === "idea" && <BulletinWatchlistTab />}
 
           {/* ═══ Section 2: Antilag Times ═══ */}
           {b.activeSection === "antilag" && (

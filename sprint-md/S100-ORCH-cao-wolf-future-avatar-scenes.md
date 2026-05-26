@@ -16,12 +16,12 @@ S100 adds future CAO wolf avatar scenes for Open Beta interactions beyond the in
 
 ## Assignment Matrix
 
-| Issue | Linear | Brief | Owner | Execution path | Phase | Status |
-| --- | --- | --- | --- | --- | --- | --- |
-| S100-ORCH | SOL-195 | @sprint-md/S100-ORCH-cao-wolf-future-avatar-scenes.md | TP | planning/runbook | Open Beta | Backlog |
-| S100-T1 | SOL-196 | @sprint-md/S100-T1-todo-drawer-summon-scene.md | local Solvys Agent | OpenCode local | Open Beta | Backlog |
-| S100-T2 | SOL-197 | @sprint-md/S100-T2-todo-drawer-dismiss-scene.md | local Solvys Agent | OpenCode local | Open Beta | Backlog |
-| S100-T3 | SOL-198 | @sprint-md/S100-T3-avatar-scene-routing-and-qa.md | local Solvys Agent | OpenCode local | Open Beta | Backlog |
+| Issue     | Linear  | Brief                                                 | Owner              | Execution path   | Phase     | Status  |
+| --------- | ------- | ----------------------------------------------------- | ------------------ | ---------------- | --------- | ------- |
+| S100-ORCH | SOL-195 | @sprint-md/S100-ORCH-cao-wolf-future-avatar-scenes.md | TP                 | planning/runbook | Open Beta | Backlog |
+| S100-T1   | SOL-196 | @sprint-md/S100-T1-todo-drawer-summon-scene.md        | local Solvys Agent | OpenCode local   | Open Beta | Backlog |
+| S100-T2   | SOL-197 | @sprint-md/S100-T2-todo-drawer-dismiss-scene.md       | local Solvys Agent | OpenCode local   | Open Beta | Backlog |
+| S100-T3   | SOL-198 | @sprint-md/S100-T3-avatar-scene-routing-and-qa.md     | local Solvys Agent | OpenCode local   | Open Beta | Backlog |
 
 ## Acceptance
 

@@ -102,9 +102,7 @@ export function useDayPlanMultiWeek(): DayPlanMultiWeekState {
         if (!cancelled) {
           const flat = (json.weeks ?? []).flat();
           setAllPlans(flat);
-          setCurrentPlanIndex((prev) =>
-            prev >= flat.length ? 0 : prev,
-          );
+          setCurrentPlanIndex((prev) => (prev >= flat.length ? 0 : prev));
           setError(null);
           setIsLoading(false);
         }

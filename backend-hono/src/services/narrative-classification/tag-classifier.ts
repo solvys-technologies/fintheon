@@ -1,6 +1,9 @@
 import { getSupabaseClient } from "../../config/supabase.js";
 import { putSessionArtifact } from "../narrative-sessions/artifact-store.js";
-import { addSessionTags, addWorkEvent } from "../narrative-sessions/history-store.js";
+import {
+  addSessionTags,
+  addWorkEvent,
+} from "../narrative-sessions/history-store.js";
 import { normalizeCatalystId } from "../narrative-sensemaking/catalyst-reader.js";
 import type { SensemakingCatalyst } from "../narrative-sensemaking/types.js";
 import {
@@ -26,7 +29,9 @@ export async function classifyNarrativeSession(params: {
   return decisions;
 }
 
-export function classifyCatalysts(input: ClassificationInput): NarrativeTagDecision[] {
+export function classifyCatalysts(
+  input: ClassificationInput,
+): NarrativeTagDecision[] {
   return input.catalysts.map((catalyst) => {
     const matched = matchThreads(catalyst, input.threads);
     const tags = buildTags(catalyst, matched);
@@ -68,7 +73,9 @@ export async function readNarrativeThreads(): Promise<NarrativeThreadSeed[]> {
   return mergeDefaultThreads(rows);
 }
 
-async function readSessionCatalysts(sessionId: string): Promise<SensemakingCatalyst[]> {
+async function readSessionCatalysts(
+  sessionId: string,
+): Promise<SensemakingCatalyst[]> {
   const sb = getSupabaseClient();
   if (!sb) throw new Error("Supabase is not configured");
 
@@ -84,14 +91,18 @@ async function readSessionCatalysts(sessionId: string): Promise<SensemakingCatal
   return readCatalystsByIds(ids);
 }
 
-export async function readCatalystsByIds(ids: string[]): Promise<SensemakingCatalyst[]> {
+export async function readCatalystsByIds(
+  ids: string[],
+): Promise<SensemakingCatalyst[]> {
   const sb = getSupabaseClient();
   if (!sb) throw new Error("Supabase is not configured");
 
   const normalized = Array.from(new Set(ids.map(normalizeCatalystId)));
   const { data, error } = await sb
     .from("scored_riskflow_items")
-    .select("tweet_id, headline, body, source, symbols, tags, sentiment, iv_score, published_at, promoted_at, category, market_impact, agent_note")
+    .select(
+      "tweet_id, headline, body, source, symbols, tags, sentiment, iv_score, published_at, promoted_at, category, market_impact, agent_note",
+    )
     .in("tweet_id", normalized);
   if (error) throw new Error(`Catalyst read failed: ${error.message}`);
 
@@ -117,18 +128,27 @@ export async function readCatalystsByIds(ids: string[]): Promise<SensemakingCata
   }));
 }
 
-async function persistClassification(sessionId: string, decisions: NarrativeTagDecision[], actorId: string | null): Promise<void> {
+async function persistClassification(
+  sessionId: string,
+  decisions: NarrativeTagDecision[],
+  actorId: string | null,
+): Promise<void> {
   const sb = getSupabaseClient();
   if (!sb) throw new Error("Supabase is not configured");
 
   await putSessionArtifact({
     sessionId,
     artifactType: "agent-work",
-    payload: { classification: decisions, generatedAt: new Date().toISOString() },
+    payload: {
+      classification: decisions,
+      generatedAt: new Date().toISOString(),
+    },
     createdBy: actorId,
   });
   await addSessionTags(sessionId, toSessionTags(decisions));
-  await Promise.all(decisions.map((decision) => updateCatalystLabel(sessionId, decision)));
+  await Promise.all(
+    decisions.map((decision) => updateCatalystLabel(sessionId, decision)),
+  );
   await Promise.all([
     addWorkEvent({
       sessionId,
@@ -141,7 +161,8 @@ async function persistClassification(sessionId: string, decisions: NarrativeTagD
       sessionId,
       agentName: "Consul",
       eventType: "contradiction-check",
-      summary: "Checked catalyst labels for confirming, conflicting, noisy, and unclassified evidence.",
+      summary:
+        "Checked catalyst labels for confirming, conflicting, noisy, and unclassified evidence.",
       payload: summarizeLabels(decisions),
     }),
     addWorkEvent({
@@ -155,13 +176,20 @@ async function persistClassification(sessionId: string, decisions: NarrativeTagD
       sessionId,
       agentName: "Herald",
       eventType: "notable-catalyst-promotion",
-      summary: "Promoted high-confidence catalysts for Situation Map visibility.",
-      payload: { promotedCount: decisions.filter((item) => item.confidence >= 0.7).length },
+      summary:
+        "Promoted high-confidence catalysts for Situation Map visibility.",
+      payload: {
+        promotedCount: decisions.filter((item) => item.confidence >= 0.7)
+          .length,
+      },
     }),
   ]);
 }
 
-async function updateCatalystLabel(sessionId: string, decision: NarrativeTagDecision): Promise<void> {
+async function updateCatalystLabel(
+  sessionId: string,
+  decision: NarrativeTagDecision,
+): Promise<void> {
   const sb = getSupabaseClient();
   if (!sb) return;
   const { error } = await sb
@@ -194,16 +222,24 @@ async function readCardLinks(ids: string[]): Promise<Map<string, string[]>> {
   return links;
 }
 
-function matchThreads(catalyst: SensemakingCatalyst, threads: NarrativeThreadSeed[]): NarrativeThreadSeed[] {
+function matchThreads(
+  catalyst: SensemakingCatalyst,
+  threads: NarrativeThreadSeed[],
+): NarrativeThreadSeed[] {
   const text = searchableText(catalyst);
   const existing = new Set(catalyst.narrativeThreads);
   return threads.filter((thread) => {
     if (existing.has(thread.slug)) return true;
-    return thread.keywords.some((keyword) => text.includes(keyword.toLowerCase()));
+    return thread.keywords.some((keyword) =>
+      text.includes(keyword.toLowerCase()),
+    );
   });
 }
 
-function buildTags(catalyst: SensemakingCatalyst, threads: NarrativeThreadSeed[]): string[] {
+function buildTags(
+  catalyst: SensemakingCatalyst,
+  threads: NarrativeThreadSeed[],
+): string[] {
   const tags = new Set([
     ...FALLBACK_TAGS,
     catalyst.category,
@@ -214,26 +250,44 @@ function buildTags(catalyst: SensemakingCatalyst, threads: NarrativeThreadSeed[]
   return Array.from(tags).filter(Boolean).slice(0, 10);
 }
 
-function scoreConfidence(catalyst: SensemakingCatalyst, threads: NarrativeThreadSeed[]): number {
+function scoreConfidence(
+  catalyst: SensemakingCatalyst,
+  threads: NarrativeThreadSeed[],
+): number {
   const base = threads.length > 0 ? 0.52 : 0.22;
   const linkBoost = Math.min(catalyst.narrativeThreads.length * 0.12, 0.24);
   const tagBoost = Math.min(catalyst.tags.length * 0.025, 0.12);
   const ivBoost = Math.min(catalyst.ivScore / 100, 0.12);
-  return Number(Math.min(0.96, base + linkBoost + tagBoost + ivBoost).toFixed(2));
+  return Number(
+    Math.min(0.96, base + linkBoost + tagBoost + ivBoost).toFixed(2),
+  );
 }
 
-function labelConflict(catalyst: SensemakingCatalyst, confidence: number, threadCount: number): CatalystConflictLabel {
+function labelConflict(
+  catalyst: SensemakingCatalyst,
+  confidence: number,
+  threadCount: number,
+): CatalystConflictLabel {
   if (confidence < 0.34 || threadCount === 0) return "unclassified";
   if (catalyst.ivScore < 3 && catalyst.tags.length < 2) return "noise";
-  if (["bearish", "negative"].includes(catalyst.sentiment.toLowerCase())) return "conflicting";
+  if (["bearish", "negative"].includes(catalyst.sentiment.toLowerCase()))
+    return "conflicting";
   return "confirming";
 }
 
-function buildReason(catalyst: SensemakingCatalyst, threads: NarrativeThreadSeed[], label: CatalystConflictLabel, confidence: number): string {
+function buildReason(
+  catalyst: SensemakingCatalyst,
+  threads: NarrativeThreadSeed[],
+  label: CatalystConflictLabel,
+  confidence: number,
+): string {
   if (threads.length === 0) {
     return `No active narrative keywords matched ${catalyst.source}; held as ${label} at ${confidence}.`;
   }
-  const titles = threads.slice(0, 3).map((thread) => thread.title).join(", ");
+  const titles = threads
+    .slice(0, 3)
+    .map((thread) => thread.title)
+    .join(", ");
   return `Matched ${titles} from keywords, existing links, or tags; labeled ${label} at ${confidence}.`;
 }
 
@@ -246,7 +300,9 @@ function searchableText(catalyst: SensemakingCatalyst): string {
     catalyst.agentNote,
     ...catalyst.tags,
     ...catalyst.symbols,
-  ].join(" ").toLowerCase();
+  ]
+    .join(" ")
+    .toLowerCase();
 }
 
 function toSessionTags(decisions: NarrativeTagDecision[]) {
@@ -270,7 +326,12 @@ function summarizeLabels(decisions: NarrativeTagDecision[]) {
   }, {});
 }
 
-function mergeDefaultThreads(rows: NarrativeThreadSeed[]): NarrativeThreadSeed[] {
+function mergeDefaultThreads(
+  rows: NarrativeThreadSeed[],
+): NarrativeThreadSeed[] {
   const seen = new Set(rows.map((row) => row.slug));
-  return [...rows, ...DEFAULT_FIRST_RUN_NARRATIVES.filter((row) => !seen.has(row.slug))];
+  return [
+    ...rows,
+    ...DEFAULT_FIRST_RUN_NARRATIVES.filter((row) => !seen.has(row.slug)),
+  ];
 }

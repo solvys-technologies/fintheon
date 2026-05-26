@@ -35,7 +35,9 @@ async function tick(): Promise<void> {
 export function startDayPlanCron(): void {
   if (running) return;
   if (process.env.DAY_PLAN_CRON_ENABLED !== "true") {
-    log.info("Disabled by default; set DAY_PLAN_CRON_ENABLED=true to allow autonomous generation");
+    log.info(
+      "Disabled by default; set DAY_PLAN_CRON_ENABLED=true to allow autonomous generation",
+    );
     return;
   }
 

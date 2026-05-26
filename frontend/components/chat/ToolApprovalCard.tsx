@@ -1,9 +1,6 @@
 // [claude-code 2026-04-03] In-chat tool approval card — smooth spring animations, Solvys Gold palette
 import { useState, useEffect, useRef } from "react";
-import {
-  ShieldCheck,
-  ShieldX,
-} from "lucide-react";
+import { ShieldCheck, ShieldX } from "lucide-react";
 import {
   ChatCitationIcon,
   citationKindForTool,

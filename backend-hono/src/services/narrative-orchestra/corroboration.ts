@@ -1,7 +1,4 @@
-import type {
-  NarrativeEvidence,
-  NarrativeEvidenceStance,
-} from "./types.js";
+import type { NarrativeEvidence, NarrativeEvidenceStance } from "./types.js";
 import { groupEvidenceByStance } from "./evidence-linker.js";
 
 export interface CorroborationInput {
@@ -56,7 +53,10 @@ export function computeCorroborationScore(
     (total, factor) => total + factor.value * factor.weight,
     0,
   );
-  const totalWeight = factors.reduce((total, factor) => total + factor.weight, 0);
+  const totalWeight = factors.reduce(
+    (total, factor) => total + factor.weight,
+    0,
+  );
   const score = Math.round((weightedScore / totalWeight) * 100);
 
   return {
@@ -85,7 +85,9 @@ function buildStanceFactor(
   const supportShare = total > 0 ? counts.supports / total : 0;
   const contradictionShare = total > 0 ? counts.contradicts / total : 0;
   const neutralShare = total > 0 ? counts.neutral / total : 0;
-  const value = clamp01(supportShare + neutralShare * 0.35 - contradictionShare * 0.7);
+  const value = clamp01(
+    supportShare + neutralShare * 0.35 - contradictionShare * 0.7,
+  );
 
   return {
     id: "stance-mix",

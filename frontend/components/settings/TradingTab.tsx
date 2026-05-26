@@ -9,7 +9,10 @@ import { BlockerTab } from "./BlockerTab";
 
 type PrimaryBroker = "rithmic" | "projectx" | "mmt";
 
-const INSTRUMENT_GROUPS: { label: string; instruments: { symbol: string; name: string }[] }[] = [
+const INSTRUMENT_GROUPS: {
+  label: string;
+  instruments: { symbol: string; name: string }[];
+}[] = [
   {
     label: "Equity Index Futures",
     instruments: [
@@ -369,12 +372,14 @@ export function TradingTab({
                 onClick={() => setLockoutAutoReleaseMinutes(15)}
                 className="px-2 py-1 rounded text-[11px] font-mono border transition-colors"
                 style={{
-                  color: lockoutAutoReleaseMinutes === 15
-                    ? "var(--fintheon-accent, #c79f4a)"
-                    : "var(--fintheon-muted, #908774)",
-                  borderColor: lockoutAutoReleaseMinutes === 15
-                    ? "rgba(199, 159, 74, 0.4)"
-                    : "rgba(255, 255, 255, 0.08)",
+                  color:
+                    lockoutAutoReleaseMinutes === 15
+                      ? "var(--fintheon-accent, #c79f4a)"
+                      : "var(--fintheon-muted, #908774)",
+                  borderColor:
+                    lockoutAutoReleaseMinutes === 15
+                      ? "rgba(199, 159, 74, 0.4)"
+                      : "rgba(255, 255, 255, 0.08)",
                   background: "transparent",
                 }}
               >
@@ -384,12 +389,14 @@ export function TradingTab({
                 onClick={() => setLockoutAutoReleaseMinutes(30)}
                 className="px-2 py-1 rounded text-[11px] font-mono border transition-colors"
                 style={{
-                  color: lockoutAutoReleaseMinutes === 30
-                    ? "var(--fintheon-accent, #c79f4a)"
-                    : "var(--fintheon-muted, #908774)",
-                  borderColor: lockoutAutoReleaseMinutes === 30
-                    ? "rgba(199, 159, 74, 0.4)"
-                    : "rgba(255, 255, 255, 0.08)",
+                  color:
+                    lockoutAutoReleaseMinutes === 30
+                      ? "var(--fintheon-accent, #c79f4a)"
+                      : "var(--fintheon-muted, #908774)",
+                  borderColor:
+                    lockoutAutoReleaseMinutes === 30
+                      ? "rgba(199, 159, 74, 0.4)"
+                      : "rgba(255, 255, 255, 0.08)",
                   background: "transparent",
                 }}
               >

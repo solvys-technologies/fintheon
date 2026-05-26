@@ -1,6 +1,10 @@
 import { getSupabaseClient } from "../../config/supabase.js";
 import { resolveNarrativeDesk } from "../narrative-sessions/default-desk.js";
-import { classifyCatalysts, readCatalystsByIds, readNarrativeThreads } from "./tag-classifier.js";
+import {
+  classifyCatalysts,
+  readCatalystsByIds,
+  readNarrativeThreads,
+} from "./tag-classifier.js";
 import type {
   NarrativeTagDecision,
   NarrativeThreadSeed,
@@ -22,11 +26,15 @@ export async function buildSituationMap(params: {
   if (!sb) throw new Error("Supabase is not configured");
 
   const threads = await readNarrativeThreads();
-  const selection = await readDeskCatalystSelection(params.deskId, params.actorId);
+  const selection = await readDeskCatalystSelection(
+    params.deskId,
+    params.actorId,
+  );
   const catalystIds = selection.catalystIds;
-  const catalysts = catalystIds.length > 0
-    ? await readCatalystsByIds(catalystIds)
-    : await readFallbackCatalysts();
+  const catalysts =
+    catalystIds.length > 0
+      ? await readCatalystsByIds(catalystIds)
+      : await readFallbackCatalysts();
   const decisions = classifyCatalysts({ catalysts, threads });
 
   return {
@@ -53,7 +61,10 @@ async function readDeskCatalystSelection(
     .order("updated_at", { ascending: false })
     .limit(12);
   if (sessionError) {
-    console.warn("[NarrativeSituationMap] session table unavailable", sessionError);
+    console.warn(
+      "[NarrativeSituationMap] session table unavailable",
+      sessionError,
+    );
     return { deskId: desk.id, catalystIds: [] };
   }
 
@@ -70,7 +81,10 @@ async function readDeskCatalystSelection(
     return { deskId: desk.id, catalystIds: [] };
   }
 
-  return { deskId: desk.id, catalystIds: uniqueIds((data ?? []) as SelectedCatalystRow[]) };
+  return {
+    deskId: desk.id,
+    catalystIds: uniqueIds((data ?? []) as SelectedCatalystRow[]),
+  };
 }
 
 async function readFallbackCatalysts() {
@@ -87,7 +101,9 @@ async function readFallbackCatalysts() {
     return [];
   }
 
-  const ids = Array.from(new Set((links ?? []).map((row) => String(row.card_id))));
+  const ids = Array.from(
+    new Set((links ?? []).map((row) => String(row.card_id))),
+  );
   return ids.length > 0 ? readCatalystsByIds(ids.slice(0, 48)) : [];
 }
 
@@ -96,7 +112,9 @@ function buildNodes(
   decisions: NarrativeTagDecision[],
   catalysts: Awaited<ReturnType<typeof readCatalystsByIds>>,
 ): SituationMapNode[] {
-  const activeSlugs = new Set(decisions.flatMap((decision) => decision.narrativeSlugs));
+  const activeSlugs = new Set(
+    decisions.flatMap((decision) => decision.narrativeSlugs),
+  );
   const narrativeNodes = threads
     .filter((thread) => activeSlugs.has(thread.slug))
     .map((thread) => ({
@@ -108,7 +126,9 @@ function buildNodes(
       narrativeSlug: thread.slug,
     }));
 
-  const byId = new Map(decisions.map((decision) => [decision.catalystId, decision]));
+  const byId = new Map(
+    decisions.map((decision) => [decision.catalystId, decision]),
+  );
   const catalystNodes = catalysts.map((catalyst) => {
     const decision = byId.get(catalyst.id);
     return {
@@ -143,11 +163,16 @@ function buildEdges(decisions: NarrativeTagDecision[]): SituationMapEdge[] {
   return [...membership, ...relationships];
 }
 
-function buildRelationshipEdges(decisions: NarrativeTagDecision[]): SituationMapEdge[] {
+function buildRelationshipEdges(
+  decisions: NarrativeTagDecision[],
+): SituationMapEdge[] {
   const edges: SituationMapEdge[] = [];
   for (let i = 0; i < decisions.length; i += 1) {
     for (let j = i + 1; j < decisions.length; j += 1) {
-      const shared = intersect(decisions[i].narrativeSlugs, decisions[j].narrativeSlugs);
+      const shared = intersect(
+        decisions[i].narrativeSlugs,
+        decisions[j].narrativeSlugs,
+      );
       if (shared.length === 0) continue;
       edges.push({
         id: `edge-related-${decisions[i].catalystId}-${decisions[j].catalystId}`,
@@ -163,11 +188,14 @@ function buildRelationshipEdges(decisions: NarrativeTagDecision[]): SituationMap
 }
 
 function uniqueIds(rows: SelectedCatalystRow[]): string[] {
-  return Array.from(new Set(rows.map((row) => row.riskflow_item_id).filter(Boolean))).slice(0, 64);
+  return Array.from(
+    new Set(rows.map((row) => row.riskflow_item_id).filter(Boolean)),
+  ).slice(0, 64);
 }
 
 function countBySlug(decisions: NarrativeTagDecision[], slug: string): number {
-  return decisions.filter((decision) => decision.narrativeSlugs.includes(slug)).length;
+  return decisions.filter((decision) => decision.narrativeSlugs.includes(slug))
+    .length;
 }
 
 function intersect(a: string[], b: string[]): string[] {

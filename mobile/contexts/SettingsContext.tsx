@@ -386,7 +386,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         new Date(remote.updatedAt) > new Date(prev.updatedAt) ? remote : prev,
       );
       if (remote.traderName) {
-        setSettings((prev) => ({ ...prev, traderName: remote.traderName ?? "" }));
+        setSettings((prev) => ({
+          ...prev,
+          traderName: remote.traderName ?? "",
+        }));
       }
       lastRemoteThemeRef.current = remote.theme;
     })();

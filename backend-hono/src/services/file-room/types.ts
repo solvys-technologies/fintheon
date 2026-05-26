@@ -1,6 +1,8 @@
 export type FileRoomSectionId =
   | "weekly-tribune"
   | "agentic-memos"
+  | "narrative-tags"
+  | "narrative-workspaces"
   | "narrative-summaries"
   | "uploads"
   | "chart-evidence"

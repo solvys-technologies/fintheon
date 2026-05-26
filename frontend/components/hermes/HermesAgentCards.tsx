@@ -26,10 +26,7 @@ export function HermesAgentCards({ agents }: HermesAgentCardsProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
       {agents.map((agent) => (
-        <div
-          key={agent.id}
-          className="flex flex-col gap-2 text-right"
-        >
+        <div key={agent.id} className="flex flex-col gap-2 text-right">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="w-7 h-7 rounded-full bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)] text-xs font-bold flex items-center justify-center">
@@ -41,12 +38,12 @@ export function HermesAgentCards({ agents }: HermesAgentCardsProps) {
                 {agent.name}
               </span>
               <div className="flex items-center justify-end gap-1.5">
-              <span
-                className={`w-2 h-2 rounded-full ${STATUS_DOT[agent.status]}`}
-              />
-              <span className="text-[10px] text-zinc-400">
-                {STATUS_LABEL[agent.status]}
-              </span>
+                <span
+                  className={`w-2 h-2 rounded-full ${STATUS_DOT[agent.status]}`}
+                />
+                <span className="text-[10px] text-zinc-400">
+                  {STATUS_LABEL[agent.status]}
+                </span>
               </div>
             </div>
           </div>

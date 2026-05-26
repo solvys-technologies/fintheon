@@ -38,7 +38,10 @@ export async function handleSearchCatalystBank(c: Context): Promise<Response> {
 export async function handleAssignCatalystBank(c: Context): Promise<Response> {
   const parsed = assignSchema.safeParse(await readJson(c));
   if (!parsed.success) {
-    return c.json({ error: "validation failed", issues: parsed.error.issues }, 400);
+    return c.json(
+      { error: "validation failed", issues: parsed.error.issues },
+      400,
+    );
   }
 
   try {

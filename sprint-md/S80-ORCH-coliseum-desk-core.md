@@ -18,37 +18,37 @@ The first implementation sprint should build the desk/profile core and a thin Ag
 
 ## Roadmap
 
-| Phase | Name | Outcome |
-| --- | --- | --- |
-| 0 | Design + Guardrails | Terms, compliance boundary, desk roles, forecast lifecycle, read-only prediction-market policy |
-| 1 | Desk Core + Agent Style | Desk profiles, manager permissions, archetype/classification, broker/prop firm metadata, affiliate schema, agent style context |
-| 2 | Desk Forecasts | Draft/publish lifecycle, RiskFlow catalysts, validation criteria, market references, NarrativeFlow toggle |
-| 3 | Alerts + Scorecards | Thesis gaining support, Thesis proven, Thesis invalidated, calibration scoring, desk leaderboard |
-| 4 | Coliseum Feed | Followed desks, private beta feed, Desk Remarks, forecast archive, resolved view |
-| 5 | Social Layer | Comments, Spaces, moderation, follow expansion, affiliate UI, richer public profiles |
+| Phase | Name                    | Outcome                                                                                                                        |
+| ----- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 0     | Design + Guardrails     | Terms, compliance boundary, desk roles, forecast lifecycle, read-only prediction-market policy                                 |
+| 1     | Desk Core + Agent Style | Desk profiles, manager permissions, archetype/classification, broker/prop firm metadata, affiliate schema, agent style context |
+| 2     | Desk Forecasts          | Draft/publish lifecycle, RiskFlow catalysts, validation criteria, market references, NarrativeFlow toggle                      |
+| 3     | Alerts + Scorecards     | Thesis gaining support, Thesis proven, Thesis invalidated, calibration scoring, desk leaderboard                               |
+| 4     | Coliseum Feed           | Followed desks, private beta feed, Desk Remarks, forecast archive, resolved view                                               |
+| 5     | Social Layer            | Comments, Spaces, moderation, follow expansion, affiliate UI, richer public profiles                                           |
 
 ## Track Definition
 
-| Track | Title | Owner | Complexity | File Ownership |
-| --- | --- | --- | --- | --- |
-| S80-T1 | Coliseum Desk Profile Schema | Shashank via OpenCode local | High | `supabase/migrations/**`, `backend-hono/src/services/coliseum/**`, `backend-hono/src/routes/coliseum/**` |
-| S80-T2 | Desk Manager Permissions | Shashank via OpenCode local | Medium | `backend-hono/src/services/coliseum/**`, `backend-hono/src/routes/coliseum/**`, route validation |
-| S80-T3 | Agentic Desk Style Core | Shashank via OpenCode local | High | `backend-hono/src/services/desk-context/preflight.ts`, `backend-hono/src/services/coliseum/**`, settings/profile UI |
-| S80-T4 | Desk Forecast Data Model | Shashank via OpenCode local | High | `supabase/migrations/**`, forecast store/routes/types |
-| S80-T5 | NarrativeFlow Toggle Shell | Shashank via OpenCode local | High | `frontend/components/narrative/**`, `frontend/lib/coliseum-api.ts` |
-| S80-T6 | Rule-Based Thesis Monitor | Shashank via OpenCode local | High | monitor service, bulletin/notification integration, prediction-market read-only adapter |
+| Track  | Title                        | Owner                       | Complexity | File Ownership                                                                                                      |
+| ------ | ---------------------------- | --------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------- |
+| S80-T1 | Coliseum Desk Profile Schema | Shashank via OpenCode local | High       | `supabase/migrations/**`, `backend-hono/src/services/coliseum/**`, `backend-hono/src/routes/coliseum/**`            |
+| S80-T2 | Desk Manager Permissions     | Shashank via OpenCode local | Medium     | `backend-hono/src/services/coliseum/**`, `backend-hono/src/routes/coliseum/**`, route validation                    |
+| S80-T3 | Agentic Desk Style Core      | Shashank via OpenCode local | High       | `backend-hono/src/services/desk-context/preflight.ts`, `backend-hono/src/services/coliseum/**`, settings/profile UI |
+| S80-T4 | Desk Forecast Data Model     | Shashank via OpenCode local | High       | `supabase/migrations/**`, forecast store/routes/types                                                               |
+| S80-T5 | NarrativeFlow Toggle Shell   | Shashank via OpenCode local | High       | `frontend/components/narrative/**`, `frontend/lib/coliseum-api.ts`                                                  |
+| S80-T6 | Rule-Based Thesis Monitor    | Shashank via OpenCode local | High       | monitor service, bulletin/notification integration, prediction-market read-only adapter                             |
 
 ## Assignment Matrix
 
-| Issue | Linear | Brief | Owner | Execution path | Cycle | Project | Initiative |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| S80-ORCH | SOL-177 | @sprint-md/S80-ORCH-coliseum-desk-core.md | TP | planning/runbook | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
-| S80-T1 | SOL-178 | @sprint-md/S80-T1-coliseum-desk-profile-schema.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
-| S80-T2 | SOL-179 | @sprint-md/S80-T2-desk-manager-permissions.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
-| S80-T3 | SOL-180 | @sprint-md/S80-T3-agentic-desk-style-core.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
-| S80-T4 | SOL-181 | @sprint-md/S80-T4-desk-forecast-data-model.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
-| S80-T5 | SOL-182 | @sprint-md/S80-T5-narrativeflow-toggle-shell.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
-| S80-T6 | SOL-183 | @sprint-md/S80-T6-rule-based-thesis-monitor.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
+| Issue    | Linear  | Brief                                             | Owner    | Execution path                       | Cycle       | Project                                          | Initiative  |
+| -------- | ------- | ------------------------------------------------- | -------- | ------------------------------------ | ----------- | ------------------------------------------------ | ----------- |
+| S80-ORCH | SOL-177 | @sprint-md/S80-ORCH-coliseum-desk-core.md         | TP       | planning/runbook                     | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
+| S80-T1   | SOL-178 | @sprint-md/S80-T1-coliseum-desk-profile-schema.md | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
+| S80-T2   | SOL-179 | @sprint-md/S80-T2-desk-manager-permissions.md     | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
+| S80-T3   | SOL-180 | @sprint-md/S80-T3-agentic-desk-style-core.md      | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
+| S80-T4   | SOL-181 | @sprint-md/S80-T4-desk-forecast-data-model.md     | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
+| S80-T5   | SOL-182 | @sprint-md/S80-T5-narrativeflow-toggle-shell.md   | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
+| S80-T6   | SOL-183 | @sprint-md/S80-T6-rule-based-thesis-monitor.md    | Shashank | OpenCode local / Solvys Agent runner | Beta Closed | Coliseum: Desk Forecasting & Social Intelligence | Beta Closed |
 
 ## Wave Sequence
 

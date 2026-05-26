@@ -62,7 +62,12 @@ export function ProbabilityTableSlot({
         )}
         <div style={FADING_RULE} />
         <div
-          style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 6 }}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            marginTop: 6,
+          }}
         >
           {d.rows.map((r, i) => (
             <div key={i}>
@@ -83,7 +88,9 @@ export function ProbabilityTableSlot({
                 >
                   {r.label}
                 </span>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                <div
+                  style={{ display: "flex", alignItems: "baseline", gap: 6 }}
+                >
                   {r.delta !== undefined && (
                     <span
                       style={{

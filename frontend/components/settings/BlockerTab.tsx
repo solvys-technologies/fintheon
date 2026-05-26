@@ -47,7 +47,8 @@ export function BlockerTab() {
     setLockoutPermission,
     proposerIframeSources,
   } = useSettings();
-  const [accessibilityCheckLoading, setAccessibilityCheckLoading] = useState(false);
+  const [accessibilityCheckLoading, setAccessibilityCheckLoading] =
+    useState(false);
   const [state, setState] = useState<BlockerState>({
     blocked: false,
     layers: { hosts: false, resolver: false },
@@ -156,8 +157,12 @@ export function BlockerTab() {
   };
 
   const quickTargetSource =
-    proposerIframeSources.find((source) => source.id === quickTarget.platformId) ??
-    proposerIframeSources.find((source) => source.id === DEFAULT_BLOCKER_PLATFORM_ID) ??
+    proposerIframeSources.find(
+      (source) => source.id === quickTarget.platformId,
+    ) ??
+    proposerIframeSources.find(
+      (source) => source.id === DEFAULT_BLOCKER_PLATFORM_ID,
+    ) ??
     proposerIframeSources[0];
   const quickTargetDomains = domainsFromUrl(quickTargetSource?.url ?? "");
   const combinedDomains = mergeDomainLists(quickTargetDomains, domains);
@@ -192,7 +197,9 @@ export function BlockerTab() {
       saveBlockerCustomDomains(domains);
       const result = await api.setDomains(saved.domains);
       if (!result.ok) {
-        setQuickTargetError(result.reason ?? "Failed to update blocker domains");
+        setQuickTargetError(
+          result.reason ?? "Failed to update blocker domains",
+        );
         return;
       }
       notifyBlockerStateUpdated();
@@ -350,7 +357,9 @@ export function BlockerTab() {
         <div className="flex flex-wrap items-start justify-end gap-3 text-right">
           <div className="flex min-w-0 flex-1 flex-col items-end">
             <SettingsActionStatus
-              label={quickTargetDomains.length > 0 ? "Platform Ready" : "No Platform"}
+              label={
+                quickTargetDomains.length > 0 ? "Platform Ready" : "No Platform"
+              }
               detail={
                 quickTargetDomains.length > 0
                   ? `${quickTargetDomains.join(", ")}${domains.length > 0 ? ` + ${domains.length} custom` : ""}`
@@ -394,7 +403,8 @@ export function BlockerTab() {
               Accessibility Permission
             </div>
             <p className="text-[11px] text-gray-500 mt-1 leading-relaxed max-w-md">
-              Pre-authorizes Fintheon so locking works without a password prompt.
+              Pre-authorizes Fintheon so locking works without a password
+              prompt.
             </p>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1 text-right">
@@ -480,7 +490,9 @@ export function BlockerTab() {
           <div className="flex shrink-0 flex-col items-end gap-1 text-right">
             <button
               onClick={handleToggle}
-              disabled={toggling || state.isLoading || combinedDomains.length === 0}
+              disabled={
+                toggling || state.isLoading || combinedDomains.length === 0
+              }
               className={`shrink-0 px-4 py-2 rounded-md text-[12px] font-semibold transition-all ${
                 state.blocked
                   ? "bg-red-500/15 text-red-400 hover:bg-red-500/25 border border-red-500/20"
@@ -723,9 +735,9 @@ export function BlockerTab() {
               5.
             </span>
             <span>
-              <strong className="text-gray-400">In-app filter</strong> catches blocked
-              domains inside Fintheon's own webviews and shows the Desk Block
-              screen instead of the blank white blocked pane.
+              <strong className="text-gray-400">In-app filter</strong> catches
+              blocked domains inside Fintheon's own webviews and shows the Desk
+              Block screen instead of the blank white blocked pane.
             </span>
           </li>
           <li className="flex items-start gap-2">

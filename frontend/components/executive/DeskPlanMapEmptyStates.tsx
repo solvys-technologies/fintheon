@@ -24,7 +24,9 @@ export function EmptyTimeline() {
             </div>
           </div>
           <div className="min-h-[48px] pl-4">
-            <div className={`${EMPTY_POP_OUT} flex items-center justify-between gap-3 px-3 py-2`}>
+            <div
+              className={`${EMPTY_POP_OUT} flex items-center justify-between gap-3 px-3 py-2`}
+            >
               <span className="font-mono text-[9px] text-[var(--fintheon-muted)]/45">
                 {time} ET
               </span>
@@ -36,7 +38,8 @@ export function EmptyTimeline() {
         </div>
       ))}
       <p className="text-[11px] text-[var(--fintheon-muted)]/45">
-        No Desk Plans scheduled. Add one from TradingView or the Desk Plan add control.
+        No Desk Plans scheduled. Add one from TradingView or the Desk Plan add
+        control.
       </p>
     </div>
   );
@@ -47,10 +50,7 @@ export function EmptyCalendar() {
     <div>
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-3">
         {nextFiveDays().map((date) => (
-          <section
-            key={date}
-            className={`${EMPTY_POP_OUT} min-h-[150px] p-3`}
-          >
+          <section key={date} className={`${EMPTY_POP_OUT} min-h-[150px] p-3`}>
             <div className="flex items-center gap-2">
               <CalendarDays className="h-3 w-3 text-[var(--fintheon-accent)]/35" />
               <h3 className="font-mono text-[10px] text-[var(--fintheon-accent)]/55">
