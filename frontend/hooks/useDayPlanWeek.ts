@@ -9,6 +9,19 @@ const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const POLL_INTERVAL = 5 * 60_000;
 const MULTI_REFETCH_EVENT = "fintheon:day-plan-multi-refetch";
 
+async function fetchTodayPlanFallback(): Promise<DayPlan | null> {
+  const res = await fetch(`${API_BASE}/api/day-plan/today`);
+  if (!res.ok) return null;
+  const json = (await res.json()) as { plan?: DayPlan | null };
+  return json.plan ?? null;
+}
+
+function hasDeskPlanWindows(plan: DayPlan | null | undefined): plan is DayPlan {
+  return Boolean(
+    plan && Array.isArray(plan.windows) && plan.windows.length > 0,
+  );
+}
+
 export function useDayPlanWeek() {
   const [data, setData] = useState<WeekDayEntry[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,7 +56,10 @@ export function useDayPlanWeek() {
           setIsLoading(false);
         }
       } catch {
-        // Silently retry
+        if (!cancelled) {
+          setError("Network error");
+          setIsLoading(false);
+        }
       }
     }
 
@@ -92,22 +108,36 @@ export function useDayPlanMultiWeek(): DayPlanMultiWeekState {
       try {
         const res = await fetch(`${API_BASE}/api/day-plan/multi-week`);
         if (!res.ok) {
+          const fallbackPlan = await fetchTodayPlanFallback().catch(() => null);
           if (!cancelled) {
-            setError(`HTTP ${res.status}`);
+            setAllPlans(fallbackPlan ? [fallbackPlan] : []);
+            setError(fallbackPlan ? null : `HTTP ${res.status}`);
             setIsLoading(false);
           }
           return;
         }
         const json = (await res.json()) as { weeks: DayPlan[][] };
+        const flat = (json.weeks ?? []).flat();
+        const fallbackPlan = flat.some(hasDeskPlanWindows)
+          ? null
+          : await fetchTodayPlanFallback().catch(() => null);
+        const plans =
+          fallbackPlan && !flat.some(hasDeskPlanWindows)
+            ? [fallbackPlan]
+            : flat;
         if (!cancelled) {
-          const flat = (json.weeks ?? []).flat();
-          setAllPlans(flat);
-          setCurrentPlanIndex((prev) => (prev >= flat.length ? 0 : prev));
+          setAllPlans(plans);
+          setCurrentPlanIndex((prev) => (prev >= plans.length ? 0 : prev));
           setError(null);
           setIsLoading(false);
         }
       } catch {
-        // Silently retry
+        const fallbackPlan = await fetchTodayPlanFallback().catch(() => null);
+        if (!cancelled) {
+          setAllPlans(fallbackPlan ? [fallbackPlan] : []);
+          setError(fallbackPlan ? null : "Network error");
+          setIsLoading(false);
+        }
       }
     }
 

@@ -147,7 +147,12 @@ export function DayCard({
   );
   const autoLockKeyRef = useRef<string | null>(null);
 
-  const plan = multiWeekPlan ?? todayData;
+  const plan =
+    multiWeekPlan &&
+    ((multiWeekPlan.windows?.length ?? 0) > 0 ||
+      (todayData?.windows?.length ?? 0) === 0)
+      ? multiWeekPlan
+      : todayData;
   const isLoading = multiWeekLoading && todayLoading;
   const allWindows = useMemo(
     () =>
