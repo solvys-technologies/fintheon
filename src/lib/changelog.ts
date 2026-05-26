@@ -9,6 +9,24 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-26T09:56:54-04:00",
+    agent: "codex",
+    summary:
+      "Fixed NarrativeFlow workspace-session behavior: selecting an existing narrative from the greeting dropdown now opens that narrative and starts a fresh workspace chat instead of creating another narrative; first-turn greeting submissions create deferred workspace shells, hand the prompt into Harper, and require a visible acknowledgement before rail population begins.",
+    files: [
+      "backend-hono/src/routes/narrative/sessions/validation.ts",
+      "backend-hono/src/services/narrative-sessions/session-store.ts",
+      "backend-hono/src/services/strands/agents/harper.ts",
+      "backend-hono/src/services/ai/agent-instructions/narrativeflow-research.ts",
+      "frontend/components/ChatInterface.tsx",
+      "frontend/components/chat/hooks/useHermesChat.ts",
+      "frontend/components/narrative/NarrativeCanvas.tsx",
+      "frontend/components/narrative/NarrativeFlowLanding.tsx",
+      "frontend/lib/narrative-session-api.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-26T12:00:00-04:00",
     agent: "codex",
     summary:
