@@ -51,11 +51,19 @@ migrateStorageKeys();
  */
 function useAppInit(enabled: boolean, onReady: () => void) {
   const { getAccessToken } = useAuth();
-  const hasRun = useRef(false);
+  const initStatusRef = useRef<"idle" | "running" | "ready">("idle");
 
   useEffect(() => {
-    if (!enabled || hasRun.current) return;
-    hasRun.current = true;
+    if (!enabled) {
+      initStatusRef.current = "idle";
+      return;
+    }
+    if (initStatusRef.current === "ready") {
+      onReady();
+      return;
+    }
+    if (initStatusRef.current === "running") return;
+    initStatusRef.current = "running";
 
     let cancelled = false;
     const API = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -97,11 +105,13 @@ function useAppInit(enabled: boolean, onReady: () => void) {
       await new Promise((r) => setTimeout(r, 300));
       if (cancelled) return;
 
+      initStatusRef.current = "ready";
       onReady();
     })();
 
     return () => {
       cancelled = true;
+      if (initStatusRef.current === "running") initStatusRef.current = "idle";
     };
   }, [enabled, getAccessToken, onReady]);
 }

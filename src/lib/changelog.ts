@@ -30,8 +30,10 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-05-26T12:00:00-04:00",
     agent: "codex",
     summary:
-      "Desk prototype surgery: pulled the visible Desk/Dashboard tab into repo-owned Desk components, added a Desk Plan widget owner, moved the Sprint Map/Calendar toggle into the Desk namespace, and kept the executive dashboard export as a compatibility wrapper.",
+      "Desk prototype surgery: pulled the visible Desk/Dashboard tab into repo-owned Desk components, added a Desk Plan widget owner, moved the Sprint Map/Calendar toggle into the Desk namespace, loaded the prototype briefing from queued Desk Plan windows, fixed the dev cold-start splash retry so the prototype is not trapped behind loading, and kept the executive dashboard export as a compatibility wrapper.",
     files: [
+      "frontend/App.tsx",
+      "frontend/components/desk/desk-queued-events.ts",
       "frontend/components/desk/DeskDashboardPrototype.tsx",
       "frontend/components/desk/DeskBriefingPanel.tsx",
       "frontend/components/desk/DeskPlanWidget.tsx",
