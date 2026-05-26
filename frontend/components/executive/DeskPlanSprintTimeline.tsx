@@ -108,9 +108,10 @@ function SprintDayRow({
   onDelete: (plan: DayPlan) => void;
   onToggle: (blockId: string) => void;
 }) {
-  const hasExpandedBlock = row.blocks.some(
+  const expandedBlockIndex = row.blocks.findIndex(
     (item) => `${item.plan.id}-${item.window.id}` === expandedId,
   );
+  const hasExpandedBlock = expandedBlockIndex >= 0;
   const rowHeight = Math.max(
     62,
     row.blocks.length * 42 + 14 + (hasExpandedBlock ? 172 : 0),
@@ -139,13 +140,16 @@ function SprintDayRow({
         ) : (
           row.blocks.map((item, index) => {
             const blockId = `${item.plan.id}-${item.window.id}`;
+            const top =
+              index * 42 +
+              (hasExpandedBlock && index > expandedBlockIndex ? 172 : 0);
             return (
               <SprintBlock
                 key={blockId}
                 plan={item.plan}
                 window={item.window}
                 overlap={item.overlap}
-                top={index * 42}
+                top={top}
                 isExpanded={expandedId === blockId}
                 deletingId={deletingId}
                 onDelete={onDelete}
@@ -222,7 +226,10 @@ function SprintBlock({
             Fcst {window.econForecast?.forecast ?? "pending"}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-1 pr-2">
+        <div
+          className="flex shrink-0 items-center gap-1 pr-2"
+          onClick={(event) => event.stopPropagation()}
+        >
           <DeletePlanButton
             plan={plan}
             deletingId={deletingId}

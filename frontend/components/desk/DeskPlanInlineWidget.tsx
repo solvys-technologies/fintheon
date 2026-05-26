@@ -9,7 +9,7 @@ type ScenarioTone = "neutral" | "bullish" | "bearish";
 
 export function DeskPlanInlineWidget({
   plan,
-  window,
+  window: deskWindow,
   isOpen,
   compact = false,
 }: {
@@ -25,13 +25,13 @@ export function DeskPlanInlineWidget({
       setShouldRender(true);
       return;
     }
-    const timer = window.setTimeout(() => setShouldRender(false), 190);
-    return () => window.clearTimeout(timer);
+    const timer = globalThis.setTimeout(() => setShouldRender(false), 190);
+    return () => globalThis.clearTimeout(timer);
   }, [isOpen]);
 
   if (!shouldRender) return null;
 
-  const forecast = window.econForecast;
+  const forecast = deskWindow.econForecast;
   const missTone = scenarioTone(forecast?.miss.isBullishForEquities);
   const beatTone = scenarioTone(forecast?.beat.isBullishForEquities);
   const thesis =
@@ -63,11 +63,14 @@ export function DeskPlanInlineWidget({
       <dl className="mt-2 space-y-1.5 font-mono">
         <InlineRow
           label="Event"
-          value={window.eventName ?? plan.eventName ?? "Desk session"}
+          value={deskWindow.eventName ?? plan.eventName ?? "Desk session"}
         />
         <InlineRow
           label="Trading Window"
-          value={formatEasternClockRange(window.startTime, window.endTime)}
+          value={formatEasternClockRange(
+            deskWindow.startTime,
+            deskWindow.endTime,
+          )}
         />
         <InlineRow label="Forecast" value={forecast?.forecast ?? "pending"} />
         <InlineRow

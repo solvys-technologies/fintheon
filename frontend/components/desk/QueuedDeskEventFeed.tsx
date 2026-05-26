@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Lenis from "lenis";
+import { ChevronDown } from "lucide-react";
 import type { DayPlan } from "../../types/day-plan";
 import { FadingRuler } from "../shared/FadingRuler";
+import { DeskPlanInlineWidget } from "./DeskPlanInlineWidget";
 import {
   buildQueuedDeskEvents,
   groupQueuedDeskEvents,
@@ -132,7 +134,9 @@ function QueuedDeskEventRow({
   index: number;
   compact: boolean;
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const afterThirdOpacity = index <= 2 ? 1 : Math.max(0.28, 0.86 - index * 0.1);
+  const toggleExpanded = () => setIsExpanded((value) => !value);
   return (
     <article
       className={`group ${index > 0 ? "pt-2" : ""}`}
@@ -140,9 +144,19 @@ function QueuedDeskEventRow({
     >
       {index > 0 ? <FadingRuler className="mb-2 opacity-50" /> : null}
       <div
+        role="button"
+        tabIndex={0}
+        onClick={toggleExpanded}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            toggleExpanded();
+          }
+        }}
         className={`grid gap-3 ${
           compact ? "grid-cols-[1fr_auto]" : "grid-cols-[minmax(0,1fr)_auto]"
-        }`}
+        } cursor-pointer rounded-sm py-1 transition-[transform,color] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:translate-x-0.5`}
+        aria-expanded={isExpanded}
       >
         <div className="min-w-0">
           <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-[var(--fintheon-accent)]/60">
@@ -168,10 +182,23 @@ function QueuedDeskEventRow({
             <span>Beat {event.beatPrint ?? "\u2014"}</span>
           </div>
         </div>
-        <span className="shrink-0 self-start rounded-sm border border-[var(--fintheon-accent)]/14 px-1.5 py-0.5 font-mono text-[8.5px] text-[var(--fintheon-accent)]/74">
-          {event.forecast}
-        </span>
+        <div className="flex shrink-0 items-start gap-2">
+          <span className="rounded-sm border border-[var(--fintheon-accent)]/14 px-1.5 py-0.5 font-mono text-[8.5px] text-[var(--fintheon-accent)]/74">
+            {event.forecast}
+          </span>
+          <ChevronDown
+            className={`mt-0.5 h-3 w-3 text-[var(--fintheon-accent)]/45 transition-transform duration-200 ${
+              isExpanded ? "rotate-180" : ""
+            }`}
+          />
+        </div>
       </div>
+      <DeskPlanInlineWidget
+        plan={event.plan}
+        window={event.window}
+        isOpen={isExpanded}
+        compact={compact}
+      />
     </article>
   );
 }
