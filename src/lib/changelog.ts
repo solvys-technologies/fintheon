@@ -9,6 +9,25 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-26T00:56:00-04:00",
+    agent: "codex",
+    summary:
+      "Reworked CAO/chat architecture around Fileroom-grounded agent memory: removed NarrativeFlow hidden opener auto-sends, added Fileroom SOUL/System Prompt/Reflection/Growth/GEPA Streamdowns, wired learning and REFLECT writes into those files, made user-directed memory phrases append relationship memory to SOUL.md, unified NarrativeFlow onto the repo-owned composer, fixed ticker-strip Streamdown recovery with 5D sparklines, and cleaned up the thinking row shimmer/state.",
+    files: [
+      "backend-hono/src/services/ai/agent-instructions/fileroom-prompt-vault.ts",
+      "backend-hono/src/services/ai/agent-instructions/index.ts",
+      "backend-hono/src/services/strands/agents/harper.ts",
+      "backend-hono/src/routes/agent-learning/index.ts",
+      "backend-hono/src/services/autoresearch/reflect-engine.ts",
+      "frontend/components/ui/chatgpt-prompt-input.tsx",
+      "frontend/components/narrative/NarrativeInputBar.tsx",
+      "frontend/components/chat/CognitionPanel.tsx",
+      "frontend/components/chat/slots/StreamdownChat.tsx",
+      "frontend/index.css",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-25T23:29:16-04:00",
     agent: "codex",
     summary:

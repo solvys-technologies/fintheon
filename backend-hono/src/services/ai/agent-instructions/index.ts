@@ -32,6 +32,10 @@ import {
   buildNarrativeFlowResearchProtocolBlock,
   buildTradingViewWatchlistScopeBlock,
 } from "./narrativeflow-research.js";
+import {
+  ensureAgentPromptVault,
+  renderFileroomPromptLayer,
+} from "./fileroom-prompt-vault.js";
 
 const ROLE_TO_SOUL_ID: Record<HermesAgentRole, SoulAgentId> = {
   "harper-cao": "harper",
@@ -200,6 +204,23 @@ The RiskFlow Main vault is also TP's narrative authoring substrate. After export
 Your learnings will be recalled in future contexts to improve your performance. Do not store secrets, raw credentials, or private account data.
 `;
 
+const FILEROOM_MEMORY_UPDATE_BLOCK = `
+
+## User-Directed Memory Updates
+When the user says "update your memory", "remember this", "update your SOUL", "update your system prompt", "save this for next time", or a similar phrase, treat it as an instruction to persist the lesson into your Fileroom operating files.
+Use POST /api/agent/learning with topic "user-directed-memory-update", memoryType "reflect_finding" or "learned_pattern", and include enough context for the future relationship, not just a shallow note.
+Those writes update your Fileroom Reflections, Growth Addendum, active System Prompt Streamdown, and relationship-memory section in SOUL.md for future runs.
+`;
+
+const RISK_EVENT_SCALPER_BLOCK = `
+
+## Default Desk Stance
+You were hired by Risk Event scalpers. Unless the user explicitly changes horizon, gear every analysis, desk plan, briefing, and agentic desk action toward scalpable risk-event decisions.
+Default thinking: what changed, what the tape priced, who is trapped, what reprices next, where the scalp invalidates, and what catalyst/time window matters now.
+Educate yourself after each meaningful miss or new pattern so you become a legendary risk-event analyst, not a generic market commentator.
+Do not reflexively answer "You're right." If the user is right, absorb the correction and move. Use sharp Wall Street desk language when appropriate; profanity is allowed when it adds desk realism, but never aim it at the user.
+`;
+
 const CAPABILITIES_BLOCK = `
 
 ## Your Capabilities — USE THEM
@@ -280,6 +301,7 @@ export async function getAgentSystemPrompt(
   const soulId = ROLE_TO_SOUL_ID[role];
   if (soulId) {
     try {
+      await ensureAgentPromptVault(soulId);
       const soul = await loadSoul(soulId);
       prompt = renderSoulPrompt(soul);
     } catch (err) {
@@ -321,6 +343,8 @@ export async function getAgentSystemPrompt(
 
   // 2.8. Self-learning loop — reflect and store learnings
   prompt += SELF_LEARNING_BLOCK;
+  prompt += FILEROOM_MEMORY_UPDATE_BLOCK;
+  prompt += RISK_EVENT_SCALPER_BLOCK;
 
   // 2.9. Capability awareness — what tools and data the agent has access to
   prompt += CAPABILITIES_BLOCK;
@@ -356,10 +380,18 @@ export async function getAgentSystemPrompt(
     prompt += DEEP_ANALYSIS_BLOCK;
   }
 
+  if (soulId) {
+    prompt += await renderFileroomPromptLayer(soulId);
+  }
+
   // Cache the compiled prompt
   promptCache.set(cacheKey, { prompt, expiresAt: Date.now() + CACHE_TTL_MS });
 
   return prompt;
+}
+
+export function clearAgentSystemPromptCache(): void {
+  promptCache.clear();
 }
 
 /**

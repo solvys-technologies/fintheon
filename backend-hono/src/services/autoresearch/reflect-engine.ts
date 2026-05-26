@@ -9,6 +9,8 @@ import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
 import { addMemory } from "../agent-memory/memory-store.js";
 import type { AgentId } from "../agent-memory/types.js";
+import { clearAgentSystemPromptCache } from "../ai/agent-instructions/index.js";
+import { recordAgentReflection } from "../ai/agent-instructions/fileroom-prompt-vault.js";
 
 const log = createLogger("REFLECT");
 
@@ -456,6 +458,7 @@ async function addReflectMemoryToAllAgents(input: {
   metadata?: Record<string, unknown>;
   ttlHours?: number;
 }): Promise<void> {
+  let wroteFileroom = false;
   for (const agentId of ALL_AGENTS) {
     await addMemory({
       agentId,
@@ -469,7 +472,19 @@ async function addReflectMemoryToAllAgents(input: {
         error: err instanceof Error ? err.message : String(err),
       }),
     );
+    await recordAgentReflection({
+      agentId,
+      topic: "reflect-finding",
+      insight: input.content,
+      confidence: 0.82,
+      metadata: input.metadata,
+    })
+      .then(() => {
+        wroteFileroom = true;
+      })
+      .catch(() => null);
   }
+  if (wroteFileroom) clearAgentSystemPromptCache();
 }
 
 async function distributeReflectFindings(report: ReflectReport): Promise<void> {

@@ -1,9 +1,11 @@
 // [claude-code 2026-04-19] S27-T8 W1d: SOUL.md loader — literal CLAUDE.md grounding + Zod validation + 5-min cache.
 // [claude-code 2026-05-05] S59-T2: Added native_home optional field to SoulSchema + WHERE YOU ARE rendering in renderSystemPrompt.
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { dirname, resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
+import { DEFAULT_DESK_ID, sectionRoot } from "../../file-room/paths.js";
 
 // Schema duplicated from shared/soul-schema.ts — backend tsconfig rootDir is ./src so cross-root imports are not available.
 // Keep in sync with shared/soul-schema.ts.
@@ -72,6 +74,13 @@ export interface LoadedSoul extends Soul {
 
 const SOUL_DIR = dirname(fileURLToPath(import.meta.url));
 const CACHE_TTL_MS = 5 * 60 * 1000;
+const AGENT_FILEROOM_DIR: Record<AgentId, string> = {
+  harper: "Harper",
+  oracle: "Oracle",
+  feucht: "Feucht",
+  consul: "Consul",
+  herald: "Herald",
+};
 
 interface CacheEntry {
   soul: LoadedSoul;
@@ -189,7 +198,7 @@ export async function loadSoul(agentId: AgentId): Promise<LoadedSoul> {
   const cached = cache.get(agentId);
   if (cached && cached.expiresAt > Date.now()) return cached.soul;
 
-  const soulPath = join(SOUL_DIR, `${agentId}.md`);
+  const soulPath = resolveSoulPath(agentId);
   const raw = await readFile(soulPath, "utf-8");
   const frontmatterText = splitFrontmatter(raw);
   const parsed = parseYaml(frontmatterText);
@@ -213,6 +222,17 @@ export async function loadSoul(agentId: AgentId): Promise<LoadedSoul> {
 
   cache.set(agentId, { soul: loaded, expiresAt: Date.now() + CACHE_TTL_MS });
   return loaded;
+}
+
+function resolveSoulPath(agentId: AgentId): string {
+  const fileroomPath = join(
+    sectionRoot(DEFAULT_DESK_ID, "agent-souls"),
+    AGENT_FILEROOM_DIR[agentId],
+    "SOUL.md",
+  );
+  return existsSync(fileroomPath)
+    ? fileroomPath
+    : join(SOUL_DIR, `${agentId}.md`);
 }
 
 export function reloadSouls(): void {

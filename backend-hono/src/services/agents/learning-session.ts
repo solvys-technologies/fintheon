@@ -1,6 +1,8 @@
 // [codex 2026-05-17] Post-analysis learning capture for Fintheon agents.
 import { addMemory } from "../agent-memory/memory-store.js";
 import type { AgentId } from "../agent-memory/types.js";
+import { clearAgentSystemPromptCache } from "../ai/agent-instructions/index.js";
+import { recordAgentReflection } from "../ai/agent-instructions/fileroom-prompt-vault.js";
 import type {
   AgentPipelineResult,
   MarketDataReport,
@@ -163,8 +165,8 @@ async function storeNotes(notes: LearningNote[]): Promise<number> {
   }
 
   const writes = await Promise.all(
-    [...unique.values()].map((note) =>
-      addMemory({
+    [...unique.values()].map(async (note) => {
+      const memory = await addMemory({
         agentId: note.agentId,
         memoryType: "learned_pattern",
         content: `${note.topic}: ${note.insight}`,
@@ -174,10 +176,21 @@ async function storeNotes(notes: LearningNote[]): Promise<number> {
           topic: note.topic,
           ...(note.metadata ?? {}),
         },
-      }),
-    ),
+      });
+      if (memory) {
+        await recordAgentReflection({
+          agentId: note.agentId,
+          topic: note.topic,
+          insight: note.insight,
+          confidence: note.confidence,
+          metadata: note.metadata,
+        }).catch(() => null);
+      }
+      return memory;
+    }),
   );
 
+  if (writes.some(Boolean)) clearAgentSystemPromptCache();
   return writes.filter(Boolean).length;
 }
 

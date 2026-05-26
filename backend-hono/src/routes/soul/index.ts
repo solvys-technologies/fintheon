@@ -1,10 +1,18 @@
 // [claude-code 2026-05-07] Fileroom soul card editor — read/write agent SOUL.md files from the Apparatus Fileroom.
 import { Hono } from "hono";
-import { readFile, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
 import { createLogger } from "../../lib/logger.js";
+import {
+  DEFAULT_DESK_ID,
+  sectionRoot,
+} from "../../services/file-room/paths.js";
+import { ensureAgentPromptVault } from "../../services/ai/agent-instructions/fileroom-prompt-vault.js";
+import { clearAgentSystemPromptCache } from "../../services/ai/agent-instructions/index.js";
+import { reloadSouls } from "../../services/ai/soul/loader.js";
 
 const log = createLogger("SoulRoutes");
 
@@ -19,6 +27,13 @@ const SOUL_DIR = join(
   dirname(fileURLToPath(import.meta.url)),
   "../../services/ai/soul",
 );
+const AGENT_DIR: Record<(typeof VALID_AGENTS)[number], string> = {
+  harper: "Harper",
+  oracle: "Oracle",
+  feucht: "Feucht",
+  consul: "Consul",
+  herald: "Herald",
+};
 
 interface SoulMeta {
   agent_id: string;
@@ -35,7 +50,8 @@ export function createSoulRoutes(): Hono {
     try {
       const souls: SoulMeta[] = [];
       for (const agentId of VALID_AGENTS) {
-        const filePath = join(SOUL_DIR, `${agentId}.md`);
+        await ensureAgentPromptVault(agentId);
+        const filePath = soulPath(agentId);
         try {
           const raw = await readFile(filePath, "utf-8");
           const frontmatterMatch = raw.match(/^---\n([\s\S]*?)\n---/);
@@ -68,7 +84,9 @@ export function createSoulRoutes(): Hono {
       if (!VALID_AGENTS.includes(agentId as (typeof VALID_AGENTS)[number])) {
         return c.json({ error: `Unknown agent: ${agentId}` }, 404);
       }
-      const filePath = join(SOUL_DIR, `${agentId}.md`);
+      const typedAgentId = agentId as (typeof VALID_AGENTS)[number];
+      await ensureAgentPromptVault(typedAgentId);
+      const filePath = soulPath(typedAgentId);
       const raw = await readFile(filePath, "utf-8");
       return c.json({ agent_id: agentId, content: raw });
     } catch (err) {
@@ -88,8 +106,13 @@ export function createSoulRoutes(): Hono {
       if (!body.content || typeof body.content !== "string") {
         return c.json({ error: "content is required" }, 400);
       }
-      const filePath = join(SOUL_DIR, `${agentId}.md`);
+      const typedAgentId = agentId as (typeof VALID_AGENTS)[number];
+      await ensureAgentPromptVault(typedAgentId);
+      const filePath = soulPath(typedAgentId);
+      await mkdir(dirname(filePath), { recursive: true });
       await writeFile(filePath, body.content, "utf-8");
+      reloadSouls();
+      clearAgentSystemPromptCache();
       log.info(`Soul file updated: ${agentId}`);
       return c.json({ ok: true, agent_id: agentId });
     } catch (err) {
@@ -99,4 +122,15 @@ export function createSoulRoutes(): Hono {
   });
 
   return app;
+}
+
+function soulPath(agentId: (typeof VALID_AGENTS)[number]): string {
+  const fileroomPath = join(
+    sectionRoot(DEFAULT_DESK_ID, "agent-souls"),
+    AGENT_DIR[agentId],
+    "SOUL.md",
+  );
+  return existsSync(fileroomPath)
+    ? fileroomPath
+    : join(SOUL_DIR, `${agentId}.md`);
 }

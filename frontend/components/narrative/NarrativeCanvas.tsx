@@ -90,10 +90,6 @@ export function NarrativeCanvas({
   const [requestedChatThreadId, setRequestedChatThreadId] = useState<
     string | null
   >(null);
-  const [initialChatMessage, setInitialChatMessage] = useState<{
-    id: string;
-    text: string;
-  } | null>(null);
   const [chatContextId, setChatContextId] = useState<string | null>(null);
   const [response, setResponse] = useState<SensemakingResponse | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -228,18 +224,11 @@ export function NarrativeCanvas({
     async (payload: CreateNarrativeSessionPayload) => {
       setIsSubmitting(true);
       setValidationMessage(null);
-      setInitialChatMessage(null);
       try {
         const bundle = await createNarrativeSession(payload);
         setActiveSession(bundle.session);
         setResponse(bundle.response);
         setIsResearchRailOpen(true);
-        if (bundle.session.id && payload.query.trim()) {
-          setInitialChatMessage({
-            id: `narrative-open:${bundle.session.id}`,
-            text: payload.query,
-          });
-        }
         setSessions((current) => [
           toSummary(bundle.session, bundle.session.catalystIds?.length ?? 0),
           ...current,
@@ -262,7 +251,6 @@ export function NarrativeCanvas({
       const bundle = await fetchNarrativeSession(id);
       setActiveSession(bundle.session);
       setResponse(bundle.response);
-      setInitialChatMessage(null);
       setSurfaceMode("workspace");
     } catch (err) {
       setValidationMessage(
@@ -310,7 +298,6 @@ export function NarrativeCanvas({
         if (activeSession?.id === id) {
           setActiveSession(null);
           setResponse(null);
-          setInitialChatMessage(null);
           setSurfaceMode("workspace");
         }
         setManagedSession(null);
@@ -352,7 +339,6 @@ export function NarrativeCanvas({
         if (status === "archived" && activeSession?.id === id) {
           setActiveSession(null);
           setResponse(null);
-          setInitialChatMessage(null);
           setSurfaceMode("workspace");
         } else if (activeSession?.id === id) {
           setActiveSession(bundle.session);
@@ -427,7 +413,6 @@ export function NarrativeCanvas({
   const resetWorkspace = () => {
     setActiveSession(null);
     setResponse(null);
-    setInitialChatMessage(null);
     setSurfaceMode("workspace");
     setIsHistoryOpen(false);
   };
@@ -594,12 +579,6 @@ export function NarrativeCanvas({
         onWorkspaceChange={handleChatContextChange}
         workspaceSelectorLabel="Attach Narrative"
         requestedConversationId={requestedChatThreadId}
-        initialMessage={initialChatMessage}
-        onInitialMessageSent={(id) =>
-          setInitialChatMessage((message) =>
-            message?.id === id ? null : message,
-          )
-        }
         emptyState={<NarrativeFlowWorkspaceGreeting session={activeSession} />}
         composerPlacement="center-until-start"
         hideHeader

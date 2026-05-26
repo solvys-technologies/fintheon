@@ -201,8 +201,8 @@ export function NarrativeFlowLanding({
     storageKey: "fintheon:narrative-opener-queue",
   });
 
-  function handleCreateSession(contextSuffix?: string) {
-    submitSessionWithQuery(query, contextSuffix);
+  function handleCreateSession(message: string) {
+    submitSessionWithQuery(message);
   }
 
   const greetingPhaseClass = isGreetingLeaving

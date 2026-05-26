@@ -4,6 +4,8 @@ import { z } from "zod";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { addMemory } from "../../services/agent-memory/memory-store.js";
 import type { AgentId, MemoryType } from "../../services/agent-memory/types.js";
+import { recordAgentReflection } from "../../services/ai/agent-instructions/fileroom-prompt-vault.js";
+import { clearAgentSystemPromptCache } from "../../services/ai/agent-instructions/index.js";
 
 const agentIds = ["harper", "oracle", "feucht", "consul", "herald"] as const;
 const memoryTypes = [
@@ -75,6 +77,18 @@ export function createAgentLearningRoutes(): Hono {
     if (!memory) {
       return c.json({ ok: false, error: "Learning was not stored" }, 500);
     }
+
+    await recordAgentReflection({
+      agentId: input.agentId,
+      topic: input.topic ?? input.memoryType ?? "agent-learning",
+      insight: input.insight,
+      confidence: input.confidence ?? null,
+      metadata: {
+        memoryType: input.memoryType ?? "learned_pattern",
+        ...(input.metadata ?? {}),
+      },
+    }).catch(() => null);
+    clearAgentSystemPromptCache();
 
     return c.json({ ok: true, memory });
   });

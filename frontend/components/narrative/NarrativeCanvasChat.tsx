@@ -280,7 +280,7 @@ export function NarrativeCanvasChat({
             onClearChip?.(id);
           }
         }}
-        onSubmit={() => submitText(input)}
+        onSubmit={(message) => submitText(message)}
         onQueueMessage={queue.addQueue}
         onEditQueue={queue.editQueue}
         onRemoveQueue={queue.removeQueue}

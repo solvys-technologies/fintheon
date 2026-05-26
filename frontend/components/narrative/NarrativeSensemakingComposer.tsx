@@ -29,7 +29,7 @@ interface NarrativeSensemakingComposerProps {
   onOpenDrawer: () => void;
   onCloseDrawer?: () => void;
   onRemoveHeadline: (id: string) => void;
-  onSubmit: (contextSuffix?: string) => void;
+  onSubmit: (message: string) => void;
   onQueueMessage: (text: string) => void;
   onEditQueue: (id: string, text: string) => void;
   onRemoveQueue: (id: string) => void;

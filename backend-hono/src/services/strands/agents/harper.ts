@@ -11,9 +11,14 @@ import { withCognition } from "../telemetry.js";
 import { createConversationManager } from "../memory-store.js";
 import { checkDeepSeekDirectHealth } from "../provider.js";
 import {
+  clearAgentSystemPromptCache,
   extractSkillTag,
   getAgentSystemPrompt,
 } from "../../ai/agent-instructions/index.js";
+import {
+  hasAgentMemoryUpdateIntent,
+  recordAgentReflection,
+} from "../../ai/agent-instructions/fileroom-prompt-vault.js";
 import { buildMacroWatchlistContext } from "../../market-data/macro-watchlist.js";
 import { buildNarrativeFlowResearchProtocolBlock } from "../../ai/agent-instructions/narrativeflow-research.js";
 import { getUserApiKey } from "../../ai/api-key-crypto.js";
@@ -131,6 +136,21 @@ export async function streamHarperChat(
   responseHeaders?: Record<string, string>,
 ): Promise<Response> {
   const { message, requestId, conversationId, userId } = options;
+  if (hasAgentMemoryUpdateIntent(message)) {
+    await recordAgentReflection({
+      agentId: "harper",
+      topic: "user-directed-memory-update",
+      insight: message,
+      confidence: 0.9,
+      metadata: { source: "harper-chat", requestId, conversationId },
+    }).catch((err) =>
+      log.warn("Failed to persist user-directed memory update", {
+        requestId,
+        error: String(err),
+      }),
+    );
+    clearAgentSystemPromptCache();
+  }
   const agent = await createHarperAgent(requestId, {
     conversationId,
     userId,
