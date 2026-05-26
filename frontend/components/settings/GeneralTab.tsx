@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { CreditCard, Download } from "lucide-react";
 import { ProfileSettingsSection } from "./ProfileSettingsSection";
+import { DeskStyleSection } from "./DeskStyleSection";
 
 interface AvailableSymbol {
   symbol: string;
@@ -37,6 +38,8 @@ export function GeneralTab({
         traderName={traderName}
         setTraderName={setTraderName}
       />
+
+      <DeskStyleSection />
 
       <section className="fintheon-fade-divider mt-6 pb-1">
         <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">

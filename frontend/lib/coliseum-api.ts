@@ -61,14 +61,13 @@ export async function fetchDeskAgentStyle(): Promise<DeskAgentStyle | null> {
 
 export async function saveDeskAgentStyle(
   style: DeskAgentStyle,
+  authToken?: string,
 ): Promise<DeskAgentStyle> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
   const data = await requestJson<{ style?: DeskAgentStyle }>(
     "/api/coliseum/desks/default/agent-style",
-    {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(style),
-    },
+    { method: "PUT", headers, body: JSON.stringify(style) },
   );
   if (!data.style) throw new Error("Desk style response was empty.");
   return data.style;
