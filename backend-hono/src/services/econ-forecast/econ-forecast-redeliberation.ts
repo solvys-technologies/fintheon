@@ -16,6 +16,8 @@ interface RedeliberationResult {
   forecast?: string;
   missProbability?: number;
   beatProbability?: number;
+  missAgenticPrint?: string;
+  beatAgenticPrint?: string;
   aiPrediction?: string;
 }
 
@@ -98,8 +100,20 @@ function applyRedeliberation(
   return {
     ...forecast,
     forecast: parsed.forecast ?? forecast.forecast,
-    miss: { ...forecast.miss, probability: normalizedMiss },
-    beat: { ...forecast.beat, probability: 100 - normalizedMiss },
+    miss: {
+      ...forecast.miss,
+      probability: normalizedMiss,
+      agenticPrint:
+        cleanAgenticPrint(parsed.missAgenticPrint) ??
+        forecast.miss.agenticPrint,
+    },
+    beat: {
+      ...forecast.beat,
+      probability: 100 - normalizedMiss,
+      agenticPrint:
+        cleanAgenticPrint(parsed.beatAgenticPrint) ??
+        forecast.beat.agenticPrint,
+    },
     aiPrediction: parsed.aiPrediction ?? forecast.aiPrediction,
     validationChecks: [
       ...(forecast.validationChecks ?? []),
@@ -175,6 +189,13 @@ function clampProbability(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
+function cleanAgenticPrint(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed || /^(n\/?a|null|undefined)$/i.test(trimmed)) return undefined;
+  return trimmed.slice(0, 48);
+}
+
 const REDELIBERATION_SYSTEM_PROMPT = `You are the second-pass validation desk for Fintheon economic forecasts.
 Return strict JSON only:
 {
@@ -183,6 +204,8 @@ Return strict JSON only:
   "forecast": "optional corrected consensus string",
   "missProbability": number,
   "beatProbability": number,
+  "missAgenticPrint": "optional corrected miss-side print value only",
+  "beatAgenticPrint": "optional corrected beat-side print value only",
   "aiPrediction": "optional tightened prediction"
 }
 
@@ -190,4 +213,5 @@ Rules:
 - Run a skeptical validity check against event type, consensus, previous, and macro logic.
 - Do not invent actual print data.
 - Probabilities must represent miss vs beat odds and sum to roughly 100.
+- Only return missAgenticPrint or beatAgenticPrint when the current print values are concretely wrong. Values must be terse print/tone strings, not prose.
 - Prefer "pass" unless there is a concrete inconsistency.`;

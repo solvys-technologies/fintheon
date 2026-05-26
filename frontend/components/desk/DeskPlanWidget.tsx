@@ -12,6 +12,8 @@ const MULTI_REFETCH_EVENT = "fintheon:day-plan-multi-refetch";
 export function DeskPlanWidget() {
   const { addToast } = useToast();
   const [isAdvancing, setIsAdvancing] = useState(false);
+  const [windowControlsTarget, setWindowControlsTarget] =
+    useState<HTMLSpanElement | null>(null);
   const deskDateLabel = useMemo(() => formatDeskDate(new Date()), []);
 
   const advanceDeskPlan = useCallback(async () => {
@@ -49,14 +51,18 @@ export function DeskPlanWidget() {
         headerRight={
           <div className="ml-auto flex flex-col items-end gap-0.5">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-[0.17em] text-[var(--fintheon-accent)]/72">
-                Desk Plan
-                <BookOpen className="h-4 w-4" />
-              </span>
+              <span
+                ref={setWindowControlsTarget}
+                className="inline-flex min-w-[46px] justify-end"
+              />
               <DeskPlanAdvanceButton
                 isLoading={isAdvancing}
                 onClick={advanceDeskPlan}
               />
+              <span className="inline-flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-[0.17em] text-[var(--fintheon-accent)]/72">
+                Desk Plan
+                <BookOpen className="h-4 w-4" />
+              </span>
             </div>
             <span className="font-mono text-[10.5px] text-[var(--fintheon-muted)]/52">
               {deskDateLabel}
@@ -65,7 +71,13 @@ export function DeskPlanWidget() {
         }
       />
       <div className="relative mt-2 min-h-0 flex-1 overflow-y-auto pr-1">
-        <DayCard bare hideHeader fillThesis className="flex h-full flex-col" />
+        <DayCard
+          bare
+          hideHeader
+          fillThesis
+          windowControlsPortal={windowControlsTarget}
+          className="flex h-full flex-col"
+        />
       </div>
     </section>
   );

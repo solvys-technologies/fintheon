@@ -12,8 +12,8 @@ export interface QueuedDeskEvent {
   country: string;
   forecast: string;
   prediction: string;
-  missProbability: number | null;
-  beatProbability: number | null;
+  missPrint: string | null;
+  beatPrint: string | null;
 }
 
 export function buildQueuedDeskEvents(plans: DayPlan[]): QueuedDeskEvent[] {
@@ -34,8 +34,20 @@ export function buildQueuedDeskEvents(plans: DayPlan[]): QueuedDeskEvent[] {
           window.econForecast?.aiPrediction ??
           plan.deskTheme ??
           "Awaiting desk forecast.",
-        missProbability: window.econForecast?.miss.probability ?? null,
-        beatProbability: window.econForecast?.beat.probability ?? null,
+        missPrint: window.econForecast
+          ? scenarioPrint(
+              window.econForecast.forecast,
+              window.econForecast.miss.agenticPrint,
+              "miss",
+            )
+          : null,
+        beatPrint: window.econForecast
+          ? scenarioPrint(
+              window.econForecast.forecast,
+              window.econForecast.beat.agenticPrint,
+              "beat",
+            )
+          : null,
       })),
     )
     .sort((a, b) => {
@@ -43,6 +55,24 @@ export function buildQueuedDeskEvents(plans: DayPlan[]): QueuedDeskEvent[] {
       if (dateSort !== 0) return dateSort;
       return a.window.startTime.localeCompare(b.window.startTime);
     });
+}
+
+function scenarioPrint(
+  forecast: string,
+  explicitValue: string | undefined,
+  side: "miss" | "beat",
+) {
+  const explicit = explicitValue?.trim();
+  if (explicit) return explicit;
+  const clean = forecast.trim();
+  if (!clean || /^(n\/?a|null|undefined)$/i.test(clean)) return "\u2014";
+  const lower = clean.toLowerCase();
+  if (lower === "hawkish" || lower === "dovish" || lower === "none") {
+    if (side === "miss") return lower === "hawkish" ? "dovish" : lower;
+    return lower === "dovish" ? "hawkish" : lower;
+  }
+  if (/^[<>≤≥]/.test(clean)) return clean;
+  return `${side === "miss" ? "<" : ">"}${clean}`;
 }
 
 export function groupQueuedDeskEvents(events: QueuedDeskEvent[]) {

@@ -66,16 +66,15 @@ export function DeskPlanSprintTimeline({
       </div>
       <FadingRuler className="opacity-35" />
 
-      <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
-        <div className="grid grid-cols-[72px_1fr] gap-3">
+      <div className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
+        <div className="grid grid-cols-[62px_1fr] gap-2">
           <span />
           <TimeRuler segment={segment} />
         </div>
         <div className="relative mt-2">
           <TimeGuides segment={segment} />
-          {weekRows.map((row, index) => (
+          {weekRows.map((row) => (
             <div key={row.date}>
-              {index > 0 ? <SprintRowDivider /> : null}
               <SprintDayRow
                 row={row}
                 expandedId={expandedId}
@@ -108,15 +107,15 @@ function SprintDayRow({
   onDelete: (plan: DayPlan) => void;
   onToggle: (blockId: string) => void;
 }) {
-  const rowHeight = Math.max(88, row.blocks.length * 52 + 24);
+  const rowHeight = Math.max(62, row.blocks.length * 38 + 14);
   return (
     <div
-      className="relative grid grid-cols-[72px_1fr] gap-3 py-3"
+      className="relative grid grid-cols-[62px_1fr] gap-2 py-2"
       style={{ minHeight: rowHeight }}
     >
       <div className="pt-1 text-right">
         <p
-          className="text-[15px] uppercase leading-none text-[var(--fintheon-accent)]/82"
+          className="text-[13px] uppercase leading-none text-[var(--fintheon-accent)]/82"
           style={{ fontFamily: "var(--font-display, var(--font-heading))" }}
         >
           {row.day}
@@ -139,7 +138,7 @@ function SprintDayRow({
                 plan={item.plan}
                 window={item.window}
                 overlap={item.overlap}
-                top={index * 52}
+                top={index * 38}
                 isExpanded={expandedId === blockId}
                 deletingId={deletingId}
                 onDelete={onDelete}
@@ -149,15 +148,6 @@ function SprintDayRow({
           })
         )}
       </div>
-    </div>
-  );
-}
-
-function SprintRowDivider() {
-  return (
-    <div aria-hidden="true" className="grid grid-cols-[72px_1fr] gap-3">
-      <span />
-      <FadingRuler className="opacity-36" />
     </div>
   );
 }
@@ -190,9 +180,9 @@ function SprintBlock({
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") onToggle();
       }}
-      className={cn(POP_OUT_CARD, "absolute min-w-[178px] p-3 text-left")}
+      className={cn(POP_OUT_CARD, "absolute min-w-[138px] p-2 text-left")}
       style={{
-        left: `${overlap.left}%`,
+        left: `min(${overlap.left}%, calc(100% - 138px))`,
         top,
         width: `${Math.min(overlap.width, 92)}%`,
         borderColor: tone.color,
@@ -200,18 +190,18 @@ function SprintBlock({
     >
       <span
         aria-hidden="true"
-        className="absolute right-0 top-0 h-0 w-0 border-l-[15px] border-t-[15px] border-l-transparent"
+        className="absolute right-0 top-0 h-0 w-0 border-l-[12px] border-t-[12px] border-l-transparent"
         style={{ borderTopColor: tone.color }}
       />
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="line-clamp-1 text-[12px] text-[var(--fintheon-text)]/90">
+          <p className="line-clamp-1 text-[10.5px] text-[var(--fintheon-text)]/90">
             {window.eventName ?? plan.eventName ?? "Desk session"}
           </p>
-          <p className="mt-1 font-mono text-[8.5px] text-[var(--fintheon-accent)]/65">
+          <p className="mt-0.5 font-mono text-[7.5px] text-[var(--fintheon-accent)]/65">
             {formatEasternClockRange(window.startTime, window.endTime)}
           </p>
-          <p className="mt-0.5 font-mono text-[8.5px] text-[var(--fintheon-accent)]/55">
+          <p className="font-mono text-[7.5px] text-[var(--fintheon-accent)]/55">
             Fcst {window.econForecast?.forecast ?? "pending"}
           </p>
         </div>
@@ -229,7 +219,7 @@ function SprintBlock({
         </div>
       </div>
       {isExpanded ? (
-        <p className="mt-3 text-[10px] leading-relaxed text-[var(--fintheon-text)]/62">
+        <p className="mt-2 text-[9px] leading-relaxed text-[var(--fintheon-text)]/62">
           {window.econForecast?.aiPrediction ??
             plan.deskTheme ??
             "Awaiting agent forecast."}
@@ -245,7 +235,7 @@ function TimeRuler({ segment }: { segment: SprintSegment }) {
       {[0, 60, 120, 180, 240].map((offset) => (
         <span
           key={offset}
-          className="text-[13px] uppercase text-[var(--fintheon-muted)]/52"
+          className="text-[12px] uppercase text-[var(--fintheon-muted)]/52"
           style={{ fontFamily: "var(--font-display, var(--font-data))" }}
         >
           {formatClock(segment.startMinute + offset)}
@@ -259,7 +249,7 @@ function TimeGuides({ segment }: { segment: SprintSegment }) {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-y-0 right-0 left-[84px]"
+      className="pointer-events-none absolute inset-y-0 right-0 left-[70px]"
     >
       {[0, 60, 120, 180, 240].map((offset) => {
         const left =
@@ -273,7 +263,7 @@ function TimeGuides({ segment }: { segment: SprintSegment }) {
             style={{
               left: `${left}%`,
               background:
-                "linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--fintheon-accent) 18%, transparent) 35%, color-mix(in srgb, var(--fintheon-accent) 7%, transparent) 100%)",
+                "linear-gradient(to bottom, color-mix(in srgb, var(--fintheon-accent) 18%, transparent) 0%, color-mix(in srgb, var(--fintheon-accent) 18%, transparent) 35%, color-mix(in srgb, var(--fintheon-accent) 8%, transparent) 72%, transparent 100%)",
             }}
           />
         );

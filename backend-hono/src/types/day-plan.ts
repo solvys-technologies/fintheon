@@ -19,6 +19,7 @@ export interface EconForecastScenario {
   description: string;
   isBullishForEquities: boolean;
   probability: number;
+  agenticPrint?: string;
 }
 
 export interface EconForecast {

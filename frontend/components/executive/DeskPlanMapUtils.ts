@@ -105,10 +105,20 @@ export function sprintOverlap(
 
 export function segmentHasWindows(segment: SprintSegment): boolean {
   return segment.plans.some((plan) =>
-    plan.windows?.some((window) =>
-      sprintOverlap(window.startTime, window.endTime, segment),
-    ),
+    plan.windows?.some((window) => windowBelongsToSegment(window, segment)),
   );
+}
+
+function windowBelongsToSegment(
+  window: { startTime?: string | null; endTime?: string | null },
+  segment: SprintSegment,
+) {
+  const start = parseClockMinutes(window.startTime);
+  const end = parseClockMinutes(window.endTime);
+  if (start == null || end == null) return false;
+  const adjustedEnd = end < start ? end + 24 * 60 : end;
+  const center = start + (adjustedEnd - start) / 2;
+  return center >= segment.startMinute && center < segment.endMinute;
 }
 
 export function findNextDeskPlanSegmentIndex(

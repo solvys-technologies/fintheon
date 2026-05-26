@@ -5,7 +5,8 @@
 //   bullish (green up) or bearish (red down) for equities per scenario.
 //   Prices hidden until 30 min before window — fresh data pulled at that time.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useDayPlan } from "../../hooks/useDayPlan";
 import { useDayPlanMultiWeek } from "../../hooks/useDayPlanWeek";
 import { useDriftStatus } from "../../hooks/useDriftStatus";
@@ -40,6 +41,7 @@ interface DayCardProps {
   hideHeader?: boolean;
   fillThesis?: boolean;
   hideStreak?: boolean;
+  windowControlsPortal?: HTMLElement | null;
 }
 
 function fmtTradingWindow(w: DayPlanWindow): string {
@@ -125,6 +127,7 @@ export function DayCard({
   hideHeader,
   fillThesis,
   hideStreak,
+  windowControlsPortal,
 }: DayCardProps) {
   const { data: todayData, isLoading: todayLoading } = useDayPlan();
   const { currentPlan: multiWeekPlan, isLoading: multiWeekLoading } =
@@ -135,6 +138,10 @@ export function DayCard({
   const { state: lockoutState, lockUntil: lockoutLockUntil } = useLockout();
 
   const [currentWindowIndex, setCurrentWindowIndex] = useState(0);
+  const [cycleDirection, setCycleDirection] = useState<"prev" | "next" | null>(
+    null,
+  );
+  const [cycleAnimationKey, setCycleAnimationKey] = useState(0);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(
     () => new Set(),
   );
@@ -160,14 +167,33 @@ export function DayCard({
     .join("|");
   const currentWindow = windows[currentWindowIndex] ?? null;
   const hasWindow = !!currentWindow;
+  const hasExternalWindowControls = Boolean(windowControlsPortal);
 
   useEffect(() => {
     if (windows.length === 0) {
       setCurrentWindowIndex(0);
+      setCycleDirection(null);
       return;
     }
+    setCycleDirection(null);
     setCurrentWindowIndex(defaultWindowIndex(plan?.date, windows));
   }, [plan?.date, windowSignature]);
+
+  const cycleWindow = useCallback(
+    (direction: "prev" | "next") => {
+      setCurrentWindowIndex((value) => {
+        const next =
+          direction === "prev"
+            ? Math.max(0, value - 1)
+            : Math.min(windows.length - 1, value + 1);
+        if (next === value) return value;
+        setCycleDirection(direction);
+        setCycleAnimationKey((key) => key + 1);
+        return next;
+      });
+    },
+    [windows.length],
+  );
 
   useEffect(() => {
     if (!fillThesis || !hasWindow) return;
@@ -249,188 +275,215 @@ export function DayCard({
     windows,
   ]);
 
+  const windowCycler =
+    hasExternalWindowControls && windowControlsPortal && windows.length > 1
+      ? createPortal(
+          <WindowCycler
+            currentIndex={currentWindowIndex}
+            totalWindows={windows.length}
+            onPrev={() => cycleWindow("prev")}
+            onNext={() => cycleWindow("next")}
+          />,
+          windowControlsPortal,
+        )
+      : null;
+
   return (
-    <section
-      id={id}
-      className={[baseSurface, className].filter(Boolean).join(" ").trim()}
-      aria-label="Day card"
-      data-tour-target="day-card"
-    >
-      {!hideHeader && (
-        <header className="flex items-center gap-3 mb-1">
-          <div className="min-w-0">
-            <div className="flex items-baseline gap-2">
-              <span
-                className="text-[11.5px] font-semibold uppercase tracking-[0.2em]"
-                style={{
-                  color: "var(--fintheon-accent)",
-                  fontFamily: "var(--font-heading)",
-                }}
-              >
-                Desk Plan
-              </span>
-              {plan?.sourceBriefId && (
+    <>
+      {windowCycler}
+      <section
+        id={id}
+        className={[baseSurface, className].filter(Boolean).join(" ").trim()}
+        aria-label="Day card"
+        data-tour-target="day-card"
+      >
+        {!hideHeader && (
+          <header className="flex items-center gap-3 mb-1">
+            <div className="min-w-0">
+              <div className="flex items-baseline gap-2">
                 <span
-                  className="text-[9px] uppercase tracking-widest"
-                  style={{ color: "var(--fintheon-muted, #908774)" }}
+                  className="text-[11.5px] font-semibold uppercase tracking-[0.2em]"
+                  style={{
+                    color: "var(--fintheon-accent)",
+                    fontFamily: "var(--font-heading)",
+                  }}
                 >
-                  brief
+                  Desk Plan
+                </span>
+                {plan?.sourceBriefId && (
+                  <span
+                    className="text-[9px] uppercase tracking-widest"
+                    style={{ color: "var(--fintheon-muted, #908774)" }}
+                  >
+                    brief
+                  </span>
+                )}
+              </div>
+              {!hideStreak && dateLabel && (
+                <span
+                  className="mt-0.5 block text-[10.5px]"
+                  style={{
+                    color: "var(--fintheon-muted, #908774)",
+                    fontFamily: "var(--font-data, monospace)",
+                  }}
+                >
+                  {dateLabel}
                 </span>
               )}
             </div>
-            {!hideStreak && dateLabel && (
-              <span
-                className="mt-0.5 block text-[10.5px]"
-                style={{
-                  color: "var(--fintheon-muted, #908774)",
-                  fontFamily: "var(--font-data, monospace)",
-                }}
-              >
-                {dateLabel}
-              </span>
-            )}
-          </div>
-        </header>
-      )}
+          </header>
+        )}
 
-      {!fillThesis && (
-        <p
-          className="text-[13.5px] leading-relaxed mb-3"
-          style={{
-            color: "var(--fintheon-text)",
-            fontFamily: "var(--font-body)",
-            minHeight: "1.4em",
-          }}
+        <div
+          key={`${currentWindow?.id ?? "no-window"}:${cycleAnimationKey}`}
+          className={[
+            fillThesis ? "flex min-h-0 flex-1 flex-col" : "",
+            cycleDirection === "next"
+              ? "desk-plan-card-drill-next"
+              : cycleDirection === "prev"
+                ? "desk-plan-card-drill-prev"
+                : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
         >
-          {isLoading
-            ? "Loading\u2026"
-            : plan?.deskTheme || "No plan published for today."}
-        </p>
-      )}
+          {!fillThesis && (
+            <p
+              className="text-[13.5px] leading-relaxed mb-3"
+              style={{
+                color: "var(--fintheon-text)",
+                fontFamily: "var(--font-body)",
+                minHeight: "1.4em",
+              }}
+            >
+              {isLoading
+                ? "Loading\u2026"
+                : plan?.deskTheme || "No plan published for today."}
+            </p>
+          )}
 
-      <FadingRuler />
+          <FadingRuler />
 
-      <dl
-        className={`font-mono text-[13.5px] py-3 space-y-1.5 ${
-          fillThesis ? "flex min-h-0 flex-1 flex-col" : ""
-        }`}
-      >
-        <Row
-          label="Event"
-          value={plan?.eventName ?? "\u2014"}
-          loading={isLoading}
-        />
-        <WindowControlRow
-          label="Trading Window"
-          value={hasWindow ? fmtTradingWindow(currentWindow!) : "\u2014"}
-          loading={isLoading}
-          currentIndex={currentWindowIndex}
-          totalWindows={windows.length}
-          onPrev={() =>
-            setCurrentWindowIndex((value) => Math.max(0, value - 1))
-          }
-          onNext={() =>
-            setCurrentWindowIndex((value) =>
-              Math.min(windows.length - 1, value + 1),
-            )
-          }
-        />
-        <GatedForecastRow
-          label="Forecast"
-          planDate={plan?.date}
-          window={currentWindow}
-          loading={isLoading}
-          renderValue={(f) => f.forecast}
-        />
-        <GatedForecastRow
-          label="Miss"
-          planDate={plan?.date}
-          window={currentWindow}
-          loading={isLoading}
-          renderValue={(f) => `${f.miss.probability}%`}
-          scenario={currentWindow?.econForecast?.miss}
-          expanded={expandedRows.has("miss")}
-          onToggle={() => toggleExpandedRow("miss")}
-          detail={(f) => f.miss.description}
-        />
-        <GatedForecastRow
-          label="Beat"
-          planDate={plan?.date}
-          window={currentWindow}
-          loading={isLoading}
-          renderValue={(f) => `${f.beat.probability}%`}
-          scenario={currentWindow?.econForecast?.beat}
-          expanded={expandedRows.has("beat")}
-          onToggle={() => toggleExpandedRow("beat")}
-          detail={(f) => f.beat.description}
-        />
-        {currentWindow?.econForecast?.otherNotableEvents &&
-          currentWindow.econForecast.otherNotableEvents.length > 0 && (
+          <dl
+            className={`font-mono text-[13.5px] py-3 space-y-1.5 ${
+              fillThesis ? "flex min-h-0 flex-1 flex-col" : ""
+            }`}
+          >
             <Row
-              label="Notable"
-              value={currentWindow.econForecast.otherNotableEvents.join(", ")}
-              loading={false}
+              label="Event"
+              value={plan?.eventName ?? "\u2014"}
+              loading={isLoading}
+            />
+            <WindowControlRow
+              label="Trading Window"
+              value={hasWindow ? fmtTradingWindow(currentWindow!) : "\u2014"}
+              loading={isLoading}
+              currentIndex={currentWindowIndex}
+              totalWindows={windows.length}
+              onPrev={() => cycleWindow("prev")}
+              onNext={() => cycleWindow("next")}
+              showControls={!hasExternalWindowControls}
+            />
+            <GatedForecastRow
+              label="Forecast"
+              planDate={plan?.date}
+              window={currentWindow}
+              loading={isLoading}
+              renderValue={(f) => f.forecast}
+            />
+            <GatedForecastRow
+              label="Miss"
+              planDate={plan?.date}
+              window={currentWindow}
+              loading={isLoading}
+              renderValue={(f) => scenarioPrint(f, "miss")}
+              scenario={currentWindow?.econForecast?.miss}
+              expanded={expandedRows.has("miss")}
+              onToggle={() => toggleExpandedRow("miss")}
+              detail={(f) => f.miss.description}
+            />
+            <GatedForecastRow
+              label="Beat"
+              planDate={plan?.date}
+              window={currentWindow}
+              loading={isLoading}
+              renderValue={(f) => scenarioPrint(f, "beat")}
+              scenario={currentWindow?.econForecast?.beat}
+              expanded={expandedRows.has("beat")}
+              onToggle={() => toggleExpandedRow("beat")}
+              detail={(f) => f.beat.description}
+            />
+            {currentWindow?.econForecast?.otherNotableEvents &&
+              currentWindow.econForecast.otherNotableEvents.length > 0 && (
+                <Row
+                  label="Notable"
+                  value={currentWindow.econForecast.otherNotableEvents.join(
+                    ", ",
+                  )}
+                  loading={false}
+                />
+              )}
+            <GatedForecastRow
+              label="Thesis"
+              planDate={plan?.date}
+              window={currentWindow}
+              loading={isLoading}
+              renderValue={() => "View thesis"}
+              expanded={expandedRows.has("thesis")}
+              onToggle={() => toggleExpandedRow("thesis")}
+              detail={(f) => buildThesisDetail(f)}
+              fillDetail={fillThesis}
+            />
+          </dl>
+
+          <FadingRuler />
+
+          {drift && (
+            <footer className="flex items-center justify-end pt-3">
+              <div className="flex items-center gap-2">
+                <span
+                  className="inline-flex items-center gap-1.5"
+                  title={drift.message ?? undefined}
+                  aria-label={`Drift ${DRIFT_LABELS[driftVisual]}${drift.message ? ` \u2014 ${drift.message}` : ""}`}
+                >
+                  <span
+                    className="text-[10.5px] uppercase tracking-[0.16em]"
+                    style={{
+                      color: "var(--fintheon-muted, #908774)",
+                      fontFamily: "var(--font-data, monospace)",
+                    }}
+                  >
+                    Drift
+                  </span>
+                  <span
+                    aria-hidden
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background: DRIFT_COLORS[driftVisual],
+                      display: "inline-block",
+                    }}
+                  />
+                  <span
+                    className="text-[11.5px]"
+                    style={{ color: "var(--fintheon-text)" }}
+                  >
+                    {DRIFT_LABELS[driftVisual]}
+                  </span>
+                </span>
+              </div>
+            </footer>
+          )}
+          {plan?.date && (
+            <AgenticFeedbackControls
+              surface="desk-plan"
+              itemId={`${plan.date}:${currentWindow?.id ?? currentWindowIndex}`}
             />
           )}
-        <GatedForecastRow
-          label="Thesis"
-          planDate={plan?.date}
-          window={currentWindow}
-          loading={isLoading}
-          renderValue={() => "View thesis"}
-          expanded={expandedRows.has("thesis")}
-          onToggle={() => toggleExpandedRow("thesis")}
-          detail={(f) => buildThesisDetail(f)}
-          fillDetail={fillThesis}
-        />
-      </dl>
-
-      <FadingRuler />
-
-      {drift && (
-        <footer className="flex items-center justify-end pt-3">
-          <div className="flex items-center gap-2">
-            <span
-              className="inline-flex items-center gap-1.5"
-              title={drift.message ?? undefined}
-              aria-label={`Drift ${DRIFT_LABELS[driftVisual]}${drift.message ? ` \u2014 ${drift.message}` : ""}`}
-            >
-              <span
-                className="text-[10.5px] uppercase tracking-[0.16em]"
-                style={{
-                  color: "var(--fintheon-muted, #908774)",
-                  fontFamily: "var(--font-data, monospace)",
-                }}
-              >
-                Drift
-              </span>
-              <span
-                aria-hidden
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: DRIFT_COLORS[driftVisual],
-                  display: "inline-block",
-                }}
-              />
-              <span
-                className="text-[11.5px]"
-                style={{ color: "var(--fintheon-text)" }}
-              >
-                {DRIFT_LABELS[driftVisual]}
-              </span>
-            </span>
-          </div>
-        </footer>
-      )}
-      {plan?.date && (
-        <AgenticFeedbackControls
-          surface="desk-plan"
-          itemId={`${plan.date}:${currentWindow?.id ?? currentWindowIndex}`}
-        />
-      )}
-    </section>
+        </div>
+      </section>
+    </>
   );
 }
 
@@ -442,6 +495,7 @@ function WindowControlRow({
   totalWindows,
   onPrev,
   onNext,
+  showControls = true,
 }: {
   label: string;
   value: string;
@@ -450,6 +504,7 @@ function WindowControlRow({
   totalWindows: number;
   onPrev: () => void;
   onNext: () => void;
+  showControls?: boolean;
 }) {
   return (
     <div className="flex items-baseline gap-3">
@@ -465,33 +520,13 @@ function WindowControlRow({
       </dt>
       <DottedLeader />
       <dd className="flex items-center gap-1.5 text-right shrink-0">
-        {totalWindows > 1 && (
-          <span className="inline-flex items-center gap-1">
-            <button
-              type="button"
-              onClick={onPrev}
-              disabled={currentIndex <= 0}
-              className="p-0.5 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] disabled:text-gray-700 disabled:cursor-default transition-colors"
-              aria-label="Previous desk plan window"
-            >
-              <ChevronLeft className="w-3 h-3" />
-            </button>
-            <span
-              className="text-[11.5px] tabular-nums"
-              style={{ color: "var(--fintheon-muted, #908774)" }}
-            >
-              {currentIndex + 1}/{totalWindows}
-            </span>
-            <button
-              type="button"
-              onClick={onNext}
-              disabled={currentIndex >= totalWindows - 1}
-              className="p-0.5 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] disabled:text-gray-700 disabled:cursor-default transition-colors"
-              aria-label="Next desk plan window"
-            >
-              <ChevronRight className="w-3 h-3" />
-            </button>
-          </span>
+        {showControls && totalWindows > 1 && (
+          <WindowCycler
+            currentIndex={currentIndex}
+            totalWindows={totalWindows}
+            onPrev={onPrev}
+            onNext={onNext}
+          />
         )}
         <span
           className="tabular-nums"
@@ -507,6 +542,47 @@ function WindowControlRow({
         </span>
       </dd>
     </div>
+  );
+}
+
+function WindowCycler({
+  currentIndex,
+  totalWindows,
+  onPrev,
+  onNext,
+}: {
+  currentIndex: number;
+  totalWindows: number;
+  onPrev: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <button
+        type="button"
+        onClick={onPrev}
+        disabled={currentIndex <= 0}
+        className="rounded p-0.5 text-[var(--fintheon-accent)]/60 transition-colors hover:text-[var(--fintheon-accent)] disabled:cursor-default disabled:text-gray-700"
+        aria-label="Previous desk plan window"
+      >
+        <ChevronLeft className="h-3 w-3" />
+      </button>
+      <span
+        className="font-mono text-[11.5px] tabular-nums"
+        style={{ color: "var(--fintheon-muted, #908774)" }}
+      >
+        {currentIndex + 1}/{totalWindows}
+      </span>
+      <button
+        type="button"
+        onClick={onNext}
+        disabled={currentIndex >= totalWindows - 1}
+        className="rounded p-0.5 text-[var(--fintheon-accent)]/60 transition-colors hover:text-[var(--fintheon-accent)] disabled:cursor-default disabled:text-gray-700"
+        aria-label="Next desk plan window"
+      >
+        <ChevronRight className="h-3 w-3" />
+      </button>
+    </span>
   );
 }
 
@@ -730,6 +806,26 @@ function DottedLeader() {
       }}
     />
   );
+}
+
+function scenarioPrint(
+  forecast: NonNullable<DayPlanWindow["econForecast"]>,
+  side: "miss" | "beat",
+) {
+  const explicit = forecast[side]?.agenticPrint?.trim();
+  if (explicit) return explicit;
+
+  const clean = forecast.forecast?.trim();
+  if (!clean || /^(n\/?a|null|undefined)$/i.test(clean)) return "\u2014";
+
+  const lower = clean.toLowerCase();
+  if (lower === "hawkish" || lower === "dovish" || lower === "none") {
+    if (side === "miss") return lower === "hawkish" ? "dovish" : lower;
+    return lower === "dovish" ? "hawkish" : lower;
+  }
+
+  if (/^[<>≤≥]/.test(clean)) return clean;
+  return `${side === "miss" ? "<" : ">"}${clean}`;
 }
 
 function buildThesisDetail(

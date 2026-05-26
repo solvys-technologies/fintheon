@@ -39,8 +39,8 @@ const SPEECH_SYSTEM_PROMPT = `You analyze scheduled central bank and government 
 Output strictly a JSON object with these fields:
 {
   "forecast": "hawkish" | "dovish" | "none",
-  "miss": { "description": "what would constitute a dovish surprise", "isBullishForEquities": true, "probability": number },
-  "beat": { "description": "what would constitute a hawkish surprise", "isBullishForEquities": false, "probability": number },
+  "miss": { "description": "what would constitute a dovish surprise", "isBullishForEquities": true, "probability": number, "agenticPrint": "dovish" },
+  "beat": { "description": "what would constitute a hawkish surprise", "isBullishForEquities": false, "probability": number, "agenticPrint": "hawkish" },
   "otherNotableEvents": [],
   "aiPrediction": "1-2 sentence actionable prediction"
 }
@@ -48,6 +48,7 @@ Output strictly a JSON object with these fields:
 Rules:
 - "dovish" = rates lower/sooner = bullish equities; "hawkish" = rates higher/later = bearish equities
 - Probabilities must sum to 100. If the speaker is consistently in one camp, weight accordingly.
+- miss.agenticPrint and beat.agenticPrint are the agentic desk's scenario tone only: "dovish", "hawkish", or "none". No prose.
 - aiPrediction: declarative, convicted, no hedging. Reference what the speaker has said recently.
 - No emojis, no markdown. Plain JSON only.`;
 
@@ -57,14 +58,15 @@ const ECON_SYSTEM_PROMPT = `You analyze scheduled economic data releases for tra
 Output strictly a JSON object with these fields:
 {
   "forecast": "the consensus forecast number as a string, e.g. '0.3%' or '215K'",
-  "miss": { "description": "what print would classify as a miss and why", "isBullishForEquities": bool, "probability": number },
-  "beat": { "description": "what print would classify as a beat and why", "isBullishForEquities": bool, "probability": number },
+  "miss": { "description": "what print would classify as a miss and why", "isBullishForEquities": bool, "probability": number, "agenticPrint": "the desk's miss-side print forecast, e.g. '<0.3%' or '198K'" },
+  "beat": { "description": "what print would classify as a beat and why", "isBullishForEquities": bool, "probability": number, "agenticPrint": "the desk's beat-side print forecast, e.g. '>0.3%' or '232K'" },
   "otherNotableEvents": ["any other events at the same time"],
   "aiPrediction": "1-3 sentence actionable prediction citing recent trends and what traders are positioned for"
 }
 
 Rules:
 - forecast: use the provided consensus or previous value if no consensus exists
+- miss.agenticPrint and beat.agenticPrint are the Agentic Desk's deliberated scenario print for that path, not probability. Use only the print/value with unit or comparator. No prose.
 - If consensus is missing, infer a directional forecast from recent prints, RiskFlow headlines, and regime data. Do not answer with a generic passage.
 - miss/beat isBullishForEquities depends on what's good/bad for risk assets:
   * Lower CPI/inflation = bullish (rates down). Higher = bearish.
@@ -292,11 +294,23 @@ function parseForecastResponse(
       description: String(parsed.miss?.description ?? "Print below consensus"),
       isBullishForEquities: Boolean(parsed.miss?.isBullishForEquities),
       probability: clampProb(Number(parsed.miss?.probability) || 40),
+      agenticPrint: scenarioAgenticPrint(
+        parsed.miss?.agenticPrint,
+        forecast,
+        "miss",
+        input.isSpeech,
+      ),
     };
     const beat: EconForecastScenario = {
       description: String(parsed.beat?.description ?? "Print above consensus"),
       isBullishForEquities: Boolean(parsed.beat?.isBullishForEquities),
       probability: clampProb(Number(parsed.beat?.probability) || 40),
+      agenticPrint: scenarioAgenticPrint(
+        parsed.beat?.agenticPrint,
+        forecast,
+        "beat",
+        input.isSpeech,
+      ),
     };
 
     // Normalize probabilities to sum to 100
@@ -335,19 +349,48 @@ function clampProb(n: number): number {
   return Math.max(0, Math.min(100, Math.round(n)));
 }
 
+function scenarioAgenticPrint(
+  raw: unknown,
+  forecast: string,
+  side: "miss" | "beat",
+  isSpeech: boolean,
+): string {
+  const explicit = typeof raw === "string" ? raw.trim() : "";
+  if (explicit && !/^(n\/?a|null|undefined)$/i.test(explicit)) {
+    return explicit.slice(0, 48);
+  }
+  return fallbackScenarioPrint(forecast, side, isSpeech);
+}
+
+function fallbackScenarioPrint(
+  forecast: string,
+  side: "miss" | "beat",
+  isSpeech: boolean,
+): string {
+  if (isSpeech) return side === "miss" ? "dovish" : "hawkish";
+  const clean = forecast.trim();
+  if (!clean || /^(n\/?a|null|undefined)$/i.test(clean)) return "\u2014";
+  if (/^[<>≤≥]/.test(clean)) return clean;
+  return `${side === "miss" ? "<" : ">"}${clean}`;
+}
+
 // ── Fallback ────────────────────────────────────────────────────────────────
 
 function buildFallbackForecast(input: EconForecastInput): EconForecast {
   const isSpeech = input.isSpeech;
+  const fallbackForecast = isSpeech
+    ? "none"
+    : (input.forecast ?? input.previous ?? "N/A");
 
   return {
-    forecast: isSpeech ? "none" : (input.forecast ?? input.previous ?? "N/A"),
+    forecast: fallbackForecast,
     miss: {
       description: isSpeech
         ? "Dovish surprise — more accommodation signaled"
         : "Print below consensus",
       isBullishForEquities: isSpeech ? true : false,
       probability: 50,
+      agenticPrint: fallbackScenarioPrint(fallbackForecast, "miss", isSpeech),
     },
     beat: {
       description: isSpeech
@@ -355,6 +398,7 @@ function buildFallbackForecast(input: EconForecastInput): EconForecast {
         : "Print above consensus",
       isBullishForEquities: isSpeech ? false : true,
       probability: 50,
+      agenticPrint: fallbackScenarioPrint(fallbackForecast, "beat", isSpeech),
     },
     otherNotableEvents: [],
     aiPrediction: isSpeech

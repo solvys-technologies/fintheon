@@ -9,6 +9,26 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-26T13:22:00-04:00",
+    agent: "codex",
+    summary:
+      "Desk follow-up patch: moved the DayCard window cycler into the Desk Plan header beside the seven-day advance control, added deck-style drill transitions for event cycling, switched Desk Plan miss/beat values from probability percentages to agentic print forecasts with backend generation support, and tightened the Sprint map zoom with row dividers removed plus bottom-fading time needles.",
+    files: [
+      "backend-hono/src/services/econ-forecast/econ-forecast-redeliberation.ts",
+      "backend-hono/src/services/econ-forecast/econ-forecast-service.ts",
+      "backend-hono/src/types/day-plan.ts",
+      "frontend/components/desk/DeskPlanWidget.tsx",
+      "frontend/components/desk/QueuedDeskEventFeed.tsx",
+      "frontend/components/desk/desk-queued-events.ts",
+      "frontend/components/executive/DeskPlanMapUtils.ts",
+      "frontend/components/executive/DeskPlanSprintTimeline.tsx",
+      "frontend/components/narrative/DayCard.tsx",
+      "frontend/index.css",
+      "frontend/types/day-plan.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-26T13:05:00-04:00",
     agent: "codex",
     summary:

@@ -3611,6 +3611,44 @@ html[data-zen-mode="true"] button[aria-label] {
   }
 }
 
+.desk-plan-card-drill-next,
+.desk-plan-card-drill-prev {
+  animation-duration: 260ms;
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, opacity;
+}
+
+.desk-plan-card-drill-next {
+  animation-name: desk-plan-card-from-right;
+}
+
+.desk-plan-card-drill-prev {
+  animation-name: desk-plan-card-from-left;
+}
+
+@keyframes desk-plan-card-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(26px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes desk-plan-card-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-26px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
 .proxvoice-speaking-ring {
   outline: 1px solid color-mix(in srgb, var(--fintheon-accent) 72%, transparent);
   outline-offset: 3px;
@@ -3644,6 +3682,8 @@ html[data-zen-mode="true"] button[aria-label] {
 
 @media (prefers-reduced-motion: reduce) {
   .fintheon-fade-in,
+  .desk-plan-card-drill-next,
+  .desk-plan-card-drill-prev,
   .proxvoice-speaking-ring {
     animation: none;
   }

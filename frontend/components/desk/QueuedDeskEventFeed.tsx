@@ -163,9 +163,9 @@ function QueuedDeskEventRow({
             {event.prediction}
           </p>
           <div className="mt-2 flex items-center gap-2 font-mono text-[8.5px] text-[var(--fintheon-muted)]/48">
-            <span>Miss {formatProbability(event.missProbability)}</span>
+            <span>Miss {event.missPrint ?? "\u2014"}</span>
             <span className="h-1 w-px bg-[var(--fintheon-accent)]/18" />
-            <span>Beat {formatProbability(event.beatProbability)}</span>
+            <span>Beat {event.beatPrint ?? "\u2014"}</span>
           </div>
         </div>
         <span className="shrink-0 self-start rounded-sm border border-[var(--fintheon-accent)]/14 px-1.5 py-0.5 font-mono text-[8.5px] text-[var(--fintheon-accent)]/74">
@@ -174,8 +174,4 @@ function QueuedDeskEventRow({
       </div>
     </article>
   );
-}
-
-function formatProbability(value: number | null) {
-  return value == null ? "pending" : `${value}%`;
 }
