@@ -1,0 +1,17 @@
+{
+  "name": "Fintheon Desktop",
+  "short_name": "Fintheon",
+  "start_url": "/?surface=desktop",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#050402",
+  "background_color": "#050402",
+  "icons": [
+    {
+      "src": "/fintheon-logo.png",
+      "sizes": "1080x1080",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

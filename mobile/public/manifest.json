@@ -1,7 +1,8 @@
 {
-  "name": "Fintheon",
+  "name": "Fintheon Mobile",
   "short_name": "Fintheon",
-  "start_url": "/",
+  "start_url": "/?surface=mobile",
+  "scope": "/",
   "display": "standalone",
   "theme_color": "#000000",
   "background_color": "#000000",

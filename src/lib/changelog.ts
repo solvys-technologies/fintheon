@@ -9,6 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-27T00:50:31-04:00",
+    agent: "codex",
+    summary:
+      "Added automatic surface routing between the desktop Web-PWA and compact Mobile PWA: shared user-agent/touch detection, client-side redirect fallback, Vercel header redirects, and PWA start URLs with explicit surface overrides.",
+    files: [
+      "shared/surface-routing.ts",
+      "frontend/main.tsx",
+      "frontend/index.html",
+      "frontend/public/manifest.json",
+      "frontend/vercel.json",
+      "mobile/main.tsx",
+      "mobile/public/manifest.json",
+      "mobile/vercel.json",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-27T00:30:00-04:00",
     agent: "codex",
     summary:

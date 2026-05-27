@@ -4,6 +4,21 @@
   "devCommand": "bun run dev",
   "installCommand": "bun install",
   "framework": "vite",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(Android|webOS|iPhone|iPad|iPod|BlackBerry|BB10|IEMobile|Opera Mini|Mobile|Silk|Kindle|Tablet).*"
+        }
+      ],
+      "missing": [{ "type": "query", "key": "surface" }],
+      "destination": "https://fintheon.pricedinresearch.io/:path*",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/chat",

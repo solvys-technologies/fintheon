@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import { routeSurfaceForClient } from "../shared/surface-routing";
 import "./index.css";
 
 // [claude-code 2026-04-19] S24 unify: belt-and-suspenders against shipping a bundle with
@@ -43,13 +44,21 @@ if (import.meta.env.PROD && typeof window !== "undefined") {
   }
 }
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-);
+const didRouteSurface = routeSurfaceForClient({
+  currentSurface: "mobile",
+  desktopUrl: import.meta.env.VITE_FINTHEON_DESKTOP_URL,
+  mobileUrl: import.meta.env.VITE_FINTHEON_MOBILE_URL,
+});
+
+if (!didRouteSurface) {
+  ReactDOM.createRoot(document.getElementById("root")!).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  );
+}
 
 // Register service worker in production for push notifications + offline
-if ("serviceWorker" in navigator && import.meta.env.PROD) {
+if (!didRouteSurface && "serviceWorker" in navigator && import.meta.env.PROD) {
   navigator.serviceWorker.register("/sw.js");
 }

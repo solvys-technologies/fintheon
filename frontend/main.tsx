@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { installEasternTimeFormatOverride } from "./lib/eastern-time-format";
+import { routeSurfaceForClient } from "../shared/surface-routing";
 import "./index.css";
 
 installEasternTimeFormatOverride();
@@ -16,8 +17,16 @@ console.warn = (...args: unknown[]) => {
   _origWarn.apply(console, args);
 };
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-);
+if (
+  !routeSurfaceForClient({
+    currentSurface: "desktop",
+    desktopUrl: import.meta.env.VITE_FINTHEON_DESKTOP_URL,
+    mobileUrl: import.meta.env.VITE_FINTHEON_MOBILE_URL,
+  })
+) {
+  ReactDOM.createRoot(document.getElementById("root")!).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  );
+}
