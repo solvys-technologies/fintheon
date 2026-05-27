@@ -99,11 +99,7 @@
         content: "";
         flex: 1;
         height: 1px;
-        background: linear-gradient(
-          90deg,
-          rgba(199, 159, 74, 0.3),
-          transparent
-        );
+        background: rgba(199, 159, 74, 0.18);
       }
 
       .bank-label:not(:first-of-type) {
@@ -125,7 +121,6 @@
         background: rgba(14, 12, 8, 0.94);
         color: var(--text);
         cursor: pointer;
-        box-shadow: 0 12px 34px rgba(0, 0, 0, 0.36);
         transition:
           border-color 160ms var(--ease-out),
           color 160ms var(--ease-out),
@@ -168,7 +163,7 @@
         inset: 0;
         pointer-events: none;
         border-radius: inherit;
-        box-shadow: inset 0 1px rgba(255, 255, 255, 0.035);
+        border-top: 1px solid rgba(240, 234, 214, 0.03);
       }
 
       .toast-card.is-active {
@@ -197,7 +192,7 @@
         inset: 0;
         pointer-events: none;
         border-radius: inherit;
-        box-shadow: inset 0 1px rgba(255, 255, 255, 0.035);
+        border-top: 1px solid rgba(240, 234, 214, 0.03);
       }
 
       .overlay-card.is-active {
@@ -212,6 +207,14 @@
 
       .dropdown-card {
         min-height: 176px;
+      }
+
+      .chat-card {
+        min-height: 238px;
+      }
+
+      .stream-card {
+        min-height: 214px;
       }
 
       .overlay-row {
@@ -434,6 +437,221 @@
         border: 1px solid rgba(240, 234, 214, 0.24);
       }
 
+      .chat-shell,
+      .slot-shell,
+      .ticker-surface {
+        display: grid;
+        gap: 9px;
+        padding: 10px;
+        border: 1px solid rgba(199, 159, 74, 0.12);
+        border-radius: 6px;
+        background: rgba(10, 9, 5, 0.72);
+      }
+
+      .chat-thread {
+        display: grid;
+        gap: 8px;
+      }
+
+      .chat-line {
+        display: flex;
+        gap: 7px;
+        align-items: flex-start;
+      }
+
+      .avatar-dot {
+        flex: 0 0 auto;
+        width: 18px;
+        height: 18px;
+        display: grid;
+        place-items: center;
+        border: 1px solid rgba(199, 159, 74, 0.2);
+        border-radius: 50%;
+        color: var(--gold);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 8px;
+      }
+
+      .chat-bubble {
+        min-width: 0;
+        max-width: 92%;
+        padding: 7px 8px;
+        border: 1px solid rgba(199, 159, 74, 0.1);
+        border-radius: 6px;
+        color: rgba(240, 234, 214, 0.76);
+        background: rgba(5, 4, 2, 0.48);
+        font-size: 10.5px;
+        line-height: 1.4;
+      }
+
+      .chat-bubble.user {
+        margin-left: auto;
+        color: var(--text);
+        border-color: rgba(199, 159, 74, 0.18);
+        background: rgba(199, 159, 74, 0.08);
+      }
+
+      .chat-composer {
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 0 9px;
+        border: 1px solid rgba(199, 159, 74, 0.14);
+        border-radius: 6px;
+        color: var(--muted);
+        background: rgba(0, 0, 0, 0.16);
+        font-size: 10px;
+      }
+
+      .slot-label {
+        color: var(--gold);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 9px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .slot-title {
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 650;
+        line-height: 1.28;
+      }
+
+      .slot-text {
+        color: rgba(240, 234, 214, 0.68);
+        font-size: 10.5px;
+        line-height: 1.42;
+      }
+
+      .slot-rule {
+        height: 1px;
+        background: rgba(199, 159, 74, 0.1);
+      }
+
+      .data-table {
+        display: grid;
+        gap: 0;
+        border: 1px solid rgba(199, 159, 74, 0.1);
+        border-radius: 5px;
+        overflow: hidden;
+      }
+
+      .data-row {
+        display: grid;
+        grid-template-columns: 1fr 64px 54px;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        border-top: 1px solid rgba(199, 159, 74, 0.08);
+        color: rgba(240, 234, 214, 0.72);
+        font-size: 10.5px;
+      }
+
+      .data-row:first-child {
+        border-top: 0;
+      }
+
+      .data-row strong,
+      .data-row b {
+        color: var(--text);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-weight: 400;
+        text-align: right;
+      }
+
+      .prob-bar {
+        height: 2px;
+        margin-top: 4px;
+        border-radius: 1px;
+        background: rgba(199, 159, 74, 0.12);
+        overflow: hidden;
+      }
+
+      .prob-bar span {
+        display: block;
+        height: 100%;
+        background: var(--gold);
+      }
+
+      .ticker-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+
+      .ticker-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        height: 24px;
+        padding: 0 7px;
+        border: 1px solid rgba(199, 159, 74, 0.18);
+        border-radius: 5px;
+        color: rgba(240, 234, 214, 0.75);
+        background: rgba(0, 0, 0, 0.18);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 9.5px;
+      }
+
+      .ticker-pill.active {
+        color: var(--gold);
+        border-color: rgba(199, 159, 74, 0.32);
+        background: rgba(199, 159, 74, 0.08);
+      }
+
+      .ticker-surface {
+        width: 100%;
+      }
+
+      .ticker-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .ticker-price {
+        margin-top: 2px;
+        color: var(--text);
+        font-size: 22px;
+        font-weight: 650;
+        line-height: 1;
+      }
+
+      .ticker-change {
+        margin-top: 3px;
+        color: var(--green);
+        font-size: 10px;
+      }
+
+      .ticker-sparkline {
+        width: 100%;
+        height: 52px;
+        display: block;
+      }
+
+      .ticker-sparkline polyline {
+        fill: none;
+        stroke: var(--green);
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 2;
+      }
+
+      .mini-chart-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1px;
+        min-height: 84px;
+        border: 1px solid rgba(199, 159, 74, 0.1);
+        border-radius: 5px;
+        padding: 8px;
+        background: rgba(0, 0, 0, 0.16);
+      }
+
       .toast-row {
         display: flex;
         align-items: flex-start;
@@ -444,6 +662,7 @@
 
       .toast-main {
         display: flex;
+        flex: 1;
         align-items: flex-start;
         gap: 8px;
         min-width: 0;
@@ -494,6 +713,7 @@
       }
 
       .copy {
+        flex: 1;
         min-width: 0;
         display: grid;
         gap: 3px;
@@ -533,6 +753,7 @@
       }
 
       .toast-card:hover .dismiss,
+      .overlay-card:hover .dismiss,
       .live-toast .dismiss {
         color: rgba(240, 234, 214, 0.72);
       }
@@ -540,7 +761,9 @@
       .toast-actions {
         display: flex;
         flex-wrap: wrap;
+        justify-content: flex-end;
         gap: 6px;
+        width: 100%;
         margin-top: 5px;
       }
 
@@ -591,6 +814,49 @@
         font-weight: 400;
       }
 
+      .sparkline-widget {
+        display: grid;
+        gap: 4px;
+        margin-top: 7px;
+        padding: 6px 7px;
+        border: 1px solid rgba(199, 159, 74, 0.14);
+        border-radius: 5px;
+        background: rgba(0, 0, 0, 0.2);
+      }
+
+      .sparkline-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: var(--muted-2);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 8.5px;
+        text-transform: uppercase;
+      }
+
+      .sparkline-top b {
+        color: var(--gold);
+        font-weight: 400;
+      }
+
+      .sparkline-chart {
+        width: 100%;
+        height: 30px;
+        display: block;
+      }
+
+      .sparkline-chart .sparkline-area {
+        fill: rgba(196, 124, 72, 0.13);
+      }
+
+      .sparkline-chart polyline {
+        fill: none;
+        stroke: var(--orange);
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 2;
+      }
+
       .native-shell {
         border-color: rgba(240, 234, 214, 0.16);
         background: rgba(20, 20, 19, 0.94);
@@ -609,6 +875,13 @@
         top: 70px;
         right: 24px;
         align-items: flex-end;
+      }
+
+      .preview-stack.top-middle {
+        top: 70px;
+        left: 50%;
+        align-items: center;
+        transform: translateX(-50%);
       }
 
       .preview-stack.bottom-left {
@@ -637,8 +910,6 @@
 
       .preview-stack.center-modal.has-preview {
         background: rgba(5, 4, 2, 0.55);
-        backdrop-filter: blur(5px);
-        -webkit-backdrop-filter: blur(5px);
       }
 
       .preview-stack.anchor-menu {
@@ -663,16 +934,20 @@
       .live-toast {
         opacity: 0;
         pointer-events: none;
-        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.48);
         transition:
           opacity 260ms var(--ease-out),
           transform 320ms var(--ease-out);
       }
 
       .top-right .live-toast,
+      .top-middle .live-toast,
       .bottom-right .live-toast,
       .native-os .live-toast {
         transform: translateX(16px) scale(0.96);
+      }
+
+      .top-middle .live-toast {
+        transform: translateY(-12px) scale(0.96);
       }
 
       .bottom-left .live-toast {
@@ -724,9 +999,15 @@
         }
 
         .preview-stack.top-right,
+        .preview-stack.top-middle,
         .preview-stack.bottom-right,
         .preview-stack.native-os {
           right: 12px;
+        }
+
+        .preview-stack.top-middle {
+          left: 50%;
+          right: auto;
         }
 
         .preview-stack.bottom-left {
@@ -751,7 +1032,8 @@
       <span>Preview loop</span>
     </button>
 
-    <main class="toast-canvas" aria-label="Fintheon toast notification bank">
+    <main class="toast-canvas" aria-label="Fintheon overlay bank">
+      <h2 class="bank-label">Toast notifications</h2>
       <section class="toast-bank">
         <article class="toast-card" data-position="bottom-left">
           <div class="toast-row">
@@ -842,10 +1124,10 @@
                   >Location: bottom left, updater stack</span
                 >
                 <div class="toast-actions">
-                  <button class="toast-action" type="button">Update now</button>
                   <button class="toast-action secondary" type="button">
                     Later
                   </button>
+                  <button class="toast-action" type="button">Update now</button>
                 </div>
               </div>
             </div>
@@ -855,7 +1137,7 @@
           </div>
         </article>
 
-        <article class="toast-card" data-position="bottom-left">
+        <article class="toast-card" data-position="top-right">
           <div class="toast-row">
             <div class="toast-main">
               <span class="badge error">Fail</span>
@@ -911,7 +1193,7 @@
           </div>
         </article>
 
-        <article class="toast-card" data-position="bottom-left">
+        <article class="toast-card" data-position="top-right">
           <div class="toast-row">
             <div class="toast-main">
               <span class="badge warn">Plan</span>
@@ -922,7 +1204,7 @@
                   CAO chat.</span
                 >
                 <span class="location"
-                  >Location: bottom left, reminder bridge</span
+                  >Location: top right, reminder bridge</span
                 >
                 <div class="toast-actions">
                   <button class="toast-action" type="button">
@@ -967,15 +1249,23 @@
                 <span class="location"
                   >Location: top right, market alert stack</span
                 >
-                <div class="fuse" aria-label="VIX fuse 8 of 10">
-                  <div class="fuse-track">
-                    <span class="on"></span><span class="on"></span
-                    ><span class="on"></span><span class="on"></span
-                    ><span class="on"></span><span class="on"></span
-                    ><span class="on"></span><span class="on"></span
-                    ><span></span><span></span>
+                <div class="sparkline-widget" aria-label="VIX 5-day sparkline">
+                  <div class="sparkline-top">
+                    <span>5D VIX</span><b>21.8</b>
                   </div>
-                  <b>8.0</b>
+                  <svg
+                    class="sparkline-chart"
+                    viewBox="0 0 180 34"
+                    aria-hidden="true"
+                  >
+                    <path
+                      class="sparkline-area"
+                      d="M2 31 L2 23 L22 24 L42 20 L62 22 L82 17 L102 19 L122 13 L142 16 L162 9 L178 12 L178 31 Z"
+                    ></path>
+                    <polyline
+                      points="2,23 22,24 42,20 62,22 82,17 102,19 122,13 142,16 162,9 178,12"
+                    ></polyline>
+                  </svg>
                 </div>
               </div>
             </div>
@@ -985,7 +1275,7 @@
           </div>
         </article>
 
-        <article class="toast-card" data-position="top-right">
+        <article class="toast-card" data-position="bottom-right">
           <div class="toast-row">
             <div class="toast-main">
               <span class="badge success">Trade</span>
@@ -993,7 +1283,7 @@
                 <span class="title">New Proposal Available, NVDA</span>
                 <span class="desc">View in Strategium.</span>
                 <span class="location"
-                  >Location: top right, trade alert stack</span
+                  >Location: bottom right, trade alert stack</span
                 >
               </div>
             </div>
@@ -1003,7 +1293,7 @@
           </div>
         </article>
 
-        <article class="toast-card" data-position="top-right">
+        <article class="toast-card" data-position="bottom-left">
           <div class="toast-row">
             <div class="toast-main">
               <span class="badge success">Clock</span>
@@ -1011,7 +1301,7 @@
                 <span class="title">08:45 Tue ES</span>
                 <span class="desc">Antilag clocked.</span>
                 <span class="location"
-                  >Location: top right, desk action stack</span
+                  >Location: bottom left, desk action stack</span
                 >
               </div>
             </div>
@@ -1051,7 +1341,7 @@
           </div>
         </article>
 
-        <article class="toast-card" data-position="bottom-left">
+        <article class="toast-card" data-position="bottom-right">
           <div class="toast-row">
             <div class="toast-main">
               <span class="badge warn">Risk</span>
@@ -1061,7 +1351,7 @@
                   >Semis extend losses after export control headline.</span
                 >
                 <span class="location"
-                  >Location: bottom left, Zen mode news stack</span
+                  >Location: bottom right, Zen mode news stack</span
                 >
                 <div class="toast-actions">
                   <button class="toast-action" type="button">
@@ -1076,7 +1366,7 @@
           </div>
         </article>
 
-        <article class="toast-card" data-position="bottom-left">
+        <article class="toast-card" data-position="bottom-right">
           <div class="toast-row">
             <div class="toast-main">
               <span class="badge info">Geo</span>
@@ -1087,7 +1377,7 @@
                   window.</span
                 >
                 <span class="location"
-                  >Location: bottom left, notification poller</span
+                  >Location: bottom right, notification poller</span
                 >
               </div>
             </div>
@@ -1097,7 +1387,7 @@
           </div>
         </article>
 
-        <article class="toast-card" data-position="bottom-left">
+        <article class="toast-card" data-position="top-middle">
           <div class="toast-row">
             <div class="toast-main">
               <span class="badge high">High</span>
@@ -1108,7 +1398,7 @@
                   session.</span
                 >
                 <span class="location"
-                  >Location: bottom left, notification poller</span
+                  >Location: middle top, notification poller</span
                 >
               </div>
             </div>
@@ -1158,11 +1448,2206 @@
           </div>
         </article>
       </section>
+
+      <h2 class="bank-label">Popup modals</h2>
+      <section class="toast-bank">
+        <article class="overlay-card modal-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Settings modal</span>
+                <span class="overlay-desc"
+                  >ProjectX credentials, general state, notifications, and
+                  version details.</span
+                >
+                <span class="location"
+                  >Location: centered modal,
+                  frontend/components/SettingsModal.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="surface-header">
+                <span class="surface-kicker">Settings</span>
+                <span class="badge">API</span>
+              </div>
+              <div class="surface-body">
+                <div class="field">
+                  <span>ProjectX Username</span><strong>Set</strong>
+                </div>
+                <div class="field">
+                  <span>Trade alerts</span><strong>Enabled</strong>
+                </div>
+                <div class="field dim">
+                  <span>Version</span><span>7.0.2</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card modal-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Upgrade plan modal</span>
+                <span class="overlay-desc"
+                  >Four-tier account upgrade picker with current-plan
+                  state.</span
+                >
+                <span class="location"
+                  >Location: centered modal,
+                  frontend/components/UpgradeModal.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="surface-header">
+                <span class="surface-kicker">Upgrade</span>
+                <span class="badge info">Plan</span>
+              </div>
+              <div class="metric-grid">
+                <div class="metric"><span>Pleb</span><b>$0</b></div>
+                <div class="metric"><span>Analyst</span><b>$149</b></div>
+                <div class="metric"><span>Desk</span><b>$699</b></div>
+              </div>
+              <div class="surface-actions">
+                <button class="action primary" type="button">Upgrade</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card modal-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Trading proposal modal</span>
+                <span class="overlay-desc"
+                  >Strategy, instrument, direction, confidence, and approve or
+                  reject actions.</span
+                >
+                <span class="location"
+                  >Location: centered modal,
+                  frontend/components/ProposalModal.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="surface-header">
+                <span class="surface-kicker">Trading Proposal</span>
+                <span class="badge success">Long</span>
+              </div>
+              <div class="metric-grid">
+                <div class="metric"><span>Strategy</span><b>40/40</b></div>
+                <div class="metric"><span>Instrument</span><b>/NQ</b></div>
+                <div class="metric"><span>Conf.</span><b>82%</b></div>
+              </div>
+              <div class="surface-actions">
+                <button class="action" type="button">Reject</button>
+                <button class="action primary" type="button">Approve</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card modal-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Trade idea modal</span>
+                <span class="overlay-desc"
+                  >RiskFlow trade idea detail with direction, ticker, levels,
+                  and trade brief.</span
+                >
+                <span class="location"
+                  >Location: centered modal,
+                  frontend/components/TradeIdeaModal.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="surface-header">
+                <span class="surface-kicker">Trade Brief</span>
+                <span class="badge">NVDA</span>
+              </div>
+              <div class="metric-grid">
+                <div class="metric"><span>Entry</span><b>142.20</b></div>
+                <div class="metric"><span>Stop</span><b>139.80</b></div>
+                <div class="metric"><span>Target</span><b>149.00</b></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card modal-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Search modal</span>
+                <span class="overlay-desc"
+                  >Command-style global navigation for agents, sections,
+                  reports, and events.</span
+                >
+                <span class="location"
+                  >Location: top-centered modal,
+                  frontend/components/search/SearchModal.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="field">
+                <span>Search Fintheon...</span><strong>cmd+k</strong>
+              </div>
+              <div class="menu-list">
+                <div class="menu-item active">
+                  <span>RiskFlow Feed</span><small>Navigate</small>
+                </div>
+                <div class="menu-item">
+                  <span>Consilium</span><small>Workspace</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card modal-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">MDB report modal</span>
+                <span class="overlay-desc"
+                  >Morning Daily Brief reader with loading, error, and saved
+                  report states.</span
+                >
+                <span class="location"
+                  >Location: centered report modal,
+                  frontend/components/MDBReportModal.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="surface-header">
+                <span class="surface-kicker">MDB Report</span>
+                <span class="badge info">Brief</span>
+              </div>
+              <div class="field dim">
+                <span>Macro read</span><span>Saved to history</span>
+              </div>
+              <div class="field dim">
+                <span>RiskFlow context</span><span>Attached</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card modal-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Shortcuts popup</span>
+                <span class="overlay-desc"
+                  >Keyboard shortcut and hidden command reference.</span
+                >
+                <span class="location"
+                  >Location: centered popup,
+                  frontend/components/layout/ShortcutsPopup.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="surface-header">
+                <span class="surface-kicker">Shortcuts</span>
+                <span class="badge">Keys</span>
+              </div>
+              <div class="field">
+                <span>Summon the Index</span><strong>cmd K</strong>
+              </div>
+              <div class="field">
+                <span>Close modals</span><strong>Esc</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card modal-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Econ countdown modal</span>
+                <span class="overlay-desc"
+                  >T-minus economic print stack with actual, forecast, and beat
+                  or miss state.</span
+                >
+                <span class="location"
+                  >Location: modal stack,
+                  frontend/components/feed/EconCountdownModal.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="surface-header">
+                <span class="surface-kicker">CPI Core</span>
+                <span class="badge warn">02:18</span>
+              </div>
+              <div class="metric-grid">
+                <div class="metric"><span>Prev</span><b>0.3</b></div>
+                <div class="metric"><span>Fcast</span><b>0.2</b></div>
+                <div class="metric"><span>Actual</span><b>--</b></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card modal-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Stop monitoring modal</span>
+                <span class="overlay-desc"
+                  >PsychAssist confirmation before ending a monitoring
+                  session.</span
+                >
+                <span class="location"
+                  >Location: centered confirmation,
+                  frontend/components/mission-control/StopMonitoringModal.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="surface-header">
+                <span class="surface-kicker">Stop Monitoring?</span>
+                <span class="badge warn">ER</span>
+              </div>
+              <div class="surface-actions">
+                <button class="action" type="button">Continue</button>
+                <button class="action primary" type="button">Stop</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card modal-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Approval modal</span>
+                <span class="overlay-desc"
+                  >Shared action approval surface for tools, narratives, and
+                  refinement edits.</span
+                >
+                <span class="location"
+                  >Location: centered approval,
+                  frontend/components/shared/ApprovalModal.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="surface-header">
+                <span class="surface-kicker">Approve Action</span>
+                <span class="badge success">Gate</span>
+              </div>
+              <div class="field dim">
+                <span>Admin password</span><span>Required</span>
+              </div>
+              <div class="surface-actions">
+                <button class="action" type="button">Deny</button>
+                <button class="action primary" type="button">Approve</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card modal-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Add account modal</span>
+                <span class="overlay-desc"
+                  >ProjectX username, API key, prop firm, account size, and
+                  screenshot slot.</span
+                >
+                <span class="location"
+                  >Location: centered modal,
+                  frontend/components/journal/AddAccountModal.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="field">
+                <span>ProjectX username</span><strong>Required</strong>
+              </div>
+              <div class="field">
+                <span>Account size</span><strong>$50,000</strong>
+              </div>
+              <div class="field dim">
+                <span>Baseline screenshot</span><span>Optional</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card modal-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Refinement unlock modal</span>
+                <span class="overlay-desc"
+                  >Password gate for mutating matrices, lexicons, weights, and
+                  source accounts.</span
+                >
+                <span class="location"
+                  >Location: centered lock modal,
+                  frontend/components/refinement/RefinementEditLockModal.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="surface-header">
+                <span class="surface-kicker">Unlock Editing</span>
+                <span class="badge warn">Lock</span>
+              </div>
+              <div class="field dim">
+                <span>Password</span><span>Session unlock</span>
+              </div>
+              <div class="surface-actions">
+                <button class="action primary" type="button">Unlock</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card modal-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Regime tracker modal</span>
+                <span class="overlay-desc"
+                  >Trading regimes grouped by category with AI generate and
+                  manual add states.</span
+                >
+                <span class="location"
+                  >Location: centered modal,
+                  frontend/components/regimes/RegimeTrackerModal.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="surface-header">
+                <span class="surface-kicker">Regime Tracker</span>
+                <span class="badge">ET</span>
+              </div>
+              <div class="chip-row">
+                <span class="chip active">Gap and Go</span>
+                <span class="chip">Mean Reversion</span>
+                <span class="chip">News Shock</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card modal-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Catalyst modal</span>
+                <span class="overlay-desc"
+                  >Narrative catalyst editor with category, instruments, tags,
+                  direction, status, and severity.</span
+                >
+                <span class="location"
+                  >Location: centered modal,
+                  frontend/components/narrative/CatalystModal.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="field">
+                <span>Category</span><strong>Monetary</strong>
+              </div>
+              <div class="chip-row">
+                <span class="chip active">/NQ</span>
+                <span class="chip">VIX</span>
+                <span class="chip">DXY</span>
+              </div>
+              <div class="field dim">
+                <span>Tag suggestions</span><span>3 open</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card modal-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">RiskFlow import modal</span>
+                <span class="overlay-desc"
+                  >Score RiskFlow or Daily Brief candidates and import matched
+                  narrative catalysts.</span
+                >
+                <span class="location"
+                  >Location: centered modal,
+                  frontend/components/narrative/RiskFlowImportModal.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="tabs">
+                <span class="tab active">RiskFlow</span>
+                <span class="tab">Daily Brief</span>
+              </div>
+              <div class="menu-item active">
+                <span>Fed liquidity watch</span
+                ><small>Score 78, matched to Macro lane</small>
+              </div>
+              <div class="surface-actions">
+                <button class="action primary" type="button">Import</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card modal-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Narrative save modal</span>
+                <span class="overlay-desc"
+                  >Confirmation before saving irreversible NarrativeFlow
+                  state.</span
+                >
+                <span class="location"
+                  >Location: centered confirmation,
+                  frontend/components/narrative/NarrativeSaveModal.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="surface-header">
+                <span class="surface-kicker">Save Changes</span>
+                <span class="badge success">Save</span>
+              </div>
+              <div class="surface-actions">
+                <button class="action" type="button">Cancel</button>
+                <button class="action primary" type="button">Save</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card modal-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Narrative manage modal</span>
+                <span class="overlay-desc"
+                  >Archive, restore, or delete a NarrativeFlow workspace and map
+                  bubble.</span
+                >
+                <span class="location"
+                  >Location: centered modal,
+                  frontend/components/narrative/NarrativeSessionManageModal.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="surface-header">
+                <span class="surface-kicker">Manage Narrative</span>
+                <span class="badge warn">Map</span>
+              </div>
+              <div class="surface-actions">
+                <button class="action" type="button">Archive</button>
+                <button class="action" type="button">Delete</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card modal-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Narrative timeline modal</span>
+                <span class="overlay-desc"
+                  >Scrollable catalyst timeline editor with tag and event
+                  management.</span
+                >
+                <span class="location"
+                  >Location: centered modal,
+                  frontend/components/narrative/NarrativeManageModal.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="menu-list">
+                <div class="menu-item active">
+                  <span>New Event</span><small>Today, medium severity</small>
+                </div>
+                <div class="menu-item">
+                  <span>Rates narrative update</span
+                  ><small>Tag: monetary</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card modal-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">First API key popup</span>
+                <span class="overlay-desc"
+                  >First-run provider key prompt that points users to Settings
+                  API.</span
+                >
+                <span class="location"
+                  >Location: centered popup,
+                  frontend/components/chat/FirstTimeApiKeyPopup.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="surface-header">
+                <span class="surface-kicker">Add your API key</span>
+                <span class="badge info">API</span>
+              </div>
+              <div class="surface-actions">
+                <button class="action primary" type="button">Continue</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card" data-position="floating-popup">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Chamber agent summary popup</span>
+                <span class="overlay-desc"
+                  >Draggable Arbitrum seat rationale popup with score
+                  fuse.</span
+                >
+                <span class="location"
+                  >Location: draggable floating popup,
+                  frontend/components/arbitrum/ChamberAgentSummaryPopup.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="surface-header">
+                <span class="surface-kicker">Forecaster</span>
+                <span class="badge">7.6</span>
+              </div>
+              <div class="fuse">
+                <div class="fuse-track">
+                  <span class="on"></span><span class="on"></span
+                  ><span class="on"></span><span class="on"></span
+                  ><span class="on"></span><span class="on"></span
+                  ><span class="on"></span><span></span><span></span
+                  ><span></span>
+                </div>
+                <b>Score</b>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card" data-position="floating-popup">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">ProxVoice profile popup</span>
+                <span class="overlay-desc"
+                  >Draggable participant profile card for forum voice
+                  context.</span
+                >
+                <span class="location"
+                  >Location: draggable floating popup,
+                  frontend/components/proxvoice/DraggableProfilePopup.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="surface-header">
+                <span class="surface-kicker">Profile</span>
+                <span class="badge success">Live</span>
+              </div>
+              <div class="field"><span>Desk</span><strong>Macro</strong></div>
+              <div class="field dim">
+                <span>Voice channel</span><span>Forum</span>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <h2 class="bank-label">Dropdown menus and popovers</h2>
+      <section class="toast-bank">
+        <article class="overlay-card dropdown-card" data-position="anchor-menu">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">TopHeader layout dropdown</span>
+                <span class="overlay-desc"
+                  >Castra and Zen layout selection when trading browser is
+                  active.</span
+                >
+                <span class="location"
+                  >Location: top toolbar portal,
+                  frontend/components/layout/TopHeader.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="menu-list">
+                <div class="menu-item active">
+                  <span>Castra</span
+                  ><small>Trading browser beside Fintheon</small>
+                </div>
+                <div class="menu-item">
+                  <span>Zen</span><small>Focused full-width split</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card dropdown-card" data-position="anchor-menu">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">TopHeader platform dropdown</span>
+                <span class="overlay-desc"
+                  >Trading platform selector for TradingView, TopstepX, and
+                  browser targets.</span
+                >
+                <span class="location"
+                  >Location: top toolbar portal,
+                  frontend/components/layout/TopHeader.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="menu-list">
+                <div class="menu-item active">
+                  <span>TradingView</span><small>Charting workspace</small>
+                </div>
+                <div class="menu-item">
+                  <span>TopstepX</span><small>Execution platform</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card dropdown-card" data-position="anchor-menu">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Consilium section dropdowns</span>
+                <span class="overlay-desc"
+                  >Sanctum, Imperium, and Apparatus subview menus with staggered
+                  rows.</span
+                >
+                <span class="location"
+                  >Location: Consilium nav row,
+                  frontend/components/consilium/ConsiliumHub.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="menu-list">
+                <div class="menu-item active">
+                  <span>NarrativeFlow</span><small>Catalyst map</small>
+                </div>
+                <div class="menu-item">
+                  <span>ArbitrumChamber</span><small>Deliberation</small>
+                </div>
+                <div class="menu-item">
+                  <span>Timeline</span><small>Chronology</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card dropdown-card" data-position="anchor-menu">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Narrative analysis dropdown</span>
+                <span class="overlay-desc"
+                  >Workspace, Forecasts, Coliseum, Resolved, and Map analysis
+                  modes.</span
+                >
+                <span class="location"
+                  >Location: Consilium analysis toolbar,
+                  frontend/components/consilium/NarrativeAnalysisDropdown.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="menu-list">
+                <div class="menu-item active">
+                  <span>Workspace</span><small>Active narrative surface</small>
+                </div>
+                <div class="menu-item">
+                  <span>Forecasts</span><small>Prediction cards</small>
+                </div>
+                <div class="menu-item">
+                  <span>Map</span><small>Force canvas</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card dropdown-card" data-position="anchor-menu">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Agent filter dropdown</span>
+                <span class="overlay-desc"
+                  >Multi-select Consilium agent filter with dots, roles, and
+                  clear filters row.</span
+                >
+                <span class="location"
+                  >Location: Consilium filters,
+                  frontend/components/consilium/AgentFilterDropdown.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="menu-list">
+                <div class="menu-item active">
+                  <span>Harper</span><small>CAO selected</small>
+                </div>
+                <div class="menu-item">
+                  <span>Oracle</span><small>Probability</small>
+                </div>
+                <div class="menu-item">
+                  <span>Feucht</span><small>Risk</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card dropdown-card" data-position="anchor-menu">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">RiskFlow priority menu</span>
+                <span class="overlay-desc"
+                  >Multi-select critical, high, medium, and low priority
+                  filter.</span
+                >
+                <span class="location"
+                  >Location: RiskFlow filter bar,
+                  frontend/components/shared/PriorityFilterMenu.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="chip-row">
+                <span class="chip active">CRIT 3</span>
+                <span class="chip active">HIGH 12</span>
+                <span class="chip">MED 28</span>
+                <span class="chip">LOW 40</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card dropdown-card" data-position="anchor-menu">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">RiskFlow source menu</span>
+                <span class="overlay-desc"
+                  >Bucketed source filter for wire, macro, OSINT, commentary,
+                  econ, earnings, and geopolitics.</span
+                >
+                <span class="location"
+                  >Location: RiskFlow filter bar,
+                  frontend/components/feed/SourceFilterMenu.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="chip-row">
+                <span class="chip active">Wire</span>
+                <span class="chip">Macro</span>
+                <span class="chip">OSINT</span>
+                <span class="chip">Econ</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card dropdown-card" data-position="anchor-menu">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Desk briefing dropdown</span>
+                <span class="overlay-desc"
+                  >Daily brief selector inside the Desk briefing panel.</span
+                >
+                <span class="location"
+                  >Location: Desk briefing panel,
+                  frontend/components/desk/DeskDailyBriefingPanel.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="menu-list">
+                <div class="menu-item active">
+                  <span>MDB</span><small>Morning Daily Brief</small>
+                </div>
+                <div class="menu-item">
+                  <span>ADB</span><small>Afternoon Daily Brief</small>
+                </div>
+                <div class="menu-item">
+                  <span>PMDB</span><small>Post-market Daily Brief</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card dropdown-card" data-position="anchor-menu">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Settings symbol dropdown</span>
+                <span class="overlay-desc"
+                  >Instrument selector with symbol, contract name, and
+                  description rows.</span
+                >
+                <span class="location"
+                  >Location: General settings tab,
+                  frontend/components/settings/GeneralTab.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="menu-list">
+                <div class="menu-item active">
+                  <span>NQ</span><small>Nasdaq 100 futures</small>
+                </div>
+                <div class="menu-item">
+                  <span>ES</span><small>S&P 500 futures</small>
+                </div>
+                <div class="menu-item">
+                  <span>CL</span><small>Crude Oil</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card dropdown-card" data-position="anchor-menu">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Theme font dropdown</span>
+                <span class="overlay-desc"
+                  >Font-theme picker with heading and body previews.</span
+                >
+                <span class="location"
+                  >Location: Theme settings,
+                  frontend/components/settings/ThemeSettings.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="menu-list">
+                <div class="menu-item active">
+                  <span>Nothing Design</span
+                  ><small>The market writes in this voice.</small>
+                </div>
+                <div class="menu-item">
+                  <span>Industrial</span><small>Dense desk typography</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card dropdown-card" data-position="anchor-menu">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">RiskFlow regime dropdown</span>
+                <span class="overlay-desc"
+                  >Manual market regime override with confidence display.</span
+                >
+                <span class="location"
+                  >Location: RiskFlow settings,
+                  frontend/components/settings/RiskFlowSettings.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="menu-list">
+                <div class="menu-item active">
+                  <span>Risk-on</span><small>Confidence 74%</small>
+                </div>
+                <div class="menu-item">
+                  <span>Risk-off</span><small>Manual override</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card dropdown-card" data-position="anchor-menu">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Lockout timer select</span>
+                <span class="overlay-desc"
+                  >Native select for AM NY, AM-PM NY, next Desk Plan, and NY
+                  close timers.</span
+                >
+                <span class="location"
+                  >Location: Trading settings,
+                  frontend/components/settings/LockoutTimerDropdown.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="field">
+                <span>AM NY session</span><strong>8:55AM</strong>
+              </div>
+              <div class="field">
+                <span>Next Desk Plan</span><strong>Queued</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card dropdown-card" data-position="anchor-menu">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Account chooser dropdown</span>
+                <span class="overlay-desc"
+                  >Mission Control account selector with provider and paper or
+                  live state.</span
+                >
+                <span class="location"
+                  >Location: mission control account widget,
+                  frontend/components/mission-control/AccountTrackerWidget.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="menu-list">
+                <div class="menu-item active">
+                  <span>Topstep 150K</span><small>ProjectX, live</small>
+                </div>
+                <div class="menu-item">
+                  <span>Apex Eval</span><small>ProjectX, paper</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card dropdown-card" data-position="anchor-menu">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Hybrid chart dropdown</span>
+                <span class="overlay-desc"
+                  >Performance chart selector for P&L, ER Trend, and Hybrid
+                  overlay.</span
+                >
+                <span class="location"
+                  >Location: performance journal,
+                  frontend/components/journal/HybridChartDropdown.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="menu-list">
+                <div class="menu-item active">
+                  <span>P&L</span><small>Equity curve</small>
+                </div>
+                <div class="menu-item">
+                  <span>ER Trend</span><small>PsychAssist</small>
+                </div>
+                <div class="menu-item">
+                  <span>Hybrid</span><small>Overlay</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card dropdown-card" data-position="anchor-menu">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Narrative theme filter</span>
+                <span class="overlay-desc"
+                  >Theme filter dropdown in NarrativeFlow filter controls.</span
+                >
+                <span class="location"
+                  >Location: NarrativeFlow filter bar,
+                  frontend/components/narrative/NarrativeFlowFilterBar.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="chip-row">
+                <span class="chip active">All themes</span>
+                <span class="chip">Liquidity</span>
+                <span class="chip">AI Capex</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card dropdown-card" data-position="anchor-menu">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Workspace view menu</span>
+                <span class="overlay-desc"
+                  >Narrative workspace orientation and render-mode
+                  controls.</span
+                >
+                <span class="location"
+                  >Location: Narrative workspace chrome,
+                  frontend/components/narrative/NarrativeWorkspaceChrome.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="menu-list">
+                <div class="menu-item active">
+                  <span>Map</span><small>Left to Right</small>
+                </div>
+                <div class="menu-item">
+                  <span>Mermaid</span><small>Top Down</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card dropdown-card" data-position="anchor-menu">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Catalyst template menu</span>
+                <span class="overlay-desc"
+                  >Fixed-position quick-add menu for typed narrative catalyst
+                  templates.</span
+                >
+                <span class="location"
+                  >Location: Narrative toolbar,
+                  frontend/components/narrative/CatalystTemplateMenu.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="metric-grid">
+                <div class="metric"><span>Macro</span><b>+</b></div>
+                <div class="metric"><span>Earnings</span><b>+</b></div>
+                <div class="metric"><span>Geo</span><b>+</b></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card dropdown-card" data-position="anchor-menu">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Narrative color popover</span>
+                <span class="overlay-desc"
+                  >Saved narrative color swatch selector.</span
+                >
+                <span class="location"
+                  >Location: Narrative session history,
+                  frontend/components/narrative/NarrativeColorPopover.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="swatches">
+                <span class="swatch" style="background: #c79f4a"></span>
+                <span class="swatch" style="background: #5fb88b"></span>
+                <span class="swatch" style="background: #7ca2c2"></span>
+                <span class="swatch" style="background: #e26055"></span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article
+          class="overlay-card dropdown-card"
+          data-position="bottom-popover"
+        >
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Provider dropdown</span>
+                <span class="overlay-desc"
+                  >Compact chat provider dropdown with status dots and API key
+                  hints.</span
+                >
+                <span class="location"
+                  >Location: composer toolbar,
+                  frontend/components/chat/ProviderDropdown.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="menu-list">
+                <div class="menu-item active">
+                  <span>DeepSeek v4 Pro</span><small>Direct API</small>
+                </div>
+                <div class="menu-item">
+                  <span>OpenCode Go</span><small>Self-hosted proxy</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article
+          class="overlay-card dropdown-card"
+          data-position="bottom-popover"
+        >
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Provider popover</span>
+                <span class="overlay-desc"
+                  >Anchored provider selection popover used by Narrative input
+                  surfaces.</span
+                >
+                <span class="location"
+                  >Location: anchored popover,
+                  frontend/components/chat/FintheonProviderModal.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="menu-list">
+                <div class="menu-item active">
+                  <span>DeepSeek v4 Pro</span><small>Key present</small>
+                </div>
+                <div class="menu-item">
+                  <span>OpenCode Go</span><small>Runner fallback</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article
+          class="overlay-card dropdown-card"
+          data-position="bottom-popover"
+        >
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Sessions dropdown</span>
+                <span class="overlay-desc"
+                  >Conversation search and session switcher. Chat drawers
+                  excluded.</span
+                >
+                <span class="location"
+                  >Location: chat header popup,
+                  frontend/components/chat/SessionsDropdown.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="field dim">
+                <span>Search sessions...</span><span>New</span>
+              </div>
+              <div class="menu-item active">
+                <span>May CPI prep</span><small>Updated 2m ago</small>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <h2 class="bank-label">Chat interfaces and Streamdowns</h2>
+      <section class="toast-bank">
+        <article class="overlay-card chat-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Primary CAO chat interface</span>
+                <span class="overlay-desc"
+                  >Full-width Fintheon thread with assistant/user primitives,
+                  cognition row, tool approvals, and answer widgets.</span
+                >
+                <span class="location"
+                  >Location: chat thread,
+                  frontend/components/chat/FintheonThread.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="chat-shell">
+              <div class="chat-thread">
+                <div class="chat-line">
+                  <span class="avatar-dot">H</span>
+                  <div class="chat-bubble">
+                    I pulled the Desk Plan, RiskFlow, and current narrative
+                    anchors. CPI is the only print with real asymmetry today.
+                  </div>
+                </div>
+                <div class="chat-line">
+                  <div class="chat-bubble user">
+                    Queue the setup and show the price levels for /NQ.
+                  </div>
+                </div>
+              </div>
+              <div class="chat-composer">
+                <span>Message your analysts...</span>
+                <span class="slot-label">deep</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card chat-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Compact chat sidebar</span>
+                <span class="overlay-desc"
+                  >Condensed chat rail with thread state, queue, cognition, and
+                  compact composer controls.</span
+                >
+                <span class="location"
+                  >Location: sidebar chat,
+                  frontend/components/chat/ChatSidebar.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="chat-shell">
+              <div class="surface-header">
+                <span class="surface-kicker">Harper</span>
+                <span class="badge success">Live</span>
+              </div>
+              <div class="chat-thread">
+                <div class="chat-line">
+                  <span class="avatar-dot">C</span>
+                  <div class="chat-bubble">
+                    Building context from NarrativeFlow and the latest approved
+                    week plan.
+                  </div>
+                </div>
+              </div>
+              <div class="chat-composer">
+                <span>Ask Harper...</span><span>Queued 2</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card chat-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">NarrativeFlow chat interface</span>
+                <span class="overlay-desc"
+                  >Workspace chat tied to narrative artifacts, active catalysts,
+                  and deferred artifact creation.</span
+                >
+                <span class="location"
+                  >Location: NarrativeFlow workspace,
+                  frontend/components/narrative/NarrativeCanvasChat.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="chat-shell">
+              <div class="chip-row">
+                <span class="chip active">Macro lane</span>
+                <span class="chip">Liquidity</span>
+                <span class="chip">AI capex</span>
+              </div>
+              <div class="chat-thread">
+                <div class="chat-line">
+                  <span class="avatar-dot">N</span>
+                  <div class="chat-bubble">
+                    Anchor catalyst selected. Harper can now draft the map,
+                    docs, or timeline artifact.
+                  </div>
+                </div>
+              </div>
+              <div class="chat-composer">
+                <span>Ask about this narrative...</span><span>/NQ /ES DXY</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card stream-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Streamdown markdown answer</span>
+                <span class="overlay-desc"
+                  >The base Streamdown renderer before custom slot blocks are
+                  introduced.</span
+                >
+                <span class="location"
+                  >Location: assistant message text,
+                  frontend/components/chat/slots/StreamdownChat.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="slot-shell">
+              <span class="slot-label">Streamdown</span>
+              <span class="slot-title">CPI risk map</span>
+              <span class="slot-text"
+                >Base case is continuation higher if core services cools. The
+                invalidation is a hot shelter print with rates bid.</span
+              >
+              <div class="chip-row">
+                <span class="chip active">/NQ</span>
+                <span class="chip">Rates</span>
+                <span class="chip">CPI</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article
+          class="overlay-card stream-card"
+          data-position="floating-popup"
+        >
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Market ticker mention card</span>
+                <span class="overlay-desc"
+                  >Inline $ticker card with 5-day sparkline, live TV link, and
+                  open/range metrics.</span
+                >
+                <span class="location"
+                  >Location: inline ticker popover,
+                  frontend/components/chat/slots/MarketTickerCard.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="ticker-surface">
+              <div class="ticker-head">
+                <div>
+                  <span class="slot-label">NQ - Futures</span>
+                  <div class="ticker-price">21,432.25</div>
+                  <div class="ticker-change">+124.50 (+0.58%)</div>
+                </div>
+                <span class="badge success">5D</span>
+              </div>
+              <svg
+                class="ticker-sparkline"
+                viewBox="0 0 260 64"
+                aria-label="NQ 5-day sparkline"
+              >
+                <path
+                  d="M6 56 L6 44 L38 46 L70 38 L102 41 L134 27 L166 32 L198 18 L230 22 L254 12 L254 56 Z"
+                  fill="rgba(95, 184, 139, 0.12)"
+                ></path>
+                <polyline
+                  points="6,44 38,46 70,38 102,41 134,27 166,32 198,18 230,22 254,12"
+                ></polyline>
+              </svg>
+              <div class="metric-grid">
+                <div class="metric"><span>Open</span><b>21302</b></div>
+                <div class="metric"><span>High</span><b>21490</b></div>
+                <div class="metric"><span>Low</span><b>21244</b></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article
+          class="overlay-card stream-card"
+          data-position="bottom-popover"
+        >
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Market ticker strip slot</span>
+                <span class="overlay-desc"
+                  >Streamdown ticker pills that can open individual instrument
+                  cards.</span
+                >
+                <span class="location"
+                  >Location: Streamdown slot,
+                  frontend/components/chat/slots/MarketTickerStripSlot.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="slot-shell">
+              <span class="slot-label">5D performance</span>
+              <div class="ticker-pills">
+                <span class="ticker-pill active">NQ 21432 +0.58%</span>
+                <span class="ticker-pill">ES 5928 +0.32%</span>
+                <span class="ticker-pill">YM 42511 -0.11%</span>
+                <span class="ticker-pill">CL 78.42 +1.04%</span>
+                <span class="ticker-pill">GC 2388 -0.24%</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card stream-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Price level slot</span>
+                <span class="overlay-desc"
+                  >Feucht support, resistance, and trigger table rendered inside
+                  a Streamdown answer.</span
+                >
+                <span class="location"
+                  >Location: Streamdown slot,
+                  frontend/components/chat/slots/PriceLevelSlot.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="slot-shell">
+              <span class="slot-label">levels - /NQ - 08:52 ET</span>
+              <div class="data-table">
+                <div class="data-row">
+                  <span>Premarket high</span><strong>21485</strong><b>Res</b>
+                </div>
+                <div class="data-row">
+                  <span>VWAP reclaim</span><strong>21392</strong><b>Trig</b>
+                </div>
+                <div class="data-row">
+                  <span>Overnight low</span><strong>21264</strong><b>Sup</b>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card stream-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Probability table slot</span>
+                <span class="overlay-desc"
+                  >Oracle scenario table with probability bars and delta
+                  labels.</span
+                >
+                <span class="location"
+                  >Location: Streamdown slot,
+                  frontend/components/chat/slots/ProbabilityTableSlot.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="slot-shell">
+              <span class="slot-label">probabilities</span>
+              <span class="slot-title"
+                >Core CPI prints at or below consensus</span
+              >
+              <div>
+                <div class="field">
+                  <span>Soft print, /NQ bid</span><strong>57%</strong>
+                </div>
+                <div class="prob-bar"><span style="width: 57%"></span></div>
+              </div>
+              <div>
+                <div class="field">
+                  <span>Inline print, chop</span><strong>28%</strong>
+                </div>
+                <div class="prob-bar"><span style="width: 28%"></span></div>
+              </div>
+              <div>
+                <div class="field">
+                  <span>Hot print, rates shock</span><strong>15%</strong>
+                </div>
+                <div class="prob-bar"><span style="width: 15%"></span></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card stream-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Weekly desk plan slot</span>
+                <span class="overlay-desc"
+                  >Streamdown approval block for syncing queued events into the
+                  Desk Plan.</span
+                >
+                <span class="location"
+                  >Location: Streamdown slot,
+                  frontend/components/chat/slots/WeeklyDeskPlanSlot.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="slot-shell">
+              <span class="slot-label">weekly desk plan</span>
+              <div class="data-table">
+                <div class="data-row">
+                  <span>Tue CPI Core</span><strong>08:30</strong><b>0.2%</b>
+                </div>
+                <div class="data-row">
+                  <span>Wed FOMC Minutes</span><strong>14:00</strong><b>Risk</b>
+                </div>
+                <div class="data-row">
+                  <span>Fri NFP</span><strong>08:30</strong><b>185K</b>
+                </div>
+              </div>
+              <div class="surface-actions">
+                <button class="action" type="button">Deny</button>
+                <button class="action primary" type="button">
+                  Approve week
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card stream-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Backtest result slot</span>
+                <span class="overlay-desc"
+                  >Strategy metrics grid for P/L, win rate, drawdown, trades,
+                  and Sharpe.</span
+                >
+                <span class="location"
+                  >Location: Streamdown slot,
+                  frontend/components/chat/slots/BacktestResultSlot.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="slot-shell">
+              <span class="slot-label">backtest - 20 sessions</span>
+              <span class="slot-title">CPI breakout continuation</span>
+              <div class="metric-grid">
+                <div class="metric"><span>P/L</span><b>+18.4R</b></div>
+                <div class="metric"><span>Win %</span><b>61%</b></div>
+                <div class="metric"><span>Max DD</span><b>-3.2R</b></div>
+              </div>
+              <span class="slot-text">Sharpe 1.42, 34 trades shown.</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card stream-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Catalyst card slot</span>
+                <span class="overlay-desc"
+                  >RiskFlow catalyst card inside chat, with severity, body,
+                  source, and IV context.</span
+                >
+                <span class="location"
+                  >Location: Streamdown slot,
+                  frontend/components/chat/slots/CatalystCardSlot.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="slot-shell">
+              <span class="slot-label">catalyst - high</span>
+              <span class="slot-title"
+                >Fed speaker flags upside inflation risk into CPI</span
+              >
+              <div class="slot-rule"></div>
+              <span class="slot-text"
+                >RiskFlow marks the headline as rates-sensitive with direct /NQ
+                beta through duration exposure.</span
+              >
+              <span class="slot-label">IV - 7.8 - WatchTag</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card stream-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Narrative preview slot</span>
+                <span class="overlay-desc"
+                  >Compact NarrativeFlow preview with confidence and symbol
+                  chips.</span
+                >
+                <span class="location"
+                  >Location: Streamdown slot,
+                  frontend/components/chat/slots/NarrativePreviewSlot.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="slot-shell">
+              <span class="slot-label">narrative - 76% conf</span>
+              <span class="slot-title">AI capex wobble into semis</span>
+              <span class="slot-text"
+                >NVDA demand narrative remains intact, but duration risk is
+                pressuring high-multiple beta.</span
+              >
+              <div class="chip-row">
+                <span class="chip active">NVDA</span>
+                <span class="chip">NQ</span>
+                <span class="chip">SOXX</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card stream-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Performance table slot</span>
+                <span class="overlay-desc"
+                  >Per-symbol Streamdown table with P/L, trades, win rate, and
+                  average R.</span
+                >
+                <span class="location"
+                  >Location: Streamdown slot,
+                  frontend/components/chat/slots/PerfTableSlot.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="slot-shell">
+              <span class="slot-label">performance - week to date</span>
+              <div class="data-table">
+                <div class="data-row">
+                  <span>/NQ</span><strong>+4.80R</strong><b>64%</b>
+                </div>
+                <div class="data-row">
+                  <span>/ES</span><strong>+1.10R</strong><b>55%</b>
+                </div>
+                <div class="data-row">
+                  <span>/CL</span><strong>-0.60R</strong><b>40%</b>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card stream-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Psych table slot</span>
+                <span class="overlay-desc"
+                  >ER, discipline, and infraction table rendered inside
+                  chat.</span
+                >
+                <span class="location"
+                  >Location: Streamdown slot,
+                  frontend/components/chat/slots/PsychTableSlot.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="slot-shell">
+              <span class="slot-label">psych - latest sessions</span>
+              <div class="data-table">
+                <div class="data-row">
+                  <span>Tue AM</span><strong>3.2 ER</strong><b>0</b>
+                </div>
+                <div class="data-row">
+                  <span>Mon PM</span><strong>6.7 ER</strong><b>2</b>
+                </div>
+                <div class="data-row">
+                  <span>Fri AM</span><strong>4.1 ER</strong><b>1</b>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card stream-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Vision insight slot</span>
+                <span class="overlay-desc"
+                  >Proactive desktop observation card Harper can push into the
+                  chat stream.</span
+                >
+                <span class="location"
+                  >Location: Streamdown slot,
+                  frontend/components/chat/slots/VisionInsightSlot.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="slot-shell">
+              <span class="slot-label">vision - desktop</span>
+              <span class="slot-title"
+                >TradingView is still on yesterday's range</span
+              >
+              <div class="slot-rule"></div>
+              <span class="slot-text"
+                >The active chart does not match the new Desk Plan window.
+                Switch to today's CPI scenario before execution.</span
+              >
+              <span class="slot-label">Open chart context</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card stream-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Agent handoff slot</span>
+                <span class="overlay-desc"
+                  >In-flight agent-to-agent handoff block with status and
+                  preview text.</span
+                >
+                <span class="location"
+                  >Location: Streamdown slot,
+                  frontend/components/chat/slots/AgentHandoffSlot.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="slot-shell">
+              <div class="field">
+                <span>Harper to Oracle</span><strong>complete</strong>
+              </div>
+              <span class="slot-text"
+                >Question: does the CPI setup support a gap-and-go probability
+                above 50%?</span
+              >
+              <span class="slot-label">Preview: 57% base case</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card chat-card" data-position="bottom-popover">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Tool approval card</span>
+                <span class="overlay-desc"
+                  >In-chat permission block for shell, file, web, and MCP tool
+                  execution.</span
+                >
+                <span class="location"
+                  >Location: chat stream,
+                  frontend/components/chat/ToolApprovalCard.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="slot-shell">
+              <span class="slot-label">Permission required</span>
+              <div class="field">
+                <span>Shell command</span><strong>bun run build</strong>
+              </div>
+              <span class="slot-text">approval is permanent</span>
+              <div class="surface-actions">
+                <button class="action" type="button">Deny</button>
+                <button class="action primary" type="button">Approve</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card chat-card" data-position="bottom-popover">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Cognition panel</span>
+                <span class="overlay-desc"
+                  >Streaming thought trail and collapsible tool-call log below
+                  active chat messages.</span
+                >
+                <span class="location"
+                  >Location: active chat stream,
+                  frontend/components/chat/CognitionPanel.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="slot-shell">
+              <span class="slot-label">Calling Tools...</span>
+              <div class="field">
+                <span>Building context</span><strong>284ms</strong>
+              </div>
+              <div class="field">
+                <span>Calling market-data</span><strong>619ms</strong>
+              </div>
+              <div class="field dim">
+                <span>Awaiting response</span><span>live</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card chat-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Answer captured widget</span>
+                <span class="overlay-desc"
+                  >Chat UI action response block rendered after questionnaire
+                  answers are captured.</span
+                >
+                <span class="location"
+                  >Location: chat stream,
+                  frontend/components/chat/ChatAnswerStreamWidget.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="slot-shell">
+              <span class="slot-label">Answers captured</span>
+              <span class="slot-title">Risk limits updated</span>
+              <span class="slot-text"
+                >Daily max loss $1,200. Max trades 4. Cooldown after two
+                consecutive losses.</span
+              >
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card stream-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Artifact trade proposal card</span>
+                <span class="overlay-desc"
+                  >Parsed artifact card for trade proposal outputs embedded in
+                  chat answers.</span
+                >
+                <span class="location"
+                  >Location: chat artifact,
+                  frontend/components/chat/ArtifactCard.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="slot-shell">
+              <div class="field">
+                <span>Long /NQ</span><strong>82% conf</strong>
+              </div>
+              <div class="metric-grid">
+                <div class="metric"><span>Entry</span><b>21392</b></div>
+                <div class="metric"><span>Stop</span><b>21264</b></div>
+                <div class="metric"><span>Target</span><b>21485</b></div>
+              </div>
+              <span class="slot-text"
+                >Rationale: reclaim above VWAP with CPI risk clearing.</span
+              >
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card stream-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">TradingView chart slot</span>
+                <span class="overlay-desc"
+                  >Streamdown chart slot and futures chart widget for instrument
+                  context.</span
+                >
+                <span class="location"
+                  >Location: chat widget,
+                  frontend/components/chat/widgets/FuturesChart.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="slot-shell">
+              <span class="slot-label">CME_MINI:NQ1! - 15m</span>
+              <div class="mini-chart-grid" aria-label="Chart preview">
+                <svg viewBox="0 0 220 78" aria-hidden="true">
+                  <polyline
+                    points="4,58 26,54 48,60 70,42 92,47 114,28 136,34 158,20 180,25 214,12"
+                    fill="none"
+                    stroke="#c79f4a"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  ></polyline>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="overlay-card stream-card" data-position="center-modal">
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Economic calendar widget</span>
+                <span class="overlay-desc"
+                  >TradingView economic calendar widget available in chat
+                  surfaces.</span
+                >
+                <span class="location"
+                  >Location: chat widget,
+                  frontend/components/chat/widgets/EconomicCalendar.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="slot-shell">
+              <span class="slot-label">USD calendar</span>
+              <div class="data-table">
+                <div class="data-row">
+                  <span>Core CPI m/m</span><strong>08:30</strong><b>High</b>
+                </div>
+                <div class="data-row">
+                  <span>Fed Chair remarks</span><strong>12:10</strong><b>Med</b>
+                </div>
+                <div class="data-row">
+                  <span>10Y auction</span><strong>13:00</strong><b>Med</b>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article
+          class="overlay-card dropdown-card"
+          data-position="bottom-popover"
+        >
+          <div class="overlay-row">
+            <div class="overlay-top">
+              <div class="overlay-copy">
+                <span class="overlay-title">Reasoning level selector</span>
+                <span class="overlay-desc"
+                  >Composer popover for standard, deep, and xhigh reasoning
+                  states.</span
+                >
+                <span class="location"
+                  >Location: composer popover,
+                  frontend/components/chat/ReasoningLevelSelector.tsx</span
+                >
+              </div>
+              <button class="dismiss" type="button" aria-label="Dismiss">
+                x
+              </button>
+            </div>
+            <div class="surface-frame">
+              <div class="menu-list">
+                <div class="menu-item">
+                  <span>Standard</span><small>Fast response</small>
+                </div>
+                <div class="menu-item active">
+                  <span>Deep</span><small>More context and tools</small>
+                </div>
+                <div class="menu-item">
+                  <span>XHigh</span><small>Maximum deliberation</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
     </main>
 
     <div
       class="preview-stack top-right"
       data-preview-position="top-right"
+    ></div>
+    <div
+      class="preview-stack top-middle"
+      data-preview-position="top-middle"
     ></div>
     <div
       class="preview-stack bottom-left"
@@ -1176,11 +3661,29 @@
       class="preview-stack native-os"
       data-preview-position="native-os"
     ></div>
+    <div
+      class="preview-stack center-modal"
+      data-preview-position="center-modal"
+    ></div>
+    <div
+      class="preview-stack anchor-menu"
+      data-preview-position="anchor-menu"
+    ></div>
+    <div
+      class="preview-stack floating-popup"
+      data-preview-position="floating-popup"
+    ></div>
+    <div
+      class="preview-stack bottom-popover"
+      data-preview-position="bottom-popover"
+    ></div>
 
     <script>
       const button = document.getElementById("preview-button");
       const buttonLabel = button.querySelector("span:last-child");
-      const cards = Array.from(document.querySelectorAll(".toast-card"));
+      const cards = Array.from(
+        document.querySelectorAll(".toast-card, .overlay-card"),
+      );
       const stacks = new Map(
         Array.from(document.querySelectorAll("[data-preview-position]")).map(
           (stack) => [stack.dataset.previewPosition, stack],
@@ -1198,7 +3701,10 @@
       function clearPreview() {
         clearTimers();
         cards.forEach((card) => card.classList.remove("is-active"));
-        stacks.forEach((stack) => stack.replaceChildren());
+        stacks.forEach((stack) => {
+          stack.classList.remove("has-preview");
+          stack.replaceChildren();
+        });
       }
 
       function schedule(callback, delay) {
@@ -1214,11 +3720,13 @@
         card.classList.add("is-active");
         clone.classList.add("live-toast");
         clone.classList.remove("is-active");
+        stack.classList.add("has-preview");
         stack.append(clone);
         window.requestAnimationFrame(() => clone.classList.add("is-entered"));
         schedule(() => clone.classList.add("is-exiting"), 2100);
         schedule(() => {
           clone.remove();
+          stack.classList.remove("has-preview");
           card.classList.remove("is-active");
           done();
         }, 2380);

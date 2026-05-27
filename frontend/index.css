@@ -965,8 +965,8 @@ html[data-zen-mode="true"] button[aria-label] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border: none;
   border-radius: 4px;
   background: transparent;
@@ -987,6 +987,38 @@ html[data-zen-mode="true"] button[aria-label] {
 
 .toolbar-icon-btn.toolbar-active {
   background: transparent;
+}
+
+.toolbar-icon-btn > svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+#fintheon-heading-toolbar button[title="Back"],
+#fintheon-heading-toolbar button[title="Forward"] {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+}
+
+#fintheon-heading-toolbar button[title="Back"] > svg,
+#fintheon-heading-toolbar button[title="Forward"] > svg,
+#fintheon-heading-toolbar button[aria-label="Layout Options"] > svg:first-child,
+#fintheon-heading-toolbar
+  button[aria-label="Select trading platform"]
+  > svg:first-child {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+#fintheon-heading-toolbar button[aria-label="Layout Options"] > svg:last-child,
+#fintheon-heading-toolbar
+  button[aria-label="Select trading platform"]
+  > svg:last-child {
+  width: 12px !important;
+  height: 12px !important;
 }
 
 @keyframes toolbar-icon-shimmer {
@@ -3210,12 +3242,12 @@ html[data-zen-mode="true"] button[aria-label] {
   );
   box-shadow: none;
   transition:
-    max-height 300ms var(--t-panel-ease, ease-out),
-    transform 300ms var(--t-panel-ease, ease-out),
-    opacity 240ms ease,
+    max-height 520ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 360ms ease,
     border-color 220ms ease,
-    padding 300ms var(--t-panel-ease, ease-out),
-    margin-bottom 300ms var(--t-panel-ease, ease-out);
+    padding 420ms cubic-bezier(0.16, 1, 0.3, 1),
+    margin-bottom 420ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .fintheon-chat-input-drawer.t-panel-slide,
@@ -3244,7 +3276,7 @@ html[data-zen-mode="true"] button[aria-label] {
 .fintheon-chat-input-drawer[aria-hidden="true"] {
   max-height: 0 !important;
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(3px) scale(0.998);
   margin-bottom: 0;
   border-width: 0;
   padding-top: 0 !important;

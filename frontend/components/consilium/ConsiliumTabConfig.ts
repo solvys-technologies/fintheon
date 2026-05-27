@@ -89,7 +89,7 @@ export const APPARATUS_SUB_VIEWS: {
 }[] = [
   {
     id: "desk",
-    label: "Desk",
+    label: "Agentic Desk",
     subtitle: "Agent dossiers & monitoring",
     icon: Users,
   },

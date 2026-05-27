@@ -71,7 +71,7 @@ export function RepoChatComposerSurface({
     }
 
     setIsVisible(false);
-    const timer = window.setTimeout(() => setShouldRender(false), 280);
+    const timer = window.setTimeout(() => setShouldRender(false), 520);
     return () => window.clearTimeout(timer);
   }, [open]);
 
