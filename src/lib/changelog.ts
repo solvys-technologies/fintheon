@@ -9,10 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-27T01:35:00-04:00",
+    agent: "codex",
+    summary:
+      "Added the Prices of Interest agent skill and /prices command wrapper for Unusual Whales-derived put wall, HVL/gamma-flip, call wall, and basis-adjusted futures chart levels.",
+    files: [
+      ".claude/skills/prices-of-interest/SKILL.md",
+      ".claude/skills/prices-of-interest/references/unusual-whales-levels.md",
+      ".claude/skills/prices-of-interest/scripts/derive-prices-of-interest.mjs",
+      ".claude/commands/prices.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-27T00:50:31-04:00",
     agent: "codex",
     summary:
-      "Added automatic surface routing between the desktop Web-PWA and compact Mobile PWA: shared user-agent/touch detection, client-side redirect fallback, Vercel header redirects, and PWA start URLs with explicit surface overrides.",
+      "Added automatic surface routing between the desktop Web-PWA and compact Mobile PWA: shared user-agent/touch/private-LAN detection, client-side redirect fallback, Vercel header redirects, and PWA start URLs with explicit surface overrides.",
     files: [
       "shared/surface-routing.ts",
       "frontend/main.tsx",

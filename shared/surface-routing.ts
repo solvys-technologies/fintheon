@@ -104,7 +104,7 @@ function getDestinationBaseUrl(
   const normalizedUrl = normalizeUrl(configuredUrl);
   if (normalizedUrl) return normalizedUrl;
 
-  if (isLocalHostname(window.location.hostname)) {
+  if (isLocalNetworkHostname(window.location.hostname)) {
     const port = target === SURFACE_TARGETS.desktop ? "7777" : "7778";
     return `${window.location.protocol}//${window.location.hostname}:${port}`;
   }
@@ -138,11 +138,25 @@ function readSurfaceOverride(params: URLSearchParams): SurfaceTarget | null {
   return null;
 }
 
-function isLocalHostname(hostname: string): boolean {
+function isLocalNetworkHostname(hostname: string): boolean {
+  const normalizedHostname = hostname.replace(/^\[|\]$/g, "");
+  const ipv4Parts = normalizedHostname.split(".").map(Number);
+  const isPrivateIpv4 =
+    ipv4Parts.length === 4 &&
+    ipv4Parts.every(
+      (part) => Number.isInteger(part) && part >= 0 && part <= 255,
+    ) &&
+    (ipv4Parts[0] === 10 ||
+      (ipv4Parts[0] === 100 && ipv4Parts[1] >= 64 && ipv4Parts[1] <= 127) ||
+      (ipv4Parts[0] === 172 && ipv4Parts[1] >= 16 && ipv4Parts[1] <= 31) ||
+      (ipv4Parts[0] === 192 && ipv4Parts[1] === 168) ||
+      (ipv4Parts[0] === 169 && ipv4Parts[1] === 254));
+
   return (
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname === "[::1]" ||
-    hostname === "::1"
+    normalizedHostname === "localhost" ||
+    normalizedHostname === "127.0.0.1" ||
+    normalizedHostname === "::1" ||
+    normalizedHostname.endsWith(".local") ||
+    isPrivateIpv4
   );
 }
