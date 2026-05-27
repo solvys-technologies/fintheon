@@ -125,6 +125,7 @@ let backendTray = null;
 let pendingAuthUrl = null;
 let backendStopInFlight = null;
 let deferredUpdateOnClose = false;
+let updateInstallInProgress = false;
 
 // [claude-code 2026-05-13] S63 T3: Dock menu state + notification tracking
 let dockQuickAccessUrl = "";
@@ -203,8 +204,21 @@ app.on("gpu-process-crashed", (_event, killed) => {
 
 let closeReason = null; // Set by the listener that fires first; read by quit hooks
 
-app.on("before-quit", (_event) => {
-  deferredUpdateOnClose = false;
+app.on("before-quit", (event) => {
+  if (
+    deferredUpdateOnClose &&
+    !updateInstallInProgress &&
+    updateManager.hasDownloadedUpdate()
+  ) {
+    event.preventDefault();
+    installDownloadedUpdate("deferred-quit").catch((err) => {
+      logCrash("deferred-update-install-failed", {
+        message: err?.message ?? String(err),
+      });
+      app.quit();
+    });
+    return;
+  }
   logCrash("app-before-quit", { reason: closeReason ?? "unknown" });
 });
 

@@ -1,9 +1,9 @@
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const crypto = require("crypto");
 const { spawn } = require("child_process");
 
-const REPO = "solvys-technologies/fintheon";
 const UPDATE_DIR = "updates";
 
 function normalizeVersion(version) {
@@ -46,35 +46,8 @@ function buildPath() {
     .join(":");
 }
 
-function runProcess(command, args, options = {}) {
-  return new Promise((resolveProcess) => {
-    const child = spawn(command, args, {
-      ...options,
-      env: { ...process.env, PATH: buildPath(), ...(options.env || {}) },
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    let stdout = "";
-    let stderr = "";
-    child.stdout.on("data", (data) => {
-      if (options.stdoutFile) {
-        options.stdoutFile.write(data);
-        return;
-      }
-      stdout += String(data);
-    });
-    child.stderr.on("data", (data) => {
-      stderr += String(data);
-    });
-    child.on("error", (error) => {
-      resolveProcess({ ok: false, code: null, stdout, stderr, error });
-    });
-    child.on("close", (code) => {
-      resolveProcess({ ok: code === 0, code, stdout, stderr });
-    });
-  });
-}
-
-function getDmgName(version) {
+function getDmgName(version, assetName) {
+  if (assetName) return assetName;
   const suffix = process.arch === "arm64" ? "arm64" : "x64";
   return `Fintheon-${normalizeVersion(version)}-${suffix}.dmg`;
 }
@@ -87,6 +60,16 @@ function isUsableFile(filePath) {
   }
 }
 
+function hashFile(filePath) {
+  return new Promise((resolveHash, rejectHash) => {
+    const hash = crypto.createHash("sha256");
+    const stream = fs.createReadStream(filePath);
+    stream.on("error", rejectHash);
+    stream.on("data", (chunk) => hash.update(chunk));
+    stream.on("end", () => resolveHash(hash.digest("hex")));
+  });
+}
+
 function createUpdateManager({
   app,
   getCurrentApiBase,
@@ -96,6 +79,7 @@ function createUpdateManager({
 }) {
   let downloadedAsset = null;
   let downloadInFlight = null;
+  let latestUpdate = null;
 
   function emit(channel, payload) {
     const win = getMainWindow();
@@ -103,14 +87,14 @@ function createUpdateManager({
     win.webContents.send(channel, payload);
   }
 
-  function getAssetPaths(version) {
+  function getAssetPaths(version, assetName) {
     const updateDir = path.join(app.getPath("userData"), UPDATE_DIR);
-    const assetName = getDmgName(version);
+    const resolvedAssetName = getDmgName(version, assetName);
     return {
       updateDir,
-      assetName,
-      dmgPath: path.join(updateDir, assetName),
-      tempPath: path.join(updateDir, `${assetName}.tmp`),
+      assetName: resolvedAssetName,
+      dmgPath: path.join(updateDir, resolvedAssetName),
+      tempPath: path.join(updateDir, `${resolvedAssetName}.tmp`),
     };
   }
 
@@ -136,21 +120,24 @@ function createUpdateManager({
   async function checkForDesktopUpdate() {
     try {
       const base = (getCurrentApiBase() || remoteBackendUrl).replace(/\/$/, "");
-      const res = await fetch(`${base}/api/version/check`);
-      if (!res.ok) throw new Error(`version check ${res.status}`);
+      const arch = process.arch === "arm64" ? "arm64" : "x64";
+      const res = await fetch(
+        `${base}/api/desktop/update/latest?platform=darwin&arch=${arch}`,
+      );
+      if (!res.ok) throw new Error(`desktop update check ${res.status}`);
       const data = await res.json();
-      const latest = normalizeVersion(data.latest);
+      if (!data?.ok) throw new Error(data?.reason ?? "update unavailable");
+      const latest = normalizeVersion(data.version);
       const hasUpdate =
-        Boolean(latest) &&
-        data.updateAvailable === true &&
-        isNewerThan(latest, app.getVersion());
+        Boolean(latest) && isNewerThan(latest, app.getVersion());
+      latestUpdate = hasUpdate ? { ...data, version: latest } : null;
       if (hasUpdate) downloadUpdateInBackground(latest);
       return {
         ok: true,
-        current: data.current ?? app.getVersion(),
+        current: app.getVersion(),
         latest: latest || null,
         updateAvailable: hasUpdate,
-        downloadUrl: releasesLatestUrl,
+        downloadUrl: data.downloadUrl ?? releasesLatestUrl,
         downloaded:
           downloadedAsset?.version === latest &&
           isUsableFile(downloadedAsset.dmgPath),
@@ -167,7 +154,7 @@ function createUpdateManager({
   }
 
   async function downloadUpdate(version) {
-    const cleanVersion = normalizeVersion(version);
+    const cleanVersion = normalizeVersion(version || latestUpdate?.version);
     if (!cleanVersion) return { ok: false, reason: "version is required" };
     if (
       downloadedAsset?.version === cleanVersion &&
@@ -212,70 +199,72 @@ function createUpdateManager({
   }
 
   async function downloadUpdateAsset(version) {
-    const tag = `v${normalizeVersion(version)}`;
-    const paths = getAssetPaths(version);
+    const update = latestUpdate?.version === version ? latestUpdate : null;
+    if (!update?.downloadUrl) throw new Error("download URL unavailable");
+    const tag = update.tag || `v${normalizeVersion(version)}`;
+    const paths = getAssetPaths(version, update.assetName);
     fs.mkdirSync(paths.updateDir, { recursive: true });
     fs.rmSync(paths.tempPath, { force: true });
+    if (isUsableFile(paths.dmgPath)) {
+      if (update.sha256) {
+        const existingHash = await hashFile(paths.dmgPath);
+        if (existingHash !== update.sha256)
+          fs.rmSync(paths.dmgPath, { force: true });
+      }
+    }
     if (isUsableFile(paths.dmgPath)) {
       return {
         version,
         tag,
         assetName: paths.assetName,
         dmgPath: paths.dmgPath,
+        sha256: update.sha256 ?? null,
+        releaseUrl: update.releaseUrl ?? releasesLatestUrl,
       };
     }
 
-    const ghAuth = await runProcess("gh", ["auth", "status"]);
-    if (!ghAuth.ok) throw new Error("gh CLI is not authenticated");
-
-    const download = await runProcess("gh", [
-      "release",
-      "download",
-      tag,
-      "--repo",
-      REPO,
-      "--pattern",
-      paths.assetName,
-      "--output",
-      paths.dmgPath,
-      "--clobber",
-    ]);
-    if (download.ok && isUsableFile(paths.dmgPath)) {
-      return {
-        version,
-        tag,
-        assetName: paths.assetName,
-        dmgPath: paths.dmgPath,
-      };
+    const download = await fetch(update.downloadUrl);
+    if (!download.ok || !download.body) {
+      throw new Error(`download failed ${download.status}`);
     }
-
-    const assetApi = await runProcess("gh", [
-      "release",
-      "view",
-      tag,
-      "--repo",
-      REPO,
-      "--json",
-      "assets",
-      "--jq",
-      `.assets[] | select(.name == "${paths.assetName}") | .apiUrl`,
-    ]);
-    const apiUrl = assetApi.stdout.trim();
-    if (!assetApi.ok || !apiUrl) throw new Error("release asset not found");
-
     const out = fs.createWriteStream(paths.tempPath);
-    const apiDownload = await runProcess(
-      "gh",
-      ["api", apiUrl, "-H", "Accept: application/octet-stream"],
-      { stdoutFile: out },
-    );
-    await new Promise((resolveStream) => out.end(resolveStream));
-    if (!apiDownload.ok || !isUsableFile(paths.tempPath)) {
+    await new Promise((resolveStream, rejectStream) => {
+      const reader = download.body.getReader();
+      function pump() {
+        reader
+          .read()
+          .then(({ done, value }) => {
+            if (done) {
+              out.end(resolveStream);
+              return;
+            }
+            out.write(Buffer.from(value), pump);
+          })
+          .catch(rejectStream);
+      }
+      out.on("error", rejectStream);
+      pump();
+    });
+    if (!isUsableFile(paths.tempPath)) {
       fs.rmSync(paths.tempPath, { force: true });
-      throw new Error("release asset API download failed");
+      throw new Error("downloaded DMG is not usable");
+    }
+    if (update.sha256) {
+      const downloadedHash = await hashFile(paths.tempPath);
+      if (downloadedHash !== update.sha256) {
+        fs.rmSync(paths.tempPath, { force: true });
+        throw new Error("downloaded DMG checksum mismatch");
+      }
     }
     fs.renameSync(paths.tempPath, paths.dmgPath);
-    return { version, tag, assetName: paths.assetName, dmgPath: paths.dmgPath };
+    return {
+      version,
+      tag,
+      assetName: paths.assetName,
+      dmgPath: paths.dmgPath,
+      sha256: update.sha256 ?? null,
+      releaseUrl: update.releaseUrl ?? releasesLatestUrl,
+    };
   }
 
   async function installUpdate() {
@@ -298,10 +287,15 @@ function createUpdateManager({
     return { ok: true, installing: true, target: downloadedAsset.version };
   }
 
+  function hasDownloadedUpdate() {
+    return Boolean(downloadedAsset && isUsableFile(downloadedAsset.dmgPath));
+  }
+
   return {
     checkForDesktopUpdate,
     downloadUpdate,
     installUpdate,
+    hasDownloadedUpdate,
   };
 }
 

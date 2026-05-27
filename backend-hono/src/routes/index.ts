@@ -34,6 +34,7 @@ import { createLexiconRoutes } from "./lexicon/index.js";
 import { createClassificationMatrixRoutes } from "./classification-matrix/index.js";
 
 import { createVersionRoutes } from "./version/index.js";
+import { createDesktopUpdateRoutes } from "./desktop-update/index.js";
 import { createMarketDataRoutes } from "./market-data/index.js";
 import { createSettingsRoutes } from "./settings/index.js";
 import { createJournalRoutes } from "./journal/index.js";
@@ -159,6 +160,7 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/setup", createSetupRoutes());
   // Version check (public, used by auto-update prompt)
   app.route("/api/version", createVersionRoutes());
+  app.route("/api/desktop/update", createDesktopUpdateRoutes());
   // Phase 2: Market routes - VIX is public
   app.route("/api/market", createMarketRoutes());
   app.route("/api/boardroom", createBoardroomRoutes());
