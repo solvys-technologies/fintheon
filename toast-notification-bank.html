@@ -40,6 +40,27 @@
         --blue: #7ca2c2;
         --orange: #c47c48;
         --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        --fintheon-bg: var(--bg);
+        --fintheon-text: var(--text);
+        --fintheon-primary: var(--gold);
+        --fintheon-accent: var(--gold);
+        --fintheon-border: rgba(199, 159, 74, 0.22);
+        --fintheon-toast-glass-bg: rgba(8, 9, 10, 0.72);
+        --fintheon-toast-glass-tint: color-mix(
+          in srgb,
+          var(--fintheon-primary) 10%,
+          transparent
+        );
+        --fintheon-toast-glass-edge: rgba(240, 234, 214, 0.14);
+        --fintheon-toast-glass-line: color-mix(
+          in srgb,
+          var(--fintheon-primary) 24%,
+          transparent
+        );
+        --fintheon-toast-glass-shadow: 0 18px 46px rgba(0, 0, 0, 0.48);
+        --fintheon-toast-radius: 16px;
+        --fintheon-toast-blur: 18px;
+        --fintheon-toast-accent: var(--fintheon-primary);
       }
 
       * {
@@ -142,12 +163,34 @@
       }
 
       .toast-card {
+        --toast-tone: var(--fintheon-toast-accent);
+        --toast-tone-soft: color-mix(
+          in srgb,
+          var(--toast-tone) 14%,
+          transparent
+        );
+        --toast-tone-line: color-mix(
+          in srgb,
+          var(--toast-tone) 34%,
+          transparent
+        );
         position: relative;
         min-width: 280px;
         max-width: 390px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: var(--surface);
+        border: 1px solid var(--toast-tone-line);
+        border-radius: var(--fintheon-toast-radius);
+        background:
+          linear-gradient(180deg, rgba(240, 234, 214, 0.07), transparent 34%),
+          linear-gradient(135deg, var(--toast-tone-soft), transparent 52%),
+          linear-gradient(
+            180deg,
+            var(--fintheon-toast-glass-tint),
+            transparent 78%
+          ),
+          var(--fintheon-toast-glass-bg);
+        box-shadow: var(--fintheon-toast-glass-shadow);
+        backdrop-filter: blur(var(--fintheon-toast-blur)) saturate(1.18);
+        -webkit-backdrop-filter: blur(var(--fintheon-toast-blur)) saturate(1.18);
         overflow: hidden;
         isolation: isolate;
         cursor: default;
@@ -163,12 +206,14 @@
         inset: 0;
         pointer-events: none;
         border-radius: inherit;
-        border-top: 1px solid rgba(240, 234, 214, 0.03);
+        border-top: 1px solid var(--fintheon-toast-glass-edge);
+        box-shadow:
+          inset 0 1px rgba(240, 234, 214, 0.05),
+          inset 0 -1px rgba(0, 0, 0, 0.28);
       }
 
       .toast-card.is-active {
-        border-color: rgba(199, 159, 74, 0.58);
-        background: var(--surface-strong);
+        border-color: var(--toast-tone);
         transform: translateY(-1px);
       }
 
@@ -657,7 +702,7 @@
         align-items: flex-start;
         justify-content: space-between;
         gap: 10px;
-        padding: 11px 12px;
+        padding: 12px 13px;
       }
 
       .toast-main {
@@ -687,6 +732,12 @@
         text-transform: uppercase;
       }
 
+      .toast-card .badge {
+        border-color: var(--toast-tone-line);
+        background: color-mix(in srgb, var(--toast-tone) 16%, transparent);
+        color: var(--toast-tone);
+      }
+
       .badge.success {
         border-color: rgba(95, 184, 139, 0.28);
         background: rgba(95, 184, 139, 0.12);
@@ -712,6 +763,17 @@
         color: var(--orange);
       }
 
+      .toast-card .badge,
+      .toast-card .badge.success,
+      .toast-card .badge.error,
+      .toast-card .badge.high,
+      .toast-card .badge.info,
+      .toast-card .badge.warn {
+        border-color: var(--toast-tone-line);
+        background: color-mix(in srgb, var(--toast-tone) 16%, transparent);
+        color: var(--toast-tone);
+      }
+
       .copy {
         flex: 1;
         min-width: 0;
@@ -721,20 +783,20 @@
 
       .title {
         color: var(--text);
-        font-size: 12px;
+        font-size: 12.5px;
         font-weight: 650;
         line-height: 1.25;
       }
 
       .desc {
-        color: var(--muted);
+        color: rgba(240, 234, 214, 0.62);
         font-size: 10.5px;
         line-height: 1.35;
       }
 
       .location {
         margin-top: 2px;
-        color: var(--muted-2);
+        color: rgba(240, 234, 214, 0.34);
         font-family: "JetBrains Mono", ui-monospace, monospace;
         font-size: 9.5px;
         line-height: 1.25;
@@ -749,7 +811,7 @@
         border: 0;
         border-radius: 5px;
         background: transparent;
-        color: rgba(240, 234, 214, 0.42);
+        color: rgba(240, 234, 214, 0.5);
       }
 
       .toast-card:hover .dismiss,
@@ -768,10 +830,10 @@
       }
 
       .toast-action {
-        border: 1px solid rgba(199, 159, 74, 0.26);
+        border: 1px solid var(--toast-tone-line);
         border-radius: 5px;
-        background: rgba(199, 159, 74, 0.1);
-        color: var(--gold);
+        background: color-mix(in srgb, var(--toast-tone) 13%, transparent);
+        color: var(--toast-tone);
         padding: 3px 7px;
         font-size: 10px;
         font-weight: 650;
@@ -858,8 +920,7 @@
       }
 
       .native-shell {
-        border-color: rgba(240, 234, 214, 0.16);
-        background: rgba(20, 20, 19, 0.94);
+        --toast-tone: var(--fintheon-toast-info);
       }
 
       .preview-stack {
@@ -1034,7 +1095,7 @@
 
     <main class="toast-canvas" aria-label="Fintheon overlay bank">
       <h2 class="bank-label">Toast notifications</h2>
-      <section class="toast-bank">
+      <section class="toast-bank" data-liquid-dom-surface="toast-bank">
         <article class="toast-card" data-position="bottom-left">
           <div class="toast-row">
             <div class="toast-main">

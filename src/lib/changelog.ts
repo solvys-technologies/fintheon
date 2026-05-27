@@ -12,10 +12,11 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-05-27T13:20:00-04:00",
     agent: "codex",
     summary:
-      "Fixed the Arbitrum prediction-card icon crash by falling back to neutral for unknown lean values, centralized edit and lock aliases on the current icon-bank variants, and moved the sidebar edit control into the Desk subheader row as a compact pencil icon.",
+      "Fixed the Arbitrum prediction-card icon crash by falling back to neutral for unknown lean values, centralized edit and lock aliases on the current runtime and reference icon-bank variants, and moved the sidebar edit control into the Desk subheader row as a compact pencil icon.",
     files: [
       "frontend/components/narrative/ArbitrumChamberPredictionCards.tsx",
       "frontend/components/icon-bank/AnimatedIcons.tsx",
+      "frontend/lib/icon-bank.ts",
       "frontend/components/layout/NavSidebar.tsx",
       "src/lib/changelog.ts",
     ],
@@ -111,7 +112,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-05-26T22:52:00-04:00",
     agent: "codex",
     summary:
-      "Overlay prototype bank: expanded the standalone HTML canvas to render desktop toast notifications, popup modals, dropdown menus, and non-drawer chat/Streamdown surfaces, corrected toast placement metadata, swapped the VIX fuse for a mini sparkline, removed composer drawer specimens from the bank, deleted the orphaned FuturesChart widget, and kept the top-right preview loop for enter/dwell/exit motion.",
+      "Overlay prototype bank: expanded the standalone HTML canvas to render desktop toast notifications, popup modals, dropdown menus, and non-drawer chat/Streamdown surfaces, corrected toast placement metadata, restyled the toast bank with CSS-variable-driven liquid glass tokens, swapped the VIX fuse for a mini sparkline, removed composer drawer specimens from the bank, deleted the orphaned FuturesChart widget, and kept the top-right preview loop for enter/dwell/exit motion.",
     files: [
       "toast-notification-bank.html",
       "frontend/components/chat/widgets/FuturesChart.tsx",
