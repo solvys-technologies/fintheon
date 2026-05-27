@@ -16,6 +16,7 @@ You are a release engineer. Follow every phase in order. Do not skip pre-flight.
 - **Release prune rule** (standing auth — TP confirmed 2026-04-26): after publishing the new GH release, run `gh release list` and `gh release delete <tag> --yes --cleanup-tag=false` for (a) every release whose tag starts with the current major-version prefix (e.g. `v5.*`) EXCEPT the one just published, AND (b) every release published in the last 5 days from any major-version namespace EXCEPT the one just published. Keep exactly one release per major version at any time AND zero stale releases from the last 5 days. `--cleanup-tag=false` preserves git tags so history/diffs remain intact.
 - **Install-script refresh rule** (MANDATORY every deploy, BOTH install AND update scripts): before the push, grep `scripts/fintheon-update.sh`, `scripts/fintheon-setup.sh`, `scripts/install-cli.sh` for version renders and fetch pointers. Any `git describe --tags --always` → swap to `git describe --tags --abbrev=0` (drops the `-N-gHASH` post-tag drift suffix). Any hardcoded `UPDATE_VERSION=` / `SETUP_VERSION=` / tag pointer → bump to the new tag. Any `git clone --branch <X>` or `curl .../raw/<X>/...` pointer must resolve to the new release. Commit the script changes with `INSTALL-UPDATE:` prefix as part of the deploy push — do NOT leave them for a follow-up. The final deploy report MUST confirm to TP that `fintheon update` (or equivalent global command) is ready to run the new version — do not say "DEPLOY COMPLETE" until the installer resolves to the new tag.
 - **No 10PM support-bomb releases**: never publish or leave active a Fintheon release unless a nontechnical user can download the DMG from GitHub, mount it, drag it to `/Applications`, open it, and receive in-app updates without calling TP. `bun run release:preflight` and `bun run release:verify-dmg` are hard gates, not nice-to-have checks.
+- **Sprint 100 Developer ID exception** (temporary, explicit override only): Apple Developer ID signing/notarization is deferred to Sprint 100. If, and only if, TP explicitly says to publish while disregarding the Developer ID/Gatekeeper failure for the moment, continue the deploy with an unsigned/ad-hoc macOS DMG. Do not claim `release:preflight` passed. Name the exception in the release notes, final report, and verification summary. This exception applies only to `codesign`/`spctl`/Developer ID failures; it does NOT waive frontend/backend/mobile builds, install/update script refresh, DMG creation, release asset upload, `latest-mac.yml`/blockmap upload, `bun run release:verify-dmg`, release pruning, endpoint checks, or local backend restart.
 - **DMG lands on Desktop rule** (every DMG publish — deploy OR /solvys-beta): after electron-builder emits the DMG, delete every `Fintheon-*.dmg` already on `~/Desktop/` and copy the new one there. TP installs from Desktop; old DMGs confuse it. `find ~/Desktop -maxdepth 1 -name "Fintheon-*.dmg" -type f -delete` then `cp dist-electron/Fintheon-*.dmg ~/Desktop/`.
 - **Current major** = numeric prefix of the active deploy branch (e.g. `v5.*` while on `v5.22`). When the branch rolls to v6.x later, pivot the prune target.
 - Deploy must hit ALL 3 targets: backend (Fly.io), desktop frontend (Vercel), mobile PWA (Vercel)
@@ -195,6 +196,7 @@ bun run release:verify-dmg
 - FAIL if the DMG upload fails (the release is incomplete without it)
 - FAIL if `release:verify-dmg` fails; delete or fix the broken GitHub release before ending the deploy
 - WARN if Desktop copy fails (non-blocking; DMG is still on the release)
+- If the Sprint 100 Developer ID exception is explicitly active and `desktop:build`/`electron-builder` stalls on missing signing identity, rebuild the DMG with `CSC_IDENTITY_AUTO_DISCOVERY=false bunx electron-builder --mac dmg` after `bun run frontend:build`. Upload `desktop-dist/Fintheon-${VERSION}-arm64.dmg`, `desktop-dist/Fintheon-${VERSION}-arm64.dmg.blockmap`, and `desktop-dist/latest-mac.yml`. Add a release-body note: "Apple Developer ID signing/notarization is intentionally deferred to Sprint 100; this release publishes the current unsigned/ad-hoc macOS DMG." The release is still incomplete unless `bun run release:verify-dmg` passes against the deployed update endpoint.
 
 ### 2f. Prune older releases in the current major-version namespace
 
@@ -233,6 +235,7 @@ curl -s -o /dev/null -w "%{http_code}" {desktop_deployment_url}
 ```
 
 - PASS if HTTP 200
+- If a generated Vercel deployment URL returns 401 due to deployment protection, verify the canonical production alias instead: `https://fintheon-alpha.vercel.app`.
 
 ### 3c. Mobile PWA Check
 
@@ -241,6 +244,7 @@ curl -s -o /dev/null -w "%{http_code}" {mobile_deployment_url}
 ```
 
 - PASS if HTTP 200
+- If a generated Vercel deployment URL returns 401 due to deployment protection, verify the canonical production alias instead: `https://fintheon.pricedinresearch.io`.
 
 ### 3d. API Smoke Tests
 
