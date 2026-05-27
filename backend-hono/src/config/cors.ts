@@ -4,6 +4,7 @@
  */
 
 const isDev = process.env.NODE_ENV !== "production";
+const isDesktopRuntime = process.env.FINTHEON_DESKTOP === "true";
 
 const isLocalhostOrigin = (origin: string): boolean => {
   try {
@@ -60,7 +61,9 @@ export const corsConfig = {
     if (allowlist.includes(origin)) return origin;
     // Allow any localhost origin (Electron, Vite dev, port hopping)
     if (isLocalhostOrigin(origin)) return origin;
-    if (isDev && isPrivateNetworkOrigin(origin)) return origin;
+    if ((isDev || isDesktopRuntime) && isPrivateNetworkOrigin(origin)) {
+      return origin;
+    }
     return null;
   },
   allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
